@@ -215,7 +215,7 @@ divided into six 'phases'.
 * **Army Types**:
   * **Field Armies**: Deploy onto the world map for exploration and conquest.
   * **Guard Armies**: Deployed to defense slots to protect structures.
-* **Stamina System**: Armies recover +30 stamina each Phase (6 phases per Eternum Day, totaling +180 stamina per day).
+* **Stamina System**: Armies recover +20 stamina each Phase (6 phases per Eternum Day, totaling +120 stamina per day).
 * **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
   specific biomes.
 * **Reinforcements**: Lords can transport troops by donkey to any Realm, Hyperstructure, Camp or Essence Rift that they
@@ -883,7 +883,7 @@ meta: {
 
 ### Blitz Stamina & Relic Configuration Clarification
 
-* [Blitz/Stamina & Biomes](/blitz/military/stamina-and-biomes): Updated Blitz stamina regeneration to **30 stamina per phase** and clarified combat stamina thresholds as **75** to attack and **60** to defend.
+* [Blitz/Stamina & Biomes](/blitz/military/stamina-and-biomes): Clarified Blitz stamina regeneration as **20 stamina per phase** and combat stamina thresholds as **50** to attack and **40** to defend.
 * Confirmed combat stamina thresholds are config-driven values, not dynamically derived at runtime from regeneration.
 
 ### Relic Duration Standardisation
@@ -1408,613 +1408,6 @@ meta: {
 ***
 
 *This changelog reflects all documentation updates made since the previous release.*
-
-
-
----
-
-file: docs/pages/eternum/achievements.mdx
-meta: {}
-
-# Achievements & Quests
-
-*WIP*
-
-
-
----
-
-file: docs/pages/eternum/game-entry.mdx
-meta: {
-  "title": "Game Entry",
-  "description": "How to join Eternum via Season Passes and Villages"
-}
-
-# Game Entry
-
-Eternum takes place in 'Seasons', multi-week campaigns with long-term strategic and diplomatic developments. There are
-several weeks between each season that allow for iterative development and feature expansion in each subsequent season.
-
-## Realms NFT Holder Entry <img src="/images/ring_pass.png" alt="Season entry" width="300" className=" float-right" />
-
-Realms NFT holders have the exclusive benefit of free entry into each season of Eternum through the minting of Season
-Passes. Each Season Pass is unique to the Realm it was minted from and allows the holder to initiate a settling
-transaction to enter the game. To do this, Lords must first mint the Season Pass
-[here](https://empire.realms.world/mint) using the wallet that contains the Realms NFT, then transfer the Season Pass to
-their [Cartridge Wallet](/overview/controller).
-
-## Non-Realm Holder Entry
-
-⚖️ **Season Pass Marketplace**
-
-Should a Realm NFT holder decide not to use their Season Pass, they can transfer it or sell it on the
-[Season Pass Marketplace](https://empire.realms.world/trade), providing an avenue for non-Realm holders to acquire
-Season Passes to participate in the game.
-
-🏕️ **Villages**
-
-Villages are modest outposts that can be established around settled Realms, offering an accessible entry point into
-Eternum. Villages have some restrictions but offer a low-cost, casual taste of Eternum gameplay to newcomers while also
-acting as an avenue for established players to expand their production. Each Realm can support up to six surrounding
-Villages.
-
-For detailed information about Villages, including settling mechanics, resource production, and progression paths, visit
-our [Villages guide](/eternum/realm-and-villages/villages).
-
-## Realm Control Mechanics
-
-As long as you maintain control of a settled Realm or Village, you can actively participate without additional entry
-fees, engage in the market using **$LORDS** tokens, and enjoy uninterrupted gameplay until the end of the season.
-However, Eternum is a high-stakes game, it can be unforgiving and players must accept that their valuable holdings may
-become a target for other players. Thankfully, the game offers high-stakes and low-stakes gameplay to ensure that
-players can participate in the world at their own pace and risk tolerance.
-
-⚔️ **Realms - High Stakes**
-
-Once settled, Realms can be conquered and claimed within a Season, transferring control to the conqueror. Realms are the
-key playing pieces in Eternum and allow for the full gameplay experience in producing resources, training armies,
-conducting trade, and pursuing territorial expansion. This level of capability comes with increased risk, as Realms must
-continually manage defenses, alliances, and strategic positioning to protect themselves from rivals.
-
-🌴 **Villages - Low Stakes**
-
-Unlike Realms, Villages cannot be conquered by other players, making them an ideal choice for casual players seeking a
-lower-risk gameplay experience. Villages can still participate in most gameplay activities, but production rates are
-limited to 50% the rate of Realms and progression paths are limited. These features make Villages perfect for new
-players looking to learn the game mechanics without the constant threat of conquest.
-
-
-
----
-
-file: docs/pages/eternum/key-concepts.mdx
-meta: {
-  "title": "Key Concepts",
-  "description": "The foundational mechanics of Eternum"
-}
-
-# 🔑 Key Concepts
-
-<img src="/images/covers/07.png" alt="Eternum Key Concepts" className="w-full rounded-lg my-6" />
-
-This section outlines the core mechanics and systems that form the foundation of Eternum's gameplay.
-
-## Realms
-
-* **Limited Assets**: 8,000 unique and irreplaceable Realms serve as the foundation of Eternum, each has the ability to
-  freely mint a Season Pass.
-* **Settling**: Players must burn a Season Pass to settle their Realm in the game world.
-* **Starting Materials**: Each newly settled Realm begins with a set of starting materials.
-* **Progression Path**: Realms can upgrade from Settlements → Cities → Kingdoms → Empires, unlocking additional
-  buildable hexes and defensive army slots.
-* **Resource Production**: Each Realm can produce 1-7 different resources based on the original Realms NFT metadata.
-* **Wonders**: Realms with Wonders have a 20% production bonus and share this bonus with all Realms and Villages in a
-  12- tile radius.
-* **Hardcore Gameplay**: If a Realm’s defenses crumble, it can be claimed by another player—transferring gameplay rights
-  to the conqueror.
-
-## Villages
-
-* **Accessible Entry**: Villages can be established around settled Realms, offering a simple entry system for new
-  players
-* **Scaling**: Up to 6 Villages per Realm, allowing for 48,000 Villages in Season 1
-* **Limited Production**: Produce materials at 50% the rate of Realms and only have access to 1 resource type each
-* **Parent Realm**: Each Village is tied to a parent Realm and will pay bridging fees if moving materials out of the
-  game
-* **Troop Restrictions**: Villages may only receive tokenized troops from their parent Realm, they cannot buy or be sent
-  troops from any other source
-* **Simple Progression**: Villages have a limited upgrade path from Settlement to City
-* **Casual Gameplay**: Villages can be raided, but can’t be claimed by other players.
-
-## Materials
-
-* **Materials Categories**:
-  * **Food**: (Wheat, Fish) - essential for production, troop movement, and construction.
-  * **Resources**: 22 different resource types, distributed based on rarity across both Realms and Villages.
-  * **Troops**: Units with unique properties that can be assigned to armies.
-  * **Donkeys**: Required for moving materials around the world, essential for logistics.
-  * **Labor**: A new material in S1 that allows players to build and produce in 'simple mode', acquired through burning
-    resources.
-  * **Ancient Fragments**: Found in-game, critical for the construction of Hyperstructures.
-* **ERC20 Compatibility**: All materials (except Labor) can be traded freely and bridged out as ERC20 tokens through
-  Realms.
-
-## Buildings
-
-* **Construction Modes**: Two building systems available - Standard (resource-efficient) and Simple (labor-focused).
-* **Building Types**:
-  * **The Keep**: Central structure automatically constructed when settling, provides baseline population capacity.
-  * **Resource Buildings**: Specific buildings for each of the 22 resources, only requiring food to construct.
-  * **Economic Buildings**: Includes Farms, Fishing Villages, Worker Huts, Storehouses, and Markets.
-  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
-* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
-  and Villages are upgraded.
-
-## Production
-
-* **Production Modes**: Like buildings, production can be done in Standard (resource-intensive) or Simple (food and
-  labor) mode.
-* **Production Types**:
-  * **Food**: The only resources (Wheat, Fish) that can be produced without inputs.
-  * **Resources**: Require combinations of other resources (standard) or labor (simple).
-  * **Labor**: Produced by burning resources in the Keep, used for simple mode construction and production.
-  * **Troops**: Essential for exploration and warfare, with higher tiers requiring lower tier troops as inputs.
-  * **Donkeys**: One-time-use transport, consumed after a single journey.
-
-## World Map
-
-* **Exploration System**: The world begins shrouded in mystery, with only the six Banks visible at season start;
-  adjacent hexes are revealed when settling, and armies can explore to reveal new areas.
-* **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
-  movement.
-* **Movement & Stamina**: Armies move using stamina (regenerating at +2 per Phase, +12 per Eternum Day), with costs
-  varying by biome and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities.
-* **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
-  exploring armies may discover resources or encounter world structures and agent armies.
-
-## Military
-
-<img src="/images/covers/04.png" alt="Eternum Military" className="w-full rounded-lg my-6" />
-
-* **Army Composition**: Armies consist of a single troop type and tier (Knights, Crossbowmen, or Paladins).
-* **Troop Tiers**: T1, T2, and T3 troops with increasing combat strength.
-* **Combat Factors**: Battles resolved based on army damage, stamina modifiers, and biome effects.
-* **Army Types**:
-  * **Field Armies**: Deploy onto the world map for exploration and conquest.
-  * **Guard Armies**: Deployed to defense slots to protect structures.
-* **Stamina System**: Armies recover +2 stamina per Phase (6 phases per Eternum Day, totaling +12 stamina per day).
-* **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
-  specific biomes.
-* **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders.
-  * Success depends on the raiding army's damage relative to the combined guard armies.
-  * Undefended structures can be raided without casualties.
-
-## Tribes
-
-Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
-private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
-within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
-
-## Victory Conditions
-
-Eternum's seasonal gameplay culminates in victory through the accumulation of victory points earned through the
-construction and ownership of Hyperstructures. However, there are various achievement paths, with players earning
-recognition and rewards for various actions within the Season.
-
-
-
----
-
-file: docs/pages/eternum/prize-pool.mdx
-meta: {}
-
-import { table } from "@/components/styles";
-
-# 💰 Prize Pool
-
-## Overview
-
-In Season 1 of Eternum, there are four prize categories with a total of:
-
-* 1,000,000 $LORDS tokens
-* 100,000 $STRK tokens
-
-> **Note:** All Season 1 prizes will be distributed manually by the development team (except for the agent rewards which
-> are collected directly in-game). Future seasons will implement automated distribution through game contracts, aligning
-> with decentralized gaming principles.
-
-## Prize Categories
-
-### 1. Victory Prizes
-
-**Total: 300,000 $LORDS + 50,000 $STRK**
-
-These prizes are awarded to top-performing tribes based on victory points. Additionally, 2.5% of all $LORDS bridging
-volume is collected as a fee and added to the prize pool, further increasing the total rewards available.
-
-#### How to Earn Victory Points
-
-Players can earn victory points by:
-
-* Contributing resources and labor to hyperstructure construction
-* Holding shares in completed hyperstructures to accumulate emitted victory points
-
-#### Distribution
-
-Once a player triggers the end of the game (or the game contract breaks), a snapshot of tribes, their members, and the
-victory point leaderboard is taken. Tribes will then be ranked by the cumulative number of victory points of their
-players. The top 10 tribes receive prizes based on this allocation:
-
-<div style={table.container}>
-  <div style={table.wrapper}>
-    <table style={table.table}>
-      <thead style={table.tableHead}>
-        <tr>
-          <th style={table.headerCell}>Rank</th>
-          <th style={table.headerCell}>Allocation</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr style={table.tableRow}>
-          <td style={table.cell}>1st Place</td>
-          <td style={table.cell}>30%</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>2nd Place</td>
-          <td style={table.cell}>18%</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>3rd Place</td>
-          <td style={table.cell}>12%</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>4th Place</td>
-          <td style={table.cell}>9%</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>5th Place</td>
-          <td style={table.cell}>7%</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>6th Place</td>
-          <td style={table.cell}>6%</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>7th & 8th Place</td>
-          <td style={table.cell}>5% each</td>
-        </tr>
-
-        <tr style={table.tableRow}>
-          <td style={table.cell}>9th & 10th Place</td>
-          <td style={table.cell}>4% each</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-#### Individual Distribution
-
-Within each tribe:
-
-* Tribe Leader: 30% of tribal allocation (regardless of their victory points)
-* Other Members: 70% split proportionally based on victory points contribution to the tribal total
-
-### 2. Achievement Prizes
-
-**Total: 300,000 $LORDS**
-
-Players earn achievement points by completing quests—tracked inside your Cartridge profile, and accessible via your
-Cartridge wallet in-game. At the end of the season, this prize pool will be split proportionally amongst all players
-based on the number of achievement points they have accumulated.
-
-> **Note:** Achievement details, requirements, and point allocations will be withheld until the game begins to prevent
-> planned farming and extractive behaviors. Check the Achievements section for updates when this information becomes
-> available.
-
-### 3. Daydreams Agent Prizes
-
-**Total: 250,000 $LORDS + 25,000 $STRK**
-
-#### Agent Rewards
-
-Each agent on the world map carries 10-35 $LORDS, obtainable through:
-
-* Collaboration (persuasion via chat)
-* Combat victory
-
-#### Special Achievement
-
-25,000 $STRK will be distributed to the first 100 players who complete the 'Nexus-6' achievement by defeating 10 agent
-armies.
-
-### 4. Eternum Arts & Emissaries Prizes
-
-**Total: 150,000 $LORDS + 25,000 $STRK**
-
-Awarded to players or groups making exceptional cultural, artistic, or creative contributions to Eternum. These awards
-can be given during or after the game at the developers' discretion.
-
-> **Note:** For more information, join our [Discord community](https://discord.gg/KJff5Ecp).
-
-## Unused Prize Distribution
-
-If any prizes remain unallocated at the end of the game and prize distribution phase:
-
-* Unused $LORDS will be distributed through the veLORDS protocol
-* Unused $STRK will be retained by developers for future use
-
-
-
----
-
-file: docs/pages/eternum/tribes.mdx
-meta: {}
-
-# 👥 Tribes
-
-Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
-private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
-within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
-
-## Formation & Membership
-
-* Any player can create a tribe
-* Set tribe name
-* Set to public or private
-* If private, send invites to players
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/create-guild.gif" alt="Create Guild" />
-
-  <em>Flow to create a tribe</em>
-</div>
-
-
-
----
-
-file: docs/pages/eternum/victory.mdx
-meta: {}
-
-import { ETERNUM_CONFIG } from "@/utils/config";
-import {
-  HyperstructureInitializationShardsTable,
-  HyperstructureConstructionCostTable,
-  HyperstructurePointsTable,
-  getTotalHyperstructureCompletionPoints,
-  HYPERSTRUCTURE_POINT_MULTIPLIER,
-} from "@/components/eternum-components/HyperstructureTable";
-import { formatNumberWithCommas } from "@/utils/formatting";
-
-# 👑 Victory
-
-<img src="/images/covers/07.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
-
-## Victory Points
-
-Ultimate victory in Eternum is measured by Victory Points (VP), earned exclusively through Hyperstructures. When a
-single player’s total VP reaches the season-defined threshold, they unlock the ability to End Season, immediately
-halting all further gameplay actions and cementing the final standings. Thus, the race to build, seize, and defend
-Hyperstructures is the decisive path that ultimately closes the chapter on each season of Eternum.
-
-## Activating Foundations
-
-Each Hyperstructure is unique, requiring varying quantities of all 22 resources (and Labor) for completion. To activate
-a Hyperstructure Foundation, all **{
-  formatNumberWithCommas(ETERNUM_CONFIG().hyperstructures.hyperstructureInitializationShardsCost.amount)} Ancient
-Fragments** must be deposited into the structures's balance, and then the owner of the mine must explicitly activate the
-foundation to begin construction. Upon activation, the exact quantity required for each resource is randomly determined
-within predefined minimum and maximum ranges shown below:
-
-<HyperstructureInitializationShardsTable />
-
-<HyperstructureConstructionCostTable />
-
-*Note: In addition to these resources, all Hyperstructures require a fixed contribution of 50,000,000 units of labor to
-complete construction.*
-
-## Construction Victory Points
-
-The Lord initiating the Hyperstructure construction determines whether contributions can be made by all Lords (public)
-or restricted to members of their tribe (private). Contributions may be made directly from Realms or Villages without
-requiring donkeys for transport. As Lords contribute to the Hyperstructure, they are awarded with a proportional
-allocation of Victory Points. A total of **{formatNumberWithCommas(getTotalHyperstructureCompletionPoints())}** are
-available to claim throughout the construction process.
-
-## Accumulation Victory Points
-
-Separately, and in addition to the victory points awarded at completion, the owner of the Hyperstructure begins to
-accumulate
-**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsPerCycle)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
-victory points** for every second the structure remains under their control. These accumulating victory points can be
-shared among multiple Lords through a customizable share split, allowing the owner to distribute glory and reward
-cooperation. If a Hyperstructure is claimed by another Lord, future accumulated victory points are redirected to the new
-owner, who may similarly decide on sharing arrangements.
-
-## Total Victory
-
-Victory points earned through construction contributions or accumulation cannot be lost once awarded. The first player
-to reach
-**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
-total victory points** unlocks the ability to select the ‘End Season’ option, concluding the current game season.
-
-<HyperstructurePointsTable />
-
-
-
----
-
-file: docs/pages/eternum/world-physics.mdx
-meta: {}
-
-import { Biomes } from "@/components/Biomes";
-
-# 🌪️ World Physics
-
-<img src="/images/covers/08.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
-
-In Eternum, every action is governed by onchain physics—immutable rules encoded directly onto the blockchain, ensuring
-fairness, transparency, and absolute consistency for all Lords. Here, code is law; no exceptions exist outside the
-boundaries set by these protocols.
-
-## Seasons
-
-Welcome to Season 1. Eternum, in its current form, comes and goes in seasonal launches. Each season marks a special time
-of iteration and advancement in this new form of onchain gaming and may be likened to the movement of tides. Once a
-season launches, the tide flows out and the Lords arrive to build their castles in the sand. Nothing, not even the
-developers, can stop or alter the course of a season once launched, and players are free to take any action that the
-rules of the game allow. Once a Lord accumulates the requisite Victory Points, they unlock the ability to end the
-season—signalling the tide to come back in and put an end to the Lords' fun… until next season.
-
-## Time
-
-Time within a season is measured in Eternum Days, and each is precisely one hour in length. Each Eternum Day is divided
-into six equal phases (early hours, dawn, morning, afternoon, dusk, and late evening), with each phase lasting ten
-minutes. One day ends and the next begins at the top of every real-world hour.
-
-## Materials
-
-In the world of Eternum, everything holds tangible, tokenized value—be it food, labor, resources, troops, or even the
-trusty donkeys required for transport. These fungible tokens are generated within Eternum, but can be bridged in and out
-of the game through Realms or Banks and traded on external marketplaces. All materials have an associated weight, which
-determines the amount that can be stored and the number of donkeys required to move the goods from place to place.
-
-Note: This document will use 'materials' to refer to all tangible assets - i.e. food, resources, ancient fragments,
-labor, troops, and donkeys. This is not to be confused with 'resources', which specifically refers to the 22 resources
-ranging from wood through to dragonhide. Tokens such as $LORDS and $STRK are not considered materials.
-
-## Cost of Production
-
-With the exception of food, nothing in Eternum is produced for free; every unit of production demands an input—food,
-labor, resources, or some combination thereof. Lords must consider these costs and effectively balance trade to ensure
-they can survive the season.
-
-## Travel
-
-Transporting materials across the vast lands of Eternum takes time… and donkeys. Every transfer of materials between
-locations relies exclusively on these speedy and dependable creatures. These donkeys are single-use, consumed upon
-completing their journey, making continuous acquisition vital for maintaining trade routes and strategic flexibility.
-
-Moving tokenized troops through the donkey network may be fast, but to dominate your enemies and ensure security of your
-lands, troops must be deployed to an army. Once troops are deployed, they cannot be retokenized, and are doomed to their
-fate within this season of Eternum. Once troops are deployed to the world map, their mobility is governed by stamina,
-limiting the distance they can travel and the number of actions they can perform. Travelling between hexes or initiating
-an attack expends valuable stamina points, but they are partially replenished each Eternum Day.
-
-## Hexes
-
-Eternum unfolds across an infinite, procedurally-generated, hexagonal-tile world map. This represents the physical space
-of the world and defines spawn locations, biome distribution, and distances between Realms, Villages, and other world
-structures. This is the layer in which armies explore, fight, raid and capture, and is explorable in the 'World' view.
-
-Zooming in, each Realm or Village hex is broken up into smaller hexes which define the local area and building placement
-(hexes within hexes!). Here in the 'Local' view, Lords can plan out their building placement and closely manage their
-population, supply chain, and production.
-
-## Biomes
-
-Each hexagonal tile on the world map possesses a distinct biome. Each troop type responds uniquely to these varied
-terrains, gaining or losing combat efficiency and stamina based on their affinity with different biomes. Successful
-Lords must master biome knowledge to exploit strategic advantages or avoid costly missteps.
-
-<Biomes />
-
-## The Known World
-
-Initial scouting reports have revealed some key details about the world:
-
-* Six ancient Banks have been located, distributed evenly in a ring around the central point. These structures are
-  perfectly situated and designed to facilitate trade in this new world. Sufficiently prepared Lords may be able to
-  capture these lucrative structures, but will likely make themselves a target in the process.
-
-* An unknown number of Hyperstructure Foundations are scattered around the unexplored world. These are rare, key
-  locations that must be claimed by Lords in order to rebuild the ancient Hyperstructures that are critical to achieving
-  victory. They are more likely to be found in the central regions of the map, and as each subsequent Hyperstructure
-  Foundation is discovered, the likelihood of finding another one in the world diminishes.
-
-* Hundreds of mines are also strewn across the landscape. Prospectors have theorized that these mines are hotspots for
-  finding ancient fragments needed to reconstruct key sections of the Hyperstructures.
-
-* Bandits roam throughout the lands and have established lairs in each of the key locations described above. The newly
-  arrived Lords will need to overcome these lawless brigands to bring order and control back to Eternum.
-
-* Mysterious hooded figures lurk in the mist, offering to play a strange card game with any who wish to try their luck.
-
-
-
----
-
-file: docs/pages/eternum/world-structures.mdx
-meta: {}
-
-# 💠 World Structures
-
-## Hyperstructures
-
-Hyperstructures are colossal edifices constructed atop ancient foundations hidden across Eternum, representing
-monumental achievements and symbols of dominance in the game world. Lords must uncover and claim Hyperstructure
-Foundations through exploration and combat, then invest substantial quantities of resources, labor, and ancient
-fragments to reconstruct these majestic towers. Successfully completing and controlling Hyperstructures is the primary
-path to victory in Eternum, making them ultimate strategic targets for ambitious Lords and powerful tribes alike.
-
-<img src="/images/buildings/construction/hyperstructure.png" width="800" />
-
-### Hyperstructure Foundations
-
-These ancient, indestructible platforms are primarily scattered within the ring of Banks that surround the center of the
-map. There is a chance of discovering a Hyperstructure Foundation each time an army explores an unrevealed hex,
-calculated using the following formula:
-
-```
-Discovery Chance = (0.975^x × y) - (z × 0.001)
-```
-
-Where:
-
-* **x** = the number of hexes from the center of the map
-* **y** = the base chance of finding a Hyperstructure Foundation on the central hex (4%)
-* **z** = the number of Hyperstructure Foundations already discovered
-
-For example, if you're exploring a hex 100 tiles from the center and 5 foundations have already been discovered:
-
-```
-Discovery Chance = (0.975^100 × 4) - (5 × 0.001)
-                 = (0.079 × 4) - 0.005
-                 = 0.316 - 0.005
-                 = 0.311 or 31.1%
-```
-
-The result of this function means that Hyperstructure Foundations are generally only able to be found within 300 tiles
-of the center of the map. As more are found, the chance of finding another diminishes and makes it even less likely to
-find one further from the center. Lords are therefore incentivized to explore early in the season to discover these key
-components for victory.
-
-Hyperstructure Foundations and Hyperstructures both have four defense slots to deter attacks from rival Lords. However,
-like other world structures they are not able to maintain any field armies.
-
-## Fragment Mines
-
-Fragment Mines are rare, ancient nodes scattered throughout the unexplored hexes of Eternum. They produce valuable
-ancient fragments, a vital resource needed for constructing Hyperstructures. Once discovered by an exploring field army,
-a Fragment Mine must first be claimed by defeating its resident bandit forces. Only then can Lords begin extracting the
-mysterious shards hidden within. Each mine contains a finite number of ancient fragments and will permanently cease
-production when depleted.
-
-<img src="/images/buildings/construction/fragment-mine.png" width="800" />
-
-The chance of discovering a Fragment Mine when exploring an unrevealed hex is static at 1 in 150, or 0.67%. Mines can
-contain between 300,000 and 3 million ancient fragments in incremental amounts (i.e. 300k, 600k, 900k…). It will take
-some time for the full amount of ancient fragments to be produced by the structure, and the more that the mine contains,
-the longer it will take. Lords will need to ensure that their mines are adequately defended from rivals, however they
-only have one defense slot to support a guard army.
 
 
 
@@ -2648,6 +2041,613 @@ the constants/types of the world that needed to be transcribed to Typescript.
 
 Everything considered as client agnostic should be in there. The main reason for this separation is to be able to re-use
 this logic in any other project that uses Typescript, e.g. new mobile client, data analytics app, etc.
+
+
+
+---
+
+file: docs/pages/eternum/achievements.mdx
+meta: {}
+
+# Achievements & Quests
+
+*WIP*
+
+
+
+---
+
+file: docs/pages/eternum/game-entry.mdx
+meta: {
+  "title": "Game Entry",
+  "description": "How to join Eternum via Season Passes and Villages"
+}
+
+# Game Entry
+
+Eternum takes place in 'Seasons', multi-week campaigns with long-term strategic and diplomatic developments. There are
+several weeks between each season that allow for iterative development and feature expansion in each subsequent season.
+
+## Realms NFT Holder Entry <img src="/images/ring_pass.png" alt="Season entry" width="300" className=" float-right" />
+
+Realms NFT holders have the exclusive benefit of free entry into each season of Eternum through the minting of Season
+Passes. Each Season Pass is unique to the Realm it was minted from and allows the holder to initiate a settling
+transaction to enter the game. To do this, Lords must first mint the Season Pass
+[here](https://empire.realms.world/mint) using the wallet that contains the Realms NFT, then transfer the Season Pass to
+their [Cartridge Wallet](/overview/controller).
+
+## Non-Realm Holder Entry
+
+⚖️ **Season Pass Marketplace**
+
+Should a Realm NFT holder decide not to use their Season Pass, they can transfer it or sell it on the
+[Season Pass Marketplace](https://empire.realms.world/trade), providing an avenue for non-Realm holders to acquire
+Season Passes to participate in the game.
+
+🏕️ **Villages**
+
+Villages are modest outposts that can be established around settled Realms, offering an accessible entry point into
+Eternum. Villages have some restrictions but offer a low-cost, casual taste of Eternum gameplay to newcomers while also
+acting as an avenue for established players to expand their production. Each Realm can support up to six surrounding
+Villages.
+
+For detailed information about Villages, including settling mechanics, resource production, and progression paths, visit
+our [Villages guide](/eternum/realm-and-villages/villages).
+
+## Realm Control Mechanics
+
+As long as you maintain control of a settled Realm or Village, you can actively participate without additional entry
+fees, engage in the market using **$LORDS** tokens, and enjoy uninterrupted gameplay until the end of the season.
+However, Eternum is a high-stakes game, it can be unforgiving and players must accept that their valuable holdings may
+become a target for other players. Thankfully, the game offers high-stakes and low-stakes gameplay to ensure that
+players can participate in the world at their own pace and risk tolerance.
+
+⚔️ **Realms - High Stakes**
+
+Once settled, Realms can be conquered and claimed within a Season, transferring control to the conqueror. Realms are the
+key playing pieces in Eternum and allow for the full gameplay experience in producing resources, training armies,
+conducting trade, and pursuing territorial expansion. This level of capability comes with increased risk, as Realms must
+continually manage defenses, alliances, and strategic positioning to protect themselves from rivals.
+
+🌴 **Villages - Low Stakes**
+
+Unlike Realms, Villages cannot be conquered by other players, making them an ideal choice for casual players seeking a
+lower-risk gameplay experience. Villages can still participate in most gameplay activities, but production rates are
+limited to 50% the rate of Realms and progression paths are limited. These features make Villages perfect for new
+players looking to learn the game mechanics without the constant threat of conquest.
+
+
+
+---
+
+file: docs/pages/eternum/key-concepts.mdx
+meta: {
+  "title": "Key Concepts",
+  "description": "The foundational mechanics of Eternum"
+}
+
+# 🔑 Key Concepts
+
+<img src="/images/covers/07.png" alt="Eternum Key Concepts" className="w-full rounded-lg my-6" />
+
+This section outlines the core mechanics and systems that form the foundation of Eternum's gameplay.
+
+## Realms
+
+* **Limited Assets**: 8,000 unique and irreplaceable Realms serve as the foundation of Eternum, each has the ability to
+  freely mint a Season Pass.
+* **Settling**: Players must burn a Season Pass to settle their Realm in the game world.
+* **Starting Materials**: Each newly settled Realm begins with a set of starting materials.
+* **Progression Path**: Realms can upgrade from Settlements → Cities → Kingdoms → Empires, unlocking additional
+  buildable hexes and defensive army slots.
+* **Resource Production**: Each Realm can produce 1-7 different resources based on the original Realms NFT metadata.
+* **Wonders**: Realms with Wonders have a 20% production bonus and share this bonus with all Realms and Villages in a
+  12- tile radius.
+* **Hardcore Gameplay**: If a Realm’s defenses crumble, it can be claimed by another player—transferring gameplay rights
+  to the conqueror.
+
+## Villages
+
+* **Accessible Entry**: Villages can be established around settled Realms, offering a simple entry system for new
+  players
+* **Scaling**: Up to 6 Villages per Realm, allowing for 48,000 Villages in Season 1
+* **Limited Production**: Produce materials at 50% the rate of Realms and only have access to 1 resource type each
+* **Parent Realm**: Each Village is tied to a parent Realm and will pay bridging fees if moving materials out of the
+  game
+* **Troop Restrictions**: Villages may only receive tokenized troops from their parent Realm, they cannot buy or be sent
+  troops from any other source
+* **Simple Progression**: Villages have a limited upgrade path from Settlement to City
+* **Casual Gameplay**: Villages can be raided, but can’t be claimed by other players.
+
+## Materials
+
+* **Materials Categories**:
+  * **Food**: (Wheat, Fish) - essential for production, troop movement, and construction.
+  * **Resources**: 22 different resource types, distributed based on rarity across both Realms and Villages.
+  * **Troops**: Units with unique properties that can be assigned to armies.
+  * **Donkeys**: Required for moving materials around the world, essential for logistics.
+  * **Labor**: A new material in S1 that allows players to build and produce in 'simple mode', acquired through burning
+    resources.
+  * **Ancient Fragments**: Found in-game, critical for the construction of Hyperstructures.
+* **ERC20 Compatibility**: All materials (except Labor) can be traded freely and bridged out as ERC20 tokens through
+  Realms.
+
+## Buildings
+
+* **Construction Modes**: Two building systems available - Standard (resource-efficient) and Simple (labor-focused).
+* **Building Types**:
+  * **The Keep**: Central structure automatically constructed when settling, provides baseline population capacity.
+  * **Resource Buildings**: Specific buildings for each of the 22 resources, only requiring food to construct.
+  * **Economic Buildings**: Includes Farms, Fishing Villages, Worker Huts, Storehouses, and Markets.
+  * **Military Buildings**: Nine different buildings for producing three tiers of each troop type.
+* **Placement & Population**: Buildings require buildable hexes and population capacity, with more unlocked as Realms
+  and Villages are upgraded.
+
+## Production
+
+* **Production Modes**: Like buildings, production can be done in Standard (resource-intensive) or Simple (food and
+  labor) mode.
+* **Production Types**:
+  * **Food**: The only resources (Wheat, Fish) that can be produced without inputs.
+  * **Resources**: Require combinations of other resources (standard) or labor (simple).
+  * **Labor**: Produced by burning resources in the Keep, used for simple mode construction and production.
+  * **Troops**: Essential for exploration and warfare, with higher tiers requiring lower tier troops as inputs.
+  * **Donkeys**: One-time-use transport, consumed after a single journey.
+
+## World Map
+
+* **Exploration System**: The world begins shrouded in mystery, with only the six Banks visible at season start;
+  adjacent hexes are revealed when settling, and armies can explore to reveal new areas.
+* **Biomes**: 16 unique biome types procedurally generated across the map, each affecting combat effectiveness and troop
+  movement.
+* **Movement & Stamina**: Armies move using stamina (regenerating at +2 per Phase, +12 per Eternum Day), with costs
+  varying by biome and troop type; Knights, Crossbowmen, and Paladins each have different maximum stamina capacities.
+* **Exploration Mechanics**: Exploring costs 30 stamina per hex and reveals that area permanently to all Lords;
+  exploring armies may discover resources or encounter world structures and agent armies.
+
+## Military
+
+<img src="/images/covers/04.png" alt="Eternum Military" className="w-full rounded-lg my-6" />
+
+* **Army Composition**: Armies consist of a single troop type and tier (Knights, Crossbowmen, or Paladins).
+* **Troop Tiers**: T1, T2, and T3 troops with increasing combat strength.
+* **Combat Factors**: Battles resolved based on army damage, stamina modifiers, and biome effects.
+* **Army Types**:
+  * **Field Armies**: Deploy onto the world map for exploration and conquest.
+  * **Guard Armies**: Deployed to defense slots to protect structures.
+* **Stamina System**: Armies recover +2 stamina per Phase (6 phases per Eternum Day, totaling +12 stamina per day).
+* **Biome Effects**: Each troop type has advantages (+30% damage), disadvantages (-30% damage), or no change (0%) in
+  specific biomes.
+* **Raiding Mechanics**: Armies can attempt to steal resources from structures without defeating defenders.
+  * Success depends on the raiding army's damage relative to the combined guard armies.
+  * Undefended structures can be raided without casualties.
+
+## Tribes
+
+Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
+private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
+within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
+
+## Victory Conditions
+
+Eternum's seasonal gameplay culminates in victory through the accumulation of victory points earned through the
+construction and ownership of Hyperstructures. However, there are various achievement paths, with players earning
+recognition and rewards for various actions within the Season.
+
+
+
+---
+
+file: docs/pages/eternum/prize-pool.mdx
+meta: {}
+
+import { table } from "@/components/styles";
+
+# 💰 Prize Pool
+
+## Overview
+
+In Season 1 of Eternum, there are four prize categories with a total of:
+
+* 1,000,000 $LORDS tokens
+* 100,000 $STRK tokens
+
+> **Note:** All Season 1 prizes will be distributed manually by the development team (except for the agent rewards which
+> are collected directly in-game). Future seasons will implement automated distribution through game contracts, aligning
+> with decentralized gaming principles.
+
+## Prize Categories
+
+### 1. Victory Prizes
+
+**Total: 300,000 $LORDS + 50,000 $STRK**
+
+These prizes are awarded to top-performing tribes based on victory points. Additionally, 2.5% of all $LORDS bridging
+volume is collected as a fee and added to the prize pool, further increasing the total rewards available.
+
+#### How to Earn Victory Points
+
+Players can earn victory points by:
+
+* Contributing resources and labor to hyperstructure construction
+* Holding shares in completed hyperstructures to accumulate emitted victory points
+
+#### Distribution
+
+Once a player triggers the end of the game (or the game contract breaks), a snapshot of tribes, their members, and the
+victory point leaderboard is taken. Tribes will then be ranked by the cumulative number of victory points of their
+players. The top 10 tribes receive prizes based on this allocation:
+
+<div style={table.container}>
+  <div style={table.wrapper}>
+    <table style={table.table}>
+      <thead style={table.tableHead}>
+        <tr>
+          <th style={table.headerCell}>Rank</th>
+          <th style={table.headerCell}>Allocation</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr style={table.tableRow}>
+          <td style={table.cell}>1st Place</td>
+          <td style={table.cell}>30%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>2nd Place</td>
+          <td style={table.cell}>18%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>3rd Place</td>
+          <td style={table.cell}>12%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>4th Place</td>
+          <td style={table.cell}>9%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>5th Place</td>
+          <td style={table.cell}>7%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>6th Place</td>
+          <td style={table.cell}>6%</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>7th & 8th Place</td>
+          <td style={table.cell}>5% each</td>
+        </tr>
+
+        <tr style={table.tableRow}>
+          <td style={table.cell}>9th & 10th Place</td>
+          <td style={table.cell}>4% each</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+#### Individual Distribution
+
+Within each tribe:
+
+* Tribe Leader: 30% of tribal allocation (regardless of their victory points)
+* Other Members: 70% split proportionally based on victory points contribution to the tribal total
+
+### 2. Achievement Prizes
+
+**Total: 300,000 $LORDS**
+
+Players earn achievement points by completing quests—tracked inside your Cartridge profile, and accessible via your
+Cartridge wallet in-game. At the end of the season, this prize pool will be split proportionally amongst all players
+based on the number of achievement points they have accumulated.
+
+> **Note:** Achievement details, requirements, and point allocations will be withheld until the game begins to prevent
+> planned farming and extractive behaviors. Check the Achievements section for updates when this information becomes
+> available.
+
+### 3. Daydreams Agent Prizes
+
+**Total: 250,000 $LORDS + 25,000 $STRK**
+
+#### Agent Rewards
+
+Each agent on the world map carries 10-35 $LORDS, obtainable through:
+
+* Collaboration (persuasion via chat)
+* Combat victory
+
+#### Special Achievement
+
+25,000 $STRK will be distributed to the first 100 players who complete the 'Nexus-6' achievement by defeating 10 agent
+armies.
+
+### 4. Eternum Arts & Emissaries Prizes
+
+**Total: 150,000 $LORDS + 25,000 $STRK**
+
+Awarded to players or groups making exceptional cultural, artistic, or creative contributions to Eternum. These awards
+can be given during or after the game at the developers' discretion.
+
+> **Note:** For more information, join our [Discord community](https://discord.gg/KJff5Ecp).
+
+## Unused Prize Distribution
+
+If any prizes remain unallocated at the end of the game and prize distribution phase:
+
+* Unused $LORDS will be distributed through the veLORDS protocol
+* Unused $STRK will be retained by developers for future use
+
+
+
+---
+
+file: docs/pages/eternum/tribes.mdx
+meta: {}
+
+# 👥 Tribes
+
+Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
+private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
+within Eternum and rely on player-driven interactions including arrangements of alliances and declarations of war.
+
+## Formation & Membership
+
+* Any player can create a tribe
+* Set tribe name
+* Set to public or private
+* If private, send invites to players
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/create-guild.gif" alt="Create Guild" />
+
+  <em>Flow to create a tribe</em>
+</div>
+
+
+
+---
+
+file: docs/pages/eternum/victory.mdx
+meta: {}
+
+import { ETERNUM_CONFIG } from "@/utils/config";
+import {
+  HyperstructureInitializationShardsTable,
+  HyperstructureConstructionCostTable,
+  HyperstructurePointsTable,
+  getTotalHyperstructureCompletionPoints,
+  HYPERSTRUCTURE_POINT_MULTIPLIER,
+} from "@/components/eternum-components/HyperstructureTable";
+import { formatNumberWithCommas } from "@/utils/formatting";
+
+# 👑 Victory
+
+<img src="/images/covers/07.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
+
+## Victory Points
+
+Ultimate victory in Eternum is measured by Victory Points (VP), earned exclusively through Hyperstructures. When a
+single player’s total VP reaches the season-defined threshold, they unlock the ability to End Season, immediately
+halting all further gameplay actions and cementing the final standings. Thus, the race to build, seize, and defend
+Hyperstructures is the decisive path that ultimately closes the chapter on each season of Eternum.
+
+## Activating Foundations
+
+Each Hyperstructure is unique, requiring varying quantities of all 22 resources (and Labor) for completion. To activate
+a Hyperstructure Foundation, all **{
+  formatNumberWithCommas(ETERNUM_CONFIG().hyperstructures.hyperstructureInitializationShardsCost.amount)} Ancient
+Fragments** must be deposited into the structures's balance, and then the owner of the mine must explicitly activate the
+foundation to begin construction. Upon activation, the exact quantity required for each resource is randomly determined
+within predefined minimum and maximum ranges shown below:
+
+<HyperstructureInitializationShardsTable />
+
+<HyperstructureConstructionCostTable />
+
+*Note: In addition to these resources, all Hyperstructures require a fixed contribution of 50,000,000 units of labor to
+complete construction.*
+
+## Construction Victory Points
+
+The Lord initiating the Hyperstructure construction determines whether contributions can be made by all Lords (public)
+or restricted to members of their tribe (private). Contributions may be made directly from Realms or Villages without
+requiring donkeys for transport. As Lords contribute to the Hyperstructure, they are awarded with a proportional
+allocation of Victory Points. A total of **{formatNumberWithCommas(getTotalHyperstructureCompletionPoints())}** are
+available to claim throughout the construction process.
+
+## Accumulation Victory Points
+
+Separately, and in addition to the victory points awarded at completion, the owner of the Hyperstructure begins to
+accumulate
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsPerCycle)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+victory points** for every second the structure remains under their control. These accumulating victory points can be
+shared among multiple Lords through a customizable share split, allowing the owner to distribute glory and reward
+cooperation. If a Hyperstructure is claimed by another Lord, future accumulated victory points are redirected to the new
+owner, who may similarly decide on sharing arrangements.
+
+## Total Victory
+
+Victory points earned through construction contributions or accumulation cannot be lost once awarded. The first player
+to reach
+**{formatNumberWithCommas(Number(ETERNUM_CONFIG().hyperstructures.hyperstructurePointsForWin)/HYPERSTRUCTURE_POINT_MULTIPLIER)}
+total victory points** unlocks the ability to select the ‘End Season’ option, concluding the current game season.
+
+<HyperstructurePointsTable />
+
+
+
+---
+
+file: docs/pages/eternum/world-physics.mdx
+meta: {}
+
+import { Biomes } from "@/components/Biomes";
+
+# 🌪️ World Physics
+
+<img src="/images/covers/08.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
+
+In Eternum, every action is governed by onchain physics—immutable rules encoded directly onto the blockchain, ensuring
+fairness, transparency, and absolute consistency for all Lords. Here, code is law; no exceptions exist outside the
+boundaries set by these protocols.
+
+## Seasons
+
+Welcome to Season 1. Eternum, in its current form, comes and goes in seasonal launches. Each season marks a special time
+of iteration and advancement in this new form of onchain gaming and may be likened to the movement of tides. Once a
+season launches, the tide flows out and the Lords arrive to build their castles in the sand. Nothing, not even the
+developers, can stop or alter the course of a season once launched, and players are free to take any action that the
+rules of the game allow. Once a Lord accumulates the requisite Victory Points, they unlock the ability to end the
+season—signalling the tide to come back in and put an end to the Lords' fun… until next season.
+
+## Time
+
+Time within a season is measured in Eternum Days, and each is precisely one hour in length. Each Eternum Day is divided
+into six equal phases (early hours, dawn, morning, afternoon, dusk, and late evening), with each phase lasting ten
+minutes. One day ends and the next begins at the top of every real-world hour.
+
+## Materials
+
+In the world of Eternum, everything holds tangible, tokenized value—be it food, labor, resources, troops, or even the
+trusty donkeys required for transport. These fungible tokens are generated within Eternum, but can be bridged in and out
+of the game through Realms or Banks and traded on external marketplaces. All materials have an associated weight, which
+determines the amount that can be stored and the number of donkeys required to move the goods from place to place.
+
+Note: This document will use 'materials' to refer to all tangible assets - i.e. food, resources, ancient fragments,
+labor, troops, and donkeys. This is not to be confused with 'resources', which specifically refers to the 22 resources
+ranging from wood through to dragonhide. Tokens such as $LORDS and $STRK are not considered materials.
+
+## Cost of Production
+
+With the exception of food, nothing in Eternum is produced for free; every unit of production demands an input—food,
+labor, resources, or some combination thereof. Lords must consider these costs and effectively balance trade to ensure
+they can survive the season.
+
+## Travel
+
+Transporting materials across the vast lands of Eternum takes time… and donkeys. Every transfer of materials between
+locations relies exclusively on these speedy and dependable creatures. These donkeys are single-use, consumed upon
+completing their journey, making continuous acquisition vital for maintaining trade routes and strategic flexibility.
+
+Moving tokenized troops through the donkey network may be fast, but to dominate your enemies and ensure security of your
+lands, troops must be deployed to an army. Once troops are deployed, they cannot be retokenized, and are doomed to their
+fate within this season of Eternum. Once troops are deployed to the world map, their mobility is governed by stamina,
+limiting the distance they can travel and the number of actions they can perform. Travelling between hexes or initiating
+an attack expends valuable stamina points, but they are partially replenished each Eternum Day.
+
+## Hexes
+
+Eternum unfolds across an infinite, procedurally-generated, hexagonal-tile world map. This represents the physical space
+of the world and defines spawn locations, biome distribution, and distances between Realms, Villages, and other world
+structures. This is the layer in which armies explore, fight, raid and capture, and is explorable in the 'World' view.
+
+Zooming in, each Realm or Village hex is broken up into smaller hexes which define the local area and building placement
+(hexes within hexes!). Here in the 'Local' view, Lords can plan out their building placement and closely manage their
+population, supply chain, and production.
+
+## Biomes
+
+Each hexagonal tile on the world map possesses a distinct biome. Each troop type responds uniquely to these varied
+terrains, gaining or losing combat efficiency and stamina based on their affinity with different biomes. Successful
+Lords must master biome knowledge to exploit strategic advantages or avoid costly missteps.
+
+<Biomes />
+
+## The Known World
+
+Initial scouting reports have revealed some key details about the world:
+
+* Six ancient Banks have been located, distributed evenly in a ring around the central point. These structures are
+  perfectly situated and designed to facilitate trade in this new world. Sufficiently prepared Lords may be able to
+  capture these lucrative structures, but will likely make themselves a target in the process.
+
+* An unknown number of Hyperstructure Foundations are scattered around the unexplored world. These are rare, key
+  locations that must be claimed by Lords in order to rebuild the ancient Hyperstructures that are critical to achieving
+  victory. They are more likely to be found in the central regions of the map, and as each subsequent Hyperstructure
+  Foundation is discovered, the likelihood of finding another one in the world diminishes.
+
+* Hundreds of mines are also strewn across the landscape. Prospectors have theorized that these mines are hotspots for
+  finding ancient fragments needed to reconstruct key sections of the Hyperstructures.
+
+* Bandits roam throughout the lands and have established lairs in each of the key locations described above. The newly
+  arrived Lords will need to overcome these lawless brigands to bring order and control back to Eternum.
+
+* Mysterious hooded figures lurk in the mist, offering to play a strange card game with any who wish to try their luck.
+
+
+
+---
+
+file: docs/pages/eternum/world-structures.mdx
+meta: {}
+
+# 💠 World Structures
+
+## Hyperstructures
+
+Hyperstructures are colossal edifices constructed atop ancient foundations hidden across Eternum, representing
+monumental achievements and symbols of dominance in the game world. Lords must uncover and claim Hyperstructure
+Foundations through exploration and combat, then invest substantial quantities of resources, labor, and ancient
+fragments to reconstruct these majestic towers. Successfully completing and controlling Hyperstructures is the primary
+path to victory in Eternum, making them ultimate strategic targets for ambitious Lords and powerful tribes alike.
+
+<img src="/images/buildings/construction/hyperstructure.png" width="800" />
+
+### Hyperstructure Foundations
+
+These ancient, indestructible platforms are primarily scattered within the ring of Banks that surround the center of the
+map. There is a chance of discovering a Hyperstructure Foundation each time an army explores an unrevealed hex,
+calculated using the following formula:
+
+```
+Discovery Chance = (0.975^x × y) - (z × 0.001)
+```
+
+Where:
+
+* **x** = the number of hexes from the center of the map
+* **y** = the base chance of finding a Hyperstructure Foundation on the central hex (4%)
+* **z** = the number of Hyperstructure Foundations already discovered
+
+For example, if you're exploring a hex 100 tiles from the center and 5 foundations have already been discovered:
+
+```
+Discovery Chance = (0.975^100 × 4) - (5 × 0.001)
+                 = (0.079 × 4) - 0.005
+                 = 0.316 - 0.005
+                 = 0.311 or 31.1%
+```
+
+The result of this function means that Hyperstructure Foundations are generally only able to be found within 300 tiles
+of the center of the map. As more are found, the chance of finding another diminishes and makes it even less likely to
+find one further from the center. Lords are therefore incentivized to explore early in the season to discover these key
+components for victory.
+
+Hyperstructure Foundations and Hyperstructures both have four defense slots to deter attacks from rival Lords. However,
+like other world structures they are not able to maintain any field armies.
+
+## Fragment Mines
+
+Fragment Mines are rare, ancient nodes scattered throughout the unexplored hexes of Eternum. They produce valuable
+ancient fragments, a vital resource needed for constructing Hyperstructures. Once discovered by an exploring field army,
+a Fragment Mine must first be claimed by defeating its resident bandit forces. Only then can Lords begin extracting the
+mysterious shards hidden within. Each mine contains a finite number of ancient fragments and will permanently cease
+production when depleted.
+
+<img src="/images/buildings/construction/fragment-mine.png" width="800" />
+
+The chance of discovering a Fragment Mine when exploring an unrevealed hex is static at 1 in 150, or 0.67%. Mines can
+contain between 300,000 and 3 million ancient fragments in incremental amounts (i.e. 300k, 600k, 900k…). It will take
+some time for the full amount of ancient fragments to be produced by the structure, and the more that the mine contains,
+the longer it will take. Lords will need to ensure that their mines are adequately defended from rivals, however they
+only have one defense slot to support a guard army.
 
 
 
@@ -3999,20 +3999,20 @@ Stamina is granted instantly when a new Phase begins, and no other automatic sta
 **Blitz Stamina System:**
 
 * **Day Length**: 6 minutes (1 minute per phase)
-* **Stamina Regeneration per Phase**: 30 stamina
-* **Total Stamina Regeneration per Day**: 180 stamina
+* **Stamina Regeneration per Phase**: 20 stamina
+* **Total Stamina Regeneration per Day**: 120 stamina
 
 ## Combat Stamina Mechanics
 
 ### Attacking Army
 
-The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **75
+The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **50
 stamina** (2.5 × stamina regen per phase). If the attacker does not have the full stamina cost, the attack command is
 rejected and no combat occurs.
 
 ### Defending Army
 
-The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **60
+The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **40
 stamina** (2.0 × stamina regen per phase). If the defender's current stamina is below this required threshold, they
 receive a **30% damage penalty** during that combat round.
 
@@ -4719,8 +4719,8 @@ import { ExplorationRewards } from "@/components/blitz-components/ExplorationRew
 
 Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
 against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +30 stamina per Phase (one
-minute), totaling +180 stamina per Eternum Day. Each troop type possesses different maximum stamina capacities, outlined
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +20 stamina per Phase (one
+minute), totaling +120 stamina per Eternum Day. Each troop type possesses different maximum stamina capacities, outlined
 in the table below:
 
 <BlitzTroopMovementTable />
@@ -4864,6 +4864,494 @@ activate the crate will receive **three** Relics directly into their inventory a
 Lord, so be sure to secure them before your enemies do!
 
 <img src="/images/covers/blitz-relic-crate.png" alt="Relic Crate" className="w-full rounded-lg my-6" />
+
+
+
+---
+
+file: docs/pages/development/axis/cli-reference.mdx
+meta: {
+  "layout": "docs",
+  "title": "Axis CLI Reference"
+}
+
+# Axis CLI Reference
+
+## Commands
+
+| Command                               | Description                                                                                            |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `axis` / `axis run`                   | Run in TUI mode                                                                                        |
+| `axis run --headless --world=<name>`  | Run in headless mode                                                                                   |
+| `axis worlds`                         | List discovered worlds                                                                                 |
+| `axis auth <world>`                   | Generate auth URL (non-blocking if no TTY)                                                             |
+| `axis auth <world> --redirect-url`    | Complete auth with redirect URL                                                                        |
+| `axis auth <world> --session-data`    | Complete auth with raw base64 session data                                                             |
+| `axis auth <world> --status`          | Check session status for one world                                                                     |
+| `axis auth <world> --method=password` | Direct password auth (no browser needed)                                                               |
+| `axis auth --all`                     | Auth all discovered worlds                                                                             |
+| `axis auth --all --status`            | Check status for all worlds                                                                            |
+| `axis doctor`                         | Validate configuration                                                                                 |
+| `axis init [world]`                   | Manually seed runtime directories and config (optional — all directories are auto-created when needed) |
+| `axis --version`                      | Print version                                                                                          |
+| `axis --help`                         | Print usage                                                                                            |
+
+## Run Flags
+
+| Flag                                         | Description                          |
+| -------------------------------------------- | ------------------------------------ |
+| `--headless`                                 | Run without TUI                      |
+| `--world=<name>`                             | Target world (required for headless) |
+| `--auth=session\|privatekey`                 | Auth strategy                        |
+| `--api-port=<port>`                          | Enable HTTP API                      |
+| `--api-host=<host>`                          | API bind host                        |
+| `--stdin`                                    | Enable stdin command stream          |
+| `--verbosity=quiet\|actions\|decisions\|all` | Output filter                        |
+| `--json`                                     | JSON output for command responses    |
+
+## Auth Flags
+
+| Flag                      | Description                                         |
+| ------------------------- | --------------------------------------------------- |
+| `--all`                   | Target all discovered worlds                        |
+| `--status`                | Check session status instead of generating auth URL |
+| `--redirect-url=<url>`    | Complete auth with the redirect URL from browser    |
+| `--session-data=<base64>` | Complete auth with raw base64 session data          |
+| `--method=password`       | Direct password auth (no browser needed)            |
+| `--username=<user>`       | Username for password auth                          |
+| `--password=<pass>`       | Password for password auth                          |
+| `--callback-url=<url>`    | Public callback endpoint                            |
+| `--timeout=<ms>`          | Approval wait timeout                               |
+
+
+
+---
+
+file: docs/pages/development/axis/configuration-and-operations.mdx
+meta: {
+  "layout": "docs",
+  "title": "Axis Configuration and Operations"
+}
+
+# Axis Configuration and Operations
+
+## Config File Loading
+
+Axis auto-loads `.env` files on every command. Precedence (lowest to highest):
+
+1. **`~/.eternum-agent/.env`** — global config (API keys, preferences). Auto-created on first run.
+2. **`./.env`** (current directory) — local overrides for development or per-project settings.
+3. **Shell environment** — `export ANTHROPIC_API_KEY=...` always wins over file values.
+
+Values from higher-priority sources override lower ones. Shell env vars are never overwritten by file values. All
+runtime directories (`~/.eternum-agent/data/`, `~/.eternum-agent/.cartridge/`) are auto-created on first run — no manual
+`axis init` required.
+
+## Core Environment Variables
+
+| Variable             | Default                          | Purpose                                                      |
+| -------------------- | -------------------------------- | ------------------------------------------------------------ |
+| `MODEL_PROVIDER`     | `anthropic`                      | LLM provider (`anthropic`, `openai`, `openrouter`, `google`) |
+| `MODEL_ID`           | `claude-sonnet-4-5-20250929`     | Model ID                                                     |
+| `ANTHROPIC_API_KEY`  | none                             | Required for Anthropic provider                              |
+| `OPENAI_API_KEY`     | none                             | Required for OpenAI provider                                 |
+| `CHAIN`              | `slot`                           | Chain selection                                              |
+| `SLOT_NAME`          | none                             | Auto-select discovered world                                 |
+| `GAME_NAME`          | `eternum`                        | Session/game namespace                                       |
+| `TICK_INTERVAL_MS`   | `60000`                          | Tick interval in ms                                          |
+| `LOOP_ENABLED`       | `true`                           | Auto-start loop on launch                                    |
+| `ETERNUM_AGENT_HOME` | `~/.eternum-agent`               | Runtime root                                                 |
+| `DATA_DIR`           | `$ETERNUM_AGENT_HOME/data`       | Agent data root                                              |
+| `SESSION_BASE_PATH`  | `$ETERNUM_AGENT_HOME/.cartridge` | Session/artifact root                                        |
+
+## Optional / Advanced Variables
+
+| Variable                                | Purpose                                                   |
+| --------------------------------------- | --------------------------------------------------------- |
+| `RPC_URL`, `TORII_URL`, `WORLD_ADDRESS` | Manual world overrides (skip discovery)                   |
+| `MANIFEST_PATH`                         | Explicit manifest path                                    |
+| `CHAIN_ID`                              | Override inferred chain id                                |
+| `PRIVATE_KEY`, `ACCOUNT_ADDRESS`        | Private-key auth mode                                     |
+| `MASTER_ADDRESS`, `MASTER_PRIVATE_KEY`  | Optional auto top-up for non-mainnet fee token shortfalls |
+| `CARTRIDGE_API_BASE`                    | Factory/discovery API base override                       |
+
+## Runtime Directory
+
+```text
+~/.eternum-agent/
+├── data/
+│   └── <world>/
+│       ├── soul.md
+│       ├── HEARTBEAT.md
+│       └── tasks/
+│           ├── game.md
+│           ├── economy.md
+│           ├── exploration.md
+│           ├── combat.md
+│           ├── priorities.md
+│           └── learnings.md
+└── .cartridge/
+    └── <world>/
+        ├── profile.json
+        ├── manifest.json
+        ├── policy.json
+        ├── session.json
+        ├── auth.json
+        └── auth-qr.png
+```
+
+## Runtime Config Updates (Headless)
+
+Use `POST /config` with `changes` to update settings live.
+
+Typical paths:
+
+* `tickIntervalMs`
+* `loopEnabled`
+* `modelProvider`
+* `modelId`
+* `dataDir`
+
+Some backend fields (like world connection details) require restart in headless mode.
+
+## Diagnostics
+
+Run doctor:
+
+```bash
+axis doctor
+```
+
+Common issues:
+
+* `No worlds discovered`: check network reachability and `CARTRIDGE_API_BASE`
+* `--world is required for headless mode`: pre-auth and set `--world`
+* Auth remains pending: complete approval or run `axis auth <world> --redirect-url="..."`
+* Password auth fails: verify username/password and that the account has a password credential on Cartridge
+* Session expired: re-run `axis auth <world>`
+
+
+
+---
+
+file: docs/pages/development/axis/headless-and-api.mdx
+meta: {
+  "layout": "docs",
+  "title": "Axis Headless and API"
+}
+
+# Axis Headless and API
+
+Headless mode is designed for orchestrators, remote servers, and multi-agent fleets.
+
+## Start Headless
+
+```bash
+axis run --headless --world=my-world --api-port=3000 --stdin
+```
+
+`--world` is required in headless mode.
+
+If no artifacts exist for the world, Axis auto-discovers and bootstraps them (profile, manifest, policies). If no
+session exists, it prints the auth URL and instructions to complete authentication via
+`axis auth <world> --redirect-url="..."`.
+
+For first-time setup on a new VPS, see
+[Headless VPS Auth](/development/axis/worlds-and-auth#headless-vps-auth-no-browser).
+
+## NDJSON Event Stream
+
+Headless mode emits newline-delimited JSON to stdout.
+
+Common event types:
+
+* `startup`
+* `session`
+* `decision`
+* `action`
+* `prompt`
+* `heartbeat`
+* `config`
+* `error`
+* `shutdown`
+
+Verbosity filters:
+
+* `quiet`: `error`, `session`, `shutdown`
+* `actions`: `quiet` + `action`
+* `decisions`: `actions` + `decision`, `heartbeat`, `prompt`, `startup`, `config`
+* `all`: `decisions` + `tick`
+
+## HTTP API
+
+Enable with `--api-port`.
+
+| Method     | Path             | Purpose                     |
+| ---------- | ---------------- | --------------------------- |
+| `POST`     | `/prompt`        | Queue a prompt              |
+| `GET`      | `/status`        | Agent status                |
+| `GET`      | `/state`         | World state snapshot        |
+| `GET`      | `/events`        | SSE stream                  |
+| `POST`     | `/config`        | Runtime config updates      |
+| `POST`     | `/shutdown`      | Graceful shutdown           |
+| `GET/POST` | `/auth/callback` | Cartridge callback endpoint |
+
+Prompt example:
+
+```bash
+curl -X POST http://127.0.0.1:3000/prompt \
+  -H 'Content-Type: application/json' \
+  -d '{"content":"Build a farm at your main realm"}'
+```
+
+Runtime config example:
+
+```bash
+curl -X POST http://127.0.0.1:3000/config \
+  -H 'Content-Type: application/json' \
+  -d '{"changes":[{"path":"tickIntervalMs","value":30000}]}'
+```
+
+## Stdin Control
+
+If `--stdin` is set (or stdin is non-TTY), send one JSON object per line:
+
+```jsonl
+{"type":"prompt","content":"Scout north"}
+{"type":"config","changes":[{"path":"tickIntervalMs","value":45000}]}
+{"type":"shutdown"}
+```
+
+## Fleet Pattern
+
+```bash
+axis auth --all --json > /tmp/auth.json
+
+for world in $(jq -r '.[].world' /tmp/auth.json); do
+  axis run --headless --world="$world" --api-port=$((3000 + RANDOM % 1000)) &
+done
+```
+
+
+
+---
+
+file: docs/pages/development/axis/install-and-run.mdx
+meta: {
+  "layout": "docs",
+  "title": "Axis Install and Run"
+}
+
+# Axis Install and Run
+
+## Prerequisites
+
+* One model provider API key (e.g. `ANTHROPIC_API_KEY`)
+* For source builds: Node.js 22+, pnpm, Bun
+
+## Install
+
+```bash
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
+```
+
+Pin a version: `VERSION=v0.1.0 bash`. Verify: `axis --version`.
+
+## Quick Start (Interactive)
+
+```bash
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
+axis
+```
+
+Discovers worlds, opens browser for auth, starts the agent.
+
+## Quick Start (Headless)
+
+```bash
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
+axis auth my-world --method=password --username=me --password=secret
+axis run --headless --world=my-world
+```
+
+See [Worlds and Auth](/development/axis/worlds-and-auth) for alternative auth methods.
+
+## Run from Source
+
+```bash
+git clone https://github.com/bibliothecadao/eternum.git
+cd eternum && pnpm install
+
+pnpm --dir packages/types build
+pnpm --dir packages/torii build
+pnpm --dir packages/provider build
+pnpm --dir packages/client build
+pnpm --dir packages/game-agent build
+
+cd client/apps/onchain-agent
+cp .env.example .env
+pnpm dev
+```
+
+## Standalone Binary
+
+```bash
+cd client/apps/onchain-agent
+bun run build.ts --compile    # produces ./axis
+cp axis ~/.local/bin/
+```
+
+Always use `build.ts` — direct `bun build` skips plugins that embed WASM and manifests.
+
+## Uninstall
+
+* Roll back: reinstall with `VERSION=vX.Y.Z`
+* Remove: `~/.local/bin/axis`, `~/.local/share/eternum-agent`, and optionally `~/.eternum-agent`
+
+
+
+---
+
+file: docs/pages/development/axis/overview.mdx
+meta: {
+  "layout": "docs",
+  "title": "Axis Overview"
+}
+
+# Axis Overview
+
+Axis is the Eternum onchain agent CLI. It discovers active worlds, authenticates with Cartridge Controller, and runs an
+LLM-driven tick loop that observes game state and executes on-chain actions.
+
+## What Axis Does
+
+* Discovers live worlds across `slot`, `sepolia`, and `mainnet`
+* Authenticates via password (headless) or browser (interactive)
+* Runs in TUI mode or headless server mode
+* Generates game actions from contract ABIs at runtime
+* Persists agent memory and strategy per world
+* Exposes HTTP + stdin control in headless mode
+
+## Get Started
+
+```bash
+curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
+echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
+axis
+```
+
+## TUI vs Headless
+
+|                     | TUI (`axis`)                 | Headless (`axis run --headless`)     |
+| ------------------- | ---------------------------- | ------------------------------------ |
+| **Use when**        | Running manually on a laptop | VPS, CI, fleet orchestration         |
+| **World selection** | Interactive picker           | `--world=<name>` (required)          |
+| **Auth**            | Opens browser automatically  | `--method=password` or QR + redirect |
+| **Output**          | Terminal UI with chat log    | NDJSON to stdout                     |
+| **Control**         | Keyboard input               | HTTP API, stdin, SSE                 |
+
+## Read Next
+
+* [Install and Run](/development/axis/install-and-run)
+* [World Discovery and Auth](/development/axis/worlds-and-auth)
+* [Headless Mode and API](/development/axis/headless-and-api)
+* [Configuration and Operations](/development/axis/configuration-and-operations)
+* [CLI Reference](/development/axis/cli-reference)
+
+
+
+---
+
+file: docs/pages/development/axis/worlds-and-auth.mdx
+meta: {
+  "layout": "docs",
+  "title": "Axis Worlds and Auth"
+}
+
+# Axis Worlds and Auth
+
+## World Discovery
+
+Axis discovers active worlds using Cartridge factory SQL. Only `upcoming` or `ongoing` worlds are shown.
+
+```bash
+axis worlds                        # List discovered worlds
+SLOT_NAME=my-world axis run        # Auto-select a world, skip picker
+```
+
+## Password Auth (Headless)
+
+Decrypts your Cartridge credentials, registers a Controller session with paymaster, and writes session data to disk:
+
+```bash
+axis auth my-world --method=password --username=me --password=secret
+axis auth --all --method=password --username=me --password=secret --json
+```
+
+Sessions last 7 days. Re-run to refresh.
+
+## Browser Auth (Interactive)
+
+Default for TUI mode. Generates a session URL that you approve in a browser:
+
+```bash
+axis auth my-world
+```
+
+On VPS without a password account, Axis compresses the session URL into a QR code:
+
+```bash
+# 1. Generate QR + auth URL (exits immediately)
+axis auth my-world
+#   → ~/.eternum-agent/.cartridge/my-world/auth-qr.png
+
+# 2. Scan QR or open URL on another device, approve on Cartridge
+# 3. Paste the redirect URL back
+axis auth my-world --redirect-url="http://localhost:PORT/callback?startapp=..."
+```
+
+The QR points to a redirect page (default `https://auth.axis.gg`, override with `AXIS_AUTH_REDIRECT_URL`) that
+decompresses the payload and redirects to the full Cartridge auth URL.
+
+You can also pass raw session data directly:
+
+```bash
+axis auth my-world --session-data="<base64>"
+```
+
+Or start a callback server if your VPS has a public endpoint:
+
+```bash
+axis auth my-world --callback-url=http://my-host:3000
+```
+
+## Check Status
+
+```bash
+axis auth my-world --status
+axis auth --all --status --json
+```
+
+## Private Key Fallback
+
+Bypasses Cartridge Controller entirely. No paymaster — you pay gas directly:
+
+```bash
+PRIVATE_KEY=0x... ACCOUNT_ADDRESS=0x... axis run --headless --world=my-world --auth=privatekey
+```
+
+## Artifact Layout
+
+Per-world artifacts stored under `~/.eternum-agent/.cartridge/<world>/`:
+
+| File            | Purpose                                         |
+| --------------- | ----------------------------------------------- |
+| `session.json`  | Controller session keypair                      |
+| `profile.json`  | World profile (chain, rpc, torii, worldAddress) |
+| `manifest.json` | Resolved manifest with live contract addresses  |
+| `policy.json`   | Session policies                                |
+| `auth.json`     | Auth URL and status metadata                    |
+| `auth-qr.png`   | Compressed auth URL QR code                     |
 
 
 
@@ -6722,494 +7210,6 @@ explained in more detail in the [Military section](/eternum/military/stamina-and
 potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop type
 differently as they move between hexes—this is explained further in the
 [Movement & Exploration](/eternum/worldmap-movement/movement) section below.
-
-
-
----
-
-file: docs/pages/development/axis/cli-reference.mdx
-meta: {
-  "layout": "docs",
-  "title": "Axis CLI Reference"
-}
-
-# Axis CLI Reference
-
-## Commands
-
-| Command                               | Description                                                                                            |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `axis` / `axis run`                   | Run in TUI mode                                                                                        |
-| `axis run --headless --world=<name>`  | Run in headless mode                                                                                   |
-| `axis worlds`                         | List discovered worlds                                                                                 |
-| `axis auth <world>`                   | Generate auth URL (non-blocking if no TTY)                                                             |
-| `axis auth <world> --redirect-url`    | Complete auth with redirect URL                                                                        |
-| `axis auth <world> --session-data`    | Complete auth with raw base64 session data                                                             |
-| `axis auth <world> --status`          | Check session status for one world                                                                     |
-| `axis auth <world> --method=password` | Direct password auth (no browser needed)                                                               |
-| `axis auth --all`                     | Auth all discovered worlds                                                                             |
-| `axis auth --all --status`            | Check status for all worlds                                                                            |
-| `axis doctor`                         | Validate configuration                                                                                 |
-| `axis init [world]`                   | Manually seed runtime directories and config (optional — all directories are auto-created when needed) |
-| `axis --version`                      | Print version                                                                                          |
-| `axis --help`                         | Print usage                                                                                            |
-
-## Run Flags
-
-| Flag                                         | Description                          |
-| -------------------------------------------- | ------------------------------------ |
-| `--headless`                                 | Run without TUI                      |
-| `--world=<name>`                             | Target world (required for headless) |
-| `--auth=session\|privatekey`                 | Auth strategy                        |
-| `--api-port=<port>`                          | Enable HTTP API                      |
-| `--api-host=<host>`                          | API bind host                        |
-| `--stdin`                                    | Enable stdin command stream          |
-| `--verbosity=quiet\|actions\|decisions\|all` | Output filter                        |
-| `--json`                                     | JSON output for command responses    |
-
-## Auth Flags
-
-| Flag                      | Description                                         |
-| ------------------------- | --------------------------------------------------- |
-| `--all`                   | Target all discovered worlds                        |
-| `--status`                | Check session status instead of generating auth URL |
-| `--redirect-url=<url>`    | Complete auth with the redirect URL from browser    |
-| `--session-data=<base64>` | Complete auth with raw base64 session data          |
-| `--method=password`       | Direct password auth (no browser needed)            |
-| `--username=<user>`       | Username for password auth                          |
-| `--password=<pass>`       | Password for password auth                          |
-| `--callback-url=<url>`    | Public callback endpoint                            |
-| `--timeout=<ms>`          | Approval wait timeout                               |
-
-
-
----
-
-file: docs/pages/development/axis/configuration-and-operations.mdx
-meta: {
-  "layout": "docs",
-  "title": "Axis Configuration and Operations"
-}
-
-# Axis Configuration and Operations
-
-## Config File Loading
-
-Axis auto-loads `.env` files on every command. Precedence (lowest to highest):
-
-1. **`~/.eternum-agent/.env`** — global config (API keys, preferences). Auto-created on first run.
-2. **`./.env`** (current directory) — local overrides for development or per-project settings.
-3. **Shell environment** — `export ANTHROPIC_API_KEY=...` always wins over file values.
-
-Values from higher-priority sources override lower ones. Shell env vars are never overwritten by file values. All
-runtime directories (`~/.eternum-agent/data/`, `~/.eternum-agent/.cartridge/`) are auto-created on first run — no manual
-`axis init` required.
-
-## Core Environment Variables
-
-| Variable             | Default                          | Purpose                                                      |
-| -------------------- | -------------------------------- | ------------------------------------------------------------ |
-| `MODEL_PROVIDER`     | `anthropic`                      | LLM provider (`anthropic`, `openai`, `openrouter`, `google`) |
-| `MODEL_ID`           | `claude-sonnet-4-5-20250929`     | Model ID                                                     |
-| `ANTHROPIC_API_KEY`  | none                             | Required for Anthropic provider                              |
-| `OPENAI_API_KEY`     | none                             | Required for OpenAI provider                                 |
-| `CHAIN`              | `slot`                           | Chain selection                                              |
-| `SLOT_NAME`          | none                             | Auto-select discovered world                                 |
-| `GAME_NAME`          | `eternum`                        | Session/game namespace                                       |
-| `TICK_INTERVAL_MS`   | `60000`                          | Tick interval in ms                                          |
-| `LOOP_ENABLED`       | `true`                           | Auto-start loop on launch                                    |
-| `ETERNUM_AGENT_HOME` | `~/.eternum-agent`               | Runtime root                                                 |
-| `DATA_DIR`           | `$ETERNUM_AGENT_HOME/data`       | Agent data root                                              |
-| `SESSION_BASE_PATH`  | `$ETERNUM_AGENT_HOME/.cartridge` | Session/artifact root                                        |
-
-## Optional / Advanced Variables
-
-| Variable                                | Purpose                                                   |
-| --------------------------------------- | --------------------------------------------------------- |
-| `RPC_URL`, `TORII_URL`, `WORLD_ADDRESS` | Manual world overrides (skip discovery)                   |
-| `MANIFEST_PATH`                         | Explicit manifest path                                    |
-| `CHAIN_ID`                              | Override inferred chain id                                |
-| `PRIVATE_KEY`, `ACCOUNT_ADDRESS`        | Private-key auth mode                                     |
-| `MASTER_ADDRESS`, `MASTER_PRIVATE_KEY`  | Optional auto top-up for non-mainnet fee token shortfalls |
-| `CARTRIDGE_API_BASE`                    | Factory/discovery API base override                       |
-
-## Runtime Directory
-
-```text
-~/.eternum-agent/
-├── data/
-│   └── <world>/
-│       ├── soul.md
-│       ├── HEARTBEAT.md
-│       └── tasks/
-│           ├── game.md
-│           ├── economy.md
-│           ├── exploration.md
-│           ├── combat.md
-│           ├── priorities.md
-│           └── learnings.md
-└── .cartridge/
-    └── <world>/
-        ├── profile.json
-        ├── manifest.json
-        ├── policy.json
-        ├── session.json
-        ├── auth.json
-        └── auth-qr.png
-```
-
-## Runtime Config Updates (Headless)
-
-Use `POST /config` with `changes` to update settings live.
-
-Typical paths:
-
-* `tickIntervalMs`
-* `loopEnabled`
-* `modelProvider`
-* `modelId`
-* `dataDir`
-
-Some backend fields (like world connection details) require restart in headless mode.
-
-## Diagnostics
-
-Run doctor:
-
-```bash
-axis doctor
-```
-
-Common issues:
-
-* `No worlds discovered`: check network reachability and `CARTRIDGE_API_BASE`
-* `--world is required for headless mode`: pre-auth and set `--world`
-* Auth remains pending: complete approval or run `axis auth <world> --redirect-url="..."`
-* Password auth fails: verify username/password and that the account has a password credential on Cartridge
-* Session expired: re-run `axis auth <world>`
-
-
-
----
-
-file: docs/pages/development/axis/headless-and-api.mdx
-meta: {
-  "layout": "docs",
-  "title": "Axis Headless and API"
-}
-
-# Axis Headless and API
-
-Headless mode is designed for orchestrators, remote servers, and multi-agent fleets.
-
-## Start Headless
-
-```bash
-axis run --headless --world=my-world --api-port=3000 --stdin
-```
-
-`--world` is required in headless mode.
-
-If no artifacts exist for the world, Axis auto-discovers and bootstraps them (profile, manifest, policies). If no
-session exists, it prints the auth URL and instructions to complete authentication via
-`axis auth <world> --redirect-url="..."`.
-
-For first-time setup on a new VPS, see
-[Headless VPS Auth](/development/axis/worlds-and-auth#headless-vps-auth-no-browser).
-
-## NDJSON Event Stream
-
-Headless mode emits newline-delimited JSON to stdout.
-
-Common event types:
-
-* `startup`
-* `session`
-* `decision`
-* `action`
-* `prompt`
-* `heartbeat`
-* `config`
-* `error`
-* `shutdown`
-
-Verbosity filters:
-
-* `quiet`: `error`, `session`, `shutdown`
-* `actions`: `quiet` + `action`
-* `decisions`: `actions` + `decision`, `heartbeat`, `prompt`, `startup`, `config`
-* `all`: `decisions` + `tick`
-
-## HTTP API
-
-Enable with `--api-port`.
-
-| Method     | Path             | Purpose                     |
-| ---------- | ---------------- | --------------------------- |
-| `POST`     | `/prompt`        | Queue a prompt              |
-| `GET`      | `/status`        | Agent status                |
-| `GET`      | `/state`         | World state snapshot        |
-| `GET`      | `/events`        | SSE stream                  |
-| `POST`     | `/config`        | Runtime config updates      |
-| `POST`     | `/shutdown`      | Graceful shutdown           |
-| `GET/POST` | `/auth/callback` | Cartridge callback endpoint |
-
-Prompt example:
-
-```bash
-curl -X POST http://127.0.0.1:3000/prompt \
-  -H 'Content-Type: application/json' \
-  -d '{"content":"Build a farm at your main realm"}'
-```
-
-Runtime config example:
-
-```bash
-curl -X POST http://127.0.0.1:3000/config \
-  -H 'Content-Type: application/json' \
-  -d '{"changes":[{"path":"tickIntervalMs","value":30000}]}'
-```
-
-## Stdin Control
-
-If `--stdin` is set (or stdin is non-TTY), send one JSON object per line:
-
-```jsonl
-{"type":"prompt","content":"Scout north"}
-{"type":"config","changes":[{"path":"tickIntervalMs","value":45000}]}
-{"type":"shutdown"}
-```
-
-## Fleet Pattern
-
-```bash
-axis auth --all --json > /tmp/auth.json
-
-for world in $(jq -r '.[].world' /tmp/auth.json); do
-  axis run --headless --world="$world" --api-port=$((3000 + RANDOM % 1000)) &
-done
-```
-
-
-
----
-
-file: docs/pages/development/axis/install-and-run.mdx
-meta: {
-  "layout": "docs",
-  "title": "Axis Install and Run"
-}
-
-# Axis Install and Run
-
-## Prerequisites
-
-* One model provider API key (e.g. `ANTHROPIC_API_KEY`)
-* For source builds: Node.js 22+, pnpm, Bun
-
-## Install
-
-```bash
-curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
-```
-
-Pin a version: `VERSION=v0.1.0 bash`. Verify: `axis --version`.
-
-## Quick Start (Interactive)
-
-```bash
-echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
-axis
-```
-
-Discovers worlds, opens browser for auth, starts the agent.
-
-## Quick Start (Headless)
-
-```bash
-echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
-axis auth my-world --method=password --username=me --password=secret
-axis run --headless --world=my-world
-```
-
-See [Worlds and Auth](/development/axis/worlds-and-auth) for alternative auth methods.
-
-## Run from Source
-
-```bash
-git clone https://github.com/bibliothecadao/eternum.git
-cd eternum && pnpm install
-
-pnpm --dir packages/types build
-pnpm --dir packages/torii build
-pnpm --dir packages/provider build
-pnpm --dir packages/client build
-pnpm --dir packages/game-agent build
-
-cd client/apps/onchain-agent
-cp .env.example .env
-pnpm dev
-```
-
-## Standalone Binary
-
-```bash
-cd client/apps/onchain-agent
-bun run build.ts --compile    # produces ./axis
-cp axis ~/.local/bin/
-```
-
-Always use `build.ts` — direct `bun build` skips plugins that embed WASM and manifests.
-
-## Uninstall
-
-* Roll back: reinstall with `VERSION=vX.Y.Z`
-* Remove: `~/.local/bin/axis`, `~/.local/share/eternum-agent`, and optionally `~/.eternum-agent`
-
-
-
----
-
-file: docs/pages/development/axis/overview.mdx
-meta: {
-  "layout": "docs",
-  "title": "Axis Overview"
-}
-
-# Axis Overview
-
-Axis is the Eternum onchain agent CLI. It discovers active worlds, authenticates with Cartridge Controller, and runs an
-LLM-driven tick loop that observes game state and executes on-chain actions.
-
-## What Axis Does
-
-* Discovers live worlds across `slot`, `sepolia`, and `mainnet`
-* Authenticates via password (headless) or browser (interactive)
-* Runs in TUI mode or headless server mode
-* Generates game actions from contract ABIs at runtime
-* Persists agent memory and strategy per world
-* Exposes HTTP + stdin control in headless mode
-
-## Get Started
-
-```bash
-curl -fsSL https://github.com/bibliothecadao/eternum/releases/latest/download/install-axis.sh | bash
-echo "ANTHROPIC_API_KEY=sk-ant-..." >> ~/.eternum-agent/.env
-axis
-```
-
-## TUI vs Headless
-
-|                     | TUI (`axis`)                 | Headless (`axis run --headless`)     |
-| ------------------- | ---------------------------- | ------------------------------------ |
-| **Use when**        | Running manually on a laptop | VPS, CI, fleet orchestration         |
-| **World selection** | Interactive picker           | `--world=<name>` (required)          |
-| **Auth**            | Opens browser automatically  | `--method=password` or QR + redirect |
-| **Output**          | Terminal UI with chat log    | NDJSON to stdout                     |
-| **Control**         | Keyboard input               | HTTP API, stdin, SSE                 |
-
-## Read Next
-
-* [Install and Run](/development/axis/install-and-run)
-* [World Discovery and Auth](/development/axis/worlds-and-auth)
-* [Headless Mode and API](/development/axis/headless-and-api)
-* [Configuration and Operations](/development/axis/configuration-and-operations)
-* [CLI Reference](/development/axis/cli-reference)
-
-
-
----
-
-file: docs/pages/development/axis/worlds-and-auth.mdx
-meta: {
-  "layout": "docs",
-  "title": "Axis Worlds and Auth"
-}
-
-# Axis Worlds and Auth
-
-## World Discovery
-
-Axis discovers active worlds using Cartridge factory SQL. Only `upcoming` or `ongoing` worlds are shown.
-
-```bash
-axis worlds                        # List discovered worlds
-SLOT_NAME=my-world axis run        # Auto-select a world, skip picker
-```
-
-## Password Auth (Headless)
-
-Decrypts your Cartridge credentials, registers a Controller session with paymaster, and writes session data to disk:
-
-```bash
-axis auth my-world --method=password --username=me --password=secret
-axis auth --all --method=password --username=me --password=secret --json
-```
-
-Sessions last 7 days. Re-run to refresh.
-
-## Browser Auth (Interactive)
-
-Default for TUI mode. Generates a session URL that you approve in a browser:
-
-```bash
-axis auth my-world
-```
-
-On VPS without a password account, Axis compresses the session URL into a QR code:
-
-```bash
-# 1. Generate QR + auth URL (exits immediately)
-axis auth my-world
-#   → ~/.eternum-agent/.cartridge/my-world/auth-qr.png
-
-# 2. Scan QR or open URL on another device, approve on Cartridge
-# 3. Paste the redirect URL back
-axis auth my-world --redirect-url="http://localhost:PORT/callback?startapp=..."
-```
-
-The QR points to a redirect page (default `https://auth.axis.gg`, override with `AXIS_AUTH_REDIRECT_URL`) that
-decompresses the payload and redirects to the full Cartridge auth URL.
-
-You can also pass raw session data directly:
-
-```bash
-axis auth my-world --session-data="<base64>"
-```
-
-Or start a callback server if your VPS has a public endpoint:
-
-```bash
-axis auth my-world --callback-url=http://my-host:3000
-```
-
-## Check Status
-
-```bash
-axis auth my-world --status
-axis auth --all --status --json
-```
-
-## Private Key Fallback
-
-Bypasses Cartridge Controller entirely. No paymaster — you pay gas directly:
-
-```bash
-PRIVATE_KEY=0x... ACCOUNT_ADDRESS=0x... axis run --headless --world=my-world --auth=privatekey
-```
-
-## Artifact Layout
-
-Per-world artifacts stored under `~/.eternum-agent/.cartridge/<world>/`:
-
-| File            | Purpose                                         |
-| --------------- | ----------------------------------------------- |
-| `session.json`  | Controller session keypair                      |
-| `profile.json`  | World profile (chain, rpc, torii, worldAddress) |
-| `manifest.json` | Resolved manifest with live contract addresses  |
-| `policy.json`   | Session policies                                |
-| `auth.json`     | Auth URL and status metadata                    |
-| `auth-qr.png`   | Compressed auth URL QR code                     |
 
 
 

@@ -37,7 +37,7 @@ Production Accelerated Rates:** All production is increased for the fast-paced f
 resources or labor. Troops require lower-tier troops as inputs. Donkeys are one-time use.
 
 World Map & Military Exploration:** Reveal hexes to find Essence, Hyperstructures, and enemies. Biomes:** 16 unique
-types affecting combat (+/- 30% damage) and movement. Stamina:_ Armies recover _+30 stamina per Phase** (+180 per Day).
+types affecting combat (+/- 30% damage) and movement. Stamina:_ Armies recover _+20 stamina per Phase** (+120 per Day).
 Army Types:** Field Armies: Map exploration and conquest. Guard Armies: Static defense of structures.
 
 Victory Leaderboard ranking is determined by Victory Points (VP) awarded for exploring, claiming structures, opening

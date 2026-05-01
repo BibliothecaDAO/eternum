@@ -980,14 +980,14 @@
       "damageDelta": "922337203685477580800000"
     },
     "stamina": {
-      "staminaGainPerTick": 30,
+      "staminaGainPerTick": 20,
       "staminaInitial": 20,
       "staminaBonusValue": 0,
       "staminaKnightMax": 120,
       "staminaPaladinMax": 120,
       "staminaCrossbowmanMax": 120,
-      "staminaAttackReq": 75,
-      "staminaDefenseReq": 60,
+      "staminaAttackReq": 50,
+      "staminaDefenseReq": 40,
       "staminaExploreWheatCost": 0.03,
       "staminaExploreFishCost": 0,
       "staminaExploreStaminaCost": 0,
