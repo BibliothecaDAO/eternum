@@ -12,9 +12,9 @@
   "requestedLaunchStep": "configure-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25263411021-1.json",
   "latestLaunchRequestId": "25263411021-1",
-  "currentStepId": "sync-paymaster",
+  "currentStepId": "create-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-02T22:28:30.007Z",
+  "updatedAt": "2026-05-02T22:28:38.314Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-02T22:43:25.429Z",
-    "lastEvaluatedAt": "2026-05-02T22:28:25.429Z"
+    "nextEvaluationAt": "2026-05-02T22:43:38.314Z",
+    "lastEvaluatedAt": "2026-05-02T22:28:38.314Z"
   },
   "steps": [
     {
@@ -83,9 +83,9 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "pending",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
+      "latestEvent": "Waiting to run",
       "startedAt": "2026-05-02T22:28:30.007Z"
     }
   ],
@@ -2267,7 +2267,7 @@
         },
         "seriesGameNumber": 12,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Completed sync-paymaster",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2425,8 +2425,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-05-02T22:28:36.469Z"
           }
         ],
         "artifacts": {
@@ -2449,7 +2450,8 @@
             "worldAddress": "0x04c679a2c4f91a8938775050c0298880ce38bd43372d646ea5cd52b9a71e5c59",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       },
       {
@@ -2512,13 +2514,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25263411021-1",
-    "workflowRunId": 25263411021,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-05-02T22:28:30.007Z",
-    "expiresAt": "2026-05-02T23:13:30.007Z"
   }
 }
