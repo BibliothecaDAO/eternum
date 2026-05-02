@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25241221963-1.json",
   "latestLaunchRequestId": "25241221963-1",
-  "currentStepId": null,
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-02T02:13:42.814Z",
+  "updatedAt": "2026-05-02T02:13:47.197Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -92,9 +92,10 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage is complete"
+      "latestEvent": "Setting up gas coverage started",
+      "startedAt": "2026-05-02T02:13:47.197Z"
     }
   ],
   "summary": {
@@ -2273,5 +2274,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
+  },
+  "activeLease": {
+    "launchRequestId": "25241221963-1",
+    "workflowRunId": 25241221963,
+    "workflowRunAttempt": 1,
+    "stepId": "sync-paymaster",
+    "acquiredAt": "2026-05-02T02:13:47.197Z",
+    "expiresAt": "2026-05-02T02:58:47.197Z"
   }
 }
