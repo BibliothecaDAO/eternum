@@ -9,11 +9,10 @@
     "workflowName": "Game Launch",
     "workflowRunId": 25245159629,
     "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "leaseId": "18c0ef21-08a0-48e6-b556-1b7e0a217029"
+    "stepId": "grant-lootchest-role",
+    "leaseId": "0bdd5648-75f0-4dd7-ada4-d9b5092fa313"
   },
-  "acquiredAt": "2026-05-02T05:52:48.695Z",
-  "heartbeatAt": "2026-05-02T05:52:53.511Z",
-  "expiresAt": "2026-05-02T05:52:53.511Z",
-  "releasedAt": "2026-05-02T05:52:53.511Z"
+  "acquiredAt": "2026-05-02T05:53:08.804Z",
+  "heartbeatAt": "2026-05-02T05:53:08.804Z",
+  "expiresAt": "2026-05-02T06:03:08.804Z"
 }
