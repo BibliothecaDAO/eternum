@@ -22,6 +22,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-04",
+    title: "Quieter Game Reviews",
+    description:
+      "Game review now opens automatically only for connected players who registered in the ended game, so logged-out visitors can browse the landing page without an unexpected review prompt.",
+    type: "fix",
+  },
+  {
     date: "2026-04-30",
     title: "Synced Army Positions",
     description:

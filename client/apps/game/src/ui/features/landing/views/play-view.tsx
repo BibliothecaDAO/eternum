@@ -50,6 +50,16 @@ const FactoryV2Content = lazy(() =>
 );
 const FactoryPage = lazy(() => import("../../admin").then((module) => ({ default: module.FactoryPage })));
 
+const hasConnectedAccountAddress = (address: string | undefined): boolean => Boolean(address && address !== "0x0");
+
+const shouldAutoOpenGameReview = (game: GameData): game is GameData & { worldAddress: string; isRegistered: true } => {
+  return game.gameStatus === "ended" && Boolean(game.worldAddress) && game.isRegistered === true;
+};
+
+const resolveGameReviewCandidate = (endedGames: GameData[]): (GameData & { worldAddress: string }) | null => {
+  return endedGames.filter(shouldAutoOpenGameReview).toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0] ?? null;
+};
+
 type LearnGuideTier = "beginner" | "advanced";
 type LearnGuideKind = "video" | "written";
 
@@ -954,7 +964,7 @@ export const PlayView = ({
 
   const handleSelectGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account?.address);
+      const hasAccount = hasConnectedAccountAddress(account?.address);
 
       // Check if user needs to sign in before entering game
       if (!hasAccount) {
@@ -975,7 +985,7 @@ export const PlayView = ({
 
   const handleAutoSettleGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account?.address);
+      const hasAccount = hasConnectedAccountAddress(account?.address);
       if (!hasAccount) return;
 
       openGameEntryRoute(selection, "settle", true);
@@ -985,7 +995,7 @@ export const PlayView = ({
 
   const handlePlayGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account?.address);
+      const hasAccount = hasConnectedAccountAddress(account?.address);
 
       if (!hasAccount) {
         const redirectTo = buildEntryRedirectHref(selection, "play", null, false);
@@ -1015,7 +1025,7 @@ export const PlayView = ({
 
   const handleForgeHyperstructures = useCallback(
     (selection: WorldSelection, numLeft: number) => {
-      const hasAccount = Boolean(account?.address);
+      const hasAccount = hasConnectedAccountAddress(account?.address);
 
       // Check if user needs to sign in before forging
       if (!hasAccount) {
@@ -1086,16 +1096,16 @@ export const PlayView = ({
     if (disableReviewFlow) return;
     if (activeTab !== "play") return;
     if (reviewWorld) return;
+    if (!hasConnectedAccountAddress(account?.address)) return;
     if (endedGames.length === 0) return;
 
-    const candidate = endedGames.toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0];
+    const candidate = resolveGameReviewCandidate(endedGames);
     if (!candidate) return;
-    if (!candidate.worldAddress) return;
     if (isGameReviewDismissed(candidate.chain, candidate.worldAddress)) return;
 
     setReviewInitialStep(undefined);
     setReviewWorld({ name: candidate.name, chain: candidate.chain, worldAddress: candidate.worldAddress });
-  }, [activeTab, disableReviewFlow, endedGames, reviewWorld]);
+  }, [account?.address, activeTab, disableReviewFlow, endedGames, reviewWorld]);
 
   const renderContent = () => {
     switch (activeTab) {
