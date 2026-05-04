@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-04",
+    title: "Accurate Player Header",
+    description:
+      "Fixed the in-game header so connected players are no longer labeled as spectating while their leaderboard rank is still loading.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-04-30",
     title: "Synced Army Positions",
     description:
