@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-05T10:52:43.775Z",
+  "updatedAt": "2026-05-05T10:52:49.606Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -471,12 +471,13 @@
       "path": "runs/mainnet/blitz/apac-gladiator-5-5-26-1130.json",
       "inputPath": "inputs/mainnet/blitz/apac-gladiator-5-5-26-1130/25372069613-1.json",
       "status": "running",
-      "updatedAt": "2026-05-05T10:52:43.775Z",
+      "updatedAt": "2026-05-05T10:52:49.606Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-05T11:37:49.606Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-05-05T11:30:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
