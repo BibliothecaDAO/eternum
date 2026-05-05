@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25385557383-1.json",
   "latestLaunchRequestId": "25385557383-1",
-  "currentStepId": "sync-paymaster",
+  "currentStepId": null,
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-05T15:42:19.118Z",
+  "updatedAt": "2026-05-05T15:42:42.721Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-05T15:57:13.175Z",
-    "lastEvaluatedAt": "2026-05-05T15:42:13.175Z"
+    "nextEvaluationAt": "2026-05-05T15:57:42.721Z",
+    "lastEvaluatedAt": "2026-05-05T15:42:42.721Z"
   },
   "steps": [
     {
@@ -92,10 +92,11 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
-      "startedAt": "2026-05-05T15:42:19.118Z"
+      "latestEvent": "Setting up gas coverage is complete",
+      "startedAt": "2026-05-05T15:42:19.118Z",
+      "finishedAt": "2026-05-05T15:42:42.721Z"
     }
   ],
   "summary": {
@@ -2473,7 +2474,7 @@
         },
         "seriesGameNumber": 13,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Completed sync-paymaster",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2631,8 +2632,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-05-05T15:42:26.386Z"
           }
         ],
         "artifacts": {
@@ -2657,7 +2659,8 @@
             "worldAddress": "0x00220777fe18921c66f08bb324fd9eab054b91f01c866ecb82cde90855bbc5fa",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       },
       {
@@ -2670,7 +2673,7 @@
         },
         "seriesGameNumber": 14,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Completed sync-paymaster",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2828,8 +2831,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-05-05T15:42:29.234Z"
           }
         ],
         "artifacts": {
@@ -2852,7 +2856,8 @@
             "worldAddress": "0x0715847f75716054c5432eb72c296a6635eca208f1e666bcddfc4224d3fa2f38",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       },
       {
@@ -2865,7 +2870,7 @@
         },
         "seriesGameNumber": 15,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Completed sync-paymaster",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3023,8 +3028,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-05-05T15:42:32.171Z"
           }
         ],
         "artifacts": {
@@ -3047,7 +3053,8 @@
             "worldAddress": "0x076f0ba221d7fbadbf36391b5bac1010125821e04e3460dae33c8388e8e0d553",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       },
       {
@@ -3060,7 +3067,7 @@
         },
         "seriesGameNumber": 16,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Completed sync-paymaster",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3218,8 +3225,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-05-05T15:42:34.950Z"
           }
         ],
         "artifacts": {
@@ -3242,7 +3250,8 @@
             "worldAddress": "0x0601359e28e09095f4003d0eebb0858f06124d7f5249f4ed60d339d88bdd57d3",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       },
       {
@@ -3255,7 +3264,7 @@
         },
         "seriesGameNumber": 17,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Completed sync-paymaster",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3413,8 +3422,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-05-05T15:42:37.939Z"
           }
         ],
         "artifacts": {
@@ -3437,7 +3447,8 @@
             "worldAddress": "0x0559a3bf71f26929e29400dafd8ac968863d19e24cf64e846e3e533c3a0afb60",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       },
       {
@@ -3450,7 +3461,7 @@
         },
         "seriesGameNumber": 18,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Completed sync-paymaster",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3608,8 +3619,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-05-05T15:42:40.888Z"
           }
         ],
         "artifacts": {
@@ -3632,7 +3644,8 @@
             "worldAddress": "0x053e2e8b2c8366cf2902f413f36fd478d7484c60858d08a0452c7ab02fbfac52",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       }
     ],
@@ -3643,13 +3656,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25385557383-1",
-    "workflowRunId": 25385557383,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-05-05T15:42:19.118Z",
-    "expiresAt": "2026-05-05T16:27:19.118Z"
   }
 }
