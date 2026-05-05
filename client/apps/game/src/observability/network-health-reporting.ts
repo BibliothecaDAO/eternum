@@ -40,6 +40,7 @@ interface OutageReport {
 
 interface SetupTimeoutReport {
   label: string;
+  streamType?: NetworkStreamType;
   timeoutMs: number;
   requestId?: number | string;
 }
@@ -88,6 +89,7 @@ interface NetworkScopeTags {
 
 const DUPLICATE_TTL_MS = 5 * 60 * 1000;
 const MAX_CONTEXT_TEXT_LENGTH = 180;
+const TORII_SPATIAL_LIFECYCLE_GROUP = "spatial_lifecycle";
 const reportedKeys = new Map<string, number>();
 let eventsThisSession = 0;
 let enabledOverride: boolean | null = null;
@@ -151,6 +153,19 @@ const sanitizeContextText = (value: string): string => {
   }
   return `${redacted.slice(0, MAX_CONTEXT_TEXT_LENGTH - 3)}...`;
 };
+
+const getActiveWorldName = (): string => getActiveWorld()?.name ?? "unknown-world";
+
+const buildToriiLifecycleFingerprint = (streamType: NetworkStreamType | undefined, fallback: string[]): string[] => {
+  if (streamType !== "spatial") {
+    return fallback;
+  }
+
+  return [`torii_spatial:${TORII_SPATIAL_LIFECYCLE_GROUP}:${streamType}:${getActiveWorldName()}`];
+};
+
+const buildToriiLifecycleGroupTags = (streamType: NetworkStreamType | undefined): Record<string, string> =>
+  streamType === "spatial" ? { "network.lifecycle_group": TORII_SPATIAL_LIFECYCLE_GROUP } : {};
 
 export const setNetworkHealthScopeTags = async ({ toriiBaseUrl, walletAddress }: NetworkScopeTags): Promise<void> => {
   if (!isEnabled()) return;
@@ -268,11 +283,16 @@ export const reportNetworkOutageResolved = (report: OutageReport): void => repor
 
 export const reportNetworkOutageDeadEnd = (report: OutageReport): void => reportOutage(report, false);
 
-export const reportSubscriptionSetupTimeout = ({ label, timeoutMs, requestId }: SetupTimeoutReport): void => {
+export const reportSubscriptionSetupTimeout = ({
+  label,
+  streamType,
+  timeoutMs,
+  requestId,
+}: SetupTimeoutReport): void => {
   if (!isEnabled()) return;
   if (!canEmitMore()) return;
 
-  const dedupeKey = `setup-timeout:${label}`;
+  const dedupeKey = `setup-timeout:${streamType ?? "unknown"}:${label}`;
   if (shouldSkipDuplicate(dedupeKey)) return;
 
   eventsThisSession += 1;
@@ -283,15 +303,18 @@ export const reportSubscriptionSetupTimeout = ({ label, timeoutMs, requestId }: 
       feature: "network-health",
       "network.kind": "subscription_setup_timeout",
       "network.subscription_label": label,
+      ...(streamType ? { "network.stream_type": streamType } : {}),
+      ...buildToriiLifecycleGroupTags(streamType),
     },
     contexts: {
       network: {
         label,
+        ...(streamType ? { stream_type: streamType } : {}),
         timeout_ms: timeoutMs,
         ...(typeof requestId !== "undefined" ? { request_id: String(requestId) } : {}),
       },
     },
-    fingerprint: ["network-health", "setup-timeout", label],
+    fingerprint: buildToriiLifecycleFingerprint(streamType, ["network-health", "setup-timeout", label]),
   });
 };
 
@@ -321,6 +344,7 @@ export const reportToriiSubscriptionLifecycle = ({
       "network.stream_type": streamType,
       "network.kind": kind,
       "network.outcome": outcome,
+      ...buildToriiLifecycleGroupTags(streamType),
     },
     contexts: {
       network: {
@@ -331,7 +355,7 @@ export const reportToriiSubscriptionLifecycle = ({
         ...(signatureHash ? { signature_hash: signatureHash } : {}),
       },
     },
-    fingerprint: ["network-health", "torii", streamType, kind, outcome],
+    fingerprint: buildToriiLifecycleFingerprint(streamType, ["network-health", "torii", streamType, kind, outcome]),
   });
 };
 
@@ -356,6 +380,7 @@ export const reportToriiReadinessTimeout = ({
       "network.stream_type": streamType,
       "network.kind": "readiness_timeout",
       "network.outcome": "timeout",
+      ...buildToriiLifecycleGroupTags(streamType),
     },
     contexts: {
       network: {
@@ -364,7 +389,12 @@ export const reportToriiReadinessTimeout = ({
         timeout_ms: timeoutMs,
       },
     },
-    fingerprint: ["network-health", "torii", streamType, "readiness-timeout"],
+    fingerprint: buildToriiLifecycleFingerprint(streamType, [
+      "network-health",
+      "torii",
+      streamType,
+      "readiness-timeout",
+    ]),
   });
 };
 

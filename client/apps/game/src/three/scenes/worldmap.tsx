@@ -5984,6 +5984,7 @@ export default class WorldmapScene extends WarpTravel {
       toast("Map sync delayed", { description: "Retrying…" });
       reportSubscriptionSetupTimeout({
         label: info.label,
+        streamType: "spatial",
         timeoutMs: info.timeoutMs,
         requestId: info.requestId,
       });
