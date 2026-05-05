@@ -4,15 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "apac-gladiator-05-05-26-1130",
-    "launchRequestId": "25371934755-1",
+    "gameName": "apac-gladiator--5-5-26-1130",
+    "launchRequestId": "25372069613-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25371934755,
+    "workflowRunId": 25372069613,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "fd37c5a8-a5dc-4fad-8d1e-fe4f99dd74b1"
+    "leaseId": "e1a2c0e5-e8e3-44ee-b9f8-e0add9760eef"
   },
-  "acquiredAt": "2026-05-05T10:49:53.188Z",
-  "heartbeatAt": "2026-05-05T10:50:59.293Z",
-  "expiresAt": "2026-05-05T11:00:59.293Z"
+  "acquiredAt": "2026-05-05T11:01:05.824Z",
+  "heartbeatAt": "2026-05-05T11:01:05.824Z",
+  "expiresAt": "2026-05-05T11:11:05.824Z"
 }
