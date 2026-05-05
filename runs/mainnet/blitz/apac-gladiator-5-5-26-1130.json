@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25372069613-1",
   "currentStepId": null,
   "createdAt": "2026-05-05T10:52:43.775Z",
-  "updatedAt": "2026-05-05T11:05:09.442Z",
+  "updatedAt": "2026-05-05T11:06:50.202Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -88,14 +88,12 @@
     "configureTxHash": "0x48d92b1f3516eb6a8c34d9546761132fb27043ecf87f556fb485223c90992f1",
     "worldConfigTxHash": "0x48d92b1f3516eb6a8c34d9546761132fb27043ecf87f556fb485223c90992f1",
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/apac-gladiator--5-5-26-1130/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-05T11:04:40.425Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-05-05T11:05:07.937Z"
+    "lastIndexerDescribeAt": "2026-05-05T11:06:50.202Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-05-05T11:04:55.035Z"
 }
