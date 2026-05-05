@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-05T15:24:54.987Z",
+  "updatedAt": "2026-05-05T15:42:03.235Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1679,11 +1679,15 @@
     "apac-gladiator-05-05-26-1100": {
       "gameName": "apac-gladiator-05-05-26-1100",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-05-05-26-1100 not found"
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/apac-gladiator-05-05-26-1100/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-05T15:42:03.235Z"
       },
-      "updatedAt": "2026-05-05T15:24:54.987Z"
+      "updatedAt": "2026-05-05T15:42:03.235Z"
     },
     "apac-gladiator--5-5-26-1130": {
       "gameName": "apac-gladiator--5-5-26-1130",
