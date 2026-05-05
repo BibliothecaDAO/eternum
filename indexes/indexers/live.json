@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-05T13:41:36.784Z",
+  "updatedAt": "2026-05-05T13:48:08.308Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1723,6 +1723,19 @@
         "describedAt": "2026-05-05T13:07:06.335Z"
       },
       "updatedAt": "2026-05-05T13:07:06.335Z"
+    },
+    "bltz-codex-local-odra2": {
+      "gameName": "bltz-codex-local-odra2",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-codex-local-odra2/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-05T13:48:08.308Z"
+      },
+      "updatedAt": "2026-05-05T13:48:08.308Z"
     }
   }
 }
