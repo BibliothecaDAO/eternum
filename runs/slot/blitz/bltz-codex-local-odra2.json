@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25379890741-1",
   "currentStepId": null,
   "createdAt": "2026-05-05T13:41:14.198Z",
-  "updatedAt": "2026-05-05T13:45:10.939Z",
+  "updatedAt": "2026-05-05T13:48:04.573Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,13 +80,11 @@
     "worldConfigTxHash": "0x7b90e0ac200129152d4c8e662fd9617d4a9e85958738b9054e6ab8806614808",
     "lootChestRoleTxHash": "0x6e05f08d3f98bf2684e469c3763522d68b5ad86994338dbc258e0ae855fd784",
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-codex-local-odra2/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-05T13:44:18.802Z",
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-05-05T13:45:08.323Z"
+    "lastIndexerDescribeAt": "2026-05-05T13:48:04.572Z"
   },
   "completedAt": "2026-05-05T13:44:20.704Z"
 }
