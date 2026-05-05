@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-05T13:07:06.335Z",
+  "updatedAt": "2026-05-05T13:14:09.556Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1690,13 +1690,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/apac-gladiator--5-5-26-1130/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-05T11:06:52.615Z"
+        "describedAt": "2026-05-05T13:14:09.555Z"
       },
-      "updatedAt": "2026-05-05T11:06:52.616Z"
+      "updatedAt": "2026-05-05T13:14:09.556Z"
     },
     "bltz-ping-150": {
       "gameName": "bltz-ping-150",
