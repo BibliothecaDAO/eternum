@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "boat-4-27",
-    "launchRequestId": "24983099345-1",
+    "gameName": "bltz-ping-150",
+    "launchRequestId": "25377661399-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 24983099345,
+    "workflowRunId": 25377661399,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "2f8d6ac4-b4cd-40b7-9cb6-4f0802b8ec6e"
+    "stepId": "create-world",
+    "leaseId": "9c22772e-0b77-4a0c-875b-844a04c81703"
   },
-  "acquiredAt": "2026-04-27T07:55:52.713Z",
-  "heartbeatAt": "2026-04-27T07:56:08.065Z",
-  "expiresAt": "2026-04-27T07:56:08.065Z",
-  "releasedAt": "2026-04-27T07:56:08.065Z"
+  "acquiredAt": "2026-05-05T12:57:26.324Z",
+  "heartbeatAt": "2026-05-05T12:57:26.324Z",
+  "expiresAt": "2026-05-05T13:07:26.324Z"
 }
