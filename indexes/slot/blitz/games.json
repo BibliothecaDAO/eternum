@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-05T13:42:37.341Z",
+  "updatedAt": "2026-05-05T13:42:44.848Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -742,11 +742,10 @@
       "path": "runs/slot/blitz/bltz-codex-local-odra2.json",
       "inputPath": "inputs/slot/blitz/bltz-codex-local-odra2/25379890741-1.json",
       "status": "running",
-      "updatedAt": "2026-05-05T13:42:37.341Z",
+      "updatedAt": "2026-05-05T13:42:44.848Z",
       "workflowRef": "next",
-      "currentStepId": "wait-for-factory-index",
-      "activeLeaseExpiresAt": "2026-05-05T14:27:37.341Z",
-      "hasRunningStep": true,
+      "currentStepId": "configure-world",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "configure-world",
       "startTime": 1777988991,
