@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-05T13:07:02.967Z",
+  "updatedAt": "2026-05-05T13:41:14.198Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -734,6 +734,23 @@
         "indexerTier": "legendary",
         "lastIndexerDescribeAt": "2026-05-05T13:07:02.967Z"
       }
+    },
+    "bltz-codex-local-odra2": {
+      "kind": "game",
+      "environment": "slot.blitz",
+      "gameName": "bltz-codex-local-odra2",
+      "path": "runs/slot/blitz/bltz-codex-local-odra2.json",
+      "inputPath": "inputs/slot/blitz/bltz-codex-local-odra2/25379890741-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-05T13:41:14.198Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-05T13:49:51.770Z",
+      "durationSeconds": 432000,
+      "artifacts": {}
     }
   }
 }
