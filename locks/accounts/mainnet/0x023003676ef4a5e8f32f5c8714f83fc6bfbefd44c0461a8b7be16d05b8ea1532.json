@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "apac-gladiator--5-5-26-1130",
-    "launchRequestId": "25372069613-1",
+    "gameName": "blitz-rotation",
+    "launchRequestId": "25385557383-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25372069613,
+    "workflowRunId": 25385557383,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "5fd04cb1-3f4a-45c2-b6a6-d4a8a5306619"
+    "stepId": "create-world",
+    "leaseId": "d465eb0d-9e3b-467c-bb22-129fbfe78e80"
   },
-  "acquiredAt": "2026-05-05T11:04:00.165Z",
-  "heartbeatAt": "2026-05-05T11:04:05.616Z",
-  "expiresAt": "2026-05-05T11:04:05.616Z",
-  "releasedAt": "2026-05-05T11:04:05.616Z"
+  "acquiredAt": "2026-05-05T15:26:51.155Z",
+  "heartbeatAt": "2026-05-05T15:26:51.155Z",
+  "expiresAt": "2026-05-05T15:36:51.155Z"
 }
