@@ -8,19 +8,19 @@
   "rotationName": "blitz-rotation",
   "seriesName": "blitz-rotation",
   "status": "running",
-  "executionMode": "guided_recovery",
-  "requestedLaunchStep": "configure-worlds",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25263411021-1.json",
-  "latestLaunchRequestId": "25263411021-1",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25385557383-1.json",
+  "latestLaunchRequestId": "25385557383-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-05T15:25:06.127Z",
+  "updatedAt": "2026-05-05T15:26:26.832Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 25263411021,
+    "workflowRunId": 25385557383,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25263411021",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25385557383",
     "ref": "next",
     "sha": "962c5d32f03c9852ed354f930e188ddcd2c20280"
   },
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-05T15:40:06.127Z",
-    "lastEvaluatedAt": "2026-05-05T15:25:06.127Z"
+    "nextEvaluationAt": "2026-05-05T15:41:26.832Z",
+    "lastEvaluatedAt": "2026-05-05T15:26:26.832Z"
   },
   "steps": [
     {
@@ -61,32 +61,28 @@
       "title": "Applying settings",
       "status": "pending",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-05-02T22:27:09.153Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
       "status": "pending",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-05-02T22:27:43.783Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
       "status": "pending",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-05-02T22:28:06.492Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
       "status": "pending",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-05-02T22:28:30.007Z"
+      "latestEvent": "Waiting to run"
     }
   ],
   "summary": {
@@ -2512,6 +2508,266 @@
           "lastIndexerTierDispatchFailedAt": "2026-05-05T15:24:51.918Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-05-05-26-1100\" does not exist"
         }
+      },
+      {
+        "gameName": "na-gladiator-06-05-26-0200",
+        "startTime": 1778032800,
+        "startTimeIso": "2026-05-06T02:00:00.000Z",
+        "durationSeconds": 3600,
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        },
+        "seriesGameNumber": 14,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "eu-gladiator-06-05-26-1900",
+        "startTime": 1778094000,
+        "startTimeIso": "2026-05-06T19:00:00.000Z",
+        "durationSeconds": 3600,
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        },
+        "seriesGameNumber": 15,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "apac-gladiator-07-05-26-1000",
+        "startTime": 1778148000,
+        "startTimeIso": "2026-05-07T10:00:00.000Z",
+        "durationSeconds": 3600,
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        },
+        "seriesGameNumber": 16,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "na-gladiator-08-05-26-0100",
+        "startTime": 1778202000,
+        "startTimeIso": "2026-05-08T01:00:00.000Z",
+        "durationSeconds": 3600,
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        },
+        "seriesGameNumber": 17,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "eu-gladiator-08-05-26-1800",
+        "startTime": 1778263200,
+        "startTimeIso": "2026-05-08T18:00:00.000Z",
+        "durationSeconds": 3600,
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        },
+        "seriesGameNumber": 18,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
