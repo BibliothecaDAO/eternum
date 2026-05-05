@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-05T11:06:50.202Z",
+  "updatedAt": "2026-05-05T13:10:10.481Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -471,7 +471,7 @@
       "path": "runs/mainnet/blitz/apac-gladiator-5-5-26-1130.json",
       "inputPath": "inputs/mainnet/blitz/apac-gladiator-5-5-26-1130/25372069613-1.json",
       "status": "complete",
-      "updatedAt": "2026-05-05T11:06:50.202Z",
+      "updatedAt": "2026-05-05T13:10:10.481Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -482,7 +482,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "legendary",
-        "lastIndexerDescribeAt": "2026-05-05T11:06:50.202Z"
+        "lastIndexerDescribeAt": "2026-05-05T11:06:50.202Z",
+        "pendingIndexerTierTarget": "pro",
+        "pendingIndexerTierRequestedAt": "2026-05-05T13:10:08.593Z"
       }
     }
   }
