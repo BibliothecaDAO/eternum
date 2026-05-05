@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25379890741-1",
   "currentStepId": null,
   "createdAt": "2026-05-05T13:41:14.198Z",
-  "updatedAt": "2026-05-05T13:44:20.704Z",
+  "updatedAt": "2026-05-05T13:45:10.939Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -84,7 +84,9 @@
     "indexerUrl": "https://api.cartridge.gg/x/bltz-codex-local-odra2/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-05T13:44:18.802Z"
+    "lastIndexerDescribeAt": "2026-05-05T13:44:18.802Z",
+    "pendingIndexerTierTarget": "legendary",
+    "pendingIndexerTierRequestedAt": "2026-05-05T13:45:08.323Z"
   },
   "completedAt": "2026-05-05T13:44:20.704Z"
 }
