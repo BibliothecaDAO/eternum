@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-05T13:01:50.963Z",
+  "updatedAt": "2026-05-05T13:02:12.934Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1697,6 +1697,19 @@
         "describedAt": "2026-05-05T11:06:52.615Z"
       },
       "updatedAt": "2026-05-05T11:06:52.616Z"
+    },
+    "bltz-ping-150": {
+      "gameName": "bltz-ping-150",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-ping-150/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-05T13:02:12.934Z"
+      },
+      "updatedAt": "2026-05-05T13:02:12.934Z"
     }
   }
 }
