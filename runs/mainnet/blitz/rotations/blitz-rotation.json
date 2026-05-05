@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25385557383-1.json",
   "latestLaunchRequestId": "25385557383-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-05T15:41:59.821Z",
+  "updatedAt": "2026-05-05T15:42:13.175Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-05T15:55:27.338Z",
-    "lastEvaluatedAt": "2026-05-05T15:40:27.338Z"
+    "nextEvaluationAt": "2026-05-05T15:57:13.175Z",
+    "lastEvaluatedAt": "2026-05-05T15:42:13.175Z"
   },
   "steps": [
     {
@@ -83,10 +83,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-05T15:40:37.868Z"
+      "latestEvent": "Finishing setup is complete",
+      "startedAt": "2026-05-05T15:40:37.868Z",
+      "finishedAt": "2026-05-05T15:42:13.175Z"
     },
     {
       "id": "sync-paymaster",
@@ -2471,7 +2472,7 @@
         },
         "seriesGameNumber": 13,
         "currentStepId": null,
-        "latestEvent": "Indexer tier updated basic -> pro for apac-gladiator-05-05-26-1100",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2623,8 +2624,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-05-05T15:40:59.728Z"
           },
           {
             "id": "sync-paymaster",
@@ -2633,16 +2635,28 @@
           }
         ],
         "artifacts": {
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-05-05T15:40:08.295Z",
           "indexerCreated": true,
           "worldAddress": "0x00220777fe18921c66f08bb324fd9eab054b91f01c866ecb82cde90855bbc5fa",
           "createGameTxHash": "0x207105bc0b80b9ae0a847b3271c09ae0c576265cc1b7c0b66eab13625abef1a",
           "configureTxHash": "0x2243f939101ef9bef51251281d9c2c30ab3854590bbe50f7d645d030175f0b1",
           "worldConfigTxHash": "0x2243f939101ef9bef51251281d9c2c30ab3854590bbe50f7d645d030175f0b1",
-          "indexerTier": "pro",
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
           "indexerUrl": "https://api.cartridge.gg/x/apac-gladiator-05-05-26-1100/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-05-05T15:41:59.821Z"
+          "lastIndexerDescribeAt": "2026-05-05T15:40:59.727Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "apac-gladiator-05-05-26-1100",
+            "worldAddress": "0x00220777fe18921c66f08bb324fd9eab054b91f01c866ecb82cde90855bbc5fa",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       },
       {
@@ -2655,7 +2669,7 @@
         },
         "seriesGameNumber": 14,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2807,8 +2821,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-05-05T15:41:13.727Z"
           },
           {
             "id": "sync-paymaster",
@@ -2820,7 +2835,23 @@
           "worldAddress": "0x0715847f75716054c5432eb72c296a6635eca208f1e666bcddfc4224d3fa2f38",
           "createGameTxHash": "0x1bf1ddf03fc9a8bbab6daff1a862f1768721726be8de4f153caee62cef50f20",
           "configureTxHash": "0x3b99d0af728370d7eba1826877ed5b4ad91c720db30891e4ef9e360341485b7",
-          "worldConfigTxHash": "0x3b99d0af728370d7eba1826877ed5b4ad91c720db30891e4ef9e360341485b7"
+          "worldConfigTxHash": "0x3b99d0af728370d7eba1826877ed5b4ad91c720db30891e4ef9e360341485b7",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/na-gladiator-06-05-26-0200/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-05-05T15:41:13.727Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "na-gladiator-06-05-26-0200",
+            "worldAddress": "0x0715847f75716054c5432eb72c296a6635eca208f1e666bcddfc4224d3fa2f38",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       },
       {
@@ -2833,7 +2864,7 @@
         },
         "seriesGameNumber": 15,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2985,8 +3016,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-05-05T15:41:29.832Z"
           },
           {
             "id": "sync-paymaster",
@@ -2998,7 +3030,23 @@
           "worldAddress": "0x076f0ba221d7fbadbf36391b5bac1010125821e04e3460dae33c8388e8e0d553",
           "createGameTxHash": "0x3c055134c99d9456cb5053c9642382a1f56833d415d7412eb9cd1f1a17be3cf",
           "configureTxHash": "0x4613b2dedb8d840a9823b0349b9a80fd08c28cd253ea2c9f9d0dbc8aeed7169",
-          "worldConfigTxHash": "0x4613b2dedb8d840a9823b0349b9a80fd08c28cd253ea2c9f9d0dbc8aeed7169"
+          "worldConfigTxHash": "0x4613b2dedb8d840a9823b0349b9a80fd08c28cd253ea2c9f9d0dbc8aeed7169",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/eu-gladiator-06-05-26-1900/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-05-05T15:41:29.832Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "eu-gladiator-06-05-26-1900",
+            "worldAddress": "0x076f0ba221d7fbadbf36391b5bac1010125821e04e3460dae33c8388e8e0d553",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       },
       {
@@ -3011,7 +3059,7 @@
         },
         "seriesGameNumber": 16,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3163,8 +3211,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-05-05T15:41:42.975Z"
           },
           {
             "id": "sync-paymaster",
@@ -3176,7 +3225,23 @@
           "worldAddress": "0x0601359e28e09095f4003d0eebb0858f06124d7f5249f4ed60d339d88bdd57d3",
           "createGameTxHash": "0x253dd285ffa7d9793ac0cb42a113f7bcf055575e47f0afef43071ea84c10fe8",
           "configureTxHash": "0x53a7f01bc4b9ade3cfd7f44fdb8401f211af9d930ec928abad5c36dcccd952",
-          "worldConfigTxHash": "0x53a7f01bc4b9ade3cfd7f44fdb8401f211af9d930ec928abad5c36dcccd952"
+          "worldConfigTxHash": "0x53a7f01bc4b9ade3cfd7f44fdb8401f211af9d930ec928abad5c36dcccd952",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/apac-gladiator-07-05-26-1000/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-05-05T15:41:42.974Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "apac-gladiator-07-05-26-1000",
+            "worldAddress": "0x0601359e28e09095f4003d0eebb0858f06124d7f5249f4ed60d339d88bdd57d3",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       },
       {
@@ -3189,7 +3254,7 @@
         },
         "seriesGameNumber": 17,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3341,8 +3406,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-05-05T15:41:55.718Z"
           },
           {
             "id": "sync-paymaster",
@@ -3354,7 +3420,23 @@
           "worldAddress": "0x0559a3bf71f26929e29400dafd8ac968863d19e24cf64e846e3e533c3a0afb60",
           "createGameTxHash": "0x4d7ae159baeaadeb540b4843c3d121624304250e69fc53928a855f668a7ab42",
           "configureTxHash": "0x31fbe4600b77554c4317061acdcad4cf5f42620785ff049b2717106e270712b",
-          "worldConfigTxHash": "0x31fbe4600b77554c4317061acdcad4cf5f42620785ff049b2717106e270712b"
+          "worldConfigTxHash": "0x31fbe4600b77554c4317061acdcad4cf5f42620785ff049b2717106e270712b",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/na-gladiator-08-05-26-0100/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-05-05T15:41:55.718Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "na-gladiator-08-05-26-0100",
+            "worldAddress": "0x0559a3bf71f26929e29400dafd8ac968863d19e24cf64e846e3e533c3a0afb60",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       },
       {
@@ -3367,7 +3449,7 @@
         },
         "seriesGameNumber": 18,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3519,8 +3601,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-05-05T15:42:11.345Z"
           },
           {
             "id": "sync-paymaster",
@@ -3532,7 +3615,23 @@
           "worldAddress": "0x053e2e8b2c8366cf2902f413f36fd478d7484c60858d08a0452c7ab02fbfac52",
           "createGameTxHash": "0x4d9a996a5731684f922f5bb654c2e41c54167583def3b850f3747a817c03ea1",
           "configureTxHash": "0x14dac909b2bc3088d63caf81667fd319e6f0e68cbfb6a0e3f002160e700413a",
-          "worldConfigTxHash": "0x14dac909b2bc3088d63caf81667fd319e6f0e68cbfb6a0e3f002160e700413a"
+          "worldConfigTxHash": "0x14dac909b2bc3088d63caf81667fd319e6f0e68cbfb6a0e3f002160e700413a",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/eu-gladiator-08-05-26-1800/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-05-05T15:42:11.344Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "eu-gladiator-08-05-26-1800",
+            "worldAddress": "0x053e2e8b2c8366cf2902f413f36fd478d7484c60858d08a0452c7ab02fbfac52",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       }
     ],
@@ -3543,13 +3642,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25385557383-1",
-    "workflowRunId": 25385557383,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-05-05T15:40:37.868Z",
-    "expiresAt": "2026-05-05T16:25:37.868Z"
   }
 }
