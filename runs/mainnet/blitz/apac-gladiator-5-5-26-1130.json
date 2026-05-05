@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/apac-gladiator-5-5-26-1130/25372069613-1.json",
   "latestLaunchRequestId": "25372069613-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-05T10:52:43.775Z",
-  "updatedAt": "2026-05-05T10:52:49.606Z",
+  "updatedAt": "2026-05-05T11:03:01.103Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-05-05T10:52:49.606Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-05-05T10:52:49.606Z",
+      "finishedAt": "2026-05-05T11:03:01.103Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -69,15 +70,10 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "2026-05-05T11:30:00.000Z",
-    "durationSeconds": 3600
-  },
-  "activeLease": {
-    "launchRequestId": "25372069613-1",
-    "workflowRunId": 25372069613,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-05-05T10:52:49.606Z",
-    "expiresAt": "2026-05-05T11:37:49.606Z"
+    "scheduledStartTime": 1777980600,
+    "durationSeconds": 3600,
+    "summaryPath": ".context/game-launch/mainnet-blitz-apac-gladiator-5-5-26-1130.json",
+    "worldAddress": "0x04a3d9c8121e0f35699c9b6ef5939f108093be3068dc43c272237ba52a6534f6",
+    "createGameTxHash": "0x242a144ddfe5e8ad24f929608e923ad488844e9f76af255dd5ad00f6de6c2"
   }
 }
