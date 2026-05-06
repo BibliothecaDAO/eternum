@@ -82,6 +82,8 @@ export const SettingsWindow = () => {
   const { trackName, next: nextTrack } = useMusicPlayer();
   const enableMapZoom = useUIStore((state) => state.enableMapZoom);
   const setEnableMapZoom = useUIStore((state) => state.setEnableMapZoom);
+  const showTransferRoutes = useUIStore((state) => state.showTransferRoutes);
+  const setShowTransferRoutes = useUIStore((state) => state.setShowTransferRoutes);
 
   const playToggleOn = useUISound("ui.toggle_on");
   const playToggleOff = useUISound("ui.toggle_off");
@@ -322,6 +324,20 @@ export const SettingsWindow = () => {
             >
               <Checkbox enabled={enableMapZoom} />
               <div>Enable Map Zoom</div>
+            </div>
+            <div
+              className="flex items-center space-x-2 text-xs cursor-pointer text-gray-gold"
+              onClick={() => {
+                if (showTransferRoutes) {
+                  playToggleOff();
+                } else {
+                  playToggleOn();
+                }
+                setShowTransferRoutes(!showTransferRoutes);
+              }}
+            >
+              <Checkbox enabled={showTransferRoutes} />
+              <div>Show Trade Routes</div>
             </div>
           </section>
 

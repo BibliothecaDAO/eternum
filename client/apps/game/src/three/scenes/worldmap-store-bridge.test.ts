@@ -19,6 +19,8 @@ const createWorldmapStoreState = (overrides: Partial<WorldmapStoreState> = {}): 
     selectableArmies: [],
     playerStructures: [],
     publicIncomingTroopArrivalsByStructure: {},
+    showTransferRoutes: true,
+    transferRouteOverlayRoutes: [],
     entityActions: {
       actionPaths: new Map(),
       hoveredHex: null,
@@ -63,6 +65,8 @@ describe("worldmap store bridge", () => {
       onSelectableArmiesChanged: vi.fn(),
       onPlayerStructuresChanged: vi.fn(),
       onIncomingTroopArrivalsChanged: vi.fn(),
+      onShowTransferRoutesChanged: vi.fn(),
+      onTransferRouteOverlayRoutesChanged: vi.fn(),
       onEntityActionsChanged: vi.fn(),
       onSelectedHexChanged: vi.fn(),
       onMapZoomPolicyChanged: vi.fn(),
@@ -73,19 +77,23 @@ describe("worldmap store bridge", () => {
       ...callbacks,
     });
 
-    expect(subscriptions).toHaveLength(6);
-    expect(listeners).toHaveLength(6);
+    expect(subscriptions).toHaveLength(8);
+    expect(listeners).toHaveLength(8);
 
     listeners[0].listener([{ entityId: 7 }] as never, [] as never);
     listeners[1].listener([{ entityId: 11 }] as never, [] as never);
     listeners[2].listener({ 99: [] } as never, {} as never);
-    listeners[3].listener({ selectedEntityId: 42 } as never, { selectedEntityId: null } as never);
-    listeners[4].listener({ col: 1, row: 2 } as never, null as never);
-    listeners[5].listener(true as never, false as never);
+    listeners[3].listener(false as never, true as never);
+    listeners[4].listener([{ id: "live:1" }] as never, [] as never);
+    listeners[5].listener({ selectedEntityId: 42 } as never, { selectedEntityId: null } as never);
+    listeners[6].listener({ col: 1, row: 2 } as never, null as never);
+    listeners[7].listener(true as never, false as never);
 
     expect(callbacks.onSelectableArmiesChanged).toHaveBeenCalledWith([{ entityId: 7 }], []);
     expect(callbacks.onPlayerStructuresChanged).toHaveBeenCalledWith([{ entityId: 11 }], []);
     expect(callbacks.onIncomingTroopArrivalsChanged).toHaveBeenCalledWith({ 99: [] }, {});
+    expect(callbacks.onShowTransferRoutesChanged).toHaveBeenCalledWith(false, true);
+    expect(callbacks.onTransferRouteOverlayRoutesChanged).toHaveBeenCalledWith([{ id: "live:1" }], []);
     expect(callbacks.onEntityActionsChanged).toHaveBeenCalledWith({ selectedEntityId: 42 }, { selectedEntityId: null });
     expect(callbacks.onSelectedHexChanged).toHaveBeenCalledWith({ col: 1, row: 2 }, null);
     expect(callbacks.onMapZoomPolicyChanged).toHaveBeenCalledTimes(1);
@@ -122,6 +130,8 @@ describe("worldmap store bridge", () => {
       onSelectableArmiesChanged,
       onPlayerStructuresChanged: vi.fn(),
       onIncomingTroopArrivalsChanged: vi.fn(),
+      onShowTransferRoutesChanged: vi.fn(),
+      onTransferRouteOverlayRoutesChanged: vi.fn(),
       onEntityActionStateSynced: vi.fn(),
       hasMissingActionPathOwnership: () => false,
       clearEntitySelection: vi.fn(),
@@ -156,6 +166,8 @@ describe("worldmap store bridge", () => {
       onSelectableArmiesChanged: vi.fn(),
       onPlayerStructuresChanged: vi.fn(),
       onIncomingTroopArrivalsChanged: vi.fn(),
+      onShowTransferRoutesChanged: vi.fn(),
+      onTransferRouteOverlayRoutesChanged: vi.fn(),
       onEntityActionStateSynced: vi.fn(),
       hasMissingActionPathOwnership: () => true,
       clearEntitySelection,
@@ -175,6 +187,8 @@ describe("worldmap store bridge", () => {
       selectableArmies: [{ entityId: 1 }] as never,
       playerStructures: [{ entityId: 2 }] as never,
       publicIncomingTroopArrivalsByStructure: { 3: [{ count: 4 }] } as never,
+      showTransferRoutes: true,
+      transferRouteOverlayRoutes: [{ id: "live:route" }] as never,
       entityActions: {
         actionPaths: new Map([["1,1", { action: "move" }]]),
         hoveredHex: { col: 1, row: 1 },
@@ -187,6 +201,8 @@ describe("worldmap store bridge", () => {
       onSelectableArmiesChanged: vi.fn(),
       onPlayerStructuresChanged: vi.fn(),
       onIncomingTroopArrivalsChanged: vi.fn(),
+      onShowTransferRoutesChanged: vi.fn(),
+      onTransferRouteOverlayRoutesChanged: vi.fn(),
       onEntityActionStateSynced: vi.fn(),
       clearEntitySelection: vi.fn(),
       onSelectedHexChanged: vi.fn(),
@@ -205,6 +221,8 @@ describe("worldmap store bridge", () => {
     expect(callbacks.onSelectableArmiesChanged).toHaveBeenCalledWith([{ entityId: 1 }]);
     expect(callbacks.onPlayerStructuresChanged).toHaveBeenCalledWith([{ entityId: 2 }]);
     expect(callbacks.onIncomingTroopArrivalsChanged).toHaveBeenCalledWith({ 3: [{ count: 4 }] });
+    expect(callbacks.onShowTransferRoutesChanged).toHaveBeenCalledWith(true);
+    expect(callbacks.onTransferRouteOverlayRoutesChanged).toHaveBeenCalledWith([{ id: "live:route" }]);
     expect(callbacks.onEntityActionStateSynced).toHaveBeenCalledWith(state.entityActions);
     expect(callbacks.onSelectedHexChanged).toHaveBeenCalledWith({ col: 5, row: 6 });
     expect(callbacks.onMapZoomPolicyChanged).toHaveBeenCalledTimes(1);

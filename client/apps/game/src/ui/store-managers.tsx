@@ -2,7 +2,14 @@ import { POLLING_INTERVALS } from "@/config/polling";
 import { usePlayerStructureSync } from "@/hooks/helpers/use-player-structure-sync";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
+import { useStoryEvents } from "@/hooks/store/use-story-events-store";
+import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import {
+  buildTransferRouteOverlayRoutes,
+  mergeRetainedTransferRouteOverlayRoutes,
+  type TransferRouteOverlayRoute,
+} from "@/lib/transfer-route-overlay";
 import { sqlApi } from "@/services/api";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
@@ -16,6 +23,9 @@ import {
   getEntityIdFromKeys,
   getGuildFromPlayerAddress,
   LeaderboardManager,
+  MAP_DATA_REFRESH_INTERVAL,
+  MapDataStore,
+  Position,
   ResourceArrivalManager,
   SelectableArmy,
   summarizeIncomingTroopArrivals,
@@ -264,6 +274,80 @@ const PublicTroopArrivalsStoreManager = () => {
 
     setPublicIncomingTroopArrivalsByStructure(summarizeIncomingTroopArrivals(formatArrivals(rawArrivals), nowSeconds));
   }, [chainNowMs, components.ResourceArrival, resourceArrivals, setPublicIncomingTroopArrivalsByStructure]);
+
+  return null;
+};
+
+const TransferRouteOverlayStoreManager = () => {
+  const chainNowMs = useChainTimeStore((state) => state.nowMs);
+  const setTransferRouteOverlayRoutes = useUIStore((state) => state.setTransferRouteOverlayRoutes);
+  const transferAutomationEntriesById = useTransferAutomationStore((state) => state.entries);
+  const { data: storyEvents = [] } = useStoryEvents(350);
+  const mapDataStore = useMemo(() => MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi), []);
+  const [mapDataVersion, setMapDataVersion] = useState(0);
+  const previousRoutesRef = useRef<TransferRouteOverlayRoute[]>([]);
+
+  const transferAutomationEntries = useMemo(
+    () => Object.values(transferAutomationEntriesById),
+    [transferAutomationEntriesById],
+  );
+
+  useEffect(() => {
+    const handleRefresh = () => setMapDataVersion((version) => version + 1);
+    mapDataStore.onRefresh(handleRefresh);
+    return () => mapDataStore.offRefresh(handleRefresh);
+  }, [mapDataStore]);
+
+  useEffect(() => {
+    if (mapDataStore.getStructureCount() > 0 || mapDataStore.getArmyCount() > 0) {
+      return;
+    }
+
+    void mapDataStore.refresh().catch((error) => {
+      console.error("[TransferRouteOverlay] Failed to hydrate map data", error);
+    });
+  }, [mapDataStore]);
+
+  useEffect(() => {
+    const currentTimeMs = chainNowMs > 0 ? chainNowMs : Date.now();
+    const nextRoutes = buildTransferRouteOverlayRoutes({
+      currentTimeMs,
+      liveEvents: storyEvents,
+      automationEntries: transferAutomationEntries,
+      resolveEntityHex: (entityId) => resolveTransferRouteEntityHex(mapDataStore, entityId),
+    });
+    const routes = mergeRetainedTransferRouteOverlayRoutes({
+      currentTimeMs,
+      nextRoutes,
+      previousRoutes: previousRoutesRef.current,
+    });
+
+    previousRoutesRef.current = routes;
+    setTransferRouteOverlayRoutes(routes);
+  }, [chainNowMs, mapDataStore, mapDataVersion, setTransferRouteOverlayRoutes, storyEvents, transferAutomationEntries]);
+
+  useEffect(
+    () => () => {
+      previousRoutesRef.current = [];
+    },
+    [],
+  );
+
+  return null;
+};
+
+const resolveTransferRouteEntityHex = (mapDataStore: MapDataStore, entityId: number) => {
+  const structure = mapDataStore.getStructureById(entityId);
+  if (structure) {
+    const normalized = new Position({ x: structure.coordX, y: structure.coordY }).getNormalized();
+    return { col: Number(normalized.x), row: Number(normalized.y) };
+  }
+
+  const army = mapDataStore.getArmyById(entityId);
+  if (army) {
+    const normalized = new Position({ x: army.coordX, y: army.coordY }).getNormalized();
+    return { col: Number(normalized.x), row: Number(normalized.y) };
+  }
 
   return null;
 };
@@ -640,6 +724,7 @@ export const StoreManagers = () => {
     <>
       <ResourceArrivalsStoreManager />
       <PublicTroopArrivalsStoreManager />
+      <TransferRouteOverlayStoreManager />
       <RelicsStoreManager />
       <AutoRegisterPointsStoreManager />
       <PlayerStructuresStoreManager />

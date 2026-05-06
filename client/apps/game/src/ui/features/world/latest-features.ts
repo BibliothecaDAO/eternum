@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-06",
+    title: "Trade Route Overlay",
+    description:
+      "Added pulsing map arcs for live transfers and planned automation routes, with a quick toggle so active trade movement is visible across the world.",
+    type: "feature",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-06",
     title: "Map Sync Recovery",
     description:
       "Improved map stream recovery so delayed spatial updates enter a reconnecting state, retry cleanly, and surface network trouble when the map cannot restore live updates.",

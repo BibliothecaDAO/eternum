@@ -9,6 +9,7 @@ interface WorldmapOwnedManagers {
   chestManager?: Destroyable | null;
   fxManager?: Destroyable | null;
   resourceFXManager?: Destroyable | null;
+  transferRouteOverlayManager?: Destroyable | null;
 }
 
 export function destroyWorldmapOwnedManagers(managers: WorldmapOwnedManagers): void {
@@ -18,4 +19,5 @@ export function destroyWorldmapOwnedManagers(managers: WorldmapOwnedManagers): v
   managers.chestManager?.destroy();
   managers.fxManager?.destroy();
   managers.resourceFXManager?.destroy();
+  managers.transferRouteOverlayManager?.destroy();
 }

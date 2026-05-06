@@ -47,6 +47,7 @@ import Info from "lucide-react/dist/esm/icons/info";
 import Loader from "lucide-react/dist/esm/icons/loader";
 import MapIcon from "lucide-react/dist/esm/icons/map";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import RouteIcon from "lucide-react/dist/esm/icons/route";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
 
@@ -182,6 +183,28 @@ const PanelTabs = ({
     })}
   </div>
 );
+
+const TransferRouteToggleButton = () => {
+  const showTransferRoutes = useUIStore((state) => state.showTransferRoutes);
+  const setShowTransferRoutes = useUIStore((state) => state.setShowTransferRoutes);
+
+  return (
+    <button
+      type="button"
+      onClick={() => setShowTransferRoutes(!showTransferRoutes)}
+      aria-pressed={showTransferRoutes}
+      className={cn(
+        "pointer-events-auto flex h-11 w-11 items-center justify-center rounded-md border transition",
+        showTransferRoutes
+          ? "border-gold/80 bg-black/80 text-gold shadow-[0_6px_18px_rgba(255,209,128,0.25)] ring-1 ring-gold/40"
+          : "border-gold/30 bg-black/70 text-gold/70 hover:border-gold/60 hover:text-gold",
+      )}
+      title="Show Trade Routes"
+    >
+      <RouteIcon className="h-4 w-4" />
+    </button>
+  );
+};
 
 const MapTilePanel = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -1014,6 +1037,11 @@ export const BottomRightPanel = memo(() => {
           onSelect={handleTabToggle}
           className="absolute right-2 bottom-full pb-2"
         />
+        {isMapView ? (
+          <div className="absolute right-[104px] bottom-full pb-2">
+            <TransferRouteToggleButton />
+          </div>
+        ) : null}
         <div className="pointer-events-auto">
           <div className={cn(activeTab === "tile" && isPanelOpen ? "block" : "hidden")}>
             {isMapView ? <MapTilePanel /> : <LocalTilePanel />}

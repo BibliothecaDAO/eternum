@@ -19,6 +19,10 @@ interface RegisterWorldmapStoreBridgeInput {
   onIncomingTroopArrivalsChanged: (
     publicIncomingTroopArrivalsByStructure: WorldmapStoreState["publicIncomingTroopArrivalsByStructure"],
   ) => void;
+  onShowTransferRoutesChanged: (showTransferRoutes: WorldmapStoreState["showTransferRoutes"]) => void;
+  onTransferRouteOverlayRoutesChanged: (
+    transferRouteOverlayRoutes: WorldmapStoreState["transferRouteOverlayRoutes"],
+  ) => void;
   onEntityActionsChanged: (
     nextEntityActions: WorldmapStoreState["entityActions"],
     previousEntityActions: WorldmapStoreState["entityActions"] | undefined,
@@ -41,6 +45,10 @@ interface SyncWorldmapStoreBridgeStateInput {
   onIncomingTroopArrivalsChanged: (
     publicIncomingTroopArrivalsByStructure: WorldmapStoreState["publicIncomingTroopArrivalsByStructure"],
   ) => void;
+  onShowTransferRoutesChanged: (showTransferRoutes: WorldmapStoreState["showTransferRoutes"]) => void;
+  onTransferRouteOverlayRoutesChanged: (
+    transferRouteOverlayRoutes: WorldmapStoreState["transferRouteOverlayRoutes"],
+  ) => void;
   onEntityActionStateSynced: (entityActions: WorldmapStoreState["entityActions"]) => void;
   hasMissingActionPathOwnership: () => boolean;
   clearEntitySelection: () => void;
@@ -59,6 +67,8 @@ export function registerWorldmapStoreBridge({
   onSelectableArmiesChanged,
   onPlayerStructuresChanged,
   onIncomingTroopArrivalsChanged,
+  onShowTransferRoutesChanged,
+  onTransferRouteOverlayRoutesChanged,
   onEntityActionsChanged,
   onSelectedHexChanged,
   onMapZoomPolicyChanged,
@@ -67,6 +77,8 @@ export function registerWorldmapStoreBridge({
     store.subscribe((state) => state.selectableArmies, onSelectableArmiesChanged),
     store.subscribe((state) => state.playerStructures, onPlayerStructuresChanged),
     store.subscribe((state) => state.publicIncomingTroopArrivalsByStructure, onIncomingTroopArrivalsChanged),
+    store.subscribe((state) => state.showTransferRoutes, onShowTransferRoutesChanged),
+    store.subscribe((state) => state.transferRouteOverlayRoutes, onTransferRouteOverlayRoutesChanged),
     store.subscribe((state) => state.entityActions, onEntityActionsChanged),
     store.subscribe((state) => state.selectedHex, onSelectedHexChanged),
     store.subscribe(
@@ -95,6 +107,8 @@ export function syncWorldmapStoreBridgeState({
   onSelectableArmiesChanged,
   onPlayerStructuresChanged,
   onIncomingTroopArrivalsChanged,
+  onShowTransferRoutesChanged,
+  onTransferRouteOverlayRoutesChanged,
   onEntityActionStateSynced,
   hasMissingActionPathOwnership,
   clearEntitySelection,
@@ -112,6 +126,8 @@ export function syncWorldmapStoreBridgeState({
   onSelectableArmiesChanged(uiState.selectableArmies);
   onPlayerStructuresChanged(uiState.playerStructures);
   onIncomingTroopArrivalsChanged(uiState.publicIncomingTroopArrivalsByStructure);
+  onShowTransferRoutesChanged(uiState.showTransferRoutes);
+  onTransferRouteOverlayRoutesChanged(uiState.transferRouteOverlayRoutes);
   onEntityActionStateSynced(uiState.entityActions);
 
   if (hasMissingActionPathOwnership()) {

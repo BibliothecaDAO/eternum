@@ -114,6 +114,7 @@ import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { ArrivalGhostManager } from "../managers/arrival-ghost-manager";
+import { TransferRouteOverlayManager } from "../managers/transfer-route-overlay-manager";
 import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
 import { SceneName, type ArmyData } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
@@ -955,6 +956,7 @@ export default class WorldmapScene extends WarpTravel {
   private fxManager!: FXManager;
   private arrivalGhostManager!: ArrivalGhostManager;
   private resourceFXManager!: ResourceFXManager;
+  private transferRouteOverlayManager!: TransferRouteOverlayManager;
   private armyIndex: number = 0;
   private selectableArmies: SelectableArmy[] = [];
   private structureIndex: number = 0;
@@ -1064,6 +1066,7 @@ export default class WorldmapScene extends WarpTravel {
   private initializeWorldmapSceneServices(dojoContext: SetupResult): void {
     this.fxManager = new FXManager(this.scene, 1);
     this.resourceFXManager = new ResourceFXManager(this.scene, 1.2);
+    this.transferRouteOverlayManager = new TransferRouteOverlayManager(this.scene);
 
     if (MEMORY_MONITORING_ENABLED) {
       this.memoryMonitor = new MemoryMonitor({
@@ -8038,6 +8041,7 @@ export default class WorldmapScene extends WarpTravel {
     this.arrivalGhostManager.update(deltaTime);
     this.fxManager.update(deltaTime);
     this.resourceFXManager.update(deltaTime);
+    this.transferRouteOverlayManager.update(deltaTime);
     this.selectionPulseManager.update(deltaTime);
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime, animationContext);
@@ -8576,6 +8580,7 @@ export default class WorldmapScene extends WarpTravel {
       chestManager: this.chestManager,
       fxManager: this.fxManager,
       resourceFXManager: this.resourceFXManager,
+      transferRouteOverlayManager: this.transferRouteOverlayManager,
     });
     this.updateCameraTargetHexThrottled?.cancel();
     this.minimapCameraMoveThrottled?.cancel();
@@ -8892,6 +8897,12 @@ export default class WorldmapScene extends WarpTravel {
       onIncomingTroopArrivalsChanged: (publicIncomingTroopArrivalsByStructure) => {
         this.structureManager.setIncomingTroopArrivalsByStructure(publicIncomingTroopArrivalsByStructure);
       },
+      onShowTransferRoutesChanged: (showTransferRoutes) => {
+        this.transferRouteOverlayManager.setEnabled(showTransferRoutes);
+      },
+      onTransferRouteOverlayRoutesChanged: (transferRouteOverlayRoutes) => {
+        this.transferRouteOverlayManager.setRoutes(transferRouteOverlayRoutes);
+      },
       onEntityActionsChanged: (nextEntityActions, previousEntityActions) =>
         this.handleEntityActionsStoreUpdate(nextEntityActions, previousEntityActions),
       onSelectedHexChanged: (selectedHex) => {
@@ -8974,6 +8985,12 @@ export default class WorldmapScene extends WarpTravel {
       onPlayerStructuresChanged: (playerStructures) => this.updatePlayerStructures(playerStructures),
       onIncomingTroopArrivalsChanged: (publicIncomingTroopArrivalsByStructure) => {
         this.structureManager.setIncomingTroopArrivalsByStructure(publicIncomingTroopArrivalsByStructure);
+      },
+      onShowTransferRoutesChanged: (showTransferRoutes) => {
+        this.transferRouteOverlayManager.setEnabled(showTransferRoutes);
+      },
+      onTransferRouteOverlayRoutesChanged: (transferRouteOverlayRoutes) => {
+        this.transferRouteOverlayManager.setRoutes(transferRouteOverlayRoutes);
       },
       onEntityActionStateSynced: () => this.syncEntityActionPathsTransitionToken(),
       hasMissingActionPathOwnership: () => this.isMissingActionPathOwnershipState(),

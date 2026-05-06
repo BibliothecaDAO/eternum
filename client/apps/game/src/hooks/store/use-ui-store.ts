@@ -1,4 +1,5 @@
 import { BattleViewInfo, LeftView } from "@/types";
+import type { TransferRouteOverlayRoute } from "@/lib/transfer-route-overlay";
 import { ContextMenuState } from "@/types/context-menu";
 import { SelectableArmy } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress, Direction } from "@bibliothecadao/types";
@@ -183,6 +184,11 @@ interface UIStore {
   // map zoom controls
   enableMapZoom: boolean;
   setEnableMapZoom: (enable: boolean) => void;
+  // transfer route overlay
+  showTransferRoutes: boolean;
+  setShowTransferRoutes: (show: boolean) => void;
+  transferRouteOverlayRoutes: TransferRouteOverlayRoute[];
+  setTransferRouteOverlayRoutes: (routes: TransferRouteOverlayRoute[]) => void;
 }
 
 export type AppStore = UIStore & PopupsStore & ThreeStore & BuildModeStore & RealmStore & WorldStore;
@@ -343,5 +349,13 @@ export const useUIStore = create(
       set({ enableMapZoom: enable });
       localStorage.setItem("enableMapZoom", String(enable));
     },
+    // transfer route overlay
+    showTransferRoutes: readLocalBool("showTransferRoutes", true),
+    setShowTransferRoutes: (show: boolean) => {
+      set({ showTransferRoutes: show });
+      localStorage.setItem("showTransferRoutes", String(show));
+    },
+    transferRouteOverlayRoutes: [],
+    setTransferRouteOverlayRoutes: (routes: TransferRouteOverlayRoute[]) => set({ transferRouteOverlayRoutes: routes }),
   })),
 );
