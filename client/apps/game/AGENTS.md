@@ -46,11 +46,16 @@ export const latestFeatures = [
 
 Game UI uses dark surfaces, so border color must always be intentional.
 
-- Never use bare Tailwind `border`, `border-t`, `border-r`, `border-b`, or `border-l` on game UI surfaces unless an explicit border color class is also present on that same element.
-- Always pair border width utilities with a color utility such as `border-gold/20`, `border-rose-500/30`, or `border-white/10`.
-- Do not rely on Tailwind's default border color for chips, pills, cards, badges, icon wrappers, buttons, toggles, or panel edges.
-- When the same visual concept appears in more than one place, centralize its border and surface styling in a shared helper or component instead of duplicating inline class strings.
-- Before changing a styled UI pattern, search for every renderer of that pattern and keep them on the same shared presentation path.
+- Never use bare Tailwind `border`, `border-t`, `border-r`, `border-b`, or `border-l` on game UI surfaces unless an
+  explicit border color class is also present on that same element.
+- Always pair border width utilities with a color utility such as `border-gold/20`, `border-rose-500/30`, or
+  `border-white/10`.
+- Do not rely on Tailwind's default border color for chips, pills, cards, badges, icon wrappers, buttons, toggles, or
+  panel edges.
+- When the same visual concept appears in more than one place, centralize its border and surface styling in a shared
+  helper or component instead of duplicating inline class strings.
+- Before changing a styled UI pattern, search for every renderer of that pattern and keep them on the same shared
+  presentation path.
 
 Example:
 
