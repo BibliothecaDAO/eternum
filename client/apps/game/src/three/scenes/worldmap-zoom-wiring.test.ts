@@ -95,4 +95,11 @@ describe("worldmap zoom wiring", () => {
     expect(source).toMatch(/updateWorldmapZoomSpring\(/);
     expect(source).not.toMatch(/this\.cameraAnimate\(\s*newPosition,\s*target,\s*duration/);
   });
+
+  it("exposes active zoom spring as transient render performance mode", () => {
+    const source = readSceneSource("worldmap.tsx");
+
+    expect(source).toMatch(/isTransientRenderPerformanceModeActive\(\)/);
+    expect(source).toMatch(/return this\.isWorldmapZoomSpringActive/);
+  });
 });

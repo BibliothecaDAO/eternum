@@ -1880,6 +1880,10 @@ export default class WorldmapScene extends WarpTravel {
     return this.zoomCoordinator.getSnapshot().stableBand;
   }
 
+  public isTransientRenderPerformanceModeActive(): boolean {
+    return this.isWorldmapZoomSpringActive;
+  }
+
   public override addCameraViewListener(listener: (view: CameraView) => void) {
     this.worldmapCameraViewListeners.add(listener);
     listener(this.getCurrentCameraView());

@@ -19,6 +19,7 @@ export interface RendererEffectsBridgeRuntime {
   applyEnvironment(): void;
   applyQualityFeatures(features: QualityFeatures): void;
   dispose(): void;
+  setTransientRenderPerformanceMode(active: boolean): void;
   setupPostProcessingEffects(): void;
   subscribeToQualityController(): void;
   updateWeatherPostProcessing(): void;
@@ -46,6 +47,10 @@ class GameRendererEffectsBridgeRuntime implements RendererEffectsBridgeRuntime {
 
   public applyQualityFeatures(features: QualityFeatures): void {
     this.getOrCreateEffectsRuntime().applyQualityFeatures(features);
+  }
+
+  public setTransientRenderPerformanceMode(active: boolean): void {
+    this.effectsRuntime?.setTransientRenderPerformanceMode(active);
   }
 
   public subscribeToQualityController(): void {

@@ -22,6 +22,7 @@ import {
 import type { RendererBackendV2, RendererPostProcessController, RendererPostProcessPlan } from "./renderer-backend-v2";
 import type { RendererSurfaceLike } from "./renderer-backend";
 import type { QualityFeatures } from "./utils/quality-controller";
+import { resolveRendererPresentationQualityFeatures } from "./renderer-transient-performance-mode";
 import { resolveWebgpuPostprocessPolicy } from "./webgpu-postprocess-policy";
 
 type TrackableFolderLike = {
@@ -68,6 +69,7 @@ export interface RendererEffectsRuntime {
   applyQualityFeatures(features: QualityFeatures): void;
   hasPostProcessing(): boolean;
   resolveRendererToneMappingMode(mode: ToneMappingMode): RendererPostProcessPlan["toneMapping"]["mode"];
+  setTransientRenderPerformanceMode(active: boolean): void;
   setupPostProcessingEffects(features: QualityFeatures): void;
   updateWeatherPostProcessing(weatherState: { intensity: number; stormIntensity: number }): void;
 }
@@ -88,6 +90,8 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
   };
   private weatherBaseValuesInitialized = false;
   private weatherPostProcessingEnabled = true;
+  private currentQualityFeatures?: QualityFeatures;
+  private transientRenderPerformanceModeActive = false;
 
   constructor(private readonly input: CreateRendererEffectsRuntimeInput) {}
 
@@ -97,6 +101,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
       return;
     }
 
+    this.currentQualityFeatures = { ...features };
     this.postProcessingConfig = effectsConfig;
     this.rebuildPostProcessing(features);
     this.setupToneMappingGUI(features, effectsConfig);
@@ -127,6 +132,37 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
   }
 
   public applyQualityFeatures(features: QualityFeatures): void {
+    this.currentQualityFeatures = { ...features };
+    this.applyRendererPresentationFeatures(features);
+    this.input.scenes.worldmapScene.applyQualityFeatures(features);
+    this.input.scenes.fastTravelScene?.applyQualityFeatures(features);
+    this.input.scenes.hexceptionScene.applyQualityFeatures(features);
+  }
+
+  public setTransientRenderPerformanceMode(active: boolean): void {
+    if (this.transientRenderPerformanceModeActive === active) {
+      return;
+    }
+
+    this.transientRenderPerformanceModeActive = active;
+    if (!this.currentQualityFeatures) {
+      return;
+    }
+
+    this.applyRendererPresentationFeatures(this.currentQualityFeatures);
+  }
+
+  private applyRendererPresentationFeatures(features: QualityFeatures): void {
+    const presentationFeatures = resolveRendererPresentationQualityFeatures({
+      baseFeatures: features,
+      transientPerformanceModeActive: this.transientRenderPerformanceModeActive,
+    });
+
+    this.applyRendererQualityFeatures(presentationFeatures);
+    this.applyRendererPostProcessingFeatures(presentationFeatures);
+  }
+
+  private applyRendererQualityFeatures(features: QualityFeatures): void {
     const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
     const resolvedPixelRatio = (this.input.resolvePixelRatio ?? ((value: number) => value))(
       Math.min(devicePixelRatio, features.pixelRatio),
@@ -138,16 +174,14 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
       shadows: features.shadows,
       width: window.innerWidth,
     });
+  }
 
+  private applyRendererPostProcessingFeatures(features: QualityFeatures): void {
     if (this.postProcessingConfig) {
       this.rebuildPostProcessing(features);
     } else {
       setRendererDiagnosticDegradations([]);
     }
-
-    this.input.scenes.worldmapScene.applyQualityFeatures(features);
-    this.input.scenes.fastTravelScene?.applyQualityFeatures(features);
-    this.input.scenes.hexceptionScene.applyQualityFeatures(features);
   }
 
   public updateWeatherPostProcessing(weatherState: { intensity: number; stormIntensity: number }): void {

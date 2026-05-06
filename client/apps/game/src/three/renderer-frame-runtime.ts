@@ -12,6 +12,7 @@ interface RendererFrameSceneController {
   getInteractionOverlayScene(): Scene;
   getScene(): Scene;
   hasActiveLabelAnimations(): boolean;
+  isTransientRenderPerformanceModeActive?(): boolean;
   setWeatherAtmosphereState(weatherState: unknown): void;
   update(deltaTime: number): void;
 }
@@ -41,7 +42,13 @@ interface RunRendererFrameInput {
   currentTime: number;
   cycleProgress: number;
   deltaTime: number;
-  effectsBridgeRuntime?: Pick<{ updateWeatherPostProcessing(): void }, "updateWeatherPostProcessing">;
+  effectsBridgeRuntime?: Pick<
+    {
+      setTransientRenderPerformanceMode?(active: boolean): void;
+      updateWeatherPostProcessing(): void;
+    },
+    "setTransientRenderPerformanceMode" | "updateWeatherPostProcessing"
+  >;
   fastTravelScene?: RendererFrameSceneController;
   hexceptionScene: RendererFrameSceneController;
   hudScene: RendererFrameHudController;
@@ -70,6 +77,10 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
     return false;
   }
 
+  syncTransientRenderPerformanceMode({
+    effectsBridgeRuntime: input.effectsBridgeRuntime,
+    sceneController: resolvedFrame.sceneController,
+  });
   resolvedFrame.sceneController.update(input.deltaTime);
 
   const shouldRenderLabels = input.labelRuntime.shouldRender({
@@ -90,6 +101,18 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
   input.captureStatsSample();
 
   return true;
+}
+
+function syncTransientRenderPerformanceMode(input: {
+  effectsBridgeRuntime?: Pick<
+    { setTransientRenderPerformanceMode?(active: boolean): void },
+    "setTransientRenderPerformanceMode"
+  >;
+  sceneController: RendererFrameSceneController;
+}): void {
+  input.effectsBridgeRuntime?.setTransientRenderPerformanceMode?.(
+    input.sceneController.isTransientRenderPerformanceModeActive?.() ?? false,
+  );
 }
 
 function advanceHudAndResolveWeatherState(

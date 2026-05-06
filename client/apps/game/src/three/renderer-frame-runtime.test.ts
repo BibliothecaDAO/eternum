@@ -150,6 +150,42 @@ describe("runRendererFrame", () => {
     expect(snapshotRendererDiagnostics().sceneName).toBe(SceneName.WorldMap);
   });
 
+  it("syncs transient render performance mode from the active scene", () => {
+    const hudScene = createHudScene();
+    const worldmapScene = {
+      ...createScene("worldmap", 1),
+      isTransientRenderPerformanceModeActive: vi.fn(() => true),
+    };
+    const hexceptionScene = createScene("hexception", 2);
+    const backend = createBackend();
+    const labelRuntime = {
+      render: vi.fn(),
+      shouldRender: vi.fn(() => false),
+    };
+    const effectsBridgeRuntime = {
+      setTransientRenderPerformanceMode: vi.fn(),
+      updateWeatherPostProcessing: vi.fn(),
+    };
+
+    runRendererFrame({
+      backend: backend as never,
+      camera: "camera" as never,
+      captureStatsSample: vi.fn(),
+      currentScene: SceneName.WorldMap,
+      currentTime: 160,
+      cycleProgress: 0.5,
+      deltaTime: 0.02,
+      fastTravelScene: undefined,
+      hexceptionScene: hexceptionScene as never,
+      hudScene: hudScene as never,
+      labelRuntime: labelRuntime as never,
+      effectsBridgeRuntime,
+      worldmapScene: worldmapScene as never,
+    });
+
+    expect(effectsBridgeRuntime.setTransientRenderPerformanceMode).toHaveBeenCalledWith(true);
+  });
+
   it("routes fast-travel rendering and label activity through the travel scene when available", () => {
     const hudScene = createHudScene();
     const worldmapScene = createScene("worldmap", 1);
