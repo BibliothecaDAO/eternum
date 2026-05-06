@@ -38,6 +38,7 @@ import {
   SeasonEnded,
   SettlementPlannerSnapshot,
   SettlementPlannerTile,
+  ActiveTransferData,
   StoryEventData,
   StructureDetails,
   StructureLocation,
@@ -74,6 +75,7 @@ import { RESOURCE_QUERIES } from "./resource";
 import { extractRelicsFromResourceData } from "./relics-utils";
 import { SEASON_QUERIES } from "./season";
 import { STORY_QUERIES } from "./story";
+import { buildActiveTransfersStoryEventsQuery } from "./story";
 import { STRUCTURE_QUERIES } from "./structure";
 import { TILES_QUERIES } from "./tiles";
 import { TRADING_QUERIES } from "./trading";
@@ -108,6 +110,147 @@ const buildCacheUrl = (baseUrl: string, path: string): URL => {
 // within a few hundred ms. gRPC subscription reconciles any staleness within a block.
 const STRUCTURES_BY_OWNER_TTL_MS = 500;
 const structuresByOwnerCache = new Map<string, { promise: Promise<StructureLocation[]>; expiresAt: number }>();
+const DEFAULT_ACTIVE_TRANSFERS_LIMIT = 500;
+const DEFAULT_ACTIVE_TRANSFERS_LOOKBACK_SECONDS = 1_800;
+
+type ActiveTransferStoryRow = Pick<
+  StoryEventData,
+  | "id"
+  | "event_id"
+  | "tx_hash"
+  | "timestamp"
+  | "resource_transfer_from_entity_id"
+  | "resource_transfer_to_entity_id"
+  | "resource_transfer_resources"
+  | "resource_transfer_is_mint"
+  | "resource_transfer_travel_time"
+>;
+
+const parseActiveTransferNumber = (value: unknown): number | null => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === "bigint") {
+    return Number(value);
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith("0x")) {
+    return Number(BigInt(trimmed));
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const parseActiveTransferPositiveInteger = (value: unknown): number | null => {
+  const parsed = parseActiveTransferNumber(value);
+  if (parsed === null) {
+    return null;
+  }
+
+  const integer = Math.floor(parsed);
+  return integer > 0 ? integer : null;
+};
+
+const parseActiveTransferResourceIds = (raw: unknown): number[] => {
+  const parseMaybeJson = (value: unknown): unknown => {
+    if (typeof value !== "string") {
+      return value;
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed.startsWith("[") && !trimmed.startsWith("{")) {
+      return value;
+    }
+
+    try {
+      return JSON.parse(trimmed) as unknown;
+    } catch {
+      return value;
+    }
+  };
+
+  const parsed = parseMaybeJson(raw);
+  const candidates = Array.isArray(parsed)
+    ? parsed
+    : parsed && typeof parsed === "object"
+      ? Object.values(parsed as Record<string, unknown>)
+      : [];
+
+  const resourceIds = candidates
+    .map((entry) => {
+      if (Array.isArray(entry)) {
+        return parseActiveTransferPositiveInteger(entry[0]);
+      }
+
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+
+      const candidate = entry as { resourceId?: unknown; resource?: unknown };
+      return parseActiveTransferPositiveInteger(candidate.resourceId ?? candidate.resource);
+    })
+    .filter((resourceId): resourceId is number => resourceId !== null);
+
+  return Array.from(new Set(resourceIds));
+};
+
+const resolveActiveTransferId = (
+  row: ActiveTransferStoryRow,
+  sourceEntityId: number,
+  destinationEntityId: number,
+  startedAtMs: number,
+): string => row.event_id ?? row.id ?? row.tx_hash ?? `${sourceEntityId}-${destinationEntityId}-${startedAtMs}`;
+
+const normalizeActiveTransferRows = (rows: ActiveTransferStoryRow[], currentTimeMs: number): ActiveTransferData[] =>
+  rows
+    .map((row): ActiveTransferData | null => {
+      const sourceEntityId = parseActiveTransferPositiveInteger(row.resource_transfer_from_entity_id);
+      const destinationEntityId = parseActiveTransferPositiveInteger(row.resource_transfer_to_entity_id);
+      const startedAtSeconds = parseActiveTransferNumber(row.timestamp);
+      const travelTimeSeconds = parseActiveTransferNumber(row.resource_transfer_travel_time);
+      const resourceIds = parseActiveTransferResourceIds(row.resource_transfer_resources);
+
+      if (
+        sourceEntityId === null ||
+        destinationEntityId === null ||
+        startedAtSeconds === null ||
+        travelTimeSeconds === null ||
+        travelTimeSeconds <= 0 ||
+        resourceIds.length === 0
+      ) {
+        return null;
+      }
+
+      const startedAtMs = startedAtSeconds * 1000;
+      const endsAtMs = startedAtMs + travelTimeSeconds * 1000;
+      if (currentTimeMs >= endsAtMs) {
+        return null;
+      }
+
+      return {
+        id: `live:${resolveActiveTransferId(row, sourceEntityId, destinationEntityId, startedAtMs)}`,
+        eventId: row.event_id ?? undefined,
+        txHash: row.tx_hash ?? undefined,
+        sourceEntityId,
+        destinationEntityId,
+        resourceIds,
+        startedAtMs,
+        endsAtMs,
+        progress: Math.max(0, Math.min((currentTimeMs - startedAtMs) / (travelTimeSeconds * 1000), 1)),
+      };
+    })
+    .filter((transfer): transfer is ActiveTransferData => transfer !== null);
 
 export class SqlApi {
   constructor(
@@ -852,6 +995,40 @@ export class SqlApi {
     const results = await fetchWithErrorHandling<{ total_count: number }>(url, "Failed to count story events");
     const firstResult = extractFirstOrNull(results);
     return firstResult?.total_count ?? 0;
+  }
+
+  async fetchActiveTransfers(
+    limit: number = DEFAULT_ACTIVE_TRANSFERS_LIMIT,
+    lookbackSeconds: number = DEFAULT_ACTIVE_TRANSFERS_LOOKBACK_SECONDS,
+    currentTimeMs: number = Date.now(),
+  ): Promise<ActiveTransferData[]> {
+    const normalizedLimit = Math.max(0, Math.floor(limit));
+    if (normalizedLimit === 0) {
+      return [];
+    }
+
+    const normalizedLookbackSeconds = Math.max(1, Math.floor(lookbackSeconds));
+    const cacheBase = this.cacheBaseUrl?.trim();
+    if (cacheBase) {
+      try {
+        const cacheUrl = buildCacheUrl(cacheBase, "/api/cache/active-transfers");
+        cacheUrl.searchParams.set("limit", normalizedLimit.toString());
+        cacheUrl.searchParams.set("lookbackSeconds", normalizedLookbackSeconds.toString());
+        cacheUrl.searchParams.set("toriiSqlBaseUrl", this.baseUrl);
+        return await fetchJsonWithErrorHandling<ActiveTransferData[]>(
+          cacheUrl.toString(),
+          "Failed to fetch cached active transfers",
+        );
+      } catch (error) {
+        console.warn("Cached active transfers fetch failed; falling back to direct SQL.", error);
+      }
+    }
+
+    const minTimestampSeconds = Math.max(0, Math.floor(currentTimeMs / 1000) - normalizedLookbackSeconds);
+    const query = buildActiveTransfersStoryEventsQuery(normalizedLimit, minTimestampSeconds);
+    const url = buildApiUrl(this.baseUrl, query);
+    const rows = await fetchWithErrorHandling<ActiveTransferStoryRow>(url, "Failed to fetch active transfers");
+    return normalizeActiveTransferRows(rows, currentTimeMs);
   }
 
   /**

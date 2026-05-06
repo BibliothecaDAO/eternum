@@ -1,3 +1,5 @@
+import type { ActiveTransferData } from "@bibliothecadao/torii";
+
 export interface TransferRouteOverlayHex {
   col: number;
   row: number;
@@ -48,10 +50,11 @@ interface BuildTransferRouteOverlayRoutesInput {
   maxRoutes?: number;
 }
 
-interface MergeRetainedTransferRouteOverlayRoutesInput {
+interface BuildTransferRouteOverlayRoutesFromActiveTransfersInput {
   currentTimeMs: number;
-  nextRoutes: TransferRouteOverlayRoute[];
-  previousRoutes: TransferRouteOverlayRoute[];
+  liveTransfers: ActiveTransferData[];
+  automationEntries: TransferAutomationRouteEntry[];
+  resolveEntityHex: (entityId: number) => TransferRouteOverlayHex | null;
   maxRoutes?: number;
 }
 
@@ -82,15 +85,17 @@ export function buildTransferRouteOverlayRoutes(
     .slice(0, input.maxRoutes ?? DEFAULT_MAX_TRANSFER_ROUTE_OVERLAY_ROUTES);
 }
 
-export function mergeRetainedTransferRouteOverlayRoutes(
-  input: MergeRetainedTransferRouteOverlayRoutesInput,
+export function buildTransferRouteOverlayRoutesFromActiveTransfers(
+  input: BuildTransferRouteOverlayRoutesFromActiveTransfersInput,
 ): TransferRouteOverlayRoute[] {
-  const nextRoutesById = new Map(input.nextRoutes.map((route) => [route.id, route]));
-  const retainedLiveRoutes = input.previousRoutes
-    .filter((route) => shouldRetainLiveTransferRoute(route, input.currentTimeMs, nextRoutesById))
-    .map((route) => refreshRetainedLiveRoute(route, input.currentTimeMs));
+  const liveRoutes = input.liveTransfers
+    .map((transfer) => buildLiveTransferRouteFromActiveTransfer(transfer, input))
+    .filter((route): route is TransferRouteOverlayRoute => route !== null);
+  const plannedRoutes = input.automationEntries
+    .map((entry) => buildPlannedTransferRoute(entry, input.resolveEntityHex))
+    .filter((route): route is TransferRouteOverlayRoute => route !== null);
 
-  return [...input.nextRoutes, ...retainedLiveRoutes]
+  return [...liveRoutes, ...plannedRoutes]
     .toSorted(compareTransferRoutes)
     .slice(0, input.maxRoutes ?? DEFAULT_MAX_TRANSFER_ROUTE_OVERLAY_ROUTES);
 }
@@ -180,38 +185,34 @@ function buildPlannedTransferRoute(
   };
 }
 
-function shouldRetainLiveTransferRoute(
-  route: TransferRouteOverlayRoute,
-  currentTimeMs: number,
-  nextRoutesById: Map<string, TransferRouteOverlayRoute>,
-): boolean {
-  if (route.kind !== "live") {
-    return false;
+function buildLiveTransferRouteFromActiveTransfer(
+  transfer: ActiveTransferData,
+  input: BuildTransferRouteOverlayRoutesFromActiveTransfersInput,
+): TransferRouteOverlayRoute | null {
+  const sourceHex = input.resolveEntityHex(transfer.sourceEntityId);
+  const destinationHex = input.resolveEntityHex(transfer.destinationEntityId);
+  if (!sourceHex || !destinationHex) {
+    return null;
   }
 
-  if (nextRoutesById.has(route.id)) {
-    return false;
+  if (input.currentTimeMs >= transfer.endsAtMs) {
+    return null;
   }
 
-  return route.endsAtMs !== undefined && currentTimeMs < route.endsAtMs;
-}
-
-function refreshRetainedLiveRoute(route: TransferRouteOverlayRoute, currentTimeMs: number): TransferRouteOverlayRoute {
-  if (route.startedAtMs === undefined || route.endsAtMs === undefined) {
-    return route;
-  }
-
-  const durationMs = route.endsAtMs - route.startedAtMs;
-  if (durationMs <= 0) {
-    return {
-      ...route,
-      progress: 1,
-    };
-  }
+  const durationMs = transfer.endsAtMs - transfer.startedAtMs;
+  const progress = durationMs > 0 ? clampProgress((input.currentTimeMs - transfer.startedAtMs) / durationMs) : 1;
 
   return {
-    ...route,
-    progress: clampProgress((currentTimeMs - route.startedAtMs) / durationMs),
+    id: transfer.id,
+    kind: "live",
+    sourceEntityId: transfer.sourceEntityId,
+    destinationEntityId: transfer.destinationEntityId,
+    sourceHex,
+    destinationHex,
+    resourceIds: transfer.resourceIds,
+    startedAtMs: transfer.startedAtMs,
+    endsAtMs: transfer.endsAtMs,
+    progress,
   };
 }
 

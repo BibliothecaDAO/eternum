@@ -4,6 +4,7 @@ import type { AppEnv } from "../middleware/auth";
 import { createCachedJsonResponse, createJsonPayload, type CachedJsonPayload } from "./cache-response";
 import {
   ALL_TILES_QUERY,
+  buildActiveTransfersQuery,
   buildLeaderboardQuery,
   buildStoryEventsQuery,
   HYPERSTRUCTURE_LEADERBOARD_CONFIG_QUERY,
@@ -33,6 +34,30 @@ type LeaderboardCachePayload = {
   hyperstructureConfigRow?: unknown;
 };
 
+type ActiveTransferCacheRow = {
+  id?: string | null;
+  event_id?: string | null;
+  tx_hash?: string | null;
+  timestamp?: string | number | bigint | null;
+  resource_transfer_from_entity_id?: string | number | bigint | null;
+  resource_transfer_to_entity_id?: string | number | bigint | null;
+  resource_transfer_resources?: unknown;
+  resource_transfer_is_mint?: boolean | string | number | null;
+  resource_transfer_travel_time?: string | number | bigint | null;
+};
+
+type ActiveTransferCachePayload = {
+  id: string;
+  eventId?: string;
+  txHash?: string;
+  sourceEntityId: number;
+  destinationEntityId: number;
+  resourceIds: number[];
+  startedAtMs: number;
+  endsAtMs: number;
+  progress: number;
+};
+
 const DEFAULT_LEADERBOARD_TTL_MS = 60_000;
 const DEFAULT_LEADERBOARD_STALE_MS = 5 * 60_000;
 const DEFAULT_LEADERBOARD_MAX_ENTRIES = 5;
@@ -44,6 +69,14 @@ const DEFAULT_STORY_EVENTS_STALE_MS = 2 * 60_000;
 const DEFAULT_STORY_EVENTS_MAX_ENTRIES = 25;
 const DEFAULT_STORY_EVENTS_LIMIT = 50;
 const DEFAULT_STORY_EVENTS_LIMIT_MAX = 2_000;
+
+const DEFAULT_ACTIVE_TRANSFERS_TTL_MS = 5_000;
+const DEFAULT_ACTIVE_TRANSFERS_STALE_MS = 30_000;
+const DEFAULT_ACTIVE_TRANSFERS_MAX_ENTRIES = 25;
+const DEFAULT_ACTIVE_TRANSFERS_LIMIT = 500;
+const DEFAULT_ACTIVE_TRANSFERS_LIMIT_MAX = 5_000;
+const DEFAULT_ACTIVE_TRANSFERS_LOOKBACK_SECONDS = 1_800;
+const DEFAULT_ACTIVE_TRANSFERS_LOOKBACK_SECONDS_MAX = 86_400;
 
 const DEFAULT_TILES_TTL_MS = 5_000;
 const DEFAULT_TILES_STALE_MS = 30_000;
@@ -114,6 +147,38 @@ const storyEventsLimitDefault = parseEnvInt(
 );
 const storyEventsLimitMax = parseEnvInt(process.env.STORY_EVENTS_CACHE_LIMIT_MAX, DEFAULT_STORY_EVENTS_LIMIT_MAX, 1);
 
+const activeTransfersTtlMs = parseEnvNumber(process.env.ACTIVE_TRANSFERS_CACHE_TTL_MS, DEFAULT_ACTIVE_TRANSFERS_TTL_MS);
+const activeTransfersStaleMs = parseEnvNumber(
+  process.env.ACTIVE_TRANSFERS_CACHE_STALE_MS,
+  DEFAULT_ACTIVE_TRANSFERS_STALE_MS,
+  activeTransfersTtlMs,
+);
+const activeTransfersMaxEntries = parseEnvInt(
+  process.env.ACTIVE_TRANSFERS_CACHE_MAX_ENTRIES,
+  DEFAULT_ACTIVE_TRANSFERS_MAX_ENTRIES,
+  1,
+);
+const activeTransfersLimitDefault = parseEnvInt(
+  process.env.ACTIVE_TRANSFERS_CACHE_LIMIT_DEFAULT,
+  DEFAULT_ACTIVE_TRANSFERS_LIMIT,
+  1,
+);
+const activeTransfersLimitMax = parseEnvInt(
+  process.env.ACTIVE_TRANSFERS_CACHE_LIMIT_MAX,
+  DEFAULT_ACTIVE_TRANSFERS_LIMIT_MAX,
+  1,
+);
+const activeTransfersLookbackSecondsDefault = parseEnvInt(
+  process.env.ACTIVE_TRANSFERS_CACHE_LOOKBACK_SECONDS_DEFAULT,
+  DEFAULT_ACTIVE_TRANSFERS_LOOKBACK_SECONDS,
+  1,
+);
+const activeTransfersLookbackSecondsMax = parseEnvInt(
+  process.env.ACTIVE_TRANSFERS_CACHE_LOOKBACK_SECONDS_MAX,
+  DEFAULT_ACTIVE_TRANSFERS_LOOKBACK_SECONDS_MAX,
+  1,
+);
+
 const tilesTtlMs = parseEnvNumber(process.env.TILES_CACHE_TTL_MS, DEFAULT_TILES_TTL_MS);
 const tilesStaleMs = parseEnvNumber(process.env.TILES_CACHE_STALE_MS, DEFAULT_TILES_STALE_MS, tilesTtlMs);
 const tilesMaxEntries = parseEnvInt(process.env.TILES_CACHE_MAX_ENTRIES, DEFAULT_TILES_MAX_ENTRIES, 1);
@@ -149,6 +214,8 @@ const leaderboardCache = new Map<string, CacheEntry<CachedJsonPayload>>();
 const leaderboardInFlight = new Map<string, Promise<CachedJsonPayload>>();
 const storyEventsCache = new Map<string, CacheEntry<CachedJsonPayload>>();
 const storyEventsInFlight = new Map<string, Promise<CachedJsonPayload>>();
+const activeTransfersCache = new Map<string, CacheEntry<CachedJsonPayload>>();
+const activeTransfersInFlight = new Map<string, Promise<CachedJsonPayload>>();
 const tilesCache = new Map<string, CacheEntry<CachedJsonPayload>>();
 const tilesInFlight = new Map<string, Promise<CachedJsonPayload>>();
 const hyperstructuresCache = new Map<string, CacheEntry<CachedJsonPayload>>();
@@ -198,6 +265,7 @@ const startCacheCleanup = () => {
     () => {
       cleanupExpiredEntries(leaderboardCache, leaderboardStaleMs);
       cleanupExpiredEntries(storyEventsCache, storyEventsStaleMs);
+      cleanupExpiredEntries(activeTransfersCache, activeTransfersStaleMs);
       cleanupExpiredEntries(tilesCache, tilesStaleMs);
       cleanupExpiredEntries(hyperstructuresCache, hyperstructuresStaleMs);
       cleanupExpiredEntries(structureExplorerDetailsCache, structureExplorerDetailsStaleMs);
@@ -268,6 +336,131 @@ const fetchToriiRows = async <T>(baseUrl: string, query: string, context: string
 
   return result as T[];
 };
+
+const parseActiveTransferNumber = (value: unknown): number | null => {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === "bigint") {
+    return Number(value);
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (trimmed.startsWith("0x")) {
+    return Number(BigInt(trimmed));
+  }
+
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const parseActiveTransferPositiveInteger = (value: unknown): number | null => {
+  const parsed = parseActiveTransferNumber(value);
+  if (parsed === null) {
+    return null;
+  }
+
+  const integer = Math.floor(parsed);
+  return integer > 0 ? integer : null;
+};
+
+const parseActiveTransferResourceIds = (raw: unknown): number[] => {
+  const parseMaybeJson = (value: unknown): unknown => {
+    if (typeof value !== "string") {
+      return value;
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed.startsWith("[") && !trimmed.startsWith("{")) {
+      return value;
+    }
+
+    try {
+      return JSON.parse(trimmed) as unknown;
+    } catch {
+      return value;
+    }
+  };
+
+  const parsed = parseMaybeJson(raw);
+  const resourceCandidates = Array.isArray(parsed)
+    ? parsed
+    : parsed && typeof parsed === "object"
+      ? Object.values(parsed as Record<string, unknown>)
+      : [];
+
+  const resourceIds = resourceCandidates
+    .map((entry) => {
+      if (Array.isArray(entry)) {
+        return parseActiveTransferPositiveInteger(entry[0]);
+      }
+
+      if (!entry || typeof entry !== "object") {
+        return null;
+      }
+
+      const candidate = entry as { resourceId?: unknown; resource?: unknown };
+      return parseActiveTransferPositiveInteger(candidate.resourceId ?? candidate.resource);
+    })
+    .filter((resourceId): resourceId is number => resourceId !== null);
+
+  return Array.from(new Set(resourceIds));
+};
+
+const normalizeActiveTransfers = (
+  rows: ActiveTransferCacheRow[],
+  currentTimeMs: number,
+): ActiveTransferCachePayload[] =>
+  rows
+    .map((row): ActiveTransferCachePayload | null => {
+      const sourceEntityId = parseActiveTransferPositiveInteger(row.resource_transfer_from_entity_id);
+      const destinationEntityId = parseActiveTransferPositiveInteger(row.resource_transfer_to_entity_id);
+      const startedAtSeconds = parseActiveTransferNumber(row.timestamp);
+      const travelTimeSeconds = parseActiveTransferNumber(row.resource_transfer_travel_time);
+      const resourceIds = parseActiveTransferResourceIds(row.resource_transfer_resources);
+
+      if (
+        sourceEntityId === null ||
+        destinationEntityId === null ||
+        startedAtSeconds === null ||
+        travelTimeSeconds === null ||
+        travelTimeSeconds <= 0 ||
+        resourceIds.length === 0
+      ) {
+        return null;
+      }
+
+      const startedAtMs = startedAtSeconds * 1000;
+      const endsAtMs = startedAtMs + travelTimeSeconds * 1000;
+      if (currentTimeMs >= endsAtMs) {
+        return null;
+      }
+
+      const transferId =
+        row.event_id ?? row.id ?? row.tx_hash ?? `${sourceEntityId}-${destinationEntityId}-${startedAtMs}`;
+
+      return {
+        id: `live:${transferId}`,
+        eventId: row.event_id ?? undefined,
+        txHash: row.tx_hash ?? undefined,
+        sourceEntityId,
+        destinationEntityId,
+        resourceIds,
+        startedAtMs,
+        endsAtMs,
+        progress: Math.max(0, Math.min((currentTimeMs - startedAtMs) / (travelTimeSeconds * 1000), 1)),
+      };
+    })
+    .filter((transfer): transfer is ActiveTransferCachePayload => transfer !== null);
 
 const getCachedValue = async <T>({
   cache,
@@ -533,6 +726,75 @@ cacheRoutes.get("/story-events", async (c) => {
   } catch (error) {
     console.error("Failed to fetch story events cache", error);
     return c.json({ error: "Failed to fetch story events cache." }, 500);
+  }
+});
+
+cacheRoutes.get("/active-transfers", async (c) => {
+  const start = Date.now();
+  const toriiBaseUrl = resolveToriiSqlBaseUrl(c);
+  if (!toriiBaseUrl) {
+    return c.json({ error: "Torii SQL base URL missing. Provide toriiSqlBaseUrl or set TORII_SQL_BASE_URL." }, 400);
+  }
+
+  const limitRaw = c.req.query("limit");
+  const limitParsed = limitRaw ? Number.parseInt(limitRaw, 10) : activeTransfersLimitDefault;
+  if (limitParsed <= 0) {
+    logCacheMetrics({
+      name: "active-transfers",
+      status: "hit",
+      totalMs: Date.now() - start,
+      fetchMs: null,
+      ageMs: null,
+      extra: "limit=0",
+    });
+    c.header("x-cache", "hit");
+    return sendJsonBody(c, createJsonPayload([]));
+  }
+
+  const limit = clampNumber(limitParsed, 1, activeTransfersLimitMax);
+  const lookbackRaw = c.req.query("lookbackSeconds");
+  const lookbackParsed = lookbackRaw ? Number.parseInt(lookbackRaw, 10) : activeTransfersLookbackSecondsDefault;
+  const lookbackSeconds = clampNumber(lookbackParsed, 1, activeTransfersLookbackSecondsMax);
+  const cacheKey = `${toriiBaseUrl}|limit:${limit}|lookbackSeconds:${lookbackSeconds}`;
+
+  try {
+    let fetchMs: number | null = null;
+    const result = await getCachedValue({
+      cache: activeTransfersCache,
+      inFlight: activeTransfersInFlight,
+      key: cacheKey,
+      ttlMs: activeTransfersTtlMs,
+      staleMs: activeTransfersStaleMs,
+      maxEntries: activeTransfersMaxEntries,
+      fetcher: async () => {
+        const fetchStart = Date.now();
+        try {
+          const currentTimeMs = Date.now();
+          const query = buildActiveTransfersQuery({
+            limit,
+            minTimestampSeconds: Math.max(0, Math.floor(currentTimeMs / 1000) - lookbackSeconds),
+          });
+          const rows = await fetchToriiRows<ActiveTransferCacheRow>(toriiBaseUrl, query, "active transfers");
+          return createJsonPayload(normalizeActiveTransfers(rows, currentTimeMs));
+        } finally {
+          fetchMs = Date.now() - fetchStart;
+        }
+      },
+    });
+
+    logCacheMetrics({
+      name: "active-transfers",
+      status: result.status,
+      totalMs: Date.now() - start,
+      fetchMs,
+      ageMs: Date.now() - result.fetchedAt,
+      extra: `limit=${limit} lookbackSeconds=${lookbackSeconds}`,
+    });
+    c.header("x-cache", result.status);
+    return sendJsonBody(c, result.value);
+  } catch (error) {
+    console.error("Failed to fetch active transfers cache", error);
+    return c.json({ error: "Failed to fetch active transfers cache." }, 500);
   }
 });
 

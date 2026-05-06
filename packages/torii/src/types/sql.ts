@@ -294,6 +294,18 @@ export interface StoryEventData {
   prize_trial_id?: string;
 }
 
+export interface ActiveTransferData {
+  id: string;
+  eventId?: string;
+  txHash?: string;
+  sourceEntityId: number;
+  destinationEntityId: number;
+  resourceIds: number[];
+  startedAtMs: number;
+  endsAtMs: number;
+  progress: number;
+}
+
 export interface PlayersData {
   explorer_ids: string | number;
   structure_ids: string;

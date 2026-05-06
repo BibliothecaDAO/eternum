@@ -46,6 +46,7 @@ export interface SqlApiLike {
   fetchPlayerLeaderboard(limit?: number, offset?: number): Promise<any[]>;
   fetchPlayerLeaderboardByAddress?(address: string): Promise<any | null>;
   fetchStoryEvents(limit?: number, offset?: number): Promise<any[]>;
+  fetchActiveTransfers?(limit?: number, lookbackSeconds?: number): Promise<any[]>;
   fetchStoryEventsByEntity(entityId: ID, limit?: number, offset?: number): Promise<any[]>;
   fetchStoryEventsByOwner(owner: string, limit?: number, offset?: number): Promise<any[]>;
   fetchStoryEventsCount(): Promise<number>;

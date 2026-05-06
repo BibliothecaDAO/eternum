@@ -1,15 +1,11 @@
 import { POLLING_INTERVALS } from "@/config/polling";
 import { usePlayerStructureSync } from "@/hooks/helpers/use-player-structure-sync";
+import { useActiveTransfers } from "@/hooks/use-active-transfers";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
-import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import {
-  buildTransferRouteOverlayRoutes,
-  mergeRetainedTransferRouteOverlayRoutes,
-  type TransferRouteOverlayRoute,
-} from "@/lib/transfer-route-overlay";
+import { buildTransferRouteOverlayRoutesFromActiveTransfers } from "@/lib/transfer-route-overlay";
 import { sqlApi } from "@/services/api";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
@@ -282,10 +278,9 @@ const TransferRouteOverlayStoreManager = () => {
   const chainNowMs = useChainTimeStore((state) => state.nowMs);
   const setTransferRouteOverlayRoutes = useUIStore((state) => state.setTransferRouteOverlayRoutes);
   const transferAutomationEntriesById = useTransferAutomationStore((state) => state.entries);
-  const { data: storyEvents = [] } = useStoryEvents(350);
+  const { data: activeTransfers = [] } = useActiveTransfers(500, 1800);
   const mapDataStore = useMemo(() => MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi), []);
   const [mapDataVersion, setMapDataVersion] = useState(0);
-  const previousRoutesRef = useRef<TransferRouteOverlayRoute[]>([]);
 
   const transferAutomationEntries = useMemo(
     () => Object.values(transferAutomationEntriesById),
@@ -310,28 +305,21 @@ const TransferRouteOverlayStoreManager = () => {
 
   useEffect(() => {
     const currentTimeMs = chainNowMs > 0 ? chainNowMs : Date.now();
-    const nextRoutes = buildTransferRouteOverlayRoutes({
+    const routes = buildTransferRouteOverlayRoutesFromActiveTransfers({
       currentTimeMs,
-      liveEvents: storyEvents,
+      liveTransfers: activeTransfers,
       automationEntries: transferAutomationEntries,
       resolveEntityHex: (entityId) => resolveTransferRouteEntityHex(mapDataStore, entityId),
     });
-    const routes = mergeRetainedTransferRouteOverlayRoutes({
-      currentTimeMs,
-      nextRoutes,
-      previousRoutes: previousRoutesRef.current,
-    });
-
-    previousRoutesRef.current = routes;
     setTransferRouteOverlayRoutes(routes);
-  }, [chainNowMs, mapDataStore, mapDataVersion, setTransferRouteOverlayRoutes, storyEvents, transferAutomationEntries]);
-
-  useEffect(
-    () => () => {
-      previousRoutesRef.current = [];
-    },
-    [],
-  );
+  }, [
+    activeTransfers,
+    chainNowMs,
+    mapDataStore,
+    mapDataVersion,
+    setTransferRouteOverlayRoutes,
+    transferAutomationEntries,
+  ]);
 
   return null;
 };

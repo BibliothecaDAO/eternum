@@ -122,6 +122,29 @@ const STORY_EVENT_SELECT_FIELDS = `
       "story.PrizeDistributionFinalStory.trial_id" as prize_trial_id
 `;
 
+const ACTIVE_TRANSFER_SELECT_FIELDS = `
+      id as id,
+      internal_event_id as event_id,
+      tx_hash,
+      timestamp,
+      "story.ResourceTransferStory.from_entity_id" as resource_transfer_from_entity_id,
+      "story.ResourceTransferStory.to_entity_id" as resource_transfer_to_entity_id,
+      "story.ResourceTransferStory.resources" as resource_transfer_resources,
+      "story.ResourceTransferStory.is_mint" as resource_transfer_is_mint,
+      "story.ResourceTransferStory.travel_time" as resource_transfer_travel_time
+`;
+
+export const buildActiveTransfersStoryEventsQuery = (limit: number, minTimestampSeconds: number): string => `
+    SELECT
+${ACTIVE_TRANSFER_SELECT_FIELDS}
+    FROM "s1_eternum-StoryEvent"
+    WHERE story = 'ResourceTransferStory'
+      AND COALESCE(CAST("story.ResourceTransferStory.is_mint" AS TEXT), '0') NOT IN ('1', 'true', 'TRUE')
+      AND timestamp >= ${Math.max(0, Math.floor(minTimestampSeconds))}
+    ORDER BY timestamp DESC
+    LIMIT ${Math.max(0, Math.floor(limit))}
+`;
+
 export const STORY_QUERIES = {
   /**
    * Fetches all story events ordered by timestamp descending (newest first)

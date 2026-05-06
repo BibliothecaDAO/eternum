@@ -334,6 +334,31 @@ ${STORY_EVENT_SELECT_FIELDS}
     OFFSET ${offset}
 `;
 
+export const buildActiveTransfersQuery = ({
+  limit,
+  minTimestampSeconds,
+}: {
+  limit: number;
+  minTimestampSeconds: number;
+}): string => `
+    SELECT
+      id as id,
+      internal_event_id as event_id,
+      tx_hash,
+      timestamp,
+      "story.ResourceTransferStory.from_entity_id" as resource_transfer_from_entity_id,
+      "story.ResourceTransferStory.to_entity_id" as resource_transfer_to_entity_id,
+      "story.ResourceTransferStory.resources" as resource_transfer_resources,
+      "story.ResourceTransferStory.is_mint" as resource_transfer_is_mint,
+      "story.ResourceTransferStory.travel_time" as resource_transfer_travel_time
+    FROM "s1_eternum-StoryEvent"
+    WHERE story = 'ResourceTransferStory'
+      AND COALESCE(CAST("story.ResourceTransferStory.is_mint" AS TEXT), '0') NOT IN ('1', 'true', 'TRUE')
+      AND timestamp >= ${Math.max(0, Math.floor(minTimestampSeconds))}
+    ORDER BY timestamp DESC
+    LIMIT ${Math.max(0, Math.floor(limit))}
+`;
+
 export const HYPERSTRUCTURE_LEADERBOARD_CONFIG_QUERY = `
     SELECT
       "victory_points_grant_config.hyp_points_per_second" AS points_per_second,

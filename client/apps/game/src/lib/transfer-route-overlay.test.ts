@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildTransferRouteOverlayRoutes,
-  mergeRetainedTransferRouteOverlayRoutes,
+  buildTransferRouteOverlayRoutesFromActiveTransfers,
   parseTransferRouteResourceIds,
 } from "./transfer-route-overlay";
 
@@ -147,47 +147,39 @@ describe("transfer route overlay builders", () => {
     });
   });
 
-  it("retains still-active live routes after they fall out of the fetched event window", () => {
-    const nextRoutes = buildTransferRouteOverlayRoutes({
-      currentTimeMs: 120_000,
-      liveEvents: [],
-      automationEntries: [
+  it("builds active transfer routes from normalized server payloads", () => {
+    const routes = buildTransferRouteOverlayRoutesFromActiveTransfers({
+      currentTimeMs: 115_000,
+      liveTransfers: [
         {
-          id: "automation-a",
-          active: true,
-          sourceEntityId: "33",
-          destinationEntityId: "44",
-          resourceIds: [5],
-          intervalMinutes: 5,
-        },
-      ],
-      resolveEntityHex,
-    });
-
-    const routes = mergeRetainedTransferRouteOverlayRoutes({
-      currentTimeMs: 120_000,
-      nextRoutes,
-      previousRoutes: [
-        {
-          id: "live:still-active",
-          kind: "live",
+          id: "live:event-1",
+          eventId: "event-1",
+          txHash: "0xabc",
           sourceEntityId: 11,
           destinationEntityId: 22,
-          sourceHex: { col: 1, row: 2 },
-          destinationHex: { col: 5, row: 8 },
           resourceIds: [1],
           startedAtMs: 100_000,
-          endsAtMs: 140_000,
+          endsAtMs: 130_000,
           progress: 0.25,
         },
       ],
+      automationEntries: [],
+      resolveEntityHex,
     });
 
-    expect(routes.map((route) => route.id)).toEqual(["live:still-active", "planned:automation-a"]);
-    expect(routes[0]).toMatchObject({
-      progress: 0.5,
-      startedAtMs: 100_000,
-      endsAtMs: 140_000,
-    });
+    expect(routes).toEqual([
+      {
+        id: "live:event-1",
+        kind: "live",
+        sourceEntityId: 11,
+        destinationEntityId: 22,
+        sourceHex: { col: 1, row: 2 },
+        destinationHex: { col: 5, row: 8 },
+        resourceIds: [1],
+        startedAtMs: 100_000,
+        endsAtMs: 130_000,
+        progress: 0.5,
+      },
+    ]);
   });
 });
