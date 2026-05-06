@@ -8,32 +8,32 @@
   "rotationName": "blitz-rotation",
   "seriesName": "blitz-rotation",
   "status": "attention",
-  "executionMode": "fast_trial",
-  "requestedLaunchStep": "full",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25455381914-1.json",
-  "latestLaunchRequestId": "25455381914-1",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "sync-paymaster",
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25456569524-1.json",
+  "latestLaunchRequestId": "25456569524-1",
   "currentStepId": "sync-paymaster",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-06T19:30:29.805Z",
+  "updatedAt": "2026-05-06T19:31:54.592Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 25455381914,
+    "workflowRunId": 25456569524,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25455381914",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25456569524",
     "ref": "next",
     "sha": "234f966948820ba461ad704dbe25e395a08451cb"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-05-06T19:45:29.805Z",
+    "nextRetryAt": "2026-05-06T19:46:54.592Z",
     "lastRetryAt": "2026-05-06T19:30:29.805Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-06T19:25:55.391Z",
-    "lastEvaluatedAt": "2026-05-06T19:10:55.391Z"
+    "nextEvaluationAt": "2026-05-06T19:46:54.592Z",
+    "lastEvaluatedAt": "2026-05-06T19:31:54.592Z"
   },
   "steps": [
     {
@@ -41,64 +41,49 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-05-06T19:06:50.824Z",
-      "finishedAt": "2026-05-06T19:06:57.443Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
       "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete",
-      "startedAt": "2026-05-06T19:07:02.011Z",
-      "finishedAt": "2026-05-06T19:09:03.226Z"
+      "latestEvent": "Creating games is complete"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
       "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-05-06T19:09:12.816Z",
-      "finishedAt": "2026-05-06T19:09:19.696Z"
+      "latestEvent": "Waiting for games is complete"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
       "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete",
-      "startedAt": "2026-05-06T19:09:24.150Z",
-      "finishedAt": "2026-05-06T19:09:48.255Z"
+      "latestEvent": "Applying settings is complete"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
       "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests is complete",
-      "startedAt": "2026-05-06T19:09:57.703Z",
-      "finishedAt": "2026-05-06T19:10:10.987Z"
+      "latestEvent": "Setting up loot chests is complete"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
       "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete",
-      "startedAt": "2026-05-06T19:10:20.805Z",
-      "finishedAt": "2026-05-06T19:10:43.275Z"
+      "latestEvent": "Finishing setup is complete"
     },
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
       "status": "failed",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"eu-gladiator-09-05-26-2000\" on mainnet.blitz\n\u001b[2m[+18ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+18ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+19ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Syncing paymaster policy for the launched world\n\u001b[2m[+415ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m sync paymaster failed after 396ms: slot command failed with exit code 1: Error: rpc error: code = FailedPrecondition desc = paymaster has no budget; fund it before adding policies\nWarning: 1 policies with entrypoints [approve] have no trigger and will sponsor ALL such calls. Continue? [y/N]:\nError: 1 rotation or series game failed during sync-paymaster\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-05-06T19:10:47.839Z",
-      "finishedAt": "2026-05-06T19:10:55.391Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"eu-gladiator-09-05-26-2000\" on mainnet.blitz\n\u001b[2m[+18ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+18ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+19ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Syncing paymaster policy for the launched world\n\u001b[2m[+415ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m sync paymaster failed after 396ms: slot command failed with exit code 1: Error: rpc error: code = FailedPrecondition desc = paymaster has no budget; fund it before adding policies\nWarning: 1 policies with entrypoints [approve] have no trigger and will sponsor ALL such calls. Continue? [y/N]:\nError: 1 rotation or series game failed during sync-paymaster\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Setting up gas coverage needs attention"
     }
   ],
   "summary": {
