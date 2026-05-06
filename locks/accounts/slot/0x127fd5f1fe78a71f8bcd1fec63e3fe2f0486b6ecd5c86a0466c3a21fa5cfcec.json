@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-codex-local-odra2",
-    "launchRequestId": "25379890741-1",
+    "gameName": "bltz-boost-391",
+    "launchRequestId": "25454060446-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25379890741,
+    "workflowRunId": 25454060446,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "9ffa5f81-c38b-46b5-abf7-ead6be427531"
+    "stepId": "create-world",
+    "leaseId": "12096e59-66f5-4f77-b2b0-ea049f0f95df"
   },
-  "acquiredAt": "2026-05-05T13:43:27.993Z",
-  "heartbeatAt": "2026-05-05T13:43:45.366Z",
-  "expiresAt": "2026-05-05T13:43:45.366Z",
-  "releasedAt": "2026-05-05T13:43:45.366Z"
+  "acquiredAt": "2026-05-06T18:39:37.620Z",
+  "heartbeatAt": "2026-05-06T18:39:37.620Z",
+  "expiresAt": "2026-05-06T18:49:37.620Z"
 }
