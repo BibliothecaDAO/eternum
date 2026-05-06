@@ -520,6 +520,10 @@ export class ToriiStreamManager {
   private markSpatialSubscriptionApplied(): void {
     const store = useConnectionStore.getState();
     store.recordSpatialHandshake();
+    if (this.isRecoveringSpatialReadiness()) {
+      return;
+    }
+
     store.setSpatialStatus("connected");
   }
 
@@ -531,6 +535,10 @@ export class ToriiStreamManager {
   private resetReadinessRecoveryAttempts(): void {
     this.readinessRecoveryAttempts = 0;
     this.clearReadinessRecoveryTimer();
+  }
+
+  private isRecoveringSpatialReadiness(): boolean {
+    return this.readinessRecoveryAttempts > 0;
   }
 
   private clearReadinessRecoveryTimer(): void {
@@ -550,7 +558,9 @@ export class ToriiStreamManager {
 
     while (true) {
       try {
-        return await this.createSpatialSubscription(clause, requestId);
+        return await this.createSpatialSubscription(clause, requestId, {
+          reportSetupTimeouts: attempt >= SPATIAL_SUBSCRIPTION_CREATE_MAX_ATTEMPTS,
+        });
       } catch (error) {
         if (attempt >= SPATIAL_SUBSCRIPTION_CREATE_MAX_ATTEMPTS) {
           throw error;
@@ -563,7 +573,11 @@ export class ToriiStreamManager {
     }
   }
 
-  private async createSpatialSubscription(clause: Clause | null, requestId: number): Promise<ToriiEntitySubscription> {
+  private async createSpatialSubscription(
+    clause: Clause | null,
+    requestId: number,
+    options: { reportSetupTimeouts?: boolean } = {},
+  ): Promise<ToriiEntitySubscription> {
     return syncEntitiesDebounced(this.client, this.setup, clause, this.logging, this.onUpdate, {
       isReadyEntity: this.isSpatialReadyEntity,
       onReadyEntityApplied: (info) => {
@@ -575,6 +589,9 @@ export class ToriiStreamManager {
       },
       subscriptionSetupTimeoutMs: this.subscriptionSetupTimeoutMs,
       onSubscriptionSetupTimeout: (info) => {
+        if (options.reportSetupTimeouts === false) {
+          return;
+        }
         this.onSubscriptionSetupTimeout?.({ ...info, requestId });
       },
       streamType: "spatial",

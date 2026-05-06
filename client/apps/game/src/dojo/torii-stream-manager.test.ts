@@ -372,9 +372,17 @@ describe("ToriiStreamManager", () => {
     const syncMock = vi.mocked(syncEntitiesDebounced);
     const cancelFirst = vi.fn();
     const cancelRecovered = vi.fn();
+    let recoveredOptions:
+      | {
+          onReadyEntityApplied?: (info: { entityId: string; models: string[] }) => void;
+        }
+      | undefined;
     syncMock
       .mockImplementationOnce(async () => syncSubscription(cancelFirst, new Promise<void>(() => {})))
-      .mockImplementationOnce(async () => syncSubscription(cancelRecovered));
+      .mockImplementationOnce(async (...args) => {
+        recoveredOptions = args[5] as typeof recoveredOptions;
+        return syncSubscription(cancelRecovered, new Promise<void>(() => {}));
+      });
 
     const manager = new ToriiStreamManager({
       client: {} as any,
@@ -392,6 +400,13 @@ describe("ToriiStreamManager", () => {
 
     expect(syncMock).toHaveBeenCalledTimes(2);
     expect(cancelFirst).toHaveBeenCalledTimes(1);
+    expect(useConnectionStore.getState().spatialStatus).toBe("reconnecting");
+
+    recoveredOptions?.onReadyEntityApplied?.({
+      entityId: "tile-1",
+      models: ["s1_eternum-TileOpt"],
+    });
+
     expect(useConnectionStore.getState().spatialStatus).toBe("connected");
 
     manager.cancelCurrentSubscription();
@@ -564,6 +579,44 @@ describe("ToriiStreamManager", () => {
       timeoutMs: 25,
       requestId: 1,
     });
+    vi.useRealTimers();
+  });
+
+  it("suppresses setup timeout callbacks when an internal create retry succeeds", async () => {
+    vi.useFakeTimers();
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const onSubscriptionSetupTimeout = vi.fn();
+
+    syncMock
+      .mockImplementationOnce(async (...args) => {
+        const options = args[5] as
+          | {
+              onSubscriptionSetupTimeout?: (info: { label: string; timeoutMs: number }) => void;
+            }
+          | undefined;
+        options?.onSubscriptionSetupTimeout?.({
+          label: "event subscription",
+          timeoutMs: 25,
+        });
+        throw new Error("timeout:25");
+      })
+      .mockResolvedValueOnce(syncSubscription(vi.fn()));
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+      subscriptionSetupTimeoutMs: 25,
+      onSubscriptionSetupTimeout,
+    });
+
+    const pendingSwitch = manager.switchBounds(descriptor(0));
+    await vi.runOnlyPendingTimersAsync();
+
+    await expect(pendingSwitch).resolves.toEqual({ outcome: "applied" });
+    expect(onSubscriptionSetupTimeout).not.toHaveBeenCalled();
+
+    manager.cancelCurrentSubscription();
     vi.useRealTimers();
   });
 });
