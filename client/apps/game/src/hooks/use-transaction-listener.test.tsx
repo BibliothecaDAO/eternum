@@ -165,4 +165,38 @@ describe("useTransactionListener", () => {
       }),
     );
   });
+
+  it("passes submit failure classification through to transaction reporting without a hash", async () => {
+    await act(async () => {
+      root.render(<HookHarness />);
+    });
+
+    await act(async () => {
+      provider.emit("transactionFailed", {
+        message: "Transaction submission timed out after 20s before a transaction hash was returned",
+        stage: "submit",
+        type: "claim_share_points",
+        failureKind: "submission_timeout_no_hash",
+        providerState: "unknown",
+        hasTxHash: false,
+        retrySafety: "unsafe_until_wallet_checked",
+      });
+    });
+
+    expect(observabilityMocks.reportClientTransactionFailure).toHaveBeenCalledWith(
+      expect.objectContaining({
+        context: expect.objectContaining({
+          surface: "dojo_provider",
+          stage: "submit",
+          transactionHash: undefined,
+          failureKind: "submission_timeout_no_hash",
+          providerState: "unknown",
+          hasTxHash: false,
+          retrySafety: "unsafe_until_wallet_checked",
+        }),
+      }),
+    );
+    expect(storeState.addTransaction).not.toHaveBeenCalled();
+    expect(storeState.updateTransaction).not.toHaveBeenCalled();
+  });
 });

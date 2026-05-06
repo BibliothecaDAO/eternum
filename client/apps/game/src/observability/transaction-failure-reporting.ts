@@ -2,6 +2,9 @@ import * as Sentry from "@sentry/react";
 import {
   type BatchedTransactionDetail,
   type TransactionFailureStage,
+  type TransactionProviderState,
+  type TransactionRetrySafety,
+  type TransactionSubmitFailureKind,
   type TransactionType,
 } from "@bibliothecadao/provider";
 import { env } from "../../env";
@@ -41,6 +44,10 @@ export interface ClientTransactionFailureContext {
   worldName?: string;
   worldAddress?: string;
   rpcHost?: string;
+  failureKind?: TransactionSubmitFailureKind;
+  providerState?: TransactionProviderState;
+  hasTxHash?: boolean;
+  retrySafety?: TransactionRetrySafety;
 }
 
 type ClientTransactionBreadcrumbStage = "submitted" | "pending" | "completed" | ClientTransactionFailureStage;
@@ -194,13 +201,22 @@ const buildFingerprint = ({
   transactionType,
   operation,
   normalizedReason,
+  failureKind,
 }: {
   surface: ClientTransactionSurface;
   stage: ClientTransactionFailureStage;
   transactionType?: TransactionType;
   operation: string;
   normalizedReason: string;
+  failureKind?: TransactionSubmitFailureKind;
 }) => {
+  if (
+    stage === "submit" &&
+    (failureKind === "provider_connection_destroyed" || failureKind === "submission_timeout_no_hash")
+  ) {
+    return ["client-transaction-submission", failureKind, surface, transactionType ?? operation];
+  }
+
   return ["client-transaction-failure", surface, stage, transactionType ?? operation, normalizedReason];
 };
 
@@ -240,6 +256,10 @@ const buildBreadcrumbData = (context: Partial<Omit<ClientTransactionFailureConte
     worldName: context.worldName ?? defaultContext.worldName,
     worldAddress: context.worldAddress ?? defaultContext.worldAddress,
     rpcHost: context.rpcHost,
+    failureKind: context.failureKind,
+    providerState: context.providerState,
+    hasTxHash: context.hasTxHash,
+    retrySafety: context.retrySafety,
   });
 };
 
@@ -352,14 +372,17 @@ export const reportClientTransactionFailure = async ({
   const walletIdentity = await resolveUserIdentity(failureContext.walletAddress);
   const sanitizedError = error instanceof Error ? error : new Error(readableMessage);
   const vrfNotConsumed = isVrfNotConsumedError(error);
+  const hasTransactionHash = failureContext.hasTxHash ?? Boolean(failureContext.transactionHash);
   const tags = {
     feature: "transactions",
     "tx.surface": failureContext.surface,
     "tx.stage": stage,
     ...(failureContext.transactionType ? { "tx.type": failureContext.transactionType } : {}),
+    ...(failureContext.failureKind ? { "tx.failure_kind": failureContext.failureKind } : {}),
+    ...(failureContext.providerState ? { provider_state: failureContext.providerState } : {}),
     ...(failureContext.chain ? { chain: failureContext.chain } : {}),
     ...(failureContext.worldName ? { world: failureContext.worldName } : {}),
-    has_tx_hash: failureContext.transactionHash ? "true" : "false",
+    has_tx_hash: hasTransactionHash ? "true" : "false",
     ...(vrfNotConsumed ? { "tx.vrf_not_consumed": "true" } : {}),
   };
   const transactionContext = sanitizeValue({
@@ -367,6 +390,10 @@ export const reportClientTransactionFailure = async ({
     stage,
     transactionType: failureContext.transactionType,
     transactionHash: failureContext.transactionHash,
+    failureKind: failureContext.failureKind,
+    providerState: failureContext.providerState,
+    hasTxHash: hasTransactionHash,
+    retrySafety: failureContext.retrySafety,
     transactionCount: failureContext.transactionCount,
     entrypoints: failureContext.entrypoints,
     contractAddresses: failureContext.contractAddresses,
@@ -411,6 +438,7 @@ export const reportClientTransactionFailure = async ({
       transactionType: failureContext.transactionType,
       operation: failureContext.operation,
       normalizedReason,
+      failureKind: failureContext.failureKind,
     }),
   });
 };

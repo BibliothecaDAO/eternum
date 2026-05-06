@@ -151,6 +151,10 @@ export const useTransactionListener = () => {
           batchDetails: payload.batchDetails,
           entrypoints: payload.entrypoints,
           contractAddresses: payload.contractAddresses,
+          failureKind: payload.failureKind,
+          providerState: payload.providerState,
+          hasTxHash: payload.hasTxHash ?? Boolean(payload.transactionHash),
+          retrySafety: payload.retrySafety,
         },
       });
 

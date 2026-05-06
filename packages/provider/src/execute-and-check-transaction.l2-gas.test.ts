@@ -489,7 +489,133 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(findTransactionFailedPayload(provider)).toMatchObject({
       stage: "submit",
       message: expect.stringContaining("Transaction submission timed out"),
+      failureKind: "submission_timeout_no_hash",
+      hasTxHash: false,
+      retrySafety: "unsafe_until_wallet_checked",
     });
+  });
+
+  it("classifies destroyed provider connections before a transaction hash", async () => {
+    const provider = makeProvider();
+    provider.execute = vi
+      .fn()
+      .mockRejectedValue(new Error("Unable to send execute() call due to destroyed connection"));
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "claim_share_points",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toThrow("destroyed connection");
+
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      stage: "submit",
+      failureKind: "provider_connection_destroyed",
+      providerState: "destroyed",
+      hasTxHash: false,
+      retrySafety: "safe_after_reconnect",
+    });
+  });
+
+  it("emits a late submitted and pending event when a timed-out submission later returns a hash", async () => {
+    vi.useFakeTimers();
+    const provider = makeProvider();
+    provider.TRANSACTION_SUBMIT_TIMEOUT_MS = 50;
+
+    let resolveExecute!: (value: { transaction_hash: string }) => void;
+    provider.execute = vi.fn(() => {
+      return new Promise<{ transaction_hash: string }>((resolve) => {
+        resolveExecute = resolve;
+      });
+    });
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "set_entity_name",
+      calldata: [],
+    };
+
+    const timedOutSubmission = provider
+      .executeAndCheckTransaction(signer, call, undefined, { waitForConfirmation: false })
+      .then(
+        () => "resolved",
+        (error: unknown) => error,
+      );
+
+    await vi.advanceTimersByTimeAsync(50);
+    await expect(timedOutSubmission).resolves.toBeInstanceOf(Error);
+
+    resolveExecute({ transaction_hash: "0xlate" });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(provider.emit).toHaveBeenCalledWith(
+      "transactionSubmitted",
+      expect.objectContaining({
+        transactionHash: "0xlate",
+        recoveredFromSubmissionTimeout: true,
+      }),
+    );
+    expect(provider.emit).toHaveBeenCalledWith(
+      "transactionPending",
+      expect.objectContaining({
+        transactionHash: "0xlate",
+        recoveredFromSubmissionTimeout: true,
+      }),
+    );
+  });
+
+  it("waits for a registered pre-submit guard before calling execute", async () => {
+    const provider = makeProvider();
+    let releaseGuard!: () => void;
+    provider.transactionSubmitGuard = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseGuard = resolve;
+        }),
+    );
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "claim_share_points",
+      calldata: [],
+    };
+
+    const result = provider.executeAndCheckTransaction(signer, call, undefined, { waitForConfirmation: false });
+    await Promise.resolve();
+
+    expect(provider.transactionSubmitGuard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transactionType: TransactionType.CLAIM_SHARE_POINTS,
+      }),
+    );
+    expect(provider.execute).not.toHaveBeenCalled();
+
+    releaseGuard();
+    await expect(result).resolves.toMatchObject({
+      statusReceipt: "PENDING",
+      transaction_hash: "0xabc",
+    });
+    expect(provider.execute).toHaveBeenCalledTimes(1);
   });
 
   it("uses default v3 execution details when fee estimation stalls before submission", async () => {

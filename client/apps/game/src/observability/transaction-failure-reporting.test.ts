@@ -128,4 +128,72 @@ describe("transaction failure reporting", () => {
     expect(sentryMocks.addBreadcrumb).toHaveBeenCalledTimes(1);
     expect(sentryMocks.captureException).not.toHaveBeenCalled();
   });
+
+  it("tags provider disconnects separately from no-hash submission timeouts", async () => {
+    const { reportClientTransactionFailure } = await loadModule();
+
+    await reportClientTransactionFailure({
+      error: new Error("Unable to send execute() call due to destroyed connection"),
+      context: {
+        surface: "dojo_provider",
+        operation: "claim_share_points",
+        stage: "submit",
+        walletAddress: "0x123",
+        failureKind: "provider_connection_destroyed",
+        providerState: "destroyed",
+        hasTxHash: false,
+        retrySafety: "safe_after_reconnect",
+      } as any,
+    });
+
+    await reportClientTransactionFailure({
+      error: new Error("Transaction submission timed out after 20s before a transaction hash was returned"),
+      context: {
+        surface: "dojo_provider",
+        operation: "claim_share_points",
+        stage: "submit",
+        walletAddress: "0x123",
+        failureKind: "submission_timeout_no_hash",
+        providerState: "unknown",
+        hasTxHash: false,
+        retrySafety: "unsafe_until_wallet_checked",
+      } as any,
+    });
+
+    expect(sentryMocks.captureException).toHaveBeenCalledTimes(2);
+
+    const [, disconnectContext] = sentryMocks.captureException.mock.calls[0];
+    const [, timeoutContext] = sentryMocks.captureException.mock.calls[1];
+
+    expect(disconnectContext.tags).toMatchObject({
+      "tx.failure_kind": "provider_connection_destroyed",
+      provider_state: "destroyed",
+      has_tx_hash: "false",
+    });
+    expect(timeoutContext.tags).toMatchObject({
+      "tx.failure_kind": "submission_timeout_no_hash",
+      provider_state: "unknown",
+      has_tx_hash: "false",
+    });
+    expect(disconnectContext.contexts.transaction).toMatchObject({
+      failureKind: "provider_connection_destroyed",
+      retrySafety: "safe_after_reconnect",
+    });
+    expect(timeoutContext.contexts.transaction).toMatchObject({
+      failureKind: "submission_timeout_no_hash",
+      retrySafety: "unsafe_until_wallet_checked",
+    });
+    expect(disconnectContext.fingerprint).toEqual([
+      "client-transaction-submission",
+      "provider_connection_destroyed",
+      "dojo_provider",
+      "claim_share_points",
+    ]);
+    expect(timeoutContext.fingerprint).toEqual([
+      "client-transaction-submission",
+      "submission_timeout_no_hash",
+      "dojo_provider",
+      "claim_share_points",
+    ]);
+  });
 });

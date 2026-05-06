@@ -31,6 +31,11 @@ import {
   TransactionFailedPayload,
   TransactionFailureStage,
   TransactionLifecycleMeta,
+  TransactionProviderState,
+  TransactionRetrySafety,
+  TransactionSubmitFailureKind,
+  TransactionSubmitGuard,
+  TransactionSubmitGuardContext,
   TransactionType,
 } from "./types";
 import { createVrfRequestRandomCall, isVrfEnabled, isVrfRequestRandomCall, type VrfSource } from "./vrf";
@@ -54,6 +59,11 @@ export type {
   TransactionFailedPayload,
   TransactionFailureStage,
   TransactionLifecycleMeta,
+  TransactionProviderState,
+  TransactionRetrySafety,
+  TransactionSubmitFailureKind,
+  TransactionSubmitGuard,
+  TransactionSubmitGuardContext,
 } from "./types";
 export type { VrfSource } from "./vrf";
 
@@ -63,6 +73,8 @@ const V3_L2_GAS_OVERHEAD_PERCENT = 50n;
 const HUNDRED_PERCENT = 100n;
 const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
 const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
+export const SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE =
+  "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.";
 const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
 const GENERIC_ERROR_MESSAGES = new Set([
   "transaction execution error",
@@ -362,6 +374,49 @@ const extractErrorMessage = (error: unknown, fallback = "Unknown error"): string
 
 const matchesNonceError = (error: unknown): boolean => extractErrorMessage(error, "").toLowerCase().includes("nonce");
 
+const isTransactionSubmissionTimeoutError = (error: unknown): boolean => {
+  return error instanceof TransactionSubmissionTimeoutError;
+};
+
+const matchesDestroyedConnectionError = (error: unknown): boolean => {
+  const message = extractErrorMessage(error, "").toLowerCase();
+  return message.includes("destroyed connection") || message.includes("connection destroyed");
+};
+
+const classifySubmitFailure = (
+  error: unknown,
+): {
+  failureKind: TransactionSubmitFailureKind;
+  providerState: TransactionProviderState;
+  hasTxHash: boolean;
+  retrySafety: TransactionRetrySafety;
+} => {
+  if (isTransactionSubmissionTimeoutError(error)) {
+    return {
+      failureKind: "submission_timeout_no_hash",
+      providerState: "unknown",
+      hasTxHash: false,
+      retrySafety: "unsafe_until_wallet_checked",
+    };
+  }
+
+  if (matchesDestroyedConnectionError(error)) {
+    return {
+      failureKind: "provider_connection_destroyed",
+      providerState: "destroyed",
+      hasTxHash: false,
+      retrySafety: "safe_after_reconnect",
+    };
+  }
+
+  return {
+    failureKind: "submit_failed",
+    providerState: "unknown",
+    hasTxHash: false,
+    retrySafety: "unknown",
+  };
+};
+
 const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN | undefined => {
   if (!resourceBounds?.l2_gas || typeof resourceBounds.l2_gas.max_amount !== "bigint") {
     return resourceBounds;
@@ -517,6 +572,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   private pendingTransactionSpans = new Map<string, Span>();
   private pendingVrfExecutionLocks = new Map<string, VrfExecutionLock>();
   private readonly retryConfig?: RetryConfig;
+  private transactionSubmitGuard?: TransactionSubmitGuard;
   /**
    * Create a new EternumProvider instance
    *
@@ -698,13 +754,39 @@ export class EternumProvider extends EnhancedDojoProvider {
     return await this.execute(signer as any, transactionDetails, NAMESPACE, executionDetails);
   }
 
-  private async submitTransactionWithTimeout(
+  public setTransactionSubmitGuard(transactionSubmitGuard?: TransactionSubmitGuard): void {
+    this.transactionSubmitGuard = transactionSubmitGuard;
+  }
+
+  private getSignerAddress(signer: Account | AccountInterface): string | undefined {
+    const address = (signer as { address?: unknown }).address;
+    return typeof address === "string" && address.length > 0 ? address : undefined;
+  }
+
+  private async runTransactionSubmitGuard(
     signer: Account | AccountInterface,
-    transactionDetails: AllowArray<Call>,
-    executionDetails: UniversalDetails,
+    transactionMeta: TransactionLifecycleMeta,
+  ): Promise<void> {
+    const guard = this.transactionSubmitGuard;
+    if (!guard) {
+      return;
+    }
+
+    const context: TransactionSubmitGuardContext = {
+      ...transactionMeta,
+      transactionType: transactionMeta.type,
+      signerAddress: this.getSignerAddress(signer),
+      providerState: "ready",
+    };
+
+    await guard(context);
+  }
+
+  private async waitForTransactionSubmission(
+    submitPromise: Promise<{ transaction_hash: string }>,
   ): Promise<{ transaction_hash: string }> {
     return await this.withTimeout(
-      this.submitTransaction(signer, transactionDetails, executionDetails),
+      submitPromise,
       this.TRANSACTION_SUBMIT_TIMEOUT_MS,
       () => new TransactionSubmissionTimeoutError(this.TRANSACTION_SUBMIT_TIMEOUT_MS),
     );
@@ -834,6 +916,58 @@ export class EternumProvider extends EnhancedDojoProvider {
     this.emit("transactionFailed", payload);
   }
 
+  private emitTransactionSubmitted(transactionHash: string, transactionMeta: TransactionLifecycleMeta): void {
+    this.emit("transactionSubmitted", {
+      transactionHash,
+      ...transactionMeta,
+    });
+  }
+
+  private emitTransactionPending(transactionHash: string, transactionMeta: TransactionLifecycleMeta): void {
+    this.emit("transactionPending", {
+      transactionHash,
+      ...transactionMeta,
+    });
+  }
+
+  private observeLateSubmittedTransaction(
+    submitPromise: Promise<{ transaction_hash: string }>,
+    transactionMeta: TransactionLifecycleMeta,
+  ): void {
+    void submitPromise
+      .then((tx) => {
+        const recoveredTransactionMeta = {
+          ...transactionMeta,
+          recoveredFromSubmissionTimeout: true,
+        };
+        const recoveredTransactionMetaWithHash = {
+          ...recoveredTransactionMeta,
+          transactionHash: tx.transaction_hash,
+        };
+
+        this.emitTransactionSubmitted(tx.transaction_hash, recoveredTransactionMeta);
+        this.emitTransactionPending(tx.transaction_hash, recoveredTransactionMeta);
+
+        void this.waitForTransactionWithCheckInternal(tx.transaction_hash, recoveredTransactionMetaWithHash)
+          .then((receipt) => {
+            this.emit("transactionComplete", {
+              details: receipt,
+              ...recoveredTransactionMeta,
+            });
+          })
+          .catch((error) => {
+            this.emitTransactionFailure({
+              ...recoveredTransactionMetaWithHash,
+              message: extractErrorMessage(error),
+              stage: resolveTransactionFailureStage(error, "background_confirmation"),
+            });
+          });
+      })
+      .catch(() => {
+        // The original timeout path already emitted the submit failure.
+      });
+  }
+
   // ============ Optional client-side batching API ============
   public beginBatch(options: { signer: Account | AccountInterface; immediateEntrypoints?: string[] }) {
     if (this._batchCalls) return; // already batching
@@ -956,6 +1090,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       ...(batchDetails && batchDetails.length > 0 ? { batchDetails } : {}),
     });
 
+    await this.runTransactionSubmitGuard(signer, transactionMeta);
     const span = this.startTransactionSpan(sanitizedTransactionDetails, transactionMeta);
 
     const executionDetails = await this.getV3ExecutionDetails(signer, sanitizedTransactionDetails);
@@ -967,16 +1102,23 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
 
     let tx;
+    let submitPromise: Promise<{ transaction_hash: string }> | undefined;
     try {
-      tx = await this.submitTransactionWithTimeout(signer, sanitizedTransactionDetails, executionDetails);
+      submitPromise = this.submitTransaction(signer, sanitizedTransactionDetails, executionDetails);
+      tx = await this.waitForTransactionSubmission(submitPromise);
     } catch (error) {
       releaseVrfExecutionLock?.();
       releaseVrfExecutionLock = undefined;
       const message = extractErrorMessage(error);
+      const submitFailure = classifySubmitFailure(error);
+      if (submitPromise && submitFailure.failureKind === "submission_timeout_no_hash") {
+        this.observeLateSubmittedTransaction(submitPromise, transactionMeta);
+      }
       this.emitTransactionFailure({
         ...transactionMeta,
         message: `Transaction failed to submit: ${message}`,
         stage: "submit",
+        ...submitFailure,
       });
       this.failTransactionSpan(span, undefined, error);
       throw error;
@@ -986,10 +1128,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     span.addEvent("transaction.submitted", { "transaction.hash": tx.transaction_hash });
 
     // Emit immediately so UI can show pending state
-    this.emit("transactionSubmitted", {
-      transactionHash: tx.transaction_hash,
-      ...transactionMeta,
-    });
+    this.emitTransactionSubmitted(tx.transaction_hash, transactionMeta);
 
     const waitForConfirmation = options?.waitForConfirmation ?? true;
     const transactionMetaWithHash = {
@@ -1008,10 +1147,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       : waitPromiseWithoutLockRelease;
 
     if (!waitForConfirmation) {
-      this.emit("transactionPending", {
-        transactionHash: tx.transaction_hash,
-        ...transactionMeta,
-      });
+      this.emitTransactionPending(tx.transaction_hash, transactionMeta);
       span.setAttribute("transaction.status", "pending");
       span.addEvent("transaction.pending", { "transaction.hash": tx.transaction_hash });
       this.pendingTransactionSpans.set(tx.transaction_hash, span);
@@ -1056,10 +1192,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
 
     if (waitResult.status === "pending") {
-      this.emit("transactionPending", {
-        transactionHash: tx.transaction_hash,
-        ...transactionMeta,
-      });
+      this.emitTransactionPending(tx.transaction_hash, transactionMeta);
       span.setAttribute("transaction.status", "pending");
       span.addEvent("transaction.pending", { "transaction.hash": tx.transaction_hash });
       this.pendingTransactionSpans.set(tx.transaction_hash, span);
