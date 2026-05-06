@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25426632193-1",
   "currentStepId": null,
   "createdAt": "2026-05-06T09:15:29.143Z",
-  "updatedAt": "2026-05-06T09:30:32.416Z",
+  "updatedAt": "2026-05-06T09:33:04.690Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -88,14 +88,12 @@
     "configureTxHash": "0xf8699bfa765d694025af50059b867566cefdf2ad3fcf600c2d5636c3486872",
     "worldConfigTxHash": "0xf8699bfa765d694025af50059b867566cefdf2ad3fcf600c2d5636c3486872",
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/blitz-my-axe/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-06T09:19:07.948Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-05-06T09:30:31.180Z"
+    "lastIndexerDescribeAt": "2026-05-06T09:33:04.690Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-05-06T09:19:22.235Z"
 }
