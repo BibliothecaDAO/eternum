@@ -6,31 +6,30 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DashboardNetworkSwitch } from "./dashboard-network-switch";
 
 const mocks = vi.hoisted(() => ({
-  useAccount: vi.fn(),
-  useSelectedRuntimeChain: vi.fn(),
-  setSelectedChain: vi.fn(),
-  switchWalletToChain: vi.fn(),
+  selectPreferredChain: vi.fn(),
+  switchToPreferredChain: vi.fn(),
+  useLandingNetworkState: vi.fn(),
 }));
 
-vi.mock("@starknet-react/core", () => ({
-  useAccount: mocks.useAccount,
-}));
-
-vi.mock("@/runtime/world", () => ({
-  useSelectedRuntimeChain: mocks.useSelectedRuntimeChain,
-  setSelectedChain: mocks.setSelectedChain,
+vi.mock("../hooks/use-landing-network-state", () => ({
+  useLandingNetworkState: mocks.useLandingNetworkState,
 }));
 
 vi.mock("@/ui/utils/network-switch", () => ({
   getChainLabel: (chain: string) => (chain === "mainnet" ? "Mainnet" : "Slot"),
-  resolveConnectedTxChainFromRuntime: () => "slot",
-  switchWalletToChain: mocks.switchWalletToChain,
 }));
 
-const controller = {
-  switchStarknetChain: vi.fn(),
-  openSettings: vi.fn(),
-  rpcUrl: vi.fn(),
+const buildLandingNetworkState = (overrides: Partial<ReturnType<typeof mocks.useLandingNetworkState>> = {}) => {
+  return {
+    connectedChain: "slot",
+    connectedLandingChain: "slot",
+    hasConnectedWallet: true,
+    preferredChain: "mainnet",
+    selectPreferredChain: mocks.selectPreferredChain,
+    status: "mismatched",
+    switchToPreferredChain: mocks.switchToPreferredChain,
+    ...overrides,
+  };
 };
 
 const waitForAsyncWork = async () => {
@@ -45,15 +44,11 @@ describe("DashboardNetworkSwitch", () => {
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-    mocks.useSelectedRuntimeChain.mockReturnValue("slot");
-    mocks.setSelectedChain.mockReset();
-    mocks.switchWalletToChain.mockReset();
-    mocks.switchWalletToChain.mockResolvedValue(true);
-    mocks.useAccount.mockReturnValue({
-      address: "0xabc",
-      chainId: "0xslot",
-      connector: { controller },
-    });
+    mocks.selectPreferredChain.mockReset();
+    mocks.switchToPreferredChain.mockReset();
+    mocks.switchToPreferredChain.mockResolvedValue(true);
+    mocks.useLandingNetworkState.mockReset();
+    mocks.useLandingNetworkState.mockReturnValue(buildLandingNetworkState());
 
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -71,36 +66,46 @@ describe("DashboardNetworkSwitch", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
+  it("renders Mainnet before Slot", async () => {
+    await act(async () => {
+      root.render(<DashboardNetworkSwitch />);
+      await waitForAsyncWork();
+    });
+
+    const buttonLabels = Array.from(container.querySelectorAll("button")).map((button) => button.textContent);
+
+    expect(buttonLabels).toEqual(["Mainnet", "Slot"]);
+  });
+
   it("swaps the preferred game chain and wallet network when the user picks another chain", async () => {
     await act(async () => {
       root.render(<DashboardNetworkSwitch />);
       await waitForAsyncWork();
     });
 
-    const mainnetButton = Array.from(container.querySelectorAll("button")).find((button) =>
-      button.textContent?.includes("Mainnet"),
+    const slotButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Slot"),
     );
 
-    expect(mainnetButton).toBeDefined();
+    expect(slotButton).toBeDefined();
 
     await act(async () => {
-      mainnetButton?.click();
+      slotButton?.click();
       await waitForAsyncWork();
     });
 
-    expect(mocks.setSelectedChain).toHaveBeenCalledWith("mainnet");
-    expect(mocks.switchWalletToChain).toHaveBeenCalledWith({
-      controller,
-      targetChain: "mainnet",
-    });
+    expect(mocks.switchToPreferredChain).toHaveBeenCalledWith("slot");
   });
 
   it("updates the selected button immediately after changing the preferred chain without waiting for wallet state", async () => {
-    mocks.useAccount.mockReturnValue({
-      address: null,
-      chainId: null,
-      connector: undefined,
-    });
+    mocks.useLandingNetworkState.mockReturnValue(
+      buildLandingNetworkState({
+        connectedChain: null,
+        connectedLandingChain: null,
+        hasConnectedWallet: false,
+        status: "disconnected",
+      }),
+    );
 
     await act(async () => {
       root.render(<DashboardNetworkSwitch />);
@@ -111,16 +116,16 @@ describe("DashboardNetworkSwitch", () => {
     const slotButton = buttons.find((button) => button.textContent?.includes("Slot"));
     const mainnetButton = buttons.find((button) => button.textContent?.includes("Mainnet"));
 
-    expect(slotButton?.getAttribute("aria-pressed")).toBe("true");
-    expect(mainnetButton?.getAttribute("aria-pressed")).toBe("false");
+    expect(mainnetButton?.getAttribute("aria-pressed")).toBe("true");
+    expect(slotButton?.getAttribute("aria-pressed")).toBe("false");
 
     await act(async () => {
-      mainnetButton?.click();
+      slotButton?.click();
       await waitForAsyncWork();
     });
 
-    expect(mocks.setSelectedChain).toHaveBeenCalledWith("mainnet");
-    expect(mainnetButton?.getAttribute("aria-pressed")).toBe("true");
-    expect(slotButton?.getAttribute("aria-pressed")).toBe("false");
+    expect(mocks.selectPreferredChain).toHaveBeenCalledWith("slot");
+    expect(slotButton?.getAttribute("aria-pressed")).toBe("true");
+    expect(mainnetButton?.getAttribute("aria-pressed")).toBe("false");
   });
 });

@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-06",
+    title: "Focused Chain Views",
+    description:
+      "Landing games, profile ranks, MMR, prediction markets, and cosmetics now follow the selected landing chain, with each page open starting on Mainnet.",
+    type: "fix",
+  },
+  {
+    date: "2026-05-06",
     title: "Map Sync Recovery",
     description:
       "Improved map stream recovery so delayed spatial updates enter a reconnecting state, retry cleanly, and surface network trouble when the map cannot restore live updates.",

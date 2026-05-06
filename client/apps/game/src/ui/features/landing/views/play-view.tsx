@@ -33,6 +33,7 @@ import { GameReviewModal } from "../components/game-review-modal";
 import type { LandingModeFilter, LandingEntryRouteState } from "../lib/landing-entry-state";
 import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
 import { useLandingContext } from "../context/landing-context";
+import { useLandingNetworkState } from "../hooks/use-landing-network-state";
 
 interface PlayViewProps {
   className?: string;
@@ -866,6 +867,7 @@ export const PlayView = ({
   const queryClient = useQueryClient();
   const location = useLocation();
   const navigate = useNavigate();
+  const { preferredChain } = useLandingNetworkState();
 
   // Review flow state
   const [reviewWorld, setReviewWorld] = useState<WorldSelection | null>(null);
@@ -1148,7 +1150,7 @@ export const PlayView = ({
 
   return (
     <>
-      {shouldMountMarketsProviders ? <MarketsProviders>{content}</MarketsProviders> : content}
+      {shouldMountMarketsProviders ? <MarketsProviders chain={preferredChain}>{content}</MarketsProviders> : content}
 
       {reviewWorld && !disableReviewFlow && (
         <GameReviewModal
