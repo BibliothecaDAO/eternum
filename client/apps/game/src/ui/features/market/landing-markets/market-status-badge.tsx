@@ -26,7 +26,7 @@ const STATUS_STYLES: Record<StatusKey, string> = {
   open: "border-brilliance/40 bg-brilliance/10 text-brilliance",
   active: "border-brilliance/40 bg-brilliance/10 text-brilliance",
   trading: "border-brilliance/40 bg-brilliance/10 text-brilliance",
-  closed: "border-orange/40 bg-orange/10 text-orange",
+  closed: "border-eternum-orange/40 bg-eternum-orange/10 text-eternum-orange",
   resolvable: "border-gold/40 bg-gold/10 text-gold",
   resolved: "border-gold/55 bg-gold/20 text-gold",
   settling: "border-gold/40 bg-gold/10 text-gold",

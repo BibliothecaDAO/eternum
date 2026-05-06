@@ -32,10 +32,10 @@ const pickTone = (overall: string): { container: string; text: string; ring: str
     };
   }
   return {
-    container: "border-orange/60 bg-orange/15 hover:bg-orange/25",
-    text: "text-orange",
-    ring: "focus-visible:ring-orange/50",
-    dot: "bg-orange",
+    container: "border-eternum-orange/60 bg-eternum-orange/15 hover:bg-eternum-orange/25",
+    text: "text-eternum-orange",
+    ring: "focus-visible:ring-eternum-orange/50",
+    dot: "bg-eternum-orange",
   };
 };
 

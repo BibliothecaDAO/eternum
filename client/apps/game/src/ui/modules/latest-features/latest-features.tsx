@@ -1,7 +1,9 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { latestFeatures } from "@/ui/features/world";
+import { getLatestFeaturePresentation } from "@/ui/features/world/latest-feature-presentation";
 import { latestFeatures as featuresData, type FeatureType } from "@/ui/features/world/latest-features";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Zap from "lucide-react/dist/esm/icons/zap";
@@ -10,30 +12,18 @@ import Wrench from "lucide-react/dist/esm/icons/wrench";
 import ExternalLink from "lucide-react/dist/esm/icons/external-link";
 import { useEffect } from "react";
 
-const typeConfig: Record<FeatureType, { icon: typeof Sparkles; label: string; color: string; bg: string }> = {
+const typeConfig: Record<FeatureType, { icon: typeof Sparkles }> = {
   feature: {
     icon: Sparkles,
-    label: "New",
-    color: "text-emerald-400",
-    bg: "bg-emerald-500/20 border-emerald-500/30",
   },
   improvement: {
     icon: Zap,
-    label: "Improved",
-    color: "text-sky-400",
-    bg: "bg-sky-500/20 border-sky-500/30",
   },
   balance: {
     icon: Scale,
-    label: "Balance",
-    color: "text-amber-400",
-    bg: "bg-amber-500/20 border-amber-500/30",
   },
   fix: {
     icon: Wrench,
-    label: "Fixed",
-    color: "text-rose-400",
-    bg: "bg-rose-500/20 border-rose-500/30",
   },
 };
 
@@ -80,6 +70,7 @@ export const LatestFeaturesWindow = () => {
             <div className="space-y-3">
               {featuresData.map((feature, index) => {
                 const config = typeConfig[feature.type];
+                const presentation = getLatestFeaturePresentation(feature.type);
                 const Icon = config.icon;
                 const recent = isRecentByDays(feature.date);
 
@@ -99,16 +90,24 @@ export const LatestFeaturesWindow = () => {
                     )}
 
                     <div className="flex items-start gap-3">
-                      <div className={`p-1.5 rounded-md border ${config.bg} flex-shrink-0 mt-0.5`}>
-                        <Icon className={`w-3.5 h-3.5 ${config.color}`} />
+                      <div
+                        className={cn(
+                          "p-1.5 rounded-md border flex-shrink-0 mt-0.5",
+                          presentation.iconSurfaceClassName,
+                        )}
+                      >
+                        <Icon className={cn("w-3.5 h-3.5", presentation.iconClassName)} />
                       </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="mb-2 flex flex-wrap items-center gap-2">
                           <span
-                            className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${config.bg} ${config.color}`}
+                            className={cn(
+                              "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]",
+                              presentation.badgeClassName,
+                            )}
                           >
-                            {config.label}
+                            {presentation.popupLabel}
                           </span>
                           {feature.gameSlug ? (
                             <span className="rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-gold/75">

@@ -3,6 +3,18 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  /*
+   * Keep bare Tailwind `border` aligned with the game palette.
+   * Explicit `border-*` utilities still override this base fallback.
+   */
+  *,
+  ::before,
+  ::after {
+    border-color: rgba(223, 170, 84, 0.18);
+  }
+}
+
 @keyframes transfer-token {
   0% {
     left: 0%;

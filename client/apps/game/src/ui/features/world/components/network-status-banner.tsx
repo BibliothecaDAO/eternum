@@ -62,7 +62,7 @@ export const NetworkStatusBanner = ({ onRetry }: NetworkStatusBannerProps) => {
               <div
                 className={cn(
                   "pointer-events-none absolute inset-y-4 left-0 w-[2px] rounded-full",
-                  status === "disconnected" ? "bg-anger-light/80" : "bg-orange/80",
+                  status === "disconnected" ? "bg-anger-light/80" : "bg-eternum-orange/80",
                 )}
               />
 
@@ -73,7 +73,7 @@ export const NetworkStatusBanner = ({ onRetry }: NetworkStatusBannerProps) => {
                       "flex h-10 w-10 items-center justify-center rounded-full border shadow-[inset_0_1px_4px_rgba(0,0,0,0.45)]",
                       status === "disconnected"
                         ? "border-anger-light/35 bg-anger-light/10 text-anger-light"
-                        : "border-orange/35 bg-orange/10 text-orange",
+                        : "border-eternum-orange/35 bg-eternum-orange/10 text-eternum-orange",
                     )}
                   >
                     <AlertTriangle className={cn("h-[18px] w-[18px]", reconnecting && "animate-pulse")} aria-hidden />
@@ -84,7 +84,7 @@ export const NetworkStatusBanner = ({ onRetry }: NetworkStatusBannerProps) => {
                   <div
                     className={cn(
                       "text-[9px] font-semibold uppercase tracking-[0.38em]",
-                      status === "disconnected" ? "text-anger-light" : "text-orange",
+                      status === "disconnected" ? "text-anger-light" : "text-eternum-orange",
                     )}
                   >
                     Network

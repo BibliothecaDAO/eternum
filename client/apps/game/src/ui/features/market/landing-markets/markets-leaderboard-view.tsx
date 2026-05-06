@@ -35,12 +35,12 @@ const RANK_STYLES = {
     iconColor: "text-gray-300",
   },
   3: {
-    bg: "bg-gradient-to-r from-orange/15 to-orange/5",
-    border: "border-orange/30",
+    bg: "bg-gradient-to-r from-eternum-orange/15 to-eternum-orange/5",
+    border: "border-eternum-orange/30",
     ring: "",
-    text: "text-orange",
+    text: "text-eternum-orange",
     icon: Medal,
-    iconColor: "text-orange",
+    iconColor: "text-eternum-orange",
   },
 };
 

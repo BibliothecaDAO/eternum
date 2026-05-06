@@ -70,8 +70,8 @@ const notificationToneStyles: Record<
     shadow: "shadow-[0_0_10px_rgba(107,127,215,0.4)]",
   },
   yellow: {
-    background: "bg-yellow/90",
-    border: "border-yellow/80",
+    background: "bg-eternum-yellow/90",
+    border: "border-eternum-yellow/80",
     text: "text-dark",
     shadow: "shadow-[0_0_10px_rgba(250,255,0,0.45)]",
   },
@@ -82,8 +82,8 @@ const notificationToneStyles: Record<
     shadow: "shadow-[0_0_10px_rgba(223,170,84,0.45)]",
   },
   orange: {
-    background: "bg-orange/90",
-    border: "border-orange/80",
+    background: "bg-eternum-orange/90",
+    border: "border-eternum-orange/80",
     text: "text-dark",
     shadow: "shadow-[0_0_10px_rgba(254,153,60,0.45)]",
   },

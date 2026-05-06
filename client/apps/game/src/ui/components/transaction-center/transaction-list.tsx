@@ -23,7 +23,7 @@ const CollapsibleSection = ({
 
   const variantStyles = {
     default: "text-gold/70",
-    warning: "text-orange",
+    warning: "text-eternum-orange",
     error: "text-danger",
   };
 
@@ -49,7 +49,7 @@ const CollapsibleSection = ({
             variant === "error"
               ? "bg-danger/20 text-danger"
               : variant === "warning"
-                ? "bg-orange/20 text-orange"
+                ? "bg-eternum-orange/20 text-eternum-orange"
                 : "bg-gold/20 text-gold/70"
           }`}
         >
@@ -143,13 +143,13 @@ export const TransactionList = ({ maxRecentTransactions = 10 }: TransactionListP
           ))}
         </div>
         {/* Refresh button for stuck transactions */}
-        <div className="px-3 py-2 border-t border-orange/20">
+        <div className="px-3 py-2 border-t border-eternum-orange/20">
           <button
             onClick={() => window.location.reload()}
             className="w-full flex items-center justify-center gap-2 px-3 py-2
-                       bg-orange/20 hover:bg-orange/30
-                       border border-orange/40 rounded
-                       text-orange text-xs font-medium
+                       bg-eternum-orange/20 hover:bg-eternum-orange/30
+                       border border-eternum-orange/40 rounded
+                       text-eternum-orange text-xs font-medium
                        transition-colors"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -162,7 +162,9 @@ export const TransactionList = ({ maxRecentTransactions = 10 }: TransactionListP
             </svg>
             Refresh Client
           </button>
-          <p className="text-[10px] text-orange/50 text-center mt-1">Try refreshing if transactions are stuck</p>
+          <p className="text-[10px] text-eternum-orange/50 text-center mt-1">
+            Try refreshing if transactions are stuck
+          </p>
         </div>
       </CollapsibleSection>
 

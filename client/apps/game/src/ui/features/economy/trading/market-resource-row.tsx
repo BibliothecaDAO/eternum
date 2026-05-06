@@ -28,7 +28,8 @@ export const MarketResourceRow = memo(
     const resource = useMemo(() => findResourceById(resourceId), [resourceId]);
 
     const balanceNum = balance ? Number(balance) : 0;
-    const balanceColor = balanceNum > 1000 ? "text-green/70" : balanceNum > 100 ? "text-yellow/70" : "text-red/50";
+    const balanceColor =
+      balanceNum > 1000 ? "text-green/70" : balanceNum > 100 ? "text-eternum-yellow/70" : "text-red/50";
 
     return (
       <div

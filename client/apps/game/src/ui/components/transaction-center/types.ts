@@ -624,7 +624,7 @@ export const getTxIcon = (type: TransactionType): string => {
 
 export const getStatusColor = (status: TransactionStatus, isStuck: boolean): string => {
   if (status === "pending" && isStuck) {
-    return "text-orange";
+    return "text-eternum-orange";
   }
 
   switch (status) {

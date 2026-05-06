@@ -392,7 +392,7 @@ const PlayerRow = ({
           className={clsx(
             "pointer-events-none absolute inset-y-2 left-1 w-1 rounded-full bg-gradient-to-b",
             player.isUser && !isSelected && "from-amber-200 via-gold to-amber-500 opacity-80",
-            isSelected && "from-yellow via-amber-200 to-gold opacity-100 animate-slowPulse",
+            isSelected && "from-eternum-yellow via-amber-200 to-gold opacity-100 animate-slowPulse",
           )}
         />
       )}

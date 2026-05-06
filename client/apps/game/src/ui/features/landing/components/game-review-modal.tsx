@@ -296,12 +296,12 @@ const SubmitScoreStep = ({
       </div>
 
       {!hasSigner && canRunPrimaryAction && (
-        <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
+        <div className="rounded-xl border border-eternum-orange/30 bg-eternum-orange/10 p-3 text-sm text-eternum-orange">
           Connect a wallet to submit score.
         </div>
       )}
       {!scoreSubmitted && isDevModeGame && (
-        <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
+        <div className="rounded-xl border border-eternum-orange/30 bg-eternum-orange/10 p-3 text-sm text-eternum-orange">
           Score submission is disabled for dev mode games.
         </div>
       )}
@@ -440,7 +440,7 @@ const ClaimRewardsStep = ({
       )}
 
       {!scoreSubmitted && (
-        <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
+        <div className="rounded-xl border border-eternum-orange/30 bg-eternum-orange/10 p-3 text-sm text-eternum-orange">
           Submit score first to unlock reward claiming.
         </div>
       )}
@@ -456,7 +456,7 @@ const ClaimRewardsStep = ({
       )}
 
       {!hasSigner && (
-        <div className="rounded-xl border border-orange/30 bg-orange/10 p-3 text-sm text-orange">
+        <div className="rounded-xl border border-eternum-orange/30 bg-eternum-orange/10 p-3 text-sm text-eternum-orange">
           Connect a wallet to claim rewards.
         </div>
       )}

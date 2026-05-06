@@ -42,6 +42,22 @@ export const latestFeatures = [
 - Use present tense ("Added", "Improved", "Fixed")
 - New entries go at the top of the array (most recent first)
 
+## Tailwind Border Safety
+
+Game UI uses dark surfaces, so border color must always be intentional.
+
+- Never use bare Tailwind `border`, `border-t`, `border-r`, `border-b`, or `border-l` on game UI surfaces unless an explicit border color class is also present on that same element.
+- Always pair border width utilities with a color utility such as `border-gold/20`, `border-rose-500/30`, or `border-white/10`.
+- Do not rely on Tailwind's default border color for chips, pills, cards, badges, icon wrappers, buttons, toggles, or panel edges.
+- When the same visual concept appears in more than one place, centralize its border and surface styling in a shared helper or component instead of duplicating inline class strings.
+- Before changing a styled UI pattern, search for every renderer of that pattern and keep them on the same shared presentation path.
+
+Example:
+
+```tsx
+<span className="rounded-full border border-gold/20 bg-gold/10 px-2 py-0.5 text-gold/75" />
+```
+
 ## CRITICAL Git Rules for Parallel Agents CRITICAL
 
 Multiple agents may work on different files in the same worktree simultaneously. You MUST follow these rules:

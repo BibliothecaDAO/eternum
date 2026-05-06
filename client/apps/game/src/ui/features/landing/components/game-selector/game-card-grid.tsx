@@ -122,7 +122,7 @@ const getStageLabel = (stage: RegistrationStage): string => {
 const GameTypeBadge = ({ mmrEnabled }: { mmrEnabled: boolean }) => {
   if (mmrEnabled) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-[8px] font-bold text-orange border border-orange/40 bg-orange/15 px-1 py-0.5 rounded">
+      <span className="inline-flex items-center gap-0.5 text-[8px] font-bold text-eternum-orange border border-eternum-orange/40 bg-eternum-orange/15 px-1 py-0.5 rounded">
         <Trophy className="w-2.5 h-2.5" />
         Ranked
       </span>
@@ -137,7 +137,7 @@ const GameTypeBadge = ({ mmrEnabled }: { mmrEnabled: boolean }) => {
 const ChainBadge = ({ chain }: { chain: Chain }) => {
   const chainStyles: Record<Chain, string> = {
     mainnet: "text-brilliance/70 bg-brilliance/10 border border-brilliance/20",
-    sepolia: "text-orange/70 bg-orange/10 border border-orange/20",
+    sepolia: "text-eternum-orange/70 bg-eternum-orange/10 border border-eternum-orange/20",
     slot: "text-gold/70 bg-gold/10 border border-gold/20",
     slottest: "text-gold/70 bg-gold/10 border border-gold/20",
     local: "text-white/70 bg-white/10 border border-white/20",

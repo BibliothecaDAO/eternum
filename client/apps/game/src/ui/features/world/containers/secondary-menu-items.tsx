@@ -178,7 +178,7 @@ export const SecondaryMenuItems = () => {
             className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-dark-brown
                         ${txStatus.status === "idle" ? "bg-brilliance" : ""}
                         ${txStatus.status === "pending" ? "bg-gold animate-pulse" : ""}
-                        ${txStatus.status === "stuck" ? "bg-orange animate-pulse" : ""}
+                        ${txStatus.status === "stuck" ? "bg-eternum-orange animate-pulse" : ""}
                         ${txStatus.status === "error" ? "bg-danger" : ""}
                         shadow-[0_0_6px_currentColor]`}
           />

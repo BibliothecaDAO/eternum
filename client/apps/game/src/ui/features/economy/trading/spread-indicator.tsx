@@ -16,7 +16,7 @@ export const SpreadIndicator = memo(({ bidPrice, askPrice }: SpreadIndicatorProp
   const barWidth = Math.min(Math.max(spreadPercent * 2, 5), 100);
 
   // Color: green for tight (<5%), yellow for medium (5-15%), red for wide (>15%)
-  const barColor = spreadPercent < 5 ? "bg-green" : spreadPercent < 15 ? "bg-yellow/70" : "bg-red";
+  const barColor = spreadPercent < 5 ? "bg-green" : spreadPercent < 15 ? "bg-eternum-yellow/70" : "bg-red";
 
   return (
     <div className="w-full h-1 bg-gold/10 rounded-full overflow-hidden" title={`Spread: ${spreadPercent.toFixed(1)}%`}>

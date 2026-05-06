@@ -167,10 +167,10 @@ const TradeConfirmDialog = ({
           )}
 
           {/* Risk Notice */}
-          <div className="rounded-lg border border-orange/35 bg-orange/10 p-3">
+          <div className="rounded-lg border border-eternum-orange/35 bg-eternum-orange/10 p-3">
             <div className="mb-2 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-orange">Alpha Release</span>
+              <AlertTriangle className="h-4 w-4 text-eternum-orange" />
+              <span className="text-xs font-semibold uppercase tracking-wide text-eternum-orange">Alpha Release</span>
             </div>
             <p className="text-[11px] leading-relaxed text-gold/70">
               Smart contracts are not audited. Loss of funds is possible. Trade at your own risk.

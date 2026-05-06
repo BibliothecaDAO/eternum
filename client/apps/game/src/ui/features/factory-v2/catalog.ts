@@ -28,7 +28,7 @@ export const factoryModeDefinitions: FactoryModeDefinition[] = [
     label: "Eternum",
     strapline: "Larger worlds with a few extra finishing touches.",
     description: "Use this when you are launching a full Eternum world.",
-    accentClassName: "from-gold/30 via-orange/20 to-red-900/30",
+    accentClassName: "from-gold/30 via-eternum-orange/20 to-red-900/30",
     focusLabel: "Bigger launch, clearer recovery",
     stepPrinciples: ["Keep the flow calm", "Show what needs attention", "Hide the heavy lifting"],
   },

@@ -23,7 +23,7 @@ interface HyperstructureCardProps {
 
 const relationToneClasses: Record<NonNullable<RelationBadge["tone"]>, string> = {
   ally: "bg-green/30 border-green/50 border text-green-200",
-  enemy: "bg-yellow/30 border-yellow/50 border text-yellow-200",
+  enemy: "bg-eternum-yellow/30 border-eternum-yellow/50 border text-yellow-200",
   bandits: "bg-enemy border-enemy border text-red-200",
   neutral: "bg-gold/20 border-gold/40 border text-gold",
 };

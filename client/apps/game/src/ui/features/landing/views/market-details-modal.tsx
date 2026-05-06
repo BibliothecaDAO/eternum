@@ -59,7 +59,7 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 
 const MarketDetailsModalLoadingFallback = () => (
   <div className="flex h-[60vh] items-center justify-center">
-    <Loader2 className="h-6 w-6 animate-spin text-orange" />
+    <Loader2 className="h-6 w-6 animate-spin text-eternum-orange" />
   </div>
 );
 
@@ -153,7 +153,7 @@ const MarketDetailsTabs = ({
               className={cx(
                 "whitespace-nowrap rounded-lg border px-3 py-1.5 text-xs font-semibold tracking-[0.06em] leading-none transition-colors",
                 activeTab === tab.key
-                  ? "border-orange/70 bg-orange/20 text-orange"
+                  ? "border-eternum-orange/70 bg-eternum-orange/20 text-eternum-orange"
                   : "border-white/15 bg-white/5 text-white/70 hover:border-white/30 hover:bg-white/10",
               )}
               onClick={() => setActiveTab(tab.key)}
@@ -491,10 +491,10 @@ const MarketDetailsModalContent = ({
                 onClick={() => void handleResolveOneClick()}
                 disabled={resolveOneClickDisabled}
                 className={cx(
-                  "inline-flex h-9 items-center whitespace-nowrap rounded-lg border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#04060b]",
+                  "inline-flex h-9 items-center whitespace-nowrap rounded-lg border px-3 text-xs font-semibold uppercase tracking-[0.12em] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-eternum-orange/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#04060b]",
                   resolveOneClickDisabled
                     ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
-                    : "border-orange/80 bg-orange/20 text-orange shadow-[0_0_16px_rgba(251,146,60,0.22)] hover:border-orange hover:bg-orange/30",
+                    : "border-eternum-orange/80 bg-eternum-orange/20 text-eternum-orange shadow-[0_0_16px_rgba(251,146,60,0.22)] hover:border-eternum-orange hover:bg-eternum-orange/30",
                 )}
                 title={resolveOneClickTitle}
                 aria-label={resolveOneClickAriaLabel}
@@ -531,7 +531,7 @@ const MarketDetailsModalContent = ({
                   "inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors",
                   isLoading || isTradeSyncing
                     ? "cursor-not-allowed border-white/10 bg-white/5 text-white/35"
-                    : "border-orange/70 bg-orange/15 text-orange hover:border-orange hover:bg-orange/25",
+                    : "border-eternum-orange/70 bg-eternum-orange/15 text-eternum-orange hover:border-eternum-orange hover:bg-eternum-orange/25",
                 )}
                 title="Refresh market data"
                 aria-label="Refresh market data"
@@ -583,9 +583,9 @@ const MarketDetailsModalContent = ({
         </div>
 
         <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-5">
-          <div className="rounded-lg border border-orange/40 bg-orange/10 px-3 py-2">
-            <p className="text-[10px] uppercase tracking-[0.12em] text-orange/80">All-time Volume</p>
-            <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-orange">
+          <div className="rounded-lg border border-eternum-orange/40 bg-eternum-orange/10 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.12em] text-eternum-orange/80">All-time Volume</p>
+            <p className="mt-1 inline-flex items-center gap-1 text-sm font-semibold text-eternum-orange">
               {volumeDisplay} {market.collateralToken?.symbol || ""}
               <TokenIcon token={market.collateralToken} size={13} />
             </p>

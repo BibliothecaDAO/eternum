@@ -420,7 +420,7 @@ const TIER_BG_COLORS: Record<string, string> = {
   "text-brilliance": "rgba(125, 255, 186, 0.7)",
   "text-gold": "rgba(223, 170, 84, 0.7)",
   "text-light-pink": "rgba(202, 177, 166, 0.7)",
-  "text-orange": "rgba(251, 146, 60, 0.7)",
+  "text-eternum-orange": "rgba(254, 153, 60, 0.7)",
   "text-gray-gold": "rgba(119, 103, 86, 0.7)",
 };
 

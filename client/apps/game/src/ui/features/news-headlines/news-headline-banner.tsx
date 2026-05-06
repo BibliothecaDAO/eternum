@@ -52,9 +52,9 @@ const HEADLINE_THEME_MAP: Record<HeadlineType, HeadlineTheme> = {
   "five-min-warning": {
     icon: Clock3,
     eyebrow: "Timer Warning",
-    accentTextClassName: "text-orange",
-    accentSurfaceClassName: "border-orange/35 bg-orange/10 text-orange",
-    accentEdgeClassName: "bg-orange/80",
+    accentTextClassName: "text-eternum-orange",
+    accentSurfaceClassName: "border-eternum-orange/35 bg-eternum-orange/10 text-eternum-orange",
+    accentEdgeClassName: "bg-eternum-orange/80",
   },
   "first-t2-army": {
     icon: Shield,

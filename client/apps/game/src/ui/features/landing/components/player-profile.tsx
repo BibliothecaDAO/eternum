@@ -66,7 +66,7 @@ const TIER_COLOR_HEX: Record<string, string> = {
   "text-brilliance": "#7DFFBA",
   "text-gold": "#dfaa54",
   "text-light-pink": "#CAB1A6",
-  "text-orange": "#FE993C",
+  "text-eternum-orange": "#FE993C",
   "text-gray-gold": "#776756",
 };
 

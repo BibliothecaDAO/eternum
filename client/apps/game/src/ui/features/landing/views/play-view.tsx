@@ -3,6 +3,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
+import { getLatestFeaturePresentation } from "@/ui/features/world/latest-feature-presentation";
 import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import {
   BookOpen,
@@ -21,6 +22,7 @@ import {
   Clock,
   Trophy,
   RefreshCw,
+  type LucideIcon,
 } from "lucide-react";
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -335,22 +337,21 @@ const LearnContent = ({
   </div>
 );
 
-/**
- * Get icon and color for feature type
- */
+const landingFeatureIcons: Record<FeatureType, LucideIcon> = {
+  feature: Sparkles,
+  improvement: TrendingUp,
+  balance: Wrench,
+  fix: Bug,
+};
+
 const getFeatureTypeStyle = (type: FeatureType) => {
-  switch (type) {
-    case "feature":
-      return { icon: Sparkles, color: "text-emerald-400", bg: "bg-emerald-500/20", label: "New Feature" };
-    case "improvement":
-      return { icon: TrendingUp, color: "text-blue-400", bg: "bg-blue-500/20", label: "Improvement" };
-    case "balance":
-      return { icon: Wrench, color: "text-amber-400", bg: "bg-amber-500/20", label: "Balance" };
-    case "fix":
-      return { icon: Bug, color: "text-red-400", bg: "bg-red-500/20", label: "Bug Fix" };
-    default:
-      return { icon: Sparkles, color: "text-gold", bg: "bg-gold/20", label: "Update" };
-  }
+  const presentation = getLatestFeaturePresentation(type);
+
+  return {
+    icon: landingFeatureIcons[type],
+    ...presentation,
+    label: presentation.landingLabel,
+  };
 };
 
 const formatFeatureDate = (dateString: string) =>
@@ -389,16 +390,20 @@ const NewsContent = () => (
             className="group rounded-lg border border-gold/10 bg-black/40 p-4 transition-all hover:border-gold/20"
           >
             <div className="flex items-start gap-3">
-              <div className={cn("flex h-8 w-8 items-center justify-center rounded-lg flex-shrink-0", style.bg)}>
-                <Icon className={cn("h-4 w-4", style.color)} />
+              <div
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-lg border flex-shrink-0",
+                  style.iconSurfaceClassName,
+                )}
+              >
+                <Icon className={cn("h-4 w-4", style.iconClassName)} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <span
                     className={cn(
                       "rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]",
-                      style.bg,
-                      style.color,
+                      style.badgeClassName,
                     )}
                   >
                     {style.label}
