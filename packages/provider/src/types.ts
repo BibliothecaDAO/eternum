@@ -21,6 +21,7 @@ export type TransactionRetrySafety = "safe_after_reconnect" | "unsafe_until_wall
 export interface TransactionLifecycleMeta {
   type?: TransactionType;
   transactionHash?: string;
+  signerAddress?: string;
   transactionCount?: number;
   batchDetails?: BatchedTransactionDetail[];
   entrypoints?: string[];

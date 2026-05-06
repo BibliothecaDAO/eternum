@@ -578,6 +578,105 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     );
   });
 
+  it("keeps the VRF submission lock until a timed-out submission reaches a terminal state", async () => {
+    vi.useFakeTimers();
+    const provider = makeProvider();
+    provider.TRANSACTION_SUBMIT_TIMEOUT_MS = 50;
+    provider.VRF_PROVIDER_ADDRESS = "0x999";
+
+    let resolveFirstExecute!: (value: { transaction_hash: string }) => void;
+    let resolveFirstWait!: (value: any) => void;
+    const firstWaitPromise = new Promise<any>((resolve) => {
+      resolveFirstWait = resolve;
+    });
+
+    provider.execute = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ transaction_hash: string }>((resolve) => {
+            resolveFirstExecute = resolve;
+          }),
+      )
+      .mockResolvedValueOnce({ transaction_hash: "0x2" });
+    provider.waitForTransactionWithCheckInternal = vi.fn().mockImplementation((transactionHash: string) => {
+      if (transactionHash === "0x1") {
+        return firstWaitPromise;
+      }
+      return Promise.resolve({ isReverted: () => false });
+    });
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const calls: Call[] = [
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 0, "0xabc"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "open_chest",
+        calldata: [],
+      },
+    ];
+
+    const firstResult = provider.executeAndCheckTransaction(signer, calls, undefined, {
+      waitForConfirmation: false,
+    });
+    const timedOutResult = firstResult.then(
+      () => null,
+      (error: unknown) => error,
+    );
+
+    await vi.advanceTimersByTimeAsync(50);
+    await expect(timedOutResult).resolves.toBeInstanceOf(Error);
+
+    const secondResult = provider.executeAndCheckTransaction(signer, calls, undefined, {
+      waitForConfirmation: false,
+    });
+
+    const releasedBeforeLateHash = await vi
+      .waitFor(
+        () => {
+          expect(provider.execute).toHaveBeenCalledTimes(2);
+        },
+        { timeout: 25, interval: 1 },
+      )
+      .then(
+        () => true,
+        () => false,
+      );
+    expect(releasedBeforeLateHash).toBe(false);
+
+    resolveFirstExecute({ transaction_hash: "0x1" });
+
+    const releasedBeforeTerminalState = await vi
+      .waitFor(
+        () => {
+          expect(provider.execute).toHaveBeenCalledTimes(2);
+        },
+        { timeout: 25, interval: 1 },
+      )
+      .then(
+        () => true,
+        () => false,
+      );
+    expect(releasedBeforeTerminalState).toBe(false);
+
+    resolveFirstWait({ isReverted: () => false });
+
+    await expect(secondResult).resolves.toMatchObject({
+      statusReceipt: "PENDING",
+      transaction_hash: "0x2",
+    });
+    expect(provider.execute).toHaveBeenCalledTimes(2);
+  });
+
   it("waits for a registered pre-submit guard before calling execute", async () => {
     const provider = makeProvider();
     let releaseGuard!: () => void;

@@ -1,6 +1,11 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  rememberUncertainClaimSharePointsSubmission,
+  resetUncertainSubmissionRegistryForTests,
+  shouldSkipAutomaticClaimSharePointsSubmission,
+} from "../ui/utils/uncertain-transaction-registry";
 
 import { useTransactionListener } from "./use-transaction-listener";
 
@@ -84,6 +89,7 @@ describe("useTransactionListener", () => {
     root = createRoot(container);
     provider.removeAllListeners();
     storeState.transactions = [];
+    resetUncertainSubmissionRegistryForTests();
     storeState.addTransaction.mockClear();
     storeState.updateTransaction.mockClear();
     observabilityMocks.addClientTransactionBreadcrumb.mockClear();
@@ -198,5 +204,53 @@ describe("useTransactionListener", () => {
     );
     expect(storeState.addTransaction).not.toHaveBeenCalled();
     expect(storeState.updateTransaction).not.toHaveBeenCalled();
+  });
+
+  it("clears the unresolved claim-share-points marker after a recovered late completion", async () => {
+    rememberUncertainClaimSharePointsSubmission({
+      walletAddress: "0xabc",
+      failureKind: "submission_timeout_no_hash",
+    });
+    expect(shouldSkipAutomaticClaimSharePointsSubmission("0xabc")).toBe(true);
+
+    await act(async () => {
+      root.render(<HookHarness />);
+    });
+
+    await act(async () => {
+      provider.emit("transactionComplete", {
+        details: { transaction_hash: "0xtx" },
+        type: "claim_share_points",
+        recoveredFromSubmissionTimeout: true,
+        signerAddress: "0xabc",
+      });
+    });
+
+    expect(shouldSkipAutomaticClaimSharePointsSubmission("0xabc")).toBe(false);
+  });
+
+  it("clears the unresolved claim-share-points marker after a recovered late failure with a hash", async () => {
+    rememberUncertainClaimSharePointsSubmission({
+      walletAddress: "0xabc",
+      failureKind: "submission_timeout_no_hash",
+    });
+    expect(shouldSkipAutomaticClaimSharePointsSubmission("0xabc")).toBe(true);
+
+    await act(async () => {
+      root.render(<HookHarness />);
+    });
+
+    await act(async () => {
+      provider.emit("transactionFailed", {
+        message: "Transaction reverted",
+        stage: "revert",
+        transactionHash: "0xfail",
+        type: "claim_share_points",
+        recoveredFromSubmissionTimeout: true,
+        signerAddress: "0xabc",
+      });
+    });
+
+    expect(shouldSkipAutomaticClaimSharePointsSubmission("0xabc")).toBe(false);
   });
 });

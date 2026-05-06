@@ -825,7 +825,10 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   private buildTransactionLifecycleMeta(
     transactionDetails: AllowArray<Call>,
-    meta: Pick<TransactionLifecycleMeta, "type" | "transactionCount" | "batchDetails" | "transactionHash">,
+    meta: Pick<
+      TransactionLifecycleMeta,
+      "type" | "transactionHash" | "signerAddress" | "transactionCount" | "batchDetails"
+    >,
   ): TransactionLifecycleMeta {
     const entrypoints = this.getTransactionEntrypoints(transactionDetails);
     const contractAddresses = this.getTransactionContractAddresses(transactionDetails);
@@ -933,6 +936,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   private observeLateSubmittedTransaction(
     submitPromise: Promise<{ transaction_hash: string }>,
     transactionMeta: TransactionLifecycleMeta,
+    releaseVrfExecutionLock?: () => void,
   ): void {
     void submitPromise
       .then((tx) => {
@@ -948,7 +952,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         this.emitTransactionSubmitted(tx.transaction_hash, recoveredTransactionMeta);
         this.emitTransactionPending(tx.transaction_hash, recoveredTransactionMeta);
 
-        void this.waitForTransactionWithCheckInternal(tx.transaction_hash, recoveredTransactionMetaWithHash)
+        return this.waitForTransactionWithCheckInternal(tx.transaction_hash, recoveredTransactionMetaWithHash)
           .then((receipt) => {
             this.emit("transactionComplete", {
               details: receipt,
@@ -965,6 +969,9 @@ export class EternumProvider extends EnhancedDojoProvider {
       })
       .catch(() => {
         // The original timeout path already emitted the submit failure.
+      })
+      .finally(() => {
+        releaseVrfExecutionLock?.();
       });
   }
 
@@ -1086,6 +1093,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const transactionMeta = this.buildTransactionLifecycleMeta(sanitizedTransactionDetails, {
       type: txType,
+      signerAddress: this.getSignerAddress(signer),
       ...(isMultipleTransactions ? { transactionCount: sanitizedTransactionDetails.length } : {}),
       ...(batchDetails && batchDetails.length > 0 ? { batchDetails } : {}),
     });
@@ -1107,12 +1115,14 @@ export class EternumProvider extends EnhancedDojoProvider {
       submitPromise = this.submitTransaction(signer, sanitizedTransactionDetails, executionDetails);
       tx = await this.waitForTransactionSubmission(submitPromise);
     } catch (error) {
-      releaseVrfExecutionLock?.();
-      releaseVrfExecutionLock = undefined;
       const message = extractErrorMessage(error);
       const submitFailure = classifySubmitFailure(error);
       if (submitPromise && submitFailure.failureKind === "submission_timeout_no_hash") {
-        this.observeLateSubmittedTransaction(submitPromise, transactionMeta);
+        this.observeLateSubmittedTransaction(submitPromise, transactionMeta, releaseVrfExecutionLock);
+        releaseVrfExecutionLock = undefined;
+      } else {
+        releaseVrfExecutionLock?.();
+        releaseVrfExecutionLock = undefined;
       }
       this.emitTransactionFailure({
         ...transactionMeta,
