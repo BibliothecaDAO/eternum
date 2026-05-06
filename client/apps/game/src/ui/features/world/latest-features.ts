@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-06",
+    title: "Accurate Reward Claims",
+    description:
+      "Fixed ended game reward cards so chest rewards only appear when the game can actually mint loot chests and the shared chest pool still has claimable supply.",
+    type: "fix",
+  },
+  {
+    date: "2026-05-06",
     title: "Map Sync Recovery",
     description:
       "Improved map stream recovery so delayed spatial updates enter a reconnecting state, retry cleanly, and surface network trouble when the map cannot restore live updates.",

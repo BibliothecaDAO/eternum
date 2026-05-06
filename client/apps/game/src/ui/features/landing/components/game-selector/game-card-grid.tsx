@@ -80,6 +80,15 @@ const formatLordsDisplayMaxTwoDecimals = (value: string): string => {
   return limitedDecimals.length > 0 ? `${wholeFormatted}.${limitedDecimals}` : wholeFormatted;
 };
 
+const formatClaimableRewardsText = (claimSummary: GameReviewClaimSummary): string => {
+  const lordsAmount = formatLordsDisplayMaxTwoDecimals(claimSummary.lordsWonFormatted);
+  if (claimSummary.chestsClaimedEstimate <= 0) {
+    return `Claimable: ${lordsAmount} LORDS`;
+  }
+
+  return `Claimable: ${lordsAmount} LORDS + ${claimSummary.chestsClaimedEstimate.toLocaleString()} chests`;
+};
+
 const getErrorMessage = (error: unknown): string | null => {
   if (error instanceof Error && error.message) return error.message;
   if (
@@ -808,8 +817,7 @@ const GameCard = ({
 
         {canClaimRewards && claimSummary && (
           <div className="rounded border border-gold/25 bg-gold/10 px-2 py-1.5 text-[10px] text-gold">
-            Claimable: {formatLordsDisplayMaxTwoDecimals(claimSummary.lordsWonFormatted)} LORDS +{" "}
-            {claimSummary.chestsClaimedEstimate.toLocaleString()} chests
+            {formatClaimableRewardsText(claimSummary)}
           </div>
         )}
 
