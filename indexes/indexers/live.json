@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-06T09:33:07.146Z",
+  "updatedAt": "2026-05-06T11:41:56.533Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1759,13 +1759,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/blitz-my-axe/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-06T09:33:07.145Z"
+        "describedAt": "2026-05-06T11:41:56.532Z"
       },
-      "updatedAt": "2026-05-06T09:33:07.146Z"
+      "updatedAt": "2026-05-06T11:41:56.533Z"
     }
   }
 }
