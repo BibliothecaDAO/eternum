@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25412468814-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-06T02:04:23.848Z",
+  "updatedAt": "2026-05-06T02:04:27.821Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -65,9 +65,10 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-06T02:04:27.821Z"
     },
     {
       "id": "grant-lootchest-roles",
@@ -3703,5 +3704,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
+  },
+  "activeLease": {
+    "launchRequestId": "25412468814-1",
+    "workflowRunId": 25412468814,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-worlds",
+    "acquiredAt": "2026-05-06T02:04:27.821Z",
+    "expiresAt": "2026-05-06T02:49:27.821Z"
   }
 }
