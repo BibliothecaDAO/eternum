@@ -7,6 +7,12 @@ import { sqlApi } from "@/services/api";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
+import {
+  clearUncertainClaimSharePointsSubmission,
+  isNoHashSubmissionTimeout,
+  rememberUncertainClaimSharePointsSubmission,
+  shouldSkipAutomaticClaimSharePointsSubmission,
+} from "@/ui/utils/uncertain-transaction-registry";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   formatArmies,
@@ -436,6 +442,10 @@ const AutoRegisterPointsStoreManager = () => {
       let txHash: string | null = null;
       try {
         const playerAddress = ContractAddress(account.address);
+        if (shouldSkipAutomaticClaimSharePointsSubmission(playerAddress)) {
+          log("Skipped: unresolved no-hash claim submission");
+          return;
+        }
         const claimedPointsAtSubmit = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
           playerAddress,
           { ignorePendingClaimOverride: true },
@@ -463,6 +473,7 @@ const AutoRegisterPointsStoreManager = () => {
         }
 
         leaderboardManager.confirmPendingSharePointsClaim(playerAddress, txHash ?? undefined);
+        clearUncertainClaimSharePointsSubmission(playerAddress);
         log("Points registered successfully");
 
         // Refresh leaderboard
@@ -470,6 +481,12 @@ const AutoRegisterPointsStoreManager = () => {
         leaderboardManager.updatePoints();
         log("Leaderboard refreshed");
       } catch (error) {
+        if (isNoHashSubmissionTimeout(error)) {
+          rememberUncertainClaimSharePointsSubmission({
+            walletAddress: ContractAddress(account.address),
+            failureKind: "submission_timeout_no_hash",
+          });
+        }
         leaderboardManager.clearPendingSharePointsClaim(ContractAddress(account.address), txHash ?? undefined);
         leaderboardManager.updatePoints();
         console.error("[AutoRegisterPoints] Failed:", error);
