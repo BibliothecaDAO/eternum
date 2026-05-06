@@ -357,6 +357,11 @@ import {
   resolveWorldmapCameraViewProfile,
 } from "./worldmap-camera-view-profile";
 import {
+  advanceWorldmapCameraSpring,
+  createWorldmapCameraSpringGoal,
+  createWorldmapCameraSpringState,
+} from "./worldmap-camera-spring";
+import {
   appendWorldmapChunkTrace,
   createWorldmapChunkTraceBuffer,
   snapshotWorldmapChunkTrace,
@@ -489,6 +494,12 @@ const TORII_BOUNDS_MODELS: BoundsModelConfig[] = [
   { model: "s1_eternum-BattleEvent", colField: "coord.x", rowField: "coord.y" },
 ];
 const WORLDMAP_CHUNK_POLICY = createWorldmapChunkPolicy(WORLD_CHUNK_CONFIG);
+const WORLDMAP_ZOOM_SPRING_CONFIG = {
+  angularFrequency: 14,
+  settleDistance: 0.025,
+  settleVelocity: 0.05,
+  maxDeltaSeconds: 1 / 20,
+};
 const SPATIAL_SQL_RESULT_ARRAY_KEYS = ["entities", "items", "models", "rows"];
 type DirectionalPrefetchAnchor = {
   forwardChunkKey: string;
@@ -584,6 +595,10 @@ export default class WorldmapScene extends WarpTravel {
     minDistance: this.worldmapMinZoomDistance,
     maxDistance: this.worldmapMaxZoomDistance,
   });
+  private readonly zoomSpringState = createWorldmapCameraSpringState();
+  private readonly zoomSpringGoal = createWorldmapCameraSpringGoal();
+  private isWorldmapZoomSpringActive = false;
+  private shouldCountWorldmapZoomSpringCompletion = false;
   private readonly worldmapCameraViewListeners: Set<(view: CameraView) => void> = new Set();
   private readonly worldmapCameraTransitionListeners: Set<(status: WorldmapCameraTransitionStatus) => void> = new Set();
   private lastPublishedStableCameraView = this.zoomCoordinator.getSnapshot().stableBand;
@@ -1826,32 +1841,39 @@ export default class WorldmapScene extends WarpTravel {
     this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
 
     const previousView = this.targetCameraView;
-    const target = this.controls.target;
-    if (position !== previousView) {
+    const shouldCountTransition = position !== previousView;
+    if (shouldCountTransition) {
       incrementWorldmapRenderCounter("zoomTransitionsStarted");
     }
 
     this.targetCameraView = position;
+    this.retargetWorldmapZoomSpring(position, shouldCountTransition);
+  }
+
+  private retargetWorldmapZoomSpring(position: CameraView, shouldCountTransition: boolean): void {
     const profile = resolveWorldmapCameraViewProfile(position);
     this.cameraDistance = profile.distance;
     this.cameraAngle = profile.angleRadians;
 
-    const newPosition = new Vector3(target.x, target.y + profile.height, target.z + profile.depth);
-    const duration = this.resolveCameraViewTransitionDuration(Math.abs(position - previousView));
-    const ease = this.resolveCameraTransitionEase();
-
-    this.cameraAnimate(
-      newPosition,
-      target,
-      duration,
-      () => {
-        if (position !== previousView) {
-          incrementWorldmapRenderCounter("zoomTransitionsCompleted");
-        }
-        this.syncResolvedCameraViewFromDistance(this.controls.object.position.distanceTo(this.controls.target));
-      },
-      { ease },
+    this.zoomSpringGoal.cameraTarget.copy(this.controls.target);
+    this.zoomSpringGoal.cameraPosition.set(
+      this.controls.target.x,
+      this.controls.target.y + profile.height,
+      this.controls.target.z + profile.depth,
     );
+
+    this.shouldCountWorldmapZoomSpringCompletion =
+      this.shouldCountWorldmapZoomSpringCompletion || shouldCountTransition;
+
+    if (this.isWorldmapZoomSpringActive) {
+      return;
+    }
+
+    this.zoomSpringState.cameraPosition.copy(this.controls.object.position as Vector3);
+    this.zoomSpringState.cameraTarget.copy(this.controls.target);
+    this.zoomSpringState.cameraVelocity.set(0, 0, 0);
+    this.zoomSpringState.targetVelocity.set(0, 0, 0);
+    this.isWorldmapZoomSpringActive = true;
   }
 
   public override getCurrentCameraView(): CameraView {
@@ -1929,18 +1951,6 @@ export default class WorldmapScene extends WarpTravel {
     this.zoomControllerState = resetWorldmapWheelIntent(this.zoomControllerState);
   }
 
-  private resolveCameraViewTransitionDuration(viewDelta: number): number {
-    if (viewDelta <= 0) {
-      return 0.32;
-    }
-
-    return 0.3 + viewDelta * 0.12;
-  }
-
-  private resolveCameraTransitionEase(): string {
-    return "power2.out";
-  }
-
   private publishWorldmapZoomSnapshot(snapshot: WorldmapCameraSnapshot): void {
     const nextStableCameraView = snapshot.stableBand;
     if (nextStableCameraView !== this.lastPublishedStableCameraView) {
@@ -1976,6 +1986,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private alignWorldmapCameraToBand(view: CameraView): void {
+    this.clearWorldmapZoomSpring();
     const profile = resolveWorldmapCameraViewProfile(view);
 
     this.controls.object.position.set(
@@ -3892,6 +3903,7 @@ export default class WorldmapScene extends WarpTravel {
     this.terrainRecoveryInFlight = resetState.terrainRecoveryInFlight;
     this.lowTerrainFrames = 0;
     this.offscreenChunkFrames = 0;
+    this.clearWorldmapZoomSpring();
     this.lastPublishedStableCameraView = this.zoomCoordinator.getSnapshot().stableBand;
     this.lastPublishedZoomStatus = "idle";
     this.terrainReferenceInstances = 0;
@@ -7998,6 +8010,7 @@ export default class WorldmapScene extends WarpTravel {
 
   update(deltaTime: number) {
     const animationContext = this.getAnimationVisibilityContext();
+    this.updateWorldmapZoomSpring(deltaTime);
     this.syncWorldmapZoomSnapshot();
     super.update(deltaTime);
     this.armyManager.update(deltaTime, animationContext);
@@ -8018,6 +8031,45 @@ export default class WorldmapScene extends WarpTravel {
       this.lowTerrainFrames = 0;
       this.offscreenChunkFrames = 0;
     }
+  }
+
+  private updateWorldmapZoomSpring(deltaTime: number): void {
+    if (!this.isWorldmapZoomSpringActive) {
+      return;
+    }
+
+    const hasSettled = advanceWorldmapCameraSpring({
+      state: this.zoomSpringState,
+      goal: this.zoomSpringGoal,
+      config: WORLDMAP_ZOOM_SPRING_CONFIG,
+      deltaSeconds: deltaTime,
+    });
+
+    this.controls.object.position.copy(this.zoomSpringState.cameraPosition);
+    this.controls.target.copy(this.zoomSpringState.cameraTarget);
+    this.notifyControlsChanged();
+
+    if (!hasSettled) {
+      return;
+    }
+
+    this.isWorldmapZoomSpringActive = false;
+    if (this.shouldCountWorldmapZoomSpringCompletion) {
+      incrementWorldmapRenderCounter("zoomTransitionsCompleted");
+    }
+    this.shouldCountWorldmapZoomSpringCompletion = false;
+    this.syncResolvedCameraViewFromDistance(this.controls.object.position.distanceTo(this.controls.target));
+  }
+
+  private clearWorldmapZoomSpring(): void {
+    this.isWorldmapZoomSpringActive = false;
+    this.shouldCountWorldmapZoomSpringCompletion = false;
+    this.zoomSpringState.cameraPosition.copy(this.controls.object.position as Vector3);
+    this.zoomSpringState.cameraTarget.copy(this.controls.target);
+    this.zoomSpringState.cameraVelocity.set(0, 0, 0);
+    this.zoomSpringState.targetVelocity.set(0, 0, 0);
+    this.zoomSpringGoal.cameraPosition.copy(this.zoomSpringState.cameraPosition);
+    this.zoomSpringGoal.cameraTarget.copy(this.zoomSpringState.cameraTarget);
   }
 
   private syncWorldmapZoomSnapshot(): void {

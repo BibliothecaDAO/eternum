@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-06",
+    title: "Smoother Map Zoom",
+    description:
+      "Improved map zoom transitions so close, medium, and far views retarget smoothly when wheel input changes direction or speed.",
+    type: "improvement",
+  },
+  {
+    date: "2026-05-06",
     title: "Stable Map Zoom",
     description:
       "Fixed map zoom so close, medium, and far views animate smoothly without forcing terrain chunks to rebuild during the zoom.",

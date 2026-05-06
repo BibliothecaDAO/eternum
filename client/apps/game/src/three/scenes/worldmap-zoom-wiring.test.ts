@@ -81,10 +81,18 @@ describe("worldmap zoom wiring", () => {
     expect(source).toMatch(/this\.zoomCoordinator\.syncToBand\(CameraView\.Medium/);
   });
 
-  it("uses a worldmap-specific camera transition curve for fixed zoom band changes", () => {
+  it("uses worldmap-specific spring config for fixed zoom band changes", () => {
     const source = readSceneSource("worldmap.tsx");
 
-    expect(source).toMatch(/resolveCameraViewTransitionDuration\(/);
-    expect(source).toMatch(/resolveCameraTransitionEase\(/);
+    expect(source).toMatch(/WORLDMAP_ZOOM_SPRING_CONFIG/);
+    expect(source).toMatch(/advanceWorldmapCameraSpring\(/);
+  });
+
+  it("retargets fixed-band zoom through a spring instead of restarting camera tweens", () => {
+    const source = readSceneSource("worldmap.tsx");
+
+    expect(source).toMatch(/retargetWorldmapZoomSpring\(/);
+    expect(source).toMatch(/updateWorldmapZoomSpring\(/);
+    expect(source).not.toMatch(/this\.cameraAnimate\(\s*newPosition,\s*target,\s*duration/);
   });
 });
