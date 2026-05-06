@@ -11,6 +11,7 @@ function readSceneSource(fileName: string): string {
 describe("worldmap zoom wiring", () => {
   it("routes worldmap wheel zoom through the stepped zoom controller instead of continuous delta intents", () => {
     const source = readSceneSource("worldmap.tsx");
+    const coordinatorSource = readSceneSource("worldmap-zoom/worldmap-zoom-coordinator.ts");
 
     expect(source).toMatch(/WorldmapZoomCoordinator/);
     expect(source).toMatch(/applyWorldmapWheelIntent\(/);
@@ -18,6 +19,7 @@ describe("worldmap zoom wiring", () => {
     expect(source).toMatch(/resolveWorldmapWheelGestureTimeoutMs\(/);
     expect(source).toMatch(/setWorldmapZoomTargetView\(/);
     expect(source).not.toMatch(/type:\s*"continuous_delta"/);
+    expect(coordinatorSource).not.toMatch(/continuous_delta|snap_to_distance|applyContinuousWorldmapZoomDelta/);
   });
 
   it("keeps MapControls zoom disabled for worldmap", () => {
@@ -51,9 +53,19 @@ describe("worldmap zoom wiring", () => {
 
   it("does not use cursor-anchor wheel resolution for fixed worldmap zoom stepping", () => {
     const source = readSceneSource("worldmap.tsx");
+    const coordinatorSource = readSceneSource("worldmap-zoom/worldmap-zoom-coordinator.ts");
 
     expect(source).not.toMatch(/resolveWorldmapWheelAnchor\(/);
     expect(source).not.toMatch(/resolveWorldmapGroundIntersection\(/);
+    expect(coordinatorSource).not.toMatch(/anchorWorldPoint|solveWorldmapZoomAnchor/);
+  });
+
+  it("does not force chunk refreshes from zoom-distance changes", () => {
+    const source = readSceneSource("worldmap.tsx");
+
+    expect(source).toMatch(/resolveControlsChangeChunkRefreshPlan\(/);
+    expect(source).not.toMatch(/shouldForceChunkRefreshForZoomDistanceChange/);
+    expect(source).not.toMatch(/planWorldmapZoomRefresh/);
   });
 
   it("removes direct worldmap refresh requests from GameRenderer control changes", () => {

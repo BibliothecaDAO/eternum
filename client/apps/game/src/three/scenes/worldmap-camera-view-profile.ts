@@ -6,6 +6,8 @@ interface WorldmapCameraViewProfile {
   angleDegrees: number;
   angleRadians: number;
   distance: number;
+  height: number;
+  depth: number;
 }
 
 export function resolveWorldmapCameraFieldOfViewDegrees(): number {
@@ -25,9 +27,13 @@ export function resolveWorldmapCameraViewProfiles(): Record<CameraView, Worldmap
 }
 
 function createWorldmapCameraViewProfile(distance: number, angleDegrees: number): WorldmapCameraViewProfile {
+  const angleRadians = (angleDegrees * Math.PI) / 180;
+
   return {
     angleDegrees,
-    angleRadians: (angleDegrees * Math.PI) / 180,
+    angleRadians,
     distance,
+    height: Math.sin(angleRadians) * distance,
+    depth: Math.cos(angleRadians) * distance,
   };
 }

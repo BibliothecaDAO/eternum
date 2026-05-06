@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-06",
+    title: "Stable Map Zoom",
+    description:
+      "Fixed map zoom so close, medium, and far views animate smoothly without forcing terrain chunks to rebuild during the zoom.",
+    type: "fix",
+  },
+  {
+    date: "2026-05-06",
     title: "Map Sync Recovery",
     description:
       "Improved map stream recovery so delayed spatial updates enter a reconnecting state, retry cleanly, and surface network trouble when the map cannot restore live updates.",

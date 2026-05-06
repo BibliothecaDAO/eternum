@@ -28,7 +28,6 @@ import {
   waitForChunkTransitionToSettle,
   resolveHydratedChunkRefreshFlushPlan,
   shouldScheduleHydratedChunkRefreshForFetch,
-  shouldForceChunkRefreshForZoomDistanceChange,
   resolveControlsChangeChunkRefreshPlan,
   resolveEntityActionPathLookup,
 } from "./worldmap-chunk-transition";
@@ -1481,45 +1480,24 @@ describe("resolveHydratedChunkRefreshFlushPlan", () => {
   });
 });
 
-describe("shouldForceChunkRefreshForZoomDistanceChange", () => {
-  it("forces refresh when zoom distance delta reaches the threshold", () => {
-    expect(
-      shouldForceChunkRefreshForZoomDistanceChange({
-        previousDistance: 20,
-        nextDistance: 20.75,
-        threshold: 0.75,
-      }),
-    ).toBe(true);
-  });
-
-  it("does not force refresh for small zoom drift below threshold", () => {
-    expect(
-      shouldForceChunkRefreshForZoomDistanceChange({
-        previousDistance: 20,
-        nextDistance: 20.4,
-        threshold: 0.75,
-      }),
-    ).toBe(false);
-  });
-
-  it("does not force refresh when previous distance is unavailable", () => {
-    expect(
-      shouldForceChunkRefreshForZoomDistanceChange({
-        previousDistance: null,
-        nextDistance: 40,
-        threshold: 0.75,
-      }),
-    ).toBe(false);
-  });
-});
-
 describe("resolveControlsChangeChunkRefreshPlan", () => {
-  it("requests a debounced refresh on camera movement even without large zoom delta", () => {
+  it("does not refresh chunks for distance-only zoom movement", () => {
     expect(
       resolveControlsChangeChunkRefreshPlan({
-        previousDistance: 20,
-        nextDistance: 20.2,
-        threshold: 0.75,
+        previousTargetHex: { col: 12, row: 12 },
+        nextTargetHex: { col: 12, row: 12 },
+      }),
+    ).toEqual({
+      shouldRequestRefresh: false,
+      shouldForceRefresh: false,
+    });
+  });
+
+  it("requests a debounced refresh when the camera target hex moves", () => {
+    expect(
+      resolveControlsChangeChunkRefreshPlan({
+        previousTargetHex: { col: 12, row: 12 },
+        nextTargetHex: { col: 13, row: 12 },
       }),
     ).toEqual({
       shouldRequestRefresh: true,
@@ -1527,25 +1505,11 @@ describe("resolveControlsChangeChunkRefreshPlan", () => {
     });
   });
 
-  it("requests a forced refresh when zoom delta crosses threshold", () => {
+  it("skips refresh when the previous target hex is unavailable", () => {
     expect(
       resolveControlsChangeChunkRefreshPlan({
-        previousDistance: 20,
-        nextDistance: 21,
-        threshold: 0.75,
-      }),
-    ).toEqual({
-      shouldRequestRefresh: true,
-      shouldForceRefresh: true,
-    });
-  });
-
-  it("skips refresh when distance sample is invalid", () => {
-    expect(
-      resolveControlsChangeChunkRefreshPlan({
-        previousDistance: 20,
-        nextDistance: Number.NaN,
-        threshold: 0.75,
+        previousTargetHex: null,
+        nextTargetHex: { col: 13, row: 12 },
       }),
     ).toEqual({
       shouldRequestRefresh: false,

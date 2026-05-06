@@ -29,7 +29,6 @@ interface WorldmapSwitchOffRuntimeStateResult {
   isSwitchedOff: boolean;
   toriiLoadingCounter: number;
   currentChunk: string;
-  lastControlsCameraDistance: null;
 }
 
 interface WorldmapSwitchOffTransitionStateInput<TChunkSwitchPromise> {
@@ -112,7 +111,6 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
     isSwitchedOff: true,
     toriiLoadingCounter: 0,
     currentChunk: "null",
-    lastControlsCameraDistance: null,
   };
 };
 

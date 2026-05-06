@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  WORLDMAP_STEP_WHEEL_DELTA,
-  applyContinuousWorldmapZoomDelta,
-  normalizeWorldmapWheelDelta,
-  resolveWorldmapWheelPixelDelta,
-} from "./worldmap-zoom-input-normalizer";
+import { normalizeWorldmapWheelDelta, resolveWorldmapWheelPixelDelta } from "./worldmap-zoom-input-normalizer";
 
 describe("resolveWorldmapWheelPixelDelta", () => {
   it("normalizes wheel deltas across pixel, line, and page modes", () => {
@@ -31,47 +26,5 @@ describe("normalizeWorldmapWheelDelta", () => {
 
   it("clamps pathological wheel spikes", () => {
     expect(normalizeWorldmapWheelDelta({ delta: 10_000, deltaMode: 0, viewportHeight: 900 }).normalizedDelta).toBe(480);
-  });
-});
-
-describe("applyContinuousWorldmapZoomDelta", () => {
-  it("uses a symmetric exponential distance curve for zoom in and zoom out", () => {
-    expect(
-      applyContinuousWorldmapZoomDelta({
-        currentDistance: 20,
-        normalizedDelta: -WORLDMAP_STEP_WHEEL_DELTA,
-        minDistance: 10,
-        maxDistance: 40,
-      }),
-    ).toBeCloseTo(18.1, 1);
-
-    expect(
-      applyContinuousWorldmapZoomDelta({
-        currentDistance: 20,
-        normalizedDelta: WORLDMAP_STEP_WHEEL_DELTA,
-        minDistance: 10,
-        maxDistance: 40,
-      }),
-    ).toBeCloseTo(22.1, 1);
-  });
-
-  it("clamps the resolved distance within the worldmap zoom bounds", () => {
-    expect(
-      applyContinuousWorldmapZoomDelta({
-        currentDistance: 10.2,
-        normalizedDelta: -WORLDMAP_STEP_WHEEL_DELTA * 4,
-        minDistance: 10,
-        maxDistance: 40,
-      }),
-    ).toBe(10);
-
-    expect(
-      applyContinuousWorldmapZoomDelta({
-        currentDistance: 39.5,
-        normalizedDelta: WORLDMAP_STEP_WHEEL_DELTA * 4,
-        minDistance: 10,
-        maxDistance: 40,
-      }),
-    ).toBe(40);
   });
 });

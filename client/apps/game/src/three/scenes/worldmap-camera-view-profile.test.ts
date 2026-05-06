@@ -28,6 +28,19 @@ describe("resolveWorldmapCameraViewProfiles", () => {
     expect(farProfile.angleDegrees).toBe(58);
   });
 
+  it("exposes fixed camera heights and depths for every band", () => {
+    const closeProfile = resolveWorldmapCameraViewProfile(CameraView.Close);
+    const mediumProfile = resolveWorldmapCameraViewProfile(CameraView.Medium);
+    const farProfile = resolveWorldmapCameraViewProfile(CameraView.Far);
+
+    expect(closeProfile.height).toBeCloseTo(Math.sin(closeProfile.angleRadians) * closeProfile.distance);
+    expect(closeProfile.depth).toBeCloseTo(Math.cos(closeProfile.angleRadians) * closeProfile.distance);
+    expect(closeProfile.height).toBeLessThan(mediumProfile.height);
+    expect(mediumProfile.height).toBeLessThan(farProfile.height);
+    expect(closeProfile.depth).toBeLessThan(mediumProfile.depth);
+    expect(mediumProfile.depth).toBeLessThan(farProfile.depth);
+  });
+
   it("uses a narrower worldmap field of view to reduce perspective skew", () => {
     expect(resolveWorldmapCameraFieldOfViewDegrees()).toBe(38);
   });

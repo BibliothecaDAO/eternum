@@ -83,7 +83,6 @@ describe("worldmap runtime lifecycle", () => {
       isSwitchedOff: true,
       toriiLoadingCounter: 0,
       currentChunk: "null",
-      lastControlsCameraDistance: null,
     });
   });
 

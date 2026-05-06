@@ -140,10 +140,14 @@ interface HydratedChunkRefreshFlushPlan {
   remainingQueuedChunkKeys: string[];
 }
 
-interface ZoomRefreshDecisionInput {
-  previousDistance: number | null;
-  nextDistance: number;
-  threshold: number;
+interface CameraTargetHex {
+  col: number;
+  row: number;
+}
+
+interface ControlsChangeChunkRefreshPlanInput {
+  previousTargetHex: CameraTargetHex | null;
+  nextTargetHex: CameraTargetHex | null;
 }
 
 interface ControlsChangeChunkRefreshPlan {
@@ -480,29 +484,13 @@ export function resolveHydratedChunkRefreshFlushPlan(
 }
 
 /**
- * Large zoom-distance changes can expose stale terrain state even when the
- * stride chunk key does not change. Force a refresh when movement exceeds
- * threshold and we have a previous distance sample.
+ * Controls-change events should refresh chunks only when the ground focus
+ * moves. Zoom distance changes are presentation-only and must not churn chunks.
  */
-export function shouldForceChunkRefreshForZoomDistanceChange(input: ZoomRefreshDecisionInput): boolean {
-  if (input.previousDistance === null) {
-    return false;
-  }
-  if (!Number.isFinite(input.nextDistance) || !Number.isFinite(input.previousDistance)) {
-    return false;
-  }
-
-  const threshold = Math.max(0, input.threshold);
-  return Math.abs(input.nextDistance - input.previousDistance) >= threshold;
-}
-
-/**
- * Controls-change events should always schedule a debounced chunk refresh when
- * distance samples are valid so pan traversal converges quickly. Large zoom
- * deltas still escalate to forced refresh.
- */
-export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecisionInput): ControlsChangeChunkRefreshPlan {
-  if (!Number.isFinite(input.nextDistance)) {
+export function resolveControlsChangeChunkRefreshPlan(
+  input: ControlsChangeChunkRefreshPlanInput,
+): ControlsChangeChunkRefreshPlan {
+  if (!hasKnownCameraTargetHex(input.previousTargetHex) || !hasKnownCameraTargetHex(input.nextTargetHex)) {
     return {
       shouldRequestRefresh: false,
       shouldForceRefresh: false,
@@ -510,9 +498,17 @@ export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecision
   }
 
   return {
-    shouldRequestRefresh: true,
-    shouldForceRefresh: shouldForceChunkRefreshForZoomDistanceChange(input),
+    shouldRequestRefresh: !matchesCameraTargetHex(input.previousTargetHex, input.nextTargetHex),
+    shouldForceRefresh: false,
   };
+}
+
+function hasKnownCameraTargetHex(targetHex: CameraTargetHex | null): targetHex is CameraTargetHex {
+  return Boolean(targetHex && Number.isFinite(targetHex.col) && Number.isFinite(targetHex.row));
+}
+
+function matchesCameraTargetHex(previousTargetHex: CameraTargetHex, nextTargetHex: CameraTargetHex): boolean {
+  return previousTargetHex.col === nextTargetHex.col && previousTargetHex.row === nextTargetHex.row;
 }
 
 /**

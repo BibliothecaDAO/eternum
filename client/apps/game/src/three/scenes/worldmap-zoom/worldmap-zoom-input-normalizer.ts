@@ -10,14 +10,6 @@ interface NormalizeWorldmapWheelDeltaInput extends ResolveWorldmapWheelPixelDelt
   maxPixelDelta?: number;
 }
 
-interface ApplyContinuousWorldmapZoomDeltaInput {
-  currentDistance: number;
-  normalizedDelta: number;
-  minDistance: number;
-  maxDistance: number;
-  zoomSensitivity?: number;
-}
-
 interface NormalizedWorldmapWheelDelta {
   normalizedDelta: number;
   direction: -1 | 0 | 1;
@@ -34,14 +26,6 @@ export function normalizeWorldmapWheelDelta(input: NormalizeWorldmapWheelDeltaIn
     direction,
     inputKind: Math.abs(clampedDelta) < 24 ? "trackpad" : "wheel",
   };
-}
-
-export function applyContinuousWorldmapZoomDelta(input: ApplyContinuousWorldmapZoomDeltaInput): number {
-  const clampedDelta = clamp(input.normalizedDelta, -480, 480);
-  const zoomScale = Math.exp(clampedDelta / (input.zoomSensitivity ?? 1200));
-  const unclampedDistance = input.currentDistance * zoomScale;
-
-  return clamp(unclampedDistance, input.minDistance, input.maxDistance);
 }
 
 export function resolveWorldmapWheelPixelDelta(input: ResolveWorldmapWheelPixelDeltaInput): number {
