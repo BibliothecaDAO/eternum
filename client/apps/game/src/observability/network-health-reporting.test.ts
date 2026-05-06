@@ -100,13 +100,24 @@ describe("network-health-reporting", () => {
   });
 
   it("reportSubscriptionSetupTimeout captures and dedups by label", () => {
-    reportSubscriptionSetupTimeout({ label: "entity subscription", timeoutMs: 8000, requestId: 42 });
-    reportSubscriptionSetupTimeout({ label: "entity subscription", timeoutMs: 8000, requestId: 43 });
+    reportSubscriptionSetupTimeout({
+      label: "entity subscription",
+      streamType: "spatial",
+      timeoutMs: 8000,
+      requestId: 42,
+    });
+    reportSubscriptionSetupTimeout({
+      label: "entity subscription",
+      streamType: "spatial",
+      timeoutMs: 8000,
+      requestId: 43,
+    });
 
     expect(sentryMocks.captureMessage).toHaveBeenCalledTimes(1);
     const [message, opts] = sentryMocks.captureMessage.mock.calls[0];
     expect(message).toContain("entity subscription");
     expect(opts.tags["network.kind"]).toBe("subscription_setup_timeout");
+    expect(opts.tags["network.stream_type"]).toBe("spatial");
     expect(opts.contexts.network.label).toBe("entity subscription");
   });
 
@@ -207,6 +218,27 @@ describe("network-health-reporting", () => {
     expect(message).toContain("readiness timed out");
     expect(opts.tags["network.kind"]).toBe("readiness_timeout");
     expect(opts.contexts.network.timeout_ms).toBe(8000);
+  });
+
+  it("groups spatial Torii lifecycle failures under the world-level Sentry fingerprint", () => {
+    reportToriiSubscriptionLifecycle({
+      streamType: "spatial",
+      kind: "fallback_recreate",
+      outcome: "failed",
+      reason: "recreate failed",
+    });
+    reportToriiReadinessTimeout({
+      streamType: "spatial",
+      requestId: 8,
+      timeoutMs: 8000,
+      elapsedMs: 8012.8,
+    });
+
+    expect(sentryMocks.captureMessage).toHaveBeenCalledTimes(2);
+    const [, lifecycleOpts] = sentryMocks.captureMessage.mock.calls[0];
+    const [, readinessOpts] = sentryMocks.captureMessage.mock.calls[1];
+    expect(lifecycleOpts.fingerprint).toEqual(["torii_spatial:spatial_lifecycle:spatial:eternum"]);
+    expect(readinessOpts.fingerprint).toEqual(lifecycleOpts.fingerprint);
   });
 
   it("reportToriiQueuePressure dedups by stream and queue bucket", () => {

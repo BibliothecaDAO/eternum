@@ -76,6 +76,9 @@ export interface GlobalModelStreamConfig {
 }
 
 const DEFAULT_SUBSCRIPTION_SETUP_TIMEOUT_MS = 8_000;
+const SPATIAL_SUBSCRIPTION_CREATE_MAX_ATTEMPTS = 2;
+const SPATIAL_SUBSCRIPTION_CREATE_RETRY_BACKOFF_MS = 750;
+const SPATIAL_READINESS_RECOVERY_BACKOFF_MS = [1_000, 2_500, 5_000] as const;
 const TILE_OPT_MODEL = "s1_eternum-TileOpt";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -117,6 +120,16 @@ function hashSignature(signature: string): string {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function getBackoffDelay(attempt: number, delays: readonly number[]): number {
+  return delays[Math.min(Math.max(attempt - 1, 0), delays.length - 1)] ?? 0;
+}
+
+function waitForBackoff(delayMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, delayMs);
+  });
 }
 
 function getPaddedBounds(descriptor: BoundsDescriptor): {
@@ -276,6 +289,9 @@ export class ToriiStreamManager {
   private readonly onSubscriptionSetupTimeout?: (info: BoundsSubscriptionSetupTimeoutInfo) => void;
   private activeReadinessDescriptor: BoundsDescriptor | null = null;
   private activeReadinessContext: { requestId: number; startedAt: number } | null = null;
+  private readinessRecoveryAttempts = 0;
+  private readinessRecoveryTimer: ReturnType<typeof setTimeout> | null = null;
+  private shutdownRequested = false;
 
   constructor({
     client,
@@ -306,6 +322,7 @@ export class ToriiStreamManager {
   }
 
   async switchBounds(descriptor: BoundsDescriptor): Promise<BoundsSwitchResult> {
+    this.clearReadinessRecoveryTimer();
     this.lastDescriptor = descriptor;
 
     const signature = JSON.stringify({
@@ -356,7 +373,7 @@ export class ToriiStreamManager {
 
           this.monitorSpatialStreamReadiness(updateCurrentSubscription.subscription, requestId);
           this.currentSignature = signature;
-          useConnectionStore.getState().recordSpatialHandshake();
+          this.markSpatialSubscriptionApplied();
           addToriiStreamBreadcrumb({
             event: "subscription_update_succeeded",
             streamType: "spatial",
@@ -397,8 +414,9 @@ export class ToriiStreamManager {
       const recreateStartedAt = performance.now();
       let subscription: ToriiEntitySubscription;
       try {
-        subscription = await this.createSpatialSubscription(clause, requestId);
+        subscription = await this.createSpatialSubscriptionWithRetry(clause, requestId);
       } catch (error) {
+        useConnectionStore.getState().setSpatialStatus("failed");
         if (attemptedUpdate) {
           reportToriiSubscriptionLifecycle({
             streamType: "spatial",
@@ -428,7 +446,7 @@ export class ToriiStreamManager {
       this.currentSignature = signature;
       // Handshake succeeded — restart the staleness clock so the monitor
       // tracks subscription transport separately from quiet data updates.
-      useConnectionStore.getState().recordSpatialHandshake();
+      this.markSpatialSubscriptionApplied();
       if (attemptedUpdate) {
         addToriiStreamBreadcrumb({
           event: "fallback_recreate_succeeded",
@@ -499,10 +517,71 @@ export class ToriiStreamManager {
     });
   }
 
-  private async createSpatialSubscription(clause: Clause | null, requestId: number): Promise<ToriiEntitySubscription> {
+  private markSpatialSubscriptionApplied(): void {
+    const store = useConnectionStore.getState();
+    store.recordSpatialHandshake();
+    if (this.isRecoveringSpatialReadiness()) {
+      return;
+    }
+
+    store.setSpatialStatus("connected");
+  }
+
+  private markSpatialReadyEntityApplied(): void {
+    this.resetReadinessRecoveryAttempts();
+    useConnectionStore.getState().setSpatialStatus("connected");
+  }
+
+  private resetReadinessRecoveryAttempts(): void {
+    this.readinessRecoveryAttempts = 0;
+    this.clearReadinessRecoveryTimer();
+  }
+
+  private isRecoveringSpatialReadiness(): boolean {
+    return this.readinessRecoveryAttempts > 0;
+  }
+
+  private clearReadinessRecoveryTimer(): void {
+    if (this.readinessRecoveryTimer === null) {
+      return;
+    }
+
+    clearTimeout(this.readinessRecoveryTimer);
+    this.readinessRecoveryTimer = null;
+  }
+
+  private async createSpatialSubscriptionWithRetry(
+    clause: Clause | null,
+    requestId: number,
+  ): Promise<ToriiEntitySubscription> {
+    let attempt = 1;
+
+    while (true) {
+      try {
+        return await this.createSpatialSubscription(clause, requestId, {
+          reportSetupTimeouts: attempt >= SPATIAL_SUBSCRIPTION_CREATE_MAX_ATTEMPTS,
+        });
+      } catch (error) {
+        if (attempt >= SPATIAL_SUBSCRIPTION_CREATE_MAX_ATTEMPTS) {
+          throw error;
+        }
+
+        useConnectionStore.getState().setSpatialStatus("reconnecting");
+        attempt += 1;
+        await waitForBackoff(SPATIAL_SUBSCRIPTION_CREATE_RETRY_BACKOFF_MS);
+      }
+    }
+  }
+
+  private async createSpatialSubscription(
+    clause: Clause | null,
+    requestId: number,
+    options: { reportSetupTimeouts?: boolean } = {},
+  ): Promise<ToriiEntitySubscription> {
     return syncEntitiesDebounced(this.client, this.setup, clause, this.logging, this.onUpdate, {
       isReadyEntity: this.isSpatialReadyEntity,
       onReadyEntityApplied: (info) => {
+        this.markSpatialReadyEntityApplied();
         this.onSpatialReadyEntityApplied?.(this.buildSpatialReadyEntityInfo(info));
       },
       onReadyEntityReceived: (info) => {
@@ -510,6 +589,9 @@ export class ToriiStreamManager {
       },
       subscriptionSetupTimeoutMs: this.subscriptionSetupTimeoutMs,
       onSubscriptionSetupTimeout: (info) => {
+        if (options.reportSetupTimeouts === false) {
+          return;
+        }
         this.onSubscriptionSetupTimeout?.({ ...info, requestId });
       },
       streamType: "spatial",
@@ -522,23 +604,82 @@ export class ToriiStreamManager {
         return;
       }
 
-      this.onSpatialReadyTimeout?.(
-        buildSpatialReadinessTimeoutInfo({
-          elapsedMs: readinessResult.durationMs,
-          requestId,
-          timeoutMs: this.subscriptionSetupTimeoutMs,
-        }),
-      );
-      reportToriiReadinessTimeout({
-        streamType: "spatial",
-        elapsedMs: readinessResult.durationMs,
-        requestId,
+      this.handleSpatialStreamReadinessTimeout(requestId, readinessResult.durationMs);
+    });
+  }
+
+  private handleSpatialStreamReadinessTimeout(requestId: number, elapsedMs: number): void {
+    if (this.shutdownRequested || requestId !== this.latestSwitchRequestId) {
+      return;
+    }
+
+    const timeoutInfo = buildSpatialReadinessTimeoutInfo({
+      elapsedMs,
+      requestId,
+      timeoutMs: this.subscriptionSetupTimeoutMs,
+    });
+
+    this.onSpatialReadyTimeout?.(timeoutInfo);
+    reportToriiReadinessTimeout({
+      streamType: "spatial",
+      elapsedMs: timeoutInfo.elapsedMs,
+      requestId,
+      timeoutMs: timeoutInfo.timeoutMs,
+    });
+    this.scheduleSpatialReadinessRecovery(timeoutInfo);
+  }
+
+  private scheduleSpatialReadinessRecovery(info: ToriiSpatialReadinessTimeoutInfo): void {
+    if (!this.lastDescriptor) {
+      useConnectionStore.getState().setSpatialStatus("failed");
+      return;
+    }
+
+    if (this.readinessRecoveryAttempts >= SPATIAL_READINESS_RECOVERY_BACKOFF_MS.length) {
+      this.markSpatialReadinessRecoveryFailed("readiness recovery exhausted", info);
+      return;
+    }
+
+    this.readinessRecoveryAttempts += 1;
+    const delayMs = getBackoffDelay(this.readinessRecoveryAttempts, SPATIAL_READINESS_RECOVERY_BACKOFF_MS);
+    useConnectionStore.getState().setSpatialStatus("reconnecting");
+
+    this.readinessRecoveryTimer = setTimeout(() => {
+      this.readinessRecoveryTimer = null;
+      void this.runSpatialReadinessRecovery(info.requestId);
+    }, delayMs);
+  }
+
+  private async runSpatialReadinessRecovery(timedOutRequestId: number): Promise<void> {
+    if (this.shutdownRequested || timedOutRequestId !== this.latestSwitchRequestId) {
+      return;
+    }
+
+    try {
+      await this.resubscribe({ resetReadinessRecovery: false });
+    } catch (error) {
+      this.markSpatialReadinessRecoveryFailed(getErrorMessage(error), {
+        elapsedMs: 0,
+        requestId: timedOutRequestId,
         timeoutMs: this.subscriptionSetupTimeoutMs,
       });
+    }
+  }
+
+  private markSpatialReadinessRecoveryFailed(reason: string, info: ToriiSpatialReadinessTimeoutInfo): void {
+    useConnectionStore.getState().setSpatialStatus("failed");
+    reportToriiSubscriptionLifecycle({
+      streamType: "spatial",
+      kind: "readiness",
+      outcome: "failed",
+      requestId: info.requestId,
+      durationMs: info.elapsedMs,
+      reason,
     });
   }
 
   cancelCurrentSubscription() {
+    this.clearReadinessRecoveryTimer();
     if (this.currentSubscription) {
       this.currentSubscription.cancel();
       this.currentSubscription = null;
@@ -552,10 +693,15 @@ export class ToriiStreamManager {
   }
 
   shutdown() {
+    this.shutdownRequested = true;
+    this.clearReadinessRecoveryTimer();
     this.cancelCurrentSubscription();
   }
 
-  async resubscribe(): Promise<BoundsSwitchResult | null> {
+  async resubscribe(options: { resetReadinessRecovery?: boolean } = {}): Promise<BoundsSwitchResult | null> {
+    if (options.resetReadinessRecovery ?? true) {
+      this.resetReadinessRecoveryAttempts();
+    }
     this.currentSignature = null;
     if (this.lastDescriptor) {
       return this.switchBounds(this.lastDescriptor);
