@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-05T13:14:06.646Z",
+  "updatedAt": "2026-05-06T09:15:29.143Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -484,6 +484,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-05-05T13:14:06.646Z"
       }
+    },
+    "blitz-my-axe": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "blitz-my-axe",
+      "path": "runs/mainnet/blitz/blitz-my-axe.json",
+      "inputPath": "inputs/mainnet/blitz/blitz-my-axe/25426632193-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-06T09:15:29.143Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-06T10:00:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
     }
   }
 }
