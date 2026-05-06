@@ -23,6 +23,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-06",
+    title: "Snappier Map Zoom",
+    description:
+      "Reduced extra controls, minimap, and outline updates while map zoom is already animating, so close, medium, and far transitions spend more time on the camera movement itself.",
+    type: "improvement",
+  },
+  {
+    date: "2026-05-06",
     title: "Lighter Map Zoom",
     description:
       "Map zoom now temporarily reduces expensive visual effects while the camera is moving, keeping terrain stable while making close, medium, and far transitions feel smoother.",

@@ -1854,6 +1854,7 @@ export default class WorldmapScene extends WarpTravel {
     const profile = resolveWorldmapCameraViewProfile(position);
     this.cameraDistance = profile.distance;
     this.cameraAngle = profile.angleRadians;
+    this.publishWorldmapCameraDistance(profile.distance);
 
     this.zoomSpringGoal.cameraTarget.copy(this.controls.target);
     this.zoomSpringGoal.cameraPosition.set(
@@ -8026,7 +8027,9 @@ export default class WorldmapScene extends WarpTravel {
     this.selectedHexManager.update(deltaTime);
     this.structureManager.updateAnimations(deltaTime, animationContext);
     this.chestManager.update(deltaTime);
-    this.updateCameraTargetHexThrottled?.();
+    if (!this.isWorldmapZoomSpringActive) {
+      this.updateCameraTargetHexThrottled?.();
+    }
     setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
     if (WORLDMAP_ZOOM_HARDENING.terrainSelfHeal) {
       this.monitorTerrainVisibilityHealth();
@@ -8051,18 +8054,36 @@ export default class WorldmapScene extends WarpTravel {
 
     this.controls.object.position.copy(this.zoomSpringState.cameraPosition);
     this.controls.target.copy(this.zoomSpringState.cameraTarget);
-    this.notifyControlsChanged();
+    this.syncWorldmapZoomCameraFrame();
 
     if (!hasSettled) {
       return;
     }
 
+    this.completeWorldmapZoomSpring();
+  }
+
+  private syncWorldmapZoomCameraFrame(): void {
+    this.syncCameraPresentationFrame();
+  }
+
+  private publishWorldmapCameraDistance(distance: number): void {
+    const nextDistance = Math.round(distance * 100) / 100;
+    const currentDistance = useUIStore.getState().cameraDistance;
+    if (currentDistance !== null && Math.abs(currentDistance - nextDistance) <= 0.01) {
+      return;
+    }
+
+    useUIStore.setState({ cameraDistance: nextDistance });
+  }
+
+  private completeWorldmapZoomSpring(): void {
     this.isWorldmapZoomSpringActive = false;
     if (this.shouldCountWorldmapZoomSpringCompletion) {
       incrementWorldmapRenderCounter("zoomTransitionsCompleted");
     }
     this.shouldCountWorldmapZoomSpringCompletion = false;
-    this.syncResolvedCameraViewFromDistance(this.controls.object.position.distanceTo(this.controls.target));
+    this.notifyControlsChanged();
   }
 
   private clearWorldmapZoomSpring(): void {

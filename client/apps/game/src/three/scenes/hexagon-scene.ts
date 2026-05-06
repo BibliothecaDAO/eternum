@@ -67,6 +67,8 @@ import { resolveWorldmapZoomBand } from "./worldmap-zoom/worldmap-zoom-band-poli
 export { CameraView } from "./camera-view";
 type CameraTransitionStatus = "idle" | "transitioning";
 
+const OUTLINE_OPACITY_UPDATE_EPSILON = 0.004;
+
 export abstract class HexagonScene {
   protected scene!: Scene;
   protected interactionOverlayScene!: Scene;
@@ -128,6 +130,7 @@ export abstract class HexagonScene {
   protected animationDistanceThreshold = 80; // Distance beyond which animations are skipped
   private lastFogNear = 0;
   private lastFogFar = 0;
+  private lastOutlineOpacity: number | null = null;
 
   constructor(
     protected sceneName: SceneName,
@@ -166,13 +169,7 @@ export abstract class HexagonScene {
   protected notifyControlsChanged(): void {
     publishCameraTransitionFrame({
       updateControls: () => this.controls.update(),
-      syncDistanceVisuals: () => {
-        const distance = this.controls.object.position.distanceTo(this.controls.target);
-        this.updateCameraClipPlanesForDistance(distance);
-        this.updateFogForDistance(distance);
-        this.updateOutlineOpacityForDistance(distance);
-        this.syncResolvedCameraViewFromDistance(distance);
-      },
+      syncDistanceVisuals: () => this.syncCameraDistanceVisuals(),
       emitFallbackChange: () => {
         this.controls.dispatchEvent({ type: "change" });
       },
@@ -181,6 +178,20 @@ export abstract class HexagonScene {
         this.visibilityManager?.markDirty();
       },
     });
+  }
+
+  protected syncCameraPresentationFrame(): void {
+    this.camera.lookAt(this.controls.target);
+    this.camera.updateMatrixWorld();
+    this.syncCameraDistanceVisuals();
+  }
+
+  protected syncCameraDistanceVisuals(): void {
+    const distance = this.controls.object.position.distanceTo(this.controls.target);
+    this.updateCameraClipPlanesForDistance(distance);
+    this.updateFogForDistance(distance);
+    this.updateOutlineOpacityForDistance(distance);
+    this.syncResolvedCameraViewFromDistance(distance);
   }
 
   private initializeScene(): void {
@@ -1008,6 +1019,13 @@ export abstract class HexagonScene {
     const maxDistance = 60;
     const t = Math.min(1, Math.max(0, (distance - minDistance) / (maxDistance - minDistance)));
     const opacity = 0.04 + t * 0.06;
+    if (
+      this.lastOutlineOpacity !== null &&
+      Math.abs(opacity - this.lastOutlineOpacity) < OUTLINE_OPACITY_UPDATE_EPSILON
+    ) {
+      return;
+    }
+    this.lastOutlineOpacity = opacity;
 
     outlineModel.instancedMeshes.forEach((mesh) => {
       const material = mesh.material as MeshStandardMaterial;

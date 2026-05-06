@@ -102,4 +102,29 @@ describe("worldmap zoom wiring", () => {
     expect(source).toMatch(/isTransientRenderPerformanceModeActive\(\)/);
     expect(source).toMatch(/return this\.isWorldmapZoomSpringActive/);
   });
+
+  it("keeps in-flight zoom spring frames out of the generic controls-change path", () => {
+    const source = readSceneSource("worldmap.tsx");
+    const updateZoomSpringSource = source.slice(
+      source.indexOf("private updateWorldmapZoomSpring"),
+      source.indexOf("private syncWorldmapZoomCameraFrame"),
+    );
+
+    expect(updateZoomSpringSource).toMatch(/this\.syncWorldmapZoomCameraFrame\(\)/);
+    expect(updateZoomSpringSource).not.toMatch(/this\.notifyControlsChanged\(\)/);
+    expect(source).toMatch(/private completeWorldmapZoomSpring\(\)/);
+  });
+
+  it("avoids polling minimap camera state while fixed-band zoom is animating", () => {
+    const source = readSceneSource("worldmap.tsx");
+    const updateSource = source.slice(
+      source.indexOf("update(deltaTime: number)"),
+      source.indexOf("private updateWorldmapZoomSpring"),
+    );
+
+    expect(updateSource).toMatch(
+      /if \(!this\.isWorldmapZoomSpringActive\) \{\s*this\.updateCameraTargetHexThrottled\?\.\(\);\s*\}/,
+    );
+    expect(source).toMatch(/this\.publishWorldmapCameraDistance\(profile\.distance\)/);
+  });
 });

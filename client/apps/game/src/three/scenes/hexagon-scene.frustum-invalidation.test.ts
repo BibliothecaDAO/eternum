@@ -21,4 +21,19 @@ describe("hexagon scene frustum invalidation", () => {
 
     expect(methodSource).not.toMatch(/frustumManager\?\.(forceUpdate|markDirty)\s*\(/);
   });
+
+  it("coalesces distance-driven outline opacity writes", () => {
+    const source = readHexagonSceneSource();
+    const outlineOpacitySource = source.slice(
+      source.indexOf("protected updateOutlineOpacityForDistance"),
+      source.indexOf("public setWeatherAtmosphereState"),
+    );
+
+    expect(source).toMatch(/OUTLINE_OPACITY_UPDATE_EPSILON/);
+    expect(source).toMatch(/private lastOutlineOpacity/);
+    expect(outlineOpacitySource).toMatch(
+      /Math\.abs\(opacity - this\.lastOutlineOpacity\) < OUTLINE_OPACITY_UPDATE_EPSILON/,
+    );
+    expect(outlineOpacitySource).toMatch(/this\.lastOutlineOpacity = opacity/);
+  });
 });
