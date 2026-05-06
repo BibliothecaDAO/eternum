@@ -5,8 +5,10 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { usePlayerStore } from "@/hooks/store/use-player-store";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { buildMockActiveTransfers } from "@/lib/transfer-route-overlay-mock";
 import { buildTransferRouteOverlayRoutesFromActiveTransfers } from "@/lib/transfer-route-overlay";
 import { sqlApi } from "@/services/api";
+import { isMockTransferRoutesEnabled } from "@/ui/debug/mock-transfer-routes-overlay";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
@@ -305,9 +307,12 @@ const TransferRouteOverlayStoreManager = () => {
 
   useEffect(() => {
     const currentTimeMs = chainNowMs > 0 ? chainNowMs : Date.now();
+    const liveTransfers = isMockTransferRoutesEnabled()
+      ? buildMockActiveTransfers(mapDataStore.getAllStructures(), currentTimeMs)
+      : activeTransfers;
     const routes = buildTransferRouteOverlayRoutesFromActiveTransfers({
       currentTimeMs,
-      liveTransfers: activeTransfers,
+      liveTransfers,
       automationEntries: transferAutomationEntries,
       resolveEntityHex: (entityId) => resolveTransferRouteEntityHex(mapDataStore, entityId),
     });

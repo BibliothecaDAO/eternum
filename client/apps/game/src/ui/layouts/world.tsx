@@ -25,6 +25,7 @@ import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { useUIStore } from "../../hooks/store/use-ui-store";
 import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overlay";
+import { MockTransferRoutesOverlay } from "../debug/mock-transfer-routes-overlay";
 import { Tooltip } from "../design-system/molecules/tooltip";
 import { NetworkStatusBanner } from "../features/world/components/network-status-banner";
 import { triggerConnectionForceReconnect } from "../features/world/components/network-status-retry";
@@ -75,6 +76,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Tooltip />
         <VersionDisplay />
         <ArmyMovementLatencyOverlay />
+        <MockTransferRoutesOverlay />
         <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
       </div>
     </>
