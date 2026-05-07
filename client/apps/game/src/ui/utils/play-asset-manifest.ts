@@ -73,7 +73,7 @@ export const DASHBOARD_SHARED_PLAY_IMAGE_ASSETS = Object.freeze([
   "/image-icons/world.png",
   "/image-icons/production.png",
   "/image-icons/home.png",
-  "/image-icons/time.png",
+  "/images/buildings/thumb/timeglass.png",
   "/image-icons/leave.png",
   "/image-icons/portal.png",
   "/image-icons/robot.png",
