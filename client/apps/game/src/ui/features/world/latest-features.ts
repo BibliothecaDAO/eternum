@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-07",
+    title: "Scrollable Tile HUD",
+    description:
+      "Fixed bottom-right entity and building detail panes so oversized info scrolls without moving the biome and action summary.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-05-06",
     title: "Focused Chain Views",
     description:
