@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "blitz-rotation",
   "seriesName": "blitz-rotation",
-  "status": "running",
+  "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "sync-paymaster",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25486781187-1.json",
   "latestLaunchRequestId": "25486781187-1",
   "currentStepId": "sync-paymaster",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-07T09:11:56.378Z",
+  "updatedAt": "2026-05-07T09:12:04.430Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
+    "nextRetryAt": "2026-05-07T09:27:04.430Z",
     "lastRetryAt": "2026-05-07T09:10:31.315Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-07T09:26:49.215Z",
-    "lastEvaluatedAt": "2026-05-07T09:11:49.215Z"
+    "nextEvaluationAt": "2026-05-07T09:27:04.430Z",
+    "lastEvaluatedAt": "2026-05-07T09:12:04.430Z"
   },
   "steps": [
     {
@@ -80,10 +81,12 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
-      "startedAt": "2026-05-07T09:11:56.378Z"
+      "latestEvent": "Setting up gas coverage failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"eu-gladiator-09-05-26-2000\" on mainnet.blitz\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+18ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Syncing paymaster policy for the launched world\n\u001b[2m[+455ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m sync paymaster failed after 437ms: slot command failed with exit code 1: Error: rpc error: code = FailedPrecondition desc = paymaster has no budget; fund it before adding policies\nWarning: 1 policies with entrypoints [approve] have no trigger and will sponsor ALL such calls. Continue? [y/N]:\nError: 1 rotation or series game failed during sync-paymaster\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-05-07T09:11:56.378Z",
+      "finishedAt": "2026-05-07T09:12:04.430Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"eu-gladiator-09-05-26-2000\" on mainnet.blitz\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+18ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Syncing paymaster policy for the launched world\n\u001b[2m[+455ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m sync paymaster failed after 437ms: slot command failed with exit code 1: Error: rpc error: code = FailedPrecondition desc = paymaster has no budget; fund it before adding policies\nWarning: 1 policies with entrypoints [approve] have no trigger and will sponsor ALL such calls. Continue? [y/N]:\nError: 1 rotation or series game failed during sync-paymaster\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)"
     }
   ],
   "summary": {
@@ -4000,7 +4003,7 @@
             "id": "sync-paymaster",
             "status": "failed",
             "latestEvent": "slot command failed with exit code 1: Error: rpc error: code = FailedPrecondition desc = paymaster has no budget; fund it before adding policies\nWarning: 1 policies with entrypoints [approve] have no trigger and will sponsor ALL such calls. Continue? [y/N]:",
-            "updatedAt": "2026-05-07T08:51:59.793Z",
+            "updatedAt": "2026-05-07T09:12:02.511Z",
             "errorMessage": "slot command failed with exit code 1: Error: rpc error: code = FailedPrecondition desc = paymaster has no budget; fund it before adding policies\nWarning: 1 policies with entrypoints [approve] have no trigger and will sponsor ALL such calls. Continue? [y/N]:"
           }
         ],
@@ -4035,13 +4038,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25486781187-1",
-    "workflowRunId": 25486781187,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-05-07T09:11:56.378Z",
-    "expiresAt": "2026-05-07T09:56:56.378Z"
   }
 }
