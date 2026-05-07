@@ -36,7 +36,6 @@ describe("renderer effects bridge runtime", () => {
       applyQualityFeatures: vi.fn(),
       hasPostProcessing: vi.fn(() => true),
       resolveRendererToneMappingMode: vi.fn(() => "aces-filmic" as const),
-      setTransientRenderPerformanceMode: vi.fn(),
       setupPostProcessingEffects: vi.fn(),
       updateWeatherPostProcessing: vi.fn(),
     };
@@ -58,35 +57,6 @@ describe("renderer effects bridge runtime", () => {
     expect(effectsRuntime.applyEnvironment).toHaveBeenCalledTimes(1);
   });
 
-  it("forwards transient render performance mode only after effects runtime exists", () => {
-    const effectsRuntime = {
-      applyEnvironment: vi.fn(async () => {}),
-      applyQualityFeatures: vi.fn(),
-      hasPostProcessing: vi.fn(() => true),
-      resolveRendererToneMappingMode: vi.fn(() => "aces-filmic" as const),
-      setTransientRenderPerformanceMode: vi.fn(),
-      setupPostProcessingEffects: vi.fn(),
-      updateWeatherPostProcessing: vi.fn(),
-    };
-    const createEffectsRuntime = vi.fn(() => effectsRuntime);
-    const runtime = createRendererEffectsBridgeRuntime({
-      addQualityListener: vi.fn(),
-      createEffectsRuntime,
-      resolveQualityFeatures: () => createQualityFeatures(),
-      resolveWeatherState: () => undefined,
-    });
-
-    runtime.setTransientRenderPerformanceMode(true);
-    expect(createEffectsRuntime).not.toHaveBeenCalled();
-
-    runtime.setupPostProcessingEffects();
-    runtime.setTransientRenderPerformanceMode(true);
-    runtime.setTransientRenderPerformanceMode(false);
-
-    expect(effectsRuntime.setTransientRenderPerformanceMode).toHaveBeenNthCalledWith(1, true);
-    expect(effectsRuntime.setTransientRenderPerformanceMode).toHaveBeenNthCalledWith(2, false);
-  });
-
   it("subscribes once to quality changes and disposes the subscription", () => {
     const qualityFeatures = createQualityFeatures();
     const effectsRuntime = {
@@ -94,7 +64,6 @@ describe("renderer effects bridge runtime", () => {
       applyQualityFeatures: vi.fn(),
       hasPostProcessing: vi.fn(() => true),
       resolveRendererToneMappingMode: vi.fn(() => "aces-filmic" as const),
-      setTransientRenderPerformanceMode: vi.fn(),
       setupPostProcessingEffects: vi.fn(),
       updateWeatherPostProcessing: vi.fn(),
     };
@@ -128,7 +97,6 @@ describe("renderer effects bridge runtime", () => {
       applyQualityFeatures: vi.fn(),
       hasPostProcessing: vi.fn(() => true),
       resolveRendererToneMappingMode: vi.fn(() => "aces-filmic" as const),
-      setTransientRenderPerformanceMode: vi.fn(),
       setupPostProcessingEffects: vi.fn(),
       updateWeatherPostProcessing: vi.fn(),
     };

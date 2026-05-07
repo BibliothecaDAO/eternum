@@ -1702,10 +1702,6 @@ export default class WorldmapScene extends WarpTravel {
     return LOCKED_WORLDMAP_CAMERA_VIEW;
   }
 
-  public isTransientRenderPerformanceModeActive(): boolean {
-    return false;
-  }
-
   public override addCameraViewListener(listener: (view: CameraView) => void) {
     this.worldmapCameraViewListeners.add(listener);
     listener(this.getCurrentCameraView());

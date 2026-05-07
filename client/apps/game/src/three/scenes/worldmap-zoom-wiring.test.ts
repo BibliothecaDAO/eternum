@@ -113,8 +113,7 @@ describe("worldmap zoom wiring", () => {
     expect(source).not.toMatch(/updateWorldmapZoomSpring\(/);
     expect(source).not.toMatch(/snapWorldmapZoomBandChange\(/);
     expect(source).not.toMatch(/shouldSnapWorldmapZoomBandChange\(/);
-    expect(source).toMatch(/isTransientRenderPerformanceModeActive\(\)/);
-    expect(source).toMatch(/return false/);
+    expect(source).not.toMatch(/isTransientRenderPerformanceModeActive\(\)/);
   });
 
   it("keeps minimap camera state polling active because there is no zoom animation", () => {

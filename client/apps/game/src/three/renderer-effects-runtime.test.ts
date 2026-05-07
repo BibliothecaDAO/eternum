@@ -1,12 +1,8 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ToneMappingMode } from "postprocessing";
-import {
-  resetRendererDiagnostics,
-  snapshotRendererDiagnostics,
-  syncRendererBackendDiagnostics,
-} from "./renderer-diagnostics";
-import { createRendererBackendCapabilities, createRendererInitDiagnostics } from "./renderer-backend-v2";
+import { resetRendererDiagnostics, snapshotRendererDiagnostics } from "./renderer-diagnostics";
+import { createRendererBackendCapabilities } from "./renderer-backend-v2";
 
 vi.mock("@/three/constants", () => ({
   POST_PROCESSING_CONFIG: {
@@ -191,109 +187,6 @@ describe("renderer effects runtime", () => {
     expect(scenes.worldmapScene.applyQualityFeatures).toHaveBeenCalledTimes(1);
     expect(scenes.fastTravelScene.applyQualityFeatures).toHaveBeenCalledTimes(1);
     expect(scenes.hexceptionScene.applyQualityFeatures).toHaveBeenCalledTimes(1);
-  });
-
-  it("applies transient zoom performance features only to renderer presentation", () => {
-    const backend = createBackend();
-    const scenes = createScenes();
-    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 2 });
-    const runtime = createRendererEffectsRuntime({
-      backend: backend as never,
-      createFolder: createFolderFactory(),
-      graphicsSetting: GraphicsSettings.HIGH,
-      isMobileDevice: false,
-      scenes: scenes as never,
-    });
-    const baseFeatures = createQualityFeatures({
-      bloom: true,
-      bloomIntensity: 0.3,
-      chromaticAberration: true,
-      fxaa: true,
-      pixelRatio: 2,
-      vignette: true,
-    });
-
-    runtime.setupPostProcessingEffects(baseFeatures);
-    runtime.applyQualityFeatures(baseFeatures);
-    backend.applyQuality.mockClear();
-    backend.applyPostProcessPlan.mockClear();
-    scenes.worldmapScene.applyQualityFeatures.mockClear();
-    scenes.fastTravelScene.applyQualityFeatures.mockClear();
-    scenes.hexceptionScene.applyQualityFeatures.mockClear();
-
-    runtime.setTransientRenderPerformanceMode(true);
-
-    expect(backend.applyQuality).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        pixelRatio: 1.25,
-      }),
-    );
-    expect(backend.applyPostProcessPlan).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        antiAlias: "none",
-        bloom: expect.objectContaining({ enabled: false, intensity: 0 }),
-        chromaticAberration: expect.objectContaining({ enabled: false }),
-        vignette: expect.objectContaining({ enabled: false }),
-      }),
-    );
-    expect(scenes.worldmapScene.applyQualityFeatures).not.toHaveBeenCalled();
-    expect(scenes.fastTravelScene.applyQualityFeatures).not.toHaveBeenCalled();
-    expect(scenes.hexceptionScene.applyQualityFeatures).not.toHaveBeenCalled();
-
-    runtime.setTransientRenderPerformanceMode(false);
-
-    expect(backend.applyQuality).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        pixelRatio: 2,
-      }),
-    );
-    expect(backend.applyPostProcessPlan).toHaveBeenLastCalledWith(
-      expect.objectContaining({
-        antiAlias: "fxaa",
-        bloom: expect.objectContaining({ enabled: true, intensity: 0.3 }),
-        chromaticAberration: expect.objectContaining({ enabled: true }),
-        vignette: expect.objectContaining({ enabled: true }),
-      }),
-    );
-    expect(scenes.worldmapScene.applyQualityFeatures).not.toHaveBeenCalled();
-    expect(scenes.fastTravelScene.applyQualityFeatures).not.toHaveBeenCalled();
-    expect(scenes.hexceptionScene.applyQualityFeatures).not.toHaveBeenCalled();
-  });
-
-  it("does not reconfigure WebGPU renderer quality for transient zoom mode", () => {
-    syncRendererBackendDiagnostics(
-      createRendererInitDiagnostics({
-        activeMode: "webgpu",
-        buildMode: "experimental-webgpu-auto",
-        requestedMode: "experimental-webgpu-auto",
-      }),
-    );
-    const backend = createBackend();
-    const scenes = createScenes();
-    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 2 });
-    const runtime = createRendererEffectsRuntime({
-      backend: backend as never,
-      createFolder: createFolderFactory(),
-      graphicsSetting: GraphicsSettings.HIGH,
-      isMobileDevice: false,
-      scenes: scenes as never,
-    });
-    const baseFeatures = createQualityFeatures({
-      bloom: true,
-      bloomIntensity: 0.3,
-      chromaticAberration: true,
-      fxaa: true,
-      pixelRatio: 2,
-      vignette: true,
-    });
-
-    runtime.applyQualityFeatures(baseFeatures);
-    backend.applyQuality.mockClear();
-
-    runtime.setTransientRenderPerformanceMode(true);
-    runtime.setTransientRenderPerformanceMode(false);
-
-    expect(backend.applyQuality).not.toHaveBeenCalled();
   });
 
   it("degrades environment and unsupported postprocess features explicitly", () => {
