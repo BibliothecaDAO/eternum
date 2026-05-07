@@ -58,6 +58,13 @@ interface CreateRendererEffectsRuntimeInput {
   scenes: RendererEffectsScenes;
 }
 
+interface RendererQualityInput {
+  height: number;
+  pixelRatio: number;
+  shadows: boolean;
+  width: number;
+}
+
 const DEFAULT_ENVIRONMENT_INTENSITY: Record<GraphicsSettings, number> = {
   [GraphicsSettings.HIGH]: 0.55,
   [GraphicsSettings.MID]: 0.45,
@@ -92,6 +99,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
   private weatherPostProcessingEnabled = true;
   private currentQualityFeatures?: QualityFeatures;
   private transientRenderPerformanceModeActive = false;
+  private lastRendererQualityInput?: RendererQualityInput;
 
   constructor(private readonly input: CreateRendererEffectsRuntimeInput) {}
 
@@ -154,6 +162,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
 
   private applyRendererPresentationFeatures(features: QualityFeatures): void {
     const presentationFeatures = resolveRendererPresentationQualityFeatures({
+      activeMode: snapshotRendererDiagnostics().activeMode,
       baseFeatures: features,
       transientPerformanceModeActive: this.transientRenderPerformanceModeActive,
     });
@@ -163,17 +172,27 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
   }
 
   private applyRendererQualityFeatures(features: QualityFeatures): void {
+    const rendererQualityInput = this.resolveRendererQualityInput(features);
+    if (matchesRendererQualityInput(this.lastRendererQualityInput, rendererQualityInput)) {
+      return;
+    }
+
+    this.lastRendererQualityInput = { ...rendererQualityInput };
+    applyRendererBackendQuality(this.input.backend, rendererQualityInput);
+  }
+
+  private resolveRendererQualityInput(features: QualityFeatures): RendererQualityInput {
     const devicePixelRatio = Math.max(window.devicePixelRatio || 1, 1);
     const resolvedPixelRatio = (this.input.resolvePixelRatio ?? ((value: number) => value))(
       Math.min(devicePixelRatio, features.pixelRatio),
     );
 
-    applyRendererBackendQuality(this.input.backend, {
+    return {
       height: window.innerHeight,
       pixelRatio: resolvedPixelRatio,
       shadows: features.shadows,
       width: window.innerWidth,
-    });
+    };
   }
 
   private applyRendererPostProcessingFeatures(features: QualityFeatures): void {
@@ -368,4 +387,13 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
       }),
     );
   }
+}
+
+function matchesRendererQualityInput(left: RendererQualityInput | undefined, right: RendererQualityInput): boolean {
+  return (
+    left?.height === right.height &&
+    left.pixelRatio === right.pixelRatio &&
+    left.shadows === right.shadows &&
+    left.width === right.width
+  );
 }

@@ -22,6 +22,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-07",
+    title: "Smoother WebGPU Zoom",
+    description:
+      "Reduced WebGPU renderer reconfiguration during map zoom, so close, medium, and far transitions feel smoother without changing terrain or chunk loading.",
+    type: "improvement",
+  },
+  {
     date: "2026-05-06",
     title: "Snappier Map Zoom",
     description:

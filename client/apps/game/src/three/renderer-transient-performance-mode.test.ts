@@ -57,4 +57,26 @@ describe("resolveRendererPresentationQualityFeatures", () => {
     expect(resolved.maxVisibleArmies).toBe(features.maxVisibleArmies);
     expect(resolved.maxVisibleStructures).toBe(features.maxVisibleStructures);
   });
+
+  it("keeps WebGPU pixel ratio stable during transient performance mode", () => {
+    const features = createQualityFeatures({
+      pixelRatio: 2,
+    });
+
+    const resolved = resolveRendererPresentationQualityFeatures({
+      activeMode: "webgpu",
+      baseFeatures: features,
+      transientPerformanceModeActive: true,
+    });
+
+    expect(resolved).toEqual({
+      ...features,
+      bloom: false,
+      bloomIntensity: 0,
+      chromaticAberration: false,
+      fxaa: false,
+      pixelRatio: 2,
+      vignette: false,
+    });
+  });
 });

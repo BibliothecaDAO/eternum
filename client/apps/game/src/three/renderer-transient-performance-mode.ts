@@ -1,8 +1,10 @@
+import type { RendererActiveMode } from "./renderer-backend-v2";
 import type { QualityFeatures } from "./utils/quality-controller";
 
 const TRANSIENT_RENDER_PIXEL_RATIO_CAP = 1.25;
 
 export function resolveRendererPresentationQualityFeatures(input: {
+  activeMode?: RendererActiveMode | null;
   baseFeatures: QualityFeatures;
   transientPerformanceModeActive: boolean;
 }): QualityFeatures {
@@ -10,17 +12,34 @@ export function resolveRendererPresentationQualityFeatures(input: {
     return input.baseFeatures;
   }
 
-  return resolveTransientRenderPerformanceFeatures(input.baseFeatures);
+  return resolveTransientRenderPerformanceFeatures({
+    activeMode: input.activeMode,
+    baseFeatures: input.baseFeatures,
+  });
 }
 
-function resolveTransientRenderPerformanceFeatures(baseFeatures: QualityFeatures): QualityFeatures {
+function resolveTransientRenderPerformanceFeatures(input: {
+  activeMode?: RendererActiveMode | null;
+  baseFeatures: QualityFeatures;
+}): QualityFeatures {
   return {
-    ...baseFeatures,
+    ...input.baseFeatures,
     bloom: false,
     bloomIntensity: 0,
     chromaticAberration: false,
     fxaa: false,
-    pixelRatio: Math.min(baseFeatures.pixelRatio, TRANSIENT_RENDER_PIXEL_RATIO_CAP),
+    pixelRatio: resolveTransientRenderPixelRatio(input),
     vignette: false,
   };
+}
+
+function resolveTransientRenderPixelRatio(input: {
+  activeMode?: RendererActiveMode | null;
+  baseFeatures: QualityFeatures;
+}): number {
+  if (input.activeMode === "webgpu") {
+    return input.baseFeatures.pixelRatio;
+  }
+
+  return Math.min(input.baseFeatures.pixelRatio, TRANSIENT_RENDER_PIXEL_RATIO_CAP);
 }
