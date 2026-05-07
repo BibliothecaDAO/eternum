@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25476155674-1",
   "currentStepId": "sync-paymaster",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-07T04:31:44.052Z",
+  "updatedAt": "2026-05-07T04:50:31.077Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,8 +27,8 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-05-07T04:46:44.052Z",
-    "lastRetryAt": "2026-05-07T04:30:31.288Z"
+    "nextRetryAt": "2026-05-07T05:05:31.077Z",
+    "lastRetryAt": "2026-05-07T04:50:31.077Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
