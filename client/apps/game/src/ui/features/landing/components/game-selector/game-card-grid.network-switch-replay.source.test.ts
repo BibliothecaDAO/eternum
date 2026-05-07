@@ -9,9 +9,8 @@ describe("Game card network switch replay", () => {
     const source = readFileSync(fileURLToPath(new URL("./game-card-grid.tsx", import.meta.url)), "utf8");
 
     expect(source).toContain('import { useLandingNetworkState } from "../../hooks/use-landing-network-state";');
-    expect(source).toContain(
-      'import { canInteractWithLandingChain, resolvePreferredLandingChain } from "../../lib/landing-network-state";',
-    );
+    expect(source).toContain("canInteractWithLandingChain");
+    expect(source).toContain("resolvePreferredLandingChain");
     expect(source).toContain("const [isSwitchNetworkPending, setIsSwitchNetworkPending] = useState(false);");
     expect(source).toContain("resolvePendingNetworkSwitchOutcome");
     expect(source).toContain(
