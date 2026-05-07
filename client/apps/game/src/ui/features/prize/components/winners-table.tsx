@@ -1,4 +1,6 @@
 import { getActiveWorld } from "@/runtime/world";
+import { estimateClaimableChests } from "@/services/review/chest-reward-estimate";
+import { normalizeNonZeroAddress } from "@/services/review/sql-parse-utils";
 import { displayAddress } from "@/ui/utils/utils";
 import { buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
 import { getAddressName, toHexString } from "@bibliothecadao/eternum";
@@ -11,10 +13,10 @@ import { useEffect, useMemo, useState } from "react";
 import { env } from "../../../../../env";
 
 const POINTS_PRECISION = 1_000_000n;
-const GAME_REWARD_CHEST_POINTS_THRESHOLD = 500n * POINTS_PRECISION;
 const GAME_CHEST_REWARD_QUERY = `
   SELECT
-    allocated_chests
+    allocated_chests,
+    distributed_chests
   FROM "s1_eternum-GameChestReward"
   LIMIT 1;
 `;
@@ -24,15 +26,27 @@ const SEASON_PRIZE_QUERY = `
   FROM "s1_eternum-SeasonPrize"
   LIMIT 1;
 `;
+const REWARD_CHEST_CONFIG_QUERY = `
+  SELECT
+    "blitz_registration_config.collectibles_lootchest_address" AS loot_chest_address
+  FROM "s1_eternum-WorldConfig"
+  LIMIT 1;
+`;
 
 type GameChestRewardRow = {
   allocated_chests?: unknown;
+  distributed_chests?: unknown;
 };
 type SeasonPrizeRow = {
   total_registered_points?: unknown;
 };
+type RewardChestConfigRow = {
+  loot_chest_address?: unknown;
+};
 type ChestRewardSnapshot = {
-  allocatedRewardChests: bigint;
+  lootChestAddress: string | null;
+  allocatedRewardChests: number;
+  distributedRewardChests: number;
   totalRegisteredPoints: bigint;
 };
 
@@ -49,6 +63,14 @@ const toBigIntValue = (value: unknown): bigint | undefined => {
     }
   }
   return undefined;
+};
+
+const toChestCount = (value: unknown): number => {
+  const count = toBigIntValue(value);
+  if (count == null || count <= 0n) return 0;
+
+  const asNumber = Number(count);
+  return Number.isFinite(asNumber) ? Math.trunc(asNumber) : 0;
 };
 
 type Row = {
@@ -92,7 +114,9 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
   const [chestRewardSnapshot, setChestRewardSnapshot] = useState<ChestRewardSnapshot | null>(
     () => cachedChestRewardSnapshot,
   );
-  const allocatedRewardChests = chestRewardSnapshot?.allocatedRewardChests ?? 0n;
+  const allocatedRewardChests = chestRewardSnapshot?.allocatedRewardChests ?? 0;
+  const distributedRewardChests = chestRewardSnapshot?.distributedRewardChests ?? 0;
+  const lootChestAddress = chestRewardSnapshot?.lootChestAddress ?? null;
   const totalRegisteredPoints = chestRewardSnapshot?.totalRegisteredPoints ?? 0n;
 
   useEffect(() => {
@@ -104,7 +128,7 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
         const toriiBaseUrl = activeWorld?.toriiBaseUrl ?? env.VITE_PUBLIC_TORII;
         const sqlBaseUrl = toriiBaseUrl.endsWith("/sql") ? toriiBaseUrl : `${toriiBaseUrl}/sql`;
 
-        const [chestRows, seasonRows] = await Promise.all([
+        const [chestRows, seasonRows, configRows] = await Promise.all([
           fetchWithErrorHandling<GameChestRewardRow>(
             buildApiUrl(sqlBaseUrl, GAME_CHEST_REWARD_QUERY),
             "Failed to fetch game chest reward state",
@@ -113,18 +137,23 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
             buildApiUrl(sqlBaseUrl, SEASON_PRIZE_QUERY),
             "Failed to fetch season prize state",
           ),
+          fetchWithErrorHandling<RewardChestConfigRow>(
+            buildApiUrl(sqlBaseUrl, REWARD_CHEST_CONFIG_QUERY),
+            "Failed to fetch reward chest config",
+          ),
         ]);
 
         if (cancelled) return;
 
-        const nextAllocatedRewardChests = toBigIntValue(chestRows[0]?.allocated_chests);
-        const nextTotalRegisteredPoints = toBigIntValue(seasonRows[0]?.total_registered_points);
-        if (nextAllocatedRewardChests == null || nextTotalRegisteredPoints == null) {
-          return;
-        }
+        const nextAllocatedRewardChests = toChestCount(chestRows[0]?.allocated_chests);
+        const nextDistributedRewardChests = toChestCount(chestRows[0]?.distributed_chests);
+        const nextTotalRegisteredPoints = toBigIntValue(seasonRows[0]?.total_registered_points) ?? 0n;
+        const nextLootChestAddress = normalizeNonZeroAddress(configRows[0]?.loot_chest_address);
 
         const nextSnapshot: ChestRewardSnapshot = {
+          lootChestAddress: nextLootChestAddress,
           allocatedRewardChests: nextAllocatedRewardChests,
+          distributedRewardChests: nextDistributedRewardChests,
           totalRegisteredPoints: nextTotalRegisteredPoints,
         };
         cachedChestRewardSnapshot = nextSnapshot;
@@ -190,18 +219,20 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
         const player = r!.player as unknown as bigint;
         const points = playerPointsByPlayer.get(player);
         const safePoints = typeof points === "bigint" ? points : 0n;
-        const guaranteedChestCount = safePoints >= GAME_REWARD_CHEST_POINTS_THRESHOLD ? 1n : 0n;
-        const proportionalChestCount =
-          allocatedRewardChests > 0n && totalRegisteredPoints > 0n
-            ? (allocatedRewardChests * safePoints) / totalRegisteredPoints
-            : 0n;
+        const chestEstimate = estimateClaimableChests({
+          lootChestAddress,
+          allocatedChests: allocatedRewardChests,
+          distributedChests: distributedRewardChests,
+          playerRegisteredPoints: safePoints,
+          totalRegisteredPoints,
+        });
 
         return {
           player,
           rank: Number(r!.rank),
           paid: Boolean(r!.paid),
           points,
-          earnedChests: guaranteedChestCount + proportionalChestCount,
+          earnedChests: BigInt(chestEstimate.count),
         };
       });
 
@@ -231,6 +262,8 @@ export const WinnersTable = ({ trialId }: { trialId?: bigint }) => {
     trialId,
     playerPointsByPlayer,
     allocatedRewardChests,
+    distributedRewardChests,
+    lootChestAddress,
     totalRegisteredPoints,
   ]);
 

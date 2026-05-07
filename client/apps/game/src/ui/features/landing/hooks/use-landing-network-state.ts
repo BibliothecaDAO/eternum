@@ -1,4 +1,3 @@
-import { env } from "../../../../../env";
 import { setSelectedChain, useSelectedRuntimeChain } from "@/runtime/world";
 import {
   resolveConnectedTxChainFromRuntime,
@@ -7,7 +6,7 @@ import {
 } from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 import {
   resolveLandingNetworkState,
@@ -26,11 +25,30 @@ interface LandingNetworkControllerState {
   switchToPreferredChain: (chain: LandingNetworkChain) => Promise<boolean>;
 }
 
+const DEFAULT_LANDING_CHAIN: Chain = "mainnet";
+
+// Landing should start on Mainnet for each full page open, while still allowing
+// normal Slot/Mainnet switching during the current page session.
+let hasDefaultedLandingChainOnPageOpen = false;
+
+const defaultLandingChainOnPageOpen = () => {
+  if (hasDefaultedLandingChainOnPageOpen) return;
+
+  hasDefaultedLandingChainOnPageOpen = true;
+  setSelectedChain(DEFAULT_LANDING_CHAIN);
+};
+
 export const useLandingNetworkState = (): LandingNetworkControllerState => {
-  const fallbackChain = env.VITE_PUBLIC_CHAIN as Chain;
-  const selectedChain = useSelectedRuntimeChain(fallbackChain);
+  const storedSelectedChain = useSelectedRuntimeChain(DEFAULT_LANDING_CHAIN);
+  const shouldStartOnDefaultLandingChain = !hasDefaultedLandingChainOnPageOpen;
+  const selectedChain = shouldStartOnDefaultLandingChain ? DEFAULT_LANDING_CHAIN : storedSelectedChain;
   const { address, chainId, connector } = useAccount();
   const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller ?? null;
+
+  useEffect(() => {
+    if (!shouldStartOnDefaultLandingChain) return;
+    defaultLandingChainOnPageOpen();
+  }, [shouldStartOnDefaultLandingChain]);
 
   const connectedChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
 

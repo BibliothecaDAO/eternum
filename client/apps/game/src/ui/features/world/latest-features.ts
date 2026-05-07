@@ -22,10 +22,17 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
-    date: "2026-05-04",
-    title: "Quieter Game Reviews",
+    date: "2026-05-06",
+    title: "Focused Chain Views",
     description:
-      "Game review now opens automatically only for connected players who registered in the ended game, so logged-out visitors can browse the landing page without an unexpected review prompt.",
+      "Landing games, profile ranks, MMR, prediction markets, and cosmetics now follow the selected landing chain, with each page open starting on Mainnet.",
+    type: "fix",
+  },
+  {
+    date: "2026-05-06",
+    title: "Map Sync Recovery",
+    description:
+      "Improved map stream recovery so delayed spatial updates enter a reconnecting state, retry cleanly, and surface network trouble when the map cannot restore live updates.",
     type: "fix",
   },
   {
