@@ -130,6 +130,7 @@ import {
   toggleMapHexView,
   selectNextStructure as utilSelectNextStructure,
 } from "../utils/navigation";
+import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
@@ -253,6 +254,7 @@ import {
   setWorldmapZoomTargetView,
 } from "./worldmap-zoom-controller";
 import { WorldmapZoomCoordinator } from "./worldmap-zoom/worldmap-zoom-coordinator";
+import { shouldSnapWorldmapZoomBandChange } from "./worldmap-zoom-snap-policy";
 import {
   WORLDMAP_STEP_WHEEL_DELTA,
   normalizeWorldmapWheelDelta,
@@ -1837,9 +1839,6 @@ export default class WorldmapScene extends WarpTravel {
 
   public override changeCameraView(position: CameraView) {
     this.zoomControllerState = setWorldmapZoomTargetView(this.zoomControllerState, position);
-    this.zoomCoordinator.requestBand(position);
-    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
-
     const previousView = this.targetCameraView;
     const shouldCountTransition = position !== previousView;
     if (shouldCountTransition) {
@@ -1847,7 +1846,40 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.targetCameraView = position;
+    if (this.shouldSnapWorldmapZoomBandChange()) {
+      this.snapWorldmapZoomBandChange(position, shouldCountTransition);
+      return;
+    }
+
+    this.zoomCoordinator.requestBand(position);
+    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.getSnapshot());
     this.retargetWorldmapZoomSpring(position, shouldCountTransition);
+  }
+
+  private shouldSnapWorldmapZoomBandChange(): boolean {
+    return shouldSnapWorldmapZoomBandChange({
+      activeMode: snapshotRendererDiagnostics().activeMode,
+    });
+  }
+
+  private snapWorldmapZoomBandChange(position: CameraView, shouldCountTransition: boolean): void {
+    const profile = resolveWorldmapCameraViewProfile(position);
+    this.cameraDistance = profile.distance;
+    this.cameraAngle = profile.angleRadians;
+    this.publishWorldmapCameraDistance(profile.distance);
+
+    this.controls.object.position.set(
+      this.controls.target.x,
+      this.controls.target.y + profile.height,
+      this.controls.target.z + profile.depth,
+    );
+    this.clearWorldmapZoomSpring();
+    this.publishWorldmapZoomSnapshot(this.zoomCoordinator.syncToBand(position, performance.now()));
+
+    if (shouldCountTransition) {
+      incrementWorldmapRenderCounter("zoomTransitionsCompleted");
+    }
+    this.notifyControlsChanged();
   }
 
   private retargetWorldmapZoomSpring(position: CameraView, shouldCountTransition: boolean): void {

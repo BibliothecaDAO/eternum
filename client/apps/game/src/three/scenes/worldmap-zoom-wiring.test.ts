@@ -96,6 +96,18 @@ describe("worldmap zoom wiring", () => {
     expect(source).not.toMatch(/this\.cameraAnimate\(\s*newPosition,\s*target,\s*duration/);
   });
 
+  it("snaps WebGPU fixed-band zoom without activating the spring path", () => {
+    const source = readSceneSource("worldmap.tsx");
+    const changeCameraViewSource = source.slice(
+      source.indexOf("public override changeCameraView"),
+      source.indexOf("private retargetWorldmapZoomSpring"),
+    );
+
+    expect(source).toMatch(/shouldSnapWorldmapZoomBandChange\(/);
+    expect(source).toMatch(/snapWorldmapZoomBandChange\(/);
+    expect(changeCameraViewSource).toMatch(/this\.snapWorldmapZoomBandChange\(position, shouldCountTransition\)/);
+  });
+
   it("exposes active zoom spring as transient render performance mode", () => {
     const source = readSceneSource("worldmap.tsx");
 
