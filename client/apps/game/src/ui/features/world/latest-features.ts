@@ -23,9 +23,9 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-06",
-    title: "Accurate Reward Claims",
+    title: "Focused Chain Views",
     description:
-      "Fixed ended game reward cards so chest rewards only appear when the game can actually mint loot chests and the shared chest pool still has claimable supply.",
+      "Landing games, profile ranks, MMR, prediction markets, and cosmetics now follow the selected landing chain, with each page open starting on Mainnet.",
     type: "fix",
   },
   {

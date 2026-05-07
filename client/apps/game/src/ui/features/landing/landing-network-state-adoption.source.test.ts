@@ -12,11 +12,15 @@ describe("Landing network state adoption", () => {
     const dashboardSource = readSource("src/ui/features/landing/components/dashboard-network-switch.tsx");
     const gameGridSource = readSource("src/ui/features/landing/components/game-selector/game-card-grid.tsx");
     const marketsSource = readSource("src/ui/features/landing/views/markets-view.tsx");
+    const profileSource = readSource("src/ui/features/landing/components/player-profile.tsx");
     const factorySource = readSource("src/ui/features/factory-v2/hooks/use-factory-v2-developer-config.ts");
 
     expect(dashboardSource).toContain('import { useLandingNetworkState } from "../hooks/use-landing-network-state";');
     expect(gameGridSource).toContain('import { useLandingNetworkState } from "../../hooks/use-landing-network-state";');
     expect(marketsSource).toContain('import { useLandingNetworkState } from "../hooks/use-landing-network-state";');
+    expect(profileSource).toContain(
+      'import { useLandingNetworkState } from "@/ui/features/landing/hooks/use-landing-network-state";',
+    );
     expect(factorySource).toContain(
       'import { useLandingNetworkState } from "@/ui/features/landing/hooks/use-landing-network-state";',
     );
