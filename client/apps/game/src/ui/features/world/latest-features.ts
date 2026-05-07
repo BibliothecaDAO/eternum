@@ -22,12 +22,11 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
-    date: "2026-05-04",
-    title: "Accurate Player Header",
+    date: "2026-05-06",
+    title: "Map Sync Recovery",
     description:
-      "Fixed the in-game header so connected players are no longer labeled as spectating while their leaderboard rank is still loading.",
+      "Improved map stream recovery so delayed spatial updates enter a reconnecting state, retry cleanly, and surface network trouble when the map cannot restore live updates.",
     type: "fix",
-    gameSlug: "eternum",
   },
   {
     date: "2026-04-30",
