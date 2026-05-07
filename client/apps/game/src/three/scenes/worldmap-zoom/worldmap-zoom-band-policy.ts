@@ -1,5 +1,7 @@
 import { CameraView } from "../camera-view";
-import type { WorldmapZoomBand, WorldmapZoomStatus } from "./worldmap-zoom-types";
+
+export type WorldmapZoomBand = CameraView.Close | CameraView.Medium | CameraView.Far;
+type WorldmapZoomStatus = "idle" | "zooming";
 
 export interface WorldmapZoomBandState {
   resolvedBand: WorldmapZoomBand;

@@ -9,31 +9,22 @@ function readSceneSource(fileName: string): string {
 }
 
 describe("worldmap zoom wiring", () => {
-  it("routes worldmap wheel zoom through the stepped zoom controller instead of continuous delta intents", () => {
-    const source = readSceneSource("worldmap.tsx");
-    const coordinatorSource = readSceneSource("worldmap-zoom/worldmap-zoom-coordinator.ts");
-
-    expect(source).toMatch(/WorldmapZoomCoordinator/);
-    expect(source).toMatch(/applyWorldmapWheelIntent\(/);
-    expect(source).toMatch(/resolveWorldmapWheelThreshold\(/);
-    expect(source).toMatch(/resolveWorldmapWheelGestureTimeoutMs\(/);
-    expect(source).toMatch(/setWorldmapZoomTargetView\(/);
-    expect(source).not.toMatch(/type:\s*"continuous_delta"/);
-    expect(coordinatorSource).not.toMatch(/continuous_delta|snap_to_distance|applyContinuousWorldmapZoomDelta/);
-  });
-
-  it("keeps MapControls zoom disabled for worldmap", () => {
+  it("keeps map controls zoom disabled for worldmap", () => {
     const source = readSceneSource("worldmap.tsx");
 
     expect(source).toMatch(/this\.controls\.enableZoom = false/);
     expect(source).not.toMatch(/this\.controls\.enableZoom = useUIStore\.getState\(\)\.enableMapZoom/);
   });
 
-  it("caps worldmap max zoom distance at the far presentation band", () => {
+  it("locks worldmap min and max zoom distance to the far presentation band", () => {
     const source = readSceneSource("worldmap.tsx");
 
-    expect(source).toMatch(/worldmapMaxZoomDistance = 40/);
-    expect(source).toMatch(/maxDistance: this\.worldmapMaxZoomDistance/);
+    expect(source).toMatch(
+      /worldmapZoomDistance = resolveWorldmapCameraViewProfile\(LOCKED_WORLDMAP_CAMERA_VIEW\)\.distance/,
+    );
+    expect(source).toMatch(/worldmapMinZoomDistance = this\.worldmapZoomDistance/);
+    expect(source).toMatch(/worldmapMaxZoomDistance = this\.worldmapZoomDistance/);
+    expect(source).toMatch(/this\.controls\.minDistance = this\.worldmapMinZoomDistance/);
     expect(source).toMatch(/this\.controls\.maxDistance = this\.worldmapMaxZoomDistance/);
   });
 
@@ -51,13 +42,30 @@ describe("worldmap zoom wiring", () => {
     expect(source).toMatch(/interactiveHexManager\.setHoverVisualMode\("outline"\)/);
   });
 
-  it("does not use cursor-anchor wheel resolution for fixed worldmap zoom stepping", () => {
+  it("does not attach wheel, cursor-anchor, or minimap zoom paths for worldmap", () => {
     const source = readSceneSource("worldmap.tsx");
-    const coordinatorSource = readSceneSource("worldmap-zoom/worldmap-zoom-coordinator.ts");
+    const minimapSource = readSceneSource("../../ui/features/world/components/bottom-right-panel/hex-minimap.tsx");
 
+    expect(source).not.toMatch(/addEventListener\("wheel"/);
+    expect(source).not.toMatch(/minimapZoom/);
+    expect(minimapSource).not.toMatch(/minimapZoom/);
+    expect(minimapSource).not.toMatch(/onWheel=\{handleWheel\}/);
+    expect(source).not.toMatch(/applyWorldmapWheelIntent\(/);
+    expect(source).not.toMatch(/normalizeWorldmapWheelDelta\(/);
     expect(source).not.toMatch(/resolveWorldmapWheelAnchor\(/);
     expect(source).not.toMatch(/resolveWorldmapGroundIntersection\(/);
-    expect(coordinatorSource).not.toMatch(/anchorWorldPoint|solveWorldmapZoomAnchor/);
+    expect(source).not.toMatch(/applyDirectionalZoomIntent\(/);
+  });
+
+  it("does not register worldmap camera-view zoom shortcuts", () => {
+    const source = readSceneSource("worldmap.tsx");
+
+    expect(source).not.toMatch(/camera-view-close/);
+    expect(source).not.toMatch(/camera-view-medium/);
+    expect(source).not.toMatch(/camera-view-far/);
+    expect(source).not.toMatch(/Zoom to close view/);
+    expect(source).not.toMatch(/Zoom to medium view/);
+    expect(source).not.toMatch(/Zoom to far view/);
   });
 
   it("does not force chunk refreshes from zoom-distance changes", () => {
@@ -74,69 +82,50 @@ describe("worldmap zoom wiring", () => {
     expect(source).not.toMatch(/this\.worldmapScene\.requestChunkRefresh\(/);
   });
 
-  it("snaps the first worldmap entry to the intended medium camera band", () => {
+  it("snaps the first worldmap entry to the locked far camera band", () => {
     const source = readSceneSource("worldmap.tsx");
 
     expect(source).toMatch(/if \(!this\.hasInitialized\) \{\s*this\.alignInitialWorldmapCameraView\(\);\s*\}/);
-    expect(source).toMatch(/this\.zoomCoordinator\.syncToBand\(CameraView\.Medium/);
+    expect(source).toMatch(/this\.alignWorldmapCameraToBand\(LOCKED_WORLDMAP_CAMERA_VIEW\)/);
+    expect(source).toMatch(/this\.syncLockedWorldmapCameraView\(\)/);
   });
 
-  it("uses worldmap-specific spring config for fixed zoom band changes", () => {
-    const source = readSceneSource("worldmap.tsx");
-
-    expect(source).toMatch(/WORLDMAP_ZOOM_SPRING_CONFIG/);
-    expect(source).toMatch(/advanceWorldmapCameraSpring\(/);
-  });
-
-  it("retargets fixed-band zoom through a spring instead of restarting camera tweens", () => {
-    const source = readSceneSource("worldmap.tsx");
-
-    expect(source).toMatch(/retargetWorldmapZoomSpring\(/);
-    expect(source).toMatch(/updateWorldmapZoomSpring\(/);
-    expect(source).not.toMatch(/this\.cameraAnimate\(\s*newPosition,\s*target,\s*duration/);
-  });
-
-  it("snaps WebGPU fixed-band zoom without activating the spring path", () => {
+  it("locks every worldmap camera view request to the far band without a transition", () => {
     const source = readSceneSource("worldmap.tsx");
     const changeCameraViewSource = source.slice(
       source.indexOf("public override changeCameraView"),
-      source.indexOf("private retargetWorldmapZoomSpring"),
+      source.indexOf("public override getCurrentCameraView"),
     );
 
-    expect(source).toMatch(/shouldSnapWorldmapZoomBandChange\(/);
-    expect(source).toMatch(/snapWorldmapZoomBandChange\(/);
-    expect(changeCameraViewSource).toMatch(/this\.snapWorldmapZoomBandChange\(position, shouldCountTransition\)/);
+    expect(source).toMatch(/resolveLockedWorldmapCameraView\(/);
+    expect(changeCameraViewSource).toMatch(/const lockedView = resolveLockedWorldmapCameraView\(position\)/);
+    expect(changeCameraViewSource).toMatch(/this\.alignWorldmapCameraToBand\(lockedView\)/);
+    expect(changeCameraViewSource).not.toMatch(/incrementWorldmapRenderCounter\("zoomTransitionsStarted"\)/);
+    expect(source).not.toMatch(/this\.cameraAnimate\(\s*newPosition,\s*target,\s*duration/);
   });
 
-  it("exposes active zoom spring as transient render performance mode", () => {
+  it("removes worldmap zoom transition helpers from the scene", () => {
     const source = readSceneSource("worldmap.tsx");
 
+    expect(source).not.toMatch(/WORLDMAP_ZOOM_SPRING_CONFIG/);
+    expect(source).not.toMatch(/advanceWorldmapCameraSpring\(/);
+    expect(source).not.toMatch(/retargetWorldmapZoomSpring\(/);
+    expect(source).not.toMatch(/updateWorldmapZoomSpring\(/);
+    expect(source).not.toMatch(/snapWorldmapZoomBandChange\(/);
+    expect(source).not.toMatch(/shouldSnapWorldmapZoomBandChange\(/);
     expect(source).toMatch(/isTransientRenderPerformanceModeActive\(\)/);
-    expect(source).toMatch(/return this\.isWorldmapZoomSpringActive/);
+    expect(source).toMatch(/return false/);
   });
 
-  it("keeps in-flight zoom spring frames out of the generic controls-change path", () => {
-    const source = readSceneSource("worldmap.tsx");
-    const updateZoomSpringSource = source.slice(
-      source.indexOf("private updateWorldmapZoomSpring"),
-      source.indexOf("private syncWorldmapZoomCameraFrame"),
-    );
-
-    expect(updateZoomSpringSource).toMatch(/this\.syncWorldmapZoomCameraFrame\(\)/);
-    expect(updateZoomSpringSource).not.toMatch(/this\.notifyControlsChanged\(\)/);
-    expect(source).toMatch(/private completeWorldmapZoomSpring\(\)/);
-  });
-
-  it("avoids polling minimap camera state while fixed-band zoom is animating", () => {
+  it("keeps minimap camera state polling active because there is no zoom animation", () => {
     const source = readSceneSource("worldmap.tsx");
     const updateSource = source.slice(
       source.indexOf("update(deltaTime: number)"),
-      source.indexOf("private updateWorldmapZoomSpring"),
+      source.indexOf("private syncLockedWorldmapCameraView"),
     );
 
-    expect(updateSource).toMatch(
-      /if \(!this\.isWorldmapZoomSpringActive\) \{\s*this\.updateCameraTargetHexThrottled\?\.\(\);\s*\}/,
-    );
+    expect(updateSource).toMatch(/this\.updateCameraTargetHexThrottled\?\.\(\)/);
+    expect(updateSource).not.toMatch(/isWorldmapZoomSpringActive/);
     expect(source).toMatch(/this\.publishWorldmapCameraDistance\(profile\.distance\)/);
   });
 });

@@ -9,7 +9,7 @@ import {
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
 import { BiomeIdToType, BiomeType, HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type WheelEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 
 export interface MinimapTile {
   col: number;
@@ -548,15 +548,6 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
     }
   }, []);
 
-  const handleWheel = useCallback((e: WheelEvent<SVGSVGElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (typeof window === "undefined") return;
-    const direction = Math.sign(e.deltaY);
-    if (direction === 0) return;
-    window.dispatchEvent(new CustomEvent("minimapZoom", { detail: { zoomOut: direction > 0 } }));
-  }, []);
-
   const handleDoubleClick = useCallback(() => {
     scheduleViewUpdate({ ...initialView });
   }, [initialView, scheduleViewUpdate]);
@@ -566,7 +557,6 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
       ref={svgRef}
       viewBox={viewBox.value}
       className="absolute inset-0 h-full w-full touch-none select-none"
-      onWheel={handleWheel}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={endDrag}

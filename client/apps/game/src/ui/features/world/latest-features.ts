@@ -23,44 +23,9 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-07",
-    title: "Instant WebGPU Zoom",
+    title: "Locked Map View",
     description:
-      "Changed WebGPU map zoom to snap directly between close, medium, and far views, avoiding animation stalls while keeping terrain chunks stable.",
-    type: "improvement",
-  },
-  {
-    date: "2026-05-07",
-    title: "Smoother WebGPU Zoom",
-    description:
-      "Reduced WebGPU renderer reconfiguration during map zoom, so close, medium, and far transitions feel smoother without changing terrain or chunk loading.",
-    type: "improvement",
-  },
-  {
-    date: "2026-05-06",
-    title: "Snappier Map Zoom",
-    description:
-      "Reduced extra controls, minimap, and outline updates while map zoom is already animating, so close, medium, and far transitions spend more time on the camera movement itself.",
-    type: "improvement",
-  },
-  {
-    date: "2026-05-06",
-    title: "Lighter Map Zoom",
-    description:
-      "Map zoom now temporarily reduces expensive visual effects while the camera is moving, keeping terrain stable while making close, medium, and far transitions feel smoother.",
-    type: "improvement",
-  },
-  {
-    date: "2026-05-06",
-    title: "Smoother Map Zoom",
-    description:
-      "Improved map zoom transitions so close, medium, and far views retarget smoothly when wheel input changes direction or speed.",
-    type: "improvement",
-  },
-  {
-    date: "2026-05-06",
-    title: "Stable Map Zoom",
-    description:
-      "Fixed map zoom so close, medium, and far views animate smoothly without forcing terrain chunks to rebuild during the zoom.",
+      "Temporarily locked the world map to the full zoomed-out view, removing zoom controls so navigation stays stable while terrain chunks keep loading normally.",
     type: "fix",
   },
   {
