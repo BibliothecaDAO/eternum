@@ -98,6 +98,8 @@ jobs:
       VITE_PUBLIC_CLIENT_FEE_RECIPIENT: "0x009d838f2dB23aFD64e4A2A116EdA44a00Cda1b1C8Cb2CE9C11eB534E8Bc50E0"
       VITE_PUBLIC_SLOT: "eternum-blitz-slot-4"
       VITE_PUBLIC_CHAIN: "slot"
+      GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
+      ETERNUM_DISABLE_MKCERT: "true"
 
     steps:
       - name: Checkout repository
@@ -137,7 +139,7 @@ jobs:
       - name: Wait for game client preview server
         run: |
           for attempt in $(seq 1 60); do
-            if curl --fail --silent --show-error --insecure https://127.0.0.1:4173 >/dev/null; then
+            if curl --fail --silent --show-error "$GAME_CLIENT_PREVIEW_URL" >/dev/null; then
               exit 0
             fi
 
@@ -151,7 +153,7 @@ jobs:
       - name: Run renderer scene smoke
         run: |
           node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs \
-            --base-url https://127.0.0.1:4173 \
+            --base-url "$GAME_CLIENT_PREVIEW_URL" \
             --scenes map,hex \
             --artifact-dir /tmp/renderer-scene-smoke-artifacts
 
@@ -166,7 +168,7 @@ jobs:
       - name: Run renderer debug smoke
         run: |
           node ./client/apps/game/scripts/run-renderer-debug-smoke.mjs \
-            --base-url https://127.0.0.1:4173 \
+            --base-url "$GAME_CLIENT_PREVIEW_URL" \
             --scenarios baseline,stress \
             --output /tmp/renderer-debug-smoke.json
 
