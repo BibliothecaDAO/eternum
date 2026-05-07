@@ -12,9 +12,9 @@
   "requestedLaunchStep": "sync-paymaster",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25488629664-1.json",
   "latestLaunchRequestId": "25488629664-1",
-  "currentStepId": "sync-paymaster",
+  "currentStepId": null,
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-07T09:52:06.240Z",
+  "updatedAt": "2026-05-07T09:52:14.942Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-07T10:06:59.142Z",
-    "lastEvaluatedAt": "2026-05-07T09:51:59.142Z"
+    "nextEvaluationAt": "2026-05-07T10:07:14.942Z",
+    "lastEvaluatedAt": "2026-05-07T09:52:14.942Z"
   },
   "steps": [
     {
@@ -80,10 +80,11 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
-      "startedAt": "2026-05-07T09:52:06.240Z"
+      "latestEvent": "Setting up gas coverage is complete",
+      "startedAt": "2026-05-07T09:52:06.240Z",
+      "finishedAt": "2026-05-07T09:52:14.942Z"
     }
   ],
   "summary": {
@@ -3839,127 +3840,10 @@
           "fee_amount": "1000000000000000000000"
         },
         "seriesGameNumber": 20,
-        "currentStepId": "sync-paymaster",
-        "latestEvent": "slot command failed with exit code 1: Error: rpc error: code = FailedPrecondition desc = paymaster has no budget; fund it before adding policies\nWarning: 1 policies with entrypoints [approve] have no trigger and will sponsor ALL such calls. Continue? [y/N]:",
-        "status": "failed",
-        "configSteps": [
-          {
-            "id": "world-admin",
-            "description": "Set world admin config"
-          },
-          {
-            "id": "mercenaries-name",
-            "description": "Set mercenaries name config"
-          },
-          {
-            "id": "vrf",
-            "description": "Set VRF config"
-          },
-          {
-            "id": "game-mode",
-            "description": "Set game mode config"
-          },
-          {
-            "id": "factory-address",
-            "description": "Set factory address"
-          },
-          {
-            "id": "blitz-exploration",
-            "description": "Set blitz exploration config"
-          },
-          {
-            "id": "mmr",
-            "description": "Set MMR config"
-          },
-          {
-            "id": "victory-points",
-            "description": "Set victory points config"
-          },
-          {
-            "id": "camp-starting-resources",
-            "description": "Set camp starting resources config"
-          },
-          {
-            "id": "blitz-registration",
-            "description": "Set blitz registration config"
-          },
-          {
-            "id": "agent",
-            "description": "Set agent config"
-          },
-          {
-            "id": "season",
-            "description": "Set season config"
-          },
-          {
-            "id": "resource-bridge-fees",
-            "description": "Set resource bridge fees config"
-          },
-          {
-            "id": "battle",
-            "description": "Set battle config"
-          },
-          {
-            "id": "structure-max-level",
-            "description": "Set structure max level config"
-          },
-          {
-            "id": "tick",
-            "description": "Set tick config"
-          },
-          {
-            "id": "map",
-            "description": "Set map config"
-          },
-          {
-            "id": "quest",
-            "description": "Set quest config"
-          },
-          {
-            "id": "capacity",
-            "description": "Set capacity config"
-          },
-          {
-            "id": "speed",
-            "description": "Set speed config"
-          },
-          {
-            "id": "hyperstructure",
-            "description": "Set hyperstructure config"
-          },
-          {
-            "id": "settlement",
-            "description": "Set settlement config"
-          },
-          {
-            "id": "starting-resources",
-            "description": "Set starting resources config"
-          },
-          {
-            "id": "weight",
-            "description": "Set weight config"
-          },
-          {
-            "id": "realm-upgrade",
-            "description": "Set realm upgrade config"
-          },
-          {
-            "id": "troop",
-            "description": "Set troop config"
-          },
-          {
-            "id": "building-base",
-            "description": "Set base building config"
-          },
-          {
-            "id": "building-categories",
-            "description": "Set building category config"
-          },
-          {
-            "id": "resource-factory",
-            "description": "Set resource factory config"
-          }
-        ],
+        "currentStepId": null,
+        "latestEvent": "Completed sync-paymaster",
+        "status": "succeeded",
+        "configSteps": [],
         "steps": [
           {
             "id": "create-series",
@@ -3998,10 +3882,9 @@
           },
           {
             "id": "sync-paymaster",
-            "status": "failed",
-            "latestEvent": "slot command failed with exit code 1: Error: rpc error: code = FailedPrecondition desc = paymaster has no budget; fund it before adding policies\nWarning: 1 policies with entrypoints [approve] have no trigger and will sponsor ALL such calls. Continue? [y/N]:",
-            "updatedAt": "2026-05-07T09:31:56.095Z",
-            "errorMessage": "slot command failed with exit code 1: Error: rpc error: code = FailedPrecondition desc = paymaster has no budget; fund it before adding policies\nWarning: 1 policies with entrypoints [approve] have no trigger and will sponsor ALL such calls. Continue? [y/N]:"
+            "status": "succeeded",
+            "latestEvent": "Completed sync-paymaster",
+            "updatedAt": "2026-05-07T09:52:13.017Z"
           }
         ],
         "artifacts": {
@@ -4024,7 +3907,8 @@
             "worldAddress": "0x004be30199741b01043a3feb9f78db0f40340f980e43406b5b9603cbe903ddb1",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "paymasterSynced": true
         }
       }
     ],
@@ -4035,13 +3919,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25488629664-1",
-    "workflowRunId": 25488629664,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-05-07T09:52:06.240Z",
-    "expiresAt": "2026-05-07T10:37:06.240Z"
   }
 }
