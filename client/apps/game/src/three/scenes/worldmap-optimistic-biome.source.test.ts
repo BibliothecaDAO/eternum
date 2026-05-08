@@ -10,9 +10,9 @@ function readSource(filename: string): string {
 
 /**
  * Close the "empty hex for a few seconds" gap between tx submission and the
- * authoritative TileOpt delivery. Biome.getBiome is deterministic and mirrors
- * the Cairo biome_library, so we can render the destination biome immediately
- * once the submitted tx hash starts the optimistic tween.
+ * authoritative TileOpt delivery after confirmation. Biome.getBiome is
+ * deterministic and mirrors the Cairo biome_library, so we can render the
+ * destination biome immediately once the optimistic tween is allowed to start.
  */
 describe("Worldmap optimistic destination biome", () => {
   it("imports Biome from @bibliothecadao/eternum", () => {

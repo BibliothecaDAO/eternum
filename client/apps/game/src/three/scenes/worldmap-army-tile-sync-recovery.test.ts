@@ -34,7 +34,7 @@ describe("worldmap army tile-sync recovery", () => {
   it("does not advance tile-sync recovery from troop updates", () => {
     const src = readSource("worldmap.tsx");
 
-    const listenerStart = src.indexOf("this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {");
+    const listenerStart = src.indexOf("this.worldUpdateListener.Army.onExplorerTroopsUpdate(async (update) => {");
     expect(listenerStart).toBeGreaterThan(-1);
 
     const listenerBody = src.slice(listenerStart, listenerStart + 1400);

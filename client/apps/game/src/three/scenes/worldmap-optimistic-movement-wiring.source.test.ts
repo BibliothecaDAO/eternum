@@ -22,7 +22,7 @@ describe("Worldmap optimistic movement wiring", () => {
     expect(source).toMatch(/this\.pendingMovementPlans\.set/);
   });
 
-  it("starts the optimistic plan from the submitted transaction hash", () => {
+  it("records submitted transaction hashes without starting movement", () => {
     const source = readSource("worldmap.tsx");
 
     const submitStart = source.indexOf("private handleSubmittedArmyMovementTx(");
@@ -32,10 +32,12 @@ describe("Worldmap optimistic movement wiring", () => {
     const submitHandler = source.slice(submitStart, submitEnd);
 
     expect(submitHandler).toContain('"tx_submitted"');
-    expect(submitHandler).toContain("startSubmittedArmyMovementOptimisticPlan");
+    expect(submitHandler).toContain("this.pendingArmyMovementTxMap.set(txHash, entityId)");
+    expect(submitHandler).not.toContain("startConfirmedArmyMovementOptimisticPlan");
+    expect(submitHandler).not.toContain("applyMovementPlan");
   });
 
-  it("records confirmation without waiting to start the optimistic tween", () => {
+  it("starts the optimistic plan from transaction confirmation", () => {
     const source = readSource("worldmap.tsx");
 
     const handlerStart = source.indexOf("this.handleTransactionComplete = ");
@@ -45,7 +47,37 @@ describe("Worldmap optimistic movement wiring", () => {
 
     const handler = source.slice(handlerStart, handlerEnd);
     expect(handler).toContain('"tx_confirmed"');
-    expect(handler).not.toContain("applyMovementPlan");
+    expect(handler).toContain("this.startConfirmedArmyMovementOptimisticPlan(entityId, txHash)");
+  });
+
+  it("applies confirmed movement plans at most once", () => {
+    const source = readSource("worldmap.tsx");
+
+    const helperStart = source.indexOf("private startConfirmedArmyMovementOptimisticPlan(");
+    expect(helperStart).toBeGreaterThan(0);
+    const helperEnd = source.indexOf("\n  private ", helperStart + 20);
+    expect(helperEnd).toBeGreaterThan(helperStart);
+    const helper = source.slice(helperStart, helperEnd);
+
+    expect(helper).toContain("this.pendingMovementPlans.get(entityId)");
+    expect(helper).toContain("if (!planPromise) return");
+    expect(helper).toContain("this.pendingMovementPlans.delete(entityId)");
+    expect(helper).toContain("this.applyConfirmedArmyMovementOptimisticPlan(entityId, txHash, plan)");
+    expect(helper.indexOf("this.pendingMovementPlans.delete(entityId)")).toBeLessThan(
+      helper.indexOf("this.applyConfirmedArmyMovementOptimisticPlan"),
+    );
+  });
+
+  it("lets authoritative movement clear pending plans before confirmation", () => {
+    const source = readSource("worldmap.tsx");
+
+    const clearStart = source.indexOf("private clearPendingArmyMovementFromAuthoritativePosition(");
+    expect(clearStart).toBeGreaterThan(0);
+    const clearEnd = source.indexOf("\n  private ", clearStart + 20);
+    expect(clearEnd).toBeGreaterThan(clearStart);
+    const clearBody = source.slice(clearStart, clearEnd);
+
+    expect(clearBody).toContain("this.pendingMovementPlans.delete(entityId)");
   });
 
   it("rewinds optimistic movement when the tx fails", () => {

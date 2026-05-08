@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-08",
+    title: "Confirmed Army Movement",
+    description:
+      "Army movement now waits for confirmation or synced world state, then animates from its source while pending markers show where explore or travel is resolving.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-05-07",
     title: "Scrollable Tile HUD",
     description:
@@ -68,7 +76,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-04-29",
     title: "Smoother Army Movement",
     description:
-      "Army movement now starts as soon as the transaction is submitted, blocks follow-up commands until authoritative world state catches up, and rewinds cleanly if the transaction fails.",
+      "Army movement now blocks follow-up commands while submitted moves resolve, keeps pending feedback visible, and rewinds cleanly if the transaction fails.",
     type: "fix",
   },
   {

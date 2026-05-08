@@ -5,15 +5,16 @@ type ExplorerTroopsUpdateHandlers = {
   cancelPendingArmyRemoval: (entityId: ID) => void;
   scheduleArmyRemoval: (entityId: ID, reason: "tile" | "zero") => void;
   updateArmyHexes: (update: ExplorerTroopsSystemUpdate) => void;
+  moveArmyToAuthoritativeExplorerTroopsPosition: (update: ExplorerTroopsSystemUpdate) => Promise<void>;
   updateArmyFromExplorerTroopsUpdate: (update: ExplorerTroopsSystemUpdate) => void;
   onAuthoritativePositionApplied?: (update: ExplorerTroopsSystemUpdate) => void;
   shouldSkipStalePositionUpdate?: (entityId: ID, normalized: { x: number; y: number }) => boolean;
 };
 
-export function processExplorerTroopsUpdate(
+export async function processExplorerTroopsUpdate(
   update: ExplorerTroopsSystemUpdate,
   handlers: ExplorerTroopsUpdateHandlers,
-): void {
+): Promise<void> {
   handlers.cancelPendingArmyRemoval(update.entityId);
 
   if (update.troopCount <= 0) {
@@ -29,6 +30,7 @@ export function processExplorerTroopsUpdate(
 
   if (!shouldSkipPosition) {
     handlers.updateArmyHexes(update);
+    await handlers.moveArmyToAuthoritativeExplorerTroopsPosition(update);
   }
   // Always apply non-positional fields (stamina/troop-count/owner). Tick-based
   // staleness resolution downstream handles any regression in those fields.

@@ -59,7 +59,7 @@ describe("worldmap army suppression integration", () => {
   it("troop updates do not recover visuals before tile state catches up", () => {
     const src = readSource("worldmap.tsx");
 
-    const listenerStart = src.indexOf("this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {");
+    const listenerStart = src.indexOf("this.worldUpdateListener.Army.onExplorerTroopsUpdate(async (update) => {");
     expect(listenerStart).toBeGreaterThan(-1);
 
     const listenerBody = src.slice(listenerStart, listenerStart + 1200);

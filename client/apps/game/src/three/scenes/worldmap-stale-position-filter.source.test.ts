@@ -28,7 +28,7 @@ describe("Worldmap stale-position filter wiring", () => {
   it("passes shouldSkipStalePositionUpdate into processExplorerTroopsUpdate", () => {
     const source = readSource("worldmap.tsx");
 
-    const callStart = source.indexOf("processExplorerTroopsUpdate(update, {");
+    const callStart = source.indexOf("await processExplorerTroopsUpdate(update, {");
     expect(callStart).toBeGreaterThan(0);
     const callEnd = source.indexOf("});", callStart);
     const body = source.slice(callStart, callEnd);

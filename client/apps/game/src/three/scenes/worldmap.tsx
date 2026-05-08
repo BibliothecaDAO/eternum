@@ -66,6 +66,7 @@ import {
   BattleEventSystemUpdate,
   ChestSystemUpdate,
   ExplorerRewardSystemUpdate,
+  ExplorerTroopsSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   getTileAt,
@@ -639,9 +640,9 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovementTxMap: Map<string, ID> = new Map();
   private pendingArmyMovementTargetKeys: Map<ID, string> = new Map();
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
-  // Pre-computed optimistic movement plans keyed by entityId. Planned at submit
-  // time in parallel with the tx, applied as soon as the tx hash is submitted
-  // so the army moves during provider confirmation instead of waiting on Torii.
+  // Pre-computed movement plans keyed by entityId. Planned at submit time in
+  // parallel with the tx, then applied after provider confirmation unless Torii
+  // reconciles the authoritative position first.
   private pendingMovementPlans: Map<ID, Promise<ArmyMovementPlan | null>> = new Map();
   private get hydratedChunkRefreshes(): Set<string> {
     return this.hydratedRefreshQueueState.queuedChunkKeys;
@@ -992,7 +993,7 @@ export default class WorldmapScene extends WarpTravel {
     this.logWorldmapSceneConstruction();
     this.initializeToriiStreamManager(dojoContext);
     this.initializeWorldmapSceneServices(dojoContext);
-    this.bindTransactionFailureLifecycle(dojoContext);
+    this.bindTransactionLifecycle(dojoContext);
     this.initializeWorldmapManagers();
     this.configureWorldmapRecoveryLifecycle();
     this.initializeWorldmapSupportManagers();
@@ -1091,7 +1092,7 @@ export default class WorldmapScene extends WarpTravel {
     this.loadBiomeModels(this.renderChunkSize.width * this.renderChunkSize.height);
   }
 
-  private bindTransactionFailureLifecycle(dojoContext: SetupResult): void {
+  private bindTransactionLifecycle(dojoContext: SetupResult): void {
     this.handleTransactionComplete = (payload: { details?: { transaction_hash?: string } }) => {
       const txHash = payload?.details?.transaction_hash;
       if (!txHash) {
@@ -1110,6 +1111,7 @@ export default class WorldmapScene extends WarpTravel {
         txHash,
       });
 
+      this.startConfirmedArmyMovementOptimisticPlan(entityId, txHash);
       this.pendingArmyMovementTxMap.delete(txHash);
     };
 
@@ -1150,18 +1152,17 @@ export default class WorldmapScene extends WarpTravel {
       entityId,
       txHash,
     });
-    this.startSubmittedArmyMovementOptimisticPlan(entityId, txHash);
   }
 
-  private startSubmittedArmyMovementOptimisticPlan(entityId: ID, txHash: string): void {
+  private startConfirmedArmyMovementOptimisticPlan(entityId: ID, txHash: string): void {
     const planPromise = this.pendingMovementPlans.get(entityId);
     if (!planPromise) return;
 
     this.pendingMovementPlans.delete(entityId);
-    void planPromise.then((plan) => this.applySubmittedArmyMovementOptimisticPlan(entityId, txHash, plan));
+    void planPromise.then((plan) => this.applyConfirmedArmyMovementOptimisticPlan(entityId, txHash, plan));
   }
 
-  private async applySubmittedArmyMovementOptimisticPlan(
+  private async applyConfirmedArmyMovementOptimisticPlan(
     entityId: ID,
     txHash: string,
     plan: ArmyMovementPlan | null,
@@ -1460,11 +1461,13 @@ export default class WorldmapScene extends WarpTravel {
     );
 
     this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
-        processExplorerTroopsUpdate(update, {
+      this.worldUpdateListener.Army.onExplorerTroopsUpdate(async (update) => {
+        await processExplorerTroopsUpdate(update, {
           cancelPendingArmyRemoval: (entityId) => this.cancelPendingArmyRemoval(entityId),
           scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
           updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
+          moveArmyToAuthoritativeExplorerTroopsPosition: (update) =>
+            this.moveArmyToAuthoritativeExplorerTroopsPosition(update),
           updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
           onAuthoritativePositionApplied: (update) => this.clearPendingArmyMovementFromAuthoritativePosition(update),
           shouldSkipStalePositionUpdate: (entityId, normalized) =>
@@ -1479,6 +1482,13 @@ export default class WorldmapScene extends WarpTravel {
         this.removeEntityFromTracking(entityId);
         this.requestChunkRefresh(false, "army_dead");
       }),
+    );
+  }
+
+  private async moveArmyToAuthoritativeExplorerTroopsPosition(update: ExplorerTroopsSystemUpdate): Promise<void> {
+    await this.armyManager.moveArmy(
+      update.entityId,
+      new Position({ x: update.hexCoords.col, y: update.hexCoords.row }),
     );
   }
 
@@ -2693,9 +2703,8 @@ export default class WorldmapScene extends WarpTravel {
         },
       });
 
-      // Pre-compute the optimistic movement plan in parallel with the tx so the
-      // submitted tx hash can start animation without waiting for provider
-      // confirmation or Torii's authoritative TileOpt update.
+      // Pre-compute the movement plan in parallel with the tx so confirmation
+      // can start animation promptly if Torii has not already reconciled it.
       const destPosition = new Position({ x: targetHex.col, y: targetHex.row });
       this.pendingMovementPlans.set(
         selectedEntityId,
@@ -2965,6 +2974,7 @@ export default class WorldmapScene extends WarpTravel {
         source: "worldmap",
         entityId,
       });
+      this.pendingMovementPlans.delete(entityId);
       this.clearPendingArmyMovement(entityId, "movement_started");
     });
     const disposeMovementComplete = this.armyManager.onMovementComplete(entityId, () => {

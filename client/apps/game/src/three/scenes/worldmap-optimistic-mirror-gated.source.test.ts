@@ -53,10 +53,10 @@ describe("Worldmap optimistic mirror gated on applyMovementPlan result", () => {
     expect(body).toMatch(/return true;/);
   });
 
-  it("the submitted optimistic-plan helper gates the mirror on applyMovementPlan's return", () => {
+  it("the confirmed optimistic-plan helper gates the mirror on applyMovementPlan's return", () => {
     const source = readSource("worldmap.tsx");
 
-    const handlerStart = source.indexOf("private async applySubmittedArmyMovementOptimisticPlan(");
+    const handlerStart = source.indexOf("private async applyConfirmedArmyMovementOptimisticPlan(");
     expect(handlerStart).toBeGreaterThan(0);
     const handlerEnd = source.indexOf("\n  private ", handlerStart + 20);
     expect(handlerEnd).toBeGreaterThan(handlerStart);
@@ -78,7 +78,7 @@ describe("Worldmap optimistic mirror gated on applyMovementPlan result", () => {
   it("emits optimistic_animation_skipped latency phase when the plan no-ops", () => {
     const source = readSource("worldmap.tsx");
 
-    const handlerStart = source.indexOf("private async applySubmittedArmyMovementOptimisticPlan(");
+    const handlerStart = source.indexOf("private async applyConfirmedArmyMovementOptimisticPlan(");
     const handlerEnd = source.indexOf("\n  private ", handlerStart + 20);
     const handler = source.slice(handlerStart, handlerEnd);
 
