@@ -1,4 +1,4 @@
-import { TransactionType } from "@bibliothecadao/provider";
+import { SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE, TransactionType } from "@bibliothecadao/provider";
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -18,6 +18,7 @@ type TransactionFailurePayload = {
   stage?: string;
   transactionCount?: number;
   transactionHash?: string;
+  failureKind?: string;
 };
 
 export function TransactionNotification() {
@@ -50,9 +51,11 @@ export function TransactionNotification() {
       const transactionCount = typeof payload?.transactionCount === "number" ? payload.transactionCount : null;
       const action = type ? getTxMessage(type) : "Action failed";
       const txCount = transactionCount ? ` (${transactionCount} transactions)` : "";
-      const description = `${action}${txCount} - ${message}`;
+      const isNoHashTimeout = payload.failureKind === "submission_timeout_no_hash";
+      const title = isNoHashTimeout ? "⚠️ Transaction status uncertain" : "❌ Transaction failed";
+      const description = `${action}${txCount} - ${isNoHashTimeout ? SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE : message}`;
       console.error("Transaction failed:", message);
-      toast("❌ Transaction failed", { description });
+      toast(title, { description });
       AudioManager.getInstance().play("ui.tx_fail");
     };
 

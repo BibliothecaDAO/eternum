@@ -20,15 +20,14 @@ import {
 import { COSMETIC_ITEMS, type CosmeticItem } from "@/ui/features/cosmetics/config/cosmetics.data";
 import {
   COSMETICS_NETWORK_CONFIG,
-  COSMETICS_NETWORKS,
-  type CosmeticsNetwork,
-  DEFAULT_COSMETICS_NETWORK,
   resolveConnectedTxNetworkFromRuntime,
 } from "@/ui/features/cosmetics/config/networks";
 import { buildDevPreviewCatalogItems } from "@/ui/features/cosmetics/lib/dev-preview-cosmetics";
+import { resolveCosmeticsLoadoutNetworkForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
 import { useToriiCosmetics, useTotalCosmeticsSupply } from "@/ui/features/cosmetics/lib/use-torii-cosmetics";
 import { describeBlitzLoadoutSummary, useCosmeticLoadoutStore } from "@/ui/features/cosmetics/model";
-import { switchWalletToChain, type WalletChainControllerLike } from "@/ui/utils/network-switch";
+import { useLandingNetworkState } from "@/ui/features/landing/hooks/use-landing-network-state";
+import { getChainLabel, switchWalletToChain, type WalletChainControllerLike } from "@/ui/utils/network-switch";
 import { useAccount } from "@starknet-react/core";
 import { useCallback, useMemo, useState } from "react";
 
@@ -46,7 +45,8 @@ export const LandingCosmetics = () => {
   const { chainId, connector } = useAccount();
   const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
   const connectedTxNetwork = resolveConnectedTxNetworkFromRuntime({ chainId, controller });
-  const [selectedNetwork, setSelectedNetwork] = useState<CosmeticsNetwork>(DEFAULT_COSMETICS_NETWORK);
+  const { preferredChain } = useLandingNetworkState();
+  const selectedNetwork = resolveCosmeticsLoadoutNetworkForChain(preferredChain);
   const [showWrongNetworkPrompt, setShowWrongNetworkPrompt] = useState(false);
   const { data: toriiCosmetics, isLoading, isError } = useToriiCosmetics({ network: selectedNetwork });
   const { data: totalSupply, isLoading: isLoadingSupply } = useTotalCosmeticsSupply({ network: selectedNetwork });
@@ -72,6 +72,7 @@ export const LandingCosmetics = () => {
   const { showLootChestOpening, setShowLootChestOpening } = useLootChestOpeningStore();
   const { ownedChests, isLoading: isLoadingChests, refetch: refetchChests } = useOwnedChests(selectedNetwork);
   const canOpenSelectedNetworkChests = connectedTxNetwork !== null && selectedNetwork === connectedTxNetwork;
+  const selectedLandingChainLabel = getChainLabel(preferredChain);
   const selectedNetworkLabel = COSMETICS_NETWORK_CONFIG[selectedNetwork].label;
   const openDisabledReason = canOpenSelectedNetworkChests
     ? undefined
@@ -236,25 +237,13 @@ export const LandingCosmetics = () => {
               </Tabs.Tab>
             </Tabs.List>
 
-            <div className="inline-flex w-fit rounded-xl border border-gold/20 bg-black/40 p-1">
-              {COSMETICS_NETWORKS.map((network) => {
-                const isActive = selectedNetwork === network;
-                return (
-                  <button
-                    key={network}
-                    type="button"
-                    onClick={() => setSelectedNetwork(network)}
-                    className={[
-                      "rounded-lg px-3 py-1.5 text-xs font-medium transition-colors",
-                      isActive
-                        ? "bg-gold/25 text-gold border border-gold/40"
-                        : "text-gold/65 border border-transparent hover:text-gold hover:bg-gold/10",
-                    ].join(" ")}
-                  >
-                    {COSMETICS_NETWORK_CONFIG[network].label}
-                  </button>
-                );
-              })}
+            <div
+              className="inline-flex w-fit rounded-xl border border-gold/20 bg-black/40 p-1"
+              title={`Cosmetics data: ${selectedNetworkLabel}`}
+            >
+              <span className="rounded-lg border border-gold/40 bg-gold/25 px-3 py-1.5 text-xs font-medium text-gold">
+                {selectedLandingChainLabel}
+              </span>
             </div>
           </div>
 

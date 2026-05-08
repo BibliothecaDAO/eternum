@@ -2,6 +2,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
+import {
+  clearUncertainClaimSharePointsSubmission,
+  isNoHashSubmissionTimeout,
+  rememberUncertainClaimSharePointsSubmission,
+} from "@/ui/utils/uncertain-transaction-registry";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -98,7 +103,6 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
         playerAddress,
         { ignorePendingClaimOverride: true },
       );
-
       const transactionResult = await claim_share_points({
         signer: account,
         hyperstructure_ids: hyperstructuresEntityIds,
@@ -126,12 +130,19 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
       }
 
       leaderboardManager.confirmPendingSharePointsClaim(playerAddress, txHash ?? undefined);
+      clearUncertainClaimSharePointsSubmission(playerAddress);
       leaderboardManager.forceRefresh();
       leaderboardManager.updatePoints();
 
       setPlayersByRank(leaderboardManager.playersByRank);
       logPointsSummary("claim confirmed and refreshed", { txHash });
     } catch (error) {
+      if (isNoHashSubmissionTimeout(error)) {
+        rememberUncertainClaimSharePointsSubmission({
+          walletAddress: playerAddress,
+          failureKind: "submission_timeout_no_hash",
+        });
+      }
       leaderboardManager.clearPendingSharePointsClaim(playerAddress, txHash ?? undefined);
       leaderboardManager.updatePoints();
       setPlayersByRank(leaderboardManager.playersByRank);

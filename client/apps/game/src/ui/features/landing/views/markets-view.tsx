@@ -33,7 +33,6 @@ import {
   useMultiChainMarketCounts,
   useMultiChainMarkets,
   type EnrichedMarket,
-  type MarketChainFilter,
   type MarketSortKey,
   type MarketStatusKey,
 } from "@/ui/features/market/landing-markets/use-multi-chain-markets";
@@ -177,12 +176,6 @@ const STATUS_OPTIONS: Array<{
   { key: "all", label: "All" },
 ];
 
-const CHAIN_OPTIONS: Array<{ key: MarketChainFilter; label: string }> = [
-  { key: "all", label: "All Chains" },
-  { key: "slot", label: "Slot" },
-  { key: "mainnet", label: "Mainnet" },
-];
-
 const SORT_OPTIONS: Array<{ key: MarketSortKey; label: string }> = [
   { key: "creation-date", label: "Creation Date" },
   { key: "end-time", label: "End Time" },
@@ -196,11 +189,6 @@ const getStatusFromParam = (value: string | null): MarketStatusKey => {
   }
 
   return "live";
-};
-
-const getChainFromParam = (value: string | null): MarketChainFilter => {
-  if (value === "slot" || value === "mainnet") return value;
-  return "all";
 };
 
 const getSortFromParam = (value: string | null): MarketSortKey => {
@@ -568,7 +556,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   );
 
   const selectedStatus = getStatusFromParam(searchParams.get("status"));
-  const selectedChain = getChainFromParam(searchParams.get("chain"));
+  const selectedChain = landingNetworkState.preferredChain;
   const selectedSort = getSortFromParam(searchParams.get("sort"));
   const filterKey = `${selectedStatus}|${selectedChain}|${selectedSort}`;
 
@@ -580,7 +568,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
     const blockedAddresses = new Set<string>();
 
     for (const summary of worldsSummary ?? []) {
-      if (!summary.devModeOn) continue;
+      if (!summary.devModeOn || summary.chain !== selectedChain) continue;
 
       const prizeDistributionAddress = normalizeHexAddress(summary.prizeDistributionAddress ?? "");
       if (prizeDistributionAddress) {
@@ -589,7 +577,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
     }
 
     return Array.from(blockedAddresses);
-  }, [worldsSummary]);
+  }, [selectedChain, worldsSummary]);
 
   const { counts, isLoading: isCountsLoading, isFetching: isCountsFetching } = useMultiChainMarketCounts(selectedChain);
   const hasLiveMarkets = counts.live > 0;
@@ -648,19 +636,6 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
     [selectedChain, selectedSort, setSearchParams],
   );
 
-  const handleChainChange = useCallback(
-    (nextChain: MarketChainFilter) => {
-      setSearchParams((previous) => {
-        const next = new URLSearchParams(previous);
-        if (nextChain === "all") next.delete("chain");
-        else next.set("chain", nextChain);
-        return next;
-      });
-      setPagesByFilter((previous) => ({ ...previous, [`${selectedStatus}|${nextChain}|${selectedSort}`]: 1 }));
-    },
-    [selectedSort, selectedStatus, setSearchParams],
-  );
-
   const handleSortChange = useCallback(
     (nextSort: MarketSortKey) => {
       setSearchParams((previous) => {
@@ -680,8 +655,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const isInitialLoad = (isLoading || isFetching) && markets.length === 0;
 
   const sourceWarnings = useMemo(() => {
-    const selected = selectedChain === "all" ? (["slot", "mainnet"] as MarketDataChain[]) : [selectedChain];
-    return selected
+    return [selectedChain]
       .filter((chain) => !sourceStatus[chain]?.ok)
       .map((chain) => {
         const message = sourceStatus[chain]?.error ?? "Unavailable";
@@ -727,7 +701,9 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
     <div className={cn("flex h-full flex-col gap-5", className)}>
       <div className="space-y-3">
         <h2 className="font-cinzel text-xl font-semibold text-gold md:text-2xl">Prediction Markets</h2>
-        <p className="text-sm text-gold/70">Track live odds, liquidity, and market activity across Slot and Mainnet.</p>
+        <p className="text-sm text-gold/70">
+          Track live odds, liquidity, and market activity on {getChainLabel(selectedChain)}.
+        </p>
       </div>
 
       <div className={cn(PM_SURFACE_CLASS, "border-gold/15 bg-black/30 p-4")}>
@@ -800,25 +776,8 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
           })}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {CHAIN_OPTIONS.map((option) => {
-            const isActive = selectedChain === option.key;
-            return (
-              <button
-                key={option.key}
-                type="button"
-                onClick={() => handleChainChange(option.key)}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
-                  isActive
-                    ? "border-gold/70 bg-gold/15 text-gold"
-                    : "border-gold/25 bg-black/40 text-gold/75 hover:border-gold/45 hover:bg-gold/10",
-                )}
-              >
-                {option.label}
-              </button>
-            );
-          })}
+        <div className="rounded-full border border-gold/70 bg-gold/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-gold">
+          {getChainLabel(selectedChain)}
         </div>
       </div>
 
@@ -965,8 +924,12 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   );
 };
 
-export const MarketsView = ({ className }: MarketsViewProps) => (
-  <MarketsProviders>
-    <MarketsViewContent className={className} />
-  </MarketsProviders>
-);
+export const MarketsView = ({ className }: MarketsViewProps) => {
+  const { preferredChain } = useLandingNetworkState();
+
+  return (
+    <MarketsProviders chain={preferredChain}>
+      <MarketsViewContent className={className} />
+    </MarketsProviders>
+  );
+};

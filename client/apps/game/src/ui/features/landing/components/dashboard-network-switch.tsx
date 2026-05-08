@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLandingNetworkState } from "../hooks/use-landing-network-state";
 import type { LandingNetworkChain, LandingNetworkStatus } from "../lib/landing-network-state";
 
-const DASHBOARD_CHAIN_OPTIONS: LandingNetworkChain[] = ["slot", "mainnet"];
+const DASHBOARD_CHAIN_OPTIONS: LandingNetworkChain[] = ["mainnet", "slot"];
 
 const resolveIndicatorTone = (status: LandingNetworkStatus) => {
   switch (status) {

@@ -20,7 +20,11 @@ import { WorldCountdownDetailed, useGameTimeStatus } from "@/ui/components/world
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useLandingNetworkState } from "../../hooks/use-landing-network-state";
-import { canInteractWithLandingChain, resolvePreferredLandingChain } from "../../lib/landing-network-state";
+import {
+  canInteractWithLandingChain,
+  resolvePreferredLandingChain,
+  type LandingNetworkChain,
+} from "../../lib/landing-network-state";
 import { MarketDetailsModal } from "@/ui/features/landing/views/market-details-modal";
 import { normalizeHexAddress, transformMarketRowToClass } from "@/ui/features/market/hooks/transform-market-row";
 import { MaybeController } from "@/ui/features/market/landing-markets/maybe-controller";
@@ -78,6 +82,15 @@ const formatLordsDisplayMaxTwoDecimals = (value: string): string => {
 
   const limitedDecimals = decimalPart.slice(0, 2).replace(/0+$/, "");
   return limitedDecimals.length > 0 ? `${wholeFormatted}.${limitedDecimals}` : wholeFormatted;
+};
+
+const formatClaimableRewardsText = (claimSummary: GameReviewClaimSummary): string => {
+  const lordsAmount = formatLordsDisplayMaxTwoDecimals(claimSummary.lordsWonFormatted);
+  if (claimSummary.chestsClaimedEstimate <= 0) {
+    return `Claimable: ${lordsAmount} LORDS`;
+  }
+
+  return `Claimable: ${lordsAmount} LORDS + ${claimSummary.chestsClaimedEstimate.toLocaleString()} chests`;
 };
 
 const getErrorMessage = (error: unknown): string | null => {
@@ -171,6 +184,9 @@ interface GameMarketState {
   isLoading: boolean;
   error: string | null;
 }
+
+const isLiveSummaryForLandingChain = (summary: WorldSummary, selectedChain: LandingNetworkChain): boolean =>
+  summary.alive && summary.chain === selectedChain;
 
 const formatOddsPercentage = (raw: string | number) => {
   const value = Number(raw);
@@ -808,8 +824,7 @@ const GameCard = ({
 
         {canClaimRewards && claimSummary && (
           <div className="rounded border border-gold/25 bg-gold/10 px-2 py-1.5 text-[10px] text-gold">
-            Claimable: {formatLordsDisplayMaxTwoDecimals(claimSummary.lordsWonFormatted)} LORDS +{" "}
-            {claimSummary.chestsClaimedEstimate.toLocaleString()} chests
+            {formatClaimableRewardsText(claimSummary)}
           </div>
         )}
 
@@ -1133,6 +1148,7 @@ export const UnifiedGameGrid = ({
   const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
   const landingNetworkState = useLandingNetworkState();
+  const selectedLandingChain = landingNetworkState.preferredChain;
   const autoSettleEntries = useAutoSettleStore((state) => state.entries);
   const markOpening = useAutoSettleStore((state) => state.markOpening);
 
@@ -1165,14 +1181,11 @@ export const UnifiedGameGrid = ({
     refetch: refetchSummary,
   } = useWorldsSummary();
 
-  // Only show live worlds on supported chains. Dead (alive=false) worlds
-  // are excluded from the card grid — they surface separately via the modal.
+  // Only show live worlds for the chain selected in the landing network switch.
+  // Dead (alive=false) worlds are excluded from the card grid — they surface separately via the modal.
   const liveSummaries = useMemo<WorldSummary[]>(
-    () =>
-      (worldsSummaryData ?? []).filter(
-        (summary) => summary.alive && (summary.chain === "mainnet" || summary.chain === "slot"),
-      ),
-    [worldsSummaryData],
+    () => (worldsSummaryData ?? []).filter((summary) => isLiveSummaryForLandingChain(summary, selectedLandingChain)),
+    [selectedLandingChain, worldsSummaryData],
   );
 
   // Player-scoped fields (registration, settled realm) layered on top of the

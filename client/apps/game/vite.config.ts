@@ -36,7 +36,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
 
   const plugins = [svgr({ dimensions: false, svgo: false, typescript: true }), react()];
 
-  if (isServe) {
+  if (shouldUseMkcert(isServe)) {
     plugins.unshift(mkcert() as any);
   }
 
@@ -229,3 +229,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     publicDir: "../../public",
   };
 });
+
+function shouldUseMkcert(isServe: boolean): boolean {
+  return isServe && process.env.CI !== "true" && process.env.ETERNUM_DISABLE_MKCERT !== "true";
+}
