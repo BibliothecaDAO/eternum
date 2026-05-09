@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-05-09T08:25:09.457Z",
+  "updatedAt": "2026-05-09T08:25:14.628Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -86,7 +86,7 @@
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
       "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25489566039-1.json",
       "status": "running",
-      "updatedAt": "2026-05-09T08:25:09.457Z",
+      "updatedAt": "2026-05-09T08:25:14.628Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -262,7 +262,7 @@
             "indexerTier": "legendary",
             "lastIndexerDescribeAt": "2026-05-07T09:32:43.886Z",
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-09T08:05:14.139Z"
+            "pendingIndexerTierRequestedAt": "2026-05-09T08:25:13.583Z"
           }
         },
         {
@@ -274,7 +274,7 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-05-05T15:41:55.718Z",
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-09T08:05:14.139Z"
+            "pendingIndexerTierRequestedAt": "2026-05-09T08:25:13.583Z"
           }
         },
         {
@@ -286,7 +286,7 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-05-05T15:42:11.344Z",
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-09T08:05:14.139Z"
+            "pendingIndexerTierRequestedAt": "2026-05-09T08:25:13.583Z"
           }
         },
         {
