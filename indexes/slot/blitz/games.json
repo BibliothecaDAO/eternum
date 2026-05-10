@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-06T21:12:07.727Z",
+  "updatedAt": "2026-05-10T13:40:12.386Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -721,7 +721,7 @@
       "path": "runs/slot/blitz/bltz-flash-933.json",
       "inputPath": "inputs/slot/blitz/bltz-flash-933/25377771596-1.json",
       "status": "complete",
-      "updatedAt": "2026-05-05T13:07:02.967Z",
+      "updatedAt": "2026-05-10T13:40:12.386Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -732,7 +732,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "legendary",
-        "lastIndexerDescribeAt": "2026-05-05T13:07:02.967Z"
+        "lastIndexerDescribeAt": "2026-05-05T13:07:02.967Z",
+        "pendingIndexerTierTarget": "pro",
+        "pendingIndexerTierRequestedAt": "2026-05-10T13:40:11.111Z"
       }
     },
     "bltz-codex-local-odra2": {
