@@ -624,11 +624,30 @@ export class EternumProvider extends EnhancedDojoProvider {
     return this.normalizeAddress(call.calldata[2] as BigNumberish | undefined);
   }
 
+  private getTransactionCalls(transactionDetails: AllowArray<Call>): Call[] {
+    return Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
+  }
+
+  private getVrfRequestRandomCalls(transactionDetails: AllowArray<Call>): Call[] {
+    return this.getTransactionCalls(transactionDetails).filter((detail) => this.isVrfRequestRandomCall(detail));
+  }
+
+  private assertSingleVrfRequestRandomCall(transactionDetails: AllowArray<Call>): void {
+    const vrfRequestCalls = this.getVrfRequestRandomCalls(transactionDetails);
+    if (vrfRequestCalls.length <= 1) {
+      return;
+    }
+
+    throw new Error(
+      "Cannot execute a multicall with multiple VRF request_random calls. Submit VRF transactions separately.",
+    );
+  }
+
   private getVrfSerializationKey(
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
   ): string | undefined {
-    const details = Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
+    const details = this.getTransactionCalls(transactionDetails);
     const vrfRequestCall = details.find((detail) => this.isVrfRequestRandomCall(detail));
     if (!vrfRequestCall) {
       return undefined;
@@ -641,6 +660,43 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const sourceAddress = this.getVrfSourceAddress(vrfRequestCall) ?? signerAddress;
     return `${signerAddress}:${sourceAddress}`;
+  }
+
+  private getExploreSerializationKey(
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ): string | undefined {
+    const signerAddress = this.normalizeAddress((signer as { address?: BigNumberish }).address);
+    if (!signerAddress) {
+      return undefined;
+    }
+
+    const explorerId = this.getExploreTransactionExplorerId(transactionDetails) ?? "unknown";
+    return `${signerAddress}:explore:${explorerId}`;
+  }
+
+  private getExploreTransactionExplorerId(transactionDetails: AllowArray<Call>): string | undefined {
+    const explorerCall = this.getTransactionCalls(transactionDetails).find(
+      (detail) => detail.entrypoint === "explorer_move" || detail.entrypoint === "explorer_extract_reward",
+    );
+    if (!Array.isArray(explorerCall?.calldata)) {
+      return undefined;
+    }
+
+    const rawExplorerId = explorerCall.calldata[0] as BigNumberish | undefined;
+    return this.normalizeAddress(rawExplorerId) ?? (rawExplorerId !== undefined ? String(rawExplorerId) : undefined);
+  }
+
+  private getTransactionSerializationKey(
+    txType: TransactionType | undefined,
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ): string | undefined {
+    if (txType === TransactionType.EXPLORE) {
+      return this.getExploreSerializationKey(signer, transactionDetails);
+    }
+
+    return this.getVrfSerializationKey(signer, transactionDetails);
   }
 
   private createVrfExecutionLock(): VrfExecutionLock {
@@ -676,24 +732,6 @@ export class EternumProvider extends EnhancedDojoProvider {
 
       await existingLock.completed;
     }
-  }
-
-  private dedupeVrfRequestCalls(transactionDetails: AllowArray<Call>): AllowArray<Call> {
-    if (!Array.isArray(transactionDetails)) {
-      return transactionDetails;
-    }
-
-    let foundVrfRequest = false;
-    return transactionDetails.filter((detail) => {
-      if (!this.isVrfRequestRandomCall(detail)) {
-        return true;
-      }
-      if (foundVrfRequest) {
-        return false;
-      }
-      foundVrfRequest = true;
-      return true;
-    });
   }
 
   private async getV3ExecutionDetails(
@@ -1061,18 +1099,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     batchDetails?: BatchedTransactionDetail[],
     options?: ExecutionOptions & { transactionType?: TransactionType },
   ) {
-    const sanitizedTransactionDetails = this.dedupeVrfRequestCalls(transactionDetails);
-    if (Array.isArray(transactionDetails) && Array.isArray(sanitizedTransactionDetails)) {
-      const removedVrfCalls = transactionDetails.length - sanitizedTransactionDetails.length;
-      if (removedVrfCalls > 0) {
-        console.warn(`[provider] Removed ${removedVrfCalls} duplicate VRF request_random call(s) from transaction`);
-      }
-    }
+    this.assertSingleVrfRequestRandomCall(transactionDetails);
 
     if (typeof window !== "undefined") {
-      console.log({ signer, transactionDetails: sanitizedTransactionDetails });
+      console.log({ signer, transactionDetails });
     }
-    const isMultipleTransactions = Array.isArray(sanitizedTransactionDetails);
+    const isMultipleTransactions = Array.isArray(transactionDetails);
 
     // Get the transaction type based on the entrypoint name
     let txType: TransactionType;
@@ -1081,38 +1113,38 @@ export class EternumProvider extends EnhancedDojoProvider {
       // For multiple calls, use the first call's entrypoint
       txType =
         TransactionType[
-          sanitizedTransactionDetails
+          transactionDetails
             // remove VRF provider call from the list to define the transaction type
             .filter((detail) => !this.isVrfRequestRandomCall(detail))[0]
             ?.entrypoint.toUpperCase() as keyof typeof TransactionType
         ];
     } else {
-      txType = TransactionType[sanitizedTransactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
+      txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
     }
     txType = options?.transactionType ?? txType;
 
-    const transactionMeta = this.buildTransactionLifecycleMeta(sanitizedTransactionDetails, {
+    const transactionMeta = this.buildTransactionLifecycleMeta(transactionDetails, {
       type: txType,
       signerAddress: this.getSignerAddress(signer),
-      ...(isMultipleTransactions ? { transactionCount: sanitizedTransactionDetails.length } : {}),
+      ...(isMultipleTransactions ? { transactionCount: transactionDetails.length } : {}),
       ...(batchDetails && batchDetails.length > 0 ? { batchDetails } : {}),
     });
 
     await this.runTransactionSubmitGuard(signer, transactionMeta);
-    const span = this.startTransactionSpan(sanitizedTransactionDetails, transactionMeta);
 
-    const executionDetails = await this.getV3ExecutionDetails(signer, sanitizedTransactionDetails);
-    const vrfSerializationKey =
-      txType === TransactionType.EXPLORE ? undefined : this.getVrfSerializationKey(signer, sanitizedTransactionDetails);
+    const vrfSerializationKey = this.getTransactionSerializationKey(txType, signer, transactionDetails);
     let releaseVrfExecutionLock: (() => void) | undefined;
     if (vrfSerializationKey) {
       releaseVrfExecutionLock = await this.acquireVrfExecutionLock(vrfSerializationKey);
     }
 
+    const span = this.startTransactionSpan(transactionDetails, transactionMeta);
+    const executionDetails = await this.getV3ExecutionDetails(signer, transactionDetails);
+
     let tx;
     let submitPromise: Promise<{ transaction_hash: string }> | undefined;
     try {
-      submitPromise = this.submitTransaction(signer, sanitizedTransactionDetails, executionDetails);
+      submitPromise = this.submitTransaction(signer, transactionDetails, executionDetails);
       tx = await this.waitForTransactionSubmission(submitPromise);
     } catch (error) {
       const message = extractErrorMessage(error);

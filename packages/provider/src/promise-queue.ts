@@ -24,6 +24,14 @@ interface QueueItem {
   reject: (reason?: any) => void;
 }
 
+const asCallArray = (calls: AllowArray<Call>): Call[] => (Array.isArray(calls) ? calls : [calls]);
+
+const hasVrfRequestRandomCall = (transaction: QueueableTransaction): boolean =>
+  asCallArray(transaction.calls).some((call) => call.entrypoint === "request_random");
+
+const shouldSubmitIndividually = (item: QueueItem): boolean =>
+  item.transaction.transactionType === TransactionType.EXPLORE || hasVrfRequestRandomCall(item.transaction);
+
 /**
  * Promise queue that batches transactions by signer and cost category.
  * Transactions in the same category from the same signer are batched together
@@ -154,18 +162,14 @@ export class PromiseQueue {
   /**
    * Process a batch of queue items as a single multicall transaction.
    *
-   * EXPLORE-type items never merge with others. `explorer_explore` bundles a
-   * `vrf_request_random` / `consume_random(source)` pair per call; flattening
-   * multiple explores into one multicall causes the VRF provider to see
-   * overlapping requests and fail with "VrfProvider: not consumed". When a
-   * batch contains any EXPLORE item we recurse per-item so each explore
-   * submits as its own transaction. Non-explore items in the same batch also
-   * submit individually — rare and safe, since batching is an optimization.
+   * VRF request_random items never merge with others. Each request must stay
+   * paired with exactly one consuming system call, otherwise a later consume can
+   * run without its matching request and fail with "VrfProvider: not consumed".
    */
   private async processBatch(batch: QueueItem[]) {
     if (batch.length === 0) return;
 
-    if (batch.length > 1 && batch.some((item) => item.transaction.transactionType === TransactionType.EXPLORE)) {
+    if (batch.length > 1 && batch.some(shouldSubmitIndividually)) {
       for (const item of batch) {
         await this.processBatch([item]);
       }
@@ -191,10 +195,7 @@ export class PromiseQueue {
     } else {
       // Multiple transactions - batch them together
       try {
-        const allCalls = batch.map(({ transaction }) => {
-          const calls = transaction.calls;
-          return Array.isArray(calls) ? calls : [calls];
-        });
+        const allCalls = batch.map(({ transaction }) => asCallArray(transaction.calls));
 
         // Flatten all calls into a single array
         const flattenedCalls = allCalls.flat();

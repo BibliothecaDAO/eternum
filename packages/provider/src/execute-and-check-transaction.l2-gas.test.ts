@@ -159,7 +159,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(provider.execute).toHaveBeenCalledTimes(2);
   });
 
-  it("does not serialize explore VRF submissions when waitForConfirmation is false", async () => {
+  it("serializes same-explorer VRF explore submissions while confirmation is pending", async () => {
     const provider = makeProvider();
     provider.VRF_PROVIDER_ADDRESS = "0x999";
 
@@ -189,17 +189,23 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       {
         contractAddress: "0x999",
         entrypoint: "request_random",
-        calldata: ["0x123", 0, "0xabc"],
+        calldata: ["0x123", 1, "0xfeed"],
       },
       {
         contractAddress: "0x123",
-        entrypoint: "explore",
-        calldata: [],
+        entrypoint: "explorer_move",
+        calldata: [42, [0], 1],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "explorer_extract_reward",
+        calldata: [42],
       },
     ];
 
     const firstResult = await provider.executeAndCheckTransaction(signer, calls, undefined, {
       waitForConfirmation: false,
+      transactionType: TransactionType.EXPLORE,
     });
     expect(firstResult).toMatchObject({
       statusReceipt: "PENDING",
@@ -209,11 +215,21 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
 
     const secondPromise = provider.executeAndCheckTransaction(signer, calls, undefined, {
       waitForConfirmation: false,
+      transactionType: TransactionType.EXPLORE,
     });
 
-    await vi.waitFor(() => {
-      expect(provider.execute).toHaveBeenCalledTimes(2);
-    });
+    const estimatedBeforeConfirmation = await vi
+      .waitFor(
+        () => {
+          expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(2);
+        },
+        { timeout: 100, interval: 1 },
+      )
+      .then(
+        () => true,
+        () => false,
+      );
+    expect(estimatedBeforeConfirmation).toBe(false);
 
     resolveFirstWait({ isReverted: () => false });
 
@@ -223,6 +239,85 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       transaction_hash: "0x2",
     });
     expect(provider.execute).toHaveBeenCalledTimes(2);
+  });
+
+  it("rejects explicit multicalls with multiple VRF request_random calls", async () => {
+    const provider = makeProvider();
+    provider.VRF_PROVIDER_ADDRESS = "0x999";
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const calls: Call[] = [
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 1, "0x1"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "open_chest",
+        calldata: [],
+      },
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 1, "0x2"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "open_chest",
+        calldata: [],
+      },
+    ];
+
+    await expect(provider.executeAndCheckTransaction(signer, calls)).rejects.toThrow(/multiple VRF request_random/i);
+    expect(provider.execute).not.toHaveBeenCalled();
+  });
+
+  it("rejects batch flushes that combine multiple VRF request_random calls", async () => {
+    const provider = makeProvider();
+    provider.VRF_PROVIDER_ADDRESS = "0x999";
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+
+    provider.beginBatch({ signer });
+    await provider.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 1, "0x1"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "open_chest",
+        calldata: [],
+      },
+    ]);
+    await provider.executeAndCheckTransaction(signer, [
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 1, "0x2"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "open_chest",
+        calldata: [],
+      },
+    ]);
+
+    await expect(provider.flushBatch()).rejects.toThrow(/multiple VRF request_random/i);
+    expect(provider.execute).not.toHaveBeenCalled();
+    await provider.endBatch({ flush: false });
   });
 
   it("emits readable submission failures for object-shaped errors", async () => {

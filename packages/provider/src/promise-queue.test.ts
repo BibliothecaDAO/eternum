@@ -542,6 +542,30 @@ describe("Parallel Category Processing", () => {
     }
   });
 
+  it("never merges queued VRF request_random transactions into one multicall", async () => {
+    const localExecutor = makeExecutor();
+    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const pA = queue.enqueue({
+      signer,
+      calls: [makeCall("request_random"), makeCall("open_chest")],
+      transactionType: TransactionType.OPEN_CHEST,
+    });
+    const pB = queue.enqueue({
+      signer,
+      calls: [makeCall("request_random"), makeCall("open_chest")],
+      transactionType: TransactionType.OPEN_CHEST,
+    });
+
+    await Promise.all([pA, pB]);
+
+    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+    for (const call of (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls) {
+      expect(call[2]).toBeUndefined();
+    }
+  });
+
   it("still batches non-EXPLORE HIGH txs together", async () => {
     const localExecutor = makeExecutor();
     const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
