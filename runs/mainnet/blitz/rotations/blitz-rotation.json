@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25650101852-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-11T04:24:23.010Z",
+  "updatedAt": "2026-05-11T04:26:05.516Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -4119,7 +4119,7 @@
         },
         "seriesGameNumber": 22,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -4159,7 +4159,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-05-11T04:26:03.797Z"
+        }
       },
       {
         "gameName": "eu-gladiator-10-05-26-1900",
@@ -4171,7 +4174,7 @@
         },
         "seriesGameNumber": 23,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -4211,7 +4214,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-05-11T04:26:03.797Z"
+        }
       },
       {
         "gameName": "na-gladiator-11-05-26-0100",
@@ -4223,7 +4229,7 @@
         },
         "seriesGameNumber": 24,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -4263,7 +4269,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-05-11T04:26:03.797Z"
+        }
       },
       {
         "gameName": "apac-gladiator-12-05-26-1100",
