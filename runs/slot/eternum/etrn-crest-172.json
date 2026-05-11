@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-crest-172/25702835262-1.json",
   "latestLaunchRequestId": "25702835262-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-11T23:13:40.749Z",
-  "updatedAt": "2026-05-11T23:13:45.484Z",
+  "updatedAt": "2026-05-11T23:14:38.877Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-05-11T23:13:45.484Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-05-11T23:13:45.484Z",
+      "finishedAt": "2026-05-11T23:14:38.877Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -76,14 +77,10 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "2026-05-12T00:00:00.000Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25702835262-1",
-    "workflowRunId": 25702835262,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-05-11T23:13:45.484Z",
-    "expiresAt": "2026-05-11T23:58:45.484Z"
+    "scheduledStartTime": 1778544000,
+    "summaryPath": ".context/game-launch/slot-eternum-etrn-crest-172.json",
+    "durationSeconds": 0,
+    "worldAddress": "0x07d428c110d29333e45180c882ab9177c3ceae122a5ecd60be1cf4ba452b1282",
+    "createGameTxHash": "0x44f359518a62f7eccffc78e9021247f4a2976ae59982a3555acc4b037784ab4"
   }
 }
