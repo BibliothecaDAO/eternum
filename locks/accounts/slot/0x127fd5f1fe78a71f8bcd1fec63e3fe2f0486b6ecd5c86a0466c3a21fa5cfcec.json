@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.eternum",
-    "gameName": "etrn-crown-308",
-    "launchRequestId": "25702164511-1",
+    "gameName": "mygame",
+    "launchRequestId": "25702414093-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25702164511,
+    "workflowRunId": 25702414093,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "605777a6-ea6e-43eb-8823-a86e44c3f572"
+    "stepId": "configure-world",
+    "leaseId": "ed49c013-3d99-4308-8ad3-03243456e660"
   },
-  "acquiredAt": "2026-05-11T22:59:32.589Z",
-  "heartbeatAt": "2026-05-11T22:59:46.541Z",
-  "expiresAt": "2026-05-11T22:59:46.541Z",
-  "releasedAt": "2026-05-11T22:59:46.541Z"
+  "acquiredAt": "2026-05-11T23:03:01.651Z",
+  "heartbeatAt": "2026-05-11T23:03:01.651Z",
+  "expiresAt": "2026-05-11T23:13:01.651Z"
 }
