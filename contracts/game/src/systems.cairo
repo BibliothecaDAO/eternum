@@ -25,6 +25,9 @@ pub mod structure {
 pub mod realm {
     pub mod blitz {
         pub mod contracts;
+        pub mod hyperstructure_create {
+            pub mod contracts;
+        }
     }
     pub mod season {
         pub mod contracts;

@@ -1119,7 +1119,10 @@ mod RealmsCollectible {
             self.erc721._require_owned(token_id);
             let caller = starknet::get_caller_address();
             let owner = self.erc721._owner_of(token_id);
-            assert!(caller == owner, "RealmsCollectible: Caller is not owner");
+            let caller_is_owner = caller == owner;
+            let caller_is_approved = self.erc721.get_approved(token_id) == caller
+                || self.erc721.is_approved_for_all(owner, caller);
+            assert!(caller_is_owner || caller_is_approved, "RealmsCollectible: Caller is not owner or approved");
 
             let unlock_at = self.lock_state.entry(lock_id).read();
             assert!(unlock_at > starknet::get_block_timestamp(), "RealmsCollectible: Lock is not active");
