@@ -1,6 +1,6 @@
-export const resolveHyperstructureForgeBatchSize = (chain: string): number => {
-  return chain === "mainnet" ? 1 : 4;
-};
+const DEFAULT_HYPERSTRUCTURE_RESERVE_COUNT = 25;
+
+export const resolveHyperstructureForgeBatchSize = (): number => DEFAULT_HYPERSTRUCTURE_RESERVE_COUNT;
 
 export const resolveHyperstructureForgeCount = ({
   numHyperstructuresLeft,

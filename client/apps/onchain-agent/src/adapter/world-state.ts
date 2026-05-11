@@ -1526,9 +1526,7 @@ export function formatEternumTickDiff(state: EternumWorldState, prevState: Etern
     }
     sections.push(lines.join("\n"));
   } else {
-    sections.push(
-      "### My Entities\n  None visible — you need to register first! Use: approve_token → obtain_entry_token → lock_entry_token → register → settle_blitz_realm",
-    );
+    sections.push("### My Entities\n  None visible — you need to settle first! Use: approve_token → settle");
   }
 
   // Operating area — unified minimap around all owned entities
@@ -1750,9 +1748,7 @@ export function formatEternumTickPrompt(state: EternumWorldState): string {
     }
     sections.push(lines.join("\n"));
   } else {
-    sections.push(
-      "### My Entities\n  None visible — you need to register first! Use: approve_token → obtain_entry_token → lock_entry_token → register → settle_blitz_realm",
-    );
+    sections.push("### My Entities\n  None visible — you need to settle first! Use: approve_token → settle");
   }
 
   // Operating area — unified minimap around all owned entities

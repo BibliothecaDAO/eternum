@@ -22,6 +22,22 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-11",
+    title: "Safer Blitz Entry Tokens",
+    description:
+      "Blitz fee worlds now grant temporary entry-token collection approval only for the settlement transaction, then remove it immediately, so joining stays one-step without leaving broad NFT permissions behind.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-11",
+    title: "Single-Step Blitz Entry",
+    description:
+      "Blitz entry now settles you into a world with one action, and the setup flow reserves hyperstructure slots in clean 25-slot batches instead of walking through the old staged entry path.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-04-30",
     title: "Synced Army Positions",
     description:

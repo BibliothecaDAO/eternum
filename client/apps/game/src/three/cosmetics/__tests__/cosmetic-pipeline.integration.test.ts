@@ -33,7 +33,7 @@ vi.mock("../asset-cache", () => ({
   ensureCosmeticAsset: () => undefined,
 }));
 
-import { buildBlitzRegisterCalls } from "@/hooks/blitz-registration";
+import { buildBlitzSettleCalls } from "@/hooks/blitz-settlement";
 import { buildDevPreviewWorldKey, createWorldPreviewEntryController } from "@/hooks/use-world-preview-entry";
 import { useDevPreviewEntryStore } from "@/hooks/store/use-dev-preview-entry-store";
 import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
@@ -62,16 +62,15 @@ describe("cosmetic pipeline integration", () => {
       },
     });
 
-    const calls = buildBlitzRegisterCalls({
+    const calls = buildBlitzSettleCalls({
       blitzSystemsAddress: "0x1",
       usernameFelt: "0x2",
-      tokenId: 0n,
       cosmeticTokenIds: ["0xabc"],
     });
 
     expect(calls[0]).toMatchObject({
-      entrypoint: "register",
-      calldata: ["0x2", "0", "1", "0xabc"],
+      entrypoint: "settle",
+      calldata: ["0x2", "1", "1", "0xabc"],
     });
 
     playerCosmeticsStore.markAppliedBlitzLoadout("blitz:mainnet:alpha", "0x123");

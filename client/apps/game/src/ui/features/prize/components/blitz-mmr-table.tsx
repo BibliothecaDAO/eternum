@@ -52,15 +52,14 @@ export const BlitzMMRTable = () => {
     return toHexString(addr);
   }, [worldCfg?.mmr_config?.mmr_token_address]);
 
-  // Get registered players from BlitzRealmPlayerRegister
-  const blitzRegEntities = useEntityQuery([Has(components.BlitzRealmPlayerRegister)]);
+  // Blitz settlement rows are the source of truth for players who actually entered the world.
+  const blitzSettlementEntities = useEntityQuery([Has(components.BlitzSettlement)]);
   const registeredPlayerAddresses = useMemo(() => {
-    return blitzRegEntities
-      .map((eid) => getComponentValue(components.BlitzRealmPlayerRegister, eid))
+    return blitzSettlementEntities
+      .map((eid) => getComponentValue(components.BlitzSettlement, eid))
       .filter((v): v is NonNullable<typeof v> => Boolean(v))
-      .filter((v) => Boolean(v.once_registered))
       .map((v) => v.player as unknown as bigint);
-  }, [blitzRegEntities, components.BlitzRealmPlayerRegister]);
+  }, [blitzSettlementEntities, components.BlitzSettlement]);
 
   // Get player points and filter to only players with non-zero points
   const playerRegisteredPointsEntities = useEntityQuery([Has(components.PlayerRegisteredPoints)]);

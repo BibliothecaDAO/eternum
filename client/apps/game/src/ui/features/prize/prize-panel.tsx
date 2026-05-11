@@ -123,15 +123,14 @@ export const PrizePanel = () => {
     return gameMedian !== undefined && gameMedian !== 0n;
   }, [mmrGameMetaEntities, components.MMRGameMeta]);
 
-  // All registered players (by registration status), regardless of points
-  const blitzRegEntities = useEntityQuery([Has(components.BlitzRealmPlayerRegister)]);
+  // All settled blitz players, regardless of points
+  const blitzSettlementEntities = useEntityQuery([Has(components.BlitzSettlement)]);
   const registeredAddresses = useMemo(() => {
-    return blitzRegEntities
-      .map((eid) => getComponentValue(components.BlitzRealmPlayerRegister, eid))
+    return blitzSettlementEntities
+      .map((eid) => getComponentValue(components.BlitzSettlement, eid))
       .filter((v): v is NonNullable<typeof v> => Boolean(v))
-      .filter((v) => Boolean(v.once_registered))
       .map((v) => v.player as unknown as bigint);
-  }, [blitzRegEntities, components.BlitzRealmPlayerRegister]);
+  }, [blitzSettlementEntities, components.BlitzSettlement]);
 
   const [nowTs, setNowTs] = useState(() => Math.floor(Date.now() / 1000));
   useEffect(() => {

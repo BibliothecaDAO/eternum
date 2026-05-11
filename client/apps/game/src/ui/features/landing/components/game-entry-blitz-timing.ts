@@ -1,5 +1,7 @@
 interface ResolveBlitzSettlementAvailabilityInput {
-  startMainAt: number | null;
+  registrationStartAt: number | null;
+  registrationEndAt: number | null;
+  devModeOn?: boolean;
   nowSec: number;
 }
 
@@ -10,10 +12,20 @@ interface BlitzSettlementAvailability {
 }
 
 export const resolveBlitzSettlementAvailability = ({
-  startMainAt,
+  registrationStartAt,
+  registrationEndAt,
+  devModeOn = false,
   nowSec,
 }: ResolveBlitzSettlementAvailabilityInput): BlitzSettlementAvailability => {
-  if (startMainAt == null) {
+  if (devModeOn) {
+    return {
+      unlockAtSec: registrationStartAt,
+      isUnlocked: true,
+      secondsUntilUnlock: 0,
+    };
+  }
+
+  if (registrationStartAt == null) {
     return {
       unlockAtSec: null,
       isUnlocked: false,
@@ -21,10 +33,18 @@ export const resolveBlitzSettlementAvailability = ({
     };
   }
 
-  const secondsUntilUnlock = Math.max(0, startMainAt - nowSec);
+  if (registrationEndAt != null && registrationEndAt > registrationStartAt && nowSec >= registrationEndAt) {
+    return {
+      unlockAtSec: registrationStartAt,
+      isUnlocked: false,
+      secondsUntilUnlock: 0,
+    };
+  }
+
+  const secondsUntilUnlock = Math.max(0, registrationStartAt - nowSec);
 
   return {
-    unlockAtSec: startMainAt,
+    unlockAtSec: registrationStartAt,
     isUnlocked: secondsUntilUnlock === 0,
     secondsUntilUnlock,
   };
