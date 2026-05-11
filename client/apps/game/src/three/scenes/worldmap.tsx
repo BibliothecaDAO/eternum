@@ -2088,6 +2088,33 @@ export default class WorldmapScene extends WarpTravel {
     return undefined;
   }
 
+  private resolveArmyOwnerAddress(entityId: ID): ContractAddress | undefined {
+    const trackedOwner = this.getTrackedArmyOwner(entityId);
+    if (trackedOwner !== undefined && trackedOwner !== 0n) {
+      return trackedOwner;
+    }
+
+    const explorerTroops = getComponentValue(
+      this.dojo.components.ExplorerTroops,
+      getEntityIdFromKeys([BigInt(entityId)]),
+    ) as { owner?: ID } | undefined;
+    const ownerStructureId = explorerTroops?.owner;
+    if (ownerStructureId === undefined || ownerStructureId === null || ownerStructureId === 0) {
+      return trackedOwner;
+    }
+
+    const structure = getComponentValue(
+      this.dojo.components.Structure,
+      getEntityIdFromKeys([BigInt(ownerStructureId)]),
+    ) as { owner?: ContractAddress | string | number | bigint } | undefined;
+
+    if (!structure?.owner) {
+      return trackedOwner;
+    }
+
+    return BigInt(structure.owner);
+  }
+
   private syncAttachedArmiesForStructureOwner(update: {
     entityId: ID;
     owner: { address: bigint | undefined; ownerName: string; guildName: string };
@@ -2850,8 +2877,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private canAttackSpireTraversalArmy(selectedArmyId: ID, targetArmyId: ID): boolean {
-    const selectedOwner = this.getTrackedArmyOwner(selectedArmyId);
-    const targetOwner = this.getTrackedArmyOwner(targetArmyId);
+    const selectedOwner = this.resolveArmyOwnerAddress(selectedArmyId);
+    const targetOwner = this.resolveArmyOwnerAddress(targetArmyId);
 
     return (
       selectedOwner === undefined ||

@@ -882,14 +882,15 @@ export default class FastTravelScene extends WarpTravel {
     const pairedWorldTile = getTileAt(this.dojo.components, false, targetHex.col, targetHex.row);
     if (!pairedWorldTile && !options.hasSyncedPairedWorldTile) {
       void this.syncPairedWorldSpireTile(targetHex)
-        .catch((error) => {
-          console.warn("[FastTravelScene] Failed to sync paired world Spire tile", error);
-        })
-        .finally(() =>
+        .then(() =>
           this.openFastTravelSpireTravel(actionPath, selectedArmyId, {
             hasSyncedPairedWorldTile: true,
           }),
-        );
+        )
+        .catch((error) => {
+          console.warn("[FastTravelScene] Failed to sync paired world Spire tile", error);
+          toast.error("Unable to verify the linked world tile right now.");
+        });
       return;
     }
 
