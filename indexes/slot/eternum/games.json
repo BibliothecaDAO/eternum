@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-05-11T23:03:11.755Z",
+  "updatedAt": "2026-05-11T23:03:59.218Z",
   "entries": {
     "etrn-banana": {
       "kind": "game",
@@ -30,9 +30,9 @@
       "environment": "slot.eternum",
       "gameName": "mygame",
       "path": "runs/slot/eternum/mygame.json",
-      "inputPath": "inputs/slot/eternum/mygame/25702414093-1.json",
+      "inputPath": "inputs/slot/eternum/mygame/25702462741-1.json",
       "status": "attention",
-      "updatedAt": "2026-05-11T23:03:11.755Z",
+      "updatedAt": "2026-05-11T23:03:59.218Z",
       "workflowRef": "next",
       "currentStepId": "configure-world",
       "hasRunningStep": false,
