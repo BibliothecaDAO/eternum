@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-11T04:21:25.955Z",
+  "updatedAt": "2026-05-11T04:21:31.436Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -788,11 +788,10 @@
       "path": "runs/slot/blitz/bltz-jolt-730.json",
       "inputPath": "inputs/slot/blitz/bltz-jolt-730/25650051590-1.json",
       "status": "running",
-      "updatedAt": "2026-05-11T04:21:25.955Z",
+      "updatedAt": "2026-05-11T04:21:31.436Z",
       "workflowRef": "next",
-      "currentStepId": "wait-for-factory-index",
-      "activeLeaseExpiresAt": "2026-05-11T05:06:25.955Z",
-      "hasRunningStep": true,
+      "currentStepId": "configure-world",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "configure-world",
       "startTime": 1778475600,
