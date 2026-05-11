@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25665416289-1",
   "currentStepId": null,
   "createdAt": "2026-05-11T10:46:10.031Z",
-  "updatedAt": "2026-05-11T10:50:19.753Z",
+  "updatedAt": "2026-05-11T10:51:41.983Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,13 +80,11 @@
     "worldConfigTxHash": "0xd76f4d98d6d32aabfd5c03611b14d86fb1823b6cc366eb8782255483cc843",
     "lootChestRoleTxHash": "0x3ed1f9bd3023d0ad5ec3b581e421948904f8063a456be2800943c77296372b2",
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-rush-766/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-11T10:48:59.981Z",
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-05-11T10:50:18.282Z"
+    "lastIndexerDescribeAt": "2026-05-11T10:51:41.983Z"
   },
   "completedAt": "2026-05-11T10:49:01.336Z"
 }
