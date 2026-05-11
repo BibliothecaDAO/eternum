@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-05-11T23:14:38.877Z",
+  "updatedAt": "2026-05-11T23:14:47.206Z",
   "entries": {
     "etrn-banana": {
       "kind": "game",
@@ -70,12 +70,13 @@
       "path": "runs/slot/eternum/etrn-crest-172.json",
       "inputPath": "inputs/slot/eternum/etrn-crest-172/25702835262-1.json",
       "status": "running",
-      "updatedAt": "2026-05-11T23:14:38.877Z",
+      "updatedAt": "2026-05-11T23:14:47.206Z",
       "workflowRef": "next",
       "currentStepId": "wait-for-factory-index",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-11T23:59:47.206Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "wait-for-factory-index",
+      "recoverablePendingStepId": "configure-world",
       "startTime": 1778544000,
       "durationSeconds": 0,
       "artifacts": {}
