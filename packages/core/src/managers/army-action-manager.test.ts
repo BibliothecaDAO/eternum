@@ -49,6 +49,7 @@ function toTileEntityKey(alt: boolean, col: number, row: number): string {
 }
 
 function buildTileOptData(input: {
+  alt?: boolean;
   col: number;
   row: number;
   biome: number;
@@ -62,7 +63,8 @@ function buildTileOptData(input: {
     (BigInt(input.occupierId) << 9n) |
     (BigInt(input.biome) << 41n) |
     (BigInt(input.row) << 49n) |
-    (BigInt(input.col) << 81n);
+    (BigInt(input.col) << 81n) |
+    (BigInt(input.alt ? 1 : 0) << 127n);
   return { data };
 }
 
@@ -208,6 +210,38 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     expect(ActionPaths.getActionType(spireActionPath ?? [])).toBe(ActionType.SpireTravel);
   });
 
+  it("reads adjacent spires from the active ethereal layer", () => {
+    const { components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    const manager = new ArmyActionManager(components, {} as any, TEST_ENTITY_ID as any, "ethereal");
+    vi.spyOn(manager, "getFood").mockReturnValue({ wheat: 999, fish: 999 });
+    const spireHex = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+    components.TileOpt.set(
+      toTileEntityKey(true, spireHex.col, spireHex.row),
+      buildTileOptData({
+        alt: true,
+        col: spireHex.col,
+        row: spireHex.row,
+        biome: 1,
+        occupierType: TileOccupier.Spire,
+        occupierId: 999,
+      }),
+    );
+
+    const actionPaths = manager.findActionPaths(
+      structureHexes,
+      armyHexes,
+      exploredHexes,
+      chestHexes,
+      0,
+      0,
+      0x123n as any,
+    );
+
+    const spireActionPath = actionPaths.get(ActionPaths.posKey(spireHex));
+    expect(spireActionPath).toBeDefined();
+    expect(ActionPaths.getActionType(spireActionPath ?? [])).toBe(ActionType.SpireTravel);
+  });
+
   it("omits adjacent enemy structure attack paths when attack stamina is below the required threshold", () => {
     const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
     const targetHex = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
@@ -306,6 +340,36 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
     await manager.moveArmy(signer, actionPath as any, false, 0);
 
     expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
+  });
+
+  it("packs ethereal explore salts with alt true", async () => {
+    const systemCalls = {
+      explorer_explore: vi.fn().mockResolvedValue({}),
+      explorer_travel: vi.fn().mockResolvedValue({}),
+      toggle_alternate: vi.fn().mockResolvedValue({}),
+    };
+    const { components, oldFeltStart } = createTestSetup(systemCalls);
+    components.ExplorerTroops.set(TEST_ENTITY_ID.toString(), {
+      owner: 77,
+      coord: { alt: true, x: oldFeltStart.col, y: oldFeltStart.row },
+      troops: {
+        category: TroopType.Knight,
+        count: 1_000n,
+      },
+    });
+    const manager = new ArmyActionManager(components, systemCalls as any, TEST_ENTITY_ID as any, "ethereal");
+    vi.spyOn(manager, "getFood").mockReturnValue({ wheat: 999, fish: 999 });
+    const neighbor = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+
+    const actionPath = [
+      { hex: { col: oldFeltStart.col, row: oldFeltStart.row }, actionType: ActionType.Explore },
+      { hex: { col: neighbor.col, row: neighbor.row }, actionType: ActionType.Explore },
+    ];
+
+    await manager.moveArmy({ address: "0x123" } as any, actionPath as any, false, 0);
+
+    const salt = systemCalls.explorer_explore.mock.calls[0][0].vrf_source_salt;
+    expect((salt >> 64n) & 1n).toBe(1n);
   });
 });
 

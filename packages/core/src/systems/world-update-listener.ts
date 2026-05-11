@@ -12,6 +12,7 @@ import {
   ResourcesIds,
   StructureType,
   TileOccupier,
+  type TileOpt,
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
@@ -69,6 +70,10 @@ export class WorldUpdateListener {
     this.mapDataStore.refresh().catch((error) => {
       console.warn("Initial MapDataStore refresh failed:", error);
     });
+  }
+
+  private parseTileOptState(tileOpt: unknown) {
+    return tileOpt ? tileOptToTile(tileOpt as TileOpt) : undefined;
   }
 
   private resolveEntityId(
@@ -259,8 +264,8 @@ export class WorldUpdateListener {
           async (update: any): Promise<ExplorerTroopsTileSystemUpdate | undefined> => {
             if (isComponentUpdate(update, this.setup.components.TileOpt)) {
               const [currentStateOpt, _prevStateOpt] = update.value;
-              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
-              const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
+              const currentState = this.parseTileOptState(currentStateOpt);
+              const _prevState = this.parseTileOptState(_prevStateOpt);
 
               const explorer = currentState && getExplorerInfoFromTileOccupier(currentState?.occupier_type);
               const previousExplorer = _prevState && getExplorerInfoFromTileOccupier(_prevState.occupier_type);
@@ -319,6 +324,7 @@ export class WorldUpdateListener {
 
                   return {
                     entityId: removedEntityId,
+                    alt: coordsSource.alt,
                     hexCoords: { col: coordsSource.col, row: coordsSource.row },
                     troopType: previousExplorer.troopType as TroopType,
                     troopTier: previousExplorer.troopTier as TroopTier,
@@ -359,10 +365,13 @@ export class WorldUpdateListener {
                 if (explorerTroops?.coord) {
                   const explorerCol = Number((explorerTroops.coord as { x?: unknown }).x ?? NaN);
                   const explorerRow = Number((explorerTroops.coord as { y?: unknown }).y ?? NaN);
+                  const explorerAlt = Boolean((explorerTroops.coord as { alt?: unknown }).alt ?? false);
                   if (
                     Number.isFinite(explorerCol) &&
                     Number.isFinite(explorerRow) &&
-                    (explorerCol !== currentState.col || explorerRow !== currentState.row)
+                    (explorerCol !== currentState.col ||
+                      explorerRow !== currentState.row ||
+                      explorerAlt !== currentState.alt)
                   ) {
                     return;
                   }
@@ -419,6 +428,7 @@ export class WorldUpdateListener {
 
                 return {
                   entityId: rawOccupierId,
+                  alt: currentState.alt,
                   hexCoords: { col: currentState.col, row: currentState.row },
                   // need to set it to 0n if no owner address because else it won't be registered on the worldmap
                   ownerAddress: enhancedData?.owner.address ? BigInt(enhancedData.owner.address) : 0n,
@@ -494,6 +504,7 @@ export class WorldUpdateListener {
                   updatedTick: Number(currentState.troops.stamina.updated_tick),
                 },
                 ownerStructureId: normalizedOwnerStructureId,
+                alt: currentState.coord.alt ?? false,
                 hexCoords: { col: currentState.coord.x, row: currentState.coord.y },
                 ownerAddress: owner?.address || 0n,
                 ownerName: owner?.ownerName || "",
@@ -547,7 +558,7 @@ export class WorldUpdateListener {
           async (update: any) => {
             if (isComponentUpdate(update, this.setup.components.TileOpt)) {
               const [currentStateOpt, _prevStateOpt] = update.value;
-              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
+              const currentState = this.parseTileOptState(currentStateOpt);
               // const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
 
               const structureInfo = currentState && getStructureInfoFromTileOccupier(currentState?.occupier_type);
@@ -587,6 +598,7 @@ export class WorldUpdateListener {
                   this.setup.components.Structure,
                   getEntityIdFromKeys([BigInt(rawOccupierId)]),
                 );
+                const structureForName = structureComponent as Parameters<typeof getStructureName>[0] | undefined;
                 const troopGuards = structureComponent?.troop_guards ?? null;
                 const guardArmies = troopGuards ? this.buildGuardArmies(troopGuards) : enhancedData.guardArmies;
                 const battleCooldownEnd = troopGuards
@@ -605,8 +617,8 @@ export class WorldUpdateListener {
                 const isBlitz = getIsBlitz();
                 const fallbackTypeName = getStructureTypeName(structureInfo.type, isBlitz) || "Structure";
                 const enhancedStructureName = enhancedData.structureName?.trim();
-                const structureName = structureComponent
-                  ? getStructureName(structureComponent, isBlitz).name
+                const structureName = structureForName
+                  ? getStructureName(structureForName, isBlitz).name
                   : enhancedStructureName || `${fallbackTypeName} ${rawOccupierId}`;
 
                 const battleData = enhancedData.battleData
@@ -799,11 +811,16 @@ export class WorldUpdateListener {
           async (update: any) => {
             const newStateOpt = update.value[0];
             const prevStateOpt = update.value[1];
-            const newState = tileOptToTile(newStateOpt);
-            const prevState = tileOptToTile(prevStateOpt);
+            const newState = this.parseTileOptState(newStateOpt);
+            const prevState = this.parseTileOptState(prevStateOpt);
+            const visibleState = prevState ?? newState;
 
-            const newStateBiomeType = BiomeIdToType[newState?.biome];
-            const { col, row } = prevState || newState;
+            if (!visibleState) {
+              return undefined;
+            }
+
+            const newStateBiomeType = newState ? BiomeIdToType[newState.biome] : undefined;
+            const { col, row } = visibleState;
             const result = {
               hexCoords: { col, row },
               removeExplored: !newState,
@@ -895,7 +912,7 @@ export class WorldUpdateListener {
           (update: any) => {
             if (isComponentUpdate(update, this.setup.components.TileOpt)) {
               const [currentStateOpt, _prevStateOpt] = update.value;
-              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
+              const currentState = this.parseTileOptState(currentStateOpt);
               // const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
 
               if (!currentState) return;
@@ -959,7 +976,7 @@ export class WorldUpdateListener {
           (update: any) => {
             if (isComponentUpdate(update, this.setup.components.TileOpt)) {
               const [currentStateOpt, _prevStateOpt] = update.value;
-              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
+              const currentState = this.parseTileOptState(currentStateOpt);
               // const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
 
               if (!currentState) return;
@@ -993,8 +1010,8 @@ export class WorldUpdateListener {
           async (update: any): Promise<ID | undefined> => {
             if (isComponentUpdate(update, this.setup.components.TileOpt)) {
               const [currentStateOpt, prevStateOpt] = update.value;
-              const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
-              const prevState = prevStateOpt ? tileOptToTile(prevStateOpt) : undefined;
+              const currentState = this.parseTileOptState(currentStateOpt);
+              const prevState = this.parseTileOptState(prevStateOpt);
 
               // Check if the previous state was a chest and current state is not
               if (

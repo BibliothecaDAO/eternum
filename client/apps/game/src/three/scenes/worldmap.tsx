@@ -1372,6 +1372,10 @@ export default class WorldmapScene extends WarpTravel {
   private registerArmyWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onTileUpdate(async (update: ExplorerTroopsTileSystemUpdate) => {
+        if (!this.isWorldLayerArmyUpdate(update)) {
+          return;
+        }
+
         this.incrementToriiBoundsCounter("explorerTiles");
         recordArmyMovementLatencyPhase({
           phase: "worldmap_tile_update_received",
@@ -1462,6 +1466,7 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
         processExplorerTroopsUpdate(update, {
+          shouldProcessLayerUpdate: (troopsUpdate) => this.isWorldLayerArmyUpdate(troopsUpdate),
           cancelPendingArmyRemoval: (entityId) => this.cancelPendingArmyRemoval(entityId),
           scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
           updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
@@ -2249,6 +2254,10 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
+  private isWorldLayerArmyUpdate(update: { alt?: boolean }): boolean {
+    return update.alt !== true;
+  }
+
   // methods needed to add worldmap specific behavior to the click events
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: Vector3 } | null): void {
     if (hex === null) {
@@ -2731,6 +2740,9 @@ export default class WorldmapScene extends WarpTravel {
           if (txHash && this.pendingArmyMovements.has(selectedEntityId)) {
             this.handleSubmittedArmyMovementTx({ entityId: selectedEntityId, txHash });
           }
+          if (actionType === ActionType.SpireTravel) {
+            navigateToStructure(targetHex.col, targetHex.row, "travel");
+          }
           // Monitor memory usage after army movement completion
           this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
         })
@@ -2786,6 +2798,7 @@ export default class WorldmapScene extends WarpTravel {
     const traversalAction = resolveSpireTraversalAction({
       targetHex,
       etherealTile,
+      isOpposingArmy: (targetArmyId) => this.canAttackSpireTraversalArmy(selectedEntityId, targetArmyId),
     });
 
     if (traversalAction.kind === "attack") {
@@ -2802,6 +2815,11 @@ export default class WorldmapScene extends WarpTravel {
       };
 
       this.state.toggleModal(<QuickAttackPreview attacker={attackerSummary} target={targetSummary} />);
+      return;
+    }
+
+    if (traversalAction.kind === "blocked") {
+      toast.error("Another allied army already occupies the linked ethereal tile.");
       return;
     }
 
@@ -2829,6 +2847,19 @@ export default class WorldmapScene extends WarpTravel {
       direction,
       structureId: selectedEntityId,
     });
+  }
+
+  private canAttackSpireTraversalArmy(selectedArmyId: ID, targetArmyId: ID): boolean {
+    const selectedOwner = this.getTrackedArmyOwner(selectedArmyId);
+    const targetOwner = this.getTrackedArmyOwner(targetArmyId);
+
+    return (
+      selectedOwner === undefined ||
+      targetOwner === undefined ||
+      selectedOwner === 0n ||
+      targetOwner === 0n ||
+      selectedOwner !== targetOwner
+    );
   }
 
   // actionPath is not normalized

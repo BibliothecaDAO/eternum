@@ -1,23 +1,25 @@
+export type FastTravelEntityId = string | number;
+
 export interface FastTravelHexCoords {
   col: number;
   row: number;
 }
 
 export interface FastTravelArmyHydrationInput {
-  entityId: string;
+  entityId: FastTravelEntityId;
   hexCoords: FastTravelHexCoords;
   ownerName: string;
 }
 
 export interface FastTravelSpireHydrationInput {
-  entityId: string;
+  entityId: FastTravelEntityId;
   worldHexCoords: FastTravelHexCoords;
   travelHexCoords: FastTravelHexCoords;
   label: string;
 }
 
 export interface FastTravelHexEntityReference {
-  entityId: string;
+  entityId: FastTravelEntityId;
   kind: "army" | "spire";
 }
 

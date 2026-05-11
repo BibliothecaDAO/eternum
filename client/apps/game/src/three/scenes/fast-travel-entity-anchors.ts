@@ -1,12 +1,13 @@
 import type {
   FastTravelArmyHydrationInput,
+  FastTravelEntityId,
   FastTravelHexCoords,
   FastTravelSpireHydrationInput,
 } from "./fast-travel-hydration";
 import { getFastTravelWorldPositionForHex } from "./fast-travel-hex-field";
 
 export interface FastTravelEntityAnchor {
-  entityId: string;
+  entityId: FastTravelEntityId;
   kind: "army" | "spire";
   hexCoords: FastTravelHexCoords;
   label: string;

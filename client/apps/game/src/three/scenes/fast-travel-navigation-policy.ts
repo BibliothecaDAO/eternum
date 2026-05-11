@@ -1,5 +1,5 @@
 import { SceneName } from "../types";
-import type { FastTravelHexCoords } from "./fast-travel-hydration";
+import type { FastTravelEntityId, FastTravelHexCoords } from "./fast-travel-hydration";
 import {
   resolveFastTravelSpireByTravelHex,
   resolveFastTravelSpireByWorldHex,
@@ -10,7 +10,7 @@ export interface FastTravelSceneTransition {
   scene: SceneName;
   col: number;
   row: number;
-  spireId: string;
+  spireId: FastTravelEntityId;
 }
 
 export function resolveEnterFastTravelTransition(input: {

@@ -20,6 +20,7 @@ import type { Account, AccountInterface } from "starknet";
 import { divideByPrecision, FELT_CENTER, getTileAt } from "..";
 import { type ActionPath, ActionPaths, ActionType } from "../utils/action-paths";
 import { configManager } from "./config-manager";
+import { mapLayerToAlt, normalizeMapLayer, type MapLayer } from "../utils/map-layer";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
@@ -30,13 +31,16 @@ export class ArmyActionManager {
   private readonly resourceManager: ResourceManager;
   private readonly staminaManager: StaminaManager;
   private readonly FELT_CENTER: number;
+  private readonly mapAlt: boolean;
   constructor(
     private readonly components: ClientComponents,
     private readonly systemCalls: SystemCalls,
     entityId: ID,
+    mapLayer: MapLayer | boolean = "world",
   ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
+    this.mapAlt = mapLayerToAlt(normalizeMapLayer(mapLayer));
     const entityOwnerId = getComponentValue(this.components.ExplorerTroops, this.entity)?.owner;
     this.resourceManager = new ResourceManager(this.components, entityOwnerId!);
     this.staminaManager = new StaminaManager(this.components, entityId);
@@ -137,8 +141,8 @@ export class ArmyActionManager {
     };
   }
 
-  private isWorldSpireHex(position: HexPosition): boolean {
-    const tile = getTileAt(this.components, false, position.col, position.row);
+  private isSpireHex(position: HexPosition): boolean {
+    const tile = getTileAt(this.components, this.mapAlt, position.col, position.row);
     return tile?.occupier_type === TileOccupier.Spire;
   }
 
@@ -176,7 +180,7 @@ export class ArmyActionManager {
     // Process initial neighbors instead of start position
     const neighbors = getNeighborHexes(startPos.col, startPos.row);
     for (const { col, row } of neighbors) {
-      const isSpire = this.isWorldSpireHex({ col, row });
+      const isSpire = this.isSpireHex({ col, row });
       const isExplored = exploredHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
       const hasArmy = armyHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
       const isArmyMine =
@@ -253,7 +257,7 @@ export class ArmyActionManager {
         const hasStructure =
           structureHexes.get(current.col - this.FELT_CENTER)?.has(current.row - this.FELT_CENTER) || false;
         const hasChest = chestHexes.get(current.col - this.FELT_CENTER)?.has(current.row - this.FELT_CENTER) || false;
-        const hasSpire = this.isWorldSpireHex(current);
+        const hasSpire = this.isSpireHex(current);
 
         actionPaths.set(currentKey, path);
 
@@ -272,7 +276,7 @@ export class ArmyActionManager {
           const hasStructure = structureHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
           const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
           const hasChest = chestHexes.get(col - this.FELT_CENTER)?.has(row - this.FELT_CENTER) || false;
-          const hasSpire = this.isWorldSpireHex({ col, row });
+          const hasSpire = this.isSpireHex({ col, row });
 
           if (hasSpire) continue;
 
@@ -347,7 +351,7 @@ export class ArmyActionManager {
       }
     }
 
-    const vrfSourceSalt = packTileSeed({ alt: false, col: destinationHex.col, row: destinationHex.row });
+    const vrfSourceSalt = packTileSeed({ alt: this.mapAlt, col: destinationHex.col, row: destinationHex.row });
 
     try {
       return await this.systemCalls.explorer_explore({

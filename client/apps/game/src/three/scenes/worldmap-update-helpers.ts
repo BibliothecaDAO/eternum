@@ -8,12 +8,17 @@ type ExplorerTroopsUpdateHandlers = {
   updateArmyFromExplorerTroopsUpdate: (update: ExplorerTroopsSystemUpdate) => void;
   onAuthoritativePositionApplied?: (update: ExplorerTroopsSystemUpdate) => void;
   shouldSkipStalePositionUpdate?: (entityId: ID, normalized: { x: number; y: number }) => boolean;
+  shouldProcessLayerUpdate?: (update: ExplorerTroopsSystemUpdate) => boolean;
 };
 
 export function processExplorerTroopsUpdate(
   update: ExplorerTroopsSystemUpdate,
   handlers: ExplorerTroopsUpdateHandlers,
 ): void {
+  if (handlers.shouldProcessLayerUpdate && !handlers.shouldProcessLayerUpdate(update)) {
+    return;
+  }
+
   handlers.cancelPendingArmyRemoval(update.entityId);
 
   if (update.troopCount <= 0) {

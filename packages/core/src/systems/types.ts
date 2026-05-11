@@ -16,6 +16,7 @@ import { Position } from "./position";
 // data that you can get from the tile + mapdatastore
 export type ExplorerTroopsTileSystemUpdate = {
   entityId: ID;
+  alt?: boolean;
   hexCoords: HexPosition;
   troopType: TroopType;
   troopTier: TroopTier;
@@ -53,6 +54,7 @@ export type ExplorerTroopsTileSystemUpdate = {
 // data that you can get only from the explorer troops
 export type ExplorerTroopsSystemUpdate = {
   entityId: ID;
+  alt?: boolean;
   hexCoords: HexPosition;
   troopCount: number;
   onChainStamina: {

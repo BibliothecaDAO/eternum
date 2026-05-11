@@ -21,7 +21,7 @@ interface ResetFastTravelRuntimeStateInput<THydratedChunk, TRenderState, TEntity
   currentEntityAnchors: TEntityAnchor[];
   sceneArmies: TArmy[];
   sceneSpires: TSpire[];
-  selectedArmyEntityId: string | null;
+  selectedArmyEntityId: string | number | null;
   previewTargetHexKey: string | null;
   currentChunk: string;
   chunkRefreshTimeout: TTimeout | null;
@@ -31,7 +31,7 @@ interface ResetFastTravelRuntimeStateInput<THydratedChunk, TRenderState, TEntity
   selectedHexManager: FastTravelSelectedHexManager;
   pathRenderer: FastTravelPathRenderer;
   clearTimeout: (timeoutId: TTimeout) => void;
-  resolvePathEntityId: (entityId: string) => number;
+  resolvePathEntityId: (entityId: string | number) => number;
 }
 
 interface ResetFastTravelRuntimeStateResult<THydratedChunk, TRenderState, TEntityAnchor, TArmy, TSpire, TTimeout> {
@@ -40,7 +40,7 @@ interface ResetFastTravelRuntimeStateResult<THydratedChunk, TRenderState, TEntit
   currentEntityAnchors: TEntityAnchor[];
   sceneArmies: TArmy[];
   sceneSpires: TSpire[];
-  selectedArmyEntityId: string | null;
+  selectedArmyEntityId: string | number | null;
   previewTargetHexKey: string | null;
   currentChunk: string;
   chunkRefreshTimeout: TTimeout | null;

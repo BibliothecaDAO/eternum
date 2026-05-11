@@ -1,12 +1,13 @@
 import type {
   FastTravelArmyHydrationInput,
+  FastTravelEntityId,
   FastTravelHexCoords,
   FastTravelSpireHydrationInput,
 } from "./fast-travel-hydration";
 import { getFastTravelWorldPositionForHex } from "./fast-travel-hex-field";
 
 export interface FastTravelMovementResolution {
-  selectedArmyEntityId: string;
+  selectedArmyEntityId: FastTravelEntityId;
   originHexCoords: FastTravelHexCoords;
   targetHexCoords: FastTravelHexCoords;
   pathHexes: FastTravelHexCoords[];
@@ -41,7 +42,7 @@ function getNeighborHexes(hexCoords: FastTravelHexCoords, visibleHexes: FastTrav
 }
 
 export function resolveFastTravelMovement(input: {
-  selectedArmyEntityId: string;
+  selectedArmyEntityId: FastTravelEntityId;
   targetHexCoords: FastTravelHexCoords;
   visibleHexWindow: FastTravelHexCoords[];
   armies: FastTravelArmyHydrationInput[];

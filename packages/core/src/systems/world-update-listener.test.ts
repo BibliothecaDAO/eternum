@@ -288,6 +288,118 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     );
   });
 
+  it("includes tile alt in army tile update payloads", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockReturnValue({
+      alt: true,
+      occupier_type: 1,
+      occupier_id: 780,
+      col: 12,
+      row: 34,
+    });
+    getExplorerInfoFromTileOccupierMock.mockReturnValue({
+      troopType: "Knight",
+      troopTier: "T1",
+      isDaydreamsAgent: false,
+    });
+    getComponentValueMock.mockReturnValue({
+      owner: 99,
+      coord: { alt: true, x: 12, y: 34 },
+      troops: {
+        count: 500n,
+        category: "Knight",
+        tier: "T1",
+        stamina: {
+          amount: 15n,
+          updated_tick: 3n,
+        },
+        boosts: {
+          incr_damage_dealt_percent_num: 0,
+          incr_damage_dealt_end_tick: 0,
+          decr_damage_gotten_percent_num: 0,
+          decr_damage_gotten_end_tick: 0,
+          incr_stamina_regen_percent_num: 0,
+          incr_stamina_regen_tick_count: 0,
+          incr_explore_reward_percent_num: 0,
+          incr_explore_reward_end_tick: 0,
+        },
+        battle_cooldown_end: 0,
+      },
+    });
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          ExplorerTroops: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    const callback = vi.fn();
+    listener.Army.onTileUpdate(callback);
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+    await handleUpdate({ value: [{ value: "tile" }, undefined] });
+
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityId: 780,
+        alt: true,
+      }),
+    );
+  });
+
+  it("drops stale army tile updates when ExplorerTroops coord alt disagrees with TileOpt alt", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockReturnValue({
+      alt: true,
+      occupier_type: 1,
+      occupier_id: 781,
+      col: 12,
+      row: 34,
+    });
+    getExplorerInfoFromTileOccupierMock.mockReturnValue({
+      troopType: "Knight",
+      troopTier: "T1",
+      isDaydreamsAgent: false,
+    });
+    getComponentValueMock.mockReturnValue({
+      owner: 99,
+      coord: { alt: false, x: 12, y: 34 },
+      troops: {
+        count: 500n,
+        category: "Knight",
+        tier: "T1",
+        stamina: {
+          amount: 15n,
+          updated_tick: 3n,
+        },
+      },
+    });
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          ExplorerTroops: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    const callback = vi.fn();
+    listener.Army.onTileUpdate(callback);
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+    await handleUpdate({ value: [{ value: "tile" }, undefined] });
+
+    expect(callback).not.toHaveBeenCalled();
+  });
+
   it("uses enhanced stamina when it is fresher than the live explorer troop snapshot", async () => {
     isComponentUpdateMock.mockReturnValue(true);
     tileOptToTileMock.mockReturnValue({

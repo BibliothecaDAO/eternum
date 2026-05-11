@@ -12,6 +12,7 @@ export * from "./entry-token";
 export * from "./guild";
 export * from "./hyperstructure";
 export * from "./leaderboard";
+export * from "./map-layer";
 export * from "./packed-data";
 export * from "./players";
 export * from "./quest";

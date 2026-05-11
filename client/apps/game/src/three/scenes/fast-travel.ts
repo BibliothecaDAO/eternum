@@ -1,34 +1,76 @@
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+import { getEntitiesFromTorii, getExplorerTroopsFromToriiExact, getMapFromToriiExact } from "@/dojo/queries";
+import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
+import { navigateToStructure } from "@/three/utils/navigation";
+import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
+import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
 import { FAST_TRAVEL_SCENE_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
+import { FELT_CENTER } from "@/ui/config";
 import type { SetupResult } from "@bibliothecadao/dojo";
+import {
+  ActionPath,
+  ActionPaths,
+  ActionType,
+  ArmyActionManager,
+  getBlockTimestamp,
+  getExplorerInfoFromTileOccupier,
+  getTileAt,
+  isTileOccupierChest,
+  isTileOccupierStructure,
+  Position,
+} from "@bibliothecadao/eternum";
+import {
+  ActorType,
+  BiomeType,
+  ContractAddress,
+  HexEntityInfo,
+  HexPosition,
+  ID,
+  TileOccupier,
+} from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { PathRenderer } from "../managers/path-renderer";
 import { SelectedHexManager } from "../managers/selected-hex-manager";
 import { SelectionPulseManager } from "../managers/selection-pulse-manager";
+import { createElement } from "react";
+import { toast } from "sonner";
 import { Color, type Fog, type FogExp2, Group, Mesh, Raycaster, type Texture, Vector2, Vector3 } from "three";
 import type { MapControls } from "three/examples/jsm/controls/MapControls.js";
 
 import type { SceneManager } from "../scene-manager";
 import { SceneName } from "../types";
-import { getWorldPositionForHex } from "../utils";
+import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
   hydrateFastTravelChunkState,
   type FastTravelArmyHydrationInput,
   type FastTravelChunkHydrationResult,
+  type FastTravelEntityId,
   type FastTravelHexCoords,
   type FastTravelSpireHydrationInput,
 } from "./fast-travel-hydration";
 import { buildFastTravelEntityAnchors, type FastTravelEntityAnchor } from "./fast-travel-entity-anchors";
-import { resolveFastTravelMovement, type FastTravelMovementResolution } from "./fast-travel-movement-policy";
 import { prepareFastTravelRenderState, type FastTravelRenderState } from "./fast-travel-rendering";
 import {
   FAST_TRAVEL_CHUNK_POLICY,
   resolveFastTravelChunkHydrationPlan,
   resolveFastTravelVisibleChunkDecision,
+  type FastTravelChunkHydrationPlan,
 } from "./fast-travel-chunk-loading-runtime";
 import { createFastTravelRenderAssets, type FastTravelRenderAssets } from "./fast-travel-render-assets";
 import { resetFastTravelRuntimeState } from "./fast-travel-runtime-lifecycle";
+import { resolveSpireTraversalAction } from "./worldmap-spire-travel-policy";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
+
+interface FastTravelLayerState {
+  armies: FastTravelArmyHydrationInput[];
+  spires: FastTravelSpireHydrationInput[];
+  exploredTiles: Map<number, Map<number, BiomeType>>;
+  armyHexes: Map<number, Map<number, HexEntityInfo>>;
+  structureHexes: Map<number, Map<number, HexEntityInfo>>;
+  chestHexes: Map<number, Map<number, HexEntityInfo>>;
+}
 
 export default class FastTravelScene extends WarpTravel {
   private readonly travelLabelGroup = new Group();
@@ -43,7 +85,12 @@ export default class FastTravelScene extends WarpTravel {
   private currentEntityAnchors: FastTravelEntityAnchor[] = [];
   private sceneArmies: FastTravelArmyHydrationInput[] = [];
   private sceneSpires: FastTravelSpireHydrationInput[] = [];
-  private selectedArmyEntityId: string | null = null;
+  private fastTravelExploredTiles: Map<number, Map<number, BiomeType>> = new Map();
+  private fastTravelArmyHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
+  private fastTravelStructureHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
+  private fastTravelChestHexes: Map<number, Map<number, HexEntityInfo>> = new Map();
+  private selectedArmyActionPaths: Map<string, ActionPath[]> = new Map();
+  private selectedArmyEntityId: ID | null = null;
   private previewTargetHexKey: string | null = null;
   private currentChunk: string = "null";
   private chunkRefreshTimeout: number | null = null;
@@ -196,6 +243,7 @@ export default class FastTravelScene extends WarpTravel {
   protected onHexagonClick(hexCoords: FastTravelHexCoords | null): void {
     if (!hexCoords) {
       this.clearFastTravelMovementPreview();
+      this.clearFastTravelSelection();
       return;
     }
 
@@ -205,26 +253,32 @@ export default class FastTravelScene extends WarpTravel {
     );
 
     if (clickedArmy) {
-      this.selectedArmyEntityId = clickedArmy.entityId;
-      this.previewTargetHexKey = null;
-      this.clearFastTravelMovementPreview();
-      this.syncSelectedArmyFeedback();
+      this.selectFastTravelArmy(clickedArmy);
+      return;
+    }
+
+    const clickedSpire = this.currentEntityAnchors.find(
+      (anchor) =>
+        anchor.kind === "spire" && anchor.hexCoords.col === hexCoords.col && anchor.hexCoords.row === hexCoords.row,
+    );
+
+    if (clickedSpire) {
+      this.selectedHexManager.setPosition(clickedSpire.worldPosition.x, clickedSpire.worldPosition.z);
       return;
     }
 
     if (!this.selectedArmyEntityId) {
       return;
     }
-
-    this.commitFastTravelMovement(hexCoords);
   }
 
-  protected onHexagonRightClick(): void {
-    this.clearFastTravelMovementPreview();
-    this.selectedArmyEntityId = null;
-    this.selectedHexManager.resetPosition();
-    this.selectionPulseManager.hideSelection();
-    this.pathRenderer.setSelectedPath(null);
+  protected onHexagonRightClick(_event: MouseEvent, hexCoords: FastTravelHexCoords | null): void {
+    if (!hexCoords || !this.selectedArmyEntityId) {
+      this.clearFastTravelSelection();
+      return;
+    }
+
+    this.commitFastTravelMovement(hexCoords);
   }
 
   public moveCameraToURLLocation(): void {
@@ -323,33 +377,6 @@ export default class FastTravelScene extends WarpTravel {
     };
   }
 
-  private buildDemoArmies(focusHex: FastTravelHexCoords): FastTravelArmyHydrationInput[] {
-    return [
-      {
-        entityId: "fast-travel-army",
-        hexCoords: focusHex,
-        ownerName: "Warp Vanguard",
-      },
-    ];
-  }
-
-  private buildDemoSpires(focusHex: FastTravelHexCoords): FastTravelSpireHydrationInput[] {
-    return [
-      {
-        entityId: "fast-travel-spire-west",
-        label: "Western Spire",
-        worldHexCoords: { col: 400, row: 120 },
-        travelHexCoords: { col: focusHex.col - 2, row: focusHex.row + 1 },
-      },
-      {
-        entityId: "fast-travel-spire-east",
-        label: "Eastern Spire",
-        worldHexCoords: { col: 520, row: 240 },
-        travelHexCoords: { col: focusHex.col + 2, row: focusHex.row - 1 },
-      },
-    ];
-  }
-
   private requestChunkRefresh(force: boolean = false): void {
     if (this.isSwitchedOff) {
       return;
@@ -389,16 +416,22 @@ export default class FastTravelScene extends WarpTravel {
       return false;
     }
 
+    const chunkPlan = resolveFastTravelChunkHydrationPlan({
+      startCol: chunkDecision.startCol,
+      startRow: chunkDecision.startRow,
+    });
+
+    await this.syncFastTravelLayerChunk(chunkPlan);
     this.applyFastTravelVisibleChunk(chunkDecision.chunkKey, chunkDecision.startCol, chunkDecision.startRow);
     return true;
   }
 
   private applyFastTravelVisibleChunk(chunkKey: string, startCol: number, startRow: number): void {
-    const focusHex = this.resolveFastTravelFocusHex();
     const chunkPlan = resolveFastTravelChunkHydrationPlan({
       startCol,
       startRow,
     });
+    const layerState = this.resolveFastTravelLayerState(chunkPlan);
 
     this.currentHydratedChunk = hydrateFastTravelChunkState({
       chunkKey: chunkPlan.chunkKey,
@@ -406,15 +439,176 @@ export default class FastTravelScene extends WarpTravel {
       startRow: chunkPlan.startRow,
       width: chunkPlan.width,
       height: chunkPlan.height,
-      armies: this.resolveSceneArmies(focusHex),
-      spires: this.resolveSceneSpires(focusHex),
+      armies: layerState.armies,
+      spires: layerState.spires,
     });
+
+    this.sceneArmies = layerState.armies;
+    this.sceneSpires = layerState.spires;
+    this.fastTravelExploredTiles = layerState.exploredTiles;
+    this.fastTravelArmyHexes = layerState.armyHexes;
+    this.fastTravelStructureHexes = layerState.structureHexes;
+    this.fastTravelChestHexes = layerState.chestHexes;
 
     this.currentRenderState = prepareFastTravelRenderState({
       visibleHexWindow: this.currentHydratedChunk.visibleHexWindow,
     });
     this.currentChunk = chunkKey;
     this.syncFastTravelSceneVisuals();
+  }
+
+  private async syncFastTravelLayerChunk(chunkPlan: FastTravelChunkHydrationPlan): Promise<void> {
+    const minCol = chunkPlan.startCol + FELT_CENTER();
+    const maxCol = chunkPlan.startCol + chunkPlan.width - 1 + FELT_CENTER();
+    const minRow = chunkPlan.startRow + FELT_CENTER();
+    const maxRow = chunkPlan.startRow + chunkPlan.height - 1 + FELT_CENTER();
+
+    await Promise.all([
+      getMapFromToriiExact(
+        this.dojo.network.toriiClient,
+        this.dojo.network.contractComponents as unknown as Parameters<typeof getMapFromToriiExact>[1],
+        minCol,
+        maxCol,
+        minRow,
+        maxRow,
+        true,
+      ),
+      getExplorerTroopsFromToriiExact(
+        this.dojo.network.toriiClient,
+        this.dojo.network.contractComponents as unknown as Parameters<typeof getExplorerTroopsFromToriiExact>[1],
+        minCol,
+        maxCol,
+        minRow,
+        maxRow,
+        true,
+      ),
+    ]);
+
+    await this.syncFastTravelArmyOwnerStructures(chunkPlan);
+  }
+
+  private async syncFastTravelArmyOwnerStructures(chunkPlan: FastTravelChunkHydrationPlan): Promise<void> {
+    const ownerStructureIds = this.collectVisibleFastTravelArmyOwnerStructureIds(chunkPlan);
+
+    if (ownerStructureIds.length === 0) {
+      return;
+    }
+
+    await getEntitiesFromTorii(
+      this.dojo.network.toriiClient,
+      this.dojo.network.contractComponents as unknown as Parameters<typeof getEntitiesFromTorii>[1],
+      ownerStructureIds,
+      ["s1_eternum-Structure"],
+    );
+  }
+
+  private collectVisibleFastTravelArmyOwnerStructureIds(chunkPlan: FastTravelChunkHydrationPlan): ID[] {
+    const ownerStructureIds = new Set<ID>();
+
+    this.iterateChunkWindow(chunkPlan, (normalizedHex) => {
+      const contractHex = this.toContractHex(normalizedHex);
+      const tile = getTileAt(this.dojo.components, true, contractHex.col, contractHex.row);
+      if (!tile || !this.isExplorerOccupier(tile.occupier_type)) {
+        return;
+      }
+
+      const explorerTroops = this.getExplorerTroops(tile.occupier_id);
+      const ownerStructureId = Number(explorerTroops?.owner ?? 0);
+      if (Number.isFinite(ownerStructureId) && ownerStructureId > 0) {
+        ownerStructureIds.add(ownerStructureId);
+      }
+    });
+
+    return [...ownerStructureIds];
+  }
+
+  private resolveFastTravelLayerState(chunkPlan: FastTravelChunkHydrationPlan): FastTravelLayerState {
+    const layerState: FastTravelLayerState = {
+      armies: [],
+      spires: [],
+      exploredTiles: new Map(),
+      armyHexes: new Map(),
+      structureHexes: new Map(),
+      chestHexes: new Map(),
+    };
+
+    this.iterateChunkWindow(chunkPlan, (normalizedHex) => {
+      const contractHex = this.toContractHex(normalizedHex);
+      const tile = getTileAt(this.dojo.components, true, contractHex.col, contractHex.row);
+      if (!tile || Number(tile.biome) === 0) {
+        return;
+      }
+
+      this.setNestedMapValue(
+        layerState.exploredTiles,
+        normalizedHex.col,
+        normalizedHex.row,
+        Number(tile.biome) as unknown as BiomeType,
+      );
+      this.applyFastTravelOccupierState(layerState, normalizedHex, tile);
+    });
+
+    return layerState;
+  }
+
+  private applyFastTravelOccupierState(
+    layerState: FastTravelLayerState,
+    normalizedHex: FastTravelHexCoords,
+    tile: NonNullable<ReturnType<typeof getTileAt>>,
+  ): void {
+    if (Number(tile.occupier_id) === 0 || tile.occupier_type === TileOccupier.None) {
+      return;
+    }
+
+    if (tile.occupier_type === TileOccupier.Spire) {
+      layerState.spires.push({
+        entityId: tile.occupier_id,
+        label: `Spire #${tile.occupier_id}`,
+        worldHexCoords: normalizedHex,
+        travelHexCoords: normalizedHex,
+      });
+      return;
+    }
+
+    if (this.isExplorerOccupier(tile.occupier_type)) {
+      const owner = this.resolveArmyOwnerAddress(tile.occupier_id);
+      this.setNestedMapValue(layerState.armyHexes, normalizedHex.col, normalizedHex.row, {
+        id: tile.occupier_id,
+        owner,
+      });
+      layerState.armies.push({
+        entityId: tile.occupier_id,
+        hexCoords: normalizedHex,
+        ownerName: `Army #${tile.occupier_id}`,
+      });
+      return;
+    }
+
+    if (isTileOccupierChest(tile.occupier_type as TileOccupier)) {
+      this.setNestedMapValue(layerState.chestHexes, normalizedHex.col, normalizedHex.row, {
+        id: tile.occupier_id,
+        owner: 0n,
+      });
+      return;
+    }
+
+    if (tile.occupier_is_structure || isTileOccupierStructure(tile.occupier_type as TileOccupier)) {
+      this.setNestedMapValue(layerState.structureHexes, normalizedHex.col, normalizedHex.row, {
+        id: tile.occupier_id,
+        owner: this.resolveStructureOwnerAddress(tile.occupier_id),
+      });
+    }
+  }
+
+  private iterateChunkWindow(
+    chunkPlan: FastTravelChunkHydrationPlan,
+    visitHex: (hexCoords: FastTravelHexCoords) => void,
+  ): void {
+    for (let row = chunkPlan.startRow; row < chunkPlan.startRow + chunkPlan.height; row += 1) {
+      for (let col = chunkPlan.startCol; col < chunkPlan.startCol + chunkPlan.width; col += 1) {
+        visitHex({ col, row });
+      }
+    }
   }
 
   private syncFastTravelSceneVisuals(): void {
@@ -448,6 +642,9 @@ export default class FastTravelScene extends WarpTravel {
       });
 
     this.syncSelectedArmyFeedback();
+    if (this.selectedArmyEntityId !== null) {
+      this.refreshSelectedArmyActionPaths(this.selectedArmyEntityId);
+    }
   }
 
   private syncFastTravelSurfaceMeshes(): void {
@@ -472,25 +669,9 @@ export default class FastTravelScene extends WarpTravel {
     this.interactiveHexManager.updateVisibleHexes(centerRow, centerCol, field.bounds.size.cols, field.bounds.size.rows);
   }
 
-  private resolveSceneArmies(focusHex: FastTravelHexCoords): FastTravelArmyHydrationInput[] {
-    if (this.sceneArmies.length === 0) {
-      this.sceneArmies = this.buildDemoArmies(focusHex);
-    }
-
-    return this.sceneArmies;
-  }
-
-  private resolveSceneSpires(focusHex: FastTravelHexCoords): FastTravelSpireHydrationInput[] {
-    if (this.sceneSpires.length === 0) {
-      this.sceneSpires = this.buildDemoSpires(focusHex);
-    }
-
-    return this.sceneSpires;
-  }
-
   private previewFastTravelMovement(targetHexCoords: FastTravelHexCoords): void {
-    const movement = this.resolveFastTravelMovement(targetHexCoords);
-    if (!movement) {
+    const actionPath = this.resolveFastTravelActionPath(targetHexCoords);
+    if (!actionPath) {
       this.clearFastTravelMovementPreview();
       return;
     }
@@ -502,38 +683,54 @@ export default class FastTravelScene extends WarpTravel {
 
     this.previewTargetHexKey = targetHexKey;
     this.pathRenderer.createPath(
-      this.resolvePathEntityId(movement.selectedArmyEntityId),
-      movement.worldPath.map((point) => new Vector3(point.x, point.y + 0.18, point.z)),
+      this.resolvePathEntityId(this.selectedArmyEntityId),
+      this.resolveFastTravelWorldPath(actionPath, 0.18),
       new Color(this.currentRenderState?.surface.palette.edgeColor ?? "#ff4fd8"),
       "hover",
     );
   }
 
   private commitFastTravelMovement(targetHexCoords: FastTravelHexCoords): void {
-    const movement = this.resolveFastTravelMovement(targetHexCoords);
-    if (!movement) {
+    if (!this.selectedArmyEntityId) {
       return;
     }
 
-    this.sceneArmies = this.sceneArmies.map((army) =>
-      army.entityId === movement.selectedArmyEntityId ? { ...army, hexCoords: movement.targetHexCoords } : army,
-    );
+    const actionPath = this.resolveFastTravelActionPath(targetHexCoords);
+    if (!actionPath) {
+      this.clearFastTravelSelection();
+      return;
+    }
 
-    const pathEntityId = this.resolvePathEntityId(movement.selectedArmyEntityId);
+    const pathEntityId = this.resolvePathEntityId(this.selectedArmyEntityId);
     this.pathRenderer.createPath(
       pathEntityId,
-      movement.worldPath.map((point) => new Vector3(point.x, point.y + 0.18, point.z)),
+      this.resolveFastTravelWorldPath(actionPath, 0.18),
       new Color(this.currentRenderState?.surface.palette.accentColor ?? "#ffd6f7"),
       "selected",
     );
     this.pathRenderer.setSelectedPath(pathEntityId);
     this.previewTargetHexKey = null;
 
-    const targetPoint = movement.worldPath[movement.worldPath.length - 1];
+    const targetPoint = this.resolveFastTravelWorldPath(actionPath, 0).at(-1);
+    if (!targetPoint) {
+      return;
+    }
+
     this.selectedHexManager.setPosition(targetPoint.x, targetPoint.z);
     this.selectionPulseManager.hideSelection();
 
-    void this.refreshFastTravelScene();
+    const actionType = ActionPaths.getActionType(actionPath);
+    if (actionType === ActionType.Attack) {
+      this.openFastTravelAttackPreview(actionPath, this.selectedArmyEntityId);
+      return;
+    }
+
+    if (actionType === ActionType.SpireTravel) {
+      this.openFastTravelSpireTravel(actionPath, this.selectedArmyEntityId);
+      return;
+    }
+
+    this.commitFastTravelArmyAction(actionPath, this.selectedArmyEntityId);
   }
 
   private clearFastTravelMovementPreview(): void {
@@ -546,18 +743,249 @@ export default class FastTravelScene extends WarpTravel {
     this.previewTargetHexKey = null;
   }
 
-  private resolveFastTravelMovement(targetHexCoords: FastTravelHexCoords): FastTravelMovementResolution | null {
-    if (!this.selectedArmyEntityId || !this.currentHydratedChunk) {
+  private resolveFastTravelActionPath(targetHexCoords: FastTravelHexCoords): ActionPath[] | null {
+    if (!this.selectedArmyEntityId) {
       return null;
     }
 
-    return resolveFastTravelMovement({
-      selectedArmyEntityId: this.selectedArmyEntityId,
-      targetHexCoords,
-      visibleHexWindow: this.currentHydratedChunk.visibleHexWindow,
-      armies: this.sceneArmies,
-      spireAnchors: this.sceneSpires,
+    const contractHex = this.toContractHex(targetHexCoords);
+    return this.selectedArmyActionPaths.get(ActionPaths.posKey(contractHex)) ?? null;
+  }
+
+  private resolveFastTravelWorldPath(actionPath: ActionPath[], yOffset: number): Vector3[] {
+    return actionPath.map((step) => {
+      const normalizedHex = this.toNormalizedHex(step.hex);
+      const point = getWorldPositionForHex(normalizedHex);
+      return new Vector3(point.x, point.y + yOffset, point.z);
     });
+  }
+
+  private selectFastTravelArmy(anchor: FastTravelEntityAnchor): void {
+    const selectedArmyId = this.resolveNumericEntityId(anchor.entityId);
+    if (selectedArmyId === null) {
+      return;
+    }
+
+    const armyOwner = this.resolveArmyOwnerAddress(selectedArmyId);
+    if (!isAddressEqualToAccount(armyOwner)) {
+      return;
+    }
+
+    this.selectedArmyEntityId = selectedArmyId;
+    this.previewTargetHexKey = null;
+    this.clearFastTravelMovementPreview();
+    this.syncSelectedArmyFeedback();
+    this.refreshSelectedArmyActionPaths(selectedArmyId);
+  }
+
+  private refreshSelectedArmyActionPaths(selectedArmyId: ID): void {
+    const account = useAccountStore.getState().account;
+    if (!account) {
+      this.selectedArmyActionPaths.clear();
+      this.highlightHexManager.highlightHexes([]);
+      return;
+    }
+
+    try {
+      const armyActionManager = new ArmyActionManager(
+        this.dojo.components,
+        this.dojo.systemCalls,
+        selectedArmyId,
+        "ethereal",
+      );
+      const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+      const playerAddress = ContractAddress(account.address);
+      const selectedArmy = this.sceneArmies.find(
+        (army) => this.resolveNumericEntityId(army.entityId) === selectedArmyId,
+      );
+      const startPositionOverride = selectedArmy ? this.toContractHex(selectedArmy.hexCoords) : undefined;
+      const actionPaths = armyActionManager.findActionPaths(
+        this.fastTravelStructureHexes,
+        this.fastTravelArmyHexes,
+        this.fastTravelExploredTiles,
+        this.fastTravelChestHexes,
+        currentDefaultTick,
+        currentArmiesTick,
+        playerAddress,
+        startPositionOverride,
+      );
+
+      this.selectedArmyActionPaths = actionPaths.getPaths();
+      this.highlightHexManager.highlightHexes(actionPaths.getHighlightDescriptors());
+    } catch (error) {
+      console.warn("[FastTravelScene] Failed to resolve ethereal army action paths", error);
+      this.selectedArmyActionPaths.clear();
+      this.highlightHexManager.highlightHexes([]);
+    }
+  }
+
+  private openFastTravelAttackPreview(actionPath: ActionPath[], selectedArmyId: ID): void {
+    const selectedPath = actionPath.map((path) => path.hex);
+    const selectedHex = selectedPath[0];
+    const targetHex = selectedPath[selectedPath.length - 1];
+    const targetTile = getTileAt(this.dojo.components, true, targetHex.col, targetHex.row);
+
+    if (!selectedHex || !targetHex || !targetTile) {
+      return;
+    }
+
+    this.state.toggleModal(
+      createElement(QuickAttackPreview, {
+        attacker: {
+          type: ActorType.Explorer,
+          id: selectedArmyId,
+          hex: new Position({ x: selectedHex.col, y: selectedHex.row }).getContract(),
+          alt: true,
+        },
+        target: {
+          type: ActorType.Explorer,
+          id: targetTile.occupier_id,
+          hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
+          alt: true,
+        },
+      }),
+    );
+  }
+
+  private openFastTravelSpireTravel(
+    actionPath: ActionPath[],
+    selectedArmyId: ID,
+    options: { hasSyncedPairedWorldTile?: boolean } = {},
+  ): void {
+    const selectedPath = actionPath.map((path) => path.hex);
+    const selectedHex = selectedPath[0];
+    const targetHex = selectedPath[selectedPath.length - 1];
+    if (!selectedHex || !targetHex) {
+      return;
+    }
+
+    const pairedWorldTile = getTileAt(this.dojo.components, false, targetHex.col, targetHex.row);
+    if (!pairedWorldTile && !options.hasSyncedPairedWorldTile) {
+      void this.syncPairedWorldSpireTile(targetHex)
+        .catch((error) => {
+          console.warn("[FastTravelScene] Failed to sync paired world Spire tile", error);
+        })
+        .finally(() =>
+          this.openFastTravelSpireTravel(actionPath, selectedArmyId, {
+            hasSyncedPairedWorldTile: true,
+          }),
+        );
+      return;
+    }
+
+    const traversalAction = resolveSpireTraversalAction({
+      targetHex,
+      etherealTile: pairedWorldTile,
+      isOpposingArmy: (targetArmyId) => this.canAttackSpireTraversalArmy(selectedArmyId, targetArmyId),
+    });
+
+    if (traversalAction.kind === "attack") {
+      this.state.toggleModal(
+        createElement(QuickAttackPreview, {
+          attacker: {
+            type: ActorType.Explorer,
+            id: selectedArmyId,
+            hex: new Position({ x: selectedHex.col, y: selectedHex.row }).getContract(),
+            alt: true,
+          },
+          target: {
+            type: ActorType.Explorer,
+            id: traversalAction.targetArmyId,
+            hex: new Position({ x: traversalAction.targetHex.col, y: traversalAction.targetHex.row }).getContract(),
+            alt: false,
+          },
+        }),
+      );
+      return;
+    }
+
+    if (traversalAction.kind === "blocked") {
+      toast.error("Another allied army already occupies the linked world tile.");
+      return;
+    }
+
+    this.state.toggleModal(
+      createElement(SpireTravelModal, {
+        onTravelThroughSpire: () =>
+          this.commitFastTravelArmyAction(actionPath, selectedArmyId, {
+            navigateToLayer: "world",
+          }),
+      }),
+    );
+  }
+
+  private async syncPairedWorldSpireTile(targetHex: HexPosition): Promise<void> {
+    await Promise.all([
+      getMapFromToriiExact(
+        this.dojo.network.toriiClient,
+        this.dojo.network.contractComponents as unknown as Parameters<typeof getMapFromToriiExact>[1],
+        targetHex.col,
+        targetHex.col,
+        targetHex.row,
+        targetHex.row,
+        false,
+      ),
+      getExplorerTroopsFromToriiExact(
+        this.dojo.network.toriiClient,
+        this.dojo.network.contractComponents as unknown as Parameters<typeof getExplorerTroopsFromToriiExact>[1],
+        targetHex.col,
+        targetHex.col,
+        targetHex.row,
+        targetHex.row,
+        false,
+      ),
+    ]);
+
+    const pairedWorldTile = getTileAt(this.dojo.components, false, targetHex.col, targetHex.row);
+    if (!pairedWorldTile || !this.isExplorerOccupier(pairedWorldTile.occupier_type)) {
+      return;
+    }
+
+    const explorerTroops = this.getExplorerTroops(pairedWorldTile.occupier_id);
+    const ownerStructureId = Number(explorerTroops?.owner ?? 0);
+    if (!Number.isFinite(ownerStructureId) || ownerStructureId <= 0) {
+      return;
+    }
+
+    await getEntitiesFromTorii(
+      this.dojo.network.toriiClient,
+      this.dojo.network.contractComponents as unknown as Parameters<typeof getEntitiesFromTorii>[1],
+      [ownerStructureId],
+      ["s1_eternum-Structure"],
+    );
+  }
+
+  private commitFastTravelArmyAction(
+    actionPath: ActionPath[],
+    selectedArmyId: ID,
+    options: { navigateToLayer?: "world" } = {},
+  ): void {
+    const account = useAccountStore.getState().account;
+    if (!account) {
+      return;
+    }
+
+    const actionType = ActionPaths.getActionType(actionPath);
+    const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
+    const currentArmiesTick = getBlockTimestamp().currentArmiesTick;
+    const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedArmyId, true);
+    const targetHex = actionPath[actionPath.length - 1]?.hex;
+
+    armyActionManager
+      .moveArmy(account, actionPath, isTravelAction, currentArmiesTick)
+      .then(() => {
+        if (options.navigateToLayer === "world" && targetHex) {
+          navigateToStructure(targetHex.col, targetHex.row, "map");
+          return;
+        }
+
+        this.requestSceneRefresh();
+      })
+      .catch((error) => {
+        console.error("[FastTravelScene] Army action failed:", error);
+      });
+
+    this.clearFastTravelSelection();
   }
 
   private syncSelectedArmyFeedback(): void {
@@ -567,7 +995,7 @@ export default class FastTravelScene extends WarpTravel {
     }
 
     const selectedArmy = this.currentEntityAnchors.find(
-      (anchor) => anchor.kind === "army" && anchor.entityId === this.selectedArmyEntityId,
+      (anchor) => anchor.kind === "army" && this.resolveNumericEntityId(anchor.entityId) === this.selectedArmyEntityId,
     );
     if (!selectedArmy) {
       this.selectionPulseManager.hideSelection();
@@ -578,8 +1006,92 @@ export default class FastTravelScene extends WarpTravel {
     this.selectionPulseManager.hideSelection();
   }
 
-  private resolvePathEntityId(entityId: string): number {
+  private clearFastTravelSelection(): void {
+    this.clearFastTravelMovementPreview();
+    this.selectedArmyEntityId = null;
+    this.selectedArmyActionPaths.clear();
+    this.selectedHexManager.resetPosition();
+    this.selectionPulseManager.hideSelection();
+    this.highlightHexManager.highlightHexes([]);
+    this.pathRenderer.setSelectedPath(null);
+  }
+
+  private resolvePathEntityId(entityId: FastTravelEntityId | null): number {
+    if (typeof entityId === "number") {
+      return entityId;
+    }
+
+    if (entityId === null) {
+      return 0;
+    }
+
     return entityId.split("").reduce((hash, character) => hash * 31 + character.charCodeAt(0), 17);
+  }
+
+  private isOpposingArmy(selectedArmyId: ID, targetArmyId: ID): boolean {
+    const selectedOwner = this.resolveArmyOwnerAddress(selectedArmyId);
+    const targetOwner = this.resolveArmyOwnerAddress(targetArmyId);
+
+    return selectedOwner !== 0n && targetOwner !== 0n && selectedOwner !== targetOwner;
+  }
+
+  private canAttackSpireTraversalArmy(selectedArmyId: ID, targetArmyId: ID): boolean {
+    const selectedOwner = this.resolveArmyOwnerAddress(selectedArmyId);
+    const targetOwner = this.resolveArmyOwnerAddress(targetArmyId);
+
+    return selectedOwner === 0n || targetOwner === 0n || this.isOpposingArmy(selectedArmyId, targetArmyId);
+  }
+
+  private resolveArmyOwnerAddress(armyId: ID): ContractAddress {
+    const explorerTroops = this.getExplorerTroops(armyId);
+    const ownerStructureId = Number(explorerTroops?.owner ?? 0);
+    if (!Number.isFinite(ownerStructureId) || ownerStructureId <= 0) {
+      return 0n;
+    }
+
+    return this.resolveStructureOwnerAddress(ownerStructureId);
+  }
+
+  private resolveStructureOwnerAddress(structureId: ID): ContractAddress {
+    const structure = getComponentValue(this.dojo.components.Structure, getEntityIdFromKeys([BigInt(structureId)]));
+    return structure?.owner ? BigInt(structure.owner) : 0n;
+  }
+
+  private getExplorerTroops(armyId: ID): { owner?: number } | undefined {
+    return getComponentValue(this.dojo.components.ExplorerTroops, getEntityIdFromKeys([BigInt(armyId)])) as
+      | { owner?: number }
+      | undefined;
+  }
+
+  private isExplorerOccupier(occupierType: number): boolean {
+    return getExplorerInfoFromTileOccupier(occupierType) !== undefined;
+  }
+
+  private toContractHex(hexCoords: FastTravelHexCoords): HexPosition {
+    const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    return {
+      col: contractPosition.x,
+      row: contractPosition.y,
+    };
+  }
+
+  private toNormalizedHex(hexCoords: HexPosition): FastTravelHexCoords {
+    const normalizedPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+    return {
+      col: normalizedPosition.x,
+      row: normalizedPosition.y,
+    };
+  }
+
+  private resolveNumericEntityId(entityId: FastTravelEntityId): ID | null {
+    const numericId = typeof entityId === "number" ? entityId : Number(entityId);
+    return Number.isFinite(numericId) ? numericId : null;
+  }
+
+  private setNestedMapValue<T>(target: Map<number, Map<number, T>>, col: number, row: number, value: T): void {
+    const rowMap = target.get(col) ?? new Map<number, T>();
+    rowMap.set(row, value);
+    target.set(col, rowMap);
   }
 
   private resetFastTravelRuntimeState(): void {
@@ -607,7 +1119,12 @@ export default class FastTravelScene extends WarpTravel {
     this.currentEntityAnchors = nextState.currentEntityAnchors;
     this.sceneArmies = nextState.sceneArmies;
     this.sceneSpires = nextState.sceneSpires;
-    this.selectedArmyEntityId = nextState.selectedArmyEntityId;
+    this.fastTravelExploredTiles = new Map();
+    this.fastTravelArmyHexes = new Map();
+    this.fastTravelStructureHexes = new Map();
+    this.fastTravelChestHexes = new Map();
+    this.selectedArmyActionPaths.clear();
+    this.selectedArmyEntityId = null;
     this.previewTargetHexKey = nextState.previewTargetHexKey;
     this.currentChunk = nextState.currentChunk;
     this.chunkRefreshTimeout = nextState.chunkRefreshTimeout;

@@ -35,4 +35,24 @@ describe("FastTravelScene lifecycle shell", () => {
     expect(source).toMatch(/disposeFastTravelStoreSubscriptions/);
     expect(source).toMatch(/detachFastTravelManagerLabels/);
   });
+
+  it("does not hydrate demo armies or spires", () => {
+    const source = readFastTravelSource();
+
+    expect(source).not.toMatch(/buildDemoArmies/);
+    expect(source).not.toMatch(/buildDemoSpires/);
+    expect(source).toMatch(/resolveFastTravelLayerState/);
+  });
+
+  it("blocks spire exits into allied world-layer armies before opening the travel modal", () => {
+    const source = readFastTravelSource();
+
+    const methodStart = source.indexOf("private openFastTravelSpireTravel(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodBody = source.slice(methodStart, methodStart + 2600);
+    expect(methodBody).toContain("isOpposingArmy: (targetArmyId) => this.canAttackSpireTraversalArmy");
+    expect(methodBody).toContain('if (traversalAction.kind === "blocked")');
+    expect(methodBody).toContain('toast.error("Another allied army already occupies the linked world tile.")');
+  });
 });

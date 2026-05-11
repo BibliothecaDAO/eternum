@@ -13,7 +13,7 @@ import {
   useLandingLeaderboardStore,
 } from "@/services/leaderboard/use-landing-leaderboard-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -33,8 +33,6 @@ export const TopHeader = memo(() => {
     setup,
     account: { account },
   } = useDojo();
-
-  const { handleUrlChange } = useQuery();
 
   const playClick = useUISound("ui.click");
   const playHover = useUISound("ui.hover");
@@ -70,8 +68,6 @@ export const TopHeader = memo(() => {
   );
 
   const goToStructure = useGoToStructure(setup);
-  const showFastTravelLayerToggle = mode.id === "eternum";
-  const isFastTravelView = currentPathname.includes("/travel");
   const isLocalView = currentPathname.includes("/hex");
   const isWorldView = !isLocalView;
 
@@ -139,32 +135,6 @@ export const TopHeader = memo(() => {
       }),
     [isSpectating, playerEntry?.points, playerEntry?.rank],
   );
-
-  const navigateToFastTravelLayer = useCallback(() => {
-    playClick();
-
-    if (isFastTravelView) {
-      goToStructure(
-        lastControlledStructureEntityId || structureEntityId,
-        new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-        true,
-      );
-      return;
-    }
-
-    const col = selectedStructurePosition.x;
-    const row = selectedStructurePosition.y;
-    handleUrlChange(`/play/travel?col=${col}&row=${row}`);
-  }, [
-    goToStructure,
-    handleUrlChange,
-    isFastTravelView,
-    lastControlledStructureEntityId,
-    playClick,
-    selectedStructurePosition.x,
-    selectedStructurePosition.y,
-    structureEntityId,
-  ]);
 
   return (
     <div className="pointer-events-auto w-screen flex justify-between">
@@ -246,22 +216,6 @@ export const TopHeader = memo(() => {
                 >
                   World
                 </span>
-                {showFastTravelLayerToggle && (
-                  <button
-                    type="button"
-                    onClick={navigateToFastTravelLayer}
-                    onMouseEnter={() => playHover()}
-                    className={cn(
-                      "rounded-md border px-2 py-0.5 text-[11px] transition-all duration-200",
-                      isFastTravelView
-                        ? "border-cyan-300 bg-cyan-400/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.35)]"
-                        : "border-gold/25 bg-gold/10 text-gold/75 hover:border-gold/40 hover:text-gold",
-                    )}
-                    title={isFastTravelView ? "Return to World Layer" : "Go to Ethereal Layer"}
-                  >
-                    Ethereal
-                  </button>
-                )}
                 <div className="relative flex gap-2">
                   <button
                     type="button"

@@ -20,6 +20,24 @@ describe("resolveSpireTraversalAction", () => {
     });
   });
 
+  it("returns blocked when a friendly ethereal explorer occupies the linked spire tile", () => {
+    const result = resolveSpireTraversalAction({
+      targetHex: { col: 100, row: 200 },
+      etherealTile: {
+        occupier_id: 42,
+        occupier_type: TileOccupier.ExplorerKnightT1Regular,
+        occupier_is_structure: false,
+      },
+      isOpposingArmy: () => false,
+    });
+
+    expect(result).toEqual({
+      kind: "blocked",
+      targetArmyId: 42,
+      targetHex: { col: 100, row: 200 },
+    });
+  });
+
   it("returns travel when no ethereal explorer occupies the linked spire tile", () => {
     const result = resolveSpireTraversalAction({
       targetHex: { col: 100, row: 200 },

@@ -1,6 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import Button from "@/ui/design-system/atoms/button";
 import {
   BiomeSummaryCard,
   UnoccupiedTileQuadrants,
@@ -15,14 +14,13 @@ import { battleSimulation } from "@/ui/features/world/components/config";
 import { HexPosition, ID, StructureType, TileOccupier } from "@bibliothecadao/types";
 import {
   Biome,
-  Position,
   isTileOccupierChest,
   isTileOccupierQuest,
   isTileOccupierStructure,
   getTileAt,
   DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { type ReactNode, useCallback, useMemo } from "react";
 
 const occupiedEntityLayoutClass =
@@ -49,7 +47,6 @@ export const SelectedWorldmapEntity = () => {
 
 const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
   const { setup } = useDojo();
-  const { handleUrlChange } = useQuery();
   const openPopup = useUIStore((state) => state.openPopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const setCombatSimulationBiome = useUIStore((state) => state.setCombatSimulationBiome);
@@ -79,13 +76,6 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   const isChest = isTileOccupierChest(occupierType);
   const isQuest = isTileOccupierQuest(occupierType);
   const isExplored = !!tile && Number(tile.biome) !== 0;
-  const normalizedSelectedHex = useMemo(() => {
-    return new Position({ x: selectedHex.col, y: selectedHex.row }).getNormalized();
-  }, [selectedHex.col, selectedHex.row]);
-  const handleTravelToEtherealLayer = useCallback(() => {
-    handleUrlChange(`/play/travel?col=${normalizedSelectedHex.x}&row=${normalizedSelectedHex.y}`);
-  }, [handleUrlChange, normalizedSelectedHex.x, normalizedSelectedHex.y]);
-
   const renderUnexploredMessage = () => (
     <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-center">
       <p className="text-xs font-medium text-gold/60 italic text-center">
@@ -125,7 +115,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
         <div className={occupiedEntityLayoutClass}>
           <EntityInfoScrollPane>
             <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
-              <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
+              <SpireTravelPanel />
             </EntityDetailSection>
           </EntityInfoScrollPane>
           <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
@@ -228,23 +218,14 @@ const RelicCrateSummaryPanel = ({ crateEntityId }: { crateEntityId: ID }) => {
   );
 };
 
-const SpireTravelPanel = ({ onTravelToEtherealLayer }: { onTravelToEtherealLayer: () => void }) => {
+const SpireTravelPanel = () => {
   return (
     <div className="flex h-full flex-col justify-between gap-3">
       <div className="flex flex-col gap-1 text-left">
         <span className="text-xxs uppercase tracking-[0.3em] text-cyan-200/80">Spire</span>
         <span className="text-sm font-semibold text-cyan-100">Ethereal Layer Gateway</span>
-        <p className="text-xxs text-gold/70">Use this Spire to enter the Ethereal Layer and fast-travel routes.</p>
+        <p className="text-xxs text-gold/70">Move an army through this Spire to enter the Ethereal Layer.</p>
       </div>
-      <Button
-        size="xs"
-        variant="outline"
-        forceUppercase={false}
-        className="w-full border-cyan-300/60 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20"
-        onClick={onTravelToEtherealLayer}
-      >
-        Travel to Ethereal Layer
-      </Button>
     </div>
   );
 };

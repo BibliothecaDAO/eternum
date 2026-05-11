@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-12",
+    title: "Ethereal Fast Travel Layer",
+    description:
+      "Fast travel now uses the live alternate map layer with spire-gated army movement, path previews, and dark tactical rendering.",
+    type: "feature",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-05-07",
     title: "Scrollable Tile HUD",
     description:

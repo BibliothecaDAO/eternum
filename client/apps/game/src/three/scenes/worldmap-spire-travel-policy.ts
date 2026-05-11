@@ -13,6 +13,11 @@ type SpireTraversalAction =
       targetHex: HexPosition;
     }
   | {
+      kind: "blocked";
+      targetArmyId: ID;
+      targetHex: HexPosition;
+    }
+  | {
       kind: "travel";
       targetHex: HexPosition;
     };
@@ -26,8 +31,9 @@ function isExplorerTileOccupier(occupierType: number): boolean {
 export function resolveSpireTraversalAction(input: {
   targetHex: HexPosition;
   etherealTile: EtherealTileReference | undefined;
+  isOpposingArmy?: (targetArmyId: ID) => boolean;
 }): SpireTraversalAction {
-  const { targetHex, etherealTile } = input;
+  const { targetHex, etherealTile, isOpposingArmy } = input;
 
   if (
     etherealTile &&
@@ -35,6 +41,14 @@ export function resolveSpireTraversalAction(input: {
     !etherealTile.occupier_is_structure &&
     isExplorerTileOccupier(etherealTile.occupier_type)
   ) {
+    if (isOpposingArmy && !isOpposingArmy(etherealTile.occupier_id)) {
+      return {
+        kind: "blocked",
+        targetArmyId: etherealTile.occupier_id,
+        targetHex,
+      };
+    }
+
     return {
       kind: "attack",
       targetArmyId: etherealTile.occupier_id,

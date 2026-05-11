@@ -589,10 +589,12 @@ export const getMapFromToriiExact = async <S extends Schema>(
   maxCol: number,
   minRow: number,
   maxRow: number,
+  alt = false,
 ) => {
   return getEntities(
     client,
     AndComposeClause([
+      MemberClause("s1_eternum-TileOpt", "alt", "Eq", alt),
       MemberClause("s1_eternum-TileOpt", "col", "Gte", minCol),
       MemberClause("s1_eternum-TileOpt", "col", "Lte", maxCol),
       MemberClause("s1_eternum-TileOpt", "row", "Gte", minRow),
@@ -613,10 +615,12 @@ export const getExplorerTroopsFromToriiExact = async <S extends Schema>(
   maxCol: number,
   minRow: number,
   maxRow: number,
+  alt = false,
 ) => {
   return getEntities(
     client,
     AndComposeClause([
+      MemberClause("s1_eternum-ExplorerTroops", "coord.alt", "Eq", alt),
       MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Gte", minCol),
       MemberClause("s1_eternum-ExplorerTroops", "coord.x", "Lte", maxCol),
       MemberClause("s1_eternum-ExplorerTroops", "coord.y", "Gte", minRow),
