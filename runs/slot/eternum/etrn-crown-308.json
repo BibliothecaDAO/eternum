@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25702164511-1",
   "currentStepId": null,
   "createdAt": "2026-05-11T22:56:34.708Z",
-  "updatedAt": "2026-05-11T23:00:15.388Z",
+  "updatedAt": "2026-05-11T23:05:07.055Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -104,7 +104,9 @@
     "indexerUrl": "https://api.cartridge.gg/x/etrn-crown-308/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-11T23:00:14.027Z"
+    "lastIndexerDescribeAt": "2026-05-11T23:00:14.027Z",
+    "pendingIndexerTierTarget": "legendary",
+    "pendingIndexerTierRequestedAt": "2026-05-11T23:05:05.641Z"
   },
   "completedAt": "2026-05-11T23:00:15.388Z"
 }
