@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-07T09:32:47.476Z",
+  "updatedAt": "2026-05-11T04:22:50.863Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1720,26 +1720,26 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-flash-933/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-05T13:07:06.335Z"
+        "describedAt": "2026-05-11T04:22:50.710Z"
       },
-      "updatedAt": "2026-05-05T13:07:06.335Z"
+      "updatedAt": "2026-05-11T04:22:50.863Z"
     },
     "bltz-codex-local-odra2": {
       "gameName": "bltz-codex-local-odra2",
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-codex-local-odra2/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-05T13:48:08.308Z"
+        "describedAt": "2026-05-11T04:22:50.863Z"
       },
-      "updatedAt": "2026-05-05T13:48:08.308Z"
+      "updatedAt": "2026-05-11T04:22:50.863Z"
     },
     "na-gladiator-06-05-26-0200": {
       "gameName": "na-gladiator-06-05-26-0200",
