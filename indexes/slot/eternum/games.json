@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-05-11T22:59:57.660Z",
+  "updatedAt": "2026-05-11T23:00:15.388Z",
   "entries": {
     "etrn-banana": {
       "kind": "game",
@@ -48,17 +48,20 @@
       "gameName": "etrn-crown-308",
       "path": "runs/slot/eternum/etrn-crown-308.json",
       "inputPath": "inputs/slot/eternum/etrn-crown-308/25702164511-1.json",
-      "status": "running",
-      "updatedAt": "2026-05-11T22:59:57.660Z",
+      "status": "complete",
+      "updatedAt": "2026-05-11T23:00:15.388Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexer",
-      "activeLeaseExpiresAt": "2026-05-11T23:44:57.660Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "startTime": 1778540400,
       "durationSeconds": 0,
-      "artifacts": {}
+      "artifacts": {
+        "indexerCreated": true,
+        "indexerTier": "basic",
+        "lastIndexerDescribeAt": "2026-05-11T23:00:14.027Z"
+      }
     }
   }
 }
