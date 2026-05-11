@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-11T05:02:51.989Z",
+  "updatedAt": "2026-05-11T10:51:44.455Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1935,6 +1935,19 @@
         "describedAt": "2026-05-11T05:02:51.989Z"
       },
       "updatedAt": "2026-05-11T05:02:51.989Z"
+    },
+    "bltz-rush-766": {
+      "gameName": "bltz-rush-766",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-rush-766/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-11T10:51:44.455Z"
+      },
+      "updatedAt": "2026-05-11T10:51:44.455Z"
     }
   }
 }
