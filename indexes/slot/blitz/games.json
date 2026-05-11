@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-11T10:48:42.626Z",
+  "updatedAt": "2026-05-11T10:49:01.336Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -825,17 +825,20 @@
       "gameName": "bltz-rush-766",
       "path": "runs/slot/blitz/bltz-rush-766.json",
       "inputPath": "inputs/slot/blitz/bltz-rush-766/25665416289-1.json",
-      "status": "running",
-      "updatedAt": "2026-05-11T10:48:42.626Z",
+      "status": "complete",
+      "updatedAt": "2026-05-11T10:49:01.336Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexer",
-      "activeLeaseExpiresAt": "2026-05-11T11:33:42.626Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "startTime": 1778497200,
       "durationSeconds": 3600,
-      "artifacts": {}
+      "artifacts": {
+        "indexerCreated": true,
+        "indexerTier": "basic",
+        "lastIndexerDescribeAt": "2026-05-11T10:48:59.981Z"
+      }
     }
   }
 }
