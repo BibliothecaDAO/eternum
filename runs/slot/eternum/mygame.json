@@ -9,19 +9,19 @@
   "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "configure-world",
-  "inputPath": "inputs/slot/eternum/mygame/23616468613-1.json",
-  "latestLaunchRequestId": "23616468613-1",
+  "inputPath": "inputs/slot/eternum/mygame/25702414093-1.json",
+  "latestLaunchRequestId": "25702414093-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-03-26T20:25:35.454Z",
-  "updatedAt": "2026-03-26T20:30:15.222Z",
+  "updatedAt": "2026-05-11T23:02:49.629Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 23616468613,
+    "workflowRunId": 25702414093,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/23616468613",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25702414093",
     "ref": "next",
-    "sha": "bae6910889068582f7d85f413f86a16c01cfe7f4"
+    "sha": "dd2884fac4338a8593058f8857334e9cbd27a51e"
   },
   "steps": [
     {
