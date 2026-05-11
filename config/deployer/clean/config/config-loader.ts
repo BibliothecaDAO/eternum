@@ -187,16 +187,51 @@ function applyModeOverrides(
       on: resolvedOverrides.devModeOn,
     },
   };
-  config.season = {
-    ...(config.season ?? {}),
-    startMainAt: overrides.startMainAt,
-    ...(resolvedOverrides.durationSeconds !== undefined ? { durationSeconds: resolvedOverrides.durationSeconds } : {}),
-  };
+  config.season = buildSeasonConfigWithLaunchTiming(config, resolvedOverrides, overrides);
   config.settlement = {
     ...(config.settlement ?? {}),
     single_realm_mode: resolvedOverrides.singleRealmMode,
     two_player_mode: resolvedOverrides.twoPlayerMode,
   };
+}
+
+function buildSeasonConfigWithLaunchTiming(
+  config: EternumConfig,
+  resolvedOverrides: ResolvedConfigOverrides,
+  overrides: ConfigOverrides,
+): EternumConfig["season"] {
+  return {
+    ...(config.season ?? {}),
+    startMainAt: overrides.startMainAt,
+    ...resolveStartSettlingAtOverride(config, overrides.startMainAt),
+    ...(resolvedOverrides.durationSeconds !== undefined ? { durationSeconds: resolvedOverrides.durationSeconds } : {}),
+  };
+}
+
+function resolveStartSettlingAtOverride(
+  config: EternumConfig,
+  startMainAt: number,
+): Partial<Pick<EternumConfig["season"], "startSettlingAt">> {
+  if (!shouldDeriveStartSettlingAt(config, startMainAt)) {
+    return {};
+  }
+
+  return { startSettlingAt: startMainAt - resolveStartSettlingLeadSeconds(config) };
+}
+
+function shouldDeriveStartSettlingAt(config: EternumConfig, startMainAt: number): boolean {
+  return startMainAt > 0 && !hasExplicitStartSettlingAt(config);
+}
+
+function hasExplicitStartSettlingAt(config: EternumConfig): boolean {
+  return Boolean(config.season?.startSettlingAt && config.season.startSettlingAt > 0);
+}
+
+function resolveStartSettlingLeadSeconds(config: EternumConfig): number {
+  const startMainAfterSeconds = config.season?.startMainAfterSeconds ?? 0;
+  const startSettlingAfterSeconds = config.season?.startSettlingAfterSeconds ?? 0;
+
+  return Math.max(1, startMainAfterSeconds - startSettlingAfterSeconds);
 }
 
 function applyFactoryAddressOverride(config: EternumConfig, factoryAddress: string): void {

@@ -214,7 +214,7 @@ describe("applyDeploymentConfigOverrides", () => {
     ).toThrow("blitzRegistrationOverrides.fee_amount must be a non-negative integer string");
   });
 
-  test("ignores duration overrides for eternum environments", () => {
+  test("ignores duration overrides and derives launch settling for eternum environments", () => {
     const baseConfig = loadEnvironmentConfiguration("slot.eternum");
 
     const result = applyDeploymentConfigOverrides(baseConfig, {
@@ -224,6 +224,7 @@ describe("applyDeploymentConfigOverrides", () => {
     });
 
     expect(result.season.startMainAt).toBe(1_763_112_600);
+    expect(result.season.startSettlingAt).toBe(1_763_112_599);
     expect(result.season.durationSeconds).toBe(0);
     expect(result.blitz.mode.on).toBe(false);
   });

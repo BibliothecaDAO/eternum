@@ -245,6 +245,40 @@ describe("native config steps", () => {
     expect(capturedCalls[0]?.end_at).toBe((capturedCalls[0]?.start_main_at as number) + 3_600);
   });
 
+  test("keeps standard launch settling before the pinned main start", async () => {
+    const baseConfig = loadEnvironmentConfiguration("slot.eternum");
+    const config = applyDeploymentConfigOverrides(baseConfig, {
+      startMainAt: 1_700_000_030,
+      factoryAddress: "0xabc",
+    });
+
+    const capturedCalls: Array<Record<string, unknown>> = [];
+    const provider = {
+      manifest: getGameManifest("slot") as any,
+      set_season_config: async (payload: Record<string, unknown>) => {
+        capturedCalls.push(payload);
+        return { statusReceipt: "ok" };
+      },
+    };
+
+    const originalDateNow = Date.now;
+    Date.now = () => 1_700_000_000_000;
+
+    try {
+      await setSeasonConfig({
+        account: { address: "0x1" } as any,
+        provider: provider as any,
+        config,
+      });
+    } finally {
+      Date.now = originalDateNow;
+    }
+
+    expect(capturedCalls).toHaveLength(1);
+    expect(capturedCalls[0]?.start_settling_at).toBe(1_700_000_029);
+    expect(capturedCalls[0]?.start_main_at).toBe(1_700_000_030);
+  });
+
   test("fills missing simple recipe outputs with zero in resource factory payloads", async () => {
     const baseConfig = loadEnvironmentConfiguration("mainnet.blitz");
     const config = applyDeploymentConfigOverrides(baseConfig, {
