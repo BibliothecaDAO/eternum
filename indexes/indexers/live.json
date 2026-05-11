@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-11T23:08:42.890Z",
+  "updatedAt": "2026-05-11T23:31:54.600Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1974,6 +1974,19 @@
         "describedAt": "2026-05-11T23:08:42.890Z"
       },
       "updatedAt": "2026-05-11T23:08:42.890Z"
+    },
+    "etrn-crest-172": {
+      "gameName": "etrn-crest-172",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/etrn-crest-172/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-11T23:31:54.599Z"
+      },
+      "updatedAt": "2026-05-11T23:31:54.600Z"
     }
   }
 }
