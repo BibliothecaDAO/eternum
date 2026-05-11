@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-11T04:22:50.863Z",
+  "updatedAt": "2026-05-11T04:24:25.573Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1798,13 +1798,78 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/apac-gladiator-07-05-26-1000/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-07T09:32:47.475Z"
+        "describedAt": "2026-05-11T04:24:25.279Z"
       },
-      "updatedAt": "2026-05-07T09:32:47.476Z"
+      "updatedAt": "2026-05-11T04:24:25.573Z"
+    },
+    "na-gladiator-08-05-26-0100": {
+      "gameName": "na-gladiator-08-05-26-0100",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/na-gladiator-08-05-26-0100/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-11T04:24:25.312Z"
+      },
+      "updatedAt": "2026-05-11T04:24:25.573Z"
+    },
+    "eu-gladiator-08-05-26-1800": {
+      "gameName": "eu-gladiator-08-05-26-1800",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/eu-gladiator-08-05-26-1800/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-11T04:24:25.460Z"
+      },
+      "updatedAt": "2026-05-11T04:24:25.573Z"
+    },
+    "apac-gladiator-09-05-26-1200": {
+      "gameName": "apac-gladiator-09-05-26-1200",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/apac-gladiator-09-05-26-1200/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-11T04:24:25.492Z"
+      },
+      "updatedAt": "2026-05-11T04:24:25.573Z"
+    },
+    "eu-gladiator-09-05-26-2000": {
+      "gameName": "eu-gladiator-09-05-26-2000",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/eu-gladiator-09-05-26-2000/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-11T04:24:25.539Z"
+      },
+      "updatedAt": "2026-05-11T04:24:25.573Z"
+    },
+    "na-gladiator-10-05-26-0300": {
+      "gameName": "na-gladiator-10-05-26-0300",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/na-gladiator-10-05-26-0300/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-11T04:24:25.573Z"
+      },
+      "updatedAt": "2026-05-11T04:24:25.573Z"
     }
   }
 }
