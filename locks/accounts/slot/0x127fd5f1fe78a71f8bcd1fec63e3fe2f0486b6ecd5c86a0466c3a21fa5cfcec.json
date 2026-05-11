@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.eternum",
-    "gameName": "mygame",
-    "launchRequestId": "25702462741-1",
+    "gameName": "etrn-crest-172",
+    "launchRequestId": "25702835262-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25702462741,
+    "workflowRunId": 25702835262,
     "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "leaseId": "2b6350d7-0e46-4c83-a4d8-b0f966419ce2"
+    "stepId": "create-world",
+    "leaseId": "eabe6b4d-0c02-4c0f-8ccb-8b12413a2747"
   },
-  "acquiredAt": "2026-05-11T23:04:08.169Z",
-  "heartbeatAt": "2026-05-11T23:04:13.849Z",
-  "expiresAt": "2026-05-11T23:04:13.849Z",
-  "releasedAt": "2026-05-11T23:04:13.849Z"
+  "acquiredAt": "2026-05-11T23:13:48.927Z",
+  "heartbeatAt": "2026-05-11T23:13:48.927Z",
+  "expiresAt": "2026-05-11T23:23:48.927Z"
 }
