@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25650101852-1.json",
   "latestLaunchRequestId": "25650101852-1",
-  "currentStepId": "configure-worlds",
+  "currentStepId": "grant-lootchest-roles",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-11T04:37:54.547Z",
+  "updatedAt": "2026-05-11T04:39:44.790Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-11T04:52:50.530Z",
-    "lastEvaluatedAt": "2026-05-11T04:37:50.530Z"
+    "nextEvaluationAt": "2026-05-11T04:54:44.790Z",
+    "lastEvaluatedAt": "2026-05-11T04:39:44.790Z"
   },
   "steps": [
     {
@@ -65,10 +65,11 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-05-11T04:37:54.547Z"
+      "latestEvent": "Applying settings is complete",
+      "startedAt": "2026-05-11T04:37:54.547Z",
+      "finishedAt": "2026-05-11T04:39:44.790Z"
     },
     {
       "id": "grant-lootchest-roles",
@@ -4135,9 +4136,126 @@
         },
         "seriesGameNumber": 22,
         "currentStepId": null,
-        "latestEvent": "Completed wait-for-factory-indexes",
+        "latestEvent": "Completed configure-worlds",
         "status": "succeeded",
-        "configSteps": [],
+        "configSteps": [
+          {
+            "id": "world-admin",
+            "description": "Set world admin config"
+          },
+          {
+            "id": "mercenaries-name",
+            "description": "Set mercenaries name config"
+          },
+          {
+            "id": "vrf",
+            "description": "Set VRF config"
+          },
+          {
+            "id": "game-mode",
+            "description": "Set game mode config"
+          },
+          {
+            "id": "factory-address",
+            "description": "Set factory address"
+          },
+          {
+            "id": "blitz-exploration",
+            "description": "Set blitz exploration config"
+          },
+          {
+            "id": "mmr",
+            "description": "Set MMR config"
+          },
+          {
+            "id": "victory-points",
+            "description": "Set victory points config"
+          },
+          {
+            "id": "camp-starting-resources",
+            "description": "Set camp starting resources config"
+          },
+          {
+            "id": "blitz-registration",
+            "description": "Set blitz registration config"
+          },
+          {
+            "id": "agent",
+            "description": "Set agent config"
+          },
+          {
+            "id": "season",
+            "description": "Set season config"
+          },
+          {
+            "id": "resource-bridge-fees",
+            "description": "Set resource bridge fees config"
+          },
+          {
+            "id": "battle",
+            "description": "Set battle config"
+          },
+          {
+            "id": "structure-max-level",
+            "description": "Set structure max level config"
+          },
+          {
+            "id": "tick",
+            "description": "Set tick config"
+          },
+          {
+            "id": "map",
+            "description": "Set map config"
+          },
+          {
+            "id": "quest",
+            "description": "Set quest config"
+          },
+          {
+            "id": "capacity",
+            "description": "Set capacity config"
+          },
+          {
+            "id": "speed",
+            "description": "Set speed config"
+          },
+          {
+            "id": "hyperstructure",
+            "description": "Set hyperstructure config"
+          },
+          {
+            "id": "settlement",
+            "description": "Set settlement config"
+          },
+          {
+            "id": "starting-resources",
+            "description": "Set starting resources config"
+          },
+          {
+            "id": "weight",
+            "description": "Set weight config"
+          },
+          {
+            "id": "realm-upgrade",
+            "description": "Set realm upgrade config"
+          },
+          {
+            "id": "troop",
+            "description": "Set troop config"
+          },
+          {
+            "id": "building-base",
+            "description": "Set base building config"
+          },
+          {
+            "id": "building-categories",
+            "description": "Set building category config"
+          },
+          {
+            "id": "resource-factory",
+            "description": "Set resource factory config"
+          }
+        ],
         "steps": [
           {
             "id": "create-series",
@@ -4158,8 +4276,9 @@
           },
           {
             "id": "configure-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed configure-worlds",
+            "updatedAt": "2026-05-11T04:38:14.862Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -4179,7 +4298,9 @@
         ],
         "artifacts": {
           "worldAddress": "0x02e26c92b2adc0f2d7edd8debc0a7c320207b31185582ef9e62a9a57699ead0e",
-          "createGameTxHash": "0x550d622970bd6b3ad295a64c5f1a756dddb6d824fa2464b248015a353c76806"
+          "createGameTxHash": "0x550d622970bd6b3ad295a64c5f1a756dddb6d824fa2464b248015a353c76806",
+          "configureTxHash": "0x3fda6543f9b3317b2d3d312fa9f5f0ca719ad4a87807107910011a160a5b6eb",
+          "worldConfigTxHash": "0x3fda6543f9b3317b2d3d312fa9f5f0ca719ad4a87807107910011a160a5b6eb"
         }
       },
       {
@@ -4192,9 +4313,126 @@
         },
         "seriesGameNumber": 23,
         "currentStepId": null,
-        "latestEvent": "Completed wait-for-factory-indexes",
+        "latestEvent": "Completed configure-worlds",
         "status": "succeeded",
-        "configSteps": [],
+        "configSteps": [
+          {
+            "id": "world-admin",
+            "description": "Set world admin config"
+          },
+          {
+            "id": "mercenaries-name",
+            "description": "Set mercenaries name config"
+          },
+          {
+            "id": "vrf",
+            "description": "Set VRF config"
+          },
+          {
+            "id": "game-mode",
+            "description": "Set game mode config"
+          },
+          {
+            "id": "factory-address",
+            "description": "Set factory address"
+          },
+          {
+            "id": "blitz-exploration",
+            "description": "Set blitz exploration config"
+          },
+          {
+            "id": "mmr",
+            "description": "Set MMR config"
+          },
+          {
+            "id": "victory-points",
+            "description": "Set victory points config"
+          },
+          {
+            "id": "camp-starting-resources",
+            "description": "Set camp starting resources config"
+          },
+          {
+            "id": "blitz-registration",
+            "description": "Set blitz registration config"
+          },
+          {
+            "id": "agent",
+            "description": "Set agent config"
+          },
+          {
+            "id": "season",
+            "description": "Set season config"
+          },
+          {
+            "id": "resource-bridge-fees",
+            "description": "Set resource bridge fees config"
+          },
+          {
+            "id": "battle",
+            "description": "Set battle config"
+          },
+          {
+            "id": "structure-max-level",
+            "description": "Set structure max level config"
+          },
+          {
+            "id": "tick",
+            "description": "Set tick config"
+          },
+          {
+            "id": "map",
+            "description": "Set map config"
+          },
+          {
+            "id": "quest",
+            "description": "Set quest config"
+          },
+          {
+            "id": "capacity",
+            "description": "Set capacity config"
+          },
+          {
+            "id": "speed",
+            "description": "Set speed config"
+          },
+          {
+            "id": "hyperstructure",
+            "description": "Set hyperstructure config"
+          },
+          {
+            "id": "settlement",
+            "description": "Set settlement config"
+          },
+          {
+            "id": "starting-resources",
+            "description": "Set starting resources config"
+          },
+          {
+            "id": "weight",
+            "description": "Set weight config"
+          },
+          {
+            "id": "realm-upgrade",
+            "description": "Set realm upgrade config"
+          },
+          {
+            "id": "troop",
+            "description": "Set troop config"
+          },
+          {
+            "id": "building-base",
+            "description": "Set base building config"
+          },
+          {
+            "id": "building-categories",
+            "description": "Set building category config"
+          },
+          {
+            "id": "resource-factory",
+            "description": "Set resource factory config"
+          }
+        ],
         "steps": [
           {
             "id": "create-series",
@@ -4215,8 +4453,9 @@
           },
           {
             "id": "configure-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed configure-worlds",
+            "updatedAt": "2026-05-11T04:38:29.339Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -4236,7 +4475,9 @@
         ],
         "artifacts": {
           "worldAddress": "0x04fda5151c871d0ae73d886f84a62b6b191f98f2e11f2d0840763bc3a034ea68",
-          "createGameTxHash": "0x21b825a01745e73220b4ce09fda3a5c5d79dae241fbf35c29dbfb1c318c6906"
+          "createGameTxHash": "0x21b825a01745e73220b4ce09fda3a5c5d79dae241fbf35c29dbfb1c318c6906",
+          "configureTxHash": "0x214f353f95188281232820eb57ad157ed1a5fed89d34ebadd3bed01134efa5a",
+          "worldConfigTxHash": "0x214f353f95188281232820eb57ad157ed1a5fed89d34ebadd3bed01134efa5a"
         }
       },
       {
@@ -4249,9 +4490,126 @@
         },
         "seriesGameNumber": 24,
         "currentStepId": null,
-        "latestEvent": "Completed wait-for-factory-indexes",
+        "latestEvent": "Completed configure-worlds",
         "status": "succeeded",
-        "configSteps": [],
+        "configSteps": [
+          {
+            "id": "world-admin",
+            "description": "Set world admin config"
+          },
+          {
+            "id": "mercenaries-name",
+            "description": "Set mercenaries name config"
+          },
+          {
+            "id": "vrf",
+            "description": "Set VRF config"
+          },
+          {
+            "id": "game-mode",
+            "description": "Set game mode config"
+          },
+          {
+            "id": "factory-address",
+            "description": "Set factory address"
+          },
+          {
+            "id": "blitz-exploration",
+            "description": "Set blitz exploration config"
+          },
+          {
+            "id": "mmr",
+            "description": "Set MMR config"
+          },
+          {
+            "id": "victory-points",
+            "description": "Set victory points config"
+          },
+          {
+            "id": "camp-starting-resources",
+            "description": "Set camp starting resources config"
+          },
+          {
+            "id": "blitz-registration",
+            "description": "Set blitz registration config"
+          },
+          {
+            "id": "agent",
+            "description": "Set agent config"
+          },
+          {
+            "id": "season",
+            "description": "Set season config"
+          },
+          {
+            "id": "resource-bridge-fees",
+            "description": "Set resource bridge fees config"
+          },
+          {
+            "id": "battle",
+            "description": "Set battle config"
+          },
+          {
+            "id": "structure-max-level",
+            "description": "Set structure max level config"
+          },
+          {
+            "id": "tick",
+            "description": "Set tick config"
+          },
+          {
+            "id": "map",
+            "description": "Set map config"
+          },
+          {
+            "id": "quest",
+            "description": "Set quest config"
+          },
+          {
+            "id": "capacity",
+            "description": "Set capacity config"
+          },
+          {
+            "id": "speed",
+            "description": "Set speed config"
+          },
+          {
+            "id": "hyperstructure",
+            "description": "Set hyperstructure config"
+          },
+          {
+            "id": "settlement",
+            "description": "Set settlement config"
+          },
+          {
+            "id": "starting-resources",
+            "description": "Set starting resources config"
+          },
+          {
+            "id": "weight",
+            "description": "Set weight config"
+          },
+          {
+            "id": "realm-upgrade",
+            "description": "Set realm upgrade config"
+          },
+          {
+            "id": "troop",
+            "description": "Set troop config"
+          },
+          {
+            "id": "building-base",
+            "description": "Set base building config"
+          },
+          {
+            "id": "building-categories",
+            "description": "Set building category config"
+          },
+          {
+            "id": "resource-factory",
+            "description": "Set resource factory config"
+          }
+        ],
         "steps": [
           {
             "id": "create-series",
@@ -4272,8 +4630,9 @@
           },
           {
             "id": "configure-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed configure-worlds",
+            "updatedAt": "2026-05-11T04:38:42.556Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -4293,7 +4652,9 @@
         ],
         "artifacts": {
           "worldAddress": "0x05415aa0d0de1d679184e7885e34596fe649d731a6441abc18f0bcf8134f6165",
-          "createGameTxHash": "0x4907a7c180df715460942d7acec9c5271252447d7675a5ce3f44784e769c112"
+          "createGameTxHash": "0x4907a7c180df715460942d7acec9c5271252447d7675a5ce3f44784e769c112",
+          "configureTxHash": "0x73d9e215a50dd8ef7f27c8d2b285549728c14f0fdd7662e5586be3c94e9384b",
+          "worldConfigTxHash": "0x73d9e215a50dd8ef7f27c8d2b285549728c14f0fdd7662e5586be3c94e9384b"
         }
       },
       {
@@ -4306,9 +4667,126 @@
         },
         "seriesGameNumber": 25,
         "currentStepId": null,
-        "latestEvent": "Completed wait-for-factory-indexes",
+        "latestEvent": "Completed configure-worlds",
         "status": "succeeded",
-        "configSteps": [],
+        "configSteps": [
+          {
+            "id": "world-admin",
+            "description": "Set world admin config"
+          },
+          {
+            "id": "mercenaries-name",
+            "description": "Set mercenaries name config"
+          },
+          {
+            "id": "vrf",
+            "description": "Set VRF config"
+          },
+          {
+            "id": "game-mode",
+            "description": "Set game mode config"
+          },
+          {
+            "id": "factory-address",
+            "description": "Set factory address"
+          },
+          {
+            "id": "blitz-exploration",
+            "description": "Set blitz exploration config"
+          },
+          {
+            "id": "mmr",
+            "description": "Set MMR config"
+          },
+          {
+            "id": "victory-points",
+            "description": "Set victory points config"
+          },
+          {
+            "id": "camp-starting-resources",
+            "description": "Set camp starting resources config"
+          },
+          {
+            "id": "blitz-registration",
+            "description": "Set blitz registration config"
+          },
+          {
+            "id": "agent",
+            "description": "Set agent config"
+          },
+          {
+            "id": "season",
+            "description": "Set season config"
+          },
+          {
+            "id": "resource-bridge-fees",
+            "description": "Set resource bridge fees config"
+          },
+          {
+            "id": "battle",
+            "description": "Set battle config"
+          },
+          {
+            "id": "structure-max-level",
+            "description": "Set structure max level config"
+          },
+          {
+            "id": "tick",
+            "description": "Set tick config"
+          },
+          {
+            "id": "map",
+            "description": "Set map config"
+          },
+          {
+            "id": "quest",
+            "description": "Set quest config"
+          },
+          {
+            "id": "capacity",
+            "description": "Set capacity config"
+          },
+          {
+            "id": "speed",
+            "description": "Set speed config"
+          },
+          {
+            "id": "hyperstructure",
+            "description": "Set hyperstructure config"
+          },
+          {
+            "id": "settlement",
+            "description": "Set settlement config"
+          },
+          {
+            "id": "starting-resources",
+            "description": "Set starting resources config"
+          },
+          {
+            "id": "weight",
+            "description": "Set weight config"
+          },
+          {
+            "id": "realm-upgrade",
+            "description": "Set realm upgrade config"
+          },
+          {
+            "id": "troop",
+            "description": "Set troop config"
+          },
+          {
+            "id": "building-base",
+            "description": "Set base building config"
+          },
+          {
+            "id": "building-categories",
+            "description": "Set building category config"
+          },
+          {
+            "id": "resource-factory",
+            "description": "Set resource factory config"
+          }
+        ],
         "steps": [
           {
             "id": "create-series",
@@ -4329,8 +4807,9 @@
           },
           {
             "id": "configure-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed configure-worlds",
+            "updatedAt": "2026-05-11T04:38:54.365Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -4350,7 +4829,9 @@
         ],
         "artifacts": {
           "worldAddress": "0x05aa60d14ad2b0a379dbcfbfbb25a4e4d33aa3cf40aeaf23eee0c76f12b9fe7c",
-          "createGameTxHash": "0x113b592257c6f2d071e63f8524de3b5d802877d411b989e3c0f03dea2972ee3"
+          "createGameTxHash": "0x113b592257c6f2d071e63f8524de3b5d802877d411b989e3c0f03dea2972ee3",
+          "configureTxHash": "0x24828b527c2a739e3079828bbfb6602dd442ae6a2831c2f75da346b60501954",
+          "worldConfigTxHash": "0x24828b527c2a739e3079828bbfb6602dd442ae6a2831c2f75da346b60501954"
         }
       },
       {
@@ -4363,9 +4844,126 @@
         },
         "seriesGameNumber": 26,
         "currentStepId": null,
-        "latestEvent": "Completed wait-for-factory-indexes",
+        "latestEvent": "Completed configure-worlds",
         "status": "succeeded",
-        "configSteps": [],
+        "configSteps": [
+          {
+            "id": "world-admin",
+            "description": "Set world admin config"
+          },
+          {
+            "id": "mercenaries-name",
+            "description": "Set mercenaries name config"
+          },
+          {
+            "id": "vrf",
+            "description": "Set VRF config"
+          },
+          {
+            "id": "game-mode",
+            "description": "Set game mode config"
+          },
+          {
+            "id": "factory-address",
+            "description": "Set factory address"
+          },
+          {
+            "id": "blitz-exploration",
+            "description": "Set blitz exploration config"
+          },
+          {
+            "id": "mmr",
+            "description": "Set MMR config"
+          },
+          {
+            "id": "victory-points",
+            "description": "Set victory points config"
+          },
+          {
+            "id": "camp-starting-resources",
+            "description": "Set camp starting resources config"
+          },
+          {
+            "id": "blitz-registration",
+            "description": "Set blitz registration config"
+          },
+          {
+            "id": "agent",
+            "description": "Set agent config"
+          },
+          {
+            "id": "season",
+            "description": "Set season config"
+          },
+          {
+            "id": "resource-bridge-fees",
+            "description": "Set resource bridge fees config"
+          },
+          {
+            "id": "battle",
+            "description": "Set battle config"
+          },
+          {
+            "id": "structure-max-level",
+            "description": "Set structure max level config"
+          },
+          {
+            "id": "tick",
+            "description": "Set tick config"
+          },
+          {
+            "id": "map",
+            "description": "Set map config"
+          },
+          {
+            "id": "quest",
+            "description": "Set quest config"
+          },
+          {
+            "id": "capacity",
+            "description": "Set capacity config"
+          },
+          {
+            "id": "speed",
+            "description": "Set speed config"
+          },
+          {
+            "id": "hyperstructure",
+            "description": "Set hyperstructure config"
+          },
+          {
+            "id": "settlement",
+            "description": "Set settlement config"
+          },
+          {
+            "id": "starting-resources",
+            "description": "Set starting resources config"
+          },
+          {
+            "id": "weight",
+            "description": "Set weight config"
+          },
+          {
+            "id": "realm-upgrade",
+            "description": "Set realm upgrade config"
+          },
+          {
+            "id": "troop",
+            "description": "Set troop config"
+          },
+          {
+            "id": "building-base",
+            "description": "Set base building config"
+          },
+          {
+            "id": "building-categories",
+            "description": "Set building category config"
+          },
+          {
+            "id": "resource-factory",
+            "description": "Set resource factory config"
+          }
+        ],
         "steps": [
           {
             "id": "create-series",
@@ -4386,8 +4984,9 @@
           },
           {
             "id": "configure-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed configure-worlds",
+            "updatedAt": "2026-05-11T04:39:06.379Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -4407,7 +5006,9 @@
         ],
         "artifacts": {
           "worldAddress": "0x045f6bda6b2961a169dc4fb179a7f99789b357d2eae86ea2e09602a3ba095c3f",
-          "createGameTxHash": "0x3125ed88b61c9cbc11b866de9131faf1b1899efbda38984340d4023eb097615"
+          "createGameTxHash": "0x3125ed88b61c9cbc11b866de9131faf1b1899efbda38984340d4023eb097615",
+          "configureTxHash": "0x25eeeabb64b5cb171f33a2bf96b19f6371236bf52a2ec9ba932d958216797f3",
+          "worldConfigTxHash": "0x25eeeabb64b5cb171f33a2bf96b19f6371236bf52a2ec9ba932d958216797f3"
         }
       },
       {
@@ -4420,9 +5021,126 @@
         },
         "seriesGameNumber": 27,
         "currentStepId": null,
-        "latestEvent": "Completed wait-for-factory-indexes",
+        "latestEvent": "Completed configure-worlds",
         "status": "succeeded",
-        "configSteps": [],
+        "configSteps": [
+          {
+            "id": "world-admin",
+            "description": "Set world admin config"
+          },
+          {
+            "id": "mercenaries-name",
+            "description": "Set mercenaries name config"
+          },
+          {
+            "id": "vrf",
+            "description": "Set VRF config"
+          },
+          {
+            "id": "game-mode",
+            "description": "Set game mode config"
+          },
+          {
+            "id": "factory-address",
+            "description": "Set factory address"
+          },
+          {
+            "id": "blitz-exploration",
+            "description": "Set blitz exploration config"
+          },
+          {
+            "id": "mmr",
+            "description": "Set MMR config"
+          },
+          {
+            "id": "victory-points",
+            "description": "Set victory points config"
+          },
+          {
+            "id": "camp-starting-resources",
+            "description": "Set camp starting resources config"
+          },
+          {
+            "id": "blitz-registration",
+            "description": "Set blitz registration config"
+          },
+          {
+            "id": "agent",
+            "description": "Set agent config"
+          },
+          {
+            "id": "season",
+            "description": "Set season config"
+          },
+          {
+            "id": "resource-bridge-fees",
+            "description": "Set resource bridge fees config"
+          },
+          {
+            "id": "battle",
+            "description": "Set battle config"
+          },
+          {
+            "id": "structure-max-level",
+            "description": "Set structure max level config"
+          },
+          {
+            "id": "tick",
+            "description": "Set tick config"
+          },
+          {
+            "id": "map",
+            "description": "Set map config"
+          },
+          {
+            "id": "quest",
+            "description": "Set quest config"
+          },
+          {
+            "id": "capacity",
+            "description": "Set capacity config"
+          },
+          {
+            "id": "speed",
+            "description": "Set speed config"
+          },
+          {
+            "id": "hyperstructure",
+            "description": "Set hyperstructure config"
+          },
+          {
+            "id": "settlement",
+            "description": "Set settlement config"
+          },
+          {
+            "id": "starting-resources",
+            "description": "Set starting resources config"
+          },
+          {
+            "id": "weight",
+            "description": "Set weight config"
+          },
+          {
+            "id": "realm-upgrade",
+            "description": "Set realm upgrade config"
+          },
+          {
+            "id": "troop",
+            "description": "Set troop config"
+          },
+          {
+            "id": "building-base",
+            "description": "Set base building config"
+          },
+          {
+            "id": "building-categories",
+            "description": "Set building category config"
+          },
+          {
+            "id": "resource-factory",
+            "description": "Set resource factory config"
+          }
+        ],
         "steps": [
           {
             "id": "create-series",
@@ -4443,8 +5161,9 @@
           },
           {
             "id": "configure-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed configure-worlds",
+            "updatedAt": "2026-05-11T04:39:17.674Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -4464,7 +5183,9 @@
         ],
         "artifacts": {
           "worldAddress": "0x0392b83a9974fcdb5f7ea076b601e89c564a9fa9d6c18f6ff9ff419267f3ae8b",
-          "createGameTxHash": "0x205aeb075caa52bcfe50aed4a4e32879bfd2be23e8ff231fb29d03192cc4129"
+          "createGameTxHash": "0x205aeb075caa52bcfe50aed4a4e32879bfd2be23e8ff231fb29d03192cc4129",
+          "configureTxHash": "0x773e42f7ed79d982c5fc470bcd3194f1c15b5388d085e7c2b86e54cb61e9610",
+          "worldConfigTxHash": "0x773e42f7ed79d982c5fc470bcd3194f1c15b5388d085e7c2b86e54cb61e9610"
         }
       },
       {
@@ -4477,9 +5198,126 @@
         },
         "seriesGameNumber": 28,
         "currentStepId": null,
-        "latestEvent": "Completed wait-for-factory-indexes",
+        "latestEvent": "Completed configure-worlds",
         "status": "succeeded",
-        "configSteps": [],
+        "configSteps": [
+          {
+            "id": "world-admin",
+            "description": "Set world admin config"
+          },
+          {
+            "id": "mercenaries-name",
+            "description": "Set mercenaries name config"
+          },
+          {
+            "id": "vrf",
+            "description": "Set VRF config"
+          },
+          {
+            "id": "game-mode",
+            "description": "Set game mode config"
+          },
+          {
+            "id": "factory-address",
+            "description": "Set factory address"
+          },
+          {
+            "id": "blitz-exploration",
+            "description": "Set blitz exploration config"
+          },
+          {
+            "id": "mmr",
+            "description": "Set MMR config"
+          },
+          {
+            "id": "victory-points",
+            "description": "Set victory points config"
+          },
+          {
+            "id": "camp-starting-resources",
+            "description": "Set camp starting resources config"
+          },
+          {
+            "id": "blitz-registration",
+            "description": "Set blitz registration config"
+          },
+          {
+            "id": "agent",
+            "description": "Set agent config"
+          },
+          {
+            "id": "season",
+            "description": "Set season config"
+          },
+          {
+            "id": "resource-bridge-fees",
+            "description": "Set resource bridge fees config"
+          },
+          {
+            "id": "battle",
+            "description": "Set battle config"
+          },
+          {
+            "id": "structure-max-level",
+            "description": "Set structure max level config"
+          },
+          {
+            "id": "tick",
+            "description": "Set tick config"
+          },
+          {
+            "id": "map",
+            "description": "Set map config"
+          },
+          {
+            "id": "quest",
+            "description": "Set quest config"
+          },
+          {
+            "id": "capacity",
+            "description": "Set capacity config"
+          },
+          {
+            "id": "speed",
+            "description": "Set speed config"
+          },
+          {
+            "id": "hyperstructure",
+            "description": "Set hyperstructure config"
+          },
+          {
+            "id": "settlement",
+            "description": "Set settlement config"
+          },
+          {
+            "id": "starting-resources",
+            "description": "Set starting resources config"
+          },
+          {
+            "id": "weight",
+            "description": "Set weight config"
+          },
+          {
+            "id": "realm-upgrade",
+            "description": "Set realm upgrade config"
+          },
+          {
+            "id": "troop",
+            "description": "Set troop config"
+          },
+          {
+            "id": "building-base",
+            "description": "Set base building config"
+          },
+          {
+            "id": "building-categories",
+            "description": "Set building category config"
+          },
+          {
+            "id": "resource-factory",
+            "description": "Set resource factory config"
+          }
+        ],
         "steps": [
           {
             "id": "create-series",
@@ -4500,8 +5338,9 @@
           },
           {
             "id": "configure-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed configure-worlds",
+            "updatedAt": "2026-05-11T04:39:29.278Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -4521,7 +5360,9 @@
         ],
         "artifacts": {
           "worldAddress": "0x065f888a0926311271d51903a98194868bf4e91cc6a00e38c8332c244ac9ca27",
-          "createGameTxHash": "0x1d90df360853e767fc69898e6a648412e60dd2fa023b55f7269ec1712a0f353"
+          "createGameTxHash": "0x1d90df360853e767fc69898e6a648412e60dd2fa023b55f7269ec1712a0f353",
+          "configureTxHash": "0x4f3e5f4c6edc4316a79bf928490792b75063347c2a238c25d1bb9363cbb0671",
+          "worldConfigTxHash": "0x4f3e5f4c6edc4316a79bf928490792b75063347c2a238c25d1bb9363cbb0671"
         }
       },
       {
@@ -4534,9 +5375,126 @@
         },
         "seriesGameNumber": 29,
         "currentStepId": null,
-        "latestEvent": "Completed wait-for-factory-indexes",
+        "latestEvent": "Completed configure-worlds",
         "status": "succeeded",
-        "configSteps": [],
+        "configSteps": [
+          {
+            "id": "world-admin",
+            "description": "Set world admin config"
+          },
+          {
+            "id": "mercenaries-name",
+            "description": "Set mercenaries name config"
+          },
+          {
+            "id": "vrf",
+            "description": "Set VRF config"
+          },
+          {
+            "id": "game-mode",
+            "description": "Set game mode config"
+          },
+          {
+            "id": "factory-address",
+            "description": "Set factory address"
+          },
+          {
+            "id": "blitz-exploration",
+            "description": "Set blitz exploration config"
+          },
+          {
+            "id": "mmr",
+            "description": "Set MMR config"
+          },
+          {
+            "id": "victory-points",
+            "description": "Set victory points config"
+          },
+          {
+            "id": "camp-starting-resources",
+            "description": "Set camp starting resources config"
+          },
+          {
+            "id": "blitz-registration",
+            "description": "Set blitz registration config"
+          },
+          {
+            "id": "agent",
+            "description": "Set agent config"
+          },
+          {
+            "id": "season",
+            "description": "Set season config"
+          },
+          {
+            "id": "resource-bridge-fees",
+            "description": "Set resource bridge fees config"
+          },
+          {
+            "id": "battle",
+            "description": "Set battle config"
+          },
+          {
+            "id": "structure-max-level",
+            "description": "Set structure max level config"
+          },
+          {
+            "id": "tick",
+            "description": "Set tick config"
+          },
+          {
+            "id": "map",
+            "description": "Set map config"
+          },
+          {
+            "id": "quest",
+            "description": "Set quest config"
+          },
+          {
+            "id": "capacity",
+            "description": "Set capacity config"
+          },
+          {
+            "id": "speed",
+            "description": "Set speed config"
+          },
+          {
+            "id": "hyperstructure",
+            "description": "Set hyperstructure config"
+          },
+          {
+            "id": "settlement",
+            "description": "Set settlement config"
+          },
+          {
+            "id": "starting-resources",
+            "description": "Set starting resources config"
+          },
+          {
+            "id": "weight",
+            "description": "Set weight config"
+          },
+          {
+            "id": "realm-upgrade",
+            "description": "Set realm upgrade config"
+          },
+          {
+            "id": "troop",
+            "description": "Set troop config"
+          },
+          {
+            "id": "building-base",
+            "description": "Set base building config"
+          },
+          {
+            "id": "building-categories",
+            "description": "Set building category config"
+          },
+          {
+            "id": "resource-factory",
+            "description": "Set resource factory config"
+          }
+        ],
         "steps": [
           {
             "id": "create-series",
@@ -4557,8 +5515,9 @@
           },
           {
             "id": "configure-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed configure-worlds",
+            "updatedAt": "2026-05-11T04:39:40.739Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -4578,7 +5537,9 @@
         ],
         "artifacts": {
           "worldAddress": "0x055f721c34c576589dcc3a1fe7984d81835ae1cab8341eeee82e061e194468a8",
-          "createGameTxHash": "0x5488dfce359ed1e25616c7a5a54dc854c3d21944e582df94e4d8b0f9d752a56"
+          "createGameTxHash": "0x5488dfce359ed1e25616c7a5a54dc854c3d21944e582df94e4d8b0f9d752a56",
+          "configureTxHash": "0xfae088b6178f57d1f1f30bf80b037e3d7e49d88b725d81bc8ebb3bf6c34a60",
+          "worldConfigTxHash": "0xfae088b6178f57d1f1f30bf80b037e3d7e49d88b725d81bc8ebb3bf6c34a60"
         }
       }
     ],
@@ -4589,13 +5550,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25650101852-1",
-    "workflowRunId": 25650101852,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-worlds",
-    "acquiredAt": "2026-05-11T04:37:54.547Z",
-    "expiresAt": "2026-05-11T05:22:54.547Z"
   }
 }
