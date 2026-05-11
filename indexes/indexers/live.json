@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-11T04:43:38.732Z",
+  "updatedAt": "2026-05-11T05:02:51.989Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1922,6 +1922,19 @@
         "describedAt": "2026-05-11T04:32:53.909Z"
       },
       "updatedAt": "2026-05-11T04:32:53.910Z"
+    },
+    "bltz-nova-563": {
+      "gameName": "bltz-nova-563",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-nova-563/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-11T05:02:51.989Z"
+      },
+      "updatedAt": "2026-05-11T05:02:51.989Z"
     }
   }
 }
