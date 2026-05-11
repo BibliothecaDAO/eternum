@@ -19,4 +19,24 @@ describe("FastTravelScene paired world spire sync", () => {
     expect(methodBody).toContain(".then(() =>");
     expect(methodBody).not.toContain(".finally(");
   });
+
+  it("shows an error instead of traveling when the paired world tile is still missing after sync", () => {
+    const source = readSource("fast-travel.ts");
+
+    const methodStart = source.indexOf("private openFastTravelSpireTravel(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodEnd = source.indexOf("private async syncPairedWorldSpireTile(", methodStart);
+    expect(methodEnd).toBeGreaterThan(methodStart);
+
+    const methodBody = source.slice(methodStart, methodEnd);
+    const syncedRetryIndex = methodBody.indexOf("hasSyncedPairedWorldTile");
+    const missingTileGuardIndex = methodBody.indexOf("if (!pairedWorldTile) {");
+    const traversalIndex = methodBody.indexOf("const traversalAction = resolveSpireTraversalAction({");
+
+    expect(syncedRetryIndex).toBeGreaterThan(-1);
+    expect(missingTileGuardIndex).toBeGreaterThan(syncedRetryIndex);
+    expect(traversalIndex).toBeGreaterThan(missingTileGuardIndex);
+    expect(methodBody).toContain('toast.error("Unable to verify the linked world tile right now.");');
+  });
 });

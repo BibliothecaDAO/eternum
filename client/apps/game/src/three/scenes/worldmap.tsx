@@ -3,7 +3,12 @@ import { toast } from "sonner";
 
 import { reportSubscriptionSetupTimeout } from "@/observability/network-health-reporting";
 
-import { ensureStructureSynced, getExplorerTroopsFromToriiExact, getMapFromToriiExact } from "@/dojo/queries";
+import {
+  ensureStructureSynced,
+  getEntitiesFromTorii,
+  getExplorerTroopsFromToriiExact,
+  getMapFromToriiExact,
+} from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import {
   ToriiStreamManager,
@@ -68,6 +73,7 @@ import {
   ExplorerRewardSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
+  getExplorerInfoFromTileOccupier,
   getTileAt,
   recordArmyMovementLatencyPhase,
   SelectableArmy,
@@ -2812,7 +2818,11 @@ export default class WorldmapScene extends WarpTravel {
     this.state.toggleModal(<QuickAttackPreview attacker={attackerSummary} target={targetSummary} />);
   }
 
-  private onArmySpireTravel(actionPath: ActionPath[], selectedEntityId: ID) {
+  private onArmySpireTravel(
+    actionPath: ActionPath[],
+    selectedEntityId: ID,
+    options: { hasSyncedEtherealTile?: boolean } = {},
+  ) {
     const selectedPath = actionPath.map((path) => path.hex);
     const selectedHex = selectedPath[0];
     const targetHex = selectedPath[selectedPath.length - 1];
@@ -2822,6 +2832,25 @@ export default class WorldmapScene extends WarpTravel {
 
     const selected = this.getHexagonEntity(selectedHex);
     const etherealTile = getTileAt(this.dojo.components, true, targetHex.col, targetHex.row);
+    if (this.shouldSyncEtherealSpireTraversalTile(etherealTile) && !options.hasSyncedEtherealTile) {
+      void this.syncEtherealSpireTraversalTile(targetHex)
+        .then(() =>
+          this.onArmySpireTravel(actionPath, selectedEntityId, {
+            hasSyncedEtherealTile: true,
+          }),
+        )
+        .catch((error) => {
+          console.warn("[WorldmapScene] Failed to sync ethereal Spire tile", error);
+          toast.error("Unable to verify the linked ethereal tile right now.");
+        });
+      return;
+    }
+
+    if (!etherealTile) {
+      toast.error("Unable to verify the linked ethereal tile right now.");
+      return;
+    }
+
     const traversalAction = resolveSpireTraversalAction({
       targetHex,
       etherealTile,
@@ -2857,6 +2886,67 @@ export default class WorldmapScene extends WarpTravel {
 
     this.state.toggleModal(
       <SpireTravelModal onTravelThroughSpire={() => this.onArmyMovement(account, actionPath, selectedEntityId)} />,
+    );
+  }
+
+  private shouldSyncEtherealSpireTraversalTile(etherealTile: ReturnType<typeof getTileAt> | undefined): boolean {
+    if (!etherealTile) {
+      return true;
+    }
+
+    if (
+      etherealTile.occupier_is_structure ||
+      Number(etherealTile.occupier_id) === 0 ||
+      !getExplorerInfoFromTileOccupier(etherealTile.occupier_type)
+    ) {
+      return false;
+    }
+
+    const ownerAddress = this.resolveArmyOwnerAddress(etherealTile.occupier_id);
+    return ownerAddress === undefined || ownerAddress === 0n;
+  }
+
+  private async syncEtherealSpireTraversalTile(targetHex: HexPosition): Promise<void> {
+    await Promise.all([
+      getMapFromToriiExact(
+        this.dojo.network.toriiClient,
+        this.dojo.network.contractComponents as unknown as Parameters<typeof getMapFromToriiExact>[1],
+        targetHex.col,
+        targetHex.col,
+        targetHex.row,
+        targetHex.row,
+        true,
+      ),
+      getExplorerTroopsFromToriiExact(
+        this.dojo.network.toriiClient,
+        this.dojo.network.contractComponents as unknown as Parameters<typeof getExplorerTroopsFromToriiExact>[1],
+        targetHex.col,
+        targetHex.col,
+        targetHex.row,
+        targetHex.row,
+        true,
+      ),
+    ]);
+
+    const etherealTile = getTileAt(this.dojo.components, true, targetHex.col, targetHex.row);
+    if (!etherealTile || !getExplorerInfoFromTileOccupier(etherealTile.occupier_type)) {
+      return;
+    }
+
+    const explorerTroops = getComponentValue(
+      this.dojo.components.ExplorerTroops,
+      getEntityIdFromKeys([BigInt(etherealTile.occupier_id)]),
+    ) as { owner?: ID } | undefined;
+    const ownerStructureId = explorerTroops?.owner;
+    if (ownerStructureId === undefined || ownerStructureId === null || ownerStructureId === 0) {
+      return;
+    }
+
+    await getEntitiesFromTorii(
+      this.dojo.network.toriiClient,
+      this.dojo.network.contractComponents as unknown as Parameters<typeof getEntitiesFromTorii>[1],
+      [ownerStructureId],
+      ["s1_eternum-Structure"],
     );
   }
 

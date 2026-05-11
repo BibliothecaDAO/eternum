@@ -66,4 +66,40 @@ describe("FastTravelScene lifecycle shell", () => {
     );
     expect(source).toContain("[...structureIdsToHydrate]");
   });
+
+  it("syncs the selected army hex into UI state before opening fast-travel combat previews", () => {
+    const source = readFastTravelSource();
+
+    expect(source).toContain("useUIStore.getState().setSelectedHex({ col: selectedHex.col, row: selectedHex.row });");
+  });
+
+  it("dispatches chest and help action paths through dedicated fast-travel handlers", () => {
+    const source = readFastTravelSource();
+
+    expect(source).toContain("if (actionType === ActionType.Help)");
+    expect(source).toContain("this.openFastTravelHelp(actionPath, this.selectedArmyEntityId);");
+    expect(source).toContain("if (actionType === ActionType.Chest)");
+    expect(source).toContain("this.openFastTravelChest(actionPath, this.selectedArmyEntityId);");
+  });
+
+  it("uses structure attack previews when the ethereal target is a structure", () => {
+    const source = readFastTravelSource();
+
+    expect(source).toContain("const targetActorType = targetTile.occupier_is_structure");
+    expect(source).toContain("? ActorType.Structure");
+    expect(source).toContain(": ActorType.Explorer");
+  });
+
+  it("commits fast-travel actions from the primary click handler after selection", () => {
+    const source = readFastTravelSource();
+
+    const methodStart = source.indexOf("protected onHexagonClick(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodEnd = source.indexOf("protected onHexagonRightClick(", methodStart);
+    expect(methodEnd).toBeGreaterThan(methodStart);
+
+    const methodBody = source.slice(methodStart, methodEnd);
+    expect(methodBody).toContain("this.commitFastTravelMovement(hexCoords);");
+  });
 });

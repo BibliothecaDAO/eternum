@@ -1,8 +1,10 @@
 import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getEntitiesFromTorii, getExplorerTroopsFromToriiExact, getMapFromToriiExact } from "@/dojo/queries";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
 import { navigateToStructure } from "@/three/utils/navigation";
+import { ChestModal, HelpModal } from "@/ui/features/military";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
 import { FAST_TRAVEL_SCENE_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
@@ -270,15 +272,12 @@ export default class FastTravelScene extends WarpTravel {
     if (!this.selectedArmyEntityId) {
       return;
     }
+
+    this.commitFastTravelMovement(hexCoords);
   }
 
   protected onHexagonRightClick(_event: MouseEvent, hexCoords: FastTravelHexCoords | null): void {
-    if (!hexCoords || !this.selectedArmyEntityId) {
-      this.clearFastTravelSelection();
-      return;
-    }
-
-    this.commitFastTravelMovement(hexCoords);
+    this.clearFastTravelSelection();
   }
 
   public moveCameraToURLLocation(): void {
@@ -745,6 +744,16 @@ export default class FastTravelScene extends WarpTravel {
       return;
     }
 
+    if (actionType === ActionType.Help) {
+      this.openFastTravelHelp(actionPath, this.selectedArmyEntityId);
+      return;
+    }
+
+    if (actionType === ActionType.Chest) {
+      this.openFastTravelChest(actionPath, this.selectedArmyEntityId);
+      return;
+    }
+
     if (actionType === ActionType.SpireTravel) {
       this.openFastTravelSpireTravel(actionPath, this.selectedArmyEntityId);
       return;
@@ -796,6 +805,12 @@ export default class FastTravelScene extends WarpTravel {
     this.clearFastTravelMovementPreview();
     this.syncSelectedArmyFeedback();
     this.refreshSelectedArmyActionPaths(selectedArmyId);
+
+    const selectedArmy = this.sceneArmies.find((army) => this.resolveNumericEntityId(army.entityId) === selectedArmyId);
+    if (selectedArmy) {
+      const selectedHex = this.toContractHex(selectedArmy.hexCoords);
+      useUIStore.getState().setSelectedHex({ col: selectedHex.col, row: selectedHex.row });
+    }
   }
 
   private refreshSelectedArmyActionPaths(selectedArmyId: ID): void {
@@ -849,6 +864,13 @@ export default class FastTravelScene extends WarpTravel {
       return;
     }
 
+    useUIStore.getState().setSelectedHex({ col: selectedHex.col, row: selectedHex.row });
+    const targetActorType = targetTile.occupier_is_structure
+      ? ActorType.Structure
+      : isTileOccupierStructure(targetTile.occupier_type as TileOccupier)
+        ? ActorType.Structure
+        : ActorType.Explorer;
+
     this.state.toggleModal(
       createElement(QuickAttackPreview, {
         attacker: {
@@ -858,11 +880,66 @@ export default class FastTravelScene extends WarpTravel {
           alt: true,
         },
         target: {
-          type: ActorType.Explorer,
+          type: targetActorType,
           id: targetTile.occupier_id,
           hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
           alt: true,
         },
+      }),
+    );
+  }
+
+  private openFastTravelHelp(actionPath: ActionPath[], selectedArmyId: ID): void {
+    const selectedPath = actionPath.map((path) => path.hex);
+    const selectedHex = selectedPath[0];
+    const targetHex = selectedPath[selectedPath.length - 1];
+    const targetTile = targetHex ? getTileAt(this.dojo.components, true, targetHex.col, targetHex.row) : undefined;
+
+    if (!selectedHex || !targetHex || !targetTile) {
+      return;
+    }
+
+    useUIStore.getState().setSelectedHex({ col: selectedHex.col, row: selectedHex.row });
+    const targetActorType =
+      targetTile.occupier_is_structure || isTileOccupierStructure(targetTile.occupier_type as TileOccupier)
+        ? ActorType.Structure
+        : ActorType.Explorer;
+
+    this.state.toggleModal(
+      createElement(HelpModal, {
+        selected: {
+          type: ActorType.Explorer,
+          id: selectedArmyId,
+          hex: new Position({ x: selectedHex.col, y: selectedHex.row }).getContract(),
+        },
+        target: {
+          type: targetActorType,
+          id: targetTile.occupier_id,
+          hex: new Position({ x: targetHex.col, y: targetHex.row }).getContract(),
+        },
+        allowBothDirections: true,
+      }),
+    );
+  }
+
+  private openFastTravelChest(actionPath: ActionPath[], selectedArmyId: ID): void {
+    const selectedPath = actionPath.map((path) => path.hex);
+    const selectedHex = selectedPath[0];
+    const targetHex = selectedPath[selectedPath.length - 1];
+
+    if (!selectedHex || !targetHex) {
+      return;
+    }
+
+    useUIStore.getState().setSelectedHex({ col: selectedHex.col, row: selectedHex.row });
+    this.state.toggleModal(
+      createElement(ChestModal, {
+        selected: {
+          type: ActorType.Explorer,
+          id: selectedArmyId,
+          hex: { x: selectedHex.col, y: selectedHex.row },
+        },
+        chestHex: { x: targetHex.col, y: targetHex.row },
       }),
     );
   }
@@ -879,6 +956,7 @@ export default class FastTravelScene extends WarpTravel {
       return;
     }
 
+    useUIStore.getState().setSelectedHex({ col: selectedHex.col, row: selectedHex.row });
     const pairedWorldTile = getTileAt(this.dojo.components, false, targetHex.col, targetHex.row);
     if (!pairedWorldTile && !options.hasSyncedPairedWorldTile) {
       void this.syncPairedWorldSpireTile(targetHex)
@@ -891,6 +969,11 @@ export default class FastTravelScene extends WarpTravel {
           console.warn("[FastTravelScene] Failed to sync paired world Spire tile", error);
           toast.error("Unable to verify the linked world tile right now.");
         });
+      return;
+    }
+
+    if (!pairedWorldTile) {
+      toast.error("Unable to verify the linked world tile right now.");
       return;
     }
 
@@ -1032,6 +1115,7 @@ export default class FastTravelScene extends WarpTravel {
     this.selectedArmyEntityId = null;
     this.selectedArmyActionPaths.clear();
     this.selectedHexManager.resetPosition();
+    useUIStore.getState().setSelectedHex(null);
     this.selectionPulseManager.hideSelection();
     this.highlightHexManager.highlightHexes([]);
     this.pathRenderer.setSelectedPath(null);
