@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-05-11T04:26:05.516Z",
+  "updatedAt": "2026-05-11T04:27:35.478Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -86,7 +86,7 @@
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
       "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25650101852-1.json",
       "status": "running",
-      "updatedAt": "2026-05-11T04:26:05.516Z",
+      "updatedAt": "2026-05-11T04:27:35.478Z",
       "workflowRef": "next",
       "currentStepId": "create-worlds",
       "activeLeaseExpiresAt": "2026-05-11T05:07:23.567Z",
@@ -319,8 +319,9 @@
           "startTime": 1778410800,
           "durationSeconds": 3600,
           "artifacts": {
+            "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-11T04:26:03.797Z"
+            "pendingIndexerTierRequestedAt": "2026-05-11T04:27:35.177Z"
           }
         },
         {
@@ -328,8 +329,9 @@
           "startTime": 1778439600,
           "durationSeconds": 3600,
           "artifacts": {
+            "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-11T04:26:03.797Z"
+            "pendingIndexerTierRequestedAt": "2026-05-11T04:27:35.339Z"
           }
         },
         {
@@ -337,8 +339,9 @@
           "startTime": 1778461200,
           "durationSeconds": 3600,
           "artifacts": {
+            "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-11T04:26:03.797Z"
+            "pendingIndexerTierRequestedAt": "2026-05-11T04:27:35.478Z"
           }
         },
         {
