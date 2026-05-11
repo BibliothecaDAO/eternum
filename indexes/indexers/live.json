@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-11T04:32:53.910Z",
+  "updatedAt": "2026-05-11T04:43:38.732Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1802,9 +1802,9 @@
         "url": "https://api.cartridge.gg/x/apac-gladiator-07-05-26-1000/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-11T04:24:25.279Z"
+        "describedAt": "2026-05-11T04:43:37.472Z"
       },
-      "updatedAt": "2026-05-11T04:24:25.573Z"
+      "updatedAt": "2026-05-11T04:43:38.732Z"
     },
     "na-gladiator-08-05-26-0100": {
       "gameName": "na-gladiator-08-05-26-0100",
@@ -1815,9 +1815,9 @@
         "url": "https://api.cartridge.gg/x/na-gladiator-08-05-26-0100/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-11T04:24:25.312Z"
+        "describedAt": "2026-05-11T04:43:37.670Z"
       },
-      "updatedAt": "2026-05-11T04:24:25.573Z"
+      "updatedAt": "2026-05-11T04:43:38.732Z"
     },
     "eu-gladiator-08-05-26-1800": {
       "gameName": "eu-gladiator-08-05-26-1800",
@@ -1828,9 +1828,9 @@
         "url": "https://api.cartridge.gg/x/eu-gladiator-08-05-26-1800/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-11T04:24:25.460Z"
+        "describedAt": "2026-05-11T04:43:37.864Z"
       },
-      "updatedAt": "2026-05-11T04:24:25.573Z"
+      "updatedAt": "2026-05-11T04:43:38.732Z"
     },
     "apac-gladiator-09-05-26-1200": {
       "gameName": "apac-gladiator-09-05-26-1200",
@@ -1841,9 +1841,9 @@
         "url": "https://api.cartridge.gg/x/apac-gladiator-09-05-26-1200/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-11T04:24:25.492Z"
+        "describedAt": "2026-05-11T04:43:37.969Z"
       },
-      "updatedAt": "2026-05-11T04:24:25.573Z"
+      "updatedAt": "2026-05-11T04:43:38.732Z"
     },
     "eu-gladiator-09-05-26-2000": {
       "gameName": "eu-gladiator-09-05-26-2000",
@@ -1854,9 +1854,9 @@
         "url": "https://api.cartridge.gg/x/eu-gladiator-09-05-26-2000/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-11T04:24:25.539Z"
+        "describedAt": "2026-05-11T04:43:38.078Z"
       },
-      "updatedAt": "2026-05-11T04:24:25.573Z"
+      "updatedAt": "2026-05-11T04:43:38.732Z"
     },
     "na-gladiator-10-05-26-0300": {
       "gameName": "na-gladiator-10-05-26-0300",
@@ -1867,36 +1867,48 @@
         "url": "https://api.cartridge.gg/x/na-gladiator-10-05-26-0300/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-11T04:24:25.573Z"
+        "describedAt": "2026-05-11T04:43:38.354Z"
       },
-      "updatedAt": "2026-05-11T04:24:25.573Z"
+      "updatedAt": "2026-05-11T04:43:38.732Z"
     },
     "apac-gladiator-10-05-26-1100": {
       "gameName": "apac-gladiator-10-05-26-1100",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-10-05-26-1100 not found"
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/apac-gladiator-10-05-26-1100/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-11T04:43:38.463Z"
       },
-      "updatedAt": "2026-05-11T04:27:39.725Z"
+      "updatedAt": "2026-05-11T04:43:38.732Z"
     },
     "eu-gladiator-10-05-26-1900": {
       "gameName": "eu-gladiator-10-05-26-1900",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-10-05-26-1900 not found"
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/eu-gladiator-10-05-26-1900/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-11T04:43:38.628Z"
       },
-      "updatedAt": "2026-05-11T04:27:39.725Z"
+      "updatedAt": "2026-05-11T04:43:38.732Z"
     },
     "na-gladiator-11-05-26-0100": {
       "gameName": "na-gladiator-11-05-26-0100",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-11-05-26-0100 not found"
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/na-gladiator-11-05-26-0100/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-11T04:43:38.732Z"
       },
-      "updatedAt": "2026-05-11T04:27:39.725Z"
+      "updatedAt": "2026-05-11T04:43:38.732Z"
     },
     "bltz-jolt-730": {
       "gameName": "bltz-jolt-730",
