@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-11T04:55:30.904Z",
+  "updatedAt": "2026-05-11T04:55:50.853Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -805,11 +805,10 @@
       "path": "runs/slot/blitz/bltz-nova-563.json",
       "inputPath": "inputs/slot/blitz/bltz-nova-563/25651020110-1.json",
       "status": "running",
-      "updatedAt": "2026-05-11T04:55:30.904Z",
+      "updatedAt": "2026-05-11T04:55:50.853Z",
       "workflowRef": "next",
-      "currentStepId": "grant-lootchest-role",
-      "activeLeaseExpiresAt": "2026-05-11T05:40:30.904Z",
-      "hasRunningStep": true,
+      "currentStepId": "create-indexer",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-indexer",
       "startTime": 1778475600,
