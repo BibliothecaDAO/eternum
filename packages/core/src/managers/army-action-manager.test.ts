@@ -371,6 +371,36 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
     const salt = systemCalls.explorer_explore.mock.calls[0][0].vrf_source_salt;
     expect((salt >> 64n) & 1n).toBe(1n);
   });
+
+  it("rejects explore when path layer differs from ExplorerTroops.coord alt", async () => {
+    const systemCalls = {
+      explorer_explore: vi.fn().mockResolvedValue({}),
+      explorer_travel: vi.fn().mockResolvedValue({}),
+      toggle_alternate: vi.fn().mockResolvedValue({}),
+    };
+    const { components, oldFeltStart } = createTestSetup(systemCalls);
+    components.ExplorerTroops.set(TEST_ENTITY_ID.toString(), {
+      owner: 77,
+      coord: { alt: false, x: oldFeltStart.col, y: oldFeltStart.row },
+      troops: {
+        category: TroopType.Knight,
+        count: 1_000n,
+      },
+    });
+    const manager = new ArmyActionManager(components, systemCalls as any, TEST_ENTITY_ID as any, "ethereal");
+    vi.spyOn(manager, "getFood").mockReturnValue({ wheat: 999, fish: 999 });
+    const neighbor = getNeighborHexes(oldFeltStart.col, oldFeltStart.row)[0];
+
+    const actionPath = [
+      { hex: { col: oldFeltStart.col, row: oldFeltStart.row }, actionType: ActionType.Explore },
+      { hex: { col: neighbor.col, row: neighbor.row }, actionType: ActionType.Explore },
+    ];
+
+    await expect(manager.moveArmy({ address: "0x123" } as any, actionPath as any, false, 0)).rejects.toThrow(
+      /drifted|layer/i,
+    );
+    expect(systemCalls.explorer_explore).not.toHaveBeenCalled();
+  });
 });
 
 describe("ArmyActionManager.moveArmy spire traversal", () => {

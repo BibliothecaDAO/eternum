@@ -55,4 +55,15 @@ describe("FastTravelScene lifecycle shell", () => {
     expect(methodBody).toContain('if (traversalAction.kind === "blocked")');
     expect(methodBody).toContain('toast.error("Another allied army already occupies the linked world tile.")');
   });
+
+  it("hydrates visible ethereal structures before resolving allied ownership", () => {
+    const source = readFastTravelSource();
+
+    expect(source).toContain("collectVisibleFastTravelStructureIds");
+    expect(source).toContain("const visibleStructureIds = this.collectVisibleFastTravelStructureIds(chunkPlan);");
+    expect(source).toContain(
+      "const structureIdsToHydrate = new Set<ID>([...ownerStructureIds, ...visibleStructureIds]);",
+    );
+    expect(source).toContain("[...structureIdsToHydrate]");
+  });
 });

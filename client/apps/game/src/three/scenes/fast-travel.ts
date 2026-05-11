@@ -489,15 +489,17 @@ export default class FastTravelScene extends WarpTravel {
 
   private async syncFastTravelArmyOwnerStructures(chunkPlan: FastTravelChunkHydrationPlan): Promise<void> {
     const ownerStructureIds = this.collectVisibleFastTravelArmyOwnerStructureIds(chunkPlan);
+    const visibleStructureIds = this.collectVisibleFastTravelStructureIds(chunkPlan);
+    const structureIdsToHydrate = new Set<ID>([...ownerStructureIds, ...visibleStructureIds]);
 
-    if (ownerStructureIds.length === 0) {
+    if (structureIdsToHydrate.size === 0) {
       return;
     }
 
     await getEntitiesFromTorii(
       this.dojo.network.toriiClient,
       this.dojo.network.contractComponents as unknown as Parameters<typeof getEntitiesFromTorii>[1],
-      ownerStructureIds,
+      [...structureIdsToHydrate],
       ["s1_eternum-Structure"],
     );
   }
@@ -520,6 +522,24 @@ export default class FastTravelScene extends WarpTravel {
     });
 
     return [...ownerStructureIds];
+  }
+
+  private collectVisibleFastTravelStructureIds(chunkPlan: FastTravelChunkHydrationPlan): ID[] {
+    const structureIds = new Set<ID>();
+
+    this.iterateChunkWindow(chunkPlan, (normalizedHex) => {
+      const contractHex = this.toContractHex(normalizedHex);
+      const tile = getTileAt(this.dojo.components, true, contractHex.col, contractHex.row);
+      if (!tile || (!tile.occupier_is_structure && !isTileOccupierStructure(tile.occupier_type as TileOccupier))) {
+        return;
+      }
+
+      if (Number(tile.occupier_id) > 0) {
+        structureIds.add(tile.occupier_id);
+      }
+    });
+
+    return [...structureIds];
   }
 
   private resolveFastTravelLayerState(chunkPlan: FastTravelChunkHydrationPlan): FastTravelLayerState {

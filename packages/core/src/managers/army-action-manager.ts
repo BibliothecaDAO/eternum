@@ -336,15 +336,16 @@ export class ArmyActionManager {
     // so the user retries with a fresh action path instead of eating a failed tx.
     const pathStart = path[0]?.hex;
     const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
-    const chainCoord = explorerTroops?.coord as { x?: unknown; y?: unknown } | undefined;
+    const chainCoord = explorerTroops?.coord as { alt?: unknown; x?: unknown; y?: unknown } | undefined;
     if (pathStart && chainCoord !== undefined && chainCoord.x !== undefined && chainCoord.y !== undefined) {
       const chainCol = Number(chainCoord.x);
       const chainRow = Number(chainCoord.y);
+      const chainAlt = Boolean(chainCoord.alt ?? false);
       if (Number.isFinite(chainCol) && Number.isFinite(chainRow)) {
-        if (pathStart.col !== chainCol || pathStart.row !== chainRow) {
+        if (pathStart.col !== chainCol || pathStart.row !== chainRow || chainAlt !== this.mapAlt) {
           return Promise.reject(
             new Error(
-              `Explorer position drifted — path expected (${pathStart.col}, ${pathStart.row}) but chain reports (${chainCol}, ${chainRow}). Retry with a fresh path.`,
+              `Explorer position drifted — path expected (${pathStart.col}, ${pathStart.row}, alt=${this.mapAlt}) but chain reports (${chainCol}, ${chainRow}, alt=${chainAlt}). Retry with a fresh path.`,
             ),
           );
         }
