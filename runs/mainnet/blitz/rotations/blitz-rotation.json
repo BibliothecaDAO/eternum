@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25650101852-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-11T04:22:23.567Z",
+  "updatedAt": "2026-05-11T04:24:23.010Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -3054,7 +3054,7 @@
         },
         "seriesGameNumber": 16,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier updated legendary -> pro for apac-gladiator-07-05-26-1000",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3224,11 +3224,11 @@
           "worldConfigTxHash": "0x53a7f01bc4b9ade3cfd7f44fdb8401f211af9d930ec928abad5c36dcccd952",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "legendary",
+          "indexerTier": "pro",
           "indexerUrl": "https://api.cartridge.gg/x/apac-gladiator-07-05-26-1000/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-05-07T09:32:43.886Z",
+          "lastIndexerDescribeAt": "2026-05-11T04:22:41.426Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -3238,9 +3238,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
+          "paymasterSynced": true
         }
       },
       {
@@ -3253,7 +3251,7 @@
         },
         "seriesGameNumber": 17,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier updated basic -> pro for na-gladiator-08-05-26-0100",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3423,11 +3421,11 @@
           "worldConfigTxHash": "0x31fbe4600b77554c4317061acdcad4cf5f42620785ff049b2717106e270712b",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
+          "indexerTier": "pro",
           "indexerUrl": "https://api.cartridge.gg/x/na-gladiator-08-05-26-0100/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-05-05T15:41:55.718Z",
+          "lastIndexerDescribeAt": "2026-05-11T04:23:00.189Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -3437,9 +3435,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
+          "paymasterSynced": true
         }
       },
       {
@@ -3452,7 +3448,7 @@
         },
         "seriesGameNumber": 18,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier updated basic -> pro for eu-gladiator-08-05-26-1800",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3622,11 +3618,11 @@
           "worldConfigTxHash": "0x14dac909b2bc3088d63caf81667fd319e6f0e68cbfb6a0e3f002160e700413a",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
+          "indexerTier": "pro",
           "indexerUrl": "https://api.cartridge.gg/x/eu-gladiator-08-05-26-1800/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-05-05T15:42:11.344Z",
+          "lastIndexerDescribeAt": "2026-05-11T04:23:21.611Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -3636,9 +3632,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
+          "paymasterSynced": true
         }
       },
       {
@@ -3651,7 +3645,7 @@
         },
         "seriesGameNumber": 19,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier updated basic -> pro for apac-gladiator-09-05-26-1200",
         "status": "succeeded",
         "configSteps": [
           {
@@ -3821,11 +3815,11 @@
           "worldConfigTxHash": "0x2b0ea23b69378d52e93a3a6044063bd689b63d5fbfa68daf33d15fd59a6f31a",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
+          "indexerTier": "pro",
           "indexerUrl": "https://api.cartridge.gg/x/apac-gladiator-09-05-26-1200/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-05-06T02:05:43.941Z",
+          "lastIndexerDescribeAt": "2026-05-11T04:23:41.738Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -3835,9 +3829,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
+          "paymasterSynced": true
         }
       },
       {
@@ -3850,7 +3842,7 @@
         },
         "seriesGameNumber": 20,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier updated basic -> pro for eu-gladiator-09-05-26-2000",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -3903,11 +3895,11 @@
           "worldConfigTxHash": "0x54bb9c425815320a4cc12ffaa10a295e50c1004273405b00b911047026eb239",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
+          "indexerTier": "pro",
           "indexerUrl": "https://api.cartridge.gg/x/eu-gladiator-09-05-26-2000/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-05-06T19:10:41.277Z",
+          "lastIndexerDescribeAt": "2026-05-11T04:23:59.633Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -3917,9 +3909,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
+          "paymasterSynced": true
         }
       },
       {
@@ -3932,7 +3922,7 @@
         },
         "seriesGameNumber": 21,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier updated basic -> pro for na-gladiator-10-05-26-0300",
         "status": "succeeded",
         "configSteps": [
           {
@@ -4102,11 +4092,11 @@
           "worldConfigTxHash": "0x21b65e3482409b16965015fc05107184771f532e06e194b52a436142d6020cf",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
+          "indexerTier": "pro",
           "indexerUrl": "https://api.cartridge.gg/x/na-gladiator-10-05-26-0300/torii",
           "indexerVersion": "v1.8.15",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-05-07T10:15:32.319Z",
+          "lastIndexerDescribeAt": "2026-05-11T04:24:23.010Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -4116,9 +4106,7 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "paymasterSynced": true,
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
+          "paymasterSynced": true
         }
       },
       {
