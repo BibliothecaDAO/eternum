@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-11T04:32:51.279Z",
+  "updatedAt": "2026-05-11T04:53:42.716Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -797,6 +797,23 @@
         "indexerTier": "legendary",
         "lastIndexerDescribeAt": "2026-05-11T04:32:51.279Z"
       }
+    },
+    "bltz-nova-563": {
+      "kind": "game",
+      "environment": "slot.blitz",
+      "gameName": "bltz-nova-563",
+      "path": "runs/slot/blitz/bltz-nova-563.json",
+      "inputPath": "inputs/slot/blitz/bltz-nova-563/25651020110-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-11T04:53:42.716Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-11T05:00:00.000Z",
+      "durationSeconds": 432000,
+      "artifacts": {}
     }
   }
 }
