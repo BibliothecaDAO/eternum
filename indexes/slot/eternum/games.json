@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-05-11T23:08:40.100Z",
+  "updatedAt": "2026-05-11T23:13:40.749Z",
   "entries": {
     "etrn-banana": {
       "kind": "game",
@@ -62,6 +62,22 @@
         "indexerTier": "legendary",
         "lastIndexerDescribeAt": "2026-05-11T23:08:40.100Z"
       }
+    },
+    "etrn-crest-172": {
+      "kind": "game",
+      "environment": "slot.eternum",
+      "gameName": "etrn-crest-172",
+      "path": "runs/slot/eternum/etrn-crest-172.json",
+      "inputPath": "inputs/slot/eternum/etrn-crest-172/25702835262-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-11T23:13:40.749Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-12T00:00:00.000Z",
+      "artifacts": {}
     }
   }
 }
