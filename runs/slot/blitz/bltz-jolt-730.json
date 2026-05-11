@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25650051590-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-11T04:20:13.287Z",
-  "updatedAt": "2026-05-11T04:21:15.940Z",
+  "updatedAt": "2026-05-11T04:21:25.955Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-05-11T04:21:25.955Z"
     },
     {
       "id": "configure-world",
@@ -68,5 +69,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-jolt-730.json",
     "worldAddress": "0x0114025d115cb116805a1ed3a59ca39c6ae3133f18a40d1f712d39465e873193",
     "createGameTxHash": "0x6bed8646249a04443ca0bec689fe5f0c4f29faa34f6dd268c4d1b4fa0031989"
+  },
+  "activeLease": {
+    "launchRequestId": "25650051590-1",
+    "workflowRunId": 25650051590,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-05-11T04:21:25.955Z",
+    "expiresAt": "2026-05-11T05:06:25.955Z"
   }
 }
