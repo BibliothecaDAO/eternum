@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-03-26T20:30:15.222Z",
+  "updatedAt": "2026-05-11T22:56:34.708Z",
   "entries": {
     "etrn-banana": {
       "kind": "game",
@@ -40,6 +40,22 @@
       "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1774555200,
       "durationSeconds": 0,
+      "artifacts": {}
+    },
+    "etrn-crown-308": {
+      "kind": "game",
+      "environment": "slot.eternum",
+      "gameName": "etrn-crown-308",
+      "path": "runs/slot/eternum/etrn-crown-308.json",
+      "inputPath": "inputs/slot/eternum/etrn-crown-308/25702164511-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-11T22:56:34.708Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-11T23:00:00.000Z",
       "artifacts": {}
     }
   }
