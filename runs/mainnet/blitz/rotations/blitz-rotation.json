@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25650101852-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-11T04:40:14.756Z",
+  "updatedAt": "2026-05-11T04:41:06.101Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -3248,7 +3248,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
+          "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
         }
       },
       {
@@ -3447,7 +3447,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
+          "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
         }
       },
       {
@@ -3646,7 +3646,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
+          "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
         }
       },
       {
@@ -3845,7 +3845,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
+          "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
         }
       },
       {
@@ -3927,7 +3927,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
+          "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
         }
       },
       {
@@ -4126,7 +4126,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
+          "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
         }
       },
       {
@@ -4139,7 +4139,7 @@
         },
         "seriesGameNumber": 22,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -4304,7 +4304,9 @@
           "worldAddress": "0x02e26c92b2adc0f2d7edd8debc0a7c320207b31185582ef9e62a9a57699ead0e",
           "createGameTxHash": "0x550d622970bd6b3ad295a64c5f1a756dddb6d824fa2464b248015a353c76806",
           "configureTxHash": "0x3fda6543f9b3317b2d3d312fa9f5f0ca719ad4a87807107910011a160a5b6eb",
-          "worldConfigTxHash": "0x3fda6543f9b3317b2d3d312fa9f5f0ca719ad4a87807107910011a160a5b6eb"
+          "worldConfigTxHash": "0x3fda6543f9b3317b2d3d312fa9f5f0ca719ad4a87807107910011a160a5b6eb",
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
         }
       },
       {
@@ -4317,7 +4319,7 @@
         },
         "seriesGameNumber": 23,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -4482,7 +4484,9 @@
           "worldAddress": "0x04fda5151c871d0ae73d886f84a62b6b191f98f2e11f2d0840763bc3a034ea68",
           "createGameTxHash": "0x21b825a01745e73220b4ce09fda3a5c5d79dae241fbf35c29dbfb1c318c6906",
           "configureTxHash": "0x214f353f95188281232820eb57ad157ed1a5fed89d34ebadd3bed01134efa5a",
-          "worldConfigTxHash": "0x214f353f95188281232820eb57ad157ed1a5fed89d34ebadd3bed01134efa5a"
+          "worldConfigTxHash": "0x214f353f95188281232820eb57ad157ed1a5fed89d34ebadd3bed01134efa5a",
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
         }
       },
       {
@@ -4495,7 +4499,7 @@
         },
         "seriesGameNumber": 24,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -4660,7 +4664,9 @@
           "worldAddress": "0x05415aa0d0de1d679184e7885e34596fe649d731a6441abc18f0bcf8134f6165",
           "createGameTxHash": "0x4907a7c180df715460942d7acec9c5271252447d7675a5ce3f44784e769c112",
           "configureTxHash": "0x73d9e215a50dd8ef7f27c8d2b285549728c14f0fdd7662e5586be3c94e9384b",
-          "worldConfigTxHash": "0x73d9e215a50dd8ef7f27c8d2b285549728c14f0fdd7662e5586be3c94e9384b"
+          "worldConfigTxHash": "0x73d9e215a50dd8ef7f27c8d2b285549728c14f0fdd7662e5586be3c94e9384b",
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
         }
       },
       {
