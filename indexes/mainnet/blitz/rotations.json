@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-05-11T04:41:06.101Z",
+  "updatedAt": "2026-05-11T04:42:15.515Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -86,11 +86,10 @@
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
       "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25650101852-1.json",
       "status": "running",
-      "updatedAt": "2026-05-11T04:41:06.101Z",
+      "updatedAt": "2026-05-11T04:42:15.515Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexers",
-      "activeLeaseExpiresAt": "2026-05-11T05:25:14.756Z",
-      "hasRunningStep": true,
+      "currentStepId": "sync-paymaster",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "sync-paymaster",
       "autoRetry": {
@@ -100,8 +99,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-05-11T04:55:05.414Z",
-        "lastEvaluatedAt": "2026-05-11T04:40:05.414Z"
+        "nextEvaluationAt": "2026-05-11T04:57:15.515Z",
+        "lastEvaluatedAt": "2026-05-11T04:42:15.515Z"
       },
       "games": [
         {
@@ -263,7 +262,7 @@
             "indexerTier": "legendary",
             "lastIndexerDescribeAt": "2026-05-07T09:32:43.886Z",
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
+            "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
           }
         },
         {
@@ -275,7 +274,7 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-05-05T15:41:55.718Z",
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
+            "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
           }
         },
         {
@@ -287,7 +286,7 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-05-05T15:42:11.344Z",
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
+            "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
           }
         },
         {
@@ -299,7 +298,7 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-05-06T02:05:43.941Z",
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
+            "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
           }
         },
         {
@@ -311,7 +310,7 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-05-06T19:10:41.277Z",
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
+            "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
           }
         },
         {
@@ -323,7 +322,7 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-05-07T10:15:32.319Z",
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
+            "pendingIndexerTierRequestedAt": "2026-05-11T04:21:13.606Z"
           }
         },
         {
@@ -331,8 +330,9 @@
           "startTime": 1778410800,
           "durationSeconds": 3600,
           "artifacts": {
-            "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-05-11T04:40:32.169Z"
           }
         },
         {
@@ -340,8 +340,9 @@
           "startTime": 1778439600,
           "durationSeconds": 3600,
           "artifacts": {
-            "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-05-11T04:40:45.277Z"
           }
         },
         {
@@ -349,39 +350,60 @@
           "startTime": 1778461200,
           "durationSeconds": 3600,
           "artifacts": {
-            "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-11T04:41:04.649Z"
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-05-11T04:41:02.599Z"
           }
         },
         {
           "gameName": "apac-gladiator-12-05-26-1100",
           "startTime": 1778583600,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-05-11T04:41:15.602Z"
+          }
         },
         {
           "gameName": "na-gladiator-13-05-26-0200",
           "startTime": 1778637600,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-05-11T04:41:29.824Z"
+          }
         },
         {
           "gameName": "eu-gladiator-13-05-26-1900",
           "startTime": 1778698800,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-05-11T04:41:44.930Z"
+          }
         },
         {
           "gameName": "apac-gladiator-14-05-26-1000",
           "startTime": 1778752800,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-05-11T04:41:58.005Z"
+          }
         },
         {
           "gameName": "na-gladiator-15-05-26-0100",
           "startTime": 1778806800,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-05-11T04:42:14.177Z"
+          }
         }
       ]
     }
