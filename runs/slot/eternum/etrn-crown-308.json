@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25702164511-1",
   "currentStepId": "grant-village-pass-role",
   "createdAt": "2026-05-11T22:56:34.708Z",
-  "updatedAt": "2026-05-11T22:58:50.692Z",
+  "updatedAt": "2026-05-11T22:58:59.259Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,9 +63,10 @@
     {
       "id": "grant-village-pass-role",
       "title": "Setting up village pass",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Setting up village pass",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Setting up village pass started",
+      "startedAt": "2026-05-11T22:58:59.259Z"
     },
     {
       "id": "create-banks",
@@ -91,5 +92,13 @@
     "configureTxHash": "0x2fa9502be677f102c26697d6e06a3221df4424b6f7a43ce3b35c3d85d2dffbb",
     "worldConfigTxHash": "0x2fa9502be677f102c26697d6e06a3221df4424b6f7a43ce3b35c3d85d2dffbb",
     "lootChestRoleTxHash": "0x2426152e3dc8e7157d411b64633d2711cdf82e34908e9c9dc23df6b7063b79"
+  },
+  "activeLease": {
+    "launchRequestId": "25702164511-1",
+    "workflowRunId": 25702164511,
+    "workflowRunAttempt": 1,
+    "stepId": "grant-village-pass-role",
+    "acquiredAt": "2026-05-11T22:58:59.259Z",
+    "expiresAt": "2026-05-11T23:43:59.259Z"
   }
 }
