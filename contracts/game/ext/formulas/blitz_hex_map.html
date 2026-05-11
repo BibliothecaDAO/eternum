@@ -180,6 +180,29 @@
         width: 100%;
       }
 
+      .range-stepper {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .range-stepper input[type="range"] {
+        flex: 1;
+      }
+
+      .range-stepper-button {
+        width: 40px;
+        height: 40px;
+        min-width: 40px;
+        padding: 0;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        line-height: 1;
+      }
+
       .control-group select {
         appearance: none;
         border: 1px solid var(--border);
@@ -523,7 +546,25 @@
 
             <div class="control-group">
               <label for="maxPoints">Number of Settlements: <span id="maxPointsValue">96</span></label>
-              <input type="range" id="maxPoints" value="96" min="1" max="200" step="1" />
+              <div class="range-stepper">
+                <button
+                  type="button"
+                  class="button-secondary range-stepper-button"
+                  onclick="adjustRangeControlValue('maxPoints', -1)"
+                  aria-label="Decrease number of settlements"
+                >
+                  -
+                </button>
+                <input type="range" id="maxPoints" value="96" min="1" max="200" step="1" />
+                <button
+                  type="button"
+                  class="button-secondary range-stepper-button"
+                  onclick="adjustRangeControlValue('maxPoints', 1)"
+                  aria-label="Increase number of settlements"
+                >
+                  +
+                </button>
+              </div>
             </div>
 
             <div class="control-group">
@@ -2082,6 +2123,28 @@
             valueSpan.textContent = slider.value;
           }
         }
+      }
+
+      function adjustRangeControlValue(controlId, stepCount) {
+        const control = document.getElementById(controlId);
+        if (!control) {
+          return;
+        }
+
+        const currentValue = parseFloat(control.value);
+        const step = parseFloat(control.step) || 1;
+        const min = Number.isNaN(parseFloat(control.min)) ? -Infinity : parseFloat(control.min);
+        const max = Number.isNaN(parseFloat(control.max)) ? Infinity : parseFloat(control.max);
+        const nextValue = Math.min(max, Math.max(min, currentValue + step * stepCount));
+
+        if (nextValue === currentValue) {
+          return;
+        }
+
+        control.value = nextValue.toString();
+        updateSliderValue(controlId);
+        addInputFeedback(control);
+        generateMap();
       }
 
       function setupSliderValueUpdates() {
