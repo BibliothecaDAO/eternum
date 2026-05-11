@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-11T19:12:03.249Z",
+  "updatedAt": "2026-05-11T23:08:42.890Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1961,6 +1961,19 @@
         "describedAt": "2026-05-11T19:12:03.248Z"
       },
       "updatedAt": "2026-05-11T19:12:03.249Z"
+    },
+    "etrn-crown-308": {
+      "gameName": "etrn-crown-308",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/etrn-crown-308/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-11T23:08:42.890Z"
+      },
+      "updatedAt": "2026-05-11T23:08:42.890Z"
     }
   }
 }
