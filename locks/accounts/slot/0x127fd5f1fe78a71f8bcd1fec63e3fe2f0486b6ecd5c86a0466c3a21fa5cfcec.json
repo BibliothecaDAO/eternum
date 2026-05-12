@@ -3,17 +3,16 @@
   "chain": "slot",
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
-    "environment": "slot.eternum",
-    "gameName": "etrn-crest-172",
-    "launchRequestId": "25702835262-1",
+    "environment": "slot.blitz",
+    "gameName": "credence-new-flow-2",
+    "launchRequestId": "25761593460-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25702835262,
+    "workflowRunId": 25761593460,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "ab8c983b-f159-4b5a-8c7c-bde3ae279397"
+    "stepId": "create-world",
+    "leaseId": "9942dbe0-c27e-4f27-890c-2e9c70c97c61"
   },
-  "acquiredAt": "2026-05-11T23:16:27.512Z",
-  "heartbeatAt": "2026-05-11T23:16:44.204Z",
-  "expiresAt": "2026-05-11T23:16:44.204Z",
-  "releasedAt": "2026-05-11T23:16:44.204Z"
+  "acquiredAt": "2026-05-12T20:55:02.048Z",
+  "heartbeatAt": "2026-05-12T20:55:02.048Z",
+  "expiresAt": "2026-05-12T21:05:02.048Z"
 }
