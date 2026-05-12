@@ -24,8 +24,10 @@ import { ActiveRelicEffects } from "../active-relic-effects";
 import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
-import { StructureProductionPanel } from "../structure-production-panel";
+import { StructureProductionPanelView } from "../structure-production-panel";
+import { useStructureProductionSummary } from "../structure-production-summary";
 import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
+import { EntityBannerTabCue } from "./entity-banner-tab-cue";
 
 interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
@@ -78,6 +80,7 @@ const StructureBannerEntityDetailContent = memo(
     const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
 
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
+    const productionSummary = useStructureProductionSummary(structure, resources);
     const ownerAddress =
       structure?.owner !== undefined && structure.owner !== null && structure.owner !== 0n
         ? toHexString(structure.owner)
@@ -158,6 +161,21 @@ const StructureBannerEntityDetailContent = memo(
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
     const showHyperstructureVP = isHyperstructure && hyperstructureRealmCount !== undefined;
+    const occupiedGuardSlots = guards.filter((guard) => Number(guard.troops?.count ?? 0) > 0).length;
+    const guardCue = guardSlotsMax !== undefined ? `${occupiedGuardSlots}/${guardSlotsMax}` : `${occupiedGuardSlots}`;
+    const guardCueTone = occupiedGuardSlots > 0 ? "success" : "muted";
+    const productionCue =
+      productionSummary.totalProductionBuildings > 0
+        ? `${productionSummary.activeProductionBuildings}/${productionSummary.totalProductionBuildings}`
+        : "0";
+    const productionCueTone =
+      productionSummary.totalProductionBuildings === 0
+        ? "muted"
+        : productionSummary.activeProductionBuildings === productionSummary.totalProductionBuildings
+          ? "success"
+          : productionSummary.activeProductionBuildings > 0
+            ? "warning"
+            : "danger";
 
     return (
       <EntityDetailSection
@@ -268,13 +286,12 @@ const StructureBannerEntityDetailContent = memo(
             {showProductionTab && (
               <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-1.5 pt-1">
                 {resources ? (
-                  <StructureProductionPanel
-                    structure={structure}
-                    resources={resources}
+                  <StructureProductionPanelView
                     compact
                     smallTextClass="text-xxs"
                     showProductionSummary={variant !== "banner"}
                     showTooltip={false}
+                    productionSummary={productionSummary}
                   />
                 ) : (
                   <p className="text-xxs text-gold/60 italic">
@@ -313,22 +330,38 @@ const StructureBannerEntityDetailContent = memo(
           </Tabs.Panels>
 
           <Tabs.List className="mt-auto flex w-full items-center justify-between gap-2">
-            <Tabs.Tab className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60">
-              <Shield className="h-4 w-4 text-gold" />
+            <Tabs.Tab
+              aria-label={`Guards ${guardCue}`}
+              title={`Guards ${guardCue}`}
+              className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60"
+            >
+              <EntityBannerTabCue icon={Shield} label="Guards" cue={guardCue} tone={guardCueTone} />
             </Tabs.Tab>
             {showProductionTab && (
-              <Tabs.Tab className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60">
-                <Factory className="h-4 w-4 text-gold" />
+              <Tabs.Tab
+                aria-label={`Production ${productionCue}`}
+                title={`Production ${productionCue}`}
+                className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60"
+              >
+                <EntityBannerTabCue icon={Factory} label="Production" cue={productionCue} tone={productionCueTone} />
               </Tabs.Tab>
             )}
             {showFaithTab && (
-              <Tabs.Tab className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60">
-                <Sparkles className="h-4 w-4 text-gold" />
+              <Tabs.Tab
+                aria-label="Faith"
+                title="Faith"
+                className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60"
+              >
+                <EntityBannerTabCue icon={Sparkles} label="Faith" />
               </Tabs.Tab>
             )}
             {!showBalanceInline && (
-              <Tabs.Tab className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60">
-                <Coins className="h-4 w-4 text-gold" />
+              <Tabs.Tab
+                aria-label="Resources"
+                title="Resources"
+                className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60"
+              >
+                <EntityBannerTabCue icon={Coins} label="Resources" />
               </Tabs.Tab>
             )}
           </Tabs.List>

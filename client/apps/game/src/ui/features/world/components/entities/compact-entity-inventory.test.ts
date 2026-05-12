@@ -46,13 +46,19 @@ vi.mock("@bibliothecadao/types", () => ({
     Lords: 1,
     Wood: 2,
     Wheat: 3,
+    Dragonhide: 99,
   },
-  isRelic: () => false,
-  getRelicInfo: () => undefined,
+  RelicRecipientType: {
+    Explorer: 1,
+  },
+  isRelic: (resourceId: number) => resourceId === 99,
+  getRelicInfo: (resourceId: number) => (resourceId === 99 ? { recipientType: 1 } : undefined),
   resources: [],
 }));
 
-import { buildDisplayItems } from "./compact-entity-inventory";
+import { RelicRecipientType } from "@bibliothecadao/types";
+
+import { buildDisplayItems, countDisplayItems, filterDisplayItems } from "./compact-entity-inventory";
 
 describe("buildDisplayItems", () => {
   it("uses the provided currentDefaultTick when projecting balances", () => {
@@ -72,6 +78,57 @@ describe("buildDisplayItems", () => {
     expect(result[0]).toMatchObject({
       resourceId: ResourcesIds.Wood,
       amount: 25,
+    });
+  });
+
+  it("filters inventory items into resource and relic groups", () => {
+    mocks.getResourceBalancesWithProduction.mockReturnValue([
+      { resourceId: ResourcesIds.Wood, amount: 25 },
+      { resourceId: ResourcesIds.Dragonhide, amount: 1 },
+    ]);
+
+    const result = buildDisplayItems(
+      { some: "resource" } as never,
+      1234,
+      [ResourcesIds.Dragonhide],
+      RelicRecipientType.Explorer,
+    );
+
+    expect(filterDisplayItems(result, "resources")).toEqual([
+      expect.objectContaining({
+        resourceId: ResourcesIds.Wood,
+        isRelic: false,
+      }),
+    ]);
+    expect(filterDisplayItems(result, "relics")).toEqual([
+      expect.objectContaining({
+        resourceId: ResourcesIds.Dragonhide,
+        isRelic: true,
+        isActive: true,
+        canActivate: true,
+      }),
+    ]);
+  });
+
+  it("counts total, resource, relic, and active relic item groups", () => {
+    mocks.getResourceBalancesWithProduction.mockReturnValue([
+      { resourceId: ResourcesIds.Wood, amount: 25 },
+      { resourceId: ResourcesIds.Wheat, amount: 10 },
+      { resourceId: ResourcesIds.Dragonhide, amount: 1 },
+    ]);
+
+    const result = buildDisplayItems(
+      { some: "resource" } as never,
+      1234,
+      [ResourcesIds.Dragonhide],
+      RelicRecipientType.Explorer,
+    );
+
+    expect(countDisplayItems(result)).toEqual({
+      total: 3,
+      resources: 2,
+      relics: 1,
+      activeRelics: 1,
     });
   });
 });

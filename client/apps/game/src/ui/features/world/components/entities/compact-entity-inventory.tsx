@@ -32,6 +32,8 @@ interface CompactEntityInventoryProps {
   showLabels?: boolean;
   allowRelicActivation?: boolean;
   maxItems?: number;
+  filter?: CompactInventoryFilter;
+  emptyMessage?: string;
   /**
    * When > 0, renders the first `heroCount` items in a larger, higher-contrast
    * row above the tight grid. Useful for surfacing the highest-priority
@@ -39,6 +41,8 @@ interface CompactEntityInventoryProps {
    */
   heroCount?: number;
 }
+
+type CompactInventoryFilter = "all" | "resources" | "relics";
 
 interface DisplayItem {
   resourceId: number;
@@ -144,6 +148,23 @@ export const buildDisplayItems = (
   });
 };
 
+export const filterDisplayItems = (items: DisplayItem[], filter: CompactInventoryFilter = "all") => {
+  if (filter === "resources") return items.filter((item) => !item.isRelic);
+  if (filter === "relics") return items.filter((item) => item.isRelic);
+  return items;
+};
+
+export const countDisplayItems = (items: DisplayItem[]) => {
+  const relics = items.filter((item) => item.isRelic);
+
+  return {
+    total: items.length,
+    resources: items.length - relics.length,
+    relics: relics.length,
+    activeRelics: relics.filter((item) => item.isActive).length,
+  };
+};
+
 export const CompactEntityInventory = memo(
   ({
     resources,
@@ -156,6 +177,8 @@ export const CompactEntityInventory = memo(
     showLabels = false,
     allowRelicActivation = false,
     maxItems,
+    filter = "all",
+    emptyMessage = "No inventory.",
     heroCount = 0,
   }: CompactEntityInventoryProps) => {
     const toggleModal = useUIStore((state) => state.toggleModal);
@@ -166,11 +189,12 @@ export const CompactEntityInventory = memo(
       () => buildDisplayItems(resources, currentDefaultTick, activeRelicIds, recipientType, resourceTiers),
       [resources, currentDefaultTick, activeRelicIds, recipientType, resourceTiers],
     );
+    const displayItems = useMemo(() => filterDisplayItems(items, filter), [filter, items]);
 
     const hasLimit = maxItems !== undefined && Number.isFinite(maxItems);
     const limit = hasLimit ? Math.max(0, Number(maxItems)) : undefined;
-    const visibleItems = hasLimit && limit !== undefined ? items.slice(0, limit) : items;
-    const hiddenCount = hasLimit && limit !== undefined ? Math.max(items.length - limit, 0) : 0;
+    const visibleItems = hasLimit && limit !== undefined ? displayItems.slice(0, limit) : displayItems;
+    const hiddenCount = hasLimit && limit !== undefined ? Math.max(displayItems.length - limit, 0) : 0;
 
     const handleRelicClick = useCallback(
       (item: DisplayItem) => {
@@ -196,8 +220,8 @@ export const CompactEntityInventory = memo(
       [allowRelicActivation, entityId, entityType, recipientType, toggleModal],
     );
 
-    if (items.length === 0) {
-      return <p className="text-xxs text-gold/60 italic">No inventory.</p>;
+    if (displayItems.length === 0) {
+      return <p className="text-xxs text-gold/60 italic">{emptyMessage}</p>;
     }
 
     const baseGrid =
@@ -264,7 +288,7 @@ export const CompactEntityInventory = memo(
         )}
         {hiddenCount > 0 && (
           <span className="text-[10px] text-gold/60">
-            Showing {visibleItems.length} of {items.length}
+            Showing {visibleItems.length} of {displayItems.length}
           </span>
         )}
       </div>

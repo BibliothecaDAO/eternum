@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-12",
+    title: "Clearer Tile HUD",
+    description:
+      "Improved selected structure and army panels with tab badges for defenders, production, cargo, and relics so key counts are visible before opening each tab.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-05-07",
     title: "Scrollable Tile HUD",
     description:
