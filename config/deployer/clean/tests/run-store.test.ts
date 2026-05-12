@@ -329,6 +329,68 @@ describe("factory run store", () => {
     expect(runRecord.steps.find((step: { id: string }) => step.id === "create-world")?.status).toBe("succeeded");
   });
 
+  test("records successful indexer output into the live indexer snapshot", async () => {
+    const branchStore = createBranchStoreFetch();
+    globalThis.fetch = branchStore.fetch;
+
+    await recordFactoryLaunchStarted({
+      environmentId: "slot.eternum",
+      gameName: "etrn-season-730",
+      requestedLaunchStep: "full",
+      request: {
+        environmentId: "slot.eternum",
+        gameName: "etrn-season-730",
+        startTime: "2026-03-18T10:00:00Z",
+      },
+    });
+
+    writeLaunchSummaryFile({
+      environment: "slot.eternum",
+      chain: "slot",
+      gameType: "eternum",
+      gameName: "etrn-season-730",
+      startTime: 1_710_756_000,
+      startTimeIso: "2026-03-18T10:00:00.000Z",
+      rpcUrl: "https://rpc.example",
+      factoryAddress: "0x123",
+      indexerCreated: true,
+      indexerTier: "pro",
+      indexerUrl: "https://api.cartridge.gg/x/etrn-season-730/torii",
+      indexerVersion: "1.7.0",
+      indexerBranch: "next",
+      lastIndexerDescribeAt: "2026-03-18T10:10:00.000Z",
+      configMode: "batched",
+      configSteps: [],
+      dryRun: false,
+    });
+
+    await recordFactoryLaunchStepSucceeded({
+      environmentId: "slot.eternum",
+      gameName: "etrn-season-730",
+      requestedLaunchStep: "full",
+      stepId: "create-indexer",
+      request: {
+        environmentId: "slot.eternum",
+        gameName: "etrn-season-730",
+        startTime: "2026-03-18T10:00:00Z",
+      },
+    });
+
+    const snapshot = branchStore.readJson("indexes/indexers/live.json");
+    const entry = snapshot.entries["etrn-season-730"];
+
+    expect(entry.gameName).toBe("etrn-season-730");
+    expect(entry.liveState).toMatchObject({
+      state: "existing",
+      stateSource: "describe",
+      currentTier: "pro",
+      url: "https://api.cartridge.gg/x/etrn-season-730/torii",
+      version: "1.7.0",
+      branch: "next",
+      describedAt: "2026-03-18T10:10:00.000Z",
+    });
+  });
+
   test("records paymaster completion in launch artifacts", async () => {
     const branchStore = createBranchStoreFetch();
     globalThis.fetch = branchStore.fetch;
@@ -756,6 +818,9 @@ describe("factory run store", () => {
     expect(
       recoveredGame?.steps.find((step: { id: string }) => step.id === "create-indexers")?.errorMessage,
     ).toBeUndefined();
+
+    const snapshot = branchStore.readJson("indexes/indexers/live.json");
+    expect(snapshot.entries["bltz-series-recovery-02"].liveState.state).toBe("existing");
   });
 
   test("rewrites a targeted rotation child indexer status without a refreshed workspace summary", async () => {
@@ -840,6 +905,9 @@ describe("factory run store", () => {
     expect(
       recoveredGame?.steps.find((step: { id: string }) => step.id === "create-indexers")?.errorMessage,
     ).toBeUndefined();
+
+    const snapshot = branchStore.readJson("indexes/indexers/live.json");
+    expect(snapshot.entries["bltz-rotation-recovery-02"].liveState.state).toBe("existing");
   });
 
   test("marks a failed step as needing attention", async () => {

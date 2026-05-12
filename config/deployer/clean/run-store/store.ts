@@ -8,6 +8,7 @@ import {
   requireGitHubBranchStoreConfig,
   type ResolveGitHubBranchStoreConfigOptions,
 } from "./github";
+import { recordFactoryLiveIndexerSnapshotEntriesFromArtifacts } from "./indexer-live-snapshot";
 import { recordFactoryRunMaintenanceIndex } from "./maintenance-index";
 import { resolveFactoryRunId, resolveFactoryRunRecordPath } from "./paths";
 import { buildPersistedGameLaunchRequest } from "./persisted-launch-request";
@@ -384,6 +385,22 @@ async function updateRunRecord(
   return nextRun;
 }
 
+async function recordLiveIndexerSnapshotForCompletedStep(
+  run: FactoryRunRecord,
+  request: FactoryLaunchEventRequest,
+  options: RecordFactoryLaunchOptions,
+): Promise<void> {
+  if (request.stepId !== "create-indexer") {
+    return;
+  }
+
+  await recordFactoryLiveIndexerSnapshotEntriesFromArtifacts(
+    requireGitHubBranchStoreConfig(options),
+    [{ gameName: run.gameName, artifacts: run.artifacts }],
+    buildCommitMessage("record live indexer snapshot", request),
+  );
+}
+
 export async function recordFactoryLaunchStarted(
   request: FactoryRunRequestContext,
   options: RecordFactoryLaunchOptions = {},
@@ -451,7 +468,7 @@ export async function recordFactoryLaunchStepSucceeded(
 
   const context = createFactoryRunStoreEventContext(request);
 
-  return updateRunRecord(
+  const run = await updateRunRecord(
     context,
     options,
     (current) =>
@@ -475,6 +492,9 @@ export async function recordFactoryLaunchStepSucceeded(
       ),
     `complete ${request.stepId}`,
   );
+
+  await recordLiveIndexerSnapshotForCompletedStep(run, request, options);
+  return run;
 }
 
 export async function recordFactoryLaunchStepFailed(

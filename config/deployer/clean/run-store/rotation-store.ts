@@ -15,6 +15,7 @@ import {
   requireGitHubBranchStoreConfig,
   type ResolveGitHubBranchStoreConfigOptions,
 } from "./github";
+import { recordFactoryLiveIndexerSnapshotEntriesFromArtifacts } from "./indexer-live-snapshot";
 import { recordFactoryRotationMaintenanceIndex } from "./maintenance-index";
 import { resolveFactoryRotationRunId, resolveFactoryRotationRunRecordPath } from "./paths";
 import { buildPersistedRotationLaunchRequest } from "./persisted-launch-request";
@@ -500,6 +501,22 @@ async function updateRotationRunRecord(
   return nextRun;
 }
 
+async function recordLiveIndexerSnapshotForCompletedRotationStep(
+  run: FactoryRotationRunRecord,
+  request: FactoryRotationLaunchEventRequest,
+  options: RecordFactoryRotationLaunchOptions,
+): Promise<void> {
+  if (request.stepId !== "create-indexers") {
+    return;
+  }
+
+  await recordFactoryLiveIndexerSnapshotEntriesFromArtifacts(
+    requireGitHubBranchStoreConfig(options),
+    run.summary.games.map((game) => ({ gameName: game.gameName, artifacts: game.artifacts })),
+    buildCommitMessage("record live indexer snapshot", request),
+  );
+}
+
 async function resolvePlannedRotationSummary(request: FactoryRotationRunRequestContext["request"]) {
   const hydratedSummary = await hydrateRotationLaunchSummary(request);
   return persistRotationLaunchSummary(reconcileRotationLaunchSummary(request, hydratedSummary));
@@ -634,7 +651,7 @@ export async function recordFactoryRotationLaunchStepSucceeded(
 
   const context = createFactoryRotationRunStoreEventContext(request);
 
-  return updateRotationRunRecord(
+  const run = await updateRotationRunRecord(
     context,
     await resolvePlannedRotationSummary(request.request),
     options,
@@ -680,6 +697,9 @@ export async function recordFactoryRotationLaunchStepSucceeded(
     },
     `complete ${request.stepId}`,
   );
+
+  await recordLiveIndexerSnapshotForCompletedRotationStep(run, request, options);
+  return run;
 }
 
 export async function recordFactoryRotationLaunchStepFailed(

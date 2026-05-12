@@ -13,6 +13,7 @@ import {
   requireGitHubBranchStoreConfig,
   type ResolveGitHubBranchStoreConfigOptions,
 } from "./github";
+import { recordFactoryLiveIndexerSnapshotEntriesFromArtifacts } from "./indexer-live-snapshot";
 import { recordFactorySeriesMaintenanceIndex } from "./maintenance-index";
 import { resolveFactorySeriesRunId, resolveFactorySeriesRunRecordPath } from "./paths";
 import { buildPersistedSeriesLaunchRequest } from "./persisted-launch-request";
@@ -450,6 +451,22 @@ async function updateSeriesRunRecord(
   return nextRun;
 }
 
+async function recordLiveIndexerSnapshotForCompletedSeriesStep(
+  run: FactorySeriesRunRecord,
+  request: FactorySeriesLaunchEventRequest,
+  options: RecordFactorySeriesLaunchOptions,
+): Promise<void> {
+  if (request.stepId !== "create-indexers") {
+    return;
+  }
+
+  await recordFactoryLiveIndexerSnapshotEntriesFromArtifacts(
+    requireGitHubBranchStoreConfig(options),
+    run.summary.games.map((game) => ({ gameName: game.gameName, artifacts: game.artifacts })),
+    buildCommitMessage("record live indexer snapshot", request),
+  );
+}
+
 export async function recordFactorySeriesLaunchStarted(
   request: FactorySeriesRunRequestContext,
   options: RecordFactorySeriesLaunchOptions = {},
@@ -541,7 +558,7 @@ export async function recordFactorySeriesLaunchStepSucceeded(
 
   const context = createFactorySeriesRunStoreEventContext(request);
 
-  return updateSeriesRunRecord(
+  const run = await updateSeriesRunRecord(
     context,
     buildInitialSeriesLaunchSummary(request.request),
     options,
@@ -580,6 +597,9 @@ export async function recordFactorySeriesLaunchStepSucceeded(
     },
     `complete ${request.stepId}`,
   );
+
+  await recordLiveIndexerSnapshotForCompletedSeriesStep(run, request, options);
+  return run;
 }
 
 export async function recordFactorySeriesLaunchStepFailed(
