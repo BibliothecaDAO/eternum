@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-12T21:02:49.283Z",
+  "updatedAt": "2026-05-12T22:31:56.833Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2013,6 +2013,19 @@
         "describedAt": "2026-05-12T21:02:49.282Z"
       },
       "updatedAt": "2026-05-12T21:02:49.283Z"
+    },
+    "credence-new-flow-3": {
+      "gameName": "credence-new-flow-3",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/credence-new-flow-3/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-12T22:31:56.833Z"
+      },
+      "updatedAt": "2026-05-12T22:31:56.833Z"
     }
   }
 }
