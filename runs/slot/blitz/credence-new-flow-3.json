@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "credence-new-flow-3",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/credence-new-flow-3/25763784871-1.json",
   "latestLaunchRequestId": "25763784871-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-05-12T21:40:11.197Z",
-  "updatedAt": "2026-05-12T21:42:43.679Z",
+  "updatedAt": "2026-05-12T21:43:02.886Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,10 +63,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-12T21:42:43.679Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-05-12T21:42:43.679Z",
+      "finishedAt": "2026-05-12T21:43:02.886Z"
     }
   ],
   "artifacts": {
@@ -77,14 +78,13 @@
     "createGameTxHash": "0x3e9ffb526bee494bae379d6933f75af58be8c387034f8b192fc8726019000f1",
     "configureTxHash": "0x666424d38bc2e4acdcc7d227aff2d5c281f05370fd62a88d1a1d72e4df94979",
     "worldConfigTxHash": "0x666424d38bc2e4acdcc7d227aff2d5c281f05370fd62a88d1a1d72e4df94979",
-    "lootChestRoleTxHash": "0x1293baf08370ab19fe5f99054943e57c8de98c6cab3c7f14998c4f6e8ba0bc2"
+    "lootChestRoleTxHash": "0x1293baf08370ab19fe5f99054943e57c8de98c6cab3c7f14998c4f6e8ba0bc2",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/credence-new-flow-3/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-12T21:43:01.550Z"
   },
-  "activeLease": {
-    "launchRequestId": "25763784871-1",
-    "workflowRunId": 25763784871,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-12T21:42:43.679Z",
-    "expiresAt": "2026-05-12T22:27:43.679Z"
-  }
+  "completedAt": "2026-05-12T21:43:02.886Z"
 }
