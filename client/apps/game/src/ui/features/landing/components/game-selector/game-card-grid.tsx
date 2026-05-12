@@ -7,6 +7,7 @@ import { type WorldConfigMeta } from "@/hooks/use-world-availability";
 import { useWorldJackpot } from "@/hooks/use-world-jackpot";
 import { useWorldsSummary } from "@/hooks/use-worlds-summary";
 import { useWorldRegistration, type EntryStage } from "@/hooks/use-world-registration";
+import { useBlitzHyperstructureReservation } from "@/hooks/use-blitz-hyperstructure-reservation";
 import type { WorldSummary } from "@bibliothecadao/types";
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
@@ -289,7 +290,6 @@ interface GameCardProps {
   onSeeScore?: () => void;
   onClaimRewards?: () => void;
   claimSummary?: GameReviewClaimSummary | null;
-  onForgeHyperstructures?: () => Promise<void> | void;
   onRegistrationComplete?: (worldKey: string) => void;
   playerAddress: string | null;
   showChainBadge?: boolean;
@@ -308,7 +308,6 @@ const GameCard = ({
   onSeeScore,
   onClaimRewards,
   claimSummary,
-  onForgeHyperstructures,
   onRegistrationComplete,
   playerAddress,
   showChainBadge = false,
@@ -336,14 +335,15 @@ const GameCard = ({
   const canPlayEternumDirect = canOpenEternumEntry && hasSettledEternumRealm;
   const showEternumSettleShortcut = canOpenEternumEntry && hasSettledEternumRealm;
   const eternumPrimaryActionLabel = canPlayEternumDirect ? "Play" : "Settle";
-  // Can spectate ongoing or ended games
-  const canSpectate = isOngoing || isEnded;
   // Can register during upcoming, or during ongoing if dev mode is on
   const canRegisterPeriod = isBlitzMode && (isUpcoming || (isOngoing && devModeOn));
-  // Forge hyperstructures button shown during registration period
-  const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? 0;
-  // Show forge button when we have config (even if 0 left, show disabled)
-  const showForgeButton = isBlitzMode && game.config?.numHyperstructuresLeft !== null && playerAddress;
+  const canSpectateRegisteredBlitz = isBlitzMode && canRegisterPeriod && game.isRegistered === true;
+  // Spectate is always available for live and ended games, and also for
+  // registered Blitz games during the pre-main registration window.
+  const canSpectate = isOngoing || isEnded || canSpectateRegisteredBlitz;
+  const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? null;
+  const hasKnownRemainingReservations = numHyperstructuresLeft != null && numHyperstructuresLeft > 0;
+  const showReserveButton = isBlitzMode && canRegisterPeriod;
   const lordsFeeAmount = game.config?.feeAmount ?? 0n;
   const hasLordsFee = lordsFeeAmount > 0n;
   const isMainnetGame = game.chain === "mainnet";
@@ -370,7 +370,6 @@ const GameCard = ({
     const value = Number((marketClaimableDisplay ?? "0").replace(/,/g, ""));
     return Number.isFinite(value) && value > 0;
   }, [marketClaimableDisplay]);
-  const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
   const [isSwitchNetworkPending, setIsSwitchNetworkPending] = useState(false);
   const [pendingNetworkAction, setPendingNetworkAction] = useState<PendingNetworkAction | null>(null);
   const latestPendingNetworkActionRef = useRef<PendingNetworkAction | null>(null);
@@ -414,6 +413,15 @@ const GameCard = ({
     isRegistered: game.isRegistered === true,
     enabled: isBlitzMode && game.status === "ok" && canRegisterPeriod,
   });
+  const { reserve, isReserving } = useBlitzHyperstructureReservation({
+    worldName: game.name,
+    chain: game.chain,
+    remainingReservations: numHyperstructuresLeft,
+    enabled: isBlitzMode && canRegisterPeriod,
+  });
+  const reserveButtonTitle = hasKnownRemainingReservations
+    ? `Reserve Golden Tiles (${numHyperstructuresLeft} remaining)`
+    : "Reserve Golden Tiles";
   const showRegistered = game.isRegistered || entryStage === "done";
 
   // Handle settle entry with toast notification.
@@ -425,21 +433,13 @@ const GameCard = ({
     });
   }, [settle, runWithNetworkGuard]);
 
-  const handleForgeClick = useCallback(() => {
-    if (!onForgeHyperstructures || numHyperstructuresLeft <= 0 || isForgeButtonPending) return;
-
+  const handleReserveHyperstructures = useCallback(() => {
     runWithNetworkGuard(() => {
-      setIsForgeButtonPending(true);
-
-      void Promise.resolve(onForgeHyperstructures())
-        .catch((err) => {
-          console.error("Forge action failed:", err);
-        })
-        .finally(() => {
-          setIsForgeButtonPending(false);
-        });
+      void reserve().catch((err) => {
+        console.error("Hyperstructure reservation failed:", err);
+      });
     });
-  }, [onForgeHyperstructures, numHyperstructuresLeft, isForgeButtonPending, runWithNetworkGuard]);
+  }, [reserve, runWithNetworkGuard]);
 
   const handleSwitchNetwork = useCallback(async () => {
     if (!pendingNetworkAction || isSwitchNetworkPending) return;
@@ -806,34 +806,27 @@ const GameCard = ({
             </button>
           )}
 
-          {/* Forge Hyperstructures button for upcoming games */}
-          {showForgeButton && onForgeHyperstructures && (
+          {/* Reserve Hyperstructures button during the Blitz registration window */}
+          {showReserveButton && (
             <button
-              onClick={handleForgeClick}
-              disabled={numHyperstructuresLeft <= 0 || isForgeButtonPending}
-              title={
-                numHyperstructuresLeft > 0
-                  ? `Forge ${numHyperstructuresLeft} Hyperstructures`
-                  : "All Hyperstructures Forged"
-              }
+              onClick={handleReserveHyperstructures}
+              disabled={isReserving}
+              aria-label="Reserve Golden Tiles"
+              title={reserveButtonTitle}
               className={cn(
-                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors",
-                numHyperstructuresLeft > 0
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
-                  : "bg-gray-500/10 text-gray-500 border border-gray-500/20 cursor-not-allowed",
+                "relative flex h-8 w-8 flex-none items-center justify-center overflow-hidden rounded-full transition-all duration-200",
+                "border border-amber-200/80 bg-gradient-to-br from-amber-200 via-amber-400 to-yellow-500 text-black",
+                "shadow-[0_0_18px_rgba(251,191,36,0.55)] hover:scale-105 hover:shadow-[0_0_24px_rgba(251,191,36,0.75)]",
+                "disabled:scale-100 disabled:opacity-70 disabled:shadow-[0_0_12px_rgba(251,191,36,0.35)]",
               )}
             >
-              {isForgeButtonPending ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Opening...
-                </>
+              {!isReserving && <span className="absolute inset-0 rounded-full bg-amber-200/30 animate-ping" />}
+              {isReserving ? (
+                <Loader2 className="relative z-10 h-3.5 w-3.5 animate-spin" />
               ) : (
                 <>
-                  <Sparkles className="w-3 h-3" />
-                  <span className="truncate">
-                    {numHyperstructuresLeft > 0 ? `Forge ${numHyperstructuresLeft}` : "All Forged"}
-                  </span>
+                  <Sparkles className="relative z-10 h-3.5 w-3.5" />
+                  <span className="sr-only">Reserve Golden Tiles</span>
                 </>
               )}
             </button>
@@ -934,8 +927,6 @@ interface UnifiedGameGridProps {
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
   onClaimRewards?: (selection: WorldSelection) => void;
-  /** Callback for forging hyperstructures - receives world selection and numHyperstructuresLeft */
-  onForgeHyperstructures?: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete?: () => void;
   className?: string;
   /** Filter games by mode */
@@ -975,7 +966,6 @@ export const UnifiedGameGrid = ({
   onSpectate,
   onSeeScore,
   onClaimRewards,
-  onForgeHyperstructures,
   onRegistrationComplete,
   className,
   modeFilter,
@@ -1447,15 +1437,6 @@ export const UnifiedGameGrid = ({
                       : undefined
                   }
                   claimSummary={claimSummaryState?.data ?? null}
-                  onForgeHyperstructures={
-                    onForgeHyperstructures
-                      ? () =>
-                          onForgeHyperstructures(
-                            { name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined },
-                            game.config?.numHyperstructuresLeft ?? 0,
-                          )
-                      : undefined
-                  }
                   onRegistrationComplete={handleRegistrationComplete}
                   playerAddress={playerAddress}
                   showChainBadge={true}
@@ -1509,15 +1490,6 @@ export const UnifiedGameGrid = ({
                         : undefined
                     }
                     claimSummary={claimSummaryState?.data ?? null}
-                    onForgeHyperstructures={
-                      onForgeHyperstructures
-                        ? () =>
-                            onForgeHyperstructures(
-                              { name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined },
-                              game.config?.numHyperstructuresLeft ?? 0,
-                            )
-                        : undefined
-                    }
                     onRegistrationComplete={handleRegistrationComplete}
                     playerAddress={playerAddress}
                     showChainBadge={true}

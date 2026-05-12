@@ -11,7 +11,6 @@ const createContext = (overrides: Partial<ResolvedEntryContext>): ResolvedEntryC
   worldName: "iron-age",
   intent: "play",
   autoSettle: false,
-  hyperstructuresLeft: null,
   source: "landing",
   ...overrides,
 });

@@ -14,6 +14,7 @@ import {
 import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import type { Chain } from "@contracts";
+import { calculateHyperstructureReservationsLeft } from "@bibliothecadao/types";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { RpcProvider } from "starknet";
 import { env } from "../../env";
@@ -65,99 +66,6 @@ const WORLD_CONFIG_ETERNUM_QUERY = `
 const PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR = "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179";
 const prizeDistributionSelector = normalizeSelector(PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR);
 const rpcProviderCache = new Map<string, RpcProvider>();
-
-/**
- * Reservation progress matters more than created hyperstructure count now.
- * The landing flow should stop offering reserve calls once the placeholder
- * tiles are all queued, even if nobody has materialized the structures yet.
- */
-const calculateTotalHyperstructureReservations = (maxRingCount: number, twoPlayerMode: boolean): number =>
-  twoPlayerMode ? maxRingCount + 1 : 1 + 6 * ((maxRingCount * (maxRingCount + 1)) / 2);
-
-const resolveFinalHyperstructureMaxRingCount = (registrationCountMax: number, twoPlayerMode: boolean): number => {
-  if (registrationCountMax <= 0) {
-    return 0;
-  }
-
-  if (twoPlayerMode) {
-    return 2;
-  }
-
-  let maxRingCount = 0;
-  while (registrationCountMax >= 6 * maxRingCount * maxRingCount + 1) {
-    maxRingCount += 1;
-  }
-
-  return maxRingCount;
-};
-
-const calculateReservedHyperstructureCount = ({
-  maxRingCount,
-  currentRingCount,
-  currentPoint,
-  currentSide,
-  twoPlayerMode,
-}: {
-  maxRingCount: number;
-  currentRingCount: number;
-  currentPoint: number;
-  currentSide: number;
-  twoPlayerMode: boolean;
-}): number => {
-  const totalReservations = calculateTotalHyperstructureReservations(maxRingCount, twoPlayerMode);
-  if (totalReservations <= 0) {
-    return 0;
-  }
-
-  if (twoPlayerMode) {
-    return Math.min(totalReservations, Math.max(0, currentRingCount));
-  }
-
-  const isInitialCursor = currentRingCount === 0 && currentSide === 5 && currentPoint === 1;
-  if (isInitialCursor) {
-    return 0;
-  }
-
-  if (currentRingCount > maxRingCount) {
-    return totalReservations;
-  }
-
-  const completedPreviousRings = currentRingCount === 0 ? 0 : 1 + 3 * (currentRingCount - 1) * currentRingCount;
-  const reservedInCurrentRing =
-    currentRingCount === 0 ? 0 : currentSide * currentRingCount + Math.max(0, currentPoint - 1);
-
-  return Math.min(totalReservations, Math.max(0, completedPreviousRings + reservedInCurrentRing));
-};
-
-const calculateHyperstructureReservationsLeft = ({
-  registrationCountMax,
-  currentRingCount,
-  currentPoint,
-  currentSide,
-  twoPlayerMode,
-}: {
-  registrationCountMax: number;
-  currentRingCount: number;
-  currentPoint: number;
-  currentSide: number;
-  twoPlayerMode: boolean;
-}): number => {
-  if (registrationCountMax <= 0) {
-    return 0;
-  }
-
-  const finalMaxRingCount = resolveFinalHyperstructureMaxRingCount(registrationCountMax, twoPlayerMode);
-  const totalReservations = calculateTotalHyperstructureReservations(finalMaxRingCount, twoPlayerMode);
-  const reservedCount = calculateReservedHyperstructureCount({
-    maxRingCount: finalMaxRingCount,
-    currentRingCount,
-    currentPoint,
-    currentSide,
-    twoPlayerMode,
-  });
-
-  return Math.max(0, totalReservations - reservedCount);
-};
 
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 

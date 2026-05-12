@@ -13,7 +13,6 @@ describe("Game entry modal retry bootstrap", () => {
 
     expect(source).toContain("const [preflightRetryNonce, setPreflightRetryNonce] = useState(0);");
     expect(source).toContain("setIsSettling(false);");
-    expect(source).toContain("setAssignedRealmCount(0);");
     expect(source).toContain("setSettledRealmCount(0);");
     expect(source).toContain("setPreflightRetryNonce((current) => current + 1);");
     expect(source).toContain("preflightRetryNonce,");

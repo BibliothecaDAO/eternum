@@ -48,21 +48,16 @@ describe("play-route", () => {
   });
 
   it("parses and builds canonical entry routes", () => {
-    const route = parseEntryRoute(
-      createLocation("/enter/sepolia/aurora-blitz", "?intent=forge&hyperstructuresLeft=3&autoSettle=true"),
-    );
+    const route = parseEntryRoute(createLocation("/enter/sepolia/aurora-blitz", "?intent=settle&autoSettle=true"));
 
     expect(route).toEqual({
       chain: "sepolia",
       worldName: "aurora-blitz",
-      intent: "forge",
-      hyperstructuresLeft: 3,
+      intent: "settle",
       autoSettle: true,
     });
 
-    expect(buildEntryHref(route!)).toBe(
-      "/enter/sepolia/aurora-blitz?intent=forge&hyperstructuresLeft=3&autoSettle=true",
-    );
+    expect(buildEntryHref(route!)).toBe("/enter/sepolia/aurora-blitz?intent=settle&autoSettle=true");
   });
 
   it("normalizes legacy scene routes into canonical play URLs when a fallback world exists", () => {

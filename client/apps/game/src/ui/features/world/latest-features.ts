@@ -23,6 +23,46 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-12",
+    title: "Golden Tile Beacon",
+    description:
+      "Blitz landing cards now use a compact glowing gold circle for Golden Tile reservation, so the action stands out immediately without taking over the whole card footer.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-12",
+    title: "Active Game Spectating",
+    description:
+      "Your Active Games cards now keep spectate available for registered Blitz worlds during the pre-main window, so you can open the world before the match fully starts.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-12",
+    title: "Golden Tile Reservation",
+    description:
+      "Blitz open-game cards now label the hyperstructure reservation action as Reserve Golden Tiles, so the landing flow speaks in game terms instead of contract terms.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-12",
+    title: "Visible Blitz Reservation",
+    description:
+      "Blitz open-game cards now keep the reserve-hyperstructures action visible throughout the registration window, so you do not lose the button when landing summary counts lag behind the contract state.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-12",
+    title: "Blitz Reservation Cleanup",
+    description:
+      "Blitz landing cards now reserve hyperstructure slots directly from the open-games list, while the old All Forged entry phase is gone so joining and preparing a world reads much more clearly.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-12",
     title: "Blitz Realm Provisioning",
     description:
       "Blitz realms now enter with a lighter initial setup and show a dedicated in-world provision action beside realm upgrades once the main phase starts, so delayed economy activation is available exactly when it matters.",

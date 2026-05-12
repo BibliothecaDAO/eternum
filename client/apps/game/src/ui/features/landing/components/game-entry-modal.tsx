@@ -49,7 +49,6 @@ import {
   resolveGameEntryModalPhase,
   type GameEntryModalPhase as ModalPhase,
 } from "./game-entry-phase";
-import { resolveHyperstructureForgeBatchSize, resolveHyperstructureForgeCount } from "./game-entry-forge.utils";
 import { resolveBlitzSettlementAvailability } from "./game-entry-blitz-timing";
 import { SeasonPlacementMap, type SeasonPlacementMapSlot } from "./season-placement-map";
 import { SeasonPassOptionCard } from "./season-pass-option-card";
@@ -525,8 +524,6 @@ type DirectSettlementSnapshotRow = {
 
 type ResolvedWorldSystemAddresses = {
   blitzRealmSystemsAddress: string | null;
-  hyperstructureCreateSystemsAddress: string | null;
-  hyperstructureSystemsAddress: string | null;
   nameSystemsAddress: string | null;
   realmSystemsAddress: string | null;
   spireSystemsAddress: string | null;
@@ -848,13 +845,6 @@ type VillageRevealResult = {
   resourceLabel: string;
 };
 
-// Hyperstructure info type
-type HyperstructureInfo = {
-  entityId: number;
-  initialized: boolean;
-  name: string;
-};
-
 interface GameEntryModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -864,10 +854,6 @@ interface GameEntryModalProps {
   autoSettleEnabled?: boolean;
   /** Entry intent for route-owned landing entry */
   entryIntent?: "play" | "settle";
-  /** If true, skip settlement and just reserve hyperstructure slots, then close */
-  isForgeMode?: boolean;
-  /** Number of hyperstructure reservations left to submit (for forge mode) */
-  numHyperstructuresLeft?: number;
 }
 
 /**
@@ -2683,246 +2669,6 @@ const VillageRevealPhase = ({
 };
 
 /**
- * Hyperstructure initialization phase - shows hyperstructures that need to be initialized
- */
-const HyperstructurePhase = ({
-  hyperstructures,
-  isInitializing,
-  currentInitializingId,
-  onInitialize,
-  onInitializeAll,
-}: {
-  hyperstructures: HyperstructureInfo[];
-  isInitializing: boolean;
-  currentInitializingId: number | null;
-  onInitialize: (entityId: number) => void;
-  onInitializeAll: () => void;
-}) => {
-  const uninitializedCount = hyperstructures.filter((h) => !h.initialized).length;
-  const initializedCount = hyperstructures.length - uninitializedCount;
-  const progress = hyperstructures.length > 0 ? (initializedCount / hyperstructures.length) * 100 : 0;
-  const allInitialized = uninitializedCount === 0;
-
-  return (
-    <div className="flex flex-col">
-      <div className="text-center mb-4">
-        <div className="mx-auto w-16 h-16 mb-3 rounded-full bg-amber-500/20 flex items-center justify-center">
-          <Sparkles className="w-8 h-8 text-amber-400" />
-        </div>
-        <h2 className="text-lg font-semibold text-gold">
-          {allInitialized ? "Hyperstructures Ready!" : "Initialize Hyperstructures"}
-        </h2>
-        <p className="text-xs text-gold/60 mt-1">
-          {allInitialized
-            ? "All hyperstructures have been activated. Ready to settle!"
-            : "Hyperstructures must be activated before you can settle your realms"}
-        </p>
-      </div>
-
-      {/* Progress bar */}
-      <div className="space-y-2 mb-4">
-        <div className="h-2 bg-brown/50 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full bg-gradient-to-r from-amber-500/80 to-amber-400 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-          />
-        </div>
-        <div className="flex justify-between text-xs text-gold/70">
-          <span>
-            {initializedCount} / {hyperstructures.length} initialized
-          </span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-      </div>
-
-      {/* Hyperstructure list */}
-      {!allInitialized && (
-        <div className="space-y-2 mb-4 max-h-40 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-          {hyperstructures.map((hs) => (
-            <div
-              key={hs.entityId}
-              className={cn(
-                "flex items-center justify-between gap-2 p-2 rounded-lg transition-colors",
-                hs.initialized
-                  ? "bg-emerald-500/10 border border-emerald-500/20"
-                  : currentInitializingId === hs.entityId
-                    ? "bg-amber-500/10 border border-amber-500/30"
-                    : "bg-white/5 border border-white/10",
-              )}
-            >
-              <div className="flex items-center gap-2 min-w-0">
-                <div
-                  className={cn(
-                    "flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center",
-                    hs.initialized
-                      ? "bg-emerald-500/20 text-emerald-400"
-                      : currentInitializingId === hs.entityId
-                        ? "bg-amber-500/20 text-amber-400"
-                        : "bg-brown/30 text-gold/50",
-                  )}
-                >
-                  {hs.initialized ? (
-                    <Check className="w-3 h-3" />
-                  ) : currentInitializingId === hs.entityId ? (
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-3 h-3" />
-                  )}
-                </div>
-                <span
-                  className={cn(
-                    "text-sm truncate",
-                    hs.initialized
-                      ? "text-emerald-400"
-                      : currentInitializingId === hs.entityId
-                        ? "text-amber-400"
-                        : "text-gold/70",
-                  )}
-                >
-                  {hs.name}
-                </span>
-              </div>
-              {!hs.initialized && currentInitializingId !== hs.entityId && (
-                <Button
-                  onClick={() => onInitialize(hs.entityId)}
-                  disabled={isInitializing}
-                  variant="outline"
-                  size="xs"
-                  className="flex-shrink-0"
-                >
-                  Initialize
-                </Button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Action button */}
-      {!allInitialized && uninitializedCount > 1 && (
-        <Button
-          onClick={onInitializeAll}
-          disabled={isInitializing}
-          className="w-full h-11 !text-brown !bg-gold rounded-md mb-2"
-          forceUppercase={false}
-        >
-          {isInitializing ? (
-            <div className="flex items-center justify-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Initializing...</span>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              <span>Initialize All ({uninitializedCount})</span>
-            </div>
-          )}
-        </Button>
-      )}
-
-      {allInitialized && (
-        <div className="flex items-center justify-center gap-2 text-emerald-400 text-sm">
-          <Check className="w-4 h-4" />
-          <span>Proceeding to settlement...</span>
-        </div>
-      )}
-    </div>
-  );
-};
-
-/**
- * Reserve hyperstructures phase - queues required placeholder slots before the main game.
- * This is different from initialization - reservation opens the slots, initialization activates captured structures.
- */
-const ForgeHyperstructuresPhase = ({
-  numHyperstructuresLeft,
-  nextForgeCount,
-  isForging,
-  errorMessage,
-  onForge,
-  onClose,
-}: {
-  numHyperstructuresLeft: number;
-  nextForgeCount: number;
-  isForging: boolean;
-  errorMessage: string | null;
-  onForge: () => void;
-  onClose: () => void;
-}) => {
-  const allReserved = numHyperstructuresLeft <= 0;
-  const reserveLabel = `Reserve ${nextForgeCount} Hyperstructure${nextForgeCount === 1 ? "" : "s"}`;
-
-  return (
-    <div className="flex flex-col gap-4" aria-live="polite">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-gold/30 bg-gold/10">
-          {allReserved ? <Check className="h-5 w-5 text-emerald-400" /> : <Sparkles className="h-5 w-5 text-gold" />}
-        </div>
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold text-gold">
-            {allReserved ? "All Hyperstructures Reserved" : "Reserve Hyperstructures"}
-          </h2>
-          <p className="mt-1 text-xs leading-5 text-gold/65">
-            {allReserved
-              ? "This world already has every required hyperstructure slot reserved."
-              : "Reserve the remaining hyperstructure slots for this Blitz world."}
-          </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-md border border-gold/15 bg-black/25 px-3 py-2">
-          <div className="text-[10px] uppercase text-gold/50">Remaining</div>
-          <div className="mt-1 text-2xl font-semibold text-gold">{Math.max(0, numHyperstructuresLeft)}</div>
-        </div>
-        <div className="rounded-md border border-gold/15 bg-black/25 px-3 py-2">
-          <div className="text-[10px] uppercase text-gold/50">Next Transaction</div>
-          <div className="mt-1 text-2xl font-semibold text-gold">{nextForgeCount}</div>
-        </div>
-      </div>
-
-      {errorMessage && (
-        <div className="flex gap-2 rounded-md border border-red/30 bg-red/10 px-3 py-2 text-sm text-red">
-          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>{errorMessage}</span>
-        </div>
-      )}
-
-      {!allReserved && (
-        <button
-          type="button"
-          onClick={onForge}
-          disabled={isForging || nextForgeCount <= 0}
-          className={cn(
-            "flex h-11 w-full items-center justify-center gap-2 rounded-md border px-4 text-sm font-semibold transition-colors",
-            "border-gold bg-gold text-brown hover:bg-gold/90",
-            "disabled:cursor-not-allowed disabled:border-gold/25 disabled:bg-gold/10 disabled:text-gold/45",
-          )}
-        >
-          {isForging ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Reserving...</span>
-            </>
-          ) : (
-            <>
-              <Sparkles className="h-4 w-4" />
-              <span>{reserveLabel}</span>
-            </>
-          )}
-        </button>
-      )}
-
-      <Button variant="outline" onClick={onClose} className="w-full" forceUppercase={false}>
-        {allReserved ? "Done" : "Close"}
-      </Button>
-    </div>
-  );
-};
-
-/**
  * Main GameEntryModal component
  */
 export const GameEntryModal = ({
@@ -2933,8 +2679,6 @@ export const GameEntryModal = ({
   isSpectateMode = false,
   autoSettleEnabled = false,
   entryIntent = "play",
-  isForgeMode = false,
-  numHyperstructuresLeft: initialNumHyperstructuresLeft,
 }: GameEntryModalProps) => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -2978,7 +2722,7 @@ export const GameEntryModal = ({
   const isBlitzMode = worldMode === "blitz";
   const isEternumMode = worldMode === "eternum";
   const unifiedSettlementPlannerEnabled = env.VITE_PUBLIC_ETERNUM_UNIFIED_SETTLEMENT_PLANNER;
-  const resolvedEntryIntent = isForgeMode ? "forge" : isSpectateMode ? "spectate" : entryIntent;
+  const resolvedEntryIntent = isSpectateMode ? "spectate" : entryIntent;
   const entryContext = useMemo(
     () =>
       resolveEntryContextFromLandingSelection({
@@ -2988,9 +2732,8 @@ export const GameEntryModal = ({
         },
         intent: resolvedEntryIntent,
         autoSettle: autoSettleEnabled,
-        hyperstructuresLeft: initialNumHyperstructuresLeft ?? null,
       }),
-    [autoSettleEnabled, chain, resolvedEntryIntent, initialNumHyperstructuresLeft, worldName],
+    [autoSettleEnabled, chain, resolvedEntryIntent, worldName],
   );
   const [preflightError, setPreflightError] = useState<Error | null>(null);
   const [preflightRetryNonce, setPreflightRetryNonce] = useState(0);
@@ -3005,17 +2748,6 @@ export const GameEntryModal = ({
   const [needsSettlement, setNeedsSettlement] = useState(false);
   const [canPlay, setCanPlay] = useState(false);
 
-  // Hyperstructure state
-  const [hyperstructures, setHyperstructures] = useState<HyperstructureInfo[]>([]);
-  const [isInitializingHyperstructure, setIsInitializingHyperstructure] = useState(false);
-  const [currentInitializingId, setCurrentInitializingId] = useState<number | null>(null);
-  const needsHyperstructureInit = false;
-  const hyperstructureCheckComplete = true;
-
-  // Forge hyperstructures state (for creating new ones during registration)
-  const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(initialNumHyperstructuresLeft ?? 0);
-  const [isForging, setIsForging] = useState(false);
-  const [forgeErrorMessage, setForgeErrorMessage] = useState<string | null>(null);
   const [eternumSettlementMode, setEternumSettlementMode] = useState<EternumSettlementMode>("realm");
   const [seasonPlacement, setSeasonPlacement] = useState<SeasonPlacement>(DEFAULT_SEASON_PLACEMENT);
   const [selectedSeasonPassTokenId, setSelectedSeasonPassTokenId] = useState<bigint | null>(null);
@@ -3034,14 +2766,9 @@ export const GameEntryModal = ({
   const [settlementPlannerConflict, setSettlementPlannerConflict] = useState<string | null>(null);
   const [settlementPlannerSuccess, setSettlementPlannerSuccess] = useState<string | null>(null);
 
-  const forgeBatchSize = useMemo(() => resolveHyperstructureForgeBatchSize(), []);
   const expectedBlitzSettlementCount = useMemo(
     () => getExpectedBlitzSettlementCount(worldMeta?.singleRealmMode ?? false),
     [worldMeta?.singleRealmMode],
-  );
-  const nextForgeCount = useMemo(
-    () => resolveHyperstructureForgeCount({ numHyperstructuresLeft, batchSize: forgeBatchSize }),
-    [forgeBatchSize, numHyperstructuresLeft],
   );
   const [optimisticRealmPlacements, setOptimisticRealmPlacements] = useState<SettlementPlannerOptimisticRealm[]>([]);
   const [mintRealmTokenIdInput, setMintRealmTokenIdInput] = useState("1");
@@ -3074,8 +2801,6 @@ export const GameEntryModal = ({
 
     return {
       blitzRealmSystemsSelector: resolveSelector("blitz_realm_systems"),
-      hyperstructureCreateSystemsSelector: resolveSelector("hyperstructure_create_systems"),
-      hyperstructureSystemsSelector: resolveSelector("hyperstructure_systems"),
       nameSystemsSelector: resolveSelector("name_systems"),
       realmSystemsSelector: resolveSelector("realm_systems"),
       spireSystemsSelector: resolveSelector("spire_systems"),
@@ -3100,12 +2825,6 @@ export const GameEntryModal = ({
       return {
         blitzRealmSystemsAddress: resolvedSystemSelectors.blitzRealmSystemsSelector
           ? (contracts[resolvedSystemSelectors.blitzRealmSystemsSelector] ?? null)
-          : null,
-        hyperstructureCreateSystemsAddress: resolvedSystemSelectors.hyperstructureCreateSystemsSelector
-          ? (contracts[resolvedSystemSelectors.hyperstructureCreateSystemsSelector] ?? null)
-          : null,
-        hyperstructureSystemsAddress: resolvedSystemSelectors.hyperstructureSystemsSelector
-          ? (contracts[resolvedSystemSelectors.hyperstructureSystemsSelector] ?? null)
           : null,
         nameSystemsAddress: resolvedSystemSelectors.nameSystemsSelector
           ? (contracts[resolvedSystemSelectors.nameSystemsSelector] ?? null)
@@ -3477,13 +3196,7 @@ export const GameEntryModal = ({
     setSettlementCheckComplete(false);
     setSettleStage("idle");
     setIsSettling(false);
-    setAssignedRealmCount(0);
     setSettledRealmCount(0);
-    setPendingSettlementVerificationTargetCount(null);
-    setPendingSettlementVerificationStartedAtMs(null);
-    setHyperstructures([]);
-    setIsInitializingHyperstructure(false);
-    setCurrentInitializingId(null);
     setEternumSettlementMode("realm");
     setSeasonPlacement(DEFAULT_SEASON_PLACEMENT);
     setSelectedSeasonPassTokenId(null);
@@ -3548,8 +3261,6 @@ export const GameEntryModal = ({
   const entryPreflightComplete = isGameEntryPreflightComplete({
     isEternumMode,
     isSpectateMode,
-    isForgeMode,
-    isBlitzMode,
     settlementCheckComplete,
   });
   const bootstrapStatus: "idle" | "pending-world" | "loading" | "ready" | "error" = preflightError
@@ -3677,7 +3388,6 @@ export const GameEntryModal = ({
     const result = resolveGameEntryModalPhase({
       bootstrapStatus,
       hasPhaseError: phaseError != null,
-      isForgeMode,
       isBlitzMode,
       isSpectateMode,
       worldMode,
@@ -3694,7 +3404,6 @@ export const GameEntryModal = ({
       hasVillagePass,
       hasSeasonPass,
       checksComplete,
-      needsHyperstructureInit,
       needsSettlement,
       canPlay,
       isBlitzSettlementUnlocked: blitzSettlementAvailability.isUnlocked,
@@ -3703,13 +3412,10 @@ export const GameEntryModal = ({
     debugLog(worldName, "Phase determined:", result, {
       bootstrapStatus,
       hasError: phaseError != null,
-      isForgeMode,
       isBlitzMode,
       isSpectateMode,
       checksComplete,
       settlementCheckComplete,
-      hyperstructureCheckComplete,
-      needsHyperstructureInit,
       needsSettlement,
       canPlay,
       isBlitzSettlementUnlocked: blitzSettlementAvailability.isUnlocked,
@@ -3750,13 +3456,10 @@ export const GameEntryModal = ({
   }, [
     bootstrapStatus,
     phaseError,
-    isForgeMode,
     isBlitzMode,
     isSpectateMode,
     checksComplete,
     settlementCheckComplete,
-    hyperstructureCheckComplete,
-    needsHyperstructureInit,
     needsSettlement,
     canPlay,
     blitzSettlementAvailability.isUnlocked,
@@ -3942,19 +3645,15 @@ export const GameEntryModal = ({
       const contractAddress =
         systemName === "blitz_realm_systems"
           ? resolvedWorldSystemAddresses?.blitzRealmSystemsAddress
-          : systemName === "hyperstructure_create_systems"
-            ? resolvedWorldSystemAddresses?.hyperstructureCreateSystemsAddress
-            : systemName === "hyperstructure_systems"
-              ? resolvedWorldSystemAddresses?.hyperstructureSystemsAddress
-              : systemName === "name_systems"
-                ? resolvedWorldSystemAddresses?.nameSystemsAddress
-                : systemName === "realm_systems"
-                  ? resolvedWorldSystemAddresses?.realmSystemsAddress
-                  : systemName === "spire_systems"
-                    ? resolvedWorldSystemAddresses?.spireSystemsAddress
-                    : systemName === "village_systems"
-                      ? resolvedWorldSystemAddresses?.villageSystemsAddress
-                      : null;
+          : systemName === "name_systems"
+            ? resolvedWorldSystemAddresses?.nameSystemsAddress
+            : systemName === "realm_systems"
+              ? resolvedWorldSystemAddresses?.realmSystemsAddress
+              : systemName === "spire_systems"
+                ? resolvedWorldSystemAddresses?.spireSystemsAddress
+                : systemName === "village_systems"
+                  ? resolvedWorldSystemAddresses?.villageSystemsAddress
+                  : null;
 
       if (!contractAddress) {
         throw new Error(`${systemName} contract not found for selected world`);
@@ -4109,7 +3808,7 @@ export const GameEntryModal = ({
       return;
     }
 
-    if (isSpectateMode || (isForgeMode && isBlitzMode)) {
+    if (isSpectateMode) {
       setNeedsSettlement(false);
       setCanPlay(true);
       setSettlementCheckComplete(true);
@@ -4150,44 +3849,20 @@ export const GameEntryModal = ({
     isEternumMode,
     isOpen,
     isSpectateMode,
-    isForgeMode,
     worldName,
     preflightRetryNonce,
     readSettlementSnapshot,
     syncSettlementStateFromSnapshot,
   ]);
 
-  // Hyperstructure initialization no longer blocks /enter. It can be handled after entering the world.
   useEffect(() => {
     if (!isOpen) {
-      return;
-    }
-
-    setHyperstructures([]);
-  }, [isOpen, worldName]);
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    if (isForgeMode && isBlitzMode) {
       return;
     }
 
     debugLog(worldName, "Resetting modal state for", worldName, "chain:", chain);
     resetBootstrapDependentState();
-  }, [chain, isBlitzMode, isForgeMode, isOpen, resetBootstrapDependentState, worldName]);
-
-  useEffect(() => {
-    if (!isOpen || !isForgeMode) {
-      return;
-    }
-
-    setNumHyperstructuresLeft(initialNumHyperstructuresLeft ?? 0);
-    setIsForging(false);
-    setForgeErrorMessage(null);
-  }, [chain, initialNumHyperstructuresLeft, isForgeMode, isOpen, worldName]);
+  }, [chain, isOpen, resetBootstrapDependentState, worldName]);
 
   // Retry handler
   const handleRetry = useCallback(() => {
@@ -4985,148 +4660,6 @@ export const GameEntryModal = ({
     void handleSettle();
   }, [autoSettleEnabled, handleSettle, isSettling, phase]);
 
-  // Reserve hyperstructure placeholders before players materialize them in-game.
-  const handleForgeHyperstructures = useCallback(async () => {
-    debugLog(worldName, "handleForgeHyperstructures called - hasAccount:", !!account);
-    if (!isBlitzMode) {
-      debugLog(worldName, "Skipping blitz forge flow outside blitz mode");
-      setForgeErrorMessage("Hyperstructure reservation is only available for Blitz worlds.");
-      return;
-    }
-    if (!account) {
-      setForgeErrorMessage("Connect a controller account before reserving hyperstructures.");
-      return;
-    }
-    if (nextForgeCount <= 0) {
-      setNumHyperstructuresLeft(0);
-      setForgeErrorMessage(null);
-      return;
-    }
-
-    setIsForging(true);
-    setForgeErrorMessage(null);
-
-    try {
-      const hyperstructureCreateSystemsAddress = resolveWorldSystemAddress("hyperstructure_create_systems");
-
-      const hyperstructureCount = nextForgeCount;
-      const signer = account as unknown as Account;
-
-      debugLog(worldName, "Reserving hyperstructures, count:", hyperstructureCount);
-      await executeEntryObservedTransaction({
-        signer,
-        calls: {
-          contractAddress: hyperstructureCreateSystemsAddress,
-          entrypoint: "reserve_hyperstructures",
-          calldata: [hyperstructureCount.toString()],
-        },
-        operation: "hyperstructure_create_systems.reserve_hyperstructures",
-        label: "reserve_hyperstructures",
-        waitForConfirmation: false,
-      });
-
-      debugLog(worldName, "Hyperstructures reserved!");
-      // Update local count
-      setNumHyperstructuresLeft((prev) => Math.max(0, prev - hyperstructureCount));
-
-      // Invalidate the world availability cache so the count updates on the landing page
-      const worldKey = getWorldKey({ name: worldName, chain });
-      queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
-    } catch (error) {
-      debugLog(worldName, "Reserve hyperstructures failed:", error);
-      setForgeErrorMessage(error instanceof Error ? error.message : "Failed to reserve hyperstructures.");
-    } finally {
-      setIsForging(false);
-    }
-  }, [account, isBlitzMode, worldName, nextForgeCount, chain, queryClient]);
-
-  // Initialize a single hyperstructure
-  const handleInitializeHyperstructure = useCallback(
-    async (entityId: number) => {
-      debugLog(worldName, "handleInitializeHyperstructure called for entityId:", entityId);
-      if (!account) return;
-
-      setIsInitializingHyperstructure(true);
-      setCurrentInitializingId(entityId);
-
-      try {
-        await executeEntryObservedTransaction({
-          signer: account as unknown as Account,
-          calls: {
-            contractAddress: resolveWorldSystemAddress("hyperstructure_systems"),
-            entrypoint: "initialize",
-            calldata: [entityId],
-          },
-          operation: "hyperstructure_initialize",
-          label: "hyperstructure initialize",
-          waitForConfirmation: false,
-        });
-
-        debugLog(worldName, "Hyperstructure initialized:", entityId);
-
-        // Update local state
-        setHyperstructures((prev) => prev.map((h) => (h.entityId === entityId ? { ...h, initialized: true } : h)));
-
-        // Check if all are now initialized
-        const remaining = hyperstructures.filter((h) => !h.initialized && h.entityId !== entityId);
-        if (remaining.length === 0) {
-          debugLog(worldName, "All hyperstructures initialized!");
-        }
-      } catch (error) {
-        debugLog(worldName, "Failed to initialize hyperstructure:", error);
-      } finally {
-        setIsInitializingHyperstructure(false);
-        setCurrentInitializingId(null);
-      }
-    },
-    [account, hyperstructures, resolveWorldSystemAddress, worldName],
-  );
-
-  // Initialize all hyperstructures
-  const handleInitializeAllHyperstructures = useCallback(async () => {
-    debugLog(worldName, "handleInitializeAllHyperstructures called");
-    if (!account) return;
-
-    const uninitialized = hyperstructures.filter((h) => !h.initialized);
-    if (uninitialized.length === 0) return;
-
-    setIsInitializingHyperstructure(true);
-
-    try {
-      for (const hs of uninitialized) {
-        setCurrentInitializingId(hs.entityId);
-        debugLog(worldName, "Initializing hyperstructure:", hs.entityId);
-
-        try {
-          await executeEntryObservedTransaction({
-            signer: account as unknown as Account,
-            calls: {
-              contractAddress: resolveWorldSystemAddress("hyperstructure_systems"),
-              entrypoint: "initialize",
-              calldata: [hs.entityId],
-            },
-            operation: "hyperstructure_initialize",
-            label: "hyperstructure initialize",
-            waitForConfirmation: false,
-          });
-
-          // Update local state
-          setHyperstructures((prev) => prev.map((h) => (h.entityId === hs.entityId ? { ...h, initialized: true } : h)));
-        } catch (error) {
-          debugLog(worldName, "Failed to initialize hyperstructure:", hs.entityId, error);
-          // Continue with next hyperstructure even if one fails
-        }
-      }
-
-      debugLog(worldName, "All hyperstructures initialization complete!");
-    } catch (error) {
-      debugLog(worldName, "Failed to initialize hyperstructures:", error);
-    } finally {
-      setIsInitializingHyperstructure(false);
-      setCurrentInitializingId(null);
-    }
-  }, [account, hyperstructures, resolveWorldSystemAddress, worldName]);
-
   // Auto-enter game when ready (spectate mode or already settled players)
   useEffect(() => {
     debugLog(worldName, "Auto-enter check - phase:", phase, "isSpectateMode:", isSpectateMode);
@@ -5212,14 +4745,8 @@ export const GameEntryModal = ({
         {/* Header */}
         <div className="px-6 pt-6 pb-2">
           <div className="flex items-center gap-2 text-xs text-gold/60 mb-1">
-            {isForgeMode ? (
-              <Sparkles className="w-3 h-3" />
-            ) : isSpectateMode ? (
-              <Eye className="w-3 h-3" />
-            ) : (
-              <Play className="w-3 h-3" />
-            )}
-            <span>{isForgeMode ? "Forging Hyperstructures" : isSpectateMode ? "Spectating" : "Entering"}</span>
+            {isSpectateMode ? <Eye className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+            <span>{isSpectateMode ? "Spectating" : "Entering"}</span>
           </div>
           <h3 className="text-lg font-bold text-gold truncate">{worldName}</h3>
         </div>
@@ -5270,29 +4797,6 @@ export const GameEntryModal = ({
             {(phase === "loading" || phase === "error") && (
               <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <BootstrapLoadingPanel tasks={tasks} progress={progress} error={phaseError} onRetry={handleRetry} />
-              </motion.div>
-            )}
-            {phase === "forge" && (
-              <motion.div key="forge" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <ForgeHyperstructuresPhase
-                  numHyperstructuresLeft={numHyperstructuresLeft}
-                  nextForgeCount={nextForgeCount}
-                  isForging={isForging}
-                  errorMessage={forgeErrorMessage}
-                  onForge={handleForgeHyperstructures}
-                  onClose={onClose}
-                />
-              </motion.div>
-            )}
-            {phase === "hyperstructure" && (
-              <motion.div key="hyperstructure" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <HyperstructurePhase
-                  hyperstructures={hyperstructures}
-                  isInitializing={isInitializingHyperstructure}
-                  currentInitializingId={currentInitializingId}
-                  onInitialize={handleInitializeHyperstructure}
-                  onInitializeAll={handleInitializeAllHyperstructures}
-                />
               </motion.div>
             )}
             {phase === "settlement-waiting" && (
