@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25715761216-1.json",
   "latestLaunchRequestId": "25715761216-1",
-  "currentStepId": "create-series",
+  "currentStepId": null,
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-12T05:41:12.196Z",
+  "updatedAt": "2026-05-12T05:41:17.239Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,17 +31,18 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-12T05:56:07.400Z",
-    "lastEvaluatedAt": "2026-05-12T05:41:07.400Z"
+    "nextEvaluationAt": "2026-05-12T05:56:17.239Z",
+    "lastEvaluatedAt": "2026-05-12T05:41:17.239Z"
   },
   "steps": [
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Creating series started",
-      "startedAt": "2026-05-12T05:41:12.196Z"
+      "latestEvent": "Series is ready to accept rotation games",
+      "startedAt": "2026-05-12T05:41:12.196Z",
+      "finishedAt": "2026-05-12T05:41:17.239Z"
     },
     {
       "id": "create-worlds",
@@ -5691,13 +5692,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25715761216-1",
-    "workflowRunId": 25715761216,
-    "workflowRunAttempt": 1,
-    "stepId": "create-series",
-    "acquiredAt": "2026-05-12T05:41:12.196Z",
-    "expiresAt": "2026-05-12T06:26:12.196Z"
   }
 }
