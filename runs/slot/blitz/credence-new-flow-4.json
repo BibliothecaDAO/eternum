@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25764824962-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-05-12T22:02:57.946Z",
-  "updatedAt": "2026-05-12T22:04:17.973Z",
+  "updatedAt": "2026-05-12T22:04:21.949Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-12T22:04:21.949Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -70,5 +71,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-credence-new-flow-4.json",
     "worldAddress": "0x077811a703fe290069608b0da7afc48c91c9f91831f0eb15958d71c57b76ed70",
     "createGameTxHash": "0x325216bac5dec05b945f132d3568a280225c420248294911c62deacffa440b3"
+  },
+  "activeLease": {
+    "launchRequestId": "25764824962-1",
+    "workflowRunId": 25764824962,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-05-12T22:04:21.949Z",
+    "expiresAt": "2026-05-12T22:49:21.949Z"
   }
 }
