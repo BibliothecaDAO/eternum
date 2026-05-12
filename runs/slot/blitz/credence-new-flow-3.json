@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25763784871-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-12T21:40:11.197Z",
-  "updatedAt": "2026-05-12T21:41:28.883Z",
+  "updatedAt": "2026-05-12T21:41:32.525Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-05-12T21:41:32.525Z"
     },
     {
       "id": "configure-world",
@@ -68,5 +69,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-credence-new-flow-3.json",
     "worldAddress": "0x071395d4de5d485a33ffd9f2e6078ce88a565a228db838a06328c898ed2d498a",
     "createGameTxHash": "0x3e9ffb526bee494bae379d6933f75af58be8c387034f8b192fc8726019000f1"
+  },
+  "activeLease": {
+    "launchRequestId": "25763784871-1",
+    "workflowRunId": 25763784871,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-05-12T21:41:32.525Z",
+    "expiresAt": "2026-05-12T22:26:32.525Z"
   }
 }
