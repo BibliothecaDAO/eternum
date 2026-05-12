@@ -44,7 +44,7 @@ import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
-import { processExplorerTroopsUpdate } from "@/three/scenes/worldmap-update-helpers";
+import { enqueueExplorerTroopsUpdate, processExplorerTroopsUpdate } from "@/three/scenes/worldmap-update-helpers";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
@@ -644,6 +644,7 @@ export default class WorldmapScene extends WarpTravel {
   // parallel with the tx, then applied after provider confirmation unless Torii
   // reconciles the authoritative position first.
   private pendingMovementPlans: Map<ID, Promise<ArmyMovementPlan | null>> = new Map();
+  private explorerTroopsUpdateQueue: Map<ID, Promise<void>> = new Map();
   private get hydratedChunkRefreshes(): Set<string> {
     return this.hydratedRefreshQueueState.queuedChunkKeys;
   }
@@ -1461,18 +1462,8 @@ export default class WorldmapScene extends WarpTravel {
     );
 
     this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Army.onExplorerTroopsUpdate(async (update) => {
-        await processExplorerTroopsUpdate(update, {
-          cancelPendingArmyRemoval: (entityId) => this.cancelPendingArmyRemoval(entityId),
-          scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
-          updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
-          moveArmyToAuthoritativeExplorerTroopsPosition: (update) =>
-            this.moveArmyToAuthoritativeExplorerTroopsPosition(update),
-          updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
-          onAuthoritativePositionApplied: (update) => this.clearPendingArmyMovementFromAuthoritativePosition(update),
-          shouldSkipStalePositionUpdate: (entityId, normalized) =>
-            this.armyManager.shouldSkipStalePositionUpdate(entityId, normalized),
-        });
+      this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
+        this.queueExplorerTroopsUpdate(update);
       }),
     );
 
@@ -1483,6 +1474,31 @@ export default class WorldmapScene extends WarpTravel {
         this.requestChunkRefresh(false, "army_dead");
       }),
     );
+  }
+
+  private queueExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): void {
+    enqueueExplorerTroopsUpdate(update, this.explorerTroopsUpdateQueue, {
+      processUpdate: (queuedUpdate) => this.applyExplorerTroopsUpdate(queuedUpdate),
+      onError: (error, failedUpdate) => this.handleExplorerTroopsUpdateError(error, failedUpdate),
+    });
+  }
+
+  private async applyExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): Promise<void> {
+    await processExplorerTroopsUpdate(update, {
+      cancelPendingArmyRemoval: (entityId) => this.cancelPendingArmyRemoval(entityId),
+      scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
+      updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
+      moveArmyToAuthoritativeExplorerTroopsPosition: (update) =>
+        this.moveArmyToAuthoritativeExplorerTroopsPosition(update),
+      updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
+      onAuthoritativePositionApplied: (update) => this.clearPendingArmyMovementFromAuthoritativePosition(update),
+      shouldSkipStalePositionUpdate: (entityId, normalized) =>
+        this.armyManager.shouldSkipStalePositionUpdate(entityId, normalized),
+    });
+  }
+
+  private handleExplorerTroopsUpdateError(error: unknown, update: ExplorerTroopsSystemUpdate): void {
+    console.error("[worldmap] ExplorerTroops update failed", { entityId: update.entityId, error });
   }
 
   private async moveArmyToAuthoritativeExplorerTroopsPosition(update: ExplorerTroopsSystemUpdate): Promise<void> {
@@ -8565,6 +8581,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementVisualLifecycleDisposers.clear();
     this.pendingArmyMovements.clear();
     this.pendingMovementPlans.clear();
+    this.explorerTroopsUpdateQueue.clear();
     if (this.handleTransactionComplete) {
       this.dojo.network?.provider?.off("transactionComplete", this.handleTransactionComplete);
     }

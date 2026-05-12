@@ -55,6 +55,16 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     expect(body).toContain("this.clearPendingArmyMovementFromAuthoritativePosition(update)");
   });
 
+  it("routes ExplorerTroops listener work through the per-entity queue", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const listenerStart = source.indexOf("this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {");
+    expect(listenerStart).toBeGreaterThan(-1);
+
+    const listenerBody = source.slice(listenerStart, listenerStart + 300);
+    expect(source).toContain("private explorerTroopsUpdateQueue: Map<ID, Promise<void>> = new Map()");
+    expect(listenerBody).toContain("this.queueExplorerTroopsUpdate(update)");
+  });
+
   it("animates authoritative ExplorerTroops movement before clearing pending movement", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
     const callStart = source.indexOf("await processExplorerTroopsUpdate(update, {");

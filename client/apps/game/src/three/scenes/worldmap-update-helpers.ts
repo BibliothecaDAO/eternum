@@ -11,6 +11,34 @@ type ExplorerTroopsUpdateHandlers = {
   shouldSkipStalePositionUpdate?: (entityId: ID, normalized: { x: number; y: number }) => boolean;
 };
 
+type ExplorerTroopsUpdateQueueHandlers = {
+  processUpdate: (update: ExplorerTroopsSystemUpdate) => Promise<void>;
+  onError?: (error: unknown, update: ExplorerTroopsSystemUpdate) => void;
+};
+
+export function enqueueExplorerTroopsUpdate(
+  update: ExplorerTroopsSystemUpdate,
+  queue: Map<ID, Promise<void>>,
+  handlers: ExplorerTroopsUpdateQueueHandlers,
+): void {
+  const entityId = update.entityId;
+  const previousUpdate = queue.get(entityId) ?? Promise.resolve();
+  const queuedUpdate = previousUpdate
+    .catch(() => undefined)
+    .then(() => handlers.processUpdate(update))
+    .catch((error) => {
+      handlers.onError?.(error, update);
+    });
+
+  queue.set(entityId, queuedUpdate);
+
+  void queuedUpdate.then(() => {
+    if (queue.get(entityId) === queuedUpdate) {
+      queue.delete(entityId);
+    }
+  });
+}
+
 export async function processExplorerTroopsUpdate(
   update: ExplorerTroopsSystemUpdate,
   handlers: ExplorerTroopsUpdateHandlers,

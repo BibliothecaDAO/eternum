@@ -34,11 +34,11 @@ describe("worldmap army tile-sync recovery", () => {
   it("does not advance tile-sync recovery from troop updates", () => {
     const src = readSource("worldmap.tsx");
 
-    const listenerStart = src.indexOf("this.worldUpdateListener.Army.onExplorerTroopsUpdate(async (update) => {");
-    expect(listenerStart).toBeGreaterThan(-1);
+    const handlerStart = src.indexOf("private async applyExplorerTroopsUpdate(");
+    expect(handlerStart).toBeGreaterThan(-1);
 
-    const listenerBody = src.slice(listenerStart, listenerStart + 1400);
-    expect(listenerBody).not.toContain("this.armyLastTileSyncAt.set(update.entityId");
+    const handlerBody = src.slice(handlerStart, handlerStart + 1400);
+    expect(handlerBody).not.toContain("this.armyLastTileSyncAt.set(update.entityId");
   });
 
   it("uses tile-sync timestamps for scheduled removal cancellation and deferred retry", () => {

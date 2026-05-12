@@ -59,12 +59,12 @@ describe("worldmap army suppression integration", () => {
   it("troop updates do not recover visuals before tile state catches up", () => {
     const src = readSource("worldmap.tsx");
 
-    const listenerStart = src.indexOf("this.worldUpdateListener.Army.onExplorerTroopsUpdate(async (update) => {");
-    expect(listenerStart).toBeGreaterThan(-1);
+    const handlerStart = src.indexOf("private async applyExplorerTroopsUpdate(");
+    expect(handlerStart).toBeGreaterThan(-1);
 
-    const listenerBody = src.slice(listenerStart, listenerStart + 1200);
-    expect(listenerBody).not.toContain("this.cancelPendingArmyRemoval(update.entityId)");
-    expect(listenerBody).not.toContain("restoreArmyVisualIfVisible(update.entityId)");
-    expect(listenerBody).toContain("this.armyManager.updateArmyFromExplorerTroopsUpdate(update)");
+    const handlerBody = src.slice(handlerStart, handlerStart + 1200);
+    expect(handlerBody).not.toContain("this.cancelPendingArmyRemoval(update.entityId)");
+    expect(handlerBody).not.toContain("restoreArmyVisualIfVisible(update.entityId)");
+    expect(handlerBody).toContain("this.armyManager.updateArmyFromExplorerTroopsUpdate(update)");
   });
 });
