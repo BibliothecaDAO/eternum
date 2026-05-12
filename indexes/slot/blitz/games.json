@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-12T22:55:11.873Z",
+  "updatedAt": "2026-05-12T22:56:44.046Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -952,7 +952,7 @@
       "path": "runs/slot/blitz/credence-new-flow-6.json",
       "inputPath": "inputs/slot/blitz/credence-new-flow-6/25766884744-1.json",
       "status": "complete",
-      "updatedAt": "2026-05-12T22:55:11.873Z",
+      "updatedAt": "2026-05-12T22:56:44.046Z",
       "workflowRef": "credence0x/blitz-hex-map",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -962,10 +962,8 @@
       "durationSeconds": 5400,
       "artifacts": {
         "indexerCreated": true,
-        "indexerTier": "basic",
-        "lastIndexerDescribeAt": "2026-05-12T22:55:03.410Z",
-        "pendingIndexerTierTarget": "legendary",
-        "pendingIndexerTierRequestedAt": "2026-05-12T22:55:10.391Z"
+        "indexerTier": "legendary",
+        "lastIndexerDescribeAt": "2026-05-12T22:56:44.046Z"
       }
     }
   }
