@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-12T22:41:43.892Z",
+  "updatedAt": "2026-05-12T22:56:46.296Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2039,6 +2039,19 @@
         "describedAt": "2026-05-12T22:32:06.364Z"
       },
       "updatedAt": "2026-05-12T22:32:06.364Z"
+    },
+    "credence-new-flow-6": {
+      "gameName": "credence-new-flow-6",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/credence-new-flow-6/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-12T22:56:46.296Z"
+      },
+      "updatedAt": "2026-05-12T22:56:46.296Z"
     }
   }
 }
