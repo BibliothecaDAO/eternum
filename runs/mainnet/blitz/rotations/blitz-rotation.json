@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25730164467-1.json",
   "latestLaunchRequestId": "25730164467-1",
-  "currentStepId": "wait-for-factory-indexes",
+  "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-12T11:03:35.250Z",
+  "updatedAt": "2026-05-12T11:03:41.111Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-12T11:18:26.134Z",
-    "lastEvaluatedAt": "2026-05-12T11:03:26.134Z"
+    "nextEvaluationAt": "2026-05-12T11:18:41.111Z",
+    "lastEvaluatedAt": "2026-05-12T11:03:41.111Z"
   },
   "steps": [
     {
@@ -56,10 +56,11 @@
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games started",
-      "startedAt": "2026-05-12T11:03:35.250Z"
+      "latestEvent": "Waiting for games is complete",
+      "startedAt": "2026-05-12T11:03:35.250Z",
+      "finishedAt": "2026-05-12T11:03:41.111Z"
     },
     {
       "id": "configure-worlds",
@@ -5697,7 +5698,7 @@
         },
         "seriesGameNumber": 30,
         "currentStepId": null,
-        "latestEvent": "Completed create-worlds",
+        "latestEvent": "Completed wait-for-factory-indexes",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -5714,8 +5715,9 @@
           },
           {
             "id": "wait-for-factory-indexes",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed wait-for-factory-indexes",
+            "updatedAt": "2026-05-12T11:03:39.867Z"
           },
           {
             "id": "configure-worlds",
@@ -5751,13 +5753,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25730164467-1",
-    "workflowRunId": 25730164467,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-indexes",
-    "acquiredAt": "2026-05-12T11:03:35.250Z",
-    "expiresAt": "2026-05-12T11:48:35.250Z"
   }
 }
