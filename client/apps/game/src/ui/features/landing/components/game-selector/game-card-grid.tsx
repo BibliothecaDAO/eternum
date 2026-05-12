@@ -1001,8 +1001,6 @@ export const UnifiedGameGrid = ({
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
   const landingNetworkState = useLandingNetworkState();
   const selectedLandingChain = landingNetworkState.preferredChain;
-  const autoSettleEntries = useAutoSettleStore((state) => state.entries);
-  const markOpening = useAutoSettleStore((state) => state.markOpening);
 
   // Check if there's a stored controller session that's still reconnecting
   // starknet-react stores the last connected connector as "lastUsedConnector" in localStorage
