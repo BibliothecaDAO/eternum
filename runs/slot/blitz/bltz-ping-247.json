@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25765155725-1",
   "currentStepId": null,
   "createdAt": "2026-05-12T22:10:35.111Z",
-  "updatedAt": "2026-05-12T22:30:17.633Z",
+  "updatedAt": "2026-05-12T22:32:04.095Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,13 +80,11 @@
     "worldConfigTxHash": "0x362baf164c4d8f81d889561445d435323425376bbb453a547c1191b3ca17543",
     "lootChestRoleTxHash": "0x67062e917d177b7c0ad6954080d690b1a65890d121b427ecd811951126c16f3",
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-ping-247/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-12T22:13:44.721Z",
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-05-12T22:30:16.163Z"
+    "lastIndexerDescribeAt": "2026-05-12T22:32:04.095Z"
   },
   "completedAt": "2026-05-12T22:13:46.072Z"
 }
