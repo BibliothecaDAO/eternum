@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-12T21:40:11.197Z",
+  "updatedAt": "2026-05-12T21:40:16.062Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -889,12 +889,13 @@
       "path": "runs/slot/blitz/credence-new-flow-3.json",
       "inputPath": "inputs/slot/blitz/credence-new-flow-3/25763784871-1.json",
       "status": "running",
-      "updatedAt": "2026-05-12T21:40:11.197Z",
+      "updatedAt": "2026-05-12T21:40:16.062Z",
       "workflowRef": "credence0x/blitz-hex-map",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-12T22:25:16.062Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-05-12T22:59:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
