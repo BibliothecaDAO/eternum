@@ -1,12 +1,15 @@
 // @vitest-environment node
 
 import { describe, expect, it } from "vitest";
+import { StructureType } from "@bibliothecadao/types";
 
 import {
   applyDashboardRegistrationHint,
   buildSettlementExecutionPlan,
   deriveSettlementPhaseViewModel,
   deriveSettlementStatus,
+  findIndexedRealmSettlement,
+  findNewIndexedVillageSettlement,
   getExpectedSettlementCount,
   hasReachedSettlementTarget,
   parseSnapshotRegistrationRow,
@@ -96,6 +99,49 @@ describe("hasReachedSettlementTarget", () => {
   it("keeps incomplete settlement targets pending", () => {
     expect(hasReachedSettlementTarget({ settledCount: 2 }, 3)).toBe(false);
     expect(hasReachedSettlementTarget({ settledCount: 0 }, 1)).toBe(false);
+  });
+});
+
+describe("findIndexedRealmSettlement", () => {
+  it("matches the newly indexed realm by realm id", () => {
+    const realm = { category: StructureType.Realm, entity_id: 101, realm_id: 77, coord_x: 12, coord_y: 13 };
+
+    expect(
+      findIndexedRealmSettlement(
+        [{ category: StructureType.Village, entity_id: 202, realm_id: null, coord_x: 12, coord_y: 13 }, realm],
+        { realmId: 77, coordX: null, coordY: null },
+      ),
+    ).toBe(realm);
+  });
+
+  it("falls back to selected settlement coordinates when the realm id is not indexed yet", () => {
+    const realm = { category: StructureType.Realm, entity_id: 101, realm_id: null, coord_x: 22, coord_y: 23 };
+
+    expect(
+      findIndexedRealmSettlement([realm], {
+        realmId: 77,
+        coordX: 22,
+        coordY: 23,
+      }),
+    ).toBe(realm);
+  });
+});
+
+describe("findNewIndexedVillageSettlement", () => {
+  it("returns the newest village that was not present before submission", () => {
+    const oldestVillage = { category: StructureType.Village, entity_id: 10, realm_id: null, coord_x: 1, coord_y: 1 };
+    const newVillage = { category: StructureType.Village, entity_id: 12, realm_id: null, coord_x: 3, coord_y: 3 };
+
+    expect(
+      findNewIndexedVillageSettlement(
+        [
+          oldestVillage,
+          { category: StructureType.Realm, entity_id: 11, realm_id: 5, coord_x: 2, coord_y: 2 },
+          newVillage,
+        ],
+        new Set([10]),
+      ),
+    ).toBe(newVillage);
   });
 });
 

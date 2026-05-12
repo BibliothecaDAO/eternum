@@ -117,6 +117,26 @@ const buildSyncingResult = ({
   recoveryStatus,
 });
 
+const waitForSubmittedSettlementProgress = async ({
+  targetSettleCount,
+  waitForSettlementTarget,
+  syncSettlementStateFromSnapshot,
+}: {
+  targetSettleCount: number;
+  waitForSettlementTarget: RunBlitzSettlementFlowParams["waitForSettlementTarget"];
+  syncSettlementStateFromSnapshot: RunBlitzSettlementFlowParams["syncSettlementStateFromSnapshot"];
+}) => {
+  const snapshot = await waitForSettlementTarget(targetSettleCount);
+  if (!snapshot) {
+    throw new Error("Timed out waiting for submitted settlement progress.");
+  }
+
+  const status = syncSettlementStateFromSnapshot(snapshot);
+  if (!hasReachedSettlementTarget(status, targetSettleCount)) {
+    throw new Error(`Settlement is still syncing: ${status.settledCount}/${targetSettleCount} realms settled.`);
+  }
+};
+
 export const runBlitzSettlementFlow = async ({
   isMainnet,
   singleRealmMode,
@@ -154,7 +174,11 @@ export const runBlitzSettlementFlow = async ({
       await runAssignAndSettle(plan.initialSettleCount);
       hasConfirmedSettlementSubmission = true;
       targetProgress = Math.min(plan.targetSettleCount, targetProgress + plan.initialSettleCount);
-      await waitForSettlementTarget(targetProgress);
+      await waitForSubmittedSettlementProgress({
+        targetSettleCount: targetProgress,
+        waitForSettlementTarget,
+        syncSettlementStateFromSnapshot,
+      });
     }
 
     if (plan.extraSettleCalls > 0) {
@@ -163,7 +187,11 @@ export const runBlitzSettlementFlow = async ({
         await runSingleSettle(stepIndex, plan.extraSettleCalls);
         hasConfirmedSettlementSubmission = true;
         targetProgress = Math.min(plan.targetSettleCount, targetProgress + 1);
-        await waitForSettlementTarget(targetProgress);
+        await waitForSubmittedSettlementProgress({
+          targetSettleCount: targetProgress,
+          waitForSettlementTarget,
+          syncSettlementStateFromSnapshot,
+        });
       }
     }
 

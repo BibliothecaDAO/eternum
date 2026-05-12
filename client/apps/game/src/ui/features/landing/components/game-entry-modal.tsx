@@ -57,8 +57,12 @@ import {
   applyDashboardRegistrationHint,
   deriveSettlementPhaseViewModel,
   deriveSettlementStatus,
+  findIndexedRealmSettlement,
+  findNewIndexedVillageSettlement,
   hasReachedSettlementTarget,
   parseSnapshotRegistrationRow,
+  type IndexedRealmSettlementTarget,
+  type SettlementSubmissionStatus,
   type SettleStage,
   type SettlementSnapshot,
 } from "./game-entry-settlement.utils";
@@ -363,7 +367,40 @@ const computeSeasonPlacementPreview = ({
   };
 };
 
+const buildSettlementStillSyncingMessage = (settlementType: "realm" | "village"): string =>
+  `${settlementType === "realm" ? "Realm" : "Village"} settlement submitted, but world sync is still catching up. Close and reopen this game card in a moment if it does not appear.`;
+
+const getSubmittedSettlementSyncMessage = (error: unknown): string | null => {
+  const raw = error instanceof Error ? error.message : String(error ?? "");
+  const message = raw.toLowerCase();
+  return message.includes("world sync is still catching up") ? raw : null;
+};
+
+const resolveSettlementSubmissionButtonLabel = ({
+  status,
+  idleLabel,
+  submittingLabel,
+}: {
+  status: SettlementSubmissionStatus;
+  idleLabel: string;
+  submittingLabel: string;
+}): string => {
+  if (status === "submitting") return submittingLabel;
+  if (status === "syncing") return "Checking settlement...";
+  return idleLabel;
+};
+
+const resolveSettlementSubmissionDetail = (status: SettlementSubmissionStatus): string | null => {
+  if (status === "submitting") return "Submitting transaction to your wallet.";
+  if (status === "syncing") return "Submitted but still syncing. Checking indexed world state.";
+  if (status === "failed") return "Settlement failed. You can retry once the wallet is ready.";
+  return null;
+};
+
 const mapSeasonSettleError = (error: unknown): string => {
+  const submittedSyncMessage = getSubmittedSettlementSyncMessage(error);
+  if (submittedSyncMessage) return submittedSyncMessage;
+
   const raw = error instanceof Error ? error.message : String(error ?? "");
   const message = raw.toLowerCase();
   const failingAddressMatch = raw.match(/address\s*(?:\n|:)?\s*(0x[0-9a-f]+)/i);
@@ -441,6 +478,9 @@ const mapSeasonSettleError = (error: unknown): string => {
 };
 
 const mapVillageSettleError = (error: unknown): string => {
+  const submittedSyncMessage = getSubmittedSettlementSyncMessage(error);
+  if (submittedSyncMessage) return submittedSyncMessage;
+
   const raw = error instanceof Error ? error.message : String(error ?? "");
   const message = raw.toLowerCase();
 
@@ -1220,6 +1260,7 @@ const SeasonPlacementPhase = ({
   onSelectSeasonPass,
   onConfirmSettlement,
   isSubmittingSettlement,
+  submissionStatus,
   placementValidationErrors,
   targetCoordPreview,
   settlementError,
@@ -1246,6 +1287,7 @@ const SeasonPlacementPhase = ({
   onSelectSeasonPass: (tokenId: bigint | null) => void;
   onConfirmSettlement: () => void;
   isSubmittingSettlement: boolean;
+  submissionStatus: SettlementSubmissionStatus;
   placementValidationErrors: string[];
   targetCoordPreview: SeasonPlacementPreview | null;
   settlementError: string | null;
@@ -1265,13 +1307,12 @@ const SeasonPlacementPhase = ({
   const maxPointForLayer = Math.max(0, placement.layer - 1);
   const canSubmit =
     selectedSeasonPassTokenId != null && canSettle && placementValidationErrors.length === 0 && !isSubmittingSettlement;
-  const submitLabel = isSubmittingSettlement
-    ? spiresSettled
-      ? "Settling..."
-      : "Creating Spires + Settling..."
-    : spiresSettled
-      ? "Settle Realm"
-      : "Create Spires + Settle Realm";
+  const submitLabel = resolveSettlementSubmissionButtonLabel({
+    status: submissionStatus,
+    idleLabel: spiresSettled ? "Settle Realm" : "Create Spires + Settle Realm",
+    submittingLabel: spiresSettled ? "Submitting..." : "Creating Spires + Settling...",
+  });
+  const submissionDetail = resolveSettlementSubmissionDetail(submissionStatus);
   const spiresProgressLabel =
     spiresSettledCount != null && spiresMaxCount != null
       ? `${Math.min(spiresSettledCount, spiresMaxCount)} / ${spiresMaxCount}`
@@ -1562,6 +1603,7 @@ const SeasonPlacementPhase = ({
       )}
 
       {settlementError && <p className="text-[11px] text-red-200">{settlementError}</p>}
+      {submissionDetail && !settlementError && <p className="text-[11px] text-gold/70">{submissionDetail}</p>}
 
       <div className="sticky bottom-0 z-10 rounded-xl border border-gold/30 bg-gradient-to-r from-[#1a1309]/95 via-[#20170c]/95 to-[#120d07]/95 px-3 py-3 shadow-[0_-10px_25px_rgba(0,0,0,0.35)] backdrop-blur-sm">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -1751,6 +1793,7 @@ const VillagePlacementPhase = ({
   onSelectDirection,
   onConfirmSettlement,
   isSubmittingSettlement,
+  submissionStatus,
   settlementError,
   villagePassInventoryError,
   villageSlotsError,
@@ -1776,6 +1819,7 @@ const VillagePlacementPhase = ({
   onSelectDirection: (direction: Direction | null) => void;
   onConfirmSettlement: () => void;
   isSubmittingSettlement: boolean;
+  submissionStatus: SettlementSubmissionStatus;
   settlementError: string | null;
   villagePassInventoryError: string | null;
   villageSlotsError: string | null;
@@ -1792,6 +1836,12 @@ const VillagePlacementPhase = ({
     selectedDirection != null &&
     selectedDirectionSlot?.isAvailable === true &&
     !isSubmittingSettlement;
+  const submitLabel = resolveSettlementSubmissionButtonLabel({
+    status: submissionStatus,
+    idleLabel: "Settle Village",
+    submittingLabel: "Submitting Village...",
+  });
+  const submissionDetail = resolveSettlementSubmissionDetail(submissionStatus);
 
   return (
     <div className="flex flex-col gap-4">
@@ -1945,6 +1995,7 @@ const VillagePlacementPhase = ({
       />
 
       {settlementError && <p className="text-[11px] text-red-200">{settlementError}</p>}
+      {submissionDetail && !settlementError && <p className="text-[11px] text-gold/70">{submissionDetail}</p>}
 
       <div className="sticky bottom-0 z-10 rounded-xl border border-gold/30 bg-gradient-to-r from-[#1a1309]/95 via-[#20170c]/95 to-[#120d07]/95 px-3 py-3 shadow-[0_-10px_25px_rgba(0,0,0,0.35)] backdrop-blur-sm">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -1967,7 +2018,7 @@ const VillagePlacementPhase = ({
           >
             <div className="flex items-center justify-center gap-2">
               {isSubmittingSettlement ? <Loader2 className="h-4 w-4 animate-spin" /> : <Castle className="h-4 w-4" />}
-              <span>{isSubmittingSettlement ? "Settling Village..." : "Settle Village"}</span>
+              <span>{submitLabel}</span>
             </div>
           </Button>
         </div>
@@ -2027,6 +2078,8 @@ const SettlementPlannerPhase = ({
   onConfirmVillageSettlement,
   isSubmittingRealmSettlement,
   isSubmittingVillageSettlement,
+  realmSettlementSubmissionStatus,
+  villageSettlementSubmissionStatus,
   seasonSettlementError,
   villageSettlementError,
   onEnterGame,
@@ -2082,6 +2135,8 @@ const SettlementPlannerPhase = ({
   onConfirmVillageSettlement: () => void;
   isSubmittingRealmSettlement: boolean;
   isSubmittingVillageSettlement: boolean;
+  realmSettlementSubmissionStatus: SettlementSubmissionStatus;
+  villageSettlementSubmissionStatus: SettlementSubmissionStatus;
   seasonSettlementError: string | null;
   villageSettlementError: string | null;
   onEnterGame: () => void;
@@ -2099,6 +2154,18 @@ const SettlementPlannerPhase = ({
   const selectedSeasonPass = seasonPasses.find((pass) => pass.tokenId === selectedSeasonPassTokenId) ?? null;
   const selectedVillagePass = villagePasses.find((pass) => pass.tokenId === selectedVillagePassTokenId) ?? null;
   const plannerAction = selectedRealmSlot != null ? "realm" : selectedVillageSlot != null ? "village" : "info";
+  const realmSettlementSubmitLabel = resolveSettlementSubmissionButtonLabel({
+    status: realmSettlementSubmissionStatus,
+    idleLabel: "Settle Realm",
+    submittingLabel: "Submitting Realm...",
+  });
+  const realmSettlementSubmissionDetail = resolveSettlementSubmissionDetail(realmSettlementSubmissionStatus);
+  const villageSettlementSubmitLabel = resolveSettlementSubmissionButtonLabel({
+    status: villageSettlementSubmissionStatus,
+    idleLabel: "Settle Village",
+    submittingLabel: "Submitting Village...",
+  });
+  const villageSettlementSubmissionDetail = resolveSettlementSubmissionDetail(villageSettlementSubmissionStatus);
   const spiresProgressLabel =
     spiresSettledCount != null && spiresMaxCount != null
       ? `${Math.min(spiresSettledCount, spiresMaxCount)} / ${spiresMaxCount}`
@@ -2362,6 +2429,9 @@ const SettlementPlannerPhase = ({
             )}
 
             {seasonSettlementError && <p className="text-[11px] text-red-200">{seasonSettlementError}</p>}
+            {realmSettlementSubmissionDetail && !seasonSettlementError && (
+              <p className="text-[11px] text-gold/70">{realmSettlementSubmissionDetail}</p>
+            )}
 
             <Button
               onClick={onConfirmRealmSettlement}
@@ -2375,7 +2445,7 @@ const SettlementPlannerPhase = ({
                 ) : (
                   <Castle className="h-4 w-4" />
                 )}
-                <span>{isSubmittingRealmSettlement ? "Settling Realm..." : "Settle Realm"}</span>
+                <span>{realmSettlementSubmitLabel}</span>
               </div>
             </Button>
           </div>
@@ -2487,6 +2557,9 @@ const SettlementPlannerPhase = ({
             )}
 
             {villageSettlementError && <p className="text-[11px] text-red-200">{villageSettlementError}</p>}
+            {villageSettlementSubmissionDetail && !villageSettlementError && (
+              <p className="text-[11px] text-gold/70">{villageSettlementSubmissionDetail}</p>
+            )}
 
             <Button
               onClick={onConfirmVillageSettlement}
@@ -2500,7 +2573,7 @@ const SettlementPlannerPhase = ({
                 ) : (
                   <Castle className="h-4 w-4" />
                 )}
-                <span>{isSubmittingVillageSettlement ? "Settling Village..." : "Settle Village"}</span>
+                <span>{villageSettlementSubmitLabel}</span>
               </div>
             </Button>
           </div>
@@ -3026,6 +3099,10 @@ export const GameEntryModal = ({
   const [villagePassDistributorTransferError, setVillagePassDistributorTransferError] = useState<string | null>(null);
   const [isSubmittingVillageSettlement, setIsSubmittingVillageSettlement] = useState(false);
   const [villageSettlementError, setVillageSettlementError] = useState<string | null>(null);
+  const [seasonSettlementSubmissionStatus, setSeasonSettlementSubmissionStatus] =
+    useState<SettlementSubmissionStatus>("idle");
+  const [villageSettlementSubmissionStatus, setVillageSettlementSubmissionStatus] =
+    useState<SettlementSubmissionStatus>("idle");
   const [villageRevealResult, setVillageRevealResult] = useState<VillageRevealResult | null>(null);
   const [settlementPlannerTarget, setSettlementPlannerTarget] = useState<SettlementPlannerTarget | null>(null);
   const [settlementPlannerConflict, setSettlementPlannerConflict] = useState<string | null>(null);
@@ -3240,6 +3317,31 @@ export const GameEntryModal = ({
     }
     return distributorVillagePassInventoryError;
   }, [distributorVillagePassInventoryError]);
+  const invalidateEternumSettlementQueries = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["eternumOwnedStructures", chain, worldName, account?.address] });
+    void queryClient.invalidateQueries({ queryKey: ["eternumRealmVillageSlots", chain, worldName] });
+    void queryClient.invalidateQueries({ queryKey: ["seasonPlacementOccupiedSlots", chain, worldName] });
+    void queryClient.invalidateQueries({ queryKey: ["settlementPlannerSnapshot", chain, worldName] });
+    void queryClient.invalidateQueries({ queryKey: ["settlementPlannerExploredTiles", chain, worldName] });
+  }, [account?.address, chain, queryClient, worldName]);
+  const refetchSettlementPlannerData = settlementPlannerData.refetch;
+  const refreshEternumSettlementQueries = useCallback(async () => {
+    invalidateEternumSettlementQueries();
+    await Promise.allSettled([
+      refetchOwnedStructures(),
+      refetchRealmVillageSlots(),
+      refetchSeasonPassInventory(),
+      refetchVillagePassInventory(),
+      refetchSettlementPlannerData(),
+    ]);
+  }, [
+    invalidateEternumSettlementQueries,
+    refetchOwnedStructures,
+    refetchRealmVillageSlots,
+    refetchSeasonPassInventory,
+    refetchVillagePassInventory,
+    refetchSettlementPlannerData,
+  ]);
   const ownedRealms = useMemo<OwnedRealmOption[]>(() => {
     return (ownedStructures as PlayerStructure[])
       .filter((structure) => structure.category === StructureType.Realm)
@@ -3318,6 +3420,8 @@ export const GameEntryModal = ({
       setSeasonSettlementComplete(false);
       setIsSubmittingVillageSettlement(false);
       setVillageSettlementError(null);
+      setSeasonSettlementSubmissionStatus("idle");
+      setVillageSettlementSubmissionStatus("idle");
       setVillageRevealResult(null);
       setSettlementPlannerTarget(null);
       setSettlementPlannerConflict(null);
@@ -3416,10 +3520,12 @@ export const GameEntryModal = ({
 
   useEffect(() => {
     setSeasonSettlementError(null);
+    setSeasonSettlementSubmissionStatus("idle");
   }, [selectedSeasonPassTokenId, seasonPlacement.side, seasonPlacement.layer, seasonPlacement.point]);
 
   useEffect(() => {
     setVillageSettlementError(null);
+    setVillageSettlementSubmissionStatus("idle");
   }, [selectedVillagePassTokenId, selectedVillageRealmEntityId, selectedVillageDirection]);
 
   useEffect(() => {
@@ -3486,6 +3592,8 @@ export const GameEntryModal = ({
     setVillagePassDistributorTransferError(null);
     setIsSubmittingVillageSettlement(false);
     setVillageSettlementError(null);
+    setSeasonSettlementSubmissionStatus("idle");
+    setVillageSettlementSubmissionStatus("idle");
     setVillageRevealResult(null);
     setSettlementPlannerTarget(null);
     setSettlementPlannerConflict(null);
@@ -3506,6 +3614,14 @@ export const GameEntryModal = ({
 
     return () => window.clearInterval(id);
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen || !isEternumMode) {
+      return;
+    }
+
+    void refreshEternumSettlementQueries();
+  }, [isEternumMode, isOpen, refreshEternumSettlementQueries]);
 
   const blitzSettlementAvailability = resolveBlitzSettlementAvailability({
     startMainAt: worldMeta?.startMainAt ?? null,
@@ -3937,13 +4053,9 @@ export const GameEntryModal = ({
         chain,
         worldName,
         waitForConfirmation,
-        ...(waitForConfirmation
-          ? {
-              confirm: async (txHash) => {
-                await confirmSubmittedTransaction(txHash, label, fallbackWaitAccount);
-              },
-            }
-          : {}),
+        confirm: async (txHash) => {
+          await confirmSubmittedTransaction(txHash, label, fallbackWaitAccount);
+        },
       });
     },
     [chain, confirmSubmittedTransaction, worldName],
@@ -4062,11 +4174,39 @@ export const GameEntryModal = ({
     [buildSetAddressNameCall, resolveWorldSystemAddress],
   );
 
+  const waitForRealmSettlementIndex = useCallback(
+    async ({
+      ownerAddress,
+      target,
+      timeoutMs = SETTLEMENT_SYNC_TIMEOUT_MS,
+    }: {
+      ownerAddress: string;
+      target: IndexedRealmSettlementTarget;
+      timeoutMs?: number;
+    }): Promise<PlayerStructure> => {
+      const startedAt = Date.now();
+      while (Date.now() - startedAt < timeoutMs) {
+        const structures = await selectedWorldSqlApi.fetchPlayerStructures(ownerAddress);
+        const indexedRealm = findIndexedRealmSettlement(structures as PlayerStructure[], target);
+        if (indexedRealm) {
+          await refreshEternumSettlementQueries();
+          return indexedRealm;
+        }
+
+        invalidateEternumSettlementQueries();
+        await new Promise((resolve) => window.setTimeout(resolve, SETTLEMENT_PROGRESS_POLL_MS));
+      }
+
+      throw new Error(buildSettlementStillSyncingMessage("realm"));
+    },
+    [invalidateEternumSettlementQueries, refreshEternumSettlementQueries, selectedWorldSqlApi],
+  );
+
   const waitForVillageResourceReveal = useCallback(
     async ({
       ownerAddress,
       existingVillageIds,
-      timeoutMs = 45_000,
+      timeoutMs = SETTLEMENT_SYNC_TIMEOUT_MS,
     }: {
       ownerAddress: string;
       existingVillageIds: Set<number>;
@@ -4075,16 +4215,13 @@ export const GameEntryModal = ({
       const startedAt = Date.now();
       while (Date.now() - startedAt < timeoutMs) {
         const structures = await selectedWorldSqlApi.fetchPlayerStructures(ownerAddress);
-        const newVillage = structures
-          .filter(
-            (structure) => structure.category === StructureType.Village && !existingVillageIds.has(structure.entity_id),
-          )
-          .toSorted((left, right) => right.entity_id - left.entity_id)[0];
+        const newVillage = findNewIndexedVillageSettlement(structures as PlayerStructure[], existingVillageIds);
 
         if (newVillage) {
           const resourceId = resolvePrimaryVillageResource(newVillage.resources_packed);
           const resourceLabel = resourceId != null ? resolveResourceLabel(resourceId) : null;
           if (resourceId != null && resourceLabel) {
+            await refreshEternumSettlementQueries();
             return {
               villageEntityId: newVillage.entity_id,
               resourceId,
@@ -4093,12 +4230,13 @@ export const GameEntryModal = ({
           }
         }
 
-        await new Promise((resolve) => window.setTimeout(resolve, 1500));
+        invalidateEternumSettlementQueries();
+        await new Promise((resolve) => window.setTimeout(resolve, SETTLEMENT_PROGRESS_POLL_MS));
       }
 
-      throw new Error("Village created but resource assignment is not indexed in Torii yet.");
+      throw new Error(buildSettlementStillSyncingMessage("village"));
     },
-    [selectedWorldSqlApi],
+    [invalidateEternumSettlementQueries, refreshEternumSettlementQueries, selectedWorldSqlApi],
   );
 
   // Check settlement status after bootstrap completes
@@ -4224,6 +4362,7 @@ export const GameEntryModal = ({
       setSettlementPlannerSuccess(null);
 
       if (target.type === "realm_slot") {
+        setSeasonSettlementSubmissionStatus("idle");
         setSeasonPlacement({
           side: target.slot.side,
           layer: target.slot.layer,
@@ -4232,6 +4371,7 @@ export const GameEntryModal = ({
       }
 
       if (target.type === "village_slot") {
+        setVillageSettlementSubmissionStatus("idle");
         setSelectedVillageRealmEntityId(target.slot.realmEntityId);
         setSelectedVillageDirection(target.slot.direction);
       }
@@ -4540,8 +4680,10 @@ export const GameEntryModal = ({
     }
 
     setIsSubmittingSeasonSettlement(true);
+    setSeasonSettlementSubmissionStatus("submitting");
     setSeasonSettlementError(null);
     setSettlementPlannerConflict(null);
+    setSettlementPlannerSuccess(null);
 
     if (unifiedSettlementPlannerEnabled && settlementPlannerRealmTarget) {
       captureClientEvent("planner_submit_clicked", {
@@ -4621,6 +4763,17 @@ export const GameEntryModal = ({
       const realmId = Number(realmIdBigInt);
       const owner = account.address;
       const frontend = account.address;
+      const settlementTarget: IndexedRealmSettlementTarget = {
+        realmId,
+        coordX:
+          unifiedSettlementPlannerEnabled && settlementPlannerRealmTarget
+            ? settlementPlannerRealmTarget.coordX
+            : (targetCoordPreview?.x ?? null),
+        coordY:
+          unifiedSettlementPlannerEnabled && settlementPlannerRealmTarget
+            ? settlementPlannerRealmTarget.coordY
+            : (targetCoordPreview?.y ?? null),
+      };
 
       const seasonPassTokenId = uint256.bnToUint256(realmIdBigInt);
       const optionalPlayerName = await resolveOptionalPlayerNameForSettlement();
@@ -4655,13 +4808,20 @@ export const GameEntryModal = ({
         label: optionalPlayerName
           ? "set address name + approve season pass + season realm create"
           : "approve season pass + season realm create",
+        waitForConfirmation: false,
+      });
+
+      setSeasonSettlementSubmissionStatus("syncing");
+      setSettlementPlannerSuccess("Settlement submitted. Checking indexed world state.");
+      await waitForRealmSettlementIndex({
+        ownerAddress: account.address,
+        target: settlementTarget,
       });
 
       setSeasonSettlementError(null);
-      void refetchSeasonPassInventory();
       void refetchDistributorVillagePassInventory();
-      void refetchOwnedStructures();
       setSeasonSettlementComplete(true);
+      setSeasonSettlementSubmissionStatus("completed");
       setSettlementPlannerSuccess("Realm settled. New village slots will unlock on the planner as sync catches up.");
 
       if (unifiedSettlementPlannerEnabled && settlementPlannerRealmTarget) {
@@ -4683,6 +4843,7 @@ export const GameEntryModal = ({
       }
     } catch (error) {
       debugLog(worldName, "Season settlement failed:", error);
+      setSeasonSettlementSubmissionStatus("failed");
       setSeasonSettlementError(mapSeasonSettleError(error));
       if (unifiedSettlementPlannerEnabled) {
         captureClientEvent("planner_submit_failed", {
@@ -4699,6 +4860,7 @@ export const GameEntryModal = ({
     unifiedSettlementPlannerEnabled,
     settlementPlannerRealmTarget,
     selectedSeasonPassTokenId,
+    targetCoordPreview,
     seasonPlacementErrors,
     seasonTimingValid,
     spiresSettled,
@@ -4717,9 +4879,8 @@ export const GameEntryModal = ({
     executeEntryObservedTransaction,
     resolveOptionalPlayerNameForSettlement,
     buildSetAddressNameCall,
-    refetchSeasonPassInventory,
     refetchDistributorVillagePassInventory,
-    refetchOwnedStructures,
+    waitForRealmSettlementIndex,
     settlementPlannerData,
     queryClient,
   ]);
@@ -4772,8 +4933,10 @@ export const GameEntryModal = ({
     }
 
     setIsSubmittingVillageSettlement(true);
+    setVillageSettlementSubmissionStatus("submitting");
     setVillageSettlementError(null);
     setSettlementPlannerConflict(null);
+    setSettlementPlannerSuccess(null);
 
     if (unifiedSettlementPlannerEnabled && settlementPlannerVillageTarget) {
       captureClientEvent("planner_submit_clicked", {
@@ -4801,8 +4964,11 @@ export const GameEntryModal = ({
         calls: villageSettlementCalls,
         operation: "village_systems.create",
         label: optionalPlayerName ? "set address name + village_systems.create" : "village_systems.create",
+        waitForConfirmation: false,
       });
 
+      setVillageSettlementSubmissionStatus("syncing");
+      setSettlementPlannerSuccess("Village submitted. Checking indexed world state.");
       const revealResult = await waitForVillageResourceReveal({
         ownerAddress: account.address,
         existingVillageIds,
@@ -4811,12 +4977,9 @@ export const GameEntryModal = ({
       setVillageRevealResult(revealResult);
       setVillageSettlementError(null);
       setEternumSettlementMode("village");
+      setVillageSettlementSubmissionStatus("completed");
       setSettlementPlannerSuccess("Village settled. Reveal complete; you can keep planning from the map.");
 
-      refetchVillagePassInventory();
-      void refetchOwnedStructures();
-      void refetchRealmVillageSlots();
-      void settlementPlannerData.refetch();
       if (unifiedSettlementPlannerEnabled) {
         captureClientEvent("planner_submit_succeeded", {
           worldName,
@@ -4826,6 +4989,7 @@ export const GameEntryModal = ({
       }
     } catch (error) {
       debugLog(worldName, "Village settlement failed:", error);
+      setVillageSettlementSubmissionStatus("failed");
       setVillageSettlementError(mapVillageSettleError(error));
       if (unifiedSettlementPlannerEnabled) {
         captureClientEvent("planner_submit_failed", {
@@ -4852,10 +5016,6 @@ export const GameEntryModal = ({
     buildVillageSettlementCalls,
     executeEntryObservedTransaction,
     waitForVillageResourceReveal,
-    refetchVillagePassInventory,
-    refetchOwnedStructures,
-    refetchRealmVillageSlots,
-    settlementPlannerData,
     worldName,
     chain,
   ]);
@@ -4863,6 +5023,7 @@ export const GameEntryModal = ({
   const handleSettleAnotherVillage = useCallback(() => {
     setVillageRevealResult(null);
     setVillageSettlementError(null);
+    setVillageSettlementSubmissionStatus("idle");
     setEternumSettlementMode("village");
     setSettlementPlannerSuccess("Village settled. Choose another free slot or enter the game.");
     void refetchOwnedStructures();
@@ -4959,6 +5120,7 @@ export const GameEntryModal = ({
         calls: assignCalls,
         operation: "assign_and_settle_realms",
         label: "assign_and_settle_realms",
+        waitForConfirmation: false,
       });
     },
     [executeEntryObservedTransaction],
@@ -4985,6 +5147,7 @@ export const GameEntryModal = ({
         },
         operation: "settle_realms",
         label: `settle_realms ${stepIndex + 1}/${totalSteps}`,
+        waitForConfirmation: false,
       });
     },
     [executeEntryObservedTransaction],
@@ -5555,6 +5718,8 @@ export const GameEntryModal = ({
                   onConfirmVillageSettlement={handleVillageSettle}
                   isSubmittingRealmSettlement={isSubmittingSeasonSettlement}
                   isSubmittingVillageSettlement={isSubmittingVillageSettlement}
+                  realmSettlementSubmissionStatus={seasonSettlementSubmissionStatus}
+                  villageSettlementSubmissionStatus={villageSettlementSubmissionStatus}
                   seasonSettlementError={seasonSettlementError}
                   villageSettlementError={villageSettlementError ?? ownedStructuresError}
                   onEnterGame={handleEnterGame}
@@ -5610,6 +5775,7 @@ export const GameEntryModal = ({
                   onSelectSeasonPass={setSelectedSeasonPassTokenId}
                   onConfirmSettlement={handleSeasonSettle}
                   isSubmittingSettlement={isSubmittingSeasonSettlement}
+                  submissionStatus={seasonSettlementSubmissionStatus}
                   placementValidationErrors={seasonPlacementErrors}
                   targetCoordPreview={targetCoordPreview}
                   settlementError={seasonSettlementError}
@@ -5676,6 +5842,7 @@ export const GameEntryModal = ({
                   onSelectDirection={setSelectedVillageDirection}
                   onConfirmSettlement={handleVillageSettle}
                   isSubmittingSettlement={isSubmittingVillageSettlement}
+                  submissionStatus={villageSettlementSubmissionStatus}
                   settlementError={villageSettlementError ?? ownedStructuresError}
                   villagePassInventoryError={villagePassInventoryWarning}
                   villageSlotsError={villageSlotsError}

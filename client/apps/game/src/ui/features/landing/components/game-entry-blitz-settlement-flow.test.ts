@@ -82,6 +82,36 @@ describe("runBlitzSettlementFlow", () => {
     expect(result.recoveryStatus?.canPlay).toBe(false);
   });
 
+  it("does not submit extra mainnet settlement calls before initial progress is indexed", async () => {
+    const readSettlementSnapshot = vi
+      .fn<() => Promise<SettlementSnapshot | null>>()
+      .mockResolvedValueOnce(snapshot({ registered: true }))
+      .mockResolvedValueOnce(snapshot({ onceRegistered: true, settledCount: 0 }));
+    const runAssignAndSettle = vi.fn<(_: number) => Promise<void>>().mockResolvedValue(undefined);
+    const runSingleSettle = vi.fn<(_: number, __: number) => Promise<void>>().mockResolvedValue(undefined);
+    const waitForSettlementTarget = vi
+      .fn<(_: number) => Promise<SettlementSnapshot | null>>()
+      .mockResolvedValue(snapshot({ onceRegistered: true, settledCount: 0 }));
+
+    const result = await runBlitzSettlementFlow({
+      isMainnet: true,
+      singleRealmMode: false,
+      readSettlementSnapshot,
+      syncSettlementStateFromSnapshot: deriveSettlementStatus,
+      waitForSettlementTarget,
+      onStageChange: vi.fn(),
+      runAssignAndSettle,
+      runSingleSettle,
+    });
+
+    expect(result).toMatchObject({
+      status: "syncing",
+      pendingTargetSettleCount: 3,
+    });
+    expect(runAssignAndSettle).toHaveBeenCalledWith(1);
+    expect(runSingleSettle).not.toHaveBeenCalled();
+  });
+
   it("fails when verification breaks before any settlement submission is confirmed", async () => {
     const readSettlementSnapshot = vi
       .fn<() => Promise<SettlementSnapshot | null>>()

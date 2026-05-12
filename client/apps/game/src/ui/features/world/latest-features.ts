@@ -22,6 +22,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-12",
+    title: "Reliable Realm Settlement",
+    description:
+      "Fixed landing settlement flows so submitted realm and village transactions keep checking synced world state instead of spinning until a hard refresh.",
+    type: "fix",
+  },
+  {
     date: "2026-05-07",
     title: "Scrollable Tile HUD",
     description:

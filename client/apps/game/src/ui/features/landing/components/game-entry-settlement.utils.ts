@@ -1,4 +1,5 @@
 import { parseMaybeBooleanFlag } from "@/config/game-modes/resolved-mode";
+import { StructureType } from "@bibliothecadao/types";
 
 export type SettlementSnapshot = {
   registered: boolean;
@@ -29,6 +30,22 @@ export type SettlementStatus = {
 };
 
 export type SettleStage = "idle" | "assigning" | "settling" | "syncing" | "done" | "error";
+
+export type SettlementSubmissionStatus = "idle" | "submitting" | "syncing" | "failed" | "completed";
+
+type IndexedSettlementStructure = {
+  category?: number | null;
+  entity_id?: number | null;
+  realm_id?: number | null;
+  coord_x?: number | null;
+  coord_y?: number | null;
+};
+
+export type IndexedRealmSettlementTarget = {
+  realmId: number | null;
+  coordX: number | null;
+  coordY: number | null;
+};
 
 type SettlementStepStatus = "pending" | "active" | "complete";
 
@@ -66,6 +83,38 @@ export const hasReachedSettlementTarget = (
   progress: Pick<SettlementSnapshot, "settledCount"> | Pick<SettlementStatus, "settledCount">,
   targetSettleCount: number,
 ): boolean => Math.max(0, progress.settledCount) >= Math.max(0, targetSettleCount);
+
+const hasMatchingRealmId = (structure: IndexedSettlementStructure, target: IndexedRealmSettlementTarget): boolean =>
+  target.realmId != null && structure.realm_id === target.realmId;
+
+const hasMatchingCoordinates = (structure: IndexedSettlementStructure, target: IndexedRealmSettlementTarget): boolean =>
+  target.coordX != null &&
+  target.coordY != null &&
+  structure.coord_x === target.coordX &&
+  structure.coord_y === target.coordY;
+
+export const findIndexedRealmSettlement = <T extends IndexedSettlementStructure>(
+  structures: T[],
+  target: IndexedRealmSettlementTarget,
+): T | null =>
+  structures.find(
+    (structure) =>
+      Number(structure.category) === StructureType.Realm &&
+      (hasMatchingRealmId(structure, target) || hasMatchingCoordinates(structure, target)),
+  ) ?? null;
+
+export const findNewIndexedVillageSettlement = <T extends IndexedSettlementStructure>(
+  structures: T[],
+  existingVillageIds: Set<number>,
+): T | null =>
+  structures
+    .filter(
+      (structure) =>
+        Number(structure.category) === StructureType.Village &&
+        structure.entity_id != null &&
+        !existingVillageIds.has(structure.entity_id),
+    )
+    .toSorted((left, right) => Number(right.entity_id ?? 0) - Number(left.entity_id ?? 0))[0] ?? null;
 
 const buildCompletedStepStatuses = (): SettlementPhaseViewModel["stepStatuses"] => ({
   1: "complete",
