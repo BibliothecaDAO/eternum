@@ -78,14 +78,16 @@ describe("Worldmap optimistic mirror gated on applyMovementPlan result", () => {
   it("emits optimistic_animation_skipped latency phase when the plan no-ops", () => {
     const source = readSource("worldmap.tsx");
 
-    const handlerStart = source.indexOf("private async applySubmittedArmyMovementOptimisticPlan(");
-    const handlerEnd = source.indexOf("\n  private ", handlerStart + 20);
-    const handler = source.slice(handlerStart, handlerEnd);
+    const helperStart = source.indexOf("private clearArrivalGhostAfterOptimisticMovementAbort(");
+    expect(helperStart).toBeGreaterThan(-1);
+    const helperEnd = source.indexOf("\n  private ", helperStart + 20);
+    expect(helperEnd).toBeGreaterThan(helperStart);
+    const helper = source.slice(helperStart, helperEnd);
 
     // Observability: without this phase marker, the no-op path is invisible
     // in the latency trace and we can't confirm from logs which early-return
     // fired in production.
-    expect(handler).toContain('"optimistic_animation_skipped"');
+    expect(helper).toContain('"optimistic_animation_skipped"');
   });
 
   it("registers optimistic_animation_skipped in the latency phase union", () => {

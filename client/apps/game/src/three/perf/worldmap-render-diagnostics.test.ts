@@ -203,4 +203,16 @@ describe("worldmap-render-diagnostics", () => {
 
     expect(snapshot.counters).toHaveProperty("duplicateTileAuthoritativeUpdates", 1);
   });
+
+  it("tracks ghost-army recovery counters for pending removal cancellation sources", () => {
+    incrementWorldmapRenderCounter("pendingArmyRemovalCancelledByTileRecovery" as any);
+    incrementWorldmapRenderCounter("pendingArmyRemovalCancelledByExplorerTroopsZero" as any);
+    incrementWorldmapRenderCounter("pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery" as any);
+
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    expect(snapshot.counters).toHaveProperty("pendingArmyRemovalCancelledByTileRecovery", 1);
+    expect(snapshot.counters).toHaveProperty("pendingArmyRemovalCancelledByExplorerTroopsZero", 1);
+    expect(snapshot.counters).toHaveProperty("pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery", 1);
+  });
 });
