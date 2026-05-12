@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25702835262-1",
   "currentStepId": null,
   "createdAt": "2026-05-11T23:13:40.749Z",
-  "updatedAt": "2026-05-12T00:40:11.491Z",
+  "updatedAt": "2026-05-12T00:41:38.284Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -100,13 +100,11 @@
     "villagePassRoleTxHash": "0x52016e9d8c6d08c7d36994daba11e173e6f1ffc77f205924fa7094f6d8a12f0",
     "createBanksTxHash": "0x2f9f8b83199cfcab8117186a579d56a372719a3c2e63eedaa66d01375bf07a3",
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/etrn-crest-172/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-11T23:31:51.962Z",
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-05-12T00:40:10.362Z"
+    "lastIndexerDescribeAt": "2026-05-12T00:41:38.284Z"
   },
   "completedAt": "2026-05-11T23:17:16.869Z"
 }
