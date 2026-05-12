@@ -1,9 +1,22 @@
 // @vitest-environment node
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  resolveBlitzGrantStartingTroops: vi.fn(() => true),
+}));
+
+vi.mock("@/services/blitz/blitz-settlement-options", () => ({
+  resolveBlitzGrantStartingTroops: mocks.resolveBlitzGrantStartingTroops,
+}));
 
 import { buildBlitzSettleCalls } from "./blitz-settlement";
 
 describe("buildBlitzSettleCalls", () => {
+  beforeEach(() => {
+    mocks.resolveBlitzGrantStartingTroops.mockReset();
+    mocks.resolveBlitzGrantStartingTroops.mockReturnValue(true);
+  });
+
   it("emits an explicit empty cosmetic span when no cosmetics are selected", () => {
     const calls = buildBlitzSettleCalls({
       blitzSystemsAddress: "0xabc",
@@ -15,7 +28,7 @@ describe("buildBlitzSettleCalls", () => {
     expect(calls[0]).toMatchObject({
       contractAddress: "0xabc",
       entrypoint: "settle",
-      calldata: ["0x123", "1", "0"],
+      calldata: ["291", "1", "0", "1"],
     });
   });
 
@@ -57,7 +70,22 @@ describe("buildBlitzSettleCalls", () => {
     expect(calls[0]).toMatchObject({
       contractAddress: "0xabc",
       entrypoint: "settle",
-      calldata: ["0x123", "1", "2", "0x1", "0x2"],
+      calldata: ["291", "1", "2", "1", "2", "1"],
+    });
+  });
+
+  it("appends a disabled troop grant flag when the dev override turns it off", () => {
+    mocks.resolveBlitzGrantStartingTroops.mockReturnValue(false);
+
+    const calls = buildBlitzSettleCalls({
+      blitzSystemsAddress: "0xabc",
+      usernameFelt: "0x123",
+    });
+
+    expect(calls[0]).toMatchObject({
+      contractAddress: "0xabc",
+      entrypoint: "settle",
+      calldata: ["291", "1", "0", "0"],
     });
   });
 

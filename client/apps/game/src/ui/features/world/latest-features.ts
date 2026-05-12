@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-12",
+    title: "Blitz Realm Provisioning",
+    description:
+      "Blitz realms now enter with a lighter initial setup and show a dedicated in-world provision action beside realm upgrades once the main phase starts, so delayed economy activation is available exactly when it matters.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-11",
     title: "Safer Blitz Entry Tokens",
     description:

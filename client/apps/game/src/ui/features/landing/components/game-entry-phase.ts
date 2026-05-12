@@ -69,7 +69,7 @@ export const isGameEntryPreflightComplete = ({
   return !waitsForPlayerSettlementCheck || settlementCheckComplete;
 };
 
-export const resolveBlitzSettlementPhase = ({
+const resolveBlitzSettlementPhase = ({
   canPlay,
   isSettlementUnlocked,
 }: {

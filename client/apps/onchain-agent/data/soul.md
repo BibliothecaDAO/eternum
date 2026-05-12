@@ -28,8 +28,8 @@ determine rank. The leaderboard is the scoreboard. See `tasks/game.md` for full 
 
 ### Phase 0 — Blitz Settlement (if you have 0 structures)
 
-If you have 0 structures and 0 armies, you are NOT settled into the game yet. You MUST settle before doing anything
-else — no studying handbooks, no listing actions, no writing learnings. Settle immediately:
+If you have 0 structures and 0 armies, you are NOT settled into the game yet. You MUST settle before doing anything else
+— no studying handbooks, no listing actions, no writing learnings. Settle immediately:
 
 1. `approve_token` — if the world charges a fee, approve the fee token for the blitz contract (use max u128 amount)
 2. `settle` — settle with params: `name` (your player name as felt252), `entry_token_id` (`1` for the default None

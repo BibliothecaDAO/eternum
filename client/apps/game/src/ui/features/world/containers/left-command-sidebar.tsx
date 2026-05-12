@@ -36,6 +36,7 @@ import {
   formatUsedBuildingTilesLabel,
   resolveAvailableBuildingTiles,
 } from "@/ui/features/world/containers/structure-status";
+import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
 import type { getEntityInfo } from "@bibliothecadao/eternum";
@@ -698,7 +699,7 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
         <StructureStatusStats populationLabel={populationStatusLabel} buildingTilesLabel={buildingTilesStatusLabel} />
       )}
       {structure.category === StructureType.Realm && (
-        <StructureLevelUpButton structureEntityId={structure.entityId} className="shrink-0" />
+        <StructureRealmActions structureEntityId={structure.entityId} className="shrink-0" />
       )}
     </div>
   );
@@ -719,13 +720,14 @@ const ORDERED_MENU_IDS: MenuEnum[] = [
   MenuEnum.predictionMarket, // Prediction Market
 ];
 
-type StructureLevelUpButtonProps = {
+type StructureRealmActionsProps = {
   structureEntityId: ID | null;
   className?: string;
 };
 
-const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevelUpButtonProps) => {
+const StructureRealmActions = ({ structureEntityId, className }: StructureRealmActionsProps) => {
   const upgradeInfo = useStructureUpgrade(typeof structureEntityId === "number" ? structureEntityId : null);
+  const provisionInfo = useBlitzRealmProvision(typeof structureEntityId === "number" ? structureEntityId : null);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   if (!upgradeInfo) {
@@ -819,6 +821,25 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
     });
   };
 
+  const canRenderProvisionAction = Boolean(
+    provisionInfo &&
+    (provisionInfo.canProvision ||
+      provisionInfo.isProvisionLoading ||
+      provisionInfo.provisionActionState === "syncTimeout"),
+  );
+  const canProvision = provisionInfo?.canProvision ?? false;
+  const isProvisionDisabled = !canProvision || Boolean(provisionInfo?.isProvisionLocked);
+  const shouldGlowProvision = canProvision && !isProvisionDisabled;
+
+  const handleProvision = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (!provisionInfo || isProvisionDisabled) return;
+
+    void provisionInfo.handleProvision().catch((error) => {
+      console.error("Failed to provision realm", error);
+    });
+  };
+
   return (
     <div className={clsx("flex items-center gap-2", className)}>
       <button
@@ -835,6 +856,27 @@ const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevel
       >
         {upgradeInfo.isUpgradeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : renderIcon()}
       </button>
+      {canRenderProvisionAction && (
+        <button
+          type="button"
+          onClick={handleProvision}
+          disabled={isProvisionDisabled}
+          className={clsx(
+            "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
+            shouldGlowProvision
+              ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.35)]"
+              : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
+          )}
+          aria-label="Provision realm"
+          title="Provision realm"
+        >
+          {provisionInfo?.isProvisionLoading ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Pickaxe className="h-3.5 w-3.5" />
+          )}
+        </button>
+      )}
       <button
         type="button"
         onMouseEnter={showRequirementsTooltip}

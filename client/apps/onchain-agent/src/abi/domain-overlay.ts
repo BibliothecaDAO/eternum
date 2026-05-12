@@ -832,7 +832,8 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
     paramOverrides: {
       name: { description: "Player name (felt252 encoded)" },
       entry_token_id: {
-        description: "Optional entry token selector. Use 1 for the default None path unless you know you need a token ID.",
+        description:
+          "Optional entry token selector. Use 1 for the default None path unless you know you need a token ID.",
       },
       cosmetic_token_ids: { description: "Array of cosmetic token IDs. Use [] when you have none." },
     },

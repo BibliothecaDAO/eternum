@@ -275,12 +275,7 @@ async function handleBlitzSettleWithTemporaryCollectionApproval(
   const name = String(params.name ?? "");
   const entryTokenId = String(params.entry_token_id ?? params.entryTokenId ?? "1");
   const cosmeticTokenIds = toStringArray(params.cosmetic_token_ids ?? params.cosmeticTokenIds);
-  const settleCalldata = [
-    name,
-    entryTokenId,
-    cosmeticTokenIds.length.toString(),
-    ...cosmeticTokenIds,
-  ];
+  const settleCalldata = [name, entryTokenId, cosmeticTokenIds.length.toString(), ...cosmeticTokenIds];
   const calls: Call[] = [];
 
   if (_tokenConfig.entryToken) {

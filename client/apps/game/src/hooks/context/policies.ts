@@ -73,6 +73,10 @@ export const buildPolicies = (manifest: any) =>
             name: "settle",
             entrypoint: "settle",
           },
+          {
+            name: "provision_realm",
+            entrypoint: "provision_realm",
+          },
         ],
       },
       [getContractByName(manifest, "s1_eternum", "hyperstructure_create_systems").address]: {

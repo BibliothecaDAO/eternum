@@ -10,7 +10,7 @@ describe("Game card blitz entry", () => {
       "utf8",
     );
 
-    expect(source).toContain('const handleSettle = useCallback(() => {');
+    expect(source).toContain("const handleSettle = useCallback(() => {");
     expect(source).toContain("void settle().catch((err) => {");
     expect(source).toContain('return "Settling...";');
     expect(source).toContain('return "Settle";');

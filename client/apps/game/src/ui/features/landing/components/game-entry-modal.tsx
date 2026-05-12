@@ -9,18 +9,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRealmInfo } from "@bibliothecadao/eternum";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  AlertCircle,
-  Castle,
-  Check,
-  ExternalLink,
-  Eye,
-  Loader2,
-  MapPin,
-  Play,
-  Sparkles,
-  X,
-} from "lucide-react";
+import { AlertCircle, Castle, Check, ExternalLink, Eye, Loader2, MapPin, Play, Sparkles, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -135,7 +124,8 @@ const deriveSettlementStatus = ({
 }): SettlementStatus => {
   const settledCount = Math.max(0, snapshot.settledCount);
   const canPlay =
-    snapshot.hasSettledStructure || (snapshot.hasSettlementRecord && settledCount >= Math.max(1, expectedSettlementCount));
+    snapshot.hasSettledStructure ||
+    (snapshot.hasSettlementRecord && settledCount >= Math.max(1, expectedSettlementCount));
 
   return {
     settledCount,
@@ -1059,16 +1049,16 @@ const SettlementPhase = ({
 
 const SettlementWaitingPhase = ({ secondsUntilUnlock }: { secondsUntilUnlock: number | null }) => {
   const countdownLabel =
-    secondsUntilUnlock == null ? "Waiting for the registration window to open." : formatUnlockCountdown(secondsUntilUnlock);
+    secondsUntilUnlock == null
+      ? "Waiting for the registration window to open."
+      : formatUnlockCountdown(secondsUntilUnlock);
 
   return (
     <div className="flex flex-col">
       <div className="text-center mb-4">
         <img src="/images/logos/eternum-loader.png" className="mx-auto w-20 mb-3" alt="Settlement pending" />
         <h2 className="text-lg font-semibold text-gold">Settlement Opens Soon</h2>
-        <p className="text-xs text-gold/60 mt-1">
-          Blitz settlement opens when the registration window begins.
-        </p>
+        <p className="text-xs text-gold/60 mt-1">Blitz settlement opens when the registration window begins.</p>
       </div>
 
       <div className="rounded-lg border border-gold/20 bg-black/25 px-4 py-5 text-center">
@@ -3817,10 +3807,7 @@ export const GameEntryModal = ({
     const playerAddress = formatAddressForQuery(account.address);
     const [settlementRows, playerStructures] = await Promise.all([
       fetchWithErrorHandling<DirectSettlementSnapshotRow>(
-        buildApiUrl(
-          selectedWorldSqlBaseUrl,
-          buildPlayerBlitzSettlementSnapshotQuery(playerAddress),
-        ),
+        buildApiUrl(selectedWorldSqlBaseUrl, buildPlayerBlitzSettlementSnapshotQuery(playerAddress)),
         "Failed to fetch blitz settlement state",
       ),
       // Owned-structure indexing can lag behind settle-finish rows right after submission.
@@ -3957,17 +3944,17 @@ export const GameEntryModal = ({
           ? resolvedWorldSystemAddresses?.blitzRealmSystemsAddress
           : systemName === "hyperstructure_create_systems"
             ? resolvedWorldSystemAddresses?.hyperstructureCreateSystemsAddress
-          : systemName === "hyperstructure_systems"
-            ? resolvedWorldSystemAddresses?.hyperstructureSystemsAddress
-            : systemName === "name_systems"
-              ? resolvedWorldSystemAddresses?.nameSystemsAddress
-              : systemName === "realm_systems"
-                ? resolvedWorldSystemAddresses?.realmSystemsAddress
-                : systemName === "spire_systems"
-                  ? resolvedWorldSystemAddresses?.spireSystemsAddress
-                  : systemName === "village_systems"
-                    ? resolvedWorldSystemAddresses?.villageSystemsAddress
-                    : null;
+            : systemName === "hyperstructure_systems"
+              ? resolvedWorldSystemAddresses?.hyperstructureSystemsAddress
+              : systemName === "name_systems"
+                ? resolvedWorldSystemAddresses?.nameSystemsAddress
+                : systemName === "realm_systems"
+                  ? resolvedWorldSystemAddresses?.realmSystemsAddress
+                  : systemName === "spire_systems"
+                    ? resolvedWorldSystemAddresses?.spireSystemsAddress
+                    : systemName === "village_systems"
+                      ? resolvedWorldSystemAddresses?.villageSystemsAddress
+                      : null;
 
       if (!contractAddress) {
         throw new Error(`${systemName} contract not found for selected world`);
@@ -4874,27 +4861,18 @@ export const GameEntryModal = ({
     void settlementPlannerData.refetch();
   }, [refetchOwnedStructures, refetchRealmVillageSlots, refetchVillagePassInventory, settlementPlannerData]);
 
-  const finalizeSuccessfulBlitzSettlement = useCallback(
-    () => {
-      debugLog(worldName, "Settlement complete!");
-      setSettleStage("done");
-      setNeedsSettlement(false);
-      if (autoSettleEnabled && autoSettleEntryKey) {
-        markCompleted(autoSettleEntryKey);
-      }
+  const finalizeSuccessfulBlitzSettlement = useCallback(() => {
+    debugLog(worldName, "Settlement complete!");
+    setSettleStage("done");
+    setNeedsSettlement(false);
+    if (autoSettleEnabled && autoSettleEntryKey) {
+      markCompleted(autoSettleEntryKey);
+    }
 
-      setTimeout(() => {
-        handleEnterGame();
-      }, 1000);
-    },
-    [
-      autoSettleEnabled,
-      autoSettleEntryKey,
-      handleEnterGame,
-      markCompleted,
-      worldName,
-    ],
-  );
+    setTimeout(() => {
+      handleEnterGame();
+    }, 1000);
+  }, [autoSettleEnabled, autoSettleEntryKey, handleEnterGame, markCompleted, worldName]);
 
   const finalizeFailedBlitzSettlement = useCallback(
     (error: Error) => {

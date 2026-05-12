@@ -1,4 +1,5 @@
 import { CallData, uint256, type Call } from "starknet";
+import { resolveBlitzGrantStartingTroops } from "@/services/blitz/blitz-settlement-options";
 
 interface BuildBlitzSettleCallsParams {
   blitzSystemsAddress: string;
@@ -18,6 +19,7 @@ export const buildBlitzSettleCalls = ({
   cosmeticTokenIds = [],
 }: BuildBlitzSettleCallsParams): Call[] => {
   const cosmeticCalldata = cosmeticTokenIds.length > 0 ? [String(cosmeticTokenIds.length), ...cosmeticTokenIds] : ["0"];
+  const grantStartingTroopsCalldata = resolveBlitzGrantStartingTroops() ? "1" : "0";
   const calls: Call[] = [];
   const requiresEntryTokenApproval = Boolean(entryTokenAddress && feeAmount > 0n);
 
@@ -46,7 +48,7 @@ export const buildBlitzSettleCalls = ({
     contractAddress: blitzSystemsAddress,
     entrypoint: "settle",
     // `Option<u128>::None` serializes as enum index `1` in the current manifest.
-    calldata: CallData.compile([usernameFelt, "1", ...cosmeticCalldata]),
+    calldata: CallData.compile([usernameFelt, "1", ...cosmeticCalldata, grantStartingTroopsCalldata]),
   });
 
   if (requiresEntryTokenApproval) {
