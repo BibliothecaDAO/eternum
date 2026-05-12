@@ -1,7 +1,16 @@
+use crate::alias::ID;
+
 #[starknet::interface]
 pub trait IBlitzRealmSystems<T> {
     fn obtain_entry_token(ref self: T);
-    fn settle(ref self: T, name: felt252, entry_token_id: Option<u128>, cosmetic_token_ids: Span<u128>);
+    fn settle(
+        ref self: T,
+        name: felt252,
+        entry_token_id: Option<u128>,
+        cosmetic_token_ids: Span<u128>,
+        grant_starting_troops: bool,
+    );
+    fn provision_realm(ref self: T, structure_id: ID);
 }
 
 #[dojo::contract]
@@ -20,9 +29,11 @@ pub mod blitz_realm_systems {
     };
     use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
     use crate::models::name::AddressName;
+    use crate::models::owner::OwnerAddressImpl;
     use crate::models::position::{Coord, CoordImpl};
-    use crate::models::resource::production::production::ProductionStrategyImpl;
-    use crate::models::structure::StructureOwnerStats;
+    use crate::models::structure::{
+        StructureBase, StructureBaseStoreImpl, StructureCategory, StructureOwnerStats, StructureOwnerStoreImpl,
+    };
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use crate::systems::prize_distribution::contracts::prize_distribution_systems;
     use crate::systems::realm::utils::contracts::{
@@ -81,7 +92,11 @@ pub mod blitz_realm_systems {
         }
 
         fn settle(
-            ref self: ContractState, name: felt252, entry_token_id: Option<u128>, cosmetic_token_ids: Span<u128>,
+            ref self: ContractState,
+            name: felt252,
+            entry_token_id: Option<u128>,
+            cosmetic_token_ids: Span<u128>,
+            grant_starting_troops: bool,
         ) {
             let mut world: WorldStorage = self.world(DEFAULT_NS());
             let caller = starknet::get_caller_address();
@@ -167,7 +182,7 @@ pub mod blitz_realm_systems {
                 ref world, ref blitz_settlement_config, vrf_seed,
             );
             let settlement_structure_ids = BlitzRealmSettlementInternalImpl::create_player_realms(
-                ref world, caller, settlement_coords,
+                ref world, caller, settlement_coords, grant_starting_troops,
             );
             world.write_model(@BlitzSettlement { player: caller, structure_ids: settlement_structure_ids.span() });
 
@@ -184,6 +199,35 @@ pub mod blitz_realm_systems {
 
             let now = starknet::get_block_timestamp();
             world.emit_event(@BlitzSettlementEvent { player: caller, timestamp: now.into() });
+        }
+
+        fn provision_realm(ref self: ContractState, structure_id: ID) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let season_config = SeasonConfigImpl::get(world);
+
+            ////////////////////////////////////////////////
+            // Provisioning Window
+            ////////////////////////////////////////////////
+
+            season_config.assert_started_and_not_over();
+
+            ////////////////////////////////////////////////
+            // Validate Realm Ownership
+            ////////////////////////////////////////////////
+
+            let structure_owner = StructureOwnerStoreImpl::retrieve(ref world, structure_id);
+            structure_owner.assert_caller_owner();
+
+            let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
+            assert!(structure_base.category == StructureCategory::Realm.into(), "structure is not a realm");
+
+            ////////////////////////////////////////////////
+            // Provision Realm Economy
+            ////////////////////////////////////////////////
+
+            let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
+            IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
+                .provision_internal(structure_id);
         }
     }
 
@@ -388,7 +432,10 @@ pub mod blitz_realm_systems {
     #[generate_trait]
     impl BlitzRealmSettlementInternalImpl of BlitzRealmSettlementInternalTrait {
         fn create_player_realms(
-            ref world: WorldStorage, owner: ContractAddress, settlement_coords: Span<Coord>,
+            ref world: WorldStorage,
+            owner: ContractAddress,
+            settlement_coords: Span<Coord>,
+            grant_starting_troops: bool,
         ) -> Array<ID> {
             let realm_count_selector = selector!("realm_count_config");
             let mut realm_count: RealmCountConfig = WorldConfigUtilImpl::get_member(world, realm_count_selector);
@@ -402,9 +449,9 @@ pub mod blitz_realm_systems {
                 let realm_id = realm_count.count.into();
                 let settlement_coord = *remaining_coords.pop_front().unwrap();
                 let structure_id = IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
-                    .create_internal(owner, realm_id, resources.clone(), 0, 1, settlement_coord, false);
-
-                ProductionStrategyImpl::seed_unbounded_structure_labor_output(ref world, structure_id);
+                    .create_internal(
+                        owner, realm_id, resources.clone(), 0, 1, settlement_coord, false, grant_starting_troops,
+                    );
 
                 let now = starknet::get_block_timestamp();
                 world

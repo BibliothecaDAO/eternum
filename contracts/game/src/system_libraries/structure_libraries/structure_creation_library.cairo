@@ -23,7 +23,7 @@ pub trait IStructureCreationlibrary<T> {
     fn grant_starting_resources(
         self: @T, world: WorldStorage, structure_id: ID, structure_category: StructureCategory, structure_coord: Coord,
     );
-    fn grant_starting_resources_only(
+    fn grant_starting_non_troop_resources(
         self: @T, world: WorldStorage, structure_id: ID, structure_category: StructureCategory, structure_coord: Coord,
     );
     fn grant_starting_troop_resources(
@@ -247,7 +247,7 @@ pub mod structure_creation_library {
             );
         }
 
-        fn grant_starting_resources_only(
+        fn grant_starting_non_troop_resources(
             self: @ContractState,
             world: WorldStorage,
             structure_id: ID,
@@ -362,7 +362,7 @@ pub mod structure_creation_library {
     }
 
     pub fn get_dispatcher(world: @WorldStorage) -> super::IStructureCreationlibraryLibraryDispatcher {
-        let (_, class_hash) = world.dns(@"structure_creation_library_v0_1_15").expect('structure create lib not found');
+        let (_, class_hash) = world.dns(@"structure_creation_library_v0_1_16").expect('structure create lib not found');
         super::IStructureCreationlibraryLibraryDispatcher { class_hash }
     }
 }

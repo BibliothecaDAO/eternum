@@ -14407,10 +14407,10 @@
         },
         {
           "class_hash": "0x63836ecade686b1c66d1b20c66e36ce66866c6644932485ab9fedfdad901b87",
-          "tag": "s1_eternum-structure_creation_library_v0_1_15",
+          "tag": "s1_eternum-structure_creation_library_v0_1_16",
           "selector": "0x639c98a812a97151f1cc210d9e844c0c962ca760f2a13f63a6ff3b9b6ca58f3",
           "systems": [],
-          "version": "0_1_15"
+          "version": "0_1_16"
         }
       ],
       "models": [
@@ -28889,7 +28889,7 @@
             },
             {
               "type": "function",
-              "name": "grant_starting_resources_only",
+              "name": "grant_starting_non_troop_resources",
               "inputs": [
                 {
                   "name": "world",
