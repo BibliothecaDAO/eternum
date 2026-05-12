@@ -1,5 +1,4 @@
-import { env } from "../../../../../env";
-import { setSelectedChain, useSelectedRuntimeChain } from "@/runtime/world";
+import { getSelectedChain, setSelectedChain, useSelectedRuntimeChain } from "@/runtime/world";
 import {
   resolveConnectedTxChainFromRuntime,
   switchWalletToChain,
@@ -7,7 +6,7 @@ import {
 } from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 
 import {
   resolveLandingNetworkState,
@@ -26,11 +25,21 @@ interface LandingNetworkControllerState {
   switchToPreferredChain: (chain: LandingNetworkChain) => Promise<boolean>;
 }
 
+const DEFAULT_LANDING_CHAIN: Chain = "mainnet";
+
+const selectDefaultLandingChainIfMissing = () => {
+  if (getSelectedChain()) return;
+  setSelectedChain(DEFAULT_LANDING_CHAIN);
+};
+
 export const useLandingNetworkState = (): LandingNetworkControllerState => {
-  const fallbackChain = env.VITE_PUBLIC_CHAIN as Chain;
-  const selectedChain = useSelectedRuntimeChain(fallbackChain);
+  const selectedChain = useSelectedRuntimeChain(DEFAULT_LANDING_CHAIN);
   const { address, chainId, connector } = useAccount();
   const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller ?? null;
+
+  useEffect(() => {
+    selectDefaultLandingChainIfMissing();
+  }, []);
 
   const connectedChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
 

@@ -30,6 +30,13 @@ const allLatestFeatures: LatestFeature[] = [
     gameSlug: "world",
   },
   {
+    date: "2026-05-12",
+    title: "Saved Network Choice",
+    description:
+      "The landing network switch now remembers your last Mainnet or Slot choice after refresh, while first-time visits still start on Mainnet.",
+    type: "fix",
+  },
+  {
     date: "2026-05-11",
     title: "Safer Blitz Entry Tokens",
     description:
@@ -44,6 +51,28 @@ const allLatestFeatures: LatestFeature[] = [
       "Blitz entry now settles you into a world with one action, and the setup flow reserves hyperstructure slots in clean 25-slot batches instead of walking through the old staged entry path.",
     type: "improvement",
     gameSlug: "landing",
+  },
+  {
+    date: "2026-05-07",
+    title: "Scrollable Tile HUD",
+    description:
+      "Fixed bottom-right entity and building detail panes so oversized info scrolls without moving the biome and action summary.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-06",
+    title: "Focused Chain Views",
+    description:
+      "Landing games, profile ranks, MMR, prediction markets, and cosmetics now follow the selected landing chain through one shared network state.",
+    type: "fix",
+  },
+  {
+    date: "2026-05-06",
+    title: "Map Sync Recovery",
+    description:
+      "Improved map stream recovery so delayed spatial updates enter a reconnecting state, retry cleanly, and surface network trouble when the map cannot restore live updates.",
+    type: "fix",
   },
   {
     date: "2026-04-30",

@@ -23,7 +23,19 @@ import {
   DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { useCallback, useMemo } from "react";
+import { type ReactNode, useCallback, useMemo } from "react";
+
+const occupiedEntityLayoutClass =
+  "grid h-full min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-2 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:grid-rows-1";
+const entityInfoScrollPaneClass =
+  "h-full min-h-0 min-w-0 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent";
+const scrollableEntityDetailClass = "h-auto min-h-full min-w-0 overflow-visible";
+const scrollableEntitySectionClass = "flex h-auto min-h-full min-w-0";
+const supportingEntitySectionClass = "flex min-h-0 min-w-0";
+
+const EntityInfoScrollPane = ({ children }: { children: ReactNode }) => (
+  <div className={entityInfoScrollPaneClass}>{children}</div>
+);
 
 export const SelectedWorldmapEntity = () => {
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -106,28 +118,32 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
 
   return (
     <div
-      className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-y-auto overflow-x-hidden"
+      className="grid h-full min-h-0 grid-cols-1 gap-2"
       style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
     >
       {isSpire ? (
-        <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[1.15fr_0.85fr]">
-          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
-            <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
-          </EntityDetailSection>
-          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
+        <div className={occupiedEntityLayoutClass}>
+          <EntityInfoScrollPane>
+            <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
+              <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
+            </EntityDetailSection>
+          </EntityInfoScrollPane>
+          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
             <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
           </EntityDetailSection>
         </div>
       ) : isStructure ? (
-        <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[1.15fr_0.85fr]">
-          <StructureBannerEntityDetail
-            structureEntityId={occupierEntityId}
-            maxInventory={14}
-            showButtons={false}
-            className="h-full min-h-0"
-            {...sharedDetailProps}
-          />
-          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
+        <div className={occupiedEntityLayoutClass}>
+          <EntityInfoScrollPane>
+            <StructureBannerEntityDetail
+              structureEntityId={occupierEntityId}
+              maxInventory={14}
+              showButtons={false}
+              className={scrollableEntityDetailClass}
+              {...sharedDetailProps}
+            />
+          </EntityInfoScrollPane>
+          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
             <SelectedStructureActionPanel
               structureEntityId={occupierEntityId}
               biome={biome}
@@ -136,25 +152,31 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
           </EntityDetailSection>
         </div>
       ) : isChest ? (
-        <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[1.15fr_0.85fr]">
-          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
-            <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
-          </EntityDetailSection>
-          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
+        <div className={occupiedEntityLayoutClass}>
+          <EntityInfoScrollPane>
+            <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
+              <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
+            </EntityDetailSection>
+          </EntityInfoScrollPane>
+          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
             <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
           </EntityDetailSection>
         </div>
       ) : isQuest ? (
-        <QuestEntityDetail questEntityId={occupierEntityId} className="h-full min-h-0" {...sharedDetailProps} />
+        <EntityInfoScrollPane>
+          <QuestEntityDetail questEntityId={occupierEntityId} className="min-h-full" {...sharedDetailProps} />
+        </EntityInfoScrollPane>
       ) : (
-        <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[1.15fr_0.85fr]">
-          <ArmyBannerEntityDetail
-            armyEntityId={occupierEntityId}
-            showButtons={false}
-            className="h-full min-h-0"
-            {...sharedDetailProps}
-          />
-          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
+        <div className={occupiedEntityLayoutClass}>
+          <EntityInfoScrollPane>
+            <ArmyBannerEntityDetail
+              armyEntityId={occupierEntityId}
+              showButtons={false}
+              className={scrollableEntityDetailClass}
+              {...sharedDetailProps}
+            />
+          </EntityInfoScrollPane>
+          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
             <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
           </EntityDetailSection>
         </div>

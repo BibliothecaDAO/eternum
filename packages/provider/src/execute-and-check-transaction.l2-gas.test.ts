@@ -489,7 +489,232 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
     expect(findTransactionFailedPayload(provider)).toMatchObject({
       stage: "submit",
       message: expect.stringContaining("Transaction submission timed out"),
+      failureKind: "submission_timeout_no_hash",
+      hasTxHash: false,
+      retrySafety: "unsafe_until_wallet_checked",
     });
+  });
+
+  it("classifies destroyed provider connections before a transaction hash", async () => {
+    const provider = makeProvider();
+    provider.execute = vi
+      .fn()
+      .mockRejectedValue(new Error("Unable to send execute() call due to destroyed connection"));
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "claim_share_points",
+      calldata: [],
+    };
+
+    await expect(provider.executeAndCheckTransaction(signer, call)).rejects.toThrow("destroyed connection");
+
+    expect(findTransactionFailedPayload(provider)).toMatchObject({
+      stage: "submit",
+      failureKind: "provider_connection_destroyed",
+      providerState: "destroyed",
+      hasTxHash: false,
+      retrySafety: "safe_after_reconnect",
+    });
+  });
+
+  it("emits a late submitted and pending event when a timed-out submission later returns a hash", async () => {
+    vi.useFakeTimers();
+    const provider = makeProvider();
+    provider.TRANSACTION_SUBMIT_TIMEOUT_MS = 50;
+
+    let resolveExecute!: (value: { transaction_hash: string }) => void;
+    provider.execute = vi.fn(() => {
+      return new Promise<{ transaction_hash: string }>((resolve) => {
+        resolveExecute = resolve;
+      });
+    });
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "set_entity_name",
+      calldata: [],
+    };
+
+    const timedOutSubmission = provider
+      .executeAndCheckTransaction(signer, call, undefined, { waitForConfirmation: false })
+      .then(
+        () => "resolved",
+        (error: unknown) => error,
+      );
+
+    await vi.advanceTimersByTimeAsync(50);
+    await expect(timedOutSubmission).resolves.toBeInstanceOf(Error);
+
+    resolveExecute({ transaction_hash: "0xlate" });
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(provider.emit).toHaveBeenCalledWith(
+      "transactionSubmitted",
+      expect.objectContaining({
+        transactionHash: "0xlate",
+        recoveredFromSubmissionTimeout: true,
+      }),
+    );
+    expect(provider.emit).toHaveBeenCalledWith(
+      "transactionPending",
+      expect.objectContaining({
+        transactionHash: "0xlate",
+        recoveredFromSubmissionTimeout: true,
+      }),
+    );
+  });
+
+  it("keeps the VRF submission lock until a timed-out submission reaches a terminal state", async () => {
+    vi.useFakeTimers();
+    const provider = makeProvider();
+    provider.TRANSACTION_SUBMIT_TIMEOUT_MS = 50;
+    provider.VRF_PROVIDER_ADDRESS = "0x999";
+
+    let resolveFirstExecute!: (value: { transaction_hash: string }) => void;
+    let resolveFirstWait!: (value: any) => void;
+    const firstWaitPromise = new Promise<any>((resolve) => {
+      resolveFirstWait = resolve;
+    });
+
+    provider.execute = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<{ transaction_hash: string }>((resolve) => {
+            resolveFirstExecute = resolve;
+          }),
+      )
+      .mockResolvedValueOnce({ transaction_hash: "0x2" });
+    provider.waitForTransactionWithCheckInternal = vi.fn().mockImplementation((transactionHash: string) => {
+      if (transactionHash === "0x1") {
+        return firstWaitPromise;
+      }
+      return Promise.resolve({ isReverted: () => false });
+    });
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const calls: Call[] = [
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 0, "0xabc"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "open_chest",
+        calldata: [],
+      },
+    ];
+
+    const firstResult = provider.executeAndCheckTransaction(signer, calls, undefined, {
+      waitForConfirmation: false,
+    });
+    const timedOutResult = firstResult.then(
+      () => null,
+      (error: unknown) => error,
+    );
+
+    await vi.advanceTimersByTimeAsync(50);
+    await expect(timedOutResult).resolves.toBeInstanceOf(Error);
+
+    const secondResult = provider.executeAndCheckTransaction(signer, calls, undefined, {
+      waitForConfirmation: false,
+    });
+
+    const releasedBeforeLateHash = await vi
+      .waitFor(
+        () => {
+          expect(provider.execute).toHaveBeenCalledTimes(2);
+        },
+        { timeout: 25, interval: 1 },
+      )
+      .then(
+        () => true,
+        () => false,
+      );
+    expect(releasedBeforeLateHash).toBe(false);
+
+    resolveFirstExecute({ transaction_hash: "0x1" });
+
+    const releasedBeforeTerminalState = await vi
+      .waitFor(
+        () => {
+          expect(provider.execute).toHaveBeenCalledTimes(2);
+        },
+        { timeout: 25, interval: 1 },
+      )
+      .then(
+        () => true,
+        () => false,
+      );
+    expect(releasedBeforeTerminalState).toBe(false);
+
+    resolveFirstWait({ isReverted: () => false });
+
+    await expect(secondResult).resolves.toMatchObject({
+      statusReceipt: "PENDING",
+      transaction_hash: "0x2",
+    });
+    expect(provider.execute).toHaveBeenCalledTimes(2);
+  });
+
+  it("waits for a registered pre-submit guard before calling execute", async () => {
+    const provider = makeProvider();
+    let releaseGuard!: () => void;
+    provider.transactionSubmitGuard = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releaseGuard = resolve;
+        }),
+    );
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const call: Call = {
+      contractAddress: "0x1",
+      entrypoint: "claim_share_points",
+      calldata: [],
+    };
+
+    const result = provider.executeAndCheckTransaction(signer, call, undefined, { waitForConfirmation: false });
+    await Promise.resolve();
+
+    expect(provider.transactionSubmitGuard).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transactionType: TransactionType.CLAIM_SHARE_POINTS,
+      }),
+    );
+    expect(provider.execute).not.toHaveBeenCalled();
+
+    releaseGuard();
+    await expect(result).resolves.toMatchObject({
+      statusReceipt: "PENDING",
+      transaction_hash: "0xabc",
+    });
+    expect(provider.execute).toHaveBeenCalledTimes(1);
   });
 
   it("uses default v3 execution details when fee estimation stalls before submission", async () => {

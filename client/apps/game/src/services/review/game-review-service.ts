@@ -11,6 +11,7 @@ import { commitAndClaimMMR } from "@/ui/features/prize/utils/mmr-utils";
 import { getMMRTierFromRaw, toMmrIntegerFromRaw } from "@/ui/utils/mmr-tiers";
 import { SqlApi } from "@bibliothecadao/torii";
 import {
+  normalizeNonZeroAddress,
   parseAddress,
   parseBigIntValue,
   parseBoolean,
@@ -32,13 +33,12 @@ import {
   fetchGameReviewMilestoneTimings,
   type GameReviewValueMetric,
 } from "./game-review-stats-utils";
+import { estimateClaimableChests } from "./chest-reward-estimate";
 
 const RANKING_BATCH_SIZE = 200;
 const LEADERBOARD_FETCH_LIMIT = 1000;
 const MAX_MAP_SNAPSHOT_TILES = 4200;
 const LORDS_TOKEN_DECIMALS = 18;
-const VICTORY_POINTS_MULTIPLIER = 1_000_000n;
-const GAME_REWARD_CHEST_POINTS_THRESHOLD = 500n * VICTORY_POINTS_MULTIPLIER;
 const CLAIM_ALL_REWARDS_BATCH_SIZE = 200;
 const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
 const EVENT_KEY0_EXPR = "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x')";
@@ -91,7 +91,8 @@ const REVIEW_SEASON_TIMING_QUERY = `
     "season_config.dev_mode_on" AS dev_mode_on,
     "season_config.end_at" AS season_end_at,
     "season_config.registration_grace_seconds" AS registration_grace_seconds,
-    "blitz_registration_config.registration_count" AS registration_count
+    "blitz_registration_config.registration_count" AS registration_count,
+    "blitz_registration_config.collectibles_lootchest_address" AS loot_chest_address
   FROM "s1_eternum-WorldConfig"
   LIMIT 1;
 `;
@@ -386,6 +387,7 @@ interface SeasonTimingRow {
   season_end_at?: unknown;
   registration_grace_seconds?: unknown;
   registration_count?: unknown;
+  loot_chest_address?: unknown;
 }
 
 interface RankPrizeRow {
@@ -431,6 +433,7 @@ interface LatestMmrRow {
 interface ReviewFinalizationMeta {
   registeredPlayers: string[];
   registrationCount: number;
+  lootChestAddress: string | null;
   finalTrialId: bigint | null;
   rankingFinalized: boolean;
   devModeOn: boolean;
@@ -592,10 +595,12 @@ const fetchReviewFinalizationMeta = async (toriiSqlBaseUrl: string): Promise<Rev
   const seasonEndAt = seasonEndAtRaw > 0 ? seasonEndAtRaw : null;
   const registrationGraceSeconds = Math.max(0, parseNumeric(seasonTimingRows[0]?.registration_grace_seconds));
   const scoreSubmissionOpensAt = seasonEndAt != null ? seasonEndAt + registrationGraceSeconds : null;
+  const lootChestAddress = normalizeNonZeroAddress(seasonTimingRows[0]?.loot_chest_address);
 
   return {
     registeredPlayers,
     registrationCount,
+    lootChestAddress,
     finalTrialId,
     rankingFinalized,
     devModeOn,
@@ -891,6 +896,8 @@ const buildEliteTicketReason = ({
   return `Not eligible: elite ticket cutoff is rank #${cutoff} (you are #${playerRank}).`;
 };
 
+const parseChestCount = (value: unknown): number => Math.max(0, Math.trunc(parseNumeric(value)));
+
 const fetchReviewRewards = async ({
   toriiSqlBaseUrl,
   playerAddress,
@@ -918,15 +925,18 @@ const fetchReviewRewards = async ({
 
   const playerRegisteredPoints = parseBigIntValue(playerPointsRows[0]?.registered_points) ?? 0n;
   const playerPrizeClaimed = parseBoolean(playerPointsRows[0]?.prize_claimed);
-  const allocatedChests = Math.max(0, parseNumeric(chestRows[0]?.allocated_chests));
+  const allocatedChests = parseChestCount(chestRows[0]?.allocated_chests);
+  const distributedChests = parseChestCount(chestRows[0]?.distributed_chests);
   const totalRegisteredPoints = parseBigIntValue(seasonRows[0]?.total_registered_points) ?? 0n;
-  const guaranteedChestBonus = playerRegisteredPoints >= GAME_REWARD_CHEST_POINTS_THRESHOLD ? 1 : 0;
-  const proportionalChestShare =
-    allocatedChests > 0 && totalRegisteredPoints > 0n
-      ? Number((BigInt(allocatedChests) * playerRegisteredPoints) / totalRegisteredPoints)
-      : 0;
-  const chestsClaimedEstimate = Math.max(0, guaranteedChestBonus + proportionalChestShare);
-  const chestsClaimedReason = "";
+  const chestEstimate = estimateClaimableChests({
+    lootChestAddress: finalization.lootChestAddress,
+    allocatedChests,
+    distributedChests,
+    playerRegisteredPoints,
+    totalRegisteredPoints,
+  });
+  const chestsClaimedEstimate = chestEstimate.count;
+  const chestsClaimedReason = chestEstimate.reason;
 
   if (!finalization.rankingFinalized || finalization.finalTrialId == null) {
     return {

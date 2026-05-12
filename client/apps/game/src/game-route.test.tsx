@@ -13,6 +13,18 @@ vi.mock("./hooks/context/dojo-context", () => ({
   DojoProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+vi.mock("./hooks/context/transaction-submit-guard", () => ({
+  waitForSafeTransactionSubmit: vi.fn(),
+}));
+
+vi.mock("./hooks/store/use-account-store", () => ({
+  useAccountStore: {
+    getState: () => ({
+      connector: null,
+    }),
+  },
+}));
+
 vi.mock("./hooks/use-transaction-listener", () => ({
   useTransactionListener: vi.fn(),
 }));
