@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "credence-new-flow-3",
-    "launchRequestId": "25763784871-1",
+    "gameName": "credence-new-flow-4",
+    "launchRequestId": "25764824962-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25763784871,
+    "workflowRunId": 25764824962,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "33a4fa5b-73f3-4d80-a235-2a6f05299799"
+    "stepId": "create-world",
+    "leaseId": "d7de561e-faa2-4ef0-9887-a143981e6756"
   },
-  "acquiredAt": "2026-05-12T21:42:17.471Z",
-  "heartbeatAt": "2026-05-12T21:42:32.271Z",
-  "expiresAt": "2026-05-12T21:42:32.271Z",
-  "releasedAt": "2026-05-12T21:42:32.271Z"
+  "acquiredAt": "2026-05-12T22:03:07.242Z",
+  "heartbeatAt": "2026-05-12T22:03:07.242Z",
+  "expiresAt": "2026-05-12T22:13:07.242Z"
 }
