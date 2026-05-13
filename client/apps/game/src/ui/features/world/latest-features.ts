@@ -30,6 +30,14 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-05-13",
+    title: "Faster Repeat Exploring",
+    description:
+      "Repeat explore actions now spend less time in the provider submit path and expose safer readiness tracking, so scouts become ready for the next explore sooner after world state catches up.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-13",
     title: "Reliable Construction",
     description:
       "Building actions now keep pending construction costs reserved across follow-up upgrades, banking, and troop actions until the world state catches up, reducing rapid-play transaction failures.",

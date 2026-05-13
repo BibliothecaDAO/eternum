@@ -750,6 +750,7 @@ export default class WorldmapScene extends WarpTravel {
   }
   private handleTransactionComplete?: (...args: any[]) => void;
   private handleTransactionFailed?: (...args: any[]) => void;
+  private handleTransactionProgress?: (...args: any[]) => void;
   private readonly authoritativePendingArmyMovementMs = 30_000;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
   private structureManager!: StructureManager;
@@ -1140,8 +1141,26 @@ export default class WorldmapScene extends WarpTravel {
       this.pendingArmyMovementTxMap.delete(txHash);
     };
 
+    this.handleTransactionProgress = (payload: { stage?: string; type?: string; explorerId?: number | string }) => {
+      if (payload?.stage !== "explore_provider_lock_acquired" || payload?.type !== "explore") {
+        return;
+      }
+
+      const explorerId = Number(payload.explorerId);
+      if (!Number.isFinite(explorerId) || explorerId <= 0) {
+        return;
+      }
+
+      recordArmyMovementLatencyPhase({
+        phase: "explore_provider_lock_acquired",
+        source: "worldmap",
+        entityId: explorerId,
+      });
+    };
+
     dojoContext.network?.provider?.on("transactionComplete", this.handleTransactionComplete);
     dojoContext.network?.provider?.on("transactionFailed", this.handleTransactionFailed);
+    dojoContext.network?.provider?.on("transactionProgress", this.handleTransactionProgress);
   }
 
   private handleSubmittedArmyMovementTx(input: { entityId: ID; txHash: string }): void {
@@ -2695,6 +2714,7 @@ export default class WorldmapScene extends WarpTravel {
 
       this.installPendingMovementVisualLifecycle({
         entityId: selectedEntityId,
+        isExploreAction: actionType === ActionType.Explore,
         shouldAnimateArrivalGhostOnCompletion: shouldTrackArrivalGhost,
       });
 
@@ -2710,6 +2730,22 @@ export default class WorldmapScene extends WarpTravel {
           targetRow: targetHex.row,
         },
       });
+      if (actionType === ActionType.Explore) {
+        recordArmyMovementLatencyPhase({
+          phase: "explore_intent_queued",
+          source: "worldmap",
+          entityId: selectedEntityId,
+          details: {
+            targetCol: targetHex.col,
+            targetRow: targetHex.row,
+          },
+        });
+        recordArmyMovementLatencyPhase({
+          phase: "explore_submit_started",
+          source: "worldmap",
+          entityId: selectedEntityId,
+        });
+      }
 
       // Pre-compute the optimistic movement plan in parallel with the tx so the
       // submitted tx hash can start animation without waiting for provider
@@ -2743,6 +2779,14 @@ export default class WorldmapScene extends WarpTravel {
             entityId: selectedEntityId,
             txHash,
           });
+          if (txHash && actionType === ActionType.Explore) {
+            recordArmyMovementLatencyPhase({
+              phase: "explore_tx_hash_received",
+              source: "worldmap",
+              entityId: selectedEntityId,
+              txHash,
+            });
+          }
           // Torii can reconcile the authoritative target before the RPC promise
           // returns. Avoid re-registering tx lifecycle for a move we already
           // resolved from the stream.
@@ -2971,9 +3015,10 @@ export default class WorldmapScene extends WarpTravel {
 
   private installPendingMovementVisualLifecycle(input: {
     entityId: ID;
+    isExploreAction: boolean;
     shouldAnimateArrivalGhostOnCompletion: boolean;
   }): void {
-    const { entityId, shouldAnimateArrivalGhostOnCompletion } = input;
+    const { entityId, isExploreAction, shouldAnimateArrivalGhostOnCompletion } = input;
 
     this.disposePendingMovementVisualLifecycle(entityId);
 
@@ -2996,6 +3041,20 @@ export default class WorldmapScene extends WarpTravel {
       }
       this.disposePendingMovementVisualLifecycle(entityId);
     });
+    const disposeAuthoritativeReconcile = this.armyManager.onAuthoritativeReconciliation(entityId, () => {
+      if (isExploreAction) {
+        recordArmyMovementLatencyPhase({
+          phase: "explore_authoritative_reconcile_complete",
+          source: "worldmap",
+          entityId,
+        });
+        recordArmyMovementLatencyPhase({
+          phase: "explore_next_safe_unblocked",
+          source: "worldmap",
+          entityId,
+        });
+      }
+    });
     const disposeMovementVisualCancel = this.armyManager.onMovementVisualCancel(entityId, () => {
       this.clearPendingArmyMovement(entityId, "movement_evicted");
       this.arrivalGhostManager.clearArrivalGhost(entityId, "movement_evicted");
@@ -3005,6 +3064,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovementVisualLifecycleDisposers.set(entityId, () => {
       disposeMovementStart();
       disposeMovementComplete();
+      disposeAuthoritativeReconcile();
       disposeMovementVisualCancel();
       this.pendingArmyMovementVisualLifecycleDisposers.delete(entityId);
     });
@@ -8623,6 +8683,9 @@ export default class WorldmapScene extends WarpTravel {
     }
     if (this.handleTransactionFailed) {
       this.dojo.network?.provider?.off("transactionFailed", this.handleTransactionFailed);
+    }
+    if (this.handleTransactionProgress) {
+      this.dojo.network?.provider?.off("transactionProgress", this.handleTransactionProgress);
     }
     this.pendingArmyMovementTxMap.clear();
     this.stopToriiBoundsCounterLog();
