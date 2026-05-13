@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-13T11:32:51.080Z",
+  "updatedAt": "2026-05-13T11:43:34.683Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2084,13 +2084,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/credence-new-flow-7/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-13T09:24:13.236Z"
+        "describedAt": "2026-05-13T11:43:34.682Z"
       },
-      "updatedAt": "2026-05-13T09:24:13.237Z"
+      "updatedAt": "2026-05-13T11:43:34.683Z"
     },
     "zz-mainnet-1": {
       "gameName": "zz-mainnet-1",
