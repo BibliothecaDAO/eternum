@@ -8,6 +8,11 @@ import { type WorldConfigMeta } from "@/hooks/use-world-availability";
 import { useWorldJackpot } from "@/hooks/use-world-jackpot";
 import { useWorldsSummary } from "@/hooks/use-worlds-summary";
 import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-registration";
+import {
+  PLAYER_WORLD_REGISTRATION_QUERY_KEY,
+  WORLD_AVAILABILITY_QUERY_KEY,
+  WORLD_SUMMARY_QUERY_KEY,
+} from "@/hooks/world-list-queries";
 import type { WorldSummary } from "@bibliothecadao/types";
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
@@ -1441,8 +1446,8 @@ export const UnifiedGameGrid = ({
       // Invalidate both the legacy per-world availability cache (modal path)
       // and the new player registration cache so fresh data is fetched when
       // navigating back. This ensures the registration status persists across tab switches.
-      queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
-      queryClient.invalidateQueries({ queryKey: ["playerWorldRegistration", worldKey] });
+      queryClient.invalidateQueries({ queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, worldKey] });
+      queryClient.invalidateQueries({ queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, worldKey] });
 
       onRegistrationComplete?.();
     },
@@ -1514,8 +1519,8 @@ export const UnifiedGameGrid = ({
 
       if (runtimeState.shouldRefreshAvailability) {
         // Refresh both the bulk summary and any per-player registration state.
-        void queryClient.invalidateQueries({ queryKey: ["worldsSummary"] });
-        void queryClient.invalidateQueries({ queryKey: ["playerWorldRegistration", game.worldKey] });
+        void queryClient.invalidateQueries({ queryKey: WORLD_SUMMARY_QUERY_KEY });
+        void queryClient.invalidateQueries({ queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, game.worldKey] });
       }
 
       if (!runtimeState.shouldOpenEntry) return;

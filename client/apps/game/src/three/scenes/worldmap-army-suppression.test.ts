@@ -56,7 +56,7 @@ describe("worldmap army suppression integration", () => {
     expect(restorePos).toBeGreaterThan(movePos);
   });
 
-  it("troop updates do not recover visuals before tile state catches up", () => {
+  it("troop updates delegate pending-removal recovery through the ordered helper", () => {
     const src = readSource("worldmap.tsx");
 
     const listenerStart = src.indexOf("this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {");
@@ -66,5 +66,6 @@ describe("worldmap army suppression integration", () => {
     expect(listenerBody).not.toContain("this.cancelPendingArmyRemoval(update.entityId)");
     expect(listenerBody).not.toContain("restoreArmyVisualIfVisible(update.entityId)");
     expect(listenerBody).toContain("this.armyManager.updateArmyFromExplorerTroopsUpdate(update)");
+    expect(listenerBody).toContain("recoverPendingArmyRemovalFromExplorerTroops");
   });
 });

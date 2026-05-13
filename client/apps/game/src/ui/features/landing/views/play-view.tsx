@@ -34,6 +34,8 @@ import type { LandingModeFilter, LandingEntryRouteState } from "../lib/landing-e
 import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
 import { useLandingContext } from "../context/landing-context";
 import { useLandingNetworkState } from "../hooks/use-landing-network-state";
+import { invalidateWorldListQueries } from "@/hooks/world-list-queries";
+import { FACTORY_GAME_LIST_REFRESH_EVENT } from "../../factory-v2/game-list-refresh-event";
 
 interface PlayViewProps {
   className?: string;
@@ -50,6 +52,16 @@ const FactoryV2Content = lazy(() =>
   import("../../factory-v2").then((module) => ({ default: module.FactoryV2Content })),
 );
 const FactoryPage = lazy(() => import("../../admin").then((module) => ({ default: module.FactoryPage })));
+
+const hasConnectedAccountAddress = (address: string | undefined): boolean => Boolean(address && address !== "0x0");
+
+const shouldAutoOpenGameReview = (game: GameData): game is GameData & { worldAddress: string; isRegistered: true } => {
+  return game.gameStatus === "ended" && Boolean(game.worldAddress) && game.isRegistered === true;
+};
+
+const resolveGameReviewCandidate = (endedGames: GameData[]): (GameData & { worldAddress: string }) | null => {
+  return endedGames.filter(shouldAutoOpenGameReview).toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0] ?? null;
+};
 
 type LearnGuideTier = "beginner" | "advanced";
 type LearnGuideKind = "video" | "written";
@@ -901,6 +913,21 @@ export const PlayView = ({
     primeGameEntry("dashboard");
   }, [activeTab]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const refreshGameLists = () => {
+      void invalidateWorldListQueries(queryClient);
+    };
+
+    window.addEventListener(FACTORY_GAME_LIST_REFRESH_EVENT, refreshGameLists);
+    return () => {
+      window.removeEventListener(FACTORY_GAME_LIST_REFRESH_EVENT, refreshGameLists);
+    };
+  }, [queryClient]);
+
   const navigateToEntryRoute = useCallback(
     (
       selection: WorldSelection,
@@ -956,7 +983,7 @@ export const PlayView = ({
 
   const handleSelectGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account?.address);
+      const hasAccount = hasConnectedAccountAddress(account?.address);
 
       // Check if user needs to sign in before entering game
       if (!hasAccount) {
@@ -977,7 +1004,7 @@ export const PlayView = ({
 
   const handleAutoSettleGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account?.address);
+      const hasAccount = hasConnectedAccountAddress(account?.address);
       if (!hasAccount) return;
 
       openGameEntryRoute(selection, "settle", true);
@@ -987,7 +1014,7 @@ export const PlayView = ({
 
   const handlePlayGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account?.address);
+      const hasAccount = hasConnectedAccountAddress(account?.address);
 
       if (!hasAccount) {
         const redirectTo = buildEntryRedirectHref(selection, "play", null, false);
@@ -1017,7 +1044,7 @@ export const PlayView = ({
 
   const handleForgeHyperstructures = useCallback(
     (selection: WorldSelection, numLeft: number) => {
-      const hasAccount = Boolean(account?.address);
+      const hasAccount = hasConnectedAccountAddress(account?.address);
 
       // Check if user needs to sign in before forging
       if (!hasAccount) {
@@ -1058,7 +1085,7 @@ export const PlayView = ({
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await queryClient.invalidateQueries({ queryKey: ["worldAvailability"] });
+      await invalidateWorldListQueries(queryClient);
     } finally {
       // Add a small delay so the spinner is visible
       setTimeout(() => setIsRefreshing(false), 500);
@@ -1088,16 +1115,16 @@ export const PlayView = ({
     if (disableReviewFlow) return;
     if (activeTab !== "play") return;
     if (reviewWorld) return;
+    if (!hasConnectedAccountAddress(account?.address)) return;
     if (endedGames.length === 0) return;
 
-    const candidate = endedGames.toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0];
+    const candidate = resolveGameReviewCandidate(endedGames);
     if (!candidate) return;
-    if (!candidate.worldAddress) return;
     if (isGameReviewDismissed(candidate.chain, candidate.worldAddress)) return;
 
     setReviewInitialStep(undefined);
     setReviewWorld({ name: candidate.name, chain: candidate.chain, worldAddress: candidate.worldAddress });
-  }, [activeTab, disableReviewFlow, endedGames, reviewWorld]);
+  }, [account?.address, activeTab, disableReviewFlow, endedGames, reviewWorld]);
 
   const renderContent = () => {
     switch (activeTab) {

@@ -132,10 +132,27 @@ describe("isRetryableAgentBrowserFailure", () => {
     ).toBe(true);
   });
 
-  it("does not retry non-eval failures", () => {
+  it("retries transient CDP Runtime.evaluate timeouts for read-only get commands", () => {
     expect(
       isRetryableAgentBrowserFailure({
         commandArgs: ["get", "url"],
+        stderr: "Error: ✗ CDP command timed out: Runtime.evaluate",
+        stdout: "",
+      }),
+    ).toBe(true);
+    expect(
+      isRetryableAgentBrowserFailure({
+        commandArgs: ["get", "count", "text=Unable to Start"],
+        stderr: "Error: ✗ CDP command timed out: Runtime.evaluate",
+        stdout: "",
+      }),
+    ).toBe(true);
+  });
+
+  it("does not retry commands that can change browser state", () => {
+    expect(
+      isRetryableAgentBrowserFailure({
+        commandArgs: ["open", "https://127.0.0.1:4173", "--ignore-https-errors"],
         stderr: "Error: ✗ CDP command timed out: Runtime.evaluate",
         stdout: "",
       }),

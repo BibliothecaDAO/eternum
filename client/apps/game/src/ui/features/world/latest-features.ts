@@ -30,6 +30,13 @@ const allLatestFeatures: LatestFeature[] = [
     gameSlug: "eternum",
   },
   {
+    date: "2026-05-12",
+    title: "Saved Network Choice",
+    description:
+      "The landing network switch now remembers your last Mainnet or Slot choice after refresh, while first-time visits still start on Mainnet.",
+    type: "fix",
+  },
+  {
     date: "2026-05-07",
     title: "Scrollable Tile HUD",
     description:
@@ -41,7 +48,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-05-06",
     title: "Focused Chain Views",
     description:
-      "Landing games, profile ranks, MMR, prediction markets, and cosmetics now follow the selected landing chain, with each page open starting on Mainnet.",
+      "Landing games, profile ranks, MMR, prediction markets, and cosmetics now follow the selected landing chain through one shared network state.",
     type: "fix",
   },
   {

@@ -34,6 +34,7 @@ import { useSeasonPassInventory, type SeasonPassInventoryItem } from "@/hooks/us
 import { useUsername } from "@/hooks/use-username";
 import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
+import { WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { captureClientEvent } from "@/posthog";
 import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
@@ -4609,7 +4610,7 @@ export const GameEntryModal = ({
           }
 
           const worldKey = getWorldKey({ name: worldName, chain });
-          await queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
+          await queryClient.invalidateQueries({ queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, worldKey] });
         }
       }
 
@@ -5210,7 +5211,7 @@ export const GameEntryModal = ({
 
       // Invalidate the world availability cache so the count updates on the landing page
       const worldKey = getWorldKey({ name: worldName, chain });
-      queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
+      queryClient.invalidateQueries({ queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, worldKey] });
     } catch (error) {
       debugLog(worldName, "Forge hyperstructures failed:", error);
       setForgeErrorMessage(error instanceof Error ? error.message : "Failed to forge hyperstructures.");
