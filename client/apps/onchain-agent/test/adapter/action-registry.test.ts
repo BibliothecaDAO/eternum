@@ -19,8 +19,8 @@ describe("action-registry (ABI executor)", () => {
     expect(actions).toContain("move_to");
     expect(actions).toContain("approve_token");
     expect(actions).toContain("settle");
-    expect(actions).toContain("reserve_hyperstructures");
     expect(actions).toContain("create_hyperstructure");
+    expect(actions).not.toContain("reserve_hyperstructures");
     expect(actions).not.toContain("lock_entry_token");
     expect(actions).not.toContain("settle_blitz_realm");
   });
@@ -110,6 +110,7 @@ describe("action-registry (ABI executor)", () => {
     });
     expect(calls[1]).toMatchObject({
       entrypoint: "settle",
+      calldata: ["0x123", "1", "0", "1"],
     });
     expect(calls[2]).toMatchObject({
       contractAddress: "0xentry",

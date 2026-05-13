@@ -82,10 +82,6 @@ export const buildPolicies = (manifest: any) =>
       [getContractByName(manifest, "s1_eternum", "hyperstructure_create_systems").address]: {
         methods: [
           {
-            name: "reserve_hyperstructures",
-            entrypoint: "reserve_hyperstructures",
-          },
-          {
             name: "create_hyperstructure",
             entrypoint: "create_hyperstructure",
           },

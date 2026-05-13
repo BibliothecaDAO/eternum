@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 
 import { ReactComponent as TreasureChest } from "@/assets/icons/treasure-chest.svg";
 import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
-import { buildBlitzSettleCalls } from "@/hooks/blitz-settlement";
+import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -4599,7 +4599,9 @@ export const GameEntryModal = ({
         signer,
         calls: buildBlitzSettleCalls({
           blitzSystemsAddress: blitzRealmSystemsAddress,
+          signerAddress: signer.address,
           usernameFelt,
+          vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
           entryTokenAddress: worldMeta.entryTokenAddress,
           feeTokenAddress: worldMeta.feeTokenAddress,
           feeAmount: worldMeta.feeAmount,

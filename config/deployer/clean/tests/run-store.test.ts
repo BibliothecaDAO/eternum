@@ -117,6 +117,7 @@ describe("factory run store", () => {
       "create-world",
       "wait-for-factory-index",
       "configure-world",
+      "reserve-blitz-hyperstructures",
       "grant-lootchest-role",
       "create-indexer",
     ]);
@@ -143,6 +144,7 @@ describe("factory run store", () => {
       "create-world",
       "wait-for-factory-index",
       "configure-world",
+      "reserve-blitz-hyperstructures",
       "grant-lootchest-role",
       "create-indexer",
       "sync-paymaster",

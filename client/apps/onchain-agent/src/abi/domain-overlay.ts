@@ -841,14 +841,15 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
 
   "blitz_realm_systems::make_hyperstructures": {
     hidden: true,
-    description: "Deprecated helper — use hyperstructure_create_systems.reserve_hyperstructures instead.",
+    description: "Deprecated helper — no longer needed in the current Blitz flow.",
     paramOverrides: {
       count: { description: "Number of hyperstructures to create" },
     },
   },
 
   "hyperstructure_create_systems::reserve_hyperstructures": {
-    description: "Reserve placeholder hyperstructure slots in batches before players materialize them later.",
+    hidden: true,
+    description: "Launch-time helper — reserve placeholder hyperstructure slots before players settle.",
     paramOverrides: {
       count: { description: "Number of hyperstructure slots to reserve in this batch" },
     },

@@ -33,7 +33,7 @@ vi.mock("../asset-cache", () => ({
   ensureCosmeticAsset: () => undefined,
 }));
 
-import { buildBlitzSettleCalls } from "@/hooks/blitz-settlement";
+import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
 import { buildDevPreviewWorldKey, createWorldPreviewEntryController } from "@/hooks/use-world-preview-entry";
 import { useDevPreviewEntryStore } from "@/hooks/store/use-dev-preview-entry-store";
 import { resolveCosmeticsLoadoutScopeKeyForChain } from "@/ui/features/cosmetics/lib/loadout-scope";
@@ -51,7 +51,7 @@ describe("cosmetic pipeline integration", () => {
     useDevPreviewEntryStore.getState().clearAllPreviewEntries();
   });
 
-  it("flows from pending loadout to register calldata to applied army skin", () => {
+  it("flows from pending loadout to settle calldata to applied army skin", () => {
     playerCosmeticsStore.setPendingBlitzLoadout("blitz:mainnet:alpha", "0x123", {
       tokenIds: ["0xabc"],
       selectedBySlot: {
@@ -64,13 +64,16 @@ describe("cosmetic pipeline integration", () => {
 
     const calls = buildBlitzSettleCalls({
       blitzSystemsAddress: "0x1",
+      signerAddress: "0x456",
       usernameFelt: "0x2",
       cosmeticTokenIds: ["0xabc"],
     });
 
-    expect(calls[0]).toMatchObject({
+    const settleCall = calls.find((call) => call.entrypoint === "settle");
+
+    expect(settleCall).toMatchObject({
       entrypoint: "settle",
-      calldata: ["0x2", "1", "1", "0xabc"],
+      calldata: ["2", "1", "1", "2748", "1"],
     });
 
     playerCosmeticsStore.markAppliedBlitzLoadout("blitz:mainnet:alpha", "0x123");

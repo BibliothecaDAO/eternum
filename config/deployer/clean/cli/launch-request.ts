@@ -620,6 +620,7 @@ export function resolveLaunchGameStepId(value?: string): LaunchGameStepId {
     case "create-world":
     case "wait-for-factory-index":
     case "configure-world":
+    case "reserve-blitz-hyperstructures":
     case "grant-lootchest-role":
     case "grant-village-pass-role":
     case "create-banks":
@@ -628,7 +629,7 @@ export function resolveLaunchGameStepId(value?: string): LaunchGameStepId {
       return value;
     default:
       throw new Error(
-        `Unsupported launch step "${value}". Expected one of: create-world, wait-for-factory-index, configure-world, grant-lootchest-role, grant-village-pass-role, create-banks, create-indexer, sync-paymaster`,
+        `Unsupported launch step "${value}". Expected one of: create-world, wait-for-factory-index, configure-world, reserve-blitz-hyperstructures, grant-lootchest-role, grant-village-pass-role, create-banks, create-indexer, sync-paymaster`,
       );
   }
 }
@@ -639,6 +640,7 @@ export function resolveLaunchSeriesStepId(value?: string): LaunchSeriesStepId {
     case "create-worlds":
     case "wait-for-factory-indexes":
     case "configure-worlds":
+    case "reserve-blitz-hyperstructures":
     case "grant-lootchest-roles":
     case "grant-village-pass-roles":
     case "create-banks":
@@ -647,7 +649,7 @@ export function resolveLaunchSeriesStepId(value?: string): LaunchSeriesStepId {
       return value;
     default:
       throw new Error(
-        `Unsupported series launch step "${value}". Expected one of: create-series, create-worlds, wait-for-factory-indexes, configure-worlds, grant-lootchest-roles, grant-village-pass-roles, create-banks, create-indexers, sync-paymaster`,
+        `Unsupported series launch step "${value}". Expected one of: create-series, create-worlds, wait-for-factory-indexes, configure-worlds, reserve-blitz-hyperstructures, grant-lootchest-roles, grant-village-pass-roles, create-banks, create-indexers, sync-paymaster`,
       );
   }
 }

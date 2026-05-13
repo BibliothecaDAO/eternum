@@ -88,6 +88,7 @@ export interface FactoryRunArtifacts {
   durationSeconds?: number;
   worldAddress?: string;
   entryTokenAddress?: string;
+  reserveHyperstructuresTxHashes?: string[];
   createGameTxHash?: string;
   configureTxHash?: string;
   worldConfigTxHash?: string;

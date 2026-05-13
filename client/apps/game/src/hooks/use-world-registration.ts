@@ -7,6 +7,7 @@ import { executeObservedClientTransaction } from "@/observability/observed-clien
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
+import { buildBlitzSettleCalls } from "@/services/blitz/blitz-settlement-calls";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { getGameManifest, type Chain } from "@contracts";
@@ -16,7 +17,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Account, CallData, RpcProvider, uint256 } from "starknet";
 import { env } from "../../env";
 import { isRegistrationCapacityReached, resolveEffectiveRegistrationCountMax } from "./registration-capacity";
-import { buildBlitzSettleCalls } from "./blitz-settlement";
 import { useUsername } from "./use-username";
 import type { WorldConfigMeta } from "./use-world-availability";
 
@@ -265,7 +265,9 @@ export const useWorldRegistration = ({
     (blitzSystemsAddress: string) =>
       buildBlitzSettleCalls({
         blitzSystemsAddress,
+        signerAddress: address!,
         usernameFelt,
+        vrfProviderAddress: env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
         entryTokenAddress: config?.entryTokenAddress,
         feeTokenAddress: config?.feeTokenAddress,
         feeAmount: config?.feeAmount,
@@ -327,7 +329,6 @@ export const useWorldRegistration = ({
         }
 
         const blitzSystemsAddress = getWorldSystemAddress(contracts, "blitz_realm_systems");
-
         const isNonMainnet = chain !== "mainnet";
         if (isNonMainnet && feeAmount > 0n && config?.feeTokenAddress) {
           const rpcUrl = getRpcUrlForChain(chain);

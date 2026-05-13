@@ -37,6 +37,8 @@ export interface TokenConfig {
 let _tokenConfig: TokenConfig = {};
 let _blitzSystemsAddress: string | undefined;
 
+const BLITZ_SETTLE_GRANT_STARTING_TROOPS = "1";
+
 // ---------------------------------------------------------------------------
 // Cached world state — updated every tick, used for pre-flight validation.
 // ---------------------------------------------------------------------------
@@ -264,6 +266,66 @@ function toStringArray(value: unknown): string[] {
   return value.map((item) => String(item));
 }
 
+function buildBlitzEntryTokenApprovalCall(approved: boolean): Call {
+  return {
+    contractAddress: _tokenConfig.entryToken!,
+    entrypoint: "set_approval_for_all",
+    calldata: CallData.compile([_blitzSystemsAddress!, approved]),
+  };
+}
+
+function buildBlitzSettleCall({
+  name,
+  entryTokenId,
+  cosmeticTokenIds,
+}: {
+  name: string;
+  entryTokenId: string;
+  cosmeticTokenIds: string[];
+}): Call {
+  return {
+    contractAddress: _blitzSystemsAddress!,
+    entrypoint: "settle",
+    calldata: CallData.compile([
+      name,
+      entryTokenId,
+      cosmeticTokenIds.length.toString(),
+      ...cosmeticTokenIds,
+      BLITZ_SETTLE_GRANT_STARTING_TROOPS,
+    ]),
+  };
+}
+
+function buildBlitzSettleCalls({
+  name,
+  entryTokenId,
+  cosmeticTokenIds,
+}: {
+  name: string;
+  entryTokenId: string;
+  cosmeticTokenIds: string[];
+}): Call[] {
+  const calls: Call[] = [];
+
+  if (_tokenConfig.entryToken) {
+    calls.push(buildBlitzEntryTokenApprovalCall(true));
+  }
+
+  calls.push(
+    buildBlitzSettleCall({
+      name,
+      entryTokenId,
+      cosmeticTokenIds,
+    }),
+  );
+
+  if (_tokenConfig.entryToken) {
+    calls.push(buildBlitzEntryTokenApprovalCall(false));
+  }
+
+  return calls;
+}
+
 async function handleBlitzSettleWithTemporaryCollectionApproval(
   signer: Account,
   params: Record<string, unknown>,
@@ -275,33 +337,15 @@ async function handleBlitzSettleWithTemporaryCollectionApproval(
   const name = String(params.name ?? "");
   const entryTokenId = String(params.entry_token_id ?? params.entryTokenId ?? "1");
   const cosmeticTokenIds = toStringArray(params.cosmetic_token_ids ?? params.cosmeticTokenIds);
-  const settleCalldata = [name, entryTokenId, cosmeticTokenIds.length.toString(), ...cosmeticTokenIds];
-  const calls: Call[] = [];
-
-  if (_tokenConfig.entryToken) {
-    calls.push({
-      contractAddress: _tokenConfig.entryToken,
-      entrypoint: "set_approval_for_all",
-      calldata: CallData.compile([_blitzSystemsAddress, true]),
-    });
-  }
-
-  calls.push({
-    contractAddress: _blitzSystemsAddress,
-    entrypoint: "settle",
-    calldata: CallData.compile(settleCalldata),
-  });
-
-  if (_tokenConfig.entryToken) {
-    calls.push({
-      contractAddress: _tokenConfig.entryToken,
-      entrypoint: "set_approval_for_all",
-      calldata: CallData.compile([_blitzSystemsAddress, false]),
-    });
-  }
 
   try {
-    const result = await signer.execute(calls);
+    const result = await signer.execute(
+      buildBlitzSettleCalls({
+        name,
+        entryTokenId,
+        cosmeticTokenIds,
+      }),
+    );
     const txHash = result?.transaction_hash ?? (result as any)?.transactionHash;
     return { success: true, txHash };
   } catch (err: any) {
