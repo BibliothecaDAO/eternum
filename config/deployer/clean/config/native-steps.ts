@@ -791,7 +791,7 @@ function buildBlitzRegistrationConfigPayload(provider: NativeConfigProvider, con
     registration_start_at: registrationStartAt,
     entry_token_class_hash: config.blitz.registration.entry_token_class_hash,
     entry_token_ipfs_cid: byteArray.byteArrayFromString(config.blitz.registration.entry_token_ipfs_cid),
-    entry_token_deploy_calldata: buildBlitzEntryTokenDeployCalldata(provider),
+    entry_token_deploy_calldata: buildBlitzEntryTokenDeployCalldata(provider.manifest),
     collectibles_cosmetics_max: config.blitz.registration.collectible_cosmetics_max_items,
     collectibles_cosmetics_address: config.blitz.registration.collectible_cosmetics_address,
     collectibles_timelock_address: config.blitz.registration.collectible_timelock_address,
