@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25764824962-1",
   "currentStepId": null,
   "createdAt": "2026-05-12T22:02:57.946Z",
-  "updatedAt": "2026-05-12T23:01:51.795Z",
+  "updatedAt": "2026-05-13T01:10:12.043Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -84,7 +84,9 @@
     "indexerUrl": "https://api.cartridge.gg/x/credence-new-flow-4/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-12T23:01:51.795Z"
+    "lastIndexerDescribeAt": "2026-05-12T23:01:51.795Z",
+    "pendingIndexerTierTarget": "pro",
+    "pendingIndexerTierRequestedAt": "2026-05-13T01:10:10.465Z"
   },
   "completedAt": "2026-05-12T22:05:39.563Z"
 }
