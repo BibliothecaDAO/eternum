@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "mainnet.blitz:zz-mainnet-5",
+  "launchRequestId": "25804807061-1",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "gameName": "zz-mainnet-5",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "configure-world",
+  "createdAt": "2026-05-13T14:16:01.300Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 25804807061,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25804807061",
+    "ref": "credence0x/blitz-hex-map",
+    "sha": "9cbb15543f8c288ff90c4cd55da049ad658ab8e1"
+  },
+  "request": {
+    "launchKind": "game",
+    "environmentId": "mainnet.blitz",
+    "gameName": "zz-mainnet-5",
+    "startTime": "2026-05-13T15:00:00.000Z",
+    "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+    "factoryAddress": "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da",
+    "devModeOn": false,
+    "singleRealmMode": false,
+    "twoPlayerMode": false,
+    "durationSeconds": 3600,
+    "blitzRegistrationOverrides": {
+      "fee_amount": "10000000000000"
+    },
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "140",
+    "waitForFactoryIndexTimeoutMs": 300000,
+    "waitForFactoryIndexPollMs": 5000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false,
+    "maxActions": 50
+  }
+}
