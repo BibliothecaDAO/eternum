@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-13T14:48:49.877Z",
+  "updatedAt": "2026-05-13T15:03:45.581Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2143,6 +2143,32 @@
         "describedAt": "2026-05-13T14:48:49.877Z"
       },
       "updatedAt": "2026-05-13T14:48:49.877Z"
+    },
+    "zz-mainnet-6": {
+      "gameName": "zz-mainnet-6",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/zz-mainnet-6/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-13T15:03:45.461Z"
+      },
+      "updatedAt": "2026-05-13T15:03:45.581Z"
+    },
+    "zz-mainnet-7": {
+      "gameName": "zz-mainnet-7",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/zz-mainnet-7/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-13T15:03:45.580Z"
+      },
+      "updatedAt": "2026-05-13T15:03:45.581Z"
     }
   }
 }
