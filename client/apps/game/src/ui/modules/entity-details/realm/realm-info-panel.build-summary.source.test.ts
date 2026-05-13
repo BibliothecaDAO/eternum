@@ -20,4 +20,13 @@ describe("RealmInfoPanel build summary wiring", () => {
     expect(source).not.toContain("const realm = useMemo(() =>");
     expect(source).not.toContain("pendingBuilds");
   });
+
+  it("reconciles construction intents so quick-build reservations clear after indexed sync", () => {
+    const source = readSource("src/ui/modules/entity-details/realm/realm-info-panel.tsx");
+
+    expect(source).toContain("reconcileConstructionIntents");
+    expect(source).toContain("new TileManager(");
+    expect(source).toContain("tileManager.isHexOccupied");
+    expect(source).toContain("tileManager.getIndexedBuilding");
+  });
 });

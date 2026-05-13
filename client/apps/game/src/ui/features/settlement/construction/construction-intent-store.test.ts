@@ -9,30 +9,35 @@ import {
   failConstructionIntent,
   getActiveConstructionIntents,
   getBuildReservationState,
+  getConstructionIntentSnapshot,
   getEffectiveConstructionBalance,
+  getEffectiveConstructionBalanceRaw,
   getPendingConstructionCost,
   hasActiveConstructionIntent,
   markConstructionIntentConfirmed,
   reconcileConstructionIntents,
 } from "./construction-intent-store";
 
-const { getBalance, divideByPrecision } = vi.hoisted(() => ({
+const { getBalance, divideByPrecision, multiplyByPrecision } = vi.hoisted(() => ({
   getBalance: vi.fn(),
   divideByPrecision: vi.fn((value: bigint | number, floor: boolean = true) => {
     const normalized = Number(value) / 1_000_000_000;
     return floor ? Math.floor(normalized) : normalized;
   }),
+  multiplyByPrecision: vi.fn((value: number) => Math.floor(value * 1_000_000_000)),
 }));
 
 vi.mock("@bibliothecadao/eternum", () => ({
   divideByPrecision,
   getBalance,
+  multiplyByPrecision,
 }));
 
 describe("construction-intent-store", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clearAllConstructionIntentState();
+    vi.useRealTimers();
   });
 
   it("begins one active construction intent per realm and building type", () => {
@@ -192,6 +197,111 @@ describe("construction-intent-store", () => {
     expect(getPendingConstructionCost(101, ResourcesIds.Wheat)).toBe(0);
   });
 
+  it("ignores late confirmation callbacks after an intent is already indexed", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1000);
+
+    const intent = beginConstructionIntent({
+      realmEntityId: 101,
+      buildingType: BuildingType.ResourceWheat,
+      spot: { col: 11, row: 10 },
+      useSimpleCost: true,
+      costs: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+    });
+    expect(intent).not.toBeNull();
+
+    attachConstructionTx(intent!.intentId, "0xabc");
+
+    reconcileConstructionIntents(
+      101,
+      () => true,
+      ({ col, row }) => (col === 11 && row === 10 ? { category: BuildingType.ResourceWheat } : undefined),
+      { now: 2000 },
+    );
+
+    expect(getActiveConstructionIntents(101)[0]?.status).toBe("indexed_settling");
+
+    markConstructionIntentConfirmed("0xabc", 2500);
+
+    expect(getActiveConstructionIntents(101)[0]?.status).toBe("indexed_settling");
+
+    vi.setSystemTime(5000);
+    vi.advanceTimersByTime(3000);
+
+    expect(getActiveConstructionIntents(101)).toEqual([]);
+  });
+
+  it("keeps confirmed intents active after the settle window until indexed state arrives", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1000);
+
+    const intent = beginConstructionIntent({
+      realmEntityId: 101,
+      buildingType: BuildingType.ResourceWheat,
+      spot: { col: 11, row: 10 },
+      useSimpleCost: true,
+      costs: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+    });
+    expect(intent).not.toBeNull();
+
+    attachConstructionTx(intent!.intentId, "0xabc");
+    markConstructionIntentConfirmed("0xabc");
+
+    vi.setSystemTime(5000);
+
+    expect(hasActiveConstructionIntent(101, BuildingType.ResourceWheat)).toBe(true);
+    expect(getPendingConstructionCost(101, ResourcesIds.Wheat)).toBe(10);
+    expect(
+      beginConstructionIntent({
+        realmEntityId: 101,
+        buildingType: BuildingType.ResourceWheat,
+        spot: { col: 11, row: 11 },
+        useSimpleCost: true,
+        costs: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+      }),
+    ).toBeNull();
+  });
+
+  it("auto-reaps indexed intents after the settle window and notifies listeners without another reconcile", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1000);
+
+    const intent = beginConstructionIntent({
+      realmEntityId: 101,
+      buildingType: BuildingType.ResourceWheat,
+      spot: { col: 11, row: 10 },
+      useSimpleCost: true,
+      costs: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+    });
+    expect(intent).not.toBeNull();
+
+    attachConstructionTx(intent!.intentId, "0xabc");
+    markConstructionIntentConfirmed("0xabc");
+
+    reconcileConstructionIntents(
+      101,
+      () => true,
+      ({ col, row }) => (col === 11 && row === 10 ? { category: BuildingType.ResourceWheat } : undefined),
+      { now: 2000 },
+    );
+
+    const snapshotBeforeSettle = getConstructionIntentSnapshot();
+
+    vi.setSystemTime(4999);
+    vi.advanceTimersByTime(2999);
+
+    expect(getConstructionIntentSnapshot()).toBe(snapshotBeforeSettle);
+    expect(hasActiveConstructionIntent(101, BuildingType.ResourceWheat)).toBe(true);
+    expect(getPendingConstructionCost(101, ResourcesIds.Wheat)).toBe(10);
+
+    vi.setSystemTime(5000);
+    vi.advanceTimersByTime(1);
+
+    expect(getConstructionIntentSnapshot()).toBeGreaterThan(snapshotBeforeSettle);
+    expect(hasActiveConstructionIntent(101, BuildingType.ResourceWheat)).toBe(false);
+    expect(getPendingConstructionCost(101, ResourcesIds.Wheat)).toBe(0);
+  });
+
   it("releases non-occupancy failures immediately", () => {
     const intent = beginConstructionIntent({
       realmEntityId: 101,
@@ -272,5 +382,20 @@ describe("construction-intent-store", () => {
     });
 
     expect(getEffectiveConstructionBalance(101, ResourcesIds.Lords, 123, {} as any)).toBeCloseTo(0.9, 10);
+  });
+
+  it("clamps effective balances at zero when pending construction exceeds the canonical balance", () => {
+    getBalance.mockReturnValue({ balance: 5_000_000_000, resourceId: ResourcesIds.Wheat });
+    beginConstructionIntent({
+      realmEntityId: 101,
+      buildingType: BuildingType.ResourceWheat,
+      spot: { col: 11, row: 10 },
+      useSimpleCost: true,
+      costs: [{ resource: ResourcesIds.Wheat, amount: 10 }],
+      now: 1000,
+    });
+
+    expect(getEffectiveConstructionBalance(101, ResourcesIds.Wheat, 123, {} as any)).toBe(0);
+    expect(getEffectiveConstructionBalanceRaw(101, ResourcesIds.Wheat, 123, {} as any)).toBe(0);
   });
 });

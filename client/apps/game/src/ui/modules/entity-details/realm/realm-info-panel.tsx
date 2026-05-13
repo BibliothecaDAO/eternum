@@ -15,6 +15,7 @@ import {
 import {
   getEffectiveConstructionBalance,
   hasActiveConstructionIntent,
+  reconcileConstructionIntents,
 } from "@/ui/features/settlement/construction/construction-intent-store";
 import {
   buildRealmBuildingSummary,
@@ -43,6 +44,7 @@ import {
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
   hasEnoughPopulationForBuilding,
+  TileManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import {
@@ -265,6 +267,24 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     () => (structure ? mode.structure.getName(structure).name : "Structure"),
     [mode, structure],
   );
+
+  useEffect(() => {
+    if (!realmId || !realm?.position) return;
+
+    const tileManager = new TileManager(components, setup.systemCalls, {
+      col: Number(realm.position.x),
+      row: Number(realm.position.y),
+    });
+
+    reconcileConstructionIntents(
+      realmId,
+      (spot) => tileManager.isHexOccupied(spot),
+      (spot) => {
+        const building = tileManager.getIndexedBuilding(spot);
+        return building ? { category: building.category as BuildingType } : undefined;
+      },
+    );
+  }, [components, constructionIntentVersion, realm?.position, realmId, setup.systemCalls]);
 
   const relicEffects = useMemo(() => {
     if (!structure) return [];

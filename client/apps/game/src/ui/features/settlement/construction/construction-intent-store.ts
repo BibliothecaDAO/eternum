@@ -71,6 +71,7 @@ const CONSTRUCTION_INTENT_STALE_MS = 90_000;
 const OCCUPIED_SPACE_REASON = "space is occupied";
 
 const stateByRealm = new Map<number, InternalConstructionIntentState>();
+const expiryTimeoutsByIntent = new Map<string, ReturnType<typeof setTimeout>>();
 const listeners = new Set<() => void>();
 let intentSequence = 0;
 let snapshotVersion = 0;
@@ -159,7 +160,85 @@ const clearVacated = (state: InternalConstructionIntentState, key: string) => {
 };
 
 const clearIntent = (state: InternalConstructionIntentState, intentId: string) => {
+  clearIntentExpiry(intentId);
   state.intents.delete(intentId);
+};
+
+const isSettledIndexedIntent = (
+  intent: ConstructionIntent,
+  now: number,
+  settleMs: number = CONSTRUCTION_INTENT_SETTLE_MS,
+) => {
+  if (intent.status === "indexed_settling") {
+    return isSettled(intent.indexedAt ?? intent.updatedAt, now, settleMs);
+  }
+
+  return false;
+};
+
+const hasExpiredIntent = (
+  intent: ConstructionIntent,
+  now: number,
+  settleMs: number = CONSTRUCTION_INTENT_SETTLE_MS,
+  staleMs: number = CONSTRUCTION_INTENT_STALE_MS,
+) => isSettledIndexedIntent(intent, now, settleMs) || isStale(intent.updatedAt, now, staleMs);
+
+const getIntentExpiryAt = (
+  intent: ConstructionIntent,
+  settleMs: number = CONSTRUCTION_INTENT_SETTLE_MS,
+  staleMs: number = CONSTRUCTION_INTENT_STALE_MS,
+) => {
+  if (intent.status === "indexed_settling") {
+    return Math.min((intent.indexedAt ?? intent.updatedAt) + settleMs, intent.updatedAt + staleMs);
+  }
+
+  return intent.updatedAt + staleMs;
+};
+
+const clearIntentExpiry = (intentId: string) => {
+  const timeout = expiryTimeoutsByIntent.get(intentId);
+  if (!timeout) return;
+
+  clearTimeout(timeout);
+  expiryTimeoutsByIntent.delete(intentId);
+};
+
+const removeExpiredIntentAtTimeout = (intentId: string) => {
+  expiryTimeoutsByIntent.delete(intentId);
+
+  const match = findIntentById(intentId);
+  if (!match) return;
+
+  if (!hasExpiredIntent(match.intent, Date.now())) return;
+
+  clearIntent(match.state, intentId);
+  notifyConstructionIntentListeners();
+};
+
+const scheduleIntentExpiry = (intent: ConstructionIntent, scheduledAt: number) => {
+  clearIntentExpiry(intent.intentId);
+
+  const delay = Math.max(0, getIntentExpiryAt(intent) - scheduledAt);
+  const timeout = setTimeout(() => removeExpiredIntentAtTimeout(intent.intentId), delay);
+  expiryTimeoutsByIntent.set(intent.intentId, timeout);
+};
+
+const storeIntent = (state: InternalConstructionIntentState, intent: ConstructionIntent, now: number = Date.now()) => {
+  state.intents.set(intent.intentId, intent);
+  scheduleIntentExpiry(intent, now);
+};
+
+const pruneExpiredIntents = (
+  state: InternalConstructionIntentState,
+  now: number,
+  settleMs: number = CONSTRUCTION_INTENT_SETTLE_MS,
+  staleMs: number = CONSTRUCTION_INTENT_STALE_MS,
+) => {
+  Array.from(state.intents.values()).forEach((intent) => {
+    if (hasExpiredIntent(intent, now, settleMs, staleMs)) {
+      clearIntent(state, intent.intentId);
+    }
+  });
 };
 
 const getActiveIntents = (state: InternalConstructionIntentState) => Array.from(state.intents.values());
@@ -244,7 +323,7 @@ const reconcileIntent = (
   }
 
   if (indexedBuildingMatchesIntent(intent, getIndexedBuilding)) {
-    state.intents.set(intent.intentId, markIntentStatus(intent, "indexed_settling", now));
+    storeIntent(state, markIntentStatus(intent, "indexed_settling", now), now);
     return true;
   }
 
@@ -253,6 +332,7 @@ const reconcileIntent = (
 
 export const clearAllConstructionIntentState = () => {
   stateByRealm.clear();
+  Array.from(expiryTimeoutsByIntent.keys()).forEach(clearIntentExpiry);
   intentSequence = 0;
   notifyConstructionIntentListeners();
 };
@@ -267,6 +347,7 @@ export const beginConstructionIntent = ({
   now = Date.now(),
 }: ConstructionIntentInput): ConstructionIntent | null => {
   const state = getOrCreateState(realmEntityId);
+  pruneExpiredIntents(state, now);
   if (enforceBuildingTypeUniqueness && hasActiveIntentForBuilding(state, buildingType)) {
     return null;
   }
@@ -289,7 +370,7 @@ export const beginConstructionIntent = ({
     updatedAt: now,
   };
 
-  state.intents.set(intent.intentId, intent);
+  storeIntent(state, intent, now);
   clearOccupiedHold(state, spotKey);
   clearVacated(state, spotKey);
   notifyConstructionIntentListeners();
@@ -304,12 +385,16 @@ export const attachConstructionTx = (
   const match = findIntentById(intentId);
   if (!match) return false;
 
-  match.state.intents.set(intentId, {
-    ...match.intent,
-    transactionHash,
-    status: "submitted",
-    updatedAt: now,
-  });
+  storeIntent(
+    match.state,
+    {
+      ...match.intent,
+      transactionHash,
+      status: "submitted",
+      updatedAt: now,
+    },
+    now,
+  );
   notifyConstructionIntentListeners();
   return true;
 };
@@ -317,8 +402,9 @@ export const attachConstructionTx = (
 export const markConstructionIntentConfirmed = (transactionHash: string, now: number = Date.now()) => {
   const match = findIntentByTransactionHash(transactionHash);
   if (!match) return false;
+  if (match.intent.status === "indexed_settling") return true;
 
-  match.state.intents.set(match.intent.intentId, markIntentStatus(match.intent, "confirmed_waiting_index", now));
+  storeIntent(match.state, markIntentStatus(match.intent, "confirmed_waiting_index", now), now);
   notifyConstructionIntentListeners();
   return true;
 };
@@ -394,7 +480,10 @@ export const getEffectiveConstructionBalance = (
   components: ClientComponents,
 ) => {
   const canonicalBalance = getBalance(realmEntityId, resourceId, currentDefaultTick, components);
-  return divideByPrecision(canonicalBalance.balance, false) - getPendingConstructionCost(realmEntityId, resourceId);
+  return Math.max(
+    0,
+    divideByPrecision(canonicalBalance.balance, false) - getPendingConstructionCost(realmEntityId, resourceId),
+  );
 };
 
 export const getEffectiveConstructionBalanceRaw = (
@@ -404,7 +493,10 @@ export const getEffectiveConstructionBalanceRaw = (
   components: ClientComponents,
 ) => {
   const canonicalBalance = getBalance(realmEntityId, resourceId, currentDefaultTick, components);
-  return canonicalBalance.balance - multiplyByPrecision(getPendingConstructionCost(realmEntityId, resourceId));
+  return Math.max(
+    0,
+    canonicalBalance.balance - multiplyByPrecision(getPendingConstructionCost(realmEntityId, resourceId)),
+  );
 };
 
 export const getBuildReservationState = (realmEntityId: number): BuildReservationState => {
