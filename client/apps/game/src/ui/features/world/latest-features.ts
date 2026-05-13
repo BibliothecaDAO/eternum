@@ -71,19 +71,19 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-05-13",
-    title: "Bundled Blitz Reservation",
-    description:
-      "Blitz settlement now reserves pending hyperstructure slots in the same action before settling, so the landing card stays focused on a single Settle button instead of a separate setup control.",
-    type: "improvement",
-    gameSlug: "landing",
-  },
-  {
-    date: "2026-05-13",
     title: "Hyperstructure Create Prompt",
     description:
       "Reserved hyperstructure tiles now explain that you can double-click them to create the real structure, and the tile details panel also includes a direct Create Here button.",
     type: "improvement",
     gameSlug: "world",
+  },
+  {
+    date: "2026-05-13",
+    title: "Faster Repeat Exploring",
+    description:
+      "Repeat explore actions now spend less time in the provider submit path and expose safer readiness tracking, so scouts become ready for the next explore sooner after world state catches up.",
+    type: "improvement",
+    gameSlug: "eternum",
   },
   {
     date: "2026-05-12",
@@ -144,7 +144,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-05-11",
     title: "Single-Step Blitz Entry",
     description:
-      "Blitz entry now settles you into a world with one action, and the setup flow reserves hyperstructure slots in clean 25-slot batches instead of walking through the old staged entry path.",
+      "Blitz entry now settles you into a world with one action instead of walking through the old staged entry flow.",
     type: "improvement",
     gameSlug: "landing",
   },

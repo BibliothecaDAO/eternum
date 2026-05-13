@@ -12,6 +12,7 @@
  */
 import type { WorldSummary } from "@bibliothecadao/types";
 import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
+import { PLAYER_WORLD_REGISTRATION_QUERY_KEY } from "@/hooks/world-list-queries";
 import { useQueries } from "@tanstack/react-query";
 
 interface PlayerWorldRegistration {
@@ -104,7 +105,7 @@ export const usePlayerWorldRegistrations = ({
       const isBlitz = mode === "blitz";
       const isEternum = mode === "eternum";
       return {
-        queryKey: ["playerWorldRegistration", worldKey, playerAddress ?? "anonymous"],
+        queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, worldKey, playerAddress ?? "anonymous"],
         queryFn: async (): Promise<PlayerWorldRegistration> => {
           if (!playerAddress) {
             return { isPlayerRegistered: null, hasPlayerSettledRealm: null };

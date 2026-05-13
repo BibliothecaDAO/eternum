@@ -34,6 +34,8 @@ import type { LandingModeFilter, LandingEntryRouteState } from "../lib/landing-e
 import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
 import { useLandingContext } from "../context/landing-context";
 import { useLandingNetworkState } from "../hooks/use-landing-network-state";
+import { invalidateWorldListQueries } from "@/hooks/world-list-queries";
+import { FACTORY_GAME_LIST_REFRESH_EVENT } from "../../factory-v2/game-list-refresh-event";
 
 interface PlayViewProps {
   className?: string;
@@ -901,6 +903,21 @@ export const PlayView = ({
     primeGameEntry("dashboard");
   }, [activeTab]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const refreshGameLists = () => {
+      void invalidateWorldListQueries(queryClient);
+    };
+
+    window.addEventListener(FACTORY_GAME_LIST_REFRESH_EVENT, refreshGameLists);
+    return () => {
+      window.removeEventListener(FACTORY_GAME_LIST_REFRESH_EVENT, refreshGameLists);
+    };
+  }, [queryClient]);
+
   const navigateToEntryRoute = useCallback(
     (selection: WorldSelection, intent: "play" | "settle" | "spectate", autoSettle = false) => {
       const entryContext = resolveEntryContextFromLandingSelection({
@@ -1023,7 +1040,7 @@ export const PlayView = ({
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await queryClient.refetchQueries({ queryKey: ["worldsSummary"] });
+      await invalidateWorldListQueries(queryClient);
     } finally {
       // Add a small delay so the spinner is visible
       setTimeout(() => setIsRefreshing(false), 500);

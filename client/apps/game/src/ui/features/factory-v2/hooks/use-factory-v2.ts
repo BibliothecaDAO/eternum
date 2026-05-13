@@ -59,6 +59,7 @@ import { buildFactoryCreateRunRequest } from "../create-run-request";
 import { buildFactoryCreateSeriesRunRequest } from "../create-series-run-request";
 import { buildBlitzDurationOptions, supportsFactoryDuration } from "../duration";
 import { buildFandomizedGameName } from "../funny-names";
+import { requestGameListRefreshForCompletedRun } from "../game-list-refresh-event";
 import { toggleSingleRealmLaunchMode, toggleTwoPlayerLaunchMode } from "../launch-modes";
 import {
   readFactoryPendingLaunches,
@@ -1568,6 +1569,7 @@ export const useFactoryV2 = () => {
     setSelectedRunId(nextRun.id);
     forgetPendingLaunch(environmentId, nextRun.kind, nextRun.name);
     setNotice(null);
+    requestGameListRefreshForCompletedRun(nextRun);
 
     if (nextRun.status === "complete") {
       clearGuidedRecoveryState(nextRun.id);

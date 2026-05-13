@@ -6,7 +6,10 @@ export type ArrivalGhostClearReason =
   | "stale_timeout"
   | "army_removed"
   | "scene_destroyed"
-  | "superseded";
+  | "superseded"
+  | "movement_evicted"
+  | "max_lifetime"
+  | "optimistic_aborted";
 
 export interface ArrivalGhostVisualStyle {
   color: string;

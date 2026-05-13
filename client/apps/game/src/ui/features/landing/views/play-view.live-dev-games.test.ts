@@ -29,7 +29,7 @@ describe("PlayView live games dev visibility", () => {
   it("refreshes the landing summary query for open games", () => {
     const source = readFileSync(resolve(process.cwd(), "src/ui/features/landing/views/play-view.tsx"), "utf8");
 
-    expect(source).toContain('queryClient.refetchQueries({ queryKey: ["worldsSummary"] })');
+    expect(source).toContain("await invalidateWorldListQueries(queryClient)");
     expect(source).not.toContain('invalidateQueries({ queryKey: ["worldAvailability"] })');
   });
 });

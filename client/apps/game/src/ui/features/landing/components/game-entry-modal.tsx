@@ -23,6 +23,7 @@ import { useSeasonPassInventory, type SeasonPassInventoryItem } from "@/hooks/us
 import { useUsername } from "@/hooks/use-username";
 import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/use-village-pass-inventory";
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
+import { WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { captureClientEvent } from "@/posthog";
 import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
@@ -4274,7 +4275,7 @@ export const GameEntryModal = ({
           }
 
           const worldKey = getWorldKey({ name: worldName, chain });
-          await queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
+          await queryClient.invalidateQueries({ queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, worldKey] });
         }
       }
 
@@ -4661,7 +4662,6 @@ export const GameEntryModal = ({
     autoSettleAttemptedRef.current = true;
     void handleSettle();
   }, [autoSettleEnabled, handleSettle, isSettling, phase]);
-
   // Auto-enter game when ready (spectate mode or already settled players)
   useEffect(() => {
     debugLog(worldName, "Auto-enter check - phase:", phase, "isSpectateMode:", isSpectateMode);

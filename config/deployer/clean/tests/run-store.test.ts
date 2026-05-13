@@ -14,7 +14,7 @@ import {
   recordFactoryLaunchStepSucceeded,
   releaseFactoryAccountLeaseRecord,
 } from "../run-store";
-import { requireGitHubBranchStoreConfig } from "../run-store/github";
+import { requireGitHubBranchStoreConfig, updateGitHubBranchJsonFile } from "../run-store/github";
 import { resolveRepoPath } from "../shared/repo";
 import type { LaunchGameSummary, LaunchRotationSummary, LaunchSeriesSummary } from "../types";
 
@@ -31,6 +31,7 @@ const ENV_KEYS = [
   "GITHUB_SERVER_URL",
   "GITHUB_REF_NAME",
   "FACTORY_RUN_STORE_BRANCH",
+  "FACTORY_RUN_STORE_WRITE_RETRY_DELAY_MS",
   "FACTORY_RUN_LEASE_DURATION_SECONDS",
   "FACTORY_ACCOUNT_LEASE_DURATION_SECONDS",
 ] as const;
@@ -80,6 +81,66 @@ afterEach(() => {
 });
 
 describe("factory run store", () => {
+  test("retries transient branch JSON write conflicts before failing the deploy record", async () => {
+    process.env.FACTORY_RUN_STORE_WRITE_RETRY_DELAY_MS = "0";
+
+    let conflictCount = 0;
+    let version = 0;
+    let file = {
+      sha: "sha-0",
+      content: `${JSON.stringify({ count: 0 }, null, 2)}\n`,
+    };
+
+    globalThis.fetch = (async (input, init) => {
+      const url = String(input);
+
+      if (url.endsWith("/git/ref/heads/factory-runs")) {
+        return Response.json({ object: { sha: "branch-sha" } });
+      }
+
+      if (url.includes("/contents/") && init?.method !== "PUT") {
+        return Response.json({
+          sha: file.sha,
+          encoding: "base64",
+          content: Buffer.from(file.content, "utf8").toString("base64"),
+        });
+      }
+
+      if (url.includes("/contents/") && init?.method === "PUT") {
+        if (conflictCount < 4) {
+          conflictCount += 1;
+          version += 1;
+          file = {
+            sha: `external-sha-${version}`,
+            content: `${JSON.stringify({ count: conflictCount }, null, 2)}\n`,
+          };
+          return Response.json({ message: "sha does not match" }, { status: 409 });
+        }
+
+        const body = JSON.parse(String(init.body || "{}")) as { content: string };
+        version += 1;
+        file = {
+          sha: `sha-${version}`,
+          content: Buffer.from(body.content, "base64").toString("utf8"),
+        };
+        return Response.json({ content: { path: "indexes/slot/blitz/games.json" } });
+      }
+
+      throw new Error(`Unexpected fetch request: ${url}`);
+    }) as typeof fetch;
+
+    const result = await updateGitHubBranchJsonFile<{ count: number }>(
+      requireGitHubBranchStoreConfig(),
+      "indexes/slot/blitz/games.json",
+      (current) => ({ count: (current?.count || 0) + 1 }),
+      "factory-runs: retry test",
+    );
+
+    expect(conflictCount).toBe(4);
+    expect(result.count).toBe(5);
+    expect(JSON.parse(file.content).count).toBe(5);
+  });
+
   test("records launch input and initializes a run record on the storage branch", async () => {
     const branchStore = createBranchStoreFetch();
     globalThis.fetch = branchStore.fetch;

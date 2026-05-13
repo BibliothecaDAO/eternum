@@ -1,6 +1,7 @@
 import type { WorldSummary } from "@bibliothecadao/types";
 import { useQuery } from "@tanstack/react-query";
 import { env } from "../../env";
+import { WORLD_SUMMARY_QUERY_KEY } from "./world-list-queries";
 
 export async function fetchWorldsSummary(realtimeBaseUrl: string): Promise<WorldSummary[]> {
   const url = `${realtimeBaseUrl.replace(/\/+$/, "")}/api/worlds/summary`;
@@ -21,7 +22,7 @@ export async function fetchWorldsSummary(realtimeBaseUrl: string): Promise<World
  */
 export const useWorldsSummary = () =>
   useQuery({
-    queryKey: ["worldsSummary"],
+    queryKey: WORLD_SUMMARY_QUERY_KEY,
     queryFn: () => fetchWorldsSummary(env.VITE_PUBLIC_REALTIME_URL),
     staleTime: 25_000,
     refetchInterval: 30_000,

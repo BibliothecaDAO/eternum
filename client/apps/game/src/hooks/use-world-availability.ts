@@ -4,6 +4,7 @@
  * by caching results and sharing them across components.
  */
 import { getFactorySqlBaseUrl } from "@/runtime/world";
+import { BULK_WORLD_AVAILABILITY_QUERY_KEY, WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import { fetchBulkAvailability, isToriiAvailable, resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import {
@@ -457,7 +458,7 @@ const checkWorldAvailability = async (
 /** Fetch bulk world availability from the realtime server, cached with React Query. */
 const useBulkAvailability = (enabled: boolean) => {
   return useQuery({
-    queryKey: ["bulkWorldAvailability"],
+    queryKey: BULK_WORLD_AVAILABILITY_QUERY_KEY,
     queryFn: () => fetchBulkAvailability(env.VITE_PUBLIC_REALTIME_URL),
     enabled,
     staleTime: 30_000,
@@ -480,7 +481,7 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
   const queries = useQueries({
     queries: worlds.map((world) => ({
       // Include playerAddress in query key so it refetches when user connects
-      queryKey: ["worldAvailability", getWorldKey(world), playerAddress ?? "anonymous"],
+      queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, getWorldKey(world), playerAddress ?? "anonymous"],
       queryFn: () => checkWorldAvailability(world.name, world.chain, playerAddress, bulkAvailability),
       enabled: enabled && !!world.name && !isBulkAvailabilityPending,
       staleTime: 30 * 1000, // 30 seconds - data is fresh for 30s
