@@ -5,15 +5,14 @@
   "owner": {
     "environment": "mainnet.blitz",
     "gameName": "zz-mainnet-5",
-    "launchRequestId": "25804807061-1",
+    "launchRequestId": "25804878943-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25804807061,
+    "workflowRunId": 25804878943,
     "workflowRunAttempt": 1,
     "stepId": "configure-world",
-    "leaseId": "faaef485-705b-486a-9295-a1971218fabb"
+    "leaseId": "3838133a-144c-4d9c-b81b-a047641fba20"
   },
-  "acquiredAt": "2026-05-13T14:16:11.435Z",
-  "heartbeatAt": "2026-05-13T14:16:16.146Z",
-  "expiresAt": "2026-05-13T14:16:16.146Z",
-  "releasedAt": "2026-05-13T14:16:16.146Z"
+  "acquiredAt": "2026-05-13T14:17:34.698Z",
+  "heartbeatAt": "2026-05-13T14:17:34.698Z",
+  "expiresAt": "2026-05-13T14:27:34.698Z"
 }
