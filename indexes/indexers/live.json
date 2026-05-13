@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-13T15:53:02.471Z",
+  "updatedAt": "2026-05-13T17:12:49.709Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2147,15 +2147,11 @@
     "zz-mainnet-6": {
       "gameName": "zz-mainnet-6",
       "liveState": {
-        "state": "existing",
-        "stateSource": "describe",
-        "currentTier": "legendary",
-        "url": "https://api.cartridge.gg/x/zz-mainnet-6/torii",
-        "version": "v1.8.15",
-        "branch": "main",
-        "describedAt": "2026-05-13T15:03:45.461Z"
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment zz-mainnet-6 not found"
       },
-      "updatedAt": "2026-05-13T15:03:45.581Z"
+      "updatedAt": "2026-05-13T17:12:49.709Z"
     },
     "zz-mainnet-7": {
       "gameName": "zz-mainnet-7",
