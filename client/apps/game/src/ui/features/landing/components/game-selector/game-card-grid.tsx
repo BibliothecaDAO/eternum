@@ -7,7 +7,6 @@ import { type WorldConfigMeta } from "@/hooks/use-world-availability";
 import { useWorldJackpot } from "@/hooks/use-world-jackpot";
 import { useWorldsSummary } from "@/hooks/use-worlds-summary";
 import { useWorldRegistration, type EntryStage } from "@/hooks/use-world-registration";
-import { useBlitzHyperstructureReservation } from "@/hooks/use-blitz-hyperstructure-reservation";
 import type { WorldSummary } from "@bibliothecadao/types";
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
@@ -245,7 +244,6 @@ const buildGameResolutionSignature = (game: GameData): string => {
     config?.mmrEnabled ? "1" : "0",
     config?.registrationCountMax ?? "",
     config?.twoPlayerMode ? "1" : "0",
-    config?.numHyperstructuresLeft ?? "",
     config?.winnerJackpotAmount?.toString() ?? "",
   ].join(":");
 };
@@ -337,13 +335,10 @@ const GameCard = ({
   const eternumPrimaryActionLabel = canPlayEternumDirect ? "Play" : "Settle";
   // Can register during upcoming, or during ongoing if dev mode is on
   const canRegisterPeriod = isBlitzMode && (isUpcoming || (isOngoing && devModeOn));
-  const canSpectateRegisteredBlitz = isBlitzMode && canRegisterPeriod && game.isRegistered === true;
+  const canSpectatePreMainBlitz = isBlitzMode && canRegisterPeriod;
   // Spectate is always available for live and ended games, and also for
-  // registered Blitz games during the pre-main registration window.
-  const canSpectate = isOngoing || isEnded || canSpectateRegisteredBlitz;
-  const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? null;
-  const hasKnownRemainingReservations = numHyperstructuresLeft != null && numHyperstructuresLeft > 0;
-  const showReserveButton = isBlitzMode && canRegisterPeriod;
+  // Blitz worlds during the pre-main registration window.
+  const canSpectate = isOngoing || isEnded || canSpectatePreMainBlitz;
   const lordsFeeAmount = game.config?.feeAmount ?? 0n;
   const hasLordsFee = lordsFeeAmount > 0n;
   const isMainnetGame = game.chain === "mainnet";
@@ -413,15 +408,6 @@ const GameCard = ({
     isRegistered: game.isRegistered === true,
     enabled: isBlitzMode && game.status === "ok" && canRegisterPeriod,
   });
-  const { reserve, isReserving } = useBlitzHyperstructureReservation({
-    worldName: game.name,
-    chain: game.chain,
-    remainingReservations: numHyperstructuresLeft,
-    enabled: isBlitzMode && canRegisterPeriod,
-  });
-  const reserveButtonTitle = hasKnownRemainingReservations
-    ? `Reserve Golden Tiles (${numHyperstructuresLeft} remaining)`
-    : "Reserve Golden Tiles";
   const showRegistered = game.isRegistered || entryStage === "done";
 
   // Handle settle entry with toast notification.
@@ -432,14 +418,6 @@ const GameCard = ({
       });
     });
   }, [settle, runWithNetworkGuard]);
-
-  const handleReserveHyperstructures = useCallback(() => {
-    runWithNetworkGuard(() => {
-      void reserve().catch((err) => {
-        console.error("Hyperstructure reservation failed:", err);
-      });
-    });
-  }, [reserve, runWithNetworkGuard]);
 
   const handleSwitchNetwork = useCallback(async () => {
     if (!pendingNetworkAction || isSwitchNetworkPending) return;
@@ -803,32 +781,6 @@ const GameCard = ({
             >
               <Trophy className="w-3 h-3" />
               Claim Rewards
-            </button>
-          )}
-
-          {/* Reserve Hyperstructures button during the Blitz registration window */}
-          {showReserveButton && (
-            <button
-              onClick={handleReserveHyperstructures}
-              disabled={isReserving}
-              aria-label="Reserve Golden Tiles"
-              title={reserveButtonTitle}
-              className={cn(
-                "relative flex h-8 w-8 flex-none items-center justify-center overflow-hidden rounded-full transition-all duration-200",
-                "border border-amber-200/80 bg-gradient-to-br from-amber-200 via-amber-400 to-yellow-500 text-black",
-                "shadow-[0_0_18px_rgba(251,191,36,0.55)] hover:scale-105 hover:shadow-[0_0_24px_rgba(251,191,36,0.75)]",
-                "disabled:scale-100 disabled:opacity-70 disabled:shadow-[0_0_12px_rgba(251,191,36,0.35)]",
-              )}
-            >
-              {!isReserving && <span className="absolute inset-0 rounded-full bg-amber-200/30 animate-ping" />}
-              {isReserving ? (
-                <Loader2 className="relative z-10 h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <>
-                  <Sparkles className="relative z-10 h-3.5 w-3.5" />
-                  <span className="sr-only">Reserve Golden Tiles</span>
-                </>
-              )}
             </button>
           )}
 

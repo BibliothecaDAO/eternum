@@ -14,7 +14,6 @@ import {
 import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import type { Chain } from "@contracts";
-import { calculateHyperstructureReservationsLeft } from "@bibliothecadao/types";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { RpcProvider } from "starknet";
 import { env } from "../../env";
@@ -25,7 +24,7 @@ const ZERO_OWNER_ADDRESS = "0x00000000000000000000000000000000000000000000000000
 const WORLD_MODE_QUERY = `SELECT "blitz_mode_on" AS blitz_mode_on FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts.
-const WORLD_CONFIG_BLITZ_QUERY = `SELECT "season_config.start_settling_at" AS start_settling_at, "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.registration_count_max" AS registration_count_max, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.current_ring_count" AS hyper_current_ring_count, "blitz_hypers_settlement_config.point" AS hyper_current_point, "blitz_hypers_settlement_config.side" AS hyper_current_side, "blitz_settlement_config.single_realm_mode" AS single_realm_mode, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
+const WORLD_CONFIG_BLITZ_QUERY = `SELECT "season_config.start_settling_at" AS start_settling_at, "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.registration_count_max" AS registration_count_max, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_settlement_config.single_realm_mode" AS single_realm_mode, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Eternum worlds do not rely on blitz_registration_config. Fetch season timing + spacing config instead.
 const WORLD_CONFIG_ETERNUM_QUERY = `
@@ -172,8 +171,6 @@ export interface WorldConfigMeta {
   settledPlayersCount: number | null;
   settledRealmsCount: number | null;
   settledVillagesCount: number | null;
-  // Number of placeholder hyperstructures left to reserve from the landing flow.
-  numHyperstructuresLeft: number | null;
   // Reward distribution contract for this world
   prizeDistributionAddress: string | null;
   // Current fee-token balance held by the reward distribution contract
@@ -303,7 +300,6 @@ const fetchWorldConfigMeta = async (
     settledPlayersCount: null,
     settledRealmsCount: null,
     settledVillagesCount: null,
-    numHyperstructuresLeft: null,
     prizeDistributionAddress: null,
     winnerJackpotAmount: 0n,
   };
@@ -353,19 +349,6 @@ const fetchWorldConfigMeta = async (
 
         meta.singleRealmMode = parseMaybeBooleanFlag(row.single_realm_mode) ?? false;
         meta.twoPlayerMode = parseMaybeBooleanFlag(row.two_player_mode) ?? false;
-
-        const registrationCountMax = meta.registrationCountMax ?? 0;
-        const currentRingCount = parseMaybeHexToNumber(row.hyper_current_ring_count) ?? 0;
-        const currentPoint = parseMaybeHexToNumber(row.hyper_current_point) ?? 1;
-        const currentSide = parseMaybeHexToNumber(row.hyper_current_side) ?? 5;
-
-        meta.numHyperstructuresLeft = calculateHyperstructureReservationsLeft({
-          registrationCountMax,
-          currentRingCount,
-          currentPoint,
-          currentSide,
-          twoPlayerMode: meta.twoPlayerMode,
-        });
       }
 
       if (meta.mode === "eternum") {
@@ -486,7 +469,7 @@ const useBulkAvailability = (enabled: boolean) => {
 /**
  * Hook to check multiple worlds' availability with batched queries.
  * Uses React Query's useQueries for parallel execution with caching.
- * Auto-refreshes every 30 seconds to catch registration/hyperstructure updates.
+ * Auto-refreshes every 30 seconds to catch registration and phase updates.
  * @param worlds - List of worlds to check
  * @param enabled - Whether to enable the queries
  * @param playerAddress - Optional player address (padded felt) to check registration status
@@ -502,7 +485,7 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
       enabled: enabled && !!world.name && !isBulkAvailabilityPending,
       staleTime: 30 * 1000, // 30 seconds - data is fresh for 30s
       gcTime: 10 * 60 * 1000, // 10 minutes
-      refetchInterval: 30 * 1000, // Auto-refresh every 30s to catch new registrations/forges
+      refetchInterval: 30 * 1000, // Auto-refresh every 30s to catch new registrations and phase changes
       refetchIntervalInBackground: false, // Only refetch when tab is active
       retry: 1,
     })),

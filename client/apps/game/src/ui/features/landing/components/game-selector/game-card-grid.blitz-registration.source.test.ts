@@ -6,14 +6,14 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("Game card reservation visibility", () => {
-  it("shows the reservation action during the active blitz registration window", () => {
+  it("keeps the blitz registration window logic but no longer renders a separate reserve action", () => {
     const source = readFileSync(
       resolve(process.cwd(), "src/ui/features/landing/components/game-selector/game-card-grid.tsx"),
       "utf8",
     );
 
     expect(source).toContain("const canRegisterPeriod = isBlitzMode && (isUpcoming || (isOngoing && devModeOn));");
-    expect(source).toContain("const showReserveButton = isBlitzMode && canRegisterPeriod;");
+    expect(source).not.toContain("showReserveButton");
   });
 
   it("routes empty upcoming game grids to the create game page", () => {
@@ -27,26 +27,24 @@ describe("Game card reservation visibility", () => {
     expect(source).toContain("Forge New Game");
   });
 
-  it("uses reservation labels instead of the legacy forge copy", () => {
+  it("removes the separate landing hyperstructure setup button", () => {
     const source = readFileSync(
       resolve(process.cwd(), "src/ui/features/landing/components/game-selector/game-card-grid.tsx"),
       "utf8",
     );
 
-    expect(source).toContain('aria-label="Reserve Golden Tiles"');
-    expect(source).toContain("animate-ping");
-    expect(source).not.toContain("All Forged");
+    expect(source).not.toContain("showReserveButton");
+    expect(source).not.toContain("onReserveHyperstructures");
+    expect(source).not.toContain("animate-ping");
   });
 
-  it("allows spectating registered blitz games during the registration window", () => {
+  it("allows spectating blitz games during the registration window", () => {
     const source = readFileSync(
       resolve(process.cwd(), "src/ui/features/landing/components/game-selector/game-card-grid.tsx"),
       "utf8",
     );
 
-    expect(source).toContain(
-      "const canSpectateRegisteredBlitz = isBlitzMode && canRegisterPeriod && game.isRegistered === true;",
-    );
-    expect(source).toContain("const canSpectate = isOngoing || isEnded || canSpectateRegisteredBlitz;");
+    expect(source).toContain("const canSpectatePreMainBlitz = isBlitzMode && canRegisterPeriod;");
+    expect(source).toContain("const canSpectate = isOngoing || isEnded || canSpectatePreMainBlitz;");
   });
 });

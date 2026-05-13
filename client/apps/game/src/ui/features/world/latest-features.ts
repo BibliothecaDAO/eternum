@@ -22,12 +22,76 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
-    date: "2026-05-12",
-    title: "Golden Tile Beacon",
+    date: "2026-05-13",
+    title: "Blitz Settle VRF Fix",
     description:
-      "Blitz landing cards now use a compact glowing gold circle for Golden Tile reservation, so the action stands out immediately without taking over the whole card footer.",
+      "Blitz settlement now requests randomness before the settle transaction, so registration no longer misses the VRF step required for world assignment on configured networks.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-13",
+    title: "Open Game Spectating",
+    description:
+      "Blitz Open Games now shows Spectate alongside Settle during the registration window, so you can preview a world before joining it.",
     type: "improvement",
     gameSlug: "landing",
+  },
+  {
+    date: "2026-05-13",
+    title: "Open Games Refresh Fix",
+    description:
+      "The Open Games refresh button now refetches the same live summary feed the landing cards use, so new worlds and status changes show up without needing a full page reload.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-13",
+    title: "Active Game Spectate Alias",
+    description:
+      "Your Active Games now lets the Spectate button open the same direct world flow as Play, so registered matches behave consistently while keeping the lighter label.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-13",
+    title: "Safer Hyperstructure Creation",
+    description:
+      "Unconstructed Hyperstructures now treat the map double-click and Create Here button as the same pending action, so repeated clicks no longer fire duplicate creation attempts while the tile is updating.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-13",
+    title: "Bundled Blitz Reservation",
+    description:
+      "Blitz settlement now reserves pending hyperstructure slots in the same action before settling, so the landing card stays focused on a single Settle button instead of a separate setup control.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-13",
+    title: "Hyperstructure Create Prompt",
+    description:
+      "Reserved hyperstructure tiles now explain that you can double-click them to create the real structure, and the tile details panel also includes a direct Create Here button.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-12",
+    title: "Map Hyperstructure Creation",
+    description:
+      "Reserved Hyperstructures can now be created straight from the world map with a double-click, so materializing the real structure feels like a direct map action instead of a hidden contract step.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-12",
+    title: "Visible Unconstructed Hyperstructures",
+    description:
+      "Reserved Hyperstructure tiles now show up directly on the world map as light silhouettes, so you can see future Hyperstructure positions before the real structure is created.",
+    type: "improvement",
+    gameSlug: "world",
   },
   {
     date: "2026-05-12",
@@ -39,25 +103,9 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-05-12",
-    title: "Golden Tile Reservation",
+    title: "Forge Step Removed",
     description:
-      "Blitz open-game cards now label the hyperstructure reservation action as Reserve Golden Tiles, so the landing flow speaks in game terms instead of contract terms.",
-    type: "improvement",
-    gameSlug: "landing",
-  },
-  {
-    date: "2026-05-12",
-    title: "Visible Blitz Reservation",
-    description:
-      "Blitz open-game cards now keep the reserve-hyperstructures action visible throughout the registration window, so you do not lose the button when landing summary counts lag behind the contract state.",
-    type: "fix",
-    gameSlug: "landing",
-  },
-  {
-    date: "2026-05-12",
-    title: "Blitz Reservation Cleanup",
-    description:
-      "Blitz landing cards now reserve hyperstructure slots directly from the open-games list, while the old All Forged entry phase is gone so joining and preparing a world reads much more clearly.",
+      "Blitz no longer uses the old dedicated hyperstructure-prep landing phase, so joining a world and preparing its hyperstructure slots now read as one cleaner entry flow.",
     type: "improvement",
     gameSlug: "landing",
   },
@@ -231,9 +279,9 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-04-20",
-    title: "Cleaner Forge Flow",
+    title: "Cleaner Hyperstructure Setup",
     description:
-      "Forge Hyperstructures now waits for the dashboard entry data to be ready, shows a clearer remaining count, and reports forge failures instead of leaving the action feeling stuck.",
+      "Hyperstructure setup now waits for the dashboard entry data to be ready, shows a clearer remaining count, and reports setup failures instead of leaving the action feeling stuck.",
     type: "fix",
     gameSlug: "landing",
   },

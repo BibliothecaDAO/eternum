@@ -192,5 +192,5 @@ Use `list_actions` to see all available actions with their parameters. Key actio
 - **Guild**: `create_guild`, `join_guild`, `leave_guild`, `update_whitelist`, `remove_member`
 - **Hyperstructure**: `contribute_hyperstructure`, `initialize`, `allocate_shares`, `claim_share_points`
 - **Bank**: `buy_resources`, `sell_resources`, `add_liquidity`, `remove_liquidity`
-- **Blitz**: `approve_token`, `settle`, `reserve_hyperstructures`, `create_hyperstructure`
+- **Blitz**: `approve_token`, `settle`, `create_hyperstructure`
 - **Relic**: `open_chest`, `apply_relic`

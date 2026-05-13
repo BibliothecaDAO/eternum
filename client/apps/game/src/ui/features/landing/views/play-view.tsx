@@ -719,7 +719,7 @@ const RegisteredActiveGamesBar = ({
         onPlayGame={onPlayGame}
         onSelectGame={onSelectGame}
         onAutoSettleGame={onAutoSettleGame}
-        onSpectate={onSpectate}
+        onSpectate={onPlayGame}
         onRegistrationComplete={onRegistrationComplete}
         modeFilter={mode}
         statusFilter={["ongoing", "upcoming"]}
@@ -1018,12 +1018,12 @@ export const PlayView = ({
     // The toast is already shown by the GameCard component
   }, []);
 
-  // Refresh games data (invalidate world availability queries)
-  // This also handles the transition from upcoming to live when game starts
+  // Refresh landing game summaries.
+  // The open-games grid is driven by the bulk worlds summary query.
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await queryClient.invalidateQueries({ queryKey: ["worldAvailability"] });
+      await queryClient.refetchQueries({ queryKey: ["worldsSummary"] });
     } finally {
       // Add a small delay so the spinner is visible
       setTimeout(() => setIsRefreshing(false), 500);

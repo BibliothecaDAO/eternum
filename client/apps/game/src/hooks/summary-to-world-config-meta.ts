@@ -85,7 +85,6 @@ export const summaryToWorldConfigMeta = (
     settledPlayersCount: summary.settledPlayersCount ?? null,
     settledRealmsCount: summary.settledRealmsCount ?? null,
     settledVillagesCount: summary.settledVillagesCount ?? null,
-    numHyperstructuresLeft: summary.numHyperstructuresLeft ?? null,
     prizeDistributionAddress: summary.prizeDistributionAddress ?? null,
     // Jackpot is resolved on-demand via `useWorldJackpot` — callers should
     // read it from the hook's data, not from this field.

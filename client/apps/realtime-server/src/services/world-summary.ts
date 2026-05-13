@@ -1,8 +1,4 @@
-import {
-  calculateHyperstructureReservationsLeft,
-  type WorldSummary,
-  type WorldSummaryMode,
-} from "@bibliothecadao/types";
+import { type WorldSummary, type WorldSummaryMode } from "@bibliothecadao/types";
 
 const CARTRIDGE_API_BASE = "https://api.cartridge.gg";
 const ZERO_OWNER_ADDRESS = "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -22,9 +18,6 @@ const WORLD_SUMMARY_QUERY = `
     "blitz_registration_config.fee_amount" AS fee_amount,
     "blitz_registration_config.registration_start_at" AS registration_start_at,
     "season_config.start_main_at" AS registration_end_at,
-    "blitz_hypers_settlement_config.current_ring_count" AS hyper_current_ring_count,
-    "blitz_hypers_settlement_config.point" AS hyper_current_point,
-    "blitz_hypers_settlement_config.side" AS hyper_current_side,
     "blitz_settlement_config.single_realm_mode" AS single_realm_mode,
     "blitz_settlement_config.two_player_mode" AS two_player_mode,
     "season_addresses_config.season_pass_address" AS season_pass_address,
@@ -61,7 +54,6 @@ const NULL_SUMMARY: SummaryFields = {
   settledPlayersCount: null,
   settledRealmsCount: null,
   settledVillagesCount: null,
-  numHyperstructuresLeft: null,
   winnerJackpotAmount: null,
 };
 
@@ -133,25 +125,10 @@ function resolveMode(blitzModeOn: unknown): WorldSummaryMode | null {
 function parseSummaryRow(row: Record<string, unknown>): SummaryFields {
   const mode = resolveMode(row.blitz_mode_on);
   const twoPlayerMode = parseMaybeBoolean(row.two_player_mode) ?? false;
-  const registrationCountMax = parseMaybeHexToNumber(row.registration_count_max);
-  const currentRingCount = parseMaybeHexToNumber(row.hyper_current_ring_count) ?? 0;
-  const currentPoint = parseMaybeHexToNumber(row.hyper_current_point) ?? 1;
-  const currentSide = parseMaybeHexToNumber(row.hyper_current_side) ?? 5;
   const registrationEndAt =
     mode === "blitz"
       ? (parseMaybeHexToNumber(row.registration_end_at) ?? parseMaybeHexToNumber(row.start_main_at))
       : null;
-
-  let numHyperstructuresLeft: number | null = null;
-  if (mode === "blitz" && registrationCountMax != null) {
-    numHyperstructuresLeft = calculateHyperstructureReservationsLeft({
-      registrationCountMax,
-      currentRingCount,
-      currentPoint,
-      currentSide,
-      twoPlayerMode,
-    });
-  }
 
   return {
     mode,
@@ -176,7 +153,6 @@ function parseSummaryRow(row: Record<string, unknown>): SummaryFields {
     settledPlayersCount: parseMaybeHexToNumber(row.settled_players_count),
     settledRealmsCount: parseMaybeHexToNumber(row.settled_realms_count),
     settledVillagesCount: parseMaybeHexToNumber(row.settled_villages_count),
-    numHyperstructuresLeft,
     winnerJackpotAmount: null,
   };
 }
