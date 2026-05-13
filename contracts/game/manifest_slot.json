@@ -12514,10 +12514,10 @@
     },
     {
       "class_hash": "0x2e99a634d3dcdcaddcad6d971481ba4ace4c3556fc52798878ce7caf21dbcb3",
-      "tag": "s1_eternum-structure_creation_library_v0_1_16",
+      "tag": "s1_eternum-structure_creation_library_v0_1_17",
       "selector": "0x639c98a812a97151f1cc210d9e844c0c962ca760f2a13f63a6ff3b9b6ca58f3",
       "systems": [],
-      "version": "0_1_16"
+      "version": "0_1_17"
     }
   ],
   "models": [
