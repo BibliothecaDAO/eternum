@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25796118890-1.json",
   "latestLaunchRequestId": "25796118890-1",
-  "currentStepId": null,
+  "currentStepId": "create-series",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-13T11:27:04.096Z",
+  "updatedAt": "2026-05-13T11:27:10.443Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -38,9 +38,10 @@
     {
       "id": "create-series",
       "title": "Creating series",
-      "status": "succeeded",
+      "status": "running",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games"
+      "latestEvent": "Creating series started",
+      "startedAt": "2026-05-13T11:27:10.443Z"
     },
     {
       "id": "create-worlds",
@@ -6084,5 +6085,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
+  },
+  "activeLease": {
+    "launchRequestId": "25796118890-1",
+    "workflowRunId": 25796118890,
+    "workflowRunAttempt": 1,
+    "stepId": "create-series",
+    "acquiredAt": "2026-05-13T11:27:10.443Z",
+    "expiresAt": "2026-05-13T12:12:10.443Z"
   }
 }
