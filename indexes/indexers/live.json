@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-13T17:36:57.767Z",
+  "updatedAt": "2026-05-13T18:12:58.657Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2161,6 +2161,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment zz-mainnet-7 not found"
       },
       "updatedAt": "2026-05-13T17:36:57.767Z"
+    },
+    "z-onboarding-001": {
+      "gameName": "z-onboarding-001",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/z-onboarding-001/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-13T18:12:58.657Z"
+      },
+      "updatedAt": "2026-05-13T18:12:58.657Z"
     }
   }
 }
