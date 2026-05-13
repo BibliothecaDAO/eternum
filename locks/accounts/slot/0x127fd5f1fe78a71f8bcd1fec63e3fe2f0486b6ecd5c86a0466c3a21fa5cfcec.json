@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "credence-new-flow-7",
-    "launchRequestId": "25789942712-1",
+    "gameName": "bltz-zest-336",
+    "launchRequestId": "25830203935-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25789942712,
+    "workflowRunId": 25830203935,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "9c700a8a-c602-4c32-b253-6ea447f4e086"
+    "stepId": "create-world",
+    "leaseId": "446002a5-8dc0-409b-bbfa-848dd145a197"
   },
-  "acquiredAt": "2026-05-13T09:19:29.147Z",
-  "heartbeatAt": "2026-05-13T09:19:43.544Z",
-  "expiresAt": "2026-05-13T09:19:43.544Z",
-  "releasedAt": "2026-05-13T09:19:43.544Z"
+  "acquiredAt": "2026-05-13T22:32:04.936Z",
+  "heartbeatAt": "2026-05-13T22:32:04.936Z",
+  "expiresAt": "2026-05-13T22:42:04.936Z"
 }
