@@ -96,6 +96,7 @@ import type {
   FactoryWatcherState,
 } from "../types";
 import { useFactoryV2MoreOptions } from "./use-factory-v2-map-options";
+import { resolveFactoryV2WorkflowRef } from "../workflow-ref-storage";
 
 const RUN_LOOKUP_ATTEMPTS = 8;
 const RUN_LOOKUP_DELAY_MS = 1_500;
@@ -277,6 +278,7 @@ export const useFactoryV2 = () => {
     twoPlayerMode,
     durationMinutes: draftDurationMinutes,
   });
+  const workflowRefOverride = resolveFactoryV2WorkflowRef();
 
   useEffect(() => {
     runsByEnvironmentRef.current = runsByEnvironment;
@@ -1946,6 +1948,7 @@ export const useFactoryV2 = () => {
       environmentId,
       gameName,
       gameStartTime: resolveStartTimeValue(draftStartAt),
+      workflowRef: workflowRefOverride,
       selectedMode,
       selectedPreset,
       twoPlayerMode,
@@ -1961,6 +1964,7 @@ export const useFactoryV2 = () => {
     return buildFactoryCreateSeriesRunRequest({
       environmentId,
       seriesName,
+      workflowRef: workflowRefOverride,
       games: draftSeriesGames,
       selectedMode,
       selectedPreset,
@@ -1979,6 +1983,7 @@ export const useFactoryV2 = () => {
     return buildFactoryCreateRotationRunRequest({
       environmentId,
       rotationName,
+      workflowRef: workflowRefOverride,
       firstGameStartTime: draftStartAt,
       gameIntervalMinutes: draftRotationGameIntervalMinutes,
       maxGames: draftRotationMaxGames,

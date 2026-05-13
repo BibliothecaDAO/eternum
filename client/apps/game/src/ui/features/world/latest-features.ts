@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-13",
+    title: "Factory Branch Override",
+    description:
+      "Factory V2 now supports a dev-only workflow ref override, so local launch testing can target a specific branch without changing the worker request by hand.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-13",
     title: "Blitz Settle VRF Fix",
     description:
       "Blitz settlement now requests randomness before the settle transaction, so registration no longer misses the VRF step required for world assignment on configured networks.",
