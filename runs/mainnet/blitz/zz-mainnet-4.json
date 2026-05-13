@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25800082735-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-05-13T12:49:56.016Z",
-  "updatedAt": "2026-05-13T12:52:22.078Z",
+  "updatedAt": "2026-05-13T12:52:26.510Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-13T12:52:26.510Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -77,5 +78,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-zz-mainnet-4.json",
     "worldAddress": "0x02e6fdef8a12581c5658daca3936effc7f71644234a61c8caaa40541caf395b4",
     "createGameTxHash": "0x5a53bf78032c1274cca9871bcb187f39a2fcb115d1c38e75880bb5aa3d9e77b"
+  },
+  "activeLease": {
+    "launchRequestId": "25800082735-1",
+    "workflowRunId": 25800082735,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-05-13T12:52:26.510Z",
+    "expiresAt": "2026-05-13T13:37:26.510Z"
   }
 }
