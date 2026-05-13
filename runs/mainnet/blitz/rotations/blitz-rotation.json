@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25773742739-1.json",
   "latestLaunchRequestId": "25773742739-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-13T02:09:28.242Z",
+  "updatedAt": "2026-05-13T02:09:45.347Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-13T02:24:19.500Z",
-    "lastEvaluatedAt": "2026-05-13T02:09:19.500Z"
+    "nextEvaluationAt": "2026-05-13T02:24:45.347Z",
+    "lastEvaluatedAt": "2026-05-13T02:09:45.347Z"
   },
   "steps": [
     {
@@ -83,10 +83,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-13T02:09:28.242Z"
+      "latestEvent": "Finishing setup is complete",
+      "startedAt": "2026-05-13T02:09:28.242Z",
+      "finishedAt": "2026-05-13T02:09:45.347Z"
     },
     {
       "id": "sync-paymaster",
@@ -5900,7 +5901,7 @@
         },
         "seriesGameNumber": 31,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -6052,8 +6053,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-05-13T02:09:43.947Z"
           },
           {
             "id": "sync-paymaster",
@@ -6065,7 +6067,23 @@
           "worldAddress": "0x0219d571b3118d91e141802b79b5fb003069b06830a96f31570f92ecd94b8c22",
           "createGameTxHash": "0x529b2447b9883fffd870cbfb1fb35496d08a1fdd9ee1aa40ef196537f6c70a3",
           "configureTxHash": "0x7bc73e21afa51cb1c3c06f95d3dde80682df9c8d3233bc84a8d7627d7881a2c",
-          "worldConfigTxHash": "0x7bc73e21afa51cb1c3c06f95d3dde80682df9c8d3233bc84a8d7627d7881a2c"
+          "worldConfigTxHash": "0x7bc73e21afa51cb1c3c06f95d3dde80682df9c8d3233bc84a8d7627d7881a2c",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/apac-gladiator-16-05-26-1200/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-05-13T02:09:43.947Z",
+          "indexerRequest": {
+            "env": "mainnet",
+            "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "apac-gladiator-16-05-26-1200",
+            "worldAddress": "0x0219d571b3118d91e141802b79b5fb003069b06830a96f31570f92ecd94b8c22",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       }
     ],
@@ -6076,13 +6094,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25773742739-1",
-    "workflowRunId": 25773742739,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-05-13T02:09:28.242Z",
-    "expiresAt": "2026-05-13T02:54:28.242Z"
   }
 }
