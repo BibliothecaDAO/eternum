@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "z-onboarding-001",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/z-onboarding-001/25809449510-1.json",
   "latestLaunchRequestId": "25809449510-1",
-  "currentStepId": "sync-paymaster",
+  "currentStepId": null,
   "createdAt": "2026-05-13T15:37:04.692Z",
-  "updatedAt": "2026-05-13T15:41:14.726Z",
+  "updatedAt": "2026-05-13T15:41:21.770Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -81,10 +81,11 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
-      "startedAt": "2026-05-13T15:41:14.726Z"
+      "latestEvent": "Setting up gas coverage succeeded",
+      "startedAt": "2026-05-13T15:41:14.726Z",
+      "finishedAt": "2026-05-13T15:41:21.770Z"
     }
   ],
   "artifacts": {
@@ -104,14 +105,8 @@
     "indexerUrl": "https://api.cartridge.gg/x/z-onboarding-001/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-13T15:41:09.322Z"
+    "lastIndexerDescribeAt": "2026-05-13T15:41:09.322Z",
+    "paymasterSynced": true
   },
-  "activeLease": {
-    "launchRequestId": "25809449510-1",
-    "workflowRunId": 25809449510,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-05-13T15:41:14.726Z",
-    "expiresAt": "2026-05-13T16:26:14.726Z"
-  }
+  "completedAt": "2026-05-13T15:41:21.770Z"
 }
