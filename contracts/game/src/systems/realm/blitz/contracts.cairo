@@ -23,9 +23,10 @@ pub mod blitz_realm_systems {
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, blitz_produceable_resources};
     use crate::models::config::{
-        BlitzCosmeticAttrsRegister, BlitzEntryTokenRegister, BlitzExplorationConfig, BlitzRegistrationConfig,
-        BlitzRegistrationConfigImpl, BlitzSettlement, BlitzSettlementConfig, BlitzSettlementConfigImpl,
-        BlitzSettlementPosition, RealmCountConfig, SeasonConfigImpl, WorldConfigUtilImpl,
+        BlitzCosmeticAttrsRegister, BlitzEntryTokenRegister, BlitzExplorationConfig, BlitzHypersSettlementConfig,
+        BlitzHypersSettlementConfigImpl, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlement,
+        BlitzSettlementConfig, BlitzSettlementConfigImpl, BlitzSettlementPosition, RealmCountConfig, SeasonConfigImpl,
+        WorldConfigUtilImpl,
     };
     use crate::models::events::{RealmCreatedStory, Story, StoryEvent};
     use crate::models::name::AddressName;
@@ -133,6 +134,14 @@ pub mod blitz_realm_systems {
             assert!(existing_settlement.structure_ids.len() == 0, "Eternum: Player is already settled");
 
             ////////////////////////////////////////////////
+            // Validate Hyperstructure Reservations
+            ////////////////////////////////////////////////
+
+            BlitzHyperstructureReservationGuardInternalImpl::assert_reservations_complete(
+                world, blitz_registration_config, blitz_settlement_config,
+            );
+
+            ////////////////////////////////////////////////
             // Prepare Entry Token
             ////////////////////////////////////////////////
 
@@ -228,6 +237,35 @@ pub mod blitz_realm_systems {
             let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
             IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
                 .provision_internal(structure_id);
+        }
+    }
+
+    ////////////////////////////////////////////////
+    // Hyperstructure Reservation Guards
+    ////////////////////////////////////////////////
+
+    #[generate_trait]
+    impl BlitzHyperstructureReservationGuardInternalImpl of BlitzHyperstructureReservationGuardInternalTrait {
+        fn assert_reservations_complete(
+            world: WorldStorage,
+            blitz_registration_config: BlitzRegistrationConfig,
+            blitz_settlement_config: BlitzSettlementConfig,
+        ) {
+            let mut reservation_cursor: BlitzHypersSettlementConfig = WorldConfigUtilImpl::get_member(
+                world, selector!("blitz_hypers_settlement_config"),
+            );
+
+            reservation_cursor
+                .max_ring_count =
+                    BlitzHypersSettlementConfigImpl::max_ring_count_for_registration_count(
+                        blitz_registration_config.registration_count_max.into(),
+                        blitz_settlement_config.two_player_mode,
+                    );
+
+            assert!(
+                !reservation_cursor.is_valid_ring(blitz_settlement_config.two_player_mode),
+                "Eternum: Reserve all hyperstructure tiles before settling realms",
+            );
         }
     }
 
