@@ -3,6 +3,8 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUISound } from "@/audio";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 import { ConfirmationPopup } from "./confirmation-popup";
 import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
 import { TravelInfo } from "@/ui/features/economy/resources";
@@ -14,7 +16,6 @@ import {
   computeTravelTime,
   configManager,
   divideByPrecision,
-  getBalance,
   getClosestBank,
   getEntityIdFromKeys,
   isMilitaryResource,
@@ -34,6 +35,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   } = useDojo();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const constructionIntentVersion = useConstructionIntentVersion();
 
   const playTradeExecuteSound = useUISound("ui.trade_execute");
 
@@ -67,18 +69,18 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   }, [marketManager.resourceId]);
 
   const lordsBalance = useMemo(
-    () => getBalance(entityId, ResourcesIds.Lords, currentDefaultTick, components).balance,
-    [entityId, currentDefaultTick, getBalance],
+    () => getEffectiveConstructionBalance(entityId, ResourcesIds.Lords, currentDefaultTick, components),
+    [components, constructionIntentVersion, currentDefaultTick, entityId],
   );
   const resourceBalance = useMemo(
-    () => getBalance(entityId, resourceId, currentDefaultTick, components).balance,
-    [entityId, resourceId, currentDefaultTick, getBalance],
+    () => getEffectiveConstructionBalance(entityId, resourceId, currentDefaultTick, components),
+    [components, constructionIntentVersion, currentDefaultTick, entityId, resourceId],
   );
 
   const hasEnough = useMemo(() => {
     const amount = isBuyResource ? lordsAmount + ownerFee : resourceAmount;
     const balance = isBuyResource ? lordsBalance : resourceBalance;
-    return multiplyByPrecision(amount) <= balance;
+    return amount <= balance;
   }, [isBuyResource, lordsAmount, resourceAmount, resourceBalance, lordsBalance, ownerFee]);
 
   const amountsBiggerThanZero = lordsAmount > 0 && resourceAmount > 0;
@@ -185,7 +187,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
           resourceId={isLords ? ResourcesIds.Lords : resourceId}
           setResourceId={setResourceId}
           disableInput={disableInput}
-          max={isLords ? divideByPrecision(lordsBalance) : Infinity}
+          max={isLords ? lordsBalance : Infinity}
         />
       );
     },

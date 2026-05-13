@@ -16,15 +16,7 @@ import {
 import { Has, HasValue, NotValue, getComponentValue, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { uuid } from "@latticexyz/utils";
-import {
-  DEFAULT_COORD_ALT,
-  FELT_CENTER,
-  ResourceManager,
-  getBuildingCosts,
-  getBuildingCount,
-  getTileAt,
-  setBuildingCount,
-} from "..";
+import { DEFAULT_COORD_ALT, FELT_CENTER, getBuildingCount, getTileAt, setBuildingCount } from "..";
 import {
   type BuildSlotTransition,
   clearBuildSlotTransition,
@@ -127,6 +119,22 @@ export class TileManager {
     return building;
   };
 
+  getIndexedBuilding = (hexCoords: HexPosition) => {
+    const entity = getEntityIdFromKeys([
+      BigInt(this.col),
+      BigInt(this.row),
+      BigInt(hexCoords.col),
+      BigInt(hexCoords.row),
+    ]);
+    const canonicalBuildingComponent = this.components.Building.world.components.find(
+      (component) => component.id === this.components.Building.id,
+    );
+
+    if (!canonicalBuildingComponent) return undefined;
+
+    return getComponentValue(canonicalBuildingComponent as typeof this.components.Building, entity);
+  };
+
   isHexOccupied = (hexCoords: HexPosition) => {
     const { col, row } = hexCoords;
     const buildKey = toBuildSlotKey(this.col, this.row, col, row);
@@ -167,13 +175,7 @@ export class TileManager {
     return bonusPercent;
   };
 
-  private _optimisticBuilding = (
-    entityId: ID,
-    col: number,
-    row: number,
-    buildingType: BuildingType,
-    useSimpleCost: boolean,
-  ) => {
+  private _optimisticBuilding = (entityId: ID, col: number, row: number, buildingType: BuildingType) => {
     let buildingOverrideId = uuid();
     const entity = getEntityIdFromKeys([this.col, this.row, col, row].map((v) => BigInt(v)));
 
@@ -191,17 +193,6 @@ export class TileManager {
         outer_entity_id: entityId,
         paused: false,
       },
-    });
-
-    // override resource balance
-    // need to retrieve the reosurce cost before adding extra building to the structure
-    // because the resource cost increase when adding more buildings
-    const resourceChange = getBuildingCosts(entityId, this.components, buildingType, useSimpleCost);
-
-    const removeResourceOverrides: Array<() => void> = [];
-    resourceChange?.forEach((resource) => {
-      const removeOverride = this._overrideResource(entityId, resource.resource, -resource.amount);
-      removeResourceOverrides.push(removeOverride);
     });
 
     const realmEntity = getEntityIdFromKeys([BigInt(entityId)]);
@@ -248,13 +239,7 @@ export class TileManager {
     return () => {
       this.components.Building.removeOverride(buildingOverrideId);
       this.components.StructureBuildings.removeOverride(quantityOverrideId);
-      removeResourceOverrides.forEach((removeOverride) => removeOverride());
     };
-  };
-
-  private _overrideResource = (entity: ID, resourceType: number, actualResourceChange: number) => {
-    const resourceManager = new ResourceManager(this.components, entity);
-    return resourceManager.optimisticResourceUpdate(resourceType, actualResourceChange);
   };
 
   private _extractTransactionHash = (result: unknown): string | undefined => {
@@ -471,7 +456,7 @@ export class TileManager {
     // add optimistic rendering if enabled
     let removeBuildingOverride = () => {};
     if (OPTIMISTIC_BUILDING_ENABLED) {
-      removeBuildingOverride = this._optimisticBuilding(structureEntityId, col, row, buildingType, useSimpleCost);
+      removeBuildingOverride = this._optimisticBuilding(structureEntityId, col, row, buildingType);
     }
 
     try {

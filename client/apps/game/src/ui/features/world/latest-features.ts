@@ -22,6 +22,20 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-13",
+    title: "Accurate Reserved Balances",
+    description:
+      "Construction, trading, and troop panels now size actions and show costs against resources already reserved by pending builds, so quick follow-up clicks no longer overstate what is still available.",
+    type: "fix",
+  },
+  {
+    date: "2026-05-13",
+    title: "Reliable Construction",
+    description:
+      "Building actions now keep pending construction costs reserved across follow-up upgrades, banking, and troop actions until the world state catches up, reducing rapid-play transaction failures.",
+    type: "fix",
+  },
+  {
     date: "2026-05-12",
     title: "Saved Network Choice",
     description:

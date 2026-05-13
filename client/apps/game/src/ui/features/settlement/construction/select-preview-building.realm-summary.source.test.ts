@@ -13,5 +13,8 @@ describe("SelectPreviewBuildingMenu realm summary wiring", () => {
     expect(source).toContain("RealmBuildingSummary");
     expect(source).toContain("realm-summary-selector");
     expect(source).toContain("Built here");
+    expect(source).toContain("hasActiveConstructionIntent");
+    expect(source).toContain("getEffectiveConstructionBalance");
+    expect(source).not.toContain("pendingBuilds");
   });
 });

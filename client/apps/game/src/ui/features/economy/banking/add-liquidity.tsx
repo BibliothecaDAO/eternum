@@ -1,6 +1,8 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 import { ConfirmationPopup } from "./confirmation-popup";
 import { LiquidityResourceRow } from "./liquidity-resource-row";
 import { LiquidityTableHeader } from "./liquidity-table";
@@ -8,8 +10,6 @@ import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
-  divideByPrecision,
-  getBalance,
   getClosestBank,
   getEntityIdFromKeys,
   isMilitaryResource,
@@ -27,6 +27,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
     setup: { components, systemCalls },
   } = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const constructionIntentVersion = useConstructionIntentVersion();
 
   const playerStructures = useUIStore((state) => state.playerStructures);
 
@@ -63,10 +64,15 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
     }
   }, [resourceAmount]);
 
-  const lordsBalance = getBalance(entityId, Number(ResourcesIds.Lords), currentDefaultTick, components).balance;
-  const resourceBalance = getBalance(entityId, Number(resourceId), currentDefaultTick, components).balance;
-  const hasEnough =
-    lordsBalance >= multiplyByPrecision(lordsAmount) && resourceBalance >= multiplyByPrecision(resourceAmount);
+  const lordsBalance = useMemo(
+    () => getEffectiveConstructionBalance(entityId, ResourcesIds.Lords, currentDefaultTick, components),
+    [components, constructionIntentVersion, currentDefaultTick, entityId],
+  );
+  const resourceBalance = useMemo(
+    () => getEffectiveConstructionBalance(entityId, resourceId, currentDefaultTick, components),
+    [components, constructionIntentVersion, currentDefaultTick, entityId, resourceId],
+  );
+  const hasEnough = lordsBalance >= lordsAmount && resourceBalance >= resourceAmount;
 
   const isNotZero = lordsAmount > 0 && resourceAmount > 0;
   const canAdd = hasEnough && isNotZero;
@@ -142,7 +148,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
             setAmount={setLordsAmount}
             resourceId={ResourcesIds.Lords}
             setResourceId={setResourceId}
-            max={divideByPrecision(lordsBalance)}
+            max={lordsBalance}
           />
 
           <ResourceBar
@@ -153,7 +159,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
             setAmount={setResourceAmount}
             resourceId={resourceId}
             setResourceId={setResourceId}
-            max={divideByPrecision(resourceBalance)}
+            max={resourceBalance}
           />
         </div>
         <div className="p-2">

@@ -1,6 +1,8 @@
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { getEffectiveConstructionBalanceRaw } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -14,9 +16,8 @@ import {
   getEntityIdFromKeys,
   getTotalResourceWeightKg,
   isMilitaryResource,
-  ResourceManager,
 } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { findResourceById, ID, PlayerStructure, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
@@ -46,14 +47,13 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
   } = useDojo();
 
   const tick = useCurrentDefaultTick();
+  const constructionIntentVersion = useConstructionIntentVersion();
 
   const selectedStructureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const resourceManager = useResourceManager(selectedStructureEntityId);
-
   const balance = useMemo(() => {
-    return resourceManager.balanceWithProduction(tick, resource).balance;
-  }, [resourceManager, tick, resource]);
+    return getEffectiveConstructionBalanceRaw(selectedStructureEntityId, resource, tick, components);
+  }, [components, constructionIntentVersion, resource, selectedStructureEntityId, tick]);
 
   const playerStructures = useUIStore((state) => state.playerStructures);
 
@@ -155,9 +155,12 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
         if (type === "send") {
           relevantBalanceValue = availableBalance;
         } else {
-          const otherStructureManager = new ResourceManager(components, structure.structure.entity_id);
-          const receivedBalance = otherStructureManager.balanceWithProduction(tick, resource).balance;
-          relevantBalanceValue = receivedBalance ? Number(receivedBalance) : 0;
+          relevantBalanceValue = getEffectiveConstructionBalanceRaw(
+            structure.structure.entity_id,
+            resource,
+            tick,
+            components,
+          );
         }
 
         if (relevantBalanceValue === undefined || relevantBalanceValue === null) {
@@ -177,6 +180,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
     type,
     availableBalance,
     components,
+    constructionIntentVersion,
     tick,
     resource,
   ]);
@@ -419,6 +423,7 @@ export const RealmTransfer = memo(({ resource }: { resource: ResourcesIds }) => 
                     selectedStructureEntityId={selectedStructureEntityId}
                     resource={resource}
                     tick={tick}
+                    constructionIntentVersion={constructionIntentVersion}
                     add={setCalls}
                     type={type}
                   />
@@ -530,6 +535,7 @@ const RealmTransferBalance = memo(
     selectedStructureEntityId,
     add,
     tick,
+    constructionIntentVersion,
     type,
   }: {
     resource: ResourcesIds;
@@ -537,6 +543,7 @@ const RealmTransferBalance = memo(
     selectedStructureEntityId: number;
     add: Dispatch<SetStateAction<transferCall[]>>;
     tick: number;
+    constructionIntentVersion: number;
     type: "send" | "receive";
   }) => {
     const [input, setInput] = useState(0);
@@ -545,28 +552,19 @@ const RealmTransferBalance = memo(
       setup: { components },
     } = useDojo();
 
-    const sourceResourceManager = useMemo(
-      () =>
-        new ResourceManager(components, type === "send" ? selectedStructureEntityId : structure.structure.entity_id),
-      [components, structure.structure.entity_id, selectedStructureEntityId, type],
+    const sourceEntityId = type === "send" ? selectedStructureEntityId : structure.structure.entity_id;
+
+    const sourceResourceBalance = useMemo(
+      () => getEffectiveConstructionBalanceRaw(sourceEntityId, resource, tick, components),
+      [components, constructionIntentVersion, resource, sourceEntityId, tick],
     );
 
-    const getSourceBalance = useCallback(() => {
-      return sourceResourceManager.balanceWithProduction(tick, resource).balance;
-    }, [sourceResourceManager, tick, resource]);
+    const sourceDonkeyBalance = useMemo(
+      () => getEffectiveConstructionBalanceRaw(sourceEntityId, ResourcesIds.Donkey, tick, components),
+      [components, constructionIntentVersion, sourceEntityId, tick],
+    );
 
-    const getSourceDonkeyBalance = useCallback(() => {
-      return sourceResourceManager.balanceWithProduction(tick, ResourcesIds.Donkey).balance;
-    }, [sourceResourceManager, tick]);
-
-    const currentResourceBalanceBigInt = getSourceBalance();
-
-    const maxInputAmount = useMemo(() => {
-      if (currentResourceBalanceBigInt === undefined || currentResourceBalanceBigInt === null) {
-        return 0;
-      }
-      return Number(currentResourceBalanceBigInt.toString()) / RESOURCE_PRECISION;
-    }, [currentResourceBalanceBigInt]);
+    const maxInputAmount = useMemo(() => sourceResourceBalance / RESOURCE_PRECISION, [sourceResourceBalance]);
 
     const [resourceWeightKg, setResourceWeightKg] = useState(0);
 
@@ -579,9 +577,7 @@ const RealmTransferBalance = memo(
       return calculateDonkeysNeeded(resourceWeightKg);
     }, [resourceWeightKg]);
 
-    const relevantDonkeyBalance = useMemo(() => {
-      return getSourceDonkeyBalance();
-    }, [getSourceDonkeyBalance]);
+    const relevantDonkeyBalance = useMemo(() => sourceDonkeyBalance, [sourceDonkeyBalance]);
 
     const canCarry = useMemo(() => {
       return relevantDonkeyBalance >= neededDonkeysForThisTransfer;
@@ -632,7 +628,7 @@ const RealmTransferBalance = memo(
           <div className="py-1 flex flex-row justify-between items-center">
             <div className="text-sm min-w-0 mr-2">
               {type === "send" ? "Avail. here:" : "Avail. there:"}{" "}
-              {currencyFormat(getSourceBalance() ? Number(getSourceBalance()) : 0, 0)}
+              {currencyFormat(sourceResourceBalance ? Number(sourceResourceBalance) : 0, 0)}
             </div>
             <div
               className={`whitespace-nowrap text-right text-xs flex-shrink-0 ${

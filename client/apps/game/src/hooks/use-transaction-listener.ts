@@ -7,6 +7,10 @@ import {
 } from "@/observability/transaction-failure-reporting";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { getTxMessage } from "@/ui/components/transaction-center/types";
+import {
+  failConstructionIntent,
+  markConstructionIntentConfirmed,
+} from "@/ui/features/settlement/construction/construction-intent-store";
 import { clearUncertainClaimSharePointsSubmission } from "@/ui/utils/uncertain-transaction-registry";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
@@ -110,6 +114,9 @@ export const useTransactionListener = () => {
     const handleTransactionComplete = (payload: TransactionCompletePayload) => {
       const hash = payload.details.transaction_hash;
       clearRecoveredClaimSharePointsMarker(payload);
+      if (payload.type === TransactionType.CREATE_BUILDING) {
+        markConstructionIntentConfirmed(hash);
+      }
       addClientTransactionBreadcrumb({
         stage: "completed",
         message: payload.type ? getTxMessage(payload.type) : "Transaction completed",
@@ -152,6 +159,9 @@ export const useTransactionListener = () => {
     const handleTransactionFailed = (payload: TransactionFailedPayload) => {
       const message = extractReadableErrorMessage(payload.message, "Transaction failed");
       clearRecoveredClaimSharePointsMarker(payload);
+      if (payload.type === TransactionType.CREATE_BUILDING && payload.transactionHash) {
+        failConstructionIntent({ transactionHash: payload.transactionHash, reason: message });
+      }
       void reportClientTransactionFailure({
         error: new Error(message),
         context: {

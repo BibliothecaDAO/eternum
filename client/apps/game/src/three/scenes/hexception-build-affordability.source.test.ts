@@ -12,12 +12,13 @@ describe("Hexception build affordability", () => {
     const source = readSource("src/three/scenes/hexception.tsx");
 
     expect(source).toContain("canAffordPreviewBuilding");
+    expect(source).toContain("getEffectiveConstructionBalance");
     expect(source).toContain(
       "if (!this.canAffordPreviewBuilding(structureEntityId, buildingType.type, useSimpleCost))",
     );
     expect(source).toContain('toast.error("Insufficient resources to build here.");');
     expect(source).toMatch(
-      /if \(!this\.canAffordPreviewBuilding\(structureEntityId, buildingType\.type, useSimpleCost\)\) \{[\s\S]*reserveOccupiedBuildSpot\(structureEntityId, normalizedCoords\);/,
+      /if \(!this\.canAffordPreviewBuilding\(structureEntityId, buildingType\.type, useSimpleCost\)\) \{[\s\S]*const intent = beginConstructionIntent\(\{[\s\S]*const result = await this\.tileManager\.placeBuilding/,
     );
   });
 });

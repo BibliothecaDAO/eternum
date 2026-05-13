@@ -15,13 +15,14 @@ import { HintSection } from "@/ui/features/progression/hints/hint-modal";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { adjustWonderLordsCost, currencyIntlFormat, getEntityIdFromKeys } from "@/ui/utils/utils";
 import {
-  beginRealmBuildPlacement,
-  completeRealmBuildPlacement,
   getBuildReservationState,
-  reconcileBuildReservationState,
-  releaseOccupiedBuildSpot,
-  reserveOccupiedBuildSpot,
-} from "./build-reservation-store";
+  getEffectiveConstructionBalance,
+  getEffectiveConstructionBalanceRaw,
+  hasActiveConstructionIntent,
+  releaseVacatedBuildSpot,
+  reconcileConstructionIntents,
+  reserveVacatedBuildSpot,
+} from "./construction-intent-store";
 import { buildRealmBuilding, resolveRealmHasAvailableBuildingTile } from "./realm-build-actions";
 import {
   buildRealmBuildingSummary,
@@ -30,12 +31,12 @@ import {
   RealmBuildingSummary,
   resolveRealmBuildingSummaryBuildability,
 } from "./realm-building-summary";
+import { useConstructionIntentVersion } from "./use-construction-intents";
 
 import {
   Biome,
   configManager,
   divideByPrecision,
-  getBalance,
   getBlockTimestamp,
   getBuildingCosts,
   getBuildingCount,
@@ -107,6 +108,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     getEntityIdFromKeys([BigInt(entityId)]),
   );
   const resourceData = useComponentValue(dojo.setup.components.Resource, getEntityIdFromKeys([BigInt(entityId)]));
+  const constructionIntentVersion = useConstructionIntentVersion();
   const currentTime = useMemo(() => Date.now(), [timerTick]);
   const currentTimeRef = useRef(currentTime);
   currentTimeRef.current = currentTime;
@@ -120,18 +122,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     return () => window.clearInterval(interval);
   }, []);
 
-  const initialReservationState = getBuildReservationState(entityId);
-  const occupiedSpotsRef = useRef<Set<string>>(initialReservationState.occupied);
-  const vacatedSpotsRef = useRef<Set<string>>(initialReservationState.vacated);
-  const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
+  const reservationState = useMemo(() => getBuildReservationState(entityId), [entityId, constructionIntentVersion]);
   const [pendingDestroys, setPendingDestroys] = useState<Record<string, boolean>>({});
   const [pendingPauseResume, setPendingPauseResume] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    const reservationState = getBuildReservationState(entityId);
-    occupiedSpotsRef.current = reservationState.occupied;
-    vacatedSpotsRef.current = reservationState.vacated;
-    setPendingBuilds({});
     setPendingDestroys({});
     setPendingPauseResume({});
   }, [entityId]);
@@ -146,8 +141,16 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       row: outerRow,
     });
 
-    reconcileBuildReservationState(entityId, ({ col, row }) => tileManager.isHexOccupied({ col, row }));
+    reconcileConstructionIntents(
+      entityId,
+      ({ col, row }) => tileManager.isHexOccupied({ col, row }),
+      ({ col, row }) => {
+        const building = tileManager.getIndexedBuilding({ col, row });
+        return building ? { category: building.category as BuildingType } : undefined;
+      },
+    );
   }, [
+    constructionIntentVersion,
     dojo.setup.components,
     dojo.setup.systemCalls,
     entityId,
@@ -164,8 +167,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         components: dojo.setup.components,
         systemCalls: dojo.setup.systemCalls,
       },
-      occupiedSpots: occupiedSpotsRef.current,
-      vacatedSpots: vacatedSpotsRef.current,
+      occupiedSpots: reservationState.occupied,
+      vacatedSpots: reservationState.vacated,
     });
   }, [
     dojo.setup.components,
@@ -174,9 +177,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     realm?.position?.x,
     realm?.position?.y,
     structure?.base?.level,
-    pendingBuilds,
     pendingDestroys,
     structureBuildings,
+    constructionIntentVersion,
   ]);
   const isRealmFull = !hasAvailableBuildingTile;
 
@@ -195,41 +198,23 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
   const handleAutoBuild = useCallback(
     async (target: { type: BuildingType; resource?: ResourcesIds }) => {
-      const buildingKey = target.type.toString();
-      const placement = beginRealmBuildPlacement(entityId, target.type);
-
-      if (!placement.started) return;
-
-      setPendingBuilds((prev) => ({ ...prev, [buildingKey]: true }));
-
-      try {
-        await buildRealmBuilding({
-          entityId,
-          realmPosition: realm?.position,
-          target,
-          useSimpleCost,
-          world: {
-            account: dojo.account.account,
-            components: dojo.setup.components,
-            systemCalls: dojo.setup.systemCalls,
-          },
-          occupiedSpots: occupiedSpotsRef.current,
-          vacatedSpots: vacatedSpotsRef.current,
-          onReserveSpot: (spotKey) => reserveOccupiedBuildSpot(entityId, spotKey),
-          onReleaseSpot: (spotKey) => releaseOccupiedBuildSpot(entityId, spotKey),
-          onBuildSuccess: (selection) => {
-            setPreviewBuilding(null);
-            setSelectedBuildingHex(selection);
-          },
-        });
-      } finally {
-        setPendingBuilds((prev) => {
-          const next = { ...prev };
-          delete next[buildingKey];
-          return next;
-        });
-        completeRealmBuildPlacement(entityId, target.type);
-      }
+      await buildRealmBuilding({
+        entityId,
+        realmPosition: realm?.position,
+        target,
+        useSimpleCost,
+        world: {
+          account: dojo.account.account,
+          components: dojo.setup.components,
+          systemCalls: dojo.setup.systemCalls,
+        },
+        occupiedSpots: reservationState.occupied,
+        vacatedSpots: reservationState.vacated,
+        onBuildSuccess: (selection) => {
+          setPreviewBuilding(null);
+          setSelectedBuildingHex(selection);
+        },
+      });
     },
     [
       dojo.account.account,
@@ -237,6 +222,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       dojo.setup.systemCalls,
       entityId,
       realm?.position,
+      reservationState.occupied,
+      reservationState.vacated,
       setPreviewBuilding,
       setSelectedBuildingHex,
       useSimpleCost,
@@ -264,6 +251,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         return;
       }
       setPendingDestroys((prev) => ({ ...prev, [buildingKey]: true }));
+      reserveVacatedBuildSpot(entityId, { col: existing.col, row: existing.row });
 
       try {
         await tileManager.destroyBuilding(dojo.account.account, entityId, existing.col, existing.row);
@@ -274,6 +262,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           setPreviewBuilding(null);
         }
       } catch (error) {
+        releaseVacatedBuildSpot(entityId, { col: existing.col, row: existing.row });
         console.error("Failed to destroy building", error);
         toast.error("Destroy failed. Please try again.");
       } finally {
@@ -559,13 +548,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     (cost: any) =>
       Object.keys(cost).every((resourceId) => {
         const resourceCost = cost[Number(resourceId)];
-        const balance = getBalance(
+        const effectiveBalance = getEffectiveConstructionBalance(
           entityId,
           resourceCost.resource,
           currentDefaultTickRef.current,
           dojo.setup.components,
         );
-        return divideByPrecision(balance.balance) >= resourceCost.amount;
+        return effectiveBalance >= resourceCost.amount;
       }),
     [entityId, dojo.setup.components],
   );
@@ -609,7 +598,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       new Map(
         realmBuildingSummary.map((item) => {
           const buildState = getSummaryBuildState(item.buildingId);
-          const isPending = Boolean(pendingBuilds[item.buildingId.toString()]);
+          const isPending = hasActiveConstructionIntent(entityId, item.buildingId);
 
           return [
             item.buildingId,
@@ -622,7 +611,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           ] as const;
         }),
       ),
-    [getSummaryBuildState, handleAutoBuild, pendingBuilds, realmBuildingSummary],
+    [entityId, getSummaryBuildState, handleAutoBuild, realmBuildingSummary, constructionIntentVersion],
   );
 
   const tabs = useMemo(
@@ -661,7 +650,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   : undefined;
               const disabled = isLaborLockedResource || isRealmFull;
               const buildKey = building.toString();
-              const isPending = Boolean(pendingBuilds[buildKey]);
+              const isPending = hasActiveConstructionIntent(entityId, building);
               const count = getBuildingCountFor(building);
               const destroyPending = Boolean(pendingDestroys[buildKey]);
               const destroyDisabled = count <= 0 || destroyPending;
@@ -765,7 +754,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const disabledReason = isRealmFull ? "Realm full" : undefined;
                 const disabled = Boolean(disabledReason);
                 const buildKey = building.toString();
-                const isPending = Boolean(pendingBuilds[buildKey]);
+                const isPending = hasActiveConstructionIntent(entityId, building);
                 const count = getBuildingCountFor(building);
                 const destroyPending = Boolean(pendingDestroys[buildKey]);
                 const destroyDisabled = count <= 0 || destroyPending;
@@ -935,7 +924,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 ? `Switch to Resource mode to build Tier ${info.tier} military buildings.`
                                 : undefined;
                             const buildKey = building.toString();
-                            const isPending = Boolean(pendingBuilds[buildKey]);
+                            const isPending = hasActiveConstructionIntent(entityId, building);
                             const count = getBuildingCountFor(building);
                             const destroyPending = Boolean(pendingDestroys[buildKey]);
                             const destroyDisabled = count <= 0 || destroyPending;
@@ -1013,7 +1002,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       useSimpleCost,
       armyGroups,
       activeArmyType,
-      pendingBuilds,
       pendingDestroys,
       pendingPauseResume,
       pausedByCategory,
@@ -1022,6 +1010,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       handlePauseResumeAll,
       getBuildingCountFor,
       checkBalance,
+      constructionIntentVersion,
     ],
   );
 
@@ -1438,7 +1427,7 @@ const ResourceInfo = ({
           <h6 className="text-gold/70 text-xs uppercase tracking-wider pt-2 border-t border-gold/10">Cost</h6>
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(cost).map((resourceId) => {
-              const balance = getBalance(
+              const balance = getEffectiveConstructionBalanceRaw(
                 entityId || 0,
                 cost[Number(resourceId)].resource,
                 currentDefaultTick,
@@ -1450,7 +1439,7 @@ const ResourceInfo = ({
                   type="horizontal"
                   resourceId={cost[Number(resourceId)].resource}
                   amount={cost[Number(resourceId)].amount}
-                  balance={balance.balance}
+                  balance={balance}
                   size="lg"
                 />
               );
@@ -1466,7 +1455,7 @@ const ResourceInfo = ({
           </h6>
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(buildingCost).map((resourceId, index) => {
-              const balance = getBalance(
+              const balance = getEffectiveConstructionBalanceRaw(
                 entityId || 0,
                 buildingCost[Number(resourceId)].resource,
                 currentDefaultTick,
@@ -1478,7 +1467,7 @@ const ResourceInfo = ({
                   type="horizontal"
                   resourceId={buildingCost[Number(resourceId)].resource}
                   amount={buildingCost[Number(resourceId)].amount}
-                  balance={balance.balance}
+                  balance={balance}
                   size="lg"
                 />
               );
@@ -1611,7 +1600,12 @@ const BuildingInfo = ({
           <div className="grid grid-cols-2 gap-2">
             {ongoingCost.map((costItem, index) => {
               if (!costItem || costItem.resource === undefined) return null; // Add check for undefined
-              const balance = getBalance(entityId || 0, costItem.resource, currentDefaultTick, dojo.setup.components);
+              const balance = getEffectiveConstructionBalanceRaw(
+                entityId || 0,
+                costItem.resource,
+                currentDefaultTick,
+                dojo.setup.components,
+              );
               return (
                 <ResourceCost
                   key={`ongoing-cost-${index}`}
@@ -1619,7 +1613,7 @@ const BuildingInfo = ({
                   className="!text-xs"
                   resourceId={costItem.resource}
                   amount={costItem.amount}
-                  balance={balance.balance}
+                  balance={balance}
                 />
               );
             })}
@@ -1638,7 +1632,7 @@ const BuildingInfo = ({
           </h6>
           <div className="grid grid-cols-2 gap-2">
             {Object.keys(buildingCost).map((resourceId, index) => {
-              const balance = getBalance(
+              const balance = getEffectiveConstructionBalanceRaw(
                 entityId || 0,
                 buildingCost[Number(resourceId)].resource,
                 currentDefaultTick,
@@ -1651,7 +1645,7 @@ const BuildingInfo = ({
                   className="!text-xs"
                   resourceId={buildingCost[Number(resourceId)].resource}
                   amount={buildingCost[Number(resourceId)].amount}
-                  balance={balance.balance}
+                  balance={balance}
                 />
               );
             })}

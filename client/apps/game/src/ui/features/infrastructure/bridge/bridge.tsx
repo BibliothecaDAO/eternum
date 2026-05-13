@@ -6,10 +6,12 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { Button, cn, MaxButton, NumberInput, Select } from "@/ui/design-system/atoms";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { ResourceIcon } from "@/ui/design-system/molecules";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 import { displayAddress } from "@/ui/utils/utils";
 import { getClientFeeRecipient, getLordsAddress, getResourceAddresses } from "@/utils/addresses";
-import { divideByPrecision, getEntityIdFromKeys } from "@bibliothecadao/eternum";
-import { useBridgeAsset, useDojo, useResourceManager } from "@bibliothecadao/react";
+import { getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { useBridgeAsset, useDojo } from "@bibliothecadao/react";
 import {
   ID,
   PlayerStructure,
@@ -319,6 +321,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
 
   const { bridgeDepositIntoRealm, bridgeWithdrawFromRealm } = useBridgeAsset();
   const mode = useGameModeConfig();
+  const constructionIntentVersion = useConstructionIntentVersion();
   const [isBridgePending, setIsBridgePending] = useState(false);
   const [bridgeError, setBridgeError] = useState<Error | null>(null);
 
@@ -493,8 +496,15 @@ export const Bridge = ({ structures }: BridgeProps) => {
     }
   };
 
-  const resourceManager = useResourceManager(selectedStructureId || 0);
   const currentTick = useCurrentDefaultTick();
+  const getOutgoingBridgeBalance = useCallback(
+    (resourceId: number) => {
+      if (!selectedStructureId) return 0;
+
+      return getEffectiveConstructionBalance(selectedStructureId, resourceId, currentTick, components);
+    },
+    [components, constructionIntentVersion, currentTick, selectedStructureId],
+  );
 
   const isBridgeButtonDisabled = useMemo(() => {
     if (!selectedStructureId || isBridgePending) return true;
@@ -507,16 +517,14 @@ export const Bridge = ({ structures }: BridgeProps) => {
     if (bridgeDirection === "out") {
       return resourcesToBridge.some((r) => {
         if (r.resourceId && r.amount && parseFloat(r.amount) > 0) {
-          const balance = resourceManager.balanceWithProduction(currentTick, r.resourceId).balance;
-          const displayBalance = balance !== null ? divideByPrecision(balance) : 0;
-          return parseFloat(r.amount) > displayBalance;
+          return parseFloat(r.amount) > getOutgoingBridgeBalance(r.resourceId);
         }
         return false;
       });
     }
 
     return false;
-  }, [selectedStructureId, resourcesToBridge, isBridgePending, bridgeDirection, resourceManager, currentTick]);
+  }, [selectedStructureId, resourcesToBridge, isBridgePending, bridgeDirection, getOutgoingBridgeBalance]);
 
   const bridgeTitle = bridgeDirection === "in" ? "Bridge In" : "Bridge Out";
   const structureSelectLabel = bridgeDirection === "in" ? "Bridge To" : "Bridge From";
@@ -627,10 +635,8 @@ export const Bridge = ({ structures }: BridgeProps) => {
           {resourcesToBridge.map((resource) => {
             const balance =
               bridgeDirection === "out" && resource.resourceId && selectedStructureId
-                ? resourceManager.balanceWithProduction(currentTick, resource.resourceId).balance
+                ? getOutgoingBridgeBalance(resource.resourceId)
                 : null;
-
-            const displayBalance = balance !== null ? divideByPrecision(balance) : 0;
             const resourceName = resource.resourceId
               ? bridgeableResources.find((r) => r.id === resource.resourceId)?.name
               : "";
@@ -676,7 +682,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
                       )}
 
                       {bridgeDirection === "out" && resource.resourceId && selectedStructureId && (
-                        <RealmBalance resourceId={resource.resourceId} balance={displayBalance} />
+                        <RealmBalance resourceId={resource.resourceId} balance={balance ?? 0} />
                       )}
                     </span>
                   </div>
@@ -721,7 +727,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
                   <div className="flex-grow">
                     <NumberInput
                       min={0}
-                      max={bridgeDirection === "out" && balance !== null ? displayBalance : undefined}
+                      max={bridgeDirection === "out" && balance !== null ? balance : undefined}
                       value={parseInt(resource.amount) || 0}
                       onChange={(value) => handleAmountChange(resource.key, value.toString())}
                       disabled={!resource.resourceId}
@@ -734,7 +740,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
                       resourceKey={resource.key}
                       resourceId={resource.resourceId}
                       tokenAddress={resource.tokenAddress}
-                      structureBalance={displayBalance}
+                      structureBalance={balance ?? 0}
                       direction={bridgeDirection}
                     />
                   )}

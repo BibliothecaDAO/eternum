@@ -12,6 +12,8 @@ import TextInput from "@/ui/design-system/atoms/text-input";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ViewOnMapIcon } from "@/ui/design-system/molecules/view-on-map-icon";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 import { currencyFormat } from "@/ui/utils/utils";
 import { DeploymentStrengthSummary } from "./deployment-strength-summary";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
@@ -19,8 +21,6 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import {
   ArmyManager,
   configManager,
-  divideByPrecision,
-  getBalance,
   getEntityIdFromKeys,
   getTroopName,
   getTroopResourceId,
@@ -109,6 +109,7 @@ export const ArmyCreate = ({
   const queryClient = useQueryClient();
 
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const constructionIntentVersion = useConstructionIntentVersion();
 
   const [isLoading, setIsLoading] = useState(false);
   const [canCreate, setCanCreate] = useState(false);
@@ -237,10 +238,17 @@ export const ArmyCreate = ({
 
   const maxAffordableTroops = useMemo(() => {
     const resourceId = getTroopResourceId(selectedTroopType, selectedTier);
-    const balance = getBalance(owner_entity, resourceId, currentDefaultTick, components).balance;
-    const available = Number(divideByPrecision(balance) || 0);
+    const available = getEffectiveConstructionBalance(owner_entity, resourceId, currentDefaultTick, components);
     return Math.max(0, Math.min(available, remainingTroopCapacity));
-  }, [owner_entity, selectedTroopType, selectedTier, currentDefaultTick, components, remainingTroopCapacity]);
+  }, [
+    components,
+    constructionIntentVersion,
+    currentDefaultTick,
+    owner_entity,
+    remainingTroopCapacity,
+    selectedTier,
+    selectedTroopType,
+  ]);
 
   useEffect(() => {
     setTroopCount((current) => Math.max(0, Math.min(current, maxAffordableTroops)));
@@ -342,12 +350,12 @@ export const ArmyCreate = ({
             <h5 className="text-center my-4">SELECT TROOP TYPE</h5>
             <div className={clsx("grid gap-3", troops.length === 1 ? "grid-cols-1" : "grid-cols-3")}>
               {troops.map((troop) => {
-                const balance = getBalance(
+                const available = getEffectiveConstructionBalance(
                   owner_entity,
                   getTroopResourceId(troop.troopType, selectedTier),
                   currentDefaultTick,
                   components,
-                ).balance;
+                );
                 const isCurrentTroopType =
                   !army || army.troops.count === 0n
                     ? selectedTroopType === troop.troopType
@@ -371,7 +379,10 @@ export const ArmyCreate = ({
                         <h6 className=" font-semibold">{getTroopName(troop.troopType, selectedTier)}</h6>
                       </div>
                       <div className="text-xl font-normal mt-1 mb-2 text-gold/80">
-                        Avail. <span className="text-gold">{currencyFormat(balance ? Number(balance) : 0, 0)}</span>
+                        Avail.{" "}
+                        <span className="text-gold">
+                          {available.toLocaleString("en-US", { maximumFractionDigits: 0 })}
+                        </span>
                       </div>
                       <div className="px-2 py-1 bg-white/10 flex justify-between items-center rounded-md">
                         <ResourceIcon

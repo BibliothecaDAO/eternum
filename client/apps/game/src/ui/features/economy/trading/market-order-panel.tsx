@@ -4,6 +4,8 @@ import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ConfirmationPopup } from "@/ui/features/economy/banking";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 import { currencyFormat, formatNumber } from "@/ui/utils/utils";
 import {
   calculateDonkeysNeeded,
@@ -13,11 +15,12 @@ import {
   isMilitaryResource,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInterface } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { resolveOrderRowResourceInputLimit } from "./market-order-row-balance";
 
 const ONE_MONTH = 2628000;
 
@@ -39,12 +42,13 @@ const MarketResource = memo(
     bidPrice: number;
     ammPrice: number;
   }) => {
+    const dojo = useDojo();
     const currentDefaultTick = useCurrentDefaultTick();
-    const resourceManager = useResourceManager(entityId);
+    const constructionIntentVersion = useConstructionIntentVersion();
 
     const balance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance;
-    }, [resourceManager, currentDefaultTick]);
+      return getEffectiveConstructionBalance(entityId, resourceId, currentDefaultTick, dojo.setup.components);
+    }, [constructionIntentVersion, currentDefaultTick, dojo.setup.components, entityId, resourceId]);
 
     const resource = useMemo(() => {
       return findResourceById(resourceId);
@@ -63,7 +67,7 @@ const MarketResource = memo(
           <ResourceIcon size="sm" resource={resource?.trait || ""} withTooltip={false} />
           <div className="truncate text-xs">{resource?.trait || ""}</div>
           <div className="text-xs text-gold/70 group-hover:text-green">
-            [{currencyFormat(balance ? Number(balance) : 0, 0)}]
+            [{balance.toLocaleString("en-US", { maximumFractionDigits: 0 })}]
           </div>
         </div>
 
@@ -281,17 +285,29 @@ const OrderRow = memo(
     const playTradeExecuteSound = useUISound("ui.trade_execute");
 
     const currentDefaultTick = useCurrentDefaultTick();
-
-    const resourceManager = useResourceManager(entityId);
+    const constructionIntentVersion = useConstructionIntentVersion();
 
     const lordsBalance = useMemo(
-      () => Number(resourceManager.balance(ResourcesIds.Lords)),
-      [resourceManager, updateBalance],
+      () => getEffectiveConstructionBalance(entityId, ResourcesIds.Lords, currentDefaultTick, dojo.setup.components),
+      [constructionIntentVersion, currentDefaultTick, dojo.setup.components, entityId, updateBalance],
     );
 
     const resourceBalance = useMemo(
-      () => Number(resourceManager.balanceWithProduction(currentDefaultTick, offer.makerGets[0].resourceId)),
-      [resourceManager, currentDefaultTick, offer.makerGets[0].resourceId, updateBalance],
+      () =>
+        getEffectiveConstructionBalance(
+          entityId,
+          offer.makerGets[0].resourceId,
+          currentDefaultTick,
+          dojo.setup.components,
+        ),
+      [
+        constructionIntentVersion,
+        currentDefaultTick,
+        dojo.setup.components,
+        entityId,
+        offer.makerGets[0].resourceId,
+        updateBalance,
+      ],
     );
 
     const [confirmOrderModal, setConfirmOrderModal] = useState(false);
@@ -318,27 +334,30 @@ const OrderRow = memo(
       return isBuy ? offer.takerGets[0].amount : offer.makerGets[0].amount;
     }, [isBuy, offer.takerGets[0].amount, offer.makerGets[0].amount]);
 
-    const resourceBalanceRatio = useMemo(
-      () => (resourceBalance < getsDisplayNumber ? resourceBalance / getsDisplayNumber : 1),
-      [resourceBalance, getsDisplayNumber],
-    );
-    const lordsBalanceRatio = useMemo(
-      () => (lordsBalance < getTotalLords ? lordsBalance / getTotalLords : 1),
-      [lordsBalance, getTotalLords],
-    );
+    const maxInputValue = useMemo(() => {
+      if (isBuy) {
+        return resolveOrderRowResourceInputLimit({
+          action: "sell-resource",
+          availableResource: resourceBalance,
+          requestedResourceRaw: offer.makerGets[0].amount,
+        });
+      }
+
+      return resolveOrderRowResourceInputLimit({
+        action: "buy-resource",
+        availableLords: lordsBalance,
+        requestedResourceRaw: offer.takerGets[0].amount,
+        totalLordsRaw: offer.makerGets[0].amount,
+      });
+    }, [isBuy, lordsBalance, offer.makerGets, offer.takerGets, resourceBalance]);
+
     const [inputValue, setInputValue] = useState<number>(() => {
-      return isBuy
-        ? divideByPrecision(offer.makerGets[0].amount) * resourceBalanceRatio
-        : divideByPrecision(offer.takerGets[0].amount) * lordsBalanceRatio;
+      return maxInputValue;
     });
 
     useEffect(() => {
-      setInputValue(
-        isBuy
-          ? divideByPrecision(offer.makerGets[0].amount) * resourceBalanceRatio
-          : divideByPrecision(offer.takerGets[0].amount) * lordsBalanceRatio,
-      );
-    }, [resourceBalanceRatio, lordsBalanceRatio]);
+      setInputValue(maxInputValue);
+    }, [maxInputValue]);
 
     const calculatedResourceAmount = useMemo(() => {
       return multiplyByPrecision(inputValue);
@@ -364,8 +383,8 @@ const OrderRow = memo(
     }, [orderWeightKg]);
 
     const donkeyBalance = useMemo(() => {
-      return divideByPrecision(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance);
-    }, [resourceManager, currentDefaultTick]);
+      return getEffectiveConstructionBalance(entityId, ResourcesIds.Donkey, currentDefaultTick, dojo.setup.components);
+    }, [constructionIntentVersion, currentDefaultTick, dojo.setup.components, entityId]);
 
     const onAccept = async () => {
       try {
@@ -443,7 +462,7 @@ const OrderRow = memo(
             loading={loading}
             inputValue={inputValue}
             setInputValue={setInputValue}
-            maxInputValue={divideByPrecision(getsDisplayNumber) * (isBuy ? resourceBalanceRatio : lordsBalanceRatio)}
+            maxInputValue={maxInputValue}
             getDisplayResource={getDisplayResource}
             calculatedLords={calculatedLords}
             donkeysNeeded={donkeysNeeded}
@@ -646,21 +665,20 @@ const OrderCreation = memo(
     }, [orderWeightKg]);
 
     const currentDefaultTick = useCurrentDefaultTick();
-
-    const resourceManager = useResourceManager(entityId);
+    const constructionIntentVersion = useConstructionIntentVersion();
 
     // divide to get the number of donkeys without precision
     const donkeyBalance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance;
-    }, [resourceManager, currentDefaultTick]);
+      return getEffectiveConstructionBalance(entityId, ResourcesIds.Donkey, currentDefaultTick, components);
+    }, [components, constructionIntentVersion, currentDefaultTick, entityId]);
 
     const resourceBalance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance;
-    }, [resourceManager, currentDefaultTick]);
+      return getEffectiveConstructionBalance(entityId, resourceId, currentDefaultTick, components);
+    }, [components, constructionIntentVersion, currentDefaultTick, entityId, resourceId]);
 
     const lordsBalance = useMemo(() => {
-      return resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Lords).balance;
-    }, [resourceManager, currentDefaultTick]);
+      return getEffectiveConstructionBalance(entityId, ResourcesIds.Lords, currentDefaultTick, components);
+    }, [components, constructionIntentVersion, currentDefaultTick, entityId]);
 
     const canBuy = useMemo(() => {
       return isBuy ? lordsBalance > lords : resourceBalance > resource;
@@ -722,11 +740,11 @@ const OrderCreation = memo(
               onChange={(value) => {
                 setResource(Number(value));
               }}
-              max={!isBuy ? divideByPrecision(resourceBalance) : Infinity}
+              max={!isBuy ? resourceBalance : Infinity}
             />
 
             <div className="text-sm  text-gold/70">
-              {currencyFormat(resourceBalance ? Number(resourceBalance) : 0, 0)} avail.
+              {resourceBalance.toLocaleString("en-US", { maximumFractionDigits: 0 })} avail.
             </div>
           </div>
           <div className="flex flex-col w-1/3 justify-center text-center  self-center">
@@ -759,11 +777,11 @@ const OrderCreation = memo(
               onChange={(value) => {
                 setLords(Number(value));
               }}
-              max={isBuy ? divideByPrecision(lordsBalance) : Infinity}
+              max={isBuy ? lordsBalance : Infinity}
             />
 
             <div className="text-sm  text-gold/70">
-              {currencyFormat(lordsBalance ? Number(lordsBalance) : 0, 0)} avail.
+              {lordsBalance.toLocaleString("en-US", { maximumFractionDigits: 0 })} avail.
             </div>
           </div>
         </div>
@@ -774,7 +792,7 @@ const OrderCreation = memo(
               <div className="flex gap-2">
                 {donkeysNeeded.toLocaleString()}{" "}
                 <div className="text-green text-xs self-center">
-                  [{currencyFormat(donkeyBalance ? Number(donkeyBalance) : 0, 0).toLocaleString()} avail.]
+                  [{donkeyBalance.toLocaleString("en-US", { maximumFractionDigits: 0 })} avail.]
                 </div>
               </div>
             </div>

@@ -5,14 +5,10 @@ import {
   type RealmUpgradeActionStatus,
   useRealmUpgradeStore,
 } from "@/hooks/store/use-realm-upgrade-store";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
-import {
-  configManager,
-  divideByPrecision,
-  getBalance,
-  getEntityIdFromKeys,
-  getRealmInfo,
-} from "@bibliothecadao/eternum";
+import { configManager, getEntityIdFromKeys, getRealmInfo } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, getLevelName } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -167,6 +163,7 @@ const isRealmUpgradeLoadingState = (upgradeActionState: RealmUpgradeActionStatus
 export const useStructureUpgrade = (structureEntityId: number | null): StructureUpgradeResult | null => {
   const { setup, account, network } = useDojo();
   const currentDefaultTick = useCurrentDefaultTick();
+  const constructionIntentVersion = useConstructionIntentVersion();
   const pendingUpgrade = useRealmUpgradeStore((state) =>
     structureEntityId ? (state.upgradesByRealm[structureEntityId] ?? null) : null,
   );
@@ -206,11 +203,12 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
 
     return rawCosts.map((cost) => {
       try {
-        const balance = getBalance(structureEntityId, cost.resource, currentDefaultTick, setup.components);
-        // Guard against Infinity or NaN values that can cause BigInt conversion errors
-        const rawBalance = balance.balance;
-        const safeBalance = Number.isFinite(rawBalance) ? rawBalance : 0;
-        const currentAmount = divideByPrecision(safeBalance);
+        const currentAmount = getEffectiveConstructionBalance(
+          structureEntityId,
+          cost.resource,
+          currentDefaultTick,
+          setup.components,
+        );
         const progress = cost.amount > 0 ? Math.min(100, (currentAmount * 100) / cost.amount) : 100;
 
         return {
@@ -229,7 +227,16 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
         };
       }
     });
-  }, [currentDefaultTick, liveResources, nextLevel, rawCosts, setup.components, structureEntityId, structureInfo]);
+  }, [
+    constructionIntentVersion,
+    currentDefaultTick,
+    liveResources,
+    nextLevel,
+    rawCosts,
+    setup.components,
+    structureEntityId,
+    structureInfo,
+  ]);
 
   const { canUpgrade, upgradeProgress, missingRequirements } = useMemo(() => {
     if (!structureInfo || !nextLevel) {

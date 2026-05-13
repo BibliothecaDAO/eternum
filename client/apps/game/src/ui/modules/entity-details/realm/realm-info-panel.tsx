@@ -13,14 +13,15 @@ import {
   resolveRealmHasAvailableBuildingTile,
 } from "@/ui/features/settlement/construction/realm-build-actions";
 import {
-  beginRealmBuildPlacement,
-  completeRealmBuildPlacement,
-} from "@/ui/features/settlement/construction/build-reservation-store";
+  getEffectiveConstructionBalance,
+  hasActiveConstructionIntent,
+} from "@/ui/features/settlement/construction/construction-intent-store";
 import {
   buildRealmBuildingSummary,
   RealmBuildingSummary,
   resolveRealmBuildingSummaryBuildability,
 } from "@/ui/features/settlement/construction/realm-building-summary";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 import { productionAutomation } from "@/ui/features/world/components/config";
 import { ActiveRelicEffects } from "@/ui/features/world/components/entities/active-relic-effects";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
@@ -34,9 +35,7 @@ import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/uti
 import { inferRealmPreset } from "@/utils/automation-presets";
 import { getRealmStatusColor, getFailureSeverity, timeAgo } from "@/utils/automation-status";
 import {
-  divideByPrecision,
   formatTime,
-  getBalance,
   getBuildingCosts,
   getBuildingCount,
   getGuardsByStructure,
@@ -261,7 +260,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const { currentArmiesTick, currentBlockTimestamp, currentDefaultTick } = useBlockTimestamp();
   const { data: storyEvents = [] } = useStoryEvents(200);
   const mode = useGameModeConfig();
-  const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
+  const constructionIntentVersion = useConstructionIntentVersion();
   const structureName = useMemo(
     () => (structure ? mode.structure.getName(structure).name : "Structure"),
     [mode, structure],
@@ -336,8 +335,13 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     (cost: any) =>
       Object.keys(cost).every((resourceId) => {
         const resourceCost = cost[Number(resourceId)];
-        const balance = getBalance(realmId ?? 0, resourceCost.resource, currentDefaultTick, components);
-        return divideByPrecision(balance.balance) >= resourceCost.amount;
+        const effectiveBalance = getEffectiveConstructionBalance(
+          realmId ?? 0,
+          resourceCost.resource,
+          currentDefaultTick,
+          components,
+        );
+        return effectiveBalance >= resourceCost.amount;
       }),
     [components, currentDefaultTick, realmId],
   );
@@ -359,7 +363,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
           systemCalls: setup.systemCalls,
         },
       }),
-    [components, realm?.position, realmId, setup.systemCalls],
+    [components, constructionIntentVersion, realm?.position, realmId, setup.systemCalls],
   );
   const realmBuildingSummary = useMemo(
     () =>
@@ -373,35 +377,18 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const handleBuildSummaryItem = useCallback(
     async (buildingId: BuildingType) => {
       if (!realmId) return;
-
-      const buildingKey = buildingId.toString();
-      const placement = beginRealmBuildPlacement(realmId, buildingId);
-
-      if (!placement.started) return;
-
-      setPendingBuilds((prev) => ({ ...prev, [buildingKey]: true }));
-
-      try {
-        await buildRealmBuilding({
-          entityId: realmId,
-          realmPosition: realm?.position,
-          target: { type: buildingId },
-          useSimpleCost,
-          world: {
-            account: account.account,
-            components,
-            systemCalls: setup.systemCalls,
-          },
-          onBuildSuccess: (selection) => setSelectedBuildingHex(selection),
-        });
-      } finally {
-        setPendingBuilds((prev) => {
-          const next = { ...prev };
-          delete next[buildingKey];
-          return next;
-        });
-        completeRealmBuildPlacement(realmId, buildingId);
-      }
+      await buildRealmBuilding({
+        entityId: realmId,
+        realmPosition: realm?.position,
+        target: { type: buildingId },
+        useSimpleCost,
+        world: {
+          account: account.account,
+          components,
+          systemCalls: setup.systemCalls,
+        },
+        onBuildSuccess: (selection) => setSelectedBuildingHex(selection),
+      });
     },
     [account.account, components, realm?.position, realmId, setSelectedBuildingHex, setup.systemCalls, useSimpleCost],
   );
@@ -420,7 +407,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
             hasAvailableBuildingTile,
             useSimpleCost,
           });
-          const isPending = Boolean(pendingBuilds[item.buildingId.toString()]);
+          const isPending = Boolean(realmId && hasActiveConstructionIntent(realmId, item.buildingId));
 
           return [
             item.buildingId,
@@ -443,11 +430,11 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
       handleBuildSummaryItem,
       hasAvailableBuildingTile,
       isOwned,
-      pendingBuilds,
       realm,
       realmBuildingSummary,
       realmId,
       useSimpleCost,
+      constructionIntentVersion,
     ],
   );
   const resolveTransferStructureName = useCallback(

@@ -1,13 +1,10 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 import { calculateArrivalTime, formatArrivalTime } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
-import {
-  calculateDonkeysNeeded,
-  divideByPrecision,
-  getBalance,
-  getTotalResourceWeightKg,
-} from "@bibliothecadao/eternum";
+import { calculateDonkeysNeeded, getTotalResourceWeightKg } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ResourcesIds, type ID, type Resource } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
@@ -27,6 +24,7 @@ export const TravelInfo = ({
 }) => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const constructionIntentVersion = useConstructionIntentVersion();
   const [resourceWeightKg, setResourceWeightKg] = useState(0);
   const [donkeyBalance, setDonkeyBalance] = useState(0);
   const neededDonkeys = useMemo(() => calculateDonkeysNeeded(resourceWeightKg), [resourceWeightKg]);
@@ -38,11 +36,11 @@ export const TravelInfo = ({
     const totalWeight = getTotalResourceWeightKg(resources);
     setResourceWeightKg(totalWeight);
 
-    const { balance } = getBalance(entityId, ResourcesIds.Donkey, currentDefaultTick, dojo.setup.components);
-
     const currentDonkeyAmount = isAmm ? 0 : resources.find((r) => r.resourceId === ResourcesIds.Donkey)?.amount || 0;
 
-    const calculatedDonkeyBalance = divideByPrecision(balance) - currentDonkeyAmount;
+    const calculatedDonkeyBalance =
+      getEffectiveConstructionBalance(entityId, ResourcesIds.Donkey, currentDefaultTick, dojo.setup.components) -
+      currentDonkeyAmount;
 
     setDonkeyBalance(calculatedDonkeyBalance);
 
@@ -58,7 +56,7 @@ export const TravelInfo = ({
     }
     // Note: resourceWeightKg and donkeyBalance are outputs of this effect, not inputs.
     // They were removed from deps to fix the circular dependency that caused re-render storms.
-  }, [resources, entityId, currentDefaultTick, dojo.setup.components, isAmm, setCanCarry]);
+  }, [constructionIntentVersion, resources, entityId, currentDefaultTick, dojo.setup.components, isAmm, setCanCarry]);
 
   return (
     <>

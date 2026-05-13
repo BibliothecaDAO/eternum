@@ -1,8 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 import { ProductionModal } from "@/ui/features/settlement";
-import { configManager, divideByPrecision, getBalance, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { configManager, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
@@ -23,6 +25,7 @@ const WONDER_BONUS_DISTANCE = 12;
 export const Castle = () => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const constructionIntentVersion = useConstructionIntentVersion();
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const [isWonderBonusLoading, setIsWonderBonusLoading] = useState(false);
@@ -88,10 +91,15 @@ export const Castle = () => {
 
     return Object.keys(cost).every((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
-      return divideByPrecision(balance.balance) >= resourceCost.amount;
+      const balance = getEffectiveConstructionBalance(
+        structureEntityId,
+        resourceCost.resource,
+        currentDefaultTick,
+        dojo.setup.components,
+      );
+      return balance >= resourceCost.amount;
     });
-  }, [getNextRealmLevel, structureEntityId, currentDefaultTick, dojo.setup.components]);
+  }, [constructionIntentVersion, currentDefaultTick, dojo.setup.components, getNextRealmLevel, structureEntityId]);
 
   const missingResources = useMemo(() => {
     if (!getNextRealmLevel) return [];
@@ -103,8 +111,12 @@ export const Castle = () => {
 
     Object.keys(cost).forEach((resourceId) => {
       const resourceCost = cost[Number(resourceId)];
-      const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, dojo.setup.components);
-      const currentAmount = divideByPrecision(balance.balance);
+      const currentAmount = getEffectiveConstructionBalance(
+        structureEntityId,
+        resourceCost.resource,
+        currentDefaultTick,
+        dojo.setup.components,
+      );
 
       if (currentAmount < resourceCost.amount) {
         missing.push({
@@ -116,7 +128,7 @@ export const Castle = () => {
     });
 
     return missing;
-  }, [getNextRealmLevel, structureEntityId, currentDefaultTick, dojo.setup.components]);
+  }, [constructionIntentVersion, currentDefaultTick, dojo.setup.components, getNextRealmLevel, structureEntityId]);
 
   const levelUpRealm = async () => {
     setIsLevelUpLoading(true);

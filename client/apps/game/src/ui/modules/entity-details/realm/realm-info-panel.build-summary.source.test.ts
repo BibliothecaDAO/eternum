@@ -14,7 +14,10 @@ describe("RealmInfoPanel build summary wiring", () => {
     expect(source).toContain('headline="Built here"');
     expect(source).toContain("realmBuildingSummaryActions");
     expect(source).toContain("handleBuildSummaryItem");
+    expect(source).toContain("hasActiveConstructionIntent");
+    expect(source).toContain("getEffectiveConstructionBalance");
     expect(source).toContain("const realm = structureEntityId ? getRealmInfo(");
     expect(source).not.toContain("const realm = useMemo(() =>");
+    expect(source).not.toContain("pendingBuilds");
   });
 });

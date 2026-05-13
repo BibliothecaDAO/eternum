@@ -6,16 +6,17 @@ import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ConfirmationPopup } from "@/ui/features/economy/banking";
-import { formatNumber, currencyFormat } from "@/ui/utils/utils";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
+import { formatNumber } from "@/ui/utils/utils";
 import {
   MarketManager,
-  divideByPrecision,
   multiplyByPrecision,
   calculateDonkeysNeeded,
   getTotalResourceWeightKg,
   getClosestBank,
 } from "@bibliothecadao/eternum";
-import { useDojo, useResourceManager } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import { findResourceById, ResourcesIds, ID, MarketInterface } from "@bibliothecadao/types";
 import { memo, useMemo, useState, useCallback, lazy, Suspense } from "react";
 import { BuySellToggle } from "./buy-sell-toggle";
@@ -39,7 +40,7 @@ interface UnifiedTradePanelProps {
 export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOffers }: UnifiedTradePanelProps) => {
   const dojo = useDojo();
   const currentDefaultTick = useCurrentDefaultTick();
-  const resourceManager = useResourceManager(entityId);
+  const constructionIntentVersion = useConstructionIntentVersion();
 
   const tradeDirection = useMarketStore((state) => state.tradeDirection);
   const tradeAmount = useMarketStore((state) => state.tradeAmount);
@@ -101,12 +102,12 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
 
   // Balance checks
   const lordsBalance = useMemo(
-    () => divideByPrecision(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Lords).balance),
-    [resourceManager, currentDefaultTick],
+    () => getEffectiveConstructionBalance(entityId, ResourcesIds.Lords, currentDefaultTick, dojo.setup.components),
+    [constructionIntentVersion, currentDefaultTick, dojo.setup.components, entityId],
   );
   const resourceBalance = useMemo(
-    () => divideByPrecision(resourceManager.balanceWithProduction(currentDefaultTick, resourceId).balance),
-    [resourceManager, currentDefaultTick, resourceId],
+    () => getEffectiveConstructionBalance(entityId, resourceId, currentDefaultTick, dojo.setup.components),
+    [constructionIntentVersion, currentDefaultTick, dojo.setup.components, entityId, resourceId],
   );
 
   // Donkey calculations
@@ -118,8 +119,8 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
 
   const donkeysNeeded = useMemo(() => calculateDonkeysNeeded(weightKg), [weightKg]);
   const donkeyBalance = useMemo(
-    () => divideByPrecision(resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Donkey).balance),
-    [resourceManager, currentDefaultTick],
+    () => getEffectiveConstructionBalance(entityId, ResourcesIds.Donkey, currentDefaultTick, dojo.setup.components),
+    [constructionIntentVersion, currentDefaultTick, dojo.setup.components, entityId],
   );
   const canTransport = resourceId === ResourcesIds.Donkey || donkeyBalance >= donkeysNeeded;
 
@@ -229,7 +230,10 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
         </div>
         <div className="flex items-center justify-between">
           <div className="text-xs text-gold/50">
-            Balance: {currencyFormat(tradeDirection === "buy" ? lordsBalance : resourceBalance, 0)}{" "}
+            Balance:{" "}
+            {(tradeDirection === "buy" ? lordsBalance : resourceBalance).toLocaleString("en-US", {
+              maximumFractionDigits: 0,
+            })}{" "}
             {tradeDirection === "buy" ? "Lords" : resourceName}
           </div>
           <DonkeyCostIndicator
@@ -247,7 +251,8 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
             @ {formatNumber(effectivePrice, 4)} Lords/{resourceName}
           </span>
           <span className={`text-sm font-medium ${tradeDirection === "buy" ? "text-red" : "text-green"}`}>
-            {tradeDirection === "buy" ? "Cost" : "Gain"}: {currencyFormat(totalLords, 2)} Lords
+            {tradeDirection === "buy" ? "Cost" : "Gain"}:{" "}
+            {totalLords.toLocaleString("en-US", { maximumFractionDigits: 2 })} Lords
           </span>
         </div>
       )}
@@ -264,9 +269,9 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
         isLoading={isLoading}
         onClick={() => setShowConfirmation(true)}
       >
-        {tradeDirection === "buy" ? "Buy" : "Sell"} {tradeAmount > 0 ? currencyFormat(tradeAmount, 0) : ""}{" "}
-        {resourceName}
-        {totalLords > 0 ? ` for ~${currencyFormat(totalLords, 0)} Lords` : ""}
+        {tradeDirection === "buy" ? "Buy" : "Sell"}{" "}
+        {tradeAmount > 0 ? tradeAmount.toLocaleString("en-US", { maximumFractionDigits: 0 }) : ""} {resourceName}
+        {totalLords > 0 ? ` for ~${totalLords.toLocaleString("en-US", { maximumFractionDigits: 0 })} Lords` : ""}
       </Button>
 
       {/* Order Book Depth (collapsible) */}
@@ -298,10 +303,11 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
               <span className={tradeDirection === "buy" ? "text-green" : "text-red"}>
                 {tradeDirection === "buy" ? "Buy" : "Sell"}
               </span>{" "}
-              {currencyFormat(tradeAmount, 0)} {resourceName}
+              {tradeAmount.toLocaleString("en-US", { maximumFractionDigits: 0 })} {resourceName}
             </p>
             <p className="mb-2">
-              {tradeDirection === "buy" ? "Cost" : "Gain"}: ~{currencyFormat(totalLords, 2)} Lords
+              {tradeDirection === "buy" ? "Cost" : "Gain"}: ~
+              {totalLords.toLocaleString("en-US", { maximumFractionDigits: 2 })} Lords
             </p>
             <p className="text-xs text-gold/50">
               via {effectiveVenue === "orderbook" ? "Order Book" : "AMM"}

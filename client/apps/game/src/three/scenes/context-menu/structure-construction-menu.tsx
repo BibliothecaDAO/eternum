@@ -2,11 +2,10 @@ import { LeftView } from "@/types";
 import { ContextMenuAction, ContextMenuIcon, ContextMenuRadialOptions } from "@/types/context-menu";
 import { CONTEXT_MENU_CONFIG } from "@/ui/config";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   configManager,
-  divideByPrecision,
-  getBalance,
   getBlockTimestamp,
   getBuildingCosts,
   getRealmInfo,
@@ -141,8 +140,13 @@ export const createConstructionMenu = ({
       if (!entry) {
         return true;
       }
-      const balance = getBalance(structureEntityId, entry.resource, currentDefaultTick, components);
-      return divideByPrecision(balance.balance) >= entry.amount;
+      const effectiveBalance = getEffectiveConstructionBalance(
+        structureEntityId,
+        entry.resource,
+        currentDefaultTick,
+        components,
+      );
+      return effectiveBalance >= entry.amount;
     });
 
   const makeBuildingAction = ({

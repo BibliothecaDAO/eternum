@@ -4,10 +4,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { HintSection } from "@/ui/features/progression";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
-import { divideByPrecision, getBalance } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ID, Resources, ResourcesIds, findResourceById, findResourceIdByTrait } from "@bibliothecadao/types";
 import { memo, useEffect, useRef, useState } from "react";
@@ -40,6 +41,7 @@ export const ResourceBar = memo(
   }) => {
     const dojo = useDojo();
     const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+    const constructionIntentVersion = useConstructionIntentVersion();
 
     const [selectedResourceBalance, setSelectedResourceBalance] = useState(0);
     const [searchInput, setSearchInput] = useState("");
@@ -49,9 +51,9 @@ export const ResourceBar = memo(
 
     useEffect(() => {
       setSelectedResourceBalance(
-        divideByPrecision(getBalance(entityId, Number(resourceId), currentDefaultTick, dojo.setup.components).balance),
+        getEffectiveConstructionBalance(entityId, resourceId, currentDefaultTick, dojo.setup.components),
       );
-    }, [resourceId, getBalance, entityId]);
+    }, [constructionIntentVersion, currentDefaultTick, dojo.setup.components, entityId, resourceId]);
 
     const handleResourceChange = (trait: string) => {
       const newResourceId = findResourceIdByTrait(trait);
@@ -155,8 +157,11 @@ export const ResourceBar = memo(
               <SelectItem key={resource.id} value={resource.trait} disabled={resource.id === resourceId}>
                 <ResourceCost
                   resourceId={resource.id}
-                  amount={divideByPrecision(
-                    getBalance(entityId, resource.id, currentDefaultTick, dojo.setup.components).balance,
+                  amount={getEffectiveConstructionBalance(
+                    entityId,
+                    resource.id,
+                    currentDefaultTick,
+                    dojo.setup.components,
                   )}
                   className="border-0 bg-transparent"
                 />

@@ -10,11 +10,12 @@ import { sqlApi } from "@/services/api";
 import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 import {
   ArmyManager,
   configManager,
   divideByPrecision,
-  getBalance,
   getBlockTimestamp,
   getEntityIdFromKeys,
   getTroopResourceId,
@@ -113,6 +114,7 @@ export const UnifiedArmyCreationModal = ({
   const [armyType, setArmyType] = useState(isExplorer);
   const currentArmiesTick = useCurrentArmiesTick();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const constructionIntentVersion = useConstructionIntentVersion();
   const previousStructureIdRef = useRef<number | null>(null);
 
   // troopCapacityLimit computed below after structureLevel is resolved
@@ -420,8 +422,7 @@ export const UnifiedArmyCreationModal = ({
     for (const type of TROOP_TYPES) {
       for (const tier of TROOP_TIERS) {
         const resourceId = getTroopResourceId(type, tier);
-        const balance = getBalance(activeId, resourceId, currentDefaultTick, components).balance;
-        const available = Number(divideByPrecision(balance) || 0);
+        const available = getEffectiveConstructionBalance(activeId, resourceId, currentDefaultTick, components);
 
         if (available > 0) {
           firstTroopWithBalance = { type, tier };
@@ -436,8 +437,12 @@ export const UnifiedArmyCreationModal = ({
     setSelectedTroopCombo((previous) => {
       if (!structureChanged) {
         const previousResourceId = getTroopResourceId(previous.type, previous.tier);
-        const previousBalance = getBalance(activeId, previousResourceId, currentDefaultTick, components).balance;
-        const previousAvailable = Number(divideByPrecision(previousBalance) || 0);
+        const previousAvailable = getEffectiveConstructionBalance(
+          activeId,
+          previousResourceId,
+          currentDefaultTick,
+          components,
+        );
 
         if (previousAvailable > 0) {
           return previous;
@@ -457,7 +462,7 @@ export const UnifiedArmyCreationModal = ({
 
       return { ...DEFAULT_TROOP_COMBO };
     });
-  }, [activeStructureId, components, currentDefaultTick]);
+  }, [activeStructureId, components, constructionIntentVersion, currentDefaultTick]);
 
   useEffect(() => {
     if (freeDirections.length > 0 && selectedDirection === null && direction === undefined) {
@@ -594,8 +599,12 @@ export const UnifiedArmyCreationModal = ({
       label: formatTroopTypeLabel(type),
       tiers: TROOP_TIERS.map((tier) => {
         const resourceId = getTroopResourceId(type, tier);
-        const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, components).balance;
-        const available = Number(divideByPrecision(balance) || 0);
+        const available = getEffectiveConstructionBalance(
+          activeStructureId,
+          resourceId,
+          currentDefaultTick,
+          components,
+        );
         const resource = resources.find((item) => item.id === resourceId);
 
         return {
@@ -605,23 +614,23 @@ export const UnifiedArmyCreationModal = ({
         };
       }),
     }));
-  }, [activeStructureId, currentDefaultTick, components]);
+  }, [activeStructureId, components, constructionIntentVersion, currentDefaultTick]);
 
   const maxAffordable = useMemo(() => {
     if (!activeStructureId) return 0;
     const resourceId = getTroopResourceId(selectedTroopCombo.type, selectedTroopCombo.tier);
-    const balance = getBalance(activeStructureId, resourceId, currentDefaultTick, components).balance;
-    const available = Number(divideByPrecision(balance) || 0);
+    const available = getEffectiveConstructionBalance(activeStructureId, resourceId, currentDefaultTick, components);
     const capacityLimit =
       capacityRemainingForSelector !== null ? capacityRemainingForSelector : Number.POSITIVE_INFINITY;
     return Math.max(0, Math.min(available, capacityLimit));
   }, [
     activeStructureId,
+    components,
+    constructionIntentVersion,
+    currentDefaultTick,
+    capacityRemainingForSelector,
     selectedTroopCombo.type,
     selectedTroopCombo.tier,
-    currentDefaultTick,
-    components,
-    capacityRemainingForSelector,
   ]);
 
   useEffect(() => {

@@ -47,9 +47,14 @@ import {
 
 import { ProductionModal } from "@/ui/features/settlement";
 import {
-  releaseOccupiedBuildSpot,
-  reserveOccupiedBuildSpot,
-} from "@/ui/features/settlement/construction/build-reservation-store";
+  attachConstructionTx,
+  beginConstructionIntent,
+  failConstructionIntent,
+  getBuildReservationState,
+  getEffectiveConstructionBalance,
+  reconcileConstructionIntents,
+  toSpotKey,
+} from "@/ui/features/settlement/construction/construction-intent-store";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionType,
@@ -57,8 +62,6 @@ import {
   ResourceIdToMiningType,
   ResourceManager,
   TileManager,
-  divideByPrecision,
-  getBalance,
   getBuildingCosts,
   getEntityIdFromKeys,
   getStructureStage,
@@ -103,6 +106,18 @@ import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
 import { HexHoverLabel } from "../utils/labels/hex-hover-label";
+
+const extractConstructionTransactionHash = (result: unknown): string | undefined => {
+  const tx = result as { transaction_hash?: unknown; transactionHash?: unknown } | undefined;
+  const transactionHash = tx?.transaction_hash ?? tx?.transactionHash;
+  return typeof transactionHash === "string" ? transactionHash : undefined;
+};
+
+const extractConstructionErrorMessage = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return String(error);
+};
 
 const loader = gltfLoader;
 
@@ -398,9 +413,28 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     return buildingCosts.every((resourceCost) => {
-      const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, this.dojo.components);
-      return divideByPrecision(balance.balance) >= resourceCost.amount;
+      const effectiveBalance = getEffectiveConstructionBalance(
+        structureEntityId,
+        resourceCost.resource,
+        currentDefaultTick,
+        this.dojo.components,
+      );
+      return effectiveBalance >= resourceCost.amount;
     });
+  }
+
+  private reconcileConstructionIntentsForCurrentRealm() {
+    const structureEntityId = this.state.structureEntityId;
+    if (!structureEntityId) return;
+
+    reconcileConstructionIntents(
+      structureEntityId,
+      (spot) => this.tileManager.isHexOccupied(spot),
+      (spot) => {
+        const building = this.tileManager.getIndexedBuilding(spot);
+        return building ? { category: building.category as BuildingType } : undefined;
+      },
+    );
   }
 
   private loadBuildingModels() {
@@ -506,6 +540,7 @@ export default class HexceptionScene extends HexagonScene {
           } else if (buildingType !== BuildingType.None) {
             playBuildingSound(buildingType);
           }
+          this.reconcileConstructionIntentsForCurrentRealm();
           this.updateHexceptionGrid(this.hexceptionRadius);
         },
       );
@@ -656,16 +691,43 @@ export default class HexceptionScene extends HexagonScene {
     const account = useAccountStore.getState().account;
     if (buildingType) {
       // if building mode
-      if (!this.tileManager.isHexOccupied(normalizedCoords)) {
+      const structureEntityId = useUIStore.getState().structureEntityId;
+      const reservationState = getBuildReservationState(structureEntityId);
+      const spotIsHeld = reservationState.occupied.has(toSpotKey(normalizedCoords));
+      if (!this.tileManager.isHexOccupied(normalizedCoords) && !spotIsHeld) {
         this.clearBuildingMode();
         const useSimpleCost = this.state.useSimpleCost;
-        const structureEntityId = useUIStore.getState().structureEntityId;
         if (!this.canAffordPreviewBuilding(structureEntityId, buildingType.type, useSimpleCost)) {
           toast.error("Insufficient resources to build here.");
           this.updateHexceptionGrid(this.hexceptionRadius);
           return;
         }
-        reserveOccupiedBuildSpot(structureEntityId, normalizedCoords);
+        const buildingCosts = getBuildingCosts(
+          structureEntityId,
+          this.dojo.components,
+          buildingType.type,
+          useSimpleCost,
+        );
+        if (!buildingCosts?.length) {
+          toast.error("Insufficient resources to build here.");
+          this.updateHexceptionGrid(this.hexceptionRadius);
+          return;
+        }
+
+        const intent = beginConstructionIntent({
+          realmEntityId: structureEntityId,
+          buildingType: buildingType.type,
+          spot: normalizedCoords,
+          useSimpleCost,
+          costs: buildingCosts,
+          enforceBuildingTypeUniqueness: false,
+        });
+        if (!intent) {
+          toast.error("Building already pending.");
+          this.updateHexceptionGrid(this.hexceptionRadius);
+          return;
+        }
+
         try {
           console.log("Placing building at:", {
             dojo: account!,
@@ -675,22 +737,22 @@ export default class HexceptionScene extends HexagonScene {
             buildingId: buildingType.type,
           });
 
-          await this.tileManager.placeBuilding(
+          const result = await this.tileManager.placeBuilding(
             account!,
             structureEntityId,
             buildingType.type,
             normalizedCoords,
             useSimpleCost,
           );
+          attachConstructionTx(intent.intentId, extractConstructionTransactionHash(result));
           AudioManager.getInstance().play("ui.build_place");
         } catch (error) {
           console.log("catched error so removing building", error);
-          const message = error instanceof Error ? error.message : String(error);
-          if (!message.toLowerCase().includes("space is occupied")) {
-            releaseOccupiedBuildSpot(structureEntityId, normalizedCoords);
-          }
+          const message = extractConstructionErrorMessage(error);
+          failConstructionIntent({ intentId: intent.intentId, reason: message });
           this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
         }
+        this.reconcileConstructionIntentsForCurrentRealm();
         this.updateHexceptionGrid(this.hexceptionRadius);
       } else {
         // Hex is occupied — invalid placement

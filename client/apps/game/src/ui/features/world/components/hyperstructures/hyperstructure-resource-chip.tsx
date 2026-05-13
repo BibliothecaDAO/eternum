@@ -2,10 +2,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { getEffectiveConstructionBalance } from "@/ui/features/settlement/construction/construction-intent-store";
+import { useConstructionIntentVersion } from "@/ui/features/settlement/construction/use-construction-intents";
 import { currencyIntlFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
-import { divideByPrecision, getBalance } from "@bibliothecadao/eternum";
 import { ProgressWithPercentage, useDojo } from "@bibliothecadao/react";
 import { findResourceById, ID } from "@bibliothecadao/types";
 import { useEffect, useMemo, useState } from "react";
@@ -31,14 +32,13 @@ export const HyperstructureResourceChip = ({
 }: HyperstructureResourceChipProps) => {
   const dojo = useDojo();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
+  const constructionIntentVersion = useConstructionIntentVersion();
   const [inputValue, setInputValue] = useState<number>(0);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   const balance = useMemo(() => {
-    return divideByPrecision(
-      getBalance(structureEntityId, resourceId, currentDefaultTick, dojo.setup.components).balance,
-    );
-  }, [structureEntityId, resourceId, currentDefaultTick, dojo.setup.components]);
+    return getEffectiveConstructionBalance(structureEntityId, resourceId, currentDefaultTick, dojo.setup.components);
+  }, [constructionIntentVersion, currentDefaultTick, dojo.setup.components, resourceId, structureEntityId]);
 
   let maxContributableAmount = Math.min(progress.costNeeded! - progress.amount, balance);
   maxContributableAmount = Math.ceil(maxContributableAmount);
