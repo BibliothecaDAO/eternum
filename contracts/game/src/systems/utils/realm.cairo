@@ -2,8 +2,9 @@ use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage};
 use starknet::ContractAddress;
 use crate::alias::ID;
-use crate::models::map::TileOccupier;
-use crate::models::position::Coord;
+use crate::models::map::{Tile, TileImpl, TileOccupier};
+use crate::models::map2::TileOpt;
+use crate::models::position::{Coord, CoordTrait, Direction};
 use crate::models::realm::{RealmNameAndAttrsDecodingImpl, RealmReferenceImpl};
 use crate::models::resource::production::building::{
     BuildingCategory, BuildingImpl, StructureBuildingCategoryCountImpl, StructureBuildings,
@@ -16,6 +17,8 @@ use crate::models::structure::{
 use crate::system_libraries::structure_libraries::structure_creation_library::{
     IStructureCreationlibraryDispatcherTrait, structure_creation_library,
 };
+use crate::systems::utils::map::IMapImpl;
+use crate::utils::map::biomes::{Biome, get_biome};
 
 #[starknet::interface]
 pub trait ISeasonPass<TState> {
@@ -90,16 +93,18 @@ pub impl iRealmImpl of iRealmTrait {
     fn provision_realm(ref world: WorldStorage, structure_id: ID) {
         let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, structure_id);
         assert!(structure_base.category == StructureCategory::Realm.into(), "structure is not a realm");
+        let structure_coord = structure_base.coord();
 
         let structure_buildings: StructureBuildings = world.read_model(structure_id);
         assert!(
             structure_buildings.building_count(BuildingCategory::ResourceLabor) == 0, "realm is already provisioned",
         );
 
+        Self::reveal_realm_surroundings(ref world, structure_coord);
+
         // ensure troop start exists before the rest of the realm economy turns on
         Self::grant_realm_starting_troops(ref world, structure_id);
 
-        let structure_coord = structure_base.coord();
         let structure_creation_library = structure_creation_library::get_dispatcher(@world);
         structure_creation_library
             .grant_starting_non_troop_resources(world, structure_id, StructureCategory::Realm, structure_coord);
@@ -116,6 +121,25 @@ pub impl iRealmImpl of iRealmTrait {
         );
 
         ProductionStrategyImpl::seed_unbounded_structure_labor_output(ref world, structure_id);
+    }
+
+    fn reveal_realm_surroundings(ref world: WorldStorage, structure_coord: Coord) {
+        let structure_surrounding = array![
+            Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
+            Direction::SouthEast,
+        ];
+
+        for direction in structure_surrounding {
+            let neighbor_coord = structure_coord.neighbor(direction);
+            let neighbor_tile_opt: TileOpt = world.read_model((neighbor_coord.alt, neighbor_coord.x, neighbor_coord.y));
+            let mut neighbor_tile: Tile = neighbor_tile_opt.into();
+            if neighbor_tile.discovered() {
+                continue;
+            }
+
+            let biome: Biome = get_biome(neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into());
+            IMapImpl::explore(ref world, ref neighbor_tile, biome);
+        }
     }
 
     fn collect_season_pass(ref world: WorldStorage, season_pass_address: ContractAddress, realm_id: ID) {

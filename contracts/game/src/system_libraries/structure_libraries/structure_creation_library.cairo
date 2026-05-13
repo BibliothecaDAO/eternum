@@ -3,7 +3,6 @@ use crate::alias::ID;
 use crate::models::config::WorldConfigUtilImpl;
 use crate::models::map::TileOccupier;
 use crate::models::position::Coord;
-use crate::models::resource;
 use crate::models::structure::{StructureCategory, StructureMetadata};
 
 #[starknet::interface]
@@ -41,10 +40,9 @@ pub mod structure_creation_library {
     use crate::models::config::{
         StartingResourcesConfig, StructureCapacityConfig, VillageTokenConfig, WorldConfigUtilImpl,
     };
-    use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
     use crate::models::map::{Tile, TileImpl, TileOccupier};
     use crate::models::map2::TileOpt;
-    use crate::models::position::{Coord, CoordImpl, Direction};
+    use crate::models::position::{Coord, CoordTrait, Direction};
     use crate::models::resource::resource::{
         ResourceImpl, ResourceList, ResourceWeightImpl, SingleResourceImpl, SingleResourceStoreImpl, TroopResourceImpl,
         WeightStoreImpl,
@@ -52,7 +50,7 @@ pub mod structure_creation_library {
     use crate::models::structure::{
         Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureImpl, StructureMetadata,
         StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureTroopExplorerStoreImpl,
-        StructureTroopGuardStoreImpl, StructureVillageSlots,
+        StructureVillageSlots,
     };
     use crate::models::troop::{ExplorerTroops, GuardSlot, TroopsImpl};
     use crate::models::weight::Weight;
@@ -135,54 +133,42 @@ pub mod structure_creation_library {
                 IMapImpl::explore(ref world, ref tile, biome);
             }
 
-            // explore all tiles around the structure, as well as village spots
-            let structure_surrounding = array![
-                Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
-                Direction::SouthEast,
-            ];
-            let mut possible_village_slots: Array<Direction> = array![];
-            let village_pass_config: VillageTokenConfig = WorldConfigUtilImpl::get_member(
-                world, selector!("village_pass_config"),
-            );
+            if _should_explore_surroundings(category, explore_village_coord) {
+                _reveal_structure_surroundings(ref world, coord);
+            }
 
-            if (category != StructureCategory::FragmentMine && category != StructureCategory::Village)
-                || explore_village_coord {
+            // prepare season village slots when requested; blitz realms defer adjacent reveal to provisioning
+            let mut possible_village_slots: Array<Direction> = array![];
+
+            if explore_village_coord {
+                let structure_surrounding = array![
+                    Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
+                    Direction::SouthEast,
+                ];
+                let village_pass_config: VillageTokenConfig = WorldConfigUtilImpl::get_member(
+                    world, selector!("village_pass_config"),
+                );
                 for direction in structure_surrounding {
-                    let neighbor_coord: Coord = coord.neighbor(direction);
-                    let neighbor_tile_opt: TileOpt = world
-                        .read_model((neighbor_coord.alt, neighbor_coord.x, neighbor_coord.y));
-                    let mut neighbor_tile: Tile = neighbor_tile_opt.into();
-                    if !neighbor_tile.discovered() {
-                        let biome: Biome = get_biome(
-                            neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into(),
+                    // explore village tile so that no structure can be built on it
+                    let village_coord = coord
+                        .neighbor_after_distance(direction, iVillageImpl::village_realm_distance());
+                    let village_tile_opt: TileOpt = world
+                        .read_model((village_coord.alt, village_coord.x, village_coord.y));
+                    let mut village_tile: Tile = village_tile_opt.into();
+                    if !village_tile.discovered() {
+                        let village_biome: Biome = get_biome(
+                            village_coord.alt, village_coord.x.into(), village_coord.y.into(),
                         );
-                        IMapImpl::explore(ref world, ref neighbor_tile, biome);
+                        IMapImpl::explore(ref world, ref village_tile, village_biome);
                     }
 
-                    // only do village settings when category is realm
-                    if explore_village_coord {
-                        // explore village tile so that no structure can be built on it
-                        let village_coord = coord
-                            .neighbor_after_distance(direction, iVillageImpl::village_realm_distance());
-                        let village_tile_opt: TileOpt = world
-                            .read_model((village_coord.alt, village_coord.x, village_coord.y));
-                        let mut village_tile: Tile = village_tile_opt.into();
-                        if !village_tile.discovered() {
-                            let village_biome: Biome = get_biome(
-                                village_coord.alt, village_coord.x.into(), village_coord.y.into(),
-                            );
-                            IMapImpl::explore(ref world, ref village_tile, village_biome);
-                        }
-
-                        // ensure village tile is only useable if no structure is on it and tile is not a quest tile
-                        if !village_tile.occupier_is_structure
-                            && village_tile.occupier_type != TileOccupier::Quest.into() {
-                            // mint village nft
-                            IVillagePassDispatcher { contract_address: village_pass_config.token_address }
-                                .mint(village_pass_config.mint_recipient_address);
-                            // append village slot
-                            possible_village_slots.append(direction);
-                        }
+                    // ensure village tile is only useable if no structure is on it and tile is not a quest tile
+                    if !village_tile.occupier_is_structure && village_tile.occupier_type != TileOccupier::Quest.into() {
+                        // mint village nft
+                        IVillagePassDispatcher { contract_address: village_pass_config.token_address }
+                            .mint(village_pass_config.mint_recipient_address);
+                        // append village slot
+                        possible_village_slots.append(direction);
                     }
                 };
             }
@@ -291,6 +277,35 @@ pub mod structure_creation_library {
         resources
     }
 
+    fn _should_explore_surroundings(category: StructureCategory, explore_village_coord: bool) -> bool {
+        if explore_village_coord {
+            return true;
+        }
+
+        category != StructureCategory::Realm
+            && category != StructureCategory::FragmentMine
+            && category != StructureCategory::Village
+    }
+
+    fn _reveal_structure_surroundings(ref world: WorldStorage, structure_coord: Coord) {
+        let structure_surrounding = array![
+            Direction::East, Direction::NorthEast, Direction::NorthWest, Direction::West, Direction::SouthWest,
+            Direction::SouthEast,
+        ];
+
+        for direction in structure_surrounding {
+            let neighbor_coord: Coord = structure_coord.neighbor(direction);
+            let neighbor_tile_opt: TileOpt = world.read_model((neighbor_coord.alt, neighbor_coord.x, neighbor_coord.y));
+            let mut neighbor_tile: Tile = neighbor_tile_opt.into();
+            if neighbor_tile.discovered() {
+                continue;
+            }
+
+            let biome: Biome = get_biome(neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into());
+            IMapImpl::explore(ref world, ref neighbor_tile, biome);
+        }
+    }
+
     fn _grant_non_troop_resources(
         ref world: WorldStorage, structure_id: ID, ref structure_weight: Weight, resources: Span<ResourceList>,
     ) {
@@ -362,7 +377,7 @@ pub mod structure_creation_library {
     }
 
     pub fn get_dispatcher(world: @WorldStorage) -> super::IStructureCreationlibraryLibraryDispatcher {
-        let (_, class_hash) = world.dns(@"structure_creation_library_v0_1_16").expect('structure create lib not found');
+        let (_, class_hash) = world.dns(@"structure_creation_library_v0_1_17").expect('structure create lib not found');
         super::IStructureCreationlibraryLibraryDispatcher { class_hash }
     }
 }
