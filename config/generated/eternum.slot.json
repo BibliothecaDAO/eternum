@@ -4716,7 +4716,7 @@
         },
         {
           "address": "0x4d50e0be7e7c970e654c835dd8534111df36333c4f09e7c87bd8a398c7d20a0",
-          "class_hash": "0x5d0bb8c1bb6a23f2c092ae97029118f5085224ad2db1b09b4e06e4a69114fac",
+          "class_hash": "0x690eda713151078f256f2016ce1e255ceb77ce866046064a0bb3d42acb762a7",
           "init_calldata": [],
           "tag": "s1_eternum-blitz_realm_systems",
           "selector": "0x3414be5ba2c90784f15eb572e9222b5c83a6865ec0e475a57d7dc18af9b3742",

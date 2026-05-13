@@ -104,7 +104,8 @@ pub mod hyperstructure_create_systems {
             let blitz_mode_on: bool = WorldConfigUtilImpl::get_member(world, selector!("blitz_mode_on"));
             assert!(blitz_mode_on == true, "Eternum: Not a blitz game");
 
-            SeasonConfigImpl::get(world).assert_started_and_not_over();
+            let season_config = SeasonConfigImpl::get(world);
+            assert!(!season_config.has_ended(), "Game over");
 
             ////////////////////////////////////////////////
             // Materialize Reserved Hyperstructure
