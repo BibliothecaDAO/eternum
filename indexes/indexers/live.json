@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-13T10:57:52.674Z",
+  "updatedAt": "2026-05-13T11:03:08.829Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2104,6 +2104,19 @@
         "describedAt": "2026-05-13T10:57:52.674Z"
       },
       "updatedAt": "2026-05-13T10:57:52.674Z"
+    },
+    "zz-mainnet-2": {
+      "gameName": "zz-mainnet-2",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/zz-mainnet-2/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-13T11:03:08.828Z"
+      },
+      "updatedAt": "2026-05-13T11:03:08.829Z"
     }
   }
 }
