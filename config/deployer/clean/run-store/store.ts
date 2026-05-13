@@ -294,6 +294,7 @@ function mergeLaunchArtifacts(
     scheduledStartTime: summary.startTime ?? currentArtifacts.scheduledStartTime,
     durationSeconds: summary.durationSeconds ?? currentArtifacts.durationSeconds,
     worldAddress: summary.worldAddress || currentArtifacts.worldAddress,
+    entryTokenAddress: summary.entryTokenAddress || currentArtifacts.entryTokenAddress,
     createGameTxHash: summary.createGameTxHash || currentArtifacts.createGameTxHash,
     configureTxHash: summary.configureTxHash || currentArtifacts.configureTxHash,
     lootChestRoleTxHash: summary.lootChestRoleTxHash || currentArtifacts.lootChestRoleTxHash,

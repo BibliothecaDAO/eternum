@@ -61,6 +61,7 @@ export interface ConfigLogger {
 
 export interface CleanConfigArtifacts {
   worldConfigTxHash?: string;
+  entryTokenAddress?: string;
 }
 
 export interface CleanConfigContext<Provider = unknown> {
@@ -303,6 +304,7 @@ export interface LaunchGameSummary {
   rpcUrl: string;
   factoryAddress: string;
   worldAddress?: string;
+  entryTokenAddress?: string;
   createGameTxHash?: string;
   configureTxHash?: string;
   worldConfigTxHash?: string;
@@ -342,6 +344,7 @@ export interface PrizeFundingState {
 
 export interface SeriesLaunchGameArtifacts {
   worldAddress?: string;
+  entryTokenAddress?: string;
   createGameTxHash?: string;
   configureTxHash?: string;
   worldConfigTxHash?: string;

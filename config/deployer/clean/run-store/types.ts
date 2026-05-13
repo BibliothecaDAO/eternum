@@ -87,6 +87,7 @@ export interface FactoryRunArtifacts {
   scheduledStartTime?: string | number;
   durationSeconds?: number;
   worldAddress?: string;
+  entryTokenAddress?: string;
   createGameTxHash?: string;
   configureTxHash?: string;
   worldConfigTxHash?: string;

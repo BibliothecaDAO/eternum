@@ -44,6 +44,9 @@ const resolveFactoryWorldProfileMock = mock(async () => null);
 const writeLaunchSummaryMock = mock(() => "/tmp/launch-summary.json");
 const loadLaunchSummaryIfPresentMock = mock(() => null);
 const resolveFactoryWorldConfigStepsMock = mock(() => []);
+const getGameManifestMock = mock(() => ({}));
+const loadEnvironmentConfigurationMock = mock(() => ({}));
+const applyDeploymentConfigOverridesMock = mock((config: unknown) => config);
 const executeConfigStepsMock = mock(async ({ mode }: { mode?: string }) => ({
   mode: mode || "batched",
   steps: [],
@@ -105,7 +108,7 @@ mock.module("@bibliothecadao/provider", () => ({
 }));
 
 mock.module("@contracts", () => ({
-  getGameManifest: () => ({}),
+  getGameManifest: getGameManifestMock,
   getSeasonAddresses: () => ({}),
 }));
 
@@ -134,8 +137,8 @@ mock.module("starknet", () => ({
 }));
 
 mock.module("../config/config-loader", () => ({
-  applyDeploymentConfigOverrides: (config: unknown) => config,
-  loadEnvironmentConfiguration: () => ({}),
+  applyDeploymentConfigOverrides: applyDeploymentConfigOverridesMock,
+  loadEnvironmentConfiguration: loadEnvironmentConfigurationMock,
 }));
 
 mock.module("../config/executor", () => ({
@@ -223,6 +226,12 @@ describe("runLaunchStep mainnet launch steps", () => {
     loadLaunchSummaryIfPresentMock.mockImplementation(() => null);
     resolveFactoryWorldConfigStepsMock.mockClear();
     resolveFactoryWorldConfigStepsMock.mockImplementation(() => []);
+    getGameManifestMock.mockClear();
+    getGameManifestMock.mockImplementation(() => ({}));
+    loadEnvironmentConfigurationMock.mockClear();
+    loadEnvironmentConfigurationMock.mockImplementation(() => ({}));
+    applyDeploymentConfigOverridesMock.mockClear();
+    applyDeploymentConfigOverridesMock.mockImplementation((config: unknown) => config);
     executeConfigStepsMock.mockClear();
     executeConfigStepsMock.mockImplementation(async ({ mode }: { mode?: string }) => ({
       mode: mode || "batched",
@@ -511,6 +520,43 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(summary.worldConfigTxHash).toBe("0xconfigure");
   });
 
+  test("stores the computed blitz entry token address after configure-world", async () => {
+    getGameManifestMock.mockImplementation(() => ({
+      contracts: [
+        { tag: "s1_eternum-blitz_realm_systems", address: "0x111" },
+        { tag: "s1_eternum-config_systems", address: "0x222" },
+      ],
+    }));
+    loadEnvironmentConfigurationMock.mockImplementation(() => ({
+      blitz: {
+        mode: { on: true },
+        registration: {
+          fee_amount: "1",
+          entry_token_class_hash: "0x123",
+        },
+      },
+    }));
+    executeConfigStepsMock.mockImplementationOnce(async () => ({
+      mode: "batched",
+      steps: [{ id: "blitz-registration", description: "Set blitz registration config" }],
+      transactionHash: "0xabc",
+      artifacts: {},
+    }));
+
+    const summary = await runLaunchStep({
+      environmentId: "mainnet.blitz",
+      stepId: "configure-world",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(summary.entryTokenAddress).toBe("0x55587061e1f470c749e9f7e568a3eb8b8d2335ac2c9b5adf8d9669fb378b38");
+  });
+
   test("stores the sequential world-admin tx hash as worldConfigTxHash", async () => {
     executeConfigStepsMock.mockImplementationOnce(async () => ({
       mode: "sequential",
@@ -654,6 +700,12 @@ describe("runLaunchStep mainnet launch steps", () => {
   });
 
   test("syncs paymaster only for mainnet environments", async () => {
+    loadLaunchSummaryIfPresentMock.mockImplementation(() =>
+      buildStoredLaunchSummary({
+        entryTokenAddress: "0xentry",
+      }),
+    );
+
     const summary = await runLaunchStep({
       environmentId: "mainnet.blitz",
       stepId: "sync-paymaster",
@@ -667,6 +719,7 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(syncPaymasterPolicyMock.mock.calls[0]?.[0]).toMatchObject({
       chain: "mainnet",
       gameName: "alpha",
+      extraActions: [{ contractAddress: "0xentry", entrypoint: "set_approval_for_all" }],
     });
     expect(summary.paymasterSynced).toBe(true);
   });
