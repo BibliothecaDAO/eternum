@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/credence-new-flow-7/25789942712-1.json",
   "latestLaunchRequestId": "25789942712-1",
-  "currentStepId": "configure-world",
+  "currentStepId": "grant-lootchest-role",
   "createdAt": "2026-05-13T09:17:40.514Z",
-  "updatedAt": "2026-05-13T09:18:59.573Z",
+  "updatedAt": "2026-05-13T09:19:16.726Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,10 +45,11 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-05-13T09:18:59.573Z"
+      "latestEvent": "Applying settings succeeded",
+      "startedAt": "2026-05-13T09:18:59.573Z",
+      "finishedAt": "2026-05-13T09:19:16.726Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -70,14 +71,8 @@
     "durationSeconds": 5400,
     "summaryPath": ".context/game-launch/slot-blitz-credence-new-flow-7.json",
     "worldAddress": "0x0597c3eb897d6364d8ba457ffde670673f17cfb2562a3e257b415d8307cbb200",
-    "createGameTxHash": "0x152713b45cf41ca9bfcc81b69d44425824046cd475337307d2e4912045b8406"
-  },
-  "activeLease": {
-    "launchRequestId": "25789942712-1",
-    "workflowRunId": 25789942712,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "acquiredAt": "2026-05-13T09:18:59.573Z",
-    "expiresAt": "2026-05-13T10:03:59.573Z"
+    "createGameTxHash": "0x152713b45cf41ca9bfcc81b69d44425824046cd475337307d2e4912045b8406",
+    "configureTxHash": "0x794bb07c1d3b14bb7baf2bde03b9514cff19164ea2180986f34d37c6901e177",
+    "worldConfigTxHash": "0x794bb07c1d3b14bb7baf2bde03b9514cff19164ea2180986f34d37c6901e177"
   }
 }
