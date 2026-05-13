@@ -158,5 +158,30 @@ describe("summarizeArmyMovementLatency", () => {
     expect(pairs).toContain("move_requested->movement_started");
     expect(pairs).toContain("movement_started->movement_completed");
     expect(pairs).toContain("tx_submitted->optimistic_animation_started");
+    expect(pairs).toContain("explore_intent_queued->explore_tx_hash_received");
+    expect(pairs).toContain("explore_tx_hash_received->explore_authoritative_reconcile_complete");
+    expect(pairs).toContain("explore_intent_queued->explore_next_safe_unblocked");
+  });
+
+  it("summarizes explore next-safe latency phase pairs", () => {
+    record(42, "explore_intent_queued", 10);
+    record(42, "explore_tx_hash_received", 110, "0xabc");
+    record(42, "explore_authoritative_reconcile_complete", 260, "0xabc");
+    record(42, "explore_next_safe_unblocked", 275, "0xabc");
+
+    const summary = summarizeArmyMovementLatency();
+    const requestToHash = summary.phasePairs.find(
+      (p) => p.pair.from === "explore_intent_queued" && p.pair.to === "explore_tx_hash_received",
+    );
+    const hashToReconcile = summary.phasePairs.find(
+      (p) => p.pair.from === "explore_tx_hash_received" && p.pair.to === "explore_authoritative_reconcile_complete",
+    );
+    const requestToUnblocked = summary.phasePairs.find(
+      (p) => p.pair.from === "explore_intent_queued" && p.pair.to === "explore_next_safe_unblocked",
+    );
+
+    expect(requestToHash?.recentDeltasMs).toEqual([100]);
+    expect(hashToReconcile?.recentDeltasMs).toEqual([150]);
+    expect(requestToUnblocked?.recentDeltasMs).toEqual([265]);
   });
 });

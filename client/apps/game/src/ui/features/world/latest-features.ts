@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-13",
+    title: "Faster Repeat Exploring",
+    description:
+      "Repeat explore actions now spend less time in the provider submit path and expose safer readiness tracking, so scouts become ready for the next explore sooner after world state catches up.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-05-07",
     title: "Scrollable Tile HUD",
     description:

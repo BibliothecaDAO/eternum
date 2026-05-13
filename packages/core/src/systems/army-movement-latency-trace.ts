@@ -2,6 +2,12 @@ import type { ID } from "@bibliothecadao/types";
 
 export type ArmyMovementLatencyPhase =
   | "move_requested"
+  | "explore_intent_queued"
+  | "explore_submit_started"
+  | "explore_provider_lock_acquired"
+  | "explore_tx_hash_received"
+  | "explore_authoritative_reconcile_complete"
+  | "explore_next_safe_unblocked"
   | "tx_submitted"
   | "tx_response_received"
   | "tx_confirmed"

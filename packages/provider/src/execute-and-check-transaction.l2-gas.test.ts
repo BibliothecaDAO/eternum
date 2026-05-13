@@ -31,6 +31,7 @@ const makeProvider = () => {
     .mockResolvedValue({ status: "confirmed", receipt: { isReverted: () => false } });
   provider.pendingTransactionSpans = new Map();
   provider.pendingVrfExecutionLocks = new Map();
+  provider.cachedExploreExecutionDetails = new Map();
   provider.TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
   provider.TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
   provider.FEE_ESTIMATE_TIMEOUT_MS = 5_000;
@@ -212,6 +213,7 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       transaction_hash: "0x1",
     });
     expect(provider.execute).toHaveBeenCalledTimes(1);
+    provider.cachedExploreExecutionDetails.clear();
 
     const secondPromise = provider.executeAndCheckTransaction(signer, calls, undefined, {
       waitForConfirmation: false,
@@ -229,7 +231,11 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
         () => true,
         () => false,
       );
-    expect(estimatedBeforeConfirmation).toBe(false);
+    expect(estimatedBeforeConfirmation).toBe(true);
+
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(provider.execute).toHaveBeenCalledTimes(1);
 
     resolveFirstWait({ isReverted: () => false });
 
@@ -843,5 +849,221 @@ describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
       transaction_hash: "0xabc",
     });
     expect(provider.execute).toHaveBeenCalledWith(signer, call, "s1_eternum", { version: 3 });
+  });
+
+  it("reuses cached explore resource bounds on subsequent submissions", async () => {
+    const provider = makeProvider();
+    provider.VRF_PROVIDER_ADDRESS = "0x999";
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi.fn().mockResolvedValue({
+        resourceBounds: makeResourceBounds(1_000_000_000n),
+      }),
+    };
+    const calls: Call[] = [
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 1, "0xfeed"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "explorer_move",
+        calldata: [42, [0], 1],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "explorer_extract_reward",
+        calldata: [42],
+      },
+    ];
+
+    await provider.executeAndCheckTransaction(signer, calls, undefined, {
+      waitForConfirmation: false,
+      transactionType: TransactionType.EXPLORE,
+    });
+    await provider.executeAndCheckTransaction(signer, calls, undefined, {
+      waitForConfirmation: false,
+      transactionType: TransactionType.EXPLORE,
+    });
+
+    expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(1);
+    expect(provider.execute).toHaveBeenCalledTimes(2);
+    expect(provider.execute.mock.calls[0][3]).toMatchObject(provider.execute.mock.calls[1][3]);
+  });
+
+  it("does not reuse cached explore resource bounds across distinct explore payloads", async () => {
+    const provider = makeProvider();
+    provider.VRF_PROVIDER_ADDRESS = "0x999";
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi
+        .fn()
+        .mockResolvedValueOnce({
+          resourceBounds: makeResourceBounds(10n),
+        })
+        .mockResolvedValueOnce({
+          resourceBounds: makeResourceBounds(20n),
+        }),
+    };
+    const firstCalls: Call[] = [
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 1, "0xfeed"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "explorer_move",
+        calldata: [42, [0], 1],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "explorer_extract_reward",
+        calldata: [42],
+      },
+    ];
+    const secondCalls: Call[] = [
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 1, "0xbeef"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "explorer_move",
+        calldata: [43, [1], 1],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "explorer_extract_reward",
+        calldata: [43],
+      },
+    ];
+
+    await provider.executeAndCheckTransaction(signer, firstCalls, undefined, {
+      waitForConfirmation: false,
+      transactionType: TransactionType.EXPLORE,
+    });
+    await provider.executeAndCheckTransaction(signer, secondCalls, undefined, {
+      waitForConfirmation: false,
+      transactionType: TransactionType.EXPLORE,
+    });
+
+    expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(2);
+    expect(provider.execute.mock.calls[0][3].resourceBounds.l2_gas.max_amount).toBe(15n);
+    expect(provider.execute.mock.calls[1][3].resourceBounds.l2_gas.max_amount).toBe(30n);
+  });
+
+  it("refreshes cached explore resource bounds after a nonce retry", async () => {
+    const provider = makeProvider();
+    provider.VRF_PROVIDER_ADDRESS = "0x999";
+    provider.retryConfig = {
+      maxRetries: 1,
+      baseDelayMs: 0,
+      maxDelayMs: 0,
+      jitterFactor: 0,
+    };
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi
+        .fn()
+        .mockResolvedValueOnce({
+          resourceBounds: makeResourceBounds(10n),
+        })
+        .mockResolvedValueOnce({
+          resourceBounds: makeResourceBounds(20n),
+        }),
+    };
+    const calls: Call[] = [
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 1, "0xfeed"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "explorer_move",
+        calldata: [42, [0], 1],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "explorer_extract_reward",
+        calldata: [42],
+      },
+    ];
+
+    provider.execute = vi
+      .fn()
+      .mockRejectedValueOnce(new Error("nonce too old"))
+      .mockResolvedValueOnce({ transaction_hash: "0xabc" });
+
+    await provider.executeAndCheckTransaction(signer, calls, undefined, {
+      waitForConfirmation: false,
+      transactionType: TransactionType.EXPLORE,
+    });
+
+    expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(2);
+    expect(provider.execute.mock.calls[0][3].resourceBounds.l2_gas.max_amount).toBe(15n);
+    expect(provider.execute.mock.calls[1][3].resourceBounds.l2_gas.max_amount).toBe(30n);
+  });
+
+  it("invalidates cached explore resource bounds after a fee-related submit failure", async () => {
+    const provider = makeProvider();
+    provider.VRF_PROVIDER_ADDRESS = "0x999";
+
+    const signer = {
+      address: "0xabc",
+      estimateInvokeFee: vi
+        .fn()
+        .mockResolvedValueOnce({
+          resourceBounds: makeResourceBounds(10n),
+        })
+        .mockResolvedValueOnce({
+          resourceBounds: makeResourceBounds(20n),
+        }),
+    };
+    const calls: Call[] = [
+      {
+        contractAddress: "0x999",
+        entrypoint: "request_random",
+        calldata: ["0x123", 1, "0xfeed"],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "explorer_move",
+        calldata: [42, [0], 1],
+      },
+      {
+        contractAddress: "0x123",
+        entrypoint: "explorer_extract_reward",
+        calldata: [42],
+      },
+    ];
+
+    await provider.executeAndCheckTransaction(signer, calls, undefined, {
+      waitForConfirmation: false,
+      transactionType: TransactionType.EXPLORE,
+    });
+
+    provider.execute = vi.fn().mockRejectedValueOnce(new Error("max fee too low"));
+    await expect(
+      provider.executeAndCheckTransaction(signer, calls, undefined, {
+        waitForConfirmation: false,
+        transactionType: TransactionType.EXPLORE,
+      }),
+    ).rejects.toThrow(/max fee too low/i);
+
+    provider.execute = vi.fn().mockResolvedValueOnce({ transaction_hash: "0xdef" });
+    await provider.executeAndCheckTransaction(signer, calls, undefined, {
+      waitForConfirmation: false,
+      transactionType: TransactionType.EXPLORE,
+    });
+
+    expect(signer.estimateInvokeFee).toHaveBeenCalledTimes(2);
+    expect(provider.execute.mock.calls[0][3].resourceBounds.l2_gas.max_amount).toBe(30n);
   });
 });

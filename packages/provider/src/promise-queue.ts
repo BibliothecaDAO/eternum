@@ -32,6 +32,30 @@ const hasVrfRequestRandomCall = (transaction: QueueableTransaction): boolean =>
 const shouldSubmitIndividually = (item: QueueItem): boolean =>
   item.transaction.transactionType === TransactionType.EXPLORE || hasVrfRequestRandomCall(item.transaction);
 
+const splitBatchForSubmission = (batch: QueueItem[]): QueueItem[][] => {
+  const submissionBatches: QueueItem[][] = [];
+  let currentSharedBatch: QueueItem[] = [];
+
+  for (const item of batch) {
+    if (shouldSubmitIndividually(item)) {
+      if (currentSharedBatch.length > 0) {
+        submissionBatches.push(currentSharedBatch);
+        currentSharedBatch = [];
+      }
+      submissionBatches.push([item]);
+      continue;
+    }
+
+    currentSharedBatch.push(item);
+  }
+
+  if (currentSharedBatch.length > 0) {
+    submissionBatches.push(currentSharedBatch);
+  }
+
+  return submissionBatches;
+};
+
 /**
  * Promise queue that batches transactions by signer and cost category.
  * Transactions in the same category from the same signer are batched together
@@ -169,11 +193,14 @@ export class PromiseQueue {
   private async processBatch(batch: QueueItem[]) {
     if (batch.length === 0) return;
 
-    if (batch.length > 1 && batch.some(shouldSubmitIndividually)) {
-      for (const item of batch) {
-        await this.processBatch([item]);
+    if (batch.length > 1) {
+      const submissionBatches = splitBatchForSubmission(batch);
+      if (submissionBatches.length > 1) {
+        for (const submissionBatch of submissionBatches) {
+          await this.processBatch(submissionBatch);
+        }
+        return;
       }
-      return;
     }
 
     if (batch.length === 1) {

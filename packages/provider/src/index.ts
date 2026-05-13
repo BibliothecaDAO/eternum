@@ -73,6 +73,7 @@ const V3_L2_GAS_OVERHEAD_PERCENT = 50n;
 const HUNDRED_PERCENT = 100n;
 const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
 const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
+const EXPLORE_RESOURCE_BOUNDS_CACHE_TTL_MS = 15_000;
 export const SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE =
   "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.";
 const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
@@ -372,8 +373,6 @@ const extractErrorMessage = (error: unknown, fallback = "Unknown error"): string
   return fallback;
 };
 
-const matchesNonceError = (error: unknown): boolean => extractErrorMessage(error, "").toLowerCase().includes("nonce");
-
 const isTransactionSubmissionTimeoutError = (error: unknown): boolean => {
   return error instanceof TransactionSubmissionTimeoutError;
 };
@@ -443,6 +442,11 @@ const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN 
 type VrfExecutionLock = {
   completed: Promise<void>;
   resolve: () => void;
+};
+
+type CachedExploreExecutionDetails = {
+  cachedAtMs: number;
+  resourceBounds: ResourceBoundsBN;
 };
 
 type TransactionFailureError = Error & {
@@ -571,6 +575,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   private readonly FEE_ESTIMATE_TIMEOUT_MS = DEFAULT_FEE_ESTIMATE_TIMEOUT_MS;
   private pendingTransactionSpans = new Map<string, Span>();
   private pendingVrfExecutionLocks = new Map<string, VrfExecutionLock>();
+  private cachedExploreExecutionDetails = new Map<string, CachedExploreExecutionDetails>();
   private readonly retryConfig?: RetryConfig;
   private transactionSubmitGuard?: TransactionSubmitGuard;
   /**
@@ -626,6 +631,38 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   private getTransactionCalls(transactionDetails: AllowArray<Call>): Call[] {
     return Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
+  }
+
+  private serializeTransactionCacheValue(value: unknown): string {
+    if (Array.isArray(value)) {
+      return `[${value.map((item) => this.serializeTransactionCacheValue(item)).join(",")}]`;
+    }
+
+    if (typeof value === "bigint") {
+      return value.toString();
+    }
+
+    if (value === undefined) {
+      return "undefined";
+    }
+
+    if (value === null) {
+      return "null";
+    }
+
+    return String(value);
+  }
+
+  private buildTransactionCacheSignature(transactionDetails: AllowArray<Call>): string {
+    return this.getTransactionCalls(transactionDetails)
+      .map((detail) => {
+        const contractAddress = this.normalizeAddress(detail.contractAddress) ?? String(detail.contractAddress);
+        const calldata = Array.isArray(detail.calldata)
+          ? detail.calldata.map((item) => this.serializeTransactionCacheValue(item)).join(",")
+          : "";
+        return `${contractAddress}:${detail.entrypoint}:${calldata}`;
+      })
+      .join("|");
   }
 
   private getVrfRequestRandomCalls(transactionDetails: AllowArray<Call>): Call[] {
@@ -699,6 +736,79 @@ export class EternumProvider extends EnhancedDojoProvider {
     return this.getVrfSerializationKey(signer, transactionDetails);
   }
 
+  private getExploreExecutionDetailsCacheKey(
+    txType: TransactionType | undefined,
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ): string | undefined {
+    if (txType !== TransactionType.EXPLORE) {
+      return undefined;
+    }
+
+    const signerAddress = this.normalizeAddress((signer as { address?: BigNumberish }).address);
+    if (!signerAddress) {
+      return undefined;
+    }
+
+    const worldAddress =
+      this.normalizeAddress((this.manifest?.world?.address as BigNumberish | undefined) ?? undefined) ?? "unknown";
+    const nodeUrl = (this.provider as any)?.channel?.nodeUrl ?? (this.manifest as any)?.world?.metadata?.rpc_url;
+    const transactionSignature = this.buildTransactionCacheSignature(transactionDetails);
+    return `${String(nodeUrl ?? "unknown")}:${worldAddress}:${signerAddress}:${txType}:${transactionSignature}`;
+  }
+
+  private getCachedExploreExecutionDetails(cacheKey: string | undefined): UniversalDetails | undefined {
+    if (!cacheKey) {
+      return undefined;
+    }
+
+    const cached = this.cachedExploreExecutionDetails.get(cacheKey);
+    if (!cached) {
+      return undefined;
+    }
+
+    if (Date.now() - cached.cachedAtMs > EXPLORE_RESOURCE_BOUNDS_CACHE_TTL_MS) {
+      this.cachedExploreExecutionDetails.delete(cacheKey);
+      return undefined;
+    }
+
+    return {
+      version: 3,
+      resourceBounds: cached.resourceBounds,
+    };
+  }
+
+  private cacheExploreExecutionDetails(cacheKey: string | undefined, resourceBounds: ResourceBoundsBN): void {
+    if (!cacheKey) {
+      return;
+    }
+
+    this.cachedExploreExecutionDetails.set(cacheKey, {
+      cachedAtMs: Date.now(),
+      resourceBounds,
+    });
+  }
+
+  private invalidateExploreExecutionDetailsCache(cacheKey: string | undefined): void {
+    if (!cacheKey) {
+      return;
+    }
+
+    this.cachedExploreExecutionDetails.delete(cacheKey);
+  }
+
+  private shouldRefreshExecutionDetailsAfterSubmitError(error: unknown): boolean {
+    const message = extractErrorMessage(error, "").toLowerCase();
+    return (
+      message.includes("nonce") ||
+      message.includes("max fee") ||
+      message.includes("fee too low") ||
+      message.includes("insufficient fee") ||
+      message.includes("resource bound") ||
+      message.includes("resource_bounds")
+    );
+  }
+
   private createVrfExecutionLock(): VrfExecutionLock {
     let resolve!: () => void;
     const completed = new Promise<void>((innerResolve) => {
@@ -737,8 +847,14 @@ export class EternumProvider extends EnhancedDojoProvider {
   private async getV3ExecutionDetails(
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
+    options?: { cacheKey?: string; forceRefresh?: boolean },
   ): Promise<UniversalDetails> {
     const details: UniversalDetails = { version: 3 };
+    const cached = !options?.forceRefresh ? this.getCachedExploreExecutionDetails(options?.cacheKey) : undefined;
+    if (cached) {
+      return cached;
+    }
+
     const estimateInvokeFee = (signer as any)?.estimateInvokeFee;
     if (typeof estimateInvokeFee !== "function") {
       return details;
@@ -760,6 +876,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         return details;
       }
 
+      this.cacheExploreExecutionDetails(options?.cacheKey, resourceBounds);
+
       return {
         ...details,
         resourceBounds,
@@ -774,6 +892,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
     executionDetails: UniversalDetails,
+    options?: { executionDetailsCacheKey?: string },
   ): Promise<{ transaction_hash: string }> {
     if (this.retryConfig && this.retryConfig.maxRetries > 0) {
       let currentExecutionDetails = executionDetails;
@@ -781,8 +900,12 @@ export class EternumProvider extends EnhancedDojoProvider {
         () => this.execute(signer as any, transactionDetails, NAMESPACE, currentExecutionDetails),
         this.retryConfig,
         async (error, attempt) => {
-          if (matchesNonceError(error)) {
-            currentExecutionDetails = await this.getV3ExecutionDetails(signer, transactionDetails);
+          if (this.shouldRefreshExecutionDetailsAfterSubmitError(error)) {
+            this.invalidateExploreExecutionDetailsCache(options?.executionDetailsCacheKey);
+            currentExecutionDetails = await this.getV3ExecutionDetails(signer, transactionDetails, {
+              cacheKey: options?.executionDetailsCacheKey,
+              forceRefresh: true,
+            });
           }
           console.warn(`[provider] Retry attempt ${attempt} for transaction: ${extractErrorMessage(error)}`);
         },
@@ -1129,6 +1252,13 @@ export class EternumProvider extends EnhancedDojoProvider {
       ...(isMultipleTransactions ? { transactionCount: transactionDetails.length } : {}),
       ...(batchDetails && batchDetails.length > 0 ? { batchDetails } : {}),
     });
+    const executionDetailsCacheKey = this.getExploreExecutionDetailsCacheKey(txType, signer, transactionDetails);
+    const executionDetailsPromise =
+      txType === TransactionType.EXPLORE
+        ? this.getV3ExecutionDetails(signer, transactionDetails, {
+            cacheKey: executionDetailsCacheKey,
+          })
+        : undefined;
 
     await this.runTransactionSubmitGuard(signer, transactionMeta);
 
@@ -1136,19 +1266,36 @@ export class EternumProvider extends EnhancedDojoProvider {
     let releaseVrfExecutionLock: (() => void) | undefined;
     if (vrfSerializationKey) {
       releaseVrfExecutionLock = await this.acquireVrfExecutionLock(vrfSerializationKey);
+      if (txType === TransactionType.EXPLORE) {
+        this.emit("transactionProgress", {
+          stage: "explore_provider_lock_acquired",
+          type: txType,
+          explorerId: this.getExploreTransactionExplorerId(transactionDetails),
+          signerAddress: transactionMeta.signerAddress,
+        });
+      }
     }
 
     const span = this.startTransactionSpan(transactionDetails, transactionMeta);
-    const executionDetails = await this.getV3ExecutionDetails(signer, transactionDetails);
+    const executionDetails = executionDetailsPromise
+      ? await executionDetailsPromise
+      : await this.getV3ExecutionDetails(signer, transactionDetails, {
+          cacheKey: executionDetailsCacheKey,
+        });
 
     let tx;
     let submitPromise: Promise<{ transaction_hash: string }> | undefined;
     try {
-      submitPromise = this.submitTransaction(signer, transactionDetails, executionDetails);
+      submitPromise = this.submitTransaction(signer, transactionDetails, executionDetails, {
+        executionDetailsCacheKey,
+      });
       tx = await this.waitForTransactionSubmission(submitPromise);
     } catch (error) {
       const message = extractErrorMessage(error);
       const submitFailure = classifySubmitFailure(error);
+      if (this.shouldRefreshExecutionDetailsAfterSubmitError(error)) {
+        this.invalidateExploreExecutionDetailsCache(executionDetailsCacheKey);
+      }
       if (submitPromise && submitFailure.failureKind === "submission_timeout_no_hash") {
         this.observeLateSubmittedTransaction(submitPromise, transactionMeta, releaseVrfExecutionLock);
         releaseVrfExecutionLock = undefined;
