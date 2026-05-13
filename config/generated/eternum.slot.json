@@ -2464,8 +2464,8 @@
     "manifest": {
       "world": {
         "class_hash": "0x613551abceb2b37073b1149bb862ea70cf029981ce1ca47e9dd7c7ab97cb65d",
-        "address": "0x4f85d2e5184eda88be724e093e232eab6f79f3d83893afe44740d2db24a490",
-        "seed": "s1_eternum_slot_aggtxx",
+        "address": "0x3e49475f694a2c7a1bb2bcd498d38b610f49629d4536bbbe7876a2cd5a9978",
+        "seed": "s1_eternum_slot_aggtxxyy",
         "name": "Realms: Eternum",
         "entrypoints": [
           "uuid",
@@ -3942,7 +3942,7 @@
       },
       "contracts": [
         {
-          "address": "0x1ad51042e8e8b263d82d79baefcae2d18f153d280902299a233a78f6075733d",
+          "address": "0x31d69dd318aa9460e154f84a798524613690ccb7adaba9a8436ae8c2bbfdde3",
           "class_hash": "0x4b49d518c8d958eca2a3117d6788dc2234d72f4af01e350af6703a875c47713",
           "init_calldata": [],
           "tag": "s1_eternum-agent_discovery_systems",
@@ -4419,7 +4419,7 @@
           ]
         },
         {
-          "address": "0x1c4fb5b8dbdb05e87fffdb9ec6dd066976570740c9ec02d985b030adb10913e",
+          "address": "0x62e3a7778dab148691406a3e9e31ab75b21b6e98e95207cb7577e7e3cc64572",
           "class_hash": "0x18c300013c758faf427097d367a11d95859aaa565a626e409208b87d0ea6a3c",
           "init_calldata": [],
           "tag": "s1_eternum-alt_movement_systems",
@@ -4430,7 +4430,7 @@
           ]
         },
         {
-          "address": "0x3451dfbeea67a73ccbe094d6f18c3bb9c9e982753b1c104fbc053c947b2d373",
+          "address": "0x7481dbccb5b79a217cb6cf2d0efc933628c7e447a9b4992253439601cb68dad",
           "class_hash": "0x5d49864cae7e035ba3ee2193cf293a9776fb7a61dd615496ff05cba2b96adff",
           "init_calldata": [],
           "tag": "s1_eternum-artificer_systems",
@@ -4441,8 +4441,8 @@
           ]
         },
         {
-          "address": "0x21fad2f63a96851c1edc18f302ae485b93080d4ff74760bf705a0799eb9ec79",
-          "class_hash": "0x1618e30f7110318297d60f2ae8d1d8fe9baebcef9db0f4c2ba3e19ca8888454",
+          "address": "0x53afa89ac8fc6c014c200ad3e9e3e5765270b0573ea9e6520e0d2dc825218af",
+          "class_hash": "0x1c9708c23a8b621d7823af70f87dee092bd42d356e5953b26e108b534eae941",
           "init_calldata": [],
           "tag": "s1_eternum-bank_systems",
           "selector": "0x44475a775d79049bbe99567b7c00a1e4d8d582cade61a8aec07ca3bb234f6e6",
@@ -4693,8 +4693,8 @@
           ]
         },
         {
-          "address": "0xe7d07b02e1f228c8214c292e20accfb31064da1d9b617e628b9eeec691f9f7",
-          "class_hash": "0x44559e838a99aceb0fc19dff1193f875fd6627d236b7c2b0ef3db590e8cca2f",
+          "address": "0x9851f8b49af34dacc70168b9a75aac039adfb4b0a42cbb5bb7390909be306",
+          "class_hash": "0x759eb689f8501ea54b60bf4688a0f8890a1a7e72ac08149a36c295483be838c",
           "init_calldata": [],
           "tag": "s1_eternum-bitcoin_mine_discovery_systems",
           "selector": "0x58f9541b61b0dac28b8114ce07c1aec08e838cfd0e13a51d21e4581e8949727",
@@ -4703,7 +4703,7 @@
           ]
         },
         {
-          "address": "0x7480b59fdf697007b5663445e5bcc7a80247b91232b69d3da40030b8784699b",
+          "address": "0x7aea3b56fd2e915528e718d09d8bdfeb4043a3214c578564415d99e161037f2",
           "class_hash": "0x2ebde6b3b5a461a8df865707889e79fd7a0b84d3bcbbf9ec0842793c140c542",
           "init_calldata": [],
           "tag": "s1_eternum-bitcoin_mine_systems",
@@ -4715,7 +4715,7 @@
           ]
         },
         {
-          "address": "0x4d50e0be7e7c970e654c835dd8534111df36333c4f09e7c87bd8a398c7d20a0",
+          "address": "0x15aff0ade7f26eca074ae789ab2af1298de3e4224be281883545cd7569b2138",
           "class_hash": "0x690eda713151078f256f2016ce1e255ceb77ce866046064a0bb3d42acb762a7",
           "init_calldata": [],
           "tag": "s1_eternum-blitz_realm_systems",
@@ -4965,8 +4965,8 @@
           ]
         },
         {
-          "address": "0x6ca2be0a5910035e4b0630d0d13e091cd3d3774663e1120d638038b98179cae",
-          "class_hash": "0x12d087be2faeeac9a71811f70a67acb7bd94ebe7b6c397c830b7b13869fb6d8",
+          "address": "0x20f46226ad0124048d6e37a4075bcb20752120c84f3844efd44e70678e59ea0",
+          "class_hash": "0x799be831899c2d4181fcaa7f9fc82b15014914f24374717b91ce9d8af6f0422",
           "init_calldata": [],
           "tag": "s1_eternum-camp_discovery_systems",
           "selector": "0x7629a8235d3c0a8a2020de7ab1e79d29dc031713f400a9c71ac9a85fc1531da",
@@ -4975,7 +4975,7 @@
           ]
         },
         {
-          "address": "0x674c8c4d680cd5a05d84257f1e03a5ec8f0f9740297657fd1e0f5ee131f1055",
+          "address": "0x2268d0f62ed2dda3f54d7a858dbb248556f78a6b9d20be1e4d6075a101a8a3",
           "class_hash": "0x400f97e13333f31c21bcd60e169e6e0e2000adb6f2786905d10e0535c82ca89",
           "init_calldata": [],
           "tag": "s1_eternum-config_systems",
@@ -6744,7 +6744,7 @@
           ]
         },
         {
-          "address": "0x3e1afb2f09e3f5937c012ae627300d66252f1e0b22deabbbab48adba0b04d7a",
+          "address": "0x3547660cac0241da882e85377e943c3cee67112b49dfdd85136866be8eaf8fc",
           "class_hash": "0x1e73ed7b43837a39a3177fa60808f53cc36884d78b7cea31b9c57eff9f21799",
           "init_calldata": [],
           "tag": "s1_eternum-dev_resource_systems",
@@ -6958,7 +6958,7 @@
           ]
         },
         {
-          "address": "0x14ed85124061ba682a3ad2d1c586ecb7d51b60e82897fb4f37df7161c31dbab",
+          "address": "0x26e2318de5fb4f7bacba67dddac91e629085abd144efcbbfe8bbcd6fa7f93f7",
           "class_hash": "0x6b3c1b429064a5c013d71f595e9067c8236f690f9e91fd566aa7497446d36f8",
           "init_calldata": [],
           "tag": "s1_eternum-faith_prize_systems",
@@ -6970,7 +6970,7 @@
           ]
         },
         {
-          "address": "0x7b614aff7a897c09b0e3973bf7efd888222ed706e981d41fa6e615d35e2bbb0",
+          "address": "0x264ae11dfcb76b4e1c6069c2f47f9c6c6b1ec3ea7ee0a827161df4a6a50a79f",
           "class_hash": "0x34e5e1fd8ee3bd5beefc3a642c5610f6338dd7c08918f68c6881de48f604298",
           "init_calldata": [],
           "tag": "s1_eternum-faith_systems",
@@ -6988,7 +6988,7 @@
           ]
         },
         {
-          "address": "0x7aa81e0e1c427d0500fb22c62ca174935ec517ebb76a7299283819e4a80e4c8",
+          "address": "0x5522362cb1253f1f53d6805ba327e80733bd5c3a3f9d2732dd12545cb339738",
           "class_hash": "0x72cb55b084120b30ca3707acff4f2b507663c5921832958b30bc786f53fd2e3",
           "init_calldata": [],
           "tag": "s1_eternum-guild_systems",
@@ -7257,8 +7257,8 @@
           ]
         },
         {
-          "address": "0x150064f3b1b955b8d3bb579e6d67ca1ce6fc6d9d1f5c87960f39ca143769e67",
-          "class_hash": "0x39cd836a1344e75ea647fa08cb4cffba9043758860dc180f85f137c95c3a1b4",
+          "address": "0x58b8cd807127ef6cfe5c224944e2f09e213fa8bddfada0c59ee6764f04c348f",
+          "class_hash": "0x4d808a16a4eeb11e7c03ec08dc387c8bfb53233f866ceac8154f817651dfda9",
           "init_calldata": [],
           "tag": "s1_eternum-holysite_discovery_systems",
           "selector": "0x30123a168d199493abadfbadb76685cc913143571e8a53371d1724df8b1cc76",
@@ -7267,8 +7267,8 @@
           ]
         },
         {
-          "address": "0x7df87159bcf93d4befaa5c62832301bc93f07fabcfdfa0b69faf5751470b814",
-          "class_hash": "0x19fce7735430e60e50befb7855c9d1cac63b15052eeebf8c6781d31e51f92b0",
+          "address": "0x55e1ded9ec013cbd1b5396294504d63d374394b1a8ecd022766abe28eab55f0",
+          "class_hash": "0x408fc1e628a130d2030f5ef44320f066d07d07a57ee8f5d2659bf1c7f11914a",
           "init_calldata": [],
           "tag": "s1_eternum-hyperstructure_create_systems",
           "selector": "0x293bc58e2c5ded52112b6ec913c2fecd68988f5332d7cfac11eb1b190672d8c",
@@ -7279,8 +7279,8 @@
           ]
         },
         {
-          "address": "0x4fee849ea7d14da697f4f79d0e98f333d114420a85c9bb2f454f6ad0dfea2bd",
-          "class_hash": "0x40a9b6e8c704d782e89e6ce6740c75cb11383a714a7dfcf6bcdf01638767562",
+          "address": "0x4e11fcc6f14bccc53d57334003e13f93a2ba8c8da3d80a5e060f72fc4f1c71a",
+          "class_hash": "0x7a9d849e582e7dbc1610684b8774e9e3f5337aade89486fb80b0e77f3b2ded2",
           "init_calldata": [],
           "tag": "s1_eternum-hyperstructure_discovery_systems",
           "selector": "0x4de7ee78f9f01b8f7b98c172552cc0f7b81c8706ffc85e7b831021e820420d1",
@@ -7756,7 +7756,7 @@
           ]
         },
         {
-          "address": "0x46ed33d2c9ad1012b74a8e18140b87ab60dc99fa60db6dcb16f886cf20af1ab",
+          "address": "0x28401aff91a1e8cfe28e645d165f275ac987e424ce0139d7391a10fd923b7cd",
           "class_hash": "0x477f32d02d220f89ed2d755b5228ced6c34e7b1170e0c12ad8a5368aa018727",
           "init_calldata": [],
           "tag": "s1_eternum-hyperstructure_systems",
@@ -8072,7 +8072,7 @@
           ]
         },
         {
-          "address": "0x1c2389ced5e0a19c99c16cc6d5b3df665f6ce34d656134d321e68406780f43b",
+          "address": "0x492f160df6c4e30c264f11272383eea2c2b44733b2a4f6bafdcd0a75ecb2456",
           "class_hash": "0x1207b629353f8fe4352af0d8f05ed606da74278cb0461e11fa724957a06c14b",
           "init_calldata": [],
           "tag": "s1_eternum-liquidity_systems",
@@ -8313,8 +8313,8 @@
           ]
         },
         {
-          "address": "0x764702d818f25d2cca9f984f812dfa2f24a43594fc2fcb189d7746eee6286a4",
-          "class_hash": "0x4eee288db18e32a03f6ba00ae831dd133d9c491842a25cd252acf61d73bb432",
+          "address": "0xc80a95bc00c87415ee7f6d461fb4b3244b480fd9b13bc142335acd39a42735",
+          "class_hash": "0x47d22d7dc6aa7b6c81145d637a5d091e2e270c2117ccc6c893caa9080c9d4e7",
           "init_calldata": [],
           "tag": "s1_eternum-mine_discovery_systems",
           "selector": "0x567d970e2796f641f9a9c23fa16378ddaee5c8a7d27ac4e3edbd4dfa25a1743",
@@ -8790,7 +8790,7 @@
           ]
         },
         {
-          "address": "0x5887f05fc567ed8deb7da9c46172050bfb4a25ee2dd01c2ce4714f21a2167b7",
+          "address": "0x490fbab4ed7e6d0568c07a232d417ca23cd89dc18e81205acae1fa7ac8d4271",
           "class_hash": "0x3af00ba731d0d10bf55c7ca504951f6d9094e78bbe63d5f399bf835e892d7c6",
           "init_calldata": [],
           "tag": "s1_eternum-mmr_systems",
@@ -8802,7 +8802,7 @@
           ]
         },
         {
-          "address": "0x633c4faa695c787ae15f5de0bb5e2107458abbb863badd71bc5407124ff84b2",
+          "address": "0x460168acb497a837f601d20bb8357167c0ea0ed805941afa990ebfa98cd64d3",
           "class_hash": "0x68efc734b937fbfd29559e06d2abd71a8dfbce2e860cbf17d0ded265dc67626",
           "init_calldata": [],
           "tag": "s1_eternum-name_systems",
@@ -9002,7 +9002,7 @@
           ]
         },
         {
-          "address": "0x35f0695d25415326244c6b8b02e0f32eba08575ce5c2d449707824666e38c07",
+          "address": "0x14dbb58e48c69fe0f0db657bdf29fa9584f50017f8dd6f7fdc16796967b8e88",
           "class_hash": "0x7eb4b521986b4fe36dc2d4f933892862cbc2bbcba643ff6ea71e8612f55f790",
           "init_calldata": [],
           "tag": "s1_eternum-ownership_systems",
@@ -9223,7 +9223,7 @@
           ]
         },
         {
-          "address": "0x13600d87055cb3d22f4559fbac70ee7fd9727e209793db141d4b996e7a9d397",
+          "address": "0x2adbc20622210c290399f0d558e90e71cf5bbaaa52f2e53618024a521550069",
           "class_hash": "0x708c67ca62c1305467a1917eca69cca87d00d6e48518a3e5c0b9bb2b2631fef",
           "init_calldata": [],
           "tag": "s1_eternum-point_systems",
@@ -9233,7 +9233,7 @@
           ]
         },
         {
-          "address": "0x38dd8c847119698ecc49856e9a7e63a130f233a128eac91aa8e2c5ce34cbcf2",
+          "address": "0x58b9eda6f1e5d9565775fb966f5b8c303695d1d4b634127be81fd355fc08e7e",
           "class_hash": "0x1da62c6ebad34ab9ca38f876056841f18ea5439904c4fbf5cd66682cae6b74c",
           "init_calldata": [],
           "tag": "s1_eternum-prize_distribution_systems",
@@ -9470,7 +9470,7 @@
           ]
         },
         {
-          "address": "0x17f6634b54cd5be7971cbf023d559b4304f364ba4ac25b218c835eddd638343",
+          "address": "0x5af6d931798b80acae5d4effda73e2a59319d69c03fe6c2a8746ce0943ee445",
           "class_hash": "0x7b79bd1a0f04cc17f0b2d990fc5655f0df7dfe599d45cbb84b287d469531f79",
           "init_calldata": [],
           "tag": "s1_eternum-production_systems",
@@ -10066,8 +10066,8 @@
           ]
         },
         {
-          "address": "0x763b03fb3462ca0b6eab3b8d24fd444896cd347443fa3aae43a9798a18e159e",
-          "class_hash": "0x14544f896d098ea75eaf2ce7e77f0b637abb51a66e6b5732e2b6f2850ffde30",
+          "address": "0x219fe115089f3e04b7a92ab36694bb46efd4317a37dc293bc24e3ddab94976a",
+          "class_hash": "0x287ecf7a78ecc97b115b1c3244327471a84f9dbfea909d53fe9c71cc6e67c15",
           "init_calldata": [],
           "tag": "s1_eternum-realm_internal_systems",
           "selector": "0x4bb1850a95a41d6b0c7992a0c75bb1212f0ea054dc04866d6a6392cccec58b3",
@@ -10323,7 +10323,7 @@
           ]
         },
         {
-          "address": "0x53d22da6475cb968f82c622891fe524cb5086813323d736b4b571350ac1cb06",
+          "address": "0x4562e18fb3febe1905bc3007c61239202fc5920a6afc28d6b4b87235e41017c",
           "class_hash": "0x29e70d9d0770cdcae48e02aac7bb6203d552c0943f553a132a91eeb513f2b6f",
           "init_calldata": [],
           "tag": "s1_eternum-realm_systems",
@@ -10557,7 +10557,7 @@
           ]
         },
         {
-          "address": "0x55c197aaf074ae0988b4fae1518f8e27e93ffe80fa80eb6d38bcf6dc5ab2ca8",
+          "address": "0x62845e0535f4ca6152db9010e7ea2f95ab42699397c85bc84c3f948a0599932",
           "class_hash": "0x4ded8e34fe08f61c542c75baf0f77e9d38e519a1c91ec2aacf53e9bf9315326",
           "init_calldata": [],
           "tag": "s1_eternum-relic_chest_discovery_systems",
@@ -11034,7 +11034,7 @@
           ]
         },
         {
-          "address": "0x2b13dcdeb0bf82e48e9d79f7da95091510b4893f0ce9b4cb585a3bb1f524c38",
+          "address": "0x7aeae881af4e374c866e9766a7c843e0d462ddee19fa04f7eea74f64e7aa2b2",
           "class_hash": "0x531dd8e3ea820c05457032629e1a0e48fe6e062e7aad284ea6f9ba6669ed9cc",
           "init_calldata": [],
           "tag": "s1_eternum-relic_systems",
@@ -11291,7 +11291,7 @@
           ]
         },
         {
-          "address": "0x4b3c23719f68d67d97e674532b6d1835ec989fee85294cb11b37dceae1994d9",
+          "address": "0x77c8b51a536553472839af9de5be3172e2d2fe2d8412fc18dc5743b28fabb8c",
           "class_hash": "0x5070d4f63c82111694d1c0d9b811296378cc6c50277e27c01b943ddabffbda0",
           "init_calldata": [],
           "tag": "s1_eternum-resource_bridge_systems",
@@ -11579,7 +11579,7 @@
           ]
         },
         {
-          "address": "0x24555f7c111bc93a8c4daf3e40dadda8be1217e3262784937e4c4d441a569b4",
+          "address": "0x7e35c2d65a737ccc1da1d1f84ad5011078bdfdc8f051846ba2b6a01316c840f",
           "class_hash": "0x56fe741153fe98bc3700466f9fb912d20d10d927371b2260e3a84ec64236b2c",
           "init_calldata": [],
           "tag": "s1_eternum-resource_systems",
@@ -11974,7 +11974,7 @@
           ]
         },
         {
-          "address": "0x782a5a6b0b621d62e4d4326054d62816588535ddece7218b1d06de893f3bf2b",
+          "address": "0x4c62255bdd486446a3b5d5ac471b1059348e7c71b8c7fe077a949835ae4cdf7",
           "class_hash": "0x609fc2977acacf36b56197f75ae36dd69de7937d3f48dabf50f0f979bd1c013",
           "init_calldata": [],
           "tag": "s1_eternum-season_systems",
@@ -12169,7 +12169,7 @@
           ]
         },
         {
-          "address": "0x3bbaf8b61a062e8de5ce34bad18599c469456d3805c89440fe7a9ec5b34e7b4",
+          "address": "0x87e35eb7b809c2a4f25441d233aecd66acf2258fe06609486eb7c87515fcdf",
           "class_hash": "0x7543518c3d4f7aeac91f2d1c6f3a00118d85217655fe0dbfae0cf2e15db4067",
           "init_calldata": [],
           "tag": "s1_eternum-spire_systems",
@@ -12180,7 +12180,7 @@
           ]
         },
         {
-          "address": "0x2be910b5361ea34a362efce29b9c854bde242839fa81fbd19dea7b087a30ef1",
+          "address": "0x3892ca22e97929b4ae1f003af2dbecaf6ab1ddf068940aca577b9803ae0da07",
           "class_hash": "0x55fc1cc89bc35b64b5fa3ba5e4e7f51cdd72218ef22b3cb8cfc11a645dadbf4",
           "init_calldata": [],
           "tag": "s1_eternum-structure_systems",
@@ -12380,7 +12380,7 @@
           ]
         },
         {
-          "address": "0x4572858f34a133e61cfbc44142d3fac402f5db9f192bc7f7bedd2eb75a09aa3",
+          "address": "0x174c13622bf179e63147de18fdf73d7460cbb13e1934be658935eb4bea51a07",
           "class_hash": "0xa417bf55f29f620f60f63dafb0ccfb7a4a547b7d401c1f75618f1e50014027",
           "init_calldata": [],
           "tag": "s1_eternum-swap_systems",
@@ -12617,7 +12617,7 @@
           ]
         },
         {
-          "address": "0x192050b9ca497cd88609f38ce1d0ccec19aaca9fd1ee371795cfb627a055424",
+          "address": "0x7763c4446b543614d92c0f66753375c748494c0260963d3490481d07c5cb25e",
           "class_hash": "0x7422c25744dc0f08f8448eabd5863f08c459400c96dba9378d72170f58d0707",
           "init_calldata": [],
           "tag": "s1_eternum-trade_systems",
@@ -12883,7 +12883,7 @@
           ]
         },
         {
-          "address": "0x5301350a4bc19455344704f547a196b510c9206f148a1c811cc51d1a804b35a",
+          "address": "0x1c2ac0c679d6c683df48cf51e7fb2abc4d30decbd5aef59feef33f625999e8e",
           "class_hash": "0x7d6e5acac8efc5a41e637ea997c66894db0fdfdc0adb0c7075c996b4f29ba2b",
           "init_calldata": [],
           "tag": "s1_eternum-troop_battle_systems",
@@ -13203,7 +13203,7 @@
           ]
         },
         {
-          "address": "0x4ed58b3389fbaacfd16b85d8350a3a3bfe3137a6a9b0702ef6657c81ee291e",
+          "address": "0xff0c6858907bc257ce0bd0eaeb5659e0be91c69919a03f8785ce688501487a",
           "class_hash": "0x35ddf5097172c34ff5c7ff610f87566033ccd2fbc4a76ff32f039e1a599be32",
           "init_calldata": [],
           "tag": "s1_eternum-troop_management_systems",
@@ -13674,7 +13674,7 @@
           ]
         },
         {
-          "address": "0x1ef56dca519ba4b1e968c5dfc8e920c489753fdc188755532d7afff4576b38",
+          "address": "0x504dd56ef4a46fa96e61f335558dda9ccbf52f897d94b84e045592184e647fb",
           "class_hash": "0x38899f1ec2fe4ee9e3199f7339379140bf30ea1700b529147bd5a5f5753159f",
           "init_calldata": [],
           "tag": "s1_eternum-troop_movement_systems",
@@ -13981,7 +13981,7 @@
           ]
         },
         {
-          "address": "0x416492376db79c8e95d9acfbc2ee9b6eeb47a5636e6c5408d64606c7ca47b02",
+          "address": "0x305aab33b1a59b3b44fb7257d28abe01fa401ca865dda1c2f1840b27ba93c59",
           "class_hash": "0x82ad64f63adfc389f5d5c40cec7fb62b141624c6cfd80c0765fb13af19777e",
           "init_calldata": [],
           "tag": "s1_eternum-troop_movement_util_systems",
@@ -14458,7 +14458,7 @@
           ]
         },
         {
-          "address": "0x7f05828e1f12d4e345db3084f194bfe7c9964a1dfc463ca27b09b25ac9a9361",
+          "address": "0x193142c140048bee7e1f36059b6f4d2bff412de5ffa790161cba3b34d624382",
           "class_hash": "0x10d4c631363c97ee292c6c21a2405414f39834920b327979463c269a0c8839b",
           "init_calldata": [],
           "tag": "s1_eternum-troop_raid_systems",
@@ -14710,8 +14710,8 @@
           ]
         },
         {
-          "address": "0x4294eaa4d2065220ca14234d1e3efde8992dcb0aa7c871f784c29d291486e12",
-          "class_hash": "0x5883af13dfd709f3afba034b1188aa978cbda91e9b50617f55cf07de09df3bb",
+          "address": "0x6ff29de6f1e431f95aefc762e01f2694b89cdc4b7901ee16e77b9b929836e6b",
+          "class_hash": "0x6fa09c441102e4abfba584bebfd15a11973ed0e0948c6a4f725911c970b51e0",
           "init_calldata": [],
           "tag": "s1_eternum-village_systems",
           "selector": "0x7626c7e3f63dbae9658ee764d453a8dbdbc0df9797ba797fa6564759c444771",
@@ -14976,7 +14976,7 @@
           "version": "0_1_15"
         },
         {
-          "class_hash": "0x2e99a634d3dcdcaddcad6d971481ba4ace4c3556fc52798878ce7caf21dbcb3",
+          "class_hash": "0x4c6e02895f994e9260bfdb76da45841841c3de488ab0ec8efbaf64a3e739608",
           "tag": "s1_eternum-structure_creation_library_v0_1_17",
           "selector": "0x639c98a812a97151f1cc210d9e844c0c962ca760f2a13f63a6ff3b9b6ca58f3",
           "systems": [],
