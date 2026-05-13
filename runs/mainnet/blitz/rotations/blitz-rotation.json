@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "blitz-rotation",
   "seriesName": "blitz-rotation",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25820436035-1.json",
   "latestLaunchRequestId": "25820436035-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-13T19:10:43.336Z",
+  "updatedAt": "2026-05-13T19:10:49.974Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
+    "nextRetryAt": "2026-05-13T19:25:49.974Z",
     "lastRetryAt": "2026-05-07T09:50:31.575Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-13T19:25:33.685Z",
-    "lastEvaluatedAt": "2026-05-13T19:10:33.685Z"
+    "nextEvaluationAt": "2026-05-13T19:25:49.974Z",
+    "lastEvaluatedAt": "2026-05-13T19:10:49.974Z"
   },
   "steps": [
     {
@@ -83,10 +84,12 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-13T19:10:43.336Z"
+      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"eu-gladiator-16-05-26-2000\" on mainnet.blitz\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"eu-gladiator-16-05-26-2000\"\n\u001b[2m[+108ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"eu-gladiator-16-05-26-2000\" in 91ms (0x0656c560...e0e1a1)\n\u001b[2m[+118ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x0656c560...e0e1a1\n\u001b[2m[+120ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 2ms: Unable to verify whether Torii deployment \"eu-gladiator-16-05-26-2000\" already exists. Refusing to create a duplicate while state is indeterminate.\nError: 1 rotation or series game failed during create-indexers\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-05-13T19:10:43.336Z",
+      "finishedAt": "2026-05-13T19:10:49.974Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"eu-gladiator-16-05-26-2000\" on mainnet.blitz\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"eu-gladiator-16-05-26-2000\"\n\u001b[2m[+108ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"eu-gladiator-16-05-26-2000\" in 91ms (0x0656c560...e0e1a1)\n\u001b[2m[+118ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x0656c560...e0e1a1\n\u001b[2m[+120ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 2ms: Unable to verify whether Torii deployment \"eu-gladiator-16-05-26-2000\" already exists. Refusing to create a duplicate while state is indeterminate.\nError: 1 rotation or series game failed during create-indexers\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "sync-paymaster",
@@ -6096,9 +6099,9 @@
           "fee_amount": "1000000000000000000000"
         },
         "seriesGameNumber": 32,
-        "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
-        "status": "succeeded",
+        "currentStepId": "create-indexers",
+        "latestEvent": "Unable to verify whether Torii deployment \"eu-gladiator-16-05-26-2000\" already exists. Refusing to create a duplicate while state is indeterminate.",
+        "status": "failed",
         "configSteps": [
           {
             "id": "world-admin",
@@ -6249,8 +6252,10 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "failed",
+            "latestEvent": "Unable to verify whether Torii deployment \"eu-gladiator-16-05-26-2000\" already exists. Refusing to create a duplicate while state is indeterminate.",
+            "updatedAt": "2026-05-13T19:10:48.664Z",
+            "errorMessage": "Unable to verify whether Torii deployment \"eu-gladiator-16-05-26-2000\" already exists. Refusing to create a duplicate while state is indeterminate."
           },
           {
             "id": "sync-paymaster",
@@ -6273,13 +6278,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25820436035-1",
-    "workflowRunId": 25820436035,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-05-13T19:10:43.336Z",
-    "expiresAt": "2026-05-13T19:55:43.336Z"
   }
 }
