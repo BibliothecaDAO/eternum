@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25764824962-1",
   "currentStepId": null,
   "createdAt": "2026-05-12T22:02:57.946Z",
-  "updatedAt": "2026-05-13T01:10:12.043Z",
+  "updatedAt": "2026-05-13T01:11:47.662Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -80,13 +80,11 @@
     "worldConfigTxHash": "0x59bb5d093f818f252c3487b0e4b298971120367eaaad8d052d3fe28b9aec5da",
     "lootChestRoleTxHash": "0x7fe0cbe3907dd7f76d5ce651217092896ca7b3a846dfb2fcfcb87981f4ba786",
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/credence-new-flow-4/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-12T23:01:51.795Z",
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-05-13T01:10:10.465Z"
+    "lastIndexerDescribeAt": "2026-05-13T01:11:47.661Z"
   },
   "completedAt": "2026-05-12T22:05:39.563Z"
 }
