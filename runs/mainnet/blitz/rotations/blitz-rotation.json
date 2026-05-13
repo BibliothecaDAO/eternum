@@ -8,32 +8,32 @@
   "rotationName": "blitz-rotation",
   "seriesName": "blitz-rotation",
   "status": "attention",
-  "executionMode": "fast_trial",
-  "requestedLaunchStep": "full",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25820436035-1.json",
-  "latestLaunchRequestId": "25820436035-1",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "create-indexers",
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25821429666-1.json",
+  "latestLaunchRequestId": "25821429666-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-13T19:26:04.402Z",
+  "updatedAt": "2026-05-13T19:27:09.317Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 25820436035,
+    "workflowRunId": 25821429666,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25820436035",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25821429666",
     "ref": "next",
     "sha": "0f3c341ab9580241b867bcf87b9f2347eb89b617"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-05-13T19:41:04.402Z",
+    "nextRetryAt": "2026-05-13T19:42:09.317Z",
     "lastRetryAt": "2026-05-13T19:26:04.402Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-13T19:25:49.974Z",
-    "lastEvaluatedAt": "2026-05-13T19:10:49.974Z"
+    "nextEvaluationAt": "2026-05-13T19:42:09.317Z",
+    "lastEvaluatedAt": "2026-05-13T19:27:09.317Z"
   },
   "steps": [
     {
@@ -41,55 +41,42 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-05-13T19:07:17.821Z",
-      "finishedAt": "2026-05-13T19:07:24.337Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
       "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete",
-      "startedAt": "2026-05-13T19:07:29.429Z",
-      "finishedAt": "2026-05-13T19:09:27.723Z"
+      "latestEvent": "Creating games is complete"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
       "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-05-13T19:09:37.536Z",
-      "finishedAt": "2026-05-13T19:09:44.185Z"
+      "latestEvent": "Waiting for games is complete"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
       "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete",
-      "startedAt": "2026-05-13T19:09:48.829Z",
-      "finishedAt": "2026-05-13T19:10:11.885Z"
+      "latestEvent": "Applying settings is complete"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
       "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests is complete",
-      "startedAt": "2026-05-13T19:10:21.611Z",
-      "finishedAt": "2026-05-13T19:10:33.685Z"
+      "latestEvent": "Setting up loot chests is complete"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
       "status": "failed",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"eu-gladiator-16-05-26-2000\" on mainnet.blitz\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"eu-gladiator-16-05-26-2000\"\n\u001b[2m[+108ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"eu-gladiator-16-05-26-2000\" in 91ms (0x0656c560...e0e1a1)\n\u001b[2m[+118ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x0656c560...e0e1a1\n\u001b[2m[+120ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 2ms: Unable to verify whether Torii deployment \"eu-gladiator-16-05-26-2000\" already exists. Refusing to create a duplicate while state is indeterminate.\nError: 1 rotation or series game failed during create-indexers\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-05-13T19:10:43.336Z",
-      "finishedAt": "2026-05-13T19:10:49.974Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"eu-gladiator-16-05-26-2000\" on mainnet.blitz\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"eu-gladiator-16-05-26-2000\"\n\u001b[2m[+108ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"eu-gladiator-16-05-26-2000\" in 91ms (0x0656c560...e0e1a1)\n\u001b[2m[+118ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x0656c560...e0e1a1\n\u001b[2m[+120ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 2ms: Unable to verify whether Torii deployment \"eu-gladiator-16-05-26-2000\" already exists. Refusing to create a duplicate while state is indeterminate.\nError: 1 rotation or series game failed during create-indexers\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:493:15)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Finishing setup needs attention"
     },
     {
       "id": "sync-paymaster",
