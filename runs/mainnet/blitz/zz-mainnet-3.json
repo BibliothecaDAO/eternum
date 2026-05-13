@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/zz-mainnet-3/25795497749-1.json",
   "latestLaunchRequestId": "25795497749-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-05-13T11:13:47.371Z",
-  "updatedAt": "2026-05-13T11:16:59.212Z",
+  "updatedAt": "2026-05-13T11:17:15.836Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,10 +63,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-13T11:16:59.212Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-05-13T11:16:59.212Z",
+      "finishedAt": "2026-05-13T11:17:15.836Z"
     },
     {
       "id": "sync-paymaster",
@@ -83,14 +84,12 @@
     "worldAddress": "0x0269cdc831e1f03f42062b2aa7c43a2969ba333f6fe7bf85cd7eee3b08260e9d",
     "createGameTxHash": "0x5d94c1039b78b4744b05a007757b4cd0911c99d96833c7cc97c60147bff74c8",
     "configureTxHash": "0x650ba4ea8100dcd309db7ed9a9a5c6f74e7509b71b6025ad43ef629a6b4e7cd",
-    "worldConfigTxHash": "0x650ba4ea8100dcd309db7ed9a9a5c6f74e7509b71b6025ad43ef629a6b4e7cd"
-  },
-  "activeLease": {
-    "launchRequestId": "25795497749-1",
-    "workflowRunId": 25795497749,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-13T11:16:59.212Z",
-    "expiresAt": "2026-05-13T12:01:59.212Z"
+    "worldConfigTxHash": "0x650ba4ea8100dcd309db7ed9a9a5c6f74e7509b71b6025ad43ef629a6b4e7cd",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/zz-mainnet-3/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-13T11:17:14.513Z"
   }
 }
