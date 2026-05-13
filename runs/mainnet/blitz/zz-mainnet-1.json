@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25793417025-1",
   "currentStepId": null,
   "createdAt": "2026-05-13T10:29:36.744Z",
-  "updatedAt": "2026-05-13T14:46:20.735Z",
+  "updatedAt": "2026-05-13T14:48:16.566Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -88,14 +88,12 @@
     "configureTxHash": "0x5faeb5c9cb6cbaf6176006eab56bb9d21836ef7797a35c7948cb0b005d4d99f",
     "worldConfigTxHash": "0x5faeb5c9cb6cbaf6176006eab56bb9d21836ef7797a35c7948cb0b005d4d99f",
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/zz-mainnet-1/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-13T10:57:50.007Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-05-13T14:46:18.980Z"
+    "lastIndexerDescribeAt": "2026-05-13T14:48:16.566Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-05-13T10:33:17.903Z"
 }
