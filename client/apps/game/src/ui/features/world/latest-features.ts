@@ -23,25 +23,9 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-13",
-    title: "Factory Branch Override",
+    title: "Settle Or Spectate",
     description:
-      "Factory V2 now supports a dev-only workflow ref override, so local launch testing can target a specific branch without changing the worker request by hand.",
-    type: "improvement",
-    gameSlug: "landing",
-  },
-  {
-    date: "2026-05-13",
-    title: "Blitz Settle VRF Fix",
-    description:
-      "Blitz settlement now requests randomness before the settle transaction, so registration no longer misses the VRF step required for world assignment on configured networks.",
-    type: "fix",
-    gameSlug: "landing",
-  },
-  {
-    date: "2026-05-13",
-    title: "Open Game Spectating",
-    description:
-      "Blitz Open Games now shows Spectate alongside Settle during the registration window, so you can preview a world before joining it.",
+      "Blitz game cards now keep spectating alongside settling, so you can preview open worlds before joining and still jump straight into active matches from your game list.",
     type: "improvement",
     gameSlug: "landing",
   },
@@ -55,30 +39,6 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-05-13",
-    title: "Active Game Spectate Alias",
-    description:
-      "Your Active Games now lets the Spectate button open the same direct world flow as Play, so registered matches behave consistently while keeping the lighter label.",
-    type: "improvement",
-    gameSlug: "landing",
-  },
-  {
-    date: "2026-05-13",
-    title: "Safer Hyperstructure Creation",
-    description:
-      "Unconstructed Hyperstructures now treat the map double-click and Create Here button as the same pending action, so repeated clicks no longer fire duplicate creation attempts while the tile is updating.",
-    type: "fix",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-05-13",
-    title: "Hyperstructure Create Prompt",
-    description:
-      "Reserved hyperstructure tiles now explain that you can double-click them to create the real structure, and the tile details panel also includes a direct Create Here button.",
-    type: "improvement",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-05-13",
     title: "Faster Repeat Exploring",
     description:
       "Repeat explore actions now spend less time in the provider submit path and expose safer readiness tracking, so scouts become ready for the next explore sooner after world state catches up.",
@@ -86,36 +46,12 @@ const allLatestFeatures: LatestFeature[] = [
     gameSlug: "eternum",
   },
   {
-    date: "2026-05-12",
-    title: "Map Hyperstructure Creation",
+    date: "2026-05-13",
+    title: "Unconstructed Hyperstructures",
     description:
-      "Reserved Hyperstructures can now be created straight from the world map with a double-click, so materializing the real structure feels like a direct map action instead of a hidden contract step.",
+      "Reserved Hyperstructures now appear directly on the map before construction, and you can build them with a double-click or the Create Here action from tile details.",
     type: "improvement",
     gameSlug: "world",
-  },
-  {
-    date: "2026-05-12",
-    title: "Visible Unconstructed Hyperstructures",
-    description:
-      "Reserved Hyperstructure tiles now show up directly on the world map as light silhouettes, so you can see future Hyperstructure positions before the real structure is created.",
-    type: "improvement",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-05-12",
-    title: "Active Game Spectating",
-    description:
-      "Your Active Games cards now keep spectate available for registered Blitz worlds during the pre-main window, so you can open the world before the match fully starts.",
-    type: "improvement",
-    gameSlug: "landing",
-  },
-  {
-    date: "2026-05-12",
-    title: "Forge Step Removed",
-    description:
-      "Blitz no longer uses the old dedicated hyperstructure-prep landing phase, so joining a world and preparing its hyperstructure slots now read as one cleaner entry flow.",
-    type: "improvement",
-    gameSlug: "landing",
   },
   {
     date: "2026-05-12",
@@ -144,7 +80,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-05-11",
     title: "Single-Step Blitz Entry",
     description:
-      "Blitz entry now settles you into a world with one action instead of walking through the old staged entry flow.",
+      "Blitz entry now stays centered on one settlement action instead of sending players through the older staged setup flow.",
     type: "improvement",
     gameSlug: "landing",
   },

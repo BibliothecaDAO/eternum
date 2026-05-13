@@ -133,9 +133,8 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
 
   const isRealm = structureInfo?.category === StructureType.Realm;
   const isBlitzWorld = resolvedWorldGameMode === "blitz";
-  const isOwner = Boolean(structureInfo && account.account?.address)
-    ? structureInfo.owner === ContractAddress(account.account.address)
-    : false;
+  const ownerAddress = account.account?.address ? ContractAddress(account.account.address) : null;
+  const isOwner = Boolean(structureInfo && ownerAddress && structureInfo.owner === ownerAddress);
   const isProvisioned = hasProvisionBuilding(realmBuildings);
   const isMainPhase = hasMainStarted(currentBlockTimestamp, gameStartMainAt);
   const isSeasonOver = hasSeasonEnded(currentBlockTimestamp, gameEndAt);
