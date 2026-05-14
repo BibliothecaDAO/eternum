@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-14T00:52:00.281Z",
+  "updatedAt": "2026-05-14T00:52:03.380Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1035,17 +1035,20 @@
       "gameName": "bltz-zest-933",
       "path": "runs/slot/blitz/bltz-zest-933.json",
       "inputPath": "inputs/slot/blitz/bltz-zest-933/25834926220-1.json",
-      "status": "running",
-      "updatedAt": "2026-05-14T00:51:46.700Z",
+      "status": "complete",
+      "updatedAt": "2026-05-14T00:52:03.380Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexer",
-      "activeLeaseExpiresAt": "2026-05-14T01:36:46.700Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "startTime": 1778720400,
       "durationSeconds": 5400,
-      "artifacts": {}
+      "artifacts": {
+        "indexerCreated": true,
+        "indexerTier": "basic",
+        "lastIndexerDescribeAt": "2026-05-14T00:52:02.072Z"
+      }
     },
     "bltz-nova-985": {
       "kind": "game",
