@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-dash-600",
-    "launchRequestId": "25832797842-1",
+    "gameName": "bltz-zest-933",
+    "launchRequestId": "25834926220-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25832797842,
+    "workflowRunId": 25834926220,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "cefa803c-a45e-4d1d-8a6e-dfa4c7b6e9ae"
+    "stepId": "create-world",
+    "leaseId": "ec63919b-a288-4387-9536-8023e1e32241"
   },
-  "acquiredAt": "2026-05-13T23:44:11.626Z",
-  "heartbeatAt": "2026-05-13T23:44:25.680Z",
-  "expiresAt": "2026-05-13T23:44:25.680Z",
-  "releasedAt": "2026-05-13T23:44:25.680Z"
+  "acquiredAt": "2026-05-14T00:47:38.126Z",
+  "heartbeatAt": "2026-05-14T00:47:38.126Z",
+  "expiresAt": "2026-05-14T00:57:38.126Z"
 }
