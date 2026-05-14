@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25840653521-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-05-14T03:54:48.050Z",
-  "updatedAt": "2026-05-14T03:56:53.156Z",
+  "updatedAt": "2026-05-14T03:56:56.465Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-14T03:56:56.465Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -84,5 +85,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-baking-loaf.json",
     "worldAddress": "0x062486cd2fdabc14a2266f7144c7ee776ce01f5f01d515d485eb7a668c5e33f1",
     "createGameTxHash": "0x71885049e2e53aa142c0cbadb147c51c2a7e5943c8a89e69e0fb7a76d2c59a4"
+  },
+  "activeLease": {
+    "launchRequestId": "25840653521-1",
+    "workflowRunId": 25840653521,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-05-14T03:56:56.465Z",
+    "expiresAt": "2026-05-14T04:41:56.465Z"
   }
 }
