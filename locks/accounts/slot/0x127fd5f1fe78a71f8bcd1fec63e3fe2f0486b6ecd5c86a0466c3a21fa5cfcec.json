@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-zest-933",
-    "launchRequestId": "25834926220-1",
+    "gameName": "bltz-nova-985",
+    "launchRequestId": "25834972794-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25834926220,
+    "workflowRunId": 25834972794,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "90241432-31c4-4a1c-a358-6a875851f2ef"
+    "stepId": "reserve-blitz-hyperstructures",
+    "leaseId": "23429c20-a383-4ed3-8f7e-5620a82765d9"
   },
-  "acquiredAt": "2026-05-14T00:51:22.133Z",
-  "heartbeatAt": "2026-05-14T00:51:36.044Z",
-  "expiresAt": "2026-05-14T00:51:36.044Z",
-  "releasedAt": "2026-05-14T00:51:36.044Z"
+  "acquiredAt": "2026-05-14T00:51:41.159Z",
+  "heartbeatAt": "2026-05-14T00:51:41.159Z",
+  "expiresAt": "2026-05-14T01:01:41.159Z"
 }
