@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-flux-865/25889095678-1.json",
   "latestLaunchRequestId": "25889095678-1",
-  "currentStepId": "configure-world",
+  "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-05-14T22:24:42.383Z",
-  "updatedAt": "2026-05-14T22:26:15.125Z",
+  "updatedAt": "2026-05-14T22:26:38.454Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,10 +45,11 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-05-14T22:26:15.125Z"
+      "latestEvent": "Applying settings succeeded",
+      "startedAt": "2026-05-14T22:26:15.125Z",
+      "finishedAt": "2026-05-14T22:26:38.454Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -77,14 +78,9 @@
     "durationSeconds": 432000,
     "summaryPath": ".context/game-launch/slot-blitz-bltz-flux-865.json",
     "worldAddress": "0x05aed5bcb9f9664ae0cbe51d86a663c0be0a4aad409c0ba2844a92d035248cea",
-    "createGameTxHash": "0x1bcc09533a351cad3423c1c65c5ad064513044ea46257722e3ae7a0551491ab"
-  },
-  "activeLease": {
-    "launchRequestId": "25889095678-1",
-    "workflowRunId": 25889095678,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "acquiredAt": "2026-05-14T22:26:15.125Z",
-    "expiresAt": "2026-05-14T23:11:15.125Z"
+    "createGameTxHash": "0x1bcc09533a351cad3423c1c65c5ad064513044ea46257722e3ae7a0551491ab",
+    "entryTokenAddress": "0x6bebd75bf8542bb15080988a08f8e7a3677c1af17c3d2a70c47098426e72542",
+    "configureTxHash": "0x73532f1257927df6e9addad0b604f160a4223e87c50f87bdb37f853b751b635",
+    "worldConfigTxHash": "0x73532f1257927df6e9addad0b604f160a4223e87c50f87bdb37f853b751b635"
   }
 }
