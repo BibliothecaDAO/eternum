@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-flux-865",
-    "launchRequestId": "25889095678-1",
+    "gameName": "bltz-fizz-493",
+    "launchRequestId": "25889188363-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25889095678,
+    "workflowRunId": 25889188363,
     "workflowRunAttempt": 1,
-    "stepId": "reserve-blitz-hyperstructures",
-    "leaseId": "2966f246-22cd-4d58-848a-1d92b3a8dee3"
+    "stepId": "create-world",
+    "leaseId": "c1a99cc5-93f2-4d99-a99f-1492be23c72f"
   },
-  "acquiredAt": "2026-05-14T22:26:52.062Z",
-  "heartbeatAt": "2026-05-14T22:27:09.121Z",
-  "expiresAt": "2026-05-14T22:27:09.121Z",
-  "releasedAt": "2026-05-14T22:27:09.121Z"
+  "acquiredAt": "2026-05-14T22:27:14.489Z",
+  "heartbeatAt": "2026-05-14T22:27:14.489Z",
+  "expiresAt": "2026-05-14T22:37:14.489Z"
 }
