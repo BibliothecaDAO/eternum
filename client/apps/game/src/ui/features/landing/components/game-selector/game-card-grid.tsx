@@ -32,7 +32,7 @@ import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market
 import { getChainLabel } from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
+import { CheckCircle2, Eye, Loader2, LogIn, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -328,9 +328,7 @@ const GameCard = ({
   const isUnknownMode = game.config?.mode === "unknown" || !game.config?.mode;
   const hasSettledEternumRealm = isEternumMode && game.config?.hasPlayerSettledRealm === true;
   const devModeOn = game.config?.devModeOn ?? false;
-  const canPlayBlitz = isBlitzMode && isOngoing && game.isRegistered;
   const canOpenEternumEntry = isEternumMode && !isEnded;
-  const canPlay = !isUnknownMode && (canPlayBlitz || canOpenEternumEntry);
   const canPlayEternumDirect = canOpenEternumEntry && hasSettledEternumRealm;
   const showEternumSettleShortcut = canOpenEternumEntry && hasSettledEternumRealm;
   const eternumPrimaryActionLabel = canPlayEternumDirect ? "Play" : "Settle";
@@ -410,6 +408,8 @@ const GameCard = ({
     enabled: isBlitzMode && game.status === "ok" && canRegisterPeriod,
   });
   const showRegistered = game.isRegistered || entryStage === "done";
+  const canEnterRegisteredBlitz = isBlitzMode && showRegistered && (isUpcoming || isOngoing);
+  const canPlay = !isUnknownMode && (canEnterRegisteredBlitz || canOpenEternumEntry);
 
   // Handle settle entry with toast notification.
   const handleSettle = useCallback(() => {
@@ -689,8 +689,8 @@ const GameCard = ({
                   : "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors",
               )}
             >
-              <Play className="w-3 h-3" />
-              {canOpenEternumEntry ? eternumPrimaryActionLabel : "Play"}
+              {canEnterRegisteredBlitz ? <LogIn className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+              {canEnterRegisteredBlitz ? "Enter" : canOpenEternumEntry ? eternumPrimaryActionLabel : "Play"}
             </button>
           ) : isUnknownMode ? (
             <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
