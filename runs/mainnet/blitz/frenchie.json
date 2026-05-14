@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25835381654-1",
   "currentStepId": null,
   "createdAt": "2026-05-14T01:02:21.638Z",
-  "updatedAt": "2026-05-14T01:31:18.145Z",
+  "updatedAt": "2026-05-14T01:33:01.594Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x7f22201bb27e83aecd979966723c087db1630556e63e46be6c732ddc28e4e27"
     ],
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/frenchie/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-14T01:06:10.123Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-05-14T01:31:16.017Z"
+    "lastIndexerDescribeAt": "2026-05-14T01:33:01.594Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-05-14T01:06:20.094Z"
 }
