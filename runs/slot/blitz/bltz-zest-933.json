@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25834926220-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-14T00:47:29.526Z",
-  "updatedAt": "2026-05-14T00:48:48.337Z",
+  "updatedAt": "2026-05-14T00:48:51.554Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-05-14T00:48:51.554Z"
     },
     {
       "id": "configure-world",
@@ -75,5 +76,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-zest-933.json",
     "worldAddress": "0x034d65e46e67671acfa70ce30aba4afa041f3aa84be0e0ee3c1afcdf6d894c78",
     "createGameTxHash": "0x49c1684610bdf8c1c8f1f1734fe5e64576189ca1adf039975b54519fa834151"
+  },
+  "activeLease": {
+    "launchRequestId": "25834926220-1",
+    "workflowRunId": 25834926220,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-05-14T00:48:51.554Z",
+    "expiresAt": "2026-05-14T01:33:51.554Z"
   }
 }
