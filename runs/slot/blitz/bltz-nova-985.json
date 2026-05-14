@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-nova-985/25834972794-1.json",
   "latestLaunchRequestId": "25834972794-1",
-  "currentStepId": "configure-world",
+  "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-05-14T00:49:11.347Z",
-  "updatedAt": "2026-05-14T00:50:45.732Z",
+  "updatedAt": "2026-05-14T00:51:16.530Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,10 +45,11 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-05-14T00:50:45.732Z"
+      "latestEvent": "Applying settings succeeded",
+      "startedAt": "2026-05-14T00:50:45.732Z",
+      "finishedAt": "2026-05-14T00:51:16.530Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -77,14 +78,9 @@
     "durationSeconds": 5400,
     "summaryPath": ".context/game-launch/slot-blitz-bltz-nova-985.json",
     "worldAddress": "0x039a530d42b7a1edb4be526fe7fbd6f6c8b05c656105dc7996f58cade3340a39",
-    "createGameTxHash": "0x47f4c82248185d5220f6f1c4d6dda514686675c449643cde47a7ab025d74222"
-  },
-  "activeLease": {
-    "launchRequestId": "25834972794-1",
-    "workflowRunId": 25834972794,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "acquiredAt": "2026-05-14T00:50:45.732Z",
-    "expiresAt": "2026-05-14T01:35:45.732Z"
+    "createGameTxHash": "0x47f4c82248185d5220f6f1c4d6dda514686675c449643cde47a7ab025d74222",
+    "entryTokenAddress": "0x1289319215390515a75457fe054a918c409445f8ad5dd5e2ba105822a849af5",
+    "configureTxHash": "0x70950b524420f5e290c7db32693a75235c1ec66392fe98ae7a32c11fe98af1f",
+    "worldConfigTxHash": "0x70950b524420f5e290c7db32693a75235c1ec66392fe98ae7a32c11fe98af1f"
   }
 }
