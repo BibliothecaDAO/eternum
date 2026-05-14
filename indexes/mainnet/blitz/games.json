@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-13T20:52:47.126Z",
+  "updatedAt": "2026-05-14T00:29:00.815Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -669,6 +669,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-05-13T20:52:47.125Z"
       }
+    },
+    "z-onboarding-002": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "z-onboarding-002",
+      "path": "runs/mainnet/blitz/z-onboarding-002.json",
+      "inputPath": "inputs/mainnet/blitz/z-onboarding-002/25834342363-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-14T00:29:00.815Z",
+      "workflowRef": "credence0x/blitz-hex-map",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-14T01:20:00.000Z",
+      "durationSeconds": 5400,
+      "artifacts": {}
     }
   }
 }
