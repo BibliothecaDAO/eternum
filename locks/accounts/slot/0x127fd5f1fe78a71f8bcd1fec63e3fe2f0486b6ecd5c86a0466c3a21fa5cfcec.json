@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-zest-933",
-    "launchRequestId": "25834926220-1",
+    "gameName": "bltz-nova-985",
+    "launchRequestId": "25834972794-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25834926220,
+    "workflowRunId": 25834972794,
     "workflowRunAttempt": 1,
-    "stepId": "reserve-blitz-hyperstructures",
-    "leaseId": "8bbe7689-c44e-497c-80f4-eb54048f2788"
+    "stepId": "configure-world",
+    "leaseId": "d6290fe5-66b9-4737-9137-c4295239e306"
   },
-  "acquiredAt": "2026-05-14T00:50:40.489Z",
-  "heartbeatAt": "2026-05-14T00:50:56.755Z",
-  "expiresAt": "2026-05-14T00:50:56.755Z",
-  "releasedAt": "2026-05-14T00:50:56.755Z"
+  "acquiredAt": "2026-05-14T00:51:01.484Z",
+  "heartbeatAt": "2026-05-14T00:51:01.484Z",
+  "expiresAt": "2026-05-14T01:01:01.484Z"
 }
