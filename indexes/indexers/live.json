@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-14T00:58:26.510Z",
+  "updatedAt": "2026-05-14T01:12:46.025Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2193,13 +2193,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-zest-336/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-13T22:38:11.010Z"
+        "describedAt": "2026-05-14T01:12:46.025Z"
       },
-      "updatedAt": "2026-05-13T22:38:11.011Z"
+      "updatedAt": "2026-05-14T01:12:46.025Z"
     },
     "bltz-dash-600": {
       "gameName": "bltz-dash-600",
