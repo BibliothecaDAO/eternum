@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "frenchie",
-    "launchRequestId": "25835381654-1",
+    "gameName": "baking-loaf",
+    "launchRequestId": "25840653521-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25835381654,
+    "workflowRunId": 25840653521,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "54b8eee2-098a-4528-8276-c2c067fae79f"
+    "stepId": "create-world",
+    "leaseId": "94d5c792-5d5f-4f8d-955a-b8734cede754"
   },
-  "acquiredAt": "2026-05-14T01:05:41.542Z",
-  "heartbeatAt": "2026-05-14T01:05:44.962Z",
-  "expiresAt": "2026-05-14T01:05:44.962Z",
-  "releasedAt": "2026-05-14T01:05:44.962Z"
+  "acquiredAt": "2026-05-14T03:54:55.845Z",
+  "heartbeatAt": "2026-05-14T03:54:55.845Z",
+  "expiresAt": "2026-05-14T04:04:55.845Z"
 }
