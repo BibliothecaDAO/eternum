@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25835381654-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-05-14T01:02:21.638Z",
-  "updatedAt": "2026-05-14T01:04:32.087Z",
+  "updatedAt": "2026-05-14T01:04:35.607Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-14T01:04:35.607Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -84,5 +85,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-frenchie.json",
     "worldAddress": "0x05b7e1af51f9789c6367937be2a55522521a099093491549872fd7e5403ec1fd",
     "createGameTxHash": "0x5dc1fb0479ce198b8f4e9693f6cefbbb6b012787a1efdb52d9a19851d6f697d"
+  },
+  "activeLease": {
+    "launchRequestId": "25835381654-1",
+    "workflowRunId": 25835381654,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-05-14T01:04:35.607Z",
+    "expiresAt": "2026-05-14T01:49:35.607Z"
   }
 }
