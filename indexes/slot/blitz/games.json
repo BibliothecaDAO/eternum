@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-14T22:26:47.731Z",
+  "updatedAt": "2026-05-14T22:27:04.750Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1086,6 +1086,23 @@
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1778799600,
+      "durationSeconds": 432000,
+      "artifacts": {}
+    },
+    "bltz-fizz-493": {
+      "kind": "game",
+      "environment": "slot.blitz",
+      "gameName": "bltz-fizz-493",
+      "path": "runs/slot/blitz/bltz-fizz-493.json",
+      "inputPath": "inputs/slot/blitz/bltz-fizz-493/25889188363-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-14T22:27:04.750Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-14T23:00:00.000Z",
       "durationSeconds": 432000,
       "artifacts": {}
     }
