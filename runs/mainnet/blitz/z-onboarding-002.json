@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "mainnet.blitz:z-onboarding-002",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "gameName": "z-onboarding-002",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/mainnet/blitz/z-onboarding-002/25834342363-1.json",
+  "latestLaunchRequestId": "25834342363-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-05-14T00:29:00.815Z",
+  "updatedAt": "2026-05-14T00:29:00.815Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 25834342363,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/25834342363",
+    "ref": "credence0x/blitz-hex-map",
+    "sha": "aa6b5f5b498208b14241b57d68ed94d8bd9065bb"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Creating world",
+      "status": "pending",
+      "workflowStepName": "Creating world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Waiting for game",
+      "status": "pending",
+      "workflowStepName": "Waiting for game",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-world",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "reserve-blitz-hyperstructures",
+      "title": "Reserving hyperstructures",
+      "status": "pending",
+      "workflowStepName": "Reserving hyperstructures",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-role",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexer",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "sync-paymaster",
+      "title": "Setting up gas coverage",
+      "status": "pending",
+      "workflowStepName": "Setting up gas coverage",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {
+    "scheduledStartTime": "2026-05-14T01:20:00.000Z",
+    "durationSeconds": 5400
+  }
+}
