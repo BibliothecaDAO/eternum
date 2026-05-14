@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-flux-865/25889095678-1.json",
   "latestLaunchRequestId": "25889095678-1",
-  "currentStepId": "reserve-blitz-hyperstructures",
+  "currentStepId": "grant-lootchest-role",
   "createdAt": "2026-05-14T22:24:42.383Z",
-  "updatedAt": "2026-05-14T22:26:47.731Z",
+  "updatedAt": "2026-05-14T22:27:12.180Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -54,10 +54,11 @@
     {
       "id": "reserve-blitz-hyperstructures",
       "title": "Reserving hyperstructures",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Reserving hyperstructures",
-      "latestEvent": "Reserving hyperstructures started",
-      "startedAt": "2026-05-14T22:26:47.731Z"
+      "latestEvent": "Reserving hyperstructures succeeded",
+      "startedAt": "2026-05-14T22:26:47.731Z",
+      "finishedAt": "2026-05-14T22:27:12.180Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -82,14 +83,9 @@
     "createGameTxHash": "0x1bcc09533a351cad3423c1c65c5ad064513044ea46257722e3ae7a0551491ab",
     "entryTokenAddress": "0x6bebd75bf8542bb15080988a08f8e7a3677c1af17c3d2a70c47098426e72542",
     "configureTxHash": "0x73532f1257927df6e9addad0b604f160a4223e87c50f87bdb37f853b751b635",
-    "worldConfigTxHash": "0x73532f1257927df6e9addad0b604f160a4223e87c50f87bdb37f853b751b635"
-  },
-  "activeLease": {
-    "launchRequestId": "25889095678-1",
-    "workflowRunId": 25889095678,
-    "workflowRunAttempt": 1,
-    "stepId": "reserve-blitz-hyperstructures",
-    "acquiredAt": "2026-05-14T22:26:47.731Z",
-    "expiresAt": "2026-05-14T23:11:47.731Z"
+    "worldConfigTxHash": "0x73532f1257927df6e9addad0b604f160a4223e87c50f87bdb37f853b751b635",
+    "reserveHyperstructuresTxHashes": [
+      "0x3549626a63c7f6a105a0358b4844b1584dc120a28ecfc324afac533fe3e2eda"
+    ]
   }
 }
