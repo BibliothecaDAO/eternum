@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-14T01:05:38.383Z",
+  "updatedAt": "2026-05-14T01:05:47.168Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -698,11 +698,10 @@
       "path": "runs/mainnet/blitz/frenchie.json",
       "inputPath": "inputs/mainnet/blitz/frenchie/25835381654-1.json",
       "status": "running",
-      "updatedAt": "2026-05-14T01:05:38.383Z",
+      "updatedAt": "2026-05-14T01:05:47.168Z",
       "workflowRef": "next",
-      "currentStepId": "grant-lootchest-role",
-      "activeLeaseExpiresAt": "2026-05-14T01:50:38.383Z",
-      "hasRunningStep": true,
+      "currentStepId": "create-indexer",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-indexer",
       "startTime": 1778724000,
