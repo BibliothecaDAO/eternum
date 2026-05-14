@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-14T01:06:20.094Z",
+  "updatedAt": "2026-05-14T01:31:18.145Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -698,7 +698,7 @@
       "path": "runs/mainnet/blitz/frenchie.json",
       "inputPath": "inputs/mainnet/blitz/frenchie/25835381654-1.json",
       "status": "complete",
-      "updatedAt": "2026-05-14T01:06:20.094Z",
+      "updatedAt": "2026-05-14T01:31:18.145Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -709,7 +709,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "basic",
-        "lastIndexerDescribeAt": "2026-05-14T01:06:10.123Z"
+        "lastIndexerDescribeAt": "2026-05-14T01:06:10.123Z",
+        "pendingIndexerTierTarget": "legendary",
+        "pendingIndexerTierRequestedAt": "2026-05-14T01:31:16.017Z"
       }
     }
   }
