@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-14T03:57:14.577Z",
+  "updatedAt": "2026-05-14T03:57:22.926Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -719,12 +719,13 @@
       "path": "runs/mainnet/blitz/baking-loaf.json",
       "inputPath": "inputs/mainnet/blitz/baking-loaf/25840653521-1.json",
       "status": "running",
-      "updatedAt": "2026-05-14T03:57:14.577Z",
+      "updatedAt": "2026-05-14T03:57:22.926Z",
       "workflowRef": "next",
       "currentStepId": "reserve-blitz-hyperstructures",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-14T04:42:22.926Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "reserve-blitz-hyperstructures",
+      "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1778752800,
       "durationSeconds": 3600,
       "artifacts": {}
