@@ -28,7 +28,6 @@ describe("fetchWorldSummary", () => {
       fee_token: "0xabcd",
       fee_amount: "0xff",
       registration_start_at: "0x65b0fde0",
-      max_ring_count: 2,
       single_realm_mode: 0,
       two_player_mode: 1,
       season_pass_address: "0x0",
@@ -36,7 +35,6 @@ describe("fetchWorldSummary", () => {
       settled_players_count: null,
       settled_realms_count: null,
       settled_villages_count: null,
-      hyperstructure_created_count: 1,
     };
 
     mockFetch.mockResolvedValueOnce(new Response(JSON.stringify([blitzRow]), { status: 200 }));
@@ -58,8 +56,6 @@ describe("fetchWorldSummary", () => {
     expect(summary.registrationEndAt).toBe(0x65b1ffe0);
     expect(summary.singleRealmMode).toBe(false);
     expect(summary.twoPlayerMode).toBe(true);
-    // two-player + maxRingCount=2 → total = 2 + 1 = 3; created = 1; left = 2
-    expect(summary.numHyperstructuresLeft).toBe(2);
   });
 
   it("parses an eternum-mode world correctly", async () => {
@@ -93,7 +89,6 @@ describe("fetchWorldSummary", () => {
     expect(summary.feeAmount).toBeNull();
     expect(summary.registrationStartAt).toBeNull();
     expect(summary.registrationEndAt).toBeNull();
-    expect(summary.numHyperstructuresLeft).toBeNull();
   });
 
   it("returns null fields when the world config query fails", async () => {
@@ -140,22 +135,6 @@ describe("fetchWorldSummary", () => {
     expect(summary.endAt).toBeNull();
     expect(summary.registrationCount).toBeNull();
     expect(summary.feeTokenAddress).toBeNull();
-  });
-
-  it("computes numHyperstructuresLeft correctly for multi-player mode", async () => {
-    const row = {
-      blitz_mode_on: 1,
-      max_ring_count: 2,
-      two_player_mode: 0,
-      hyperstructure_created_count: 0,
-    };
-
-    mockFetch.mockResolvedValueOnce(new Response(JSON.stringify([row]), { status: 200 }));
-
-    const summary = await fetchWorldSummary("multi-player-world", 5000);
-
-    // multi-player + maxRingCount=2 → total = 1 + 6*(1+2) = 19; created = 0; left = 19
-    expect(summary.numHyperstructuresLeft).toBe(19);
   });
 
   it("sends a timeout signal on the fetch call", async () => {

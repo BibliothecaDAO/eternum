@@ -4,7 +4,8 @@ export type TravelEffectType = "travel" | "compass";
 export type PendingArmyMovementEffectClearReason =
   | "movement_started"
   | "cleanup_requested"
-  | "authoritative_reconciled";
+  | "authoritative_reconciled"
+  | "movement_evicted";
 
 export interface TrackedTravelEffect {
   key: string;

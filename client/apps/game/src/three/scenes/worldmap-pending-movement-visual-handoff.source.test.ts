@@ -84,4 +84,17 @@ describe("Worldmap pending movement visual handoff wiring", () => {
       body.indexOf("this.armyManager.applyMovementPlan"),
     );
   });
+
+  it("keeps the authoritative movement lifecycle installed when optimistic animation is skipped", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const helperStart = source.indexOf("private clearArrivalGhostAfterOptimisticMovementAbort(");
+    expect(helperStart).toBeGreaterThan(-1);
+
+    const helperEnd = source.indexOf("private mirrorOptimisticArmyDestinationIntoWorldmapCache", helperStart);
+    const helperBody = source.slice(helperStart, helperEnd);
+
+    expect(helperBody).toContain('"optimistic_animation_skipped"');
+    expect(helperBody).toContain('this.arrivalGhostManager.clearArrivalGhost(entityId, "optimistic_aborted")');
+    expect(helperBody).not.toContain("this.disposePendingMovementVisualLifecycle(entityId)");
+  });
 });

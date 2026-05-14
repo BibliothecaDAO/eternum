@@ -162,7 +162,7 @@ pub mod hyperstructure_systems {
         ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
         HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerRegisteredPoints,
     };
-    use crate::models::map::Tile;
+    use crate::models::map::{Tile, TileImpl};
     use crate::models::map2::TileOpt;
     use crate::models::owner::{OwnerAddressImpl, OwnerAddressTrait};
     use crate::models::position::Coord;
@@ -181,7 +181,6 @@ pub mod hyperstructure_systems {
 
 
     const HYPERSTRUCTURE_POINT_MULTIPLIER: u128 = 1_000_000;
-
 
     #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {

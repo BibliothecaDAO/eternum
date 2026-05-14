@@ -1,4 +1,4 @@
-import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliothecadao/provider";
+import { type EternumProvider } from "@bibliothecadao/provider";
 import {
   CapacityConfig,
   MERCENARIES_NAME_FELT,
@@ -7,6 +7,7 @@ import {
   scaleResourceOutputs,
 } from "@bibliothecadao/types";
 import { byteArray } from "starknet";
+import { buildBlitzEntryTokenDeployCalldata } from "../blitz/entry-token";
 import type { CleanConfigContext, ConfigStepResult } from "../types";
 
 type NativeConfigProvider = Pick<
@@ -165,32 +166,6 @@ function getBlitzRegistrationWindow(config: NativeConfig): BlitzRegistrationWind
     internalConfig[BLITZ_REGISTRATION_WINDOW] = resolveBlitzRegistrationWindow(config);
   }
   return internalConfig[BLITZ_REGISTRATION_WINDOW]!;
-}
-
-function buildBlitzEntryTokenDeployCalldata(provider: NativeConfigProvider): string[] {
-  // This mirrors the existing collectible deployment payload. Keeping it isolated
-  // makes the dependency obvious until the factory path has a typed constructor helper.
-  return [
-    "0x0",
-    "0x5265616c6d733a204c6f6f74204368657374",
-    "0x12",
-    "0x0",
-    "0x524c43",
-    "0x3",
-    "0x0",
-    "0x0",
-    "0x0",
-    "0x0",
-    "0x4c6f6f7420436865737420666f72205265616c6d73",
-    "0x15",
-    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-    getContractByName(provider.manifest, `${NAMESPACE}-blitz_realm_systems`),
-    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-    getContractByName(provider.manifest, `${NAMESPACE}-config_systems`),
-    getContractByName(provider.manifest, `${NAMESPACE}-config_systems`),
-    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-    "0x1f4",
-  ];
 }
 
 export const setStartingResourcesConfig: NativeStep = async ({ account, provider, config }) => {
@@ -816,7 +791,7 @@ function buildBlitzRegistrationConfigPayload(provider: NativeConfigProvider, con
     registration_start_at: registrationStartAt,
     entry_token_class_hash: config.blitz.registration.entry_token_class_hash,
     entry_token_ipfs_cid: byteArray.byteArrayFromString(config.blitz.registration.entry_token_ipfs_cid),
-    entry_token_deploy_calldata: buildBlitzEntryTokenDeployCalldata(provider),
+    entry_token_deploy_calldata: buildBlitzEntryTokenDeployCalldata(provider.manifest),
     collectibles_cosmetics_max: config.blitz.registration.collectible_cosmetics_max_items,
     collectibles_cosmetics_address: config.blitz.registration.collectible_cosmetics_address,
     collectibles_timelock_address: config.blitz.registration.collectible_timelock_address,
@@ -831,7 +806,10 @@ export const setBlitzRegistrationParametersConfig: NativeStep = async ({ account
     return;
   }
 
-  await provider.set_blitz_registration_config(withSigner(account, payload));
+  const receipt = await provider.set_blitz_registration_config(withSigner(account, payload));
+  return {
+    transactionHash: resolveTransactionHash(receipt),
+  };
 };
 
 export const setBlitzSeasonConfig: NativeStep = async ({ account, provider, config }) => {

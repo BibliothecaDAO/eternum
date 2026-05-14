@@ -34,6 +34,8 @@ import type { LandingModeFilter, LandingEntryRouteState } from "../lib/landing-e
 import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
 import { useLandingContext } from "../context/landing-context";
 import { useLandingNetworkState } from "../hooks/use-landing-network-state";
+import { invalidateWorldListQueries } from "@/hooks/world-list-queries";
+import { FACTORY_GAME_LIST_REFRESH_EVENT } from "../../factory-v2/game-list-refresh-event";
 
 interface PlayViewProps {
   className?: string;
@@ -50,6 +52,16 @@ const FactoryV2Content = lazy(() =>
   import("../../factory-v2").then((module) => ({ default: module.FactoryV2Content })),
 );
 const FactoryPage = lazy(() => import("../../admin").then((module) => ({ default: module.FactoryPage })));
+
+const hasConnectedAccountAddress = (address: string | undefined): boolean => Boolean(address && address !== "0x0");
+
+const shouldAutoOpenGameReview = (game: GameData): game is GameData & { worldAddress: string; isRegistered: true } => {
+  return game.gameStatus === "ended" && Boolean(game.worldAddress) && game.isRegistered === true;
+};
+
+const resolveGameReviewCandidate = (endedGames: GameData[]): (GameData & { worldAddress: string }) | null => {
+  return endedGames.filter(shouldAutoOpenGameReview).toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0] ?? null;
+};
 
 type LearnGuideTier = "beginner" | "advanced";
 type LearnGuideKind = "video" | "written";
@@ -260,7 +272,6 @@ const LearnContent = ({
   onSelectGame,
   onAutoSettleGame,
   onSpectate,
-  onForgeHyperstructures,
   onSeeScore,
   onClaimRewards,
   onRegistrationComplete,
@@ -269,7 +280,6 @@ const LearnContent = ({
   onSelectGame: (selection: WorldSelection) => void;
   onAutoSettleGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
-  onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onSeeScore: (selection: WorldSelection) => void;
   onClaimRewards: (selection: WorldSelection) => void;
   onRegistrationComplete: () => void;
@@ -325,7 +335,6 @@ const LearnContent = ({
         onSelectGame={onSelectGame}
         onAutoSettleGame={onAutoSettleGame}
         onSpectate={onSpectate}
-        onForgeHyperstructures={onForgeHyperstructures}
         onSeeScore={onSeeScore}
         onClaimRewards={onClaimRewards}
         onRegistrationComplete={onRegistrationComplete}
@@ -682,7 +691,6 @@ const RegisteredActiveGamesBar = ({
   onSelectGame,
   onAutoSettleGame,
   onSpectate,
-  onForgeHyperstructures,
   onRegistrationComplete,
 }: {
   mode: "blitz" | "eternum";
@@ -690,7 +698,6 @@ const RegisteredActiveGamesBar = ({
   onSelectGame: (selection: WorldSelection) => void;
   onAutoSettleGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
-  onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete: () => void;
 }) => {
   const [registeredCount, setRegisteredCount] = useState(0);
@@ -714,8 +721,7 @@ const RegisteredActiveGamesBar = ({
         onPlayGame={onPlayGame}
         onSelectGame={onSelectGame}
         onAutoSettleGame={onAutoSettleGame}
-        onSpectate={onSpectate}
-        onForgeHyperstructures={onForgeHyperstructures}
+        onSpectate={onPlayGame}
         onRegistrationComplete={onRegistrationComplete}
         modeFilter={mode}
         statusFilter={["ongoing", "upcoming"]}
@@ -744,7 +750,6 @@ const PlayTabContent = ({
   onSpectate,
   onSeeScore,
   onClaimRewards,
-  onForgeHyperstructures,
   onRegistrationComplete,
   onRefresh,
   isRefreshing = false,
@@ -759,7 +764,6 @@ const PlayTabContent = ({
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore: (selection: WorldSelection) => void;
   onClaimRewards: (selection: WorldSelection) => void;
-  onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete: () => void;
   onRefresh: () => void;
   isRefreshing?: boolean;
@@ -778,7 +782,6 @@ const PlayTabContent = ({
         onSelectGame={onSelectGame}
         onAutoSettleGame={onAutoSettleGame}
         onSpectate={onSpectate}
-        onForgeHyperstructures={onForgeHyperstructures}
         onRegistrationComplete={onRegistrationComplete}
       />
 
@@ -808,7 +811,6 @@ const PlayTabContent = ({
               onSelectGame={onSelectGame}
               onAutoSettleGame={onAutoSettleGame}
               onSpectate={onSpectate}
-              onForgeHyperstructures={onForgeHyperstructures}
               onRegistrationComplete={onRegistrationComplete}
               modeFilter={resolvedMode}
               statusFilter={["ongoing", "upcoming"]}
@@ -901,18 +903,27 @@ export const PlayView = ({
     primeGameEntry("dashboard");
   }, [activeTab]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const refreshGameLists = () => {
+      void invalidateWorldListQueries(queryClient);
+    };
+
+    window.addEventListener(FACTORY_GAME_LIST_REFRESH_EVENT, refreshGameLists);
+    return () => {
+      window.removeEventListener(FACTORY_GAME_LIST_REFRESH_EVENT, refreshGameLists);
+    };
+  }, [queryClient]);
+
   const navigateToEntryRoute = useCallback(
-    (
-      selection: WorldSelection,
-      intent: "play" | "settle" | "spectate" | "forge",
-      hyperstructuresLeft: number | null,
-      autoSettle = false,
-    ) => {
+    (selection: WorldSelection, intent: "play" | "settle" | "spectate", autoSettle = false) => {
       const entryContext = resolveEntryContextFromLandingSelection({
         selection,
         intent,
         autoSettle,
-        hyperstructuresLeft,
       });
 
       if (!entryContext) {
@@ -930,23 +941,17 @@ export const PlayView = ({
     (selection: WorldSelection, intent: "play" | "settle", autoSettle = false) => {
       startGameEntryTimeline();
       primeGameEntry("entry");
-      navigateToEntryRoute(selection, intent, null, autoSettle);
+      navigateToEntryRoute(selection, intent, autoSettle);
     },
     [navigateToEntryRoute],
   );
 
   const buildEntryRedirectHref = useCallback(
-    (
-      selection: WorldSelection,
-      intent: "play" | "settle" | "spectate" | "forge",
-      hyperstructuresLeft: number | null,
-      autoSettle = false,
-    ) => {
+    (selection: WorldSelection, intent: "play" | "settle" | "spectate", autoSettle = false) => {
       const entryContext = resolveEntryContextFromLandingSelection({
         selection,
         intent,
         autoSettle,
-        hyperstructuresLeft,
       });
 
       return entryContext ? buildEntryHrefFromEntryContext(entryContext) : null;
@@ -956,11 +961,11 @@ export const PlayView = ({
 
   const handleSelectGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account?.address);
+      const hasAccount = hasConnectedAccountAddress(account?.address);
 
       // Check if user needs to sign in before entering game
       if (!hasAccount) {
-        const redirectTo = buildEntryRedirectHref(selection, "settle", null, false);
+        const redirectTo = buildEntryRedirectHref(selection, "settle", false);
         if (!redirectTo) {
           return;
         }
@@ -977,7 +982,7 @@ export const PlayView = ({
 
   const handleAutoSettleGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account?.address);
+      const hasAccount = hasConnectedAccountAddress(account?.address);
       if (!hasAccount) return;
 
       openGameEntryRoute(selection, "settle", true);
@@ -987,10 +992,10 @@ export const PlayView = ({
 
   const handlePlayGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account?.address);
+      const hasAccount = hasConnectedAccountAddress(account?.address);
 
       if (!hasAccount) {
-        const redirectTo = buildEntryRedirectHref(selection, "play", null, false);
+        const redirectTo = buildEntryRedirectHref(selection, "play", false);
         if (!redirectTo) {
           return;
         }
@@ -1010,32 +1015,9 @@ export const PlayView = ({
       // Open game entry modal in spectate mode (no account required)
       startGameEntryTimeline();
       primeGameEntry("entry");
-      navigateToEntryRoute(selection, "spectate", null, false);
+      navigateToEntryRoute(selection, "spectate", false);
     },
     [navigateToEntryRoute],
-  );
-
-  const handleForgeHyperstructures = useCallback(
-    (selection: WorldSelection, numLeft: number) => {
-      const hasAccount = Boolean(account?.address);
-
-      // Check if user needs to sign in before forging
-      if (!hasAccount) {
-        const redirectTo = buildEntryRedirectHref(selection, "forge", numLeft, false);
-        if (!redirectTo) {
-          return;
-        }
-
-        setModal(<SignInPromptModal redirectTo={redirectTo} redirectState={entryRedirectState} />, true);
-        return;
-      }
-
-      // Open game entry modal in forge mode
-      startGameEntryTimeline();
-      primeGameEntry("entry");
-      navigateToEntryRoute(selection, "forge", numLeft, false);
-    },
-    [account?.address, buildEntryRedirectHref, entryRedirectState, navigateToEntryRoute, setModal],
   );
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {
@@ -1053,12 +1035,12 @@ export const PlayView = ({
     // The toast is already shown by the GameCard component
   }, []);
 
-  // Refresh games data (invalidate world availability queries)
-  // This also handles the transition from upcoming to live when game starts
+  // Refresh landing game summaries.
+  // The open-games grid is driven by the bulk worlds summary query.
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await queryClient.invalidateQueries({ queryKey: ["worldAvailability"] });
+      await invalidateWorldListQueries(queryClient);
     } finally {
       // Add a small delay so the spinner is visible
       setTimeout(() => setIsRefreshing(false), 500);
@@ -1088,16 +1070,16 @@ export const PlayView = ({
     if (disableReviewFlow) return;
     if (activeTab !== "play") return;
     if (reviewWorld) return;
+    if (!hasConnectedAccountAddress(account?.address)) return;
     if (endedGames.length === 0) return;
 
-    const candidate = endedGames.toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0];
+    const candidate = resolveGameReviewCandidate(endedGames);
     if (!candidate) return;
-    if (!candidate.worldAddress) return;
     if (isGameReviewDismissed(candidate.chain, candidate.worldAddress)) return;
 
     setReviewInitialStep(undefined);
     setReviewWorld({ name: candidate.name, chain: candidate.chain, worldAddress: candidate.worldAddress });
-  }, [activeTab, disableReviewFlow, endedGames, reviewWorld]);
+  }, [account?.address, activeTab, disableReviewFlow, endedGames, reviewWorld]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -1108,7 +1090,6 @@ export const PlayView = ({
             onSelectGame={handleSelectGame}
             onAutoSettleGame={handleAutoSettleGame}
             onSpectate={handleSpectate}
-            onForgeHyperstructures={handleForgeHyperstructures}
             onSeeScore={handleSeeScore}
             onClaimRewards={handleClaimRewards}
             onRegistrationComplete={handleRegistrationComplete}
@@ -1130,7 +1111,6 @@ export const PlayView = ({
             onSpectate={handleSpectate}
             onSeeScore={handleSeeScore}
             onClaimRewards={handleClaimRewards}
-            onForgeHyperstructures={handleForgeHyperstructures}
             onRegistrationComplete={handleRegistrationComplete}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}

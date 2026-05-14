@@ -31,7 +31,6 @@ const baseSummary: WorldSummary = {
   settledPlayersCount: null,
   settledRealmsCount: null,
   settledVillagesCount: null,
-  numHyperstructuresLeft: 42,
   winnerJackpotAmount: "999",
 };
 
@@ -54,7 +53,6 @@ describe("summaryToWorldConfigMeta", () => {
     expect(meta.feeAmount).toBe(255n);
     expect(meta.registrationStartAt).toBe(100);
     expect(meta.registrationEndAt).toBe(200);
-    expect(meta.numHyperstructuresLeft).toBe(42);
     expect(meta.mmrEnabled).toBe(true);
     expect(meta.devModeOn).toBe(false);
   });
@@ -114,7 +112,6 @@ describe("summaryToWorldConfigMeta", () => {
       settledPlayersCount: null,
       settledRealmsCount: null,
       settledVillagesCount: null,
-      numHyperstructuresLeft: null,
       winnerJackpotAmount: null,
     };
 
@@ -134,7 +131,6 @@ describe("summaryToWorldConfigMeta", () => {
     expect(meta.feeAmount).toBe(0n);
     expect(meta.registrationStartAt).toBeNull();
     expect(meta.registrationEndAt).toBeNull();
-    expect(meta.numHyperstructuresLeft).toBeNull();
     expect(meta.winnerJackpotAmount).toBe(0n);
   });
 

@@ -6,6 +6,7 @@ import {
   fetchLandingLeaderboardEntryByAddress,
   type LandingLeaderboardEntry,
 } from "@/services/leaderboard/landing-leaderboard-service";
+import { buildSettledBlitzPlayersQuery } from "@/services/blitz/blitz-settlement-sql";
 import { commitAndClaimMMR } from "@/ui/features/prize/utils/mmr-utils";
 import { getMMRTierFromRaw, toMmrIntegerFromRaw } from "@/ui/utils/mmr-tiers";
 import { SqlApi } from "@bibliothecadao/torii";
@@ -59,11 +60,7 @@ const REVIEW_BATTLE_AND_CREATION_QUERY = `
   WHERE story IN ('BattleStory', 'ExplorerCreateStory');
 `;
 
-const REVIEW_REGISTERED_PLAYERS_QUERY = `
-  SELECT player
-  FROM "s1_eternum-BlitzRealmPlayerRegister"
-  WHERE once_registered = TRUE OR registered = TRUE;
-`;
+const REVIEW_REGISTERED_PLAYERS_QUERY = buildSettledBlitzPlayersQuery();
 
 const REVIEW_PLAYERS_RANK_FINAL_QUERY = `
   SELECT trial_id

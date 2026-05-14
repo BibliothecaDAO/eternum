@@ -95,6 +95,7 @@ on:
           - create-world
           - wait-for-factory-index
           - configure-world
+          - reserve-blitz-hyperstructures
           - grant-lootchest-role
           - grant-village-pass-role
           - create-banks
@@ -148,12 +149,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: latest
+        uses: pnpm/action-setup@v4
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
@@ -204,6 +203,11 @@ jobs:
 
           if [ "${GAME_LAUNCH_STEP}" = "sync-paymaster" ] && [ "${GAME_LAUNCH_NETWORK}" != "mainnet" ]; then
             echo "sync-paymaster is only supported for mainnet environments" >&2
+            exit 1
+          fi
+
+          if [ "${GAME_LAUNCH_STEP}" = "reserve-blitz-hyperstructures" ] && [ "${GAME_LAUNCH_GAME_TYPE}" != "blitz" ]; then
+            echo "reserve-blitz-hyperstructures is only supported for blitz environments" >&2
             exit 1
           fi
 
@@ -583,6 +587,9 @@ jobs:
               configure-world|configure-worlds)
                 printf 'configure-world'
                 ;;
+              reserve-blitz-hyperstructures)
+                printf 'reserve-blitz-hyperstructures'
+                ;;
               grant-lootchest-role|grant-lootchest-roles)
                 printf 'grant-lootchest-role'
                 ;;
@@ -863,6 +870,29 @@ jobs:
           set -euo pipefail
           source .context/game-launch/launch-env.sh
           run_launch_step configure-worlds
+
+      - name: Reserve blitz hyperstructures
+        if:
+          ${{ github.event.inputs.launch_kind == 'game' && endsWith(github.event.inputs.environment, '.blitz') &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world' ||
+          github.event.inputs.launch_step == 'wait-for-factory-index' || github.event.inputs.launch_step ==
+          'configure-world' || github.event.inputs.launch_step == 'reserve-blitz-hyperstructures') }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step reserve-blitz-hyperstructures
+
+      - name: Reserve blitz hyperstructures for series
+        if:
+          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
+          endsWith(github.event.inputs.environment, '.blitz') && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'create-series' || github.event.inputs.launch_step == 'create-worlds' ||
+          github.event.inputs.launch_step == 'wait-for-factory-indexes' || github.event.inputs.launch_step ==
+          'configure-worlds' || github.event.inputs.launch_step == 'reserve-blitz-hyperstructures') }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step reserve-blitz-hyperstructures
 
       - name: Grant loot chest role
         if:

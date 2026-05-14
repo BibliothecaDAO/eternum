@@ -26,6 +26,11 @@ import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
 import {
+  clearPendingReservedHyperstructureCreation,
+  isPendingReservedHyperstructureCreation,
+  submitActiveWorldBlitzHyperstructureCreation,
+} from "@/services/blitz/blitz-hyperstructure-creation";
+import {
   PendingWorldmapFxStartPayload,
   PendingWorldmapFxStopPayload,
   WORLDMAP_PENDING_FX_START_EVENT,
@@ -37,6 +42,7 @@ import { BattleDirectionManager } from "@/three/managers/battle-direction-manage
 import { ChestManager } from "@/three/managers/chest-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
 import { LAND_NAME } from "@/three/managers/instanced-model";
+import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperstructure-manager";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
@@ -44,7 +50,10 @@ import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
-import { processExplorerTroopsUpdate } from "@/three/scenes/worldmap-update-helpers";
+import {
+  processExplorerTroopsUpdate,
+  type PendingArmyRemovalCancelSource,
+} from "@/three/scenes/worldmap-update-helpers";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
@@ -65,11 +74,14 @@ import {
   ArmyActionManager,
   BattleEventSystemUpdate,
   ChestSystemUpdate,
+  DEFAULT_COORD_ALT,
   ExplorerRewardSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   getTileAt,
+  isTileOccupierReservedHyperstructure,
   recordArmyMovementLatencyPhase,
+  ReservedHyperstructureTileSystemUpdate,
   SelectableArmy,
   StructureActionManager,
   TileSystemUpdate,
@@ -747,6 +759,7 @@ export default class WorldmapScene extends WarpTravel {
   }
   private handleTransactionComplete?: (...args: any[]) => void;
   private handleTransactionFailed?: (...args: any[]) => void;
+  private handleTransactionProgress?: (...args: any[]) => void;
   private readonly authoritativePendingArmyMovementMs = 30_000;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
   private structureManager!: StructureManager;
@@ -764,6 +777,7 @@ export default class WorldmapScene extends WarpTravel {
   // normalized coordinates
   private armiesPositions: Map<ID, HexPosition> = new Map();
   private armyLastTileSyncAt: Map<ID, number> = new Map();
+  private armyLastLiveUpdateAt: Map<ID, number> = new Map();
   // normalized coordinates
   private structuresPositions: Map<ID, HexPosition> = new Map();
 
@@ -925,6 +939,7 @@ export default class WorldmapScene extends WarpTravel {
   private armyLabelsGroup!: Group;
   private structureLabelsGroup!: Group;
   private chestLabelsGroup!: Group;
+  private reservedHyperstructureManager!: ReservedHyperstructureManager;
 
   private storeSubscriptions: Array<() => void> = [];
 
@@ -1136,8 +1151,26 @@ export default class WorldmapScene extends WarpTravel {
       this.pendingArmyMovementTxMap.delete(txHash);
     };
 
+    this.handleTransactionProgress = (payload: { stage?: string; type?: string; explorerId?: number | string }) => {
+      if (payload?.stage !== "explore_provider_lock_acquired" || payload?.type !== "explore") {
+        return;
+      }
+
+      const explorerId = Number(payload.explorerId);
+      if (!Number.isFinite(explorerId) || explorerId <= 0) {
+        return;
+      }
+
+      recordArmyMovementLatencyPhase({
+        phase: "explore_provider_lock_acquired",
+        source: "worldmap",
+        entityId: explorerId,
+      });
+    };
+
     dojoContext.network?.provider?.on("transactionComplete", this.handleTransactionComplete);
     dojoContext.network?.provider?.on("transactionFailed", this.handleTransactionFailed);
+    dojoContext.network?.provider?.on("transactionProgress", this.handleTransactionProgress);
   }
 
   private handleSubmittedArmyMovementTx(input: { entityId: ID; txHash: string }): void {
@@ -1167,16 +1200,14 @@ export default class WorldmapScene extends WarpTravel {
     plan: ArmyMovementPlan | null,
   ): Promise<void> {
     if (!this.pendingArmyMovements.has(entityId)) return;
-    if (!plan) return;
+    if (!plan) {
+      this.clearArrivalGhostAfterOptimisticMovementAbort(entityId, txHash);
+      return;
+    }
 
     const planApplied = await this.armyManager.applyMovementPlan(plan, { optimistic: true });
     if (!planApplied) {
-      recordArmyMovementLatencyPhase({
-        phase: "optimistic_animation_skipped",
-        source: "worldmap",
-        entityId,
-        txHash,
-      });
+      this.clearArrivalGhostAfterOptimisticMovementAbort(entityId, txHash);
       return;
     }
 
@@ -1188,6 +1219,18 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.mirrorOptimisticArmyDestinationIntoWorldmapCache(entityId, plan);
     this.paintOptimisticDestinationBiome(plan);
+  }
+
+  private clearArrivalGhostAfterOptimisticMovementAbort(entityId: ID, txHash: string): void {
+    recordArmyMovementLatencyPhase({
+      phase: "optimistic_animation_skipped",
+      source: "worldmap",
+      entityId,
+      txHash,
+    });
+    // Keep the pending movement lifecycle installed so the later authoritative
+    // movement handoff can still clear pending state and resolve travel FX.
+    this.arrivalGhostManager.clearArrivalGhost(entityId, "optimistic_aborted");
   }
 
   private mirrorOptimisticArmyDestinationIntoWorldmapCache(entityId: ID, plan: ArmyMovementPlan): void {
@@ -1291,6 +1334,7 @@ export default class WorldmapScene extends WarpTravel {
       this.visibilityManager,
       this.chunkSize,
     );
+    this.reservedHyperstructureManager = new ReservedHyperstructureManager(this.scene);
     this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this, this.chunkSize);
 
     // NOTE: Chunk integration system disabled for performance.
@@ -1365,6 +1409,7 @@ export default class WorldmapScene extends WarpTravel {
     this.registerBattleWorldUpdateSubscriptions();
     this.registerStructureWorldUpdateSubscriptions();
     this.registerTileWorldUpdateSubscriptions();
+    this.registerReservedHyperstructureWorldUpdateSubscriptions();
     this.registerChestWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
   }
@@ -1382,7 +1427,7 @@ export default class WorldmapScene extends WarpTravel {
             row: update.hexCoords.row,
           },
         });
-        const recoveredPendingRemoval = this.cancelPendingArmyRemoval(update.entityId);
+        const recoveredPendingRemoval = this.cancelPendingArmyRemoval(update.entityId, "tile_recovery");
         const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
 
         if (update.removed) {
@@ -1442,6 +1487,7 @@ export default class WorldmapScene extends WarpTravel {
             row: update.hexCoords.row,
           },
         });
+        this.recordAuthoritativeArmyLiveUpdate(update.entityId);
         this.armyLastTileSyncAt.set(update.entityId, Date.now());
         if (recoveredPendingRemoval) {
           void this.armyManager.restoreArmyVisualIfVisible(update.entityId);
@@ -1462,11 +1508,14 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {
         processExplorerTroopsUpdate(update, {
-          cancelPendingArmyRemoval: (entityId) => this.cancelPendingArmyRemoval(entityId),
+          cancelPendingArmyRemoval: (entityId, source) => this.cancelPendingArmyRemoval(entityId, source),
           scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
           updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
           updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
+          recordLiveArmyPresenceUpdate: (update) => this.recordAuthoritativeArmyLiveUpdate(update.entityId),
           onAuthoritativePositionApplied: (update) => this.clearPendingArmyMovementFromAuthoritativePosition(update),
+          recoverPendingArmyRemovalFromExplorerTroops: (update) =>
+            this.recoverPendingArmyRemovalFromExplorerTroops(update),
           shouldSkipStalePositionUpdate: (entityId, normalized) =>
             this.armyManager.shouldSkipStalePositionUpdate(entityId, normalized),
         });
@@ -1609,6 +1658,18 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Chest.onDeadChest((entityId) => {
         this.deleteChest(entityId);
+      }),
+    );
+  }
+
+  private registerReservedHyperstructureWorldUpdateSubscriptions(): void {
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.ReservedHyperstructure.onTileUpdate((update: ReservedHyperstructureTileSystemUpdate) => {
+        if (update.removed) {
+          clearPendingReservedHyperstructureCreation(update.hexCoords);
+        }
+
+        this.reservedHyperstructureManager.onUpdate(update);
       }),
     );
   }
@@ -2294,14 +2355,58 @@ export default class WorldmapScene extends WarpTravel {
     this.applyContextualHoverPalette(hexCoords);
   }
 
-  // double-click to enter hex view; spectate when the structure is not yours
+  // double-click reserved hyperstructure tiles to materialize them; otherwise enter the real structure
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
+    if (this.isReservedHyperstructureHex(hexCoords)) {
+      void this.createReservedHyperstructureFromWorldmap(hexCoords);
+      return;
+    }
+
+    this.enterStructureFromSelectedHex(hexCoords);
+  }
+
+  private enterStructureFromSelectedHex(hexCoords: HexPosition) {
     const { structure } = this.getHexagonEntity(hexCoords);
     if (!structure) {
       return;
     }
 
     void this.enterStructureFromWorldmap(structure, hexCoords);
+  }
+
+  private async createReservedHyperstructureFromWorldmap(hexCoords: HexPosition): Promise<void> {
+    if (isPendingReservedHyperstructureCreation(hexCoords)) {
+      return;
+    }
+
+    const account = useAccountStore.getState().account;
+    if (!account) {
+      toast.error("Connect a controller account before creating a Hyperstructure.");
+      return;
+    }
+
+    try {
+      const didSubmit = await submitActiveWorldBlitzHyperstructureCreation({
+        account,
+        hexCoords,
+      });
+
+      if (!didSubmit) {
+        return;
+      }
+
+      toast.success("Creating Hyperstructure...");
+    } catch (error) {
+      console.error("[Worldmap] Failed to create reserved hyperstructure", error);
+      toast.error("Unable to create this Hyperstructure right now.");
+    }
+  }
+
+  private isReservedHyperstructureHex(hexCoords: HexPosition): boolean {
+    const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const tile = getTileAt(this.dojo.components, DEFAULT_COORD_ALT, contractPosition.x, contractPosition.y);
+
+    return Boolean(tile && isTileOccupierReservedHyperstructure(tile.occupier_type));
   }
 
   private async enterStructureFromWorldmap(structure: HexEntityInfo, hexCoords: HexPosition) {
@@ -2677,6 +2782,7 @@ export default class WorldmapScene extends WarpTravel {
 
       this.installPendingMovementVisualLifecycle({
         entityId: selectedEntityId,
+        isExploreAction: actionType === ActionType.Explore,
         shouldAnimateArrivalGhostOnCompletion: shouldTrackArrivalGhost,
       });
 
@@ -2692,6 +2798,22 @@ export default class WorldmapScene extends WarpTravel {
           targetRow: targetHex.row,
         },
       });
+      if (actionType === ActionType.Explore) {
+        recordArmyMovementLatencyPhase({
+          phase: "explore_intent_queued",
+          source: "worldmap",
+          entityId: selectedEntityId,
+          details: {
+            targetCol: targetHex.col,
+            targetRow: targetHex.row,
+          },
+        });
+        recordArmyMovementLatencyPhase({
+          phase: "explore_submit_started",
+          source: "worldmap",
+          entityId: selectedEntityId,
+        });
+      }
 
       // Pre-compute the optimistic movement plan in parallel with the tx so the
       // submitted tx hash can start animation without waiting for provider
@@ -2725,6 +2847,14 @@ export default class WorldmapScene extends WarpTravel {
             entityId: selectedEntityId,
             txHash,
           });
+          if (txHash && actionType === ActionType.Explore) {
+            recordArmyMovementLatencyPhase({
+              phase: "explore_tx_hash_received",
+              source: "worldmap",
+              entityId: selectedEntityId,
+              txHash,
+            });
+          }
           // Torii can reconcile the authoritative target before the RPC promise
           // returns. Avoid re-registering tx lifecycle for a move we already
           // resolved from the stream.
@@ -2953,9 +3083,10 @@ export default class WorldmapScene extends WarpTravel {
 
   private installPendingMovementVisualLifecycle(input: {
     entityId: ID;
+    isExploreAction: boolean;
     shouldAnimateArrivalGhostOnCompletion: boolean;
   }): void {
-    const { entityId, shouldAnimateArrivalGhostOnCompletion } = input;
+    const { entityId, isExploreAction, shouldAnimateArrivalGhostOnCompletion } = input;
 
     this.disposePendingMovementVisualLifecycle(entityId);
 
@@ -2978,10 +3109,31 @@ export default class WorldmapScene extends WarpTravel {
       }
       this.disposePendingMovementVisualLifecycle(entityId);
     });
+    const disposeAuthoritativeReconcile = this.armyManager.onAuthoritativeReconciliation(entityId, () => {
+      if (isExploreAction) {
+        recordArmyMovementLatencyPhase({
+          phase: "explore_authoritative_reconcile_complete",
+          source: "worldmap",
+          entityId,
+        });
+        recordArmyMovementLatencyPhase({
+          phase: "explore_next_safe_unblocked",
+          source: "worldmap",
+          entityId,
+        });
+      }
+    });
+    const disposeMovementVisualCancel = this.armyManager.onMovementVisualCancel(entityId, () => {
+      this.clearPendingArmyMovement(entityId, "movement_evicted");
+      this.arrivalGhostManager.clearArrivalGhost(entityId, "movement_evicted");
+      this.disposePendingMovementVisualLifecycle(entityId);
+    });
 
     this.pendingArmyMovementVisualLifecycleDisposers.set(entityId, () => {
       disposeMovementStart();
       disposeMovementComplete();
+      disposeAuthoritativeReconcile();
+      disposeMovementVisualCancel();
       this.pendingArmyMovementVisualLifecycleDisposers.delete(entityId);
     });
   }
@@ -3998,6 +4150,7 @@ export default class WorldmapScene extends WarpTravel {
       pendingArmyRemovalMeta: this.pendingArmyRemovalMeta,
       deferredChunkRemovals: this.deferredChunkRemovals,
       armyLastTileSyncAt: this.armyLastTileSyncAt,
+      armyLastLiveUpdateAt: this.armyLastLiveUpdateAt,
       pendingArmyMovements: this.pendingArmyMovements,
       pendingArmyMovementStartedAt: this.pendingArmyMovementStartedAt,
       pendingArmyMovementFallbackTimeouts: this.pendingArmyMovementFallbackTimeouts,
@@ -4042,7 +4195,7 @@ export default class WorldmapScene extends WarpTravel {
 
   public deleteArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {
     const { playDefeatFx = true } = options;
-    this.cancelPendingArmyRemoval(entityId);
+    this.cancelPendingArmyRemoval(entityId, "delete");
     this.disposePendingMovementVisualLifecycle(entityId);
     this.arrivalGhostManager.clearArrivalGhost(entityId, "army_removed");
     this.armyManager.removeArmy(entityId, { playDefeatFx });
@@ -4061,6 +4214,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.armiesPositions.delete(entityId);
     this.armyLastTileSyncAt.delete(entityId);
+    this.armyLastLiveUpdateAt.delete(entityId);
     this.pendingArmyRemovalMeta.delete(entityId);
     this.armyStructureOwners.delete(entityId);
     this.clearArmyMovementTxEntriesForEntity(entityId);
@@ -4095,7 +4249,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    this.cancelPendingArmyRemoval(supersededEntityId);
+    this.cancelPendingArmyRemoval(supersededEntityId, "superseded");
     this.deleteArmy(supersededEntityId, { playDefeatFx: false });
   }
 
@@ -4170,7 +4324,7 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         if (reason === "tile") {
-          const lastUpdate = this.armyLastTileSyncAt.get(entityId) ?? 0;
+          const lastUpdate = this.resolveLastArmyLiveUpdateAt(entityId);
           if (lastUpdate > meta.scheduledAt) {
             this.pendingArmyRemovalMeta.delete(entityId);
             this.pendingArmyRemovals.delete(entityId);
@@ -4230,11 +4384,11 @@ export default class WorldmapScene extends WarpTravel {
       onRetryRemoval: (entityId, reason) => {
         this.scheduleArmyRemoval(entityId, reason);
       },
-      resolveLastTileSyncAt: (entityId) => this.armyLastTileSyncAt.get(entityId) ?? 0,
+      resolveLastTileSyncAt: (entityId) => this.resolveLastArmyLiveUpdateAt(entityId),
     });
   }
 
-  private cancelPendingArmyRemoval(entityId: ID): boolean {
+  private cancelPendingArmyRemoval(entityId: ID, source: PendingArmyRemovalCancelSource): boolean {
     const timeout = this.pendingArmyRemovals.get(entityId);
     const hasDeferredRemoval = this.deferredChunkRemovals.has(entityId);
     const hasRemovalMeta = this.pendingArmyRemovalMeta.has(entityId);
@@ -4247,7 +4401,43 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyRemovalMeta.delete(entityId);
     this.deferredChunkRemovals.delete(entityId);
     this.armyManager.unsuppressArmy(entityId);
+    this.recordPendingArmyRemovalCancelled(source);
     return true;
+  }
+
+  private recoverPendingArmyRemovalFromExplorerTroops(update: { entityId: ID }): void {
+    const recoveredPendingRemoval = this.cancelPendingArmyRemoval(update.entityId, "explorer_troops_live_recovery");
+    if (recoveredPendingRemoval) {
+      void this.armyManager.restoreArmyVisualIfVisible(update.entityId);
+    }
+  }
+
+  private recordAuthoritativeArmyLiveUpdate(entityId: ID): void {
+    this.armyLastLiveUpdateAt.set(entityId, Date.now());
+  }
+
+  private resolveLastArmyLiveUpdateAt(entityId: ID): number {
+    return Math.max(this.armyLastTileSyncAt.get(entityId) ?? 0, this.armyLastLiveUpdateAt.get(entityId) ?? 0);
+  }
+
+  private recordPendingArmyRemovalCancelled(source: PendingArmyRemovalCancelSource): void {
+    switch (source) {
+      case "tile_recovery":
+        incrementWorldmapRenderCounter("pendingArmyRemovalCancelledByTileRecovery");
+        return;
+      case "delete":
+        incrementWorldmapRenderCounter("pendingArmyRemovalCancelledByDelete");
+        return;
+      case "superseded":
+        incrementWorldmapRenderCounter("pendingArmyRemovalCancelledBySuperseded");
+        return;
+      case "explorer_troops_zero":
+        incrementWorldmapRenderCounter("pendingArmyRemovalCancelledByExplorerTroopsZero");
+        return;
+      case "explorer_troops_live_recovery":
+        incrementWorldmapRenderCounter("pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery");
+        return;
+    }
   }
 
   public deleteChest(entityId: ID) {
@@ -8524,6 +8714,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pinnedRenderAreas.clear();
     this.clearCache();
     this.armyLastTileSyncAt.clear();
+    this.armyLastLiveUpdateAt.clear();
     // Also clear the interactive hexes when clearing the entire cache
     this.interactiveHexManager.clearHexes();
   }
@@ -8561,6 +8752,9 @@ export default class WorldmapScene extends WarpTravel {
     if (this.handleTransactionFailed) {
       this.dojo.network?.provider?.off("transactionFailed", this.handleTransactionFailed);
     }
+    if (this.handleTransactionProgress) {
+      this.dojo.network?.provider?.off("transactionProgress", this.handleTransactionProgress);
+    }
     this.pendingArmyMovementTxMap.clear();
     this.stopToriiBoundsCounterLog();
     if (this.toriiStreamManager === activeSpatialStreamManager) {
@@ -8573,6 +8767,7 @@ export default class WorldmapScene extends WarpTravel {
       armyManager: this.armyManager,
       arrivalGhostManager: this.arrivalGhostManager,
       structureManager: this.structureManager,
+      reservedHyperstructureManager: this.reservedHyperstructureManager,
       chestManager: this.chestManager,
       fxManager: this.fxManager,
       resourceFXManager: this.resourceFXManager,

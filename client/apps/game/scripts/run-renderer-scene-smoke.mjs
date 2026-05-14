@@ -268,12 +268,20 @@ function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
 }
 
 export function isRetryableAgentBrowserFailure({ commandArgs, stderr = "", stdout = "" }) {
-  if (commandArgs[0] !== "eval") {
+  if (!isRetryableAgentBrowserCommand(commandArgs)) {
     return false;
   }
 
   const output = `${stderr}\n${stdout}`;
   return output.includes("CDP command timed out: Runtime.evaluate");
+}
+
+function isRetryableAgentBrowserCommand(commandArgs) {
+  if (commandArgs[0] === "eval" || commandArgs[0] === "errors") {
+    return true;
+  }
+
+  return commandArgs[0] === "get" && ["count", "url"].includes(commandArgs[1]);
 }
 
 async function runAgentBrowserWithRetries(
@@ -392,7 +400,7 @@ async function runSceneSmoke({
   runAgentBrowser(session, ["open", url, "--ignore-https-errors"], { headed });
   await sleep(waitMs);
 
-  const openedUrl = runAgentBrowser(session, ["get", "url"]);
+  const openedUrl = await runAgentBrowserWithRetries(session, ["get", "url"], { headed });
   const canvasExists =
     (await runAgentBrowserWithRetries(session, ["eval", "Boolean(document.getElementById('main-canvas'))"], {
       headed,
@@ -404,8 +412,10 @@ async function runSceneSmoke({
       })) || "null",
     ),
   );
-  const unableToStartCount = Number(runAgentBrowser(session, ["get", "count", "text=Unable to Start"]) || "0");
-  const errors = parseErrorLines(runAgentBrowser(session, ["errors"]));
+  const unableToStartCount = Number(
+    (await runAgentBrowserWithRetries(session, ["get", "count", "text=Unable to Start"], { headed })) || "0",
+  );
+  const errors = parseErrorLines(await runAgentBrowserWithRetries(session, ["errors"], { headed }));
   const parity = evaluateRendererParitySummary(diagnostics);
 
   const evaluation = evaluateSceneSmokeResult({

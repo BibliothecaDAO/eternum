@@ -47,7 +47,12 @@ export type WorldmapRenderCounter =
   | "spatialTileOptReadyTimeouts"
   | "spatialTileOptStreamReceived"
   | "postCommitManagerCatchUpImmediate"
-  | "postCommitManagerCatchUpDeferred";
+  | "postCommitManagerCatchUpDeferred"
+  | "pendingArmyRemovalCancelledByTileRecovery"
+  | "pendingArmyRemovalCancelledByDelete"
+  | "pendingArmyRemovalCancelledBySuperseded"
+  | "pendingArmyRemovalCancelledByExplorerTroopsZero"
+  | "pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -151,6 +156,11 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     spatialTileOptStreamReceived: 0,
     postCommitManagerCatchUpImmediate: 0,
     postCommitManagerCatchUpDeferred: 0,
+    pendingArmyRemovalCancelledByTileRecovery: 0,
+    pendingArmyRemovalCancelledByDelete: 0,
+    pendingArmyRemovalCancelledBySuperseded: 0,
+    pendingArmyRemovalCancelledByExplorerTroopsZero: 0,
+    pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery: 0,
   },
   forceRefreshReasons: {
     default: 0,

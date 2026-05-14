@@ -1,6 +1,7 @@
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { describe, expect, test } from "bun:test";
 import { getGameManifest } from "../../../../contracts/utils/utils";
+import { buildBlitzEntryTokenDeployCalldata } from "../blitz/entry-token";
 import { FACTORY_WORLD_CONFIG_STEPS, resolveFactoryWorldConfigSteps } from "../config/steps";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
 import {
@@ -210,6 +211,9 @@ describe("native config steps", () => {
     const registrationStartAt = registrationPayload.registration_start_at as number;
 
     expect(registrationStartAt).toBe(1_700_000_010);
+    expect(registrationPayload.entry_token_deploy_calldata).toEqual(
+      buildBlitzEntryTokenDeployCalldata(provider.manifest as any),
+    );
     expect(seasonPayload.start_settling_at).toBe(registrationStartAt);
     expect(seasonPayload.start_main_at).toBe(registrationStartAt + 100);
     expect(seasonPayload.end_at).toBe((seasonPayload.start_main_at as number) + config.season.durationSeconds);

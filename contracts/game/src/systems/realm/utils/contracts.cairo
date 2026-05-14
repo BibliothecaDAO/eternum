@@ -22,8 +22,10 @@ pub trait IRealmInternalSystems<T> {
         order: u8,
         wonder: u8,
         coord: Coord,
-        season: bool,
+        explore_village_coord: bool,
+        grant_starting_troops: bool,
     ) -> ID;
+    fn provision_internal(ref self: T, structure_id: ID);
 }
 
 #[dojo::contract]
@@ -45,7 +47,8 @@ pub mod realm_internal_systems {
             order: u8,
             wonder: u8,
             coord: Coord,
-            season: bool,
+            explore_village_coord: bool,
+            grant_starting_troops: bool,
         ) -> ID {
             // ensure caller is the realm systems
             let mut world: WorldStorage = self.world(DEFAULT_NS());
@@ -57,11 +60,27 @@ pub mod realm_internal_systems {
                 "caller must be the realm_systems or blitz_realm_systems",
             );
 
-            // create realm
-            let structure_id = iRealmImpl::create_realm(
-                ref world, owner, realm_id, resources, order, 0, wonder, coord, season,
+            // create the realm structure first, then optionally attach troop startup
+            let structure_id = iRealmImpl::create_realm_structure(
+                ref world, owner, realm_id, resources, order, wonder, coord, explore_village_coord,
             );
+            if grant_starting_troops {
+                iRealmImpl::grant_realm_starting_troops(ref world, structure_id);
+            }
             structure_id.into()
+        }
+
+        fn provision_internal(ref self: ContractState, structure_id: ID) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            let (realm_systems, _) = world.dns(@"realm_systems").unwrap();
+            let (blitz_realm_systems, _) = world.dns(@"blitz_realm_systems").unwrap();
+            assert!(
+                starknet::get_caller_address() == realm_systems
+                    || starknet::get_caller_address() == blitz_realm_systems,
+                "caller must be the realm_systems or blitz_realm_systems",
+            );
+
+            iRealmImpl::provision_realm(ref world, structure_id);
         }
     }
 }
