@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-nova-985",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-nova-985/25834972794-1.json",
   "latestLaunchRequestId": "25834972794-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-05-14T00:49:11.347Z",
-  "updatedAt": "2026-05-14T00:52:40.061Z",
+  "updatedAt": "2026-05-14T00:53:00.882Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-14T00:52:40.061Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-05-14T00:52:40.061Z",
+      "finishedAt": "2026-05-14T00:53:00.882Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x331e33e59f5dffe24bc20ec185d4248ba701be823795d9e037149865cbccc29"
     ],
-    "lootChestRoleTxHash": "0x61b7c0ae967dbbf4300aa4c91f06e57c678bf446239f5340870741b969ceed3"
+    "lootChestRoleTxHash": "0x61b7c0ae967dbbf4300aa4c91f06e57c678bf446239f5340870741b969ceed3",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-nova-985/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-14T00:52:59.566Z"
   },
-  "activeLease": {
-    "launchRequestId": "25834972794-1",
-    "workflowRunId": 25834972794,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-14T00:52:40.061Z",
-    "expiresAt": "2026-05-14T01:37:40.061Z"
-  }
+  "completedAt": "2026-05-14T00:53:00.882Z"
 }
