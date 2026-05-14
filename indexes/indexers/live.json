@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-14T22:21:42.083Z",
+  "updatedAt": "2026-05-14T22:31:54.349Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2287,6 +2287,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-14-05-26-1000 not found"
       },
       "updatedAt": "2026-05-14T22:21:42.083Z"
+    },
+    "bltz-flux-865": {
+      "gameName": "bltz-flux-865",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-flux-865/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-14T22:31:54.349Z"
+      },
+      "updatedAt": "2026-05-14T22:31:54.349Z"
     }
   }
 }
