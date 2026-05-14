@@ -16,6 +16,7 @@ import {
 import { SentryUserSync } from "@/observability/sentry-user-sync";
 import { useActiveWorldProfile } from "@/runtime/world";
 import { getActiveSpatialStreamManager } from "@/three/scenes/worldmap";
+import { getActiveWorldmapRecoveryHandle } from "@/three/scenes/worldmap-reconnect-recovery-handle";
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { useDojo } from "@bibliothecadao/react";
 import { Leva } from "leva";
@@ -215,10 +216,12 @@ const ConnectionMonitor = () => {
         addNetworkBreadcrumb({ event: "reconnect_start", streamType: "spatial" });
         try {
           const manager = getActiveSpatialStreamManager();
+          let outcome = "no_active_manager";
           if (manager) {
-            await manager.resubscribe();
+            const result = await manager.resubscribe();
+            outcome = result?.outcome ?? "no_active_descriptor";
           }
-          addNetworkBreadcrumb({ event: "reconnect_success", streamType: "spatial" });
+          addNetworkBreadcrumb({ event: "reconnect_success", streamType: "spatial", status: outcome });
         } catch (error) {
           addNetworkBreadcrumb({ event: "reconnect_failure", streamType: "spatial" });
           throw error;
@@ -233,6 +236,13 @@ const ConnectionMonitor = () => {
         } catch (error) {
           addNetworkBreadcrumb({ event: "reconnect_failure", streamType: "global" });
           throw error;
+        }
+      },
+      onReconnectComplete: () => {
+        try {
+          getActiveWorldmapRecoveryHandle()?.refreshAfterReconnect();
+        } catch (error) {
+          console.warn("[ConnectionMonitor] Worldmap reconnect refresh failed", error);
         }
       },
       healthCheckFn: async () => {

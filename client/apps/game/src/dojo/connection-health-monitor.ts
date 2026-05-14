@@ -10,6 +10,7 @@ const DEFAULT_DEAD_END_ATTEMPTS = 5;
 interface ConnectionHealthMonitorConfig {
   onReconnectSpatial: () => Promise<void>;
   onReconnectGlobal: () => Promise<void>;
+  onReconnectComplete?: () => void;
   healthCheckFn: () => Promise<boolean>;
   onRecovery?: (outageMs: number, attempts: number) => void;
   onDeadEnd?: (outageMs: number, attempts: number) => void;
@@ -265,6 +266,9 @@ export class ConnectionHealthMonitor {
       if (global) promises.push(this.config.onReconnectGlobal());
       attempted = promises.length > 0;
       await Promise.all(promises);
+      if (attempted) {
+        this.config.onReconnectComplete?.();
+      }
       if (markConnectedOnSuccess) {
         if (spatial) store.setSpatialStatus("connected");
         if (global) store.setGlobalStatus("connected");

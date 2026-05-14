@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   applyWorldmapSwitchOffRuntimeState,
-  finalizePendingChunkFetchOwnership,
   invalidateWorldmapSwitchOffTransitionState,
   invalidateWorldmapPendingFetchGeneration,
   shouldApplyWorldmapFetchResult,
@@ -21,8 +20,6 @@ describe("worldmap runtime lifecycle", () => {
     const pendingArmyMovementStartedAt = new Map<number, number>([[101, Date.now()]]);
     const pendingArmyMovementFallbackTimeouts = new Map<number, string>([[101, "fallback-timeout"]]);
     const armyStructureOwners = new Map<number, number>([[101, 88]]);
-    const fetchedChunks = new Set<string>(["8,8"]);
-    const pendingChunks = new Map<string, Promise<boolean>>([["8,8", Promise.resolve(true)]]);
     const pinnedChunkKeys = new Set<string>(["8,8"]);
     const pinnedRenderAreas = new Set<string>(["8,8:render"]);
 
@@ -30,6 +27,7 @@ describe("worldmap runtime lifecycle", () => {
     const clearPendingArmyMovementSpy = vi.fn();
     const clearQueuedPrefetchStateSpy = vi.fn();
     const clearStreamingWorkSpy = vi.fn();
+    const clearRenderAreaHydrationStateSpy = vi.fn();
     const invalidatePendingFetchesSpy = vi.fn();
     const releaseInactiveResourcesSpy = vi.fn();
 
@@ -42,8 +40,7 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyMovementStartedAt,
       pendingArmyMovementFallbackTimeouts,
       armyStructureOwners,
-      fetchedChunks,
-      pendingChunks,
+      clearRenderAreaHydrationState: clearRenderAreaHydrationStateSpy,
       pinnedChunkKeys,
       pinnedRenderAreas,
       hydratedChunkRefreshes: new Set(),
@@ -63,6 +60,7 @@ describe("worldmap runtime lifecycle", () => {
     expect(clearPendingArmyMovementSpy).toHaveBeenCalledWith(202);
     expect(clearStreamingWorkSpy).toHaveBeenCalledTimes(1);
     expect(clearQueuedPrefetchStateSpy).toHaveBeenCalledTimes(1);
+    expect(clearRenderAreaHydrationStateSpy).toHaveBeenCalledTimes(1);
     expect(invalidatePendingFetchesSpy).toHaveBeenCalledTimes(1);
     expect(releaseInactiveResourcesSpy).not.toHaveBeenCalled();
 
@@ -74,8 +72,6 @@ describe("worldmap runtime lifecycle", () => {
     expect(pendingArmyMovementStartedAt.size).toBe(0);
     expect(pendingArmyMovementFallbackTimeouts.size).toBe(0);
     expect(armyStructureOwners.size).toBe(0);
-    expect(fetchedChunks.size).toBe(0);
-    expect(pendingChunks.size).toBe(0);
     expect(pinnedChunkKeys.size).toBe(0);
     expect(pinnedRenderAreas.size).toBe(0);
 
@@ -92,6 +88,7 @@ describe("worldmap runtime lifecycle", () => {
     const clearPendingArmyMovementSpy = vi.fn();
     const clearQueuedPrefetchStateSpy = vi.fn();
     const clearStreamingWorkSpy = vi.fn();
+    const clearRenderAreaHydrationStateSpy = vi.fn();
     const invalidatePendingFetchesSpy = vi.fn();
     const releaseInactiveResourcesSpy = vi.fn();
 
@@ -104,8 +101,7 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyMovementStartedAt: new Map(),
       pendingArmyMovementFallbackTimeouts: new Map(),
       armyStructureOwners: new Map(),
-      fetchedChunks: new Set(),
-      pendingChunks: new Map(),
+      clearRenderAreaHydrationState: clearRenderAreaHydrationStateSpy,
       pinnedChunkKeys: new Set(),
       pinnedRenderAreas: new Set(),
       hydratedChunkRefreshes: new Set(),
@@ -122,6 +118,7 @@ describe("worldmap runtime lifecycle", () => {
     expect(clearPendingArmyMovementSpy).not.toHaveBeenCalled();
     expect(clearStreamingWorkSpy).toHaveBeenCalledTimes(1);
     expect(clearQueuedPrefetchStateSpy).toHaveBeenCalledTimes(1);
+    expect(clearRenderAreaHydrationStateSpy).toHaveBeenCalledTimes(1);
     expect(invalidatePendingFetchesSpy).toHaveBeenCalledTimes(1);
     expect(releaseInactiveResourcesSpy).not.toHaveBeenCalled();
     expect(result.currentChunk).toBe("null");
@@ -143,29 +140,6 @@ describe("worldmap runtime lifecycle", () => {
     });
   });
 
-  it("cleans up pending fetches by promise ownership identity", () => {
-    const fetchKey = "12,12:render";
-    const staleOwner = Promise.resolve(true);
-    const currentOwner = Promise.resolve(true);
-    const pendingChunks = new Map<string, Promise<boolean>>([[fetchKey, currentOwner]]);
-
-    const staleDeleteResult = finalizePendingChunkFetchOwnership({
-      pendingChunks,
-      fetchKey,
-      fetchPromise: staleOwner,
-    });
-    expect(staleDeleteResult).toBe(false);
-    expect(pendingChunks.get(fetchKey)).toBe(currentOwner);
-
-    const currentDeleteResult = finalizePendingChunkFetchOwnership({
-      pendingChunks,
-      fetchKey,
-      fetchPromise: currentOwner,
-    });
-    expect(currentDeleteResult).toBe(true);
-    expect(pendingChunks.size).toBe(0);
-  });
-
   it("clears hydrated refresh queues and sheds cache when switching to fast travel", () => {
     const hydratedChunkRefreshes = new Set<string>(["10,10"]);
     const hydratedRefreshSuppressionAreaKeys = new Set<string>(["10,10:render"]);
@@ -181,8 +155,7 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyMovementStartedAt: new Map(),
       pendingArmyMovementFallbackTimeouts: new Map(),
       armyStructureOwners: new Map(),
-      fetchedChunks: new Set(),
-      pendingChunks: new Map(),
+      clearRenderAreaHydrationState: vi.fn(),
       pinnedChunkKeys: new Set(),
       pinnedRenderAreas: new Set(),
       hydratedChunkRefreshes,
@@ -215,8 +188,7 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyMovementFallbackTimeouts: new Map(),
       armyStructureOwners: new Map(),
       suppressedArmies,
-      fetchedChunks: new Set(),
-      pendingChunks: new Map(),
+      clearRenderAreaHydrationState: vi.fn(),
       pinnedChunkKeys: new Set(),
       pinnedRenderAreas: new Set(),
       hydratedChunkRefreshes: new Set(),
@@ -241,7 +213,7 @@ describe("worldmap runtime lifecycle", () => {
         fetchGeneration: currentGeneration,
         activeFetchGeneration: nextGeneration,
         fetchKey: "12,12:render",
-        pinnedRenderAreas: new Set(["12,12:render"]),
+        retainedRenderAreas: new Set(["12,12:render"]),
       }),
     ).toBe(false);
 
@@ -250,7 +222,7 @@ describe("worldmap runtime lifecycle", () => {
         fetchGeneration: nextGeneration,
         activeFetchGeneration: nextGeneration,
         fetchKey: "12,12:render",
-        pinnedRenderAreas: new Set(["12,12:render"]),
+        retainedRenderAreas: new Set(["12,12:render"]),
       }),
     ).toBe(true);
   });
