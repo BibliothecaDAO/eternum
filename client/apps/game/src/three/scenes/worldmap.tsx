@@ -26,6 +26,11 @@ import { LoadingStateKey } from "@/hooks/store/use-world-loading";
 import { parsePlayRoute } from "@/play/navigation/play-route";
 import { resolvePlayRouteWorldPosition } from "@/play/navigation/play-route-target";
 import {
+  clearPendingReservedHyperstructureCreation,
+  isPendingReservedHyperstructureCreation,
+  submitActiveWorldBlitzHyperstructureCreation,
+} from "@/services/blitz/blitz-hyperstructure-creation";
+import {
   PendingWorldmapFxStartPayload,
   PendingWorldmapFxStopPayload,
   WORLDMAP_PENDING_FX_START_EVENT,
@@ -37,6 +42,7 @@ import { BattleDirectionManager } from "@/three/managers/battle-direction-manage
 import { ChestManager } from "@/three/managers/chest-manager";
 import InstancedBiome from "@/three/managers/instanced-biome";
 import { LAND_NAME } from "@/three/managers/instanced-model";
+import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperstructure-manager";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { SelectionPulseManager } from "@/three/managers/selection-pulse-manager";
 import { StructureManager } from "@/three/managers/structure-manager";
@@ -68,11 +74,14 @@ import {
   ArmyActionManager,
   BattleEventSystemUpdate,
   ChestSystemUpdate,
+  DEFAULT_COORD_ALT,
   ExplorerRewardSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   getTileAt,
+  isTileOccupierReservedHyperstructure,
   recordArmyMovementLatencyPhase,
+  ReservedHyperstructureTileSystemUpdate,
   SelectableArmy,
   StructureActionManager,
   TileSystemUpdate,
@@ -930,6 +939,7 @@ export default class WorldmapScene extends WarpTravel {
   private armyLabelsGroup!: Group;
   private structureLabelsGroup!: Group;
   private chestLabelsGroup!: Group;
+  private reservedHyperstructureManager!: ReservedHyperstructureManager;
 
   private storeSubscriptions: Array<() => void> = [];
 
@@ -1324,6 +1334,7 @@ export default class WorldmapScene extends WarpTravel {
       this.visibilityManager,
       this.chunkSize,
     );
+    this.reservedHyperstructureManager = new ReservedHyperstructureManager(this.scene);
     this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this, this.chunkSize);
 
     // NOTE: Chunk integration system disabled for performance.
@@ -1398,6 +1409,7 @@ export default class WorldmapScene extends WarpTravel {
     this.registerBattleWorldUpdateSubscriptions();
     this.registerStructureWorldUpdateSubscriptions();
     this.registerTileWorldUpdateSubscriptions();
+    this.registerReservedHyperstructureWorldUpdateSubscriptions();
     this.registerChestWorldUpdateSubscriptions();
     this.registerExplorerRewardWorldUpdateSubscriptions();
   }
@@ -1646,6 +1658,18 @@ export default class WorldmapScene extends WarpTravel {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Chest.onDeadChest((entityId) => {
         this.deleteChest(entityId);
+      }),
+    );
+  }
+
+  private registerReservedHyperstructureWorldUpdateSubscriptions(): void {
+    this.addWorldUpdateSubscription(
+      this.worldUpdateListener.ReservedHyperstructure.onTileUpdate((update: ReservedHyperstructureTileSystemUpdate) => {
+        if (update.removed) {
+          clearPendingReservedHyperstructureCreation(update.hexCoords);
+        }
+
+        this.reservedHyperstructureManager.onUpdate(update);
       }),
     );
   }
@@ -2331,14 +2355,58 @@ export default class WorldmapScene extends WarpTravel {
     this.applyContextualHoverPalette(hexCoords);
   }
 
-  // double-click to enter hex view; spectate when the structure is not yours
+  // double-click reserved hyperstructure tiles to materialize them; otherwise enter the real structure
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
+    if (this.isReservedHyperstructureHex(hexCoords)) {
+      void this.createReservedHyperstructureFromWorldmap(hexCoords);
+      return;
+    }
+
+    this.enterStructureFromSelectedHex(hexCoords);
+  }
+
+  private enterStructureFromSelectedHex(hexCoords: HexPosition) {
     const { structure } = this.getHexagonEntity(hexCoords);
     if (!structure) {
       return;
     }
 
     void this.enterStructureFromWorldmap(structure, hexCoords);
+  }
+
+  private async createReservedHyperstructureFromWorldmap(hexCoords: HexPosition): Promise<void> {
+    if (isPendingReservedHyperstructureCreation(hexCoords)) {
+      return;
+    }
+
+    const account = useAccountStore.getState().account;
+    if (!account) {
+      toast.error("Connect a controller account before creating a Hyperstructure.");
+      return;
+    }
+
+    try {
+      const didSubmit = await submitActiveWorldBlitzHyperstructureCreation({
+        account,
+        hexCoords,
+      });
+
+      if (!didSubmit) {
+        return;
+      }
+
+      toast.success("Creating Hyperstructure...");
+    } catch (error) {
+      console.error("[Worldmap] Failed to create reserved hyperstructure", error);
+      toast.error("Unable to create this Hyperstructure right now.");
+    }
+  }
+
+  private isReservedHyperstructureHex(hexCoords: HexPosition): boolean {
+    const contractPosition = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const tile = getTileAt(this.dojo.components, DEFAULT_COORD_ALT, contractPosition.x, contractPosition.y);
+
+    return Boolean(tile && isTileOccupierReservedHyperstructure(tile.occupier_type));
   }
 
   private async enterStructureFromWorldmap(structure: HexEntityInfo, hexCoords: HexPosition) {
@@ -8699,6 +8767,7 @@ export default class WorldmapScene extends WarpTravel {
       armyManager: this.armyManager,
       arrivalGhostManager: this.arrivalGhostManager,
       structureManager: this.structureManager,
+      reservedHyperstructureManager: this.reservedHyperstructureManager,
       chestManager: this.chestManager,
       fxManager: this.fxManager,
       resourceFXManager: this.resourceFXManager,

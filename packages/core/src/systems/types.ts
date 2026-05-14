@@ -149,6 +149,11 @@ export type ChestSystemUpdate = {
   hexCoords: HexPosition;
 };
 
+export type ReservedHyperstructureTileSystemUpdate = {
+  hexCoords: HexPosition;
+  removed?: boolean;
+};
+
 export interface QuestData {
   entityId: ID;
   questType: QuestType;

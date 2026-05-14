@@ -132,10 +132,14 @@ pub mod realm_systems {
             settlement_config.update_max_layer_and_spires(realm_count.count.into());
             WorldConfigUtilImpl::set_member(ref world, selector!("settlement_config"), settlement_config);
 
-            // create realm
+            // create the realm structure first, then provision its economy in the same tx
             let (realm_internal_systems_address, _) = world.dns(@"realm_internal_systems").unwrap();
-            let structure_id = IRealmInternalSystemsDispatcher { contract_address: realm_internal_systems_address }
-                .create_internal(owner, realm_id, resources, order, wonder, coord, true);
+            let realm_internal_systems = IRealmInternalSystemsDispatcher {
+                contract_address: realm_internal_systems_address,
+            };
+            let structure_id = realm_internal_systems
+                .create_internal(owner, realm_id, resources, order, wonder, coord, true, true);
+            realm_internal_systems.provision_internal(structure_id);
 
             // collect lords attached to season pass and bridge into the realm
             // let lords_amount_attached: u256 =

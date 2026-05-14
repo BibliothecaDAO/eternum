@@ -1,9 +1,9 @@
 /**
- * Player-scoped world registration lookups, layered on top of the bulk
+ * Player-scoped world entry lookups, layered on top of the bulk
  * `WorldSummary` payload.
  *
  * The summary endpoint intentionally does not include player-specific data
- * (registration, settlement). This hook fires one SQL query per world — but
+ * (blitz settlement, eternum realm ownership). This hook fires one SQL query per world — but
  * only when a wallet is connected — so the anonymous boot path produces
  * zero of these requests.
  *
@@ -11,7 +11,7 @@
  * in `use-world-availability.ts`.
  */
 import type { WorldSummary } from "@bibliothecadao/types";
-import { parseMaybeBooleanFlag } from "@/config/game-modes/resolved-mode";
+import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
 import { PLAYER_WORLD_REGISTRATION_QUERY_KEY } from "@/hooks/world-list-queries";
 import { useQueries } from "@tanstack/react-query";
 
@@ -43,23 +43,16 @@ const parseMaybeHexToNumber = (v: unknown): number | null => {
 };
 
 /**
- * Blitz-only: fetch `once_registered` from the BlitzRealmPlayerRegister table.
- * Ported from `use-world-availability.ts` — uses `once_registered` because
- * `registered` gets cleared after settlement.
+ * Blitz-only: check whether the player already has a settlement entry for this world.
  */
 export const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddress: string): Promise<boolean | null> => {
   try {
-    const query = `SELECT once_registered FROM "s1_eternum-BlitzRealmPlayerRegister" WHERE player = "${playerAddress}" LIMIT 1;`;
+    const query = buildPlayerBlitzSettlementStatusQuery(playerAddress);
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
     const response = await fetch(url);
     if (!response.ok) return null;
     const data = (await response.json()) as Record<string, unknown>[];
-    const [row] = data;
-    if (row && row.once_registered != null) {
-      return parseMaybeBooleanFlag(row.once_registered);
-    }
-    // Query succeeded but no row — player is not registered.
-    return false;
+    return data.length > 0;
   } catch {
     return null;
   }

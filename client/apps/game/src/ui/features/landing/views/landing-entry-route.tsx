@@ -31,10 +31,8 @@ export const LandingEntryRoute = () => {
         worldName={entryContext.worldName}
         chain={entryContext.chain}
         isSpectateMode={entryContext.intent === "spectate"}
-        isForgeMode={entryContext.intent === "forge"}
         autoSettleEnabled={entryContext.autoSettle}
         entryIntent={entryContext.intent === "settle" ? "settle" : "play"}
-        numHyperstructuresLeft={entryContext.intent === "forge" ? (entryContext.hyperstructuresLeft ?? 0) : 0}
       />
     </>
   );

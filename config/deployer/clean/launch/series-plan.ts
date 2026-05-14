@@ -12,6 +12,7 @@ export const SERIES_GAME_STEP_BY_GROUPED_STEP: Record<
   "create-worlds": "create-world",
   "wait-for-factory-indexes": "wait-for-factory-index",
   "configure-worlds": "configure-world",
+  "reserve-blitz-hyperstructures": "reserve-blitz-hyperstructures",
   "grant-lootchest-roles": "grant-lootchest-role",
   "grant-village-pass-roles": "grant-village-pass-role",
   "create-banks": "create-banks",
@@ -26,8 +27,13 @@ export function resolveSeriesLaunchStepIds(environmentId: DeploymentEnvironmentI
     "create-worlds",
     "wait-for-factory-indexes",
     "configure-worlds",
-    "grant-lootchest-roles",
   ];
+
+  if (!isEternumDeploymentEnvironment(environment)) {
+    stepIds.push("reserve-blitz-hyperstructures");
+  }
+
+  stepIds.push("grant-lootchest-roles");
 
   if (isEternumDeploymentEnvironment(environment)) {
     stepIds.push("grant-village-pass-roles", "create-banks");
@@ -52,6 +58,8 @@ export function resolveSeriesLaunchStepTitle(stepId: LaunchSeriesStepId): string
       return "Waiting for games";
     case "configure-worlds":
       return "Applying settings";
+    case "reserve-blitz-hyperstructures":
+      return "Reserving hyperstructures";
     case "grant-lootchest-roles":
       return "Setting up loot chests";
     case "grant-village-pass-roles":

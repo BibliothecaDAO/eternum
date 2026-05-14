@@ -44,7 +44,6 @@ const makeSummary = (overrides: Partial<WorldSummary>): WorldSummary => ({
   settledPlayersCount: null,
   settledRealmsCount: null,
   settledVillagesCount: null,
-  numHyperstructuresLeft: null,
   winnerJackpotAmount: null,
   ...overrides,
 });

@@ -11,7 +11,7 @@ describe("Game entry settlement target polling", () => {
   it("waits for the requested settled realm count instead of accepting empty indexed snapshots", () => {
     const source = readSource("src/ui/features/landing/components/game-entry-modal.tsx");
 
-    expect(source).toContain("hasReachedSettlementTarget(status, targetSettleCount)");
-    expect(source).not.toContain("status.remainingToSettle === 0");
+    expect(source).toContain("status.canPlay || status.settledCount >= Math.max(1, targetSettleCount)");
+    expect(source).not.toContain("hasReachedSettlementTarget(status, targetSettleCount)");
   });
 });

@@ -1,4 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { resolveBlitzSettlementComponent } from "@/services/blitz/blitz-settlement-component";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
@@ -123,15 +124,19 @@ export const PrizePanel = () => {
     return gameMedian !== undefined && gameMedian !== 0n;
   }, [mmrGameMetaEntities, components.MMRGameMeta]);
 
-  // All registered players (by registration status), regardless of points
-  const blitzRegEntities = useEntityQuery([Has(components.BlitzRealmPlayerRegister)]);
+  // All settled blitz players, regardless of points
+  const blitzSettlementComponent = useMemo(() => resolveBlitzSettlementComponent(components), [components]);
+  const blitzSettlementEntities = useEntityQuery(blitzSettlementComponent ? [Has(blitzSettlementComponent)] : []);
   const registeredAddresses = useMemo(() => {
-    return blitzRegEntities
-      .map((eid) => getComponentValue(components.BlitzRealmPlayerRegister, eid))
+    if (!blitzSettlementComponent) {
+      return [];
+    }
+
+    return blitzSettlementEntities
+      .map((eid) => getComponentValue(blitzSettlementComponent, eid))
       .filter((v): v is NonNullable<typeof v> => Boolean(v))
-      .filter((v) => Boolean(v.once_registered))
       .map((v) => v.player as unknown as bigint);
-  }, [blitzRegEntities, components.BlitzRealmPlayerRegister]);
+  }, [blitzSettlementComponent, blitzSettlementEntities]);
 
   const [nowTs, setNowTs] = useState(() => Math.floor(Date.now() / 1000));
   useEffect(() => {

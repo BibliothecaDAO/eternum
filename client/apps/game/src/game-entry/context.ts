@@ -10,7 +10,7 @@ import {
 } from "@/play/navigation/play-route";
 
 type LandingPrimaryChain = "mainnet" | "slot";
-export type EntryIntent = "play" | "settle" | "spectate" | "forge";
+export type EntryIntent = "play" | "settle" | "spectate";
 
 type LocationLike = Pick<Location, "pathname" | "search">;
 
@@ -20,7 +20,6 @@ export interface ResolvedEntryContext {
   worldAddress?: string;
   intent: EntryIntent;
   autoSettle: boolean;
-  hyperstructuresLeft: number | null;
   source: "landing" | "play-route";
 }
 
@@ -28,7 +27,6 @@ interface LandingSelectionEntryContextInput {
   selection: WorldSelectionInput;
   intent: EntryIntent;
   autoSettle?: boolean;
-  hyperstructuresLeft?: number | null;
 }
 
 interface BuildPlayRouteFromEntryContextInput {
@@ -63,7 +61,6 @@ export const resolveEntryContextFromLandingSelection = ({
   selection,
   intent,
   autoSettle = false,
-  hyperstructuresLeft = null,
 }: LandingSelectionEntryContextInput): ResolvedEntryContext | null => {
   const resolvedChain = resolveLandingEntryChain(selection.chain);
   if (!resolvedChain) {
@@ -76,7 +73,6 @@ export const resolveEntryContextFromLandingSelection = ({
     worldAddress: selection.worldAddress,
     intent,
     autoSettle,
-    hyperstructuresLeft,
     source: "landing",
   };
 };
@@ -97,7 +93,6 @@ export const resolveEntryContextFromEntryRoute = (location: LocationLike): Resol
     worldName: route.worldName,
     intent: route.intent,
     autoSettle: route.autoSettle,
-    hyperstructuresLeft: route.hyperstructuresLeft,
     source: "landing",
   };
 };
@@ -113,7 +108,6 @@ export const resolveEntryContextFromPlayRoute = (location: LocationLike): Resolv
     worldName: route.worldName,
     intent: route.spectate ? "spectate" : "play",
     autoSettle: false,
-    hyperstructuresLeft: null,
     source: "play-route",
   };
 };
@@ -123,7 +117,6 @@ export const buildEntryHrefFromEntryContext = (context: ResolvedEntryContext): s
     chain: context.chain,
     worldName: context.worldName,
     intent: context.intent,
-    hyperstructuresLeft: context.hyperstructuresLeft,
     autoSettle: context.autoSettle,
   });
 };

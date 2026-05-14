@@ -1,4 +1,4 @@
-import type { WorldSummary, WorldSummaryMode } from "@bibliothecadao/types";
+import { type WorldSummary, type WorldSummaryMode } from "@bibliothecadao/types";
 
 const CARTRIDGE_API_BASE = "https://api.cartridge.gg";
 const ZERO_OWNER_ADDRESS = "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -18,15 +18,13 @@ const WORLD_SUMMARY_QUERY = `
     "blitz_registration_config.fee_amount" AS fee_amount,
     "blitz_registration_config.registration_start_at" AS registration_start_at,
     "season_config.start_main_at" AS registration_end_at,
-    "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count,
     "blitz_settlement_config.single_realm_mode" AS single_realm_mode,
     "blitz_settlement_config.two_player_mode" AS two_player_mode,
     "season_addresses_config.season_pass_address" AS season_pass_address,
     "village_pass_config.token_address" AS village_pass_token_address,
     (SELECT COUNT(DISTINCT owner) FROM "s1_eternum-Structure" WHERE category IN (1, 5) AND owner != '${ZERO_OWNER_ADDRESS}') AS settled_players_count,
     (SELECT COUNT(*) FROM "s1_eternum-Structure" WHERE category = 1 AND owner != '${ZERO_OWNER_ADDRESS}') AS settled_realms_count,
-    (SELECT COUNT(*) FROM "s1_eternum-Structure" WHERE category = 5 AND owner != '${ZERO_OWNER_ADDRESS}') AS settled_villages_count,
-    (SELECT created_count FROM "s1_eternum-HyperstructureGlobals" LIMIT 1) AS hyperstructure_created_count
+    (SELECT COUNT(*) FROM "s1_eternum-Structure" WHERE category = 5 AND owner != '${ZERO_OWNER_ADDRESS}') AS settled_villages_count
   FROM "s1_eternum-WorldConfig"
   LIMIT 1
 `;
@@ -56,7 +54,6 @@ const NULL_SUMMARY: SummaryFields = {
   settledPlayersCount: null,
   settledRealmsCount: null,
   settledVillagesCount: null,
-  numHyperstructuresLeft: null,
   winnerJackpotAmount: null,
 };
 
@@ -125,25 +122,13 @@ function resolveMode(blitzModeOn: unknown): WorldSummaryMode | null {
   return n === 0 ? "eternum" : "blitz";
 }
 
-function calculateHyperstructuresLeft(maxRingCount: number, createdCount: number, twoPlayerMode: boolean): number {
-  const total = twoPlayerMode ? maxRingCount + 1 : 1 + 6 * ((maxRingCount * (maxRingCount + 1)) / 2);
-  return Math.max(0, total - createdCount);
-}
-
 function parseSummaryRow(row: Record<string, unknown>): SummaryFields {
   const mode = resolveMode(row.blitz_mode_on);
   const twoPlayerMode = parseMaybeBoolean(row.two_player_mode) ?? false;
-  const maxRingCount = parseMaybeHexToNumber(row.max_ring_count);
-  const createdCount = parseMaybeHexToNumber(row.hyperstructure_created_count) ?? 0;
   const registrationEndAt =
     mode === "blitz"
       ? (parseMaybeHexToNumber(row.registration_end_at) ?? parseMaybeHexToNumber(row.start_main_at))
       : null;
-
-  let numHyperstructuresLeft: number | null = null;
-  if (mode === "blitz" && maxRingCount != null && maxRingCount > 0) {
-    numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, createdCount, twoPlayerMode);
-  }
 
   return {
     mode,
@@ -168,7 +153,6 @@ function parseSummaryRow(row: Record<string, unknown>): SummaryFields {
     settledPlayersCount: parseMaybeHexToNumber(row.settled_players_count),
     settledRealmsCount: parseMaybeHexToNumber(row.settled_realms_count),
     settledVillagesCount: parseMaybeHexToNumber(row.settled_villages_count),
-    numHyperstructuresLeft,
     winnerJackpotAmount: null,
   };
 }

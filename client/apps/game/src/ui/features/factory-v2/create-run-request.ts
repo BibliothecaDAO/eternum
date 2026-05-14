@@ -6,6 +6,7 @@ export const buildFactoryCreateRunRequest = ({
   environmentId,
   gameName,
   gameStartTime,
+  workflowRef,
   selectedMode,
   selectedPreset,
   twoPlayerMode,
@@ -18,6 +19,7 @@ export const buildFactoryCreateRunRequest = ({
   environmentId: FactoryWorkerEnvironmentId;
   gameName: string;
   gameStartTime: string;
+  workflowRef?: string;
   selectedMode: FactoryGameMode;
   selectedPreset: FactoryLaunchPreset | null;
   twoPlayerMode: boolean;
@@ -30,6 +32,7 @@ export const buildFactoryCreateRunRequest = ({
   environment: environmentId,
   gameName,
   gameStartTime,
+  workflowRef,
   devModeOn: selectedPreset?.defaults.devMode ?? false,
   twoPlayerMode: selectedMode === "blitz" ? twoPlayerMode : false,
   singleRealmMode: selectedMode === "blitz" ? singleRealmMode : false,
