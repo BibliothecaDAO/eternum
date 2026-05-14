@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-14T02:13:01.181Z",
+  "updatedAt": "2026-05-14T03:12:54.563Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2232,26 +2232,26 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-zest-933/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-14T00:58:26.475Z"
+        "describedAt": "2026-05-14T03:12:54.541Z"
       },
-      "updatedAt": "2026-05-14T00:58:26.510Z"
+      "updatedAt": "2026-05-14T03:12:54.563Z"
     },
     "bltz-nova-985": {
       "gameName": "bltz-nova-985",
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-nova-985/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-14T00:58:26.509Z"
+        "describedAt": "2026-05-14T03:12:54.563Z"
       },
-      "updatedAt": "2026-05-14T00:58:26.510Z"
+      "updatedAt": "2026-05-14T03:12:54.563Z"
     },
     "frenchie": {
       "gameName": "frenchie",
