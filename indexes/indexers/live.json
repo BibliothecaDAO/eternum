@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-14T00:53:00.317Z",
+  "updatedAt": "2026-05-14T00:58:26.510Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2226,6 +2226,32 @@
         "describedAt": "2026-05-14T00:53:00.317Z"
       },
       "updatedAt": "2026-05-14T00:53:00.317Z"
+    },
+    "bltz-zest-933": {
+      "gameName": "bltz-zest-933",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-zest-933/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-14T00:58:26.475Z"
+      },
+      "updatedAt": "2026-05-14T00:58:26.510Z"
+    },
+    "bltz-nova-985": {
+      "gameName": "bltz-nova-985",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-nova-985/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-14T00:58:26.509Z"
+      },
+      "updatedAt": "2026-05-14T00:58:26.510Z"
     }
   }
 }
