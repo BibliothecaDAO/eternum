@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/frenchie/25835381654-1.json",
   "latestLaunchRequestId": "25835381654-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-14T01:02:21.638Z",
-  "updatedAt": "2026-05-14T01:02:26.258Z",
+  "updatedAt": "2026-05-14T01:04:19.069Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-05-14T01:02:26.258Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-05-14T01:02:26.258Z",
+      "finishedAt": "2026-05-14T01:04:19.069Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -76,15 +77,10 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "2026-05-14T02:00:00.000Z",
-    "durationSeconds": 5400
-  },
-  "activeLease": {
-    "launchRequestId": "25835381654-1",
-    "workflowRunId": 25835381654,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-05-14T01:02:26.258Z",
-    "expiresAt": "2026-05-14T01:47:26.258Z"
+    "scheduledStartTime": 1778724000,
+    "durationSeconds": 5400,
+    "summaryPath": ".context/game-launch/mainnet-blitz-frenchie.json",
+    "worldAddress": "0x05b7e1af51f9789c6367937be2a55522521a099093491549872fd7e5403ec1fd",
+    "createGameTxHash": "0x5dc1fb0479ce198b8f4e9693f6cefbbb6b012787a1efdb52d9a19851d6f697d"
   }
 }
