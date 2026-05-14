@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25834342363-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-14T00:29:00.815Z",
-  "updatedAt": "2026-05-14T00:31:08.972Z",
+  "updatedAt": "2026-05-14T00:31:18.782Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-05-14T00:31:18.782Z"
     },
     {
       "id": "configure-world",
@@ -82,5 +83,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-z-onboarding-002.json",
     "worldAddress": "0x06139aa776e7e6ea6ab04b5d6d6d3f6954df6368ec144c4c98cd0d0b8567f0ae",
     "createGameTxHash": "0x615859adbec9584d9e26a54c1d152ec7aeba02837ceb7d6377ab42410ffea13"
+  },
+  "activeLease": {
+    "launchRequestId": "25834342363-1",
+    "workflowRunId": 25834342363,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-05-14T00:31:18.782Z",
+    "expiresAt": "2026-05-14T01:16:18.782Z"
   }
 }
