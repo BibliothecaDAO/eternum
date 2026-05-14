@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-14T04:12:46.623Z",
+  "updatedAt": "2026-05-14T09:32:08.836Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2265,6 +2265,28 @@
         "describedAt": "2026-05-14T04:12:46.622Z"
       },
       "updatedAt": "2026-05-14T04:12:46.623Z"
+    },
+    "baking-loaf": {
+      "gameName": "baking-loaf",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/baking-loaf/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-14T09:32:08.758Z"
+      },
+      "updatedAt": "2026-05-14T09:32:08.836Z"
+    },
+    "apac-gladiator-14-05-26-1000": {
+      "gameName": "apac-gladiator-14-05-26-1000",
+      "liveState": {
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-14-05-26-1000 not found"
+      },
+      "updatedAt": "2026-05-14T09:32:08.836Z"
     }
   }
 }
