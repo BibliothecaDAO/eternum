@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-14T09:30:15.443Z",
+  "updatedAt": "2026-05-14T09:32:02.090Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -719,7 +719,7 @@
       "path": "runs/mainnet/blitz/baking-loaf.json",
       "inputPath": "inputs/mainnet/blitz/baking-loaf/25840653521-1.json",
       "status": "complete",
-      "updatedAt": "2026-05-14T09:30:15.443Z",
+      "updatedAt": "2026-05-14T09:32:02.090Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -729,10 +729,8 @@
       "durationSeconds": 3600,
       "artifacts": {
         "indexerCreated": true,
-        "indexerTier": "basic",
-        "lastIndexerDescribeAt": "2026-05-14T03:58:28.843Z",
-        "pendingIndexerTierTarget": "legendary",
-        "pendingIndexerTierRequestedAt": "2026-05-14T09:30:13.783Z"
+        "indexerTier": "legendary",
+        "lastIndexerDescribeAt": "2026-05-14T09:32:02.090Z"
       }
     }
   }
