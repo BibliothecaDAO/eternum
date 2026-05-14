@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/baking-loaf/25840653521-1.json",
   "latestLaunchRequestId": "25840653521-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-05-14T03:54:48.050Z",
-  "updatedAt": "2026-05-14T03:58:14.430Z",
+  "updatedAt": "2026-05-14T03:58:30.156Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-14T03:58:14.430Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-05-14T03:58:14.430Z",
+      "finishedAt": "2026-05-14T03:58:30.156Z"
     },
     {
       "id": "sync-paymaster",
@@ -96,14 +97,12 @@
     "worldConfigTxHash": "0x24e32ebc163a62761533ca3e09d64acd3bd98dd5646222d8f6a65e69f7d8ead",
     "reserveHyperstructuresTxHashes": [
       "0x759f884c73a91843966e8cd07e5f432136e4a24d8ea9af533dfb9503f6ce3cb"
-    ]
-  },
-  "activeLease": {
-    "launchRequestId": "25840653521-1",
-    "workflowRunId": 25840653521,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-14T03:58:14.430Z",
-    "expiresAt": "2026-05-14T04:43:14.430Z"
+    ],
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/baking-loaf/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-14T03:58:28.843Z"
   }
 }
