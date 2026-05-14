@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-14",
+    title: "Registered Game Entry",
+    description:
+      "Registered Blitz games now show an Enter action on the dashboard and display an in-game top-nav countdown until the main phase begins.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-05-13",
     title: "Settle Or Spectate",
     description:

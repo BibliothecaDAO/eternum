@@ -47,4 +47,17 @@ describe("Game card reservation visibility", () => {
     expect(source).toContain("const canSpectatePreMainBlitz = isBlitzMode && canRegisterPeriod;");
     expect(source).toContain("const canSpectate = isOngoing || isEnded || canSpectatePreMainBlitz;");
   });
+
+  it("shows an enter action for registered blitz games without removing spectate", () => {
+    const source = readFileSync(
+      resolve(process.cwd(), "src/ui/features/landing/components/game-selector/game-card-grid.tsx"),
+      "utf8",
+    );
+
+    expect(source).toContain(
+      "const canEnterRegisteredBlitz = isBlitzMode && showRegistered && (isUpcoming || isOngoing);",
+    );
+    expect(source).toContain('canEnterRegisteredBlitz ? "Enter"');
+    expect(source).toContain("{canSpectate && (");
+  });
 });
