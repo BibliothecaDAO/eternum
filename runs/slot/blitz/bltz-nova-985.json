@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25834972794-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-05-14T00:49:11.347Z",
-  "updatedAt": "2026-05-14T00:50:41.722Z",
+  "updatedAt": "2026-05-14T00:50:45.732Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-14T00:50:45.732Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -77,5 +78,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-nova-985.json",
     "worldAddress": "0x039a530d42b7a1edb4be526fe7fbd6f6c8b05c656105dc7996f58cade3340a39",
     "createGameTxHash": "0x47f4c82248185d5220f6f1c4d6dda514686675c449643cde47a7ab025d74222"
+  },
+  "activeLease": {
+    "launchRequestId": "25834972794-1",
+    "workflowRunId": 25834972794,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-05-14T00:50:45.732Z",
+    "expiresAt": "2026-05-14T01:35:45.732Z"
   }
 }
