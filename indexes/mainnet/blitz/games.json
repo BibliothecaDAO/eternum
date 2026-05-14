@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-14T00:29:00.815Z",
+  "updatedAt": "2026-05-14T00:29:06.322Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -677,12 +677,13 @@
       "path": "runs/mainnet/blitz/z-onboarding-002.json",
       "inputPath": "inputs/mainnet/blitz/z-onboarding-002/25834342363-1.json",
       "status": "running",
-      "updatedAt": "2026-05-14T00:29:00.815Z",
+      "updatedAt": "2026-05-14T00:29:06.322Z",
       "workflowRef": "credence0x/blitz-hex-map",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-14T01:14:06.322Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-05-14T01:20:00.000Z",
       "durationSeconds": 5400,
       "artifacts": {}
