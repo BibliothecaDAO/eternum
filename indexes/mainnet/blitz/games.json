@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-14T01:04:32.087Z",
+  "updatedAt": "2026-05-14T01:04:35.607Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -698,12 +698,13 @@
       "path": "runs/mainnet/blitz/frenchie.json",
       "inputPath": "inputs/mainnet/blitz/frenchie/25835381654-1.json",
       "status": "running",
-      "updatedAt": "2026-05-14T01:04:32.087Z",
+      "updatedAt": "2026-05-14T01:04:35.607Z",
       "workflowRef": "next",
       "currentStepId": "configure-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-14T01:49:35.607Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "configure-world",
+      "recoverablePendingStepId": "reserve-blitz-hyperstructures",
       "startTime": 1778724000,
       "durationSeconds": 5400,
       "artifacts": {}
