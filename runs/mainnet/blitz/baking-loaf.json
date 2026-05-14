@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25840653521-1",
   "currentStepId": null,
   "createdAt": "2026-05-14T03:54:48.050Z",
-  "updatedAt": "2026-05-14T09:30:15.443Z",
+  "updatedAt": "2026-05-14T09:32:02.090Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x759f884c73a91843966e8cd07e5f432136e4a24d8ea9af533dfb9503f6ce3cb"
     ],
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/baking-loaf/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-14T03:58:28.843Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-05-14T09:30:13.783Z"
+    "lastIndexerDescribeAt": "2026-05-14T09:32:02.090Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-05-14T03:58:39.194Z"
 }
