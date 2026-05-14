@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25840653521-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-14T03:54:48.050Z",
-  "updatedAt": "2026-05-14T03:56:39.852Z",
+  "updatedAt": "2026-05-14T03:56:48.143Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-05-14T03:56:48.143Z"
     },
     {
       "id": "configure-world",
@@ -82,5 +83,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-baking-loaf.json",
     "worldAddress": "0x062486cd2fdabc14a2266f7144c7ee776ce01f5f01d515d485eb7a668c5e33f1",
     "createGameTxHash": "0x71885049e2e53aa142c0cbadb147c51c2a7e5943c8a89e69e0fb7a76d2c59a4"
+  },
+  "activeLease": {
+    "launchRequestId": "25840653521-1",
+    "workflowRunId": 25840653521,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-05-14T03:56:48.143Z",
+    "expiresAt": "2026-05-14T04:41:48.143Z"
   }
 }
