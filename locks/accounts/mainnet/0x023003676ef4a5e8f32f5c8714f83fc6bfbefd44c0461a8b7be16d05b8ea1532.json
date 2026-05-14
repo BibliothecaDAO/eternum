@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "blitz-rotation",
-    "launchRequestId": "25834917359-1",
+    "gameName": "frenchie",
+    "launchRequestId": "25835381654-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25834917359,
+    "workflowRunId": 25835381654,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "14c40318-5d9a-4675-a203-72d950eddeca"
+    "stepId": "create-world",
+    "leaseId": "4ccf06aa-432d-4247-97e3-be15182317ae"
   },
-  "acquiredAt": "2026-05-14T00:48:29.064Z",
-  "heartbeatAt": "2026-05-14T00:48:32.784Z",
-  "expiresAt": "2026-05-14T00:48:32.784Z",
-  "releasedAt": "2026-05-14T00:48:32.784Z"
+  "acquiredAt": "2026-05-14T01:02:29.461Z",
+  "heartbeatAt": "2026-05-14T01:02:29.461Z",
+  "expiresAt": "2026-05-14T01:12:29.461Z"
 }
