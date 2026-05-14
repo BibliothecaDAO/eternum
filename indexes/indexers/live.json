@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-14T01:33:03.717Z",
+  "updatedAt": "2026-05-14T02:13:01.181Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2206,13 +2206,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-dash-600/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-14T00:05:32.586Z"
+        "describedAt": "2026-05-14T02:13:01.181Z"
       },
-      "updatedAt": "2026-05-14T00:05:32.586Z"
+      "updatedAt": "2026-05-14T02:13:01.181Z"
     },
     "z-onboarding-002": {
       "gameName": "z-onboarding-002",
