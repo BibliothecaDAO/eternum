@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25834917359-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-14T00:48:07.680Z",
+  "updatedAt": "2026-05-14T00:48:17.215Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -31,8 +31,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-14T01:02:59.028Z",
-    "lastEvaluatedAt": "2026-05-14T00:47:59.028Z"
+    "nextEvaluationAt": "2026-05-14T01:03:17.215Z",
+    "lastEvaluatedAt": "2026-05-14T00:48:17.215Z"
   },
   "steps": [
     {
@@ -74,9 +74,9 @@
     {
       "id": "reserve-blitz-hyperstructures",
       "title": "Reserving hyperstructures",
-      "status": "running",
+      "status": "pending",
       "workflowStepName": "Reserving hyperstructures",
-      "latestEvent": "Reserving hyperstructures started",
+      "latestEvent": "Waiting to run",
       "startedAt": "2026-05-14T00:48:07.680Z"
     },
     {
@@ -6180,13 +6180,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25834917359-1",
-    "workflowRunId": 25834917359,
-    "workflowRunAttempt": 1,
-    "stepId": "reserve-blitz-hyperstructures",
-    "acquiredAt": "2026-05-14T00:48:07.680Z",
-    "expiresAt": "2026-05-14T01:33:07.680Z"
   }
 }
