@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25834917359-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-14T09:30:17.555Z",
+  "updatedAt": "2026-05-14T09:32:05.316Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -5320,7 +5320,7 @@
         },
         "seriesGameNumber": 28,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-14-05-26-1000: Torii deployment \"apac-gladiator-14-05-26-1000\" does not exist",
         "status": "succeeded",
         "configSteps": [
           {
@@ -5488,13 +5488,8 @@
           "createGameTxHash": "0x1d90df360853e767fc69898e6a648412e60dd2fa023b55f7269ec1712a0f353",
           "configureTxHash": "0x4f3e5f4c6edc4316a79bf928490792b75063347c2a238c25d1bb9363cbb0671",
           "worldConfigTxHash": "0x4f3e5f4c6edc4316a79bf928490792b75063347c2a238c25d1bb9363cbb0671",
-          "indexerCreated": true,
+          "indexerCreated": false,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
-          "indexerUrl": "https://api.cartridge.gg/x/apac-gladiator-14-05-26-1000/torii",
-          "indexerVersion": "v1.8.15",
-          "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-05-11T04:41:58.005Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -5506,7 +5501,10 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-05-14T09:30:13.783Z"
+          "pendingIndexerTierRequestedAt": "2026-05-14T09:32:05.316Z",
+          "lastIndexerTierDispatchTarget": "legendary",
+          "lastIndexerTierDispatchFailedAt": "2026-05-14T09:32:05.316Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-14-05-26-1000\" does not exist"
         }
       },
       {
