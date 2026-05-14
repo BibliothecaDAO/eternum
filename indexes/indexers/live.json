@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-14T00:05:32.586Z",
+  "updatedAt": "2026-05-14T00:53:00.317Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2213,6 +2213,19 @@
         "describedAt": "2026-05-14T00:05:32.586Z"
       },
       "updatedAt": "2026-05-14T00:05:32.586Z"
+    },
+    "z-onboarding-002": {
+      "gameName": "z-onboarding-002",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/z-onboarding-002/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-14T00:53:00.317Z"
+      },
+      "updatedAt": "2026-05-14T00:53:00.317Z"
     }
   }
 }
