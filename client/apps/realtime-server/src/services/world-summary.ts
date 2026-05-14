@@ -124,7 +124,6 @@ function resolveMode(blitzModeOn: unknown): WorldSummaryMode | null {
 
 function parseSummaryRow(row: Record<string, unknown>): SummaryFields {
   const mode = resolveMode(row.blitz_mode_on);
-  const twoPlayerMode = parseMaybeBoolean(row.two_player_mode) ?? false;
   const registrationEndAt =
     mode === "blitz"
       ? (parseMaybeHexToNumber(row.registration_end_at) ?? parseMaybeHexToNumber(row.start_main_at))
