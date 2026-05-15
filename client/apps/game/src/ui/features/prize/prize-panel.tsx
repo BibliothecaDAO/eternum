@@ -1,5 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { resolveBlitzSettlementComponent } from "@/services/blitz/blitz-settlement-component";
+import { useBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
@@ -125,18 +125,7 @@ export const PrizePanel = () => {
   }, [mmrGameMetaEntities, components.MMRGameMeta]);
 
   // All settled blitz players, regardless of points
-  const blitzSettlementComponent = useMemo(() => resolveBlitzSettlementComponent(components), [components]);
-  const blitzSettlementEntities = useEntityQuery(blitzSettlementComponent ? [Has(blitzSettlementComponent)] : []);
-  const registeredAddresses = useMemo(() => {
-    if (!blitzSettlementComponent) {
-      return [];
-    }
-
-    return blitzSettlementEntities
-      .map((eid) => getComponentValue(blitzSettlementComponent, eid))
-      .filter((v): v is NonNullable<typeof v> => Boolean(v))
-      .map((v) => v.player as unknown as bigint);
-  }, [blitzSettlementComponent, blitzSettlementEntities]);
+  const registeredAddresses = useBlitzSettlementPlayerAddresses(components);
 
   const [nowTs, setNowTs] = useState(() => Math.floor(Date.now() / 1000));
   useEffect(() => {
