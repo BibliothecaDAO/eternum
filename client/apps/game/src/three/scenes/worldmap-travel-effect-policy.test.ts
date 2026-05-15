@@ -108,13 +108,4 @@ describe("resolveExploreCompletionPendingClearPlan", () => {
       }),
     ).toBe(true);
   });
-
-  it("cleans up travel effects when movement visuals are evicted before completion", () => {
-    expect(
-      shouldCleanupTrackedTravelEffectOnPendingClear({
-        trackedEffect: { key: "7,8", effectType: "travel" },
-        reason: "movement_evicted",
-      }),
-    ).toBe(true);
-  });
 });

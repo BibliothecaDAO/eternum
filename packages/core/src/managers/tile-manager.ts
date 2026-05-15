@@ -263,12 +263,42 @@ export class TileManager {
     return typeof transactionHash === "string" ? transactionHash : undefined;
   };
 
+  private _resolveTransactionWaiter = (signer: DojoAccount): ((transactionHash: string) => Promise<unknown>) | null => {
+    const signerWithWaiters = signer as DojoAccount & {
+      waitForTransaction?: (transactionHash: string) => Promise<unknown>;
+      waitForTransactionWithCheck?: (transactionHash: string) => Promise<unknown>;
+      provider?: {
+        waitForTransaction?: (transactionHash: string) => Promise<unknown>;
+        waitForTransactionWithCheck?: (transactionHash: string) => Promise<unknown>;
+      };
+    };
+
+    if (typeof signerWithWaiters.provider?.waitForTransactionWithCheck === "function") {
+      return signerWithWaiters.provider.waitForTransactionWithCheck.bind(signerWithWaiters.provider);
+    }
+
+    if (typeof signerWithWaiters.waitForTransactionWithCheck === "function") {
+      return signerWithWaiters.waitForTransactionWithCheck.bind(signerWithWaiters);
+    }
+
+    if (typeof signerWithWaiters.waitForTransaction === "function") {
+      return signerWithWaiters.waitForTransaction.bind(signerWithWaiters);
+    }
+
+    if (typeof signerWithWaiters.provider?.waitForTransaction === "function") {
+      return signerWithWaiters.provider.waitForTransaction.bind(signerWithWaiters.provider);
+    }
+
+    return null;
+  };
+
   private _scheduleOptimisticCleanupOnTransaction = (
     signer: DojoAccount,
     transactionHash: string | undefined,
     cleanup: () => void,
     options?: {
       onReverted?: (revertReason: string) => void;
+      onFailed?: (failureReason: string) => void;
     },
   ) => {
     let isCleanedUp = false;
@@ -293,13 +323,13 @@ export class TileManager {
       return;
     }
 
-    if (!("waitForTransaction" in signer) || typeof signer.waitForTransaction !== "function") {
+    const waitForTransaction = this._resolveTransactionWaiter(signer);
+    if (!waitForTransaction) {
       finalizeAndClearTimeout();
       return;
     }
 
-    void signer
-      .waitForTransaction(transactionHash)
+    void waitForTransaction(transactionHash)
       .then((receipt) => {
         const receiptAny = receipt as { isReverted?: () => boolean; revert_reason?: string; revertReason?: string };
         if (typeof receiptAny.isReverted === "function" && receiptAny.isReverted()) {
@@ -315,6 +345,7 @@ export class TileManager {
       })
       .catch((error) => {
         console.error(`Error while waiting for transaction ${transactionHash}`, error);
+        options?.onFailed?.(extractErrorMessage(error));
       })
       .finally(() => {
         finalizeAndClearTimeout();
@@ -484,6 +515,15 @@ export class TileManager {
       });
 
       const transactionHash = this._extractTransactionHash(result);
+      const clearFailedBuildTransition = (failureReason: string) => {
+        removeBuildingOverride();
+        if (failureReason.toLowerCase().includes(OCCUPIED_SPACE_REASON)) {
+          markOccupiedUnconfirmed(buildSlotTransitions, buildKey);
+          return;
+        }
+        clearBuildSlotTransition(buildSlotTransitions, buildKey);
+      };
+
       this._scheduleOptimisticCleanupOnTransaction(
         signer,
         transactionHash,
@@ -491,13 +531,9 @@ export class TileManager {
           removeBuildingOverride();
         },
         {
-          onReverted: (revertReason) => {
-            removeBuildingOverride();
-            if (revertReason.toLowerCase().includes(OCCUPIED_SPACE_REASON)) {
-              markOccupiedUnconfirmed(buildSlotTransitions, buildKey);
-              return;
-            }
-            clearBuildSlotTransition(buildSlotTransitions, buildKey);
+          onReverted: clearFailedBuildTransition,
+          onFailed: (failureReason) => {
+            clearFailedBuildTransition(failureReason);
           },
         },
       );
@@ -540,6 +576,10 @@ export class TileManager {
       const transactionHash = this._extractTransactionHash(result);
       this._scheduleOptimisticCleanupOnTransaction(signer, transactionHash, removeBuildingOverride, {
         onReverted: () => {
+          removeBuildingOverride();
+          clearBuildSlotTransition(buildSlotTransitions, buildKey);
+        },
+        onFailed: () => {
           removeBuildingOverride();
           clearBuildSlotTransition(buildSlotTransitions, buildKey);
         },

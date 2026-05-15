@@ -566,6 +566,64 @@ describe("Parallel Category Processing", () => {
     }
   });
 
+  it("batches CREATE_BUILDING transactions into one multicall", async () => {
+    const localExecutor = makeExecutor();
+    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+    const callA = makeCall("create_building_a");
+    const callB = makeCall("create_building_b");
+
+    const pA = queue.enqueue({
+      signer,
+      calls: callA,
+      transactionType: TransactionType.CREATE_BUILDING,
+    });
+    const pB = queue.enqueue({
+      signer,
+      calls: callB,
+      transactionType: TransactionType.CREATE_BUILDING,
+    });
+
+    await Promise.all([pA, pB]);
+
+    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(1);
+    const call = (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[1]).toEqual([callA, callB]);
+    expect(call[2]).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: TransactionType.CREATE_BUILDING, count: 2 })]),
+    );
+    expect(call[3]).toEqual({ waitForConfirmation: false });
+  });
+
+  it("never merges DESTROY_BUILDING transactions into one multicall", async () => {
+    const localExecutor = makeExecutor();
+    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const pA = queue.enqueue({
+      signer,
+      calls: makeCall("destroy_building"),
+      transactionType: TransactionType.DESTROY_BUILDING,
+    });
+    const pB = queue.enqueue({
+      signer,
+      calls: makeCall("destroy_building"),
+      transactionType: TransactionType.DESTROY_BUILDING,
+    });
+
+    await Promise.all([pA, pB]);
+
+    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+    for (const call of (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls) {
+      expect(call[1]).toEqual(makeCall("destroy_building"));
+      expect(call[2]).toBeUndefined();
+      expect(call[3]).toEqual({
+        waitForConfirmation: false,
+        transactionType: TransactionType.DESTROY_BUILDING,
+      });
+    }
+  });
+
   it("keeps non-VRF HIGH transactions batched around isolated VRF submissions", async () => {
     const localExecutor = makeExecutor();
     const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });

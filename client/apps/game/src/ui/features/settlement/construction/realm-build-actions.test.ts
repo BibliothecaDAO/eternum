@@ -1,7 +1,7 @@
 // @vitest-environment node
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { BuildingType } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import {
   clearAllBuildReservationState,
   getBuildReservationState,
@@ -10,16 +10,27 @@ import {
 } from "./build-reservation-store";
 import { buildRealmBuilding } from "./realm-build-actions";
 
-const { placeBuilding, isHexOccupied, getBuildingCosts, getBalance, divideByPrecision, getBlockTimestamp, toastError } =
-  vi.hoisted(() => ({
-    placeBuilding: vi.fn(),
-    isHexOccupied: vi.fn(),
-    getBuildingCosts: vi.fn(),
-    getBalance: vi.fn(),
-    divideByPrecision: vi.fn((value: bigint | number) => Number(value)),
-    getBlockTimestamp: vi.fn(() => ({ currentDefaultTick: 123 })),
-    toastError: vi.fn(),
-  }));
+const {
+  placeBuilding,
+  isHexOccupied,
+  getBuildingCosts,
+  getBalance,
+  divideByPrecision,
+  getBlockTimestamp,
+  getBuildingCategoryConfig,
+  getBasePopulationCapacity,
+  toastError,
+} = vi.hoisted(() => ({
+  placeBuilding: vi.fn(),
+  isHexOccupied: vi.fn(),
+  getBuildingCosts: vi.fn(),
+  getBalance: vi.fn(),
+  divideByPrecision: vi.fn((value: bigint | number) => Number(value)),
+  getBlockTimestamp: vi.fn(() => ({ currentDefaultTick: 123 })),
+  getBuildingCategoryConfig: vi.fn(() => ({ population_cost: 1, capacity_grant: 0 })),
+  getBasePopulationCapacity: vi.fn(() => 0),
+  toastError: vi.fn(),
+}));
 
 vi.mock("sonner", () => ({
   toast: {
@@ -37,7 +48,27 @@ vi.mock("@bibliothecadao/eternum", () => ({
   getBlockTimestamp,
   getBalance,
   getBuildingCosts,
+  configManager: {
+    getBuildingCategoryConfig,
+    getBasePopulationCapacity,
+  },
 }));
+
+const buildableRealm = {
+  category: StructureType.Realm,
+  level: 1,
+  resources: [ResourcesIds.Wheat],
+  population: 1,
+  capacity: 10,
+  hasCapacity: true,
+};
+
+const allowAllMode = {
+  rules: {
+    isBuildingTypeAllowed: vi.fn(() => true),
+    autoAllocateHyperstructureShares: false,
+  },
+};
 
 describe("buildRealmBuilding", () => {
   beforeEach(() => {
@@ -55,6 +86,8 @@ describe("buildRealmBuilding", () => {
     const result = await buildRealmBuilding({
       entityId: 101,
       realmPosition: { x: 20, y: 30 },
+      realm: buildableRealm,
+      mode: allowAllMode,
       target: { type: BuildingType.ResourceWheat },
       useSimpleCost: true,
       world: {
@@ -76,6 +109,8 @@ describe("buildRealmBuilding", () => {
     const result = await buildRealmBuilding({
       entityId: 101,
       realmPosition: { x: 20, y: 30 },
+      realm: buildableRealm,
+      mode: allowAllMode,
       target: { type: BuildingType.ResourceWheat },
       useSimpleCost: true,
       world: {
@@ -100,6 +135,8 @@ describe("buildRealmBuilding", () => {
     const result = await buildRealmBuilding({
       entityId: 101,
       realmPosition: { x: 20, y: 30 },
+      realm: buildableRealm,
+      mode: allowAllMode,
       target: { type: BuildingType.ResourceWheat },
       useSimpleCost: true,
       world: {
@@ -124,6 +161,8 @@ describe("buildRealmBuilding", () => {
     const result = await buildRealmBuilding({
       entityId: 101,
       realmPosition: { x: 20, y: 30 },
+      realm: buildableRealm,
+      mode: allowAllMode,
       target: { type: BuildingType.ResourceWheat },
       useSimpleCost: true,
       world: {
@@ -142,6 +181,8 @@ describe("buildRealmBuilding", () => {
     const result = await buildRealmBuilding({
       entityId: 101,
       realmPosition: { x: 20, y: 30 },
+      realm: buildableRealm,
+      mode: allowAllMode,
       target: { type: BuildingType.ResourceWheat },
       useSimpleCost: true,
       world: {
@@ -166,6 +207,8 @@ describe("buildRealmBuilding", () => {
     const resultPromise = buildRealmBuilding({
       entityId: 101,
       realmPosition: { x: 20, y: 30 },
+      realm: buildableRealm,
+      mode: allowAllMode,
       target: { type: BuildingType.ResourceWheat },
       useSimpleCost: true,
       world: {
@@ -188,6 +231,8 @@ describe("buildRealmBuilding", () => {
       buildRealmBuilding({
         entityId: 101,
         realmPosition: { x: 20, y: 30 },
+        realm: buildableRealm,
+        mode: allowAllMode,
         target: { type: BuildingType.ResourceWheat },
         useSimpleCost: true,
         world: {
@@ -199,6 +244,8 @@ describe("buildRealmBuilding", () => {
       buildRealmBuilding({
         entityId: 101,
         realmPosition: { x: 20, y: 30 },
+        realm: buildableRealm,
+        mode: allowAllMode,
         target: { type: BuildingType.ResourceWheat },
         useSimpleCost: true,
         world: {
@@ -220,6 +267,8 @@ describe("buildRealmBuilding", () => {
     const result = await buildRealmBuilding({
       entityId: 101,
       realmPosition: { x: 20, y: 30 },
+      realm: buildableRealm,
+      mode: allowAllMode,
       target: { type: BuildingType.ResourceWheat },
       useSimpleCost: true,
       world: {

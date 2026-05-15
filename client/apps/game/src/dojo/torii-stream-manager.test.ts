@@ -367,7 +367,7 @@ describe("ToriiStreamManager", () => {
     vi.useRealTimers();
   });
 
-  it("enters reconnecting state and resubscribes after spatial readiness timeout backoff", async () => {
+  it("marks spatial readiness stale during backoff and reconnecting during the resubscribe attempt", async () => {
     vi.useFakeTimers();
     const syncMock = vi.mocked(syncEntitiesDebounced);
     const cancelFirst = vi.fn();
@@ -394,7 +394,7 @@ describe("ToriiStreamManager", () => {
     await manager.switchBounds(descriptor(0));
     await vi.advanceTimersByTimeAsync(25);
 
-    expect(useConnectionStore.getState().spatialStatus).toBe("reconnecting");
+    expect(useConnectionStore.getState().spatialStatus).toBe("stale");
 
     await vi.runOnlyPendingTimersAsync();
 

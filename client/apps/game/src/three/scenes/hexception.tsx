@@ -50,6 +50,7 @@ import {
   releaseOccupiedBuildSpot,
   reserveOccupiedBuildSpot,
 } from "@/ui/features/settlement/construction/build-reservation-store";
+import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionType,
@@ -61,6 +62,7 @@ import {
   getBalance,
   getBuildingCosts,
   getEntityIdFromKeys,
+  getRealmInfo,
   getStructureStage,
 } from "@bibliothecadao/eternum";
 import {
@@ -386,23 +388,6 @@ export default class HexceptionScene extends HexagonScene {
     this.state.setPreviewBuilding(null);
   }
 
-  private canAffordPreviewBuilding(
-    structureEntityId: number,
-    buildingCategory: BuildingType,
-    useSimpleCost: boolean,
-  ): boolean {
-    const { currentDefaultTick } = getBlockTimestamp();
-    const buildingCosts = getBuildingCosts(structureEntityId, this.dojo.components, buildingCategory, useSimpleCost);
-    if (!buildingCosts?.length) {
-      return false;
-    }
-
-    return buildingCosts.every((resourceCost) => {
-      const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, this.dojo.components);
-      return divideByPrecision(balance.balance) >= resourceCost.amount;
-    });
-  }
-
   private loadBuildingModels() {
     for (const category of Object.values(BUILDINGS_GROUPS)) {
       const categoryPaths = this.mode.assets.buildingModelPaths[category];
@@ -655,47 +640,62 @@ export default class HexceptionScene extends HexagonScene {
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
     if (buildingType) {
-      // if building mode
-      if (!this.tileManager.isHexOccupied(normalizedCoords)) {
-        this.clearBuildingMode();
-        const useSimpleCost = this.state.useSimpleCost;
-        const structureEntityId = useUIStore.getState().structureEntityId;
-        if (!this.canAffordPreviewBuilding(structureEntityId, buildingType.type, useSimpleCost)) {
-          toast.error("Insufficient resources to build here.");
-          this.updateHexceptionGrid(this.hexceptionRadius);
-          return;
-        }
-        reserveOccupiedBuildSpot(structureEntityId, normalizedCoords);
-        try {
-          console.log("Placing building at:", {
-            dojo: account!,
-            entityId: structureEntityId,
-            col: normalizedCoords.col,
-            row: normalizedCoords.row,
-            buildingId: buildingType.type,
-          });
+      const useSimpleCost = this.state.useSimpleCost;
+      const structureEntityId = useUIStore.getState().structureEntityId;
+      const realm = getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), this.dojo.components);
+      const buildability = resolveConstructionBuildability({
+        entityId: structureEntityId,
+        buildingType: buildingType.type,
+        useSimpleCost,
+        components: this.dojo.components,
+        realm,
+        mode: this.mode,
+        targetSpot: normalizedCoords,
+        tileManager: this.tileManager,
+      });
 
-          await this.tileManager.placeBuilding(
-            account!,
-            structureEntityId,
-            buildingType.type,
-            normalizedCoords,
-            useSimpleCost,
-          );
-          AudioManager.getInstance().play("ui.build_place");
-        } catch (error) {
-          console.log("catched error so removing building", error);
-          const message = error instanceof Error ? error.message : String(error);
-          if (!message.toLowerCase().includes("space is occupied")) {
-            releaseOccupiedBuildSpot(structureEntityId, normalizedCoords);
-          }
-          this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
-        }
-        this.updateHexceptionGrid(this.hexceptionRadius);
-      } else {
-        // Hex is occupied — invalid placement
+      if (!buildability.canSubmit) {
+        toast.error(buildability.reason ?? "Building cannot be submitted.");
         AudioManager.getInstance().play("ui.build_invalid");
+        this.updateHexceptionGrid(this.hexceptionRadius);
+        return;
       }
+
+      if (!this.canAffordPreviewBuilding(structureEntityId, buildingType.type, useSimpleCost)) {
+        toast.error("Insufficient resources to build here.");
+        AudioManager.getInstance().play("ui.build_invalid");
+        this.updateHexceptionGrid(this.hexceptionRadius);
+        return;
+      }
+
+      this.clearBuildingMode();
+      reserveOccupiedBuildSpot(structureEntityId, normalizedCoords);
+      try {
+        console.log("Placing building at:", {
+          dojo: account!,
+          entityId: structureEntityId,
+          col: normalizedCoords.col,
+          row: normalizedCoords.row,
+          buildingId: buildingType.type,
+        });
+
+        await this.tileManager.placeBuilding(
+          account!,
+          structureEntityId,
+          buildingType.type,
+          normalizedCoords,
+          useSimpleCost,
+        );
+        AudioManager.getInstance().play("ui.build_place");
+      } catch (error) {
+        console.log("catched error so removing building", error);
+        const message = error instanceof Error ? error.message : String(error);
+        if (!message.toLowerCase().includes("space is occupied")) {
+          releaseOccupiedBuildSpot(structureEntityId, normalizedCoords);
+        }
+        this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
+      }
+      this.updateHexceptionGrid(this.hexceptionRadius);
     } else {
       // if not building mode
       const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
@@ -743,6 +743,32 @@ export default class HexceptionScene extends HexagonScene {
       }
     }
   }
+
+  private canAffordPreviewBuilding(
+    structureEntityId: number,
+    buildingType: BuildingType,
+    useSimpleCost: boolean,
+  ): boolean {
+    const buildingCosts = getBuildingCosts(structureEntityId, this.dojo.components, buildingType, useSimpleCost);
+    if (!buildingCosts?.length) {
+      return false;
+    }
+
+    const { currentDefaultTick } = getBlockTimestamp();
+    return buildingCosts.every((resourceCost) =>
+      this.hasEnoughResourceForPreviewCost(structureEntityId, resourceCost, currentDefaultTick),
+    );
+  }
+
+  private hasEnoughResourceForPreviewCost(
+    structureEntityId: number,
+    resourceCost: { resource: ResourcesIds; amount: number },
+    currentDefaultTick: number,
+  ): boolean {
+    const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, this.dojo.components);
+    return divideByPrecision(balance.balance) >= resourceCost.amount;
+  }
+
   protected onHexagonMouseMove(hex: { position: Vector3; hexCoords: HexPosition } | null): void {
     // Always clear the tooltip first to prevent it from persisting when other elements overlap
     this.state.setTooltip(null);

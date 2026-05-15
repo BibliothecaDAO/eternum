@@ -1,17 +1,11 @@
 import { LeftView } from "@/types";
+import { getGameModeConfig } from "@/config/game-modes";
 import { ContextMenuAction, ContextMenuIcon, ContextMenuRadialOptions } from "@/types/context-menu";
 import { CONTEXT_MENU_CONFIG } from "@/ui/config";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
 import { SetupResult } from "@bibliothecadao/dojo";
-import {
-  configManager,
-  divideByPrecision,
-  getBalance,
-  getBlockTimestamp,
-  getBuildingCosts,
-  getRealmInfo,
-  hasEnoughPopulationForBuilding,
-} from "@bibliothecadao/eternum";
+import { getRealmInfo } from "@bibliothecadao/eternum";
 import {
   BuildingType,
   HexEntityInfo,
@@ -126,7 +120,7 @@ export const createConstructionMenu = ({
   const structureId = BigInt(structure.id);
   const idString = structureId.toString();
   const structureEntityId = Number(structureId);
-  const { currentDefaultTick } = getBlockTimestamp();
+  const mode = getGameModeConfig();
 
   const realmInfo = (() => {
     try {
@@ -135,15 +129,6 @@ export const createConstructionMenu = ({
       return undefined;
     }
   })();
-
-  const checkBalance = (cost: Record<string, { resource: ResourcesIds; amount: number }> | Array<any>) =>
-    Object.values(cost).every((entry: any) => {
-      if (!entry) {
-        return true;
-      }
-      const balance = getBalance(structureEntityId, entry.resource, currentDefaultTick, components);
-      return divideByPrecision(balance.balance) >= entry.amount;
-    });
 
   const makeBuildingAction = ({
     suffix,
@@ -187,9 +172,6 @@ export const createConstructionMenu = ({
     building,
     resource,
     iconResource,
-    requiresCapacity = true,
-    requiresPopulation = true,
-    requiresStandardCost = false,
   }: {
     suffix: string;
     label: string;
@@ -197,40 +179,16 @@ export const createConstructionMenu = ({
     building: BuildingType;
     resource?: ResourcesIds;
     iconResource?: string | ResourcesIds | null;
-    requiresCapacity?: boolean;
-    requiresPopulation?: boolean;
-    requiresStandardCost?: boolean;
   }): ContextMenuAction | null => {
-    const buildingCosts = getBuildingCosts(structureEntityId, components, building, simpleCostEnabled);
-
-    if (!buildingCosts) {
-      return null;
-    }
-
-    const hasBalance = checkBalance(buildingCosts as any);
-    const populationConfig = configManager.getBuildingCategoryConfig(building);
-    const populationCost = populationConfig?.population_cost ?? 0;
-    const hasEnoughPopulation = requiresPopulation
-      ? realmInfo
-        ? hasEnoughPopulationForBuilding(realmInfo, populationCost)
-        : false
-      : true;
-    const realmHasCapacity = requiresCapacity ? (realmInfo?.hasCapacity ?? false) : true;
-    const simpleModeAllowed = requiresStandardCost ? !simpleCostEnabled : true;
-    const canBuild = hasBalance && realmHasCapacity && hasEnoughPopulation && simpleModeAllowed;
-
-    let hint: string | undefined;
-    if (!canBuild) {
-      if (!hasBalance) {
-        hint = "Insufficient resources";
-      } else if (!realmHasCapacity) {
-        hint = "No building capacity";
-      } else if (!hasEnoughPopulation) {
-        hint = "Not enough population";
-      } else if (!simpleModeAllowed) {
-        hint = "Unavailable in labor cost mode";
-      }
-    }
+    const buildability = resolveConstructionBuildability({
+      entityId: structureEntityId,
+      buildingType: building,
+      useSimpleCost: simpleCostEnabled,
+      components,
+      realm: realmInfo,
+      mode,
+    });
+    const canBuild = buildability.canSubmit;
 
     const iconDescriptor = iconResource ?? resource ?? label;
 
@@ -243,7 +201,7 @@ export const createConstructionMenu = ({
       resource,
       iconComponent: createResourceIconComponent(iconDescriptor, !canBuild),
       disabled: !canBuild,
-      hint,
+      hint: buildability.reason,
     });
   };
 
@@ -259,11 +217,6 @@ export const createConstructionMenu = ({
 
       const icon = resource.img ?? undefined;
 
-      const requiresStandardCost =
-        typedResourceId === ResourcesIds.Dragonhide ||
-        typedResourceId === ResourcesIds.Mithral ||
-        typedResourceId === ResourcesIds.Adamantine;
-
       return createActionWithAvailability({
         suffix: `resource-${resourceId}`,
         label: resource.trait,
@@ -271,7 +224,6 @@ export const createConstructionMenu = ({
         building,
         resource: typedResourceId,
         iconResource: typedResourceId,
-        requiresStandardCost,
       });
     })
     .filter((action): action is ContextMenuAction => action !== null);
@@ -289,8 +241,6 @@ export const createConstructionMenu = ({
       label: "Workers Hut",
       building: BuildingType.WorkersHut,
       iconResource: ResourcesIds.Labor,
-      requiresCapacity: false,
-      requiresPopulation: false,
     },
     {
       suffix: "economic-storehouse",
@@ -338,7 +288,6 @@ export const createConstructionMenu = ({
             building,
             resource,
             iconResource,
-            requiresStandardCost: requiresStandardMode,
           });
         })
         .filter((action): action is ContextMenuAction => action !== null),

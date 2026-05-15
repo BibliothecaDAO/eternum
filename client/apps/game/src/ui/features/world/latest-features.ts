@@ -22,6 +22,30 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-15",
+    title: "Safer Construction",
+    description:
+      "Building actions now catch more invalid placements before wallet submission and clear pending construction state after failures, reducing rejected builds and rollback cleanup.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-15",
+    title: "Blitz Leaderboard Fix",
+    description:
+      "Fixed the Blitz leaderboard and prize panel so settled-player rankings open reliably after entering a game.",
+    type: "fix",
+    gameSlug: "blitz",
+  },
+  {
+    date: "2026-05-15",
+    title: "Smarter Network Recovery",
+    description:
+      "The game now distinguishes unsupported health checks from real Torii outages, reducing unnecessary reconnect banners while keeping stale streams recoverable.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-14",
     title: "Registered Game Entry",
     description:

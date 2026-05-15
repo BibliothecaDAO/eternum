@@ -1195,12 +1195,17 @@ export class ArmyManager {
     this.indicatorMetadataCache.delete(entityId); // Clear cached metadata
 
     const numericId = this.toNumericId(entityId);
+    const shouldNotifyMovementVisualCancel =
+      options?.notifyMovementVisualCancel === true || this.armyModel.isEntityMoving(numericId);
     this.removeTrackedArmyAttachments(entityId);
 
     // Clean up movement source bucket before freeing the slot, since
     // freeInstanceSlot kills the movement callback that would normally do this
     this.cleanupMovementSourceBucket(entityId);
-    if (options?.notifyMovementVisualCancel) {
+    // Chunk reconciliation can evict a moving army before the tween completes.
+    // Surface that as a visual cancellation so arrival ghosts and travel effects
+    // do not survive the lost movement-complete callback.
+    if (shouldNotifyMovementVisualCancel) {
       this.runMovementVisualCancelListeners(numericId);
     }
 

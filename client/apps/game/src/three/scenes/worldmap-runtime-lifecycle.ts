@@ -1,6 +1,6 @@
 import { SceneName } from "../types";
 
-interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout, TPendingChunk> {
+interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout> {
   pendingArmyRemovals: Map<TEntityId, TTimeout>;
   pendingArmyRemovalMeta: Map<TEntityId, unknown>;
   deferredChunkRemovals: Map<TEntityId, unknown>;
@@ -11,8 +11,7 @@ interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout, TPendingChunk>
   pendingArmyMovementFallbackTimeouts: Map<TEntityId, TTimeout>;
   armyStructureOwners: Map<TEntityId, unknown>;
   suppressedArmies?: Set<TEntityId>;
-  fetchedChunks: Set<string>;
-  pendingChunks: Map<string, TPendingChunk>;
+  clearRenderAreaHydrationState: () => void;
   pinnedChunkKeys: Set<string>;
   pinnedRenderAreas: Set<string>;
   hydratedChunkRefreshes: Set<string>;
@@ -45,20 +44,14 @@ interface WorldmapSwitchOffTransitionStateResult {
   globalChunkSwitchPromise: null;
 }
 
-interface FinalizePendingChunkFetchOwnershipInput<TPendingChunk> {
-  pendingChunks: Map<string, TPendingChunk>;
-  fetchKey: string;
-  fetchPromise: TPendingChunk;
-}
-
 interface ShouldApplyWorldmapFetchResultInput {
   fetchGeneration: number;
   activeFetchGeneration: number;
   fetchKey: string;
-  pinnedRenderAreas: Set<string>;
+  retainedRenderAreas: { has(fetchKey: string): boolean };
 }
 
-export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPendingChunk>({
+export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
   pendingArmyRemovals,
   pendingArmyRemovalMeta,
   deferredChunkRemovals,
@@ -69,8 +62,7 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   pendingArmyMovementFallbackTimeouts,
   armyStructureOwners,
   suppressedArmies,
-  fetchedChunks,
-  pendingChunks,
+  clearRenderAreaHydrationState,
   pinnedChunkKeys,
   pinnedRenderAreas,
   hydratedChunkRefreshes,
@@ -82,7 +74,7 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   clearQueuedPrefetchState,
   releaseInactiveResources,
   invalidatePendingFetches,
-}: WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout, TPendingChunk>): WorldmapSwitchOffRuntimeStateResult => {
+}: WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout>): WorldmapSwitchOffRuntimeStateResult => {
   pendingArmyRemovals.forEach((timeoutId) => clearTimeout(timeoutId));
   pendingArmyRemovals.clear();
   pendingArmyRemovalMeta.clear();
@@ -100,8 +92,7 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout, TPending
   clearStreamingWork();
   clearQueuedPrefetchState();
   invalidatePendingFetches();
-  fetchedChunks.clear();
-  pendingChunks.clear();
+  clearRenderAreaHydrationState();
   pinnedChunkKeys.clear();
   pinnedRenderAreas.clear();
   hydratedChunkRefreshes.clear();
@@ -132,29 +123,13 @@ export const invalidateWorldmapSwitchOffTransitionState = <TChunkSwitchPromise>(
   };
 };
 
-/**
- * Finalize pending fetch ownership only if the settling promise still owns the key.
- */
-export const finalizePendingChunkFetchOwnership = <TPendingChunk>({
-  pendingChunks,
-  fetchKey,
-  fetchPromise,
-}: FinalizePendingChunkFetchOwnershipInput<TPendingChunk>): boolean => {
-  if (pendingChunks.get(fetchKey) !== fetchPromise) {
-    return false;
-  }
-
-  pendingChunks.delete(fetchKey);
-  return true;
-};
-
 export const invalidateWorldmapPendingFetchGeneration = (currentGeneration: number): number => currentGeneration + 1;
 
 export const shouldApplyWorldmapFetchResult = ({
   fetchGeneration,
   activeFetchGeneration,
   fetchKey,
-  pinnedRenderAreas,
+  retainedRenderAreas,
 }: ShouldApplyWorldmapFetchResultInput): boolean => {
-  return fetchGeneration === activeFetchGeneration && pinnedRenderAreas.has(fetchKey);
+  return fetchGeneration === activeFetchGeneration && retainedRenderAreas.has(fetchKey);
 };

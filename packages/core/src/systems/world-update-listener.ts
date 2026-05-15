@@ -42,6 +42,7 @@ import {
   ExplorerTroopsSystemUpdate,
   type ExplorerTroopsTileSystemUpdate,
   type ReservedHyperstructureTileSystemUpdate,
+  type StructureBuildingsSystemUpdate,
   StructureSystemUpdate,
   type StructureTileSystemUpdate,
   type TileSystemUpdate,
@@ -731,11 +732,11 @@ export class WorldUpdateListener {
           false,
         );
       },
-      onStructureBuildingsUpdate: (callback: (value: any) => void) => {
+      onStructureBuildingsUpdate: (callback: (value: StructureBuildingsSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.StructureBuildings,
           callback,
-          (update: any) => {
+          async (update: any): Promise<StructureBuildingsSystemUpdate | undefined> => {
             if (isComponentUpdate(update, this.setup.components.StructureBuildings)) {
               const [currentState, _prevState] = update.value;
 
@@ -782,6 +783,10 @@ export class WorldUpdateListener {
               return {
                 entityId,
                 activeProductions,
+                hexCoords: {
+                  col: Number(currentState.coord?.x ?? 0),
+                  row: Number(currentState.coord?.y ?? 0),
+                },
               };
             }
           },

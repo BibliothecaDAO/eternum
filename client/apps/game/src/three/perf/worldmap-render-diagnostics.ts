@@ -76,7 +76,9 @@ export type WorldmapForceRefreshReason =
   | "offscreen_chunk"
   | "tile_overlap_repair"
   | "shortcut"
-  | "army_dead";
+  | "army_dead"
+  | "reconnect"
+  | "manager_recovery";
 
 export interface WorldmapRenderDurationStats {
   count: number;
@@ -174,6 +176,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     tile_overlap_repair: 0,
     shortcut: 0,
     army_dead: 0,
+    reconnect: 0,
+    manager_recovery: 0,
   },
   updatedAtMs: Date.now(),
 });
