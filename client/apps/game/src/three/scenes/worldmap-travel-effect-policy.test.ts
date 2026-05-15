@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   resolveExploreCompletionPendingClearPlan,
+  resolvePendingMovementAuthoritativeResolutionPlan,
   shouldClearPendingMovementOnAuthoritativePosition,
   shouldCleanupTrackedTravelEffectOnPendingClear,
 } from "./worldmap-travel-effect-policy";
@@ -98,6 +99,32 @@ describe("resolveExploreCompletionPendingClearPlan", () => {
         pendingTargetKey: "2103,2104",
       }),
     ).toBe(false);
+  });
+
+  it("defers pending movement cleanup when the authoritative target arrives during the local tween", () => {
+    expect(
+      resolvePendingMovementAuthoritativeResolutionPlan({
+        authoritativePositionKey: "2103,2104",
+        isMovementInFlight: true,
+        pendingTargetKey: "2103,2104",
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      shouldClearAfterVisualCompletion: true,
+    });
+  });
+
+  it("does not defer pending movement cleanup for unrelated authoritative updates", () => {
+    expect(
+      resolvePendingMovementAuthoritativeResolutionPlan({
+        authoritativePositionKey: "2100,2100",
+        isMovementInFlight: true,
+        pendingTargetKey: "2103,2104",
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      shouldClearAfterVisualCompletion: false,
+    });
   });
 
   it("cleans up travel effects when authoritative reconciliation clears pending movement", () => {

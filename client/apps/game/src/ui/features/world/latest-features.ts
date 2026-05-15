@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-15",
+    title: "Movement Visual Cleanup",
+    description:
+      "Fixed fast map movement so traveling labels and destination ghosts clear after the unit resolves, even when chunks update quickly.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-15",
     title: "Safer Construction",
     description:
       "Building actions now catch more invalid placements before wallet submission and clear pending construction state after failures, reducing rejected builds and rollback cleanup.",

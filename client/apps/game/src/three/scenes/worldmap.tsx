@@ -228,7 +228,7 @@ import {
 } from "../managers/arrival-ghost-policy";
 import {
   resolveExploreCompletionPendingClearPlan,
-  shouldClearPendingMovementOnAuthoritativePosition,
+  resolvePendingMovementAuthoritativeResolutionPlan,
   shouldCleanupTrackedTravelEffectOnPendingClear,
   type PendingArmyMovementEffectClearReason,
   type TravelEffectType,
@@ -676,6 +676,7 @@ export default class WorldmapScene extends WarpTravel {
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
   private pendingArmyMovementTxMap: Map<string, ID> = new Map();
   private pendingArmyMovementTargetKeys: Map<ID, string> = new Map();
+  private pendingArmyMovementAuthoritativeResolutions: Set<ID> = new Set();
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
   // Pre-computed optimistic movement plans keyed by entityId. Planned at submit
   // time in parallel with the tx, applied as soon as the tx hash is submitted
@@ -3089,6 +3090,19 @@ export default class WorldmapScene extends WarpTravel {
     this.arrivalGhostManager.clearArrivalGhost(entityId, "movement_evicted");
   }
 
+  private handoffPendingArmyMovementToVisualLifecycle(entityId: ID): void {
+    this.pendingArmyMovements.delete(entityId);
+
+    const trackedEffect = this.travelEffectsByEntity.get(entityId);
+    if (!trackedEffect) {
+      return;
+    }
+
+    if (shouldCleanupTrackedTravelEffectOnPendingClear({ trackedEffect, reason: "movement_started" })) {
+      trackedEffect.cleanup();
+    }
+  }
+
   private clearPendingArmyMovement(
     entityId: ID,
     reason: PendingArmyMovementEffectClearReason = "cleanup_requested",
@@ -3096,6 +3110,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovements.delete(entityId);
     this.pendingArmyMovementStartedAt.delete(entityId);
     this.pendingArmyMovementTargetKeys.delete(entityId);
+    this.pendingArmyMovementAuthoritativeResolutions.delete(entityId);
 
     const fallbackTimeout = this.pendingArmyMovementFallbackTimeouts.get(entityId);
     if (fallbackTimeout) {
@@ -3113,14 +3128,18 @@ export default class WorldmapScene extends WarpTravel {
     const entityId = update.entityId;
     const pendingTargetKey = this.pendingArmyMovementTargetKeys.get(entityId);
     const authoritativePositionKey = this.resolveContractHexKey(update.hexCoords);
-    const shouldClearPendingMovement = shouldClearPendingMovementOnAuthoritativePosition({
+    const authoritativeResolutionPlan = resolvePendingMovementAuthoritativeResolutionPlan({
       pendingTargetKey,
       authoritativePositionKey,
       isMovementInFlight:
         this.armyManager.isArmyMoving(entityId) || this.armyManager.isArmyMovingOptimistically(entityId),
     });
 
-    if (!shouldClearPendingMovement) {
+    if (authoritativeResolutionPlan.shouldClearAfterVisualCompletion) {
+      this.pendingArmyMovementAuthoritativeResolutions.add(entityId);
+    }
+
+    if (!authoritativeResolutionPlan.shouldClearPendingMovement) {
       return;
     }
 
@@ -3129,6 +3148,16 @@ export default class WorldmapScene extends WarpTravel {
     useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
     this.disposePendingMovementVisualLifecycle(entityId);
     this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived");
+  }
+
+  private completePendingArmyMovementAuthoritativeResolution(entityId: ID): void {
+    if (!this.pendingArmyMovementAuthoritativeResolutions.has(entityId)) {
+      return;
+    }
+
+    this.pendingMovementPlans.delete(entityId);
+    this.clearPendingArmyMovement(entityId, "authoritative_reconciled");
+    useArmyStaminaSourceStore.getState().clearPendingStaminaSource(entityId);
   }
 
   private installPendingMovementVisualLifecycle(input: {
@@ -3146,7 +3175,7 @@ export default class WorldmapScene extends WarpTravel {
         source: "worldmap",
         entityId,
       });
-      this.clearPendingArmyMovement(entityId, "movement_started");
+      this.handoffPendingArmyMovementToVisualLifecycle(entityId);
     });
     const disposeMovementComplete = this.armyManager.onMovementComplete(entityId, () => {
       recordArmyMovementLatencyPhase({
@@ -3157,6 +3186,7 @@ export default class WorldmapScene extends WarpTravel {
       if (shouldAnimateArrivalGhostOnCompletion) {
         this.arrivalGhostManager.resolveArrivalGhost(entityId);
       }
+      this.completePendingArmyMovementAuthoritativeResolution(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
     });
     const disposeAuthoritativeReconcile = this.armyManager.onAuthoritativeReconciliation(entityId, () => {
@@ -3174,6 +3204,7 @@ export default class WorldmapScene extends WarpTravel {
       }
     });
     const disposeMovementVisualCancel = this.armyManager.onMovementVisualCancel(entityId, () => {
+      this.completePendingArmyMovementAuthoritativeResolution(entityId);
       this.clearEvictedArmyMovementVisuals(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
     });
@@ -3224,7 +3255,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private hasPendingTravelEffectForHex(key: string): boolean {
     for (const [entityId, trackedEffect] of this.travelEffectsByEntity.entries()) {
-      if (trackedEffect.key === key && this.pendingArmyMovements.has(entityId)) {
+      if (trackedEffect.key === key && this.pendingArmyMovementTargetKeys.has(entityId)) {
         return true;
       }
     }
@@ -3489,7 +3520,11 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private isArmyMovementInputLocked(entityId: ID): boolean {
-    return this.pendingArmyMovements.has(entityId) || this.armyManager.hasUnresolvedOptimisticMovement(entityId);
+    return (
+      this.pendingArmyMovements.has(entityId) ||
+      this.pendingArmyMovementAuthoritativeResolutions.has(entityId) ||
+      this.armyManager.hasUnresolvedOptimisticMovement(entityId)
+    );
   }
 
   private hasEligibleArmyForTabCycle(): boolean {
@@ -3507,6 +3542,7 @@ export default class WorldmapScene extends WarpTravel {
     const fallbackTimeout = setTimeout(() => {
       const fallbackPlan = resolvePendingArmyMovementFallbackPlan({
         hasPendingMovement: this.pendingArmyMovements.has(entityId),
+        hasPendingMovementResolution: this.pendingArmyMovementTargetKeys.has(entityId),
         pendingMovementStartedAtMs: this.pendingArmyMovementStartedAt.get(entityId),
         nowMs: Date.now(),
         staleAfterMs: this.authoritativePendingArmyMovementMs,
@@ -4203,6 +4239,8 @@ export default class WorldmapScene extends WarpTravel {
       pendingArmyMovements: this.pendingArmyMovements,
       pendingArmyMovementStartedAt: this.pendingArmyMovementStartedAt,
       pendingArmyMovementFallbackTimeouts: this.pendingArmyMovementFallbackTimeouts,
+      pendingArmyMovementTargetKeys: this.pendingArmyMovementTargetKeys,
+      pendingArmyMovementAuthoritativeResolutions: this.pendingArmyMovementAuthoritativeResolutions,
       armyStructureOwners: this.armyStructureOwners,
       suppressedArmies: this.armyManager.getSuppressedArmiesRef(),
       clearRenderAreaHydrationState: () => clearAllRenderAreaHydrationState(this.renderAreaHydrationState),
