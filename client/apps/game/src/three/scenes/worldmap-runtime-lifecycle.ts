@@ -9,6 +9,8 @@ interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout> {
   pendingArmyMovements: Set<TEntityId>;
   pendingArmyMovementStartedAt: Map<TEntityId, number>;
   pendingArmyMovementFallbackTimeouts: Map<TEntityId, TTimeout>;
+  pendingArmyMovementTargetKeys: Map<TEntityId, string>;
+  pendingArmyMovementAuthoritativeResolutions: Set<TEntityId>;
   armyStructureOwners: Map<TEntityId, unknown>;
   suppressedArmies?: Set<TEntityId>;
   clearRenderAreaHydrationState: () => void;
@@ -60,6 +62,8 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
   pendingArmyMovements,
   pendingArmyMovementStartedAt,
   pendingArmyMovementFallbackTimeouts,
+  pendingArmyMovementTargetKeys,
+  pendingArmyMovementAuthoritativeResolutions,
   armyStructureOwners,
   suppressedArmies,
   clearRenderAreaHydrationState,
@@ -86,6 +90,8 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
   pendingArmyMovementStartedAt.clear();
   pendingArmyMovementFallbackTimeouts.forEach((timeoutId) => clearTimeout(timeoutId));
   pendingArmyMovementFallbackTimeouts.clear();
+  pendingArmyMovementTargetKeys.clear();
+  pendingArmyMovementAuthoritativeResolutions.clear();
   armyStructureOwners.clear();
   suppressedArmies?.clear();
 
