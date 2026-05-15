@@ -12,9 +12,9 @@
   "requestedLaunchStep": "grant-lootchest-roles",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25930074373-1.json",
   "latestLaunchRequestId": "25930074373-1",
-  "currentStepId": "grant-lootchest-roles",
+  "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-15T16:51:36.166Z",
+  "updatedAt": "2026-05-15T16:51:48.790Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
+    "nextRetryAt": "2026-05-15T17:06:48.790Z",
     "lastRetryAt": "2026-05-15T16:50:22.611Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-15T17:06:29.242Z",
-    "lastEvaluatedAt": "2026-05-15T16:51:29.242Z"
+    "nextEvaluationAt": "2026-05-15T17:06:48.790Z",
+    "lastEvaluatedAt": "2026-05-15T16:51:48.790Z"
   },
   "steps": [
     {
@@ -73,9 +74,9 @@
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "running",
+      "status": "pending",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests started",
+      "latestEvent": "Waiting to run",
       "startedAt": "2026-05-15T16:51:36.166Z"
     },
     {
@@ -6542,13 +6543,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25930074373-1",
-    "workflowRunId": 25930074373,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-roles",
-    "acquiredAt": "2026-05-15T16:51:36.166Z",
-    "expiresAt": "2026-05-15T17:36:36.166Z"
   }
 }
