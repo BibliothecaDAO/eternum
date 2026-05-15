@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25931898256-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-15T17:32:05.351Z",
+  "updatedAt": "2026-05-15T17:32:12.485Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -5703,7 +5703,7 @@
         },
         "seriesGameNumber": 30,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-15-05-26-1800: Torii deployment \"eu-gladiator-15-05-26-1800\" does not exist",
         "status": "succeeded",
         "configSteps": [
           {
@@ -5871,13 +5871,8 @@
           "createGameTxHash": "0x25735ba61d51f5362a41ee74b297a2db247e8afae75cd68e6cbedb467cba13f",
           "configureTxHash": "0x5dd4a2f094124afc80f59fde334e030a4513330dabae9e4188fe870137699a0",
           "worldConfigTxHash": "0x5dd4a2f094124afc80f59fde334e030a4513330dabae9e4188fe870137699a0",
-          "indexerCreated": true,
+          "indexerCreated": false,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
-          "indexerUrl": "https://api.cartridge.gg/x/eu-gladiator-15-05-26-1800/torii",
-          "indexerVersion": "v1.8.15",
-          "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-05-12T11:04:54.253Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -5889,7 +5884,10 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-05-15T17:30:37.041Z"
+          "pendingIndexerTierRequestedAt": "2026-05-15T17:32:12.485Z",
+          "lastIndexerTierDispatchTarget": "legendary",
+          "lastIndexerTierDispatchFailedAt": "2026-05-15T17:32:12.485Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-15-05-26-1800\" does not exist"
         }
       },
       {
