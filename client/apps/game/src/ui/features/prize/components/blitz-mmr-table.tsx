@@ -1,9 +1,9 @@
+import { useBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
 import { displayAddress } from "@/ui/utils/utils";
 import { getMMRTierFromRaw, MMR_TOKEN_DECIMALS } from "@/ui/utils/mmr-tiers";
 import { getAddressName, toHexString } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
-import { resolveBlitzSettlementComponent } from "@/services/blitz/blitz-settlement-component";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -54,18 +54,7 @@ export const BlitzMMRTable = () => {
   }, [worldCfg?.mmr_config?.mmr_token_address]);
 
   // Blitz settlement rows are the source of truth for players who actually entered the world.
-  const blitzSettlementComponent = useMemo(() => resolveBlitzSettlementComponent(components), [components]);
-  const blitzSettlementEntities = useEntityQuery(blitzSettlementComponent ? [Has(blitzSettlementComponent)] : []);
-  const registeredPlayerAddresses = useMemo(() => {
-    if (!blitzSettlementComponent) {
-      return [];
-    }
-
-    return blitzSettlementEntities
-      .map((eid) => getComponentValue(blitzSettlementComponent, eid))
-      .filter((v): v is NonNullable<typeof v> => Boolean(v))
-      .map((v) => v.player as unknown as bigint);
-  }, [blitzSettlementComponent, blitzSettlementEntities]);
+  const registeredPlayerAddresses = useBlitzSettlementPlayerAddresses(components);
 
   // Get player points and filter to only players with non-zero points
   const playerRegisteredPointsEntities = useEntityQuery([Has(components.PlayerRegisteredPoints)]);

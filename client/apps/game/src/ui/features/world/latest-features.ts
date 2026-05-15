@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-15",
+    title: "Blitz Leaderboard Fix",
+    description:
+      "Fixed the Blitz leaderboard and prize panel so settled-player rankings open reliably after entering a game.",
+    type: "fix",
+    gameSlug: "blitz",
+  },
+  {
+    date: "2026-05-15",
     title: "Smarter Network Recovery",
     description:
       "The game now distinguishes unsupported health checks from real Torii outages, reducing unnecessary reconnect banners while keeping stale streams recoverable.",
