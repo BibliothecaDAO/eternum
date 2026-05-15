@@ -34,6 +34,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
 const allowAllMode = {
   rules: {
     isBuildingTypeAllowed: vi.fn(() => true),
+    autoAllocateHyperstructureShares: false,
   },
 };
 

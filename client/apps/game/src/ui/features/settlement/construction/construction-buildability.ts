@@ -101,7 +101,7 @@ const RESOURCE_PRODUCER_BUILDINGS_REQUIRING_STRUCTURE_RESOURCE = new Set<Buildin
   BuildingType.ResourceEtherealSilica,
   BuildingType.ResourceDragonhide,
   BuildingType.ResourceLabor,
-  BuildingType.ResourceEarthenShard,
+  BuildingType.ResourceAncientFragment,
 ]);
 
 const SIMPLE_COST_LOCKED_RESOURCE_BUILDINGS = new Set<BuildingType>([

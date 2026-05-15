@@ -66,6 +66,7 @@ const buildableRealm = {
 const allowAllMode = {
   rules: {
     isBuildingTypeAllowed: vi.fn(() => true),
+    autoAllocateHyperstructureShares: false,
   },
 };
 
