@@ -18,6 +18,7 @@ import {
   subscribeToToriiHeartbeat,
 } from "./connection-health-monitor";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
+import type { ToriiHealthProbeResult } from "./torii-health-probe";
 
 interface FakeEventTarget {
   addEventListener: ReturnType<typeof vi.fn>;
@@ -55,6 +56,19 @@ function restoreDomGlobals() {
   }
 }
 
+const reachableHealth = (source: "health" | "sql_fallback" = "health"): ToriiHealthProbeResult => ({
+  status: "reachable",
+  source,
+  httpStatus: 200,
+});
+
+const unreachableHealth = (
+  reason: "endpoint_not_found" | "timeout" | "network_error" | "server_error",
+): ToriiHealthProbeResult => ({
+  status: "unreachable",
+  reason,
+});
+
 describe("ConnectionHealthMonitor", () => {
   beforeEach(() => {
     stubDomGlobals("visible");
@@ -63,8 +77,12 @@ describe("ConnectionHealthMonitor", () => {
     reportToriiSubscriptionLifecycleMock.mockClear();
     useConnectionStore.setState({
       status: "connected",
+      spatialStatus: "connected",
+      globalStatus: "connected",
       lastSpatialUpdate: Date.now(),
       lastGlobalUpdate: Date.now(),
+      lastSpatialHandshake: 0,
+      lastGlobalHandshake: 0,
       toriiHeartbeatAvailable: true,
       lastHealthCheck: Date.now(),
       reconnectAttempts: 0,
@@ -81,7 +99,7 @@ describe("ConnectionHealthMonitor", () => {
   it("reconnects both streams during polling when the Torii heartbeat is stale", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
@@ -100,8 +118,7 @@ describe("ConnectionHealthMonitor", () => {
       lastToriiHeartbeat: Date.now() - 10_000,
     });
 
-    await vi.advanceTimersByTimeAsync(1_000);
-    await vi.runOnlyPendingTimersAsync();
+    await vi.advanceTimersByTimeAsync(2_000);
 
     expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
     expect(onReconnectGlobal).toHaveBeenCalledTimes(1);
@@ -120,7 +137,7 @@ describe("ConnectionHealthMonitor", () => {
   it("does not reconnect quiet streams while the Torii heartbeat is fresh", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
@@ -139,8 +156,7 @@ describe("ConnectionHealthMonitor", () => {
       lastToriiHeartbeat: Date.now(),
     } as any);
 
-    await vi.advanceTimersByTimeAsync(1_000);
-    await vi.runOnlyPendingTimersAsync();
+    await vi.advanceTimersByTimeAsync(2_000);
 
     expect(onReconnectSpatial).not.toHaveBeenCalled();
     expect(onReconnectGlobal).not.toHaveBeenCalled();
@@ -151,7 +167,7 @@ describe("ConnectionHealthMonitor", () => {
   it("does not reconnect from heartbeat staleness before a heartbeat source is registered", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
@@ -187,7 +203,7 @@ describe("ConnectionHealthMonitor", () => {
   it("reconnects both streams when the Torii heartbeat is stale even if entity data is quiet", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
@@ -217,7 +233,7 @@ describe("ConnectionHealthMonitor", () => {
 
   it("runs a health check immediately when the page is restored from browser cache", async () => {
     const { win } = stubDomGlobals("visible");
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
       healthCheckIntervalMs: 60_000,
@@ -271,7 +287,7 @@ describe("ConnectionHealthMonitor", () => {
   it("does not reconnect twice within a single staleThresholdMs window (cooldown)", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
@@ -313,7 +329,7 @@ describe("ConnectionHealthMonitor", () => {
   it("uses a separate reconnect cooldown so idle worlds do not resubscribe every stale threshold", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
@@ -354,7 +370,7 @@ describe("ConnectionHealthMonitor", () => {
     monitor.dispose();
   });
 
-  it("reconnects both streams when the health check throws", async () => {
+  it("reconnects both streams when a thrown health check reaches the transient threshold", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
     const healthCheckFn = vi.fn(() => Promise.reject(new Error("offline")));
@@ -365,6 +381,7 @@ describe("ConnectionHealthMonitor", () => {
       onReconnectGlobal,
       onReconnectSpatial,
       staleThresholdMs: 5_000,
+      transientHealthFailureThreshold: 1,
     });
 
     monitor.start();
@@ -380,15 +397,44 @@ describe("ConnectionHealthMonitor", () => {
 
     expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
     expect(onReconnectGlobal).toHaveBeenCalledTimes(1);
-    expect(useConnectionStore.getState().status).toBe("disconnected");
+    expect(useConnectionStore.getState().status).toBe("connected");
 
     monitor.dispose();
   });
 
-  it("treats an unhealthy HTTP response as disconnected", async () => {
+  it("treats an unhealthy HTTP response as recovered when transient reconnect succeeds", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(false));
+    const healthCheckFn = vi.fn(() => Promise.resolve(unreachableHealth("server_error")));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+      transientHealthFailureThreshold: 1,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
+    expect(onReconnectGlobal).toHaveBeenCalledTimes(1);
+    expect(useConnectionStore.getState().status).toBe("connected");
+    expect(useConnectionStore.getState().spatialStatus).toBe("connected");
+    expect(useConnectionStore.getState().globalStatus).toBe("connected");
+    expect(useConnectionStore.getState().reconnectAttempts).toBe(1);
+
+    monitor.dispose();
+  });
+
+  it("does not reconnect when health succeeds through the SQL fallback", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth("sql_fallback")));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
@@ -400,15 +446,195 @@ describe("ConnectionHealthMonitor", () => {
 
     monitor.start();
     monitor.exitBootGraceForTests();
+    useConnectionStore.setState({ lastToriiHeartbeat: Date.now() });
 
     await vi.advanceTimersByTimeAsync(1_000);
 
+    expect(onReconnectSpatial).not.toHaveBeenCalled();
+    expect(onReconnectGlobal).not.toHaveBeenCalled();
+    expect(useConnectionStore.getState().status).toBe("connected");
+
+    monitor.dispose();
+  });
+
+  it("does not mark streams failed after one transient failed probe", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(unreachableHealth("timeout")));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+    useConnectionStore.setState({ lastToriiHeartbeat: Date.now() });
+
+    await vi.advanceTimersByTimeAsync(1_000);
+
+    expect(onReconnectSpatial).not.toHaveBeenCalled();
+    expect(onReconnectGlobal).not.toHaveBeenCalled();
+    expect(useConnectionStore.getState().status).toBe("connected");
+    expect(useConnectionStore.getState().reconnectAttempts).toBe(0);
+
+    monitor.dispose();
+  });
+
+  it("marks streams failed and reconnects after two consecutive transient failed probes", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(unreachableHealth("timeout")));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+    useConnectionStore.setState({ lastToriiHeartbeat: Date.now() });
+
+    await vi.advanceTimersByTimeAsync(2_000);
+
     expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
     expect(onReconnectGlobal).toHaveBeenCalledTimes(1);
-    expect(useConnectionStore.getState().status).toBe("disconnected");
-    expect(useConnectionStore.getState().spatialStatus).toBe("failed");
-    expect(useConnectionStore.getState().globalStatus).toBe("failed");
     expect(useConnectionStore.getState().reconnectAttempts).toBe(1);
+
+    monitor.dispose();
+  });
+
+  it("treats a successful transient-health reconnect as connected stream recovery", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(unreachableHealth("timeout")));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+    useConnectionStore.setState({ lastToriiHeartbeat: Date.now() });
+
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    const state = useConnectionStore.getState();
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
+    expect(onReconnectGlobal).toHaveBeenCalledTimes(1);
+    expect(state.spatialStatus).toBe("connected");
+    expect(state.globalStatus).toBe("connected");
+    expect(state.status).toBe("connected");
+    expect(state.reconnectAttempts).toBe(1);
+
+    monitor.dispose();
+  });
+
+  it("does not inflate transient reconnect attempts while the reconnect cooldown is active", async () => {
+    const onDeadEnd = vi.fn();
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(unreachableHealth("timeout")));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onDeadEnd,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      reconnectCooldownMs: 10_000,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+    useConnectionStore.setState({ lastToriiHeartbeat: Date.now() });
+
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
+    expect(onReconnectGlobal).toHaveBeenCalledTimes(1);
+    expect(useConnectionStore.getState().reconnectAttempts).toBe(1);
+
+    await vi.advanceTimersByTimeAsync(8_000);
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
+    expect(onReconnectGlobal).toHaveBeenCalledTimes(1);
+    expect(useConnectionStore.getState().reconnectAttempts).toBe(1);
+    expect(onDeadEnd).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(2);
+    expect(onReconnectGlobal).toHaveBeenCalledTimes(2);
+    expect(useConnectionStore.getState().reconnectAttempts).toBe(2);
+
+    monitor.dispose();
+  });
+
+  it("resets the transient failure streak after a successful probe", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi
+      .fn<() => Promise<ToriiHealthProbeResult>>()
+      .mockResolvedValueOnce(unreachableHealth("network_error"))
+      .mockResolvedValueOnce(reachableHealth())
+      .mockResolvedValueOnce(unreachableHealth("network_error"));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+    useConnectionStore.setState({ lastToriiHeartbeat: Date.now() });
+
+    await vi.advanceTimersByTimeAsync(3_000);
+
+    expect(onReconnectSpatial).not.toHaveBeenCalled();
+    expect(onReconnectGlobal).not.toHaveBeenCalled();
+    expect(useConnectionStore.getState().reconnectAttempts).toBe(0);
+
+    monitor.dispose();
+  });
+
+  it("reports endpoint_not_found as a dead end once without stream resubscribe loops", async () => {
+    const onDeadEnd = vi.fn();
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(unreachableHealth("endpoint_not_found")));
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onDeadEnd,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+    useConnectionStore.setState({ lastToriiHeartbeat: Date.now() });
+
+    await vi.advanceTimersByTimeAsync(3_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onDeadEnd).toHaveBeenCalledTimes(1);
+    expect(onDeadEnd).toHaveBeenCalledWith(expect.any(Number), 1, "endpoint_not_found");
+    expect(onReconnectSpatial).not.toHaveBeenCalled();
+    expect(onReconnectGlobal).not.toHaveBeenCalled();
 
     monitor.dispose();
   });
@@ -416,7 +642,7 @@ describe("ConnectionHealthMonitor", () => {
   it("sets per-stream status to reconnecting then connected around a reconnect", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     let spatialStatusDuringReconnect: string | null = null;
     const origSetSpatialStatus = useConnectionStore.getState().setSpatialStatus;
@@ -455,7 +681,7 @@ describe("ConnectionHealthMonitor", () => {
   it("forceReconnect bypasses the reconnect cooldown", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
@@ -491,17 +717,23 @@ describe("ConnectionHealthMonitor", () => {
 
   it("fires onRecovery after an outage >= recoveryToastThresholdMs", async () => {
     const onRecovery = vi.fn();
+    const onReconnectSpatial = vi.fn(() => Promise.reject(new Error("spatial offline")));
+    const onReconnectGlobal = vi.fn(() => Promise.reject(new Error("global offline")));
     let healthy = false;
-    const healthCheckFn = vi.fn(() => (healthy ? Promise.resolve(true) : Promise.reject(new Error("offline"))));
+    const healthCheckFn = vi.fn(() =>
+      healthy ? Promise.resolve(reachableHealth()) : Promise.reject(new Error("offline")),
+    );
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
       healthCheckIntervalMs: 1_000,
-      onReconnectGlobal: vi.fn(() => Promise.resolve()),
-      onReconnectSpatial: vi.fn(() => Promise.resolve()),
+      onReconnectGlobal,
+      onReconnectSpatial,
       onRecovery,
+      reconnectCooldownMs: 60_000,
       staleThresholdMs: 5_000,
       recoveryToastThresholdMs: 10_000,
+      transientHealthFailureThreshold: 1,
     });
 
     monitor.start();
@@ -532,7 +764,7 @@ describe("ConnectionHealthMonitor", () => {
   it("records a stream reconnect after stale streams are rebuilt", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
@@ -563,7 +795,7 @@ describe("ConnectionHealthMonitor", () => {
   it("still bumps streamReconnectVersion when reconnect handlers reject so scoped subs can retry", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.reject(new Error("spatial torii hung")));
     const onReconnectGlobal = vi.fn(() => Promise.reject(new Error("global initialSync timed out")));
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
@@ -596,7 +828,7 @@ describe("ConnectionHealthMonitor", () => {
   it("does not auto-reconnect during boot grace even if stream timestamps look stale", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
@@ -623,10 +855,40 @@ describe("ConnectionHealthMonitor", () => {
     monitor.dispose();
   });
 
+  it("observes existing stream handshakes at start so quiet worlds can recover stale heartbeats", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
+
+    useConnectionStore.setState({
+      lastSpatialHandshake: Date.now() - 1_000,
+      lastGlobalHandshake: Date.now() - 1_000,
+      lastToriiHeartbeat: Date.now() - 10_000,
+    });
+
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn,
+      healthCheckIntervalMs: 1_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      staleThresholdMs: 5_000,
+    });
+
+    monitor.start();
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onReconnectSpatial).toHaveBeenCalledTimes(1);
+    expect(onReconnectGlobal).toHaveBeenCalledTimes(1);
+
+    monitor.dispose();
+  });
+
   it("exits boot grace once both streams tick after start, then behaves normally", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,
@@ -662,7 +924,7 @@ describe("ConnectionHealthMonitor", () => {
   it("forceReconnect works during boot grace (manual retry always allowed)", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());
-    const healthCheckFn = vi.fn(() => Promise.resolve(true));
+    const healthCheckFn = vi.fn(() => Promise.resolve(reachableHealth()));
 
     const monitor = new ConnectionHealthMonitor({
       healthCheckFn,

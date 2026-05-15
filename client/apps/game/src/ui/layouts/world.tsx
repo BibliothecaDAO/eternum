@@ -3,7 +3,9 @@ import {
   resolveConnectionHealthToriiBaseUrl,
   subscribeToToriiHeartbeat,
 } from "@/dojo/connection-health-monitor";
+import { createConnectionDeadEndRecoveryGate } from "@/dojo/connection-dead-end-recovery-gate";
 import { cancelEntityStreamSubscription, initialSync } from "@/dojo/sync";
+import { probeToriiHealth } from "@/dojo/torii-health-probe";
 import { resolveEntryContextFromPlayRoute } from "@/game-entry/context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { bootstrapGameForEntryContext, resetBootstrap } from "@/init/bootstrap";
@@ -45,6 +47,8 @@ import { BlockTimestampPoller } from "../shared/components/block-timestamp-polle
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { StoreManagers } from "../store-managers";
 import { PlayOverlayManager } from "./play-overlay-manager";
+
+const shouldRunDeadEndRecovery = createConnectionDeadEndRecoveryGate();
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   return (
@@ -124,6 +128,18 @@ const ActionOverlays = () => (
   </>
 );
 
+const getNetworkErrorReason = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  return "unknown_error";
+};
+
 /**
  * HUD (Heads-Up Display) - persistent UI elements positioned around the screen.
  * Layout:
@@ -185,7 +201,6 @@ const ConnectionMonitor = () => {
       heartbeatSubscription = subscription;
     });
 
-    let deadEndRecoveryFired = false;
     const runDeadEndRecovery = async () => {
       const context = resolveEntryContextFromPlayRoute(window.location);
       if (!context) {
@@ -207,7 +222,11 @@ const ConnectionMonitor = () => {
         });
       } catch (error) {
         console.warn("[ConnectionMonitor] Dead-end recovery failed", error);
-        addNetworkBreadcrumb({ event: "reconnect_failure", streamType: "global" });
+        addNetworkBreadcrumb({
+          event: "reconnect_failure",
+          streamType: "global",
+          reason: getNetworkErrorReason(error),
+        });
       }
     };
 
@@ -223,7 +242,11 @@ const ConnectionMonitor = () => {
           }
           addNetworkBreadcrumb({ event: "reconnect_success", streamType: "spatial", status: outcome });
         } catch (error) {
-          addNetworkBreadcrumb({ event: "reconnect_failure", streamType: "spatial" });
+          addNetworkBreadcrumb({
+            event: "reconnect_failure",
+            streamType: "spatial",
+            reason: getNetworkErrorReason(error),
+          });
           throw error;
         }
       },
@@ -234,7 +257,11 @@ const ConnectionMonitor = () => {
           await initialSync(setup, state, () => {}, { logging: false, reportProgress: false });
           addNetworkBreadcrumb({ event: "reconnect_success", streamType: "global" });
         } catch (error) {
-          addNetworkBreadcrumb({ event: "reconnect_failure", streamType: "global" });
+          addNetworkBreadcrumb({
+            event: "reconnect_failure",
+            streamType: "global",
+            reason: getNetworkErrorReason(error),
+          });
           throw error;
         }
       },
@@ -245,23 +272,16 @@ const ConnectionMonitor = () => {
           console.warn("[ConnectionMonitor] Worldmap reconnect refresh failed", error);
         }
       },
-      healthCheckFn: async () => {
-        const response = await fetch(`${toriiBaseUrl}/health`, {
-          method: "GET",
-          signal: AbortSignal.timeout(5_000),
-        });
-        return response.ok;
-      },
+      healthCheckFn: () => probeToriiHealth(toriiBaseUrl),
       onRecovery: (outageMs, attempts) => {
         toast.success("Back online", {
           description: `Reconnected after ${Math.max(1, Math.round(outageMs / 1000))}s offline.`,
         });
         reportNetworkOutageResolved({ streamType: "both", outageMs, attempts });
       },
-      onDeadEnd: (outageMs, attempts) => {
-        reportNetworkOutageDeadEnd({ streamType: "both", outageMs, attempts });
-        if (deadEndRecoveryFired) return;
-        deadEndRecoveryFired = true;
+      onDeadEnd: (outageMs, attempts, reason) => {
+        reportNetworkOutageDeadEnd({ streamType: "both", outageMs, attempts, reason });
+        if (!shouldRunDeadEndRecovery({ toriiBaseUrl, reason })) return;
         void runDeadEndRecovery();
       },
     });

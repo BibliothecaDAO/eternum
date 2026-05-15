@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-15",
+    title: "Smarter Network Recovery",
+    description:
+      "The game now distinguishes unsupported health checks from real Torii outages, reducing unnecessary reconnect banners while keeping stale streams recoverable.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-14",
     title: "Registered Game Entry",
     description:

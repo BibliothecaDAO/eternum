@@ -1,24 +1,27 @@
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { addToriiStreamBreadcrumb, reportToriiSubscriptionLifecycle } from "@/observability/network-health-reporting";
+import type { ToriiHealthProbeResult, ToriiHealthUnreachableReason } from "./torii-health-probe";
 
 const DEFAULT_HEALTH_CHECK_INTERVAL_MS = 10_000;
 const DEFAULT_STALE_THRESHOLD_MS = 15_000;
 const DEFAULT_RECONNECT_COOLDOWN_MS = 60_000;
 const DEFAULT_RECOVERY_TOAST_THRESHOLD_MS = 30_000;
 const DEFAULT_DEAD_END_ATTEMPTS = 5;
+const DEFAULT_TRANSIENT_HEALTH_FAILURE_THRESHOLD = 2;
 
 interface ConnectionHealthMonitorConfig {
   onReconnectSpatial: () => Promise<void>;
   onReconnectGlobal: () => Promise<void>;
   onReconnectComplete?: () => void;
-  healthCheckFn: () => Promise<boolean>;
+  healthCheckFn: () => Promise<ToriiHealthProbeResult>;
   onRecovery?: (outageMs: number, attempts: number) => void;
-  onDeadEnd?: (outageMs: number, attempts: number) => void;
+  onDeadEnd?: (outageMs: number, attempts: number, reason?: ToriiHealthUnreachableReason) => void;
   healthCheckIntervalMs?: number;
   staleThresholdMs?: number;
   reconnectCooldownMs?: number;
   recoveryToastThresholdMs?: number;
   deadEndAttempts?: number;
+  transientHealthFailureThreshold?: number;
 }
 
 interface ConnectionHealthToriiInput {
@@ -74,6 +77,8 @@ export class ConnectionHealthMonitor {
   private startedAtMs = 0;
   private hasObservedHealthyStreams = false;
   private readonly deadEndAttempts: number;
+  private readonly transientHealthFailureThreshold: number;
+  private consecutiveTransientHealthFailures = 0;
 
   constructor(config: ConnectionHealthMonitorConfig) {
     this.config = config;
@@ -85,6 +90,8 @@ export class ConnectionHealthMonitor {
     );
     this.recoveryToastThresholdMs = config.recoveryToastThresholdMs ?? DEFAULT_RECOVERY_TOAST_THRESHOLD_MS;
     this.deadEndAttempts = config.deadEndAttempts ?? DEFAULT_DEAD_END_ATTEMPTS;
+    this.transientHealthFailureThreshold =
+      config.transientHealthFailureThreshold ?? DEFAULT_TRANSIENT_HEALTH_FAILURE_THRESHOLD;
   }
 
   start(): void {
@@ -92,7 +99,7 @@ export class ConnectionHealthMonitor {
 
     activeMonitor = this;
     this.startedAtMs = Date.now();
-    this.hasObservedHealthyStreams = false;
+    this.hasObservedHealthyStreams = this.haveObservedStreamHandshakes(useConnectionStore.getState());
     document.addEventListener("visibilitychange", this.handleVisibilityChange);
     window.addEventListener("online", this.handleOnline);
     window.addEventListener("pageshow", this.handlePageShow);
@@ -117,6 +124,7 @@ export class ConnectionHealthMonitor {
     if (this.disposed) return;
     this.lastStreamReconnectAtMs = Date.now();
     this.hasObservedHealthyStreams = true;
+    this.consecutiveTransientHealthFailures = 0;
     await this.reconnectStaleStreams(true, true);
   }
 
@@ -174,23 +182,32 @@ export class ConnectionHealthMonitor {
     if (document.visibilityState === "hidden") return;
 
     try {
-      const healthy = await this.config.healthCheckFn();
-      if (!healthy) {
-        this.markHealthCheckFailed();
-        return;
-      }
-
-      this.markHealthCheckPassed();
+      this.applyHealthProbeResult(await this.config.healthCheckFn());
     } catch {
-      this.markHealthCheckFailed();
+      this.applyHealthProbeResult({ status: "unreachable", reason: "network_error" });
     }
   }
 
   // --- Shared reconnect logic ---
 
+  private applyHealthProbeResult(result: ToriiHealthProbeResult): void {
+    if (result.status === "reachable") {
+      this.markHealthCheckPassed();
+      return;
+    }
+
+    if (result.reason === "endpoint_not_found") {
+      this.markEndpointNotFound();
+      return;
+    }
+
+    this.markTransientHealthCheckFailed(result.reason);
+  }
+
   private markHealthCheckPassed(): void {
     const store = useConnectionStore.getState();
     store.recordHealthCheck();
+    this.consecutiveTransientHealthFailures = 0;
     this.markConnectedIfNeeded();
     store.resetReconnectAttempts();
 
@@ -202,15 +219,32 @@ export class ConnectionHealthMonitor {
     this.reconnectSilentStreamsAfterCooldown(store);
   }
 
-  private markHealthCheckFailed(): void {
+  private markTransientHealthCheckFailed(reason: ToriiHealthUnreachableReason): void {
+    this.consecutiveTransientHealthFailures += 1;
+    if (this.consecutiveTransientHealthFailures < this.transientHealthFailureThreshold) {
+      return;
+    }
+
+    this.reconnectAfterFailedHealthCheck(reason);
+  }
+
+  private markEndpointNotFound(): void {
+    if (this.deadEndReported) {
+      return;
+    }
+
+    this.consecutiveTransientHealthFailures = 0;
     const store = useConnectionStore.getState();
     store.setStatus("disconnected");
     store.setSpatialStatus("failed");
     store.setGlobalStatus("failed");
     store.incrementReconnectAttempts();
     this.markOutageStart();
-    this.reportDeadEndIfNeeded();
-    this.reconnectAfterFailedHealthCheck();
+    this.reportDeadEnd("endpoint_not_found");
+  }
+
+  private haveObservedStreamHandshakes(store: ReturnType<typeof useConnectionStore.getState>): boolean {
+    return store.lastSpatialHandshake > 0 && store.lastGlobalHandshake > 0;
   }
 
   private haveStreamsTickedSinceStart(store: ReturnType<typeof useConnectionStore.getState>): boolean {
@@ -235,12 +269,20 @@ export class ConnectionHealthMonitor {
     void this.reconnectStaleStreams(true, true);
   }
 
-  private reconnectAfterFailedHealthCheck(): void {
+  private reconnectAfterFailedHealthCheck(reason: ToriiHealthUnreachableReason): void {
     const now = Date.now();
     if (now - this.lastStreamReconnectAtMs < this.reconnectCooldownMs) return;
 
+    const store = useConnectionStore.getState();
+    store.setStatus("disconnected");
+    store.setSpatialStatus("failed");
+    store.setGlobalStatus("failed");
+    store.incrementReconnectAttempts();
+    this.markOutageStart();
+    this.reportDeadEndIfNeeded(reason);
+
     this.lastStreamReconnectAtMs = now;
-    void this.reconnectStaleStreams(true, true, { markConnectedOnSuccess: false });
+    void this.reconnectStaleStreams(true, true, { attemptAlreadyCounted: true, deadEndReason: reason });
   }
 
   private isHeartbeatStale(store: ReturnType<typeof useConnectionStore.getState>): boolean {
@@ -250,7 +292,11 @@ export class ConnectionHealthMonitor {
   private async reconnectStaleStreams(
     spatial: boolean,
     global: boolean,
-    options: { markConnectedOnSuccess?: boolean } = {},
+    options: {
+      markConnectedOnSuccess?: boolean;
+      attemptAlreadyCounted?: boolean;
+      deadEndReason?: ToriiHealthUnreachableReason;
+    } = {},
   ): Promise<void> {
     if (this.reconnecting || this.disposed) return;
 
@@ -284,9 +330,11 @@ export class ConnectionHealthMonitor {
       store.setStatus("degraded");
       if (spatial) store.setSpatialStatus("failed");
       if (global) store.setGlobalStatus("failed");
-      store.incrementReconnectAttempts();
+      if (!options.attemptAlreadyCounted) {
+        store.incrementReconnectAttempts();
+      }
       this.markOutageStart();
-      this.reportDeadEndIfNeeded();
+      this.reportDeadEndIfNeeded(options.deadEndReason);
     } finally {
       // Bump on both success and failure: scoped subscribers (e.g. player
       // structure sync) re-mount on this version, and a failed global
@@ -300,13 +348,19 @@ export class ConnectionHealthMonitor {
     }
   }
 
-  private reportDeadEndIfNeeded(): void {
+  private reportDeadEndIfNeeded(reason?: ToriiHealthUnreachableReason): void {
     if (this.deadEndReported) return;
     const store = useConnectionStore.getState();
     if (store.reconnectAttempts < this.deadEndAttempts) return;
+    this.reportDeadEnd(reason);
+  }
+
+  private reportDeadEnd(reason?: ToriiHealthUnreachableReason): void {
+    if (this.deadEndReported) return;
+    const store = useConnectionStore.getState();
     this.deadEndReported = true;
     const outageMs = this.pendingRecoveryToastFromMs !== null ? Date.now() - this.pendingRecoveryToastFromMs : 0;
-    this.config.onDeadEnd?.(outageMs, store.reconnectAttempts);
+    this.config.onDeadEnd?.(outageMs, store.reconnectAttempts, reason);
   }
 
   private markOutageStart(): void {
