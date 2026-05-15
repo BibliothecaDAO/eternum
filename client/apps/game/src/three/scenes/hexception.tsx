@@ -58,6 +58,9 @@ import {
   ResourceIdToMiningType,
   ResourceManager,
   TileManager,
+  divideByPrecision,
+  getBalance,
+  getBuildingCosts,
   getEntityIdFromKeys,
   getRealmInfo,
   getStructureStage,
@@ -658,6 +661,13 @@ export default class HexceptionScene extends HexagonScene {
         return;
       }
 
+      if (!this.canAffordPreviewBuilding(structureEntityId, buildingType.type, useSimpleCost)) {
+        toast.error("Insufficient resources to build here.");
+        AudioManager.getInstance().play("ui.build_invalid");
+        this.updateHexceptionGrid(this.hexceptionRadius);
+        return;
+      }
+
       this.clearBuildingMode();
       reserveOccupiedBuildSpot(structureEntityId, normalizedCoords);
       try {
@@ -733,6 +743,32 @@ export default class HexceptionScene extends HexagonScene {
       }
     }
   }
+
+  private canAffordPreviewBuilding(
+    structureEntityId: number,
+    buildingType: BuildingType,
+    useSimpleCost: boolean,
+  ): boolean {
+    const buildingCosts = getBuildingCosts(structureEntityId, this.dojo.components, buildingType, useSimpleCost);
+    if (!buildingCosts?.length) {
+      return false;
+    }
+
+    const { currentDefaultTick } = getBlockTimestamp();
+    return buildingCosts.every((resourceCost) =>
+      this.hasEnoughResourceForPreviewCost(structureEntityId, resourceCost, currentDefaultTick),
+    );
+  }
+
+  private hasEnoughResourceForPreviewCost(
+    structureEntityId: number,
+    resourceCost: { resource: ResourcesIds; amount: number },
+    currentDefaultTick: number,
+  ): boolean {
+    const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, this.dojo.components);
+    return divideByPrecision(balance.balance) >= resourceCost.amount;
+  }
+
   protected onHexagonMouseMove(hex: { position: Vector3; hexCoords: HexPosition } | null): void {
     // Always clear the tooltip first to prevent it from persisting when other elements overlap
     this.state.setTooltip(null);
