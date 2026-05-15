@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "baking-loaf",
-    "launchRequestId": "25840653521-1",
+    "gameName": "blitz-rotation",
+    "launchRequestId": "25900758661-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25840653521,
+    "workflowRunId": 25900758661,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "b067c4a0-cb9e-48af-930d-69357f5e7ceb"
+    "stepId": "create-world",
+    "leaseId": "aabf5db2-6960-4157-8c19-87ff815d80e1"
   },
-  "acquiredAt": "2026-05-14T03:57:59.952Z",
-  "heartbeatAt": "2026-05-14T03:58:03.775Z",
-  "expiresAt": "2026-05-14T03:58:03.775Z",
-  "releasedAt": "2026-05-14T03:58:03.775Z"
+  "acquiredAt": "2026-05-15T04:47:00.187Z",
+  "heartbeatAt": "2026-05-15T04:47:00.187Z",
+  "expiresAt": "2026-05-15T04:57:00.187Z"
 }
