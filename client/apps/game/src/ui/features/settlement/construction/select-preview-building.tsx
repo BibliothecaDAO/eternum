@@ -21,14 +21,15 @@ import {
   reconcileBuildReservationState,
   releaseOccupiedBuildSpot,
   reserveOccupiedBuildSpot,
+  reserveVacatedBuildSpot,
 } from "./build-reservation-store";
+import { resolveConstructionBuildability } from "./construction-buildability";
 import { buildRealmBuilding, resolveRealmHasAvailableBuildingTile } from "./realm-build-actions";
 import {
   buildRealmBuildingSummary,
   getMilitaryBuildingInfo,
   MILITARY_BUILDING_GROUP_ORDER,
   RealmBuildingSummary,
-  resolveRealmBuildingSummaryBuildability,
 } from "./realm-building-summary";
 
 import {
@@ -41,7 +42,6 @@ import {
   getBuildingCount,
   getConsumedBy,
   getRealmInfo,
-  hasEnoughPopulationForBuilding,
   ResourceManager,
   ResourceIdToMiningType,
   TileManager,
@@ -99,6 +99,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
+  const mode = useGameModeConfig();
 
   const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), dojo.setup.components);
   const structure = useComponentValue(dojo.setup.components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
@@ -110,9 +111,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const currentTime = useMemo(() => Date.now(), [timerTick]);
   const currentTimeRef = useRef(currentTime);
   currentTimeRef.current = currentTime;
-
-  const currentDefaultTickRef = useRef(currentDefaultTick);
-  currentDefaultTickRef.current = currentDefaultTick;
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -178,8 +176,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     pendingDestroys,
     structureBuildings,
   ]);
-  const isRealmFull = !hasAvailableBuildingTile;
-
   const getBuildingCountFor = useCallback(
     (buildingType: BuildingType) => {
       if (!structureBuildings) return 0;
@@ -206,6 +202,8 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         await buildRealmBuilding({
           entityId,
           realmPosition: realm?.position,
+          realm,
+          mode,
           target,
           useSimpleCost,
           world: {
@@ -236,10 +234,12 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       dojo.setup.components,
       dojo.setup.systemCalls,
       entityId,
+      realm,
       realm?.position,
       setPreviewBuilding,
       setSelectedBuildingHex,
       useSimpleCost,
+      mode,
     ],
   );
 
@@ -264,6 +264,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         return;
       }
       setPendingDestroys((prev) => ({ ...prev, [buildingKey]: true }));
+      reserveVacatedBuildSpot(entityId, { col: existing.col, row: existing.row });
 
       try {
         await tileManager.destroyBuilding(dojo.account.account, entityId, existing.col, existing.row);
@@ -430,7 +431,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   }, [realmBiome]);
 
   const { playResourceSound } = usePlayResourceSound();
-  const mode = useGameModeConfig();
 
   const buildingTypes = useMemo(
     () => Object.keys(BuildingType).filter((key) => mode.rules.isBuildingTypeAllowed(key)),
@@ -555,38 +555,25 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
     setSelectedArmyType(recommendedArmyType ?? armyGroups[0].armyType);
   }, [armyGroups, entityId, recommendedArmyType, selectedArmyType]);
 
-  const checkBalance = useCallback(
-    (cost: any) =>
-      Object.keys(cost).every((resourceId) => {
-        const resourceCost = cost[Number(resourceId)];
-        const balance = getBalance(
-          entityId,
-          resourceCost.resource,
-          currentDefaultTickRef.current,
-          dojo.setup.components,
-        );
-        return divideByPrecision(balance.balance) >= resourceCost.amount;
-      }),
-    [entityId, dojo.setup.components],
-  );
-
   const activeArmyType = selectedArmyType ?? recommendedArmyType ?? armyGroups[0]?.armyType ?? null;
   const getSummaryBuildState = useCallback(
     (buildingId: BuildingType) => {
-      const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, buildingId, useSimpleCost);
-      const hasBalance = Boolean(buildingCosts && checkBalance(buildingCosts));
-      const hasEnoughPopulation = Boolean(realm && hasEnoughPopulationForBuilding(realm, buildingId));
-
-      return resolveRealmBuildingSummaryBuildability({
-        buildingId,
-        hasBalance,
-        hasEnoughPopulation,
-        hasCapacity: Boolean(realm?.hasCapacity),
-        hasAvailableBuildingTile,
+      const buildability = resolveConstructionBuildability({
+        entityId,
+        buildingType: buildingId,
         useSimpleCost,
+        components: dojo.setup.components,
+        realm,
+        mode,
+        hasAvailableBuildingTile,
       });
+
+      return {
+        canBuild: buildability.canSubmit,
+        disabledReason: buildability.reason,
+      };
     },
-    [checkBalance, dojo.setup.components, entityId, hasAvailableBuildingTile, realm, useSimpleCost],
+    [dojo.setup.components, entityId, hasAvailableBuildingTile, mode, realm, useSimpleCost],
   );
   const allowedBuildingTypes = useMemo(
     () =>
@@ -639,27 +626,20 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             {realm?.resources.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
               const building = getBuildingFromResource(resourceId);
-
-              const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
-
-              if (!buildingCosts) return;
-
-              const hasBalance = checkBalance(buildingCosts);
               const productionStatus = productionStatusByResourceRef.current.get(resourceId as ResourcesIds);
 
-              const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
-              const isLaborLockedResource =
-                useSimpleCost &&
-                (resourceId === ResourcesIds.Dragonhide ||
-                  resourceId === ResourcesIds.Mithral ||
-                  resourceId === ResourcesIds.Adamantine);
-              const canBuild = !isLaborLockedResource && hasBalance && realm?.hasCapacity && hasEnoughPopulation;
-              const disabledReason = isRealmFull
-                ? "Realm full"
-                : isLaborLockedResource
-                  ? "Switch to Resource mode to create this building."
-                  : undefined;
-              const disabled = isLaborLockedResource || isRealmFull;
+              const buildability = resolveConstructionBuildability({
+                entityId,
+                buildingType: building,
+                useSimpleCost,
+                components: dojo.setup.components,
+                realm,
+                mode,
+                hasAvailableBuildingTile,
+              });
+              const canBuild = buildability.canSubmit;
+              const disabledReason = buildability.reason;
+              const disabled = !canBuild;
               const buildKey = building.toString();
               const isPending = Boolean(pendingBuilds[buildKey]);
               const count = getBuildingCountFor(building);
@@ -675,7 +655,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   buildingId={building}
                   resourceId={resourceId}
                   onClick={() => {
-                    if (!canBuild || isRealmFull) {
+                    if (!canBuild) {
                       return;
                     }
                     if (previewBuilding?.type === building && previewBuilding?.resource === resourceId) {
@@ -699,13 +679,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                       useSimpleCost={useSimpleCost}
                     />
                   }
-                  hasFunds={hasBalance}
-                  hasPopulation={hasEnoughPopulation}
                   disabled={disabled}
                   disabledReason={disabledReason}
                   count={count}
                   onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
-                  buildDisabled={!canBuild || isPending || isRealmFull}
+                  buildDisabled={!canBuild || isPending}
                   buildLoading={isPending}
                   onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
                   destroyDisabled={destroyDisabled}
@@ -745,11 +723,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 const building = BuildingType[buildingType as keyof typeof BuildingType];
 
                 const isWorkersHut = building === BuildingType.WorkersHut;
-                const buildingCosts = getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost);
-
-                if (!buildingCosts) return;
-
-                const hasBalance = checkBalance(buildingCosts);
                 const producedResourceId = configManager.getResourceBuildingProduced(building) as
                   | ResourcesIds
                   | undefined;
@@ -757,13 +730,18 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                   ? productionStatusByResourceRef.current.get(producedResourceId as ResourcesIds)
                   : undefined;
 
-                const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
-                const canBuild =
-                  building === BuildingType.WorkersHut
-                    ? hasBalance
-                    : hasBalance && realm?.hasCapacity && hasEnoughPopulation;
-                const disabledReason = isRealmFull ? "Realm full" : undefined;
-                const disabled = Boolean(disabledReason);
+                const buildability = resolveConstructionBuildability({
+                  entityId,
+                  buildingType: building,
+                  useSimpleCost,
+                  components: dojo.setup.components,
+                  realm,
+                  mode,
+                  hasAvailableBuildingTile,
+                });
+                const canBuild = buildability.canSubmit;
+                const disabledReason = buildability.reason;
+                const disabled = !canBuild;
                 const buildKey = building.toString();
                 const isPending = Boolean(pendingBuilds[buildKey]);
                 const count = getBuildingCountFor(building);
@@ -789,7 +767,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     key={index}
                     buildingId={building}
                     onClick={() => {
-                      if (!canBuild || isRealmFull) {
+                      if (!canBuild) {
                         return;
                       }
                       if (previewBuilding?.type === building) {
@@ -818,13 +796,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                     productionStatus={productionStatus}
                     currentTime={currentTimeRef.current}
                     toolTip={<BuildingInfo buildingId={building} entityId={entityId} useSimpleCost={useSimpleCost} />}
-                    hasFunds={hasBalance}
-                    hasPopulation={hasEnoughPopulation}
                     disabled={disabled}
                     disabledReason={disabledReason}
                     count={count}
                     onBuild={() => handleAutoBuild({ type: building })}
-                    buildDisabled={!canBuild || isPending || isRealmFull}
+                    buildDisabled={!canBuild || isPending}
                     buildLoading={isPending}
                     onDestroy={() => handleDestroyBuilding({ type: building })}
                     destroyDisabled={destroyDisabled}
@@ -914,9 +890,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                           })
                           .map((buildingType, index) => {
                             const building = BuildingType[buildingType as keyof typeof BuildingType];
-                            const buildingCost =
-                              getBuildingCosts(entityId, dojo.setup.components, building, useSimpleCost) ?? [];
-                            const info = getMilitaryBuildingInfo(building);
                             const producedResourceId = configManager.getResourceBuildingProduced(building) as
                               | ResourcesIds
                               | undefined;
@@ -924,16 +897,17 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                               ? productionStatusByResourceRef.current.get(producedResourceId as ResourcesIds)
                               : undefined;
 
-                            const hasBalance = checkBalance(buildingCost);
-                            const hasEnoughPopulation = hasEnoughPopulationForBuilding(realm, building);
-                            const isTierLockedInSimpleMode = useSimpleCost && (info?.tier ?? 0) > 1;
-                            const canBuild =
-                              !isTierLockedInSimpleMode && hasBalance && realm?.hasCapacity && hasEnoughPopulation;
-                            const disabledReason = isRealmFull
-                              ? "Realm full"
-                              : isTierLockedInSimpleMode && info?.tier
-                                ? `Switch to Resource mode to build Tier ${info.tier} military buildings.`
-                                : undefined;
+                            const buildability = resolveConstructionBuildability({
+                              entityId,
+                              buildingType: building,
+                              useSimpleCost,
+                              components: dojo.setup.components,
+                              realm,
+                              mode,
+                              hasAvailableBuildingTile,
+                            });
+                            const canBuild = buildability.canSubmit;
+                            const disabledReason = buildability.reason;
                             const buildKey = building.toString();
                             const isPending = Boolean(pendingBuilds[buildKey]);
                             const count = getBuildingCountFor(building);
@@ -953,7 +927,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 key={index}
                                 buildingId={building}
                                 onClick={() => {
-                                  if (!canBuild || isRealmFull) return;
+                                  if (!canBuild) return;
                                   if (previewBuilding?.type === building) {
                                     setPreviewBuilding(null);
                                   } else {
@@ -977,13 +951,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                     useSimpleCost={useSimpleCost}
                                   />
                                 }
-                                hasFunds={hasBalance}
-                                hasPopulation={hasEnoughPopulation}
-                                disabled={isTierLockedInSimpleMode || isRealmFull}
+                                disabled={!canBuild}
                                 disabledReason={disabledReason}
                                 count={count}
                                 onBuild={() => handleAutoBuild({ type: building })}
-                                buildDisabled={!canBuild || isPending || isRealmFull}
+                                buildDisabled={!canBuild || isPending}
                                 buildLoading={isPending}
                                 onDestroy={() => handleDestroyBuilding({ type: building })}
                                 destroyDisabled={destroyDisabled}
@@ -1017,11 +989,11 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       pendingDestroys,
       pendingPauseResume,
       pausedByCategory,
+      mode,
       handleAutoBuild,
       handleDestroyBuilding,
       handlePauseResumeAll,
       getBuildingCountFor,
-      checkBalance,
     ],
   );
 
@@ -1098,8 +1070,6 @@ const BuildingCard = ({
   productionStatus,
   currentTime,
   toolTip,
-  hasFunds = true,
-  hasPopulation = true,
   resourceId,
   className,
   disabled = false,
@@ -1126,8 +1096,6 @@ const BuildingCard = ({
   productionStatus?: ResourceProductionStatus;
   currentTime?: number;
   toolTip: React.ReactElement;
-  hasFunds?: boolean;
-  hasPopulation?: boolean;
   resourceId?: ResourcesIds;
   className?: string;
   disabled?: boolean;
@@ -1147,7 +1115,6 @@ const BuildingCard = ({
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const isDisabled = disabled;
-  const lacksRequirements = !hasFunds || !hasPopulation;
   const showDisabledMessage = isDisabled && disabledReason;
   const effectiveRemainingSeconds =
     productionStatus && currentTime
@@ -1234,16 +1201,16 @@ const BuildingCard = ({
         <div className="flex flex-col items-start gap-2">
           <button
             type="button"
-            disabled={Boolean(buildDisabled || isDisabled || lacksRequirements)}
+            disabled={Boolean(buildDisabled || isDisabled)}
             onClick={(event) => {
               event.stopPropagation();
-              if (buildDisabled || isDisabled || lacksRequirements) return;
+              if (buildDisabled || isDisabled) return;
               onBuild?.();
             }}
             className={clsx(
               "flex items-center justify-center rounded-md border border-amber-500/80 bg-amber-400/90 px-2.5 py-1 text-[10px] font-semibold text-black shadow transition",
-              !buildDisabled && !isDisabled && !lacksRequirements && "hover:translate-y-[-1px] hover:bg-amber-300",
-              (buildDisabled || isDisabled || lacksRequirements) && "opacity-60 cursor-not-allowed",
+              !buildDisabled && !isDisabled && "hover:translate-y-[-1px] hover:bg-amber-300",
+              (buildDisabled || isDisabled) && "opacity-60 cursor-not-allowed",
             )}
           >
             {buildLoading ? "…" : "Build"}
@@ -1307,16 +1274,9 @@ const BuildingCard = ({
           {badge && <div>{badge}</div>}
         </div>
       </div>
-      {(lacksRequirements || showDisabledMessage) && (
+      {showDisabledMessage && (
         <div className="absolute inset-0 bg-brown/60 p-4 text-xs flex justify-center text-center">
-          {showDisabledMessage ? (
-            <div className="self-center text-gold/90 leading-tight">{disabledReason}</div>
-          ) : (
-            <div className="self-center flex items-center space-x-2">
-              {!hasFunds && <ResourceIcon tooltipText="Need More Resources" resource="Silo" size="lg" />}
-              {!hasPopulation && <ResourceIcon tooltipText="Need More Housing" resource="House" size="lg" />}
-            </div>
-          )}
+          <div className="self-center text-gold/90 leading-tight">{disabledReason}</div>
         </div>
       )}
       <div className="absolute inset-x-0 bottom-0 p-2 space-y-2">

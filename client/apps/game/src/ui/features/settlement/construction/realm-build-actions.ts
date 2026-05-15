@@ -1,17 +1,12 @@
 import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, ResourcesIds } from "@bibliothecadao/types";
-import {
-  TileManager,
-  divideByPrecision,
-  getBalance,
-  getBuildingCosts,
-  getBlockTimestamp,
-} from "@bibliothecadao/eternum";
+import { TileManager } from "@bibliothecadao/eternum";
 import { toast } from "sonner";
 import {
   getBuildReservationState,
   releaseOccupiedBuildSpot,
   reserveOccupiedBuildSpot,
 } from "./build-reservation-store";
+import { resolveConstructionBuildability, type ConstructionBuildabilityInput } from "./construction-buildability";
 
 type RealmPosition = {
   x: bigint | number;
@@ -44,6 +39,8 @@ type BuildSpot = {
 type RealmBuildActionOptions = {
   entityId: number;
   realmPosition?: RealmPosition | null;
+  realm?: ConstructionBuildabilityInput["realm"];
+  mode?: ConstructionBuildabilityInput["mode"];
   target: RealmBuildTarget;
   useSimpleCost: boolean;
   world: BuildWorldContext;
@@ -213,27 +210,11 @@ const hasBuildableCandidate = ({
 export const resolveRealmHasAvailableBuildingTile = (options: RealmAvailableTileOptions) =>
   hasBuildableCandidate(options);
 
-const canAffordRealmBuilding = ({
-  entityId,
-  target,
-  useSimpleCost,
-  world,
-}: Pick<RealmBuildActionOptions, "entityId" | "target" | "useSimpleCost" | "world">): boolean => {
-  const { currentDefaultTick } = getBlockTimestamp();
-  const buildingCosts = getBuildingCosts(entityId, world.components, target.type, useSimpleCost);
-  if (!buildingCosts?.length) {
-    return false;
-  }
-
-  return buildingCosts.every((resourceCost) => {
-    const balance = getBalance(entityId, resourceCost.resource, currentDefaultTick, world.components);
-    return divideByPrecision(balance.balance) >= resourceCost.amount;
-  });
-};
-
 export const buildRealmBuilding = async ({
   entityId,
   realmPosition,
+  realm,
+  mode,
   target,
   useSimpleCost,
   world,
@@ -248,8 +229,17 @@ export const buildRealmBuilding = async ({
     return false;
   }
 
-  if (!canAffordRealmBuilding({ entityId, target, useSimpleCost, world })) {
-    toast.error("Insufficient resources to build.");
+  const baseBuildability = resolveConstructionBuildability({
+    entityId,
+    buildingType: target.type,
+    useSimpleCost,
+    components: world.components,
+    realm,
+    mode,
+  });
+
+  if (!baseBuildability.canSubmit) {
+    toast.error(baseBuildability.reason ?? "Building cannot be submitted.");
     return false;
   }
 
@@ -268,6 +258,23 @@ export const buildRealmBuilding = async ({
 
   try {
     for (const availableSpot of availableSpots) {
+      const spotBuildability = resolveConstructionBuildability({
+        entityId,
+        buildingType: target.type,
+        useSimpleCost,
+        components: world.components,
+        realm,
+        mode,
+        targetSpot: availableSpot,
+        tileManager,
+        occupiedSpots: reservedSpots.occupiedSpots,
+        vacatedSpots: reservedSpots.vacatedSpots,
+      });
+
+      if (!spotBuildability.canSubmit) {
+        continue;
+      }
+
       const spotKey = toBuildSpotKey(availableSpot);
       reserveAutoBuildSpot(entityId, spotKey, onReserveSpot);
 

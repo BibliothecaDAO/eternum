@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-15",
+    title: "Safer Construction",
+    description:
+      "Building actions now catch more invalid placements before wallet submission and clear pending construction state after failures, reducing rejected builds and rollback cleanup.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-15",
     title: "Blitz Leaderboard Fix",
     description:
       "Fixed the Blitz leaderboard and prize panel so settled-player rankings open reliably after entering a game.",
