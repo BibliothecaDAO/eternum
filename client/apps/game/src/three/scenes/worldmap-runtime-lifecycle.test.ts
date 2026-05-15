@@ -19,6 +19,8 @@ describe("worldmap runtime lifecycle", () => {
     const pendingArmyMovements = new Set<number>([101, 202]);
     const pendingArmyMovementStartedAt = new Map<number, number>([[101, Date.now()]]);
     const pendingArmyMovementFallbackTimeouts = new Map<number, string>([[101, "fallback-timeout"]]);
+    const pendingArmyMovementTargetKeys = new Map<number, string>([[202, "10,11"]]);
+    const pendingArmyMovementAuthoritativeResolutions = new Set<number>([202]);
     const armyStructureOwners = new Map<number, number>([[101, 88]]);
     const pinnedChunkKeys = new Set<string>(["8,8"]);
     const pinnedRenderAreas = new Set<string>(["8,8:render"]);
@@ -39,6 +41,8 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyMovements,
       pendingArmyMovementStartedAt,
       pendingArmyMovementFallbackTimeouts,
+      pendingArmyMovementTargetKeys,
+      pendingArmyMovementAuthoritativeResolutions,
       armyStructureOwners,
       clearRenderAreaHydrationState: clearRenderAreaHydrationStateSpy,
       pinnedChunkKeys,
@@ -71,6 +75,8 @@ describe("worldmap runtime lifecycle", () => {
     expect(pendingArmyMovements.size).toBe(0);
     expect(pendingArmyMovementStartedAt.size).toBe(0);
     expect(pendingArmyMovementFallbackTimeouts.size).toBe(0);
+    expect(pendingArmyMovementTargetKeys.size).toBe(0);
+    expect(pendingArmyMovementAuthoritativeResolutions.size).toBe(0);
     expect(armyStructureOwners.size).toBe(0);
     expect(pinnedChunkKeys.size).toBe(0);
     expect(pinnedRenderAreas.size).toBe(0);
@@ -100,6 +106,8 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyMovements: new Set(),
       pendingArmyMovementStartedAt: new Map(),
       pendingArmyMovementFallbackTimeouts: new Map(),
+      pendingArmyMovementTargetKeys: new Map(),
+      pendingArmyMovementAuthoritativeResolutions: new Set(),
       armyStructureOwners: new Map(),
       clearRenderAreaHydrationState: clearRenderAreaHydrationStateSpy,
       pinnedChunkKeys: new Set(),
@@ -154,6 +162,8 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyMovements: new Set(),
       pendingArmyMovementStartedAt: new Map(),
       pendingArmyMovementFallbackTimeouts: new Map(),
+      pendingArmyMovementTargetKeys: new Map(),
+      pendingArmyMovementAuthoritativeResolutions: new Set(),
       armyStructureOwners: new Map(),
       clearRenderAreaHydrationState: vi.fn(),
       pinnedChunkKeys: new Set(),
@@ -186,6 +196,8 @@ describe("worldmap runtime lifecycle", () => {
       pendingArmyMovements: new Set(),
       pendingArmyMovementStartedAt: new Map(),
       pendingArmyMovementFallbackTimeouts: new Map(),
+      pendingArmyMovementTargetKeys: new Map(),
+      pendingArmyMovementAuthoritativeResolutions: new Set(),
       armyStructureOwners: new Map(),
       suppressedArmies,
       clearRenderAreaHydrationState: vi.fn(),
