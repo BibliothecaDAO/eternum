@@ -97,4 +97,30 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     expect(helperBody).toContain('this.arrivalGhostManager.clearArrivalGhost(entityId, "optimistic_aborted")');
     expect(helperBody).not.toContain("this.disposePendingMovementVisualLifecycle(entityId)");
   });
+
+  it("keeps pending movement fallback alive when movement visuals are evicted", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const lifecycleStart = source.indexOf("private installPendingMovementVisualLifecycle(");
+    expect(lifecycleStart).toBeGreaterThan(-1);
+
+    const lifecycleEnd = source.indexOf("private disposePendingMovementVisualLifecycle(", lifecycleStart);
+    const lifecycleBody = source.slice(lifecycleStart, lifecycleEnd);
+    const cancelStart = lifecycleBody.indexOf("const disposeMovementVisualCancel");
+    const cancelEnd = lifecycleBody.indexOf("this.pendingArmyMovementVisualLifecycleDisposers.set", cancelStart);
+    const cancelHandler = lifecycleBody.slice(cancelStart, cancelEnd);
+
+    expect(cancelHandler).toContain("this.clearEvictedArmyMovementVisuals(entityId)");
+    expect(cancelHandler).not.toContain("this.clearPendingArmyMovement");
+
+    const helperStart = source.indexOf("private clearEvictedArmyMovementVisuals(");
+    expect(helperStart).toBeGreaterThan(-1);
+
+    const helperEnd = source.indexOf("private clearPendingArmyMovement(", helperStart);
+    const helperBody = source.slice(helperStart, helperEnd);
+
+    expect(helperBody).toContain("trackedEffect.cleanup()");
+    expect(helperBody).toContain('this.arrivalGhostManager.clearArrivalGhost(entityId, "movement_evicted")');
+    expect(helperBody).not.toContain("pendingArmyMovements.delete");
+    expect(helperBody).not.toContain("pendingArmyMovementFallbackTimeouts");
+  });
 });

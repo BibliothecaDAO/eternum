@@ -3080,6 +3080,15 @@ export default class WorldmapScene extends WarpTravel {
     this.updateStructureOwnershipPulses(selectedEntityId, extraHexes);
   }
 
+  private clearEvictedArmyMovementVisuals(entityId: ID): void {
+    const trackedEffect = this.travelEffectsByEntity.get(entityId);
+    if (trackedEffect) {
+      trackedEffect.cleanup();
+    }
+
+    this.arrivalGhostManager.clearArrivalGhost(entityId, "movement_evicted");
+  }
+
   private clearPendingArmyMovement(
     entityId: ID,
     reason: PendingArmyMovementEffectClearReason = "cleanup_requested",
@@ -3165,8 +3174,7 @@ export default class WorldmapScene extends WarpTravel {
       }
     });
     const disposeMovementVisualCancel = this.armyManager.onMovementVisualCancel(entityId, () => {
-      this.clearPendingArmyMovement(entityId, "movement_evicted");
-      this.arrivalGhostManager.clearArrivalGhost(entityId, "movement_evicted");
+      this.clearEvictedArmyMovementVisuals(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
     });
 
