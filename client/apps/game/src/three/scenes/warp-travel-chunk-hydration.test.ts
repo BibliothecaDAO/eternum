@@ -5,7 +5,7 @@ import { createControlledAsyncCall, flushMicrotasks } from "./worldmap-test-harn
 
 describe("hydrateWarpTravelChunk", () => {
   it("prepares target terrain only after fetch, bounds, structure drain, and asset prewarm are ready", async () => {
-    const computeTileEntities = createControlledAsyncCall<[string], boolean>();
+    const computeTileEntities = createControlledAsyncCall<[string, { requireStructures: boolean }], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
     const waitForStructureHydrationIdle = createControlledAsyncCall<[string], void>();
@@ -36,7 +36,11 @@ describe("hydrateWarpTravelChunk", () => {
 
     await flushMicrotasks(2);
 
-    expect(computeTileEntities.calls).toEqual([["24,24"], ["0,24"], ["24,0"]]);
+    expect(computeTileEntities.calls).toEqual([
+      ["24,24", { requireStructures: true }],
+      ["0,24", { requireStructures: false }],
+      ["24,0", { requireStructures: false }],
+    ]);
     expect(pinnedChunkUpdates).toEqual([["0,24", "24,0"]]);
     expect(updateBoundsSubscription.calls).toEqual([["24,24", 7]]);
     expect(waitForTileHydrationIdle.calls).toEqual([["24,24"]]);
@@ -75,7 +79,7 @@ describe("hydrateWarpTravelChunk", () => {
   });
 
   it("still waits for bounds completion but skips terrain preparation when tile fetch fails", async () => {
-    const computeTileEntities = createControlledAsyncCall<[string], boolean>();
+    const computeTileEntities = createControlledAsyncCall<[string, { requireStructures: boolean }], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
     const waitForStructureHydrationIdle = createControlledAsyncCall<[string], void>();
@@ -115,7 +119,7 @@ describe("hydrateWarpTravelChunk", () => {
   });
 
   it("does not prepare terrain until tile hydration drain finishes for the target chunk", async () => {
-    const computeTileEntities = createControlledAsyncCall<[string], boolean>();
+    const computeTileEntities = createControlledAsyncCall<[string, { requireStructures: boolean }], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
     const waitForStructureHydrationIdle = createControlledAsyncCall<[string], void>();

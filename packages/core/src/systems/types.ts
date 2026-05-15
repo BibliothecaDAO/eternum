@@ -102,6 +102,12 @@ export type StructureSystemUpdate = {
   battleCooldownEnd: number;
 };
 
+export type StructureBuildingsSystemUpdate = {
+  entityId: ID;
+  activeProductions: ActiveProduction[];
+  hexCoords: HexPosition;
+};
+
 export type TileSystemUpdate = {
   hexCoords: HexPosition;
   removeExplored: boolean;

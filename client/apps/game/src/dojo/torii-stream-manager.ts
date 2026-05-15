@@ -642,7 +642,7 @@ export class ToriiStreamManager {
 
     this.readinessRecoveryAttempts += 1;
     const delayMs = getBackoffDelay(this.readinessRecoveryAttempts, SPATIAL_READINESS_RECOVERY_BACKOFF_MS);
-    useConnectionStore.getState().setSpatialStatus("reconnecting");
+    useConnectionStore.getState().setSpatialStatus("stale");
 
     this.readinessRecoveryTimer = setTimeout(() => {
       this.readinessRecoveryTimer = null;
@@ -656,6 +656,7 @@ export class ToriiStreamManager {
     }
 
     try {
+      useConnectionStore.getState().setSpatialStatus("reconnecting");
       await this.resubscribe({ resetReadinessRecovery: false });
     } catch (error) {
       this.markSpatialReadinessRecoveryFailed(getErrorMessage(error), {
