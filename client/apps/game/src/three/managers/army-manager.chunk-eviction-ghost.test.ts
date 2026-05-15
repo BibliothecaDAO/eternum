@@ -58,7 +58,7 @@ describe("chunk-eviction ghosting prevention", () => {
       expect(cleanupPos).toBeLessThan(freeSlotPos);
     });
 
-    it("only notifies movement visual cancellation for true entity removal, not chunk reconciliation", () => {
+    it("notifies movement visual cancellation when chunk reconciliation evicts a moving army", () => {
       const src = readSource("army-manager.ts");
 
       const methodStart = src.indexOf("private removeVisibleArmy(");
@@ -66,14 +66,14 @@ describe("chunk-eviction ghosting prevention", () => {
 
       const methodBody = src.slice(methodStart, methodStart + 2800);
 
-      const cancelGuardPos = methodBody.indexOf("if (options?.notifyMovementVisualCancel)");
+      const movingCheckPos = methodBody.indexOf("this.armyModel.isEntityMoving(numericId)");
       const cancelPos = methodBody.indexOf("this.runMovementVisualCancelListeners(numericId)");
       const freeSlotPos = methodBody.indexOf("this.armyModel.freeInstanceSlot(");
       const removeArmyPos = src.indexOf("this.removeVisibleArmy(entityId, { notifyMovementVisualCancel: true })");
 
       expect(src).toContain("public onMovementVisualCancel(entityId: ID, callback: () => void): () => void");
       expect(src).toContain("options?: { notifyMovementVisualCancel?: boolean }");
-      expect(cancelGuardPos).toBeGreaterThan(-1);
+      expect(movingCheckPos).toBeGreaterThan(-1);
       expect(cancelPos).toBeGreaterThan(-1);
       expect(freeSlotPos).toBeGreaterThan(-1);
       expect(removeArmyPos).toBeGreaterThan(-1);
