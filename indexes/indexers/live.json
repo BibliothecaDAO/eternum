@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-15T09:02:16.903Z",
+  "updatedAt": "2026-05-15T09:22:15.621Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2286,7 +2286,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-14-05-26-1000 not found"
       },
-      "updatedAt": "2026-05-15T09:02:16.903Z"
+      "updatedAt": "2026-05-15T09:22:15.621Z"
     },
     "bltz-flux-865": {
       "gameName": "bltz-flux-865",
@@ -2321,7 +2321,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-15-05-26-0100 not found"
       },
-      "updatedAt": "2026-05-15T09:02:16.903Z"
+      "updatedAt": "2026-05-15T09:22:15.621Z"
     }
   }
 }
