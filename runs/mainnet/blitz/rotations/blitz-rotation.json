@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25834917359-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-15T00:30:47.439Z",
+  "updatedAt": "2026-05-15T00:32:24.726Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -5517,7 +5517,7 @@
         },
         "seriesGameNumber": 29,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-15-05-26-0100: Torii deployment \"na-gladiator-15-05-26-0100\" does not exist",
         "status": "succeeded",
         "configSteps": [
           {
@@ -5685,13 +5685,8 @@
           "createGameTxHash": "0x5488dfce359ed1e25616c7a5a54dc854c3d21944e582df94e4d8b0f9d752a56",
           "configureTxHash": "0xfae088b6178f57d1f1f30bf80b037e3d7e49d88b725d81bc8ebb3bf6c34a60",
           "worldConfigTxHash": "0xfae088b6178f57d1f1f30bf80b037e3d7e49d88b725d81bc8ebb3bf6c34a60",
-          "indexerCreated": true,
+          "indexerCreated": false,
           "indexerMode": "slot-direct",
-          "indexerTier": "basic",
-          "indexerUrl": "https://api.cartridge.gg/x/na-gladiator-15-05-26-0100/torii",
-          "indexerVersion": "v1.8.15",
-          "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-05-11T04:42:14.177Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -5703,7 +5698,10 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-05-15T00:30:46.036Z"
+          "pendingIndexerTierRequestedAt": "2026-05-15T00:32:24.726Z",
+          "lastIndexerTierDispatchTarget": "legendary",
+          "lastIndexerTierDispatchFailedAt": "2026-05-15T00:32:24.726Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-15-05-26-0100\" does not exist"
         }
       },
       {
