@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25934620614-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-15T18:34:31.464Z",
+  "updatedAt": "2026-05-15T18:40:31.453Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -5315,7 +5315,7 @@
         },
         "seriesGameNumber": 28,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for apac-gladiator-14-05-26-1000: Torii deployment \"apac-gladiator-14-05-26-1000\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -5496,10 +5496,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-15T18:22:39.323Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-15T18:22:39.323Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-14-05-26-1000\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-05-15T18:40:28.179Z"
         }
       },
       {
@@ -5512,7 +5509,7 @@
         },
         "seriesGameNumber": 29,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for na-gladiator-15-05-26-0100: Torii deployment \"na-gladiator-15-05-26-0100\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -5693,10 +5690,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-15T18:22:39.430Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-15T18:22:39.430Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-15-05-26-0100\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-05-15T18:40:28.179Z"
         }
       },
       {
