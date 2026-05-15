@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "25910118425-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-05-15T09:17:42.130Z",
-  "updatedAt": "2026-05-15T09:20:07.984Z",
+  "updatedAt": "2026-05-15T09:20:12.120Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-15T09:20:12.120Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -84,5 +85,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-twist-623.json",
     "worldAddress": "0x016907b536edc234db9065584803c3ce525b0656e68e91a8b14a9dfdda9b5d2c",
     "createGameTxHash": "0x254905236e0c9b7340980ec188418eec444eafad1adec9f9f2a652845a185f3"
+  },
+  "activeLease": {
+    "launchRequestId": "25910118425-1",
+    "workflowRunId": 25910118425,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-05-15T09:20:12.120Z",
+    "expiresAt": "2026-05-15T10:05:12.120Z"
   }
 }
