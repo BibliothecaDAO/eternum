@@ -34,15 +34,6 @@ type RealmBuildingSummaryBuildAction = {
   title?: string;
 };
 
-type RealmBuildAvailabilityOptions = {
-  buildingId: BuildingType;
-  hasBalance: boolean;
-  hasEnoughPopulation: boolean;
-  hasCapacity: boolean;
-  hasAvailableBuildingTile: boolean;
-  useSimpleCost: boolean;
-};
-
 const prioritizeEconomicBuilding = (buildingType: BuildingType) => {
   if (buildingType === BuildingType.ResourceWheat) return -2;
   if (buildingType === BuildingType.ResourceFish) return -1;
@@ -121,54 +112,6 @@ export const buildRealmBuildingSummary = ({
     },
     [],
   );
-
-export const resolveRealmBuildingSummaryBuildability = ({
-  buildingId,
-  hasBalance,
-  hasEnoughPopulation,
-  hasCapacity,
-  hasAvailableBuildingTile,
-  useSimpleCost,
-}: RealmBuildAvailabilityOptions) => {
-  if (!hasAvailableBuildingTile) {
-    return { canBuild: false, disabledReason: "Realm full" };
-  }
-
-  const militaryInfo = getMilitaryBuildingInfo(buildingId);
-  if (useSimpleCost && (militaryInfo?.tier ?? 0) > 1) {
-    return {
-      canBuild: false,
-      disabledReason: `Switch to Resource mode to build Tier ${militaryInfo?.tier} military buildings.`,
-    };
-  }
-
-  const isLaborLockedResource =
-    useSimpleCost &&
-    (buildingId === BuildingType.ResourceDragonhide ||
-      buildingId === BuildingType.ResourceMithral ||
-      buildingId === BuildingType.ResourceAdamantine);
-  if (isLaborLockedResource) {
-    return { canBuild: false, disabledReason: "Switch to Resource mode to create this building." };
-  }
-
-  if (!hasBalance) {
-    return { canBuild: false, disabledReason: "Need more resources." };
-  }
-
-  if (buildingId === BuildingType.WorkersHut) {
-    return { canBuild: true, disabledReason: undefined };
-  }
-
-  if (!hasCapacity) {
-    return { canBuild: false, disabledReason: "Need more capacity." };
-  }
-
-  if (!hasEnoughPopulation) {
-    return { canBuild: false, disabledReason: "Need more population." };
-  }
-
-  return { canBuild: true, disabledReason: undefined };
-};
 
 export const RealmBuildingSummary = ({
   items,

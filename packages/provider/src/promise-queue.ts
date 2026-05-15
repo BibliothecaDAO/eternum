@@ -26,11 +26,21 @@ interface QueueItem {
 
 const asCallArray = (calls: AllowArray<Call>): Call[] => (Array.isArray(calls) ? calls : [calls]);
 
+const CONSTRUCTION_TRANSACTION_TYPES = new Set<TransactionType>([
+  TransactionType.CREATE_BUILDING,
+  TransactionType.DESTROY_BUILDING,
+]);
+
 const hasVrfRequestRandomCall = (transaction: QueueableTransaction): boolean =>
   asCallArray(transaction.calls).some((call) => call.entrypoint === "request_random");
 
+const isConstructionWriteTransaction = (transaction: QueueableTransaction): boolean =>
+  Boolean(transaction.transactionType && CONSTRUCTION_TRANSACTION_TYPES.has(transaction.transactionType));
+
 const shouldSubmitIndividually = (item: QueueItem): boolean =>
-  item.transaction.transactionType === TransactionType.EXPLORE || hasVrfRequestRandomCall(item.transaction);
+  item.transaction.transactionType === TransactionType.EXPLORE ||
+  hasVrfRequestRandomCall(item.transaction) ||
+  isConstructionWriteTransaction(item.transaction);
 
 const splitBatchForSubmission = (batch: QueueItem[]): QueueItem[][] => {
   const submissionBatches: QueueItem[][] = [];
@@ -186,9 +196,10 @@ export class PromiseQueue {
   /**
    * Process a batch of queue items as a single multicall transaction.
    *
-   * VRF request_random items never merge with others. Each request must stay
-   * paired with exactly one consuming system call, otherwise a later consume can
-   * run without its matching request and fail with "VrfProvider: not consumed".
+   * Sensitive submissions never merge with others:
+   * - VRF request_random calls must stay paired with exactly one consumer.
+   * - Building construction/destruction must not let one rejected slot roll back
+   *   unrelated construction calls in the same multicall.
    */
   private async processBatch(batch: QueueItem[]) {
     if (batch.length === 0) return;

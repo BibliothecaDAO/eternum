@@ -566,6 +566,64 @@ describe("Parallel Category Processing", () => {
     }
   });
 
+  it("never merges CREATE_BUILDING transactions into one multicall", async () => {
+    const localExecutor = makeExecutor();
+    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const pA = queue.enqueue({
+      signer,
+      calls: makeCall("create_building"),
+      transactionType: TransactionType.CREATE_BUILDING,
+    });
+    const pB = queue.enqueue({
+      signer,
+      calls: makeCall("create_building"),
+      transactionType: TransactionType.CREATE_BUILDING,
+    });
+
+    await Promise.all([pA, pB]);
+
+    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+    for (const call of (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls) {
+      expect(call[1]).toEqual(makeCall("create_building"));
+      expect(call[2]).toBeUndefined();
+      expect(call[3]).toEqual({
+        waitForConfirmation: false,
+        transactionType: TransactionType.CREATE_BUILDING,
+      });
+    }
+  });
+
+  it("never merges DESTROY_BUILDING transactions into one multicall", async () => {
+    const localExecutor = makeExecutor();
+    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const pA = queue.enqueue({
+      signer,
+      calls: makeCall("destroy_building"),
+      transactionType: TransactionType.DESTROY_BUILDING,
+    });
+    const pB = queue.enqueue({
+      signer,
+      calls: makeCall("destroy_building"),
+      transactionType: TransactionType.DESTROY_BUILDING,
+    });
+
+    await Promise.all([pA, pB]);
+
+    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+    for (const call of (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls) {
+      expect(call[1]).toEqual(makeCall("destroy_building"));
+      expect(call[2]).toBeUndefined();
+      expect(call[3]).toEqual({
+        waitForConfirmation: false,
+        transactionType: TransactionType.DESTROY_BUILDING,
+      });
+    }
+  });
+
   it("keeps non-VRF HIGH transactions batched around isolated VRF submissions", async () => {
     const localExecutor = makeExecutor();
     const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
