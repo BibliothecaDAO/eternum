@@ -51,7 +51,7 @@ Optional env or flags:
 - `SINGLE_REALM_MODE=true|false` or `--single-realm-mode true|false`
 - `TWO_PLAYER_MODE=true|false` or `--two-player-mode true|false`
 - `DURATION_SECONDS=<integer>` or `--duration-seconds <integer>`
-- `--mode batched|sequential`
+- `--mode batched|sequential` to override config execution; mainnet defaults to `sequential`, slot defaults to `batched`
 - `--max-actions <integer>` to override the environment default (`slot`: `300`, `mainnet`: `50`)
 - `--skip-indexer`
 - `--skip-lootchest-role-grant`

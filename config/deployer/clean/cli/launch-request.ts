@@ -5,6 +5,7 @@ import {
   DEFAULT_NAMESPACE,
   DEFAULT_VERSION,
 } from "../constants";
+import { resolveDefaultConfigExecutionMode } from "../config/execution-mode";
 import { resolveDeploymentEnvironment } from "../environment";
 import type { FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
 import type {
@@ -51,16 +52,22 @@ function resolveOptionalBooleanArg(args: Args, flag: string, envKeys: string[]):
   }
 }
 
-function resolveExecutionMode(value?: string): ExecutionMode {
+function resolveExplicitExecutionMode(value?: string): ExecutionMode | undefined {
   if (!value) {
-    return "batched";
+    return undefined;
   }
-
   if (value === "batched" || value === "sequential") {
     return value;
   }
 
   throw new Error(`Unsupported execution mode "${value}". Expected "batched" or "sequential"`);
+}
+
+function resolveExecutionMode(
+  value: string | undefined,
+  environmentId: LaunchGameRequest["environmentId"],
+): ExecutionMode {
+  return resolveExplicitExecutionMode(value) ?? resolveDefaultConfigExecutionMode(environmentId);
 }
 
 function resolveOptionalNumber(value: string | undefined, label: string): number | undefined {
@@ -445,7 +452,7 @@ function requireRotationLaunchArgs(args: Args): {
   };
 }
 
-function resolveSharedLaunchRequestOptions(args: Args) {
+function resolveSharedLaunchRequestOptions(args: Args, environmentId: LaunchGameRequest["environmentId"]) {
   return {
     rpcUrl: args["rpc-url"] || process.env.RPC_URL || process.env.VITE_PUBLIC_NODE_URL,
     factoryAddress: args["factory-address"] || process.env.FACTORY_ADDRESS,
@@ -477,7 +484,7 @@ function resolveSharedLaunchRequestOptions(args: Args) {
       process.env.VRF_PROVIDER_ADDRESS ||
       process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS ||
       "0x0",
-    executionMode: resolveExecutionMode(args.mode),
+    executionMode: resolveExecutionMode(args.mode, environmentId),
     verboseConfigLogs: args["verbose-config-logs"] === "true" || process.env.VERBOSE_CONFIG_LOGS === "true",
     version: args.version || DEFAULT_VERSION,
     waitForFactoryIndexTimeoutMs:
@@ -503,7 +510,7 @@ export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
     environmentId: requiredArgs.environmentId,
     gameName: requiredArgs.gameName,
     startTime: requiredArgs.startTime,
-    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs, requiredArgs.environmentId),
     maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     seriesName: resolvedArgs["series-name"],
     seriesGameNumber: resolveOptionalNumber(resolvedArgs["series-game-number"], "series game number"),
@@ -521,7 +528,7 @@ export function buildLaunchSeriesRequest(args: Args): LaunchSeriesRequest {
     seriesName: requiredArgs.seriesName,
     games: requiredArgs.games,
     targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
-    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs, requiredArgs.environmentId),
     maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     autoRetryEnabled:
       resolveOptionalBooleanArg(resolvedArgs, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
@@ -549,7 +556,7 @@ export function buildLaunchRotationRequest(args: Args): LaunchRotationRequest {
     weeklyCadence: requiredArgs.weeklyCadence,
     targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
     evaluationIntervalMinutes: requiredArgs.evaluationIntervalMinutes,
-    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs, requiredArgs.environmentId),
     maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     autoRetryEnabled:
       resolveOptionalBooleanArg(resolvedArgs, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,

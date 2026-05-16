@@ -83,6 +83,35 @@ describe("launch request helpers", () => {
     ).toBe(300);
   });
 
+  test("defaults mainnet config execution to sequential and keeps slot batched", () => {
+    expect(
+      buildLaunchGameRequest({
+        environment: "mainnet.blitz",
+        game: "bltz-test-1",
+        "start-time": "2026-03-18T10:00:00Z",
+      }).executionMode,
+    ).toBe("sequential");
+
+    expect(
+      buildLaunchGameRequest({
+        environment: "slot.blitz",
+        game: "bltz-test-2",
+        "start-time": "2026-03-18T10:00:00Z",
+      }).executionMode,
+    ).toBe("batched");
+  });
+
+  test("honors an explicit config execution mode on mainnet", () => {
+    expect(
+      buildLaunchGameRequest({
+        environment: "mainnet.blitz",
+        game: "bltz-test-1",
+        "start-time": "2026-03-18T10:00:00Z",
+        mode: "batched",
+      }).executionMode,
+    ).toBe("batched");
+  });
+
   test("resolves supported launch step ids", () => {
     expect(resolveLaunchGameStepId("create-world")).toBe("create-world");
     expect(resolveLaunchGameStepId("configure-world")).toBe("configure-world");
@@ -177,6 +206,7 @@ games:
       launchKind: "rotation",
       environmentId: "mainnet.blitz",
       rotationName: "blitz-rotation",
+      executionMode: "sequential",
       firstGameStartTime: "2026-04-20T01:00:00Z",
       gameIntervalMinutes: 0,
       maxGames: 5200,

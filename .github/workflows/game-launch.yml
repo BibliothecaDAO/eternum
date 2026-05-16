@@ -326,10 +326,11 @@ jobs:
             local -n args_ref="${args_name}"
             local resolved_factory_address=""
             local resolved_account_address=""
-            local resolved_execution_mode="${GAME_LAUNCH_EXECUTION_MODE:-batched}"
+            local resolved_execution_mode=""
 
             resolved_factory_address="$(resolve_configured_factory_address)"
             resolved_account_address="$(resolve_configured_account_address)"
+            resolved_execution_mode="$(resolve_config_execution_mode)"
 
             args_ref+=(
               --mode "${resolved_execution_mode}"
@@ -373,6 +374,20 @@ jobs:
             echo "Unable to resolve config sync target from ${GAME_LAUNCH_ENVIRONMENT}" >&2
             exit 1
           fi
+
+          resolve_config_execution_mode() {
+            if [ -n "${GAME_LAUNCH_EXECUTION_MODE:-}" ]; then
+              printf '%s' "${GAME_LAUNCH_EXECUTION_MODE}"
+              return 0
+            fi
+
+            if [ "${GAME_LAUNCH_NETWORK}" = "mainnet" ]; then
+              printf 'sequential'
+              return 0
+            fi
+
+            printf 'batched'
+          }
 
           if [ "${GAME_LAUNCH_KIND}" = "series" ]; then
             if [ -z "${GAME_LAUNCH_SERIES_NAME}" ] || [ -z "${GAME_LAUNCH_SERIES_GAMES_JSON}" ]; then

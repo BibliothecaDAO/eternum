@@ -523,6 +523,7 @@ describe("runLaunchStep mainnet launch steps", () => {
       factoryAddress,
       accountAddress,
       privateKey,
+      executionMode: "batched",
     });
 
     expect(summary.configureTxHash).toBe("0xconfigure");
@@ -561,6 +562,7 @@ describe("runLaunchStep mainnet launch steps", () => {
       factoryAddress,
       accountAddress,
       privateKey,
+      executionMode: "batched",
     });
 
     expect(summary.entryTokenAddress).toBe("0x55587061e1f470c749e9f7e568a3eb8b8d2335ac2c9b5adf8d9669fb378b38");
@@ -680,6 +682,40 @@ describe("runLaunchStep mainnet launch steps", () => {
     ]);
   });
 
+  test("defaults mainnet configure-world to sequential mode", async () => {
+    executeConfigStepsMock.mockImplementationOnce(async ({ mode }: { mode?: string }) => ({
+      mode: mode || "batched",
+      steps: [
+        {
+          id: "world-admin",
+          description: "Set world admin config",
+          transactionHash: "0xworld-admin",
+        },
+      ],
+      transactionHash: undefined,
+      artifacts: {
+        worldConfigTxHash: "0xworld-admin",
+      },
+    }));
+
+    await runLaunchStep({
+      environmentId: "mainnet.blitz",
+      stepId: "configure-world",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(executeConfigStepsMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        mode: "sequential",
+      }),
+    );
+  });
+
   test("creates the indexer directly via Slot and stores live torii state", async () => {
     const summary = await runLaunchStep({
       environmentId: "slot.blitz",
@@ -752,6 +788,7 @@ describe("runLaunchStep mainnet launch steps", () => {
         factoryAddress,
         accountAddress,
         privateKey,
+        executionMode: "batched",
       }),
     ).rejects.toThrow("RPC: starknet_addInvokeTransaction failed");
 

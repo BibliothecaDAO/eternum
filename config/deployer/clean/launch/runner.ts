@@ -3,6 +3,7 @@ import { getGameManifest, getSeasonAddresses, type Chain } from "@contracts";
 import { setTimeout as sleep } from "node:timers/promises";
 import { Account, shortString } from "starknet";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
+import { resolveDefaultConfigExecutionMode } from "../config/execution-mode";
 import { executeConfigSteps } from "../config/executor";
 import { resolveFactoryWorldConfigSteps } from "../config/steps";
 import {
@@ -168,7 +169,7 @@ function createLaunchRuntime(request: LaunchGameRequest, progress: LaunchProgres
     cartridgeApiBase: request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE,
     toriiNamespaces: request.toriiNamespaces || DEFAULT_NAMESPACE,
     vrfProviderAddress: request.vrfProviderAddress || DEFAULT_VRF_PROVIDER_ADDRESS,
-    executionMode: request.executionMode || "batched",
+    executionMode: request.executionMode || resolveDefaultConfigExecutionMode(environment.id),
     version: request.version || DEFAULT_VERSION,
     createGame: resolveCreateGameSettings(request, environment),
   };
