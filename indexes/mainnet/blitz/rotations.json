@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-05-16T20:20:51.504Z",
+  "updatedAt": "2026-05-16T20:22:10.875Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -86,11 +86,11 @@
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
       "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25971838038-1.json",
       "status": "attention",
-      "updatedAt": "2026-05-16T20:20:51.504Z",
+      "updatedAt": "2026-05-16T20:22:10.875Z",
       "workflowRef": "next",
       "currentStepId": "reserve-blitz-hyperstructures",
       "hasRunningStep": false,
-      "recoverableFailedStepId": null,
+      "recoverableFailedStepId": "reserve-blitz-hyperstructures",
       "recoverablePendingStepId": "create-worlds",
       "autoRetry": {
         "enabled": true,
@@ -381,7 +381,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-16T20:20:49.686Z"
+            "pendingIndexerTierRequestedAt": "2026-05-16T20:22:10.662Z"
           }
         },
         {
@@ -391,7 +391,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-16T20:20:49.686Z"
+            "pendingIndexerTierRequestedAt": "2026-05-16T20:22:10.735Z"
           }
         },
         {
@@ -401,7 +401,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-16T20:20:49.686Z"
+            "pendingIndexerTierRequestedAt": "2026-05-16T20:22:10.805Z"
           }
         },
         {
@@ -411,7 +411,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-16T20:20:49.686Z"
+            "pendingIndexerTierRequestedAt": "2026-05-16T20:22:10.875Z"
           }
         },
         {
