@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-16T05:42:31.988Z",
+  "updatedAt": "2026-05-16T05:43:10.680Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -1915,26 +1915,26 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-jolt-730/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-11T04:32:53.909Z"
+        "describedAt": "2026-05-16T05:43:10.658Z"
       },
-      "updatedAt": "2026-05-11T04:32:53.910Z"
+      "updatedAt": "2026-05-16T05:43:10.680Z"
     },
     "bltz-nova-563": {
       "gameName": "bltz-nova-563",
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-nova-563/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-11T05:02:51.989Z"
+        "describedAt": "2026-05-16T05:43:10.680Z"
       },
-      "updatedAt": "2026-05-11T05:02:51.989Z"
+      "updatedAt": "2026-05-16T05:43:10.680Z"
     },
     "bltz-rush-766": {
       "gameName": "bltz-rush-766",
