@@ -9,31 +9,27 @@ import {
 } from "./game-entry-phase";
 
 describe("game entry phase resolution", () => {
-  it("marks spectator preflight complete without waiting for player settlement checks", () => {
-    const isComplete = isGameEntryPreflightComplete({
-      isEternumMode: false,
-      isSpectateMode: true,
-      isForgeMode: false,
-      isBlitzMode: true,
-      settlementCheckComplete: false,
-    });
-
-    expect(isComplete).toBe(true);
+  it("marks spectator preflight complete without waiting for settlement checks", () => {
+    expect(
+      isGameEntryPreflightComplete({
+        isEternumMode: false,
+        isSpectateMode: true,
+        settlementCheckComplete: false,
+      }),
+    ).toBe(true);
   });
 
-  it("waits for player blitz settlement checks before normal play entry", () => {
-    const isComplete = isGameEntryPreflightComplete({
-      isEternumMode: false,
-      isSpectateMode: false,
-      isForgeMode: false,
-      isBlitzMode: true,
-      settlementCheckComplete: false,
-    });
-
-    expect(isComplete).toBe(false);
+  it("waits for settlement checks before blitz play entry", () => {
+    expect(
+      isGameEntryPreflightComplete({
+        isEternumMode: false,
+        isSpectateMode: false,
+        settlementCheckComplete: false,
+      }),
+    ).toBe(false);
   });
 
-  it("surfaces a blocking error when world metadata settles into an unknown mode", () => {
+  it("surfaces a blocking error when world metadata resolves to an unknown mode", () => {
     const error = resolveGameEntryBlockingError({
       worldAvailabilityErrorMessage: null,
       isCheckingWorldAvailability: false,
@@ -46,16 +42,15 @@ describe("game entry phase resolution", () => {
     expect(error?.message).toContain("metadata");
   });
 
-  it("treats unresolved world metadata as an error phase once availability loading has finished", () => {
+  it("keeps the modal in loading while bootstrap is incomplete", () => {
     const phase = resolveGameEntryModalPhase({
-      bootstrapStatus: "ready",
-      hasPhaseError: true,
-      isForgeMode: false,
-      isBlitzMode: false,
+      bootstrapStatus: "loading",
+      hasPhaseError: false,
+      isBlitzMode: true,
       isSpectateMode: false,
-      worldMode: "unknown",
+      worldMode: "blitz",
       isCheckingWorldAvailability: false,
-      hasWorldMeta: false,
+      hasWorldMeta: true,
       isEternumMode: false,
       isLoadingEternumPrereqs: false,
       hasVillageRevealResult: false,
@@ -67,20 +62,18 @@ describe("game entry phase resolution", () => {
       hasVillagePass: false,
       hasSeasonPass: false,
       checksComplete: true,
-      needsHyperstructureInit: false,
       needsSettlement: false,
       canPlay: false,
       isBlitzSettlementUnlocked: false,
     });
 
-    expect(phase).toBe("error");
+    expect(phase).toBe("loading");
   });
 
-  it("holds registered blitz players in a waiting phase before settlement unlocks", () => {
+  it("holds blitz players in the waiting phase before settlement unlocks", () => {
     const phase = resolveGameEntryModalPhase({
       bootstrapStatus: "ready",
       hasPhaseError: false,
-      isForgeMode: false,
       isBlitzMode: true,
       isSpectateMode: false,
       worldMode: "blitz",
@@ -97,67 +90,6 @@ describe("game entry phase resolution", () => {
       hasVillagePass: false,
       hasSeasonPass: false,
       checksComplete: true,
-      needsHyperstructureInit: false,
-      needsSettlement: true,
-      canPlay: false,
-      isBlitzSettlementUnlocked: false,
-    });
-
-    expect(phase).toBe("settlement-waiting");
-  });
-
-  it("moves registered blitz players into settlement once the unlock timer ends", () => {
-    const phase = resolveGameEntryModalPhase({
-      bootstrapStatus: "ready",
-      hasPhaseError: false,
-      isForgeMode: false,
-      isBlitzMode: true,
-      isSpectateMode: false,
-      worldMode: "blitz",
-      isCheckingWorldAvailability: false,
-      hasWorldMeta: true,
-      isEternumMode: false,
-      isLoadingEternumPrereqs: false,
-      hasVillageRevealResult: false,
-      unifiedSettlementPlannerEnabled: false,
-      hasSettledRealm: false,
-      entryIntent: "play",
-      seasonSettlementComplete: false,
-      eternumSettlementMode: "realm",
-      hasVillagePass: false,
-      hasSeasonPass: false,
-      checksComplete: true,
-      needsHyperstructureInit: false,
-      needsSettlement: true,
-      canPlay: false,
-      isBlitzSettlementUnlocked: true,
-    });
-
-    expect(phase).toBe("settlement");
-  });
-
-  it("keeps unregistered new blitz players out of the game before settlement unlocks", () => {
-    const phase = resolveGameEntryModalPhase({
-      bootstrapStatus: "ready",
-      hasPhaseError: false,
-      isForgeMode: false,
-      isBlitzMode: true,
-      isSpectateMode: false,
-      worldMode: "blitz",
-      isCheckingWorldAvailability: false,
-      hasWorldMeta: true,
-      isEternumMode: false,
-      isLoadingEternumPrereqs: false,
-      hasVillageRevealResult: false,
-      unifiedSettlementPlannerEnabled: false,
-      hasSettledRealm: false,
-      entryIntent: "play",
-      seasonSettlementComplete: false,
-      eternumSettlementMode: "realm",
-      hasVillagePass: false,
-      hasSeasonPass: false,
-      checksComplete: true,
-      needsHyperstructureInit: false,
       needsSettlement: false,
       canPlay: false,
       isBlitzSettlementUnlocked: false,
@@ -166,11 +98,10 @@ describe("game entry phase resolution", () => {
     expect(phase).toBe("settlement-waiting");
   });
 
-  it("routes unregistered new blitz players into the settle flow once settlement unlocks", () => {
+  it("moves blitz players into settlement once the unlock timer ends", () => {
     const phase = resolveGameEntryModalPhase({
       bootstrapStatus: "ready",
       hasPhaseError: false,
-      isForgeMode: false,
       isBlitzMode: true,
       isSpectateMode: false,
       worldMode: "blitz",
@@ -187,7 +118,6 @@ describe("game entry phase resolution", () => {
       hasVillagePass: false,
       hasSeasonPass: false,
       checksComplete: true,
-      needsHyperstructureInit: false,
       needsSettlement: false,
       canPlay: false,
       isBlitzSettlementUnlocked: true,
@@ -196,11 +126,10 @@ describe("game entry phase resolution", () => {
     expect(phase).toBe("settlement");
   });
 
-  it("auto-enters blitz players once settlement is provably complete", () => {
+  it("auto-enters blitz players once settlement is complete", () => {
     const phase = resolveGameEntryModalPhase({
       bootstrapStatus: "ready",
       hasPhaseError: false,
-      isForgeMode: false,
       isBlitzMode: true,
       isSpectateMode: false,
       worldMode: "blitz",
@@ -217,7 +146,6 @@ describe("game entry phase resolution", () => {
       hasVillagePass: false,
       hasSeasonPass: false,
       checksComplete: true,
-      needsHyperstructureInit: false,
       needsSettlement: false,
       canPlay: true,
       isBlitzSettlementUnlocked: true,
@@ -226,93 +154,31 @@ describe("game entry phase resolution", () => {
     expect(phase).toBe("ready");
   });
 
-  it("keeps forge mode in loading until the game entry bootstrap is ready", () => {
-    const phase = resolveGameEntryModalPhase({
-      bootstrapStatus: "loading",
-      hasPhaseError: false,
-      isForgeMode: true,
-      isBlitzMode: true,
-      isSpectateMode: false,
-      worldMode: "blitz",
-      isCheckingWorldAvailability: false,
-      hasWorldMeta: true,
-      isEternumMode: false,
-      isLoadingEternumPrereqs: false,
-      hasVillageRevealResult: false,
-      unifiedSettlementPlannerEnabled: false,
-      hasSettledRealm: false,
-      entryIntent: "play",
-      seasonSettlementComplete: false,
-      eternumSettlementMode: "realm",
-      hasVillagePass: false,
-      hasSeasonPass: false,
-      checksComplete: true,
-      needsHyperstructureInit: false,
-      needsSettlement: false,
-      canPlay: true,
-      isBlitzSettlementUnlocked: false,
-    });
-
-    expect(phase).toBe("loading");
-  });
-
-  it("surfaces forge mode blocking errors instead of showing the forge action", () => {
-    const phase = resolveGameEntryModalPhase({
-      bootstrapStatus: "ready",
-      hasPhaseError: true,
-      isForgeMode: true,
-      isBlitzMode: true,
-      isSpectateMode: false,
-      worldMode: "blitz",
-      isCheckingWorldAvailability: false,
-      hasWorldMeta: true,
-      isEternumMode: false,
-      isLoadingEternumPrereqs: false,
-      hasVillageRevealResult: false,
-      unifiedSettlementPlannerEnabled: false,
-      hasSettledRealm: false,
-      entryIntent: "play",
-      seasonSettlementComplete: false,
-      eternumSettlementMode: "realm",
-      hasVillagePass: false,
-      hasSeasonPass: false,
-      checksComplete: true,
-      needsHyperstructureInit: false,
-      needsSettlement: false,
-      canPlay: true,
-      isBlitzSettlementUnlocked: false,
-    });
-
-    expect(phase).toBe("error");
-  });
-
-  it("shows forge mode once the blitz world is ready", () => {
+  it("keeps eternum planner worlds in the planner flow until the player is ready to enter", () => {
     const phase = resolveGameEntryModalPhase({
       bootstrapStatus: "ready",
       hasPhaseError: false,
-      isForgeMode: true,
-      isBlitzMode: true,
+      isBlitzMode: false,
       isSpectateMode: false,
-      worldMode: "blitz",
+      worldMode: "eternum",
       isCheckingWorldAvailability: false,
       hasWorldMeta: true,
-      isEternumMode: false,
+      isEternumMode: true,
       isLoadingEternumPrereqs: false,
       hasVillageRevealResult: false,
-      unifiedSettlementPlannerEnabled: false,
+      unifiedSettlementPlannerEnabled: true,
       hasSettledRealm: false,
       entryIntent: "play",
       seasonSettlementComplete: false,
       eternumSettlementMode: "realm",
       hasVillagePass: false,
-      hasSeasonPass: false,
+      hasSeasonPass: true,
       checksComplete: true,
-      needsHyperstructureInit: false,
       needsSettlement: false,
-      canPlay: true,
+      canPlay: false,
       isBlitzSettlementUnlocked: false,
     });
 
-    expect(phase).toBe("forge");
+    expect(phase).toBe("settlement-planner");
   });
 });

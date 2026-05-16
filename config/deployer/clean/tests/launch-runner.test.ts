@@ -44,6 +44,9 @@ const resolveFactoryWorldProfileMock = mock(async () => null);
 const writeLaunchSummaryMock = mock(() => "/tmp/launch-summary.json");
 const loadLaunchSummaryIfPresentMock = mock(() => null);
 const resolveFactoryWorldConfigStepsMock = mock(() => []);
+const getGameManifestMock = mock(() => ({}));
+const loadEnvironmentConfigurationMock = mock(() => ({}));
+const applyDeploymentConfigOverridesMock = mock((config: unknown) => config);
 const executeConfigStepsMock = mock(async ({ mode }: { mode?: string }) => ({
   mode: mode || "batched",
   steps: [],
@@ -69,6 +72,15 @@ const ensureSlotIndexerDeploymentMock = mock(async () => ({
 }));
 
 mock.module("@bibliothecadao/provider", () => ({
+  NAMESPACE: "s1_eternum",
+  getContractByName: (manifest: { contracts?: Array<{ tag?: string; address?: string }> }, tag: string) => {
+    const contract = manifest.contracts?.find((entry) => entry.tag === tag);
+    if (!contract?.address) {
+      throw new Error(`Contract ${tag} not found in test manifest`);
+    }
+
+    return contract.address;
+  },
   EternumProvider: class EternumProvider {
     provider = {};
     private queuedBatchCallCount = 0;
@@ -105,7 +117,7 @@ mock.module("@bibliothecadao/provider", () => ({
 }));
 
 mock.module("@contracts", () => ({
-  getGameManifest: () => ({}),
+  getGameManifest: getGameManifestMock,
   getSeasonAddresses: () => ({}),
 }));
 
@@ -134,8 +146,8 @@ mock.module("starknet", () => ({
 }));
 
 mock.module("../config/config-loader", () => ({
-  applyDeploymentConfigOverrides: (config: unknown) => config,
-  loadEnvironmentConfiguration: () => ({}),
+  applyDeploymentConfigOverrides: applyDeploymentConfigOverridesMock,
+  loadEnvironmentConfiguration: loadEnvironmentConfigurationMock,
 }));
 
 mock.module("../config/executor", () => ({
@@ -223,6 +235,12 @@ describe("runLaunchStep mainnet launch steps", () => {
     loadLaunchSummaryIfPresentMock.mockImplementation(() => null);
     resolveFactoryWorldConfigStepsMock.mockClear();
     resolveFactoryWorldConfigStepsMock.mockImplementation(() => []);
+    getGameManifestMock.mockClear();
+    getGameManifestMock.mockImplementation(() => ({}));
+    loadEnvironmentConfigurationMock.mockClear();
+    loadEnvironmentConfigurationMock.mockImplementation(() => ({}));
+    applyDeploymentConfigOverridesMock.mockClear();
+    applyDeploymentConfigOverridesMock.mockImplementation((config: unknown) => config);
     executeConfigStepsMock.mockClear();
     executeConfigStepsMock.mockImplementation(async ({ mode }: { mode?: string }) => ({
       mode: mode || "batched",
@@ -511,6 +529,118 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(summary.worldConfigTxHash).toBe("0xconfigure");
   });
 
+  test("stores the computed blitz entry token address after configure-world", async () => {
+    getGameManifestMock.mockImplementation(() => ({
+      contracts: [
+        { tag: "s1_eternum-blitz_realm_systems", address: "0x111" },
+        { tag: "s1_eternum-config_systems", address: "0x222" },
+      ],
+    }));
+    loadEnvironmentConfigurationMock.mockImplementation(() => ({
+      blitz: {
+        mode: { on: true },
+        registration: {
+          fee_amount: "1",
+          entry_token_class_hash: "0x123",
+        },
+      },
+    }));
+    executeConfigStepsMock.mockImplementationOnce(async () => ({
+      mode: "batched",
+      steps: [{ id: "blitz-registration", description: "Set blitz registration config" }],
+      transactionHash: "0xabc",
+      artifacts: {},
+    }));
+
+    const summary = await runLaunchStep({
+      environmentId: "mainnet.blitz",
+      stepId: "configure-world",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(summary.entryTokenAddress).toBe("0x55587061e1f470c749e9f7e568a3eb8b8d2335ac2c9b5adf8d9669fb378b38");
+  });
+
+  test("reserves blitz hyperstructures in one fixed-size call when one batch is enough", async () => {
+    getGameManifestMock.mockImplementation(() => ({
+      contracts: [{ tag: "s1_eternum-hyperstructure_create_systems", address: "0xhyper" }],
+    }));
+    loadEnvironmentConfigurationMock.mockImplementation(() => ({
+      blitz: {
+        mode: { on: true },
+        registration: {
+          registration_count_max: 24,
+        },
+      },
+      settlement: {
+        two_player_mode: false,
+      },
+    }));
+    createGameExecuteMock.mockImplementationOnce(async () => ({ transaction_hash: "0xreserve1" }));
+
+    const summary = await runLaunchStep({
+      environmentId: "mainnet.blitz",
+      stepId: "reserve-blitz-hyperstructures",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(createGameExecuteMock).toHaveBeenCalledTimes(1);
+    expect(createGameExecuteMock.mock.calls[0]?.[0]).toMatchObject({
+      contractAddress: "0xhyper",
+      entrypoint: "reserve_hyperstructures",
+    });
+    expect(waitForTransactionMock).toHaveBeenCalledWith("0xreserve1");
+    expect(createGameDelayMock).not.toHaveBeenCalled();
+    expect(summary.reserveHyperstructuresTxHashes).toEqual(["0xreserve1"]);
+  });
+
+  test("waits ten seconds between fixed-size blitz reservation batches when multiple calls are needed", async () => {
+    getGameManifestMock.mockImplementation(() => ({
+      contracts: [{ tag: "s1_eternum-hyperstructure_create_systems", address: "0xhyper" }],
+    }));
+    loadEnvironmentConfigurationMock.mockImplementation(() => ({
+      blitz: {
+        mode: { on: true },
+        registration: {
+          registration_count_max: 60,
+        },
+      },
+      settlement: {
+        two_player_mode: false,
+      },
+    }));
+    createGameExecuteMock
+      .mockImplementationOnce(async () => ({ transaction_hash: "0xreserve1" }))
+      .mockImplementationOnce(async () => ({ transaction_hash: "0xreserve2" }))
+      .mockImplementationOnce(async () => ({ transaction_hash: "0xreserve3" }))
+      .mockImplementationOnce(async () => ({ transaction_hash: "0xreserve4" }));
+
+    const summary = await runLaunchStep({
+      environmentId: "mainnet.blitz",
+      stepId: "reserve-blitz-hyperstructures",
+      gameName: "alpha",
+      startTime,
+      rpcUrl: "https://rpc.example",
+      factoryAddress,
+      accountAddress,
+      privateKey,
+    });
+
+    expect(createGameExecuteMock).toHaveBeenCalledTimes(4);
+    expect(createGameDelayMock.mock.calls).toEqual([[10_000], [10_000], [10_000]]);
+    expect(summary.reserveHyperstructuresTxHashes).toEqual(["0xreserve1", "0xreserve2", "0xreserve3", "0xreserve4"]);
+  });
+
   test("stores the sequential world-admin tx hash as worldConfigTxHash", async () => {
     executeConfigStepsMock.mockImplementationOnce(async () => ({
       mode: "sequential",
@@ -654,6 +784,12 @@ describe("runLaunchStep mainnet launch steps", () => {
   });
 
   test("syncs paymaster only for mainnet environments", async () => {
+    loadLaunchSummaryIfPresentMock.mockImplementation(() =>
+      buildStoredLaunchSummary({
+        entryTokenAddress: "0xentry",
+      }),
+    );
+
     const summary = await runLaunchStep({
       environmentId: "mainnet.blitz",
       stepId: "sync-paymaster",
@@ -667,6 +803,7 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(syncPaymasterPolicyMock.mock.calls[0]?.[0]).toMatchObject({
       chain: "mainnet",
       gameName: "alpha",
+      extraActions: [{ contractAddress: "0xentry", entrypoint: "set_approval_for_all" }],
     });
     expect(summary.paymasterSynced).toBe(true);
   });

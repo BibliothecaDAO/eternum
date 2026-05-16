@@ -3,7 +3,7 @@ import type { Chain } from "@contracts";
 import type { WorldProfile } from "@/runtime/world/types";
 
 export type PlayScene = "map" | "hex" | "travel";
-type EntryIntent = "play" | "settle" | "spectate" | "forge";
+type EntryIntent = "play" | "settle" | "spectate";
 export type PlayBootMode = "direct" | "map-first";
 
 export interface PlayRouteDescriptor {
@@ -21,7 +21,6 @@ interface EntryRouteDescriptor {
   chain: Chain;
   worldName: string;
   intent: EntryIntent;
-  hyperstructuresLeft: number | null;
   autoSettle: boolean;
 }
 
@@ -29,7 +28,7 @@ type LocationLike = Pick<Location, "pathname" | "search">;
 
 const CHAIN_VALUES: Chain[] = ["sepolia", "mainnet", "slot", "slottest", "local"];
 const PLAY_SCENES: PlayScene[] = ["map", "hex", "travel"];
-const ENTRY_INTENTS: EntryIntent[] = ["play", "settle", "spectate", "forge"];
+const ENTRY_INTENTS: EntryIntent[] = ["play", "settle", "spectate"];
 const PLAY_BOOT_MODES: PlayBootMode[] = ["direct", "map-first"];
 
 const isValidChain = (value: string): value is Chain => CHAIN_VALUES.includes(value as Chain);
@@ -130,7 +129,6 @@ export const parseEntryRoute = (location: LocationLike): EntryRouteDescriptor | 
     chain: rawChain,
     worldName: decodeURIComponent(rawWorldName),
     intent,
-    hyperstructuresLeft: parseOptionalNumber(searchParams, "hyperstructuresLeft"),
     autoSettle: searchParams.get("autoSettle") === "true",
   };
 };
@@ -140,10 +138,6 @@ export const buildEntryHref = (route: EntryRouteDescriptor): string => {
 
   if (route.intent !== "play") {
     searchParams.set("intent", route.intent);
-  }
-
-  if (route.hyperstructuresLeft !== null) {
-    searchParams.set("hyperstructuresLeft", String(route.hyperstructuresLeft));
   }
 
   if (route.autoSettle) {

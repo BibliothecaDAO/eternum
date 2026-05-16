@@ -298,7 +298,7 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
       }
     : undefined;
 
-  // Find the blitz contract address from manifest for registration flow
+  // Find the blitz contract address from manifest for the settlement flow
   const blitzContract = (artifacts.manifest as any).contracts?.find(
     (c: any) => typeof c.tag === "string" && c.tag.includes("blitz_realm_systems"),
   );
@@ -325,14 +325,20 @@ export async function mainHeadless(options: CliOptions): Promise<void> {
   let isFirstTick = true;
   const formatTickPromptWithHandbooks = (state: EternumWorldState, prevState: EternumWorldState | null): string => {
     const base = formatEternumTickDiff(state, prevState);
-    const needsRegistration = state.player.structures === 0 && state.player.armies === 0;
+    const needsSettlement = state.player.structures === 0 && state.player.armies === 0;
 
-    if (needsRegistration) {
-      // Build registration instructions with known token addresses
+    if (needsSettlement) {
+      // Build settlement instructions with known token addresses
       const feeToken = tokenConfig?.feeToken ?? "the fee token";
-      const entryToken = tokenConfig?.entryToken ?? "the entry token";
       const spender = blitzAddress || "the blitz contract";
-      return `${base}\n\nCRITICAL: You have 0 structures and 0 armies. You are NOT registered in the game yet. You MUST register RIGHT NOW before doing anything else:\n\nStep 1: approve_token (token_address: "${feeToken}", spender: "${spender}", amount: "10000000000000000000")\nStep 2: obtain_entry_token (no params) — mints an entry token NFT to you\nStep 3: Find your minted token_id. Use inspect_sql to query your entry token balance.\nStep 4: lock_entry_token (token_id: <from step 3>, lock_id: 69)\nStep 5: register (name: your player name, entry_token_id: <from step 3>, cosmetic_token_ids: [])\nStep 6: settle_blitz_realm (settlement_count: 1) — bundles VRF + assign positions + settle atomically\n\nThe lock_id is always 69 (constant). If obtain_entry_token fails with "transfer amount exceeds balance", your account has insufficient fee tokens — report the error and stop.\n\nDo NOT study handbooks, do NOT list actions, do NOT write learnings. Just register.`;
+      const settlementSteps = tokenConfig?.feeToken
+        ? `Step 1: approve_token (token_address: "${feeToken}", spender: "${spender}", amount: "10000000000000000000")\nStep 2: settle (name: your player name as felt252, entry_token_id: 1, cosmetic_token_ids: [])`
+        : `Step 1: settle (name: your player name as felt252, entry_token_id: 1, cosmetic_token_ids: [])`;
+      const feeWarning = tokenConfig?.feeToken
+        ? `\n\nUse entry_token_id = 1 for the default None path. The settle action will add and remove temporary entry-token collection approval automatically. If approve_token fails with "transfer amount exceeds balance", your account has insufficient fee tokens — report the error and stop.`
+        : `\n\nUse entry_token_id = 1 for the default None path.`;
+
+      return `${base}\n\nCRITICAL: You have 0 structures and 0 armies. You are NOT settled into the game yet. You MUST settle RIGHT NOW before doing anything else:\n\n${settlementSteps}${feeWarning}\n\nDo NOT study handbooks, do NOT list actions, do NOT write learnings. Just settle.`;
     }
 
     if (isFirstTick) {

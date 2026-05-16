@@ -16,8 +16,10 @@ import {
   getBuildingCosts,
   getBalance,
   getBlockTimestamp,
+  hasTileOccupier,
   isTileOccupierChest,
   isTileOccupierQuest,
+  isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
   Position as PositionInterface,
   getTileAt,
@@ -218,7 +220,7 @@ const MapTilePanel = () => {
 
   const hasOccupier = useMemo(() => {
     if (!tile) return false;
-    return tile.occupier_id !== 0;
+    return hasTileOccupier(tile.occupier_type);
   }, [tile]);
 
   const occupierType = useMemo(() => tile?.occupier_type ?? 0, [tile]);
@@ -230,6 +232,10 @@ const MapTilePanel = () => {
   const isStructure = useMemo(() => {
     return Boolean(tile?.occupier_is_structure) || isTileOccupierStructure(occupierType);
   }, [occupierType, tile?.occupier_is_structure]);
+
+  const isReservedHyperstructure = useMemo(() => {
+    return isTileOccupierReservedHyperstructure(occupierType);
+  }, [occupierType]);
 
   const isChest = useMemo(() => {
     return isTileOccupierChest(occupierType);
@@ -243,20 +249,21 @@ const MapTilePanel = () => {
     if (!tile) return "Hex Tile";
     if (!hasOccupier) return "Biome Tile";
     if (isSpire) return "Spire Tile";
+    if (isReservedHyperstructure) return "Unconstructed Hyperstructure";
     if (isStructure) return "Structure Tile";
     if (isChest) return "Relic Tile";
     if (isQuest) return "Quest Tile";
     return "Army Tile";
-  }, [tile, hasOccupier, isSpire, isStructure, isChest, isQuest]);
+  }, [tile, hasOccupier, isSpire, isReservedHyperstructure, isStructure, isChest, isQuest]);
 
   const panelTitle = selectedHex
     ? `${tileTypeLabel} · (${selectedHex.col - FELT_CENTER()}, ${selectedHex.row - FELT_CENTER()})`
     : "No Tile Selected";
 
   const syncableEntityType = useMemo<SyncableEntityType | null>(() => {
-    if (!tile || !hasOccupier || isSpire || isChest || isQuest) return null;
+    if (!tile || !hasOccupier || isSpire || isChest || isQuest || isReservedHyperstructure) return null;
     return isStructure ? "structure" : "explorer";
-  }, [hasOccupier, isChest, isQuest, isSpire, isStructure, tile]);
+  }, [hasOccupier, isChest, isQuest, isReservedHyperstructure, isSpire, isStructure, tile]);
 
   const syncableEntityId = useMemo<ID | null>(() => {
     if (!tile || !syncableEntityType) return null;

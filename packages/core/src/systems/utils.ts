@@ -87,7 +87,9 @@ export const getExplorerInfoFromTileOccupier = (
 
 export const getStructureInfoFromTileOccupier = (
   occupierType: number,
-): { type: StructureType; stage: StructureProgress; level: number; hasWonder: boolean } | undefined => {
+):
+  | { type: StructureType; stage: StructureProgress; level: number; hasWonder: boolean; reserved?: true }
+  | undefined => {
   switch (occupierType) {
     case TileOccupier.RealmRegularLevel1:
       return {
@@ -142,6 +144,14 @@ export const getStructureInfoFromTileOccupier = (
       return { type: StructureType.Hyperstructure, stage: StructureProgress.STAGE_2, level: 1, hasWonder: false };
     case TileOccupier.HyperstructureLevel3:
       return { type: StructureType.Hyperstructure, stage: StructureProgress.STAGE_3, level: 1, hasWonder: false };
+    case TileOccupier.ReservedHyperstructure:
+      return {
+        type: StructureType.Hyperstructure,
+        stage: StructureProgress.STAGE_1,
+        level: 1,
+        hasWonder: false,
+        reserved: true,
+      };
 
     case TileOccupier.FragmentMine:
       return { type: StructureType.FragmentMine, stage: StructureProgress.STAGE_1, level: 1, hasWonder: false };

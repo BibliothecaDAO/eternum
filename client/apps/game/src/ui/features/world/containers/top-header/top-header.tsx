@@ -7,6 +7,7 @@ import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
+import { GameStartCountdown } from "./game-start-countdown";
 import { TickProgress } from "./tick-progress";
 import {
   MIN_REFRESH_INTERVAL_MS,
@@ -167,6 +168,7 @@ export const TopHeader = memo(() => {
             <div className="flex flex-shrink-0 flex-nowrap items-center gap-3 text-xs md:text-base">
               <div className="cycle-selector flex justify-center md:justify-start gap-2 whitespace-nowrap">
                 <TickProgress />
+                <GameStartCountdown />
                 <GameEndTimer />
               </div>
               <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 px-3 whitespace-nowrap">

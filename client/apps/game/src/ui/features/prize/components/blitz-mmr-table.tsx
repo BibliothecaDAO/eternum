@@ -1,3 +1,4 @@
+import { useBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
 import { displayAddress } from "@/ui/utils/utils";
 import { getMMRTierFromRaw, MMR_TOKEN_DECIMALS } from "@/ui/utils/mmr-tiers";
 import { getAddressName, toHexString } from "@bibliothecadao/eternum";
@@ -52,15 +53,8 @@ export const BlitzMMRTable = () => {
     return toHexString(addr);
   }, [worldCfg?.mmr_config?.mmr_token_address]);
 
-  // Get registered players from BlitzRealmPlayerRegister
-  const blitzRegEntities = useEntityQuery([Has(components.BlitzRealmPlayerRegister)]);
-  const registeredPlayerAddresses = useMemo(() => {
-    return blitzRegEntities
-      .map((eid) => getComponentValue(components.BlitzRealmPlayerRegister, eid))
-      .filter((v): v is NonNullable<typeof v> => Boolean(v))
-      .filter((v) => Boolean(v.once_registered))
-      .map((v) => v.player as unknown as bigint);
-  }, [blitzRegEntities, components.BlitzRealmPlayerRegister]);
+  // Blitz settlement rows are the source of truth for players who actually entered the world.
+  const registeredPlayerAddresses = useBlitzSettlementPlayerAddresses(components);
 
   // Get player points and filter to only players with non-zero points
   const playerRegisteredPointsEntities = useEntityQuery([Has(components.PlayerRegisteredPoints)]);

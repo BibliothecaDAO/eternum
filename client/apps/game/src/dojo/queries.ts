@@ -214,9 +214,8 @@ export const getConfigFromTorii = async <S extends Schema>(
     "s1_eternum-QuestLevels",
     "s1_eternum-AddressName",
     "s1_eternum-PlayerRegisteredPoints",
-    "s1_eternum-BlitzRealmPlayerRegister",
+    "s1_eternum-BlitzSettlement",
     "s1_eternum-BlitzEntryTokenRegister",
-    "s1_eternum-BlitzRealmSettleFinish",
     // Blitz prize models (single key)
     "s1_eternum-PlayersRankTrial",
     "s1_eternum-PlayersRankFinal",
@@ -629,6 +628,44 @@ export const getExplorerTroopsFromToriiExact = async <S extends Schema>(
     components as any,
     [],
     ["s1_eternum-ExplorerTroops"],
+    EVENT_QUERY_LIMIT,
+    false,
+  );
+};
+
+export const getStructuresFromToriiExact = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  minCol: number,
+  maxCol: number,
+  minRow: number,
+  maxRow: number,
+) => {
+  const structureBoundsClause = AndComposeClause([
+    MemberClause("s1_eternum-Structure", "base.coord_x", "Gte", minCol),
+    MemberClause("s1_eternum-Structure", "base.coord_x", "Lte", maxCol),
+    MemberClause("s1_eternum-Structure", "base.coord_y", "Gte", minRow),
+    MemberClause("s1_eternum-Structure", "base.coord_y", "Lte", maxRow),
+  ]).build();
+
+  const structureBuildingsBoundsClause = AndComposeClause([
+    MemberClause("s1_eternum-StructureBuildings", "coord.x", "Gte", minCol),
+    MemberClause("s1_eternum-StructureBuildings", "coord.x", "Lte", maxCol),
+    MemberClause("s1_eternum-StructureBuildings", "coord.y", "Gte", minRow),
+    MemberClause("s1_eternum-StructureBuildings", "coord.y", "Lte", maxRow),
+  ]).build();
+
+  return getEntities(
+    client,
+    {
+      Composite: {
+        operator: "Or" as LogicalOperator,
+        clauses: [structureBoundsClause, structureBuildingsBoundsClause],
+      },
+    },
+    components as any,
+    [],
+    ["s1_eternum-Structure", "s1_eternum-StructureBuildings"],
     EVENT_QUERY_LIMIT,
     false,
   );

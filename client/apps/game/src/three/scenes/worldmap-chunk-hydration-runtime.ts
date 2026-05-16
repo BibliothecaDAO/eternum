@@ -1,11 +1,11 @@
 import type { WorldmapChunkDiagnostics } from "./worldmap-chunk-diagnostics";
 import { createWorldmapChunkPresentationRuntime } from "./worldmap-chunk-presentation-runtime";
-import { hydrateWarpTravelChunk } from "./warp-travel-chunk-hydration";
+import { hydrateWarpTravelChunk, type ComputeTileEntitiesOptions } from "./warp-travel-chunk-hydration";
 import type { WorldmapRenderDurationMetric } from "../perf/worldmap-render-diagnostics";
 
 interface HydrateWorldmapChunkRuntimeInput<TPreparedTerrain> {
   chunkKey: string;
-  computeTileEntities: (chunkKey: string) => Promise<boolean>;
+  computeTileEntities: (chunkKey: string, options: ComputeTileEntitiesOptions) => Promise<boolean>;
   diagnostics: WorldmapChunkDiagnostics;
   now: () => number;
   onChunkHydrated: (chunkKey: string) => void;

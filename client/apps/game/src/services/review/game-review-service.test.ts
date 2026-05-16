@@ -107,7 +107,7 @@ describe("game-review-service reward query formatting", () => {
       const query = decodeQueryFromUrl(url);
       const normalizedQuery = query.toLowerCase();
 
-      if (normalizedQuery.includes('from "s1_eternum-blitzrealmplayerregister"')) {
+      if (normalizedQuery.includes('from "s1_eternum-blitzsettlement"')) {
         return [{ player: TEST_PLAYER_ADDRESS }];
       }
 

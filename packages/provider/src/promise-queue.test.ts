@@ -542,6 +542,148 @@ describe("Parallel Category Processing", () => {
     }
   });
 
+  it("never merges queued VRF request_random transactions into one multicall", async () => {
+    const localExecutor = makeExecutor();
+    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const pA = queue.enqueue({
+      signer,
+      calls: [makeCall("request_random"), makeCall("open_chest")],
+      transactionType: TransactionType.OPEN_CHEST,
+    });
+    const pB = queue.enqueue({
+      signer,
+      calls: [makeCall("request_random"), makeCall("open_chest")],
+      transactionType: TransactionType.OPEN_CHEST,
+    });
+
+    await Promise.all([pA, pB]);
+
+    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+    for (const call of (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls) {
+      expect(call[2]).toBeUndefined();
+    }
+  });
+
+  it("batches CREATE_BUILDING transactions into one multicall", async () => {
+    const localExecutor = makeExecutor();
+    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+    const callA = makeCall("create_building_a");
+    const callB = makeCall("create_building_b");
+
+    const pA = queue.enqueue({
+      signer,
+      calls: callA,
+      transactionType: TransactionType.CREATE_BUILDING,
+    });
+    const pB = queue.enqueue({
+      signer,
+      calls: callB,
+      transactionType: TransactionType.CREATE_BUILDING,
+    });
+
+    await Promise.all([pA, pB]);
+
+    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(1);
+    const call = (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[1]).toEqual([callA, callB]);
+    expect(call[2]).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: TransactionType.CREATE_BUILDING, count: 2 })]),
+    );
+    expect(call[3]).toEqual({ waitForConfirmation: false });
+  });
+
+  it("never merges DESTROY_BUILDING transactions into one multicall", async () => {
+    const localExecutor = makeExecutor();
+    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const pA = queue.enqueue({
+      signer,
+      calls: makeCall("destroy_building"),
+      transactionType: TransactionType.DESTROY_BUILDING,
+    });
+    const pB = queue.enqueue({
+      signer,
+      calls: makeCall("destroy_building"),
+      transactionType: TransactionType.DESTROY_BUILDING,
+    });
+
+    await Promise.all([pA, pB]);
+
+    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(2);
+    for (const call of (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls) {
+      expect(call[1]).toEqual(makeCall("destroy_building"));
+      expect(call[2]).toBeUndefined();
+      expect(call[3]).toEqual({
+        waitForConfirmation: false,
+        transactionType: TransactionType.DESTROY_BUILDING,
+      });
+    }
+  });
+
+  it("keeps non-VRF HIGH transactions batched around isolated VRF submissions", async () => {
+    const localExecutor = makeExecutor();
+    const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });
+    const signer = makeSigner();
+
+    const battleA = makeCall("battle_a");
+    const battleB = makeCall("battle_b");
+    const battleC = makeCall("battle_c");
+    const battleD = makeCall("battle_d");
+    const vrfCalls = [makeCall("request_random"), makeCall("open_chest")];
+
+    await Promise.all([
+      queue.enqueue({
+        signer,
+        calls: battleA,
+        transactionType: TransactionType.BATTLE_START,
+      }),
+      queue.enqueue({
+        signer,
+        calls: battleB,
+        transactionType: TransactionType.BATTLE_START,
+      }),
+      queue.enqueue({
+        signer,
+        calls: vrfCalls,
+        transactionType: TransactionType.OPEN_CHEST,
+      }),
+      queue.enqueue({
+        signer,
+        calls: battleC,
+        transactionType: TransactionType.BATTLE_START,
+      }),
+      queue.enqueue({
+        signer,
+        calls: battleD,
+        transactionType: TransactionType.BATTLE_START,
+      }),
+    ]);
+
+    expect(localExecutor.executeAndCheckTransaction).toHaveBeenCalledTimes(3);
+
+    const executorCalls = (localExecutor.executeAndCheckTransaction as ReturnType<typeof vi.fn>).mock.calls;
+    expect(executorCalls[0][1]).toEqual([battleA, battleB]);
+    expect(executorCalls[0][2]).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: TransactionType.BATTLE_START, count: 2 })]),
+    );
+
+    expect(executorCalls[1][1]).toEqual(vrfCalls);
+    expect(executorCalls[1][2]).toBeUndefined();
+    expect(executorCalls[1][3]).toEqual({
+      waitForConfirmation: false,
+      transactionType: TransactionType.OPEN_CHEST,
+    });
+
+    expect(executorCalls[2][1]).toEqual([battleC, battleD]);
+    expect(executorCalls[2][2]).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: TransactionType.BATTLE_START, count: 2 })]),
+    );
+  });
+
   it("still batches non-EXPLORE HIGH txs together", async () => {
     const localExecutor = makeExecutor();
     const queue = new PromiseQueue(localExecutor, { batchDelayMs: 0 });

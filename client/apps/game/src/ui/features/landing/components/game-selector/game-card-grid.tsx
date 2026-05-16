@@ -1,5 +1,4 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveEffectiveRegistrationCountMax } from "@/hooks/registration-capacity";
 import { summaryToWorldConfigMeta } from "@/hooks/summary-to-world-config-meta";
@@ -7,7 +6,8 @@ import { usePlayerWorldRegistrations, getWorldSummaryKey } from "@/hooks/use-pla
 import { type WorldConfigMeta } from "@/hooks/use-world-availability";
 import { useWorldJackpot } from "@/hooks/use-world-jackpot";
 import { useWorldsSummary } from "@/hooks/use-worlds-summary";
-import { useWorldRegistration, type RegistrationStage } from "@/hooks/use-world-registration";
+import { useWorldRegistration, type EntryStage } from "@/hooks/use-world-registration";
+import { PLAYER_WORLD_REGISTRATION_QUERY_KEY, WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import type { WorldSummary } from "@bibliothecadao/types";
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
@@ -32,13 +32,10 @@ import { useMarketRedeem } from "@/ui/features/market/landing-markets/use-market
 import { getChainLabel } from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
 import { useQueries, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Eye, Loader2, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
+import { CheckCircle2, Eye, Loader2, LogIn, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { primeGameEntry } from "@/game-entry-preload";
-import { describeAutoSettleRuntimePhase, resolveAutoSettleRuntimeState } from "./auto-settle-runtime";
-import { resolveBlitzSettlementAvailability } from "../game-entry-blitz-timing";
 import {
   createPendingNetworkAction,
   resolvePendingNetworkSwitchOutcome,
@@ -108,24 +105,20 @@ const getErrorMessage = (error: unknown): string | null => {
 };
 
 /**
- * Get stage label for registration progress
+ * Get stage label for world entry progress.
  */
-const getStageLabel = (stage: RegistrationStage): string => {
+const getStageLabel = (stage: EntryStage): string => {
   switch (stage) {
     case "preparing":
       return "Preparing...";
-    case "obtaining-token":
-      return "Obtaining token...";
-    case "waiting-for-token":
-      return "Confirming...";
-    case "registering":
-      return "Registering...";
+    case "settling":
+      return "Settling...";
     case "done":
-      return "Registered!";
+      return "Settled!";
     case "error":
       return "Failed";
     default:
-      return "Register";
+      return "Settle";
   }
 };
 
@@ -252,7 +245,6 @@ const buildGameResolutionSignature = (game: GameData): string => {
     config?.mmrEnabled ? "1" : "0",
     config?.registrationCountMax ?? "",
     config?.twoPlayerMode ? "1" : "0",
-    config?.numHyperstructuresLeft ?? "",
     config?.winnerJackpotAmount?.toString() ?? "",
   ].join(":");
 };
@@ -297,7 +289,6 @@ interface GameCardProps {
   onSeeScore?: () => void;
   onClaimRewards?: () => void;
   claimSummary?: GameReviewClaimSummary | null;
-  onForgeHyperstructures?: () => Promise<void> | void;
   onRegistrationComplete?: (worldKey: string) => void;
   playerAddress: string | null;
   showChainBadge?: boolean;
@@ -316,7 +307,6 @@ const GameCard = ({
   onSeeScore,
   onClaimRewards,
   claimSummary,
-  onForgeHyperstructures,
   onRegistrationComplete,
   playerAddress,
   showChainBadge = false,
@@ -338,20 +328,16 @@ const GameCard = ({
   const isUnknownMode = game.config?.mode === "unknown" || !game.config?.mode;
   const hasSettledEternumRealm = isEternumMode && game.config?.hasPlayerSettledRealm === true;
   const devModeOn = game.config?.devModeOn ?? false;
-  const canPlayBlitz = isBlitzMode && isOngoing && game.isRegistered;
   const canOpenEternumEntry = isEternumMode && !isEnded;
-  const canPlay = !isUnknownMode && (canPlayBlitz || canOpenEternumEntry);
   const canPlayEternumDirect = canOpenEternumEntry && hasSettledEternumRealm;
   const showEternumSettleShortcut = canOpenEternumEntry && hasSettledEternumRealm;
   const eternumPrimaryActionLabel = canPlayEternumDirect ? "Play" : "Settle";
-  // Can spectate ongoing or ended games
-  const canSpectate = isOngoing || isEnded;
   // Can register during upcoming, or during ongoing if dev mode is on
   const canRegisterPeriod = isBlitzMode && (isUpcoming || (isOngoing && devModeOn));
-  // Forge hyperstructures button shown during registration period
-  const numHyperstructuresLeft = game.config?.numHyperstructuresLeft ?? 0;
-  // Show forge button when we have config (even if 0 left, show disabled)
-  const showForgeButton = isBlitzMode && game.config?.numHyperstructuresLeft !== null && playerAddress;
+  const canSpectatePreMainBlitz = isBlitzMode && canRegisterPeriod;
+  // Spectate is always available for live and ended games, and also for
+  // Blitz worlds during the pre-main registration window.
+  const canSpectate = isOngoing || isEnded || canSpectatePreMainBlitz;
   const lordsFeeAmount = game.config?.feeAmount ?? 0n;
   const hasLordsFee = lordsFeeAmount > 0n;
   const isMainnetGame = game.chain === "mainnet";
@@ -378,11 +364,10 @@ const GameCard = ({
     const value = Number((marketClaimableDisplay ?? "0").replace(/,/g, ""));
     return Number.isFinite(value) && value > 0;
   }, [marketClaimableDisplay]);
-  const [isForgeButtonPending, setIsForgeButtonPending] = useState(false);
   const [isSwitchNetworkPending, setIsSwitchNetworkPending] = useState(false);
   const [pendingNetworkAction, setPendingNetworkAction] = useState<PendingNetworkAction | null>(null);
   const latestPendingNetworkActionRef = useRef<PendingNetworkAction | null>(null);
-  const handledRegistrationStageRef = useRef(false);
+  const handledSettlementStageRef = useRef(false);
   const targetChainLabel = getChainLabel(pendingNetworkAction?.targetChain ?? game.chain);
 
   useEffect(() => {
@@ -405,13 +390,13 @@ const GameCard = ({
     [canInteractOnChain, game.chain, hasConnectedWallet, status],
   );
 
-  // Inline registration hook
+  // Inline world-entry hook.
   const {
-    register,
-    registrationStage,
-    isRegistering,
+    settle,
+    entryStage,
+    isSettling,
     error,
-    canRegister,
+    canSettle,
     isRegistrationFull,
     isCheckingFeeBalance,
     hasSufficientFeeBalance,
@@ -422,75 +407,18 @@ const GameCard = ({
     isRegistered: game.isRegistered === true,
     enabled: isBlitzMode && game.status === "ok" && canRegisterPeriod,
   });
-  const autoSettleEntryKey = useMemo(
-    () =>
-      playerAddress
-        ? createAutoSettleEntryKey({
-            chain: game.chain,
-            worldName: game.name,
-            walletAddress: playerAddress,
-          })
-        : null,
-    [game.chain, game.name, playerAddress],
-  );
-  const autoSettleEntry = useAutoSettleStore((state) =>
-    autoSettleEntryKey ? state.entries[autoSettleEntryKey] : undefined,
-  );
-  const armEntry = useAutoSettleStore((state) => state.armEntry);
-  const setEnabled = useAutoSettleStore((state) => state.setEnabled);
-  const showRegistered = game.isRegistered || registrationStage === "done";
-  const blitzSettlementAvailability = resolveBlitzSettlementAvailability({
-    startMainAt: game.startMainAt,
-    nowSec,
-  });
-  const unlockAtSec = blitzSettlementAvailability.unlockAtSec;
-  const canShowAutoSettleControl =
-    isBlitzMode && showRegistered && playerAddress !== null && unlockAtSec !== null && !isEnded;
-  const autoSettleRuntimeState = resolveAutoSettleRuntimeState({
-    enabled: autoSettleEntry?.enabled ?? false,
-    persistedStatus: autoSettleEntry?.status ?? "idle",
-    unlockAtSec,
-    nowSec,
-    opensOnUnlockEdge: autoSettleEntry?.opensOnUnlockEdge ?? false,
-    hasConnectedWallet,
-    hasCompatibleNetwork: canInteractOnChain(game.chain),
-  });
-  const autoSettleDisplay = canShowAutoSettleControl
-    ? describeAutoSettleRuntimePhase({
-        phase: autoSettleRuntimeState.phase,
-        nowSec,
-        unlockAtSec,
-      })
-    : null;
-  const autoSettleToggleDisabled =
-    autoSettleEntry?.status === "opening" ||
-    autoSettleEntry?.status === "settling" ||
-    autoSettleEntry?.status === "completed";
+  const showRegistered = game.isRegistered || entryStage === "done";
+  const canEnterRegisteredBlitz = isBlitzMode && showRegistered && (isUpcoming || isOngoing);
+  const canPlay = !isUnknownMode && (canEnterRegisteredBlitz || canOpenEternumEntry);
 
-  // Handle registration with toast notification
-  const handleRegister = useCallback(() => {
+  // Handle settle entry with toast notification.
+  const handleSettle = useCallback(() => {
     runWithNetworkGuard(() => {
-      void register().catch((err) => {
-        console.error("Registration failed:", err);
+      void settle().catch((err) => {
+        console.error("Settlement failed:", err);
       });
     });
-  }, [register, runWithNetworkGuard]);
-
-  const handleForgeClick = useCallback(() => {
-    if (!onForgeHyperstructures || numHyperstructuresLeft <= 0 || isForgeButtonPending) return;
-
-    runWithNetworkGuard(() => {
-      setIsForgeButtonPending(true);
-
-      void Promise.resolve(onForgeHyperstructures())
-        .catch((err) => {
-          console.error("Forge action failed:", err);
-        })
-        .finally(() => {
-          setIsForgeButtonPending(false);
-        });
-    });
-  }, [onForgeHyperstructures, numHyperstructuresLeft, isForgeButtonPending, runWithNetworkGuard]);
+  }, [settle, runWithNetworkGuard]);
 
   const handleSwitchNetwork = useCallback(async () => {
     if (!pendingNetworkAction || isSwitchNetworkPending) return;
@@ -534,84 +462,21 @@ const GameCard = ({
     [marketSnapshot, runWithNetworkGuard, toggleModal],
   );
 
-  const handleAutoSettleToggle = useCallback(() => {
-    if (!autoSettleEntryKey || unlockAtSec == null || !playerAddress) return;
-    const opensOnUnlockEdge = nowSec < unlockAtSec;
-
-    if (!autoSettleEntry || !autoSettleEntry.enabled) {
-      armEntry(autoSettleEntryKey, {
-        enabled: true,
-        walletAddress: playerAddress,
-        chain: game.chain,
-        worldName: game.name,
-        worldKey: game.worldKey,
-        unlockAtSec,
-        armedAtMs: Date.now(),
-        opensOnUnlockEdge,
-        status: "armed",
-        lastError: null,
-        lastAttemptAtMs: null,
-      });
-      return;
-    }
-
-    setEnabled(autoSettleEntryKey, !autoSettleEntry.enabled);
-  }, [
-    autoSettleEntry,
-    autoSettleEntryKey,
-    game.chain,
-    game.name,
-    game.worldKey,
-    nowSec,
-    playerAddress,
-    armEntry,
-    setEnabled,
-    unlockAtSec,
-  ]);
-
-  // Show success toast when registration completes
+  // Show success toast when settlement completes.
   useEffect(() => {
-    if (registrationStage !== "done") {
-      handledRegistrationStageRef.current = false;
+    if (entryStage !== "done") {
+      handledSettlementStageRef.current = false;
       return;
     }
 
-    if (handledRegistrationStageRef.current) return;
-    handledRegistrationStageRef.current = true;
+    if (handledSettlementStageRef.current) return;
+    handledSettlementStageRef.current = true;
 
-    if (autoSettleEntryKey && unlockAtSec != null) {
-      const opensOnUnlockEdge = nowSec < unlockAtSec;
-      armEntry(autoSettleEntryKey, {
-        enabled: true,
-        walletAddress: playerAddress!,
-        chain: game.chain,
-        worldName: game.name,
-        worldKey: game.worldKey,
-        unlockAtSec,
-        armedAtMs: Date.now(),
-        opensOnUnlockEdge,
-        status: "armed",
-        lastError: null,
-        lastAttemptAtMs: null,
-      });
-    }
-
-    toast.success("Registration successful!", {
-      description: `You are now registered for ${game.name}. Auto-settle is on for this game card.`,
+    toast.success("Settlement successful!", {
+      description: `You are now settled in ${game.name}.`,
     });
     onRegistrationComplete?.(game.worldKey);
-  }, [
-    autoSettleEntryKey,
-    game.chain,
-    game.name,
-    game.worldKey,
-    nowSec,
-    onRegistrationComplete,
-    playerAddress,
-    registrationStage,
-    armEntry,
-    unlockAtSec,
-  ]);
+  }, [entryStage, game.name, game.worldKey, onRegistrationComplete]);
 
   // Status colors - enhanced yellow for upcoming
   const statusColors = {
@@ -681,7 +546,7 @@ const GameCard = ({
           </div>
         </div>
 
-        {/* Stats row with registration indicator */}
+        {/* Stats row with entry indicator */}
         <div className="flex items-center justify-between text-xs text-white/60">
           <div className="flex items-center gap-1 min-w-0">
             <Users className="w-3 h-3" />
@@ -697,7 +562,7 @@ const GameCard = ({
           {showRegistered && (
             <div className="flex items-center gap-1 text-emerald-400">
               <CheckCircle2 className="w-3 h-3" />
-              <span className="font-medium">Registered</span>
+              <span className="font-medium">Settled</span>
             </div>
           )}
         </div>
@@ -711,39 +576,6 @@ const GameCard = ({
             className="text-xs text-white/70"
           />
         </div>
-
-        {canShowAutoSettleControl && autoSettleDisplay && (
-          <div className="rounded-lg border border-amber-400/25 bg-amber-500/10 px-2.5 py-2">
-            <div className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-200">
-                  {autoSettleDisplay.title}
-                </p>
-                <p className="mt-1 text-[11px] text-white/65">{autoSettleDisplay.detail}</p>
-              </div>
-              <button
-                type="button"
-                onClick={handleAutoSettleToggle}
-                disabled={autoSettleToggleDisabled}
-                aria-pressed={autoSettleEntry?.enabled ?? false}
-                className={cn(
-                  "relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors",
-                  autoSettleEntry?.enabled ? "border-amber-300/60 bg-amber-400/80" : "border-white/15 bg-white/10",
-                  autoSettleToggleDisabled && "cursor-not-allowed opacity-60",
-                )}
-                title="Auto-settle"
-              >
-                <span className="sr-only">Auto-settle</span>
-                <span
-                  className={cn(
-                    "mx-0.5 block h-4 w-4 rounded-full bg-brown shadow-sm transition-transform",
-                    autoSettleEntry?.enabled ? "translate-x-5" : "translate-x-0",
-                  )}
-                />
-              </button>
-            </div>
-          </div>
-        )}
 
         {showPredictionMarket && marketSnapshot ? (
           <div className="rounded-lg border border-emerald-400/35 bg-gradient-to-br from-emerald-500/10 via-black/40 to-black/20 p-2.5">
@@ -828,9 +660,9 @@ const GameCard = ({
           </div>
         )}
 
-        {/* Action buttons - compact: [Play/Register] [Spectate] layout */}
+        {/* Action buttons - compact: [Play/Settle] [Spectate] layout */}
         <div className="flex gap-1.5">
-          {/* Left slot: Play OR Register (share same space) - hidden for ended games without registration */}
+          {/* Left slot: Play OR Settle (share same space) - hidden for ended games without entry */}
           {isEnded && !showRegistered ? null : canPlay ? (
             <button
               onClick={() =>
@@ -857,8 +689,8 @@ const GameCard = ({
                   : "bg-emerald-500 text-white hover:bg-emerald-400 transition-colors",
               )}
             >
-              <Play className="w-3 h-3" />
-              {canOpenEternumEntry ? eternumPrimaryActionLabel : "Play"}
+              {canEnterRegisteredBlitz ? <LogIn className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+              {canEnterRegisteredBlitz ? "Enter" : canOpenEternumEntry ? eternumPrimaryActionLabel : "Play"}
             </button>
           ) : isUnknownMode ? (
             <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
@@ -871,28 +703,28 @@ const GameCard = ({
             </div>
           ) : isBlitzMode && game.isRegistered === false && canRegisterPeriod && playerAddress ? (
             <>
-              {isRegistering ? (
+              {isSettling ? (
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-gold/10 text-gold border border-gold/30">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  {getStageLabel(registrationStage)}
+                  {getStageLabel(entryStage)}
                 </div>
-              ) : registrationStage === "error" ? (
+              ) : entryStage === "error" ? (
                 <button
-                  onClick={handleRegister}
+                  onClick={handleSettle}
                   className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20 transition-colors"
                 >
                   Retry
                 </button>
-              ) : canRegister ? (
+              ) : canSettle ? (
                 <button
-                  onClick={handleRegister}
+                  onClick={handleSettle}
                   className={cn(
                     "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold",
                     "bg-brilliance/20 text-brilliance border border-brilliance/30 hover:bg-brilliance/30 transition-colors",
                   )}
                 >
                   <UserPlus className="w-3 h-3" />
-                  Register
+                  Settle
                 </button>
               ) : isRegistrationFull ? (
                 <div className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-medium bg-white/5 text-white/40 border border-white/10">
@@ -950,39 +782,6 @@ const GameCard = ({
             >
               <Trophy className="w-3 h-3" />
               Claim Rewards
-            </button>
-          )}
-
-          {/* Forge Hyperstructures button for upcoming games */}
-          {showForgeButton && onForgeHyperstructures && (
-            <button
-              onClick={handleForgeClick}
-              disabled={numHyperstructuresLeft <= 0 || isForgeButtonPending}
-              title={
-                numHyperstructuresLeft > 0
-                  ? `Forge ${numHyperstructuresLeft} Hyperstructures`
-                  : "All Hyperstructures Forged"
-              }
-              className={cn(
-                "flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded text-xs font-semibold transition-colors",
-                numHyperstructuresLeft > 0
-                  ? "bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30"
-                  : "bg-gray-500/10 text-gray-500 border border-gray-500/20 cursor-not-allowed",
-              )}
-            >
-              {isForgeButtonPending ? (
-                <>
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  Opening...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-3 h-3" />
-                  <span className="truncate">
-                    {numHyperstructuresLeft > 0 ? `Forge ${numHyperstructuresLeft}` : "All Forged"}
-                  </span>
-                </>
-              )}
             </button>
           )}
 
@@ -1048,7 +847,7 @@ const GameCard = ({
         )}
 
         {/* Error message - only show if not already registered */}
-        {registrationStage === "error" && error && !showRegistered && (
+        {entryStage === "error" && error && !showRegistered && (
           <div className="text-[10px] text-red-400 text-center truncate" title={error}>
             {error}
           </div>
@@ -1081,8 +880,6 @@ interface UnifiedGameGridProps {
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore?: (selection: WorldSelection) => void;
   onClaimRewards?: (selection: WorldSelection) => void;
-  /** Callback for forging hyperstructures - receives world selection and numHyperstructuresLeft */
-  onForgeHyperstructures?: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete?: () => void;
   className?: string;
   /** Filter games by mode */
@@ -1119,11 +916,9 @@ interface UnifiedGameGridProps {
 export const UnifiedGameGrid = ({
   onPlayGame,
   onSelectGame,
-  onAutoSettleGame,
   onSpectate,
   onSeeScore,
   onClaimRewards,
-  onForgeHyperstructures,
   onRegistrationComplete,
   className,
   modeFilter,
@@ -1149,8 +944,6 @@ export const UnifiedGameGrid = ({
   const playerFeltLiteral = playerAddress ? toPaddedFeltAddress(playerAddress) : null;
   const landingNetworkState = useLandingNetworkState();
   const selectedLandingChain = landingNetworkState.preferredChain;
-  const autoSettleEntries = useAutoSettleStore((state) => state.entries);
-  const markOpening = useAutoSettleStore((state) => state.markOpening);
 
   // Check if there's a stored controller session that's still reconnecting
   // starknet-react stores the last connected connector as "lastUsedConnector" in localStorage
@@ -1441,8 +1234,8 @@ export const UnifiedGameGrid = ({
       // Invalidate both the legacy per-world availability cache (modal path)
       // and the new player registration cache so fresh data is fetched when
       // navigating back. This ensures the registration status persists across tab switches.
-      queryClient.invalidateQueries({ queryKey: ["worldAvailability", worldKey] });
-      queryClient.invalidateQueries({ queryKey: ["playerWorldRegistration", worldKey] });
+      queryClient.invalidateQueries({ queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, worldKey] });
+      queryClient.invalidateQueries({ queryKey: [...PLAYER_WORLD_REGISTRATION_QUERY_KEY, worldKey] });
 
       onRegistrationComplete?.();
     },
@@ -1477,67 +1270,6 @@ export const UnifiedGameGrid = ({
     lastResolvedGamesSignatureRef.current = resolvedGamesSignature;
     onGamesResolved(resolvedGames);
   }, [onGamesResolved, resolvedGames, resolvedGamesSignature]);
-
-  useEffect(() => {
-    if (!playerAddress || !onAutoSettleGame) return;
-
-    resolvedGames.forEach((game) => {
-      if (game.config?.mode !== "blitz" || game.isRegistered !== true) return;
-
-      const unlockAtSec = game.startMainAt;
-      if (unlockAtSec == null) return;
-
-      const autoSettleEntryKey = createAutoSettleEntryKey({
-        chain: game.chain,
-        worldName: game.name,
-        walletAddress: playerAddress,
-      });
-      const autoSettleEntry = autoSettleEntries[autoSettleEntryKey];
-      if (!autoSettleEntry) return;
-
-      const runtimeState = resolveAutoSettleRuntimeState({
-        enabled: autoSettleEntry.enabled,
-        persistedStatus: autoSettleEntry.status,
-        unlockAtSec,
-        nowSec,
-        opensOnUnlockEdge: autoSettleEntry.opensOnUnlockEdge,
-        hasConnectedWallet: landingNetworkState.hasConnectedWallet,
-        hasCompatibleNetwork: canInteractWithLandingChain(
-          landingNetworkState,
-          resolvePreferredLandingChain(game.chain),
-        ),
-      });
-
-      if (runtimeState.shouldPrimeAssets) {
-        primeGameEntry("entry");
-      }
-
-      if (runtimeState.shouldRefreshAvailability) {
-        // Refresh both the bulk summary and any per-player registration state.
-        void queryClient.invalidateQueries({ queryKey: ["worldsSummary"] });
-        void queryClient.invalidateQueries({ queryKey: ["playerWorldRegistration", game.worldKey] });
-      }
-
-      if (!runtimeState.shouldOpenEntry) return;
-
-      markOpening(autoSettleEntryKey, Date.now());
-      onAutoSettleGame({
-        name: game.name,
-        chain: game.chain,
-        worldAddress: game.worldAddress ?? undefined,
-      });
-    });
-  }, [
-    autoSettleEntries,
-    landingNetworkState,
-    markOpening,
-    nowSec,
-    onAutoSettleGame,
-    playerAddress,
-    queryClient,
-    resolvedGames,
-  ]);
-
   return (
     <div className={cn("relative", className)}>
       {/* Header */}
@@ -1657,15 +1389,6 @@ export const UnifiedGameGrid = ({
                       : undefined
                   }
                   claimSummary={claimSummaryState?.data ?? null}
-                  onForgeHyperstructures={
-                    onForgeHyperstructures
-                      ? () =>
-                          onForgeHyperstructures(
-                            { name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined },
-                            game.config?.numHyperstructuresLeft ?? 0,
-                          )
-                      : undefined
-                  }
                   onRegistrationComplete={handleRegistrationComplete}
                   playerAddress={playerAddress}
                   showChainBadge={true}
@@ -1719,15 +1442,6 @@ export const UnifiedGameGrid = ({
                         : undefined
                     }
                     claimSummary={claimSummaryState?.data ?? null}
-                    onForgeHyperstructures={
-                      onForgeHyperstructures
-                        ? () =>
-                            onForgeHyperstructures(
-                              { name: game.name, chain: game.chain, worldAddress: game.worldAddress ?? undefined },
-                              game.config?.numHyperstructuresLeft ?? 0,
-                            )
-                        : undefined
-                    }
                     onRegistrationComplete={handleRegistrationComplete}
                     playerAddress={playerAddress}
                     showChainBadge={true}

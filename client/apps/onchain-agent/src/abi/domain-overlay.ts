@@ -823,29 +823,62 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   // ── Blitz Game Setup ───────────────────────────────────────────────────────
 
   "blitz_realm_systems::obtain_entry_token": {
-    description: "Obtain an entry token to register for a Blitz game",
+    hidden: true,
+    description: "Deprecated helper — use settle directly.",
   },
 
-  "blitz_realm_systems::register": {
-    description: "Register for a Blitz game using your entry token",
+  "blitz_realm_systems::settle": {
+    description: "Settle directly into a Blitz game after approving the fee token if required.",
     paramOverrides: {
-      name: { description: "Player name (felt252)" },
-      entry_token_id: { description: "Entry token ID obtained from obtain_entry_token" },
-      cosmetic_token_ids: { description: "Array of cosmetic token IDs" },
+      name: { description: "Player name (felt252 encoded)" },
+      entry_token_id: {
+        description:
+          "Optional entry token selector. Use 1 for the default None path unless you know you need a token ID.",
+      },
+      cosmetic_token_ids: { description: "Array of cosmetic token IDs. Use [] when you have none." },
     },
   },
 
   "blitz_realm_systems::make_hyperstructures": {
-    description: "Create hyperstructures for the Blitz game (admin/setup action)",
+    hidden: true,
+    description: "Deprecated helper — no longer needed in the current Blitz flow.",
     paramOverrides: {
       count: { description: "Number of hyperstructures to create" },
     },
   },
 
+  "hyperstructure_create_systems::reserve_hyperstructures": {
+    hidden: true,
+    description: "Launch-time helper — reserve placeholder hyperstructure slots before players settle.",
+    paramOverrides: {
+      count: { description: "Number of hyperstructure slots to reserve in this batch" },
+    },
+  },
+
+  "hyperstructure_create_systems::create_hyperstructure": {
+    description: "Materialize a reserved Blitz hyperstructure at the given coordinate.",
+    paramOverrides: {
+      coord: {
+        description:
+          "Reserved hyperstructure coordinate — pass as {x: number, y: number} using display coordinates from world state",
+        transform: displayCoordsToContract,
+      },
+    },
+  },
+
+  "blitz_realm_systems::register": {
+    hidden: true,
+    description: "Deprecated helper — use settle directly.",
+    paramOverrides: {
+      name: { description: "Player name (felt252 encoded)" },
+      entry_token_id: { description: "Deprecated" },
+      cosmetic_token_ids: { description: "Deprecated" },
+    },
+  },
+
   "blitz_realm_systems::create": {
-    actionType: "blitz_realm_create",
-    hidden: true, // Dojo framework entrypoint — use settle_blitz_realm composite instead
-    description: "Dojo create entrypoint (deprecated — use settle_blitz_realm instead)",
+    hidden: true,
+    description: "Dojo framework entrypoint (deprecated — use settle instead)",
   },
 
   // ── Name ───────────────────────────────────────────────────────────────────

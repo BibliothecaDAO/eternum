@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { TileOccupier } from "@bibliothecadao/types";
 
 const {
   defineComponentSystemMock,
@@ -794,6 +795,97 @@ describe("WorldUpdateListener army tile bootstrap", () => {
       address: 123n,
       ownerName: "Alice",
       guildName: "",
+    });
+  });
+
+  it("skips reserved hyperstructure placeholders in the real structure tile stream", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockImplementation((value) => value);
+    getStructureInfoFromTileOccupierMock.mockReturnValue({
+      type: 2,
+      stage: 0,
+      level: 1,
+      hasWonder: false,
+      reserved: true,
+    });
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: structureComponents,
+      } as any,
+      {} as any,
+    );
+
+    const callback = vi.fn();
+    listener.Structure.onTileUpdate(callback);
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+    await handleUpdate({
+      value: [
+        {
+          occupier_type: TileOccupier.ReservedHyperstructure,
+          occupier_id: 0,
+          col: 10,
+          row: 15,
+        },
+        undefined,
+      ],
+      entity: "0x123",
+    });
+
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it("emits reserved hyperstructure tile updates from current and previous tile state", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockImplementation((value) => value);
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    const callback = vi.fn();
+    listener.ReservedHyperstructure.onTileUpdate(callback);
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+
+    await handleUpdate({
+      value: [
+        {
+          occupier_type: TileOccupier.ReservedHyperstructure,
+          occupier_id: 0,
+          col: 12,
+          row: 34,
+        },
+        undefined,
+      ],
+    });
+
+    await handleUpdate({
+      value: [
+        undefined,
+        {
+          occupier_type: TileOccupier.ReservedHyperstructure,
+          occupier_id: 0,
+          col: 12,
+          row: 34,
+        },
+      ],
+    });
+
+    expect(callback).toHaveBeenNthCalledWith(1, {
+      hexCoords: { col: 12, row: 34 },
+    });
+    expect(callback).toHaveBeenNthCalledWith(2, {
+      hexCoords: { col: 12, row: 34 },
+      removed: true,
     });
   });
 });

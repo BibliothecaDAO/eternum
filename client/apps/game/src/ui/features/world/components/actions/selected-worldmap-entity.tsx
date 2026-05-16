@@ -1,5 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
+import Button from "@/ui/design-system/atoms/button";
 import {
   BiomeSummaryCard,
   UnoccupiedTileQuadrants,
@@ -14,14 +16,18 @@ import { battleSimulation } from "@/ui/features/world/components/config";
 import { HexPosition, ID, StructureType, TileOccupier } from "@bibliothecadao/types";
 import {
   Biome,
+  Position,
+  hasTileOccupier,
   isTileOccupierChest,
   isTileOccupierQuest,
+  isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
   getTileAt,
   DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
-import { useDojo } from "@bibliothecadao/react";
+import { useDojo, useQuery } from "@bibliothecadao/react";
 import { type ReactNode, useCallback, useMemo } from "react";
+import { toast } from "sonner";
 
 const occupiedEntityLayoutClass =
   "grid h-full min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-2 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:grid-rows-1";
@@ -47,6 +53,7 @@ export const SelectedWorldmapEntity = () => {
 
 const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
   const { setup } = useDojo();
+  const { handleUrlChange } = useQuery();
   const openPopup = useUIStore((state) => state.openPopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const setCombatSimulationBiome = useUIStore((state) => state.setCombatSimulationBiome);
@@ -69,13 +76,20 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
     }
   }, [biome, isPopupOpen, openPopup, setCombatSimulationBiome]);
 
-  const hasOccupier = !!tile && Number(tile.occupier_id) !== 0;
+  const hasOccupier = !!tile && hasTileOccupier(tile.occupier_type);
   const occupierType = tile?.occupier_type ?? 0;
   const isSpire = occupierType === TileOccupier.Spire;
+  const isReservedHyperstructure = isTileOccupierReservedHyperstructure(occupierType);
   const isStructure = Boolean(tile?.occupier_is_structure) || isTileOccupierStructure(occupierType);
   const isChest = isTileOccupierChest(occupierType);
   const isQuest = isTileOccupierQuest(occupierType);
   const isExplored = !!tile && Number(tile.biome) !== 0;
+  const normalizedSelectedHex = useMemo(() => {
+    return new Position({ x: selectedHex.col, y: selectedHex.row }).getNormalized();
+  }, [selectedHex.col, selectedHex.row]);
+  const handleTravelToEtherealLayer = useCallback(() => {
+    handleUrlChange(`/play/travel?col=${normalizedSelectedHex.x}&row=${normalizedSelectedHex.y}`);
+  }, [handleUrlChange, normalizedSelectedHex.x, normalizedSelectedHex.y]);
   const renderUnexploredMessage = () => (
     <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-center">
       <p className="text-xs font-medium text-gold/60 italic text-center">
@@ -115,7 +129,18 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
         <div className={occupiedEntityLayoutClass}>
           <EntityInfoScrollPane>
             <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
-              <SpireTravelPanel />
+              <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
+            </EntityDetailSection>
+          </EntityInfoScrollPane>
+          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
+            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
+          </EntityDetailSection>
+        </div>
+      ) : isReservedHyperstructure ? (
+        <div className={occupiedEntityLayoutClass}>
+          <EntityInfoScrollPane>
+            <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
+              <ReservedHyperstructurePanel selectedHex={selectedHex} />
             </EntityDetailSection>
           </EntityInfoScrollPane>
           <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
@@ -218,14 +243,64 @@ const RelicCrateSummaryPanel = ({ crateEntityId }: { crateEntityId: ID }) => {
   );
 };
 
-const SpireTravelPanel = () => {
+const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {
+  const { canCreate, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({
+    hexCoords: selectedHex,
+  });
+
+  const handleCreateHyperstructure = useCallback(async () => {
+    try {
+      await createHyperstructure();
+    } catch (error) {
+      console.error("[ReservedHyperstructurePanel] Failed to create reserved hyperstructure", error);
+      toast.error(error instanceof Error ? error.message : "Failed to create the hyperstructure.");
+    }
+  }, [createHyperstructure]);
+
+  return (
+    <div className="flex h-full flex-col gap-3">
+      <div className="flex flex-col gap-1 text-left">
+        <span className="text-xxs uppercase tracking-[0.3em] text-amber-200/80">Unconstructed Hyperstructure</span>
+        <span className="text-sm font-semibold text-amber-100">Reserved Hyperstructure</span>
+        <p className="text-xxs text-gold/70">
+          This tile is already reserved for a future Hyperstructure. Double-click it on the map or press Create Here to
+          awaken the real structure.
+        </p>
+      </div>
+      <div className="flex justify-start">
+        <Button
+          variant="outline"
+          size="xs"
+          className="rounded-full border-amber-300/70 px-3 py-1 text-[11px] text-amber-100 hover:border-amber-200"
+          forceUppercase={false}
+          withoutSound
+          disabled={!canCreate || isCreating}
+          onClick={() => void handleCreateHyperstructure()}
+        >
+          {isCreating ? "Creating..." : "Create Here"}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+const SpireTravelPanel = ({ onTravelToEtherealLayer }: { onTravelToEtherealLayer: () => void }) => {
   return (
     <div className="flex h-full flex-col justify-between gap-3">
       <div className="flex flex-col gap-1 text-left">
         <span className="text-xxs uppercase tracking-[0.3em] text-cyan-200/80">Spire</span>
         <span className="text-sm font-semibold text-cyan-100">Ethereal Layer Gateway</span>
-        <p className="text-xxs text-gold/70">Move an army through this Spire to enter the Ethereal Layer.</p>
+        <p className="text-xxs text-gold/70">Use this Spire to enter the Ethereal Layer and fast-travel routes.</p>
       </div>
+      <Button
+        size="xs"
+        variant="outline"
+        forceUppercase={false}
+        className="w-full border-cyan-300/60 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20"
+        onClick={onTravelToEtherealLayer}
+      >
+        Travel to Ethereal Layer
+      </Button>
     </div>
   );
 };

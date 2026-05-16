@@ -22,12 +22,123 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-16",
+    title: "Building Count Sync",
+    description:
+      "Fixed construction cards so their building-count badges update from the same realm total as the built-here summary.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-15",
+    title: "Movement Visual Cleanup",
+    description:
+      "Fixed fast map movement so traveling labels and destination ghosts clear after the unit resolves, even when chunks update quickly.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-15",
+    title: "Safer Construction",
+    description:
+      "Building actions now catch more invalid placements before wallet submission and clear pending construction state after failures, reducing rejected builds and rollback cleanup.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-15",
+    title: "Blitz Leaderboard Fix",
+    description:
+      "Fixed the Blitz leaderboard and prize panel so settled-player rankings open reliably after entering a game.",
+    type: "fix",
+    gameSlug: "blitz",
+  },
+  {
+    date: "2026-05-15",
+    title: "Smarter Network Recovery",
+    description:
+      "The game now distinguishes unsupported health checks from real Torii outages, reducing unnecessary reconnect banners while keeping stale streams recoverable.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-14",
+    title: "Registered Game Entry",
+    description:
+      "Registered Blitz games now show an Enter action on the dashboard and display an in-game top-nav countdown until the main phase begins.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-13",
+    title: "Settle Or Spectate",
+    description:
+      "Blitz game cards now keep spectating alongside settling, so you can preview open worlds before joining and still jump straight into active matches from your game list.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-13",
+    title: "Open Games Refresh Fix",
+    description:
+      "The Open Games refresh button now refetches the same live summary feed the landing cards use, so new worlds and status changes show up without needing a full page reload.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-13",
+    title: "Faster Repeat Exploring",
+    description:
+      "Repeat explore actions now spend less time in the provider submit path and expose safer readiness tracking, so scouts become ready for the next explore sooner after world state catches up.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-13",
+    title: "Unconstructed Hyperstructures",
+    description:
+      "Reserved Hyperstructures now appear directly on the map before construction, and you can build them with a double-click or the Create Here action from tile details.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-12",
+    title: "Blitz Realm Provisioning",
+    description:
+      "Blitz realms now enter with a lighter initial setup and show a dedicated in-world provision action beside realm upgrades once the main phase starts, so delayed economy activation is available exactly when it matters.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-12",
     title: "Ethereal Fast Travel Layer",
     description:
       "Fast travel now uses the live alternate map layer with spire-gated army movement, path previews, and dark tactical rendering.",
     type: "feature",
     gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-12",
+    title: "Saved Network Choice",
+    description:
+      "The landing network switch now remembers your last Mainnet or Slot choice after refresh, while first-time visits still start on Mainnet.",
+    type: "fix",
+  },
+  {
+    date: "2026-05-11",
+    title: "Safer Blitz Entry Tokens",
+    description:
+      "Blitz fee worlds now grant temporary entry-token collection approval only for the settlement transaction, then remove it immediately, so joining stays one-step without leaving broad NFT permissions behind.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-11",
+    title: "Single-Step Blitz Entry",
+    description:
+      "Blitz entry now stays centered on one settlement action instead of sending players through the older staged setup flow.",
+    type: "improvement",
+    gameSlug: "landing",
   },
   {
     date: "2026-05-07",
@@ -41,7 +152,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-05-06",
     title: "Focused Chain Views",
     description:
-      "Landing games, profile ranks, MMR, prediction markets, and cosmetics now follow the selected landing chain, with each page open starting on Mainnet.",
+      "Landing games, profile ranks, MMR, prediction markets, and cosmetics now follow the selected landing chain through one shared network state.",
     type: "fix",
   },
   {
@@ -168,9 +279,9 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-04-20",
-    title: "Cleaner Forge Flow",
+    title: "Cleaner Hyperstructure Setup",
     description:
-      "Forge Hyperstructures now waits for the dashboard entry data to be ready, shows a clearer remaining count, and reports forge failures instead of leaving the action feeling stuck.",
+      "Hyperstructure setup now waits for the dashboard entry data to be ready, shows a clearer remaining count, and reports setup failures instead of leaving the action feeling stuck.",
     type: "fix",
     gameSlug: "landing",
   },
