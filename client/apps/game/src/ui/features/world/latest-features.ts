@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-16",
+    title: "Building Count Sync",
+    description:
+      "Fixed construction cards so their building-count badges update from the same realm total as the built-here summary.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
     date: "2026-05-15",
     title: "Movement Visual Cleanup",
     description:

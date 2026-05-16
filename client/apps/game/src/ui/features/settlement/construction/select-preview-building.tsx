@@ -1138,8 +1138,7 @@ const BuildingCard = ({
     productionStatus?.isProducing && effectiveOutputRemaining !== null
       ? currencyIntlFormat(effectiveOutputRemaining, Math.abs(effectiveOutputRemaining) >= 1000 ? 1 : 0)
       : undefined;
-  const totalProductionBuildings =
-    productionStatus && productionStatus.totalBuildings > 0 ? productionStatus.totalBuildings : count;
+  const totalProductionBuildings = count;
   const activeProductionBuildings =
     productionStatus?.isProducing && productionStatus.activeBuildings > 0
       ? productionStatus.activeBuildings
