@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-14T22:37:28.424Z",
+  "updatedAt": "2026-05-16T05:41:03.697Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -784,7 +784,7 @@
       "path": "runs/slot/blitz/bltz-jolt-730.json",
       "inputPath": "inputs/slot/blitz/bltz-jolt-730/25650051590-1.json",
       "status": "complete",
-      "updatedAt": "2026-05-11T04:32:51.279Z",
+      "updatedAt": "2026-05-16T05:41:03.697Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -795,7 +795,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "legendary",
-        "lastIndexerDescribeAt": "2026-05-11T04:32:51.279Z"
+        "lastIndexerDescribeAt": "2026-05-11T04:32:51.279Z",
+        "pendingIndexerTierTarget": "pro",
+        "pendingIndexerTierRequestedAt": "2026-05-16T05:41:02.202Z"
       }
     },
     "bltz-nova-563": {
