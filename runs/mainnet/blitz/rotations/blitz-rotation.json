@@ -12,9 +12,9 @@
   "requestedLaunchStep": "grant-lootchest-roles",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25960819700-1.json",
   "latestLaunchRequestId": "25960819700-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-16T11:32:42.668Z",
+  "updatedAt": "2026-05-16T11:32:43.170Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
+    "nextRetryAt": "2026-05-16T11:47:43.170Z",
     "lastRetryAt": "2026-05-16T11:31:11.161Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-16T11:47:27.932Z",
-    "lastEvaluatedAt": "2026-05-16T11:32:27.932Z"
+    "nextEvaluationAt": "2026-05-16T11:47:43.170Z",
+    "lastEvaluatedAt": "2026-05-16T11:32:43.170Z"
   },
   "steps": [
     {
@@ -81,9 +82,9 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "pending",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
+      "latestEvent": "Waiting to run",
       "startedAt": "2026-05-16T11:32:37.061Z"
     },
     {
@@ -5898,7 +5899,7 @@
         },
         "seriesGameNumber": 31,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for apac-gladiator-16-05-26-1200: Torii deployment \"apac-gladiator-16-05-26-1200\" does not exist",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "succeeded",
         "configSteps": [
           {
@@ -6066,8 +6067,13 @@
           "createGameTxHash": "0x529b2447b9883fffd870cbfb1fb35496d08a1fdd9ee1aa40ef196537f6c70a3",
           "configureTxHash": "0x7bc73e21afa51cb1c3c06f95d3dde80682df9c8d3233bc84a8d7627d7881a2c",
           "worldConfigTxHash": "0x7bc73e21afa51cb1c3c06f95d3dde80682df9c8d3233bc84a8d7627d7881a2c",
-          "indexerCreated": false,
+          "indexerCreated": true,
           "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/apac-gladiator-16-05-26-1200/torii",
+          "indexerVersion": "v1.8.15",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-05-13T02:09:43.947Z",
           "indexerRequest": {
             "env": "mainnet",
             "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
@@ -6079,10 +6085,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-05-16T11:32:42.668Z",
-          "lastIndexerTierDispatchTarget": "legendary",
-          "lastIndexerTierDispatchFailedAt": "2026-05-16T11:32:42.668Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-16-05-26-1200\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-05-16T11:31:17.205Z"
         }
       },
       {
@@ -6728,13 +6731,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "25960819700-1",
-    "workflowRunId": 25960819700,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-05-16T11:32:37.061Z",
-    "expiresAt": "2026-05-16T12:17:37.061Z"
   }
 }
