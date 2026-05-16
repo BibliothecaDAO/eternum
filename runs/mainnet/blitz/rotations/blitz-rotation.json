@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25961593220-1",
   "currentStepId": "grant-lootchest-roles",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-16T12:12:09.053Z",
+  "updatedAt": "2026-05-16T12:12:20.689Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -5897,7 +5897,7 @@
         },
         "seriesGameNumber": 31,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-16-05-26-1200: Torii deployment \"apac-gladiator-16-05-26-1200\" does not exist",
         "status": "succeeded",
         "configSteps": [
           {
@@ -6078,7 +6078,10 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-05-16T12:11:04.945Z"
+          "pendingIndexerTierRequestedAt": "2026-05-16T12:12:20.689Z",
+          "lastIndexerTierDispatchTarget": "legendary",
+          "lastIndexerTierDispatchFailedAt": "2026-05-16T12:12:20.689Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-16-05-26-1200\" does not exist"
         }
       },
       {
