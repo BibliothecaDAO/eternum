@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "25976664535-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-17T00:17:47.473Z",
+  "updatedAt": "2026-05-17T00:22:16.895Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -5492,9 +5492,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-16T23:57:26.834Z",
+          "pendingIndexerTierRequestedAt": "2026-05-17T00:22:16.489Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-16T23:57:26.834Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-17T00:22:16.489Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-14-05-26-1000\" does not exist"
         }
       },
@@ -5689,9 +5689,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-16T23:57:26.906Z",
+          "pendingIndexerTierRequestedAt": "2026-05-17T00:22:16.591Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-16T23:57:26.906Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-17T00:22:16.591Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-15-05-26-0100\" does not exist"
         }
       },
@@ -5886,9 +5886,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-16T23:57:26.982Z",
+          "pendingIndexerTierRequestedAt": "2026-05-17T00:22:16.693Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-16T23:57:26.982Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-17T00:22:16.693Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-15-05-26-1800\" does not exist"
         }
       },
@@ -6083,9 +6083,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-16T23:57:27.058Z",
+          "pendingIndexerTierRequestedAt": "2026-05-17T00:22:16.795Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-16T23:57:27.058Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-17T00:22:16.795Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-16-05-26-1200\" does not exist"
         }
       },
@@ -6163,9 +6163,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-17T00:02:10.071Z",
+          "pendingIndexerTierRequestedAt": "2026-05-17T00:22:16.895Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-17T00:02:10.071Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-17T00:22:16.895Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-16-05-26-2000\" does not exist"
         }
       },
