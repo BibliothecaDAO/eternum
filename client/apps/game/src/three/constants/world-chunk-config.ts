@@ -11,7 +11,7 @@ interface WorldChunkConfig {
   toriiFetch: {
     /**
      * Number of stride chunks per side in a Torii "super-area".
-     * A value of 4 means one fetch covers a 4x4 stride-chunk block.
+     * Larger values reduce subscription churn by keeping bounds stable across more chunk crossings.
      */
     superAreaStrides: number;
   };
@@ -43,7 +43,7 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
   switchPadding: 0.05,
   toriiFetch: {
     // Coalesce overlapping render windows into larger stable fetch areas.
-    superAreaStrides: 4,
+    superAreaStrides: 16,
   },
   prefetch: {
     forwardDepthStrides: 2,

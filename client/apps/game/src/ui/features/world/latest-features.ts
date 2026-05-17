@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-17",
+    title: "Wider Map Streaming",
+    description:
+      "World map streaming now keeps Torii subscriptions on larger regions, reducing stream swaps and terrain churn while traversing long distances.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-16",
     title: "Building Count Sync",
     description:
