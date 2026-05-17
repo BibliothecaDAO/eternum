@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-05-17T15:20:44.798Z",
+  "updatedAt": "2026-05-17T15:22:09.320Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -86,11 +86,11 @@
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
       "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25994422616-1.json",
       "status": "attention",
-      "updatedAt": "2026-05-17T15:20:44.798Z",
+      "updatedAt": "2026-05-17T15:22:09.320Z",
       "workflowRef": "next",
       "currentStepId": "reserve-blitz-hyperstructures",
       "hasRunningStep": false,
-      "recoverableFailedStepId": null,
+      "recoverableFailedStepId": "reserve-blitz-hyperstructures",
       "recoverablePendingStepId": "grant-lootchest-roles",
       "autoRetry": {
         "enabled": true,
@@ -381,7 +381,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-17T15:20:43.543Z"
+            "pendingIndexerTierRequestedAt": "2026-05-17T15:22:09.155Z"
           }
         },
         {
@@ -391,7 +391,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-17T15:20:43.543Z"
+            "pendingIndexerTierRequestedAt": "2026-05-17T15:22:09.198Z"
           }
         },
         {
@@ -401,7 +401,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-17T15:20:43.543Z"
+            "pendingIndexerTierRequestedAt": "2026-05-17T15:22:09.221Z"
           }
         },
         {
@@ -411,7 +411,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-17T15:20:43.543Z"
+            "pendingIndexerTierRequestedAt": "2026-05-17T15:22:09.240Z"
           }
         },
         {
@@ -421,7 +421,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-17T15:20:43.543Z"
+            "pendingIndexerTierRequestedAt": "2026-05-17T15:22:09.277Z"
           }
         },
         {
@@ -431,7 +431,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-17T15:20:43.543Z"
+            "pendingIndexerTierRequestedAt": "2026-05-17T15:22:09.300Z"
           }
         },
         {
@@ -441,7 +441,7 @@
           "artifacts": {
             "indexerCreated": false,
             "pendingIndexerTierTarget": "pro",
-            "pendingIndexerTierRequestedAt": "2026-05-17T15:20:43.543Z"
+            "pendingIndexerTierRequestedAt": "2026-05-17T15:22:09.320Z"
           }
         },
         {
