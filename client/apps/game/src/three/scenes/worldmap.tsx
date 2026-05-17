@@ -302,6 +302,7 @@ import {
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
+  resolveToriiSubscriptionSwitchDecision as resolveCanonicalToriiSubscriptionSwitchDecision,
 } from "./worldmap-chunk-bounds";
 import { resolveTerrainPresentationWorldBounds } from "./worldmap-terrain-bounds-policy";
 import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
@@ -385,6 +386,9 @@ import {
   listPendingRenderAreaHydrationKeys,
   markRenderAreaHydrationStagesComplete,
   registerPendingRenderAreaHydration,
+  retainRenderAreaHydrationStages,
+  resolveFetchResultRetainedAreaKeys,
+  resolveRecentRenderAreaRetention,
   WORLDMAP_ACTIVE_HYDRATION_STAGES,
   WORLDMAP_PREFETCH_HYDRATION_STAGES,
   type WorldmapRenderAreaHydrationStage,
@@ -611,6 +615,7 @@ export default class WorldmapScene extends WarpTravel {
   private prefetchQueue: PrefetchQueueItem[] = [];
   private directionalPrefetchAreaKeys: Set<string> = new Set();
   private queuedPrefetchAreaKeys: Set<string> = new Set();
+  private retainedHydrationAreaKeys: string[] = [];
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private readonly worldmapMinZoomDistance = 10;
@@ -4243,7 +4248,10 @@ export default class WorldmapScene extends WarpTravel {
       pendingArmyMovementAuthoritativeResolutions: this.pendingArmyMovementAuthoritativeResolutions,
       armyStructureOwners: this.armyStructureOwners,
       suppressedArmies: this.armyManager.getSuppressedArmiesRef(),
-      clearRenderAreaHydrationState: () => clearAllRenderAreaHydrationState(this.renderAreaHydrationState),
+      clearRenderAreaHydrationState: () => {
+        clearAllRenderAreaHydrationState(this.renderAreaHydrationState);
+        this.clearRetainedHydrationAreas();
+      },
       pinnedChunkKeys: this.pinnedChunkKeys,
       pinnedRenderAreas: this.pinnedRenderAreas,
       hydratedChunkRefreshes: this.hydratedChunkRefreshes,
@@ -5001,7 +5009,9 @@ export default class WorldmapScene extends WarpTravel {
       }
       this.removeCachedMatricesForChunk(chunkRow, chunkCol);
       if (options?.invalidateFetchAreas) {
-        clearRenderAreaHydrationState(this.renderAreaHydrationState, this.getRenderAreaKeyForChunk(chunkKey));
+        const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
+        clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
+        this.removeRetainedHydrationArea(areaKey);
       }
     });
   }
@@ -5019,6 +5029,18 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
+   * Derive a stable live Torii subscription key for a chunk key.
+   * Subscription areas are intentionally larger than hydration fetch areas.
+   */
+  private getToriiSubscriptionAreaKeyForChunk(chunkKey: string): string {
+    return getCanonicalRenderAreaKeyForChunk(
+      chunkKey,
+      this.chunkSize,
+      WORLDMAP_CHUNK_POLICY.toriiSubscription.superAreaStrides,
+    );
+  }
+
+  /**
    * Compute integer fetch bounds that fully cover all render windows inside a Torii super-area.
    */
   private getRenderFetchBoundsForArea(areaKey: string): {
@@ -5032,6 +5054,23 @@ export default class WorldmapScene extends WarpTravel {
       this.renderChunkSize,
       this.chunkSize,
       WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
+    );
+  }
+
+  /**
+   * Compute integer subscription bounds that cover a live Torii subscription super-area.
+   */
+  private getToriiSubscriptionBoundsForArea(areaKey: string): {
+    minCol: number;
+    maxCol: number;
+    minRow: number;
+    maxRow: number;
+  } {
+    return getCanonicalRenderFetchBoundsForArea(
+      areaKey,
+      this.renderChunkSize,
+      this.chunkSize,
+      WORLDMAP_CHUNK_POLICY.toriiSubscription.superAreaStrides,
     );
   }
 
@@ -5129,6 +5168,8 @@ export default class WorldmapScene extends WarpTravel {
       chunkSize: this.chunkSize,
       forwardDepthStrides: WORLDMAP_CHUNK_POLICY.prefetch.forwardDepthStrides,
       sideRadiusStrides: WORLDMAP_CHUNK_POLICY.prefetch.sideRadiusStrides,
+      areaBoundaryLookaheadStrides: WORLDMAP_CHUNK_POLICY.prefetch.areaBoundaryLookaheadStrides,
+      fetchSuperAreaStrides: WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
       pinnedChunkKeys: this.pinnedChunkKeys,
       currentChunk: this.currentChunk,
       prefetchedAhead: this.prefetchedAhead,
@@ -6127,6 +6168,106 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
+  private removeRetainedHydrationArea(areaKey: string): void {
+    this.retainedHydrationAreaKeys = this.retainedHydrationAreaKeys.filter(
+      (retainedAreaKey) => retainedAreaKey !== areaKey,
+    );
+  }
+
+  private clearRetainedHydrationAreas(): void {
+    this.retainedHydrationAreaKeys = [];
+  }
+
+  private getProtectedHydrationAreaKeys(nextPinnedAreas: ReadonlySet<string>): Set<string> {
+    return new Set([...nextPinnedAreas, ...this.directionalPrefetchAreaKeys]);
+  }
+
+  private getRequiredToriiSubscriptionRenderAreaKeys(targetChunkKey: string): string[] {
+    const areaKeys = this.getProtectedHydrationAreaKeys(this.pinnedRenderAreas);
+    areaKeys.add(this.getRenderAreaKeyForChunk(targetChunkKey));
+    return Array.from(areaKeys);
+  }
+
+  private resolveToriiSubscriptionSwitchDecision(
+    targetChunkKey: string,
+    requestedAreaKey: string,
+  ): ReturnType<typeof resolveCanonicalToriiSubscriptionSwitchDecision> {
+    return resolveCanonicalToriiSubscriptionSwitchDecision({
+      currentSubscriptionAreaKey: this.toriiBoundsAreaKey,
+      requestedSubscriptionAreaKey: requestedAreaKey,
+      requiredRenderAreaKeys: this.getRequiredToriiSubscriptionRenderAreaKeys(targetChunkKey),
+      getSubscriptionBoundsForArea: (areaKey) => this.getToriiSubscriptionBoundsForArea(areaKey),
+      getRenderAreaBounds: (areaKey) => this.getRenderFetchBoundsForArea(areaKey),
+    });
+  }
+
+  private getActiveToriiSubscriptionBounds(): ToriiBoundsDebugRange | null {
+    if (!this.toriiBoundsAreaKey) {
+      return null;
+    }
+
+    return this.getToriiSubscriptionBoundsForArea(this.toriiBoundsAreaKey);
+  }
+
+  private isRenderAreaCoveredBySubscriptionBounds(areaKey: string, subscriptionBounds: ToriiBoundsDebugRange): boolean {
+    const areaBounds = this.getRenderFetchBoundsForArea(areaKey);
+    return (
+      areaBounds.minCol >= subscriptionBounds.minCol &&
+      areaBounds.maxCol <= subscriptionBounds.maxCol &&
+      areaBounds.minRow >= subscriptionBounds.minRow &&
+      areaBounds.maxRow <= subscriptionBounds.maxRow
+    );
+  }
+
+  private applyRecentHydrationRetention(retention: ReturnType<typeof resolveRecentRenderAreaRetention>): void {
+    this.retainedHydrationAreaKeys = retention.nextRetainedAreaKeys;
+    retention.areaKeysToRetainTerrainOnly.forEach((areaKey) => {
+      retainRenderAreaHydrationStages(this.renderAreaHydrationState, areaKey, ["tileOpt"]);
+    });
+    retention.areaKeysToClear.forEach((areaKey) => {
+      clearCompletedRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
+    });
+  }
+
+  private retainRecentlyUnpinnedHydrationAreas(
+    removedPinnedAreas: readonly string[],
+    nextPinnedAreas: ReadonlySet<string>,
+  ): void {
+    const activeSubscriptionBounds = this.getActiveToriiSubscriptionBounds();
+    const retention = resolveRecentRenderAreaRetention({
+      retainedAreaKeys: this.retainedHydrationAreaKeys,
+      recentlyUnpinnedAreaKeys: removedPinnedAreas,
+      protectedAreaKeys: this.getProtectedHydrationAreaKeys(nextPinnedAreas),
+      maxRetainedAreas: WORLDMAP_CHUNK_POLICY.recentHydrationCache.maxAreas,
+      ...(activeSubscriptionBounds
+        ? {
+            isAreaCoveredByActiveSubscription: (areaKey: string) =>
+              this.isRenderAreaCoveredBySubscriptionBounds(areaKey, activeSubscriptionBounds),
+          }
+        : {}),
+    });
+
+    this.applyRecentHydrationRetention(retention);
+  }
+
+  private pruneRetainedHydrationAreasOutsideActiveSubscription(): void {
+    const activeSubscriptionBounds = this.getActiveToriiSubscriptionBounds();
+    if (!activeSubscriptionBounds || this.retainedHydrationAreaKeys.length === 0) {
+      return;
+    }
+
+    const retention = resolveRecentRenderAreaRetention({
+      retainedAreaKeys: this.retainedHydrationAreaKeys,
+      recentlyUnpinnedAreaKeys: [],
+      protectedAreaKeys: this.getProtectedHydrationAreaKeys(this.pinnedRenderAreas),
+      maxRetainedAreas: WORLDMAP_CHUNK_POLICY.recentHydrationCache.maxAreas,
+      isAreaCoveredByActiveSubscription: (areaKey) =>
+        this.isRenderAreaCoveredBySubscriptionBounds(areaKey, activeSubscriptionBounds),
+    });
+
+    this.applyRecentHydrationRetention(retention);
+  }
+
   private updatePinnedChunks(newChunkKeys: string[]): void {
     const nextPinned = new Set(newChunkKeys);
     const prevPinned = this.pinnedChunkKeys;
@@ -6157,11 +6298,7 @@ export default class WorldmapScene extends WarpTravel {
       }
     });
 
-    // Drop completed tile data for render areas that are no longer covered.
-    // Keep in-flight pending promises for dedupe stability while they resolve.
-    removedPinnedAreas.forEach((areaKey) => {
-      clearCompletedRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
-    });
+    this.retainRecentlyUnpinnedHydrationAreas(removedPinnedAreas, nextPinnedAreas);
 
     this.pinnedChunkKeys = nextPinned;
     this.pinnedRenderAreas = nextPinnedAreas;
@@ -6178,7 +6315,7 @@ export default class WorldmapScene extends WarpTravel {
     localBounds: ToriiBoundsDebugRange;
     subscriptionBounds: ToriiBoundsDebugRange;
   } {
-    const localBounds = this.getRenderFetchBoundsForArea(areaKey);
+    const localBounds = this.getToriiSubscriptionBoundsForArea(areaKey);
     const feltCenter = FELT_CENTER();
 
     return {
@@ -6195,7 +6332,8 @@ export default class WorldmapScene extends WarpTravel {
   private buildToriiBoundsDebugSnapshot(
     extra: Partial<ToriiBoundsDebugOverlaySnapshot> = {},
   ): ToriiBoundsDebugOverlaySnapshot {
-    const currentAreaKey = this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
+    const currentAreaKey =
+      this.currentChunk !== "null" ? this.getToriiSubscriptionAreaKeyForChunk(this.currentChunk) : null;
 
     this.toriiBoundsDebugSnapshot = {
       ...this.toriiBoundsDebugSnapshot,
@@ -6309,6 +6447,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
     clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
+    this.removeRetainedHydrationArea(areaKey);
     this.tileHydrationFetches.delete(areaKey);
     this.structureHydrationFetches.delete(areaKey);
     this.hydratedRefreshSuppressionAreaKeys.delete(areaKey);
@@ -6507,17 +6646,19 @@ export default class WorldmapScene extends WarpTravel {
 
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_requested");
 
-    const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
-    const { localBounds, subscriptionBounds } = this.buildToriiBoundsDebugRanges(areaKey);
+    const requestedAreaKey = this.getToriiSubscriptionAreaKeyForChunk(chunkKey);
+    const switchDecision = this.resolveToriiSubscriptionSwitchDecision(chunkKey, requestedAreaKey);
+    const { localBounds, subscriptionBounds } = this.buildToriiBoundsDebugRanges(requestedAreaKey);
     const debugBounds = {
-      requestedAreaKey: areaKey,
+      requestedAreaKey,
       localBounds,
       subscriptionBounds,
       modelCount: TORII_BOUNDS_MODELS.length,
     };
     this.traceChunk("torii_bounds_switch_requested", {
       chunkKey,
-      areaKey,
+      areaKey: requestedAreaKey,
+      switchDecision,
       transitionToken: transitionToken ?? null,
     });
     this.refreshToriiBoundsDebugOverlay({
@@ -6525,19 +6666,22 @@ export default class WorldmapScene extends WarpTravel {
       lastOutcome: "requested",
     });
 
-    if (areaKey === this.toriiBoundsAreaKey) {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_same_signature");
+    if (switchDecision.action === "keep_current") {
+      if (switchDecision.reason === "same_subscription_area") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_same_signature");
+      }
       this.refreshToriiBoundsDebugOverlay({
         ...debugBounds,
-        subscribedAreaKey: areaKey,
-        lastOutcome: "skipped_same_signature",
+        subscribedAreaKey: switchDecision.areaKey,
+        lastOutcome: switchDecision.reason,
       });
       if (TORII_BOUNDS_DEBUG) {
-        console.log("[ToriiBounds] Skip switch (area unchanged)", { chunkKey, areaKey });
+        console.log("[ToriiBounds] Skip switch", { chunkKey, requestedAreaKey, switchDecision });
       }
       return;
     }
 
+    const areaKey = switchDecision.areaKey;
     const descriptor: BoundsDescriptor = {
       ...subscriptionBounds,
       models: TORII_BOUNDS_MODELS,
@@ -6576,6 +6720,7 @@ export default class WorldmapScene extends WarpTravel {
       }
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_applied");
       this.toriiBoundsAreaKey = areaKey;
+      this.pruneRetainedHydrationAreasOutsideActiveSubscription();
       this.refreshToriiBoundsDebugOverlay({
         ...debugBounds,
         subscribedAreaKey: areaKey,
@@ -7033,7 +7178,18 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getRetainedRenderAreaKeys(): Set<string> {
-    return new Set([...this.pinnedRenderAreas, ...this.directionalPrefetchAreaKeys]);
+    const activeSubscriptionBounds = this.getActiveToriiSubscriptionBounds();
+    return resolveFetchResultRetainedAreaKeys({
+      pinnedAreaKeys: this.pinnedRenderAreas,
+      directionalPrefetchAreaKeys: this.directionalPrefetchAreaKeys,
+      retainedAreaKeys: this.retainedHydrationAreaKeys,
+      ...(activeSubscriptionBounds
+        ? {
+            isRetainedAreaCoveredByActiveSubscription: (areaKey: string) =>
+              this.isRenderAreaCoveredBySubscriptionBounds(areaKey, activeSubscriptionBounds),
+          }
+        : {}),
+    });
   }
 
   private hydrateExploredTilesFromTileOptRecs(
@@ -8910,6 +9066,7 @@ export default class WorldmapScene extends WarpTravel {
   public clearTileEntityCache() {
     this.clearQueuedPrefetchState();
     clearAllRenderAreaHydrationState(this.renderAreaHydrationState);
+    this.clearRetainedHydrationAreas();
     this.pinnedRenderAreas.clear();
     this.clearCache();
     this.armyLastTileSyncAt.clear();

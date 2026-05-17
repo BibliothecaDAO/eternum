@@ -5,6 +5,27 @@ export interface WorldmapRenderAreaHydrationState {
   pendingStages: Map<string, Map<WorldmapRenderAreaHydrationStage, Promise<boolean>>>;
 }
 
+interface RecentRenderAreaRetentionInput {
+  retainedAreaKeys: readonly string[];
+  recentlyUnpinnedAreaKeys: readonly string[];
+  protectedAreaKeys: ReadonlySet<string>;
+  maxRetainedAreas: number;
+  isAreaCoveredByActiveSubscription?: (areaKey: string) => boolean;
+}
+
+interface RecentRenderAreaRetentionResult {
+  nextRetainedAreaKeys: string[];
+  areaKeysToClear: string[];
+  areaKeysToRetainTerrainOnly: string[];
+}
+
+interface FetchResultRetainedAreaKeysInput {
+  pinnedAreaKeys: ReadonlySet<string>;
+  directionalPrefetchAreaKeys: ReadonlySet<string>;
+  retainedAreaKeys: readonly string[];
+  isRetainedAreaCoveredByActiveSubscription?: (areaKey: string) => boolean;
+}
+
 export const WORLDMAP_PREFETCH_HYDRATION_STAGES: readonly WorldmapRenderAreaHydrationStage[] = [
   "tileOpt",
   "explorerTroops",
@@ -159,6 +180,116 @@ export function clearCompletedRenderAreaHydrationState(state: WorldmapRenderArea
 export function clearAllRenderAreaHydrationState(state: WorldmapRenderAreaHydrationState): void {
   state.completedStages.clear();
   state.pendingStages.clear();
+}
+
+export function retainRenderAreaHydrationStages(
+  state: WorldmapRenderAreaHydrationState,
+  areaKey: string,
+  stagesToRetain: readonly WorldmapRenderAreaHydrationStage[],
+): void {
+  const retainedStages = new Set(stagesToRetain);
+  const completedStages = state.completedStages.get(areaKey);
+  if (completedStages) {
+    completedStages.forEach((stage) => {
+      if (!retainedStages.has(stage)) {
+        completedStages.delete(stage);
+      }
+    });
+    if (completedStages.size === 0) {
+      state.completedStages.delete(areaKey);
+    }
+  }
+
+  const pendingStages = state.pendingStages.get(areaKey);
+  if (pendingStages) {
+    pendingStages.forEach((_, stage) => {
+      if (!retainedStages.has(stage)) {
+        pendingStages.delete(stage);
+      }
+    });
+    if (pendingStages.size === 0) {
+      state.pendingStages.delete(areaKey);
+    }
+  }
+}
+
+function addUniqueAreaKey(areaKeys: string[], areaKey: string): void {
+  if (!areaKeys.includes(areaKey)) {
+    areaKeys.push(areaKey);
+  }
+}
+
+function removeAreaKey(areaKeys: string[], areaKey: string): void {
+  const existingIndex = areaKeys.indexOf(areaKey);
+  if (existingIndex >= 0) {
+    areaKeys.splice(existingIndex, 1);
+  }
+}
+
+export function resolveRecentRenderAreaRetention({
+  maxRetainedAreas,
+  protectedAreaKeys,
+  recentlyUnpinnedAreaKeys,
+  retainedAreaKeys,
+  isAreaCoveredByActiveSubscription,
+}: RecentRenderAreaRetentionInput): RecentRenderAreaRetentionResult {
+  const areaKeysToClear: string[] = [];
+  const areaKeysToRetainTerrainOnly: string[] = [];
+  const nextRetainedAreaKeys: string[] = [];
+
+  const retainAreaKey = (areaKey: string, shouldRefreshRecency: boolean): void => {
+    if (protectedAreaKeys.has(areaKey)) {
+      return;
+    }
+
+    if (shouldRefreshRecency) {
+      removeAreaKey(nextRetainedAreaKeys, areaKey);
+    }
+
+    if (isAreaCoveredByActiveSubscription && !isAreaCoveredByActiveSubscription(areaKey)) {
+      addUniqueAreaKey(areaKeysToRetainTerrainOnly, areaKey);
+    }
+
+    addUniqueAreaKey(nextRetainedAreaKeys, areaKey);
+  };
+
+  retainedAreaKeys.forEach((areaKey) => {
+    retainAreaKey(areaKey, false);
+  });
+
+  recentlyUnpinnedAreaKeys.forEach((areaKey) => {
+    retainAreaKey(areaKey, true);
+  });
+
+  while (nextRetainedAreaKeys.length > Math.max(0, maxRetainedAreas)) {
+    const evictedAreaKey = nextRetainedAreaKeys.shift();
+    if (evictedAreaKey) {
+      removeAreaKey(areaKeysToRetainTerrainOnly, evictedAreaKey);
+      areaKeysToClear.push(evictedAreaKey);
+    }
+  }
+
+  return {
+    areaKeysToClear,
+    areaKeysToRetainTerrainOnly,
+    nextRetainedAreaKeys,
+  };
+}
+
+export function resolveFetchResultRetainedAreaKeys({
+  directionalPrefetchAreaKeys,
+  isRetainedAreaCoveredByActiveSubscription,
+  pinnedAreaKeys,
+  retainedAreaKeys,
+}: FetchResultRetainedAreaKeysInput): Set<string> {
+  const retainedAreaKeySet = new Set([...pinnedAreaKeys, ...directionalPrefetchAreaKeys]);
+  retainedAreaKeys.forEach((areaKey) => {
+    if (isRetainedAreaCoveredByActiveSubscription && !isRetainedAreaCoveredByActiveSubscription(areaKey)) {
+      return;
+    }
+    retainedAreaKeySet.add(areaKey);
+  });
+  return retainedAreaKeySet;
 }
 
 export function listCompletedRenderAreaHydrationKeys(state: WorldmapRenderAreaHydrationState): string[] {
