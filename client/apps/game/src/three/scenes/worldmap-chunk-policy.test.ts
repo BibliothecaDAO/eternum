@@ -19,13 +19,13 @@ describe("createWorldmapChunkPolicy", () => {
     const policy = createWorldmapChunkPolicy(WORLD_CHUNK_CONFIG);
 
     expect(policy).toHaveProperty("toriiFetch.superAreaStrides", WORLD_CHUNK_CONFIG.toriiFetch.superAreaStrides);
-    expect(policy).toHaveProperty("toriiSubscription.superAreaStrides", 32);
+    expect(policy).toHaveProperty("toriiSubscription.superAreaStrides", 48);
     expect(policy.toriiSubscription.superAreaStrides).toBeGreaterThan(policy.toriiFetch.superAreaStrides);
     expect(policy).toHaveProperty("prefetch.forwardDepthStrides", WORLD_CHUNK_CONFIG.prefetch.forwardDepthStrides);
     expect(policy).toHaveProperty("prefetch.sideRadiusStrides", WORLD_CHUNK_CONFIG.prefetch.sideRadiusStrides);
     expect(policy).toHaveProperty("prefetch.areaBoundaryLookaheadStrides", 3);
     expect(policy).toHaveProperty("prefetch.maxConcurrent", WORLD_CHUNK_CONFIG.prefetch.maxConcurrent);
-    expect(policy).toHaveProperty("recentHydrationCache.maxAreas", 32);
+    expect(policy).toHaveProperty("recentHydrationCache.maxAreas", 48);
   });
 
   it("derives pinned neighborhood floor metadata for cache budgeting", () => {

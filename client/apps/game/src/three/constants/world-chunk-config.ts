@@ -61,7 +61,7 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
   },
   toriiSubscription: {
     // Keep live spatial stream bounds stable across multiple fetch areas.
-    superAreaStrides: 32,
+    superAreaStrides: 48,
   },
   prefetch: {
     forwardDepthStrides: 2,
@@ -71,6 +71,6 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
     maxConcurrent: 1,
   },
   recentHydrationCache: {
-    maxAreas: 32,
+    maxAreas: 48,
   },
 };

@@ -302,6 +302,7 @@ import {
 import {
   getRenderAreaKeyForChunk as getCanonicalRenderAreaKeyForChunk,
   getRenderFetchBoundsForArea as getCanonicalRenderFetchBoundsForArea,
+  resolveToriiSubscriptionSwitchDecision as resolveCanonicalToriiSubscriptionSwitchDecision,
 } from "./worldmap-chunk-bounds";
 import { resolveTerrainPresentationWorldBounds } from "./worldmap-terrain-bounds-policy";
 import { getRenderOverlapChunkKeys, getRenderOverlapNeighborChunkKeys } from "./worldmap-chunk-neighbors";
@@ -6181,6 +6182,25 @@ export default class WorldmapScene extends WarpTravel {
     return new Set([...nextPinnedAreas, ...this.directionalPrefetchAreaKeys]);
   }
 
+  private getRequiredToriiSubscriptionRenderAreaKeys(targetChunkKey: string): string[] {
+    const areaKeys = this.getProtectedHydrationAreaKeys(this.pinnedRenderAreas);
+    areaKeys.add(this.getRenderAreaKeyForChunk(targetChunkKey));
+    return Array.from(areaKeys);
+  }
+
+  private resolveToriiSubscriptionSwitchDecision(
+    targetChunkKey: string,
+    requestedAreaKey: string,
+  ): ReturnType<typeof resolveCanonicalToriiSubscriptionSwitchDecision> {
+    return resolveCanonicalToriiSubscriptionSwitchDecision({
+      currentSubscriptionAreaKey: this.toriiBoundsAreaKey,
+      requestedSubscriptionAreaKey: requestedAreaKey,
+      requiredRenderAreaKeys: this.getRequiredToriiSubscriptionRenderAreaKeys(targetChunkKey),
+      getSubscriptionBoundsForArea: (areaKey) => this.getToriiSubscriptionBoundsForArea(areaKey),
+      getRenderAreaBounds: (areaKey) => this.getRenderFetchBoundsForArea(areaKey),
+    });
+  }
+
   private getActiveToriiSubscriptionBounds(): ToriiBoundsDebugRange | null {
     if (!this.toriiBoundsAreaKey) {
       return null;
@@ -6626,17 +6646,19 @@ export default class WorldmapScene extends WarpTravel {
 
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_requested");
 
-    const areaKey = this.getToriiSubscriptionAreaKeyForChunk(chunkKey);
-    const { localBounds, subscriptionBounds } = this.buildToriiBoundsDebugRanges(areaKey);
+    const requestedAreaKey = this.getToriiSubscriptionAreaKeyForChunk(chunkKey);
+    const switchDecision = this.resolveToriiSubscriptionSwitchDecision(chunkKey, requestedAreaKey);
+    const { localBounds, subscriptionBounds } = this.buildToriiBoundsDebugRanges(requestedAreaKey);
     const debugBounds = {
-      requestedAreaKey: areaKey,
+      requestedAreaKey,
       localBounds,
       subscriptionBounds,
       modelCount: TORII_BOUNDS_MODELS.length,
     };
     this.traceChunk("torii_bounds_switch_requested", {
       chunkKey,
-      areaKey,
+      areaKey: requestedAreaKey,
+      switchDecision,
       transitionToken: transitionToken ?? null,
     });
     this.refreshToriiBoundsDebugOverlay({
@@ -6644,19 +6666,22 @@ export default class WorldmapScene extends WarpTravel {
       lastOutcome: "requested",
     });
 
-    if (areaKey === this.toriiBoundsAreaKey) {
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_same_signature");
+    if (switchDecision.action === "keep_current") {
+      if (switchDecision.reason === "same_subscription_area") {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_skipped_same_signature");
+      }
       this.refreshToriiBoundsDebugOverlay({
         ...debugBounds,
-        subscribedAreaKey: areaKey,
-        lastOutcome: "skipped_same_signature",
+        subscribedAreaKey: switchDecision.areaKey,
+        lastOutcome: switchDecision.reason,
       });
       if (TORII_BOUNDS_DEBUG) {
-        console.log("[ToriiBounds] Skip switch (area unchanged)", { chunkKey, areaKey });
+        console.log("[ToriiBounds] Skip switch", { chunkKey, requestedAreaKey, switchDecision });
       }
       return;
     }
 
+    const areaKey = switchDecision.areaKey;
     const descriptor: BoundsDescriptor = {
       ...subscriptionBounds,
       models: TORII_BOUNDS_MODELS,
