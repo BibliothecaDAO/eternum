@@ -33,7 +33,9 @@ describe("worldmap Torii bounds debug overlay wiring", () => {
     const body = source.slice(methodStart, methodEnd);
 
     expect(body).toContain("this.refreshToriiBoundsDebugOverlay");
-    expect(body).toContain("requestedAreaKey: areaKey");
+    expect(body).toContain("const requestedAreaKey = this.getToriiSubscriptionAreaKeyForChunk(chunkKey)");
+    expect(body).toContain("requestedAreaKey,");
+    expect(body).toContain("subscribedAreaKey: switchDecision.areaKey");
     expect(body).toContain("subscribedAreaKey: areaKey");
     expect(body).toContain("subscriptionBounds");
   });
