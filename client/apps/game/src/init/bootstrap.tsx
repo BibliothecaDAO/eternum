@@ -281,7 +281,12 @@ const runDojoSetup = async (): Promise<SetupResult> => {
 const runInitialWorldSync = async (setupResult: SetupResult, stores: BootstrapStores) => {
   const initialSyncStartedAt = performance.now();
   markGameEntryMilestone("initial-sync-started");
-  await initialSync(setupResult, stores.uiStore, stores.syncingStore.setInitialSyncProgress);
+  try {
+    await initialSync(setupResult, stores.uiStore, stores.syncingStore.setInitialSyncProgress);
+  } catch (error) {
+    console.error("[bootstrap] Initial world sync failed", error);
+    throw error;
+  }
   markGameEntryMilestone("initial-sync-completed");
   recordGameEntryDuration("initial-sync", performance.now() - initialSyncStartedAt);
   console.log("[INITIAL SYNC COMPLETED]");

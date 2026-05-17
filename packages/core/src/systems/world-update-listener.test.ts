@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { TileOccupier } from "@bibliothecadao/types";
 
+const RESERVED_HYPERSTRUCTURE_OCCUPIER_TYPE =
+  (TileOccupier as typeof TileOccupier & { ReservedHyperstructure?: number }).ReservedHyperstructure ?? 39;
+
 const {
   defineComponentSystemMock,
   enhanceArmyDataMock,
@@ -859,7 +862,7 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     await handleUpdate({
       value: [
         {
-          occupier_type: TileOccupier.ReservedHyperstructure,
+          occupier_type: RESERVED_HYPERSTRUCTURE_OCCUPIER_TYPE,
           occupier_id: 0,
           col: 12,
           row: 34,
@@ -872,7 +875,7 @@ describe("WorldUpdateListener army tile bootstrap", () => {
       value: [
         undefined,
         {
-          occupier_type: TileOccupier.ReservedHyperstructure,
+          occupier_type: RESERVED_HYPERSTRUCTURE_OCCUPIER_TYPE,
           occupier_id: 0,
           col: 12,
           row: 34,
@@ -886,6 +889,43 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     expect(callback).toHaveBeenNthCalledWith(2, {
       hexCoords: { col: 12, row: 34 },
       removed: true,
+    });
+  });
+
+  it("emits dead chest updates with the previous tile layer", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockImplementation((value) => value);
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    const callback = vi.fn();
+    listener.Chest.onDeadChest(callback);
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+    await handleUpdate({
+      value: [
+        undefined,
+        {
+          alt: true,
+          occupier_type: TileOccupier.Chest,
+          occupier_id: 4321,
+          col: 12,
+          row: 34,
+        },
+      ],
+    });
+
+    expect(callback).toHaveBeenCalledWith({
+      alt: true,
+      entityId: 4321,
     });
   });
 });

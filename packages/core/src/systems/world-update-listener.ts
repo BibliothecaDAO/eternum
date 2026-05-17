@@ -39,6 +39,7 @@ import { resolveFreshestArmyStaminaSource } from "./army-stamina-source";
 import {
   type BattleEventSystemUpdate,
   type BuildingSystemUpdate,
+  type ChestRemovalSystemUpdate,
   ExplorerRewardSystemUpdate,
   ExplorerTroopsSystemUpdate,
   type ExplorerTroopsTileSystemUpdate,
@@ -49,6 +50,15 @@ import {
   type TileSystemUpdate,
 } from "./types";
 import { getExplorerInfoFromTileOccupier, getStructureInfoFromTileOccupier } from "./utils";
+
+const RESERVED_HYPERSTRUCTURE_OCCUPIER_TYPE =
+  (TileOccupier as typeof TileOccupier & { ReservedHyperstructure?: number }).ReservedHyperstructure ?? 39;
+
+function isReservedHyperstructureTile(
+  tile: { occupier_type?: unknown; col?: unknown; row?: unknown } | undefined,
+): tile is { occupier_type: number; col: number; row: number } {
+  return tile?.occupier_type === RESERVED_HYPERSTRUCTURE_OCCUPIER_TYPE;
+}
 
 // The WorldUpdateListener class is responsible for updating the Three.js models when there are changes in the game state.
 // It listens for updates from torii and translates them into a format that can be consumed by the Three.js model managers.
@@ -632,6 +642,7 @@ export class WorldUpdateListener {
 
                 return {
                   entityId: rawOccupierId,
+                  alt: currentState.alt,
                   structureName,
                   hexCoords: {
                     col: currentState.col,
@@ -828,6 +839,7 @@ export class WorldUpdateListener {
             const newStateBiomeType = newState ? BiomeIdToType[newState.biome] : undefined;
             const { col, row } = visibleState;
             const result = {
+              alt: visibleState.alt,
               hexCoords: { col, row },
               removeExplored: !newState,
               biome:
@@ -859,13 +871,13 @@ export class WorldUpdateListener {
             const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
             const prevState = prevStateOpt ? tileOptToTile(prevStateOpt) : undefined;
 
-            if (currentState?.occupier_type === TileOccupier.ReservedHyperstructure) {
+            if (isReservedHyperstructureTile(currentState)) {
               return {
                 hexCoords: { col: currentState.col, row: currentState.row },
               };
             }
 
-            if (prevState?.occupier_type === TileOccupier.ReservedHyperstructure) {
+            if (isReservedHyperstructureTile(prevState)) {
               return {
                 hexCoords: { col: prevState.col, row: prevState.row },
                 removed: true,
@@ -1033,6 +1045,7 @@ export class WorldUpdateListener {
               }
 
               const result = {
+                alt: currentState.alt,
                 entityId: chestEntityId,
                 occupierId: currentState?.occupier_id,
                 hexCoords: { col: currentState.col, row: currentState.row },
@@ -1043,11 +1056,11 @@ export class WorldUpdateListener {
           false,
         );
       },
-      onDeadChest: (callback: (value: ID) => void) => {
+      onDeadChest: (callback: (value: ChestRemovalSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.TileOpt,
           callback,
-          async (update: any): Promise<ID | undefined> => {
+          async (update: any): Promise<ChestRemovalSystemUpdate | undefined> => {
             if (isComponentUpdate(update, this.setup.components.TileOpt)) {
               const [currentStateOpt, prevStateOpt] = update.value;
               const currentState = this.parseTileOptState(currentStateOpt);
@@ -1066,7 +1079,10 @@ export class WorldUpdateListener {
                   return;
                 }
 
-                return deadChestEntityId;
+                return {
+                  alt: prevState.alt,
+                  entityId: deadChestEntityId,
+                };
               }
             }
           },

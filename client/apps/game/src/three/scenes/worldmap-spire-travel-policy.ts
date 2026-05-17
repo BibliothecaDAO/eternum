@@ -28,6 +28,14 @@ function isExplorerTileOccupier(occupierType: number): boolean {
   );
 }
 
+function isOccupiedDestination(tile: EtherealTileReference | undefined): tile is EtherealTileReference {
+  if (!tile) {
+    return false;
+  }
+
+  return Number(tile.occupier_id) !== 0 || tile.occupier_is_structure || tile.occupier_type !== TileOccupier.None;
+}
+
 export function resolveSpireTraversalAction(input: {
   targetHex: HexPosition;
   etherealTile: EtherealTileReference | undefined;
@@ -35,12 +43,14 @@ export function resolveSpireTraversalAction(input: {
 }): SpireTraversalAction {
   const { targetHex, etherealTile, isOpposingArmy } = input;
 
-  if (
-    etherealTile &&
-    Number(etherealTile.occupier_id) !== 0 &&
-    !etherealTile.occupier_is_structure &&
-    isExplorerTileOccupier(etherealTile.occupier_type)
-  ) {
+  if (!isOccupiedDestination(etherealTile)) {
+    return {
+      kind: "travel",
+      targetHex,
+    };
+  }
+
+  if (!etherealTile.occupier_is_structure && isExplorerTileOccupier(etherealTile.occupier_type)) {
     if (isOpposingArmy && !isOpposingArmy(etherealTile.occupier_id)) {
       return {
         kind: "blocked",
@@ -57,7 +67,14 @@ export function resolveSpireTraversalAction(input: {
   }
 
   return {
-    kind: "travel",
+    kind: "blocked",
+    targetArmyId: etherealTile.occupier_id,
     targetHex,
   };
+}
+
+export function resolveSpireTraversalDestinationHex(
+  actionPath: ReadonlyArray<{ hex: HexPosition }>,
+): HexPosition | undefined {
+  return actionPath[0]?.hex;
 }

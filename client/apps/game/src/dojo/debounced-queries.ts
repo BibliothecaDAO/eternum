@@ -8,32 +8,54 @@ import {
   getTilesForPositionsFromTorii,
 } from "./queries";
 
-// Queue class to manage requests
+type QueuedRequest = {
+  cancel: () => void;
+  run: () => Promise<void>;
+};
+
 class RequestQueue {
-  private queue: Array<() => Promise<void>> = [];
+  private queue: QueuedRequest[] = [];
   private processing = false;
   private batchSize = 3; // Number of concurrent requests
   private batchDelayMs = 100; // Delay between batches
 
-  async add(request: () => Promise<void>, onComplete?: () => void) {
-    this.queue.push(async () => {
-      await request();
-      onComplete?.(); // Call onComplete after the request is processed
+  add(request: () => Promise<void>, onComplete?: () => void): Promise<void> {
+    const queuedRequest = new Promise<void>((resolve, reject) => {
+      this.queue.push({
+        cancel: () => {
+          onComplete?.();
+          resolve();
+        },
+        run: async () => {
+          try {
+            await request();
+            onComplete?.(); // Call onComplete after the request is processed
+            resolve();
+          } catch (error) {
+            reject(error);
+            throw error;
+          }
+        },
+      });
     });
+
     if (!this.processing) {
       this.processing = true;
-      this.processQueue();
+      void this.processQueue();
     }
+
+    return queuedRequest;
   }
 
   private async processQueue() {
     while (this.queue.length > 0) {
       const batch = this.queue.splice(0, this.batchSize);
 
-      try {
-        await Promise.all(batch.map((request) => request()));
-      } catch (error) {
-        console.error("Error processing request batch:", error);
+      const results = await Promise.allSettled(batch.map((request) => request.run()));
+      for (const result of results) {
+        if (result.status === "rejected") {
+          console.error("Error processing request batch:", result.reason);
+        }
       }
 
       if (this.queue.length > 0) {
@@ -45,6 +67,7 @@ class RequestQueue {
   }
 
   clear() {
+    this.queue.forEach((request) => request.cancel());
     this.queue = [];
   }
 }
@@ -69,9 +92,8 @@ export const debouncedGetOwnedArmiesFromTorii = async <S extends Schema>(
   try {
     await subscriptionQueue.add(() => getOwnedArmiesFromTorii(client, components, owners), onComplete);
   } catch (error) {
-    console.error("Error in debouncedGetOwnedEntitiesFromTorii:", error);
-    // Make sure onComplete is called even if there's an error
     onComplete?.();
+    console.error("Error in debouncedGetOwnedEntitiesFromTorii:", error);
   }
 };
 
@@ -85,9 +107,8 @@ export const debouncedGetEntitiesFromTorii = async <S extends Schema>(
   try {
     await subscriptionQueue.add(() => getEntitiesFromTorii(client, components, entityIDs, entityModels), onComplete);
   } catch (error) {
-    console.error("Error in debouncedGetEntitiesFromTorii:", error);
-    // Make sure onComplete is called even if there's an error
     onComplete?.();
+    console.error("Error in debouncedGetEntitiesFromTorii:", error);
   }
 };
 
@@ -100,8 +121,7 @@ export const debouncedGetBuildingsFromTorii = async <S extends Schema>(
   try {
     await subscriptionQueue.add(() => getBuildingsFromTorii(client, components, structurePositions), onComplete);
   } catch (error) {
-    console.error("Error in debouncedGetBuildingsFromTorii:", error);
-    // Make sure onComplete is called even if there's an error
     onComplete?.();
+    console.error("Error in debouncedGetBuildingsFromTorii:", error);
   }
 };

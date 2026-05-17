@@ -121,12 +121,14 @@ export const CombatContainer = ({
   targetResources,
   attackerActiveRelicEffects = [],
   targetActiveRelicEffects = [],
+  directionHex,
 }: {
   attackerEntityId: ID;
   target: AttackTarget;
   targetResources: Array<{ resourceId: number; amount: number }>;
   attackerActiveRelicEffects: RelicEffectWithEndTick[];
   targetActiveRelicEffects: RelicEffectWithEndTick[];
+  directionHex?: { x: number; y: number };
 }) => {
   const {
     account: { account },
@@ -148,6 +150,7 @@ export const CombatContainer = ({
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   const selectedHex = useUIStore((state) => state.selectedHex);
+  const attackDirectionHex = directionHex ?? target.hex;
 
   const combatConfig = useMemo(() => {
     return configManager.getCombatConfig();
@@ -445,7 +448,7 @@ export const CombatContainer = ({
         attackerId: attackerEntityId,
         defenderId: target?.id || undefined,
         attackerHex: { col: selectedHex.col, row: selectedHex.row },
-        targetHex: { col: target.hex.x, row: target.hex.y },
+        targetHex: { col: attackDirectionHex.x, row: attackDirectionHex.y },
       });
 
       if (attackerType === AttackerType.Structure) {
@@ -474,7 +477,10 @@ export const CombatContainer = ({
 
   const onExplorerVsGuardAttack = async () => {
     if (!selectedHex) return;
-    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
+    const direction = getDirectionBetweenAdjacentHexes(selectedHex, {
+      col: attackDirectionHex.x,
+      row: attackDirectionHex.y,
+    });
     if (direction === null) return;
 
     await attack_explorer_vs_guard({
@@ -533,7 +539,10 @@ export const CombatContainer = ({
 
   const onExplorerVsExplorerAttack = async () => {
     if (!selectedHex) return;
-    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
+    const direction = getDirectionBetweenAdjacentHexes(selectedHex, {
+      col: attackDirectionHex.x,
+      row: attackDirectionHex.y,
+    });
     if (direction === null) return;
 
     await attack_explorer_vs_explorer({
@@ -547,7 +556,10 @@ export const CombatContainer = ({
 
   const onGuardVsExplorerAttack = async () => {
     if (!selectedHex || selectedGuardSlot === null) return;
-    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
+    const direction = getDirectionBetweenAdjacentHexes(selectedHex, {
+      col: attackDirectionHex.x,
+      row: attackDirectionHex.y,
+    });
     if (direction === null) return;
 
     await attack_guard_vs_explorer({

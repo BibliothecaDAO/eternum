@@ -325,9 +325,11 @@ const NumberParticle = ({ number }: { number: number }) => {
 export const ChestContainer = ({
   explorerEntityId,
   chestHex,
+  chestAlt = DEFAULT_COORD_ALT,
 }: {
   explorerEntityId: ID;
   chestHex: { x: number; y: number };
+  chestAlt?: boolean;
 }) => {
   const {
     setup: { components },
@@ -347,10 +349,10 @@ export const ChestContainer = ({
   const CLICKS_TO_OPEN = 5;
 
   const chestName = useMemo(() => {
-    const tile = getTileAt(components, DEFAULT_COORD_ALT, chestHex.x, chestHex.y);
+    const tile = getTileAt(components, chestAlt, chestHex.x, chestHex.y);
     if (!tile) return "Unknown Crate";
     return getCrateName(tile.occupier_id);
-  }, [chestHex.x, chestHex.y]);
+  }, [chestAlt, chestHex.x, chestHex.y]);
 
   const chestPositionNormalized = new Position({ x: chestHex.x, y: chestHex.y }).getNormalized();
 
@@ -378,6 +380,7 @@ export const ChestContainer = ({
 
       if (
         currentState?.explorer_id === explorerEntityId &&
+        currentState?.chest_coord?.alt === chestAlt &&
         currentState?.chest_coord?.x === chestHex.x &&
         currentState?.chest_coord?.y === chestHex.y
       ) {
@@ -402,7 +405,7 @@ export const ChestContainer = ({
         }
       }
     },
-    [explorerEntityId, chestHex.x, chestHex.y, isOpening, playChestOpenSound],
+    [explorerEntityId, chestAlt, chestHex.x, chestHex.y, isOpening, playChestOpenSound],
   );
 
   const handleChestClick = async () => {
@@ -458,7 +461,7 @@ export const ChestContainer = ({
           signer: account,
           explorer_id: explorerEntityId,
           chest_coord: {
-            alt: DEFAULT_COORD_ALT,
+            alt: chestAlt,
             x: chestHex.x,
             y: chestHex.y,
           },

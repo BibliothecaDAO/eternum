@@ -5,6 +5,9 @@
 
 import { Direction, TileOccupier } from "@bibliothecadao/types";
 
+const RESERVED_HYPERSTRUCTURE_OCCUPIER_TYPE =
+  (TileOccupier as typeof TileOccupier & { ReservedHyperstructure?: number }).ReservedHyperstructure ?? 39;
+
 // Helper function to get all directions
 export function getAllHexDirections(): Direction[] {
   return [
@@ -181,7 +184,7 @@ export class HexGrid {
 
 export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
   return (
-    tileOccupier === TileOccupier.ReservedHyperstructure ||
+    Number(tileOccupier) === RESERVED_HYPERSTRUCTURE_OCCUPIER_TYPE ||
     tileOccupier === TileOccupier.RealmRegularLevel1 ||
     tileOccupier === TileOccupier.RealmWonderLevel1 ||
     tileOccupier === TileOccupier.HyperstructureLevel1 ||
@@ -211,7 +214,7 @@ export const isTileOccupierChest = (tileOccupier: TileOccupier) => {
 };
 
 export const isTileOccupierReservedHyperstructure = (tileOccupier: TileOccupier) => {
-  return tileOccupier === TileOccupier.ReservedHyperstructure;
+  return Number(tileOccupier) === RESERVED_HYPERSTRUCTURE_OCCUPIER_TYPE;
 };
 
 export const hasTileOccupier = (tileOccupier: number | null | undefined) => {

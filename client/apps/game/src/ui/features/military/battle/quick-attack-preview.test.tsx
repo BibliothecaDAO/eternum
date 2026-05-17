@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   updateSelectedEntityId: vi.fn(),
   dispatchPendingWorldmapFxStart: vi.fn(),
   dispatchPendingWorldmapFxStop: vi.fn(),
+  getDirectionBetweenAdjacentHexes: vi.fn(),
   components: {
     Structure: Symbol("Structure"),
     ExplorerTroops: Symbol("ExplorerTroops"),
@@ -48,9 +49,9 @@ const mocks = vi.hoisted(() => ({
     attackerRelicEffects: [],
     targetRelicEffects: [],
     target: {
-      info: [],
+      info: [] as unknown[],
       id: 2,
-      targetType: 0,
+      targetType: 0 as number,
       structureCategory: null,
       hex: { x: 11, y: 10 },
       addressOwner: null,
@@ -179,7 +180,7 @@ vi.mock("@bibliothecadao/types", () => ({
     Explorer: "explorer",
     Structure: "structure",
   },
-  getDirectionBetweenAdjacentHexes: () => 0,
+  getDirectionBetweenAdjacentHexes: mocks.getDirectionBetweenAdjacentHexes,
   RESOURCE_PRECISION: 1,
   TickIds: {
     Armies: "armies",
@@ -205,6 +206,12 @@ const findPrimaryActionButton = (container: HTMLElement) => {
   ) as HTMLButtonElement | undefined;
 };
 
+const findDetailsButton = (container: HTMLElement) => {
+  return Array.from(container.querySelectorAll("button")).find((button) =>
+    /details/i.test(button.textContent ?? ""),
+  ) as HTMLButtonElement | undefined;
+};
+
 describe("QuickAttackPreview", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -223,7 +230,7 @@ describe("QuickAttackPreview", () => {
       attackerRelicEffects: [],
       targetRelicEffects: [],
       target: {
-        info: [],
+        info: [] as unknown[],
         id: 2,
         targetType: 0,
         structureCategory: null,
@@ -242,6 +249,10 @@ describe("QuickAttackPreview", () => {
     mocks.updateSelectedEntityId.mockClear();
     mocks.dispatchPendingWorldmapFxStart.mockClear();
     mocks.dispatchPendingWorldmapFxStop.mockClear();
+    mocks.getDirectionBetweenAdjacentHexes.mockImplementation(
+      (from: { col: number; row: number }, to: { col: number; row: number }) =>
+        from.col === to.col && from.row === to.row ? null : 0,
+    );
   });
 
   afterEach(async () => {
@@ -305,5 +316,101 @@ describe("QuickAttackPreview", () => {
     });
 
     expect(mocks.attackExplorerVsGuard).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses a separate direction hex for paired-layer spire attacks", async () => {
+    mocks.attackerStamina = {
+      amount: 50n,
+      updated_tick: 1n,
+    };
+    mocks.quickAttackTargetData = {
+      attackerRelicEffects: [],
+      targetRelicEffects: [],
+      target: {
+        info: [
+          {
+            ...mocks.attackerTroops,
+            stamina: {
+              amount: 50n,
+              updated_tick: 1n,
+            },
+          },
+        ],
+        id: 2,
+        targetType: 1,
+        structureCategory: null,
+        hex: { x: 10, y: 10 },
+        addressOwner: null,
+      },
+      targetResources: [],
+      isLoading: false,
+    };
+
+    await act(async () => {
+      root.render(
+        <QuickAttackPreview
+          attacker={{ type: "explorer" as never, id: 1 as never, hex: { x: 10, y: 10 } }}
+          target={{
+            type: "explorer" as never,
+            id: 2 as never,
+            hex: { x: 10, y: 10 },
+            directionHex: { x: 11, y: 10 },
+          }}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const actionButton = findPrimaryActionButton(container);
+
+    expect(actionButton).toBeDefined();
+    expect(actionButton?.disabled).toBe(false);
+
+    await act(async () => {
+      actionButton?.click();
+      await waitForAsyncWork();
+    });
+
+    expect(mocks.getDirectionBetweenAdjacentHexes).toHaveBeenCalledWith({ col: 10, row: 10 }, { col: 11, row: 10 });
+    expect(mocks.attackExplorerVsExplorer).toHaveBeenCalledWith({
+      signer: mocks.account,
+      aggressor_id: 1,
+      defender_id: 2,
+      defender_direction: 0,
+      steal_resources: [],
+    });
+  });
+
+  it("keeps paired-layer target context when opening attack details", async () => {
+    await act(async () => {
+      root.render(
+        <QuickAttackPreview
+          attacker={{ type: "explorer" as never, id: 1 as never, hex: { x: 10, y: 10 }, alt: true }}
+          target={{
+            type: "explorer" as never,
+            id: 2 as never,
+            hex: { x: 10, y: 10 },
+            directionHex: { x: 11, y: 10 },
+            alt: true,
+          }}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const detailsButton = findDetailsButton(container);
+
+    expect(detailsButton).toBeDefined();
+
+    await act(async () => {
+      detailsButton?.click();
+      await waitForAsyncWork();
+    });
+
+    expect(mocks.toggleModal).toHaveBeenCalledTimes(1);
+    expect(mocks.toggleModal.mock.calls[0][0].props).toMatchObject({
+      selected: { alt: true },
+      target: { alt: true, directionHex: { x: 11, y: 10 } },
+    });
   });
 });

@@ -102,4 +102,76 @@ describe("FastTravelScene lifecycle shell", () => {
     const methodBody = source.slice(methodStart, methodEnd);
     expect(methodBody).toContain("this.commitFastTravelMovement(hexCoords);");
   });
+
+  it("checks paired world spire traversal occupancy at the ethereal army origin", () => {
+    const source = readFastTravelSource();
+
+    const methodStart = source.indexOf("private openFastTravelSpireTravel(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodEnd = source.indexOf("private async syncPairedWorldSpireTile(", methodStart);
+    expect(methodEnd).toBeGreaterThan(methodStart);
+
+    const methodBody = source.slice(methodStart, methodEnd);
+    expect(methodBody).toContain("const destinationHex = resolveSpireTraversalDestinationHex(actionPath);");
+    expect(methodBody).toContain("getTileAt(this.dojo.components, false, destinationHex.col, destinationHex.row)");
+    expect(methodBody).toContain("this.syncPairedWorldSpireTile(destinationHex)");
+    expect(methodBody).toContain("targetHex: destinationHex");
+  });
+
+  it("navigates to the paired world destination after fast-travel spire traversal", () => {
+    const source = readFastTravelSource();
+
+    const methodStart = source.indexOf("private openFastTravelSpireTravel(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodEnd = source.indexOf("private async syncPairedWorldSpireTile(", methodStart);
+    expect(methodEnd).toBeGreaterThan(methodStart);
+
+    const methodBody = source.slice(methodStart, methodEnd);
+    expect(methodBody).toContain("destinationHex,");
+    expect(methodBody).toContain('navigateToLayer: "world"');
+  });
+
+  it("passes the ethereal layer into chest actions opened from fast travel", () => {
+    const source = readFastTravelSource();
+
+    const methodStart = source.indexOf("private openFastTravelChest(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodEnd = source.indexOf("private openFastTravelSpireTravel(", methodStart);
+    expect(methodEnd).toBeGreaterThan(methodStart);
+
+    const methodBody = source.slice(methodStart, methodEnd);
+    expect(methodBody).toContain("chestAlt: true");
+  });
+
+  it("clears the previous selected army preview before switching selection", () => {
+    const source = readFastTravelSource();
+
+    const methodStart = source.indexOf("private selectFastTravelArmy(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodEnd = source.indexOf("private refreshSelectedArmyActionPaths(", methodStart);
+    expect(methodEnd).toBeGreaterThan(methodStart);
+
+    const methodBody = source.slice(methodStart, methodEnd);
+    expect(methodBody.indexOf("this.clearFastTravelMovementPreview();")).toBeLessThan(
+      methodBody.indexOf("this.selectedArmyEntityId = selectedArmyId;"),
+    );
+  });
+
+  it("converts ethereal tile biome ids into BiomeType values before action-path resolution", () => {
+    const source = readFastTravelSource();
+
+    const methodStart = source.indexOf("private resolveFastTravelLayerState(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodEnd = source.indexOf("private applyFastTravelOccupierState(", methodStart);
+    expect(methodEnd).toBeGreaterThan(methodStart);
+
+    const methodBody = source.slice(methodStart, methodEnd);
+    expect(methodBody).toContain("resolveFastTravelTileBiomeType(tile.biome)");
+    expect(methodBody).not.toContain("Number(tile.biome) as unknown as BiomeType");
+  });
 });

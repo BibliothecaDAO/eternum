@@ -18,11 +18,14 @@ export const CombatModal = ({
     type: ActorType;
     id: ID;
     hex: { x: number; y: number };
+    alt?: boolean;
   };
   target: {
     type: ActorType;
     id: ID;
     hex: { x: number; y: number };
+    directionHex?: { x: number; y: number };
+    alt?: boolean;
   };
 }) => {
   const [activeTab, setActiveTab] = useState<ModalTab>(ModalTab.Attack);
@@ -51,7 +54,12 @@ export const CombatModal = ({
         <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)]">
           <Suspense fallback={<LoadingAnimation />}>
             {activeTab === ModalTab.Attack ? (
-              <AttackContainer attackerEntityId={selected.id} targetHex={target.hex} />
+              <AttackContainer
+                attackerEntityId={selected.id}
+                targetHex={target.hex}
+                targetAlt={target.alt}
+                targetDirectionHex={target.directionHex}
+              />
             ) : (
               <HelpContainer selected={selected} target={target} />
             )}

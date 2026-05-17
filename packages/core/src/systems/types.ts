@@ -69,6 +69,7 @@ export type ExplorerTroopsSystemUpdate = {
 
 export type StructureTileSystemUpdate = {
   entityId: ID;
+  alt?: boolean;
   structureName: string;
   hexCoords: HexPosition;
   structureType: StructureType;
@@ -111,6 +112,7 @@ export type StructureBuildingsSystemUpdate = {
 };
 
 export type TileSystemUpdate = {
+  alt?: boolean;
   hexCoords: HexPosition;
   removeExplored: boolean;
   biome: BiomeType;
@@ -153,8 +155,14 @@ export type QuestSystemUpdate = {
 };
 
 export type ChestSystemUpdate = {
+  alt?: boolean;
   occupierId: ID;
   hexCoords: HexPosition;
+};
+
+export type ChestRemovalSystemUpdate = {
+  alt?: boolean;
+  entityId: ID;
 };
 
 export type ReservedHyperstructureTileSystemUpdate = {

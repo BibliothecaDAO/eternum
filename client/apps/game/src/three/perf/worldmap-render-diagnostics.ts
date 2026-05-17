@@ -77,6 +77,7 @@ export type WorldmapForceRefreshReason =
   | "tile_overlap_repair"
   | "shortcut"
   | "army_dead"
+  | "army_layer_change"
   | "reconnect"
   | "manager_recovery";
 
@@ -176,6 +177,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     tile_overlap_repair: 0,
     shortcut: 0,
     army_dead: 0,
+    army_layer_change: 0,
     reconnect: 0,
     manager_recovery: 0,
   },

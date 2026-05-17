@@ -1,5 +1,6 @@
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { ModalContainer } from "@/ui/shared";
+import { DEFAULT_COORD_ALT } from "@bibliothecadao/eternum";
 import { ActorType, ID } from "@bibliothecadao/types";
 import { Suspense } from "react";
 import { ChestContainer } from "./chest-container";
@@ -7,6 +8,7 @@ import { ChestContainer } from "./chest-container";
 export const ChestModal = ({
   selected,
   chestHex,
+  chestAlt = DEFAULT_COORD_ALT,
 }: {
   selected: {
     type: ActorType;
@@ -14,6 +16,7 @@ export const ChestModal = ({
     hex: { x: number; y: number };
   };
   chestHex: { x: number; y: number };
+  chestAlt?: boolean;
 }) => {
   return (
     <ModalContainer size="large">
@@ -28,7 +31,7 @@ export const ChestModal = ({
         {/* Content */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)]">
           <Suspense fallback={<LoadingAnimation />}>
-            <ChestContainer explorerEntityId={selected.id} chestHex={chestHex} />
+            <ChestContainer explorerEntityId={selected.id} chestHex={chestHex} chestAlt={chestAlt} />
           </Suspense>
         </div>
       </div>

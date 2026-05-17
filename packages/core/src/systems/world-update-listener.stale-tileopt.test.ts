@@ -24,7 +24,9 @@ describe("Army.onTileUpdate stale-TileOpt suppression", () => {
 
     expect(handlerBody).toMatch(/components\.ExplorerTroops/);
     expect(handlerBody).toMatch(/explorerTroops\?\.coord/);
-    expect(handlerBody).toMatch(/!== currentState\.col \|\| .*!== currentState\.row/);
+    expect(handlerBody).toMatch(/explorerCol !== currentState\.col/);
+    expect(handlerBody).toMatch(/explorerRow !== currentState\.row/);
+    expect(handlerBody).toMatch(/explorerAlt !== currentState\.alt/);
   });
 
   it("runs the cross-check before emitting the tileopt_component_received phase", () => {

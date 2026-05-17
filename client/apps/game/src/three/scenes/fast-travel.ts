@@ -24,6 +24,7 @@ import {
 } from "@bibliothecadao/eternum";
 import {
   ActorType,
+  BiomeIdToType,
   BiomeType,
   ContractAddress,
   HexEntityInfo,
@@ -62,7 +63,7 @@ import {
 } from "./fast-travel-chunk-loading-runtime";
 import { createFastTravelRenderAssets, type FastTravelRenderAssets } from "./fast-travel-render-assets";
 import { resetFastTravelRuntimeState } from "./fast-travel-runtime-lifecycle";
-import { resolveSpireTraversalAction } from "./worldmap-spire-travel-policy";
+import { resolveSpireTraversalAction, resolveSpireTraversalDestinationHex } from "./worldmap-spire-travel-policy";
 import { WarpTravel, type WarpTravelLifecycleAdapter } from "./warp-travel";
 
 interface FastTravelLayerState {
@@ -72,6 +73,11 @@ interface FastTravelLayerState {
   armyHexes: Map<number, Map<number, HexEntityInfo>>;
   structureHexes: Map<number, Map<number, HexEntityInfo>>;
   chestHexes: Map<number, Map<number, HexEntityInfo>>;
+}
+
+function resolveFastTravelTileBiomeType(biomeId: number): BiomeType {
+  const biome = BiomeIdToType[biomeId];
+  return biome === BiomeType.None ? BiomeType.Grassland : biome || BiomeType.Grassland;
 }
 
 export default class FastTravelScene extends WarpTravel {
@@ -562,7 +568,7 @@ export default class FastTravelScene extends WarpTravel {
         layerState.exploredTiles,
         normalizedHex.col,
         normalizedHex.row,
-        Number(tile.biome) as unknown as BiomeType,
+        resolveFastTravelTileBiomeType(tile.biome),
       );
       this.applyFastTravelOccupierState(layerState, normalizedHex, tile);
     });
@@ -800,9 +806,9 @@ export default class FastTravelScene extends WarpTravel {
       return;
     }
 
+    this.clearFastTravelMovementPreview();
     this.selectedArmyEntityId = selectedArmyId;
     this.previewTargetHexKey = null;
-    this.clearFastTravelMovementPreview();
     this.syncSelectedArmyFeedback();
     this.refreshSelectedArmyActionPaths(selectedArmyId);
 
@@ -940,6 +946,7 @@ export default class FastTravelScene extends WarpTravel {
           hex: { x: selectedHex.col, y: selectedHex.row },
         },
         chestHex: { x: targetHex.col, y: targetHex.row },
+        chestAlt: true,
       }),
     );
   }
@@ -952,14 +959,15 @@ export default class FastTravelScene extends WarpTravel {
     const selectedPath = actionPath.map((path) => path.hex);
     const selectedHex = selectedPath[0];
     const targetHex = selectedPath[selectedPath.length - 1];
-    if (!selectedHex || !targetHex) {
+    const destinationHex = resolveSpireTraversalDestinationHex(actionPath);
+    if (!selectedHex || !targetHex || !destinationHex) {
       return;
     }
 
     useUIStore.getState().setSelectedHex({ col: selectedHex.col, row: selectedHex.row });
-    const pairedWorldTile = getTileAt(this.dojo.components, false, targetHex.col, targetHex.row);
-    if (!pairedWorldTile && !options.hasSyncedPairedWorldTile) {
-      void this.syncPairedWorldSpireTile(targetHex)
+    const pairedWorldTile = getTileAt(this.dojo.components, false, destinationHex.col, destinationHex.row);
+    if (this.shouldSyncPairedWorldSpireTraversalTile(pairedWorldTile) && !options.hasSyncedPairedWorldTile) {
+      void this.syncPairedWorldSpireTile(destinationHex)
         .then(() =>
           this.openFastTravelSpireTravel(actionPath, selectedArmyId, {
             hasSyncedPairedWorldTile: true,
@@ -978,7 +986,7 @@ export default class FastTravelScene extends WarpTravel {
     }
 
     const traversalAction = resolveSpireTraversalAction({
-      targetHex,
+      targetHex: destinationHex,
       etherealTile: pairedWorldTile,
       isOpposingArmy: (targetArmyId) => this.canAttackSpireTraversalArmy(selectedArmyId, targetArmyId),
     });
@@ -996,6 +1004,7 @@ export default class FastTravelScene extends WarpTravel {
             type: ActorType.Explorer,
             id: traversalAction.targetArmyId,
             hex: new Position({ x: traversalAction.targetHex.col, y: traversalAction.targetHex.row }).getContract(),
+            directionHex: { x: targetHex.col, y: targetHex.row },
             alt: false,
           },
         }),
@@ -1012,10 +1021,28 @@ export default class FastTravelScene extends WarpTravel {
       createElement(SpireTravelModal, {
         onTravelThroughSpire: () =>
           this.commitFastTravelArmyAction(actionPath, selectedArmyId, {
+            destinationHex,
             navigateToLayer: "world",
           }),
       }),
     );
+  }
+
+  private shouldSyncPairedWorldSpireTraversalTile(pairedWorldTile: ReturnType<typeof getTileAt> | undefined): boolean {
+    if (!pairedWorldTile) {
+      return true;
+    }
+
+    if (
+      pairedWorldTile.occupier_is_structure ||
+      Number(pairedWorldTile.occupier_id) === 0 ||
+      !this.isExplorerOccupier(pairedWorldTile.occupier_type)
+    ) {
+      return false;
+    }
+
+    const ownerAddress = this.resolveArmyOwnerAddress(pairedWorldTile.occupier_id);
+    return ownerAddress === 0n;
   }
 
   private async syncPairedWorldSpireTile(targetHex: HexPosition): Promise<void> {
@@ -1062,7 +1089,7 @@ export default class FastTravelScene extends WarpTravel {
   private commitFastTravelArmyAction(
     actionPath: ActionPath[],
     selectedArmyId: ID,
-    options: { navigateToLayer?: "world" } = {},
+    options: { destinationHex?: HexPosition; navigateToLayer?: "world" } = {},
   ): void {
     const account = useAccountStore.getState().account;
     if (!account) {
@@ -1074,12 +1101,13 @@ export default class FastTravelScene extends WarpTravel {
     const currentArmiesTick = getBlockTimestamp().currentArmiesTick;
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedArmyId, true);
     const targetHex = actionPath[actionPath.length - 1]?.hex;
+    const destinationHex = options.destinationHex ?? targetHex;
 
     armyActionManager
       .moveArmy(account, actionPath, isTravelAction, currentArmiesTick)
       .then(() => {
-        if (options.navigateToLayer === "world" && targetHex) {
-          navigateToStructure(targetHex.col, targetHex.row, "map");
+        if (options.navigateToLayer === "world" && destinationHex) {
+          navigateToStructure(destinationHex.col, destinationHex.row, "map");
           return;
         }
 

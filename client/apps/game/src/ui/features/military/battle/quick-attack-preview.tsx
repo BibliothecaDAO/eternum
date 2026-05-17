@@ -46,6 +46,7 @@ interface ActorSummary {
   type: ActorType;
   id: ID;
   hex: { x: number; y: number };
+  directionHex?: { x: number; y: number };
   alt?: boolean;
 }
 
@@ -344,6 +345,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     try {
       setIsSubmitting(true);
 
+      const directionTargetHex = target.directionHex ?? target.hex;
       pendingFxKey = createPendingWorldmapFxKey("attack");
       dispatchPendingWorldmapFxStart({
         key: pendingFxKey,
@@ -351,11 +353,14 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         attackerId: attacker.id,
         defenderId: targetData.id,
         attackerHex: { col: selectedHex.col, row: selectedHex.row },
-        targetHex: { col: target.hex.x, row: target.hex.y },
+        targetHex: { col: directionTargetHex.x, row: directionTargetHex.y },
       });
 
       if (attackerType === AttackerType.Structure) {
-        const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
+        const direction = getDirectionBetweenAdjacentHexes(selectedHex, {
+          col: directionTargetHex.x,
+          row: directionTargetHex.y,
+        });
         const guardSlot = structureGuards[0]?.slot;
         if (direction === null || guardSlot === undefined) return;
 
@@ -368,7 +373,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           explorer_direction: direction,
         });
       } else if (targetData.targetType === TargetType.Army) {
-        const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
+        const direction = getDirectionBetweenAdjacentHexes(selectedHex, {
+          col: directionTargetHex.x,
+          row: directionTargetHex.y,
+        });
         if (direction === null) return;
 
         playUnitCommandSound("attack");
@@ -380,7 +388,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           steal_resources: targetResources,
         });
       } else {
-        const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
+        const direction = getDirectionBetweenAdjacentHexes(selectedHex, {
+          col: directionTargetHex.x,
+          row: directionTargetHex.y,
+        });
         if (direction === null) return;
 
         playUnitCommandSound("attack");
@@ -407,8 +418,14 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const handleShowDetails = () => {
     toggleModal(
       <CombatModal
-        selected={{ type: attacker.type, id: attacker.id, hex: attacker.hex }}
-        target={{ type: target.type, id: target.id, hex: target.hex }}
+        selected={{ type: attacker.type, id: attacker.id, hex: attacker.hex, alt: attacker.alt }}
+        target={{
+          type: target.type,
+          id: target.id,
+          hex: target.hex,
+          directionHex: target.directionHex,
+          alt: target.alt,
+        }}
       />,
     );
   };

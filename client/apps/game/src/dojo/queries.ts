@@ -5,7 +5,7 @@ import { Component, Metadata, Schema, getComponentValue } from "@dojoengine/recs
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
-import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
+import { LogicalOperator } from "@dojoengine/torii-wasm";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { env } from "../../env";
 import {
@@ -57,6 +57,115 @@ const clearConfigFetchCache = () => {
 const isValidId = (id: unknown): id is ID => typeof id === "number" && Number.isFinite(id);
 const hasValidPosition = (position: HexPosition | undefined): position is HexPosition =>
   !!position && Number.isFinite(position.col) && Number.isFinite(position.row);
+
+const STRUCTURE_BASE_MODELS = ["s1_eternum-Structure"];
+const OPTIONAL_STRUCTURE_MODEL_GROUPS = [
+  ["s1_eternum-Resource", "s1_eternum-StructureBuildings"],
+  ["s1_eternum-ResourceArrival"],
+  ["s1_eternum-ProductionBoostBonus"],
+  ["s1_eternum-VillageTroop"],
+  // Needed to inspect hyperstructure shareholder distribution in Blitz worlds.
+  ["s1_eternum-HyperstructureShareholders", "s1_eternum-Hyperstructure"],
+] as const;
+
+const isIgnorableOptionalStructureSyncError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    message.includes("no such table") ||
+    message.includes("no such column") ||
+    message.includes("no rows returned by a query that expected to return at least one row")
+  );
+};
+
+const syncStructureEntityModels = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  structureEntityIds: ID[],
+) => {
+  await debouncedGetEntitiesFromTorii(client, components, structureEntityIds, STRUCTURE_BASE_MODELS);
+
+  await Promise.all(
+    OPTIONAL_STRUCTURE_MODEL_GROUPS.map(async (modelGroup) => {
+      try {
+        await debouncedGetEntitiesFromTorii(client, components, structureEntityIds, [...modelGroup]);
+      } catch (error) {
+        if (!isIgnorableOptionalStructureSyncError(error)) {
+          throw error;
+        }
+
+        console.warn("[torii] Skipping optional structure model sync for unsupported schema", {
+          error,
+          modelGroup,
+        });
+      }
+    }),
+  );
+};
+
+type ConfigModelGroup = {
+  keys: Array<string | undefined>;
+  models: string[];
+  optional?: boolean;
+};
+
+const CORE_CONFIG_MODEL_GROUPS: ConfigModelGroup[] = [{ keys: [undefined], models: ["s1_eternum-WorldConfig"] }];
+
+const OPTIONAL_CONFIG_MODEL_GROUPS: ConfigModelGroup[] = [
+  { keys: [undefined], models: ["s1_eternum-HyperstructureGlobals"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-WeightConfig"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-ResourceFactoryConfig"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-BuildingCategoryConfig"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-StructureLevelConfig"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-QuestLevels"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-MMRGameMeta"], optional: true },
+  { keys: [undefined, undefined], models: ["s1_eternum-ResourceList"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-HyperstrtConstructConfig"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-ResourceBridgeWtlConfig"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-SeasonPrize"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-SeasonEnded"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-AddressName"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-PlayerRegisteredPoints"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-BlitzSettlement"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-BlitzRealmPlayerRegister"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-BlitzEntryTokenRegister"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-BlitzRealmSettleFinish"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-PlayersRankTrial"], optional: true },
+  { keys: [undefined], models: ["s1_eternum-PlayersRankFinal"], optional: true },
+  { keys: [undefined, undefined], models: ["s1_eternum-PlayerRank"], optional: true },
+  { keys: [undefined, undefined], models: ["s1_eternum-RankPrize"], optional: true },
+];
+
+const fetchConfigModelGroup = async <S extends Schema>(
+  client: ToriiClient,
+  components: Component<S, Metadata, undefined>[],
+  group: ConfigModelGroup,
+) => {
+  const query = {
+    Keys: {
+      keys: group.keys,
+      pattern_matching: "FixedLen" as PatternMatching,
+      models: group.models,
+    },
+  };
+
+  try {
+    return await getEntities(client, query, components, [], group.models, EVENT_QUERY_LIMIT, false);
+  } catch (error) {
+    if (!group.optional || !isIgnorableOptionalStructureSyncError(error)) {
+      console.warn("[torii] Required config model sync failed", {
+        error,
+        models: group.models,
+      });
+      throw error;
+    }
+
+    console.warn("[torii] Skipping optional config model sync for unsupported schema", {
+      error,
+      models: group.models,
+    });
+    return [];
+  }
+};
 
 export const getTilesForPositionsFromTorii = async <S extends Schema>(
   client: ToriiClient,
@@ -114,18 +223,6 @@ export const getStructuresDataFromTorii = async (
     return;
   }
 
-  const playerStructuresModels = [
-    "s1_eternum-Structure",
-    "s1_eternum-Resource",
-    "s1_eternum-VillageTroop",
-    "s1_eternum-StructureBuildings",
-    "s1_eternum-ResourceArrival",
-    "s1_eternum-ProductionBoostBonus",
-    // needed to check for hyperstructure shareholders 100% in blitz mode
-    "s1_eternum-HyperstructureShareholders",
-    "s1_eternum-Hyperstructure",
-  ];
-
   const runOnComplete = onComplete
     ? (() => {
         let completedQueries = 0;
@@ -139,13 +236,11 @@ export const getStructuresDataFromTorii = async (
     : undefined;
 
   // Create promises for all queries without awaiting them
-  const structuresPromise = debouncedGetEntitiesFromTorii(
+  const structuresPromise = syncStructureEntityModels(
     client,
     components as any,
     structuresToSync.map((structure) => structure.entityId),
-    playerStructuresModels,
-    runOnComplete,
-  );
+  ).finally(runOnComplete);
 
   const armiesPromise = debouncedGetOwnedArmiesFromTorii(
     client,
@@ -200,64 +295,13 @@ export const getConfigFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
 ) => {
-  const oneKeyConfigModels = [
-    "s1_eternum-WorldConfig",
-    "s1_eternum-HyperstrtConstructConfig",
-    "s1_eternum-HyperstructureGlobals",
-    "s1_eternum-WeightConfig",
-    "s1_eternum-ResourceFactoryConfig",
-    "s1_eternum-BuildingCategoryConfig",
-    "s1_eternum-ResourceBridgeWtlConfig",
-    "s1_eternum-StructureLevelConfig",
-    "s1_eternum-SeasonPrize",
-    "s1_eternum-SeasonEnded",
-    "s1_eternum-QuestLevels",
-    "s1_eternum-AddressName",
-    "s1_eternum-PlayerRegisteredPoints",
-    "s1_eternum-BlitzSettlement",
-    "s1_eternum-BlitzEntryTokenRegister",
-    // Blitz prize models (single key)
-    "s1_eternum-PlayersRankTrial",
-    "s1_eternum-PlayersRankFinal",
-    "s1_eternum-MMRGameMeta",
-  ];
-
-  const twoKeyConfigModels = [
-    "s1_eternum-ResourceList",
-    // Blitz prize models (two keys)
-    "s1_eternum-PlayerRank",
-    "s1_eternum-RankPrize",
-  ];
-
-  const configModels = [...oneKeyConfigModels, ...twoKeyConfigModels];
-  // todo: only 1 undefined clause variable len
-  const configClauses: Clause[] = [
-    {
-      Keys: {
-        keys: [undefined],
-        pattern_matching: "FixedLen",
-        models: oneKeyConfigModels,
-      },
-    },
-    {
-      Keys: {
-        keys: [undefined, undefined],
-        pattern_matching: "FixedLen",
-        models: twoKeyConfigModels,
-      },
-    },
-  ];
-
-  const fetchConfig = () =>
-    getEntities(
-      client,
-      { Composite: { operator: "Or", clauses: configClauses } },
-      components,
-      [],
-      configModels,
-      EVENT_QUERY_LIMIT,
-      false,
+  const fetchConfig = async () => {
+    const configGroups = [...CORE_CONFIG_MODEL_GROUPS, ...OPTIONAL_CONFIG_MODEL_GROUPS];
+    const groupResults = await Promise.all(
+      configGroups.map((group) => fetchConfigModelGroup(client, components, group)),
     );
+    return groupResults.flat();
+  };
 
   // Per issue #4653: config data is static within a chain/world deployment and
   // most config models are also covered by GLOBAL_STREAM_CLAUSE's initial state

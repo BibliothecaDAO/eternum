@@ -334,7 +334,7 @@ import {
 } from "../perf/worldmap-render-diagnostics";
 import { recordRendererColorUploadBytes, recordRendererMatrixUploadBytes } from "../perf/renderer-gpu-telemetry";
 import { resolveExploredHexTransform } from "./worldmap-explored-hex-transform-policy";
-import { resolveSpireTraversalAction } from "./worldmap-spire-travel-policy";
+import { resolveSpireTraversalAction, resolveSpireTraversalDestinationHex } from "./worldmap-spire-travel-policy";
 import { buildVisibleTerrainMembership, type VisibleTerrainInstanceRef } from "./worldmap-visible-terrain-membership";
 import { resolveVisibleTerrainReconcileMode } from "./worldmap-visible-terrain-reconcile-policy";
 import { createWorldmapTerrainFingerprint } from "./worldmap-terrain-fingerprint";
@@ -538,6 +538,10 @@ type DirectionalPrefetchAnchor = {
   forwardChunkKey: string;
   movementAxis: "x" | "z";
   movementSign: -1 | 1;
+};
+type ChestRemovalSystemUpdate = {
+  alt?: boolean;
+  entityId: ID;
 };
 type WorldmapCameraTransitionStatus = "idle" | "transitioning";
 
@@ -1551,6 +1555,7 @@ export default class WorldmapScene extends WarpTravel {
           shouldProcessLayerUpdate: (troopsUpdate) => this.isWorldLayerArmyUpdate(troopsUpdate),
           cancelPendingArmyRemoval: (entityId, source) => this.cancelPendingArmyRemoval(entityId, source),
           scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
+          scheduleLayerRemoval: (entityId) => this.removeWorldLayerArmyAfterLayerChange(entityId),
           updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
           updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
           recordLiveArmyPresenceUpdate: (update) => this.recordAuthoritativeArmyLiveUpdate(update.entityId),
@@ -1641,6 +1646,10 @@ export default class WorldmapScene extends WarpTravel {
   private registerTileWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Tile.onTileUpdate((value) => {
+        if (!this.isWorldLayerTileUpdate(value)) {
+          return;
+        }
+
         this.incrementToriiBoundsCounter("tiles");
         void this.trackTileHydrationUpdate(value, this.updateExploredHex(value));
       }),
@@ -1648,6 +1657,10 @@ export default class WorldmapScene extends WarpTravel {
 
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Structure.onTileUpdate(async (value) => {
+        if (!this.isWorldLayerTileUpdate(value)) {
+          return;
+        }
+
         this.incrementToriiBoundsCounter("structureTiles");
         const positions = this.updateStructureHexes(value);
 
@@ -1700,13 +1713,23 @@ export default class WorldmapScene extends WarpTravel {
   private registerChestWorldUpdateSubscriptions(): void {
     this.addWorldUpdateSubscription(
       this.worldUpdateListener.Chest.onTileUpdate((update: ChestSystemUpdate) => {
+        if (!this.isWorldLayerTileUpdate(update)) {
+          return;
+        }
+
         this.updateChestHexes(update);
         this.chestManager.onUpdate(update);
       }),
     );
     this.addWorldUpdateSubscription(
-      this.worldUpdateListener.Chest.onDeadChest((entityId) => {
-        this.deleteChest(entityId);
+      this.worldUpdateListener.Chest.onDeadChest((rawUpdate) => {
+        const update = rawUpdate as unknown as ChestRemovalSystemUpdate;
+
+        if (!this.isWorldLayerTileUpdate(update)) {
+          return;
+        }
+
+        this.deleteChest(update.entityId);
       }),
     );
   }
@@ -2390,6 +2413,10 @@ export default class WorldmapScene extends WarpTravel {
     return update.alt !== true;
   }
 
+  private isWorldLayerTileUpdate(update: { alt?: boolean }): boolean {
+    return update.alt !== true;
+  }
+
   // methods needed to add worldmap specific behavior to the click events
   protected onHexagonMouseMove(hex: { hexCoords: HexPosition; position: Vector3 } | null): void {
     if (hex === null) {
@@ -2745,13 +2772,16 @@ export default class WorldmapScene extends WarpTravel {
 
       // Get the target position for the effect
       const targetHex = actionPath[actionPath.length - 1].hex;
+      const navigationHex =
+        actionType === ActionType.SpireTravel ? resolveSpireTraversalDestinationHex(actionPath) : targetHex;
+      const movementTargetHex = navigationHex ?? targetHex;
       const position = getWorldPositionForHex({
         col: targetHex.col - FELT_CENTER(),
         row: targetHex.row - FELT_CENTER(),
       });
 
       // Play effect based on action type: compass for exploring, travel for moving
-      const key = this.resolveContractHexKey(targetHex);
+      const key = this.resolveContractHexKey(movementTargetHex);
       const effectType = isTravelAction ? "travel" : "compass";
       const effectLabel = isTravelAction ? "Traveling" : "Exploring";
       let cleanup = () => {};
@@ -2849,8 +2879,8 @@ export default class WorldmapScene extends WarpTravel {
           this.arrivalGhostManager.upsertLocalArrivalGhost({
             entityId: selectedEntityId,
             hexCoords: {
-              col: targetHex.col - FELT_CENTER(),
-              row: targetHex.row - FELT_CENTER(),
+              col: movementTargetHex.col - FELT_CENTER(),
+              row: movementTargetHex.row - FELT_CENTER(),
             },
             sourceScene: ghostSource.sourceScene,
             visualStyle: resolveArrivalGhostVisualStyle({
@@ -2874,8 +2904,8 @@ export default class WorldmapScene extends WarpTravel {
         entityId: selectedEntityId,
         details: {
           actionType,
-          targetCol: targetHex.col,
-          targetRow: targetHex.row,
+          targetCol: movementTargetHex.col,
+          targetRow: movementTargetHex.row,
         },
       });
       if (actionType === ActionType.Explore) {
@@ -2898,7 +2928,7 @@ export default class WorldmapScene extends WarpTravel {
       // Pre-compute the optimistic movement plan in parallel with the tx so the
       // submitted tx hash can start animation without waiting for provider
       // confirmation or Torii's authoritative TileOpt update.
-      const destPosition = new Position({ x: targetHex.col, y: targetHex.row });
+      const destPosition = new Position({ x: movementTargetHex.col, y: movementTargetHex.row });
       this.pendingMovementPlans.set(
         selectedEntityId,
         this.armyManager.computeMovementPlan(selectedEntityId, destPosition).catch((error) => {
@@ -2941,8 +2971,8 @@ export default class WorldmapScene extends WarpTravel {
           if (txHash && this.pendingArmyMovements.has(selectedEntityId)) {
             this.handleSubmittedArmyMovementTx({ entityId: selectedEntityId, txHash });
           }
-          if (actionType === ActionType.SpireTravel) {
-            navigateToStructure(targetHex.col, targetHex.row, "travel");
+          if (actionType === ActionType.SpireTravel && navigationHex) {
+            navigateToStructure(navigationHex.col, navigationHex.row, "travel");
           }
           // Monitor memory usage after army movement completion
           this.memoryMonitor?.getCurrentStats(`worldmap-moveArmy-complete-${selectedEntityId}`);
@@ -2994,14 +3024,15 @@ export default class WorldmapScene extends WarpTravel {
     const selectedPath = actionPath.map((path) => path.hex);
     const selectedHex = selectedPath[0];
     const targetHex = selectedPath[selectedPath.length - 1];
-    if (!selectedHex || !targetHex) {
+    const destinationHex = resolveSpireTraversalDestinationHex(actionPath);
+    if (!selectedHex || !targetHex || !destinationHex) {
       return;
     }
 
     const selected = this.getHexagonEntity(selectedHex);
-    const etherealTile = getTileAt(this.dojo.components, true, targetHex.col, targetHex.row);
+    const etherealTile = getTileAt(this.dojo.components, true, destinationHex.col, destinationHex.row);
     if (this.shouldSyncEtherealSpireTraversalTile(etherealTile) && !options.hasSyncedEtherealTile) {
-      void this.syncEtherealSpireTraversalTile(targetHex)
+      void this.syncEtherealSpireTraversalTile(destinationHex)
         .then(() =>
           this.onArmySpireTravel(actionPath, selectedEntityId, {
             hasSyncedEtherealTile: true,
@@ -3020,7 +3051,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const traversalAction = resolveSpireTraversalAction({
-      targetHex,
+      targetHex: destinationHex,
       etherealTile,
       isOpposingArmy: (targetArmyId) => this.canAttackSpireTraversalArmy(selectedEntityId, targetArmyId),
     });
@@ -3035,6 +3066,7 @@ export default class WorldmapScene extends WarpTravel {
         type: ActorType.Explorer,
         id: traversalAction.targetArmyId,
         hex: new Position({ x: traversalAction.targetHex.col, y: traversalAction.targetHex.row }).getContract(),
+        directionHex: { x: targetHex.col, y: targetHex.row },
         alt: true,
       };
 
@@ -4451,6 +4483,16 @@ export default class WorldmapScene extends WarpTravel {
     this.clearPendingArmyMovement(entityId);
   }
 
+  private removeWorldLayerArmyAfterLayerChange(entityId: ID): void {
+    if (!this.armiesPositions.has(entityId) && !this.armyManager.getArmy(entityId)) {
+      return;
+    }
+
+    this.deleteArmy(entityId, { playDefeatFx: false });
+    this.removeEntityFromTracking(entityId);
+    this.requestChunkRefresh(true, "army_layer_change");
+  }
+
   private resolveSupersededPendingArmyRemoval(
     incomingEntityId: ID,
     incomingOwnerAddress: bigint | undefined,
@@ -4838,6 +4880,10 @@ export default class WorldmapScene extends WarpTravel {
 
   // update chest hexes on the map
   public updateChestHexes(update: ChestSystemUpdate) {
+    if (!this.isWorldLayerTileUpdate(update)) {
+      return;
+    }
+
     const {
       hexCoords: { col, row },
       occupierId,
@@ -4855,6 +4901,10 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
+    if (!this.isWorldLayerTileUpdate(update)) {
+      return;
+    }
+
     const { hexCoords, removeExplored, biome } = update;
 
     const normalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
@@ -7199,6 +7249,10 @@ export default class WorldmapScene extends WarpTravel {
       const tileOpt = getComponentValue(tileOptComponent, entity);
       const tile = tileOpt ? tileOptToTile(tileOpt) : undefined;
       if (!tile) {
+        continue;
+      }
+
+      if (tile.alt === true) {
         continue;
       }
 

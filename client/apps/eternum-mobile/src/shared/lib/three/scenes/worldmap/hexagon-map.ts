@@ -20,6 +20,23 @@ import { SelectionManager } from "../../managers/selection-manager";
 import { createHexagonShape } from "../../utils/hexagon-geometry";
 import { getHexagonCoordinates, getWorldPositionForHex, HEX_SIZE } from "../../utils/utils";
 
+type ChestRemovalUpdate = {
+  alt?: boolean;
+  entityId: number;
+};
+
+function isWorldLayerUpdate(update: { alt?: boolean }): boolean {
+  return update.alt !== true;
+}
+
+function normalizeChestRemovalUpdate(update: number | ChestRemovalUpdate): ChestRemovalUpdate {
+  if (typeof update === "number") {
+    return { entityId: update };
+  }
+
+  return update;
+}
+
 export class HexagonMap {
   // === STATIC ASSETS & CONSTANTS ===
   private static readonly MAX_HEX_CAPACITY = 5000;
@@ -128,17 +145,48 @@ export class HexagonMap {
   }
 
   private setupSystemListeners(): void {
-    this.systemManager.Tile.onTileUpdate((value) => this.biomesManager.handleTileUpdate(value));
-    this.systemManager.Army.onTileUpdate((update) => this.armyManager.handleSystemUpdate(update));
+    this.systemManager.Tile.onTileUpdate((update) => {
+      if (!isWorldLayerUpdate(update)) {
+        return;
+      }
+
+      this.biomesManager.handleTileUpdate(update);
+    });
+    this.systemManager.Army.onTileUpdate((update) => {
+      if (!isWorldLayerUpdate(update)) {
+        return;
+      }
+
+      this.armyManager.handleSystemUpdate(update);
+    });
     this.systemManager.Army.onExplorerTroopsUpdate((update) => this.armyManager.handleExplorerTroopsUpdate(update));
     this.systemManager.Army.onDeadArmy((entityId) => this.armyManager.deleteArmy(entityId));
-    this.systemManager.Structure.onTileUpdate((update) => this.structureManager.handleSystemUpdate(update));
+    this.systemManager.Structure.onTileUpdate((update) => {
+      if (!isWorldLayerUpdate(update)) {
+        return;
+      }
+
+      this.structureManager.handleSystemUpdate(update);
+    });
     this.systemManager.Structure.onStructureUpdate((update) => this.structureManager.handleStructureUpdate(update));
     this.systemManager.Structure.onStructureBuildingsUpdate((update) =>
       this.structureManager.handleBuildingUpdate(update),
     );
-    this.systemManager.Chest.onTileUpdate((update) => this.chestManager.handleSystemUpdate(update));
-    this.systemManager.Chest.onDeadChest((entityId) => this.chestManager.deleteChest(entityId));
+    this.systemManager.Chest.onTileUpdate((update) => {
+      if (!isWorldLayerUpdate(update)) {
+        return;
+      }
+
+      this.chestManager.handleSystemUpdate(update);
+    });
+    this.systemManager.Chest.onDeadChest((rawUpdate) => {
+      const update = normalizeChestRemovalUpdate(rawUpdate as unknown as number | ChestRemovalUpdate);
+      if (!isWorldLayerUpdate(update)) {
+        return;
+      }
+
+      this.chestManager.deleteChest(update.entityId);
+    });
     this.systemManager.ExplorerReward.onExplorerRewardEventUpdate((update) => this.handleExplorerRewardEvent(update));
   }
 

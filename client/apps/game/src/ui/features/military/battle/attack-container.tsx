@@ -17,9 +17,13 @@ enum AttackType {
 export const AttackContainer = ({
   attackerEntityId,
   targetHex,
+  targetAlt,
+  targetDirectionHex,
 }: {
   attackerEntityId: ID;
   targetHex: { x: number; y: number };
+  targetAlt?: boolean;
+  targetDirectionHex?: { x: number; y: number };
 }) => {
   const [attackType, setAttackType] = useState<AttackType>(AttackType.Combat);
   const mode = useGameModeConfig();
@@ -27,6 +31,7 @@ export const AttackContainer = ({
   const { attackerRelicEffects, targetRelicEffects, target, targetResources, isLoading } = useAttackTargetData(
     attackerEntityId,
     targetHex,
+    targetAlt,
   );
 
   return (
@@ -77,6 +82,7 @@ export const AttackContainer = ({
                   targetResources={targetResources}
                   attackerActiveRelicEffects={attackerRelicEffects}
                   targetActiveRelicEffects={targetRelicEffects}
+                  directionHex={targetDirectionHex}
                 />
               ) : (
                 <RaidContainer

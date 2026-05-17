@@ -186,6 +186,15 @@ describe("worldmap-render-diagnostics", () => {
     expect(Number.isNaN(snapshot.forceRefreshReasons.deferred_transition_tile)).toBe(false);
   });
 
+  it("increments army_layer_change reason without NaN corruption", () => {
+    incrementWorldmapForceRefreshReason("army_layer_change");
+
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    expect(snapshot.forceRefreshReasons).toHaveProperty("army_layer_change", 1);
+    expect(Number.isNaN(snapshot.forceRefreshReasons.army_layer_change)).toBe(false);
+  });
+
   it("initializes all forceRefreshReasons keys as finite numbers", () => {
     const snapshot = snapshotWorldmapRenderDiagnostics();
 

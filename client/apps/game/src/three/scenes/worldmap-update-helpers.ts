@@ -11,6 +11,7 @@ export type PendingArmyRemovalCancelSource =
 type ExplorerTroopsUpdateHandlers = {
   cancelPendingArmyRemoval: (entityId: ID, source: PendingArmyRemovalCancelSource) => void;
   scheduleArmyRemoval: (entityId: ID, reason: "tile" | "zero") => void;
+  scheduleLayerRemoval?: (entityId: ID, reason: "layer_change") => void;
   updateArmyHexes: (update: ExplorerTroopsSystemUpdate) => void;
   updateArmyFromExplorerTroopsUpdate: (update: ExplorerTroopsSystemUpdate) => void;
   recordLiveArmyPresenceUpdate?: (update: ExplorerTroopsSystemUpdate) => void;
@@ -25,6 +26,7 @@ export function processExplorerTroopsUpdate(
   handlers: ExplorerTroopsUpdateHandlers,
 ): void {
   if (handlers.shouldProcessLayerUpdate && !handlers.shouldProcessLayerUpdate(update)) {
+    handlers.scheduleLayerRemoval?.(update.entityId, "layer_change");
     return;
   }
 

@@ -81,4 +81,25 @@ describe("processExplorerTroopsUpdate", () => {
 
     expect(callOrder).toEqual(["hexes", "army", "live-signal", "pending-clear", "recovery"]);
   });
+
+  it("schedules world-layer removal when a live army update moves to another layer", () => {
+    const scheduleLayerRemoval = vi.fn();
+    const update = {
+      alt: true,
+      entityId: 11,
+      troopCount: 20,
+      hexCoords: { col: 2103, row: 2104 },
+    } as any;
+
+    processExplorerTroopsUpdate(update, {
+      cancelPendingArmyRemoval: vi.fn(),
+      scheduleArmyRemoval: vi.fn(),
+      updateArmyHexes: vi.fn(),
+      updateArmyFromExplorerTroopsUpdate: vi.fn(),
+      shouldProcessLayerUpdate: () => false,
+      scheduleLayerRemoval,
+    });
+
+    expect(scheduleLayerRemoval).toHaveBeenCalledWith(11, "layer_change");
+  });
 });

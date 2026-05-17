@@ -11,6 +11,9 @@ import { getHyperstructureProgress } from "../utils";
 import { PROGRESS_FINAL_THRESHOLD, PROGRESS_HALF_THRESHOLD } from "../utils/constants";
 import { StructureProgress } from "./types";
 
+const RESERVED_HYPERSTRUCTURE_OCCUPIER_TYPE =
+  (TileOccupier as typeof TileOccupier & { ReservedHyperstructure?: number }).ReservedHyperstructure ?? 39;
+
 export const getStructureStage = (structureType: StructureType, entityId: ID, components: ClientComponents): number => {
   if (structureType === StructureType.Hyperstructure) {
     const { initialized, percentage } = getHyperstructureProgress(entityId, components);
@@ -144,7 +147,7 @@ export const getStructureInfoFromTileOccupier = (
       return { type: StructureType.Hyperstructure, stage: StructureProgress.STAGE_2, level: 1, hasWonder: false };
     case TileOccupier.HyperstructureLevel3:
       return { type: StructureType.Hyperstructure, stage: StructureProgress.STAGE_3, level: 1, hasWonder: false };
-    case TileOccupier.ReservedHyperstructure:
+    case RESERVED_HYPERSTRUCTURE_OCCUPIER_TYPE:
       return {
         type: StructureType.Hyperstructure,
         stage: StructureProgress.STAGE_1,

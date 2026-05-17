@@ -39,4 +39,37 @@ describe("FastTravelScene paired world spire sync", () => {
     expect(traversalIndex).toBeGreaterThan(missingTileGuardIndex);
     expect(methodBody).toContain('toast.error("Unable to verify the linked world tile right now.");');
   });
+
+  it("syncs existing paired world explorer tiles when ownership is not hydrated yet", () => {
+    const source = readSource("fast-travel.ts");
+
+    const methodStart = source.indexOf("private openFastTravelSpireTravel(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodEnd = source.indexOf("private async syncPairedWorldSpireTile(", methodStart);
+    expect(methodEnd).toBeGreaterThan(methodStart);
+
+    const methodBody = source.slice(methodStart, methodEnd);
+    expect(methodBody).toContain("this.shouldSyncPairedWorldSpireTraversalTile(pairedWorldTile)");
+
+    const syncPolicyStart = source.indexOf("private shouldSyncPairedWorldSpireTraversalTile(");
+    expect(syncPolicyStart).toBeGreaterThan(-1);
+
+    const syncPolicyBody = source.slice(syncPolicyStart, syncPolicyStart + 900);
+    expect(syncPolicyBody).toContain("this.resolveArmyOwnerAddress(pairedWorldTile.occupier_id)");
+    expect(syncPolicyBody).toContain("ownerAddress === 0n");
+  });
+
+  it("keeps the adjacent spire hex as the attack direction target", () => {
+    const source = readSource("fast-travel.ts");
+
+    const methodStart = source.indexOf("private openFastTravelSpireTravel(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodEnd = source.indexOf("private async syncPairedWorldSpireTile(", methodStart);
+    expect(methodEnd).toBeGreaterThan(methodStart);
+
+    const methodBody = source.slice(methodStart, methodEnd);
+    expect(methodBody).toContain("directionHex: { x: targetHex.col, y: targetHex.row }");
+  });
 });
