@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-05-17T11:22:05.539Z",
+  "updatedAt": "2026-05-17T11:25:42.451Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -86,17 +86,17 @@
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
       "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/25989097374-1.json",
       "status": "attention",
-      "updatedAt": "2026-05-17T11:22:05.539Z",
+      "updatedAt": "2026-05-17T11:25:42.451Z",
       "workflowRef": "next",
       "currentStepId": "reserve-blitz-hyperstructures",
       "hasRunningStep": false,
-      "recoverableFailedStepId": "reserve-blitz-hyperstructures",
+      "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-worlds",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15,
-        "nextRetryAt": "2026-05-17T11:22:35.667Z",
-        "lastRetryAt": "2026-05-17T11:05:42.582Z"
+        "nextRetryAt": "2026-05-17T11:40:42.451Z",
+        "lastRetryAt": "2026-05-17T11:25:42.451Z"
       },
       "evaluation": {
         "intervalMinutes": 15,
