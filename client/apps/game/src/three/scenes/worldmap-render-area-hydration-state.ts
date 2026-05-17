@@ -5,6 +5,18 @@ export interface WorldmapRenderAreaHydrationState {
   pendingStages: Map<string, Map<WorldmapRenderAreaHydrationStage, Promise<boolean>>>;
 }
 
+interface RecentRenderAreaRetentionInput {
+  retainedAreaKeys: readonly string[];
+  recentlyUnpinnedAreaKeys: readonly string[];
+  protectedAreaKeys: ReadonlySet<string>;
+  maxRetainedAreas: number;
+}
+
+interface RecentRenderAreaRetentionResult {
+  nextRetainedAreaKeys: string[];
+  areaKeysToClear: string[];
+}
+
 export const WORLDMAP_PREFETCH_HYDRATION_STAGES: readonly WorldmapRenderAreaHydrationStage[] = [
   "tileOpt",
   "explorerTroops",
@@ -159,6 +171,46 @@ export function clearCompletedRenderAreaHydrationState(state: WorldmapRenderArea
 export function clearAllRenderAreaHydrationState(state: WorldmapRenderAreaHydrationState): void {
   state.completedStages.clear();
   state.pendingStages.clear();
+}
+
+export function resolveRecentRenderAreaRetention({
+  maxRetainedAreas,
+  protectedAreaKeys,
+  recentlyUnpinnedAreaKeys,
+  retainedAreaKeys,
+}: RecentRenderAreaRetentionInput): RecentRenderAreaRetentionResult {
+  const areaKeysToClear: string[] = [];
+  const nextRetainedAreaKeys: string[] = [];
+
+  retainedAreaKeys.forEach((areaKey) => {
+    if (!protectedAreaKeys.has(areaKey) && !nextRetainedAreaKeys.includes(areaKey)) {
+      nextRetainedAreaKeys.push(areaKey);
+    }
+  });
+
+  recentlyUnpinnedAreaKeys.forEach((areaKey) => {
+    if (protectedAreaKeys.has(areaKey)) {
+      return;
+    }
+
+    const existingIndex = nextRetainedAreaKeys.indexOf(areaKey);
+    if (existingIndex >= 0) {
+      nextRetainedAreaKeys.splice(existingIndex, 1);
+    }
+    nextRetainedAreaKeys.push(areaKey);
+  });
+
+  while (nextRetainedAreaKeys.length > Math.max(0, maxRetainedAreas)) {
+    const evictedAreaKey = nextRetainedAreaKeys.shift();
+    if (evictedAreaKey) {
+      areaKeysToClear.push(evictedAreaKey);
+    }
+  }
+
+  return {
+    areaKeysToClear,
+    nextRetainedAreaKeys,
+  };
 }
 
 export function listCompletedRenderAreaHydrationKeys(state: WorldmapRenderAreaHydrationState): string[] {

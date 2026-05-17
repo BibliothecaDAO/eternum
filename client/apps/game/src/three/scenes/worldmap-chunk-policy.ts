@@ -7,6 +7,9 @@ interface WorldmapChunkPolicy {
   toriiFetch: {
     superAreaStrides: number;
   };
+  toriiSubscription: {
+    superAreaStrides: number;
+  };
   pin: {
     rowsAhead: number;
     rowsBehind: number;
@@ -15,8 +18,12 @@ interface WorldmapChunkPolicy {
   prefetch: {
     forwardDepthStrides: number;
     sideRadiusStrides: number;
+    areaBoundaryLookaheadStrides: number;
     maxAhead: number;
     maxConcurrent: number;
+  };
+  recentHydrationCache: {
+    maxAreas: number;
   };
   cache: {
     pinnedChunkFloor: number;
@@ -33,11 +40,18 @@ interface WorldChunkPolicyInput {
   toriiFetch: {
     superAreaStrides: number;
   };
+  toriiSubscription: {
+    superAreaStrides: number;
+  };
   prefetch: {
     forwardDepthStrides: number;
     sideRadiusStrides: number;
+    areaBoundaryLookaheadStrides: number;
     maxAhead: number;
     maxConcurrent: number;
+  };
+  recentHydrationCache: {
+    maxAreas: number;
   };
 }
 
@@ -52,6 +66,9 @@ export function createWorldmapChunkPolicy(config: WorldChunkPolicyInput = WORLD_
     toriiFetch: {
       superAreaStrides: config.toriiFetch.superAreaStrides,
     },
+    toriiSubscription: {
+      superAreaStrides: config.toriiSubscription.superAreaStrides,
+    },
     pin: {
       rowsAhead: config.pinRadius,
       rowsBehind: config.pinRadius,
@@ -60,8 +77,12 @@ export function createWorldmapChunkPolicy(config: WorldChunkPolicyInput = WORLD_
     prefetch: {
       forwardDepthStrides: config.prefetch.forwardDepthStrides,
       sideRadiusStrides: config.prefetch.sideRadiusStrides,
+      areaBoundaryLookaheadStrides: config.prefetch.areaBoundaryLookaheadStrides,
       maxAhead: config.prefetch.maxAhead,
       maxConcurrent: config.prefetch.maxConcurrent,
+    },
+    recentHydrationCache: {
+      maxAreas: config.recentHydrationCache.maxAreas,
     },
     cache: {
       pinnedChunkFloor,

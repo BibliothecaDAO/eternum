@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-17",
+    title: "Map Streaming Stability",
+    description:
+      "World map streaming now keeps live Torii subscriptions steadier while warming nearby terrain data earlier, reducing loading churn during long travel.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-17",
     title: "Wider Map Streaming",
     description:
       "World map streaming now keeps Torii subscriptions on larger regions, reducing stream swaps and terrain churn while traversing long distances.",

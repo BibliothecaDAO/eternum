@@ -10,6 +10,7 @@ import {
   isRenderAreaHydrationComplete,
   markRenderAreaHydrationStagesComplete,
   registerPendingRenderAreaHydration,
+  resolveRecentRenderAreaRetention,
   type WorldmapRenderAreaHydrationStage,
 } from "./worldmap-render-area-hydration-state";
 
@@ -69,5 +70,19 @@ describe("worldmap render area hydration state", () => {
 
     expect(isRenderAreaHydrationComplete(state, "area-a", ["tileOpt"])).toBe(false);
     expect(getPendingRenderAreaHydrationPromise(state, "area-a", ["structures"])).toBe(pendingFetch);
+  });
+
+  it("retains recently unpinned completed areas until the retention budget is exceeded", () => {
+    expect(
+      resolveRecentRenderAreaRetention({
+        maxRetainedAreas: 2,
+        protectedAreaKeys: new Set(["area-live"]),
+        recentlyUnpinnedAreaKeys: ["area-c"],
+        retainedAreaKeys: ["area-a", "area-b", "area-live"],
+      }),
+    ).toEqual({
+      areaKeysToClear: ["area-a"],
+      nextRetainedAreaKeys: ["area-b", "area-c"],
+    });
   });
 });

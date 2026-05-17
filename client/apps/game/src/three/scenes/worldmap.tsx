@@ -385,6 +385,7 @@ import {
   listPendingRenderAreaHydrationKeys,
   markRenderAreaHydrationStagesComplete,
   registerPendingRenderAreaHydration,
+  resolveRecentRenderAreaRetention,
   WORLDMAP_ACTIVE_HYDRATION_STAGES,
   WORLDMAP_PREFETCH_HYDRATION_STAGES,
   type WorldmapRenderAreaHydrationStage,
@@ -611,6 +612,7 @@ export default class WorldmapScene extends WarpTravel {
   private prefetchQueue: PrefetchQueueItem[] = [];
   private directionalPrefetchAreaKeys: Set<string> = new Set();
   private queuedPrefetchAreaKeys: Set<string> = new Set();
+  private retainedHydrationAreaKeys: string[] = [];
   private activePrefetches = 0;
   private readonly maxConcurrentPrefetches = WORLDMAP_CHUNK_POLICY.prefetch.maxConcurrent;
   private readonly worldmapMinZoomDistance = 10;
@@ -4243,7 +4245,10 @@ export default class WorldmapScene extends WarpTravel {
       pendingArmyMovementAuthoritativeResolutions: this.pendingArmyMovementAuthoritativeResolutions,
       armyStructureOwners: this.armyStructureOwners,
       suppressedArmies: this.armyManager.getSuppressedArmiesRef(),
-      clearRenderAreaHydrationState: () => clearAllRenderAreaHydrationState(this.renderAreaHydrationState),
+      clearRenderAreaHydrationState: () => {
+        clearAllRenderAreaHydrationState(this.renderAreaHydrationState);
+        this.clearRetainedHydrationAreas();
+      },
       pinnedChunkKeys: this.pinnedChunkKeys,
       pinnedRenderAreas: this.pinnedRenderAreas,
       hydratedChunkRefreshes: this.hydratedChunkRefreshes,
@@ -5001,7 +5006,9 @@ export default class WorldmapScene extends WarpTravel {
       }
       this.removeCachedMatricesForChunk(chunkRow, chunkCol);
       if (options?.invalidateFetchAreas) {
-        clearRenderAreaHydrationState(this.renderAreaHydrationState, this.getRenderAreaKeyForChunk(chunkKey));
+        const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
+        clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
+        this.removeRetainedHydrationArea(areaKey);
       }
     });
   }
@@ -5019,6 +5026,18 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
+   * Derive a stable live Torii subscription key for a chunk key.
+   * Subscription areas are intentionally larger than hydration fetch areas.
+   */
+  private getToriiSubscriptionAreaKeyForChunk(chunkKey: string): string {
+    return getCanonicalRenderAreaKeyForChunk(
+      chunkKey,
+      this.chunkSize,
+      WORLDMAP_CHUNK_POLICY.toriiSubscription.superAreaStrides,
+    );
+  }
+
+  /**
    * Compute integer fetch bounds that fully cover all render windows inside a Torii super-area.
    */
   private getRenderFetchBoundsForArea(areaKey: string): {
@@ -5032,6 +5051,23 @@ export default class WorldmapScene extends WarpTravel {
       this.renderChunkSize,
       this.chunkSize,
       WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
+    );
+  }
+
+  /**
+   * Compute integer subscription bounds that cover a live Torii subscription super-area.
+   */
+  private getToriiSubscriptionBoundsForArea(areaKey: string): {
+    minCol: number;
+    maxCol: number;
+    minRow: number;
+    maxRow: number;
+  } {
+    return getCanonicalRenderFetchBoundsForArea(
+      areaKey,
+      this.renderChunkSize,
+      this.chunkSize,
+      WORLDMAP_CHUNK_POLICY.toriiSubscription.superAreaStrides,
     );
   }
 
@@ -5129,6 +5165,8 @@ export default class WorldmapScene extends WarpTravel {
       chunkSize: this.chunkSize,
       forwardDepthStrides: WORLDMAP_CHUNK_POLICY.prefetch.forwardDepthStrides,
       sideRadiusStrides: WORLDMAP_CHUNK_POLICY.prefetch.sideRadiusStrides,
+      areaBoundaryLookaheadStrides: WORLDMAP_CHUNK_POLICY.prefetch.areaBoundaryLookaheadStrides,
+      fetchSuperAreaStrides: WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
       pinnedChunkKeys: this.pinnedChunkKeys,
       currentChunk: this.currentChunk,
       prefetchedAhead: this.prefetchedAhead,
@@ -6127,6 +6165,37 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
+  private removeRetainedHydrationArea(areaKey: string): void {
+    this.retainedHydrationAreaKeys = this.retainedHydrationAreaKeys.filter(
+      (retainedAreaKey) => retainedAreaKey !== areaKey,
+    );
+  }
+
+  private clearRetainedHydrationAreas(): void {
+    this.retainedHydrationAreaKeys = [];
+  }
+
+  private getProtectedHydrationAreaKeys(nextPinnedAreas: ReadonlySet<string>): Set<string> {
+    return new Set([...nextPinnedAreas, ...this.directionalPrefetchAreaKeys]);
+  }
+
+  private retainRecentlyUnpinnedHydrationAreas(
+    removedPinnedAreas: readonly string[],
+    nextPinnedAreas: ReadonlySet<string>,
+  ): void {
+    const retention = resolveRecentRenderAreaRetention({
+      retainedAreaKeys: this.retainedHydrationAreaKeys,
+      recentlyUnpinnedAreaKeys: removedPinnedAreas,
+      protectedAreaKeys: this.getProtectedHydrationAreaKeys(nextPinnedAreas),
+      maxRetainedAreas: WORLDMAP_CHUNK_POLICY.recentHydrationCache.maxAreas,
+    });
+
+    this.retainedHydrationAreaKeys = retention.nextRetainedAreaKeys;
+    retention.areaKeysToClear.forEach((areaKey) => {
+      clearCompletedRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
+    });
+  }
+
   private updatePinnedChunks(newChunkKeys: string[]): void {
     const nextPinned = new Set(newChunkKeys);
     const prevPinned = this.pinnedChunkKeys;
@@ -6157,11 +6226,7 @@ export default class WorldmapScene extends WarpTravel {
       }
     });
 
-    // Drop completed tile data for render areas that are no longer covered.
-    // Keep in-flight pending promises for dedupe stability while they resolve.
-    removedPinnedAreas.forEach((areaKey) => {
-      clearCompletedRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
-    });
+    this.retainRecentlyUnpinnedHydrationAreas(removedPinnedAreas, nextPinnedAreas);
 
     this.pinnedChunkKeys = nextPinned;
     this.pinnedRenderAreas = nextPinnedAreas;
@@ -6178,7 +6243,7 @@ export default class WorldmapScene extends WarpTravel {
     localBounds: ToriiBoundsDebugRange;
     subscriptionBounds: ToriiBoundsDebugRange;
   } {
-    const localBounds = this.getRenderFetchBoundsForArea(areaKey);
+    const localBounds = this.getToriiSubscriptionBoundsForArea(areaKey);
     const feltCenter = FELT_CENTER();
 
     return {
@@ -6195,7 +6260,8 @@ export default class WorldmapScene extends WarpTravel {
   private buildToriiBoundsDebugSnapshot(
     extra: Partial<ToriiBoundsDebugOverlaySnapshot> = {},
   ): ToriiBoundsDebugOverlaySnapshot {
-    const currentAreaKey = this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
+    const currentAreaKey =
+      this.currentChunk !== "null" ? this.getToriiSubscriptionAreaKeyForChunk(this.currentChunk) : null;
 
     this.toriiBoundsDebugSnapshot = {
       ...this.toriiBoundsDebugSnapshot,
@@ -6309,6 +6375,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
     clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
+    this.removeRetainedHydrationArea(areaKey);
     this.tileHydrationFetches.delete(areaKey);
     this.structureHydrationFetches.delete(areaKey);
     this.hydratedRefreshSuppressionAreaKeys.delete(areaKey);
@@ -6507,7 +6574,7 @@ export default class WorldmapScene extends WarpTravel {
 
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_requested");
 
-    const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
+    const areaKey = this.getToriiSubscriptionAreaKeyForChunk(chunkKey);
     const { localBounds, subscriptionBounds } = this.buildToriiBoundsDebugRanges(areaKey);
     const debugBounds = {
       requestedAreaKey: areaKey,
@@ -7033,7 +7100,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getRetainedRenderAreaKeys(): Set<string> {
-    return new Set([...this.pinnedRenderAreas, ...this.directionalPrefetchAreaKeys]);
+    return new Set([...this.pinnedRenderAreas, ...this.directionalPrefetchAreaKeys, ...this.retainedHydrationAreaKeys]);
   }
 
   private hydrateExploredTilesFromTileOptRecs(
@@ -8910,6 +8977,7 @@ export default class WorldmapScene extends WarpTravel {
   public clearTileEntityCache() {
     this.clearQueuedPrefetchState();
     clearAllRenderAreaHydrationState(this.renderAreaHydrationState);
+    this.clearRetainedHydrationAreas();
     this.pinnedRenderAreas.clear();
     this.clearCache();
     this.armyLastTileSyncAt.clear();
