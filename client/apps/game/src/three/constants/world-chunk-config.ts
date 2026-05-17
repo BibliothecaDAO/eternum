@@ -71,6 +71,6 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
     maxConcurrent: 1,
   },
   recentHydrationCache: {
-    maxAreas: 8,
+    maxAreas: 32,
   },
 };

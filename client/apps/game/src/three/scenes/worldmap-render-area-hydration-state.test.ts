@@ -10,6 +10,8 @@ import {
   isRenderAreaHydrationComplete,
   markRenderAreaHydrationStagesComplete,
   registerPendingRenderAreaHydration,
+  retainRenderAreaHydrationStages,
+  resolveFetchResultRetainedAreaKeys,
   resolveRecentRenderAreaRetention,
   type WorldmapRenderAreaHydrationStage,
 } from "./worldmap-render-area-hydration-state";
@@ -82,7 +84,51 @@ describe("worldmap render area hydration state", () => {
       }),
     ).toEqual({
       areaKeysToClear: ["area-a"],
+      areaKeysToRetainTerrainOnly: [],
       nextRetainedAreaKeys: ["area-b", "area-c"],
     });
+  });
+
+  it("downgrades retained areas to terrain-only once they leave active subscription coverage", () => {
+    expect(
+      resolveRecentRenderAreaRetention({
+        maxRetainedAreas: 8,
+        protectedAreaKeys: new Set(["area-pinned"]),
+        recentlyUnpinnedAreaKeys: [],
+        retainedAreaKeys: ["area-live", "area-stale", "area-pinned"],
+        isAreaCoveredByActiveSubscription: (areaKey) => areaKey === "area-live",
+      }),
+    ).toEqual({
+      areaKeysToClear: [],
+      areaKeysToRetainTerrainOnly: ["area-stale"],
+      nextRetainedAreaKeys: ["area-live", "area-stale"],
+    });
+  });
+
+  it("can keep terrain hydration while clearing dynamic stage ownership", () => {
+    const state = createWorldmapRenderAreaHydrationState();
+    const dynamicFetch = Promise.resolve(true);
+
+    markRenderAreaHydrationStagesComplete(state, "area-a", ACTIVE_STAGES);
+    registerPendingRenderAreaHydration(state, "area-a", ["explorerTroops", "structures"], dynamicFetch);
+    retainRenderAreaHydrationStages(state, "area-a", ["tileOpt"]);
+
+    expect(isRenderAreaHydrationComplete(state, "area-a", ["tileOpt"])).toBe(true);
+    expect(isRenderAreaHydrationComplete(state, "area-a", PREFETCH_STAGES)).toBe(false);
+    expect(isRenderAreaHydrationComplete(state, "area-a", ACTIVE_STAGES)).toBe(false);
+    expect(getPendingRenderAreaHydrationPromise(state, "area-a", ["explorerTroops", "structures"])).toBe(null);
+  });
+
+  it("excludes terrain-only retained areas from late dynamic fetch result ownership", () => {
+    expect(
+      Array.from(
+        resolveFetchResultRetainedAreaKeys({
+          pinnedAreaKeys: new Set(["area-pinned"]),
+          directionalPrefetchAreaKeys: new Set(["area-prefetch"]),
+          retainedAreaKeys: ["area-live", "area-terrain-only"],
+          isRetainedAreaCoveredByActiveSubscription: (areaKey) => areaKey === "area-live",
+        }),
+      ),
+    ).toEqual(["area-pinned", "area-prefetch", "area-live"]);
   });
 });

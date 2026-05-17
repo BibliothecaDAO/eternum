@@ -25,7 +25,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-05-17",
     title: "Map Streaming Stability",
     description:
-      "World map streaming now keeps live Torii subscriptions steadier while warming nearby terrain data earlier, reducing loading churn during long travel.",
+      "World map streaming now keeps live Torii subscriptions steadier and recently visited terrain warm, reducing loading churn during long travel and backtracking.",
     type: "improvement",
     gameSlug: "world",
   },

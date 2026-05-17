@@ -385,6 +385,8 @@ import {
   listPendingRenderAreaHydrationKeys,
   markRenderAreaHydrationStagesComplete,
   registerPendingRenderAreaHydration,
+  retainRenderAreaHydrationStages,
+  resolveFetchResultRetainedAreaKeys,
   resolveRecentRenderAreaRetention,
   WORLDMAP_ACTIVE_HYDRATION_STAGES,
   WORLDMAP_PREFETCH_HYDRATION_STAGES,
@@ -6179,21 +6181,71 @@ export default class WorldmapScene extends WarpTravel {
     return new Set([...nextPinnedAreas, ...this.directionalPrefetchAreaKeys]);
   }
 
+  private getActiveToriiSubscriptionBounds(): ToriiBoundsDebugRange | null {
+    if (!this.toriiBoundsAreaKey) {
+      return null;
+    }
+
+    return this.getToriiSubscriptionBoundsForArea(this.toriiBoundsAreaKey);
+  }
+
+  private isRenderAreaCoveredBySubscriptionBounds(areaKey: string, subscriptionBounds: ToriiBoundsDebugRange): boolean {
+    const areaBounds = this.getRenderFetchBoundsForArea(areaKey);
+    return (
+      areaBounds.minCol >= subscriptionBounds.minCol &&
+      areaBounds.maxCol <= subscriptionBounds.maxCol &&
+      areaBounds.minRow >= subscriptionBounds.minRow &&
+      areaBounds.maxRow <= subscriptionBounds.maxRow
+    );
+  }
+
+  private applyRecentHydrationRetention(retention: ReturnType<typeof resolveRecentRenderAreaRetention>): void {
+    this.retainedHydrationAreaKeys = retention.nextRetainedAreaKeys;
+    retention.areaKeysToRetainTerrainOnly.forEach((areaKey) => {
+      retainRenderAreaHydrationStages(this.renderAreaHydrationState, areaKey, ["tileOpt"]);
+    });
+    retention.areaKeysToClear.forEach((areaKey) => {
+      clearCompletedRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
+    });
+  }
+
   private retainRecentlyUnpinnedHydrationAreas(
     removedPinnedAreas: readonly string[],
     nextPinnedAreas: ReadonlySet<string>,
   ): void {
+    const activeSubscriptionBounds = this.getActiveToriiSubscriptionBounds();
     const retention = resolveRecentRenderAreaRetention({
       retainedAreaKeys: this.retainedHydrationAreaKeys,
       recentlyUnpinnedAreaKeys: removedPinnedAreas,
       protectedAreaKeys: this.getProtectedHydrationAreaKeys(nextPinnedAreas),
       maxRetainedAreas: WORLDMAP_CHUNK_POLICY.recentHydrationCache.maxAreas,
+      ...(activeSubscriptionBounds
+        ? {
+            isAreaCoveredByActiveSubscription: (areaKey: string) =>
+              this.isRenderAreaCoveredBySubscriptionBounds(areaKey, activeSubscriptionBounds),
+          }
+        : {}),
     });
 
-    this.retainedHydrationAreaKeys = retention.nextRetainedAreaKeys;
-    retention.areaKeysToClear.forEach((areaKey) => {
-      clearCompletedRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
+    this.applyRecentHydrationRetention(retention);
+  }
+
+  private pruneRetainedHydrationAreasOutsideActiveSubscription(): void {
+    const activeSubscriptionBounds = this.getActiveToriiSubscriptionBounds();
+    if (!activeSubscriptionBounds || this.retainedHydrationAreaKeys.length === 0) {
+      return;
+    }
+
+    const retention = resolveRecentRenderAreaRetention({
+      retainedAreaKeys: this.retainedHydrationAreaKeys,
+      recentlyUnpinnedAreaKeys: [],
+      protectedAreaKeys: this.getProtectedHydrationAreaKeys(this.pinnedRenderAreas),
+      maxRetainedAreas: WORLDMAP_CHUNK_POLICY.recentHydrationCache.maxAreas,
+      isAreaCoveredByActiveSubscription: (areaKey) =>
+        this.isRenderAreaCoveredBySubscriptionBounds(areaKey, activeSubscriptionBounds),
     });
+
+    this.applyRecentHydrationRetention(retention);
   }
 
   private updatePinnedChunks(newChunkKeys: string[]): void {
@@ -6643,6 +6695,7 @@ export default class WorldmapScene extends WarpTravel {
       }
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "bounds_switch_applied");
       this.toriiBoundsAreaKey = areaKey;
+      this.pruneRetainedHydrationAreasOutsideActiveSubscription();
       this.refreshToriiBoundsDebugOverlay({
         ...debugBounds,
         subscribedAreaKey: areaKey,
@@ -7100,7 +7153,18 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private getRetainedRenderAreaKeys(): Set<string> {
-    return new Set([...this.pinnedRenderAreas, ...this.directionalPrefetchAreaKeys, ...this.retainedHydrationAreaKeys]);
+    const activeSubscriptionBounds = this.getActiveToriiSubscriptionBounds();
+    return resolveFetchResultRetainedAreaKeys({
+      pinnedAreaKeys: this.pinnedRenderAreas,
+      directionalPrefetchAreaKeys: this.directionalPrefetchAreaKeys,
+      retainedAreaKeys: this.retainedHydrationAreaKeys,
+      ...(activeSubscriptionBounds
+        ? {
+            isRetainedAreaCoveredByActiveSubscription: (areaKey: string) =>
+              this.isRenderAreaCoveredBySubscriptionBounds(areaKey, activeSubscriptionBounds),
+          }
+        : {}),
+    });
   }
 
   private hydrateExploredTilesFromTileOptRecs(

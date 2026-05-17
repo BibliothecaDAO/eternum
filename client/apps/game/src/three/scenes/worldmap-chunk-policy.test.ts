@@ -25,7 +25,7 @@ describe("createWorldmapChunkPolicy", () => {
     expect(policy).toHaveProperty("prefetch.sideRadiusStrides", WORLD_CHUNK_CONFIG.prefetch.sideRadiusStrides);
     expect(policy).toHaveProperty("prefetch.areaBoundaryLookaheadStrides", 3);
     expect(policy).toHaveProperty("prefetch.maxConcurrent", WORLD_CHUNK_CONFIG.prefetch.maxConcurrent);
-    expect(policy).toHaveProperty("recentHydrationCache.maxAreas", 8);
+    expect(policy).toHaveProperty("recentHydrationCache.maxAreas", 32);
   });
 
   it("derives pinned neighborhood floor metadata for cache budgeting", () => {
