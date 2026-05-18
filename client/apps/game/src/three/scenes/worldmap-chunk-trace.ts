@@ -38,6 +38,8 @@ export type WorldmapChunkTraceEvent =
   | "chunk_recovery_executed"
   | "reconnect_refresh_requested"
   | "reconnect_refresh_skipped"
+  | "reconnect_refresh_queued"
+  | "reconnect_refresh_drained"
   | "torii_resubscribe_requested"
   | "torii_resubscribe_completed"
   | "torii_resubscribe_failed";

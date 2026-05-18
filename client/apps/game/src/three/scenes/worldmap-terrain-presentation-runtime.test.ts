@@ -6,6 +6,7 @@ import {
   applyWorldmapTerrainPresentation,
   composeWorldmapTerrainPresentations,
   createWorldmapTerrainPresentationState,
+  resolveWorldmapVisualTerrainWindow,
   type WorldmapTerrainPresentation,
 } from "./worldmap-terrain-presentation-runtime";
 
@@ -74,6 +75,20 @@ describe("worldmap terrain presentation runtime", () => {
     expect(composite.cells).toHaveLength(2);
     expect(composite.capped).toBe(true);
     expect(composite.droppedCellCount).toBe(1);
+  });
+
+  it("chooses the nearest visual page when the camera focus is near a hex edge", () => {
+    const window = resolveWorldmapVisualTerrainWindow({
+      focusPoint: { x: -2.61, z: -2.49 },
+      generation: 1,
+      hexSize: 1,
+      marginPages: 0,
+      pageOrigin: { col: 0, row: 0 },
+      pageSize: { width: 1, height: 1 },
+      renderSize: { width: 1, height: 1 },
+    });
+
+    expect(window.centerPageKey).toBe("-1,-1");
   });
 
   it("drops stale terrain shells and replaces provisional target terrain with exact authority", () => {

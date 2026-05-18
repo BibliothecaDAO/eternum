@@ -709,6 +709,26 @@ export class ToriiStreamManager {
     }
     return null;
   }
+
+  async forceResubscribe(options: { resetReadinessRecovery?: boolean } = {}): Promise<BoundsSwitchResult | null> {
+    if (!this.lastDescriptor) {
+      return null;
+    }
+    if (options.resetReadinessRecovery ?? true) {
+      this.resetReadinessRecoveryAttempts();
+    }
+    const descriptor = this.lastDescriptor;
+    this.detachForcedResubscribeFromPendingSwitch();
+    return this.switchBounds(descriptor);
+  }
+
+  private detachForcedResubscribeFromPendingSwitch(): void {
+    this.latestSwitchRequestId += 1;
+    this.pendingSwitch = null;
+    this.switchQueue = Promise.resolve();
+    this.cancelCurrentSubscription();
+    this.currentSignature = null;
+  }
 }
 
 export const buildModelKeysClause = (models: GlobalModelStreamConfig[]): Clause => {

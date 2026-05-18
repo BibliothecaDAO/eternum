@@ -145,6 +145,28 @@ describe("worldmap visual terrain runtime", () => {
     expect(state.presentations).toEqual([]);
   });
 
+  it("keeps the newly accepted page when a full visual window has equal-priority pages", () => {
+    const state = createWorldmapTerrainPresentationState<Record<string, true>, string>();
+    state.presentations = [
+      pagePresentation("0,0", "provisional", 3, [{ hexKey: "0,0", biomeKey: "Outline", instanceIndex: 0 }]),
+      pagePresentation("0,24", "provisional", 3, [{ hexKey: "24,0", biomeKey: "Outline", instanceIndex: 0 }]),
+    ];
+
+    const result = applyWorldmapVisualTerrainPage(state, {
+      latestGeneration: 3,
+      maxCells: 10,
+      maxCompositePages: 2,
+      presentation: pagePresentation("24,0", "provisional", 3, [
+        { hexKey: "0,24", biomeKey: "Outline", instanceIndex: 0 },
+      ]),
+      targetCoverageKeys: new Set(["0,0", "0,24", "24,0"]),
+    });
+
+    expect(result.status).toBe("applied");
+    expect(state.presentations.map((presentation) => presentation.coverageKey)).toContain("24,0");
+    expect(result.composite.cells.map((cell) => cell.coverageKey)).toContain("24,0");
+  });
+
   it("partitions exact 48x48 prepared terrain into four 24x24 visual pages with page-local indices", () => {
     const cells: WorldmapTerrainCellRef[] = [];
     for (let row = -12; row < 36; row += 1) {

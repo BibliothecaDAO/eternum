@@ -1042,7 +1042,10 @@ export class StructureManager {
   }
 
   recoverChunkUpdateAfterStall(input: RecoverManagerChunkRuntimeAfterStallInput): void {
-    recoverManagerChunkRuntimeAfterStall(this.resolveChunkUpdateRuntimeState(), input);
+    const { didApply } = recoverManagerChunkRuntimeAfterStall(this.resolveChunkUpdateRuntimeState(), input);
+    if (!didApply) {
+      return;
+    }
     this.isUpdatingVisibleStructures = false;
     this.visibleStructurePassFence.invalidate();
   }

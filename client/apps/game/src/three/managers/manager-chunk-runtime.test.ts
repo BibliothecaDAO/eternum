@@ -147,4 +147,55 @@ describe("runManagerChunkUpdateRuntime", () => {
     expect(state.latestTransitionToken).toBe(10);
     expect(state.transitionChunkByToken.has(10)).toBe(false);
   });
+
+  it("does not overwrite currentChunk when a newer transition has already advanced past the recovery token", () => {
+    const state = createManagerChunkRuntimeState("0,0");
+    state.latestTransitionToken = 9;
+    state.currentChunk = "24,24";
+    state.inFlightPromise = new Promise<void>(() => undefined);
+
+    recoverManagerChunkRuntimeAfterStall(state, {
+      chunkKey: "0,0",
+      transitionToken: 7,
+    });
+
+    expect(state.currentChunk).toBe("24,24");
+    expect(state.latestTransitionToken).toBe(9);
+  });
+
+  it("preserves the in-flight promise of a newer transition when recovering a stale token", () => {
+    const state = createManagerChunkRuntimeState("24,24");
+    state.latestTransitionToken = 9;
+    const newerPromise = new Promise<void>(() => undefined);
+    state.inFlightPromise = newerPromise;
+
+    recoverManagerChunkRuntimeAfterStall(state, {
+      chunkKey: "0,0",
+      transitionToken: 7,
+    });
+
+    expect(state.inFlightPromise).toBe(newerPromise);
+  });
+
+  it("returns didApply=true when the recovery is non-stale", () => {
+    const state = createManagerChunkRuntimeState("0,0");
+    const result = recoverManagerChunkRuntimeAfterStall(state, {
+      chunkKey: "24,24",
+      transitionToken: 5,
+    });
+
+    expect(result.didApply).toBe(true);
+  });
+
+  it("returns didApply=false when the recovery is stale", () => {
+    const state = createManagerChunkRuntimeState("24,24");
+    state.latestTransitionToken = 9;
+
+    const result = recoverManagerChunkRuntimeAfterStall(state, {
+      chunkKey: "0,0",
+      transitionToken: 7,
+    });
+
+    expect(result.didApply).toBe(false);
+  });
 });

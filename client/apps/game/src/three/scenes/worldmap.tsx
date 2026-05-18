@@ -150,7 +150,7 @@ import {
 import { snapshotRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { createWorldmapInteractionAdapter } from "./worldmap-interaction-adapter";
-import { trackHydrationUpdateWorkForFetches } from "./worldmap-hydration-tracking";
+import { clearHydrationFetchState, trackHydrationUpdateWorkForFetches } from "./worldmap-hydration-tracking";
 import {
   claimWorldmapInteractionOwner,
   getWorldmapInteractionOwnerInstanceId,
@@ -397,6 +397,13 @@ import {
   type WorldmapRenderAreaHydrationStage,
 } from "./worldmap-render-area-hydration-state";
 import { registerActiveWorldmapRecoveryHandle } from "./worldmap-reconnect-recovery-handle";
+import { runChunkStreamResubscribeThenRefresh } from "./worldmap-chunk-stream-recovery";
+import {
+  createReconnectRefreshQueueState,
+  drainReconnectRefreshQueue,
+  queueOrRunReconnectRefresh,
+} from "./worldmap-reconnect-refresh-queue";
+import { shouldShowSetupTimeoutToast } from "./worldmap-setup-timeout-toast-policy";
 import { computeMatrixCacheEvictions } from "./worldmap-matrix-cache-eviction";
 import { snapshotExploredTilesRegion, lookupSnapshotBiome } from "./explored-tiles-snapshot";
 import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
@@ -631,6 +638,7 @@ export const getActiveSpatialStreamManager = (): ToriiStreamManagerType | null =
 
 const SETUP_TIMEOUT_TOAST_THROTTLE_MS = 30_000;
 let lastSetupTimeoutToastAtMs = 0;
+let lastSetupTimeoutToastReconnectAttempt = 0;
 
 let worldmapInteractionDebugInstanceCounter = 0;
 
@@ -727,6 +735,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private currentChunk: string = "null";
   private chunkTransitionRuntimeState = createWorldmapChunkTransitionRuntimeState<Promise<void>>();
+  private reconnectRefreshQueueState = createReconnectRefreshQueueState();
   private chunkRefreshRuntimeState = createWorldmapChunkRefreshRuntimeState();
   private pendingChunkRefreshForce = false;
   private pendingChunkRefreshUiReason: "default" | "shortcut" = "default";
@@ -5102,7 +5111,7 @@ export default class WorldmapScene extends WarpTravel {
         clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
         clearRenderAreaHydrationState(this.renderAreaHydrationState, structuresAreaKey);
         this.removeRetainedHydrationArea(areaKey);
-        this.structureHydrationFetches.delete(structuresAreaKey);
+        this.clearStructureHydrationFetch(structuresAreaKey);
       }
     });
   }
@@ -7650,8 +7659,18 @@ export default class WorldmapScene extends WarpTravel {
       timeoutMs: info.timeoutMs,
     });
     const now = Date.now();
-    if (now - lastSetupTimeoutToastAtMs >= SETUP_TIMEOUT_TOAST_THROTTLE_MS) {
+    const reconnectAttempt = useConnectionStore.getState().reconnectAttempts;
+    if (
+      shouldShowSetupTimeoutToast({
+        nowMs: now,
+        lastShownAtMs: lastSetupTimeoutToastAtMs,
+        throttleMs: SETUP_TIMEOUT_TOAST_THROTTLE_MS,
+        reconnectAttempt,
+        lastShownAtAttempt: lastSetupTimeoutToastReconnectAttempt,
+      })
+    ) {
       lastSetupTimeoutToastAtMs = now;
+      lastSetupTimeoutToastReconnectAttempt = reconnectAttempt;
       toast("Map sync delayed", { description: "Retrying…" });
       reportSubscriptionSetupTimeout({
         label: info.label,
@@ -7686,8 +7705,8 @@ export default class WorldmapScene extends WarpTravel {
     clearRenderAreaHydrationState(this.renderAreaHydrationState, structuresAreaKey);
     clearRenderAreaHydrationState(this.renderAreaHydrationState, explorerTroopsAreaKey);
     this.removeRetainedHydrationArea(areaKey);
-    this.tileHydrationFetches.delete(areaKey);
-    this.structureHydrationFetches.delete(structuresAreaKey);
+    this.clearTileHydrationFetch(areaKey);
+    this.clearStructureHydrationFetch(structuresAreaKey);
     this.explorerTroopsSpatialSqlBackoffUntilMs.delete(explorerTroopsAreaKey);
     this.hydratedRefreshSuppressionAreaKeys.delete(areaKey);
     this.hydratedRefreshSuppressionAreaKeys.delete(structuresAreaKey);
@@ -7709,18 +7728,50 @@ export default class WorldmapScene extends WarpTravel {
       this.toriiBoundsAreaKey = null;
       this.refreshToriiBoundsDebugOverlay({ subscribedAreaKey: null, lastOutcome: input.resetBoundsOutcome });
     }
+
+    const scheduleRefresh = () =>
+      this.scheduleChunkRecoveryWithReason(
+        input.reason,
+        input.chunkKey,
+        {
+          areaKey,
+          ...input.details,
+        },
+        input.refreshReason ?? "default",
+      );
+
     if (input.resubscribeReason) {
-      this.requestToriiResubscribe(input.resubscribeReason, input.chunkKey);
+      const resubscribeReason = input.resubscribeReason;
+      const chunkKey = input.chunkKey;
+      const manager = this.toriiStreamManager;
+      const resubscribe = manager
+        ? () => {
+            this.traceChunk("torii_resubscribe_requested", { reason: resubscribeReason, chunkKey });
+            return manager.forceResubscribe();
+          }
+        : null;
+      void runChunkStreamResubscribeThenRefresh({
+        resubscribe,
+        scheduleRefresh,
+        onResubscribed: (result) => {
+          this.traceChunk("torii_resubscribe_completed", {
+            reason: resubscribeReason,
+            chunkKey,
+            outcome: result?.outcome ?? null,
+          });
+        },
+        onError: (error) => {
+          this.traceChunk("torii_resubscribe_failed", {
+            reason: resubscribeReason,
+            chunkKey,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        },
+      });
+    } else {
+      scheduleRefresh();
     }
-    this.scheduleChunkRecoveryWithReason(
-      input.reason,
-      input.chunkKey,
-      {
-        areaKey,
-        ...input.details,
-      },
-      input.refreshReason ?? "default",
-    );
+
     return areaKey;
   }
 
@@ -7740,7 +7791,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private refreshAfterReconnect(): void {
-    if (this.isSwitchedOff || !this.currentChunk || this.currentChunk === "null") {
+    if (this.isSwitchedOff) {
       this.traceChunk("reconnect_refresh_skipped", {
         currentChunk: this.currentChunk,
         isSwitchedOff: this.isSwitchedOff,
@@ -7748,41 +7799,45 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const areaKey = this.clearStalledChunkAreaState(this.currentChunk);
-    this.toriiBoundsAreaKey = null;
-    this.refreshToriiBoundsDebugOverlay({ subscribedAreaKey: null, lastOutcome: "reconnect" });
-    this.traceChunk("reconnect_refresh_requested", {
-      areaKey,
-      chunkKey: this.currentChunk,
+    queueOrRunReconnectRefresh({
+      state: this.reconnectRefreshQueueState,
+      currentChunk: this.currentChunk,
+      runRefresh: () => {
+        const areaKey = this.clearStalledChunkAreaState(this.currentChunk);
+        this.toriiBoundsAreaKey = null;
+        this.refreshToriiBoundsDebugOverlay({ subscribedAreaKey: null, lastOutcome: "reconnect" });
+        this.traceChunk("reconnect_refresh_requested", {
+          areaKey,
+          chunkKey: this.currentChunk,
+        });
+        this.requestChunkRefresh(true, "reconnect");
+      },
     });
-    this.requestChunkRefresh(true, "reconnect");
+
+    if (this.reconnectRefreshQueueState.hasPendingRefresh) {
+      this.traceChunk("reconnect_refresh_queued", {
+        currentChunk: this.currentChunk,
+      });
+    }
   }
 
-  private requestToriiResubscribe(reason: string, chunkKey: string): void {
-    if (!this.toriiStreamManager) {
+  private drainQueuedReconnectRefresh(): void {
+    if (this.isSwitchedOff) {
       return;
     }
-
-    this.traceChunk("torii_resubscribe_requested", {
-      reason,
-      chunkKey,
+    drainReconnectRefreshQueue({
+      state: this.reconnectRefreshQueueState,
+      runRefresh: () => {
+        const areaKey = this.clearStalledChunkAreaState(this.currentChunk);
+        this.toriiBoundsAreaKey = null;
+        this.refreshToriiBoundsDebugOverlay({ subscribedAreaKey: null, lastOutcome: "reconnect_deferred" });
+        this.traceChunk("reconnect_refresh_drained", {
+          areaKey,
+          chunkKey: this.currentChunk,
+        });
+        this.requestChunkRefresh(true, "reconnect");
+      },
     });
-    void this.toriiStreamManager
-      .resubscribe()
-      .then((result) => {
-        this.traceChunk("torii_resubscribe_completed", {
-          reason,
-          chunkKey,
-          outcome: result?.outcome ?? null,
-        });
-      })
-      .catch((error) => {
-        this.traceChunk("torii_resubscribe_failed", {
-          reason,
-          chunkKey,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      });
   }
 
   private scheduleChunkRecovery(reason: string, chunkKey: string, details: Record<string, unknown> = {}): void {
@@ -8319,6 +8374,14 @@ export default class WorldmapScene extends WarpTravel {
       fetchSettled: false,
       waiters: [],
     });
+  }
+
+  private clearStructureHydrationFetch(fetchKey: string): void {
+    clearHydrationFetchState(this.structureHydrationFetches, fetchKey);
+  }
+
+  private clearTileHydrationFetch(fetchKey: string): void {
+    clearHydrationFetchState(this.tileHydrationFetches, fetchKey);
   }
 
   private settleStructureHydrationFetch(fetchKey: string, fetchGeneration: number): void {
@@ -9557,6 +9620,7 @@ export default class WorldmapScene extends WarpTravel {
           },
           onResolved: () => {
             this.retryDeferredChunkRemovals();
+            this.drainQueuedReconnectRefresh();
             return true;
           },
           state: this.chunkTransitionRuntimeState,
@@ -9599,6 +9663,7 @@ export default class WorldmapScene extends WarpTravel {
           },
           onResolved: () => {
             this.retryDeferredChunkRemovals();
+            this.drainQueuedReconnectRefresh();
             return true;
           },
           state: this.chunkTransitionRuntimeState,

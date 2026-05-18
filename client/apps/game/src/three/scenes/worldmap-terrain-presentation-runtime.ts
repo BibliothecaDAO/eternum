@@ -296,7 +296,7 @@ export function applyWorldmapVisualTerrainPage<TBiomeEntries = unknown, TBounds 
     return buildVisualTerrainStaleDropResult(state, input);
   }
 
-  state.presentations = [
+  const nextPresentations = [
     ...state.presentations
       .filter((presentation) => getTerrainPresentationCoverageKey(presentation) !== coverageKey)
       .map((presentation) =>
@@ -310,12 +310,16 @@ export function applyWorldmapVisualTerrainPage<TBiomeEntries = unknown, TBounds 
     input.presentation,
   ];
 
-  state.presentations = getPrioritizedWorldmapTerrainPresentations({
-    authoritativeChunkKey: input.authoritativeChunkKey ?? null,
-    nowMs: input.nowMs,
-    presentations: state.presentations,
-    targetCoverageKeys: input.targetCoverageKeys,
-  }).slice(0, input.maxCompositePages);
+  state.presentations = capTerrainPresentationsKeepingApplied(
+    getPrioritizedWorldmapTerrainPresentations({
+      authoritativeChunkKey: input.authoritativeChunkKey ?? null,
+      nowMs: input.nowMs,
+      presentations: nextPresentations,
+      targetCoverageKeys: input.targetCoverageKeys,
+    }),
+    input.presentation,
+    input.maxCompositePages,
+  );
 
   return {
     status: "applied",
@@ -327,6 +331,28 @@ export function applyWorldmapVisualTerrainPage<TBiomeEntries = unknown, TBounds 
       targetCoverageKeys: input.targetCoverageKeys,
     }),
   };
+}
+
+function capTerrainPresentationsKeepingApplied<TBiomeEntries, TBounds>(
+  prioritizedPresentations: Array<WorldmapTerrainPresentation<TBiomeEntries, TBounds>>,
+  appliedPresentation: WorldmapTerrainPresentation<TBiomeEntries, TBounds>,
+  maxPresentations: number,
+): Array<WorldmapTerrainPresentation<TBiomeEntries, TBounds>> {
+  const limit = Math.max(0, Math.floor(maxPresentations));
+  if (prioritizedPresentations.length <= limit) {
+    return prioritizedPresentations;
+  }
+
+  if (limit === 0) {
+    return [];
+  }
+
+  const cappedPresentations = prioritizedPresentations.slice(0, limit);
+  if (cappedPresentations.includes(appliedPresentation) || !prioritizedPresentations.includes(appliedPresentation)) {
+    return cappedPresentations;
+  }
+
+  return [...cappedPresentations.slice(0, limit - 1), appliedPresentation];
 }
 
 export function applyWorldmapTerrainPresentation<TBiomeEntries = unknown, TBounds = unknown>(
@@ -498,11 +524,43 @@ function resolveVisualTerrainPageKeyForHex(
 function worldPointToHex(point: WorldmapPointLike, hexSize: number): { col: number; row: number } {
   const horizontalDistance = Math.sqrt(3) * hexSize;
   const verticalDistance = 1.5 * hexSize;
+  const epsilon = 1e-12;
   const estimatedRow = Math.round(point.z / verticalDistance);
   const estimatedOffset = getRowOffset(estimatedRow, horizontalDistance);
   const estimatedCol = Math.round((point.x + estimatedOffset) / horizontalDistance);
+  const originX = estimatedCol * horizontalDistance - estimatedOffset;
+  const originZ = estimatedRow * verticalDistance;
+  const localPointX = point.x - originX;
+  const localPointZ = point.z - originZ;
 
-  return { col: estimatedCol, row: estimatedRow };
+  let bestRow = estimatedRow;
+  let bestCol = estimatedCol;
+  let bestDistanceSquared = Number.POSITIVE_INFINITY;
+
+  for (let row = estimatedRow - 1; row <= estimatedRow + 1; row += 1) {
+    const rowOffset = getRowOffset(row, horizontalDistance);
+    const nearestColForRow = Math.round((point.x + rowOffset) / horizontalDistance);
+    const localCenterZ = (row - estimatedRow) * verticalDistance;
+
+    for (let col = nearestColForRow - 1; col <= nearestColForRow + 1; col += 1) {
+      const localCenterX = (col - estimatedCol) * horizontalDistance - (rowOffset - estimatedOffset);
+      const dx = localPointX - localCenterX;
+      const dz = localPointZ - localCenterZ;
+      const distanceSquared = dx * dx + dz * dz;
+
+      if (
+        distanceSquared < bestDistanceSquared - epsilon ||
+        (Math.abs(distanceSquared - bestDistanceSquared) <= epsilon &&
+          (row < bestRow || (row === bestRow && col < bestCol)))
+      ) {
+        bestDistanceSquared = distanceSquared;
+        bestRow = row;
+        bestCol = col;
+      }
+    }
+  }
+
+  return { col: bestCol, row: bestRow };
 }
 
 function getRowOffset(row: number, horizontalDistance: number): number {

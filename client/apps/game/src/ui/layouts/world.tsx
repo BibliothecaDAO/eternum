@@ -4,6 +4,9 @@ import {
   subscribeToToriiHeartbeat,
 } from "@/dojo/connection-health-monitor";
 import { createConnectionDeadEndRecoveryGate } from "@/dojo/connection-dead-end-recovery-gate";
+import { runDeadEndRecovery } from "@/dojo/connection-dead-end-recovery";
+import { createToriiHeartbeatLifecycle } from "@/dojo/torii-heartbeat-lifecycle";
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { cancelEntityStreamSubscription, initialSync } from "@/dojo/sync";
 import { probeToriiHealth } from "@/dojo/torii-health-probe";
 import { resolveEntryContextFromPlayRoute } from "@/game-entry/context";
@@ -22,7 +25,7 @@ import { getActiveWorldmapRecoveryHandle } from "@/three/scenes/worldmap-reconne
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { useDojo } from "@bibliothecadao/react";
 import { Leva } from "leva";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
@@ -181,6 +184,11 @@ const ConnectionMonitor = () => {
   const state = useUIStore.getState();
   const fallbackToriiBaseUrl = activeWorld?.toriiBaseUrl ?? env.VITE_PUBLIC_TORII;
 
+  // Reconnect handlers can fire after this effect is created, so heartbeat
+  // reopen uses a ref instead of the setup value captured by this closure.
+  const setupRef = useRef(setup);
+  setupRef.current = setup;
+
   useEffect(() => {
     const toriiBaseUrl = resolveConnectionHealthToriiBaseUrl({
       activeWorld,
@@ -190,45 +198,44 @@ const ConnectionMonitor = () => {
 
     const walletAddress = useAccountStore.getState().account?.address ?? null;
     void setNetworkHealthScopeTags({ toriiBaseUrl, walletAddress });
-    let cancelled = false;
-    let heartbeatSubscription: { cancel: () => void } | null = null;
 
-    void subscribeToToriiHeartbeat(setup.network.toriiClient).then((subscription) => {
-      if (cancelled) {
-        subscription?.cancel();
-        return;
-      }
-      heartbeatSubscription = subscription;
+    const heartbeatLifecycle = createToriiHeartbeatLifecycle({
+      subscribe: () => subscribeToToriiHeartbeat(setupRef.current.network.toriiClient),
     });
+    void heartbeatLifecycle.start();
 
-    const runDeadEndRecovery = async () => {
-      const context = resolveEntryContextFromPlayRoute(window.location);
-      if (!context) {
-        console.warn("[ConnectionMonitor] Dead-end fired but no play-route context to recover into");
-        return;
-      }
-
-      try {
-        addNetworkBreadcrumb({ event: "reconnect_start", streamType: "global" });
-        // Tear down the cached setup, then re-run the entry-context bootstrap.
-        // This rebuilds the EternumProvider, ToriiClient, and spatial manager
-        // in one pass — covers consumers that captured the old toriiClient
-        // outside of streamReconnectVersion-keyed effects.
-        resetBootstrap();
-        await bootstrapGameForEntryContext(context);
-        addNetworkBreadcrumb({ event: "reconnect_success", streamType: "global" });
-        toast.success("Game state refreshed", {
-          description: "Reconnected after a prolonged outage.",
-        });
-      } catch (error) {
-        console.warn("[ConnectionMonitor] Dead-end recovery failed", error);
-        addNetworkBreadcrumb({
-          event: "reconnect_failure",
-          streamType: "global",
-          reason: getNetworkErrorReason(error),
-        });
-      }
-    };
+    const triggerDeadEndRecovery = () =>
+      runDeadEndRecovery({
+        resolveContext: () => {
+          const context = resolveEntryContextFromPlayRoute(window.location);
+          if (!context) {
+            console.warn("[ConnectionMonitor] Dead-end fired but no play-route context to recover into");
+            return null;
+          }
+          addNetworkBreadcrumb({ event: "reconnect_start", streamType: "global" });
+          return context;
+        },
+        resetBootstrap,
+        bootstrapForContext: (context) => bootstrapGameForEntryContext(context),
+        recordStreamReconnect: () => {
+          useConnectionStore.getState().recordStreamReconnect();
+        },
+        onSuccess: (result) => {
+          void heartbeatLifecycle.reopenWith(() => subscribeToToriiHeartbeat(result.setupResult.network.toriiClient));
+          addNetworkBreadcrumb({ event: "reconnect_success", streamType: "global" });
+          toast.success("Game state refreshed", {
+            description: "Reconnected after a prolonged outage.",
+          });
+        },
+        onFailure: (error) => {
+          console.warn("[ConnectionMonitor] Dead-end recovery failed", error);
+          addNetworkBreadcrumb({
+            event: "reconnect_failure",
+            streamType: "global",
+            reason: getNetworkErrorReason(error),
+          });
+        },
+      });
 
     const recoverWorldmapAfterConnectionFailure = () => {
       try {
@@ -276,6 +283,7 @@ const ConnectionMonitor = () => {
         }
       },
       onReconnectComplete: () => {
+        void heartbeatLifecycle.reopen();
         try {
           getActiveWorldmapRecoveryHandle()?.refreshAfterReconnect();
         } catch (error) {
@@ -292,14 +300,13 @@ const ConnectionMonitor = () => {
       onDeadEnd: (outageMs, attempts, reason) => {
         reportNetworkOutageDeadEnd({ streamType: "both", outageMs, attempts, reason });
         if (!shouldRunDeadEndRecovery({ toriiBaseUrl, reason })) return;
-        void runDeadEndRecovery();
+        void triggerDeadEndRecovery();
       },
     });
 
     monitor.start();
     return () => {
-      cancelled = true;
-      heartbeatSubscription?.cancel();
+      heartbeatLifecycle.dispose();
       monitor.dispose();
     };
   }, [activeWorld, fallbackToriiBaseUrl, setup, state]);

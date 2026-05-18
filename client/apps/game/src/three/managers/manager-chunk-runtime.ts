@@ -137,20 +137,28 @@ export async function runManagerChunkUpdateRuntime(input: RunManagerChunkUpdateR
   }
 }
 
+export interface RecoverManagerChunkRuntimeAfterStallResult {
+  state: ManagerChunkRuntimeState;
+  didApply: boolean;
+}
+
 export function recoverManagerChunkRuntimeAfterStall(
   state: ManagerChunkRuntimeState,
   input: RecoverManagerChunkRuntimeAfterStallInput,
-): ManagerChunkRuntimeState {
-  state.inFlightPromise = null;
-  state.latestTransitionToken = Math.max(state.latestTransitionToken, input.transitionToken);
+): RecoverManagerChunkRuntimeAfterStallResult {
+  const isStaleRecovery = input.transitionToken < state.latestTransitionToken;
+  if (!isStaleRecovery) {
+    state.inFlightPromise = null;
+    state.latestTransitionToken = Math.max(state.latestTransitionToken, input.transitionToken);
 
-  if (isRecoverableChunkKey(input.chunkKey)) {
-    state.currentChunk = input.chunkKey;
-    state.transitionChunkByToken.set(input.transitionToken, input.chunkKey);
+    if (isRecoverableChunkKey(input.chunkKey)) {
+      state.currentChunk = input.chunkKey;
+      state.transitionChunkByToken.set(input.transitionToken, input.chunkKey);
+    }
   }
 
   pruneTransitionChunkHistory(state);
-  return state;
+  return { state, didApply: !isStaleRecovery };
 }
 
 function registerChunkTransitionRequest(
