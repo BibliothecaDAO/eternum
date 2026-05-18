@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/aussie-noobs/26007021858-1.json",
   "latestLaunchRequestId": "26007021858-1",
-  "currentStepId": "grant-lootchest-role",
+  "currentStepId": "create-indexer",
   "createdAt": "2026-05-18T00:22:56.566Z",
-  "updatedAt": "2026-05-18T00:24:58.168Z",
+  "updatedAt": "2026-05-18T00:25:18.337Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,10 +63,11 @@
     {
       "id": "grant-lootchest-role",
       "title": "Setting up loot chests",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests started",
-      "startedAt": "2026-05-18T00:24:58.168Z"
+      "latestEvent": "Setting up loot chests succeeded",
+      "startedAt": "2026-05-18T00:24:58.168Z",
+      "finishedAt": "2026-05-18T00:25:18.337Z"
     },
     {
       "id": "create-indexer",
@@ -87,14 +88,7 @@
     "worldConfigTxHash": "0x36addbd1bab30f0cf4035d45b1b222bb580e90e3f65a7a3330c2c85f8bc6b28",
     "reserveHyperstructuresTxHashes": [
       "0x4e5e78e5819450fae51da392b74871b82f62a9b0c0f661956c2f0778781e7c"
-    ]
-  },
-  "activeLease": {
-    "launchRequestId": "26007021858-1",
-    "workflowRunId": 26007021858,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "acquiredAt": "2026-05-18T00:24:58.168Z",
-    "expiresAt": "2026-05-18T01:09:58.168Z"
+    ],
+    "lootChestRoleTxHash": "0x623a0e4662d4b775f72dba9e31c397c5c17cef29f4e2c33f15a25d1ea1eeb01"
   }
 }
