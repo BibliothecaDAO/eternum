@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26022917588-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-18T08:44:00.971Z",
-  "updatedAt": "2026-05-18T08:44:57.584Z",
+  "updatedAt": "2026-05-18T08:45:06.925Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-05-18T08:45:06.925Z"
     },
     {
       "id": "configure-world",
@@ -75,5 +76,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-kick-341.json",
     "worldAddress": "0x06e6166e43920bfb3699bee9efd22ff512df054e357ef88634d65061fb043d13",
     "createGameTxHash": "0x3355db576ca2d5e15d34ef4bb60905c8bc7d2943c1e25174638ce1c7364bbfc"
+  },
+  "activeLease": {
+    "launchRequestId": "26022917588-1",
+    "workflowRunId": 26022917588,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-05-18T08:45:06.925Z",
+    "expiresAt": "2026-05-18T09:30:06.925Z"
   }
 }
