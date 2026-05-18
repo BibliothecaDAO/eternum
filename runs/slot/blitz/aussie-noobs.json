@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "aussie-noobs",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/aussie-noobs/26007021858-1.json",
   "latestLaunchRequestId": "26007021858-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-05-18T00:22:56.566Z",
-  "updatedAt": "2026-05-18T00:25:26.776Z",
+  "updatedAt": "2026-05-18T00:25:45.185Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-18T00:25:26.776Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-05-18T00:25:26.776Z",
+      "finishedAt": "2026-05-18T00:25:45.185Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x4e5e78e5819450fae51da392b74871b82f62a9b0c0f661956c2f0778781e7c"
     ],
-    "lootChestRoleTxHash": "0x623a0e4662d4b775f72dba9e31c397c5c17cef29f4e2c33f15a25d1ea1eeb01"
+    "lootChestRoleTxHash": "0x623a0e4662d4b775f72dba9e31c397c5c17cef29f4e2c33f15a25d1ea1eeb01",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/aussie-noobs/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-18T00:25:43.856Z"
   },
-  "activeLease": {
-    "launchRequestId": "26007021858-1",
-    "workflowRunId": 26007021858,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-18T00:25:26.776Z",
-    "expiresAt": "2026-05-18T01:10:26.776Z"
-  }
+  "completedAt": "2026-05-18T00:25:45.185Z"
 }
