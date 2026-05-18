@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/aussie-noobs/26007021858-1.json",
   "latestLaunchRequestId": "26007021858-1",
-  "currentStepId": "configure-world",
+  "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-05-18T00:22:56.566Z",
-  "updatedAt": "2026-05-18T00:24:05.285Z",
+  "updatedAt": "2026-05-18T00:24:20.951Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,10 +45,11 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-05-18T00:24:05.285Z"
+      "latestEvent": "Applying settings succeeded",
+      "startedAt": "2026-05-18T00:24:05.285Z",
+      "finishedAt": "2026-05-18T00:24:20.951Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -77,14 +78,9 @@
     "durationSeconds": 3600,
     "summaryPath": ".context/game-launch/slot-blitz-aussie-noobs.json",
     "worldAddress": "0x05c85baf835c66687ac77afde89fbb3264930ef681fdd5c41dc7951f7c187d03",
-    "createGameTxHash": "0x67ea6380d93c6da4c5b89844cd5675eeeb1824162a95dc7a7b3d18a443e5fec"
-  },
-  "activeLease": {
-    "launchRequestId": "26007021858-1",
-    "workflowRunId": 26007021858,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "acquiredAt": "2026-05-18T00:24:05.285Z",
-    "expiresAt": "2026-05-18T01:09:05.285Z"
+    "createGameTxHash": "0x67ea6380d93c6da4c5b89844cd5675eeeb1824162a95dc7a7b3d18a443e5fec",
+    "entryTokenAddress": "0xad81a9f3f190efc35ca51e5beb3bc419a29efa7619a0ac4cc784f418f4efb3",
+    "configureTxHash": "0x36addbd1bab30f0cf4035d45b1b222bb580e90e3f65a7a3330c2c85f8bc6b28",
+    "worldConfigTxHash": "0x36addbd1bab30f0cf4035d45b1b222bb580e90e3f65a7a3330c2c85f8bc6b28"
   }
 }
