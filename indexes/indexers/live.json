@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-18T10:57:31.777Z",
+  "updatedAt": "2026-05-18T11:02:53.336Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2398,6 +2398,19 @@
         "describedAt": "2026-05-18T03:42:31.371Z"
       },
       "updatedAt": "2026-05-18T03:42:31.372Z"
+    },
+    "bltz-kick-341": {
+      "gameName": "bltz-kick-341",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-kick-341/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-18T11:02:53.336Z"
+      },
+      "updatedAt": "2026-05-18T11:02:53.336Z"
     }
   }
 }
