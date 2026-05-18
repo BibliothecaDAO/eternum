@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-fizz-493",
-    "launchRequestId": "25889188363-1",
+    "gameName": "aussie-noobs",
+    "launchRequestId": "26007021858-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 25889188363,
+    "workflowRunId": 26007021858,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "b08588ca-52c5-488f-a434-fcd226a010f3"
+    "stepId": "create-world",
+    "leaseId": "7375b4e1-c58c-4bcc-a1b5-0a186e06cbcb"
   },
-  "acquiredAt": "2026-05-14T22:29:39.370Z",
-  "heartbeatAt": "2026-05-14T22:29:54.138Z",
-  "expiresAt": "2026-05-14T22:29:54.138Z",
-  "releasedAt": "2026-05-14T22:29:54.138Z"
+  "acquiredAt": "2026-05-18T00:23:04.588Z",
+  "heartbeatAt": "2026-05-18T00:23:04.588Z",
+  "expiresAt": "2026-05-18T00:33:04.588Z"
 }
