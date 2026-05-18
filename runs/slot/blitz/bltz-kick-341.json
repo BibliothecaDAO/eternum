@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26022917588-1",
   "currentStepId": null,
   "createdAt": "2026-05-18T08:44:00.971Z",
-  "updatedAt": "2026-05-18T08:47:19.416Z",
+  "updatedAt": "2026-05-18T11:01:01.807Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -97,7 +97,9 @@
     "indexerUrl": "https://api.cartridge.gg/x/bltz-kick-341/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-18T08:47:18.064Z"
+    "lastIndexerDescribeAt": "2026-05-18T08:47:18.064Z",
+    "pendingIndexerTierTarget": "legendary",
+    "pendingIndexerTierRequestedAt": "2026-05-18T11:01:00.164Z"
   },
   "completedAt": "2026-05-18T08:47:19.416Z"
 }
