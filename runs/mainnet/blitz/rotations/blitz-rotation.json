@@ -12,9 +12,9 @@
   "requestedLaunchStep": "grant-lootchest-roles",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26065961292-1.json",
   "latestLaunchRequestId": "26065961292-1",
-  "currentStepId": "grant-lootchest-roles",
+  "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-18T23:16:51.690Z",
+  "updatedAt": "2026-05-18T23:16:56.534Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
+    "nextRetryAt": "2026-05-18T23:31:56.534Z",
     "lastRetryAt": "2026-05-18T23:15:17.162Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-18T23:31:38.148Z",
-    "lastEvaluatedAt": "2026-05-18T23:16:38.148Z"
+    "nextEvaluationAt": "2026-05-18T23:31:56.534Z",
+    "lastEvaluatedAt": "2026-05-18T23:16:56.534Z"
   },
   "steps": [
     {
@@ -73,9 +74,9 @@
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "running",
+      "status": "pending",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests started",
+      "latestEvent": "Waiting to run",
       "startedAt": "2026-05-18T23:16:44.727Z"
     },
     {
@@ -5306,7 +5307,7 @@
         },
         "seriesGameNumber": 28,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for apac-gladiator-14-05-26-1000: Torii deployment \"apac-gladiator-14-05-26-1000\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -5487,10 +5488,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-18T23:16:51.086Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-18T23:16:51.086Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-14-05-26-1000\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-05-18T23:15:27.865Z"
         }
       },
       {
@@ -5503,7 +5501,7 @@
         },
         "seriesGameNumber": 29,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for na-gladiator-15-05-26-0100: Torii deployment \"na-gladiator-15-05-26-0100\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -5684,10 +5682,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-18T23:16:51.158Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-18T23:16:51.158Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-15-05-26-0100\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-05-18T23:15:27.865Z"
         }
       },
       {
@@ -5700,7 +5695,7 @@
         },
         "seriesGameNumber": 30,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for eu-gladiator-15-05-26-1800: Torii deployment \"eu-gladiator-15-05-26-1800\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -5881,10 +5876,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-18T23:16:51.231Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-18T23:16:51.231Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-15-05-26-1800\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-05-18T23:15:27.865Z"
         }
       },
       {
@@ -5897,7 +5889,7 @@
         },
         "seriesGameNumber": 31,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for apac-gladiator-16-05-26-1200: Torii deployment \"apac-gladiator-16-05-26-1200\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -6078,10 +6070,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-18T23:16:51.316Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-18T23:16:51.316Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-16-05-26-1200\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-05-18T23:15:27.865Z"
         }
       },
       {
@@ -6094,7 +6083,7 @@
         },
         "seriesGameNumber": 32,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for eu-gladiator-16-05-26-2000: Torii deployment \"eu-gladiator-16-05-26-2000\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -6158,10 +6147,7 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-18T23:16:51.392Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-18T23:16:51.392Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-16-05-26-2000\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-05-18T23:15:27.865Z"
         }
       },
       {
@@ -6174,7 +6160,7 @@
         },
         "seriesGameNumber": 33,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Indexer maintenance failed for na-gladiator-17-05-26-0300: Torii deployment \"na-gladiator-17-05-26-0300\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "failed",
         "configSteps": [
           {
@@ -6349,10 +6335,7 @@
           "worldConfigTxHash": "0x16f50c20e343ddb006f98b0fcaf84ab12f1bbd39556a1caecdee497d59a32f3",
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-18T23:16:51.466Z",
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-18T23:16:51.466Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-17-05-26-0300\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-05-18T23:15:27.865Z"
         }
       },
       {
@@ -6365,7 +6348,7 @@
         },
         "seriesGameNumber": 34,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Indexer maintenance failed for apac-gladiator-17-05-26-1100: Torii deployment \"apac-gladiator-17-05-26-1100\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "failed",
         "configSteps": [
           {
@@ -6539,11 +6522,8 @@
           "configureTxHash": "0x33384b460626da8c1680ce983df0f549598a8806aedf00ab2191db9d808614e",
           "worldConfigTxHash": "0x33384b460626da8c1680ce983df0f549598a8806aedf00ab2191db9d808614e",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-18T23:16:51.540Z",
-          "indexerCreated": false,
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-18T23:16:51.540Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-17-05-26-1100\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-05-18T23:15:27.865Z",
+          "indexerCreated": false
         }
       },
       {
@@ -6556,7 +6536,7 @@
         },
         "seriesGameNumber": 35,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Indexer maintenance failed for eu-gladiator-17-05-26-1900: Torii deployment \"eu-gladiator-17-05-26-1900\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "failed",
         "configSteps": [
           {
@@ -6730,11 +6710,8 @@
           "configureTxHash": "0xd2d91f0d24f0209c61030a7800543ac8424e9a0f348b5630592ca4ea4e963f",
           "worldConfigTxHash": "0xd2d91f0d24f0209c61030a7800543ac8424e9a0f348b5630592ca4ea4e963f",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-18T23:16:51.615Z",
-          "indexerCreated": false,
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-18T23:16:51.615Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-17-05-26-1900\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-05-18T23:15:27.865Z",
+          "indexerCreated": false
         }
       },
       {
@@ -6747,7 +6724,7 @@
         },
         "seriesGameNumber": 36,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Indexer maintenance failed for na-gladiator-18-05-26-0100: Torii deployment \"na-gladiator-18-05-26-0100\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "failed",
         "configSteps": [
           {
@@ -6921,11 +6898,8 @@
           "configureTxHash": "0x10235c113397affc11efbfb713d26109a4886da7f43570deb3c5471eb1e5669",
           "worldConfigTxHash": "0x10235c113397affc11efbfb713d26109a4886da7f43570deb3c5471eb1e5669",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-18T23:16:51.690Z",
-          "indexerCreated": false,
-          "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-18T23:16:51.690Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-18-05-26-0100\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-05-18T23:15:27.865Z",
+          "indexerCreated": false
         }
       },
       {
@@ -7861,13 +7835,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "26065961292-1",
-    "workflowRunId": 26065961292,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-roles",
-    "acquiredAt": "2026-05-18T23:16:44.727Z",
-    "expiresAt": "2026-05-19T00:01:44.727Z"
   }
 }
