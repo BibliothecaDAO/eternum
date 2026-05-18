@@ -230,6 +230,14 @@ const ConnectionMonitor = () => {
       }
     };
 
+    const recoverWorldmapAfterConnectionFailure = () => {
+      try {
+        getActiveWorldmapRecoveryHandle()?.recoverAfterConnectionFailure();
+      } catch (error) {
+        console.warn("[ConnectionMonitor] Worldmap connection-failure recovery failed", error);
+      }
+    };
+
     const monitor = new ConnectionHealthMonitor({
       onReconnectSpatial: async () => {
         addNetworkBreadcrumb({ event: "reconnect_start", streamType: "spatial" });
@@ -247,6 +255,7 @@ const ConnectionMonitor = () => {
             streamType: "spatial",
             reason: getNetworkErrorReason(error),
           });
+          recoverWorldmapAfterConnectionFailure();
           throw error;
         }
       },
@@ -262,6 +271,7 @@ const ConnectionMonitor = () => {
             streamType: "global",
             reason: getNetworkErrorReason(error),
           });
+          recoverWorldmapAfterConnectionFailure();
           throw error;
         }
       },

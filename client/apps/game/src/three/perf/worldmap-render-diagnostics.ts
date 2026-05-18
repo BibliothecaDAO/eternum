@@ -37,6 +37,19 @@ export type WorldmapRenderCounter =
   | "terrainVisibleReplaceCount"
   | "terrainVisibleAppendCount"
   | "terrainVisibleRebuildCount"
+  | "terrainShellStarted"
+  | "terrainShellCommitted"
+  | "terrainShellReplaced"
+  | "terrainCompositeRebuilt"
+  | "terrainShellStaleDropped"
+  | "visualWindowResolved"
+  | "visualPageQueued"
+  | "visualPageBuilt"
+  | "visualPageCommitted"
+  | "visualPageReplaced"
+  | "visualPageEvicted"
+  | "visualPageStaleDropped"
+  | "visualPageBudgetExhausted"
   | "staleTerrainCacheFingerprintRejectCount"
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
@@ -147,6 +160,19 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     terrainVisibleReplaceCount: 0,
     terrainVisibleAppendCount: 0,
     terrainVisibleRebuildCount: 0,
+    terrainShellStarted: 0,
+    terrainShellCommitted: 0,
+    terrainShellReplaced: 0,
+    terrainCompositeRebuilt: 0,
+    terrainShellStaleDropped: 0,
+    visualWindowResolved: 0,
+    visualPageQueued: 0,
+    visualPageBuilt: 0,
+    visualPageCommitted: 0,
+    visualPageReplaced: 0,
+    visualPageEvicted: 0,
+    visualPageStaleDropped: 0,
+    visualPageBudgetExhausted: 0,
     staleTerrainCacheFingerprintRejectCount: 0,
     preparedChunkPrewarmHits: 0,
     preparedChunkPrewarmMisses: 0,

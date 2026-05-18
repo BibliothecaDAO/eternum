@@ -62,7 +62,19 @@ export async function runWorldmapChunkTransition<TTransitionPromise extends Prom
   input: RunWorldmapChunkTransitionInput<TTransitionPromise, TResult>,
 ): Promise<TResult> {
   input.state.isTransitioning = true;
-  input.state.activePromise = input.transitionPromise;
+  let ownershipPromise: TTransitionPromise | null = null;
+  const transitionRunPromise = runBoundedWorldmapChunkTransition(input, () => ownershipPromise);
+  ownershipPromise = transitionRunPromise.then(() => undefined) as TTransitionPromise;
+  ownershipPromise.catch(() => undefined);
+  input.state.activePromise = ownershipPromise;
+
+  return await transitionRunPromise;
+}
+
+async function runBoundedWorldmapChunkTransition<TTransitionPromise extends Promise<unknown>, TResult>(
+  input: RunWorldmapChunkTransitionInput<TTransitionPromise, TResult>,
+  getOwnershipPromise: () => TTransitionPromise | null,
+): Promise<TResult> {
   await input.onTransitionStart?.();
   if (input.yieldFrame) {
     await input.yieldFrame();
@@ -112,7 +124,9 @@ export async function runWorldmapChunkTransition<TTransitionPromise extends Prom
       clearTimeout(timeoutHandle);
     }
     await input.onFinally?.();
-    input.state.activePromise = null;
-    input.state.isTransitioning = false;
+    if (input.state.activePromise === getOwnershipPromise()) {
+      input.state.activePromise = null;
+      input.state.isTransitioning = false;
+    }
   }
 }

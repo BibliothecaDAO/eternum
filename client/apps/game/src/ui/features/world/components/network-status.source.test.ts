@@ -25,6 +25,13 @@ describe("network status wiring", () => {
     expect(source).toContain('toast.success("Back online"');
   });
 
+  it("lets the active worldmap clear stuck map loading when stream reconnect fails", () => {
+    const source = readSource("src/ui/layouts/world.tsx");
+
+    expect(source).toContain("recoverAfterConnectionFailure");
+    expect(source).toMatch(/getActiveWorldmapRecoveryHandle\(\)\?\.recoverAfterConnectionFailure\(\)/);
+  });
+
   it("exposes a module-level getConnectionHealthMonitor for UI retry callbacks", () => {
     const source = readSource("src/dojo/connection-health-monitor.ts");
 
