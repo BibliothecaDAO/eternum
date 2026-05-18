@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { fetchBulkAvailability, isToriiAvailable } from "@/runtime/world/factory-resolver";
+import { buildSettledBlitzPlayersWithNamesQuery } from "@/services/blitz/blitz-settlement-sql";
 
 import { env } from "../../../../../env";
 import { decodePaddedFeltAscii, normalizeHex, parseMaybeHexToNumber } from "./market-utils";
@@ -9,8 +10,7 @@ import { decodePaddedFeltAscii, normalizeHex, parseMaybeHexToNumber } from "./ma
 const WORLD_CONFIG_QUERY =
   'SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "blitz_registration_config.registration_count" AS registration_count FROM "s1_eternum-WorldConfig" LIMIT 1;';
 
-const PLAYERS_QUERY =
-  'SELECT r.player AS player, n.name AS name FROM "s1_eternum-BlitzRealmPlayerRegister" r LEFT JOIN "s1_eternum-AddressName" n ON r.player = n.address WHERE r.once_registered = TRUE OR r.registered = TRUE;';
+const PLAYERS_QUERY = buildSettledBlitzPlayersWithNamesQuery();
 
 export const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 

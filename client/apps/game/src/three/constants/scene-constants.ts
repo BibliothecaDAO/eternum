@@ -85,6 +85,7 @@ enum ChestFilenames {
 }
 
 export const ChestModelPath = "/models/new-buildings-opt/" + ChestFilenames.Chest;
+export const ReservedHyperstructureModelPath = "/models/new-buildings-opt/" + BuildingFilenames.HyperstructureInit;
 
 export const SHARED_BIOME_MODEL_PATHS = buildUniqueAssetPaths([
   ...Object.values(BiomeFilenames).map((fileName) => `${BIOMES_MODELS_PATH}${fileName}`),

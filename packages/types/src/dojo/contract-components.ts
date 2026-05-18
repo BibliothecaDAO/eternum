@@ -2020,6 +2020,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    BlitzSettlement: (() => {
+      return defineComponent(
+        world,
+        {
+          player: RecsType.BigInt,
+          structure_ids: RecsType.NumberArray,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "BlitzSettlement",
+            types: ["ContractAddress", "Span<u32>"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     BlitzRealmSettleFinish: (() => {
       return defineComponent(
         world,

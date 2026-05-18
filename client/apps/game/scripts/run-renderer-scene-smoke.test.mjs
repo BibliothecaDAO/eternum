@@ -149,6 +149,25 @@ describe("isRetryableAgentBrowserFailure", () => {
     ).toBe(true);
   });
 
+  it("retries transient agent-browser daemon read failures for read-only commands", () => {
+    expect(
+      isRetryableAgentBrowserFailure({
+        commandArgs: ["eval", "JSON.stringify(window.__rendererDiagnostics ?? null)"],
+        stderr:
+          "Error: ✗ Failed to read: Resource temporarily unavailable (os error 11) (after 5 retries - daemon may be busy or unresponsive)",
+        stdout: "",
+      }),
+    ).toBe(true);
+    expect(
+      isRetryableAgentBrowserFailure({
+        commandArgs: ["get", "count", "text=Unable to Start"],
+        stderr:
+          "Error: ✗ Failed to read: Resource temporarily unavailable (os error 11) (after 5 retries - daemon may be busy or unresponsive)",
+        stdout: "",
+      }),
+    ).toBe(true);
+  });
+
   it("does not retry commands that can change browser state", () => {
     expect(
       isRetryableAgentBrowserFailure({

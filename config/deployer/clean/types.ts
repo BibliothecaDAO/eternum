@@ -16,6 +16,7 @@ export type LaunchGameStepId =
   | "create-world"
   | "wait-for-factory-index"
   | "configure-world"
+  | "reserve-blitz-hyperstructures"
   | "grant-lootchest-role"
   | "grant-village-pass-role"
   | "create-banks"
@@ -26,6 +27,7 @@ export type SeriesLaunchStepId =
   | "create-worlds"
   | "wait-for-factory-indexes"
   | "configure-worlds"
+  | "reserve-blitz-hyperstructures"
   | "grant-lootchest-roles"
   | "grant-village-pass-roles"
   | "create-banks"
@@ -61,6 +63,7 @@ export interface ConfigLogger {
 
 export interface CleanConfigArtifacts {
   worldConfigTxHash?: string;
+  entryTokenAddress?: string;
 }
 
 export interface CleanConfigContext<Provider = unknown> {
@@ -303,6 +306,8 @@ export interface LaunchGameSummary {
   rpcUrl: string;
   factoryAddress: string;
   worldAddress?: string;
+  entryTokenAddress?: string;
+  reserveHyperstructuresTxHashes?: string[];
   createGameTxHash?: string;
   configureTxHash?: string;
   worldConfigTxHash?: string;
@@ -342,6 +347,8 @@ export interface PrizeFundingState {
 
 export interface SeriesLaunchGameArtifacts {
   worldAddress?: string;
+  entryTokenAddress?: string;
+  reserveHyperstructuresTxHashes?: string[];
   createGameTxHash?: string;
   configureTxHash?: string;
   worldConfigTxHash?: string;

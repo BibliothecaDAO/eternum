@@ -6,6 +6,13 @@ import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "..
 import { executeConfigSteps } from "../config/executor";
 import { resolveFactoryWorldConfigSteps } from "../config/steps";
 import {
+  BLITZ_HYPERSTRUCTURE_RESERVATION_COOLDOWN_MS,
+  buildReserveBlitzHyperstructuresCall,
+  resolveBlitzHyperstructureReservationCallCount,
+  shouldReserveBlitzHyperstructures,
+} from "../blitz/hyperstructure-reservation";
+import { resolveBlitzEntryTokenAddress, shouldDeployBlitzEntryToken } from "../blitz/entry-token";
+import {
   DEFAULT_CARTRIDGE_API_BASE,
   DEFAULT_FACTORY_INDEX_POLL_MS,
   DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
@@ -31,7 +38,7 @@ import {
   waitForFactoryWorldProfile,
 } from "../factory/discovery";
 import { ensureSlotIndexerDeployment, resolveIndexerArtifactState } from "../indexing/slot-torii";
-import { syncPaymasterPolicy } from "../paymaster";
+import { syncPaymasterPolicy, type PaymasterAction } from "../paymaster";
 import { buildLootChestMinterRoleGrantCall, grantRoles, resolveLootChestMinterRoleGrantTarget } from "../role-grants";
 import { resolveAccountCredentials } from "../shared/credentials";
 import type { GameManifestLike } from "../shared/manifest-types";
@@ -95,6 +102,7 @@ interface PreparedLaunchExecution {
 interface ConfiguredWorldResult {
   transactionHash?: string;
   worldConfigTxHash?: string;
+  entryTokenAddress?: string;
   steps: LaunchGameSummary["configSteps"];
 }
 
@@ -637,9 +645,160 @@ function resolveWorldConfigTxHash(result: ConfigExecutionResult): string | undef
   return result.mode === "batched" ? result.transactionHash : result.artifacts.worldConfigTxHash;
 }
 
+function resolveConfigStepTransactionHash(result: ConfigExecutionResult, stepId: string): string | undefined {
+  return result.steps.find((step) => step.id === stepId)?.transactionHash;
+}
+
+function resolveBlitzRegistrationTransactionHash(result: ConfigExecutionResult): string | undefined {
+  return result.mode === "batched"
+    ? result.transactionHash
+    : resolveConfigStepTransactionHash(result, "blitz-registration");
+}
+
+function resolveConfiguredBlitzEntryTokenAddress(options: {
+  deploymentConfig: LaunchConfig;
+  patchedManifest: GameManifestLike;
+  configResult: ConfigExecutionResult;
+}): string | undefined {
+  if (!shouldDeployBlitzEntryToken(options.deploymentConfig)) {
+    return undefined;
+  }
+
+  const blitzRegistrationTransactionHash = resolveBlitzRegistrationTransactionHash(options.configResult);
+  const entryTokenClassHash = options.deploymentConfig.blitz?.registration?.entry_token_class_hash;
+
+  if (!blitzRegistrationTransactionHash || !entryTokenClassHash) {
+    return undefined;
+  }
+
+  return resolveBlitzEntryTokenAddress({
+    manifest: options.patchedManifest,
+    entryTokenClassHash,
+    blitzRegistrationTransactionHash,
+  });
+}
+
+function buildPaymasterExtraActions(summary: LaunchGameSummary): PaymasterAction[] | undefined {
+  if (!summary.entryTokenAddress) {
+    return undefined;
+  }
+
+  return [
+    {
+      contractAddress: summary.entryTokenAddress,
+      entrypoint: "set_approval_for_all",
+    },
+  ];
+}
+
 function buildBanksFromWorldConfigTxHash(worldConfigTxHash: string) {
   const mapCenterOffset = deriveMapCenterOffsetFromWorldConfigTx(worldConfigTxHash);
   return buildBanksForMapCenterOffset(mapCenterOffset);
+}
+
+function buildBlitzHyperstructureReservationBatchLabel(batchIndex: number, totalBatches: number): string {
+  if (totalBatches === 1) {
+    return "reserve_blitz_hyperstructures";
+  }
+
+  return `reserve_blitz_hyperstructures (${batchIndex}/${totalBatches})`;
+}
+
+async function waitBeforeNextLaunchTransaction(
+  progress: LaunchProgress,
+  currentLabel: string,
+  nextLabel: string,
+  delayMs: number,
+): Promise<void> {
+  if (delayMs <= 0) {
+    return;
+  }
+
+  progress.log(`Waiting ${formatDuration(delayMs)} before ${nextLabel} after ${currentLabel} to avoid nonce issues`);
+  await sleep(delayMs);
+}
+
+async function submitBlitzHyperstructureReservationBatch(params: {
+  runtime: LaunchRuntime;
+  account: Account;
+  patchedManifest: GameManifestLike;
+  batchIndex: number;
+  totalBatches: number;
+}): Promise<string> {
+  const label = buildBlitzHyperstructureReservationBatchLabel(params.batchIndex, params.totalBatches);
+  const call = buildReserveBlitzHyperstructuresCall(params.patchedManifest);
+  const receipt = await params.runtime.progress.run(label, () => params.account.execute(call), {
+    start:
+      params.totalBatches === 1
+        ? "Reserving blitz hyperstructures"
+        : `Reserving blitz hyperstructures batch ${params.batchIndex}/${params.totalBatches}`,
+    success: (result, elapsedMs) =>
+      params.totalBatches === 1
+        ? `Reserved blitz hyperstructures in ${formatDuration(elapsedMs)} (${shortenHash(result.transaction_hash)})`
+        : `Reserved blitz hyperstructures batch ${params.batchIndex}/${params.totalBatches} in ${formatDuration(
+            elapsedMs,
+          )} (${shortenHash(result.transaction_hash)})`,
+  });
+
+  await params.runtime.progress.run(label, () => params.account.waitForTransaction(receipt.transaction_hash), {
+    start:
+      params.totalBatches === 1
+        ? `Waiting for blitz hyperstructure reservation confirmation (${shortenHash(receipt.transaction_hash)})`
+        : `Waiting for blitz hyperstructure reservation batch ${params.batchIndex}/${params.totalBatches} confirmation (${shortenHash(
+            receipt.transaction_hash,
+          )})`,
+    success: (_, elapsedMs) =>
+      params.totalBatches === 1
+        ? `Blitz hyperstructure reservation confirmed in ${formatDuration(elapsedMs)}`
+        : `Blitz hyperstructure reservation batch ${params.batchIndex}/${params.totalBatches} confirmed in ${formatDuration(
+            elapsedMs,
+          )}`,
+  });
+
+  return receipt.transaction_hash;
+}
+
+async function reserveBlitzHyperstructuresIfNeeded(params: {
+  runtime: LaunchRuntime;
+  deploymentConfig: LaunchConfig;
+  account: Account;
+  patchedManifest: GameManifestLike;
+}): Promise<string[] | undefined> {
+  if (!shouldReserveBlitzHyperstructures(params.deploymentConfig)) {
+    params.runtime.progress.log("Skipping blitz hyperstructure reservation because this launch does not require it");
+    return undefined;
+  }
+
+  const totalBatches = resolveBlitzHyperstructureReservationCallCount(params.deploymentConfig);
+  if (totalBatches <= 0) {
+    params.runtime.progress.log("Skipping blitz hyperstructure reservation because no placeholder tiles are required");
+    return undefined;
+  }
+
+  const transactionHashes: string[] = [];
+
+  for (let batchIndex = 1; batchIndex <= totalBatches; batchIndex += 1) {
+    const transactionHash = await submitBlitzHyperstructureReservationBatch({
+      runtime: params.runtime,
+      account: params.account,
+      patchedManifest: params.patchedManifest,
+      batchIndex,
+      totalBatches,
+    });
+
+    transactionHashes.push(transactionHash);
+
+    if (batchIndex < totalBatches) {
+      await waitBeforeNextLaunchTransaction(
+        params.runtime.progress,
+        buildBlitzHyperstructureReservationBatchLabel(batchIndex, totalBatches),
+        buildBlitzHyperstructureReservationBatchLabel(batchIndex + 1, totalBatches),
+        BLITZ_HYPERSTRUCTURE_RESERVATION_COOLDOWN_MS,
+      );
+    }
+  }
+
+  return transactionHashes;
 }
 
 function requireWorldConfigTxHash(summary: LaunchGameSummary): string {
@@ -692,6 +851,7 @@ async function configureWorld(params: {
   configSteps: LaunchConfigSteps;
   account: Account;
   patchedProvider: EternumProvider;
+  patchedManifest: GameManifestLike;
 }): Promise<ConfiguredWorldResult> {
   const result = await executeWorldConfig({
     ...params,
@@ -701,6 +861,11 @@ async function configureWorld(params: {
   return {
     transactionHash: result.transactionHash,
     worldConfigTxHash: resolveWorldConfigTxHash(result),
+    entryTokenAddress: resolveConfiguredBlitzEntryTokenAddress({
+      deploymentConfig: params.deploymentConfig,
+      patchedManifest: params.patchedManifest,
+      configResult: result,
+    }),
     steps: result.steps,
   };
 }
@@ -792,6 +957,7 @@ function shouldSyncPaymaster(runtime: LaunchRuntime): boolean {
 async function syncPaymasterIfNeeded(params: {
   runtime: LaunchRuntime;
   request: LaunchGameRequest;
+  summary: LaunchGameSummary;
 }): Promise<boolean | undefined> {
   if (!shouldSyncPaymaster(params.runtime)) {
     params.runtime.progress.log("Skipping paymaster sync for non-mainnet environment");
@@ -805,6 +971,7 @@ async function syncPaymasterIfNeeded(params: {
         chain: params.runtime.environment.chain,
         gameName: params.request.gameName,
         cartridgeApiBase: params.runtime.cartridgeApiBase,
+        extraActions: buildPaymasterExtraActions(params.summary),
       }),
     {
       start: "Syncing paymaster policy for the launched world",
@@ -986,12 +1153,14 @@ async function runConfigureWorldStep(
     configSteps: execution.configSteps,
     account: resolvedDependencies.accountContext.account,
     patchedProvider: resolvedDependencies.worldContext.patchedProvider,
+    patchedManifest: resolvedDependencies.worldContext.patchedManifest,
   });
 
   execution.summary.configureTxHash = configResult.transactionHash;
   if (configResult.worldConfigTxHash) {
     execution.summary.worldConfigTxHash = configResult.worldConfigTxHash;
   }
+  execution.summary.entryTokenAddress = configResult.entryTokenAddress;
   execution.summary.configSteps = configResult.steps;
 
   return resolvedDependencies;
@@ -1010,6 +1179,33 @@ async function runGrantLootChestRoleStep(
     accountAddress: resolvedDependencies.accountContext.accountAddress,
     privateKey: resolvedDependencies.accountContext.privateKey,
   });
+
+  return resolvedDependencies;
+}
+
+async function runReserveBlitzHyperstructuresStep(
+  execution: PreparedLaunchExecution,
+  dependencies?: ConfiguredLaunchDependencies,
+): Promise<ConfiguredLaunchDependencies> {
+  const resolvedDependencies = dependencies ?? (await resolveConfiguredLaunchDependencies(execution));
+
+  if (hasSucceededResumeStep(execution.request, "reserve-blitz-hyperstructures")) {
+    execution.runtime.progress.log(
+      "Skipping reserve-blitz-hyperstructures because the stored run already marked it succeeded",
+    );
+    return resolvedDependencies;
+  }
+
+  const transactionHashes = await reserveBlitzHyperstructuresIfNeeded({
+    runtime: execution.runtime,
+    deploymentConfig: execution.deploymentConfig,
+    account: resolvedDependencies.accountContext.account,
+    patchedManifest: resolvedDependencies.worldContext.patchedManifest,
+  });
+
+  if (transactionHashes?.length) {
+    execution.summary.reserveHyperstructuresTxHashes = transactionHashes;
+  }
 
   return resolvedDependencies;
 }
@@ -1062,6 +1258,7 @@ async function runSyncPaymasterStep(execution: PreparedLaunchExecution): Promise
   execution.summary.paymasterSynced = await syncPaymasterIfNeeded({
     runtime: execution.runtime,
     request: execution.request,
+    summary: execution.summary,
   });
 }
 
@@ -1075,6 +1272,9 @@ async function executeLaunchStep(execution: PreparedLaunchExecution, stepId: Lau
       return;
     case "configure-world":
       await runConfigureWorldStep(execution);
+      return;
+    case "reserve-blitz-hyperstructures":
+      await runReserveBlitzHyperstructuresStep(execution);
       return;
     case "grant-lootchest-role":
       await runGrantLootChestRoleStep(execution);
@@ -1118,10 +1318,11 @@ export async function launchGame(request: LaunchGameRequest): Promise<LaunchGame
     accountContext,
     worldContext,
   });
+  const preparedDependencies = await runReserveBlitzHyperstructuresStep(execution, configuredDependencies);
 
-  await runGrantLootChestRoleStep(execution, configuredDependencies);
+  await runGrantLootChestRoleStep(execution, preparedDependencies);
   await runGrantVillagePassRoleStep(execution, accountContext);
-  await runCreateBanksStep(execution, configuredDependencies);
+  await runCreateBanksStep(execution, preparedDependencies);
   await runCreateIndexerStep(execution, worldContext);
   await runSyncPaymasterStep(execution);
 

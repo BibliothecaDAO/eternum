@@ -19,11 +19,28 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     expect(methodBody).not.toContain("this.clearPendingArmyMovement(entityId)");
   });
 
-  it("wires local pending clear to ArmyManager movement-start notifications", () => {
+  it("hands movement-start off without clearing authoritative resolution handles", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
 
     expect(source).toContain("this.armyManager.onMovementStart");
-    expect(source).toContain('this.clearPendingArmyMovement(entityId, "movement_started")');
+    expect(source).toContain("this.handoffPendingArmyMovementToVisualLifecycle(entityId)");
+    expect(source).not.toContain('this.clearPendingArmyMovement(entityId, "movement_started")');
+  });
+
+  it("keeps target and fallback handles alive after movement-start handoff", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const helperStart = source.indexOf("private handoffPendingArmyMovementToVisualLifecycle(");
+    expect(helperStart).toBeGreaterThan(-1);
+
+    const helperEnd = source.indexOf("private clearPendingArmyMovement(", helperStart);
+    const helperBody = source.slice(helperStart, helperEnd);
+
+    expect(helperBody).toContain("this.pendingArmyMovements.delete(entityId)");
+    expect(helperBody).toContain('reason: "movement_started"');
+    expect(helperBody).toContain("trackedEffect.cleanup()");
+    expect(helperBody).not.toContain("this.pendingArmyMovementTargetKeys.delete(entityId)");
+    expect(helperBody).not.toContain("this.pendingArmyMovementFallbackTimeouts");
+    expect(helperBody).not.toContain("clearTimeout");
   });
 
   it("clears pending movement from authoritative tile updates after manager reconciliation", () => {
@@ -52,6 +69,52 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     expect(source).toContain("private clearPendingArmyMovementFromAuthoritativePosition(");
     expect(body).toContain("onAuthoritativePositionApplied:");
     expect(body).toContain("this.clearPendingArmyMovementFromAuthoritativePosition(update)");
+  });
+
+  it("clears retained pending movement handles when visual completion follows authoritative target match", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const lifecycleStart = source.indexOf("private installPendingMovementVisualLifecycle(");
+    expect(lifecycleStart).toBeGreaterThan(-1);
+
+    const lifecycleEnd = source.indexOf("private disposePendingMovementVisualLifecycle(", lifecycleStart);
+    const lifecycleBody = source.slice(lifecycleStart, lifecycleEnd);
+    const completeStart = lifecycleBody.indexOf("const disposeMovementComplete");
+    const completeEnd = lifecycleBody.indexOf("const disposeAuthoritativeReconcile", completeStart);
+    const completeHandler = lifecycleBody.slice(completeStart, completeEnd);
+
+    expect(completeHandler).toContain("this.completePendingArmyMovementAuthoritativeResolution(entityId)");
+    expect(completeHandler.indexOf("this.completePendingArmyMovementAuthoritativeResolution(entityId)")).toBeLessThan(
+      completeHandler.indexOf("this.disposePendingMovementVisualLifecycle(entityId)"),
+    );
+  });
+
+  it("clears retained pending movement handles when visual cancellation replaces completion", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const lifecycleStart = source.indexOf("private installPendingMovementVisualLifecycle(");
+    expect(lifecycleStart).toBeGreaterThan(-1);
+
+    const lifecycleEnd = source.indexOf("private disposePendingMovementVisualLifecycle(", lifecycleStart);
+    const lifecycleBody = source.slice(lifecycleStart, lifecycleEnd);
+    const cancelStart = lifecycleBody.indexOf("const disposeMovementVisualCancel");
+    const cancelEnd = lifecycleBody.indexOf("this.pendingArmyMovementVisualLifecycleDisposers.set", cancelStart);
+    const cancelHandler = lifecycleBody.slice(cancelStart, cancelEnd);
+
+    expect(cancelHandler).toContain("this.completePendingArmyMovementAuthoritativeResolution(entityId)");
+    expect(cancelHandler.indexOf("this.completePendingArmyMovementAuthoritativeResolution(entityId)")).toBeLessThan(
+      cancelHandler.indexOf("this.disposePendingMovementVisualLifecycle(entityId)"),
+    );
+  });
+
+  it("keeps travel effects pending after movement-start handoff retains target handles", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const helperStart = source.indexOf("private hasPendingTravelEffectForHex(");
+    expect(helperStart).toBeGreaterThan(-1);
+
+    const helperEnd = source.indexOf("private startPendingActionFx(", helperStart);
+    const helperBody = source.slice(helperStart, helperEnd);
+
+    expect(helperBody).toContain("trackedEffect.key === key");
+    expect(helperBody).toContain("this.pendingArmyMovementTargetKeys.has(entityId)");
   });
 
   it("does not register tx hashes after authoritative updates already cleared pending movement", () => {
@@ -83,5 +146,44 @@ describe("Worldmap pending movement visual handoff wiring", () => {
     expect(body.indexOf("this.pendingArmyMovements.has(entityId)")).toBeLessThan(
       body.indexOf("this.armyManager.applyMovementPlan"),
     );
+  });
+
+  it("keeps the authoritative movement lifecycle installed when optimistic animation is skipped", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const helperStart = source.indexOf("private clearArrivalGhostAfterOptimisticMovementAbort(");
+    expect(helperStart).toBeGreaterThan(-1);
+
+    const helperEnd = source.indexOf("private mirrorOptimisticArmyDestinationIntoWorldmapCache", helperStart);
+    const helperBody = source.slice(helperStart, helperEnd);
+
+    expect(helperBody).toContain('"optimistic_animation_skipped"');
+    expect(helperBody).toContain('this.arrivalGhostManager.clearArrivalGhost(entityId, "optimistic_aborted")');
+    expect(helperBody).not.toContain("this.disposePendingMovementVisualLifecycle(entityId)");
+  });
+
+  it("keeps pending movement fallback alive when movement visuals are evicted", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const lifecycleStart = source.indexOf("private installPendingMovementVisualLifecycle(");
+    expect(lifecycleStart).toBeGreaterThan(-1);
+
+    const lifecycleEnd = source.indexOf("private disposePendingMovementVisualLifecycle(", lifecycleStart);
+    const lifecycleBody = source.slice(lifecycleStart, lifecycleEnd);
+    const cancelStart = lifecycleBody.indexOf("const disposeMovementVisualCancel");
+    const cancelEnd = lifecycleBody.indexOf("this.pendingArmyMovementVisualLifecycleDisposers.set", cancelStart);
+    const cancelHandler = lifecycleBody.slice(cancelStart, cancelEnd);
+
+    expect(cancelHandler).toContain("this.clearEvictedArmyMovementVisuals(entityId)");
+    expect(cancelHandler).not.toContain("this.clearPendingArmyMovement");
+
+    const helperStart = source.indexOf("private clearEvictedArmyMovementVisuals(");
+    expect(helperStart).toBeGreaterThan(-1);
+
+    const helperEnd = source.indexOf("private handoffPendingArmyMovementToVisualLifecycle(", helperStart);
+    const helperBody = source.slice(helperStart, helperEnd);
+
+    expect(helperBody).toContain("trackedEffect.cleanup()");
+    expect(helperBody).toContain('this.arrivalGhostManager.clearArrivalGhost(entityId, "movement_evicted")');
+    expect(helperBody).not.toContain("pendingArmyMovements.delete");
+    expect(helperBody).not.toContain("pendingArmyMovementFallbackTimeouts");
   });
 });

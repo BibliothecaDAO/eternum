@@ -71,6 +71,9 @@ function updateSeriesLikeGameSuccess(
     artifacts: {
       ...game.artifacts,
       worldAddress: gameSummary.worldAddress || game.artifacts.worldAddress,
+      entryTokenAddress: gameSummary.entryTokenAddress || game.artifacts.entryTokenAddress,
+      reserveHyperstructuresTxHashes:
+        gameSummary.reserveHyperstructuresTxHashes || game.artifacts.reserveHyperstructuresTxHashes,
       createGameTxHash: gameSummary.createGameTxHash || game.artifacts.createGameTxHash,
       configureTxHash: gameSummary.configureTxHash || game.artifacts.configureTxHash,
       lootChestRoleTxHash: gameSummary.lootChestRoleTxHash || game.artifacts.lootChestRoleTxHash,

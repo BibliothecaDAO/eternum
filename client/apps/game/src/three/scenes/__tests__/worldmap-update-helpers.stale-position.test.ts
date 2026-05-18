@@ -9,30 +9,39 @@ const baseUpdate = {
 } as any;
 
 describe("processExplorerTroopsUpdate stale-position skip", () => {
-  it("skips updateArmyHexes but still applies updateArmyFromExplorerTroopsUpdate when stale", () => {
+  it("skips updateArmyHexes and does not treat stale replays as live recovery", () => {
     const updateArmyHexes = vi.fn();
     const updateArmyFromExplorerTroopsUpdate = vi.fn();
+    const cancelPendingArmyRemoval = vi.fn();
+    const recordLiveArmyPresenceUpdate = vi.fn();
+    const recoverPendingArmyRemovalFromExplorerTroops = vi.fn();
     const shouldSkipStalePositionUpdate = vi.fn(() => true);
     const onAuthoritativePositionApplied = vi.fn();
 
     processExplorerTroopsUpdate(baseUpdate, {
-      cancelPendingArmyRemoval: vi.fn(),
+      cancelPendingArmyRemoval,
       scheduleArmyRemoval: vi.fn(),
       updateArmyHexes,
       updateArmyFromExplorerTroopsUpdate,
+      recordLiveArmyPresenceUpdate,
       onAuthoritativePositionApplied,
+      recoverPendingArmyRemovalFromExplorerTroops,
       shouldSkipStalePositionUpdate,
     });
 
     expect(shouldSkipStalePositionUpdate).toHaveBeenCalledWith(7, expect.objectContaining({ x: expect.any(Number) }));
+    expect(cancelPendingArmyRemoval).not.toHaveBeenCalled();
     expect(updateArmyHexes).not.toHaveBeenCalled();
     expect(updateArmyFromExplorerTroopsUpdate).toHaveBeenCalledWith(baseUpdate);
+    expect(recordLiveArmyPresenceUpdate).not.toHaveBeenCalled();
     expect(onAuthoritativePositionApplied).not.toHaveBeenCalled();
+    expect(recoverPendingArmyRemovalFromExplorerTroops).not.toHaveBeenCalled();
   });
 
   it("applies both handlers when the predicate returns false", () => {
     const updateArmyHexes = vi.fn();
     const updateArmyFromExplorerTroopsUpdate = vi.fn();
+    const recordLiveArmyPresenceUpdate = vi.fn();
     const shouldSkipStalePositionUpdate = vi.fn(() => false);
     const onAuthoritativePositionApplied = vi.fn();
 
@@ -41,12 +50,14 @@ describe("processExplorerTroopsUpdate stale-position skip", () => {
       scheduleArmyRemoval: vi.fn(),
       updateArmyHexes,
       updateArmyFromExplorerTroopsUpdate,
+      recordLiveArmyPresenceUpdate,
       onAuthoritativePositionApplied,
       shouldSkipStalePositionUpdate,
     });
 
     expect(updateArmyHexes).toHaveBeenCalledWith(baseUpdate);
     expect(updateArmyFromExplorerTroopsUpdate).toHaveBeenCalledWith(baseUpdate);
+    expect(recordLiveArmyPresenceUpdate).toHaveBeenCalledWith(baseUpdate);
     expect(onAuthoritativePositionApplied).toHaveBeenCalledWith(baseUpdate);
   });
 

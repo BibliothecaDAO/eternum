@@ -29,6 +29,7 @@ interface ResolvePendingArmyMovementSelectionPlanInput extends ShouldClearPendin
 
 interface ResolvePendingArmyMovementFallbackPlanInput extends ShouldClearPendingArmyMovementInput {
   hasPendingMovement: boolean;
+  hasPendingMovementResolution?: boolean;
 }
 
 interface PendingArmyMovementSelectionPlan {
@@ -145,7 +146,9 @@ export function resolvePendingArmyMovementSelectionPlan(
 export function resolvePendingArmyMovementFallbackPlan(
   input: ResolvePendingArmyMovementFallbackPlanInput,
 ): PendingArmyMovementFallbackPlan {
-  if (!input.hasPendingMovement) {
+  const hasMovementToResolve = input.hasPendingMovement || input.hasPendingMovementResolution === true;
+
+  if (!hasMovementToResolve) {
     return {
       shouldDeleteFallbackTimeout: true,
       shouldClearPendingMovement: false,

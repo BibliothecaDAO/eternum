@@ -3,6 +3,7 @@ use starknet;
 
 #[starknet::interface]
 pub trait ICollectible<T> {
+    fn balance_of(self: @T, owner: starknet::ContractAddress) -> u256;
     fn mint(ref self: T, recipient: starknet::ContractAddress, attributes_raw: u128);
     fn mint_many(ref self: T, recipient: starknet::ContractAddress, attributes_and_counts: Span<(u128, u16)>);
     fn lock_state_update(ref self: T, lock_id: felt252, unlock_at: u64);
@@ -15,6 +16,7 @@ pub trait ICollectible<T> {
 
     // ERC721
     fn owner_of(self: @T, token_id: u256) -> starknet::ContractAddress;
+    fn token_of_owner_by_index(self: @T, owner: starknet::ContractAddress, index: u256) -> u256;
 }
 
 

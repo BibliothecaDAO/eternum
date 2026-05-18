@@ -114,6 +114,8 @@ pub struct StructureBase {
     pub coord_x: u32,
     pub coord_y: u32,
     pub level: u8,
+    // This lets delayed provisioning know whether the one-time troop start was already applied.
+    pub starting_troops_granted: bool,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, Default, DojoStore)]
@@ -304,6 +306,7 @@ pub impl StructureDefaultImpl of Default<Structure> {
                 coord_x: 0,
                 coord_y: 0,
                 level: 0,
+                starting_troops_granted: false,
             },
             troop_guards: GuardTroops {
                 delta: troops,
@@ -378,6 +381,7 @@ pub impl StructureImpl of StructureTrait {
             },
             _ => { panic!("invalid structure category"); },
         }
+        structure.base.starting_troops_granted = false;
         structure.base.created_at = starknet::get_block_timestamp().try_into().unwrap();
         structure
     }

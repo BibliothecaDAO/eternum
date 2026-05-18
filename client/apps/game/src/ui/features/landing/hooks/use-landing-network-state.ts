@@ -1,4 +1,4 @@
-import { setSelectedChain, useSelectedRuntimeChain } from "@/runtime/world";
+import { getSelectedChain, setSelectedChain, useSelectedRuntimeChain } from "@/runtime/world";
 import {
   resolveConnectedTxChainFromRuntime,
   switchWalletToChain,
@@ -27,28 +27,19 @@ interface LandingNetworkControllerState {
 
 const DEFAULT_LANDING_CHAIN: Chain = "mainnet";
 
-// Landing should start on Mainnet for each full page open, while still allowing
-// normal Slot/Mainnet switching during the current page session.
-let hasDefaultedLandingChainOnPageOpen = false;
-
-const defaultLandingChainOnPageOpen = () => {
-  if (hasDefaultedLandingChainOnPageOpen) return;
-
-  hasDefaultedLandingChainOnPageOpen = true;
+const selectDefaultLandingChainIfMissing = () => {
+  if (getSelectedChain()) return;
   setSelectedChain(DEFAULT_LANDING_CHAIN);
 };
 
 export const useLandingNetworkState = (): LandingNetworkControllerState => {
-  const storedSelectedChain = useSelectedRuntimeChain(DEFAULT_LANDING_CHAIN);
-  const shouldStartOnDefaultLandingChain = !hasDefaultedLandingChainOnPageOpen;
-  const selectedChain = shouldStartOnDefaultLandingChain ? DEFAULT_LANDING_CHAIN : storedSelectedChain;
+  const selectedChain = useSelectedRuntimeChain(DEFAULT_LANDING_CHAIN);
   const { address, chainId, connector } = useAccount();
   const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller ?? null;
 
   useEffect(() => {
-    if (!shouldStartOnDefaultLandingChain) return;
-    defaultLandingChainOnPageOpen();
-  }, [shouldStartOnDefaultLandingChain]);
+    selectDefaultLandingChainIfMissing();
+  }, []);
 
   const connectedChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
 

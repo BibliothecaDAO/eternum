@@ -11,6 +11,8 @@ interface ResolveWarpTravelDirectionalPrefetchPlanInput {
   chunkSize: number;
   forwardDepthStrides: number;
   sideRadiusStrides: number;
+  areaBoundaryLookaheadStrides?: number;
+  fetchSuperAreaStrides?: number;
   pinnedChunkKeys: Set<string>;
   currentChunk: string;
   prefetchedAhead: string[];
@@ -21,6 +23,58 @@ interface ResolveWarpTravelDirectionalPrefetchPlanInput {
 function parseChunkKey(chunkKey: string): { row: number; col: number } {
   const [row, col] = chunkKey.split(",").map(Number);
   return { row, col };
+}
+
+function resolveBoundaryPrefetchChunkKey(input: ResolveWarpTravelDirectionalPrefetchPlanInput): string | null {
+  const { anchor, areaBoundaryLookaheadStrides, chunkSize, currentChunk, fetchSuperAreaStrides } = input;
+  if (!anchor || !areaBoundaryLookaheadStrides || !fetchSuperAreaStrides) {
+    return null;
+  }
+
+  const { row, col } = parseChunkKey(currentChunk);
+  const strideIndex = anchor.movementAxis === "x" ? col / chunkSize : row / chunkSize;
+  if (!Number.isFinite(strideIndex)) {
+    return null;
+  }
+
+  const areaStartIndex = Math.floor(strideIndex / fetchSuperAreaStrides) * fetchSuperAreaStrides;
+  const distanceToBoundary =
+    anchor.movementSign > 0 ? areaStartIndex + fetchSuperAreaStrides - 1 - strideIndex : strideIndex - areaStartIndex;
+
+  if (distanceToBoundary > areaBoundaryLookaheadStrides) {
+    return null;
+  }
+
+  const boundaryStrideIndex =
+    anchor.movementSign > 0 ? areaStartIndex + fetchSuperAreaStrides : areaStartIndex - fetchSuperAreaStrides;
+  const boundaryRow = anchor.movementAxis === "z" ? boundaryStrideIndex * chunkSize : row;
+  const boundaryCol = anchor.movementAxis === "x" ? boundaryStrideIndex * chunkSize : col;
+  return `${boundaryRow},${boundaryCol}`;
+}
+
+function appendFetchPrefetchTarget(
+  chunkKey: string,
+  input: ResolveWarpTravelDirectionalPrefetchPlanInput,
+  output: {
+    chunkKeysToEnqueue: string[];
+    desiredAreaKeys: string[];
+    nextPrefetchedAhead: string[];
+  },
+): void {
+  if (input.pinnedChunkKeys.has(chunkKey) || chunkKey === input.currentChunk) {
+    return;
+  }
+
+  output.desiredAreaKeys.push(input.getRenderAreaKeyForChunk(chunkKey));
+  if (output.nextPrefetchedAhead.includes(chunkKey)) {
+    return;
+  }
+
+  output.nextPrefetchedAhead.push(chunkKey);
+  while (output.nextPrefetchedAhead.length > input.maxPrefetchedAhead) {
+    output.nextPrefetchedAhead.shift();
+  }
+  output.chunkKeysToEnqueue.push(chunkKey);
 }
 
 export function resolveWarpTravelDirectionalPrefetchPlan(input: ResolveWarpTravelDirectionalPrefetchPlanInput): {
@@ -69,21 +123,21 @@ export function resolveWarpTravelDirectionalPrefetchPlan(input: ResolveWarpTrave
   }
 
   prefetchTargets.forEach((chunkKey) => {
-    if (input.pinnedChunkKeys.has(chunkKey) || chunkKey === input.currentChunk) {
-      return;
-    }
-
-    desiredAreaKeys.push(input.getRenderAreaKeyForChunk(chunkKey));
-    if (nextPrefetchedAhead.includes(chunkKey)) {
-      return;
-    }
-
-    nextPrefetchedAhead.push(chunkKey);
-    while (nextPrefetchedAhead.length > input.maxPrefetchedAhead) {
-      nextPrefetchedAhead.shift();
-    }
-    chunkKeysToEnqueue.push(chunkKey);
+    appendFetchPrefetchTarget(chunkKey, input, {
+      chunkKeysToEnqueue,
+      desiredAreaKeys,
+      nextPrefetchedAhead,
+    });
   });
+
+  const boundaryPrefetchChunkKey = resolveBoundaryPrefetchChunkKey(input);
+  if (boundaryPrefetchChunkKey && !prefetchTargets.includes(boundaryPrefetchChunkKey)) {
+    appendFetchPrefetchTarget(boundaryPrefetchChunkKey, input, {
+      chunkKeysToEnqueue,
+      desiredAreaKeys,
+      nextPrefetchedAhead,
+    });
+  }
 
   return {
     desiredAreaKeys,

@@ -33,6 +33,18 @@ const ARRIVAL_GHOST_RING_PULSE_AMPLITUDE = 0.22;
 const ARRIVAL_GHOST_RING_PULSE_SPEED = 2.4;
 const ARRIVAL_GHOST_BURST_RING_OPACITY = 0.52;
 const ARRIVAL_GHOST_BURST_RING_EXPANSION = 0.95;
+const ARRIVAL_GHOST_MAX_LIFETIME_S = 90;
+const ARRIVAL_GHOST_CLEAR_REASONS: ArrivalGhostClearReason[] = [
+  "arrived",
+  "tx_failed",
+  "stale_timeout",
+  "army_removed",
+  "scene_destroyed",
+  "superseded",
+  "movement_evicted",
+  "max_lifetime",
+  "optimistic_aborted",
+];
 
 export interface ArrivalGhostSpec {
   entityId: ID;
@@ -42,6 +54,7 @@ export interface ArrivalGhostSpec {
 }
 
 interface ArrivalGhostState extends ArrivalGhostSpec {
+  ageElapsedS: number;
   baseScale: Vector3;
   burstRing: Mesh<RingGeometry, MeshBasicMaterial>;
   container: Group;
@@ -57,8 +70,32 @@ interface ArrivalGhostManagerOptions {
   renderChunkSize: { width: number; height: number };
 }
 
+export interface ArrivalGhostDiagnosticsSnapshot {
+  active: number;
+  cleared: Record<ArrivalGhostClearReason, number>;
+  created: number;
+  updatedAtMs: number;
+}
+
+function createArrivalGhostClearCounts(): Record<ArrivalGhostClearReason, number> {
+  return Object.fromEntries(ARRIVAL_GHOST_CLEAR_REASONS.map((reason) => [reason, 0])) as Record<
+    ArrivalGhostClearReason,
+    number
+  >;
+}
+
+function createArrivalGhostDiagnostics(): ArrivalGhostDiagnosticsSnapshot {
+  return {
+    active: 0,
+    cleared: createArrivalGhostClearCounts(),
+    created: 0,
+    updatedAtMs: Date.now(),
+  };
+}
+
 export class ArrivalGhostManager {
   private readonly ghosts = new Map<ID, ArrivalGhostState>();
+  private readonly diagnostics = createArrivalGhostDiagnostics();
   private currentChunkKey: string | null = MANAGER_UNCOMMITTED_CHUNK;
 
   constructor(
@@ -72,6 +109,7 @@ export class ArrivalGhostManager {
     const container = this.buildGhostContainer(input);
     const state: ArrivalGhostState = {
       ...input,
+      ageElapsedS: 0,
       burstRing: container.getObjectByName("arrival-ghost-burst-ring") as Mesh<RingGeometry, MeshBasicMaterial>,
       baseScale: container.scale.clone(),
       container,
@@ -83,6 +121,7 @@ export class ArrivalGhostManager {
     };
 
     this.ghosts.set(input.entityId, state);
+    this.recordGhostCreated();
     this.syncGhostVisibility(state);
   }
 
@@ -95,7 +134,7 @@ export class ArrivalGhostManager {
     ghost.resolveRequested = true;
   }
 
-  public clearArrivalGhost(entityId: ID, _reason: ArrivalGhostClearReason): void {
+  public clearArrivalGhost(entityId: ID, reason: ArrivalGhostClearReason): void {
     const ghost = this.ghosts.get(entityId);
     if (!ghost) {
       return;
@@ -104,6 +143,7 @@ export class ArrivalGhostManager {
     this.scene.remove(ghost.container);
     this.disposeGhostContainer(ghost.container);
     this.ghosts.delete(entityId);
+    this.recordGhostCleared(reason);
   }
 
   public hasArrivalGhost(entityId: ID): boolean {
@@ -114,8 +154,23 @@ export class ArrivalGhostManager {
     return Array.from(this.ghosts.keys());
   }
 
+  public snapshotDiagnostics(): ArrivalGhostDiagnosticsSnapshot {
+    return {
+      active: this.ghosts.size,
+      cleared: { ...this.diagnostics.cleared },
+      created: this.diagnostics.created,
+      updatedAtMs: this.diagnostics.updatedAtMs,
+    };
+  }
+
   public update(deltaTime: number): void {
-    for (const ghost of this.ghosts.values()) {
+    for (const ghost of Array.from(this.ghosts.values())) {
+      ghost.ageElapsedS += deltaTime;
+      if (this.hasExceededMaxLifetime(ghost)) {
+        this.clearArrivalGhost(ghost.entityId, "max_lifetime");
+        continue;
+      }
+
       this.syncGhostVisibility(ghost);
       if (!ghost.container.visible) {
         continue;
@@ -277,6 +332,10 @@ export class ArrivalGhostManager {
     ghost.burstRing.scale.setScalar(1);
   }
 
+  private hasExceededMaxLifetime(ghost: ArrivalGhostState): boolean {
+    return ghost.ageElapsedS >= ARRIVAL_GHOST_MAX_LIFETIME_S;
+  }
+
   private syncGhostVisibility(ghost: ArrivalGhostState): void {
     ghost.container.visible = this.isGhostVisibleInCurrentChunk(ghost.hexCoords);
   }
@@ -334,5 +393,15 @@ export class ArrivalGhostManager {
         }
       });
     });
+  }
+
+  private recordGhostCreated(): void {
+    this.diagnostics.created += 1;
+    this.diagnostics.updatedAtMs = Date.now();
+  }
+
+  private recordGhostCleared(reason: ArrivalGhostClearReason): void {
+    this.diagnostics.cleared[reason] += 1;
+    this.diagnostics.updatedAtMs = Date.now();
   }
 }

@@ -17,17 +17,15 @@ describe("game-entry context", () => {
     expect(
       resolveEntryContextFromLandingSelection({
         selection: { name: "iron-age", chain: "mainnet", worldAddress: "0x1" },
-        intent: "forge",
+        intent: "settle",
         autoSettle: true,
-        hyperstructuresLeft: 2,
       }),
     ).toEqual({
       chain: "mainnet",
       worldName: "iron-age",
       worldAddress: "0x1",
-      intent: "forge",
+      intent: "settle",
       autoSettle: true,
-      hyperstructuresLeft: 2,
       source: "landing",
     });
   });
@@ -46,15 +44,12 @@ describe("game-entry context", () => {
 
   it("parses canonical entry routes into landing entry context", () => {
     expect(
-      resolveEntryContextFromEntryRoute(
-        createLocation("/enter/slot/aurora-blitz", "?intent=settle&hyperstructuresLeft=5&autoSettle=true"),
-      ),
+      resolveEntryContextFromEntryRoute(createLocation("/enter/slot/aurora-blitz", "?intent=settle&autoSettle=true")),
     ).toEqual({
       chain: "slot",
       worldName: "aurora-blitz",
       intent: "settle",
       autoSettle: true,
-      hyperstructuresLeft: 5,
       source: "landing",
     });
   });
@@ -67,7 +62,6 @@ describe("game-entry context", () => {
       worldName: "aurora-blitz",
       intent: "spectate",
       autoSettle: false,
-      hyperstructuresLeft: null,
       source: "play-route",
     });
   });
@@ -78,7 +72,6 @@ describe("game-entry context", () => {
       worldName: "iron-age",
       intent: "play" as const,
       autoSettle: false,
-      hyperstructuresLeft: null,
       source: "landing" as const,
     };
 

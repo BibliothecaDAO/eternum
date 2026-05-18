@@ -41,6 +41,8 @@ import {
   ExplorerRewardSystemUpdate,
   ExplorerTroopsSystemUpdate,
   type ExplorerTroopsTileSystemUpdate,
+  type ReservedHyperstructureTileSystemUpdate,
+  type StructureBuildingsSystemUpdate,
   StructureSystemUpdate,
   type StructureTileSystemUpdate,
   type TileSystemUpdate,
@@ -552,7 +554,7 @@ export class WorldUpdateListener {
 
               const structureInfo = currentState && getStructureInfoFromTileOccupier(currentState?.occupier_type);
 
-              if (!structureInfo) return;
+              if (!structureInfo || structureInfo.reserved) return;
 
               const hyperstructure = getComponentValue(
                 this.setup.components.Hyperstructure,
@@ -730,11 +732,11 @@ export class WorldUpdateListener {
           false,
         );
       },
-      onStructureBuildingsUpdate: (callback: (value: any) => void) => {
+      onStructureBuildingsUpdate: (callback: (value: StructureBuildingsSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.StructureBuildings,
           callback,
-          (update: any) => {
+          async (update: any): Promise<StructureBuildingsSystemUpdate | undefined> => {
             if (isComponentUpdate(update, this.setup.components.StructureBuildings)) {
               const [currentState, _prevState] = update.value;
 
@@ -781,6 +783,10 @@ export class WorldUpdateListener {
               return {
                 entityId,
                 activeProductions,
+                hexCoords: {
+                  col: Number(currentState.coord?.x ?? 0),
+                  row: Number(currentState.coord?.y ?? 0),
+                },
               };
             }
           },
@@ -816,6 +822,40 @@ export class WorldUpdateListener {
             return result;
           },
           false,
+        );
+      },
+    };
+  }
+
+  public get ReservedHyperstructure() {
+    return {
+      onTileUpdate: (callback: (value: ReservedHyperstructureTileSystemUpdate) => void) => {
+        this.setupSystem(
+          this.setup.components.TileOpt,
+          callback,
+          async (update: any): Promise<ReservedHyperstructureTileSystemUpdate | undefined> => {
+            if (!isComponentUpdate(update, this.setup.components.TileOpt)) {
+              return;
+            }
+
+            const [currentStateOpt, prevStateOpt] = update.value;
+            const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
+            const prevState = prevStateOpt ? tileOptToTile(prevStateOpt) : undefined;
+
+            if (currentState?.occupier_type === TileOccupier.ReservedHyperstructure) {
+              return {
+                hexCoords: { col: currentState.col, row: currentState.row },
+              };
+            }
+
+            if (prevState?.occupier_type === TileOccupier.ReservedHyperstructure) {
+              return {
+                hexCoords: { col: prevState.col, row: prevState.row },
+                removed: true,
+              };
+            }
+          },
+          true,
         );
       },
     };

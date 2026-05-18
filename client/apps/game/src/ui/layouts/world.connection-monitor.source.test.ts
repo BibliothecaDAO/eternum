@@ -21,6 +21,7 @@ describe("world connection monitor wiring", () => {
 
     expect(source).toContain("resetBootstrap");
     expect(source).toContain("bootstrapGameForEntryContext");
-    expect(source).toContain("deadEndRecoveryFired");
+    expect(source).toContain("shouldRunDeadEndRecovery");
+    expect(source).toContain("toriiBaseUrl, reason");
   });
 });

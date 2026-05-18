@@ -2,8 +2,6 @@ type GameEntryBootstrapStatus = "idle" | "pending-world" | "loading" | "ready" |
 
 export type GameEntryModalPhase =
   | "loading"
-  | "forge"
-  | "hyperstructure"
   | "settlement-waiting"
   | "settlement"
   | "settlement-planner"
@@ -26,7 +24,6 @@ interface ResolveGameEntryBlockingErrorInput {
 interface ResolveGameEntryModalPhaseInput {
   bootstrapStatus: GameEntryBootstrapStatus;
   hasPhaseError: boolean;
-  isForgeMode: boolean;
   isBlitzMode: boolean;
   isSpectateMode: boolean;
   worldMode: string;
@@ -43,7 +40,6 @@ interface ResolveGameEntryModalPhaseInput {
   hasVillagePass: boolean;
   hasSeasonPass: boolean;
   checksComplete: boolean;
-  needsHyperstructureInit: boolean;
   needsSettlement: boolean;
   canPlay: boolean;
   isBlitzSettlementUnlocked: boolean;
@@ -52,24 +48,20 @@ interface ResolveGameEntryModalPhaseInput {
 interface GameEntryPreflightInput {
   isEternumMode: boolean;
   isSpectateMode: boolean;
-  isForgeMode: boolean;
-  isBlitzMode: boolean;
   settlementCheckComplete: boolean;
 }
 
 export const isGameEntryPreflightComplete = ({
   isEternumMode,
   isSpectateMode,
-  isForgeMode,
-  isBlitzMode,
   settlementCheckComplete,
 }: GameEntryPreflightInput): boolean => {
-  const waitsForPlayerSettlementCheck = !isEternumMode && !isSpectateMode && !(isForgeMode && isBlitzMode);
+  const waitsForPlayerSettlementCheck = !isEternumMode && !isSpectateMode;
 
   return !waitsForPlayerSettlementCheck || settlementCheckComplete;
 };
 
-export const resolveBlitzSettlementPhase = ({
+const resolveBlitzSettlementPhase = ({
   canPlay,
   isSettlementUnlocked,
 }: {
@@ -112,7 +104,6 @@ export const resolveGameEntryBlockingError = ({
 export const resolveGameEntryModalPhase = ({
   bootstrapStatus,
   hasPhaseError,
-  isForgeMode,
   isBlitzMode,
   isSpectateMode,
   worldMode,
@@ -129,7 +120,6 @@ export const resolveGameEntryModalPhase = ({
   hasVillagePass,
   hasSeasonPass,
   checksComplete,
-  needsHyperstructureInit,
   needsSettlement,
   canPlay,
   isBlitzSettlementUnlocked,
@@ -148,10 +138,6 @@ export const resolveGameEntryModalPhase = ({
 
   if (worldMode === "unknown" || isCheckingWorldAvailability || !hasWorldMeta) {
     return "loading";
-  }
-
-  if (isForgeMode && isBlitzMode) {
-    return "forge";
   }
 
   if (isEternumMode) {
@@ -180,10 +166,6 @@ export const resolveGameEntryModalPhase = ({
 
   if (!checksComplete) {
     return "loading";
-  }
-
-  if (needsHyperstructureInit) {
-    return "hyperstructure";
   }
 
   if (isBlitzMode) {

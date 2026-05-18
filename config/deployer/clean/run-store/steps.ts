@@ -9,6 +9,8 @@ export function resolveLaunchStepTitle(stepId: LaunchGameStepId): string {
       return "Waiting for game";
     case "configure-world":
       return "Applying settings";
+    case "reserve-blitz-hyperstructures":
+      return "Reserving hyperstructures";
     case "grant-lootchest-role":
       return "Setting up loot chests";
     case "grant-village-pass-role":

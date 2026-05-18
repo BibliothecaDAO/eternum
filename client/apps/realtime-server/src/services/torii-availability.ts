@@ -33,7 +33,6 @@ function buildNullSummary(name: string, chain: WorldSummaryChain, alive: boolean
     settledPlayersCount: null,
     settledRealmsCount: null,
     settledVillagesCount: null,
-    numHyperstructuresLeft: null,
     winnerJackpotAmount: null,
   };
 }
@@ -73,7 +72,6 @@ function extractSummaryFields(summary: WorldSummary | undefined, fallback: World
     settledPlayersCount: summary.settledPlayersCount,
     settledRealmsCount: summary.settledRealmsCount,
     settledVillagesCount: summary.settledVillagesCount,
-    numHyperstructuresLeft: summary.numHyperstructuresLeft,
     winnerJackpotAmount: summary.winnerJackpotAmount,
   };
 }

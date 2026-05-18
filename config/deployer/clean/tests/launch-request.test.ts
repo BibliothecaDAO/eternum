@@ -86,6 +86,7 @@ describe("launch request helpers", () => {
   test("resolves supported launch step ids", () => {
     expect(resolveLaunchGameStepId("create-world")).toBe("create-world");
     expect(resolveLaunchGameStepId("configure-world")).toBe("configure-world");
+    expect(resolveLaunchGameStepId("reserve-blitz-hyperstructures")).toBe("reserve-blitz-hyperstructures");
     expect(resolveLaunchGameStepId("create-indexer")).toBe("create-indexer");
     expect(resolveLaunchGameStepId("sync-paymaster")).toBe("sync-paymaster");
   });

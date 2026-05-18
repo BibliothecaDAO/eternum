@@ -10,6 +10,7 @@ import type {
 export const buildFactoryCreateSeriesRunRequest = ({
   environmentId,
   seriesName,
+  workflowRef,
   games,
   selectedMode,
   selectedPreset,
@@ -24,6 +25,7 @@ export const buildFactoryCreateSeriesRunRequest = ({
 }: {
   environmentId: FactoryWorkerEnvironmentId;
   seriesName: string;
+  workflowRef?: string;
   games: FactorySeriesGameDraft[];
   selectedMode: FactoryGameMode;
   selectedPreset: FactoryLaunchPreset | null;
@@ -38,6 +40,7 @@ export const buildFactoryCreateSeriesRunRequest = ({
 }): CreateFactorySeriesRunRequest => ({
   environment: environmentId,
   seriesName,
+  workflowRef,
   games: games.map((game) => ({
     gameName: game.gameName,
     startTime: resolveStartTime(game.startAt),

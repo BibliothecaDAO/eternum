@@ -12,7 +12,7 @@ interface DrainWarpTravelPrefetchQueueInput {
   activePrefetches: number;
   maxConcurrentPrefetches: number;
   desiredFetchKeys: Set<string>;
-  fetchedFetchKeys: Set<string>;
+  fetchedFetchKeys: PrefetchFetchKeyLookup;
   pendingFetchKeys: PrefetchFetchKeyLookup;
   pinnedAreaKeys: Set<string>;
 }

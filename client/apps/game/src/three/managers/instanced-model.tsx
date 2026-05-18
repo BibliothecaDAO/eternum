@@ -305,7 +305,12 @@ export default class InstancedModel {
 
   setColorAt(index: number, color: Color) {
     this.ensureCapacity(index + 1);
-    this.instancedMeshes.forEach((mesh) => mesh.setColorAt(index, color));
+    this.instancedMeshes.forEach((mesh) => {
+      mesh.setColorAt(index, color);
+      if (mesh.instanceColor) {
+        mesh.instanceColor.needsUpdate = true;
+      }
+    });
   }
 
   setCount(count: number) {

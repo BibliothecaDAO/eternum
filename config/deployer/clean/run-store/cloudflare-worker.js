@@ -33,6 +33,7 @@ const RECOVERABLE_FACTORY_STEP_IDS = new Set([
   "create-world",
   "wait-for-factory-index",
   "configure-world",
+  "reserve-blitz-hyperstructures",
   "grant-lootchest-role",
   "grant-village-pass-role",
   "create-banks",
@@ -44,6 +45,7 @@ const RECOVERABLE_FACTORY_SERIES_STEP_IDS = new Set([
   "create-worlds",
   "wait-for-factory-indexes",
   "configure-worlds",
+  "reserve-blitz-hyperstructures",
   "grant-lootchest-roles",
   "grant-village-pass-roles",
   "create-banks",
@@ -1852,6 +1854,7 @@ function validateLaunchWorkflowScope(scope) {
     scope !== "create-world" &&
     scope !== "wait-for-factory-index" &&
     scope !== "configure-world" &&
+    scope !== "reserve-blitz-hyperstructures" &&
     scope !== "grant-lootchest-role" &&
     scope !== "grant-village-pass-role" &&
     scope !== "create-banks" &&
@@ -1869,6 +1872,7 @@ function validateSeriesLaunchWorkflowScope(scope) {
     scope !== "create-worlds" &&
     scope !== "wait-for-factory-indexes" &&
     scope !== "configure-worlds" &&
+    scope !== "reserve-blitz-hyperstructures" &&
     scope !== "grant-lootchest-roles" &&
     scope !== "grant-village-pass-roles" &&
     scope !== "create-banks" &&
@@ -1888,6 +1892,10 @@ function validateLaunchWorkflowScopeForEnvironment(environment, scope) {
     return;
   }
 
+  if (scope === "reserve-blitz-hyperstructures" && !environment.endsWith(".blitz")) {
+    throw new HttpError(400, `Launch step "${scope}" is only supported for blitz environments`);
+  }
+
   if (scope === "sync-paymaster" && !environment.startsWith("mainnet.")) {
     throw new HttpError(400, `Launch step "${scope}" is only supported for mainnet environments`);
   }
@@ -1896,6 +1904,10 @@ function validateLaunchWorkflowScopeForEnvironment(environment, scope) {
 function validateSeriesLaunchWorkflowScopeForEnvironment(environment, scope) {
   if (scope === "full") {
     return;
+  }
+
+  if (scope === "reserve-blitz-hyperstructures" && !environment.endsWith(".blitz")) {
+    throw new HttpError(400, `Launch step "${scope}" is only supported for blitz environments`);
   }
 
   if (scope === "sync-paymaster" && !environment.startsWith("mainnet.")) {

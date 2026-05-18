@@ -47,7 +47,12 @@ export type WorldmapRenderCounter =
   | "spatialTileOptReadyTimeouts"
   | "spatialTileOptStreamReceived"
   | "postCommitManagerCatchUpImmediate"
-  | "postCommitManagerCatchUpDeferred";
+  | "postCommitManagerCatchUpDeferred"
+  | "pendingArmyRemovalCancelledByTileRecovery"
+  | "pendingArmyRemovalCancelledByDelete"
+  | "pendingArmyRemovalCancelledBySuperseded"
+  | "pendingArmyRemovalCancelledByExplorerTroopsZero"
+  | "pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -71,7 +76,9 @@ export type WorldmapForceRefreshReason =
   | "offscreen_chunk"
   | "tile_overlap_repair"
   | "shortcut"
-  | "army_dead";
+  | "army_dead"
+  | "reconnect"
+  | "manager_recovery";
 
 export interface WorldmapRenderDurationStats {
   count: number;
@@ -151,6 +158,11 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     spatialTileOptStreamReceived: 0,
     postCommitManagerCatchUpImmediate: 0,
     postCommitManagerCatchUpDeferred: 0,
+    pendingArmyRemovalCancelledByTileRecovery: 0,
+    pendingArmyRemovalCancelledByDelete: 0,
+    pendingArmyRemovalCancelledBySuperseded: 0,
+    pendingArmyRemovalCancelledByExplorerTroopsZero: 0,
+    pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery: 0,
   },
   forceRefreshReasons: {
     default: 0,
@@ -164,6 +176,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     tile_overlap_repair: 0,
     shortcut: 0,
     army_dead: 0,
+    reconnect: 0,
+    manager_recovery: 0,
   },
   updatedAtMs: Date.now(),
 });

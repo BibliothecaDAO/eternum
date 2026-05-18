@@ -36,6 +36,7 @@ interface OutageReport {
   streamType: NetworkStreamType;
   outageMs: number;
   attempts: number;
+  reason?: string;
 }
 
 interface SetupTimeoutReport {
@@ -190,11 +191,13 @@ export const addNetworkBreadcrumb = ({
   streamType,
   status,
   ageMs,
+  reason,
 }: {
   event: NetworkHealthEvent;
   streamType?: NetworkStreamType;
   status?: string;
   ageMs?: number;
+  reason?: string;
 }): void => {
   if (!isEnabled()) return;
 
@@ -207,6 +210,7 @@ export const addNetworkBreadcrumb = ({
       ...(streamType ? { stream_type: streamType } : {}),
       ...(status ? { status } : {}),
       ...(typeof ageMs === "number" ? { age_ms: Math.round(ageMs) } : {}),
+      ...(reason ? { reason: sanitizeContextText(reason) } : {}),
     },
   });
 };
@@ -266,12 +270,14 @@ const reportOutage = (report: OutageReport, recovered: boolean): void => {
         "network.stream_type": report.streamType,
         "network.outcome": recovered ? "resolved" : "dead-end",
         "network.duration_bucket": bucket,
+        ...(report.reason ? { "network.reason": report.reason } : {}),
       },
       contexts: {
         network: {
           outage_seconds: Math.round(report.outageMs / 1000),
           reconnect_attempts: report.attempts,
           recovered,
+          ...(report.reason ? { reason: sanitizeContextText(report.reason) } : {}),
         },
       },
       fingerprint: ["network-health", report.streamType, recovered ? "resolved" : "dead-end", bucket],

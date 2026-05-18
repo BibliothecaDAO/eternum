@@ -273,6 +273,7 @@ describe("resolvePendingArmyMovementFallbackPlan", () => {
     expect(
       resolvePendingArmyMovementFallbackPlan({
         hasPendingMovement: false,
+        hasPendingMovementResolution: false,
         pendingMovementStartedAtMs: 1000,
         nowMs: 9000,
         staleAfterMs: 8000,
@@ -281,6 +282,38 @@ describe("resolvePendingArmyMovementFallbackPlan", () => {
       shouldDeleteFallbackTimeout: true,
       shouldClearPendingMovement: false,
       shouldRequestChunkRefresh: false,
+    });
+  });
+
+  it("keeps fallback armed after movement handoff while resolution is still pending", () => {
+    expect(
+      resolvePendingArmyMovementFallbackPlan({
+        hasPendingMovement: false,
+        hasPendingMovementResolution: true,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 8500,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldDeleteFallbackTimeout: false,
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+    });
+  });
+
+  it("clears stale movement after visual handoff when resolution never arrives", () => {
+    expect(
+      resolvePendingArmyMovementFallbackPlan({
+        hasPendingMovement: false,
+        hasPendingMovementResolution: true,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 9000,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldDeleteFallbackTimeout: false,
+      shouldClearPendingMovement: true,
+      shouldRequestChunkRefresh: true,
     });
   });
 

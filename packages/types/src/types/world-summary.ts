@@ -32,7 +32,6 @@ export interface WorldSummary {
   settledPlayersCount: number | null;
   settledRealmsCount: number | null;
   settledVillagesCount: number | null;
-  numHyperstructuresLeft: number | null;
 
   winnerJackpotAmount: string | null;
 }

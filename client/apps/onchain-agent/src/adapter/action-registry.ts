@@ -1,23 +1,23 @@
 /**
  * ABI-driven action registry.
  *
- * Replaces the old hardcoded register() calls with dynamic generation from
+ * Replaces the old hardcoded action tables with dynamic generation from
  * manifest ABIs + domain overlays. All standard game actions are handled by
- * the ABI executor (Contract.populate + account.execute). The composite
- * "move_to" action is the only hand-written handler.
+ * the ABI executor (Contract.populate + account.execute). Only a small number
+ * of quality-of-life composites stay hand-written.
  */
 import type { EternumClient } from "@bibliothecadao/client";
 import type { ActionResult, GameAction, ActionDefinition } from "@bibliothecadao/game-agent";
 import { writeFileSync, mkdirSync } from "node:fs";
 import { join, dirname } from "node:path";
-import type { Account } from "starknet";
+import { CallData, type Account, type Call } from "starknet";
 import { generateActions, mergeCompositeActions } from "../abi/action-gen";
 import { createABIExecutor, type ABIExecutor } from "../abi/executor";
-import { ETERNUM_OVERLAYS, createHiddenOverlays, num, bool, numArray, precisionAmount } from "../abi/domain-overlay";
+import { ETERNUM_OVERLAYS, createHiddenOverlays, num, bool, numArray } from "../abi/domain-overlay";
 import { getDirectionBetweenAdjacentHexes } from "@bibliothecadao/types";
 import type { Manifest } from "../abi/types";
 import { moveExplorer } from "./move-executor";
-import { buildWorldState, type EternumWorldState, toContract, getMapCenter } from "./world-state";
+import { buildWorldState, type EternumWorldState, toContract } from "./world-state";
 
 // ---------------------------------------------------------------------------
 // Module state — populated by initializeActions()
@@ -35,9 +35,9 @@ export interface TokenConfig {
   worldAddress?: string;
 }
 let _tokenConfig: TokenConfig = {};
+let _blitzSystemsAddress: string | undefined;
 
-/** Blitz contract address — populated during initializeActions from routes. */
-let _blitzAddress: string | undefined;
+const BLITZ_SETTLE_GRANT_STARTING_TROOPS = "1";
 
 // ---------------------------------------------------------------------------
 // Cached world state — updated every tick, used for pre-flight validation.
@@ -109,25 +109,19 @@ export function initializeActions(
     gameName: options.gameName,
   });
 
-  // Look up the blitz contract address from routes for composite actions
-  const blitzRoute = generated.routes.get("obtain_entry_token");
+  // Look up the blitz contract address from routes for UX descriptions.
+  const blitzRoute = Array.from(generated.routes.values()).find(
+    (route) => route.contractTag.includes("blitz_realm_systems") && route.entrypoint === "settle",
+  );
   const blitzAddress = blitzRoute?.contractAddress;
-  _blitzAddress = blitzAddress;
+  _blitzSystemsAddress = blitzAddress;
 
   // Build dynamic description for approve_token with known addresses
   let approveDesc =
     "Approve a spender to transfer ERC-20 tokens on your behalf. " +
-    "Required before Blitz registration: approve the fee token for the blitz contract, then call obtain_entry_token.";
+    "Required before Blitz settlement when the world charges an entry fee: approve the fee token for the blitz contract, then call settle.";
   if (_tokenConfig.feeToken) approveDesc += ` Fee token: ${_tokenConfig.feeToken}.`;
-  if (_tokenConfig.entryToken) approveDesc += ` Entry token: ${_tokenConfig.entryToken}.`;
   if (blitzAddress) approveDesc += ` Blitz contract (spender): ${blitzAddress}.`;
-
-  // Build dynamic description for lock_entry_token with known addresses
-  let lockDesc =
-    "Lock an entry token NFT before registering for a Blitz game. " +
-    "Call AFTER obtain_entry_token and BEFORE register. " +
-    "The token_id comes from obtain_entry_token. The lock_id is always 69 (hardcoded).";
-  if (_tokenConfig.entryToken) lockDesc += ` Entry token contract: ${_tokenConfig.entryToken}.`;
 
   // Add composite actions that orchestrate multiple base actions
   const withComposites = mergeCompositeActions(generated, [
@@ -176,50 +170,12 @@ export function initializeActions(
         ],
       },
     },
-    {
-      definition: {
-        type: "lock_entry_token",
-        description: lockDesc + " Lock ID is always 69 (hardcoded).",
-        params: [
-          {
-            name: "token_id",
-            type: "number",
-            description: "Entry token ID to lock (obtained from obtain_entry_token)",
-            required: true,
-          },
-          {
-            name: "token_address",
-            type: "string",
-            description: "Entry token contract address (auto-filled from config if omitted)",
-            required: false,
-          },
-        ],
-      },
-    },
-    {
-      definition: {
-        type: "settle_blitz_realm",
-        description:
-          "Settle your realm(s) after registration. Bundles VRF randomness request, realm position assignment, " +
-          "and realm creation into a single atomic multicall. Call AFTER register.",
-        params: [
-          {
-            name: "settlement_count",
-            type: "number",
-            description: "Number of realms to settle (default: 1)",
-            required: false,
-          },
-        ],
-      },
-    },
   ]);
 
   _actionDefs = withComposites.definitions;
   _actionTypes = new Set(withComposites.routes.keys());
   _actionTypes.add("move_to"); // Not in routes (composite)
   _actionTypes.add("approve_token"); // Not in routes (composite)
-  _actionTypes.add("lock_entry_token"); // Not in routes (composite)
-  _actionTypes.add("settle_blitz_realm"); // Not in routes (composite)
 
   // Create ABI executor for standard actions
   _executor = createABIExecutor(manifest, account, {
@@ -305,89 +261,95 @@ async function handleApproveToken(signer: Account, params: Record<string, unknow
   }
 }
 
-// ---------------------------------------------------------------------------
-// lock_entry_token handler (composite action)
-// ---------------------------------------------------------------------------
+function toStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => String(item));
+}
 
-async function handleLockEntryToken(signer: Account, params: Record<string, unknown>): Promise<ActionResult> {
-  const tokenAddress = String(params.token_address ?? params.tokenAddress ?? _tokenConfig.entryToken ?? "");
-  const tokenId = BigInt(String(params.token_id ?? params.tokenId ?? "0"));
-  const lockId = BigInt(69); // Always 69 — hardcoded constant
+function buildBlitzEntryTokenApprovalCall(approved: boolean): Call {
+  return {
+    contractAddress: _tokenConfig.entryToken!,
+    entrypoint: "set_approval_for_all",
+    calldata: CallData.compile([_blitzSystemsAddress!, approved]),
+  };
+}
 
-  if (!tokenAddress) {
-    return { success: false, error: "token_address is required (or set via entryToken config)" };
+function buildBlitzSettleCall({
+  name,
+  entryTokenId,
+  cosmeticTokenIds,
+}: {
+  name: string;
+  entryTokenId: string;
+  cosmeticTokenIds: string[];
+}): Call {
+  return {
+    contractAddress: _blitzSystemsAddress!,
+    entrypoint: "settle",
+    calldata: CallData.compile([
+      name,
+      entryTokenId,
+      cosmeticTokenIds.length.toString(),
+      ...cosmeticTokenIds,
+      BLITZ_SETTLE_GRANT_STARTING_TROOPS,
+    ]),
+  };
+}
+
+function buildBlitzSettleCalls({
+  name,
+  entryTokenId,
+  cosmeticTokenIds,
+}: {
+  name: string;
+  entryTokenId: string;
+  cosmeticTokenIds: string[];
+}): Call[] {
+  const calls: Call[] = [];
+
+  if (_tokenConfig.entryToken) {
+    calls.push(buildBlitzEntryTokenApprovalCall(true));
   }
-  if (tokenId === 0n) {
-    return { success: false, error: "token_id is required and must be non-zero" };
+
+  calls.push(
+    buildBlitzSettleCall({
+      name,
+      entryTokenId,
+      cosmeticTokenIds,
+    }),
+  );
+
+  if (_tokenConfig.entryToken) {
+    calls.push(buildBlitzEntryTokenApprovalCall(false));
   }
 
-  // token_id is u256 (low, high), lock_id is felt252
-  const low = (tokenId & ((1n << 128n) - 1n)).toString();
-  const high = (tokenId >> 128n).toString();
+  return calls;
+}
+
+async function handleBlitzSettleWithTemporaryCollectionApproval(
+  signer: Account,
+  params: Record<string, unknown>,
+): Promise<ActionResult> {
+  if (!_blitzSystemsAddress) {
+    return { success: false, error: "Blitz settle route not initialized." };
+  }
+
+  const name = String(params.name ?? "");
+  const entryTokenId = String(params.entry_token_id ?? params.entryTokenId ?? "1");
+  const cosmeticTokenIds = toStringArray(params.cosmetic_token_ids ?? params.cosmeticTokenIds);
 
   try {
-    const result = await signer.execute({
-      contractAddress: tokenAddress,
-      entrypoint: "token_lock",
-      calldata: [low, high, lockId.toString()],
-    });
+    const result = await signer.execute(
+      buildBlitzSettleCalls({
+        name,
+        entryTokenId,
+        cosmeticTokenIds,
+      }),
+    );
     const txHash = result?.transaction_hash ?? (result as any)?.transactionHash;
     return { success: true, txHash };
   } catch (err: any) {
     return { success: false, error: err?.message ?? String(err) };
-  }
-}
-
-// ---------------------------------------------------------------------------
-// settle_blitz_realm handler (composite action)
-// ---------------------------------------------------------------------------
-
-const VRF_PROVIDER_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
-
-async function handleSettleBlitzRealm(signer: Account, params: Record<string, unknown>): Promise<ActionResult> {
-  const blitzAddress = _blitzAddress;
-  if (!blitzAddress) {
-    return { success: false, error: "Blitz contract address not found in manifest routes" };
-  }
-
-  const settlementCount = Number(params.settlement_count ?? params.settlementCount ?? 1);
-  if (settlementCount < 1) {
-    return { success: false, error: "settlement_count must be at least 1" };
-  }
-
-  // Step 1: VRF randomness request
-  try {
-    await signer.execute({
-      contractAddress: VRF_PROVIDER_ADDRESS,
-      entrypoint: "request_random",
-      calldata: [blitzAddress, "0", signer.address],
-    });
-  } catch (err: any) {
-    return { success: false, error: `Step 1/3 failed — VRF request_random: ${err?.message ?? String(err)}` };
-  }
-
-  // Step 2: Assign realm positions
-  try {
-    await signer.execute({
-      contractAddress: blitzAddress,
-      entrypoint: "assign_realm_positions",
-      calldata: [],
-    });
-  } catch (err: any) {
-    return { success: false, error: `Step 2/3 failed — assign_realm_positions: ${err?.message ?? String(err)}` };
-  }
-
-  // Step 3: Settle realms
-  try {
-    const result = await signer.execute({
-      contractAddress: blitzAddress,
-      entrypoint: "settle_realms",
-      calldata: [settlementCount.toString()],
-    });
-    const txHash = result?.transaction_hash ?? (result as any)?.transactionHash;
-    return { success: true, txHash, data: { settlementCount } };
-  } catch (err: any) {
-    return { success: false, error: `Step 3/3 failed — settle_realms: ${err?.message ?? String(err)}` };
   }
 }
 
@@ -570,14 +532,8 @@ export async function executeAction(client: EternumClient, signer: Account, acti
     return result;
   }
 
-  if (action.type === "lock_entry_token") {
-    const result = await handleLockEntryToken(signer, action.params);
-    logAction(action.type, result);
-    return result;
-  }
-
-  if (action.type === "settle_blitz_realm") {
-    const result = await handleSettleBlitzRealm(signer, action.params);
+  if (action.type === "settle" && _tokenConfig.entryToken) {
+    const result = await handleBlitzSettleWithTemporaryCollectionApproval(signer, action.params);
     logAction(action.type, result);
     return result;
   }

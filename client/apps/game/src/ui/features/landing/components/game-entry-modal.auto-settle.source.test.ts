@@ -18,14 +18,19 @@ describe("Game entry modal auto-settle", () => {
     expect(source).toContain("Settlement Opens Soon");
     expect(source).toContain('if (!autoSettleEnabled || phase !== "settlement"');
     expect(source).toContain("void handleSettle();");
-    expect(source).toContain("runBlitzSettlementFlow({");
-    expect(source).toContain("const singleRealmMode = worldMeta.singleRealmMode;");
+    expect(source).toContain("buildBlitzSettleCalls({");
+    expect(source).toContain("getExpectedBlitzSettlementCount(worldMeta?.singleRealmMode ?? false)");
     expect(source).not.toContain('const singleRealmMode = chain === "mainnet";');
-    expect(source).toContain('if (result.status === "completed")');
-    expect(source).toContain('if (result.status === "syncing")');
-    expect(source).toContain("beginBlitzSettlementVerification(result.pendingTargetSettleCount);");
-    expect(source).toContain("finalizeSuccessfulBlitzSettlement({ recovered: result.recovered });");
-    expect(source).toContain("finalizeFailedBlitzSettlement(result.error);");
+    expect(source).toContain('operation: "blitz_realm_systems.settle"');
+    expect(source).toContain('setSettleStage("syncing")');
+    expect(source).toContain("waitForSettlementTarget(expectedBlitzSettlementCount, SETTLEMENT_SYNC_TIMEOUT_MS)");
+    expect(source).toContain("finalizeSuccessfulBlitzSettlement();");
+    expect(source).toContain(
+      'finalizeFailedBlitzSettlement(error instanceof Error ? error : new Error("Settlement failed"));',
+    );
+    expect(source).not.toContain("runBlitzSettlementFlow({");
+    expect(source).not.toContain("assign_realm_positions");
+    expect(source).not.toContain("settle_realms");
     expect(source).toContain("markCompleted(autoSettleEntryKey)");
     expect(source).toContain("markFailed(autoSettleEntryKey");
   });

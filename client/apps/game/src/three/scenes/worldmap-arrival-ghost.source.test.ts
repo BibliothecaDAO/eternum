@@ -21,4 +21,24 @@ describe("Worldmap arrival ghost wiring", () => {
     expect(source).toContain("this.arrivalGhostManager.resolveArrivalGhost");
     expect(source).not.toContain("shouldResolveArrivalGhost");
   });
+
+  it("clears tracked arrival ghosts when movement visuals are cancelled before completion", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    expect(source).toContain("this.armyManager.onMovementVisualCancel");
+    expect(source).toContain('this.arrivalGhostManager.clearArrivalGhost(entityId, "movement_evicted")');
+  });
+
+  it("clears tracked arrival ghosts when optimistic movement aborts before animation starts", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+
+    const handlerStart = source.indexOf("private async applySubmittedArmyMovementOptimisticPlan(");
+    expect(handlerStart).toBeGreaterThan(-1);
+    const handlerEnd = source.indexOf("\n  private ", handlerStart + 20);
+    const handler = source.slice(handlerStart, handlerEnd);
+    const abortCleanupCalls = handler.match(/this\.clearArrivalGhostAfterOptimisticMovementAbort\(entityId, txHash\)/g);
+
+    expect(abortCleanupCalls).toHaveLength(2);
+    expect(source).toContain('this.arrivalGhostManager.clearArrivalGhost(entityId, "optimistic_aborted")');
+  });
 });

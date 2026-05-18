@@ -23,7 +23,7 @@ export const resolveRegistrationCosmeticTokenIds = ({
   const tokenIds = validTokenIds.length > 0 ? validTokenIds : draft.tokenIds;
 
   if (tokenIds.length > maxSelections) {
-    throw new Error(`Select at most ${maxSelections} cosmetics before registering for Blitz.`);
+    throw new Error(`Select at most ${maxSelections} cosmetics before settling into Blitz.`);
   }
 
   if (tokenIds.some((tokenId) => isDevPreviewSyntheticTokenId(tokenId))) {

@@ -10,6 +10,7 @@ import type {
 export const buildFactoryCreateRotationRunRequest = ({
   environmentId,
   rotationName,
+  workflowRef,
   firstGameStartTime,
   gameIntervalMinutes,
   maxGames,
@@ -28,6 +29,7 @@ export const buildFactoryCreateRotationRunRequest = ({
 }: {
   environmentId: FactoryWorkerEnvironmentId;
   rotationName: string;
+  workflowRef?: string;
   firstGameStartTime: string;
   gameIntervalMinutes: number;
   maxGames: number;
@@ -46,6 +48,7 @@ export const buildFactoryCreateRotationRunRequest = ({
 }): CreateFactoryRotationRunRequest => ({
   environment: environmentId,
   rotationName,
+  workflowRef,
   firstGameStartTime: resolveStartTime(firstGameStartTime),
   gameIntervalMinutes,
   maxGames,

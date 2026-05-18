@@ -52,6 +52,10 @@ function shouldIncludeBanksStep(run: Pick<FactoryRunRecord, "gameType">): boolea
   return run.gameType === "eternum";
 }
 
+function shouldIncludeBlitzHyperstructureReservationStep(run: Pick<FactoryRunRecord, "gameType">): boolean {
+  return run.gameType === "blitz";
+}
+
 function shouldIncludePaymasterStep(run: Pick<FactoryRunRecord, "chain">): boolean {
   return run.chain === "mainnet";
 }
@@ -74,6 +78,16 @@ function buildFactoryBankSteps(run: Pick<FactoryRunRecord, "gameType">): Factory
   return [buildFactoryRunStep("create-banks")];
 }
 
+function buildFactoryBlitzHyperstructureReservationSteps(
+  run: Pick<FactoryRunRecord, "gameType">,
+): FactoryRunStepRecord[] {
+  if (!shouldIncludeBlitzHyperstructureReservationStep(run)) {
+    return [];
+  }
+
+  return [buildFactoryRunStep("reserve-blitz-hyperstructures")];
+}
+
 function buildFactoryPaymasterSteps(run: Pick<FactoryRunRecord, "chain">): FactoryRunStepRecord[] {
   if (!shouldIncludePaymasterStep(run)) {
     return [];
@@ -87,6 +101,7 @@ function buildFactoryRunSteps(run: Pick<FactoryRunRecord, "chain" | "gameType">)
     buildFactoryRunStep("create-world"),
     buildFactoryRunStep("wait-for-factory-index"),
     buildFactoryRunStep("configure-world"),
+    ...buildFactoryBlitzHyperstructureReservationSteps(run),
     ...buildFactoryRoleGrantSteps(run),
     ...buildFactoryBankSteps(run),
     buildFactoryRunStep("create-indexer"),
@@ -294,6 +309,9 @@ function mergeLaunchArtifacts(
     scheduledStartTime: summary.startTime ?? currentArtifacts.scheduledStartTime,
     durationSeconds: summary.durationSeconds ?? currentArtifacts.durationSeconds,
     worldAddress: summary.worldAddress || currentArtifacts.worldAddress,
+    entryTokenAddress: summary.entryTokenAddress || currentArtifacts.entryTokenAddress,
+    reserveHyperstructuresTxHashes:
+      summary.reserveHyperstructuresTxHashes || currentArtifacts.reserveHyperstructuresTxHashes,
     createGameTxHash: summary.createGameTxHash || currentArtifacts.createGameTxHash,
     configureTxHash: summary.configureTxHash || currentArtifacts.configureTxHash,
     lootChestRoleTxHash: summary.lootChestRoleTxHash || currentArtifacts.lootChestRoleTxHash,

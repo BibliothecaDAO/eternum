@@ -7,24 +7,9 @@ import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { messages } from "./signing-policy";
 
-// Get entry token address from active world profile, fallback to env var
 const activeWorld = getActiveWorld();
-const entryTokenAddress = activeWorld?.entryTokenAddress || env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS;
 const feeTokenAddress = activeWorld?.feeTokenAddress || env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
-
-const entryTokenPolicies =
-  entryTokenAddress && entryTokenAddress !== "0x0"
-    ? {
-        [entryTokenAddress]: {
-          methods: [
-            {
-              name: "token_lock",
-              entrypoint: "token_lock",
-            },
-          ],
-        },
-      }
-    : {};
+const entryTokenAddress = activeWorld?.entryTokenAddress || null;
 
 const feeTokenPolicies = feeTokenAddress
   ? {
@@ -33,6 +18,19 @@ const feeTokenPolicies = feeTokenAddress
           {
             name: "approve",
             entrypoint: "approve",
+          },
+        ],
+      },
+    }
+  : {};
+
+const entryTokenPolicies = entryTokenAddress
+  ? {
+      [entryTokenAddress]: {
+        methods: [
+          {
+            name: "set_approval_for_all",
+            entrypoint: "set_approval_for_all",
           },
         ],
       },
@@ -66,34 +64,26 @@ const seasonPassPolicies = Object.fromEntries(
 export const buildPolicies = (manifest: any) =>
   toSessionPolicies({
     contracts: {
-      ...entryTokenPolicies,
       ...feeTokenPolicies,
+      ...entryTokenPolicies,
       ...seasonPassPolicies,
       [getContractByName(manifest, "s1_eternum", "blitz_realm_systems").address]: {
         methods: [
           {
-            name: "make_hyperstructures",
-            entrypoint: "make_hyperstructures",
+            name: "settle",
+            entrypoint: "settle",
           },
           {
-            name: "register",
-            entrypoint: "register",
+            name: "provision_realm",
+            entrypoint: "provision_realm",
           },
+        ],
+      },
+      [getContractByName(manifest, "s1_eternum", "hyperstructure_create_systems").address]: {
+        methods: [
           {
-            name: "obtain_entry_token",
-            entrypoint: "obtain_entry_token",
-          },
-          {
-            name: "create",
-            entrypoint: "create",
-          },
-          {
-            name: "assign_realm_positions",
-            entrypoint: "assign_realm_positions",
-          },
-          {
-            name: "settle_realms",
-            entrypoint: "settle_realms",
+            name: "create_hyperstructure",
+            entrypoint: "create_hyperstructure",
           },
         ],
       },

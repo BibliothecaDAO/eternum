@@ -17,6 +17,17 @@ interface ResolveExploreCompletionPendingClearPlanInput {
   pendingArmyMovements: ReadonlySet<ID>;
 }
 
+interface ResolvePendingMovementAuthoritativeResolutionPlanInput {
+  pendingTargetKey?: string;
+  authoritativePositionKey: string;
+  isMovementInFlight: boolean;
+}
+
+interface PendingMovementAuthoritativeResolutionPlan {
+  shouldClearPendingMovement: boolean;
+  shouldClearAfterVisualCompletion: boolean;
+}
+
 /**
  * Exploring can complete without an onchain position change when the revealed tile has a structure.
  * In that case, clear only pending compass effects for the explored tile.
@@ -58,18 +69,38 @@ export function shouldCleanupTrackedTravelEffectOnPendingClear(input: {
   return true;
 }
 
-export function shouldClearPendingMovementOnAuthoritativePosition(input: {
-  pendingTargetKey?: string;
-  authoritativePositionKey: string;
-  isMovementInFlight: boolean;
-}): boolean {
+export function resolvePendingMovementAuthoritativeResolutionPlan(
+  input: ResolvePendingMovementAuthoritativeResolutionPlanInput,
+): PendingMovementAuthoritativeResolutionPlan {
   if (!input.pendingTargetKey) {
-    return false;
+    return {
+      shouldClearPendingMovement: false,
+      shouldClearAfterVisualCompletion: false,
+    };
+  }
+
+  if (input.pendingTargetKey !== input.authoritativePositionKey) {
+    return {
+      shouldClearPendingMovement: false,
+      shouldClearAfterVisualCompletion: false,
+    };
   }
 
   if (input.isMovementInFlight) {
-    return false;
+    return {
+      shouldClearPendingMovement: false,
+      shouldClearAfterVisualCompletion: true,
+    };
   }
 
-  return input.pendingTargetKey === input.authoritativePositionKey;
+  return {
+    shouldClearPendingMovement: true,
+    shouldClearAfterVisualCompletion: false,
+  };
+}
+
+export function shouldClearPendingMovementOnAuthoritativePosition(
+  input: ResolvePendingMovementAuthoritativeResolutionPlanInput,
+): boolean {
+  return resolvePendingMovementAuthoritativeResolutionPlan(input).shouldClearPendingMovement;
 }

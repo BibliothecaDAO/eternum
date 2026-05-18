@@ -37,6 +37,16 @@ describe("Worldmap pending movement input lock", () => {
     expect(helperBody).toContain("this.armyManager.hasUnresolvedOptimisticMovement(entityId)");
   });
 
+  it("keeps movement input locked while authoritative resolution waits for visual completion", () => {
+    const source = readSource("worldmap.tsx");
+
+    const helperStart = source.indexOf("private isArmyMovementInputLocked(entityId: ID)");
+    expect(helperStart).toBeGreaterThan(0);
+    const helperBody = source.slice(helperStart, helperStart + 700);
+
+    expect(helperBody).toContain("this.pendingArmyMovementAuthoritativeResolutions.has(entityId)");
+  });
+
   it("passes unresolved optimistic movement into the selection plan", () => {
     const source = readSource("worldmap.tsx");
 

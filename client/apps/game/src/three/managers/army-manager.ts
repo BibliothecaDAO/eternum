@@ -199,6 +199,7 @@ export class ArmyManager {
   private components?: ClientComponents;
   private movementStartListeners: Map<number, Set<() => void>> = new Map();
   private movementCompleteListeners: Map<number, Set<() => void>> = new Map();
+  private movementVisualCancelListeners: Map<number, Set<() => void>> = new Map();
   private pointsRenderers?: {
     player: PointsLabelRenderer;
     enemy: PointsLabelRenderer;
@@ -1164,7 +1165,7 @@ export class ArmyManager {
     this.updateArmyPointIcon(army, position);
   }
 
-  private removeVisibleArmy(entityId: ID): number | null {
+  private removeVisibleArmy(entityId: ID, options?: { notifyMovementVisualCancel?: boolean }): number | null {
     const slot = this.visibleArmyIndices.get(entityId);
     if (slot === undefined) {
       return null;
@@ -1194,11 +1195,19 @@ export class ArmyManager {
     this.indicatorMetadataCache.delete(entityId); // Clear cached metadata
 
     const numericId = this.toNumericId(entityId);
+    const shouldNotifyMovementVisualCancel =
+      options?.notifyMovementVisualCancel === true || this.armyModel.isEntityMoving(numericId);
     this.removeTrackedArmyAttachments(entityId);
 
     // Clean up movement source bucket before freeing the slot, since
     // freeInstanceSlot kills the movement callback that would normally do this
     this.cleanupMovementSourceBucket(entityId);
+    // Chunk reconciliation can evict a moving army before the tween completes.
+    // Surface that as a visual cancellation so arrival ghosts and travel effects
+    // do not survive the lost movement-complete callback.
+    if (shouldNotifyMovementVisualCancel) {
+      this.runMovementVisualCancelListeners(numericId);
+    }
 
     this.armyModel.freeInstanceSlot(numericId, slot);
     return slot;
@@ -2108,6 +2117,7 @@ export class ArmyManager {
     // optimistic tween we just cancelled and should not fire.
     this.movementStartListeners.delete(numericEntityId);
     this.movementCompleteListeners.delete(numericEntityId);
+    this.movementVisualCancelListeners.delete(numericEntityId);
 
     if (armyData && (sourceState || lockedSource)) {
       const sourcePosition = new Position({
@@ -2174,7 +2184,6 @@ export class ArmyManager {
 
     this.armyPaths.delete(entityId);
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
-    this.runMovementCompleteListeners(numericEntityId);
     this.lastKnownVisibleHexes.delete(entityId);
 
     // Remove path visualization
@@ -2215,8 +2224,9 @@ export class ArmyManager {
     // console.debug(`[ArmyManager] Preparing world cleanup for entity ${entityId}`);
     const worldPosition = this.getArmyWorldPosition(entityId, army.hexCoords);
 
-    const removedSlot = this.removeVisibleArmy(entityId);
+    const removedSlot = this.removeVisibleArmy(entityId, { notifyMovementVisualCancel: true });
     if (removedSlot === null) {
+      this.runMovementVisualCancelListeners(numericEntityId);
       this.removeArmyPointIcon(entityId);
       this.removeEntityIdLabel(entityId);
     }
@@ -2405,6 +2415,29 @@ export class ArmyManager {
     };
   }
 
+  public onMovementVisualCancel(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.movementVisualCancelListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.movementVisualCancelListeners.set(numericEntityId, listeners);
+    }
+
+    listeners.add(callback);
+
+    return () => {
+      const active = this.movementVisualCancelListeners.get(numericEntityId);
+      if (!active) {
+        return;
+      }
+
+      active.delete(callback);
+      if (active.size === 0) {
+        this.movementVisualCancelListeners.delete(numericEntityId);
+      }
+    };
+  }
+
   public hasMovingArmies(): boolean {
     return this.armyModel.hasMovingInstances();
   }
@@ -2436,11 +2469,31 @@ export class ArmyManager {
     }
 
     this.movementCompleteListeners.delete(entityId);
+    this.movementVisualCancelListeners.delete(entityId);
     listeners.forEach((listener) => {
       try {
         listener();
       } catch (error) {
         console.error("[ArmyManager] Movement complete listener failed", error);
+      }
+    });
+  }
+
+  private runMovementVisualCancelListeners(entityId: number): void {
+    const listeners = this.movementVisualCancelListeners.get(entityId);
+    this.movementVisualCancelListeners.delete(entityId);
+    this.movementStartListeners.delete(entityId);
+    this.movementCompleteListeners.delete(entityId);
+
+    if (!listeners || listeners.size === 0) {
+      return;
+    }
+
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Movement visual cancel listener failed", error);
       }
     });
   }
@@ -3368,6 +3421,7 @@ ${
     this.chunkToArmies.clear();
     this.movementStartListeners.clear();
     this.movementCompleteListeners.clear();
+    this.movementVisualCancelListeners.clear();
 
     destroyArmyManagerOwnedResources({
       pathRenderer: this.pathRenderer,

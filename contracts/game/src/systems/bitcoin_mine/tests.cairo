@@ -184,6 +184,7 @@ mod tests {
                 coord_x: coord_x,
                 coord_y: coord_y,
                 level: 1,
+                starting_troops_granted: false,
             },
             troop_guards: GuardTroops {
                 delta: default_troops,
@@ -237,6 +238,7 @@ mod tests {
                 coord_x: 200,
                 coord_y: 200,
                 level: 1,
+                starting_troops_granted: false,
             },
             troop_guards: GuardTroops {
                 delta: default_troops,
