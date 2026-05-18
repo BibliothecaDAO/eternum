@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-18T00:24:05.285Z",
+  "updatedAt": "2026-05-18T00:24:20.951Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1120,11 +1120,10 @@
       "path": "runs/slot/blitz/aussie-noobs.json",
       "inputPath": "inputs/slot/blitz/aussie-noobs/26007021858-1.json",
       "status": "running",
-      "updatedAt": "2026-05-18T00:24:05.285Z",
+      "updatedAt": "2026-05-18T00:24:20.951Z",
       "workflowRef": "next",
-      "currentStepId": "configure-world",
-      "activeLeaseExpiresAt": "2026-05-18T01:09:05.285Z",
-      "hasRunningStep": true,
+      "currentStepId": "reserve-blitz-hyperstructures",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "reserve-blitz-hyperstructures",
       "startTime": 1779069600,
