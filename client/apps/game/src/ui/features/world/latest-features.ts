@@ -134,9 +134,25 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-05-12",
+    title: "Mode-Aware Army Inventory",
+    description:
+      "Updated selected army HUD tabs so Blitz armies focus on combat and relics unless they actually carry resources, while Eternum armies keep their inventory view.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-12",
+    title: "Wider Biome Cards",
+    description:
+      "Fixed biome combat bonus cards in the selected tile HUD so advantage and penalty rows fill the available panel width.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-12",
     title: "Clearer Tile HUD",
     description:
-      "Improved selected structure and army panels with tab badges for defenders, production, cargo, and relics so key counts are visible before opening each tab.",
+      "Improved selected structure and army panels with tab badges for defenders, production, inventory, and relics so key counts are visible before opening each tab.",
     type: "improvement",
     gameSlug: "eternum",
   },

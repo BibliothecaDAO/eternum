@@ -101,7 +101,7 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
   const troopBonuses = useMemo(() => buildBiomeTroopBonusCards(biome), [biome]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2">
+    <div className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col gap-2">
       <div className="flex flex-col gap-0.5">
         <div className="flex items-center justify-between gap-2">
           <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Biome</span>
@@ -165,7 +165,7 @@ export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
   }, [biome, isPopupOpen, openPopup, setCombatSimulationBiome]);
 
   return (
-    <div className="h-full min-h-0">
+    <div className="h-full min-h-0 w-full">
       <EntityDetailSection compact className="flex h-full flex-col overflow-hidden" tone="highlight">
         <BiomeSummaryCard biome={biome} onSimulateBattle={handleSimulateBattle} showSimulateAction />
       </EntityDetailSection>

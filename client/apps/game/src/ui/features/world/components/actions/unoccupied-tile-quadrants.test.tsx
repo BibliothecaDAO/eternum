@@ -91,7 +91,11 @@ describe("BiomeSummaryCard", () => {
     });
 
     const bonusGrid = container.querySelector('[aria-label="Army bonuses"]');
+    const summaryCard = container.firstElementChild;
 
+    expect(summaryCard?.className).toContain("w-full");
+    expect(summaryCard?.className).toContain("flex-1");
+    expect(summaryCard?.className).toContain("min-w-0");
     expect(bonusGrid?.className).toContain("w-full");
     expect(bonusGrid?.className).toContain("flex");
     expect(bonusGrid?.className).toContain("flex-col");
