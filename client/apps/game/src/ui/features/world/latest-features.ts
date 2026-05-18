@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-18",
+    title: "Smoother Unit Tabbing",
+    description:
+      "Improved world-map unit tabbing so nearby army and structure snapshots reuse larger regions and avoid repeated territory-loading stalls.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
     title: "Continuous Map Terrain",
     description:
       "Improved map panning so terrain pages stream around the camera continuously, keeping more of the viewport covered during fast movement.",

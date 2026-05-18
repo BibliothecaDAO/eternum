@@ -15,6 +15,8 @@ export type WorldmapChunkTraceEvent =
   | "spatial_sql_fetch_completed"
   | "spatial_sql_fetch_timeout"
   | "spatial_sql_fetch_failed"
+  | "spatial_sql_fetch_backoff_started"
+  | "spatial_sql_fetch_backoff_skipped"
   | "spatial_sql_recs_hydrated"
   | "chunk_presentation_timeout"
   | "chunk_transition_hard_timeout"

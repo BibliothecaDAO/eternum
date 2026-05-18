@@ -527,6 +527,12 @@ interface WorldmapSpatialSqlBounds {
   minRow: number;
 }
 
+interface WorldmapHydrationFetchPlan {
+  fetchKey: string;
+  localBounds: WorldmapSpatialSqlBounds;
+  stages: WorldmapRenderAreaHydrationStage[];
+}
+
 interface WorldmapManagerChunkRecoveryInput {
   chunkKey: string;
   transitionToken: number;
@@ -582,6 +588,9 @@ const TORII_BOUNDS_DEBUG_OVERLAY = env.VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY ==
 const TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS = env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
 const WORLDMAP_CHUNK_PHASE_TIMEOUT_MS = env.VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS;
 const WORLDMAP_CHUNK_RECOVERY_COOLDOWN_MS = 2_000;
+const EXPLORER_TROOPS_HYDRATION_KEY_PREFIX = "explorerTroops:";
+const STRUCTURES_HYDRATION_KEY_PREFIX = "structures:";
+const EXPLORER_TROOPS_SPATIAL_SQL_RETRY_BACKOFF_MS = 15_000;
 // Hard timeout wrapping the entire chunk transition (phase timeouts + post-phase work).
 // Catches cases where post-phase awaits (e.g. manager catch-up, finalize rollback)
 // hang past all per-phase timeouts and would otherwise lock isChunkTransitioning.
@@ -741,6 +750,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly minCachedExploredRetentionFraction = 0.6;
   private readonly minExpectedExploredForCacheValidation = 48;
   private toriiLoadingCounter = 0;
+  private explorerTroopsSpatialSqlBackoffUntilMs: Map<string, number> = new Map();
   private readonly chunkRowsAhead = WORLDMAP_CHUNK_POLICY.pin.rowsAhead;
   private readonly chunkRowsBehind = WORLDMAP_CHUNK_POLICY.pin.rowsBehind;
   private readonly chunkColsEachSide = WORLDMAP_CHUNK_POLICY.pin.colsEachSide;
@@ -5088,8 +5098,11 @@ export default class WorldmapScene extends WarpTravel {
       this.removeCachedMatricesForChunk(chunkRow, chunkCol);
       if (options?.invalidateFetchAreas) {
         const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
+        const structuresAreaKey = this.getStructuresRenderAreaKeyForChunk(chunkKey);
         clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
+        clearRenderAreaHydrationState(this.renderAreaHydrationState, structuresAreaKey);
         this.removeRetainedHydrationArea(areaKey);
+        this.structureHydrationFetches.delete(structuresAreaKey);
       }
     });
   }
@@ -5104,6 +5117,24 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkSize,
       WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
     );
+  }
+
+  private getExplorerTroopsRenderAreaKeyForChunk(chunkKey: string): string {
+    const areaKey = getCanonicalRenderAreaKeyForChunk(
+      chunkKey,
+      this.chunkSize,
+      WORLDMAP_CHUNK_POLICY.toriiFetch.explorerTroopsSuperAreaStrides,
+    );
+    return this.getExplorerTroopsHydrationKey(areaKey);
+  }
+
+  private getStructuresRenderAreaKeyForChunk(chunkKey: string): string {
+    const areaKey = getCanonicalRenderAreaKeyForChunk(
+      chunkKey,
+      this.chunkSize,
+      WORLDMAP_CHUNK_POLICY.toriiFetch.structuresSuperAreaStrides,
+    );
+    return this.getStructuresHydrationKey(areaKey);
   }
 
   /**
@@ -5133,6 +5164,54 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkSize,
       WORLDMAP_CHUNK_POLICY.toriiFetch.superAreaStrides,
     );
+  }
+
+  private getExplorerTroopsFetchBoundsForArea(fetchKey: string): {
+    minCol: number;
+    maxCol: number;
+    minRow: number;
+    maxRow: number;
+  } {
+    return getCanonicalRenderFetchBoundsForArea(
+      this.getExplorerTroopsAreaKeyFromHydrationKey(fetchKey),
+      this.renderChunkSize,
+      this.chunkSize,
+      WORLDMAP_CHUNK_POLICY.toriiFetch.explorerTroopsSuperAreaStrides,
+    );
+  }
+
+  private getStructuresFetchBoundsForArea(fetchKey: string): {
+    minCol: number;
+    maxCol: number;
+    minRow: number;
+    maxRow: number;
+  } {
+    return getCanonicalRenderFetchBoundsForArea(
+      this.getStructuresAreaKeyFromHydrationKey(fetchKey),
+      this.renderChunkSize,
+      this.chunkSize,
+      WORLDMAP_CHUNK_POLICY.toriiFetch.structuresSuperAreaStrides,
+    );
+  }
+
+  private getExplorerTroopsHydrationKey(areaKey: string): string {
+    return `${EXPLORER_TROOPS_HYDRATION_KEY_PREFIX}${areaKey}`;
+  }
+
+  private getExplorerTroopsAreaKeyFromHydrationKey(fetchKey: string): string {
+    return fetchKey.startsWith(EXPLORER_TROOPS_HYDRATION_KEY_PREFIX)
+      ? fetchKey.slice(EXPLORER_TROOPS_HYDRATION_KEY_PREFIX.length)
+      : fetchKey;
+  }
+
+  private getStructuresHydrationKey(areaKey: string): string {
+    return `${STRUCTURES_HYDRATION_KEY_PREFIX}${areaKey}`;
+  }
+
+  private getStructuresAreaKeyFromHydrationKey(fetchKey: string): string {
+    return fetchKey.startsWith(STRUCTURES_HYDRATION_KEY_PREFIX)
+      ? fetchKey.slice(STRUCTURES_HYDRATION_KEY_PREFIX.length)
+      : fetchKey;
   }
 
   /**
@@ -5226,15 +5305,60 @@ export default class WorldmapScene extends WarpTravel {
 
   private getRenderAreaHydrationCompletionLookup(requiredStages: readonly WorldmapRenderAreaHydrationStage[]) {
     return {
-      has: (fetchKey: string) => isRenderAreaHydrationComplete(this.renderAreaHydrationState, fetchKey, requiredStages),
+      has: (fetchKey: string) => this.isRenderAreaHydrationCompleteForFetchKey(fetchKey, requiredStages),
     };
   }
 
   private getRenderAreaHydrationPendingLookup(requiredStages: readonly WorldmapRenderAreaHydrationStage[]) {
     return {
-      has: (fetchKey: string) =>
-        getPendingRenderAreaHydrationStages(this.renderAreaHydrationState, fetchKey, requiredStages).length > 0,
+      has: (fetchKey: string) => this.hasPendingRenderAreaHydrationForFetchKey(fetchKey, requiredStages),
     };
+  }
+
+  private isRenderAreaHydrationCompleteForFetchKey(
+    fetchKey: string,
+    requiredStages: readonly WorldmapRenderAreaHydrationStage[],
+  ): boolean {
+    return requiredStages.every((stage) =>
+      isRenderAreaHydrationComplete(
+        this.renderAreaHydrationState,
+        this.resolveRenderAreaHydrationFetchKeyForStage(fetchKey, stage),
+        [stage],
+      ),
+    );
+  }
+
+  private hasPendingRenderAreaHydrationForFetchKey(
+    fetchKey: string,
+    requiredStages: readonly WorldmapRenderAreaHydrationStage[],
+  ): boolean {
+    return requiredStages.some(
+      (stage) =>
+        getPendingRenderAreaHydrationStages(
+          this.renderAreaHydrationState,
+          this.resolveRenderAreaHydrationFetchKeyForStage(fetchKey, stage),
+          [stage],
+        ).length > 0,
+    );
+  }
+
+  private resolveRenderAreaHydrationFetchKeyForStage(
+    fetchKey: string,
+    stage: WorldmapRenderAreaHydrationStage,
+  ): string {
+    if (stage === "explorerTroops") {
+      return fetchKey.startsWith(EXPLORER_TROOPS_HYDRATION_KEY_PREFIX)
+        ? fetchKey
+        : this.getExplorerTroopsRenderAreaKeyForChunk(fetchKey);
+    }
+
+    if (stage === "structures") {
+      return fetchKey.startsWith(STRUCTURES_HYDRATION_KEY_PREFIX)
+        ? fetchKey
+        : this.getStructuresRenderAreaKeyForChunk(fetchKey);
+    }
+
+    return fetchKey;
   }
 
   /**
@@ -5270,13 +5394,7 @@ export default class WorldmapScene extends WarpTravel {
     if (WORLDMAP_STREAMING_ROLLOUT.stagedPathEnabled) {
       this.directionalPresentationChunkKeys.forEach((chunkKey) => {
         const presentationFetchKey = this.getRenderAreaKeyForChunk(chunkKey);
-        if (
-          isRenderAreaHydrationComplete(
-            this.renderAreaHydrationState,
-            presentationFetchKey,
-            WORLDMAP_PREFETCH_HYDRATION_STAGES,
-          )
-        ) {
+        if (this.isRenderAreaHydrationCompleteForFetchKey(presentationFetchKey, WORLDMAP_PREFETCH_HYDRATION_STAGES)) {
           void this.prewarmDirectionalPresentationChunk(chunkKey);
         }
       });
@@ -7562,11 +7680,14 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
+    const structuresAreaKey = this.getStructuresRenderAreaKeyForChunk(chunkKey);
     clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
+    clearRenderAreaHydrationState(this.renderAreaHydrationState, structuresAreaKey);
     this.removeRetainedHydrationArea(areaKey);
     this.tileHydrationFetches.delete(areaKey);
-    this.structureHydrationFetches.delete(areaKey);
+    this.structureHydrationFetches.delete(structuresAreaKey);
     this.hydratedRefreshSuppressionAreaKeys.delete(areaKey);
+    this.hydratedRefreshSuppressionAreaKeys.delete(structuresAreaKey);
     this.hydratedChunkRefreshes.delete(chunkKey);
     this.pendingChunkFetchGeneration = invalidateWorldmapPendingFetchGeneration(this.pendingChunkFetchGeneration);
     return areaKey;
@@ -7962,63 +8083,172 @@ export default class WorldmapScene extends WarpTravel {
       return false;
     }
 
-    const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
     const requiredStages = this.resolveRenderAreaHydrationRequirements(options);
-    if (isRenderAreaHydrationComplete(this.renderAreaHydrationState, fetchKey, requiredStages)) {
+    const hydrationPlans = this.resolveRenderAreaHydrationFetchPlans(chunkKey, requiredStages);
+    if (hydrationPlans.every((plan) => this.isRenderAreaHydrationPlanComplete(plan))) {
       return true;
     }
 
-    const pendingPromises = getPendingRenderAreaHydrationPromises(
-      this.renderAreaHydrationState,
-      fetchKey,
-      requiredStages,
-    );
-    const stagesToFetch = this.resolveRenderAreaHydrationStagesToFetch(fetchKey, requiredStages);
-    if (stagesToFetch.length === 0) {
+    const pendingPromises = this.getPendingRenderAreaHydrationPlanPromises(hydrationPlans);
+    const plansToFetch = this.resolveRenderAreaHydrationPlansToFetch(hydrationPlans);
+    if (plansToFetch.length === 0) {
       return Promise.all(pendingPromises).then((results) => results.every(Boolean));
     }
 
-    const { minCol, maxCol, minRow, maxRow } = this.getRenderFetchBoundsForArea(fetchKey);
+    const ownedFetchPromises = plansToFetch.map((plan) => {
+      const { fetchKey, localBounds, stages } = plan;
+      const { minCol, maxCol, minRow, maxRow } = localBounds;
 
-    if (import.meta.env.DEV) {
-      console.log(
-        "[RENDER FETCH]",
-        { chunkKey, fetchKey },
-        `cols: ${minCol}-${maxCol}`,
-        `rows: ${minRow}-${maxRow}`,
-        "hydrated render areas",
-        listCompletedRenderAreaHydrationKeys(this.renderAreaHydrationState),
+      if (import.meta.env.DEV) {
+        console.log(
+          "[RENDER FETCH]",
+          { chunkKey, fetchKey, stages },
+          `cols: ${minCol}-${maxCol}`,
+          `rows: ${minRow}-${maxRow}`,
+          "hydrated render areas",
+          listCompletedRenderAreaHydrationKeys(this.renderAreaHydrationState),
+        );
+      }
+
+      this.beginRenderAreaHydrationFetch(fetchKey, stages, minCol, maxCol, minRow, maxRow);
+      const fetchPromise = this.executeTileEntitiesFetch(
+        fetchKey,
+        minCol,
+        maxCol,
+        minRow,
+        maxRow,
+        this.pendingChunkFetchGeneration,
+        stages,
       );
+      const ownedFetchPromise = fetchPromise.finally(() => {
+        finalizePendingRenderAreaHydrationOwnership(this.renderAreaHydrationState, fetchKey, stages, ownedFetchPromise);
+      });
+      registerPendingRenderAreaHydration(this.renderAreaHydrationState, fetchKey, stages, ownedFetchPromise);
+      return ownedFetchPromise;
+    });
+
+    if (plansToFetch.some((plan) => !this.isExplorerTroopsOnlyHydration(plan.stages))) {
+      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_started");
     }
 
-    this.beginRenderAreaHydrationFetch(fetchKey, stagesToFetch, minCol, maxCol, minRow, maxRow);
-    const fetchPromise = this.executeTileEntitiesFetch(
-      fetchKey,
-      minCol,
-      maxCol,
-      minRow,
-      maxRow,
-      this.pendingChunkFetchGeneration,
-      stagesToFetch,
-    );
-    const ownedFetchPromise = fetchPromise.finally(() => {
-      finalizePendingRenderAreaHydrationOwnership(
-        this.renderAreaHydrationState,
-        fetchKey,
-        stagesToFetch,
-        ownedFetchPromise,
-      );
-    });
-    recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_started");
-    registerPendingRenderAreaHydration(this.renderAreaHydrationState, fetchKey, stagesToFetch, ownedFetchPromise);
-
-    return Promise.all([...pendingPromises, ownedFetchPromise]).then((results) => results.every(Boolean));
+    return Promise.all([...pendingPromises, ...ownedFetchPromises]).then((results) => results.every(Boolean));
   }
 
   private resolveRenderAreaHydrationRequirements(input: {
     requireStructures: boolean;
   }): readonly WorldmapRenderAreaHydrationStage[] {
     return input.requireStructures ? WORLDMAP_ACTIVE_HYDRATION_STAGES : WORLDMAP_PREFETCH_HYDRATION_STAGES;
+  }
+
+  private resolveRenderAreaHydrationFetchPlans(
+    chunkKey: string,
+    requiredStages: readonly WorldmapRenderAreaHydrationStage[],
+  ): WorldmapHydrationFetchPlan[] {
+    const plans: WorldmapHydrationFetchPlan[] = [];
+    const terrainStages = requiredStages.filter((stage) => stage === "tileOpt");
+    if (terrainStages.length > 0) {
+      const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+      plans.push({
+        fetchKey,
+        localBounds: this.getRenderFetchBoundsForArea(fetchKey),
+        stages: terrainStages,
+      });
+    }
+
+    if (requiredStages.includes("structures")) {
+      const fetchKey = this.getStructuresRenderAreaKeyForChunk(chunkKey);
+      plans.push({
+        fetchKey,
+        localBounds: this.getStructuresFetchBoundsForArea(fetchKey),
+        stages: ["structures"],
+      });
+    }
+
+    if (requiredStages.includes("explorerTroops")) {
+      const fetchKey = this.getExplorerTroopsRenderAreaKeyForChunk(chunkKey);
+      plans.push({
+        fetchKey,
+        localBounds: this.getExplorerTroopsFetchBoundsForArea(fetchKey),
+        stages: ["explorerTroops"],
+      });
+    }
+
+    return plans;
+  }
+
+  private isRenderAreaHydrationPlanComplete(plan: WorldmapHydrationFetchPlan): boolean {
+    return (
+      isRenderAreaHydrationComplete(this.renderAreaHydrationState, plan.fetchKey, plan.stages) &&
+      this.isSparseHydrationPlanReusable(plan)
+    );
+  }
+
+  private getPendingRenderAreaHydrationPlanPromises(plans: readonly WorldmapHydrationFetchPlan[]): Promise<boolean>[] {
+    const pendingPromises = plans.flatMap((plan) =>
+      getPendingRenderAreaHydrationPromises(this.renderAreaHydrationState, plan.fetchKey, plan.stages),
+    );
+    return Array.from(new Set(pendingPromises));
+  }
+
+  private resolveRenderAreaHydrationPlansToFetch(
+    plans: readonly WorldmapHydrationFetchPlan[],
+  ): WorldmapHydrationFetchPlan[] {
+    return plans
+      .map((plan) => ({
+        ...plan,
+        stages: this.resolveRenderAreaHydrationStagesToFetchForPlan(plan),
+      }))
+      .filter((plan) => plan.stages.length > 0)
+      .filter((plan) => !this.shouldSkipExplorerTroopsHydrationFetch(plan));
+  }
+
+  private resolveRenderAreaHydrationStagesToFetchForPlan(
+    plan: WorldmapHydrationFetchPlan,
+  ): WorldmapRenderAreaHydrationStage[] {
+    const stagesToFetch = this.isSparseHydrationPlanReusable(plan)
+      ? plan.stages
+      : this.resolveExpiredSparseHydrationStagesForFetch(plan);
+    return this.resolveRenderAreaHydrationStagesToFetch(plan.fetchKey, stagesToFetch);
+  }
+
+  private resolveExpiredSparseHydrationStagesForFetch(
+    plan: WorldmapHydrationFetchPlan,
+  ): readonly WorldmapRenderAreaHydrationStage[] {
+    if (this.isSparseHydrationPlan(plan)) {
+      clearCompletedRenderAreaHydrationState(this.renderAreaHydrationState, plan.fetchKey);
+    }
+
+    return plan.stages;
+  }
+
+  private isSparseHydrationPlanReusable(plan: WorldmapHydrationFetchPlan): boolean {
+    if (this.isExplorerTroopsOnlyHydration(plan.stages)) {
+      const activeSubscriptionBounds = this.getActiveToriiSubscriptionBounds();
+      return (
+        !!activeSubscriptionBounds &&
+        this.isExplorerTroopsAreaCoveredBySubscriptionBounds(plan.fetchKey, activeSubscriptionBounds)
+      );
+    }
+
+    if (this.isStructuresOnlyHydration(plan.stages)) {
+      const activeSubscriptionBounds = this.getActiveToriiSubscriptionBounds();
+      return (
+        !!activeSubscriptionBounds &&
+        this.isStructuresAreaCoveredBySubscriptionBounds(plan.fetchKey, activeSubscriptionBounds)
+      );
+    }
+
+    return true;
+  }
+
+  private isSparseHydrationPlan(plan: WorldmapHydrationFetchPlan): boolean {
+    return this.isExplorerTroopsOnlyHydration(plan.stages) || this.isStructuresOnlyHydration(plan.stages);
+  }
+
+  private shouldSkipExplorerTroopsHydrationFetch(plan: WorldmapHydrationFetchPlan): boolean {
+    return (
+      this.isExplorerTroopsOnlyHydration(plan.stages) && this.shouldSkipExplorerTroopsSpatialSqlFetch(plan.fetchKey)
+    );
   }
 
   private resolveRenderAreaHydrationStagesToFetch(
@@ -8131,7 +8361,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async waitForStructureHydrationIdle(chunkKey: string): Promise<void> {
-    const fetchKey = this.getRenderAreaKeyForChunk(chunkKey);
+    const fetchKey = this.getStructuresRenderAreaKeyForChunk(chunkKey);
 
     while (true) {
       const state = this.structureHydrationFetches.get(fetchKey);
@@ -8256,33 +8486,21 @@ export default class WorldmapScene extends WarpTravel {
           localBounds,
         });
       }
-      if (
-        shouldApplyWorldmapFetchResult({
-          fetchGeneration,
-          activeFetchGeneration: this.pendingChunkFetchGeneration,
-          fetchKey,
-          retainedRenderAreas: this.getRetainedRenderAreaKeys(),
-        })
-      ) {
+      if (this.shouldApplyHydrationFetchResult(fetchKey, fetchGeneration, stages)) {
         markRenderAreaHydrationStagesComplete(this.renderAreaHydrationState, fetchKey, stages);
-        const currentAreaKey = this.currentChunk !== "null" ? this.getRenderAreaKeyForChunk(this.currentChunk) : null;
-        if (
-          shouldScheduleHydratedChunkRefreshForFetch({
-            fetchAreaKey: fetchKey,
-            currentAreaKey,
-            suppressedAreaKeys: this.hydratedRefreshSuppressionAreaKeys,
-          })
-        ) {
-          this.scheduleHydratedChunkRefresh(this.currentChunk);
-        }
+        this.scheduleRefreshForBlockingHydration(fetchKey, stages);
       }
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_succeeded");
+      if (!this.isExplorerTroopsOnlyHydration(stages)) {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_succeeded");
+      }
       return true;
     } catch (error) {
       console.error("Error fetching tile entities:", error);
       // Do not mark stages complete on error so they can be retried.
-      recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_failed");
-      return false;
+      if (!this.isExplorerTroopsOnlyHydration(stages)) {
+        recordChunkDiagnosticsEvent(this.chunkDiagnostics, "tile_fetch_failed");
+      }
+      return this.isExplorerTroopsOnlyHydration(stages);
     } finally {
       if (this.shouldFetchTileOpt(stages)) {
         this.settleTileHydrationFetch(fetchKey, fetchGeneration);
@@ -8305,16 +8523,25 @@ export default class WorldmapScene extends WarpTravel {
     stages: readonly WorldmapRenderAreaHydrationStage[],
   ): Promise<void> {
     if (stages.includes("explorerTroops")) {
-      await this.runSpatialSqlFetch("explorer_troops", fetchKey, sqlBounds, () =>
-        getExplorerTroopsFromToriiExact(
-          this.dojo.network.toriiClient,
-          this.dojo.network.contractComponents as unknown as Parameters<typeof getExplorerTroopsFromToriiExact>[1],
-          sqlBounds.minCol,
-          sqlBounds.maxCol,
-          sqlBounds.minRow,
-          sqlBounds.maxRow,
-        ),
-      );
+      if (this.shouldSkipExplorerTroopsSpatialSqlFetch(fetchKey)) {
+        throw new Error(`Explorer troops SQL fetch "${fetchKey}" is in retry backoff`);
+      }
+
+      try {
+        await this.runSpatialSqlFetch("explorer_troops", fetchKey, sqlBounds, () =>
+          getExplorerTroopsFromToriiExact(
+            this.dojo.network.toriiClient,
+            this.dojo.network.contractComponents as unknown as Parameters<typeof getExplorerTroopsFromToriiExact>[1],
+            sqlBounds.minCol,
+            sqlBounds.maxCol,
+            sqlBounds.minRow,
+            sqlBounds.maxRow,
+          ),
+        );
+      } catch (error) {
+        this.recordExplorerTroopsSpatialSqlBackoff(fetchKey, error);
+        throw error;
+      }
     }
 
     if (stages.includes("tileOpt")) {
@@ -8346,6 +8573,147 @@ export default class WorldmapScene extends WarpTravel {
 
   private shouldFetchTileOpt(stages: readonly WorldmapRenderAreaHydrationStage[]): boolean {
     return stages.includes("tileOpt");
+  }
+
+  private shouldApplyHydrationFetchResult(
+    fetchKey: string,
+    fetchGeneration: number,
+    stages: readonly WorldmapRenderAreaHydrationStage[],
+  ): boolean {
+    if (this.isExplorerTroopsOnlyHydration(stages)) {
+      return this.shouldApplyExplorerTroopsHydrationFetchResult(fetchKey, fetchGeneration);
+    }
+
+    if (this.isStructuresOnlyHydration(stages)) {
+      return this.shouldApplyStructuresHydrationFetchResult(fetchKey, fetchGeneration);
+    }
+
+    return shouldApplyWorldmapFetchResult({
+      fetchGeneration,
+      activeFetchGeneration: this.pendingChunkFetchGeneration,
+      fetchKey,
+      retainedRenderAreas: this.getRetainedRenderAreaKeys(),
+    });
+  }
+
+  private shouldApplyExplorerTroopsHydrationFetchResult(fetchKey: string, fetchGeneration: number): boolean {
+    if (fetchGeneration === this.pendingChunkFetchGeneration) {
+      return true;
+    }
+
+    const activeSubscriptionBounds = this.getActiveToriiSubscriptionBounds();
+    return (
+      !!activeSubscriptionBounds &&
+      this.isExplorerTroopsAreaCoveredBySubscriptionBounds(fetchKey, activeSubscriptionBounds)
+    );
+  }
+
+  private isExplorerTroopsAreaCoveredBySubscriptionBounds(
+    fetchKey: string,
+    subscriptionBounds: ToriiBoundsDebugRange,
+  ): boolean {
+    const areaBounds = this.getExplorerTroopsFetchBoundsForArea(fetchKey);
+    return (
+      areaBounds.minCol >= subscriptionBounds.minCol &&
+      areaBounds.maxCol <= subscriptionBounds.maxCol &&
+      areaBounds.minRow >= subscriptionBounds.minRow &&
+      areaBounds.maxRow <= subscriptionBounds.maxRow
+    );
+  }
+
+  private shouldApplyStructuresHydrationFetchResult(fetchKey: string, fetchGeneration: number): boolean {
+    if (fetchGeneration === this.pendingChunkFetchGeneration) {
+      return true;
+    }
+
+    const activeSubscriptionBounds = this.getActiveToriiSubscriptionBounds();
+    return (
+      !!activeSubscriptionBounds && this.isStructuresAreaCoveredBySubscriptionBounds(fetchKey, activeSubscriptionBounds)
+    );
+  }
+
+  private isStructuresAreaCoveredBySubscriptionBounds(
+    fetchKey: string,
+    subscriptionBounds: ToriiBoundsDebugRange,
+  ): boolean {
+    const areaBounds = this.getStructuresFetchBoundsForArea(fetchKey);
+    return (
+      areaBounds.minCol >= subscriptionBounds.minCol &&
+      areaBounds.maxCol <= subscriptionBounds.maxCol &&
+      areaBounds.minRow >= subscriptionBounds.minRow &&
+      areaBounds.maxRow <= subscriptionBounds.maxRow
+    );
+  }
+
+  private scheduleRefreshForBlockingHydration(
+    fetchKey: string,
+    stages: readonly WorldmapRenderAreaHydrationStage[],
+  ): void {
+    if (this.isExplorerTroopsOnlyHydration(stages)) {
+      return;
+    }
+
+    const currentAreaKey = this.resolveCurrentHydrationAreaKey(stages);
+    if (
+      shouldScheduleHydratedChunkRefreshForFetch({
+        fetchAreaKey: fetchKey,
+        currentAreaKey,
+        suppressedAreaKeys: this.hydratedRefreshSuppressionAreaKeys,
+      })
+    ) {
+      this.scheduleHydratedChunkRefresh(this.currentChunk);
+    }
+  }
+
+  private resolveCurrentHydrationAreaKey(stages: readonly WorldmapRenderAreaHydrationStage[]): string | null {
+    if (this.currentChunk === "null") {
+      return null;
+    }
+
+    if (this.isStructuresOnlyHydration(stages)) {
+      return this.getStructuresRenderAreaKeyForChunk(this.currentChunk);
+    }
+
+    return this.getRenderAreaKeyForChunk(this.currentChunk);
+  }
+
+  private isStructuresOnlyHydration(stages: readonly WorldmapRenderAreaHydrationStage[]): boolean {
+    return stages.length === 1 && stages[0] === "structures";
+  }
+
+  private isExplorerTroopsOnlyHydration(stages: readonly WorldmapRenderAreaHydrationStage[]): boolean {
+    return stages.length === 1 && stages[0] === "explorerTroops";
+  }
+
+  private shouldSkipExplorerTroopsSpatialSqlFetch(fetchKey: string): boolean {
+    const backoffUntilMs = this.explorerTroopsSpatialSqlBackoffUntilMs.get(fetchKey);
+    if (backoffUntilMs === undefined) {
+      return false;
+    }
+
+    if (Date.now() < backoffUntilMs) {
+      this.traceChunk("spatial_sql_fetch_backoff_skipped", {
+        fetchKey,
+        queryName: "explorer_troops",
+        retryAtMs: backoffUntilMs,
+      });
+      return true;
+    }
+
+    this.explorerTroopsSpatialSqlBackoffUntilMs.delete(fetchKey);
+    return false;
+  }
+
+  private recordExplorerTroopsSpatialSqlBackoff(fetchKey: string, error: unknown): void {
+    const retryAtMs = Date.now() + EXPLORER_TROOPS_SPATIAL_SQL_RETRY_BACKOFF_MS;
+    this.explorerTroopsSpatialSqlBackoffUntilMs.set(fetchKey, retryAtMs);
+    this.traceChunk("spatial_sql_fetch_backoff_started", {
+      error: error instanceof Error ? error.message : String(error),
+      fetchKey,
+      queryName: "explorer_troops",
+      retryAtMs,
+      retryBackoffMs: EXPLORER_TROOPS_SPATIAL_SQL_RETRY_BACKOFF_MS,
+    });
   }
 
   private getRetainedRenderAreaKeys(): Set<string> {

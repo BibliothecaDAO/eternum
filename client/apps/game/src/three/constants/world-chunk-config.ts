@@ -14,6 +14,16 @@ interface WorldChunkConfig {
      * Larger values reduce repeated SQL hydration across neighboring render windows.
      */
     superAreaStrides: number;
+    /**
+     * Sparse explorer troop snapshots can safely use the larger live subscription
+     * area without multiplying dense terrain hydration payloads.
+     */
+    explorerTroopsSuperAreaStrides: number;
+    /**
+     * Structures are sparse enough to hydrate over the larger live subscription
+     * area while keeping dense terrain hydration on the smaller fetch area.
+     */
+    structuresSuperAreaStrides: number;
   };
   /** Live Torii subscription bounds coalescing */
   toriiSubscription: {
@@ -83,6 +93,10 @@ export const WORLD_CHUNK_CONFIG: WorldChunkConfig = {
   toriiFetch: {
     // Coalesce overlapping render windows into larger stable fetch areas.
     superAreaStrides: 16,
+    // Match the live subscription area to reduce sparse army snapshot churn.
+    explorerTroopsSuperAreaStrides: 48,
+    // Match the live subscription area to reduce sparse structure snapshot churn.
+    structuresSuperAreaStrides: 48,
   },
   toriiSubscription: {
     // Keep live spatial stream bounds stable across multiple fetch areas.

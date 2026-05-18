@@ -52,20 +52,22 @@ function findMethodSignatureEnd(source: string, searchStart: number): number {
 }
 
 describe("worldmap army bootstrap fetch", () => {
-  it("hydrates explorer troops snapshots during exact chunk bootstrap before tile replay", () => {
+  it("keeps explorer troop snapshot hydration in the exact chunk bootstrap path", () => {
     const source = readWorldmapSource();
 
     expect(source).toContain("getExplorerTroopsFromToriiExact");
 
+    const computeMethodBody = extractMethodBody(source, "private async computeTileEntities(");
+    expect(computeMethodBody).toContain("this.resolveRenderAreaHydrationFetchPlans(chunkKey, requiredStages)");
+
+    const hydrationPlanBody = extractMethodBody(source, "private resolveRenderAreaHydrationFetchPlans(");
+    expect(hydrationPlanBody).toContain("this.getExplorerTroopsRenderAreaKeyForChunk(chunkKey)");
+    expect(hydrationPlanBody).toContain('stages: ["explorerTroops"]');
+
     const fetchMethodBody = extractMethodBody(source, "private async executeTileEntitiesFetch(");
     expect(fetchMethodBody).toContain("await this.fetchRenderAreaHydrationStages(fetchKey, sqlBounds, stages)");
-
     const stagedHydrationBody = extractMethodBody(source, "private async fetchRenderAreaHydrationStages(");
-    const explorerFetchIndex = stagedHydrationBody.indexOf("getExplorerTroopsFromToriiExact(");
-    const tileFetchIndex = stagedHydrationBody.indexOf("getMapFromToriiExact(");
-
-    expect(explorerFetchIndex).toBeGreaterThan(-1);
-    expect(tileFetchIndex).toBeGreaterThan(-1);
-    expect(explorerFetchIndex).toBeLessThan(tileFetchIndex);
+    expect(stagedHydrationBody).toContain("getExplorerTroopsFromToriiExact(");
+    expect(stagedHydrationBody).toContain("getMapFromToriiExact(");
   });
 });

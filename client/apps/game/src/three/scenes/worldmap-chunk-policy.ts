@@ -6,6 +6,8 @@ interface WorldmapChunkPolicy {
   switchPadding: number;
   toriiFetch: {
     superAreaStrides: number;
+    explorerTroopsSuperAreaStrides: number;
+    structuresSuperAreaStrides: number;
   };
   toriiSubscription: {
     superAreaStrides: number;
@@ -52,6 +54,8 @@ interface WorldChunkPolicyInput {
   switchPadding: number;
   toriiFetch: {
     superAreaStrides: number;
+    explorerTroopsSuperAreaStrides: number;
+    structuresSuperAreaStrides: number;
   };
   toriiSubscription: {
     superAreaStrides: number;
@@ -91,6 +95,8 @@ export function createWorldmapChunkPolicy(config: WorldChunkPolicyInput = WORLD_
     switchPadding: config.switchPadding,
     toriiFetch: {
       superAreaStrides: config.toriiFetch.superAreaStrides,
+      explorerTroopsSuperAreaStrides: config.toriiFetch.explorerTroopsSuperAreaStrides,
+      structuresSuperAreaStrides: config.toriiFetch.structuresSuperAreaStrides,
     },
     toriiSubscription: {
       superAreaStrides: config.toriiSubscription.superAreaStrides,
