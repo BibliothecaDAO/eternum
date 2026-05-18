@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-18T00:24:58.168Z",
+  "updatedAt": "2026-05-18T00:25:18.337Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1120,11 +1120,10 @@
       "path": "runs/slot/blitz/aussie-noobs.json",
       "inputPath": "inputs/slot/blitz/aussie-noobs/26007021858-1.json",
       "status": "running",
-      "updatedAt": "2026-05-18T00:24:58.168Z",
+      "updatedAt": "2026-05-18T00:25:18.337Z",
       "workflowRef": "next",
-      "currentStepId": "grant-lootchest-role",
-      "activeLeaseExpiresAt": "2026-05-18T01:09:58.168Z",
-      "hasRunningStep": true,
+      "currentStepId": "create-indexer",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-indexer",
       "startTime": 1779069600,
