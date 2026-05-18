@@ -7681,11 +7681,14 @@ export default class WorldmapScene extends WarpTravel {
 
     const areaKey = this.getRenderAreaKeyForChunk(chunkKey);
     const structuresAreaKey = this.getStructuresRenderAreaKeyForChunk(chunkKey);
+    const explorerTroopsAreaKey = this.getExplorerTroopsRenderAreaKeyForChunk(chunkKey);
     clearRenderAreaHydrationState(this.renderAreaHydrationState, areaKey);
     clearRenderAreaHydrationState(this.renderAreaHydrationState, structuresAreaKey);
+    clearRenderAreaHydrationState(this.renderAreaHydrationState, explorerTroopsAreaKey);
     this.removeRetainedHydrationArea(areaKey);
     this.tileHydrationFetches.delete(areaKey);
     this.structureHydrationFetches.delete(structuresAreaKey);
+    this.explorerTroopsSpatialSqlBackoffUntilMs.delete(explorerTroopsAreaKey);
     this.hydratedRefreshSuppressionAreaKeys.delete(areaKey);
     this.hydratedRefreshSuppressionAreaKeys.delete(structuresAreaKey);
     this.hydratedChunkRefreshes.delete(chunkKey);
