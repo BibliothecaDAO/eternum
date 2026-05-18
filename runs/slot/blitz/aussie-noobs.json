@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/aussie-noobs/26007021858-1.json",
   "latestLaunchRequestId": "26007021858-1",
-  "currentStepId": "reserve-blitz-hyperstructures",
+  "currentStepId": "grant-lootchest-role",
   "createdAt": "2026-05-18T00:22:56.566Z",
-  "updatedAt": "2026-05-18T00:24:29.149Z",
+  "updatedAt": "2026-05-18T00:24:49.814Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -54,10 +54,11 @@
     {
       "id": "reserve-blitz-hyperstructures",
       "title": "Reserving hyperstructures",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Reserving hyperstructures",
-      "latestEvent": "Reserving hyperstructures started",
-      "startedAt": "2026-05-18T00:24:29.149Z"
+      "latestEvent": "Reserving hyperstructures succeeded",
+      "startedAt": "2026-05-18T00:24:29.149Z",
+      "finishedAt": "2026-05-18T00:24:49.814Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -82,14 +83,9 @@
     "createGameTxHash": "0x67ea6380d93c6da4c5b89844cd5675eeeb1824162a95dc7a7b3d18a443e5fec",
     "entryTokenAddress": "0xad81a9f3f190efc35ca51e5beb3bc419a29efa7619a0ac4cc784f418f4efb3",
     "configureTxHash": "0x36addbd1bab30f0cf4035d45b1b222bb580e90e3f65a7a3330c2c85f8bc6b28",
-    "worldConfigTxHash": "0x36addbd1bab30f0cf4035d45b1b222bb580e90e3f65a7a3330c2c85f8bc6b28"
-  },
-  "activeLease": {
-    "launchRequestId": "26007021858-1",
-    "workflowRunId": 26007021858,
-    "workflowRunAttempt": 1,
-    "stepId": "reserve-blitz-hyperstructures",
-    "acquiredAt": "2026-05-18T00:24:29.149Z",
-    "expiresAt": "2026-05-18T01:09:29.149Z"
+    "worldConfigTxHash": "0x36addbd1bab30f0cf4035d45b1b222bb580e90e3f65a7a3330c2c85f8bc6b28",
+    "reserveHyperstructuresTxHashes": [
+      "0x4e5e78e5819450fae51da392b74871b82f62a9b0c0f661956c2f0778781e7c"
+    ]
   }
 }
