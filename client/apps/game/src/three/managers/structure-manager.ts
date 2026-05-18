@@ -42,7 +42,9 @@ import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import { FXManager } from "./fx-manager";
 import {
   bindManagerChunkRuntimeState,
+  recoverManagerChunkRuntimeAfterStall,
   type ManagerChunkUpdateOptions,
+  type RecoverManagerChunkRuntimeAfterStallInput,
   runManagerChunkUpdateRuntime,
 } from "./manager-chunk-runtime";
 import {
@@ -1037,6 +1039,12 @@ export class StructureManager {
       state: this.resolveChunkUpdateRuntimeState(),
       waitForSettle: waitForVisualSettle,
     });
+  }
+
+  recoverChunkUpdateAfterStall(input: RecoverManagerChunkRuntimeAfterStallInput): void {
+    recoverManagerChunkRuntimeAfterStall(this.resolveChunkUpdateRuntimeState(), input);
+    this.isUpdatingVisibleStructures = false;
+    this.visibleStructurePassFence.invalidate();
   }
 
   private resolveChunkUpdateRuntimeState() {

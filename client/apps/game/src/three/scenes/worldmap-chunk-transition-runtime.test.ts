@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createWorldmapChunkTransitionRuntimeState,
+  resolveWorldmapChunkTransitionTimeoutRecovery,
   runWorldmapChunkTransition,
 } from "./worldmap-chunk-transition-runtime";
 
@@ -161,5 +162,29 @@ describe("runWorldmapChunkTransition", () => {
       process.off("unhandledRejection", unhandled);
       vi.useRealTimers();
     }
+  });
+
+  it("advances the transition token when the active transition hard-times out", () => {
+    expect(
+      resolveWorldmapChunkTransitionTimeoutRecovery({
+        currentTransitionToken: 7,
+        timedOutTransitionToken: 7,
+      }),
+    ).toEqual({
+      recoveryTransitionToken: 8,
+      shouldInvalidateTimedOutTransition: true,
+    });
+  });
+
+  it("keeps the current transition token when an older transition times out late", () => {
+    expect(
+      resolveWorldmapChunkTransitionTimeoutRecovery({
+        currentTransitionToken: 9,
+        timedOutTransitionToken: 7,
+      }),
+    ).toEqual({
+      recoveryTransitionToken: 9,
+      shouldInvalidateTimedOutTransition: false,
+    });
   });
 });

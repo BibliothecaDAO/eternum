@@ -9,13 +9,13 @@ function readSceneSource(relativePath: string): string {
 }
 
 describe("worldmap critical manager catch-up wiring", () => {
-  it("uses Promise.allSettled and schedules one visibility recovery through the shared chunk recovery path", () => {
+  it("bounds critical manager catch-up and schedules one manager recovery refresh", () => {
     const worldmapSource = readSceneSource("./worldmap.tsx");
 
     expect(worldmapSource).toMatch(/private async updateCriticalManagersForChunk\(/);
-    expect(worldmapSource).toMatch(/Promise\.allSettled\(\[/);
+    expect(worldmapSource).toMatch(/runWorldmapCriticalManagerCatchUp\(\{/);
+    expect(worldmapSource).toMatch(/recoverChunkUpdateAfterStall\(criticalManagerRecovery\.resolveRecoveryInput\(\)\)/);
     expect(worldmapSource).toMatch(/critical_manager_catch_up_failed/);
-    expect(worldmapSource).toMatch(/scheduleChunkRecoveryWithReason\(/);
-    expect(worldmapSource).toMatch(/"visibility_recovery"/);
+    expect(worldmapSource).toMatch(/refreshReason: "manager_recovery"/);
   });
 });

@@ -18,7 +18,9 @@ import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import { resolveChestPointLabelSize } from "./chest-point-label-policy";
 import {
   bindManagerChunkRuntimeState,
+  recoverManagerChunkRuntimeAfterStall,
   type ManagerChunkUpdateOptions,
+  type RecoverManagerChunkRuntimeAfterStallInput,
   runManagerChunkUpdateRuntime,
 } from "./manager-chunk-runtime";
 import { PointsLabelRenderer } from "./points-label-renderer";
@@ -251,6 +253,10 @@ export class ChestManager {
       state: this.resolveChunkUpdateRuntimeState(),
       waitForSettle: waitForVisualSettle,
     });
+  }
+
+  recoverChunkUpdateAfterStall(input: RecoverManagerChunkRuntimeAfterStallInput): void {
+    recoverManagerChunkRuntimeAfterStall(this.resolveChunkUpdateRuntimeState(), input);
   }
 
   private resolveChunkUpdateRuntimeState() {

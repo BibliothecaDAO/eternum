@@ -174,6 +174,7 @@ import {
 } from "./worldmap-chunk-refresh-runtime";
 import {
   createWorldmapChunkTransitionRuntimeState,
+  resolveWorldmapChunkTransitionTimeoutRecovery,
   runWorldmapChunkTransition,
   type WorldmapChunkTransitionHardTimeoutInfo,
 } from "./worldmap-chunk-transition-runtime";
@@ -200,6 +201,7 @@ import { handleWorldmapRefreshCommitRuntime } from "./worldmap-refresh-commit-ru
 import { runWorldmapRefreshRuntime } from "./worldmap-refresh-runtime";
 import {
   handleWorldmapCriticalManagerCatchUpFailures,
+  runWorldmapCriticalManagerCatchUp,
   type WorldmapCriticalManagerCatchUpFailure,
 } from "./worldmap-critical-manager-catchup-runtime";
 import {
@@ -469,6 +471,17 @@ type WorldmapChunkFirstVisibleCommitP95RegressionDebugResult = {
   baselineLabel: string | null;
   result: ChunkSwitchP95RegressionResult;
 };
+
+interface WorldmapManagerChunkRecoveryInput {
+  chunkKey: string;
+  transitionToken: number;
+}
+
+interface CriticalManagerStallRecoveryResolver {
+  resolveRecoveryInput: () => WorldmapManagerChunkRecoveryInput;
+  getRecoveryDetails: () => Record<string, unknown>;
+  shouldScheduleRecoveryRefresh: () => boolean;
+}
 
 type WorldmapTileFetchVolumeRegressionDebugResult = {
   baselineLabel: string | null;
@@ -6571,21 +6584,37 @@ export default class WorldmapScene extends WarpTravel {
     reason: "switch_chunk" | "refresh_current_chunk",
     chunkKey: string,
     info: WorldmapChunkTransitionHardTimeoutInfo,
+    transitionToken: number,
   ): void {
+    const recoveryDecision = this.invalidateChunkTransitionAuthorityAfterStall(transitionToken);
+    const recoveryDetails = {
+      timedOutTransitionToken: transitionToken,
+      recoveryTransitionToken: recoveryDecision.recoveryTransitionToken,
+      invalidatedTimedOutTransition: recoveryDecision.shouldInvalidateTimedOutTransition,
+    };
+
     console.warn("[WorldmapScene] Chunk transition hard timeout — forcing recovery", {
       reason,
       chunkKey,
       timeoutMs: info.timeoutMs,
+      ...recoveryDetails,
     });
     this.traceChunk("chunk_transition_hard_timeout", {
       reason,
       chunkKey,
       timeoutMs: info.timeoutMs,
+      ...recoveryDetails,
     });
+    if (!recoveryDecision.shouldInvalidateTimedOutTransition) {
+      return;
+    }
+
     if (this.toriiLoadingCounter > 0) {
       this.toriiLoadingCounter = 0;
       this.state.setLoading(LoadingStateKey.Map, false);
     }
+
+    this.recoverChunkManagersAfterStall(chunkKey, recoveryDecision.recoveryTransitionToken);
     this.recoverChunkStreamingAfterStall({
       reason: "chunk_transition_hard_timeout",
       chunkKey,
@@ -6594,8 +6623,32 @@ export default class WorldmapScene extends WarpTravel {
       details: {
         reason,
         timeoutMs: info.timeoutMs,
+        ...recoveryDetails,
       },
     });
+  }
+
+  private invalidateChunkTransitionAuthorityAfterStall(staleTransitionToken: number): {
+    recoveryTransitionToken: number;
+    shouldInvalidateTimedOutTransition: boolean;
+  } {
+    const decision = resolveWorldmapChunkTransitionTimeoutRecovery({
+      currentTransitionToken: this.chunkTransitionToken,
+      timedOutTransitionToken: staleTransitionToken,
+    });
+
+    if (decision.shouldInvalidateTimedOutTransition) {
+      this.chunkTransitionToken = decision.recoveryTransitionToken;
+    }
+
+    return decision;
+  }
+
+  private recoverChunkManagersAfterStall(chunkKey: string, transitionToken: number): void {
+    const recoveryInput = { chunkKey, transitionToken };
+    this.armyManager.recoverChunkUpdateAfterStall(recoveryInput);
+    this.structureManager.recoverChunkUpdateAfterStall(recoveryInput);
+    this.chestManager.recoverChunkUpdateAfterStall(recoveryInput);
   }
 
   private handleChunkPresentationTimeout(info: WorldmapChunkPresentationTimeoutInfo): void {
@@ -7978,7 +8031,7 @@ export default class WorldmapScene extends WarpTravel {
             });
           },
           onHardTimeout: (info) => {
-            this.handleChunkTransitionHardTimeout("switch_chunk", chunkKey, info);
+            this.handleChunkTransitionHardTimeout("switch_chunk", chunkKey, info, transitionToken);
             return false;
           },
           onResolved: () => {
@@ -8020,7 +8073,7 @@ export default class WorldmapScene extends WarpTravel {
             this.state.setLoading(LoadingStateKey.ChunkTransition, false);
           },
           onHardTimeout: (info) => {
-            this.handleChunkTransitionHardTimeout("refresh_current_chunk", chunkKey, info);
+            this.handleChunkTransitionHardTimeout("refresh_current_chunk", chunkKey, info, transitionToken);
             return false;
           },
           onResolved: () => {
@@ -8458,6 +8511,41 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
+  private createCriticalManagerStallRecoveryResolver(
+    chunkKey: string,
+    stalledTransitionToken: number | undefined,
+  ): CriticalManagerStallRecoveryResolver {
+    let recoveryInput: WorldmapManagerChunkRecoveryInput | null = null;
+    let recoveryDetails: Record<string, unknown> = {};
+    let shouldScheduleRecoveryRefresh = false;
+
+    const resolveRecoveryInput = () => {
+      if (recoveryInput) {
+        return recoveryInput;
+      }
+
+      const transitionToken = stalledTransitionToken ?? this.chunkTransitionToken;
+      const recoveryDecision = this.invalidateChunkTransitionAuthorityAfterStall(transitionToken);
+      recoveryDetails = {
+        stalledTransitionToken: transitionToken,
+        recoveryTransitionToken: recoveryDecision.recoveryTransitionToken,
+        invalidatedStaleTransition: recoveryDecision.shouldInvalidateTimedOutTransition,
+      };
+      shouldScheduleRecoveryRefresh = recoveryDecision.shouldInvalidateTimedOutTransition;
+      recoveryInput = {
+        chunkKey: shouldScheduleRecoveryRefresh ? chunkKey : "null",
+        transitionToken: recoveryDecision.recoveryTransitionToken,
+      };
+      return recoveryInput;
+    };
+
+    return {
+      resolveRecoveryInput,
+      getRecoveryDetails: () => recoveryDetails,
+      shouldScheduleRecoveryRefresh: () => shouldScheduleRecoveryRefresh,
+    };
+  }
+
   private async updateCriticalManagersForChunk(
     chunkKey: string,
     options?: { force?: boolean; transitionToken?: number },
@@ -8479,23 +8567,26 @@ export default class WorldmapScene extends WarpTravel {
     recordChunkDiagnosticsEvent(this.chunkDiagnostics, "critical_manager_catch_up_started");
 
     let failures: WorldmapCriticalManagerCatchUpFailure[] = [];
+    const criticalManagerRecovery = this.createCriticalManagerStallRecoveryResolver(chunkKey, options?.transitionToken);
 
     try {
-      const [armyResult, structureResult] = await Promise.allSettled([
-        this.armyManager.updateChunk(chunkKey, options),
-        this.structureManager.updateChunk(chunkKey, options),
-      ]);
-
-      failures = [armyResult, structureResult].flatMap((result, index) =>
-        result.status === "rejected"
-          ? [
-              {
-                label: index === 0 ? "army" : "structure",
-                reason: result.reason,
-              },
-            ]
-          : [],
-      );
+      failures = await runWorldmapCriticalManagerCatchUp({
+        managers: [
+          {
+            label: "army",
+            recover: () =>
+              this.armyManager.recoverChunkUpdateAfterStall(criticalManagerRecovery.resolveRecoveryInput()),
+            run: () => this.armyManager.updateChunk(chunkKey, options),
+          },
+          {
+            label: "structure",
+            recover: () =>
+              this.structureManager.recoverChunkUpdateAfterStall(criticalManagerRecovery.resolveRecoveryInput()),
+            run: () => this.structureManager.updateChunk(chunkKey, options),
+          },
+        ],
+        timeoutMs: WORLDMAP_CHUNK_PHASE_TIMEOUT_MS,
+      });
     } finally {
       const durationMs = performance.now() - managerStartedAt;
       recordChunkDiagnosticsEvent(this.chunkDiagnostics, "manager_duration_recorded", {
@@ -8524,10 +8615,17 @@ export default class WorldmapScene extends WarpTravel {
         console.error(`[CHUNK SYNC] Critical ${failure.label} manager failed for chunk ${chunkKey}`, failure.reason);
       },
       scheduleRecovery: (failedChunkKey, failingManagers) => {
+        if (!criticalManagerRecovery.shouldScheduleRecoveryRefresh()) {
+          return;
+        }
+
         this.recoverChunkStreamingAfterStall({
           reason: "critical_manager_failure",
           chunkKey: failedChunkKey,
-          details: { failingManagers },
+          details: {
+            failingManagers,
+            ...criticalManagerRecovery.getRecoveryDetails(),
+          },
           refreshReason: "manager_recovery",
         });
       },

@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-18",
+    title: "Chunk Switch Recovery",
+    description:
+      "Fixed stalled world-map chunk switches so the map can recover in-session, restore army selection, and keep playing without a full refresh.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-17",
     title: "Map Streaming Stability",
     description:

@@ -7,6 +7,16 @@ export interface WorldmapChunkTransitionHardTimeoutInfo {
   timeoutMs: number;
 }
 
+interface WorldmapChunkTransitionTimeoutRecoveryInput {
+  currentTransitionToken: number;
+  timedOutTransitionToken: number;
+}
+
+interface WorldmapChunkTransitionTimeoutRecoveryDecision {
+  recoveryTransitionToken: number;
+  shouldInvalidateTimedOutTransition: boolean;
+}
+
 interface RunWorldmapChunkTransitionInput<TTransitionPromise extends Promise<unknown>, TResult> {
   onFinally?: () => void | Promise<void>;
   onResolved: () => TResult | Promise<TResult>;
@@ -24,6 +34,22 @@ export function createWorldmapChunkTransitionRuntimeState<
   return {
     activePromise: null,
     isTransitioning: false,
+  };
+}
+
+export function resolveWorldmapChunkTransitionTimeoutRecovery(
+  input: WorldmapChunkTransitionTimeoutRecoveryInput,
+): WorldmapChunkTransitionTimeoutRecoveryDecision {
+  if (input.currentTransitionToken !== input.timedOutTransitionToken) {
+    return {
+      recoveryTransitionToken: input.currentTransitionToken,
+      shouldInvalidateTimedOutTransition: false,
+    };
+  }
+
+  return {
+    recoveryTransitionToken: input.currentTransitionToken + 1,
+    shouldInvalidateTimedOutTransition: true,
   };
 }
 
