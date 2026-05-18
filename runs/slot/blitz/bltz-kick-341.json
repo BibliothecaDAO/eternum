@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-kick-341",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-kick-341/26022917588-1.json",
   "latestLaunchRequestId": "26022917588-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-05-18T08:44:00.971Z",
-  "updatedAt": "2026-05-18T08:46:57.631Z",
+  "updatedAt": "2026-05-18T08:47:19.416Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-18T08:46:57.631Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-05-18T08:46:57.631Z",
+      "finishedAt": "2026-05-18T08:47:19.416Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x69290a363586a7047a4a281645724b30ea1ef5367d7e1946ef6c16e3807673d"
     ],
-    "lootChestRoleTxHash": "0x5afdb87dcbc423991b9ab3524e24adb91c0eccf3b843ff6865eb218926590a6"
+    "lootChestRoleTxHash": "0x5afdb87dcbc423991b9ab3524e24adb91c0eccf3b843ff6865eb218926590a6",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-kick-341/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-18T08:47:18.064Z"
   },
-  "activeLease": {
-    "launchRequestId": "26022917588-1",
-    "workflowRunId": 26022917588,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-18T08:46:57.631Z",
-    "expiresAt": "2026-05-18T09:31:57.631Z"
-  }
+  "completedAt": "2026-05-18T08:47:19.416Z"
 }
