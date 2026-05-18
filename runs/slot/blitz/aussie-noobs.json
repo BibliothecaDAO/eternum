@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26007021858-1",
   "currentStepId": null,
   "createdAt": "2026-05-18T00:22:56.566Z",
-  "updatedAt": "2026-05-18T01:32:38.010Z",
+  "updatedAt": "2026-05-18T03:40:58.196Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -97,7 +97,9 @@
     "indexerUrl": "https://api.cartridge.gg/x/aussie-noobs/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-18T01:32:38.010Z"
+    "lastIndexerDescribeAt": "2026-05-18T01:32:38.010Z",
+    "pendingIndexerTierTarget": "pro",
+    "pendingIndexerTierRequestedAt": "2026-05-18T03:40:56.982Z"
   },
   "completedAt": "2026-05-18T00:25:45.185Z"
 }
