@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-19",
+    title: "Provision Sync Recovery",
+    description:
+      "Fixed realm provisioning so completed realms stay synced after refreshes and duplicate provision attempts recover back into the correct state.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-19",
     title: "Selected Scout Destination",
     description:
       "Fixed scout movement so the destination hex stays selected after an explore or travel command, keeping the tile panel populated through chunk changes.",

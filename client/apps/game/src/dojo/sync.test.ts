@@ -72,7 +72,10 @@ vi.mock("./sync-utils", () => ({
 }));
 
 vi.mock("./torii-stream-manager", () => ({
-  buildModelKeysClause: vi.fn(() => ({ mocked: "global-stream-clause" })),
+  buildModelKeysClause: vi.fn((models: Array<{ model: string }>) => ({
+    mocked: "model-stream-clause",
+    models: models.map(({ model }) => model),
+  })),
 }));
 
 import { cancelEntityStreamSubscription, initialSync, syncEntitiesDebounced } from "./sync";
@@ -273,6 +276,51 @@ describe("syncEntitiesDebounced", () => {
     );
   });
 
+  it("can keep entity and event subscription clauses separate", async () => {
+    const harness = createSyncHarness();
+    const entityClause = { entity: true };
+    const eventClause = { event: true };
+    const updatedEntityClause = { entity: "updated" };
+    const updatedEventClause = { event: "updated" };
+
+    const subscription = await syncEntitiesDebounced(
+      harness.client as any,
+      harness.setup as any,
+      { entityClause, eventClause } as any,
+      false,
+    );
+
+    expect(harness.client.onEntityUpdated).toHaveBeenCalledWith(entityClause, expect.any(Function));
+    expect(harness.client.onEventMessageUpdated).toHaveBeenCalledWith(eventClause, expect.any(Function));
+
+    await subscription.updateClause?.({ entityClause: updatedEntityClause, eventClause: updatedEventClause } as any);
+
+    expect(harness.client.updateEntitySubscription).toHaveBeenCalledWith(
+      expect.objectContaining({ cancel: harness.cancelEntitySubscription }),
+      updatedEntityClause,
+    );
+    expect(harness.client.updateEventMessageSubscription).toHaveBeenCalledWith(
+      expect.objectContaining({ cancel: harness.cancelEventSubscription }),
+      updatedEventClause,
+    );
+  });
+
+  it("keeps a partial clause pair scoped to the provided side", async () => {
+    const harness = createSyncHarness();
+    const entityClause = { entity: true };
+    const eventClause = { event: true };
+
+    await syncEntitiesDebounced(harness.client as any, harness.setup as any, { entityClause } as any, false);
+
+    expect(harness.client.onEntityUpdated).toHaveBeenCalledWith(entityClause, expect.any(Function));
+    expect(harness.client.onEventMessageUpdated).toHaveBeenCalledWith(entityClause, expect.any(Function));
+
+    await syncEntitiesDebounced(harness.client as any, harness.setup as any, { eventClause } as any, false);
+
+    expect(harness.client.onEntityUpdated).toHaveBeenLastCalledWith(eventClause, expect.any(Function));
+    expect(harness.client.onEventMessageUpdated).toHaveBeenLastCalledWith(eventClause, expect.any(Function));
+  });
+
   it("waits for a fresh ready entity after updating the subscription clause", async () => {
     vi.useFakeTimers();
     const harness = createSyncHarness();
@@ -388,7 +436,7 @@ describe("initialSync global streams", () => {
     cancelEntityStreamSubscription();
   });
 
-  it("opens non-spatial and spatial global streams before reporting sync complete", async () => {
+  it("opens one all-entity global stream with explicitly scoped events before reporting sync complete", async () => {
     vi.useFakeTimers();
     getEntitiesMock.mockResolvedValue(undefined);
     const harness = createSyncHarness();
@@ -408,9 +456,53 @@ describe("initialSync global streams", () => {
     await vi.advanceTimersByTimeAsync(200);
     await syncPromise;
 
-    expect(harness.client.onEntityUpdated).toHaveBeenCalledTimes(2);
-    expect(harness.client.onEventMessageUpdated).toHaveBeenCalledTimes(2);
+    expect(harness.client.onEntityUpdated).toHaveBeenCalledTimes(1);
+    expect(harness.client.onEntityUpdated).toHaveBeenCalledWith(undefined, expect.any(Function));
+    expect(harness.client.onEventMessageUpdated).toHaveBeenCalledTimes(1);
+    expect(harness.client.onEventMessageUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        models: expect.arrayContaining([
+          "s1_eternum-OpenRelicChestEvent",
+          "s1_eternum-ExplorerRewardEvent",
+          "s1_eternum-BattleEvent",
+        ]),
+      }),
+      expect.any(Function),
+    );
     expect(getEntitiesMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("hydrates Building rows in the strict global spatial snapshot", async () => {
+    vi.useFakeTimers();
+    getEntitiesMock.mockResolvedValue(undefined);
+    const harness = createSyncHarness();
+
+    const syncPromise = initialSync(harness.setup as any, createInitialSyncState() as any, vi.fn(), {
+      logging: false,
+      reportProgress: false,
+    });
+
+    await flushMicrotasks();
+    harness.emitEntityUpdate({
+      hashed_keys: "global-entity-1",
+      models: {
+        "s1_eternum-Guild": { entity_id: 1 },
+      },
+    });
+    await vi.advanceTimersByTimeAsync(200);
+    await syncPromise;
+
+    expect(getEntitiesMock).toHaveBeenCalledWith(
+      harness.client,
+      expect.objectContaining({
+        models: expect.arrayContaining(["s1_eternum-Building"]),
+      }),
+      harness.setup.network.contractComponents,
+      [],
+      expect.arrayContaining(["s1_eternum-Building"]),
+      expect.any(Number),
+      false,
+    );
   });
 
   it("fails initial sync when the strict global spatial snapshot times out", async () => {
@@ -437,7 +529,7 @@ describe("initialSync global streams", () => {
     await expectedRejection;
   });
 
-  it("cancels both global stream pairs after initial sync", async () => {
+  it("cancels the single global stream pair after initial sync", async () => {
     vi.useFakeTimers();
     getEntitiesMock.mockResolvedValue(undefined);
     const harness = createSyncHarness();
@@ -459,7 +551,7 @@ describe("initialSync global streams", () => {
 
     cancelEntityStreamSubscription();
 
-    expect(harness.cancelEntitySubscription).toHaveBeenCalledTimes(2);
-    expect(harness.cancelEventSubscription).toHaveBeenCalledTimes(2);
+    expect(harness.cancelEntitySubscription).toHaveBeenCalledTimes(1);
+    expect(harness.cancelEventSubscription).toHaveBeenCalledTimes(1);
   });
 });
