@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "sourdough",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/sourdough/26087729375-1.json",
   "latestLaunchRequestId": "26087729375-1",
-  "currentStepId": "sync-paymaster",
+  "currentStepId": null,
   "createdAt": "2026-05-19T09:12:54.638Z",
-  "updatedAt": "2026-05-19T09:17:15.262Z",
+  "updatedAt": "2026-05-19T09:17:22.347Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -81,10 +81,11 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
-      "startedAt": "2026-05-19T09:17:15.262Z"
+      "latestEvent": "Setting up gas coverage succeeded",
+      "startedAt": "2026-05-19T09:17:15.262Z",
+      "finishedAt": "2026-05-19T09:17:22.347Z"
     }
   ],
   "artifacts": {
@@ -104,14 +105,8 @@
     "indexerUrl": "https://api.cartridge.gg/x/sourdough/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-19T09:17:09.911Z"
+    "lastIndexerDescribeAt": "2026-05-19T09:17:09.911Z",
+    "paymasterSynced": true
   },
-  "activeLease": {
-    "launchRequestId": "26087729375-1",
-    "workflowRunId": 26087729375,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-05-19T09:17:15.262Z",
-    "expiresAt": "2026-05-19T10:02:15.262Z"
-  }
+  "completedAt": "2026-05-19T09:17:22.347Z"
 }
