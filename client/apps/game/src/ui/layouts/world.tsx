@@ -20,7 +20,6 @@ import {
 } from "@/observability/network-health-reporting";
 import { SentryUserSync } from "@/observability/sentry-user-sync";
 import { useActiveWorldProfile } from "@/runtime/world";
-import { getActiveSpatialStreamManager } from "@/three/scenes/worldmap";
 import { getActiveWorldmapRecoveryHandle } from "@/three/scenes/worldmap-reconnect-recovery-handle";
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { useDojo } from "@bibliothecadao/react";
@@ -248,23 +247,11 @@ const ConnectionMonitor = () => {
     const monitor = new ConnectionHealthMonitor({
       onReconnectSpatial: async () => {
         addNetworkBreadcrumb({ event: "reconnect_start", streamType: "spatial" });
-        try {
-          const manager = getActiveSpatialStreamManager();
-          let outcome = "no_active_manager";
-          if (manager) {
-            const result = await manager.resubscribe();
-            outcome = result?.outcome ?? "no_active_descriptor";
-          }
-          addNetworkBreadcrumb({ event: "reconnect_success", streamType: "spatial", status: outcome });
-        } catch (error) {
-          addNetworkBreadcrumb({
-            event: "reconnect_failure",
-            streamType: "spatial",
-            reason: getNetworkErrorReason(error),
-          });
-          recoverWorldmapAfterConnectionFailure();
-          throw error;
-        }
+        addNetworkBreadcrumb({
+          event: "reconnect_success",
+          streamType: "spatial",
+          status: "global_initial_sync_owned",
+        });
       },
       onReconnectGlobal: async () => {
         addNetworkBreadcrumb({ event: "reconnect_start", streamType: "global" });

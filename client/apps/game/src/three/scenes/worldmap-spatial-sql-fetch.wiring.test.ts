@@ -7,19 +7,22 @@ import { describe, expect, it } from "vitest";
 
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
-const extractRunSpatialSqlFetch = (source: string): string => {
-  const start = source.indexOf("  private async runSpatialSqlFetch");
-  const end = source.indexOf("  private touchMatrixCache", start);
+const extractGlobalSpatialHydration = (source: string): string => {
+  const start = source.indexOf("  private async hydrateRenderAreaFromGlobalSpatialState");
+  const end = source.indexOf("  private shouldFetchTileOpt", start);
   return source.slice(start, end);
 };
 
-describe("worldmap spatial SQL fetch hardening", () => {
-  it("bounds every spatial SQL fetch so background prefetch cannot hold map loading forever", () => {
-    const methodSource = extractRunSpatialSqlFetch(readSource("src/three/scenes/worldmap.tsx"));
+describe("worldmap global spatial hydration", () => {
+  it("hydrates render areas from the global RECS spatial sync instead of per-area SQL", () => {
+    const source = readSource("src/three/scenes/worldmap.tsx");
+    const methodSource = extractGlobalSpatialHydration(source);
 
-    expect(methodSource).toContain("settleWorldmapAsyncStage");
-    expect(methodSource).toContain("Promise.resolve().then(fetch)");
-    expect(methodSource).toContain("WORLDMAP_CHUNK_PHASE_TIMEOUT_MS");
-    expect(methodSource).toContain("spatial_sql_fetch_timeout");
+    expect(source).not.toContain("private async runSpatialSqlFetch");
+    expect(source).not.toContain("spatial_sql_fetch_timeout");
+    expect(methodSource).toContain("hydrateExploredTilesFromGlobalTileOptRecs");
+    expect(methodSource).toContain("hydrateStructuresFromGlobalTileOptRecs");
+    expect(methodSource).toContain("applyStructureTileUpdate");
+    expect(methodSource).toContain("global_spatial_recs_hydrated");
   });
 });

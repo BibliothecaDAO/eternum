@@ -53,9 +53,7 @@ export type WorldmapRenderCounter =
   | "staleTerrainCacheFingerprintRejectCount"
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
-  | "spatialSqlFetchCompleted"
-  | "spatialSqlFetchFailed"
-  | "spatialSqlRecsHydratedTiles"
+  | "globalSpatialRecsHydratedTiles"
   | "spatialTileOptRecsApplied"
   | "spatialTileOptReadyTimeouts"
   | "spatialTileOptStreamReceived"
@@ -176,9 +174,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     staleTerrainCacheFingerprintRejectCount: 0,
     preparedChunkPrewarmHits: 0,
     preparedChunkPrewarmMisses: 0,
-    spatialSqlFetchCompleted: 0,
-    spatialSqlFetchFailed: 0,
-    spatialSqlRecsHydratedTiles: 0,
+    globalSpatialRecsHydratedTiles: 0,
     spatialTileOptRecsApplied: 0,
     spatialTileOptReadyTimeouts: 0,
     spatialTileOptStreamReceived: 0,

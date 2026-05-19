@@ -52,10 +52,12 @@ function findMethodSignatureEnd(source: string, searchStart: number): number {
 }
 
 describe("worldmap army bootstrap fetch", () => {
-  it("keeps explorer troop snapshot hydration in the exact chunk bootstrap path", () => {
+  it("hydrates army bootstrap render areas from global spatial RECS instead of exact SQL", () => {
     const source = readWorldmapSource();
 
-    expect(source).toContain("getExplorerTroopsFromToriiExact");
+    expect(source).not.toContain("getExplorerTroopsFromToriiExact");
+    expect(source).not.toContain("getMapFromToriiExact");
+    expect(source).not.toContain("getStructuresFromToriiExact");
 
     const computeMethodBody = extractMethodBody(source, "private async computeTileEntities(");
     expect(computeMethodBody).toContain("this.resolveRenderAreaHydrationFetchPlans(chunkKey, requiredStages)");
@@ -65,9 +67,12 @@ describe("worldmap army bootstrap fetch", () => {
     expect(hydrationPlanBody).toContain('stages: ["explorerTroops"]');
 
     const fetchMethodBody = extractMethodBody(source, "private async executeTileEntitiesFetch(");
-    expect(fetchMethodBody).toContain("await this.fetchRenderAreaHydrationStages(fetchKey, sqlBounds, stages)");
-    const stagedHydrationBody = extractMethodBody(source, "private async fetchRenderAreaHydrationStages(");
-    expect(stagedHydrationBody).toContain("getExplorerTroopsFromToriiExact(");
-    expect(stagedHydrationBody).toContain("getMapFromToriiExact(");
+    expect(fetchMethodBody).toContain(
+      "await this.hydrateRenderAreaFromGlobalSpatialState(fetchKey, localBounds, stages)",
+    );
+    const stagedHydrationBody = extractMethodBody(source, "private async hydrateRenderAreaFromGlobalSpatialState(");
+    expect(stagedHydrationBody).toContain("hydrateExploredTilesFromGlobalTileOptRecs");
+    expect(stagedHydrationBody).toContain("hydrateStructuresFromGlobalTileOptRecs");
+    expect(stagedHydrationBody).toContain("global_spatial_recs_hydrated");
   });
 });

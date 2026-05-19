@@ -50,8 +50,8 @@ function findMethodSignatureEnd(source: string, searchStart: number): number {
   throw new Error("Unable to find method signature end");
 }
 
-describe("worldmap sparse SQL churn", () => {
-  it("uses sparse SQL super-areas without enlarging terrain hydration", () => {
+describe("worldmap sparse global spatial hydration", () => {
+  it("uses sparse hydration super-areas without enlarging terrain hydration", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
 
     expect(source).toContain("private getExplorerTroopsRenderAreaKeyForChunk(");
@@ -90,42 +90,36 @@ describe("worldmap sparse SQL churn", () => {
     expect(hydrationPlanBody).toContain('stages: ["explorerTroops"]');
   });
 
-  it("only reuses completed sparse hydration when the active subscription still covers it", () => {
+  it("reuses completed sparse hydration because global spatial RECS is authoritative", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
     const completeBody = extractMethod(source, "private isRenderAreaHydrationPlanComplete(");
     const fetchStagesBody = extractMethod(source, "private resolveRenderAreaHydrationStagesToFetchForPlan(");
 
-    expect(completeBody).toContain("this.isSparseHydrationPlanReusable(plan)");
-    expect(fetchStagesBody).toContain("this.isSparseHydrationPlanReusable(plan)");
-    expect(fetchStagesBody).toContain("this.resolveRenderAreaHydrationStagesToFetch(plan.fetchKey, stagesToFetch)");
-
-    const sparseReusableBody = extractMethod(source, "private isSparseHydrationPlanReusable(");
-    expect(sparseReusableBody).toContain("this.isExplorerTroopsOnlyHydration(plan.stages)");
-    expect(sparseReusableBody).toContain("this.isStructuresOnlyHydration(plan.stages)");
-    expect(sparseReusableBody).toContain("this.getActiveToriiSubscriptionBounds()");
+    expect(completeBody).toContain(
+      "isRenderAreaHydrationComplete(this.renderAreaHydrationState, plan.fetchKey, plan.stages)",
+    );
+    expect(fetchStagesBody).toContain("this.resolveRenderAreaHydrationStagesToFetch(plan.fetchKey, plan.stages)");
+    expect(source).not.toContain("private isSparseHydrationPlanReusable(");
+    expect(source).not.toContain("this.getActiveToriiSubscriptionBounds()");
   });
 
-  it("backs off failed explorer troop SQL fetches instead of retrying every chunk switch", () => {
+  it("does not keep per-area explorer troop SQL backoff in the presentation path", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
-    const stagedHydrationBody = extractMethod(source, "private async fetchRenderAreaHydrationStages(");
 
-    expect(stagedHydrationBody).toContain("this.shouldSkipExplorerTroopsSpatialSqlFetch(");
-    expect(stagedHydrationBody).toContain("this.recordExplorerTroopsSpatialSqlBackoff(");
-    expect(stagedHydrationBody).toContain("getExplorerTroopsFromToriiExact(");
+    expect(source).not.toContain("shouldSkipExplorerTroopsSpatialSqlFetch");
+    expect(source).not.toContain("recordExplorerTroopsSpatialSqlBackoff");
+    expect(source).not.toContain("getExplorerTroopsFromToriiExact(");
+    expect(source).not.toContain("private async fetchRenderAreaHydrationStages(");
   });
 
-  it("keeps late sparse snapshots complete when the current subscription still covers them", () => {
+  it("marks sparse global hydration applicable without active subscription bounds", () => {
     const source = readSource("src/three/scenes/worldmap.tsx");
-    const troopApplyBody = extractMethod(source, "private shouldApplyExplorerTroopsHydrationFetchResult(");
+    const applyBody = extractMethod(source, "private shouldApplyHydrationFetchResult(");
 
-    expect(troopApplyBody).toContain("fetchGeneration === this.pendingChunkFetchGeneration");
-    expect(troopApplyBody).toContain("this.getActiveToriiSubscriptionBounds()");
-    expect(troopApplyBody).toContain("this.isExplorerTroopsAreaCoveredBySubscriptionBounds(");
-
-    const structureApplyBody = extractMethod(source, "private shouldApplyStructuresHydrationFetchResult(");
-    expect(structureApplyBody).toContain("fetchGeneration === this.pendingChunkFetchGeneration");
-    expect(structureApplyBody).toContain("this.getActiveToriiSubscriptionBounds()");
-    expect(structureApplyBody).toContain("this.isStructuresAreaCoveredBySubscriptionBounds(");
+    expect(applyBody).toContain("this.isExplorerTroopsOnlyHydration(stages) || this.isStructuresOnlyHydration(stages)");
+    expect(applyBody).toContain("return true;");
+    expect(source).not.toContain("private shouldApplyExplorerTroopsHydrationFetchResult(");
+    expect(source).not.toContain("private shouldApplyStructuresHydrationFetchResult(");
   });
 
   it("checks directional prefetch hydration across split terrain and troop fetch keys", () => {

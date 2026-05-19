@@ -41,6 +41,6 @@ describe("worldmap connection failure recovery", () => {
     expect(methodSource).toContain(
       "clearRenderAreaHydrationState(this.renderAreaHydrationState, explorerTroopsAreaKey)",
     );
-    expect(methodSource).toContain("this.explorerTroopsSpatialSqlBackoffUntilMs.delete(explorerTroopsAreaKey)");
+    expect(methodSource).not.toContain("explorerTroopsSpatialSqlBackoffUntilMs");
   });
 });

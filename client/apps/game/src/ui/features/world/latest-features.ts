@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-19",
+    title: "Selected Scout Destination",
+    description:
+      "Fixed scout movement so the destination hex stays selected after an explore or travel command, keeping the tile panel populated through chunk changes.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-18",
     title: "Smoother Unit Tabbing",
     description:
