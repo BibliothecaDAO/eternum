@@ -28,10 +28,10 @@ import { primeGameEntry } from "@/game-entry-preload";
 import { buildEntryHrefFromEntryContext, resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
 import { useLocation, useNavigate } from "react-router-dom";
-import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
+import { UnifiedGameGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameReviewModal } from "../components/game-review-modal";
 import type { LandingModeFilter, LandingEntryRouteState } from "../lib/landing-entry-state";
-import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
+import { setGameReviewDismissed } from "../lib/game-review-storage";
 import { useLandingContext } from "../context/landing-context";
 import { useLandingNetworkState } from "../hooks/use-landing-network-state";
 import { invalidateWorldListQueries } from "@/hooks/world-list-queries";
@@ -54,14 +54,6 @@ const FactoryV2Content = lazy(() =>
 const FactoryPage = lazy(() => import("../../admin").then((module) => ({ default: module.FactoryPage })));
 
 const hasConnectedAccountAddress = (address: string | undefined): boolean => Boolean(address && address !== "0x0");
-
-const shouldAutoOpenGameReview = (game: GameData): game is GameData & { worldAddress: string; isRegistered: true } => {
-  return game.gameStatus === "ended" && Boolean(game.worldAddress) && game.isRegistered === true;
-};
-
-const resolveGameReviewCandidate = (endedGames: GameData[]): (GameData & { worldAddress: string }) | null => {
-  return endedGames.filter(shouldAutoOpenGameReview).toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0] ?? null;
-};
 
 type LearnGuideTier = "beginner" | "advanced";
 type LearnGuideKind = "video" | "written";
@@ -754,7 +746,6 @@ const PlayTabContent = ({
   onRefresh,
   isRefreshing = false,
   disabled = false,
-  onEndedGamesResolved,
 }: {
   modeFilter: LandingModeFilter;
   onModeFilterChange: (mode: LandingModeFilter) => void;
@@ -768,7 +759,6 @@ const PlayTabContent = ({
   onRefresh: () => void;
   isRefreshing?: boolean;
   disabled?: boolean;
-  onEndedGamesResolved?: (games: GameData[]) => void;
 }) => {
   const resolvedMode: "blitz" | "eternum" = modeFilter === "season" ? "eternum" : "blitz";
 
@@ -847,7 +837,6 @@ const PlayTabContent = ({
               layout="vertical"
               sortClaimableRewardsFirst
               sortEndedNewestFirst
-              onGamesResolved={resolvedMode === "blitz" ? onEndedGamesResolved : undefined}
             />
           </div>
         </div>
@@ -874,7 +863,6 @@ export const PlayView = ({
   // Review flow state
   const [reviewWorld, setReviewWorld] = useState<WorldSelection | null>(null);
   const [reviewInitialStep, setReviewInitialStep] = useState<"claim-rewards" | undefined>(undefined);
-  const [endedGames, setEndedGames] = useState<GameData[]>([]);
 
   // Refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -1062,25 +1050,6 @@ export const PlayView = ({
     setModal(<SignInPromptModal redirectTo={currentLandingHref} />, true);
   }, [currentLandingHref, setModal]);
 
-  const handleEndedGamesResolved = useCallback((games: GameData[]) => {
-    setEndedGames(games);
-  }, []);
-
-  useEffect(() => {
-    if (disableReviewFlow) return;
-    if (activeTab !== "play") return;
-    if (reviewWorld) return;
-    if (!hasConnectedAccountAddress(account?.address)) return;
-    if (endedGames.length === 0) return;
-
-    const candidate = resolveGameReviewCandidate(endedGames);
-    if (!candidate) return;
-    if (isGameReviewDismissed(candidate.chain, candidate.worldAddress)) return;
-
-    setReviewInitialStep(undefined);
-    setReviewWorld({ name: candidate.name, chain: candidate.chain, worldAddress: candidate.worldAddress });
-  }, [account?.address, activeTab, disableReviewFlow, endedGames, reviewWorld]);
-
   const renderContent = () => {
     switch (activeTab) {
       case "learn":
@@ -1115,7 +1084,6 @@ export const PlayView = ({
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
             disabled={Boolean(reviewWorld)}
-            onEndedGamesResolved={handleEndedGamesResolved}
           />
         );
     }
