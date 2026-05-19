@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-glow-22",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-glow-22/26077968781-1.json",
   "latestLaunchRequestId": "26077968781-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-05-19T05:23:09.271Z",
-  "updatedAt": "2026-05-19T05:26:32.293Z",
+  "updatedAt": "2026-05-19T05:26:52.838Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-19T05:26:32.293Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-05-19T05:26:32.293Z",
+      "finishedAt": "2026-05-19T05:26:52.838Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x2f421995f3ad57194a4d500f1fcc609b9254f8f6c7f9e525907b7b10d12328"
     ],
-    "lootChestRoleTxHash": "0x6d1df6e35aab7708a2ee54118935849c52a46369468316a1c22cbff23d6e075"
+    "lootChestRoleTxHash": "0x6d1df6e35aab7708a2ee54118935849c52a46369468316a1c22cbff23d6e075",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-glow-22/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-19T05:26:51.539Z"
   },
-  "activeLease": {
-    "launchRequestId": "26077968781-1",
-    "workflowRunId": 26077968781,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-19T05:26:32.293Z",
-    "expiresAt": "2026-05-19T06:11:32.293Z"
-  }
+  "completedAt": "2026-05-19T05:26:52.838Z"
 }
