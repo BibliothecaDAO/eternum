@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26075446159-1",
   "currentStepId": null,
   "createdAt": "2026-05-19T04:04:17.995Z",
-  "updatedAt": "2026-05-19T04:07:25.387Z",
+  "updatedAt": "2026-05-19T04:10:23.030Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -97,7 +97,9 @@
     "indexerUrl": "https://api.cartridge.gg/x/loaf-bolt-543/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-19T04:07:24.079Z"
+    "lastIndexerDescribeAt": "2026-05-19T04:07:24.079Z",
+    "pendingIndexerTierTarget": "legendary",
+    "pendingIndexerTierRequestedAt": "2026-05-19T04:10:21.263Z"
   },
   "completedAt": "2026-05-19T04:07:25.387Z"
 }
