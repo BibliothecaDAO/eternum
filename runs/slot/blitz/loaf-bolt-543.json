@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26075446159-1",
   "currentStepId": null,
   "createdAt": "2026-05-19T04:04:17.995Z",
-  "updatedAt": "2026-05-19T06:10:24.026Z",
+  "updatedAt": "2026-05-19T06:12:11.230Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -93,13 +93,11 @@
     ],
     "lootChestRoleTxHash": "0x35cfceee16dd3a2be53796ed90c5ba00041a29ab1f6720d2379999cbd2c00b0",
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/loaf-bolt-543/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-19T04:12:05.235Z",
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-05-19T06:10:22.171Z"
+    "lastIndexerDescribeAt": "2026-05-19T06:12:11.230Z"
   },
   "completedAt": "2026-05-19T04:07:25.387Z"
 }
