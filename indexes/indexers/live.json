@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-19T12:01:54.728Z",
+  "updatedAt": "2026-05-19T12:12:03.780Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2482,13 +2482,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-nova-590/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-19T10:02:19.524Z"
+        "describedAt": "2026-05-19T12:12:03.690Z"
       },
-      "updatedAt": "2026-05-19T10:02:19.525Z"
+      "updatedAt": "2026-05-19T12:12:03.780Z"
     },
     "apac-gladiator-19-05-26-1100": {
       "gameName": "apac-gladiator-19-05-26-1100",
@@ -2497,7 +2497,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-19-05-26-1100 not found"
       },
-      "updatedAt": "2026-05-19T11:51:39.815Z"
+      "updatedAt": "2026-05-19T12:12:03.780Z"
     },
     "bltz-glow-22": {
       "gameName": "bltz-glow-22",
