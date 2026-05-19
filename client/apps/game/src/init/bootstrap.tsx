@@ -11,6 +11,7 @@ import {
   buildSharedSlotRpcUrl,
   isSlotWorldChain,
   patchManifestWithFactory,
+  probeWorldToriiAlive,
   type WorldProfile,
 } from "@/runtime/world";
 import { setSqlApiBaseUrl } from "@/services/api";
@@ -121,13 +122,14 @@ const runBootstrap = async ({
   context: ResolvedEntryContext;
   profile: WorldProfile;
 }): Promise<BootstrapResult> => {
-  console.log("[STARTING DOJO SETUP]");
   const stores = resolveBootstrapStores();
   const worldContext = {
     chain: context.chain,
     profile,
     toriiUrl: resolveBootstrapToriiUrl(context.chain, profile),
   };
+  await assertBootstrapToriiIsAvailable(worldContext);
+  console.log("[STARTING DOJO SETUP]");
   configureDojoRuntime(worldContext);
   const setupResult = await runDojoSetup();
   await runInitialWorldSync(setupResult, stores);
@@ -248,6 +250,15 @@ const resolveBootstrapRpcUrl = (chain: Chain, profile: WorldProfile): string => 
   }
 
   return profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
+};
+
+const assertBootstrapToriiIsAvailable = async ({ profile, toriiUrl }: BootstrapWorldContext): Promise<void> => {
+  const toriiAlive = await probeWorldToriiAlive(toriiUrl);
+  if (toriiAlive !== false) {
+    return;
+  }
+
+  throw new Error(`World indexer is not available: ${profile.name}`);
 };
 
 const runDojoSetup = async (): Promise<SetupResult> => {

@@ -7,9 +7,11 @@ import {
   normalizeRpcUrl,
   patchManifestWithFactory,
   probeSlotDeploymentRpcAlive,
+  probeWorldToriiAlive,
   purgeDeadSlotWorldProfiles,
   purgeUnavailableSlotWorldProfiles,
   resolveChain,
+  type WorldProfile,
 } from "@/runtime/world";
 import { Chain, getGameManifest } from "@contracts";
 import { createDojoConfig } from "@dojoengine/core";
@@ -34,21 +36,31 @@ const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cart
 // on "Reconnect to Continue" forever.
 purgeUnavailableSlotWorldProfiles();
 
-// Probe each saved slot profile's RPC directly — this is the *exact* request
-// `ControllerConnector` is about to make, so it's the only liveness signal
-// that's authoritative for the controller-init path. Realtime-server bulk
-// availability lags GC by 30s + has a 5min stale cache, so we don't trust it
-// here. `null` = indeterminate, treat as alive (no false-positive evictions).
-const slotProfilesToProbe = listSavedWorldProfiles().filter(
-  (profile) => profile.chain === "slot" || profile.chain === "slottest",
-);
-const probedDeadSlotNames = new Set<string>();
-await Promise.all(
-  slotProfilesToProbe.map(async (profile) => {
-    const alive = await probeSlotDeploymentRpcAlive(profile.rpcUrl);
-    if (alive === false) probedDeadSlotNames.add(profile.name);
-  }),
-);
+const isSavedSlotWorldProfile = (profile: WorldProfile): boolean =>
+  profile.chain === "slot" || profile.chain === "slottest";
+
+const probeSavedSlotWorldProfile = async (profile: WorldProfile): Promise<string | null> => {
+  const [rpcAlive, toriiAlive] = await Promise.all([
+    probeSlotDeploymentRpcAlive(profile.rpcUrl),
+    probeWorldToriiAlive(profile.toriiBaseUrl),
+  ]);
+
+  return rpcAlive === false || toriiAlive === false ? profile.name : null;
+};
+
+const resolveDeadSlotWorldNames = async (): Promise<Set<string>> => {
+  const slotProfilesToProbe = listSavedWorldProfiles().filter(isSavedSlotWorldProfile);
+  const probeResults = await Promise.all(slotProfilesToProbe.map(probeSavedSlotWorldProfile));
+
+  return new Set(probeResults.filter((name): name is string => name !== null));
+};
+
+// Probe each saved slot profile before `ControllerConnector` is created.
+// The RPC probe protects controller init, while the Torii probe catches old
+// per-world indexers that can 404 even when the shared slot RPC is still alive.
+// `null` from either probe is indeterminate, so profiles are only evicted on
+// explicit dead signals.
+const probedDeadSlotNames = await resolveDeadSlotWorldNames();
 const evictedDeadSlotWorlds = purgeDeadSlotWorldProfiles(probedDeadSlotNames);
 if (evictedDeadSlotWorlds.length > 0) {
   console.warn(
