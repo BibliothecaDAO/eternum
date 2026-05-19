@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "loaf-bolt-543",
-    "launchRequestId": "26075446159-1",
+    "gameName": "bltz-ping-626",
+    "launchRequestId": "26076753405-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26075446159,
+    "workflowRunId": 26076753405,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "ab5d6807-6f2c-4a19-a231-e20597bf3ecd"
+    "stepId": "create-world",
+    "leaseId": "bc10b446-bcdf-40aa-b010-94c3939987b4"
   },
-  "acquiredAt": "2026-05-19T04:06:40.243Z",
-  "heartbeatAt": "2026-05-19T04:06:55.071Z",
-  "expiresAt": "2026-05-19T04:06:55.071Z",
-  "releasedAt": "2026-05-19T04:06:55.071Z"
+  "acquiredAt": "2026-05-19T04:46:24.517Z",
+  "heartbeatAt": "2026-05-19T04:46:24.517Z",
+  "expiresAt": "2026-05-19T04:56:24.517Z"
 }
