@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26087729375-1",
   "currentStepId": null,
   "createdAt": "2026-05-19T09:12:54.638Z",
-  "updatedAt": "2026-05-19T09:30:25.616Z",
+  "updatedAt": "2026-05-19T09:32:15.734Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x5b2c0c74a14501bd3d865c43a93552753566080757c67e6685347de543dc85e"
     ],
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/sourdough/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-19T09:17:09.911Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-05-19T09:30:23.382Z"
+    "lastIndexerDescribeAt": "2026-05-19T09:32:15.734Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-05-19T09:17:22.347Z"
 }
