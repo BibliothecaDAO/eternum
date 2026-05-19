@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-19T06:10:28.047Z",
+  "updatedAt": "2026-05-19T06:11:51.552Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -774,7 +774,7 @@
       "path": "runs/mainnet/blitz/bltz-stomp-141.json",
       "inputPath": "inputs/mainnet/blitz/bltz-stomp-141/26075224534-1.json",
       "status": "complete",
-      "updatedAt": "2026-05-19T06:10:28.047Z",
+      "updatedAt": "2026-05-19T06:11:51.552Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -784,10 +784,8 @@
       "durationSeconds": 3600,
       "artifacts": {
         "indexerCreated": true,
-        "indexerTier": "legendary",
-        "lastIndexerDescribeAt": "2026-05-19T04:27:01.273Z",
-        "pendingIndexerTierTarget": "pro",
-        "pendingIndexerTierRequestedAt": "2026-05-19T06:10:26.473Z"
+        "indexerTier": "pro",
+        "lastIndexerDescribeAt": "2026-05-19T06:11:51.551Z"
       }
     },
     "bltz-swish-713": {
