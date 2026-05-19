@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-19T11:01:58.571Z",
+  "updatedAt": "2026-05-19T11:03:21.159Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2498,6 +2498,32 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-19-05-26-1100 not found"
       },
       "updatedAt": "2026-05-19T10:51:55.213Z"
+    },
+    "bltz-glow-22": {
+      "gameName": "bltz-glow-22",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-glow-22/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-19T11:03:21.071Z"
+      },
+      "updatedAt": "2026-05-19T11:03:21.159Z"
+    },
+    "bltz-flux-607": {
+      "gameName": "bltz-flux-607",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-flux-607/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-19T11:03:21.158Z"
+      },
+      "updatedAt": "2026-05-19T11:03:21.159Z"
     }
   }
 }
