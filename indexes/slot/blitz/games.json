@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-19T04:06:36.377Z",
+  "updatedAt": "2026-05-19T04:06:57.695Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1183,11 +1183,10 @@
       "path": "runs/slot/blitz/loaf-bolt-543.json",
       "inputPath": "inputs/slot/blitz/loaf-bolt-543/26075446159-1.json",
       "status": "running",
-      "updatedAt": "2026-05-19T04:06:36.377Z",
+      "updatedAt": "2026-05-19T04:06:57.695Z",
       "workflowRef": "next",
-      "currentStepId": "grant-lootchest-role",
-      "activeLeaseExpiresAt": "2026-05-19T04:51:36.377Z",
-      "hasRunningStep": true,
+      "currentStepId": "create-indexer",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-indexer",
       "startTime": 1779165000,
