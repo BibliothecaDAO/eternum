@@ -469,10 +469,10 @@ describe("initialSync global streams", () => {
       }),
       expect.any(Function),
     );
-    expect(getEntitiesMock).toHaveBeenCalledTimes(1);
+    expect(getEntitiesMock).not.toHaveBeenCalled();
   });
 
-  it("hydrates Building rows in the strict global spatial snapshot", async () => {
+  it("skips the global spatial snapshot while the bootstrap trial is disabled", async () => {
     vi.useFakeTimers();
     getEntitiesMock.mockResolvedValue(undefined);
     const harness = createSyncHarness();
@@ -492,20 +492,10 @@ describe("initialSync global streams", () => {
     await vi.advanceTimersByTimeAsync(200);
     await syncPromise;
 
-    expect(getEntitiesMock).toHaveBeenCalledWith(
-      harness.client,
-      expect.objectContaining({
-        models: expect.arrayContaining(["s1_eternum-Building"]),
-      }),
-      harness.setup.network.contractComponents,
-      [],
-      expect.arrayContaining(["s1_eternum-Building"]),
-      expect.any(Number),
-      false,
-    );
+    expect(getEntitiesMock).not.toHaveBeenCalled();
   });
 
-  it("fails initial sync when the strict global spatial snapshot times out", async () => {
+  it("does not let a disabled global spatial snapshot timeout block initial sync", async () => {
     vi.useFakeTimers();
     getEntitiesMock.mockImplementation(() => new Promise(() => undefined));
     const harness = createSyncHarness();
@@ -515,7 +505,6 @@ describe("initialSync global streams", () => {
       reportProgress: false,
       subscriptionSetupTimeoutMs: 25,
     });
-    const expectedRejection = expect(syncPromise).rejects.toThrow(/global spatial map snapshot/i);
 
     await flushMicrotasks();
     harness.emitEntityUpdate({
@@ -526,7 +515,8 @@ describe("initialSync global streams", () => {
     });
     await vi.advanceTimersByTimeAsync(225);
 
-    await expectedRejection;
+    await expect(syncPromise).resolves.toBeUndefined();
+    expect(getEntitiesMock).not.toHaveBeenCalled();
   });
 
   it("cancels the single global stream pair after initial sync", async () => {

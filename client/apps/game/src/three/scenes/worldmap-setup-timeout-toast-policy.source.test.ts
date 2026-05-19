@@ -8,17 +8,11 @@ import { describe, expect, it } from "vitest";
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
 describe("global spatial setup-timeout wiring", () => {
-  it("routes global spatial snapshot timeout reporting through initial sync", () => {
+  it("keeps the global spatial snapshot timeout path disabled for the overwrite trial", () => {
     const source = readSource("src/dojo/sync.ts");
-    const start = source.indexOf("async function hydrateGlobalSpatialMapSnapshot");
-    const end = source.indexOf("async function syncGlobalSpatialMapSnapshot", start);
-    expect(start).toBeGreaterThan(-1);
-    expect(end).toBeGreaterThan(start);
-    const methodSource = source.slice(start, end);
 
-    expect(methodSource).toContain('label: "global spatial map snapshot"');
-    expect(methodSource).toContain("onTimeout: input.onTimeout");
-    expect(methodSource).toContain("recordGameEntryDuration");
+    expect(source).toContain("const ENABLE_GLOBAL_SPATIAL_BOOTSTRAP_SNAPSHOT = false");
+    expect(source).toMatch(/if \(ENABLE_GLOBAL_SPATIAL_BOOTSTRAP_SNAPSHOT\)[\s\S]*?syncGlobalSpatialMapSnapshot/);
   });
 
   it("keeps live global spatial updates owned by the all-entity stream", () => {

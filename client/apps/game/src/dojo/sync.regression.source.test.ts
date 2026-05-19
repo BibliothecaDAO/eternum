@@ -22,11 +22,13 @@ describe("network boot-regression guards", () => {
     expect(source).toMatch(/cancelEntityStreamSubscription[\s\S]*?if \(isInitialSyncInFlight\) return/);
   });
 
-  it("sync.ts resets the spatial handshake clock after global spatial map snapshot is applied", () => {
+  it("sync.ts keeps the global spatial bootstrap snapshot disabled for the overwrite trial", () => {
     const source = readSource("src/dojo/sync.ts");
 
+    expect(source).toContain("const ENABLE_GLOBAL_SPATIAL_BOOTSTRAP_SNAPSHOT = false");
     expect(source).toContain("syncGlobalSpatialMapSnapshot");
     expect(source).not.toContain("spatialMapStreamSubscription");
+    expect(source).toMatch(/if \(ENABLE_GLOBAL_SPATIAL_BOOTSTRAP_SNAPSHOT\)[\s\S]*?syncGlobalSpatialMapSnapshot/);
     expect(source).toContain("recordSpatialHandshake()");
   });
 

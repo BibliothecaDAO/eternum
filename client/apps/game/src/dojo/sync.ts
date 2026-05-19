@@ -50,6 +50,9 @@ interface SyncEntitiesSubscriptionOptions {
 let entityStreamSubscription: { cancel: () => void; ready: Promise<void> } | null = null;
 let isInitialSyncInFlight = false;
 
+// Trial gate: keep the extra spatial snapshot from overwriting global stream state.
+const ENABLE_GLOBAL_SPATIAL_BOOTSTRAP_SNAPSHOT = false;
+
 /**
  * Cancel the global entity stream subscription.
  * Used during game switching to stop the old Torii client from writing
@@ -687,6 +690,17 @@ async function syncGlobalSpatialMapSnapshot(input: {
   }
 }
 
+async function syncGlobalSpatialBootstrapSnapshotIfEnabled(input: {
+  setup: SetupResult;
+  logging: boolean;
+  subscriptionSetupTimeoutMs: number;
+  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+}): Promise<void> {
+  if (ENABLE_GLOBAL_SPATIAL_BOOTSTRAP_SNAPSHOT) {
+    await syncGlobalSpatialMapSnapshot(input);
+  }
+}
+
 // initial sync runs before the game is playable and should sync minimal data
 type InitialSyncOptions = {
   logging?: boolean;
@@ -731,7 +745,7 @@ export const initialSync = async (
     );
     useConnectionStore.getState().recordGlobalHandshake();
 
-    await syncGlobalSpatialMapSnapshot({
+    await syncGlobalSpatialBootstrapSnapshotIfEnabled({
       setup,
       logging,
       subscriptionSetupTimeoutMs,
