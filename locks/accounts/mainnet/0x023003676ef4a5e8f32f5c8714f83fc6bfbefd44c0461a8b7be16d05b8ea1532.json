@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "blitz-rotation",
-    "launchRequestId": "26087168993-1",
+    "gameName": "sourdough",
+    "launchRequestId": "26087729375-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26087168993,
+    "workflowRunId": 26087729375,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "ea29e39f-0629-4547-a168-102cb7db4a44"
+    "stepId": "create-world",
+    "leaseId": "d8437668-2393-41d8-b95c-0e522d7c38c7"
   },
-  "acquiredAt": "2026-05-19T09:01:35.324Z",
-  "heartbeatAt": "2026-05-19T09:01:39.820Z",
-  "expiresAt": "2026-05-19T09:01:39.820Z",
-  "releasedAt": "2026-05-19T09:01:39.820Z"
+  "acquiredAt": "2026-05-19T09:13:04.608Z",
+  "heartbeatAt": "2026-05-19T09:13:04.608Z",
+  "expiresAt": "2026-05-19T09:23:04.608Z"
 }
