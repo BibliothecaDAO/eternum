@@ -42,7 +42,9 @@ import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import { FXManager } from "./fx-manager";
 import {
   bindManagerChunkRuntimeState,
+  recoverManagerChunkRuntimeAfterStall,
   type ManagerChunkUpdateOptions,
+  type RecoverManagerChunkRuntimeAfterStallInput,
   runManagerChunkUpdateRuntime,
 } from "./manager-chunk-runtime";
 import {
@@ -93,6 +95,26 @@ import {
 
 const INITIAL_STRUCTURE_CAPACITY = 64;
 const WONDER_MODEL_INDEX = 4;
+
+interface ChunkBounds {
+  minCol: number;
+  maxCol: number;
+  minRow: number;
+  maxRow: number;
+}
+
+// Chunk authority can move by one stride while the camera moves by one hex at a boundary.
+// Structures are sparse, so keep the neighboring presentation window live to avoid edge flicker.
+function expandBoundsForStructurePresentation(bounds: ChunkBounds, chunkStride: number): ChunkBounds {
+  const overlap = Math.max(0, Math.floor(chunkStride));
+
+  return {
+    minCol: bounds.minCol - overlap,
+    maxCol: bounds.maxCol + overlap,
+    minRow: bounds.minRow - overlap,
+    maxRow: bounds.maxRow + overlap,
+  };
+}
 
 interface VisibleStructurePassSnapshot {
   chunkKey: string;
@@ -1004,8 +1026,9 @@ export class StructureManager {
     }
   }
 
-  private getChunkBounds(startRow: number, startCol: number) {
-    return getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkStride);
+  private getStructurePresentationBounds(startRow: number, startCol: number) {
+    const renderBounds = getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkStride);
+    return expandBoundsForStructurePresentation(renderBounds, this.chunkStride);
   }
 
   async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
@@ -1037,6 +1060,15 @@ export class StructureManager {
       state: this.resolveChunkUpdateRuntimeState(),
       waitForSettle: waitForVisualSettle,
     });
+  }
+
+  recoverChunkUpdateAfterStall(input: RecoverManagerChunkRuntimeAfterStallInput): void {
+    const { didApply } = recoverManagerChunkRuntimeAfterStall(this.resolveChunkUpdateRuntimeState(), input);
+    if (!didApply) {
+      return;
+    }
+    this.isUpdatingVisibleStructures = false;
+    this.visibleStructurePassFence.invalidate();
   }
 
   private resolveChunkUpdateRuntimeState() {
@@ -1498,7 +1530,7 @@ export class StructureManager {
       this.rebuildSpatialIndex();
     }
     const visibleStructures: StructureInfo[] = [];
-    const bounds = this.getChunkBounds(startRow, startCol);
+    const bounds = this.getStructurePresentationBounds(startRow, startCol);
 
     const minCol = bounds.minCol;
     const maxCol = bounds.maxCol;
@@ -1561,7 +1593,7 @@ export class StructureManager {
     }
 
     const [chunkRow, chunkCol] = this.currentChunk?.split(",").map(Number) || [];
-    const bounds = this.getChunkBounds(chunkRow || 0, chunkCol || 0);
+    const bounds = this.getStructurePresentationBounds(chunkRow || 0, chunkCol || 0);
     // Use inclusive bounds (<=) to match isStructureVisible behavior
     return (
       hexCoords.col >= bounds.minCol &&

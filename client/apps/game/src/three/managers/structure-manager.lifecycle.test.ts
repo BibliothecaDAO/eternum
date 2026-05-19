@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/store/use-account-store", () => ({
   useAccountStore: {
@@ -166,6 +166,17 @@ vi.mock("./points-label-renderer", () => ({
 }));
 
 const { StructureManager } = await import("./structure-manager");
+const { getRenderBounds } = await import("../utils/chunk-geometry");
+const actualChunkGeometry = await vi.importActual<typeof import("../utils/chunk-geometry")>("../utils/chunk-geometry");
+
+function mockCanonicalRenderBounds() {
+  vi.mocked(getRenderBounds).mockImplementation(actualChunkGeometry.getRenderBounds);
+}
+
+afterEach(() => {
+  vi.mocked(getRenderBounds).mockReset();
+  vi.mocked(getRenderBounds).mockReturnValue({ minCol: 0, minRow: 0, maxCol: 0, maxRow: 0 });
+});
 
 function createVisibleStructurePassFence() {
   let fenceVersion = 0;
@@ -394,6 +405,64 @@ function createVisibleStructurePassSubject() {
 
   return { subject, visibleStructurePassFence };
 }
+
+function createStructureVisibilitySubject() {
+  const subject = Object.create(StructureManager.prototype) as any;
+
+  subject.currentChunk = "0,0";
+  subject.renderChunkSize = { width: 48, height: 48 };
+  subject.chunkStride = 24;
+  subject.needsSpatialReindex = false;
+
+  return subject;
+}
+
+describe("StructureManager structure visibility", () => {
+  it("retains structures in the presentation overlap while crossing a chunk boundary", () => {
+    mockCanonicalRenderBounds();
+    const subject = createStructureVisibilitySubject();
+    const structuresById = new Map([
+      [
+        196,
+        {
+          entityId: 196,
+          hexCoords: { col: -13, row: -9 },
+          structureType: "Realm",
+        },
+      ],
+      [
+        197,
+        {
+          entityId: 197,
+          hexCoords: { col: -37, row: -9 },
+          structureType: "Realm",
+        },
+      ],
+      [
+        198,
+        {
+          entityId: 198,
+          hexCoords: { col: -36, row: -9 },
+          structureType: "Realm",
+        },
+      ],
+    ]);
+
+    subject.chunkToStructures = new Map([
+      ["-1,-1", new Set([196])],
+      ["-2,-1", new Set([197, 198])],
+    ]);
+    subject.structures = {
+      getStructureByEntityId: vi.fn((entityId: number) => structuresById.get(entityId)),
+    };
+
+    const visibleStructures = subject.getVisibleStructuresForChunk(0, 0);
+
+    expect(visibleStructures.map((structure: { entityId: number }) => structure.entityId).toSorted()).toEqual([
+      196, 198,
+    ]);
+  });
+});
 
 describe("StructureManager destroy lifecycle", () => {
   it("runs a single visible-structure rebuild during chunk switches", async () => {

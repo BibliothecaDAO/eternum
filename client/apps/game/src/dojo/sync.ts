@@ -13,7 +13,7 @@ import {
   tileOptToTile,
 } from "@bibliothecadao/eternum";
 import type { Component, Entity, Metadata, Schema } from "@dojoengine/recs";
-import { setEntities } from "@dojoengine/state";
+import { getEntities as getEntitiesSnapshot, setEntities } from "@dojoengine/state";
 import type { Clause, ToriiClient, Entity as ToriiEntity } from "@dojoengine/torii-wasm/types";
 import {
   getAddressNamesFromTorii,
@@ -26,6 +26,7 @@ import { env } from "../../env";
 import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
+import { GLOBAL_SPATIAL_MAP_MODEL_NAMES, GLOBAL_SPATIAL_MAP_SNAPSHOT_MODELS } from "./torii-spatial-models";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
 import {
   setupToriiSubscriptions,
@@ -40,6 +41,7 @@ interface SyncEntitiesSubscriptionOptions {
   isReadyEntity?: SyncEntityReadinessMatcher;
   onReadyEntityApplied?: (info: SyncEntityReadinessInfo) => void;
   onReadyEntityReceived?: (info: SyncEntityReadinessInfo) => void;
+  readyOnSubscriptionsReady?: boolean;
   streamType?: NetworkStreamType;
   subscriptionSetupTimeoutMs?: number;
   onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
@@ -58,11 +60,15 @@ let isInitialSyncInFlight = false;
  */
 export const cancelEntityStreamSubscription = () => {
   if (isInitialSyncInFlight) return;
+  cancelGlobalEntityStreamSubscriptions();
+};
+
+function cancelGlobalEntityStreamSubscriptions(): void {
   if (entityStreamSubscription) {
     entityStreamSubscription.cancel();
     entityStreamSubscription = null;
   }
-};
+}
 
 function toTraceBigInt(value: unknown): bigint | null {
   if (typeof value === "bigint") {
@@ -124,47 +130,15 @@ function recordTileOptStreamTrace(data: ToriiEntity): void {
   }
 }
 
-const GLOBAL_NON_SPATIAL_MODELS: string[] = [
-  // Events
+const GLOBAL_EVENT_MODELS: string[] = [
   "s1_eternum-OpenRelicChestEvent",
-  // Guilds
-  "s1_eternum-Guild",
-  "s1_eternum-GuildMember",
-  "s1_eternum-GuildWhitelist",
-  // Market
-  "s1_eternum-Market",
-  "s1_eternum-Liquidity",
-  "s1_eternum-Trade",
-  // Config + global metadata
-  "s1_eternum-WorldConfig",
-  "s1_eternum-HyperstrtConstructConfig",
-  "s1_eternum-HyperstructureGlobals",
-  "s1_eternum-WeightConfig",
-  "s1_eternum-ResourceFactoryConfig",
-  "s1_eternum-BuildingCategoryConfig",
-  "s1_eternum-StructureLevelConfig",
-  "s1_eternum-SeasonEnded",
-  "s1_eternum-QuestLevels",
-  "s1_eternum-AddressName",
-  "s1_eternum-PlayerRegisteredPoints",
-  "s1_eternum-BlitzSettlement",
-  "s1_eternum-BlitzEntryTokenRegister",
-  "s1_eternum-PlayersRankTrial",
-  "s1_eternum-PlayersRankFinal",
-  "s1_eternum-ResourceList",
-  "s1_eternum-PlayerRank",
-  "s1_eternum-RankPrize",
+  "s1_eternum-ExplorerRewardEvent",
+  "s1_eternum-BattleEvent",
 ];
 
-// Models synced per-player via a scoped subscription (see usePlayerStructureSync)
-const PLAYER_STRUCTURE_MODELS: string[] = [
-  "s1_eternum-ProductionBoostBonus",
-  "s1_eternum-Resource",
-  "s1_eternum-ResourceArrival",
-];
-
-const GLOBAL_STREAM_MODELS: GlobalModelStreamConfig[] = GLOBAL_NON_SPATIAL_MODELS.map((model) => ({ model }));
-const GLOBAL_STREAM_CLAUSE = buildModelKeysClause(GLOBAL_STREAM_MODELS);
+const GLOBAL_EVENT_STREAM_MODELS: GlobalModelStreamConfig[] = GLOBAL_EVENT_MODELS.map((model) => ({ model }));
+const GLOBAL_EVENT_STREAM_CLAUSE = buildModelKeysClause(GLOBAL_EVENT_STREAM_MODELS);
+const GLOBAL_SPATIAL_MAP_SNAPSHOT_CLAUSE = buildModelKeysClause(GLOBAL_SPATIAL_MAP_SNAPSHOT_MODELS);
 
 type BatchPayload = { upserts: ToriiEntity[]; deletions: string[] };
 type SyncEntityReadinessMatcher = (data: ToriiEntity) => boolean;
@@ -181,8 +155,20 @@ interface QueueProcessor {
 interface SyncEntitiesSubscription {
   cancel: () => void;
   ready: Promise<void>;
-  updateClause?: (clause: Clause | undefined | null) => Promise<void>;
+  updateClause?: (clause: SyncSubscriptionClauseInput) => Promise<void>;
 }
+
+type SyncSubscriptionClausePair = {
+  entityClause?: Clause | null;
+  eventClause?: Clause | null;
+};
+
+type SyncSubscriptionClauseInput = Clause | undefined | null | SyncSubscriptionClausePair;
+
+type ResolvedSyncSubscriptionClauses = {
+  entityClause: Clause | undefined | null;
+  eventClause: Clause | undefined | null;
+};
 
 interface SyncReadinessController {
   ready: Promise<void>;
@@ -200,7 +186,9 @@ interface WriteCompletionTracker {
 
 type QueuedUpdate = { entityId: string; data: ToriiEntity; resolve: () => void };
 
-const createSyncReadinessController = (): SyncReadinessController => {
+const createSyncReadinessController = (
+  options: { readyOnSubscriptionsReady?: boolean } = {},
+): SyncReadinessController => {
   let readyEntityUpdateReceived = false;
   let subscriptionsReady = false;
   let pendingReadyEntityWrites = 0;
@@ -225,7 +213,8 @@ const createSyncReadinessController = (): SyncReadinessController => {
   createReadyPromise();
 
   const resolveWhenReadyEntitiesAreApplied = () => {
-    if (settled || !readyEntityUpdateReceived || !subscriptionsReady || pendingReadyEntityWrites > 0) {
+    const hasRequiredReadySignal = readyEntityUpdateReceived || options.readyOnSubscriptionsReady === true;
+    if (settled || !hasRequiredReadySignal || !subscriptionsReady || pendingReadyEntityWrites > 0) {
       return;
     }
 
@@ -276,6 +265,23 @@ const createSyncEntityReadinessInfo = (data: ToriiEntity): SyncEntityReadinessIn
   entityId: data.hashed_keys,
   models: Object.keys((data.models as Record<string, unknown>) ?? {}),
 });
+
+const isSyncSubscriptionClausePair = (input: SyncSubscriptionClauseInput): input is SyncSubscriptionClausePair =>
+  typeof input === "object" && input !== null && ("entityClause" in input || "eventClause" in input);
+
+const resolveSyncSubscriptionClauses = (input: SyncSubscriptionClauseInput): ResolvedSyncSubscriptionClauses => {
+  if (isSyncSubscriptionClausePair(input)) {
+    return {
+      entityClause: "entityClause" in input ? input.entityClause : input.eventClause,
+      eventClause: "eventClause" in input ? input.eventClause : input.entityClause,
+    };
+  }
+
+  return {
+    entityClause: input,
+    eventClause: input,
+  };
+};
 
 const createWriteCompletionTracker = (): WriteCompletionTracker => {
   const pendingWriteResolvers = new Map<string, Array<() => void>>();
@@ -469,7 +475,7 @@ const createWorkerQueueProcessor = (
 export const syncEntitiesDebounced = async (
   client: ToriiClient,
   setupResult: SetupResult,
-  entityKeyClause: Clause | undefined | null,
+  subscriptionClause: SyncSubscriptionClauseInput,
   logging = true,
   onUpdate?: () => void,
   options?: SyncEntitiesSubscriptionOptions,
@@ -506,8 +512,11 @@ export const syncEntitiesDebounced = async (
   const streamType = options?.streamType ?? "global";
   const queueProcessor =
     createWorkerQueueProcessor(applyBatch, logging, streamType) ?? createMainThreadQueueProcessor(applyBatch, logging);
-  const readiness = createSyncReadinessController();
+  const readiness = createSyncReadinessController({
+    readyOnSubscriptionsReady: options?.readyOnSubscriptionsReady,
+  });
   const isReadyEntity = options?.isReadyEntity ?? (() => true);
+  const initialClauses = resolveSyncSubscriptionClauses(subscriptionClause);
 
   const queueUpdate = (data: ToriiEntity, origin: "entity" | "event") => {
     try {
@@ -523,7 +532,7 @@ export const syncEntitiesDebounced = async (
   try {
     const subscriptions = await setupToriiSubscriptions({
       createEntitySubscription: () =>
-        client.onEntityUpdated(entityKeyClause, (data: ToriiEntity) => {
+        client.onEntityUpdated(initialClauses.entityClause, (data: ToriiEntity) => {
           if (logging) console.log("Entity updated", data);
           recordTileOptStreamTrace(data);
           const writeComplete = queueUpdate(data, "entity");
@@ -537,7 +546,7 @@ export const syncEntitiesDebounced = async (
           }
         }),
       createEventSubscription: () =>
-        client.onEventMessageUpdated(entityKeyClause, (data: ToriiEntity) => {
+        client.onEventMessageUpdated(initialClauses.eventClause, (data: ToriiEntity) => {
           if (logging) console.log("Event message updated", data.hashed_keys);
           queueUpdate(data, "event");
         }),
@@ -563,13 +572,14 @@ export const syncEntitiesDebounced = async (
     };
 
     if (canUpdateSubscriptionClause) {
-      subscription.updateClause = async (clause: Clause | undefined | null) => {
+      subscription.updateClause = async (clause: SyncSubscriptionClauseInput) => {
+        const nextClauses = resolveSyncSubscriptionClauses(clause);
         readiness.reset();
         await updateToriiSubscriptions({
           updateEntitySubscription: () =>
-            client.updateEntitySubscription(subscriptions.entitySubscription as any, clause),
+            client.updateEntitySubscription(subscriptions.entitySubscription as any, nextClauses.entityClause),
           updateEventSubscription: () =>
-            client.updateEventMessageSubscription(subscriptions.eventSubscription as any, clause),
+            client.updateEventMessageSubscription(subscriptions.eventSubscription as any, nextClauses.eventClause),
           subscriptionSetupTimeoutMs: options?.subscriptionSetupTimeoutMs,
           onSubscriptionSetupTimeout: options?.onSubscriptionSetupTimeout,
         });
@@ -583,6 +593,99 @@ export const syncEntitiesDebounced = async (
     throw error;
   }
 };
+
+async function runRequiredToriiOperationWithTimeout<T>(input: {
+  label: string;
+  operation: () => Promise<T>;
+  timeoutMs: number;
+  onTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+}): Promise<T> {
+  const { label, operation, timeoutMs, onTimeout } = input;
+  if (!timeoutMs || timeoutMs <= 0) {
+    return operation();
+  }
+
+  return new Promise<T>((resolve, reject) => {
+    let settled = false;
+    const timeoutId = setTimeout(() => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+      onTimeout?.({ label, timeoutMs });
+      reject(new Error(`Timed out waiting for ${label} after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    operation().then(
+      (result) => {
+        clearTimeout(timeoutId);
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        resolve(result);
+      },
+      (error) => {
+        clearTimeout(timeoutId);
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        reject(error);
+      },
+    );
+  });
+}
+
+async function hydrateGlobalSpatialMapSnapshot(input: {
+  setup: SetupResult;
+  logging: boolean;
+  timeoutMs: number;
+  onTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+}): Promise<void> {
+  const snapshotStart = performance.now();
+  try {
+    await runRequiredToriiOperationWithTimeout({
+      label: "global spatial map snapshot",
+      timeoutMs: input.timeoutMs,
+      onTimeout: input.onTimeout,
+      operation: () =>
+        getEntitiesSnapshot(
+          input.setup.network.toriiClient,
+          GLOBAL_SPATIAL_MAP_SNAPSHOT_CLAUSE,
+          input.setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[],
+          [],
+          [...GLOBAL_SPATIAL_MAP_MODEL_NAMES],
+          EVENT_QUERY_LIMIT,
+          input.logging,
+        ),
+    });
+  } finally {
+    recordGameEntryDuration("initial-sync-global-spatial-map-snapshot", performance.now() - snapshotStart);
+  }
+}
+
+async function syncGlobalSpatialMapSnapshot(input: {
+  setup: SetupResult;
+  logging: boolean;
+  subscriptionSetupTimeoutMs: number;
+  onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+}): Promise<void> {
+  const totalStart = performance.now();
+  try {
+    await hydrateGlobalSpatialMapSnapshot({
+      setup: input.setup,
+      logging: input.logging,
+      timeoutMs: input.subscriptionSetupTimeoutMs,
+      onTimeout: input.onSubscriptionSetupTimeout,
+    });
+  } finally {
+    recordGameEntryDuration("initial-sync-global-spatial-map-sync", performance.now() - totalStart);
+  }
+}
 
 // initial sync runs before the game is playable and should sync minimal data
 type InitialSyncOptions = {
@@ -602,10 +705,7 @@ export const initialSync = async (
   const subscriptionSetupTimeoutMs =
     options.subscriptionSetupTimeoutMs ?? env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
   console.log("[STARTING syncEntitiesDebounced]");
-  if (entityStreamSubscription) {
-    entityStreamSubscription.cancel();
-    entityStreamSubscription = null;
-  }
+  cancelGlobalEntityStreamSubscriptions();
 
   if (reportProgress) {
     setInitialSyncProgress(0);
@@ -617,7 +717,10 @@ export const initialSync = async (
     entityStreamSubscription = await syncEntitiesDebounced(
       setup.network.toriiClient,
       setup,
-      GLOBAL_STREAM_CLAUSE,
+      {
+        entityClause: undefined,
+        eventClause: GLOBAL_EVENT_STREAM_CLAUSE,
+      },
       logging,
       () => useConnectionStore.getState().recordGlobalUpdate(),
       {
@@ -626,10 +729,22 @@ export const initialSync = async (
         onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
       },
     );
-    // Handshake succeeded; data freshness is recorded separately from
-    // subscription transport freshness so quiet worlds do not look stale.
     useConnectionStore.getState().recordGlobalHandshake();
+
+    await syncGlobalSpatialMapSnapshot({
+      setup,
+      logging,
+      subscriptionSetupTimeoutMs,
+      onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
+    });
+    // Handshakes are transport freshness. Data freshness is recorded by stream
+    // updates, so quiet worlds do not look stale after a successful boot.
+    useConnectionStore.getState().recordSpatialHandshake();
   } catch (error) {
+    cancelGlobalEntityStreamSubscriptions();
+    if (error instanceof Error && error.message.includes("global spatial map")) {
+      throw error;
+    }
     if (error instanceof Error && error.message.includes("Timed out waiting for")) {
       throw new Error(`Timed out connecting to the world stream after ${subscriptionSetupTimeoutMs}ms.`);
     }

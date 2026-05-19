@@ -9,10 +9,12 @@ const mocks = vi.hoisted(() => ({
   currentBlockTimestamp: 200,
   worldMode: "blitz" as "blitz" | "eternum" | "unknown",
   buildings: [] as Array<{ category: number }>,
+  structureBuildings: null as Record<string, unknown> | null,
   executeObservedClientTransaction: vi.fn(),
   getStructuresDataFromTorii: vi.fn(),
   toastError: vi.fn(),
   getContractByName: vi.fn(() => ({ address: "0xblitz" })),
+  getBuildingCount: vi.fn(() => 0),
 }));
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
@@ -70,9 +72,13 @@ vi.mock("@bibliothecadao/react", () => ({
 }));
 
 vi.mock("@dojoengine/react", () => ({
-  useComponentValue: (_component: unknown, realmEntity: unknown) => {
+  useComponentValue: (component: { key?: string } | undefined, realmEntity: unknown) => {
     if (!realmEntity) {
       return null;
+    }
+
+    if (component?.key === "StructureBuildings") {
+      return mocks.structureBuildings;
     }
 
     return { version: String(realmEntity) };
@@ -80,8 +86,9 @@ vi.mock("@dojoengine/react", () => ({
 }));
 
 vi.mock("@bibliothecadao/eternum", () => ({
-  getRealmInfo: (realmEntity: bigint) => ({
-    entityId: Number(realmEntity),
+  getBuildingCount: mocks.getBuildingCount,
+  getRealmInfo: () => ({
+    entityId: 101,
     level: 1,
     category: 1,
     owner: "0xowner",
@@ -174,6 +181,7 @@ describe("useBlitzRealmProvision", () => {
     mocks.currentBlockTimestamp = 200;
     mocks.worldMode = "blitz";
     mocks.buildings = [];
+    mocks.structureBuildings = null;
     mocks.executeObservedClientTransaction.mockReset();
     mocks.executeObservedClientTransaction.mockResolvedValue({ transaction_hash: "0xtx" });
     mocks.getStructuresDataFromTorii.mockReset();
@@ -181,6 +189,8 @@ describe("useBlitzRealmProvision", () => {
     mocks.toastError.mockReset();
     mocks.getContractByName.mockReset();
     mocks.getContractByName.mockReturnValue({ address: "0xblitz" });
+    mocks.getBuildingCount.mockReset();
+    mocks.getBuildingCount.mockReturnValue(0);
 
     useUIStore.setState({
       gameStartMainAt: 100,
@@ -224,6 +234,30 @@ describe("useBlitzRealmProvision", () => {
     expect(readProbeValue("canProvision")).toBe("false");
   });
 
+  it("uses StructureBuildings as the primary provisioned signal", async () => {
+    mocks.structureBuildings = {
+      packed_counts_1: "1",
+      packed_counts_2: "0",
+      packed_counts_3: "0",
+    };
+    mocks.getBuildingCount.mockReturnValue(1);
+
+    await renderProbe();
+
+    expect(readProbeValue("isProvisioned")).toBe("true");
+    expect(readProbeValue("canProvision")).toBe("false");
+    expect(mocks.getBuildingCount).toHaveBeenCalledWith(28, [1n, 0n, 0n]);
+  });
+
+  it("falls back to Building rows when StructureBuildings is not available", async () => {
+    mocks.buildings = [{ category: 28 }];
+
+    await renderProbe();
+
+    expect(readProbeValue("isProvisioned")).toBe("true");
+    expect(readProbeValue("canProvision")).toBe("false");
+  });
+
   it("submits the provision call and clears once the labor building appears", async () => {
     await renderProbe();
     await clickProvision();
@@ -245,5 +279,20 @@ describe("useBlitzRealmProvision", () => {
 
     expect(readProbeValue("isProvisioned")).toBe("true");
     expect(readProbeValue("status")).toBe("idle");
+  });
+
+  it("recovers duplicate already-provisioned errors by refreshing synced realm data", async () => {
+    mocks.executeObservedClientTransaction.mockRejectedValueOnce(new Error("realm is already provisioned"));
+
+    await renderProbe();
+    await clickProvision();
+
+    expect(mocks.getStructuresDataFromTorii).toHaveBeenCalledWith(
+      { id: "torii" },
+      [],
+      [{ entityId: 101, position: { col: 12, row: 34 } }],
+    );
+    expect(readProbeValue("status")).toBe("syncing");
+    expect(readProbeValue("loading")).toBe("true");
   });
 });

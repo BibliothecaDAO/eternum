@@ -15,20 +15,27 @@ describe("worldmap reconnect recovery handle", () => {
     expect(getActiveWorldmapRecoveryHandle()).toBe(null);
   });
 
-  it("exposes only reconnect refresh recovery for the active scene", () => {
+  it("exposes reconnect refresh and connection-failure recovery for the active scene", () => {
     const refreshAfterReconnect = vi.fn();
-    const cleanup = registerActiveWorldmapRecoveryHandle({ refreshAfterReconnect });
+    const recoverAfterConnectionFailure = vi.fn();
+    const cleanup = registerActiveWorldmapRecoveryHandle({ refreshAfterReconnect, recoverAfterConnectionFailure });
 
-    expect(getActiveWorldmapRecoveryHandle()).toEqual({ refreshAfterReconnect });
-    expect(Object.keys(getActiveWorldmapRecoveryHandle() ?? {})).toEqual(["refreshAfterReconnect"]);
+    expect(getActiveWorldmapRecoveryHandle()).toEqual({ refreshAfterReconnect, recoverAfterConnectionFailure });
+    expect(Object.keys(getActiveWorldmapRecoveryHandle() ?? {})).toEqual([
+      "refreshAfterReconnect",
+      "recoverAfterConnectionFailure",
+    ]);
 
     cleanup();
     expect(getActiveWorldmapRecoveryHandle()).toBe(null);
   });
 
   it("does not let stale scene cleanup clear a newer active handle", () => {
-    const firstCleanup = registerActiveWorldmapRecoveryHandle({ refreshAfterReconnect: vi.fn() });
-    const secondHandle = { refreshAfterReconnect: vi.fn() };
+    const firstCleanup = registerActiveWorldmapRecoveryHandle({
+      refreshAfterReconnect: vi.fn(),
+      recoverAfterConnectionFailure: vi.fn(),
+    });
+    const secondHandle = { refreshAfterReconnect: vi.fn(), recoverAfterConnectionFailure: vi.fn() };
 
     registerActiveWorldmapRecoveryHandle(secondHandle);
     firstCleanup();

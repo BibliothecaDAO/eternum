@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createManagerChunkRuntimeState,
+  recoverManagerChunkRuntimeAfterStall,
   runManagerChunkUpdateRuntime,
   type ManagerChunkUpdateOptions,
 } from "./manager-chunk-runtime";
@@ -88,5 +89,113 @@ describe("runManagerChunkUpdateRuntime", () => {
     });
 
     expect(waitForSettle).not.toHaveBeenCalled();
+  });
+
+  it("releases stale chunk ownership after a stalled manager update", async () => {
+    const state = createManagerChunkRuntimeState("24,24");
+    state.latestTransitionToken = 7;
+    state.transitionChunkByToken.set(6, "0,0");
+    state.transitionChunkByToken.set(7, "24,24");
+    state.inFlightPromise = new Promise<void>(() => undefined);
+
+    recoverManagerChunkRuntimeAfterStall(state, {
+      chunkKey: "24,24",
+      transitionToken: 8,
+    });
+
+    expect(state.currentChunk).toBe("24,24");
+    expect(state.inFlightPromise).toBeNull();
+    expect(state.latestTransitionToken).toBe(8);
+    expect(state.transitionChunkByToken.get(8)).toBe("24,24");
+    expect(state.transitionChunkByToken.has(6)).toBe(false);
+    expect(state.transitionChunkByToken.has(7)).toBe(false);
+  });
+
+  it("allows a forced same-chunk update after stalled ownership is released", async () => {
+    const state = createManagerChunkRuntimeState("24,24");
+    state.inFlightPromise = new Promise<void>(() => undefined);
+    recoverManagerChunkRuntimeAfterStall(state, {
+      chunkKey: "24,24",
+      transitionToken: 9,
+    });
+
+    const executeChunkUpdate = vi.fn(async () => undefined);
+
+    await runManagerChunkUpdateRuntime({
+      chunkKey: "24,24",
+      executeChunkUpdate,
+      isDestroyed: () => false,
+      options: { force: true, transitionToken: 9 },
+      shouldAcceptRequest,
+      state,
+    });
+
+    expect(executeChunkUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears stalled ownership without adopting an invalid recovery chunk", () => {
+    const state = createManagerChunkRuntimeState("24,24");
+    state.inFlightPromise = new Promise<void>(() => undefined);
+
+    recoverManagerChunkRuntimeAfterStall(state, {
+      chunkKey: "null",
+      transitionToken: 10,
+    });
+
+    expect(state.currentChunk).toBe("24,24");
+    expect(state.inFlightPromise).toBeNull();
+    expect(state.latestTransitionToken).toBe(10);
+    expect(state.transitionChunkByToken.has(10)).toBe(false);
+  });
+
+  it("does not overwrite currentChunk when a newer transition has already advanced past the recovery token", () => {
+    const state = createManagerChunkRuntimeState("0,0");
+    state.latestTransitionToken = 9;
+    state.currentChunk = "24,24";
+    state.inFlightPromise = new Promise<void>(() => undefined);
+
+    recoverManagerChunkRuntimeAfterStall(state, {
+      chunkKey: "0,0",
+      transitionToken: 7,
+    });
+
+    expect(state.currentChunk).toBe("24,24");
+    expect(state.latestTransitionToken).toBe(9);
+  });
+
+  it("preserves the in-flight promise of a newer transition when recovering a stale token", () => {
+    const state = createManagerChunkRuntimeState("24,24");
+    state.latestTransitionToken = 9;
+    const newerPromise = new Promise<void>(() => undefined);
+    state.inFlightPromise = newerPromise;
+
+    recoverManagerChunkRuntimeAfterStall(state, {
+      chunkKey: "0,0",
+      transitionToken: 7,
+    });
+
+    expect(state.inFlightPromise).toBe(newerPromise);
+  });
+
+  it("returns didApply=true when the recovery is non-stale", () => {
+    const state = createManagerChunkRuntimeState("0,0");
+    const result = recoverManagerChunkRuntimeAfterStall(state, {
+      chunkKey: "24,24",
+      transitionToken: 5,
+    });
+
+    expect(result.didApply).toBe(true);
+  });
+
+  it("returns didApply=false when the recovery is stale", () => {
+    const state = createManagerChunkRuntimeState("24,24");
+    state.latestTransitionToken = 9;
+
+    const result = recoverManagerChunkRuntimeAfterStall(state, {
+      chunkKey: "0,0",
+      transitionToken: 7,
+    });
+
+    expect(result.didApply).toBe(false);
   });
 });

@@ -214,6 +214,26 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     expect(options).toMatchObject({ runOnInit: true });
   });
 
+  it("subscribes structure tile updates with runOnInit enabled", () => {
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          Hyperstructure: {},
+          Structure: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    listener.Structure.onTileUpdate(() => {});
+
+    expect(defineComponentSystemMock).toHaveBeenCalledTimes(1);
+    const options = defineComponentSystemMock.mock.calls[0][3];
+    expect(options).toMatchObject({ runOnInit: true });
+  });
+
   it("uses live explorer troops stamina on tile bootstrap when data enhancer is stale", async () => {
     isComponentUpdateMock.mockReturnValue(true);
     tileOptToTileMock.mockReturnValue({
@@ -537,6 +557,47 @@ describe("WorldUpdateListener army tile bootstrap", () => {
 
     expect(callback).toHaveBeenCalledTimes(1);
     expect(callback.mock.calls[0][0].structureName).toBe("Realm of Testing");
+  });
+
+  it("resolves a structure tile update directly from a TileOpt snapshot value", async () => {
+    tileOptToTileMock.mockReturnValue({
+      occupier_type: 1,
+      occupier_id: 921,
+      col: 10,
+      row: 15,
+    });
+    getStructureInfoFromTileOccupierMock.mockReturnValue({
+      type: 4,
+      stage: 0,
+      level: 1,
+      hasWonder: false,
+    });
+    enhanceStructureDataMock.mockResolvedValue({
+      owner: { address: 123n, ownerName: "", guildName: "" },
+      guardArmies: [],
+      activeProductions: [],
+      battleData: undefined,
+      structureName: "Realm of Testing",
+    });
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          Hyperstructure: {},
+          Structure: {},
+          AddressName: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    await expect(listener.resolveStructureTileUpdateFromTileOpt({} as never)).resolves.toMatchObject({
+      entityId: 921,
+      structureName: "Realm of Testing",
+      hexCoords: { col: 10, row: 15 },
+    });
   });
 
   it("re-resolves a non-zero owner when cached data still says The Vanguard", async () => {
