@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-19T09:15:51.053Z",
+  "updatedAt": "2026-05-19T09:16:18.397Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -846,11 +846,10 @@
       "path": "runs/mainnet/blitz/sourdough.json",
       "inputPath": "inputs/mainnet/blitz/sourdough/26087729375-1.json",
       "status": "running",
-      "updatedAt": "2026-05-19T09:15:51.053Z",
+      "updatedAt": "2026-05-19T09:16:18.397Z",
       "workflowRef": "next",
-      "currentStepId": "reserve-blitz-hyperstructures",
-      "activeLeaseExpiresAt": "2026-05-19T10:00:51.053Z",
-      "hasRunningStep": true,
+      "currentStepId": "grant-lootchest-role",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1779184800,
