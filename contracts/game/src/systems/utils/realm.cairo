@@ -82,12 +82,12 @@ pub impl iRealmImpl of iRealmTrait {
         }
 
         let structure_coord = structure_base.coord();
+        structure_base.starting_troops_granted = true;
+        StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
+
         let structure_creation_library = structure_creation_library::get_dispatcher(@world);
         structure_creation_library
             .grant_starting_troop_resources(world, structure_id, StructureCategory::Realm, structure_coord);
-
-        structure_base.starting_troops_granted = true;
-        StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
     }
 
     fn provision_realm(ref world: WorldStorage, structure_id: ID) {
