@@ -49,6 +49,55 @@ export const isToriiAvailable = async (toriiBaseUrl: string): Promise<boolean> =
   }
 };
 
+type WorldToriiProbePath = "/sql" | "/health";
+
+const buildWorldToriiProbeUrl = (toriiBaseUrl: string, path: WorldToriiProbePath): string =>
+  `${toriiBaseUrl.replace(/\/+$/, "")}${path}`;
+
+const classifyWorldToriiProbeResponse = (response: Response): boolean | null => {
+  if (response.ok) return true;
+  if (response.status === 404) return false;
+  return null;
+};
+
+const probeWorldToriiPath = async (
+  toriiBaseUrl: string,
+  path: WorldToriiProbePath,
+  timeoutMs: number,
+): Promise<boolean | null> => {
+  try {
+    const response = await fetch(buildWorldToriiProbeUrl(toriiBaseUrl, path), {
+      method: "GET",
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    return classifyWorldToriiProbeResponse(response);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Probes a world's Torii endpoint without requiring any world-specific tables.
+ * Returns:
+ *   - `true`  : Torii responded on `/sql` or `/health`
+ *   - `false` : `/sql` explicitly 404'd, which means the indexed world route is gone
+ *   - `null`  : indeterminate; callers must not evict saved state on this value
+ */
+export const probeWorldToriiAlive = async (
+  toriiBaseUrl: string | null | undefined,
+  timeoutMs = 2_000,
+): Promise<boolean | null> => {
+  if (!toriiBaseUrl) return null;
+
+  const sqlProbeResult = await probeWorldToriiPath(toriiBaseUrl, "/sql", timeoutMs);
+  if (sqlProbeResult !== null) return sqlProbeResult;
+
+  const healthProbeResult = await probeWorldToriiPath(toriiBaseUrl, "/health", timeoutMs);
+  if (healthProbeResult === true) return true;
+
+  return null;
+};
+
 /**
  * Fetch bulk world availability from the realtime server.
  * Returns a map of world names to alive/dead status.

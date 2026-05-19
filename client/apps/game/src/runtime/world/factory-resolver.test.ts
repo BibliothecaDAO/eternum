@@ -27,7 +27,7 @@ vi.mock("../../../env", () => ({
   },
 }));
 
-import { resolveWorldDeploymentFromFactory } from "./factory-resolver";
+import { probeWorldToriiAlive, resolveWorldDeploymentFromFactory } from "./factory-resolver";
 
 describe("resolveWorldDeploymentFromFactory", () => {
   beforeEach(() => {
@@ -133,5 +133,56 @@ describe("resolveWorldDeploymentFromFactory", () => {
     expect(mockFetch).toHaveBeenCalledWith("https://realtime.example/api/world-deployments/slot/bltz-warzone-31", {
       signal: expect.any(AbortSignal),
     });
+  });
+});
+
+describe("probeWorldToriiAlive", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", mockFetch);
+    mockFetch.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns true when the SQL endpoint is reachable", async () => {
+    mockFetch.mockResolvedValueOnce(new Response("[]", { status: 200 }));
+
+    await expect(probeWorldToriiAlive("https://api.cartridge.gg/x/mainnet-world/torii")).resolves.toBe(true);
+
+    expect(mockFetch).toHaveBeenCalledWith("https://api.cartridge.gg/x/mainnet-world/torii/sql", {
+      method: "GET",
+      signal: expect.any(AbortSignal),
+    });
+  });
+
+  it("returns false when the SQL endpoint explicitly reports a missing deployment", async () => {
+    mockFetch.mockResolvedValueOnce(new Response("not found", { status: 404 }));
+
+    await expect(probeWorldToriiAlive("https://api.cartridge.gg/x/dead-slot-world/torii")).resolves.toBe(false);
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to the health endpoint when SQL reachability is indeterminate", async () => {
+    mockFetch
+      .mockResolvedValueOnce(new Response("gateway unavailable", { status: 503 }))
+      .mockResolvedValueOnce(new Response("ok", { status: 200 }));
+
+    await expect(probeWorldToriiAlive("https://api.cartridge.gg/x/recovering-world/torii")).resolves.toBe(true);
+
+    expect(mockFetch).toHaveBeenLastCalledWith("https://api.cartridge.gg/x/recovering-world/torii/health", {
+      method: "GET",
+      signal: expect.any(AbortSignal),
+    });
+  });
+
+  it("keeps indeterminate probes from being treated as dead", async () => {
+    mockFetch
+      .mockRejectedValueOnce(new Error("timeout"))
+      .mockResolvedValueOnce(new Response("not found", { status: 404 }));
+
+    await expect(probeWorldToriiAlive("https://api.cartridge.gg/x/maybe-live-world/torii")).resolves.toBe(null);
   });
 });

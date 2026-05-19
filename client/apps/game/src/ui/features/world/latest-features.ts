@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-19",
+    title: "Review Popup Timing",
+    description:
+      "Fixed ended-game reviews so they no longer interrupt the landing page and only prompt automatically after you are in the game.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-19",
     title: "Provision Sync Recovery",
     description:
       "Fixed realm provisioning so completed realms stay synced after refreshes and duplicate provision attempts recover back into the correct state.",

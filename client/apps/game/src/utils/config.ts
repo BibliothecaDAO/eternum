@@ -1,10 +1,17 @@
-import { ToriiSetting } from "@/types";
 import { resolveGameModeFromBlitzFlag } from "@/config/game-modes/resolved-mode";
 import { ContractComponents, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Chain, GameType, getConfigFromNetwork } from "@config";
 import { env } from "./../../env";
+import {
+  DEFAULT_TORII_SETTING,
+  isToriiSetting,
+  resolveToriiUrlForSetting,
+  resolveUnavailableToriiFallbackSetting,
+} from "./torii-setting";
+
+export { DEFAULT_TORII_SETTING } from "./torii-setting";
 
 type ConfigResolutionOptions = {
   chain?: Chain;
@@ -36,33 +43,24 @@ export const ETERNUM_CONFIG = (options: ConfigResolutionOptions = {}) => {
 };
 
 export const TORII_SETTING = async (): Promise<string> => {
-  let toriiSetting = localStorage.getItem("TORII_SETTING") as ToriiSetting;
-  if (!toriiSetting) {
-    localStorage.setItem("TORII_SETTING", DEFAULT_TORII_SETTING);
-    toriiSetting = DEFAULT_TORII_SETTING;
+  const toriiSetting = readToriiSetting();
+  const toriiUrl = resolveToriiUrlForSetting(toriiSetting, env.VITE_PUBLIC_TORII);
+
+  if (await doAliveCheck(toriiUrl)) {
+    return toriiUrl;
   }
 
-  let toriiUrl = settingToUrl(toriiSetting);
+  const fallbackSetting = resolveUnavailableToriiFallbackSetting(toriiSetting, {
+    chain: env.VITE_PUBLIC_CHAIN as Chain,
+    isDev: import.meta.env.DEV,
+  });
 
-  const isAlive = await doAliveCheck(toriiUrl);
-
-  if (!isAlive) {
-    const newSetting = getOppositeSetting(toriiSetting);
-    localStorage.setItem("TORII_SETTING", newSetting);
-    toriiUrl = settingToUrl(newSetting);
+  if (!fallbackSetting) {
+    return toriiUrl;
   }
 
-  return toriiUrl;
-};
-
-export const DEFAULT_TORII_SETTING = ToriiSetting.Remote;
-
-const settingToUrl = (setting: ToriiSetting) => {
-  return setting === ToriiSetting.Local ? "http://localhost:8080" : env.VITE_PUBLIC_TORII;
-};
-
-const getOppositeSetting = (setting: ToriiSetting) => {
-  return setting === ToriiSetting.Local ? ToriiSetting.Remote : ToriiSetting.Local;
+  localStorage.setItem("TORII_SETTING", fallbackSetting);
+  return resolveToriiUrlForSetting(fallbackSetting, env.VITE_PUBLIC_TORII);
 };
 
 const doAliveCheck = async (url: string) => {
@@ -72,4 +70,14 @@ const doAliveCheck = async (url: string) => {
   } catch {
     return false;
   }
+};
+
+const readToriiSetting = () => {
+  const storedSetting = localStorage.getItem("TORII_SETTING");
+  if (isToriiSetting(storedSetting)) {
+    return storedSetting;
+  }
+
+  localStorage.setItem("TORII_SETTING", DEFAULT_TORII_SETTING);
+  return DEFAULT_TORII_SETTING;
 };

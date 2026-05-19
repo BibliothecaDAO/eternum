@@ -26,7 +26,10 @@ import { env } from "../../env";
 import { resolveInitialStructureSelection } from "./sync-initial-selection";
 import { isDeletionPayload } from "./sync-utils";
 import { ToriiSyncWorkerManager } from "./sync-worker-manager";
-import { GLOBAL_SPATIAL_MAP_MODEL_NAMES, GLOBAL_SPATIAL_MAP_SNAPSHOT_MODELS } from "./torii-spatial-models";
+import {
+  GLOBAL_SPATIAL_MAP_BOOTSTRAP_MODEL_NAMES,
+  GLOBAL_SPATIAL_MAP_BOOTSTRAP_SNAPSHOT_MODELS,
+} from "./torii-spatial-models";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
 import {
   setupToriiSubscriptions,
@@ -138,7 +141,7 @@ const GLOBAL_EVENT_MODELS: string[] = [
 
 const GLOBAL_EVENT_STREAM_MODELS: GlobalModelStreamConfig[] = GLOBAL_EVENT_MODELS.map((model) => ({ model }));
 const GLOBAL_EVENT_STREAM_CLAUSE = buildModelKeysClause(GLOBAL_EVENT_STREAM_MODELS);
-const GLOBAL_SPATIAL_MAP_SNAPSHOT_CLAUSE = buildModelKeysClause(GLOBAL_SPATIAL_MAP_SNAPSHOT_MODELS);
+const GLOBAL_SPATIAL_MAP_BOOTSTRAP_SNAPSHOT_CLAUSE = buildModelKeysClause(GLOBAL_SPATIAL_MAP_BOOTSTRAP_SNAPSHOT_MODELS);
 
 type BatchPayload = { upserts: ToriiEntity[]; deletions: string[] };
 type SyncEntityReadinessMatcher = (data: ToriiEntity) => boolean;
@@ -640,7 +643,7 @@ async function runRequiredToriiOperationWithTimeout<T>(input: {
   });
 }
 
-async function hydrateGlobalSpatialMapSnapshot(input: {
+async function hydrateGlobalSpatialBootstrapSnapshot(input: {
   setup: SetupResult;
   logging: boolean;
   timeoutMs: number;
@@ -649,16 +652,16 @@ async function hydrateGlobalSpatialMapSnapshot(input: {
   const snapshotStart = performance.now();
   try {
     await runRequiredToriiOperationWithTimeout({
-      label: "global spatial map snapshot",
+      label: "global spatial map bootstrap snapshot",
       timeoutMs: input.timeoutMs,
       onTimeout: input.onTimeout,
       operation: () =>
         getEntitiesSnapshot(
           input.setup.network.toriiClient,
-          GLOBAL_SPATIAL_MAP_SNAPSHOT_CLAUSE,
+          GLOBAL_SPATIAL_MAP_BOOTSTRAP_SNAPSHOT_CLAUSE,
           input.setup.network.contractComponents as unknown as Component<Schema, Metadata, undefined>[],
           [],
-          [...GLOBAL_SPATIAL_MAP_MODEL_NAMES],
+          [...GLOBAL_SPATIAL_MAP_BOOTSTRAP_MODEL_NAMES],
           EVENT_QUERY_LIMIT,
           input.logging,
         ),
@@ -668,7 +671,7 @@ async function hydrateGlobalSpatialMapSnapshot(input: {
   }
 }
 
-async function syncGlobalSpatialMapSnapshot(input: {
+async function syncGlobalSpatialBootstrapSnapshot(input: {
   setup: SetupResult;
   logging: boolean;
   subscriptionSetupTimeoutMs: number;
@@ -676,7 +679,7 @@ async function syncGlobalSpatialMapSnapshot(input: {
 }): Promise<void> {
   const totalStart = performance.now();
   try {
-    await hydrateGlobalSpatialMapSnapshot({
+    await hydrateGlobalSpatialBootstrapSnapshot({
       setup: input.setup,
       logging: input.logging,
       timeoutMs: input.subscriptionSetupTimeoutMs,
@@ -731,7 +734,7 @@ export const initialSync = async (
     );
     useConnectionStore.getState().recordGlobalHandshake();
 
-    await syncGlobalSpatialMapSnapshot({
+    await syncGlobalSpatialBootstrapSnapshot({
       setup,
       logging,
       subscriptionSetupTimeoutMs,

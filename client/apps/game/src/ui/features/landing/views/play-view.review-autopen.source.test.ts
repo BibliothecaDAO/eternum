@@ -8,14 +8,33 @@ import { describe, expect, it } from "vitest";
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
 describe("PlayView review auto-open", () => {
-  it("only auto-opens game review for connected players registered in the ended game", () => {
+  it("does not auto-open game reviews from the landing play page", () => {
     const source = readSource("src/ui/features/landing/views/play-view.tsx");
 
-    expect(source).toContain("const hasConnectedAccountAddress");
-    expect(source).toContain(
-      'return game.gameStatus === "ended" && Boolean(game.worldAddress) && game.isRegistered === true;',
-    );
-    expect(source).toContain("if (!hasConnectedAccountAddress(account?.address)) return;");
-    expect(source).toContain("const candidate = resolveGameReviewCandidate(endedGames);");
+    expect(source).not.toContain("shouldAutoOpenGameReview");
+    expect(source).not.toContain("resolveGameReviewCandidate");
+    expect(source).not.toContain("onEndedGamesResolved");
+    expect(source).not.toContain("endedGames");
+    expect(source).not.toContain("isGameReviewDismissed");
+  });
+
+  it("keeps landing review actions manual", () => {
+    const source = readSource("src/ui/features/landing/views/play-view.tsx");
+
+    expect(source).toContain("const handleSeeScore = useCallback");
+    expect(source).toContain("const handleClaimRewards = useCallback");
+    expect(source).toContain('setReviewInitialStep("claim-rewards");');
+    expect(source).toContain("setReviewWorld(selection);");
+    expect(source).toContain("<GameReviewModal");
+  });
+
+  it("keeps automatic review prompting owned by the in-game endgame flow", () => {
+    const source = readSource("src/ui/shared/components/endgame-modal.tsx");
+
+    expect(source).toContain("export const EndgameModal");
+    expect(source).toContain("isGameReviewDismissed");
+    expect(source).toContain("const handleOpenReview = useCallback");
+    expect(source).toContain("<GameIsOverModal");
+    expect(source).toContain("<GameReviewModal");
   });
 });

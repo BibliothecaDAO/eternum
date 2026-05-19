@@ -5,6 +5,7 @@ import {
   DEFAULT_STANDALONE_AMMV2_ROUTER_ADDRESS,
 } from "@bibliothecadao/ammv2-sdk";
 import { getSelectedChain } from "./src/runtime/world/store";
+import { assertPublicEnvConsistency } from "./src/utils/public-env-consistency";
 
 const _rawEnv = import.meta.env as Record<string, string | undefined>;
 
@@ -295,9 +296,12 @@ try {
     ...import.meta.env,
     VITE_PUBLIC_AMM_ROUTER_ADDRESS: resolveLegacyAmmRouterAddress(_rawEnv),
   });
+  assertPublicEnvConsistency(env);
 } catch (error) {
   if (error instanceof z.ZodError) {
     console.error("❌ Invalid environment variables:", JSON.stringify(error.errors, null, 2));
+  } else {
+    console.error("❌ Invalid environment variables:", error);
   }
   throw new Error("Invalid environment variables");
 }

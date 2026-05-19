@@ -302,7 +302,11 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   }, [shouldTrackReconnectGrace, location.pathname, location.search]);
 
   const connectWallet = useCallback(() => {
-    if (isConnected || isConnecting) {
+    if (isConnecting) {
+      return;
+    }
+
+    if (isConnected && resolvedAccount) {
       return;
     }
 
@@ -315,7 +319,7 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     void connectWithControllerRetry(connectAsync, primaryConnector).catch((error) => {
       console.error("Unable to connect wallet:", error);
     });
-  }, [connectAsync, connectors, isConnected, isConnecting]);
+  }, [connectAsync, connectors, isConnected, isConnecting, resolvedAccount]);
 
   const phase = resolveBootPhase({
     bootstrapError: bootstrap.error,

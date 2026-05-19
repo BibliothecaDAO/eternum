@@ -8,17 +8,25 @@ const retryMock = vi.fn();
 const setAccountNameMock = vi.fn();
 const setShowBlankOverlayMock = vi.fn();
 const useGameEntryBootstrapControllerMock = vi.fn();
+const starknetReactState = vi.hoisted(() => ({
+  account: null as unknown,
+  connector: null as unknown,
+  controllerAccount: null as unknown,
+  connectors: [] as unknown[],
+  isConnected: false,
+  isConnecting: false,
+}));
 
 vi.mock("@starknet-react/core", () => ({
   useAccount: () => ({
-    account: null,
-    connector: null,
-    isConnected: false,
-    isConnecting: false,
+    account: starknetReactState.account,
+    connector: starknetReactState.connector,
+    isConnected: starknetReactState.isConnected,
+    isConnecting: starknetReactState.isConnecting,
   }),
   useConnect: () => ({
     connectAsync: connectAsyncMock,
-    connectors: [],
+    connectors: starknetReactState.connectors,
   }),
 }));
 
@@ -27,7 +35,7 @@ vi.mock("@/game-entry/bootstrap-controller", () => ({
 }));
 
 vi.mock("@/hooks/context/use-controller-account", () => ({
-  useControllerAccount: () => null,
+  useControllerAccount: () => starknetReactState.controllerAccount,
 }));
 
 vi.mock("@/hooks/store/use-account-store", () => ({
@@ -52,8 +60,10 @@ vi.mock("@/hooks/use-cartridge-username", () => ({
 const { usePlayRouteBootController } = await import("./play-route-boot");
 const { usePlayRouteReadinessStore } = await import("./play-route-readiness-store");
 
+let latestBootController: ReturnType<typeof usePlayRouteBootController> | null = null;
+
 const BootControllerHarness = () => {
-  usePlayRouteBootController();
+  latestBootController = usePlayRouteBootController();
   return null;
 };
 
@@ -90,6 +100,13 @@ describe("usePlayRouteBootController", () => {
     setShowBlankOverlayMock.mockReset();
     useGameEntryBootstrapControllerMock.mockReset();
     useGameEntryBootstrapControllerMock.mockReturnValue(createIdleBootstrapControllerState());
+    starknetReactState.account = null;
+    starknetReactState.connector = null;
+    starknetReactState.controllerAccount = null;
+    starknetReactState.connectors = [];
+    starknetReactState.isConnected = false;
+    starknetReactState.isConnecting = false;
+    latestBootController = null;
     usePlayRouteReadinessStore.getState().reset(0);
   });
 
@@ -114,5 +131,45 @@ describe("usePlayRouteBootController", () => {
     expect(getRenderPhaseUpdateWarnings(consoleErrorMock)).toEqual([]);
     expect(usePlayRouteReadinessStore.getState().bootToken).toBe(1);
     expect(setShowBlankOverlayMock).toHaveBeenCalledWith(true);
+  });
+
+  it("retries controller connection when Starknet is connected without a resolved controller account", async () => {
+    const connector = { id: "controller" };
+    starknetReactState.connectors = [connector];
+    starknetReactState.isConnected = true;
+    connectAsyncMock.mockResolvedValue(undefined);
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={["/play/mainnet/iron-age/map"]}>
+          <BootControllerHarness />
+        </MemoryRouter>,
+      );
+    });
+
+    latestBootController?.connectWallet();
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(connectAsyncMock).toHaveBeenCalledWith({ connector });
+  });
+
+  it("does not reconnect when Starknet and the controller account are both resolved", async () => {
+    starknetReactState.connectors = [{ id: "controller" }];
+    starknetReactState.controllerAccount = { address: "0x123" };
+    starknetReactState.isConnected = true;
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={["/play/mainnet/iron-age/map"]}>
+          <BootControllerHarness />
+        </MemoryRouter>,
+      );
+    });
+
+    latestBootController?.connectWallet();
+
+    expect(connectAsyncMock).not.toHaveBeenCalled();
   });
 });
