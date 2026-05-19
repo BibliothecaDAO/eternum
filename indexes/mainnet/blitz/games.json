@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-19T10:02:16.785Z",
+  "updatedAt": "2026-05-19T11:40:17.920Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -846,7 +846,7 @@
       "path": "runs/mainnet/blitz/sourdough.json",
       "inputPath": "inputs/mainnet/blitz/sourdough/26087729375-1.json",
       "status": "complete",
-      "updatedAt": "2026-05-19T09:32:15.734Z",
+      "updatedAt": "2026-05-19T11:40:17.920Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -857,7 +857,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "legendary",
-        "lastIndexerDescribeAt": "2026-05-19T09:32:15.734Z"
+        "lastIndexerDescribeAt": "2026-05-19T09:32:15.734Z",
+        "pendingIndexerTierTarget": "pro",
+        "pendingIndexerTierRequestedAt": "2026-05-19T11:40:16.565Z"
       }
     },
     "bltz-nova-590": {
