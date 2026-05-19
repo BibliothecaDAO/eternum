@@ -22,10 +22,13 @@ describe("network boot-regression guards", () => {
     expect(source).toMatch(/cancelEntityStreamSubscription[\s\S]*?if \(isInitialSyncInFlight\) return/);
   });
 
-  it("sync.ts resets the spatial handshake clock after global spatial map snapshot is applied", () => {
+  it("sync.ts keeps Structure owners out of the global spatial bootstrap snapshot", () => {
     const source = readSource("src/dojo/sync.ts");
+    const spatialModelsSource = readSource("src/dojo/torii-spatial-models.ts");
 
-    expect(source).toContain("syncGlobalSpatialMapSnapshot");
+    expect(spatialModelsSource).toContain('GLOBAL_SPATIAL_OWNER_MODEL_NAME = "s1_eternum-Structure"');
+    expect(spatialModelsSource).toContain("model !== GLOBAL_SPATIAL_OWNER_MODEL_NAME");
+    expect(source).toContain("syncGlobalSpatialBootstrapSnapshot");
     expect(source).not.toContain("spatialMapStreamSubscription");
     expect(source).toContain("recordSpatialHandshake()");
   });
