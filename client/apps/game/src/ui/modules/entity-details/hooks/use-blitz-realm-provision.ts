@@ -9,7 +9,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { CallData } from "starknet";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getRealmInfo } from "@bibliothecadao/eternum";
+import { getBuildingCount, getRealmInfo } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
 import { BuildingType, ContractAddress, StructureType } from "@bibliothecadao/types";
 import { dojoConfig } from "../../../../../dojo-config";
@@ -22,6 +22,11 @@ type LiveRealmInfo = NonNullable<ReturnType<typeof getRealmInfo>>;
 type RealmProvisionSyncTarget = Parameters<typeof getStructuresDataFromTorii>[2][number];
 type RealmProvisionToriiComponents = Parameters<typeof getStructuresDataFromTorii>[1];
 type RealmProvisionActionStatus = "idle" | "submitting" | "syncing" | "syncTimeout";
+type StructureBuildingsCounts = {
+  packed_counts_1?: bigint | number | string;
+  packed_counts_2?: bigint | number | string;
+  packed_counts_3?: bigint | number | string;
+};
 
 interface StructureProvisionResult {
   canProvision: boolean;
@@ -59,6 +64,41 @@ const resolveRealmProvisionToriiComponents = (contractComponents: unknown): Real
 
 const hasProvisionBuilding = (buildings: Array<{ category: number }> | null | undefined) =>
   Boolean(buildings?.some((building) => building?.category === BuildingType.ResourceLabor));
+
+const readPackedCount = (value: bigint | number | string | undefined): bigint => {
+  if (value === undefined) {
+    return 0n;
+  }
+
+  return BigInt(value);
+};
+
+const resolvePackedBuildingCounts = (structureBuildings: unknown): bigint[] | null => {
+  if (!structureBuildings || typeof structureBuildings !== "object") {
+    return null;
+  }
+
+  const counts = structureBuildings as StructureBuildingsCounts;
+  return [
+    readPackedCount(counts.packed_counts_1),
+    readPackedCount(counts.packed_counts_2),
+    readPackedCount(counts.packed_counts_3),
+  ];
+};
+
+const hasProvisionBuildingCount = (structureBuildings: unknown): boolean => {
+  const packedCounts = resolvePackedBuildingCounts(structureBuildings);
+  if (!packedCounts) {
+    return false;
+  }
+
+  return getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0;
+};
+
+const isAlreadyProvisionedError = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes("realm is already provisioned");
+};
 
 const syncRealmStructureIfPossible = async ({
   toriiClient,
@@ -135,7 +175,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
   const isBlitzWorld = resolvedWorldGameMode === "blitz";
   const ownerAddress = account.account?.address ? ContractAddress(account.account.address) : null;
   const isOwner = Boolean(structureInfo && ownerAddress && structureInfo.owner === ownerAddress);
-  const isProvisioned = hasProvisionBuilding(realmBuildings);
+  const isProvisioned = hasProvisionBuildingCount(liveStructureBuildings) || hasProvisionBuilding(realmBuildings);
   const isMainPhase = hasMainStarted(currentBlockTimestamp, gameStartMainAt);
   const isSeasonOver = hasSeasonEnded(currentBlockTimestamp, gameEndAt);
   const canProvision = Boolean(isBlitzWorld && isRealm && isOwner && isMainPhase && !isSeasonOver && !isProvisioned);
@@ -222,10 +262,20 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
 
       setProvisionActionState("syncing");
     } catch (error) {
+      if (isAlreadyProvisionedError(error) && syncTarget) {
+        setProvisionActionState("syncing");
+        await syncRealmStructureIfPossible({
+          toriiClient: network.toriiClient,
+          contractComponents: toriiComponents,
+          syncTarget,
+        });
+        return;
+      }
+
       setProvisionActionState("idle");
       throw error;
     }
-  }, [account.account, canProvision, structureInfo]);
+  }, [account.account, canProvision, network.toriiClient, structureInfo, syncTarget, toriiComponents]);
 
   if (!structureInfo) {
     return null;

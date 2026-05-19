@@ -11,8 +11,9 @@ describe("global spatial setup-timeout wiring", () => {
   it("routes global spatial snapshot timeout reporting through initial sync", () => {
     const source = readSource("src/dojo/sync.ts");
     const start = source.indexOf("async function hydrateGlobalSpatialMapSnapshot");
-    const end = source.indexOf("async function subscribeGlobalSpatialMapStream", start);
+    const end = source.indexOf("async function syncGlobalSpatialMapSnapshot", start);
     expect(start).toBeGreaterThan(-1);
+    expect(end).toBeGreaterThan(start);
     const methodSource = source.slice(start, end);
 
     expect(methodSource).toContain('label: "global spatial map snapshot"');
@@ -20,16 +21,16 @@ describe("global spatial setup-timeout wiring", () => {
     expect(methodSource).toContain("recordGameEntryDuration");
   });
 
-  it("routes global spatial subscription setup timeout reporting through initial sync", () => {
+  it("keeps live global spatial updates owned by the all-entity stream", () => {
     const source = readSource("src/dojo/sync.ts");
-    const start = source.indexOf("async function subscribeGlobalSpatialMapStream");
-    const end = source.indexOf("async function syncGlobalSpatialMapStream", start);
+    const start = source.indexOf("async function syncGlobalSpatialMapSnapshot");
+    const end = source.indexOf("// initial sync runs before the game is playable", start);
     expect(start).toBeGreaterThan(-1);
     const methodSource = source.slice(start, end);
 
-    expect(methodSource).toContain('streamType: "spatial"');
-    expect(methodSource).toContain("onSubscriptionSetupTimeout: input.onSubscriptionSetupTimeout");
-    expect(methodSource).toContain("readyOnSubscriptionsReady: true");
+    expect(source).not.toContain("async function subscribeGlobalSpatialMapStream");
+    expect(methodSource).toContain("hydrateGlobalSpatialMapSnapshot");
+    expect(methodSource).not.toContain("syncEntitiesDebounced");
   });
 
   it("keeps worldmap free of the removed per-bounds timeout toast path", () => {

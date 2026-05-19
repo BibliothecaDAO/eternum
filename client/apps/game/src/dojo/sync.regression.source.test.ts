@@ -22,11 +22,11 @@ describe("network boot-regression guards", () => {
     expect(source).toMatch(/cancelEntityStreamSubscription[\s\S]*?if \(isInitialSyncInFlight\) return/);
   });
 
-  it("sync.ts resets the spatial handshake clock after global spatial map sync is applied", () => {
+  it("sync.ts resets the spatial handshake clock after global spatial map snapshot is applied", () => {
     const source = readSource("src/dojo/sync.ts");
 
-    expect(source).toContain("syncGlobalSpatialMapStream");
-    expect(source).toContain("spatialMapStreamSubscription");
+    expect(source).toContain("syncGlobalSpatialMapSnapshot");
+    expect(source).not.toContain("spatialMapStreamSubscription");
     expect(source).toContain("recordSpatialHandshake()");
   });
 
