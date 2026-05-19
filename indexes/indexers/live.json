@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-19T05:56:57.254Z",
+  "updatedAt": "2026-05-19T06:11:54.115Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2443,13 +2443,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-stomp-141/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-19T04:27:03.365Z"
+        "describedAt": "2026-05-19T06:11:54.115Z"
       },
-      "updatedAt": "2026-05-19T04:27:03.365Z"
+      "updatedAt": "2026-05-19T06:11:54.115Z"
     },
     "bltz-ping-626": {
       "gameName": "bltz-ping-626",
