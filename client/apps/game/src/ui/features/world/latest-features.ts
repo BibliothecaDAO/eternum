@@ -22,6 +22,62 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-19",
+    title: "Relic Tab States",
+    description:
+      "Improved army and structure HUD relic cues so empty relic tabs look disabled, stored relics stay accessible, and activatable army relics appear directly in the default HUD.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Balanced Relic Cues",
+    description:
+      "Refined the army and structure HUD relic counts into a quieter usable/total cue that keeps available relics clear without overwhelming the tab.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Relic Count Cues",
+    description:
+      "Improved army and structure HUD relic cues so usable relics stand out while total relic quantities stay visible at a glance.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Usable Relic Alerts",
+    description:
+      "Army and structure HUD tabs now show a compact action cue when the selected entity has relics ready to activate.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Accurate Supply Readiness",
+    description:
+      "Fixed army readiness icons so travel and explore each reflect their own stamina and food requirements before you commit a movement action.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Relic Usability Cues",
+    description:
+      "Relic inventory cards now use different borders to show which relics match the selected army or structure before activation.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Clearer HUD Tabs",
+    description:
+      "Improved the selected army and structure HUD tabs so their bottom icon controls look clickable and the active section is easier to spot.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-17",
     title: "Map Streaming Stability",
     description:

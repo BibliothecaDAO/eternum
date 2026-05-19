@@ -34,6 +34,7 @@ interface CompactEntityInventoryProps {
   maxItems?: number;
   filter?: CompactInventoryFilter;
   emptyMessage?: string;
+  showHiddenCount?: boolean;
   /**
    * When > 0, renders the first `heroCount` items in a larger, higher-contrast
    * row above the tight grid. Useful for surfacing the highest-priority
@@ -42,7 +43,7 @@ interface CompactEntityInventoryProps {
   heroCount?: number;
 }
 
-type CompactInventoryFilter = "all" | "resources" | "relics";
+type CompactInventoryFilter = "all" | "resources" | "relics" | "usableRelics";
 
 interface DisplayItem {
   resourceId: number;
@@ -51,6 +52,8 @@ interface DisplayItem {
   isActive: boolean;
   canActivate: boolean;
 }
+
+type InventoryItemVariant = "default" | "hero";
 
 const compactInventoryFormatter = new Intl.NumberFormat("en-US", {
   notation: "compact",
@@ -151,6 +154,7 @@ export const buildDisplayItems = (
 export const filterDisplayItems = (items: DisplayItem[], filter: CompactInventoryFilter = "all") => {
   if (filter === "resources") return items.filter((item) => !item.isRelic);
   if (filter === "relics") return items.filter((item) => item.isRelic);
+  if (filter === "usableRelics") return items.filter((item) => item.isRelic && item.canActivate && !item.isActive);
   return items;
 };
 
@@ -162,8 +166,33 @@ export const countDisplayItems = (items: DisplayItem[]) => {
     resources: items.length - relics.length,
     relics: relics.length,
     activeRelics: relics.filter((item) => item.isActive).length,
+    totalRelics: sumDisplayItemAmounts(relics),
+    usableRelics: sumDisplayItemAmounts(relics.filter((item) => item.canActivate && !item.isActive)),
   };
 };
+
+const sumDisplayItemAmounts = (items: DisplayItem[]) =>
+  items.reduce((total, item) => total + Math.max(0, Math.floor(item.amount)), 0);
+
+const getResourceItemClass = (variant: InventoryItemVariant) =>
+  variant === "hero"
+    ? "border-gold/45 bg-[linear-gradient(180deg,rgba(56,40,14,0.95),rgba(10,10,10,0.96))]"
+    : "border-gold/25 bg-[linear-gradient(180deg,rgba(28,21,9,0.9),rgba(8,8,8,0.95))]";
+
+const getRelicItemClass = (item: DisplayItem) => {
+  if (item.isActive) {
+    return "border-relic2/70 bg-[linear-gradient(180deg,rgba(165,124,255,0.2),rgba(14,10,22,0.92))] shadow-[inset_0_1px_0_rgba(210,185,255,0.18),0_0_12px_rgba(165,124,255,0.16)]";
+  }
+
+  if (item.canActivate) {
+    return "border-gold/80 bg-[linear-gradient(180deg,rgba(166,117,34,0.22),rgba(22,12,30,0.94))] shadow-[inset_0_1px_0_rgba(255,214,102,0.22),0_0_14px_rgba(223,170,84,0.16)]";
+  }
+
+  return "border-dashed border-relic2/25 bg-[linear-gradient(180deg,rgba(100,76,160,0.08),rgba(10,8,16,0.94))] text-gold/65";
+};
+
+const getInventoryItemClass = (item: DisplayItem, variant: InventoryItemVariant) =>
+  item.isRelic ? getRelicItemClass(item) : getResourceItemClass(variant);
 
 export const CompactEntityInventory = memo(
   ({
@@ -179,6 +208,7 @@ export const CompactEntityInventory = memo(
     maxItems,
     filter = "all",
     emptyMessage = "No inventory.",
+    showHiddenCount = true,
     heroCount = 0,
   }: CompactEntityInventoryProps) => {
     const toggleModal = useUIStore((state) => state.toggleModal);
@@ -237,29 +267,26 @@ export const CompactEntityInventory = memo(
 
     const renderItem = (item: DisplayItem, options: { hero: boolean }) => {
       const resourceDef = resourceDefs.find((r) => r.id === item.resourceId);
-      const isClickableRelic =
-        allowRelicActivation && item.isRelic && item.canActivate && !item.isActive && entityId && entityType != null;
+      const relicInfo = item.isRelic ? getRelicInfo(item.resourceId) : undefined;
+      const itemName = relicInfo?.name ?? resourceDef?.trait ?? ResourcesIds[item.resourceId] ?? "resource";
+      const isActivatableRelic = item.isRelic && item.canActivate && !item.isActive;
+      const isClickableRelic = allowRelicActivation && isActivatableRelic && entityId && entityType != null;
 
       const heroPadding = "px-2.5 py-2";
       const heroIconSize = "sm";
       const heroAmountClass = "text-base font-bold";
+      const itemVariant = options.hero ? "hero" : "default";
 
       const itemClasses = cn(
-        "flex h-full w-full flex-col items-center justify-center rounded-xl border text-center shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
+        "flex h-full w-full appearance-none flex-col items-center justify-center rounded-xl border text-center normal-case [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
         options.hero ? heroPadding : compactItemClass,
-        item.isRelic
-          ? item.isActive
-            ? "border-relic2/60 bg-[linear-gradient(180deg,rgba(165,124,255,0.18),rgba(14,10,22,0.92))]"
-            : "border-relic2/40 bg-[linear-gradient(180deg,rgba(137,98,233,0.12),rgba(10,8,16,0.94))]"
-          : options.hero
-            ? "border-gold/45 bg-[linear-gradient(180deg,rgba(56,40,14,0.95),rgba(10,10,10,0.96))]"
-            : "border-gold/25 bg-[linear-gradient(180deg,rgba(28,21,9,0.9),rgba(8,8,8,0.95))]",
+        getInventoryItemClass(item, itemVariant),
         isClickableRelic &&
-          "cursor-pointer transition-colors duration-150 hover:border-gold/60 hover:bg-gold/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
+          "cursor-pointer transition-[background-color,border-color,box-shadow] duration-150 hover:border-gold hover:bg-gold/15 hover:shadow-[inset_0_1px_0_rgba(255,214,102,0.28),0_0_18px_rgba(223,170,84,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
       );
 
-      return (
-        <div key={`inventory-item-${item.resourceId}`} className={itemClasses} onClick={() => handleRelicClick(item)}>
+      const itemContent = (
+        <>
           <ResourceIcon
             resource={ResourcesIds[item.resourceId]}
             size={options.hero ? heroIconSize : iconSize}
@@ -274,6 +301,31 @@ export const CompactEntityInventory = memo(
             </span>
           )}
           {item.isRelic && item.isActive && <Sparkles className="mt-1 h-3 w-3 text-relic2" />}
+        </>
+      );
+
+      if (isClickableRelic) {
+        return (
+          <button
+            key={`inventory-item-${item.resourceId}`}
+            type="button"
+            className={itemClasses}
+            onClick={() => handleRelicClick(item)}
+            aria-label={`Activate ${itemName}`}
+            title={`Activate ${itemName}`}
+          >
+            {itemContent}
+          </button>
+        );
+      }
+
+      return (
+        <div
+          key={`inventory-item-${item.resourceId}`}
+          className={itemClasses}
+          title={item.isRelic && !item.canActivate ? `${itemName} cannot be used by this entity` : itemName}
+        >
+          {itemContent}
         </div>
       );
     };
@@ -286,7 +338,7 @@ export const CompactEntityInventory = memo(
         {regularItems.length > 0 && (
           <div className={cn(baseGrid)}>{regularItems.map((item) => renderItem(item, { hero: false }))}</div>
         )}
-        {hiddenCount > 0 && (
+        {showHiddenCount && hiddenCount > 0 && (
           <span className="text-[10px] text-gold/60">
             Showing {visibleItems.length} of {displayItems.length}
           </span>

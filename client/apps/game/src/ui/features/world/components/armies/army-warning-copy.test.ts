@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatArmyFoodRequirement,
   getArmyFoodRequirementLabel,
+  getArmyMovementFoodRequirementWarnings,
   getArmyReadinessTitle,
   getArmyStaminaRequirementWarnings,
 } from "./army-warning-copy";
@@ -43,7 +44,8 @@ describe("getArmyReadinessTitle", () => {
       getArmyReadinessTitle({
         hasTravelStaminaWarning: true,
         hasExploreStaminaWarning: true,
-        notEnoughFood: true,
+        hasTravelFoodWarning: false,
+        hasExploreFoodWarning: true,
       }),
     ).toBe("Travel and explore blocked");
   });
@@ -53,9 +55,47 @@ describe("getArmyReadinessTitle", () => {
       getArmyReadinessTitle({
         hasTravelStaminaWarning: false,
         hasExploreStaminaWarning: false,
-        notEnoughFood: true,
+        hasTravelFoodWarning: false,
+        hasExploreFoodWarning: true,
       }),
     ).toBe("Explore blocked");
+  });
+
+  it("reports travel blocking when only travel requirements are missing", () => {
+    expect(
+      getArmyReadinessTitle({
+        hasTravelStaminaWarning: false,
+        hasExploreStaminaWarning: false,
+        hasTravelFoodWarning: true,
+        hasExploreFoodWarning: false,
+      }),
+    ).toBe("Travel blocked");
+  });
+});
+
+describe("getArmyMovementFoodRequirementWarnings", () => {
+  it("blocks travel when the army cannot afford one travel food step", () => {
+    const warnings = getArmyMovementFoodRequirementWarnings({
+      travelFoodCosts: { wheatPayAmount: 30, fishPayAmount: 0 },
+      exploreFoodCosts: { wheatPayAmount: 100, fishPayAmount: 0 },
+      food: { wheat: 20, fish: 0 },
+    });
+
+    expect(warnings.travel).toEqual({ missingWheat: 10, missingFish: 0, hasWarning: true });
+    expect(warnings.explore).toEqual({ missingWheat: 80, missingFish: 0, hasWarning: true });
+    expect(warnings.combined).toEqual({ missingWheat: 80, missingFish: 0, hasWarning: true });
+  });
+
+  it("keeps travel ready when only the explore food requirement is short", () => {
+    const warnings = getArmyMovementFoodRequirementWarnings({
+      travelFoodCosts: { wheatPayAmount: 30, fishPayAmount: 0 },
+      exploreFoodCosts: { wheatPayAmount: 100, fishPayAmount: 0 },
+      food: { wheat: 40, fish: 0 },
+    });
+
+    expect(warnings.travel.hasWarning).toBe(false);
+    expect(warnings.explore).toEqual({ missingWheat: 60, missingFish: 0, hasWarning: true });
+    expect(warnings.combined).toEqual({ missingWheat: 60, missingFish: 0, hasWarning: true });
   });
 });
 

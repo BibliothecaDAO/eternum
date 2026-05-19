@@ -25,6 +25,62 @@ export const formatArmyFoodRequirement = ({
   return `${missingParts.slice(0, -1).join(", ")} and ${missingParts[missingParts.length - 1]}`;
 };
 
+interface ArmyFoodRequirement {
+  wheatPayAmount: number;
+  fishPayAmount: number;
+}
+
+interface ArmyFoodBalance {
+  wheat: number;
+  fish: number;
+}
+
+interface ArmyFoodRequirementWarning {
+  missingWheat: number;
+  missingFish: number;
+  hasWarning: boolean;
+}
+
+const getArmyFoodRequirementWarning = ({
+  costs,
+  food,
+}: {
+  costs: ArmyFoodRequirement;
+  food: ArmyFoodBalance;
+}): ArmyFoodRequirementWarning => {
+  const missingWheat = Math.max(0, costs.wheatPayAmount - food.wheat);
+  const missingFish = Math.max(0, costs.fishPayAmount - food.fish);
+
+  return {
+    missingWheat,
+    missingFish,
+    hasWarning: missingWheat > 0 || missingFish > 0,
+  };
+};
+
+export const getArmyMovementFoodRequirementWarnings = ({
+  travelFoodCosts,
+  exploreFoodCosts,
+  food,
+}: {
+  travelFoodCosts: ArmyFoodRequirement;
+  exploreFoodCosts: ArmyFoodRequirement;
+  food: ArmyFoodBalance;
+}) => {
+  const travel = getArmyFoodRequirementWarning({ costs: travelFoodCosts, food });
+  const explore = getArmyFoodRequirementWarning({ costs: exploreFoodCosts, food });
+
+  return {
+    travel,
+    explore,
+    combined: {
+      missingWheat: Math.max(travel.missingWheat, explore.missingWheat),
+      missingFish: Math.max(travel.missingFish, explore.missingFish),
+      hasWarning: travel.hasWarning || explore.hasWarning,
+    },
+  };
+};
+
 export const getArmyStaminaRequirementWarnings = ({
   currentStamina,
   minTravelStamina,
@@ -41,13 +97,20 @@ export const getArmyStaminaRequirementWarnings = ({
 export const getArmyReadinessTitle = ({
   hasTravelStaminaWarning,
   hasExploreStaminaWarning,
-  notEnoughFood,
+  hasTravelFoodWarning,
+  hasExploreFoodWarning,
 }: {
   hasTravelStaminaWarning: boolean;
   hasExploreStaminaWarning: boolean;
-  notEnoughFood: boolean;
+  hasTravelFoodWarning: boolean;
+  hasExploreFoodWarning: boolean;
 }): string => {
-  if (hasTravelStaminaWarning) return "Travel and explore blocked";
-  if (hasExploreStaminaWarning || notEnoughFood) return "Explore blocked";
+  const travelBlocked = hasTravelStaminaWarning || hasTravelFoodWarning;
+  const exploreBlocked = hasExploreStaminaWarning || hasExploreFoodWarning;
+
+  if (travelBlocked && exploreBlocked) return "Travel and explore blocked";
+  if (travelBlocked) return "Travel blocked";
+  if (exploreBlocked) return "Explore blocked";
+
   return "Ready to travel or explore";
 };

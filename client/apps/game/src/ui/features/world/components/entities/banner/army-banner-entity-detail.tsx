@@ -26,8 +26,13 @@ import { ArmyWarning } from "../../armies/army-warning";
 import { buildDisplayItems, CompactEntityInventory, countDisplayItems } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
-import { EntityBannerTabCue } from "./entity-banner-tab-cue";
-import { ARMY_RESOURCE_INVENTORY_TAB_LABEL, shouldShowArmyResourceInventoryTab } from "./army-banner-tabs";
+import { EntityBannerTabCue, resolveEntityBannerRelicCue } from "./entity-banner-tab-cue";
+import {
+  ARMY_RESOURCE_INVENTORY_TAB_LABEL,
+  formatArmyCombatTabCue,
+  formatArmyTroopCountLabel,
+  shouldShowArmyResourceInventoryTab,
+} from "./army-banner-tabs";
 
 interface ArmyBannerEntityDetailProps {
   armyEntityId: ID;
@@ -40,19 +45,6 @@ interface ArmyBannerEntityDetailProps {
 interface ArmyBannerEntityDetailContentProps extends Omit<ArmyBannerEntityDetailProps, "layoutVariant"> {
   variant: EntityDetailLayoutVariant;
 }
-
-const cueNumberFormatter = new Intl.NumberFormat("en-US", {
-  notation: "compact",
-  maximumFractionDigits: 1,
-});
-
-const formatTabCueNumber = (value: number): string => {
-  const flooredValue = Math.floor(value);
-  if (flooredValue >= 1000) {
-    return cueNumberFormatter.format(flooredValue);
-  }
-  return flooredValue.toLocaleString();
-};
 
 const ArmyBannerEntityDetailContent = memo(
   ({ armyEntityId, className, compact = true }: ArmyBannerEntityDetailContentProps) => {
@@ -102,7 +94,9 @@ const ArmyBannerEntityDetailContent = memo(
     const statusClass = derivedData.isMine
       ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
       : "border-red-400/40 bg-red-400/15 text-red-200";
-    const troopCount = Number(explorer.troops.count || 0);
+    const troopCount = explorer.troops.count;
+    const troopCountLabel = formatArmyTroopCountLabel(troopCount);
+    const combatTabCue = formatArmyCombatTabCue(troopCount);
     const currentStamina = derivedData.staminaDisplay?.displayCurrent ?? Number(derivedData.stamina.amount);
     const maxStamina = derivedData.maxStamina;
     const minTravelCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
@@ -116,8 +110,12 @@ const ArmyBannerEntityDetailContent = memo(
             : "success";
     const showResourceInventoryTab = shouldShowArmyResourceInventoryTab(resolvedWorldMode, inventoryCounts.resources);
     const resourceInventoryCueTone = inventoryCounts.resources > 0 ? "default" : "muted";
-    const relicCueTone =
-      inventoryCounts.activeRelics > 0 ? "success" : inventoryCounts.relics > 0 ? "default" : "muted";
+    const totalRelicCount = inventoryCounts.totalRelics;
+    const usableRelicCount = derivedData.isMine ? inventoryCounts.usableRelics : 0;
+    const relicCue = resolveEntityBannerRelicCue(usableRelicCount, totalRelicCount);
+    const relicTabLabel = relicCue.state === "empty" ? "Relics 0" : `Relics ${usableRelicCount}/${totalRelicCount}`;
+    const showCombatRelicActions = derivedData.isMine && usableRelicCount > 0;
+    const combatRelicActionLimit = compact ? 4 : undefined;
 
     return (
       <EntityDetailSection
@@ -167,7 +165,7 @@ const ArmyBannerEntityDetailContent = memo(
           ) : null}
         </div>
 
-        <Tabs variant="inventory" className="flex min-h-0 flex-1 flex-col gap-2">
+        <Tabs variant="entityBanner" className="flex min-h-0 flex-1 flex-col gap-2">
           <Tabs.Panels className="flex-1 min-h-0">
             <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-2">
               <TroopChip troops={explorer.troops} size="sm" className="w-full" />
@@ -185,6 +183,31 @@ const ArmyBannerEntityDetailContent = memo(
                       />
                     ) : null
                   }
+                />
+              ) : null}
+              {showCombatRelicActions ? (
+                <CompactEntityInventory
+                  resources={explorerResources}
+                  activeRelicIds={activeRelicIds}
+                  recipientType={RelicRecipientType.Explorer}
+                  entityId={armyEntityId}
+                  entityType={EntityType.ARMY}
+                  allowRelicActivation
+                  variant="tight"
+                  maxItems={combatRelicActionLimit}
+                  filter="usableRelics"
+                  showHiddenCount={false}
+                  emptyMessage="No relics ready."
+                  className="min-h-0"
+                />
+              ) : null}
+              {visibleRelicEffects.length > 0 ? (
+                <ActiveRelicEffects
+                  relicEffects={relicEffects}
+                  entityId={armyEntityId}
+                  variant="inline"
+                  maxItems={compact ? 2 : undefined}
+                  className="min-h-0"
                 />
               ) : null}
             </Tabs.Panel>
@@ -227,24 +250,14 @@ const ArmyBannerEntityDetailContent = memo(
             </Tabs.Panel>
           </Tabs.Panels>
 
-          <Tabs.List className="mt-auto flex w-full items-center justify-between gap-2">
-            <Tabs.Tab
-              aria-label={`Combat ${formatTabCueNumber(troopCount)}`}
-              title={`Combat ${formatTabCueNumber(troopCount)} troops`}
-              className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60"
-            >
-              <EntityBannerTabCue
-                icon={Swords}
-                label="Combat"
-                cue={formatTabCueNumber(troopCount)}
-                tone={combatCueTone}
-              />
+          <Tabs.List>
+            <Tabs.Tab aria-label={`Combat ${troopCountLabel}`} title={`Combat ${troopCountLabel}`}>
+              <EntityBannerTabCue icon={Swords} label="Combat" cue={combatTabCue} tone={combatCueTone} />
             </Tabs.Tab>
             {showResourceInventoryTab && (
               <Tabs.Tab
                 aria-label={`${ARMY_RESOURCE_INVENTORY_TAB_LABEL} ${inventoryCounts.resources}`}
                 title={`${ARMY_RESOURCE_INVENTORY_TAB_LABEL} ${inventoryCounts.resources}`}
-                className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60"
               >
                 <EntityBannerTabCue
                   icon={Package}
@@ -254,17 +267,8 @@ const ArmyBannerEntityDetailContent = memo(
                 />
               </Tabs.Tab>
             )}
-            <Tabs.Tab
-              aria-label={`Relics ${inventoryCounts.activeRelics}/${inventoryCounts.relics}`}
-              title={`Relics ${inventoryCounts.activeRelics}/${inventoryCounts.relics}`}
-              className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60"
-            >
-              <EntityBannerTabCue
-                icon={Sparkles}
-                label="Relics"
-                cue={`${inventoryCounts.activeRelics}/${inventoryCounts.relics}`}
-                tone={relicCueTone}
-              />
+            <Tabs.Tab aria-label={relicTabLabel} title={relicTabLabel} disabled={relicCue.disabled}>
+              <EntityBannerTabCue icon={Sparkles} label="Relics" splitCue={relicCue.splitCue} />
             </Tabs.Tab>
           </Tabs.List>
         </Tabs>

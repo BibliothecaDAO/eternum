@@ -12,7 +12,7 @@ import { Tabs } from "@/ui/design-system/atoms/tab";
 import { CompactDefenseDisplay } from "@/ui/features/military";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
-import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
@@ -21,13 +21,13 @@ import { formatTime, toHexString } from "@bibliothecadao/eternum";
 import { getAvatarUrl, usePlayerAvatar } from "@/hooks/use-player-avatar";
 
 import { ActiveRelicEffects } from "../active-relic-effects";
-import { CompactEntityInventory } from "../compact-entity-inventory";
+import { buildDisplayItems, CompactEntityInventory, countDisplayItems } from "../compact-entity-inventory";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
 import { StructureProductionPanelView } from "../structure-production-panel";
 import { useStructureProductionSummary } from "../structure-production-summary";
 import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
-import { EntityBannerTabCue } from "./entity-banner-tab-cue";
+import { EntityBannerTabCue, resolveEntityBannerRelicCue } from "./entity-banner-tab-cue";
 
 interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
@@ -75,11 +75,19 @@ const StructureBannerEntityDetailContent = memo(
     const resolvedWorldMode = useResolvedWorldGameMode();
     const isEternumMode = resolvedWorldMode === "eternum";
     const currentBlockTimestamp = useCurrentBlockTimestamp();
+    const currentDefaultTick = useCurrentDefaultTick();
     const openPopup = useUIStore((state) => state.openPopup);
     const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
     const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
 
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
+    const resourceTiers = useMemo(() => mode.resources.getTiers(), [mode]);
+    const inventoryItems = useMemo(
+      () =>
+        buildDisplayItems(resources, currentDefaultTick, activeRelicIds, RelicRecipientType.Structure, resourceTiers),
+      [activeRelicIds, currentDefaultTick, resources, resourceTiers],
+    );
+    const inventoryCounts = useMemo(() => countDisplayItems(inventoryItems), [inventoryItems]);
     const productionSummary = useStructureProductionSummary(structure, resources);
     const ownerAddress =
       structure?.owner !== undefined && structure.owner !== null && structure.owner !== 0n
@@ -176,6 +184,11 @@ const StructureBannerEntityDetailContent = memo(
           : productionSummary.activeProductionBuildings > 0
             ? "warning"
             : "danger";
+    const totalRelicCount = inventoryCounts.totalRelics;
+    const usableRelicCount = isMine ? inventoryCounts.usableRelics : 0;
+    const relicCue = resolveEntityBannerRelicCue(usableRelicCount, totalRelicCount);
+    const resourcesTabLabel =
+      relicCue.state === "empty" ? "Resources" : `Resources ${usableRelicCount}/${totalRelicCount}`;
 
     return (
       <EntityDetailSection
@@ -239,7 +252,7 @@ const StructureBannerEntityDetailContent = memo(
           </div>
         )}
 
-        <Tabs variant="inventory" className="flex min-h-0 flex-1 flex-col gap-2">
+        <Tabs variant="entityBanner" className="flex min-h-0 flex-1 flex-col gap-2">
           <Tabs.Panels className="flex-1 min-h-0">
             <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-1.5">
               {showHyperstructureVP && (
@@ -329,39 +342,23 @@ const StructureBannerEntityDetailContent = memo(
             )}
           </Tabs.Panels>
 
-          <Tabs.List className="mt-auto flex w-full items-center justify-between gap-2">
-            <Tabs.Tab
-              aria-label={`Guards ${guardCue}`}
-              title={`Guards ${guardCue}`}
-              className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60"
-            >
+          <Tabs.List>
+            <Tabs.Tab aria-label={`Guards ${guardCue}`} title={`Guards ${guardCue}`}>
               <EntityBannerTabCue icon={Shield} label="Guards" cue={guardCue} tone={guardCueTone} />
             </Tabs.Tab>
             {showProductionTab && (
-              <Tabs.Tab
-                aria-label={`Production ${productionCue}`}
-                title={`Production ${productionCue}`}
-                className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60"
-              >
+              <Tabs.Tab aria-label={`Production ${productionCue}`} title={`Production ${productionCue}`}>
                 <EntityBannerTabCue icon={Factory} label="Production" cue={productionCue} tone={productionCueTone} />
               </Tabs.Tab>
             )}
             {showFaithTab && (
-              <Tabs.Tab
-                aria-label="Faith"
-                title="Faith"
-                className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60"
-              >
+              <Tabs.Tab aria-label="Faith" title="Faith">
                 <EntityBannerTabCue icon={Sparkles} label="Faith" />
               </Tabs.Tab>
             )}
             {!showBalanceInline && (
-              <Tabs.Tab
-                aria-label="Resources"
-                title="Resources"
-                className="!mx-0 flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gold/30 bg-dark/40 px-3 text-center transition hover:bg-dark/60"
-              >
-                <EntityBannerTabCue icon={Coins} label="Resources" />
+              <Tabs.Tab aria-label={resourcesTabLabel} title={resourcesTabLabel}>
+                <EntityBannerTabCue icon={Coins} label="Resources" splitCue={relicCue.splitCue} tone="default" />
               </Tabs.Tab>
             )}
           </Tabs.List>

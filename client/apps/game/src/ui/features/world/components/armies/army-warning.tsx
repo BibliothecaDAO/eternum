@@ -13,6 +13,7 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import {
   Biome,
   computeExploreFoodCosts,
+  computeTravelFoodCosts,
   configManager,
   divideByPrecision,
   ResourceManager,
@@ -22,6 +23,7 @@ import { ClientComponents, getNeighborHexes, ResourcesIds, TroopType } from "@bi
 import { ComponentValue } from "@dojoengine/recs";
 import {
   formatArmyFoodRequirement,
+  getArmyMovementFoodRequirementWarnings,
   getArmyFoodRequirementLabel,
   getArmyReadinessTitle,
   getArmyStaminaRequirementWarnings,
@@ -58,17 +60,25 @@ export const ArmyWarning = ({
     return { wheat: divideByPrecision(wheat), fish: divideByPrecision(fish) };
   }, [structureResources, army.owner]);
 
-  const exploreFoodCosts = useMemo(
-    () => (!army?.owner ? { wheatPayAmount: 0, fishPayAmount: 0 } : computeExploreFoodCosts(army.troops)),
+  const movementFoodCosts = useMemo(
+    () =>
+      !army?.owner
+        ? {
+            travel: { wheatPayAmount: 0, fishPayAmount: 0 },
+            explore: { wheatPayAmount: 0, fishPayAmount: 0 },
+          }
+        : {
+            travel: computeTravelFoodCosts(army.troops),
+            explore: computeExploreFoodCosts(army.troops),
+          },
     [army],
   );
 
-  const { missingWheat, missingFish, notEnoughFood } = useMemo(() => {
-    const missingWheat = Math.max(0, exploreFoodCosts.wheatPayAmount - food.wheat);
-    const missingFish = Math.max(0, exploreFoodCosts.fishPayAmount - food.fish);
-    const notEnoughFood = missingWheat > 0 || missingFish > 0;
-    return { missingWheat, missingFish, notEnoughFood };
-  }, [exploreFoodCosts.wheatPayAmount, exploreFoodCosts.fishPayAmount, food.wheat, food.fish]);
+  const foodWarnings = getArmyMovementFoodRequirementWarnings({
+    travelFoodCosts: movementFoodCosts.travel,
+    exploreFoodCosts: movementFoodCosts.explore,
+    food,
+  });
 
   const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
   const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
@@ -98,18 +108,37 @@ export const ArmyWarning = ({
     minExploreStamina: minStaminaNeededExplore,
   });
 
-  const hasWarnings = hasTravelStaminaWarning || hasExploreStaminaWarning || notEnoughFood;
+  const hasTravelFoodWarning = foodWarnings.travel.hasWarning;
+  const hasExploreFoodWarning = foodWarnings.explore.hasWarning;
+  const hasWarnings = hasTravelStaminaWarning || hasExploreStaminaWarning || foodWarnings.combined.hasWarning;
   const statusTitle = getArmyReadinessTitle({
     hasTravelStaminaWarning,
     hasExploreStaminaWarning,
-    notEnoughFood,
+    hasTravelFoodWarning,
+    hasExploreFoodWarning,
   });
-  const missingFoodText = formatArmyFoodRequirement({
-    missingWheat,
-    missingFish,
-    wheatLabel: foodRequirementLabel,
-    formatAmount: (amount) => formatNumber(Number(amount), 0),
+  const missingFoodText = getMissingFoodText(foodWarnings.combined, foodRequirementLabel);
+  const missingTravelFoodText = getMissingFoodText(foodWarnings.travel, foodRequirementLabel);
+  const missingExploreFoodText = getMissingFoodText(foodWarnings.explore, foodRequirementLabel);
+
+  const travelTitle = formatRequirementTitle({
+    label: "Travel",
+    readyLabel: "Travel ready",
+    requirements: [
+      hasTravelStaminaWarning ? `${minStaminaNeeded}+ stamina` : null,
+      hasTravelFoodWarning ? missingTravelFoodText : null,
+    ],
   });
+  const exploreTitle = formatRequirementTitle({
+    label: "Explore",
+    readyLabel: "Explore ready",
+    requirements: [
+      hasExploreStaminaWarning ? `${minStaminaNeededExplore}+ stamina` : null,
+      hasExploreFoodWarning ? missingExploreFoodText : null,
+    ],
+  });
+  const supplyTitle = foodWarnings.combined.hasWarning ? `Missing ${missingFoodText}` : `${foodRequirementLabel} ready`;
+
   const statusDescription = hasWarnings
     ? missingFoodText
       ? `${statusTitle}. Missing ${missingFoodText}.`
@@ -120,27 +149,45 @@ export const ArmyWarning = ({
     <div aria-label={statusDescription} title={statusDescription} className="flex items-center justify-end gap-1">
       <ReadinessIcon
         icon={<Route className="h-3.5 w-3.5" />}
-        active={!hasTravelStaminaWarning}
-        title={hasTravelStaminaWarning ? `Travel needs ${minStaminaNeeded}+ stamina` : "Travel ready"}
+        active={!hasTravelStaminaWarning && !hasTravelFoodWarning}
+        title={travelTitle}
       />
       <ReadinessIcon
         icon={<Telescope className="h-3.5 w-3.5" />}
-        active={!hasExploreStaminaWarning && !notEnoughFood}
-        title={
-          hasExploreStaminaWarning
-            ? `Explore needs ${minStaminaNeededExplore}+ stamina`
-            : notEnoughFood
-              ? `Explore needs ${foodRequirementLabel}`
-              : "Explore ready"
-        }
+        active={!hasExploreStaminaWarning && !hasExploreFoodWarning}
+        title={exploreTitle}
       />
       <ReadinessIcon
         icon={<Wheat className="h-3.5 w-3.5" />}
-        active={!notEnoughFood}
-        title={notEnoughFood ? `Missing ${missingFoodText}` : `${foodRequirementLabel} ready`}
+        active={!foodWarnings.combined.hasWarning}
+        title={supplyTitle}
       />
     </div>
   );
+};
+
+const getMissingFoodText = (foodWarning: { missingWheat: number; missingFish: number }, foodRequirementLabel: string) =>
+  formatArmyFoodRequirement({
+    missingWheat: foodWarning.missingWheat,
+    missingFish: foodWarning.missingFish,
+    wheatLabel: foodRequirementLabel,
+    formatAmount: (amount) => formatNumber(Number(amount), 0),
+  });
+
+const formatRequirementTitle = ({
+  label,
+  readyLabel,
+  requirements,
+}: {
+  label: string;
+  readyLabel: string;
+  requirements: Array<string | null>;
+}) => {
+  const missingRequirements = requirements.filter(Boolean);
+
+  if (missingRequirements.length === 0) return readyLabel;
+
+  return `${label} needs ${missingRequirements.join(" and ")}`;
 };
 
 const ReadinessIcon = ({ icon, active, title }: { icon: ReactNode; active: boolean; title: string }) => {

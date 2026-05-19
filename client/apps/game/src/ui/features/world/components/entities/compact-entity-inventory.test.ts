@@ -47,12 +47,18 @@ vi.mock("@bibliothecadao/types", () => ({
     Wood: 2,
     Wheat: 3,
     Dragonhide: 99,
+    AncientFragment: 100,
   },
   RelicRecipientType: {
     Explorer: 1,
+    Structure: 2,
   },
-  isRelic: (resourceId: number) => resourceId === 99,
-  getRelicInfo: (resourceId: number) => (resourceId === 99 ? { recipientType: 1 } : undefined),
+  isRelic: (resourceId: number) => resourceId === 99 || resourceId === 100,
+  getRelicInfo: (resourceId: number) => {
+    if (resourceId === 99) return { recipientType: 1 };
+    if (resourceId === 100) return { recipientType: 2 };
+    return undefined;
+  },
   resources: [],
 }));
 
@@ -110,11 +116,43 @@ describe("buildDisplayItems", () => {
     ]);
   });
 
-  it("counts total, resource, relic, and active relic item groups", () => {
+  it("filters usable relics to compatible inactive relics", () => {
+    mocks.getResourceBalancesWithProduction.mockReturnValue([
+      { resourceId: ResourcesIds.Wood, amount: 25 },
+      { resourceId: ResourcesIds.Dragonhide, amount: 1 },
+      { resourceId: ResourcesIds.AncientFragment, amount: 1 },
+    ]);
+
+    const result = buildDisplayItems({ some: "resource" } as never, 1234, [], RelicRecipientType.Explorer);
+
+    expect(filterDisplayItems(result, "usableRelics")).toEqual([
+      expect.objectContaining({
+        resourceId: ResourcesIds.Dragonhide,
+        isRelic: true,
+        isActive: false,
+        canActivate: true,
+      }),
+    ]);
+  });
+
+  it("excludes active compatible relics from usable relic filters", () => {
+    mocks.getResourceBalancesWithProduction.mockReturnValue([{ resourceId: ResourcesIds.Dragonhide, amount: 1 }]);
+
+    const result = buildDisplayItems(
+      { some: "resource" } as never,
+      1234,
+      [ResourcesIds.Dragonhide],
+      RelicRecipientType.Explorer,
+    );
+
+    expect(filterDisplayItems(result, "usableRelics")).toEqual([]);
+  });
+
+  it("counts total, resource, relic, and active relic item groups without treating active relics as usable", () => {
     mocks.getResourceBalancesWithProduction.mockReturnValue([
       { resourceId: ResourcesIds.Wood, amount: 25 },
       { resourceId: ResourcesIds.Wheat, amount: 10 },
-      { resourceId: ResourcesIds.Dragonhide, amount: 1 },
+      { resourceId: ResourcesIds.Dragonhide, amount: 2 },
     ]);
 
     const result = buildDisplayItems(
@@ -129,6 +167,51 @@ describe("buildDisplayItems", () => {
       resources: 2,
       relics: 1,
       activeRelics: 1,
+      totalRelics: 2,
+      usableRelics: 0,
+    });
+  });
+
+  it("marks relics compatible with the selected recipient type", () => {
+    mocks.getResourceBalancesWithProduction.mockReturnValue([
+      { resourceId: ResourcesIds.Dragonhide, amount: 1 },
+      { resourceId: ResourcesIds.AncientFragment, amount: 1 },
+    ]);
+
+    const result = buildDisplayItems({ some: "resource" } as never, 1234, [], RelicRecipientType.Explorer);
+
+    expect(result).toEqual([
+      expect.objectContaining({
+        resourceId: ResourcesIds.Dragonhide,
+        isRelic: true,
+        canActivate: true,
+      }),
+      expect.objectContaining({
+        resourceId: ResourcesIds.AncientFragment,
+        isRelic: true,
+        canActivate: false,
+      }),
+    ]);
+  });
+
+  it("counts inactive compatible relics as usable", () => {
+    mocks.getResourceBalancesWithProduction.mockReturnValue([
+      { resourceId: ResourcesIds.Dragonhide, amount: 2 },
+      { resourceId: ResourcesIds.AncientFragment, amount: 1 },
+    ]);
+
+    const result = buildDisplayItems(
+      { some: "resource" } as never,
+      1234,
+      [ResourcesIds.AncientFragment],
+      RelicRecipientType.Explorer,
+    );
+
+    expect(countDisplayItems(result)).toMatchObject({
+      relics: 2,
+      activeRelics: 1,
+      totalRelics: 3,
+      usableRelics: 2,
     });
   });
 });
