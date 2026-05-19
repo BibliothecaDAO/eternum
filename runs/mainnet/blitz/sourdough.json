@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/sourdough/26087729375-1.json",
   "latestLaunchRequestId": "26087729375-1",
-  "currentStepId": "wait-for-factory-index",
+  "currentStepId": "configure-world",
   "createdAt": "2026-05-19T09:12:54.638Z",
-  "updatedAt": "2026-05-19T09:15:09.923Z",
+  "updatedAt": "2026-05-19T09:15:15.911Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,10 +36,11 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting for game started",
-      "startedAt": "2026-05-19T09:15:09.923Z"
+      "latestEvent": "Waiting for game succeeded",
+      "startedAt": "2026-05-19T09:15:09.923Z",
+      "finishedAt": "2026-05-19T09:15:15.911Z"
     },
     {
       "id": "configure-world",
@@ -83,13 +84,5 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-sourdough.json",
     "worldAddress": "0x06316d9ee92413c4849f76d3a42d43fdce499c8cf9fd0cfc8cb3215df1365f9c",
     "createGameTxHash": "0x626d6d7f2a7aa13af524e323b3b59d2e1de39d8766e305d9e7a69cd9162d74b"
-  },
-  "activeLease": {
-    "launchRequestId": "26087729375-1",
-    "workflowRunId": 26087729375,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-index",
-    "acquiredAt": "2026-05-19T09:15:09.923Z",
-    "expiresAt": "2026-05-19T10:00:09.923Z"
   }
 }
