@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26075063266-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-19T03:51:53.869Z",
-  "updatedAt": "2026-05-19T03:52:28.608Z",
+  "updatedAt": "2026-05-19T03:52:33.923Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-05-19T03:52:33.923Z"
     },
     {
       "id": "configure-world",
@@ -75,5 +76,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-boost-514.json",
     "worldAddress": "0x04c7b1df08cecd364f6243ffc32e510e8da74283d8fd53109847c1d8d0c69c7d",
     "createGameTxHash": "0x7c0ab108d2b61baabe0bac32d875763f606c9299ae016997530d8f92a788a43"
+  },
+  "activeLease": {
+    "launchRequestId": "26075063266-1",
+    "workflowRunId": 26075063266,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-05-19T03:52:33.923Z",
+    "expiresAt": "2026-05-19T04:37:33.923Z"
   }
 }
