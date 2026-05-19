@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-19T09:52:09.100Z",
+  "updatedAt": "2026-05-19T09:52:14.631Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -867,12 +867,13 @@
       "path": "runs/mainnet/blitz/bltz-nova-590.json",
       "inputPath": "inputs/mainnet/blitz/bltz-nova-590/26089660272-1.json",
       "status": "running",
-      "updatedAt": "2026-05-19T09:52:09.100Z",
+      "updatedAt": "2026-05-19T09:52:14.631Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-19T10:37:14.631Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-05-19T10:00:00.000Z",
       "durationSeconds": 5400,
       "artifacts": {}
