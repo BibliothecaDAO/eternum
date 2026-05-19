@@ -31,4 +31,20 @@ describe("manager chunk runtime wiring", () => {
     expect(chestManagerSource).toMatch(/shouldRunManagerChunkUpdate\(\{/);
     expect(chestManagerSource).toMatch(/this\.renderVisibleChests\(nextChunkKey\)/);
   });
+
+  it("routes manager stall recovery through the shared runtime", () => {
+    const armyManagerSource = readManagerSource("army-manager.ts");
+    const structureManagerSource = readManagerSource("structure-manager.ts");
+    const chestManagerSource = readManagerSource("chest-manager.ts");
+
+    expect(armyManagerSource).toMatch(/recoverManagerChunkRuntimeAfterStall\(/);
+    expect(armyManagerSource).toMatch(/this\.isArmyChunkTransitioning = false/);
+    expect(armyManagerSource).toMatch(/this\.drainDeferredArmyQueue\(\)/);
+    expect(armyManagerSource).toMatch(/this\.drainPreCommitArmyQueue\(\)/);
+
+    expect(structureManagerSource).toMatch(/recoverManagerChunkRuntimeAfterStall\(/);
+    expect(structureManagerSource).toMatch(/this\.visibleStructurePassFence\.invalidate\(\)/);
+
+    expect(chestManagerSource).toMatch(/recoverManagerChunkRuntimeAfterStall\(/);
+  });
 });

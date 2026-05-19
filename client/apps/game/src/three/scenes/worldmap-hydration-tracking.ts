@@ -15,6 +15,10 @@ interface WorldmapHydrationTrackedFetchState extends WorldmapHydrationFetchState
   pendingCount: number;
 }
 
+interface WorldmapHydrationClearableFetchState {
+  waiters: Array<() => void>;
+}
+
 export function shouldTrackHydrationUpdateForFetch(
   state: WorldmapHydrationFetchState,
   position: WorldmapHydrationUpdatePosition,
@@ -63,4 +67,19 @@ export function trackHydrationUpdateWorkForFetches<TState extends WorldmapHydrat
       input.flushWaiters(fetchKey, state);
     });
   });
+}
+
+export function clearHydrationFetchState<TState extends WorldmapHydrationClearableFetchState>(
+  fetches: Map<string, TState>,
+  fetchKey: string,
+): void {
+  const state = fetches.get(fetchKey);
+  if (!state) {
+    return;
+  }
+
+  const waiters = [...state.waiters];
+  state.waiters.length = 0;
+  fetches.delete(fetchKey);
+  waiters.forEach((resolve) => resolve());
 }

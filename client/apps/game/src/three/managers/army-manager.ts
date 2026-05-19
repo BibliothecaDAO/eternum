@@ -111,6 +111,8 @@ import { MAX_INSTANCES } from "../constants/army-constants";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
 import {
   bindManagerChunkRuntimeState,
+  recoverManagerChunkRuntimeAfterStall,
+  type RecoverManagerChunkRuntimeAfterStallInput,
   type ManagerChunkUpdateOptions,
   runManagerChunkUpdateRuntime,
 } from "./manager-chunk-runtime";
@@ -909,6 +911,16 @@ export class ArmyManager {
       state: this.resolveChunkUpdateRuntimeState(),
       waitForSettle: waitForVisualSettle,
     });
+  }
+
+  recoverChunkUpdateAfterStall(input: RecoverManagerChunkRuntimeAfterStallInput): void {
+    const { didApply } = recoverManagerChunkRuntimeAfterStall(this.resolveChunkUpdateRuntimeState(), input);
+    if (!didApply) {
+      return;
+    }
+    this.isArmyChunkTransitioning = false;
+    this.drainDeferredArmyQueue();
+    this.drainPreCommitArmyQueue();
   }
 
   private resolveChunkUpdateRuntimeState() {

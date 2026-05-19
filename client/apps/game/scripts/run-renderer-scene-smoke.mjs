@@ -14,6 +14,11 @@ const DEFAULT_WAIT_MS = 20000;
 const AGENT_BROWSER_RETRY_DELAY_MS = 2000;
 const AGENT_BROWSER_RETRY_ATTEMPTS = 2;
 const DEFAULT_CARTRIDGE_API_BASE = "https://api.cartridge.gg";
+const RETRYABLE_AGENT_BROWSER_FAILURE_PATTERNS = [
+  "CDP command timed out: Runtime.evaluate",
+  "Failed to read: Resource temporarily unavailable",
+  "daemon may be busy or unresponsive",
+];
 const FACTORY_SQL_BASE_URLS = {
   local: [],
   mainnet: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-mainnet/torii/sql`],
@@ -272,8 +277,7 @@ export function isRetryableAgentBrowserFailure({ commandArgs, stderr = "", stdou
     return false;
   }
 
-  const output = `${stderr}\n${stdout}`;
-  return output.includes("CDP command timed out: Runtime.evaluate");
+  return isRetryableAgentBrowserOutput(`${stderr}\n${stdout}`);
 }
 
 function isRetryableAgentBrowserCommand(commandArgs) {
@@ -282,6 +286,10 @@ function isRetryableAgentBrowserCommand(commandArgs) {
   }
 
   return commandArgs[0] === "get" && ["count", "url"].includes(commandArgs[1]);
+}
+
+function isRetryableAgentBrowserOutput(output) {
+  return RETRYABLE_AGENT_BROWSER_FAILURE_PATTERNS.some((pattern) => output.includes(pattern));
 }
 
 async function runAgentBrowserWithRetries(

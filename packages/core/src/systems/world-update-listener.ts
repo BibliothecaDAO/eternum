@@ -550,105 +550,10 @@ export class WorldUpdateListener {
             if (isComponentUpdate(update, this.setup.components.TileOpt)) {
               const [currentStateOpt, _prevStateOpt] = update.value;
               const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
-              // const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
-
-              const structureInfo = currentState && getStructureInfoFromTileOccupier(currentState?.occupier_type);
-
-              if (!structureInfo || structureInfo.reserved) return;
-
-              const hyperstructure = getComponentValue(
-                this.setup.components.Hyperstructure,
-                getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
-              );
-
-              const initialized = hyperstructure?.initialized || false;
-
-              const rawOccupierId = currentState?.occupier_id;
-
-              if (rawOccupierId === undefined || rawOccupierId === null) {
-                this.logMissingEntityId("Structure.onTileUpdate", {
-                  update,
-                  currentState,
-                  structureInfo,
-                });
-                return;
-              }
-
-              let hyperstructureRealmCount: number | undefined;
-
-              if (structureInfo.type === StructureType.Hyperstructure) {
-                hyperstructureRealmCount = this.dataEnhancer.getHyperstructureRealmCount(rawOccupierId);
-              }
-
-              // Use sequential update processing to prevent race conditions
-              const result = await this.processSequentialUpdate(rawOccupierId, async () => {
-                // Use DataEnhancer to fetch all enhanced data
-                const enhancedData = await this.dataEnhancer.enhanceStructureData(rawOccupierId);
-
-                const structureComponent = getComponentValue(
-                  this.setup.components.Structure,
-                  getEntityIdFromKeys([BigInt(rawOccupierId)]),
-                );
-                const troopGuards = structureComponent?.troop_guards ?? null;
-                const guardArmies = troopGuards ? this.buildGuardArmies(troopGuards) : enhancedData.guardArmies;
-                const battleCooldownEnd = troopGuards
-                  ? this.getBattleCooldownEnd(troopGuards)
-                  : enhancedData.battleData?.battleCooldownEnd;
-
-                if (troopGuards) {
-                  this.mapDataStore.updateStructureGuards(rawOccupierId, guardArmies, battleCooldownEnd);
-                }
-
-                const ownerAddress = structureComponent?.owner ?? enhancedData.owner.address ?? 0n;
-                const ownerName = this.resolveOwnerNameFromAddress(ownerAddress, enhancedData.owner.ownerName);
-
-                this.dataEnhancer.updateStructureOwner(rawOccupierId, ownerAddress, ownerName);
-
-                const isBlitz = getIsBlitz();
-                const fallbackTypeName = getStructureTypeName(structureInfo.type, isBlitz) || "Structure";
-                const enhancedStructureName = enhancedData.structureName?.trim();
-                const structureName = structureComponent
-                  ? getStructureName(structureComponent, isBlitz).name
-                  : enhancedStructureName || `${fallbackTypeName} ${rawOccupierId}`;
-
-                const battleData = enhancedData.battleData
-                  ? {
-                      ...enhancedData.battleData,
-                      battleCooldownEnd: battleCooldownEnd ?? enhancedData.battleData.battleCooldownEnd,
-                    }
-                  : undefined;
-
-                return {
-                  entityId: rawOccupierId,
-                  structureName,
-                  hexCoords: {
-                    col: currentState.col,
-                    row: currentState.row,
-                  },
-                  structureType: structureInfo.type,
-                  initialized,
-                  stage: structureInfo.stage,
-                  level: structureInfo.level,
-                  owner: {
-                    address: ownerAddress,
-                    ownerName,
-                    guildName: enhancedData.owner.guildName,
-                  },
-                  hasWonder: structureInfo.hasWonder,
-                  isAlly: false,
-                  // Enhanced data from DataEnhancer
-                  guardArmies,
-                  activeProductions: enhancedData.activeProductions,
-                  hyperstructureRealmCount,
-                  battleData,
-                };
-              });
-
-              // Return undefined if update was cancelled due to being outdated
-              return result || undefined;
+              return this.resolveStructureTileUpdateFromTileState(currentState, update);
             }
           },
-          false,
+          true,
         );
       },
       onStructureUpdate: (callback: (value: StructureSystemUpdate) => void) => {
@@ -794,6 +699,110 @@ export class WorldUpdateListener {
         );
       },
     };
+  }
+
+  public async resolveStructureTileUpdateFromTileOpt(
+    tileOpt: Parameters<typeof tileOptToTile>[0],
+  ): Promise<StructureTileSystemUpdate | undefined> {
+    const currentState = tileOpt ? tileOptToTile(tileOpt) : undefined;
+    return this.resolveStructureTileUpdateFromTileState(currentState, { tileOpt });
+  }
+
+  private async resolveStructureTileUpdateFromTileState(
+    currentState: ReturnType<typeof tileOptToTile> | undefined,
+    missingEntityContext: unknown,
+  ): Promise<StructureTileSystemUpdate | undefined> {
+    if (!currentState) return;
+
+    const structureInfo = getStructureInfoFromTileOccupier(currentState.occupier_type);
+
+    if (!structureInfo || structureInfo.reserved) return;
+
+    const hyperstructure = getComponentValue(
+      this.setup.components.Hyperstructure,
+      getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
+    );
+
+    const initialized = hyperstructure?.initialized || false;
+    const rawOccupierId = currentState?.occupier_id;
+
+    if (rawOccupierId === undefined || rawOccupierId === null) {
+      this.logMissingEntityId("Structure.onTileUpdate", {
+        update: missingEntityContext,
+        currentState,
+        structureInfo,
+      });
+      return;
+    }
+
+    let hyperstructureRealmCount: number | undefined;
+
+    if (structureInfo.type === StructureType.Hyperstructure) {
+      hyperstructureRealmCount = this.dataEnhancer.getHyperstructureRealmCount(rawOccupierId);
+    }
+
+    const result = await this.processSequentialUpdate(rawOccupierId, async () => {
+      const enhancedData = await this.dataEnhancer.enhanceStructureData(rawOccupierId);
+
+      const structureComponent = getComponentValue(
+        this.setup.components.Structure,
+        getEntityIdFromKeys([BigInt(rawOccupierId)]),
+      );
+      const troopGuards = structureComponent?.troop_guards ?? null;
+      const guardArmies = troopGuards ? this.buildGuardArmies(troopGuards) : enhancedData.guardArmies;
+      const battleCooldownEnd = troopGuards
+        ? this.getBattleCooldownEnd(troopGuards)
+        : enhancedData.battleData?.battleCooldownEnd;
+
+      if (troopGuards) {
+        this.mapDataStore.updateStructureGuards(rawOccupierId, guardArmies, battleCooldownEnd);
+      }
+
+      const ownerAddress = structureComponent?.owner ?? enhancedData.owner.address ?? 0n;
+      const ownerName = this.resolveOwnerNameFromAddress(ownerAddress, enhancedData.owner.ownerName);
+
+      this.dataEnhancer.updateStructureOwner(rawOccupierId, ownerAddress, ownerName);
+
+      const isBlitz = getIsBlitz();
+      const fallbackTypeName = getStructureTypeName(structureInfo.type, isBlitz) || "Structure";
+      const enhancedStructureName = enhancedData.structureName?.trim();
+      const structureName = structureComponent
+        ? getStructureName(structureComponent, isBlitz).name
+        : enhancedStructureName || `${fallbackTypeName} ${rawOccupierId}`;
+
+      const battleData = enhancedData.battleData
+        ? {
+            ...enhancedData.battleData,
+            battleCooldownEnd: battleCooldownEnd ?? enhancedData.battleData.battleCooldownEnd,
+          }
+        : undefined;
+
+      return {
+        entityId: rawOccupierId,
+        structureName,
+        hexCoords: {
+          col: currentState.col,
+          row: currentState.row,
+        },
+        structureType: structureInfo.type,
+        initialized,
+        stage: structureInfo.stage,
+        level: structureInfo.level,
+        owner: {
+          address: ownerAddress,
+          ownerName,
+          guildName: enhancedData.owner.guildName,
+        },
+        hasWonder: structureInfo.hasWonder,
+        isAlly: false,
+        guardArmies,
+        activeProductions: enhancedData.activeProductions,
+        hyperstructureRealmCount,
+        battleData,
+      };
+    });
+
+    return result || undefined;
   }
 
   public get Tile() {

@@ -25,6 +25,13 @@ describe("network status wiring", () => {
     expect(source).toContain('toast.success("Back online"');
   });
 
+  it("lets the active worldmap clear stuck map loading when stream reconnect fails", () => {
+    const source = readSource("src/ui/layouts/world.tsx");
+
+    expect(source).toContain("recoverAfterConnectionFailure");
+    expect(source).toMatch(/getActiveWorldmapRecoveryHandle\(\)\?\.recoverAfterConnectionFailure\(\)/);
+  });
+
   it("exposes a module-level getConnectionHealthMonitor for UI retry callbacks", () => {
     const source = readSource("src/dojo/connection-health-monitor.ts");
 
@@ -34,11 +41,13 @@ describe("network status wiring", () => {
     expect(source).toContain('setGlobalStatus("reconnecting")');
   });
 
-  it("fires a throttled subscription-setup-timeout toast from worldmap", () => {
-    const source = readSource("src/three/scenes/worldmap.tsx");
+  it("treats spatial reconnect as owned by the global initial sync stream", () => {
+    const worldSource = readSource("src/ui/layouts/world.tsx");
+    const worldmapSource = readSource("src/three/scenes/worldmap.tsx");
 
-    expect(source).toContain("SETUP_TIMEOUT_TOAST_THROTTLE_MS");
-    expect(source).toContain('toast("Map sync delayed"');
-    expect(source).toContain("handleToriiSubscriptionSetupTimeout");
+    expect(worldSource).toContain('status: "global_initial_sync_owned"');
+    expect(worldSource).toContain("await initialSync(setup, state");
+    expect(worldmapSource).not.toContain("SETUP_TIMEOUT_TOAST_THROTTLE_MS");
+    expect(worldmapSource).not.toContain("handleToriiSubscriptionSetupTimeout");
   });
 });

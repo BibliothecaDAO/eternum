@@ -25,7 +25,7 @@ describe("worldmap Torii bounds debug overlay wiring", () => {
     expect(source).toContain("debugWindow.getToriiBoundsDebugSnapshot = () => this.getToriiBoundsDebugSnapshot()");
   });
 
-  it("updates the overlay when bounds are requested and applied", () => {
+  it("updates the overlay when global spatial sync marks bounds locally ready", () => {
     const source = readWorldmapSource();
     const methodStart = source.indexOf("private async updateToriiBoundsSubscription");
     expect(methodStart).toBeGreaterThan(0);
@@ -33,8 +33,10 @@ describe("worldmap Torii bounds debug overlay wiring", () => {
     const body = source.slice(methodStart, methodEnd);
 
     expect(body).toContain("this.refreshToriiBoundsDebugOverlay");
-    expect(body).toContain("requestedAreaKey: areaKey");
-    expect(body).toContain("subscribedAreaKey: areaKey");
+    expect(body).toContain("const requestedAreaKey = this.getToriiSubscriptionAreaKeyForChunk(chunkKey)");
+    expect(body).toContain("requestedAreaKey,");
+    expect(body).toContain("subscribedAreaKey: requestedAreaKey");
+    expect(body).toContain('lastOutcome: "global_spatial_sync"');
     expect(body).toContain("subscriptionBounds");
   });
 });

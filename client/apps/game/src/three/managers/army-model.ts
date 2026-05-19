@@ -533,43 +533,80 @@ export class ArmyModel {
   }
 
   private clearInstanceSlot(matrixIndex: number): void {
-    // O(1) slot clearing: only clear the specific model(s) that own this slot
     const entityId = this.matrixIndexOwners.get(matrixIndex);
 
     if (entityId !== undefined) {
-      // Clear from the active base model (if any)
-      const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
-      if (activeBaseModel) {
-        const modelData = this.models.get(activeBaseModel);
-        if (modelData) {
-          modelData.activeInstances.delete(matrixIndex);
-          this.clearModelSlot(modelData, matrixIndex);
-        }
-      }
-
-      // Clear from the active cosmetic model (if any)
-      const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
-      if (activeCosmetic) {
-        const cosmeticData = this.cosmeticModels.get(activeCosmetic);
-        if (cosmeticData) {
-          cosmeticData.activeInstances.delete(matrixIndex);
-          this.clearModelSlot(cosmeticData, matrixIndex);
-        }
-      }
+      this.clearKnownOwnerSlot(entityId, matrixIndex);
     } else {
-      // Fallback: if we don't know the owner, clear all models (legacy behavior)
-      // This should rarely happen in practice
-      this.models.forEach((modelData) => {
-        modelData.activeInstances.delete(matrixIndex);
-        this.clearModelSlot(modelData, matrixIndex);
-      });
-      this.cosmeticModels.forEach((modelData) => {
-        modelData.activeInstances.delete(matrixIndex);
-        this.clearModelSlot(modelData, matrixIndex);
-      });
+      this.clearSlotFromEveryRenderable(matrixIndex);
     }
 
     this.setAnimationState(matrixIndex, false);
+  }
+
+  private clearKnownOwnerSlot(entityId: number, matrixIndex: number): void {
+    this.clearActiveBaseModelSlot(entityId, matrixIndex);
+    this.clearActiveCosmeticModelSlot(entityId, matrixIndex);
+    this.clearStaleRenderableSlotMemberships(matrixIndex);
+  }
+
+  private clearActiveBaseModelSlot(entityId: number, matrixIndex: number): void {
+    const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
+    if (!activeBaseModel) {
+      return;
+    }
+
+    const modelData = this.models.get(activeBaseModel);
+    if (!modelData) {
+      return;
+    }
+
+    modelData.activeInstances.delete(matrixIndex);
+    this.clearModelSlot(modelData, matrixIndex);
+  }
+
+  private clearActiveCosmeticModelSlot(entityId: number, matrixIndex: number): void {
+    const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
+    if (!activeCosmetic) {
+      return;
+    }
+
+    const cosmeticData = this.cosmeticModels.get(activeCosmetic);
+    if (!cosmeticData) {
+      return;
+    }
+
+    cosmeticData.activeInstances.delete(matrixIndex);
+    this.clearModelSlot(cosmeticData, matrixIndex);
+  }
+
+  private clearStaleRenderableSlotMemberships(matrixIndex: number): void {
+    this.models.forEach((modelData) => {
+      this.clearModelSlotIfActive(modelData, matrixIndex);
+    });
+    this.cosmeticModels.forEach((modelData) => {
+      this.clearModelSlotIfActive(modelData, matrixIndex);
+    });
+  }
+
+  private clearSlotFromEveryRenderable(matrixIndex: number): void {
+    this.models.forEach((modelData) => {
+      modelData.activeInstances.delete(matrixIndex);
+      this.clearModelSlot(modelData, matrixIndex);
+    });
+    this.cosmeticModels.forEach((modelData) => {
+      modelData.activeInstances.delete(matrixIndex);
+      this.clearModelSlot(modelData, matrixIndex);
+    });
+  }
+
+  private clearModelSlotIfActive(modelData: ModelData, matrixIndex: number): void {
+    if (!modelData.activeInstances.has(matrixIndex)) {
+      return;
+    }
+
+    modelData.activeInstances.delete(matrixIndex);
+    this.clearModelSlot(modelData, matrixIndex);
   }
 
   /**

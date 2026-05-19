@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   createWorldmapChunkTransitionRuntimeState,
+  resolveWorldmapChunkTransitionTimeoutRecovery,
   runWorldmapChunkTransition,
 } from "./worldmap-chunk-transition-runtime";
 
@@ -24,7 +25,8 @@ describe("runWorldmapChunkTransition", () => {
     });
 
     expect(state.isTransitioning).toBe(true);
-    expect(state.activePromise).toBe(transitionPromise);
+    expect(state.activePromise).not.toBeNull();
+    expect(state.activePromise).not.toBe(transitionPromise);
 
     resolveTransition();
 
@@ -76,7 +78,8 @@ describe("runWorldmapChunkTransition", () => {
       await Promise.resolve();
 
       expect(state.isTransitioning).toBe(true);
-      expect(state.activePromise).toBe(transitionPromise);
+      expect(state.activePromise).not.toBeNull();
+      expect(state.activePromise).not.toBe(transitionPromise);
 
       vi.advanceTimersByTime(1_000);
 
@@ -86,6 +89,40 @@ describe("runWorldmapChunkTransition", () => {
       expect(onFinally).toHaveBeenCalledTimes(1);
       expect(state.isTransitioning).toBe(false);
       expect(state.activePromise).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("exposes timeout-bounded ownership to callers waiting on the active transition", async () => {
+    vi.useFakeTimers();
+    try {
+      const state = createWorldmapChunkTransitionRuntimeState();
+      const transitionPromise = new Promise<void>(() => {});
+
+      const runPromise = runWorldmapChunkTransition({
+        hardTimeoutMs: 1_000,
+        onHardTimeout: vi.fn(() => false),
+        onResolved: vi.fn(() => true),
+        state,
+        transitionPromise,
+        yieldFrame: () => Promise.resolve(),
+      });
+
+      await Promise.resolve();
+      await Promise.resolve();
+
+      let waiterSettled = false;
+      const activeTransition = state.activePromise;
+      void activeTransition?.then(() => {
+        waiterSettled = true;
+      });
+
+      vi.advanceTimersByTime(1_000);
+
+      await expect(runPromise).resolves.toBe(false);
+      await Promise.resolve();
+      expect(waiterSettled).toBe(true);
     } finally {
       vi.useRealTimers();
     }
@@ -161,5 +198,29 @@ describe("runWorldmapChunkTransition", () => {
       process.off("unhandledRejection", unhandled);
       vi.useRealTimers();
     }
+  });
+
+  it("advances the transition token when the active transition hard-times out", () => {
+    expect(
+      resolveWorldmapChunkTransitionTimeoutRecovery({
+        currentTransitionToken: 7,
+        timedOutTransitionToken: 7,
+      }),
+    ).toEqual({
+      recoveryTransitionToken: 8,
+      shouldInvalidateTimedOutTransition: true,
+    });
+  });
+
+  it("keeps the current transition token when an older transition times out late", () => {
+    expect(
+      resolveWorldmapChunkTransitionTimeoutRecovery({
+        currentTransitionToken: 9,
+        timedOutTransitionToken: 7,
+      }),
+    ).toEqual({
+      recoveryTransitionToken: 9,
+      shouldInvalidateTimedOutTransition: false,
+    });
   });
 });
