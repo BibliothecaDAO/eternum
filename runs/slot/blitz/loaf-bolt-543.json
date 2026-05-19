@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "loaf-bolt-543",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/loaf-bolt-543/26075446159-1.json",
   "latestLaunchRequestId": "26075446159-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-05-19T04:04:17.995Z",
-  "updatedAt": "2026-05-19T04:07:06.369Z",
+  "updatedAt": "2026-05-19T04:07:25.387Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-19T04:07:06.369Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-05-19T04:07:06.369Z",
+      "finishedAt": "2026-05-19T04:07:25.387Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x48ac9f2211f55e19ddee65311b9f1b159218838afb252d6906df4b469d72d90"
     ],
-    "lootChestRoleTxHash": "0x35cfceee16dd3a2be53796ed90c5ba00041a29ab1f6720d2379999cbd2c00b0"
+    "lootChestRoleTxHash": "0x35cfceee16dd3a2be53796ed90c5ba00041a29ab1f6720d2379999cbd2c00b0",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/loaf-bolt-543/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-19T04:07:24.079Z"
   },
-  "activeLease": {
-    "launchRequestId": "26075446159-1",
-    "workflowRunId": 26075446159,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-19T04:07:06.369Z",
-    "expiresAt": "2026-05-19T04:52:06.369Z"
-  }
+  "completedAt": "2026-05-19T04:07:25.387Z"
 }
