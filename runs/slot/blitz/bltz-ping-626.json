@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26076753405-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-05-19T04:46:14.874Z",
-  "updatedAt": "2026-05-19T04:47:28.570Z",
+  "updatedAt": "2026-05-19T04:47:32.720Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-19T04:47:32.720Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -77,5 +78,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-ping-626.json",
     "worldAddress": "0x06894b9e549bc11f4b8aab10cd1d37e22f60a574589730ca91080b23db4b4268",
     "createGameTxHash": "0x7a94ab86e046d408f79b8cd43696152dc1a57dd597f2e0d11f478bd4b951155"
+  },
+  "activeLease": {
+    "launchRequestId": "26076753405-1",
+    "workflowRunId": 26076753405,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-05-19T04:47:32.720Z",
+    "expiresAt": "2026-05-19T05:32:32.720Z"
   }
 }
