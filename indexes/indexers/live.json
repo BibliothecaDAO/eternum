@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-19T23:21:47.191Z",
+  "updatedAt": "2026-05-19T23:41:51.470Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2293,26 +2293,26 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-flux-865/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-14T22:31:54.349Z"
+        "describedAt": "2026-05-19T23:41:51.448Z"
       },
-      "updatedAt": "2026-05-14T22:31:54.349Z"
+      "updatedAt": "2026-05-19T23:41:51.470Z"
     },
     "bltz-fizz-493": {
       "gameName": "bltz-fizz-493",
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-fizz-493/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-14T22:37:30.462Z"
+        "describedAt": "2026-05-19T23:41:51.470Z"
       },
-      "updatedAt": "2026-05-14T22:37:30.462Z"
+      "updatedAt": "2026-05-19T23:41:51.470Z"
     },
     "na-gladiator-15-05-26-0100": {
       "gameName": "na-gladiator-15-05-26-0100",
