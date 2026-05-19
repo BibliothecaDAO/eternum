@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-19T08:30:27.741Z",
+  "updatedAt": "2026-05-19T09:12:54.638Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -835,6 +835,23 @@
       "hasRunningStep": false,
       "recoverableFailedStepId": "create-world",
       "recoverablePendingStepId": "wait-for-factory-index",
+      "startTime": "2026-05-19T10:00:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
+    },
+    "sourdough": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "sourdough",
+      "path": "runs/mainnet/blitz/sourdough.json",
+      "inputPath": "inputs/mainnet/blitz/sourdough/26087729375-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-19T09:12:54.638Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
       "startTime": "2026-05-19T10:00:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
