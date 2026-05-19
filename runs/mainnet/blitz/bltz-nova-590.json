@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26089660272-1",
   "currentStepId": null,
   "createdAt": "2026-05-19T09:52:09.100Z",
-  "updatedAt": "2026-05-19T10:00:19.561Z",
+  "updatedAt": "2026-05-19T10:02:16.785Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x4209dd2f66e33fa2b36ea54a75adaf05313d010bb5372208dfd35c0b88647f9"
     ],
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-nova-590/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-19T09:56:14.201Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-05-19T10:00:17.964Z"
+    "lastIndexerDescribeAt": "2026-05-19T10:02:16.785Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-05-19T09:56:27.006Z"
 }
