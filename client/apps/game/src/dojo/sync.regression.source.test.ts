@@ -22,10 +22,11 @@ describe("network boot-regression guards", () => {
     expect(source).toMatch(/cancelEntityStreamSubscription[\s\S]*?if \(isInitialSyncInFlight\) return/);
   });
 
-  it("torii-stream-manager.ts resets spatial handshake clock after a bounds switch subscription is applied", () => {
-    const source = readSource("src/dojo/torii-stream-manager.ts");
+  it("sync.ts resets the spatial handshake clock after global spatial map sync is applied", () => {
+    const source = readSource("src/dojo/sync.ts");
 
-    expect(source).toContain("useConnectionStore");
+    expect(source).toContain("syncGlobalSpatialMapStream");
+    expect(source).toContain("spatialMapStreamSubscription");
     expect(source).toContain("recordSpatialHandshake()");
   });
 

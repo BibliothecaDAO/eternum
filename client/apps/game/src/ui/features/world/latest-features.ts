@@ -22,6 +22,54 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-19",
+    title: "Selected Scout Destination",
+    description:
+      "Fixed scout movement so the destination hex stays selected after an explore or travel command, keeping the tile panel populated through chunk changes.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Smoother Unit Tabbing",
+    description:
+      "Improved world-map unit tabbing so nearby army and structure snapshots reuse larger regions and avoid repeated territory-loading stalls.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Continuous Map Terrain",
+    description:
+      "Improved map panning so terrain pages stream around the camera continuously, keeping more of the viewport covered during fast movement.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Seamless Map Panning",
+    description:
+      "Improved world-map chunk presentation so nearby terrain stays visible while the next chunk hydrates, reducing blank map pop-in during travel.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Offline Map Recovery",
+    description:
+      "Improved world-map network recovery so stalled terrain fetches time out cleanly and offline reconnect failures clear stuck map loading before retrying.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Chunk Switch Recovery",
+    description:
+      "Fixed stalled world-map chunk switches so the map can recover in-session, restore army selection, and keep playing without a full refresh.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-17",
     title: "Map Streaming Stability",
     description:

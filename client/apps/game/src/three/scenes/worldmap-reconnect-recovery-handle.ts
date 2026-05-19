@@ -1,5 +1,6 @@
 export interface ActiveWorldmapRecoveryHandle {
   refreshAfterReconnect: () => void;
+  recoverAfterConnectionFailure: () => void;
 }
 
 let activeWorldmapRecoveryHandle: ActiveWorldmapRecoveryHandle | null = null;

@@ -2,11 +2,13 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { setEntitiesMock } = vi.hoisted(() => ({
+const { getEntitiesMock, setEntitiesMock } = vi.hoisted(() => ({
+  getEntitiesMock: vi.fn(),
   setEntitiesMock: vi.fn(),
 }));
 
 vi.mock("@dojoengine/state", () => ({
+  getEntities: getEntitiesMock,
   setEntities: setEntitiesMock,
 }));
 
@@ -29,7 +31,12 @@ vi.mock("@/hooks/store/use-account-store", () => ({
 
 vi.mock("@/hooks/store/use-connection-store", () => ({
   useConnectionStore: {
-    getState: vi.fn(() => ({ recordGlobalUpdate: vi.fn() })),
+    getState: vi.fn(() => ({
+      recordGlobalHandshake: vi.fn(),
+      recordGlobalUpdate: vi.fn(),
+      recordSpatialHandshake: vi.fn(),
+      recordSpatialUpdate: vi.fn(),
+    })),
   },
 }));
 
@@ -68,7 +75,7 @@ vi.mock("./torii-stream-manager", () => ({
   buildModelKeysClause: vi.fn(() => ({ mocked: "global-stream-clause" })),
 }));
 
-import { syncEntitiesDebounced } from "./sync";
+import { cancelEntityStreamSubscription, initialSync, syncEntitiesDebounced } from "./sync";
 
 type ToriiEntityStub = {
   hashed_keys: string;
@@ -79,6 +86,7 @@ type EntityUpdatedCallback = (entity: ToriiEntityStub) => void;
 
 function createSyncHarness() {
   let onEntityUpdated: EntityUpdatedCallback | null = null;
+  const onEntityUpdatedCallbacks: EntityUpdatedCallback[] = [];
   const cancelEntitySubscription = vi.fn();
   const cancelEventSubscription = vi.fn();
   const entitySubscription = { cancel: cancelEntitySubscription };
@@ -87,6 +95,7 @@ function createSyncHarness() {
   const client = {
     onEntityUpdated: vi.fn(async (_clause, callback: EntityUpdatedCallback) => {
       onEntityUpdated = callback;
+      onEntityUpdatedCallbacks.push(callback);
       return entitySubscription;
     }),
     onEventMessageUpdated: vi.fn(async () => eventSubscription),
@@ -96,6 +105,8 @@ function createSyncHarness() {
 
   const setup = {
     network: {
+      toriiClient: client,
+      contractComponents: [],
       world: {
         components: {},
         deleteEntity: vi.fn(),
@@ -103,11 +114,12 @@ function createSyncHarness() {
     },
   };
 
-  const emitEntityUpdate = (entity: ToriiEntityStub) => {
-    if (!onEntityUpdated) {
+  const emitEntityUpdate = (entity: ToriiEntityStub, index = 0) => {
+    const callback = onEntityUpdatedCallbacks[index] ?? onEntityUpdated;
+    if (!callback) {
       throw new Error("entity subscription was not created");
     }
-    onEntityUpdated(entity);
+    callback(entity);
   };
 
   return {
@@ -115,7 +127,21 @@ function createSyncHarness() {
     cancelEventSubscription,
     client,
     emitEntityUpdate,
+    onEntityUpdatedCallbacks,
     setup,
+  };
+}
+
+const flushMicrotasks = async (count = 4) => {
+  for (let index = 0; index < count; index += 1) {
+    await Promise.resolve();
+  }
+};
+
+function createInitialSyncState() {
+  return {
+    structureEntityId: 0,
+    setStructureEntityId: vi.fn(),
   };
 }
 
@@ -354,5 +380,86 @@ describe("syncEntitiesDebounced", () => {
     const subscription = await syncEntitiesDebounced(harness.client as any, harness.setup as any, null, false);
 
     expect(subscription.updateClause).toBeUndefined();
+  });
+});
+
+describe("initialSync global streams", () => {
+  afterEach(() => {
+    cancelEntityStreamSubscription();
+  });
+
+  it("opens non-spatial and spatial global streams before reporting sync complete", async () => {
+    vi.useFakeTimers();
+    getEntitiesMock.mockResolvedValue(undefined);
+    const harness = createSyncHarness();
+
+    const syncPromise = initialSync(harness.setup as any, createInitialSyncState() as any, vi.fn(), {
+      logging: false,
+      reportProgress: false,
+    });
+
+    await flushMicrotasks();
+    harness.emitEntityUpdate({
+      hashed_keys: "global-entity-1",
+      models: {
+        "s1_eternum-Guild": { entity_id: 1 },
+      },
+    });
+    await vi.advanceTimersByTimeAsync(200);
+    await syncPromise;
+
+    expect(harness.client.onEntityUpdated).toHaveBeenCalledTimes(2);
+    expect(harness.client.onEventMessageUpdated).toHaveBeenCalledTimes(2);
+    expect(getEntitiesMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails initial sync when the strict global spatial snapshot times out", async () => {
+    vi.useFakeTimers();
+    getEntitiesMock.mockImplementation(() => new Promise(() => undefined));
+    const harness = createSyncHarness();
+
+    const syncPromise = initialSync(harness.setup as any, createInitialSyncState() as any, vi.fn(), {
+      logging: false,
+      reportProgress: false,
+      subscriptionSetupTimeoutMs: 25,
+    });
+    const expectedRejection = expect(syncPromise).rejects.toThrow(/global spatial map snapshot/i);
+
+    await flushMicrotasks();
+    harness.emitEntityUpdate({
+      hashed_keys: "global-entity-1",
+      models: {
+        "s1_eternum-Guild": { entity_id: 1 },
+      },
+    });
+    await vi.advanceTimersByTimeAsync(225);
+
+    await expectedRejection;
+  });
+
+  it("cancels both global stream pairs after initial sync", async () => {
+    vi.useFakeTimers();
+    getEntitiesMock.mockResolvedValue(undefined);
+    const harness = createSyncHarness();
+
+    const syncPromise = initialSync(harness.setup as any, createInitialSyncState() as any, vi.fn(), {
+      logging: false,
+      reportProgress: false,
+    });
+
+    await flushMicrotasks();
+    harness.emitEntityUpdate({
+      hashed_keys: "global-entity-1",
+      models: {
+        "s1_eternum-Guild": { entity_id: 1 },
+      },
+    });
+    await vi.advanceTimersByTimeAsync(200);
+    await syncPromise;
+
+    cancelEntityStreamSubscription();
+
+    expect(harness.cancelEntitySubscription).toHaveBeenCalledTimes(2);
+    expect(harness.cancelEventSubscription).toHaveBeenCalledTimes(2);
   });
 });

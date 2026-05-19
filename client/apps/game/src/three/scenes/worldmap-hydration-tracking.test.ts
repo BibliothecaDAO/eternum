@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { shouldTrackHydrationUpdateForFetch, trackHydrationUpdateWorkForFetches } from "./worldmap-hydration-tracking";
+import {
+  clearHydrationFetchState,
+  shouldTrackHydrationUpdateForFetch,
+  trackHydrationUpdateWorkForFetches,
+} from "./worldmap-hydration-tracking";
 import { createDeferred } from "./worldmap-test-harness";
 
 describe("shouldTrackHydrationUpdateForFetch", () => {
@@ -95,5 +99,32 @@ describe("shouldTrackHydrationUpdateForFetch", () => {
 
     expect(fetches.get("matching-area")?.pendingCount).toBe(0);
     expect(flushes).toEqual([{ fetchKey: "matching-area", pendingCount: 0 }]);
+  });
+
+  it("resolves waiters before deleting a cleared hydration fetch", async () => {
+    let waiterResolved = false;
+    const fetches = new Map([
+      [
+        "matching-area",
+        {
+          minCol: 10,
+          maxCol: 20,
+          minRow: 30,
+          maxRow: 40,
+          pendingCount: 1,
+          fetchSettled: false,
+          waiters: [
+            () => {
+              waiterResolved = true;
+            },
+          ],
+        },
+      ],
+    ]);
+
+    clearHydrationFetchState(fetches, "matching-area");
+
+    expect(fetches.has("matching-area")).toBe(false);
+    expect(waiterResolved).toBe(true);
   });
 });

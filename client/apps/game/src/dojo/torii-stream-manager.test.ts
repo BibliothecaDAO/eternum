@@ -619,4 +619,76 @@ describe("ToriiStreamManager", () => {
     manager.cancelCurrentSubscription();
     vi.useRealTimers();
   });
+
+  it("forceResubscribe recreates the subscription even when the descriptor is unchanged", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const cancelFirst = vi.fn();
+    const cancelSecond = vi.fn();
+    syncMock
+      .mockImplementationOnce(async () => syncSubscription(cancelFirst))
+      .mockImplementationOnce(async () => syncSubscription(cancelSecond));
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+    });
+
+    await manager.switchBounds(descriptor(0));
+    const result = await manager.forceResubscribe();
+
+    expect(result?.outcome).toBe("applied");
+    expect(syncMock).toHaveBeenCalledTimes(2);
+    expect(cancelFirst).toHaveBeenCalledTimes(1);
+
+    manager.cancelCurrentSubscription();
+  });
+
+  it("forceResubscribe bypasses a hung pending switch during recovery", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const pendingCreate = deferred<SyncSubscriptionStub>();
+    const cancelStale = vi.fn();
+    const cancelRecovered = vi.fn();
+    syncMock
+      .mockImplementationOnce(() => pendingCreate.promise)
+      .mockImplementationOnce(async () => syncSubscription(cancelRecovered));
+
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+    });
+
+    const staleSwitch = manager.switchBounds(descriptor(0));
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(syncMock).toHaveBeenCalledTimes(1);
+
+    const forcedSwitch = manager.forceResubscribe();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(syncMock).toHaveBeenCalledTimes(2);
+
+    pendingCreate.resolve(syncSubscription(cancelStale));
+    await expect(staleSwitch).resolves.toEqual({ outcome: "stale_dropped" });
+    await expect(forcedSwitch).resolves.toEqual({ outcome: "applied" });
+    expect(cancelStale).toHaveBeenCalledTimes(1);
+
+    manager.cancelCurrentSubscription();
+  });
+
+  it("forceResubscribe is a no-op when no descriptor has ever been applied", async () => {
+    const syncMock = vi.mocked(syncEntitiesDebounced);
+    const manager = new ToriiStreamManager({
+      client: {} as any,
+      setup: {} as any,
+      logging: false,
+    });
+
+    const result = await manager.forceResubscribe();
+
+    expect(result).toBeNull();
+    expect(syncMock).not.toHaveBeenCalled();
+  });
 });
