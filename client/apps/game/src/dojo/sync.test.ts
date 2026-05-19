@@ -469,10 +469,10 @@ describe("initialSync global streams", () => {
       }),
       expect.any(Function),
     );
-    expect(getEntitiesMock).not.toHaveBeenCalled();
+    expect(getEntitiesMock).toHaveBeenCalledTimes(1);
   });
 
-  it("skips the global spatial snapshot while the bootstrap trial is disabled", async () => {
+  it("hydrates render-critical spatial rows without replaying Structure owners", async () => {
     vi.useFakeTimers();
     getEntitiesMock.mockResolvedValue(undefined);
     const harness = createSyncHarness();
@@ -492,10 +492,18 @@ describe("initialSync global streams", () => {
     await vi.advanceTimersByTimeAsync(200);
     await syncPromise;
 
-    expect(getEntitiesMock).not.toHaveBeenCalled();
+    const snapshotCall = getEntitiesMock.mock.calls[0];
+    expect(snapshotCall[1]).toEqual(
+      expect.objectContaining({
+        models: expect.arrayContaining(["s1_eternum-TileOpt", "s1_eternum-Building"]),
+      }),
+    );
+    expect(snapshotCall[1].models).not.toContain("s1_eternum-Structure");
+    expect(snapshotCall[4]).toEqual(expect.arrayContaining(["s1_eternum-TileOpt", "s1_eternum-Building"]));
+    expect(snapshotCall[4]).not.toContain("s1_eternum-Structure");
   });
 
-  it("does not let a disabled global spatial snapshot timeout block initial sync", async () => {
+  it("fails initial sync when the ownerless global spatial bootstrap snapshot times out", async () => {
     vi.useFakeTimers();
     getEntitiesMock.mockImplementation(() => new Promise(() => undefined));
     const harness = createSyncHarness();
@@ -505,6 +513,7 @@ describe("initialSync global streams", () => {
       reportProgress: false,
       subscriptionSetupTimeoutMs: 25,
     });
+    const expectedRejection = expect(syncPromise).rejects.toThrow(/global spatial map bootstrap snapshot/i);
 
     await flushMicrotasks();
     harness.emitEntityUpdate({
@@ -515,8 +524,7 @@ describe("initialSync global streams", () => {
     });
     await vi.advanceTimersByTimeAsync(225);
 
-    await expect(syncPromise).resolves.toBeUndefined();
-    expect(getEntitiesMock).not.toHaveBeenCalled();
+    await expectedRejection;
   });
 
   it("cancels the single global stream pair after initial sync", async () => {
