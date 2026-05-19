@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26077968781-1",
   "currentStepId": null,
   "createdAt": "2026-05-19T05:23:09.271Z",
-  "updatedAt": "2026-05-19T13:10:13.588Z",
+  "updatedAt": "2026-05-19T13:11:45.559Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -93,13 +93,11 @@
     ],
     "lootChestRoleTxHash": "0x6d1df6e35aab7708a2ee54118935849c52a46369468316a1c22cbff23d6e075",
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-glow-22/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-19T11:02:07.109Z",
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-05-19T13:10:11.407Z"
+    "lastIndexerDescribeAt": "2026-05-19T13:11:45.559Z"
   },
   "completedAt": "2026-05-19T05:26:52.838Z"
 }
