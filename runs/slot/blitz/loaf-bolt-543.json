@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26075446159-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-19T04:04:17.995Z",
-  "updatedAt": "2026-05-19T04:05:27.638Z",
+  "updatedAt": "2026-05-19T04:05:31.429Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-05-19T04:05:31.429Z"
     },
     {
       "id": "configure-world",
@@ -75,5 +76,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-loaf-bolt-543.json",
     "worldAddress": "0x06b7942d60531933339cb0d363bf27bdeec576de8b0a8eb2ee2aac5204cdae72",
     "createGameTxHash": "0x676975558d498619452a293635341ca178d3f1bf6faeb87149312e4dd58eddf"
+  },
+  "activeLease": {
+    "launchRequestId": "26075446159-1",
+    "workflowRunId": 26075446159,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-05-19T04:05:31.429Z",
+    "expiresAt": "2026-05-19T04:50:31.429Z"
   }
 }
