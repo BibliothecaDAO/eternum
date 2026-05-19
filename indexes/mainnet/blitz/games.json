@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-15T22:37:01.226Z",
+  "updatedAt": "2026-05-19T03:57:12.250Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -765,6 +765,23 @@
       "recoverablePendingStepId": "reserve-blitz-hyperstructures",
       "startTime": 1778886000,
       "durationSeconds": 432000,
+      "artifacts": {}
+    },
+    "bltz-stomp-141": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "bltz-stomp-141",
+      "path": "runs/mainnet/blitz/bltz-stomp-141.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-stomp-141/26075224534-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-19T03:57:12.250Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-19T04:30:00.000Z",
+      "durationSeconds": 3600,
       "artifacts": {}
     }
   }
