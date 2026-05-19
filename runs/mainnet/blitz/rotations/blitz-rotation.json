@@ -12,9 +12,9 @@
   "requestedLaunchStep": "create-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26093845054-1.json",
   "latestLaunchRequestId": "26093845054-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-19T11:21:22.649Z",
+  "updatedAt": "2026-05-19T11:23:24.441Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
+    "nextRetryAt": "2026-05-19T11:38:24.441Z",
     "lastRetryAt": "2026-05-19T11:20:08.737Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-19T11:36:14.819Z",
-    "lastEvaluatedAt": "2026-05-19T11:21:14.819Z"
+    "nextEvaluationAt": "2026-05-19T11:38:24.441Z",
+    "lastEvaluatedAt": "2026-05-19T11:23:24.441Z"
   },
   "steps": [
     {
@@ -45,10 +46,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-05-19T11:21:22.649Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-05-19T11:21:22.649Z",
+      "finishedAt": "2026-05-19T11:23:24.441Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -7869,8 +7871,8 @@
         },
         "seriesGameNumber": 42,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -7880,8 +7882,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-05-19T11:23:19.966Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -7914,7 +7917,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x017a81e1f28e3de5c204a0713fdef024c40382b03e3b1e5de4b1cbc310cac65c",
+          "createGameTxHash": "0x6e751e6d9f4874b64e8d274353d9f00304cd3e7d4eae75df6625d47f2e3ff39"
+        }
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
@@ -7924,13 +7930,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "26093845054-1",
-    "workflowRunId": 26093845054,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-05-19T11:21:22.649Z",
-    "expiresAt": "2026-05-19T12:06:22.649Z"
   }
 }
