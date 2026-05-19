@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-19T09:16:58.840Z",
+  "updatedAt": "2026-05-19T09:32:18.800Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2463,6 +2463,19 @@
         "describedAt": "2026-05-19T06:43:37.678Z"
       },
       "updatedAt": "2026-05-19T06:43:37.678Z"
+    },
+    "sourdough": {
+      "gameName": "sourdough",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/sourdough/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-19T09:32:18.800Z"
+      },
+      "updatedAt": "2026-05-19T09:32:18.800Z"
     }
   }
 }
