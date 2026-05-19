@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "bltz-swish-713",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-swish-713/26076379323-1.json",
   "latestLaunchRequestId": "26076379323-1",
   "currentStepId": "create-world",
   "createdAt": "2026-05-19T04:34:24.602Z",
-  "updatedAt": "2026-05-19T04:34:29.288Z",
+  "updatedAt": "2026-05-19T04:34:38.837Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,12 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-05-19T04:34:29.288Z"
+      "latestEvent": "Creating world failed: \u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-swish-713\" on mainnet.blitz\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\nTypeError: undefined is not an object (evaluating 'abi.find')\n    at getAbiVersion (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.9.2/node_modules/starknet/dist/index.mjs:3105:7)\n    at createAbiParser (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.9.2/node_modules/starknet/dist/index.mjs:3095:19)\n    at new _Contract (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.9.2/node_modules/starknet/dist/index.mjs:12155:20)\n    at new DojoProvider (/home/runner/work/eternum/eternum/node_modules/.pnpm/@dojoengine+core@1.7.0-preview.3_typescript@5.9.3_viem@2.46.2_bufferutil@4.1.0_typescri_db727d2e60360f9f8d74eee42869fd1f/node_modules/@dojoengine/core/dist/index.js:214:25)\n    at <anonymous> (unknown:1:28)\n    at new st (/home/runner/work/eternum/eternum/packages/provider/dist/index.js:1:20925)\n    at createAccount (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:124:24)\n    at resolveLaunchAccountContext (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:336:23)\n    at executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1268:13)\n    at runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1304:9)",
+      "startedAt": "2026-05-19T04:34:29.288Z",
+      "finishedAt": "2026-05-19T04:34:38.837Z",
+      "errorMessage": "\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-swish-713\" on mainnet.blitz\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for mainnet.blitz\nTypeError: undefined is not an object (evaluating 'abi.find')\n    at getAbiVersion (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.9.2/node_modules/starknet/dist/index.mjs:3105:7)\n    at createAbiParser (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.9.2/node_modules/starknet/dist/index.mjs:3095:19)\n    at new _Contract (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.9.2/node_modules/starknet/dist/index.mjs:12155:20)\n    at new DojoProvider (/home/runner/work/eternum/eternum/node_modules/.pnpm/@dojoengine+core@1.7.0-preview.3_typescript@5.9.3_viem@2.46.2_bufferutil@4.1.0_typescri_db727d2e60360f9f8d74eee42869fd1f/node_modules/@dojoengine/core/dist/index.js:214:25)\n    at <anonymous> (unknown:1:28)\n    at new st (/home/runner/work/eternum/eternum/packages/provider/dist/index.js:1:20925)\n    at createAccount (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:124:24)\n    at resolveLaunchAccountContext (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:336:23)\n    at executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1268:13)\n    at runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1304:9)"
     },
     {
       "id": "wait-for-factory-index",
@@ -78,13 +80,5 @@
   "artifacts": {
     "scheduledStartTime": "2026-05-19T05:00:00.000Z",
     "durationSeconds": 3600
-  },
-  "activeLease": {
-    "launchRequestId": "26076379323-1",
-    "workflowRunId": 26076379323,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-05-19T04:34:29.288Z",
-    "expiresAt": "2026-05-19T05:19:29.288Z"
   }
 }
