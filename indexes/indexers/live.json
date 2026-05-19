@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-19T13:02:03.210Z",
+  "updatedAt": "2026-05-19T13:12:03.547Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2504,26 +2504,26 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-glow-22/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-19T11:03:21.071Z"
+        "describedAt": "2026-05-19T13:12:03.526Z"
       },
-      "updatedAt": "2026-05-19T11:03:21.159Z"
+      "updatedAt": "2026-05-19T13:12:03.547Z"
     },
     "bltz-flux-607": {
       "gameName": "bltz-flux-607",
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-flux-607/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-19T11:03:21.158Z"
+        "describedAt": "2026-05-19T13:12:03.547Z"
       },
-      "updatedAt": "2026-05-19T11:03:21.159Z"
+      "updatedAt": "2026-05-19T13:12:03.547Z"
     }
   }
 }
