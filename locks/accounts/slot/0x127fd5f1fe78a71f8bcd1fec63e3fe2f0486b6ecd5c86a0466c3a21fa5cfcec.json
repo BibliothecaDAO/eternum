@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-boost-514",
-    "launchRequestId": "26075063266-1",
+    "gameName": "loaf-bolt-543",
+    "launchRequestId": "26075446159-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26075063266,
+    "workflowRunId": 26075446159,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "1954bf5d-4b30-4f46-b903-3e0a366f208d"
+    "stepId": "create-world",
+    "leaseId": "402f7d0d-dd11-480a-b881-ba9604dbc518"
   },
-  "acquiredAt": "2026-05-19T03:53:39.234Z",
-  "heartbeatAt": "2026-05-19T03:53:53.938Z",
-  "expiresAt": "2026-05-19T03:53:53.938Z",
-  "releasedAt": "2026-05-19T03:53:53.938Z"
+  "acquiredAt": "2026-05-19T04:04:26.569Z",
+  "heartbeatAt": "2026-05-19T04:04:26.569Z",
+  "expiresAt": "2026-05-19T04:14:26.569Z"
 }
