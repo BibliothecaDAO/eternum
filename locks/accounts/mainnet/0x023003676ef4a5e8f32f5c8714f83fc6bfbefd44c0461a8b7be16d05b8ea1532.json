@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "blitz-rotation",
-    "launchRequestId": "26089127228-1",
+    "gameName": "bltz-nova-590",
+    "launchRequestId": "26089660272-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26089127228,
+    "workflowRunId": 26089660272,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "366f14c6-cf22-4acb-bb5d-dd348a09ab55"
+    "stepId": "create-world",
+    "leaseId": "9e7a2f59-9e6f-4227-aa18-b462ffaf2ef3"
   },
-  "acquiredAt": "2026-05-19T09:41:32.059Z",
-  "heartbeatAt": "2026-05-19T09:41:36.154Z",
-  "expiresAt": "2026-05-19T09:41:36.154Z",
-  "releasedAt": "2026-05-19T09:41:36.154Z"
+  "acquiredAt": "2026-05-19T09:52:18.608Z",
+  "heartbeatAt": "2026-05-19T09:52:18.608Z",
+  "expiresAt": "2026-05-19T10:02:18.608Z"
 }
