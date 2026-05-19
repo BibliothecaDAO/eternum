@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-19T23:40:16.423Z",
+  "updatedAt": "2026-05-19T23:40:18.516Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1101,7 +1101,7 @@
       "path": "runs/slot/blitz/bltz-fizz-493.json",
       "inputPath": "inputs/slot/blitz/bltz-fizz-493/25889188363-1.json",
       "status": "complete",
-      "updatedAt": "2026-05-14T22:37:28.424Z",
+      "updatedAt": "2026-05-19T23:40:18.516Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -1112,7 +1112,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "legendary",
-        "lastIndexerDescribeAt": "2026-05-14T22:37:28.423Z"
+        "lastIndexerDescribeAt": "2026-05-14T22:37:28.423Z",
+        "pendingIndexerTierTarget": "pro",
+        "pendingIndexerTierRequestedAt": "2026-05-19T23:40:15.112Z"
       }
     },
     "aussie-noobs": {
