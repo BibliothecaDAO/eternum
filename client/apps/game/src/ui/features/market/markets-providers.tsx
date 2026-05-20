@@ -60,7 +60,7 @@ export const MarketsProviders = ({
         worldAddress={config.worldAddress}
         fallback={loadingFallback}
       >
-        <UserProvider>
+        <UserProvider chain={resolvedChain}>
           <ControllersProvider>{children}</ControllersProvider>
         </UserProvider>
       </DojoSdkProviderInitialized>

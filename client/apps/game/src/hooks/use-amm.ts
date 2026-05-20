@@ -3,7 +3,9 @@ import { useAccount } from "@starknet-react/core";
 import type { Call } from "starknet";
 import { env } from "../../env";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { useRuntimeChain } from "@/runtime/world";
 import { GameAmmClient } from "@/services/amm";
+import type { Chain } from "@contracts";
 
 interface AmmRuntimeConfig {
   chain: string;
@@ -14,8 +16,7 @@ interface AmmRuntimeConfig {
   routerAddress: string;
 }
 
-function resolveAmmRuntimeConfig(): AmmRuntimeConfig {
-  const chain = env.VITE_PUBLIC_CHAIN ?? "sepolia";
+function resolveAmmRuntimeConfig(chain: Chain): AmmRuntimeConfig {
   const routerAddress = env.VITE_PUBLIC_AMM_ROUTER_ADDRESS;
   const lordsAddress = env.VITE_PUBLIC_AMM_LORDS_ADDRESS;
   const indexerUrl = env.VITE_PUBLIC_AMM_INDEXER_URL;
@@ -35,7 +36,8 @@ function resolveAmmRuntimeConfig(): AmmRuntimeConfig {
 
 export function useAmm() {
   const { account } = useAccount();
-  const runtimeConfig = useMemo(() => resolveAmmRuntimeConfig(), []);
+  const runtimeChain = useRuntimeChain((env.VITE_PUBLIC_CHAIN ?? "sepolia") as Chain);
+  const runtimeConfig = useMemo(() => resolveAmmRuntimeConfig(runtimeChain), [runtimeChain]);
 
   const client = useMemo(
     () =>

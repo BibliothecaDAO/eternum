@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { getFactorySqlBaseUrl } from "@/runtime/world";
+import { getFactorySqlBaseUrl, useRuntimeChain } from "@/runtime/world";
 import { fetchBulkAvailability, isToriiAvailable } from "@/runtime/world/factory-resolver";
 import { buildSettledBlitzPlayersWithNamesQuery } from "@/services/blitz/blitz-settlement-sql";
+import type { Chain } from "@contracts";
 
 import { env } from "../../../../../env";
 import { decodePaddedFeltAscii, normalizeHex, parseMaybeHexToNumber } from "./market-utils";
@@ -87,6 +88,7 @@ type MarketServer = {
 };
 
 const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayerFallback?: boolean } = {}) => {
+  const runtimeChain = useRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
   const [servers, setServers] = useState<MarketServer[]>([]);
   const serversRef = useRef<MarketServer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -107,7 +109,7 @@ const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayer
       setLoading(true);
       setError(null);
 
-      const factorySqlBaseUrl = getFactorySqlBaseUrl(env.VITE_PUBLIC_CHAIN as any);
+      const factorySqlBaseUrl = getFactorySqlBaseUrl(runtimeChain);
       if (!factorySqlBaseUrl) {
         setServers([]);
         return;
@@ -184,7 +186,7 @@ const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayer
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [runtimeChain]);
 
   useEffect(() => {
     void refresh();

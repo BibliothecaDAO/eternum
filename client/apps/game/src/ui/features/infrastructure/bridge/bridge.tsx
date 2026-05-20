@@ -5,6 +5,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 import { Button, cn, MaxButton, NumberInput, Select } from "@/ui/design-system/atoms";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
+import { useRuntimeChain } from "@/runtime/world";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { displayAddress } from "@/ui/utils/utils";
 import { getClientFeeRecipient, getLordsAddress, getResourceAddresses } from "@/utils/addresses";
@@ -20,6 +21,7 @@ import {
   StructureType,
   WORLD_CONFIG_ID,
 } from "@bibliothecadao/types";
+import type { Chain } from "@contracts";
 import { useComponentValue } from "@dojoengine/react";
 import { useSendTransaction } from "@starknet-react/core";
 import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
@@ -29,6 +31,7 @@ import Star from "lucide-react/dist/esm/icons/star";
 import X from "lucide-react/dist/esm/icons/x";
 import React, { useCallback, useMemo, useState } from "react";
 import { formatEther, parseEther } from "viem";
+import { env } from "../../../../../env";
 
 interface BridgeProps {
   structures: PlayerStructure[];
@@ -268,12 +271,13 @@ const RealmBalance = ({ resourceId, balance }: { resourceId: number | null; bala
 };
 
 export const Bridge = ({ structures }: BridgeProps) => {
+  const runtimeChain = useRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
   const {
     account: { account },
     setup: { components },
   } = useDojo();
 
-  const resourceAddresses = getResourceAddresses();
+  const resourceAddresses = getResourceAddresses(runtimeChain);
 
   const hyperstructuresCompleted =
     useComponentValue(components.HyperstructureGlobals, getEntityIdFromKeys([BigInt(WORLD_CONFIG_ID)]))
@@ -305,7 +309,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
   } = useSendTransaction({
     calls: [
       {
-        contractAddress: getLordsAddress() as `0x${string}`,
+        contractAddress: getLordsAddress(runtimeChain) as `0x${string}`,
         entrypoint: "mint_test_lords",
         calldata: [],
       },
@@ -656,22 +660,21 @@ export const Bridge = ({ structures }: BridgeProps) => {
                             direction={bridgeDirection}
                           />
                           {/* Conditional Mint Test LORDS Button */}
-                          {import.meta.env.VITE_PUBLIC_CHAIN !== "mainnet" &&
-                            resourceName?.toLowerCase() === "lords" && (
-                              <Button
-                                onClick={handleMintTestLords}
-                                disabled={isMintPending}
-                                variant="outline"
-                                title="Mint 1000 Test $LORDS"
-                                // Smaller size for header placement
-                                className={cn(
-                                  "h-6 px-2 text-xs border transition-colors duration-300 flex-shrink-0",
-                                  "border-gold/30 bg-gold/10 text-gold hover:bg-gold/20",
-                                )}
-                              >
-                                {isMintPending ? "..." : "Mint"}
-                              </Button>
-                            )}
+                          {runtimeChain !== "mainnet" && resourceName?.toLowerCase() === "lords" && (
+                            <Button
+                              onClick={handleMintTestLords}
+                              disabled={isMintPending}
+                              variant="outline"
+                              title="Mint 1000 Test $LORDS"
+                              // Smaller size for header placement
+                              className={cn(
+                                "h-6 px-2 text-xs border transition-colors duration-300 flex-shrink-0",
+                                "border-gold/30 bg-gold/10 text-gold hover:bg-gold/20",
+                              )}
+                            >
+                              {isMintPending ? "..." : "Mint"}
+                            </Button>
+                          )}
                         </div>
                       )}
 

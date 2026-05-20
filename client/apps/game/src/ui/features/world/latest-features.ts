@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-20",
+    title: "Runtime Network Selection",
+    description:
+      "Improved game selection so mainnet and slot games can launch from the same page without stale network preferences blocking startup.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-05-19",
     title: "Review Popup Timing",
     description:
