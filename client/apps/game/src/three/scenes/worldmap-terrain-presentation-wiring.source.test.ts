@@ -99,4 +99,58 @@ describe("worldmap terrain presentation wiring", () => {
       exactCommit.indexOf("setVisibleTerrainMembership"),
     );
   });
+
+  it("guards rolling visual terrain behind active worldmap chunk ownership", () => {
+    const refreshMethod = extractMethod(
+      readSource("src/three/scenes/worldmap.tsx"),
+      "  private async refreshVisualTerrainWindowFromCamera",
+      "  private async refreshVisualTerrainWindowForFocus",
+    );
+
+    expect(refreshMethod).toContain("canRefreshWorldmapVisualTerrain");
+    expect(refreshMethod).toContain("currentScene: this.sceneManager.getCurrentScene()");
+    expect(refreshMethod).toContain("hasInitialized: this.hasInitialized");
+    expect(refreshMethod).toContain("currentChunk: this.currentChunk");
+  });
+
+  it("threads transition ownership through rolling visual page builds and commits", () => {
+    const refreshMethod = extractMethod(
+      readSource("src/three/scenes/worldmap.tsx"),
+      "  private async refreshVisualTerrainWindowForFocus",
+      "  private visualTerrainWindowsMatch",
+    );
+    const criticalBuilder = extractMethod(
+      readSource("src/three/scenes/worldmap.tsx"),
+      "  private async buildCriticalVisualTerrainPages",
+      "  private enqueueMissingVisualTerrainPages",
+    );
+    const queueBuilder = extractMethod(
+      readSource("src/three/scenes/worldmap.tsx"),
+      "  private enqueueMissingVisualTerrainPages",
+      "  private processVisualTerrainBuildQueue",
+    );
+    const buildMethod = extractMethod(
+      readSource("src/three/scenes/worldmap.tsx"),
+      "  private async buildAndApplyVisualTerrainPage",
+      "  private shouldApplyVisualTerrainPageBuild",
+    );
+
+    expect(refreshMethod).toContain("const transitionToken = this.chunkTransitionToken");
+    expect(criticalBuilder).toContain("transitionToken: window.transitionToken");
+    expect(queueBuilder).toContain("transitionToken: window.transitionToken");
+    expect(buildMethod).toContain("latestTransitionToken: this.chunkTransitionToken");
+  });
+
+  it("invalidates visual terrain work when clearing presentations", () => {
+    const clearMethod = extractMethod(
+      readSource("src/three/scenes/worldmap.tsx"),
+      "  private clearVisualTerrainPresentations",
+      "  private cachePreparedTerrainChunk",
+    );
+
+    expect(clearMethod).toContain("this.visualTerrainGeneration += 1");
+    expect(clearMethod).toContain("this.refreshVisualTerrainWindowThrottled?.cancel()");
+    expect(clearMethod).toContain("this.visualTerrainBuildQueue = []");
+    expect(clearMethod).toContain("this.activeVisualTerrainBuildPageKeys.clear()");
+  });
 });

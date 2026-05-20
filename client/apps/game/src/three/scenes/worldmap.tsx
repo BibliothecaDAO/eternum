@@ -425,6 +425,10 @@ import {
   type WorldmapTerrainSourceCellRef,
   type WorldmapVisualTerrainWindow,
 } from "./worldmap-terrain-presentation-runtime";
+import {
+  canRefreshWorldmapVisualTerrain,
+  shouldApplyWorldmapVisualTerrainPageBuild as shouldApplyWorldmapVisualTerrainPageBuildLifecycle,
+} from "./worldmap-visual-terrain-lifecycle";
 
 interface CachedMatrixEntry {
   matrices: InstancedBufferAttribute | null;
@@ -475,7 +479,11 @@ interface WorldmapVisualTerrainPageBuildRequest {
   generation: number;
   pageKey: string;
   priority: "critical" | "normal";
-  transitionToken?: number;
+  transitionToken: number;
+}
+
+interface WorldmapVisualTerrainBuildWindow extends WorldmapVisualTerrainWindow {
+  transitionToken: number;
 }
 
 interface StructureHydrationFetchState {
@@ -638,7 +646,7 @@ export default class WorldmapScene extends WarpTravel {
   private visualTerrainPresentationState: WorldmapTerrainPresentationState = createWorldmapTerrainPresentationState();
   private visualTerrainRetentionTimeout: number | null = null;
   private visualTerrainGeneration = 0;
-  private visualTerrainWindow: WorldmapVisualTerrainWindow | null = null;
+  private visualTerrainWindow: WorldmapVisualTerrainBuildWindow | null = null;
   private visualTerrainWindowPageKeys: Set<string> = new Set();
   private visualTerrainBuildQueue: WorldmapVisualTerrainPageBuildRequest[] = [];
   private visualTerrainBuildFrameHandle: number | null = null;
@@ -5456,7 +5464,15 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async refreshVisualTerrainWindowFromCamera(): Promise<void> {
-    if (!WORLDMAP_CHUNK_POLICY.visualPresentation.rollingWindowEnabled || this.isSwitchedOff) {
+    if (
+      !canRefreshWorldmapVisualTerrain({
+        currentChunk: this.currentChunk,
+        currentScene: this.sceneManager.getCurrentScene(),
+        hasInitialized: this.hasInitialized,
+        isSwitchedOff: this.isSwitchedOff,
+        rollingWindowEnabled: WORLDMAP_CHUNK_POLICY.visualPresentation.rollingWindowEnabled,
+      })
+    ) {
       return;
     }
 
@@ -5466,18 +5482,22 @@ export default class WorldmapScene extends WarpTravel {
 
   private async refreshVisualTerrainWindowForFocus(focusPoint: Vector3): Promise<void> {
     const nextGeneration = this.visualTerrainGeneration + 1;
-    const nextWindow = resolveWorldmapVisualTerrainWindow({
-      focusPoint: {
-        x: focusPoint.x,
-        z: focusPoint.z,
-      },
-      generation: nextGeneration,
-      hexSize: HEX_SIZE,
-      marginPages: WORLDMAP_CHUNK_POLICY.visualPresentation.viewportMarginPages,
-      pageOrigin: this.getVisualTerrainPageOrigin(),
-      pageSize: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize,
-      renderSize: this.renderChunkSize,
-    });
+    const transitionToken = this.chunkTransitionToken;
+    const nextWindow: WorldmapVisualTerrainBuildWindow = {
+      ...resolveWorldmapVisualTerrainWindow({
+        focusPoint: {
+          x: focusPoint.x,
+          z: focusPoint.z,
+        },
+        generation: nextGeneration,
+        hexSize: HEX_SIZE,
+        marginPages: WORLDMAP_CHUNK_POLICY.visualPresentation.viewportMarginPages,
+        pageOrigin: this.getVisualTerrainPageOrigin(),
+        pageSize: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize,
+        renderSize: this.renderChunkSize,
+      }),
+      transitionToken,
+    };
 
     if (this.visualTerrainWindow && this.visualTerrainWindowsMatch(this.visualTerrainWindow, nextWindow)) {
       return;
@@ -5503,11 +5523,12 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private visualTerrainWindowsMatch(
-    currentWindow: WorldmapVisualTerrainWindow,
-    nextWindow: WorldmapVisualTerrainWindow,
+    currentWindow: WorldmapVisualTerrainBuildWindow,
+    nextWindow: WorldmapVisualTerrainBuildWindow,
   ): boolean {
     return (
       currentWindow.centerPageKey === nextWindow.centerPageKey &&
+      currentWindow.transitionToken === nextWindow.transitionToken &&
       currentWindow.pageKeys.length === nextWindow.pageKeys.length &&
       currentWindow.pageKeys.every((pageKey, index) => pageKey === nextWindow.pageKeys[index])
     );
@@ -5545,7 +5566,7 @@ export default class WorldmapScene extends WarpTravel {
     );
   }
 
-  private async buildCriticalVisualTerrainPages(window: WorldmapVisualTerrainWindow): Promise<void> {
+  private async buildCriticalVisualTerrainPages(window: WorldmapVisualTerrainBuildWindow): Promise<void> {
     const criticalBudget = WORLDMAP_CHUNK_POLICY.visualPresentation.criticalPageImmediateBudget;
     const criticalPageKeys = window.criticalPageKeys.slice(0, criticalBudget);
     for (const pageKey of criticalPageKeys) {
@@ -5556,11 +5577,12 @@ export default class WorldmapScene extends WarpTravel {
         generation: window.generation,
         pageKey,
         priority: "critical",
+        transitionToken: window.transitionToken,
       });
     }
   }
 
-  private enqueueMissingVisualTerrainPages(window: WorldmapVisualTerrainWindow): void {
+  private enqueueMissingVisualTerrainPages(window: WorldmapVisualTerrainBuildWindow): void {
     window.pageKeys.forEach((pageKey) => {
       if (
         this.hasVisualTerrainCoverage(pageKey) ||
@@ -5576,6 +5598,7 @@ export default class WorldmapScene extends WarpTravel {
         generation: window.generation,
         pageKey,
         priority: "normal",
+        transitionToken: window.transitionToken,
       });
       this.traceChunk("visual_page_queued", {
         generation: window.generation,
@@ -5646,7 +5669,7 @@ export default class WorldmapScene extends WarpTravel {
         coverageKind: "visual_page",
         generation: request.generation,
         kind: "provisional",
-        transitionToken: request.transitionToken ?? this.chunkTransitionToken,
+        transitionToken: request.transitionToken,
       });
       this.traceChunk("visual_page_built", {
         cellCount: presentation.cells.length,
@@ -5655,7 +5678,9 @@ export default class WorldmapScene extends WarpTravel {
         priority: request.priority,
       });
       incrementWorldmapRenderCounter("visualPageBuilt");
-      this.applyVisualTerrainPagePresentation(presentation);
+      this.applyVisualTerrainPagePresentation(presentation, {
+        latestTransitionToken: this.chunkTransitionToken,
+      });
     } finally {
       if (this.activeVisualTerrainBuildPageKeys.get(request.pageKey) === request.generation) {
         this.activeVisualTerrainBuildPageKeys.delete(request.pageKey);
@@ -5664,12 +5689,19 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private shouldApplyVisualTerrainPageBuild(request: WorldmapVisualTerrainPageBuildRequest): boolean {
-    return (
-      !this.isSwitchedOff &&
-      request.generation === this.visualTerrainGeneration &&
-      this.visualTerrainWindowPageKeys.has(request.pageKey) &&
-      (request.transitionToken === undefined || request.transitionToken === this.chunkTransitionToken)
-    );
+    return shouldApplyWorldmapVisualTerrainPageBuildLifecycle({
+      currentChunk: this.currentChunk,
+      currentGeneration: this.visualTerrainGeneration,
+      currentScene: this.sceneManager.getCurrentScene(),
+      currentTransitionToken: this.chunkTransitionToken,
+      hasInitialized: this.hasInitialized,
+      isSwitchedOff: this.isSwitchedOff,
+      pageKey: request.pageKey,
+      requestGeneration: request.generation,
+      requestTransitionToken: request.transitionToken,
+      rollingWindowEnabled: WORLDMAP_CHUNK_POLICY.visualPresentation.rollingWindowEnabled,
+      targetPageKeys: this.visualTerrainWindowPageKeys,
+    });
   }
 
   private traceVisualTerrainPageStaleDrop(request: WorldmapVisualTerrainPageBuildRequest, reason: string): void {
@@ -7235,6 +7267,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private clearVisualTerrainPresentations(): void {
+    this.visualTerrainGeneration += 1;
+    this.refreshVisualTerrainWindowThrottled?.cancel();
     if (this.visualTerrainRetentionTimeout !== null) {
       window.clearTimeout(this.visualTerrainRetentionTimeout);
       this.visualTerrainRetentionTimeout = null;
