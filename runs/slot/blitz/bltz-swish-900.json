@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26149573752-1",
   "currentStepId": null,
   "createdAt": "2026-05-20T08:02:23.592Z",
-  "updatedAt": "2026-05-20T08:31:06.784Z",
+  "updatedAt": "2026-05-20T08:32:57.519Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -93,13 +93,11 @@
     ],
     "lootChestRoleTxHash": "0x5006d66a2aafed214a8a30c32b3cd5fcf8e4df70aa76af38a996b7a45837dff",
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-swish-900/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-20T08:05:35.960Z",
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-05-20T08:31:05.044Z"
+    "lastIndexerDescribeAt": "2026-05-20T08:32:57.519Z"
   },
   "completedAt": "2026-05-20T08:05:37.285Z"
 }
