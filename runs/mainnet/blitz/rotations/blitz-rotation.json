@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "26137277798-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-20T02:35:12.049Z",
+  "updatedAt": "2026-05-20T02:36:40.305Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -7108,7 +7108,7 @@
         },
         "seriesGameNumber": 38,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-20-05-26-0200: Torii deployment \"na-gladiator-20-05-26-0200\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -7282,8 +7282,11 @@
           "configureTxHash": "0x3b50a9719eddbc36d28d0f31d3de55c31dda98c27e9797e4bd70e3dc1c8b656",
           "worldConfigTxHash": "0x3b50a9719eddbc36d28d0f31d3de55c31dda98c27e9797e4bd70e3dc1c8b656",
           "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-05-20T02:35:10.738Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-05-20T02:36:40.305Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "legendary",
+          "lastIndexerTierDispatchFailedAt": "2026-05-20T02:36:40.305Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-20-05-26-0200\" does not exist"
         }
       },
       {
