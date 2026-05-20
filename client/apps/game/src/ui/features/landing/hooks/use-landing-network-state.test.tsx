@@ -23,7 +23,13 @@ const waitForAsyncWork = async () => {
 const LandingNetworkStateProbe = () => {
   const state = useLandingNetworkState();
 
-  return <div data-preferred-chain={state.preferredChain} data-status={state.status} />;
+  return (
+    <div data-preferred-chain={state.preferredChain} data-status={state.status}>
+      <button type="button" onClick={() => state.selectPreferredChain("slot")}>
+        Select slot
+      </button>
+    </div>
+  );
 };
 
 const getPreferredChain = (container: HTMLElement) => {
@@ -69,15 +75,15 @@ describe("useLandingNetworkState", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
 
-  it("defaults first-time users to mainnet and persists that preference once", async () => {
+  it("defaults first-time users to mainnet without persisting a preference", async () => {
     const setItemSpy = vi.spyOn(Storage.prototype, "setItem");
 
     await renderProbe(root);
 
     const selectedChainWrites = setItemSpy.mock.calls.filter(([key]) => key === CHAIN_KEY);
     expect(getPreferredChain(container)).toBe("mainnet");
-    expect(window.localStorage.getItem(CHAIN_KEY)).toBe("mainnet");
-    expect(selectedChainWrites).toEqual([[CHAIN_KEY, "mainnet"]]);
+    expect(window.localStorage.getItem(CHAIN_KEY)).toBeNull();
+    expect(selectedChainWrites).toEqual([]);
   });
 
   it("keeps a saved slot preference after refresh", async () => {
@@ -100,5 +106,17 @@ describe("useLandingNetworkState", () => {
     expect(getPreferredChain(container)).toBe("mainnet");
     expect(window.localStorage.getItem(CHAIN_KEY)).toBe("mainnet");
     expect(setItemSpy.mock.calls.filter(([key]) => key === CHAIN_KEY)).toEqual([]);
+  });
+
+  it("persists explicit network selection", async () => {
+    await renderProbe(root);
+
+    await act(async () => {
+      container.querySelector("button")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      await waitForAsyncWork();
+    });
+
+    expect(getPreferredChain(container)).toBe("slot");
+    expect(window.localStorage.getItem(CHAIN_KEY)).toBe("slot");
   });
 });

@@ -4,11 +4,6 @@ import {
   DEFAULT_STANDALONE_AMMV2_LORDS_ADDRESS,
   DEFAULT_STANDALONE_AMMV2_ROUTER_ADDRESS,
 } from "@bibliothecadao/ammv2-sdk";
-import { getSelectedChain } from "./src/runtime/world/store";
-import {
-  assertPublicEnvConsistency,
-  resolveRuntimePublicEnvConsistencyInput,
-} from "./src/utils/public-env-consistency";
 
 const _rawEnv = import.meta.env as Record<string, string | undefined>;
 
@@ -302,15 +297,9 @@ const parsePublicEnv = (): PublicEnv => {
   });
 };
 
-const resolveRuntimePublicEnv = (parsedEnv: PublicEnv): PublicEnv => {
-  return resolveRuntimePublicEnvConsistencyInput(parsedEnv, getSelectedChain());
-};
-
 const resolveValidatedPublicEnv = (): PublicEnv => {
   const parsedEnv = parsePublicEnv();
-  const runtimeEnv = resolveRuntimePublicEnv(parsedEnv);
-  assertPublicEnvConsistency(runtimeEnv);
-  return runtimeEnv;
+  return parsedEnv;
 };
 
 let env: PublicEnv;

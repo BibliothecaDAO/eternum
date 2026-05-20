@@ -1,4 +1,4 @@
-import { useActiveWorldProfile, useSelectedRuntimeChain } from "@/runtime/world";
+import { useActiveWorldProfile, useRuntimeChain } from "@/runtime/world";
 import { ControllerConnector } from "@cartridge/connector";
 import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
@@ -21,8 +21,6 @@ const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const KATANA_CHAIN_NETWORK = "Katana Local";
 const KATANA_CHAIN_NAME = "katana";
 const KATANA_RPC_URL = "http://localhost:5050";
-const isLocal = env.VITE_PUBLIC_CHAIN === "local";
-
 const fallbackChain = env.VITE_PUBLIC_CHAIN as import("@contracts").Chain;
 const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
@@ -70,23 +68,23 @@ const queryClient = new QueryClient({
 
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const activeWorld = useActiveWorldProfile();
-  const selectedChain = useSelectedRuntimeChain(fallbackChain);
+  const runtimeChain = useRuntimeChain(fallbackChain);
   const baseRpcUrl = useMemo(() => {
-    if (isLocal) {
+    if (runtimeChain === "local") {
       return KATANA_RPC_URL;
     }
 
     return activeWorld?.rpcUrl ?? dojoConfig.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
-  }, [activeWorld?.rpcUrl]);
+  }, [activeWorld?.rpcUrl, runtimeChain]);
   const runtimeConfig = useMemo(
     () =>
       resolveStarknetRuntimeConfig({
         fallbackChain,
-        selectedChain,
+        selectedChain: runtimeChain,
         baseRpcUrl,
         cartridgeApiBase,
       }),
-    [baseRpcUrl, selectedChain],
+    [baseRpcUrl, runtimeChain],
   );
 
   const controller = useMemo(

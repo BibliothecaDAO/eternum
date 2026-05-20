@@ -231,7 +231,7 @@ const MarketDetailsModalContent = ({
   }, [initialMarket.market_id]);
   const { market: fetchedMarket, refresh: refreshMarket, isLoading } = useMarket(marketId);
   const market = fetchedMarket ?? initialMarket;
-  const resolutionController = useMarketResolutionController(market);
+  const resolutionController = useMarketResolutionController(market, chain);
 
   const watchState = getWatchState(market);
   const isWatching = watchingMarketId === String(market.market_id);

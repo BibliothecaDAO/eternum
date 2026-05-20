@@ -1,41 +1,11 @@
-import { getActiveWorld } from "@/runtime/world";
+import { getActiveWorld, resolveRuntimeChain } from "@/runtime/world";
 import { getSeasonPassAddress, getVillagePassAddress } from "@/utils/addresses";
-import { getSeasonAddresses } from "@contracts";
+import { Chain, getSeasonAddresses } from "@contracts";
 import { toSessionPolicies } from "@cartridge/controller";
 import { getContractByName } from "@dojoengine/core";
 import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
-import { messages } from "./signing-policy";
-
-const activeWorld = getActiveWorld();
-const feeTokenAddress = activeWorld?.feeTokenAddress || env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
-const entryTokenAddress = activeWorld?.entryTokenAddress || null;
-
-const feeTokenPolicies = feeTokenAddress
-  ? {
-      [feeTokenAddress]: {
-        methods: [
-          {
-            name: "approve",
-            entrypoint: "approve",
-          },
-        ],
-      },
-    }
-  : {};
-
-const entryTokenPolicies = entryTokenAddress
-  ? {
-      [entryTokenAddress]: {
-        methods: [
-          {
-            name: "set_approval_for_all",
-            entrypoint: "set_approval_for_all",
-          },
-        ],
-      },
-    }
-  : {};
+import { buildSigningMessages } from "./signing-policy";
 
 const seasonPassMethodPolicies = [
   {
@@ -48,21 +18,69 @@ const seasonPassMethodPolicies = [
   },
 ];
 
-const seasonPassAddresses = Array.from(new Set([getSeasonPassAddress(), getSeasonAddresses("slot").seasonPass])).filter(
-  (address): address is string => Boolean(address && address !== "0x0"),
-);
+const buildFeeTokenPolicies = (feeTokenAddress: string | null | undefined) =>
+  feeTokenAddress
+    ? {
+        [feeTokenAddress]: {
+          methods: [
+            {
+              name: "approve",
+              entrypoint: "approve",
+            },
+          ],
+        },
+      }
+    : {};
 
-const seasonPassPolicies = Object.fromEntries(
-  seasonPassAddresses.map((address) => [
-    address,
-    {
-      methods: seasonPassMethodPolicies,
-    },
-  ]),
-);
+const buildEntryTokenPolicies = (entryTokenAddress: string | null | undefined) =>
+  entryTokenAddress
+    ? {
+        [entryTokenAddress]: {
+          methods: [
+            {
+              name: "set_approval_for_all",
+              entrypoint: "set_approval_for_all",
+            },
+          ],
+        },
+      }
+    : {};
 
-export const buildPolicies = (manifest: any) =>
-  toSessionPolicies({
+const resolvePolicyChain = (): Chain => resolveRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
+
+const resolveSeasonPassAddresses = (chain: Chain): string[] =>
+  Array.from(new Set([getSeasonPassAddress(chain), getSeasonAddresses("slot").seasonPass])).filter(
+    (address): address is string => Boolean(address && address !== "0x0"),
+  );
+
+const buildSeasonPassPolicies = (chain: Chain) =>
+  Object.fromEntries(
+    resolveSeasonPassAddresses(chain).map((address) => [
+      address,
+      {
+        methods: seasonPassMethodPolicies,
+      },
+    ]),
+  );
+
+const buildActiveWorldTokenPolicies = () => {
+  const activeWorld = getActiveWorld();
+  const feeTokenAddress = activeWorld?.feeTokenAddress || env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
+  const entryTokenAddress = activeWorld?.entryTokenAddress || null;
+
+  return {
+    feeTokenPolicies: buildFeeTokenPolicies(feeTokenAddress),
+    entryTokenPolicies: buildEntryTokenPolicies(entryTokenAddress),
+  };
+};
+
+export const buildPolicies = (manifest: any) => {
+  const chain = resolvePolicyChain();
+  const { feeTokenPolicies, entryTokenPolicies } = buildActiveWorldTokenPolicies();
+  const seasonPassPolicies = buildSeasonPassPolicies(chain);
+  const villagePassAddress = getVillagePassAddress(chain);
+
+  return toSessionPolicies({
     contracts: {
       ...feeTokenPolicies,
       ...entryTokenPolicies,
@@ -103,7 +121,7 @@ export const buildPolicies = (manifest: any) =>
           },
         ],
       },
-      [getVillagePassAddress()]: {
+      [villagePassAddress]: {
         methods: [
           {
             name: "set_approval_for_all",
@@ -805,7 +823,7 @@ export const buildPolicies = (manifest: any) =>
           },
         ],
       },
-      [getVillagePassAddress()]: {
+      [villagePassAddress]: {
         methods: [
           {
             name: "set_approval_for_all",
@@ -814,5 +832,6 @@ export const buildPolicies = (manifest: any) =>
         ],
       },
     },
-    messages,
+    messages: buildSigningMessages(chain),
   });
+};

@@ -1,30 +1,34 @@
 import { Chain, getSeasonAddresses } from "@contracts";
+import { resolveRuntimeChain } from "@/runtime/world";
 import { env } from "../../env";
 
-export const getResourceAddresses = () => {
-  const addresses = getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).resources;
+const resolveAddressChain = (chain?: Chain): Chain => chain ?? resolveRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
+
+export const getResourceAddresses = (chain?: Chain) => {
+  const addresses = getSeasonAddresses(resolveAddressChain(chain)).resources;
   return addresses;
 };
 
-export const getSeasonPassAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).seasonPass;
+export const getSeasonPassAddress = (chain?: Chain) => {
+  return getSeasonAddresses(resolveAddressChain(chain)).seasonPass;
 };
 
-const getRealmsAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).realms;
+const getRealmsAddress = (chain?: Chain) => {
+  return getSeasonAddresses(resolveAddressChain(chain)).realms;
 };
 
-export const getLordsAddress = () => {
-  if ((env.VITE_PUBLIC_CHAIN as Chain) == "mainnet") {
-    return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).lords;
+export const getLordsAddress = (chain?: Chain) => {
+  const resolvedChain = resolveAddressChain(chain);
+  if (resolvedChain == "mainnet") {
+    return getSeasonAddresses(resolvedChain).lords;
   }
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).resources.LORDS[1];
+  return getSeasonAddresses(resolvedChain).resources.LORDS[1];
 };
 
 export const getClientFeeRecipient = () => {
   return env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT;
 };
 
-export const getVillagePassAddress = () => {
-  return getSeasonAddresses(env.VITE_PUBLIC_CHAIN as Chain).villagePass;
+export const getVillagePassAddress = (chain?: Chain) => {
+  return getSeasonAddresses(resolveAddressChain(chain)).villagePass;
 };

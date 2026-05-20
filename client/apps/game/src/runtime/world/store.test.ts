@@ -7,10 +7,12 @@ import {
   getActiveWorldName,
   purgeDeadSlotWorldProfiles,
   purgeUnavailableSlotWorldProfiles,
+  resolveRuntimeChain,
 } from "./store";
 import type { WorldProfilesMap } from "./types";
 
 const ACTIVE_KEY = "ACTIVE_WORLD_NAME";
+const CHAIN_KEY = "ACTIVE_WORLD_CHAIN";
 const PROFILES_KEY = "WORLD_PROFILES";
 
 const createLocalStorage = () => {
@@ -168,5 +170,29 @@ describe("world profile store", () => {
     const remaining = JSON.parse(window.localStorage.getItem(PROFILES_KEY) ?? "{}") as WorldProfilesMap;
     expect(remaining).toHaveProperty("bltz-riff-363");
     expect(getActiveWorldName()).toBe("bltz-riff-363");
+  });
+
+  it("uses the active world chain before a saved selected-chain preference", () => {
+    saveProfiles({
+      "bltz-riff-363": {
+        name: "bltz-riff-363",
+        chain: "slot",
+        toriiBaseUrl: "https://api.cartridge.gg/x/bltz-riff-363/torii",
+        rpcUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+        worldAddress: "0x00ffc134",
+        contractsBySelector: {},
+        fetchedAt: 1,
+      },
+    });
+    window.localStorage.setItem(ACTIVE_KEY, "bltz-riff-363");
+    window.localStorage.setItem(CHAIN_KEY, "mainnet");
+
+    expect(resolveRuntimeChain("mainnet")).toBe("slot");
+  });
+
+  it("uses the selected-chain preference when no active world exists", () => {
+    window.localStorage.setItem(CHAIN_KEY, "slot");
+
+    expect(resolveRuntimeChain("mainnet")).toBe("slot");
   });
 });

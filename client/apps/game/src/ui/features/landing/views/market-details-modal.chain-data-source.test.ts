@@ -1,3 +1,5 @@
+// @vitest-environment node
+
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -17,6 +19,7 @@ describe("MarketDetailsModal chain-aware data sources", () => {
     expect(source).toContain("fetchMarketBuyUniqueAccountsCountByMarket");
     expect(source).toContain("<MarketPositions market={market} chain={chain} address={address} />");
     expect(source).toContain("<MarketVaultFees market={market} chain={chain} address={address} />");
+    expect(source).toContain("useMarketResolutionController(market, chain)");
   });
 
   it("normalizes market id with address padding for SQL lookups", () => {
