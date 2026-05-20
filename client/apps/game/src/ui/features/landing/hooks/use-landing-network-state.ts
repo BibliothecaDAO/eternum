@@ -1,4 +1,4 @@
-import { getSelectedChain, setSelectedChain, useSelectedRuntimeChain } from "@/runtime/world";
+import { setSelectedChain, useSelectedRuntimeChain } from "@/runtime/world";
 import {
   resolveConnectedTxChainFromRuntime,
   switchWalletToChain,
@@ -6,7 +6,7 @@ import {
 } from "@/ui/utils/network-switch";
 import type { Chain } from "@contracts";
 import { useAccount } from "@starknet-react/core";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 
 import {
   resolveLandingNetworkState,
@@ -27,19 +27,10 @@ interface LandingNetworkControllerState {
 
 const DEFAULT_LANDING_CHAIN: Chain = "mainnet";
 
-const selectDefaultLandingChainIfMissing = () => {
-  if (getSelectedChain()) return;
-  setSelectedChain(DEFAULT_LANDING_CHAIN);
-};
-
 export const useLandingNetworkState = (): LandingNetworkControllerState => {
   const selectedChain = useSelectedRuntimeChain(DEFAULT_LANDING_CHAIN);
   const { address, chainId, connector } = useAccount();
   const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller ?? null;
-
-  useEffect(() => {
-    selectDefaultLandingChainIfMissing();
-  }, []);
 
   const connectedChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
 

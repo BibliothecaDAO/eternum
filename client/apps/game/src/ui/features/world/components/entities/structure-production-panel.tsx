@@ -1,6 +1,4 @@
-import { ResourceManager, getBlockTimestamp } from "@bibliothecadao/eternum";
-import { useBuildings } from "@bibliothecadao/react";
-import { ClientComponents, ResourcesIds, getProducedResource } from "@bibliothecadao/types";
+import { ClientComponents, ResourcesIds } from "@bibliothecadao/types";
 import { memo, useEffect, useMemo, useState } from "react";
 
 import { ProductionStatusBadge } from "@/ui/shared";
@@ -8,6 +6,10 @@ import { currencyIntlFormat } from "@/ui/utils/utils";
 import { ComponentValue } from "@dojoengine/recs";
 import { formatTimeRemaining } from "../../../economy/resources/entity-resource-table/utils";
 import { createProductionSortComparator } from "./production-sort";
+import {
+  StructureProductionSummary,
+  useStructureProductionSummary,
+} from "@/ui/features/world/components/entities/structure-production-summary";
 
 interface StructureProductionPanelProps {
   structure: ComponentValue<ClientComponents["Structure"]["schema"]>;
@@ -32,15 +34,8 @@ interface StructureProductionPanelProps {
   consumptionPerSecondById?: Map<ResourcesIds, number>;
 }
 
-interface ResourceProductionSummaryItem {
-  resourceId: ResourcesIds;
-  totalBuildings: number;
-  activeBuildings: number;
-  isProducing: boolean;
-  timeRemainingSeconds: number | null;
-  productionPerSecond: number | null;
-  outputRemaining: number | null;
-  calculatedAt: number;
+interface StructureProductionPanelViewProps extends Omit<StructureProductionPanelProps, "structure" | "resources"> {
+  productionSummary: StructureProductionSummary;
 }
 
 const formatOutputAmount = (value: number | null | undefined): string | undefined => {
@@ -61,10 +56,8 @@ const formatNetRatePerSecond = (value: number): string => {
   return `0/s`;
 };
 
-export const StructureProductionPanel = memo(
+export const StructureProductionPanelView = memo(
   ({
-    structure,
-    resources,
     compact = false,
     smallTextClass,
     showProductionSummary = true,
@@ -72,7 +65,8 @@ export const StructureProductionPanel = memo(
     badgeVariant = "default",
     starvedResources,
     consumptionPerSecondById,
-  }: StructureProductionPanelProps) => {
+    productionSummary,
+  }: StructureProductionPanelViewProps) => {
     const [timerTick, setTimerTick] = useState(0);
 
     useEffect(() => {
@@ -89,86 +83,7 @@ export const StructureProductionPanel = memo(
 
     const currentTime = useMemo(() => Date.now(), [timerTick]);
     const productionBadgeSize = badgeVariant === "detailed" ? "md" : compact ? "xs" : "sm";
-
-    const { currentDefaultTick } = getBlockTimestamp();
-
-    const buildingsData = useBuildings(Number(structure.base.coord_x ?? 0), Number(structure.base.coord_y ?? 0));
-
-    const productionBuildings = useMemo(
-      () => (buildingsData ?? []).filter((building) => building && getProducedResource(building.category)),
-      [buildingsData],
-    );
-
-    const resourceProductionSummary = useMemo<ResourceProductionSummaryItem[]>(() => {
-      if (!productionBuildings.length) return [];
-
-      const summaries = new Map<ResourcesIds, { totalBuildings: number }>();
-
-      productionBuildings.forEach((building) => {
-        if (!building?.produced?.resource) return;
-
-        const resourceId = building.produced.resource as ResourcesIds;
-        if (resourceId === ResourcesIds.Labor) return;
-
-        const summary = summaries.get(resourceId);
-        if (summary) {
-          summary.totalBuildings += 1;
-        } else {
-          summaries.set(resourceId, { totalBuildings: 1 });
-        }
-      });
-
-      const calculatedAt = Date.now();
-
-      return Array.from(summaries.entries()).map(([resourceId, stats]) => {
-        let isProducing = false;
-        let timeRemainingSeconds: number | null = null;
-        let productionPerSecond: number | null = null;
-        let outputRemaining: number | null = null;
-        let activeBuildings = 0;
-
-        const productionInfo = ResourceManager.balanceAndProduction(resources, resourceId);
-        const productionData = ResourceManager.calculateResourceProductionData(
-          resourceId,
-          productionInfo,
-          currentDefaultTick || 0,
-        );
-        isProducing = productionData.isProducing;
-
-        if (isProducing) {
-          const buildingCount = Number(productionInfo.production?.building_count ?? 0);
-          activeBuildings = buildingCount > 0 ? buildingCount : stats.totalBuildings;
-        }
-
-        timeRemainingSeconds = Number.isFinite(productionData.timeRemainingSeconds)
-          ? productionData.timeRemainingSeconds
-          : null;
-        productionPerSecond = Number.isFinite(productionData.productionPerSecond)
-          ? productionData.productionPerSecond
-          : null;
-        outputRemaining = Number.isFinite(productionData.outputRemaining) ? productionData.outputRemaining : null;
-
-        return {
-          resourceId,
-          totalBuildings: stats.totalBuildings,
-          activeBuildings,
-          isProducing,
-          timeRemainingSeconds,
-          productionPerSecond,
-          outputRemaining,
-          calculatedAt,
-        };
-      });
-    }, [productionBuildings, resources, currentDefaultTick]);
-
-    const totalProductionBuildings = resourceProductionSummary.reduce(
-      (accumulator, summary) => accumulator + summary.totalBuildings,
-      0,
-    );
-    const activeProductionBuildings = resourceProductionSummary.reduce(
-      (accumulator, summary) => accumulator + summary.activeBuildings,
-      0,
-    );
+    const { activeProductionBuildings, items: resourceProductionSummary, totalProductionBuildings } = productionSummary;
 
     if (!resourceProductionSummary.length) {
       return <p className={`${smallTextClass} text-gold/60 italic`}>No production buildings.</p>;
@@ -266,5 +181,14 @@ export const StructureProductionPanel = memo(
     );
   },
 );
+
+StructureProductionPanelView.displayName = "StructureProductionPanelView";
+
+export const StructureProductionPanel = memo((props: StructureProductionPanelProps) => {
+  const { resources, structure, ...viewProps } = props;
+  const productionSummary = useStructureProductionSummary(structure, resources);
+
+  return <StructureProductionPanelView {...viewProps} productionSummary={productionSummary} />;
+});
 
 StructureProductionPanel.displayName = "StructureProductionPanel";

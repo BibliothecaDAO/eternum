@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-20",
+    title: "Runtime Network Selection",
+    description:
+      "Improved game selection so mainnet and slot games can launch from the same page without stale network preferences blocking startup.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
     date: "2026-05-19",
     title: "Review Popup Timing",
     description:
@@ -39,6 +47,14 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-05-19",
+    title: "Relic Tab States",
+    description:
+      "Improved army and structure HUD relic cues so empty relic tabs look disabled, stored relics stay accessible, and activatable army relics appear directly in the default HUD.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-19",
     title: "Selected Scout Destination",
     description:
       "Fixed scout movement so the destination hex stays selected after an explore or travel command, keeping the tile panel populated through chunk changes.",
@@ -47,9 +63,33 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-05-18",
-    title: "Smoother Unit Tabbing",
+    title: "Accurate Supply Readiness",
     description:
-      "Improved world-map unit tabbing so nearby army and structure snapshots reuse larger regions and avoid repeated territory-loading stalls.",
+      "Fixed army readiness icons so travel and explore each reflect their own stamina and food requirements before you commit a movement action.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Balanced Relic Cues",
+    description:
+      "Refined the army and structure HUD relic counts into a quieter usable/total cue that keeps available relics clear without overwhelming the tab.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Chunk Switch Recovery",
+    description:
+      "Fixed stalled world-map chunk switches so the map can recover in-session, restore army selection, and keep playing without a full refresh.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Clearer HUD Tabs",
+    description:
+      "Improved the selected army and structure HUD tabs so their bottom icon controls look clickable and the active section is easier to spot.",
     type: "improvement",
     gameSlug: "world",
   },
@@ -63,14 +103,6 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-05-18",
-    title: "Seamless Map Panning",
-    description:
-      "Improved world-map chunk presentation so nearby terrain stays visible while the next chunk hydrates, reducing blank map pop-in during travel.",
-    type: "improvement",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-05-18",
     title: "Offline Map Recovery",
     description:
       "Improved world-map network recovery so stalled terrain fetches time out cleanly and offline reconnect failures clear stuck map loading before retrying.",
@@ -79,10 +111,42 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-05-18",
-    title: "Chunk Switch Recovery",
+    title: "Relic Count Cues",
     description:
-      "Fixed stalled world-map chunk switches so the map can recover in-session, restore army selection, and keep playing without a full refresh.",
-    type: "fix",
+      "Improved army and structure HUD relic cues so usable relics stand out while total relic quantities stay visible at a glance.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Relic Usability Cues",
+    description:
+      "Relic inventory cards now use different borders to show which relics match the selected army or structure before activation.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Seamless Map Panning",
+    description:
+      "Improved world-map chunk presentation so nearby terrain stays visible while the next chunk hydrates, reducing blank map pop-in during travel.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Smoother Unit Tabbing",
+    description:
+      "Improved world-map unit tabbing so nearby army and structure snapshots reuse larger regions and avoid repeated territory-loading stalls.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Usable Relic Alerts",
+    description:
+      "Army and structure HUD tabs now show a compact action cue when the selected entity has relics ready to activate.",
+    type: "improvement",
     gameSlug: "world",
   },
   {
@@ -195,6 +259,30 @@ const allLatestFeatures: LatestFeature[] = [
     description:
       "The landing network switch now remembers your last Mainnet or Slot choice after refresh, while first-time visits still start on Mainnet.",
     type: "fix",
+  },
+  {
+    date: "2026-05-12",
+    title: "Mode-Aware Army Inventory",
+    description:
+      "Updated selected army HUD tabs so Blitz armies focus on combat and relics unless they actually carry resources, while Eternum armies keep their inventory view.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-12",
+    title: "Wider Biome Cards",
+    description:
+      "Fixed biome combat bonus cards in the selected tile HUD so advantage and penalty rows fill the available panel width.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-12",
+    title: "Clearer Tile HUD",
+    description:
+      "Improved selected structure and army panels with tab badges for defenders, production, inventory, and relics so key counts are visible before opening each tab.",
+    type: "improvement",
+    gameSlug: "eternum",
   },
   {
     date: "2026-05-11",

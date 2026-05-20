@@ -58,7 +58,7 @@ const writeStorageValue = (key: string, value: string | null) => {
   }
 };
 
-export const getSelectedChain = (): Chain | null => {
+const getSelectedChain = (): Chain | null => {
   const stored = readStorageValue(CHAIN_KEY);
   return isValidChain(stored) ? stored : null;
 };
@@ -244,3 +244,5 @@ export const getActiveWorld = (): WorldProfile | null => {
   if (!name) return null;
   return getWorldProfile(name);
 };
+
+export const resolveRuntimeChain = (fallback: Chain): Chain => getActiveWorld()?.chain ?? resolveChain(fallback);

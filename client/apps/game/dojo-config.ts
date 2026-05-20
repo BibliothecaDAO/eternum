@@ -68,11 +68,10 @@ if (evictedDeadSlotWorlds.length > 0) {
   );
 }
 
-const resolvedChain = resolveChain(VITE_PUBLIC_CHAIN! as Chain);
-let manifest = getGameManifest(resolvedChain as Chain);
-
 // If a previously saved world profile exists, patch manifest and prefer its Torii.
 const activeWorld = getActiveWorld();
+const resolvedChain = activeWorld?.chain ?? resolveChain(VITE_PUBLIC_CHAIN! as Chain);
+let manifest = getGameManifest(resolvedChain as Chain);
 const toriiFromWorld = activeWorld?.toriiBaseUrl;
 const rpcFromWorld = activeWorld?.rpcUrl;
 if (activeWorld && activeWorld.contractsBySelector && activeWorld.worldAddress) {

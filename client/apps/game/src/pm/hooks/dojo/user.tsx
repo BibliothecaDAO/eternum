@@ -2,10 +2,12 @@ import { LordsAbi } from "@bibliothecadao/eternum";
 import { useAccount, useCall } from "@starknet-react/core";
 import { createContext, useCallback, useContext, useMemo } from "react";
 import { Abi } from "starknet";
+import type { PredictionMarketChain } from "../../manifest-loader";
 import { getPredictionMarketConfig } from "../../prediction-market-config";
 
 type UserProviderProps = {
   children: React.ReactNode;
+  chain?: PredictionMarketChain;
 };
 
 type UserProviderState =
@@ -47,9 +49,9 @@ const normalizeUint256 = (value: unknown): bigint => {
   }
 };
 
-export function UserProvider({ children, ...props }: UserProviderProps) {
+export function UserProvider({ children, chain, ...props }: UserProviderProps) {
   const { account } = useAccount();
-  const collateralToken = getPredictionMarketConfig().collateralToken;
+  const collateralToken = getPredictionMarketConfig(chain).collateralToken;
 
   // LORDS balance from RPC
   const lordsBalanceCall = useCall({
