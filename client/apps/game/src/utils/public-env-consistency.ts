@@ -6,6 +6,20 @@ type PublicEnvConsistencyInput = {
   VITE_PUBLIC_TORII: string;
 };
 
+type RuntimePublicEnvConsistencyInput<T extends PublicEnvConsistencyInput> = Omit<T, "VITE_PUBLIC_CHAIN"> &
+  PublicEnvConsistencyInput;
+
+export const resolveRuntimePublicEnvConsistencyInput = <T extends PublicEnvConsistencyInput>(
+  env: T,
+  runtimeChain: PublicEnvChain | null,
+): RuntimePublicEnvConsistencyInput<T> => {
+  if (!runtimeChain) {
+    return env;
+  }
+
+  return { ...env, VITE_PUBLIC_CHAIN: runtimeChain };
+};
+
 export const assertPublicEnvConsistency = (env: PublicEnvConsistencyInput): void => {
   const errors = resolvePublicEnvConsistencyErrors(env);
   if (errors.length === 0) {
