@@ -2,7 +2,11 @@
 
 import { describe, expect, it } from "vitest";
 
-import { assertPublicEnvConsistency, resolvePublicEnvConsistencyErrors } from "./public-env-consistency";
+import {
+  assertPublicEnvConsistency,
+  resolvePublicEnvConsistencyErrors,
+  resolveRuntimePublicEnvConsistencyInput,
+} from "./public-env-consistency";
 
 const mainnetEnv = {
   VITE_PUBLIC_CHAIN: "mainnet" as const,
@@ -43,6 +47,19 @@ describe("resolvePublicEnvConsistencyErrors", () => {
         VITE_PUBLIC_TORII: "https://api.cartridge.gg/x/eternum-blitz-slot-4/torii",
       }),
     ).toEqual([]);
+  });
+
+  it("allows slot deployments when the runtime chain has been switched to slot", () => {
+    const runtimeEnv = resolveRuntimePublicEnvConsistencyInput(
+      {
+        ...mainnetEnv,
+        VITE_PUBLIC_SLOT: "eternum-blitz-slot-4",
+        VITE_PUBLIC_TORII: "https://api.cartridge.gg/x/eternum-blitz-slot-test/torii",
+      },
+      "slot",
+    );
+
+    expect(resolvePublicEnvConsistencyErrors(runtimeEnv)).toEqual([]);
   });
 });
 

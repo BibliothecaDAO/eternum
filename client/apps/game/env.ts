@@ -5,7 +5,10 @@ import {
   DEFAULT_STANDALONE_AMMV2_ROUTER_ADDRESS,
 } from "@bibliothecadao/ammv2-sdk";
 import { getSelectedChain } from "./src/runtime/world/store";
-import { assertPublicEnvConsistency } from "./src/utils/public-env-consistency";
+import {
+  assertPublicEnvConsistency,
+  resolveRuntimePublicEnvConsistencyInput,
+} from "./src/utils/public-env-consistency";
 
 const _rawEnv = import.meta.env as Record<string, string | undefined>;
 
@@ -290,13 +293,29 @@ const envSchema = z.object({
   VITE_NEW_RELIC_LICENSE_KEY: z.string().optional(),
 });
 
-let env: z.infer<typeof envSchema>;
-try {
-  env = envSchema.parse({
+type PublicEnv = z.infer<typeof envSchema>;
+
+const parsePublicEnv = (): PublicEnv => {
+  return envSchema.parse({
     ...import.meta.env,
     VITE_PUBLIC_AMM_ROUTER_ADDRESS: resolveLegacyAmmRouterAddress(_rawEnv),
   });
-  assertPublicEnvConsistency(env);
+};
+
+const resolveRuntimePublicEnv = (parsedEnv: PublicEnv): PublicEnv => {
+  return resolveRuntimePublicEnvConsistencyInput(parsedEnv, getSelectedChain());
+};
+
+const resolveValidatedPublicEnv = (): PublicEnv => {
+  const parsedEnv = parsePublicEnv();
+  const runtimeEnv = resolveRuntimePublicEnv(parsedEnv);
+  assertPublicEnvConsistency(runtimeEnv);
+  return runtimeEnv;
+};
+
+let env: PublicEnv;
+try {
+  env = resolveValidatedPublicEnv();
 } catch (error) {
   if (error instanceof z.ZodError) {
     console.error("❌ Invalid environment variables:", JSON.stringify(error.errors, null, 2));
@@ -304,11 +323,6 @@ try {
     console.error("❌ Invalid environment variables:", error);
   }
   throw new Error("Invalid environment variables");
-}
-
-const storedChain = getSelectedChain();
-if (storedChain) {
-  env = { ...env, VITE_PUBLIC_CHAIN: storedChain };
 }
 
 export { env };
