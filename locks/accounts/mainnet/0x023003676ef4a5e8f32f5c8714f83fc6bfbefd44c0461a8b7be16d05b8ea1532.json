@@ -9,11 +9,10 @@
     "workflowName": "Game Launch",
     "workflowRunId": 26159914526,
     "workflowRunAttempt": 1,
-    "stepId": "reserve-blitz-hyperstructures",
-    "leaseId": "e613e85d-4115-42a1-803f-67e81e71ef10"
+    "stepId": "grant-lootchest-role",
+    "leaseId": "85e2a880-9001-4153-9236-45676b149143"
   },
-  "acquiredAt": "2026-05-20T11:39:08.404Z",
-  "heartbeatAt": "2026-05-20T11:39:28.508Z",
-  "expiresAt": "2026-05-20T11:39:28.508Z",
-  "releasedAt": "2026-05-20T11:39:28.508Z"
+  "acquiredAt": "2026-05-20T11:39:43.636Z",
+  "heartbeatAt": "2026-05-20T11:39:43.636Z",
+  "expiresAt": "2026-05-20T11:49:43.636Z"
 }
