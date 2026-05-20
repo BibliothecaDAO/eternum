@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-swish-900",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-swish-900/26149573752-1.json",
   "latestLaunchRequestId": "26149573752-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-05-20T08:02:23.592Z",
-  "updatedAt": "2026-05-20T08:05:18.040Z",
+  "updatedAt": "2026-05-20T08:05:37.285Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-20T08:05:18.040Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-05-20T08:05:18.040Z",
+      "finishedAt": "2026-05-20T08:05:37.285Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x4983647ec586298363ea721d3d858ccc90db54b890d3df0282024c0c70fd240"
     ],
-    "lootChestRoleTxHash": "0x5006d66a2aafed214a8a30c32b3cd5fcf8e4df70aa76af38a996b7a45837dff"
+    "lootChestRoleTxHash": "0x5006d66a2aafed214a8a30c32b3cd5fcf8e4df70aa76af38a996b7a45837dff",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-swish-900/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-20T08:05:35.960Z"
   },
-  "activeLease": {
-    "launchRequestId": "26149573752-1",
-    "workflowRunId": 26149573752,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-20T08:05:18.040Z",
-    "expiresAt": "2026-05-20T08:50:18.040Z"
-  }
+  "completedAt": "2026-05-20T08:05:37.285Z"
 }
