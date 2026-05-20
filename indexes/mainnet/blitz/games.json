@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-20T13:57:46.864Z",
+  "updatedAt": "2026-05-20T21:30:56.491Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -901,6 +901,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-05-20T13:57:46.863Z"
       }
+    },
+    "bltz-vibe-53": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "bltz-vibe-53",
+      "path": "runs/mainnet/blitz/bltz-vibe-53.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-vibe-53/26191101080-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-20T21:30:56.491Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-20T23:00:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
     }
   }
 }
