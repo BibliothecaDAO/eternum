@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-20T08:05:18.040Z",
+  "updatedAt": "2026-05-20T08:05:37.285Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1266,17 +1266,20 @@
       "gameName": "bltz-swish-900",
       "path": "runs/slot/blitz/bltz-swish-900.json",
       "inputPath": "inputs/slot/blitz/bltz-swish-900/26149573752-1.json",
-      "status": "running",
-      "updatedAt": "2026-05-20T08:05:18.040Z",
+      "status": "complete",
+      "updatedAt": "2026-05-20T08:05:37.285Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexer",
-      "activeLeaseExpiresAt": "2026-05-20T08:50:18.040Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "startTime": 1779267600,
       "durationSeconds": 5400,
-      "artifacts": {}
+      "artifacts": {
+        "indexerCreated": true,
+        "indexerTier": "basic",
+        "lastIndexerDescribeAt": "2026-05-20T08:05:35.960Z"
+      }
     }
   }
 }
