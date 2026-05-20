@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26149573752-1",
   "currentStepId": null,
   "createdAt": "2026-05-20T08:02:23.592Z",
-  "updatedAt": "2026-05-20T08:05:37.285Z",
+  "updatedAt": "2026-05-20T08:31:06.784Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -97,7 +97,9 @@
     "indexerUrl": "https://api.cartridge.gg/x/bltz-swish-900/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-20T08:05:35.960Z"
+    "lastIndexerDescribeAt": "2026-05-20T08:05:35.960Z",
+    "pendingIndexerTierTarget": "legendary",
+    "pendingIndexerTierRequestedAt": "2026-05-20T08:31:05.044Z"
   },
   "completedAt": "2026-05-20T08:05:37.285Z"
 }
