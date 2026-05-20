@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-20T08:22:44.650Z",
+  "updatedAt": "2026-05-20T08:33:00.320Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2533,6 +2533,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-20-05-26-0200 not found"
       },
       "updatedAt": "2026-05-20T08:22:44.650Z"
+    },
+    "bltz-swish-900": {
+      "gameName": "bltz-swish-900",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-swish-900/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-20T08:33:00.320Z"
+      },
+      "updatedAt": "2026-05-20T08:33:00.320Z"
     }
   }
 }
