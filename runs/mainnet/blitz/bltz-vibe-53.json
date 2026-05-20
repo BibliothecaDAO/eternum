@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26191101080-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-05-20T21:30:56.491Z",
-  "updatedAt": "2026-05-20T21:33:11.229Z",
+  "updatedAt": "2026-05-20T21:33:15.085Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-20T21:33:15.085Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -84,5 +85,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-vibe-53.json",
     "worldAddress": "0x01607de73ff69d48c78cc637f4cb3d96562eed3a930536dfb907d905c84b5f84",
     "createGameTxHash": "0x1c733db6ed830e3d4ac539eb213fa01dfb664230cbb42f4662f39095c362741"
+  },
+  "activeLease": {
+    "launchRequestId": "26191101080-1",
+    "workflowRunId": 26191101080,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-05-20T21:33:15.085Z",
+    "expiresAt": "2026-05-20T22:18:15.085Z"
   }
 }
