@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-21T08:34:37.807Z",
+  "updatedAt": "2026-05-21T08:34:47.169Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -989,12 +989,13 @@
       "path": "runs/mainnet/blitz/blitz-heresjohnny.json",
       "inputPath": "inputs/mainnet/blitz/blitz-heresjohnny/26214770465-1.json",
       "status": "running",
-      "updatedAt": "2026-05-21T08:34:37.807Z",
+      "updatedAt": "2026-05-21T08:34:47.169Z",
       "workflowRef": "next",
       "currentStepId": "create-indexer",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-21T09:19:47.169Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-indexer",
+      "recoverablePendingStepId": "sync-paymaster",
       "startTime": 1779357600,
       "durationSeconds": 3600,
       "artifacts": {}
