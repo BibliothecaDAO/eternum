@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-21T04:47:34.451Z",
+  "updatedAt": "2026-05-21T05:03:48.859Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2594,6 +2594,19 @@
         "describedAt": "2026-05-21T00:43:25.420Z"
       },
       "updatedAt": "2026-05-21T00:43:25.420Z"
+    },
+    "bltz-flash-95": {
+      "gameName": "bltz-flash-95",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-flash-95/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-21T05:03:48.858Z"
+      },
+      "updatedAt": "2026-05-21T05:03:48.859Z"
     }
   }
 }
