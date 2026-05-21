@@ -9,7 +9,7 @@ import { useRuntimeChain } from "@/runtime/world";
 import { ResourceIcon } from "@/ui/design-system/molecules";
 import { displayAddress } from "@/ui/utils/utils";
 import { getClientFeeRecipient, getLordsAddress, getResourceAddresses } from "@/utils/addresses";
-import { divideByPrecision, getEntityIdFromKeys } from "@bibliothecadao/eternum";
+import { divideByPrecision, getEntityIdFromKeys, ResourceManager } from "@bibliothecadao/eternum";
 import { useBridgeAsset, useDojo, useResourceManager } from "@bibliothecadao/react";
 import {
   ID,
@@ -461,6 +461,19 @@ export const Bridge = ({ structures }: BridgeProps) => {
       setIsBridgePending(false);
       return;
     }
+    const removeResourceOverrides =
+      bridgeDirection === "out"
+        ? new ResourceManager(components, selectedStructureId).optimisticResourceUpdates(
+            resourcesToBridge
+              .filter((resource): resource is ResourceToBridge & { resourceId: number } =>
+                Boolean(resource.resourceId && resource.amount && parseFloat(resource.amount) > 0),
+              )
+              .map((resource) => ({
+                resourceId: resource.resourceId as ResourcesIds,
+                amount: -parseFloat(resource.amount),
+              })),
+          )
+        : () => {};
 
     try {
       console.log(
@@ -493,6 +506,7 @@ export const Bridge = ({ structures }: BridgeProps) => {
         error instanceof Error ? error : new Error(`An unknown bridging ${bridgeDirection} error occurred`),
       );
     } finally {
+      removeResourceOverrides();
       setIsBridgePending(false);
     }
   };

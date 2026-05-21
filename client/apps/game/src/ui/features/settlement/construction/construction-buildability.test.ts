@@ -11,6 +11,8 @@ const {
   divideByPrecision,
   getBuildingCategoryConfig,
   getBasePopulationCapacity,
+  getComponentValue,
+  getEntityIdFromKeys,
 } = vi.hoisted(() => ({
   getBalance: vi.fn(),
   getBuildingCosts: vi.fn(),
@@ -18,6 +20,8 @@ const {
   divideByPrecision: vi.fn((value: bigint | number) => Number(value)),
   getBuildingCategoryConfig: vi.fn(),
   getBasePopulationCapacity: vi.fn(() => 0),
+  getComponentValue: vi.fn(),
+  getEntityIdFromKeys: vi.fn((keys: bigint[]) => keys.join(":")),
 }));
 
 vi.mock("@bibliothecadao/eternum", () => ({
@@ -29,6 +33,14 @@ vi.mock("@bibliothecadao/eternum", () => ({
     getBuildingCategoryConfig,
     getBasePopulationCapacity,
   },
+}));
+
+vi.mock("@dojoengine/recs", () => ({
+  getComponentValue,
+}));
+
+vi.mock("@dojoengine/utils", () => ({
+  getEntityIdFromKeys,
 }));
 
 const allowAllMode = {
@@ -64,6 +76,7 @@ describe("resolveConstructionBuildability", () => {
     getBalance.mockReturnValue({ balance: 20n });
     getBuildingCategoryConfig.mockReturnValue({ population_cost: 1, capacity_grant: 0 });
     getBasePopulationCapacity.mockReturnValue(0);
+    getComponentValue.mockReturnValue(undefined);
     allowAllMode.rules.isBuildingTypeAllowed.mockReturnValue(true);
   });
 
@@ -159,6 +172,30 @@ describe("resolveConstructionBuildability", () => {
 
     expect(noCapacityResult).toMatchObject({ canSubmit: false, code: "insufficient_capacity" });
     expect(noPopulationResult).toMatchObject({ canSubmit: false, code: "insufficient_population" });
+  });
+
+  it("uses optimistic RECS population instead of stale realm population", () => {
+    getComponentValue.mockReturnValueOnce({
+      population: {
+        current: 10,
+        max: 10,
+      },
+    });
+
+    const result = resolveConstructionBuildability(
+      buildabilityInput({
+        components: {
+          StructureBuildings: {},
+        },
+        realm: { ...buildableRealm, population: 1, capacity: 10, hasCapacity: true },
+      }),
+    );
+
+    expect(result).toMatchObject({
+      canSubmit: false,
+      code: "insufficient_capacity",
+    });
+    expect(getEntityIdFromKeys).toHaveBeenCalledWith([101n]);
   });
 
   it("rejects resource producers not supported by the structure resource set", () => {

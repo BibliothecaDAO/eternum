@@ -214,6 +214,12 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
 
   const displayedResearchBalance = optimisticResearchBalance ?? currentResearchBalance;
 
+  useEffect(() => {
+    if (optimisticResearchBalance !== null && currentResearchBalance <= optimisticResearchBalance) {
+      setOptimisticResearchBalance(null);
+    }
+  }, [currentResearchBalance, optimisticResearchBalance]);
+
   const seasonConfig = configManager.getSeasonConfig();
   const seasonStarted = Number(seasonConfig.startMainAt) === 0 || nowSeconds >= Number(seasonConfig.startMainAt);
   const seasonNotEnded = Number(seasonConfig.endAt) === 0 || nowSeconds <= Number(seasonConfig.endAt);
@@ -277,6 +283,10 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
 
     setIsCrafting(true);
     setError(null);
+    const removeResourceOverride = resourceManager.optimisticResourceUpdate(
+      ResourcesIds.Research,
+      -configuredResearchCost,
+    );
 
     try {
       const receipt = await systemCalls.burn_research_for_relic({
@@ -287,12 +297,13 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
       const craftedRelic = extractCraftedRelicId(receipt, structureId);
       setCraftedRelicId(craftedRelic);
       setCraftedWithoutReveal(craftedRelic === null);
-
       setOptimisticResearchBalance(Math.max(displayedResearchBalance - configuredResearchCost, 0));
+
       triggerRelicsRefresh();
     } catch (craftError) {
       setError(mapCraftRelicError(craftError));
     } finally {
+      removeResourceOverride();
       setIsCrafting(false);
     }
   };

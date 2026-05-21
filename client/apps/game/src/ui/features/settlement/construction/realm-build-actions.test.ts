@@ -19,6 +19,8 @@ const {
   getBlockTimestamp,
   getBuildingCategoryConfig,
   getBasePopulationCapacity,
+  getComponentValue,
+  getEntityIdFromKeys,
   toastError,
 } = vi.hoisted(() => ({
   placeBuilding: vi.fn(),
@@ -29,6 +31,8 @@ const {
   getBlockTimestamp: vi.fn(() => ({ currentDefaultTick: 123 })),
   getBuildingCategoryConfig: vi.fn(() => ({ population_cost: 1, capacity_grant: 0 })),
   getBasePopulationCapacity: vi.fn(() => 0),
+  getComponentValue: vi.fn(),
+  getEntityIdFromKeys: vi.fn((keys: bigint[]) => keys.join(":")),
   toastError: vi.fn(),
 }));
 
@@ -52,6 +56,14 @@ vi.mock("@bibliothecadao/eternum", () => ({
     getBuildingCategoryConfig,
     getBasePopulationCapacity,
   },
+}));
+
+vi.mock("@dojoengine/recs", () => ({
+  getComponentValue,
+}));
+
+vi.mock("@dojoengine/utils", () => ({
+  getEntityIdFromKeys,
 }));
 
 const buildableRealm = {
@@ -78,6 +90,7 @@ describe("buildRealmBuilding", () => {
     placeBuilding.mockResolvedValue({ transaction_hash: "0x1" });
     getBuildingCosts.mockReturnValue([{ resource: 1, amount: 10 }]);
     getBalance.mockReturnValue({ balance: 20n, resourceId: 1 });
+    getComponentValue.mockReturnValue(undefined);
   });
 
   it("re-checks resource affordability before submitting a build", async () => {
@@ -100,6 +113,36 @@ describe("buildRealmBuilding", () => {
     expect(result).toBe(false);
     expect(placeBuilding).not.toHaveBeenCalled();
     expect(toastError).toHaveBeenCalledWith("Insufficient resources to build.");
+  });
+
+  it("blocks auto-build when optimistic RECS population is already full", async () => {
+    getComponentValue.mockReturnValue({
+      population: {
+        current: 10,
+        max: 10,
+      },
+    });
+
+    const result = await buildRealmBuilding({
+      entityId: 101,
+      realmPosition: { x: 20, y: 30 },
+      realm: { ...buildableRealm, population: 1, capacity: 10, hasCapacity: true },
+      mode: allowAllMode,
+      target: { type: BuildingType.ResourceWheat },
+      useSimpleCost: true,
+      world: {
+        account: {},
+        components: {
+          StructureBuildings: {},
+        },
+        systemCalls: {},
+      },
+    });
+
+    expect(result).toBe(false);
+    expect(placeBuilding).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledWith("Need more capacity.");
+    expect(getEntityIdFromKeys).toHaveBeenCalledWith([101n]);
   });
 
   it("keeps a successful auto-selected tile reserved until synced state confirms occupancy", async () => {
