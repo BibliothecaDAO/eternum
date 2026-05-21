@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-21",
+    title: "Population Build Guard",
+    description:
+      "Fixed construction checks so pending buildings update population limits immediately, preventing extra builds while transactions are still in flight.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-21",
     title: "Resource Spend Sync",
     description:
       "Fixed resource balances so spending actions update immediately across automation, transfers, trading, crafting, production, bridge, and army flows.",

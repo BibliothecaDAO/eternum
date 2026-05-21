@@ -14,6 +14,8 @@ import {
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 
 type ConstructionSpot = {
   col: number;
@@ -75,6 +77,17 @@ export type ConstructionBuildabilityInput = {
 type ResourceCost = {
   resource: ResourcesIds | number;
   amount: number;
+};
+
+type PopulationState = {
+  current: number;
+  max: number;
+  hasCapacity: boolean | null;
+};
+
+type BuildingPopulationImpact = {
+  cost: number;
+  capacityGrant: number;
 };
 
 const RESOURCE_PRODUCER_BUILDINGS_REQUIRING_STRUCTURE_RESOURCE = new Set<BuildingType>([
@@ -273,23 +286,76 @@ const validateCosts = (input: ConstructionBuildabilityInput): ConstructionBuilda
   return pass();
 };
 
+const resolveBuildingPopulationImpact = (buildingType: BuildingType): BuildingPopulationImpact => {
+  const buildingConfig = configManager.getBuildingCategoryConfig(buildingType);
+  return {
+    cost: toNumber(buildingConfig?.population_cost),
+    capacityGrant: toNumber(buildingConfig?.capacity_grant),
+  };
+};
+
+const resolveRecsPopulationState = (
+  input: ConstructionBuildabilityInput,
+  basePopulationCapacity: number,
+): PopulationState | null => {
+  const structureBuildingsComponent = input.components?.StructureBuildings;
+  if (!structureBuildingsComponent) return null;
+
+  const structureBuildings = getComponentValue(
+    structureBuildingsComponent,
+    getEntityIdFromKeys([BigInt(input.entityId)]),
+  );
+  const population = structureBuildings?.population;
+  if (!population) return null;
+
+  const current = toNumber(population.current);
+  const max = toNumber(population.max);
+
+  return {
+    current,
+    max,
+    hasCapacity: max + basePopulationCapacity > current,
+  };
+};
+
+const resolvePopulationState = (
+  input: ConstructionBuildabilityInput,
+  basePopulationCapacity: number,
+): PopulationState => {
+  const recsPopulationState = resolveRecsPopulationState(input, basePopulationCapacity);
+  if (recsPopulationState) return recsPopulationState;
+
+  const current = toNumber(input.realm?.population);
+  const max = toNumber(input.realm?.capacity);
+
+  return {
+    current,
+    max,
+    hasCapacity: input.realm?.hasCapacity ?? (max + basePopulationCapacity > current ? true : null),
+  };
+};
+
+const lacksAvailablePopulationCapacity = (population: PopulationState, impact: BuildingPopulationImpact): boolean =>
+  population.hasCapacity === false && impact.cost > 0 && impact.capacityGrant <= 0;
+
+const exceedsProjectedPopulationCapacity = (
+  population: PopulationState,
+  impact: BuildingPopulationImpact,
+  basePopulationCapacity: number,
+): boolean => population.current + impact.cost > population.max + impact.capacityGrant + basePopulationCapacity;
+
 const validatePopulation = (input: ConstructionBuildabilityInput): ConstructionBuildabilityResult => {
   if (input.buildingType === BuildingType.WorkersHut) return pass();
 
-  const buildingConfig = configManager.getBuildingCategoryConfig(input.buildingType);
-  const populationCost = toNumber(buildingConfig?.population_cost);
-  const capacityGrant = toNumber(buildingConfig?.capacity_grant);
-  const currentPopulation = toNumber(input.realm?.population);
-  const currentCapacity = toNumber(input.realm?.capacity);
   const basePopulationCapacity = toNumber(configManager.getBasePopulationCapacity());
+  const population = resolvePopulationState(input, basePopulationCapacity);
+  const impact = resolveBuildingPopulationImpact(input.buildingType);
 
-  if (input.realm?.hasCapacity === false && populationCost > 0 && capacityGrant <= 0) {
+  if (lacksAvailablePopulationCapacity(population, impact)) {
     return fail("insufficient_capacity", "Need more capacity.");
   }
 
-  const projectedPopulation = currentPopulation + populationCost;
-  const projectedCapacity = currentCapacity + capacityGrant + basePopulationCapacity;
-  if (projectedPopulation > projectedCapacity) {
+  if (exceedsProjectedPopulationCapacity(population, impact, basePopulationCapacity)) {
     return fail("insufficient_population", "Need more population.");
   }
 
