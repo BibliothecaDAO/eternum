@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "26220366057-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-21T10:31:44.818Z",
+  "updatedAt": "2026-05-21T10:33:42.490Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -5496,9 +5496,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.259Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:41.266Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.259Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:41.266Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-14-05-26-1000\" does not exist"
         }
       },
@@ -5693,9 +5693,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.279Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:41.370Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.279Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:41.370Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-15-05-26-0100\" does not exist"
         }
       },
@@ -5890,9 +5890,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.298Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:41.473Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.298Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:41.473Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-15-05-26-1800\" does not exist"
         }
       },
@@ -6087,9 +6087,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.321Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:41.574Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.321Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:41.574Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-16-05-26-1200\" does not exist"
         }
       },
@@ -6167,9 +6167,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.343Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:41.676Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.343Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:41.676Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-16-05-26-2000\" does not exist"
         }
       },
@@ -6183,7 +6183,7 @@
         },
         "seriesGameNumber": 33,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x023003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x57a36c41ab13a5faece4a37e64e95ae659c1b2ff756db4d05dc42ee8f8adb8a\",\n        \"0x36e1263d186750e7b52343ee3d95277a12c82a25e4423d0ebf7efe6a05cd7de\",\n        \"0x1\",\n        \"0x13\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x3cf\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x5f5e101\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Contract address= 0x23003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532, Class hash= 0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f, Selector= 0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad, Nested error: (0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), 0x0 (''), \\\"Eternum: Not a blitz game\\\", 0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED'))\"}",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-17-05-26-0300: Torii deployment \"na-gladiator-17-05-26-0300\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -6358,9 +6358,9 @@
           "worldConfigTxHash": "0x16f50c20e343ddb006f98b0fcaf84ab12f1bbd39556a1caecdee497d59a32f3",
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.366Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:41.778Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.366Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:41.778Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-17-05-26-0300\" does not exist"
         }
       },
@@ -6374,7 +6374,7 @@
         },
         "seriesGameNumber": 34,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x023003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x57a36c41ab13a5faece4a37e64e95ae659c1b2ff756db4d05dc42ee8f8adb8a\",\n        \"0x36e1263d186750e7b52343ee3d95277a12c82a25e4423d0ebf7efe6a05cd7de\",\n        \"0x1\",\n        \"0x13\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x3cf\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0xbebc201\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Contract address= 0x23003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532, Class hash= 0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f, Selector= 0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad, Nested error: (0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), 0x0 (''), \\\"Eternum: Not a blitz game\\\", 0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED'))\"}",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-17-05-26-1100: Torii deployment \"apac-gladiator-17-05-26-1100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -6548,10 +6548,10 @@
           "configureTxHash": "0x33384b460626da8c1680ce983df0f549598a8806aedf00ab2191db9d808614e",
           "worldConfigTxHash": "0x33384b460626da8c1680ce983df0f549598a8806aedf00ab2191db9d808614e",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.385Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:41.881Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.385Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:41.881Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-17-05-26-1100\" does not exist"
         }
       },
@@ -6565,7 +6565,7 @@
         },
         "seriesGameNumber": 35,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x023003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x57a36c41ab13a5faece4a37e64e95ae659c1b2ff756db4d05dc42ee8f8adb8a\",\n        \"0x36e1263d186750e7b52343ee3d95277a12c82a25e4423d0ebf7efe6a05cd7de\",\n        \"0x1\",\n        \"0x13\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x3cf\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0xbebc201\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Contract address= 0x23003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532, Class hash= 0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f, Selector= 0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad, Nested error: (0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), 0x0 (''), \\\"Eternum: Not a blitz game\\\", 0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED'))\"}",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-17-05-26-1900: Torii deployment \"eu-gladiator-17-05-26-1900\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -6739,10 +6739,10 @@
           "configureTxHash": "0xd2d91f0d24f0209c61030a7800543ac8424e9a0f348b5630592ca4ea4e963f",
           "worldConfigTxHash": "0xd2d91f0d24f0209c61030a7800543ac8424e9a0f348b5630592ca4ea4e963f",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.405Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:41.980Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.405Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:41.980Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-17-05-26-1900\" does not exist"
         }
       },
@@ -6756,7 +6756,7 @@
         },
         "seriesGameNumber": 36,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x023003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x57a36c41ab13a5faece4a37e64e95ae659c1b2ff756db4d05dc42ee8f8adb8a\",\n        \"0x36e1263d186750e7b52343ee3d95277a12c82a25e4423d0ebf7efe6a05cd7de\",\n        \"0x1\",\n        \"0x13\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x3cf\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x5f5e101\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Contract address= 0x23003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532, Class hash= 0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f, Selector= 0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad, Nested error: (0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), 0x0 (''), \\\"Eternum: Not a blitz game\\\", 0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED'))\"}",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-18-05-26-0100: Torii deployment \"na-gladiator-18-05-26-0100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -6930,10 +6930,10 @@
           "configureTxHash": "0x10235c113397affc11efbfb713d26109a4886da7f43570deb3c5471eb1e5669",
           "worldConfigTxHash": "0x10235c113397affc11efbfb713d26109a4886da7f43570deb3c5471eb1e5669",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.427Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:42.085Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.427Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:42.085Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-18-05-26-0100\" does not exist"
         }
       },
@@ -6947,7 +6947,7 @@
         },
         "seriesGameNumber": 37,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x023003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x57a36c41ab13a5faece4a37e64e95ae659c1b2ff756db4d05dc42ee8f8adb8a\",\n        \"0x36e1263d186750e7b52343ee3d95277a12c82a25e4423d0ebf7efe6a05cd7de\",\n        \"0x1\",\n        \"0x13\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x3cf\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x1\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Contract address= 0x23003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532, Class hash= 0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f, Selector= 0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad, Nested error: (0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), 0x0 (''), \\\"Eternum: Not a blitz game\\\", 0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED'))\"}",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-19-05-26-1100: Torii deployment \"apac-gladiator-19-05-26-1100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -7121,10 +7121,10 @@
           "configureTxHash": "0x2ee00a9eb4aa4431b1e94142191a2d75ae2be16adb97808f03de7b5cd904e8f",
           "worldConfigTxHash": "0x2ee00a9eb4aa4431b1e94142191a2d75ae2be16adb97808f03de7b5cd904e8f",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.446Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:42.188Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.446Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:42.188Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-19-05-26-1100\" does not exist"
         }
       },
@@ -7138,7 +7138,7 @@
         },
         "seriesGameNumber": 38,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x023003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x57a36c41ab13a5faece4a37e64e95ae659c1b2ff756db4d05dc42ee8f8adb8a\",\n        \"0x36e1263d186750e7b52343ee3d95277a12c82a25e4423d0ebf7efe6a05cd7de\",\n        \"0x1\",\n        \"0x13\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x3cf\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x1\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Contract address= 0x23003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532, Class hash= 0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f, Selector= 0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad, Nested error: (0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), 0x0 (''), \\\"Eternum: Not a blitz game\\\", 0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED'))\"}",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-20-05-26-0200: Torii deployment \"na-gladiator-20-05-26-0200\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -7312,10 +7312,10 @@
           "configureTxHash": "0x3b50a9719eddbc36d28d0f31d3de55c31dda98c27e9797e4bd70e3dc1c8b656",
           "worldConfigTxHash": "0x3b50a9719eddbc36d28d0f31d3de55c31dda98c27e9797e4bd70e3dc1c8b656",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.470Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:42.291Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.470Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:42.291Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-20-05-26-0200\" does not exist"
         }
       },
@@ -7329,7 +7329,7 @@
         },
         "seriesGameNumber": 39,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x023003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x57a36c41ab13a5faece4a37e64e95ae659c1b2ff756db4d05dc42ee8f8adb8a\",\n        \"0x36e1263d186750e7b52343ee3d95277a12c82a25e4423d0ebf7efe6a05cd7de\",\n        \"0x1\",\n        \"0x13\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x3cf\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x1\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Contract address= 0x23003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532, Class hash= 0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f, Selector= 0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad, Nested error: (0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), 0x0 (''), \\\"Eternum: Not a blitz game\\\", 0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED'))\"}",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-20-05-26-1900: Torii deployment \"eu-gladiator-20-05-26-1900\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -7503,10 +7503,10 @@
           "configureTxHash": "0x1d6d7e305ca6de342dc18ed10dab391e000663b88f0c5c807796033ff1a0bc8",
           "worldConfigTxHash": "0x1d6d7e305ca6de342dc18ed10dab391e000663b88f0c5c807796033ff1a0bc8",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.490Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:42.394Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.490Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:42.394Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-20-05-26-1900\" does not exist"
         }
       },
@@ -7520,7 +7520,7 @@
         },
         "seriesGameNumber": 40,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x023003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x57a36c41ab13a5faece4a37e64e95ae659c1b2ff756db4d05dc42ee8f8adb8a\",\n        \"0x36e1263d186750e7b52343ee3d95277a12c82a25e4423d0ebf7efe6a05cd7de\",\n        \"0x1\",\n        \"0x13\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x3cf\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x1\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Contract address= 0x23003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532, Class hash= 0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f, Selector= 0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad, Nested error: (0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), 0x0 (''), \\\"Eternum: Not a blitz game\\\", 0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED'))\"}",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-21-05-26-1000: Torii deployment \"apac-gladiator-21-05-26-1000\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -7694,10 +7694,10 @@
           "configureTxHash": "0xce838d82976035d5c5aff9c8e44553c7edb12a382e89059808de48e19718fc",
           "worldConfigTxHash": "0xce838d82976035d5c5aff9c8e44553c7edb12a382e89059808de48e19718fc",
           "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-05-21T10:12:34.510Z",
+          "pendingIndexerTierRequestedAt": "2026-05-21T10:33:42.490Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "legendary",
-          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:12:34.510Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-21T10:33:42.490Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-21-05-26-1000\" does not exist"
         }
       },
