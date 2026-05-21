@@ -484,6 +484,7 @@ export const useAutomation = () => {
           const productionResult = await execute_realm_production_plan({
             signer: starknetSignerAccount,
             realm_entity_id: plan.realmId,
+            skipQueue: true,
             resource_to_resource: plan.callset.resourceToResource.map((item) => ({
               resource_id: item.resourceId,
               cycles: item.cycles,
