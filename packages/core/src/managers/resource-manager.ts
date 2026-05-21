@@ -13,6 +13,11 @@ export interface ResourceProductionData {
   timeRemainingSeconds: number;
 }
 
+export interface OptimisticResourceChange {
+  resourceId: ResourcesIds;
+  amount: number;
+}
+
 export class ResourceManager {
   entityId: ID;
 
@@ -580,6 +585,19 @@ export class ResourceManager {
             },
           });
           break;
+        case ResourcesIds.Research:
+          this.components.Resource.addOverride(overrideId, {
+            entity,
+            value: {
+              ...currentResource,
+              weight: {
+                ...currentWeight,
+                weight: currentWeight.weight + weightChange,
+              },
+              RESEARCH_BALANCE: currentBalance + amountWithPrecision,
+            },
+          });
+          break;
         default:
           break;
       }
@@ -590,6 +608,19 @@ export class ResourceManager {
 
     return () => {
       this.components.Resource.removeOverride(overrideId);
+    };
+  };
+
+  public optimisticResourceUpdates = (resourceChanges: OptimisticResourceChange[]) => {
+    const removeResourceOverrides = resourceChanges
+      .filter((resourceChange) => Number.isFinite(resourceChange.amount) && resourceChange.amount !== 0)
+      .map((resourceChange) => this.optimisticResourceUpdate(resourceChange.resourceId, resourceChange.amount));
+
+    let cleanedUp = false;
+    return () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
+      removeResourceOverrides.toReversed().forEach((removeOverride) => removeOverride());
     };
   };
 

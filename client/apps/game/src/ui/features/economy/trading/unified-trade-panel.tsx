@@ -14,6 +14,7 @@ import {
   calculateDonkeysNeeded,
   getTotalResourceWeightKg,
   getClosestBank,
+  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, ResourcesIds, ID, MarketInterface } from "@bibliothecadao/types";
@@ -161,21 +162,35 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
     setIsLoading(true);
     setShowConfirmation(false);
 
+    const precisionAmount = multiplyByPrecision(tradeAmount);
+    const orderbookTakerBuysCount =
+      effectiveVenue === "orderbook" && bestOBOffer
+        ? Math.ceil(precisionAmount / bestOBOffer.makerGivesMinResourceAmount)
+        : 0;
+    const removeResourceOverrides =
+      effectiveVenue === "orderbook" && bestOBOffer
+        ? new ResourceManager(dojo.setup.components, entityId).optimisticResourceUpdate(
+            bestOBOffer.makerGets[0].resourceId,
+            -divideByPrecision(bestOBOffer.takerPaysMinResourceAmount * orderbookTakerBuysCount),
+          )
+        : new ResourceManager(dojo.setup.components, entityId).optimisticResourceUpdate(
+            tradeDirection === "buy" ? ResourcesIds.Lords : resourceId,
+            -(tradeDirection === "buy" ? totalLords : tradeAmount),
+          );
+
     try {
       if (effectiveVenue === "orderbook" && bestOBOffer) {
         // Accept the best order book offer
-        const precisionAmount = multiplyByPrecision(tradeAmount);
         await dojo.setup.systemCalls.accept_order({
           signer: dojo.account.account,
           taker_id: entityId,
           trade_id: bestOBOffer.tradeId,
-          taker_buys_count: Math.ceil(precisionAmount / bestOBOffer.makerGivesMinResourceAmount),
+          taker_buys_count: orderbookTakerBuysCount,
         });
       } else if (effectiveVenue === "amm") {
         // Execute AMM swap
         const closestBank = getClosestBank(entityId, dojo.setup.components);
         if (!closestBank) return;
-        const precisionAmount = multiplyByPrecision(tradeAmount);
         if (tradeDirection === "buy") {
           await dojo.setup.systemCalls.buy_resources({
             signer: dojo.account.account,
@@ -197,9 +212,10 @@ export const UnifiedTradePanel = memo(({ resourceId, entityId, askOffers, bidOff
     } catch (error) {
       console.error("Trade execution failed:", error);
     } finally {
+      removeResourceOverrides();
       setIsLoading(false);
     }
-  }, [effectiveVenue, bestOBOffer, tradeAmount, tradeDirection, entityId, resourceId, dojo]);
+  }, [effectiveVenue, bestOBOffer, tradeAmount, tradeDirection, entityId, resourceId, totalLords, dojo]);
 
   const maxAmount = tradeDirection === "buy" ? (effectivePrice ? lordsBalance / effectivePrice : 0) : resourceBalance;
 

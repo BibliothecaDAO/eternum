@@ -386,6 +386,12 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       setTransferDrafts((prev) => prev.map((t) => (ids.has(t.id) ? { ...t, isProcessing: true } : t)));
 
       setTransferAnimations((prev) => new Set([...prev, ...animationKeys]));
+      const removeResourceOverrides = transfers.map((transfer) =>
+        new ResourceManager(components, transfer.fromStructureId).optimisticResourceUpdate(
+          transfer.resourceId,
+          -transfer.amount,
+        ),
+      );
 
       try {
         await send_resources_multiple({
@@ -403,6 +409,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         setTransferDrafts((prev) => prev.map((t) => (ids.has(t.id) ? { ...t, isProcessing: false } : t)));
         throw error;
       } finally {
+        removeResourceOverrides.forEach((removeOverride) => removeOverride());
         setTimeout(() => {
           setTransferAnimations((prev) => {
             const next = new Set(prev);
@@ -412,7 +419,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         }, 2000);
       }
     },
-    [account, send_resources_multiple],
+    [account, components, send_resources_multiple],
   );
 
   const executeTransfer = useCallback(
