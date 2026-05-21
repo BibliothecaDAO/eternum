@@ -189,7 +189,6 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   const [error, setError] = useState<string | null>(null);
   const [craftedRelicId, setCraftedRelicId] = useState<ResourcesIds | null>(null);
   const [craftedWithoutReveal, setCraftedWithoutReveal] = useState(false);
-  const [optimisticResearchBalance, setOptimisticResearchBalance] = useState<number | null>(null);
 
   const resourceManager = useResourceManager(structureId);
 
@@ -212,7 +211,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
     return data.balance;
   }, [currentDefaultTick, resourceManager]);
 
-  const displayedResearchBalance = optimisticResearchBalance ?? currentResearchBalance;
+  const displayedResearchBalance = currentResearchBalance;
 
   const seasonConfig = configManager.getSeasonConfig();
   const seasonStarted = Number(seasonConfig.startMainAt) === 0 || nowSeconds >= Number(seasonConfig.startMainAt);
@@ -256,7 +255,6 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
     setCraftedRelicId(null);
     setCraftedWithoutReveal(false);
     setError(null);
-    setOptimisticResearchBalance(null);
   }, [structureId]);
 
   const handleCraftRelic = async () => {
@@ -277,6 +275,10 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
 
     setIsCrafting(true);
     setError(null);
+    const removeResourceOverride = resourceManager.optimisticResourceUpdate(
+      ResourcesIds.Research,
+      -configuredResearchCost,
+    );
 
     try {
       const receipt = await systemCalls.burn_research_for_relic({
@@ -288,11 +290,11 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
       setCraftedRelicId(craftedRelic);
       setCraftedWithoutReveal(craftedRelic === null);
 
-      setOptimisticResearchBalance(Math.max(displayedResearchBalance - configuredResearchCost, 0));
       triggerRelicsRefresh();
     } catch (craftError) {
       setError(mapCraftRelicError(craftError));
     } finally {
+      removeResourceOverride();
       setIsCrafting(false);
     }
   };

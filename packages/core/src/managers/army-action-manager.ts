@@ -24,10 +24,11 @@ import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
 
+const OPTIMISTIC_RESOURCE_FALLBACK_TIMEOUT_MS = 180_000;
+
 export class ArmyActionManager {
   private readonly entity: Entity;
   private readonly entityId: ID;
-  private readonly resourceManager: ResourceManager;
   private readonly staminaManager: StaminaManager;
   private readonly FELT_CENTER: number;
   constructor(
@@ -37,8 +38,6 @@ export class ArmyActionManager {
   ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
-    const entityOwnerId = getComponentValue(this.components.ExplorerTroops, this.entity)?.owner;
-    this.resourceManager = new ResourceManager(this.components, entityOwnerId!);
     this.staminaManager = new StaminaManager(this.components, entityId);
     this.FELT_CENTER = FELT_CENTER();
   }
@@ -128,8 +127,16 @@ export class ArmyActionManager {
 
   // getFood is without precision
   public getFood(currentDefaultTick: number) {
-    const wheatBalance = this.resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat);
-    const fishBalance = this.resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish);
+    const resourceManager = this._getOwnerResourceManager();
+    if (!resourceManager) {
+      return {
+        wheat: 0,
+        fish: 0,
+      };
+    }
+
+    const wheatBalance = resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat);
+    const fishBalance = resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish);
 
     return {
       wheat: divideByPrecision(wheatBalance.balance),
@@ -348,15 +355,19 @@ export class ArmyActionManager {
     }
 
     const vrfSourceSalt = packTileSeed({ alt: false, col: destinationHex.col, row: destinationHex.row });
+    const removeResourceOverrides = this._optimisticExploreFoodSpend(explorerTroops?.owner, explorerTroops?.troops);
 
     try {
-      return await this.systemCalls.explorer_explore({
+      const result = await this.systemCalls.explorer_explore({
         explorer_id: this.entityId,
         directions: [direction],
         vrf_source_salt: vrfSourceSalt,
         signer,
       });
+      this._scheduleResourceCleanupOnTransaction(signer, result, removeResourceOverrides);
+      return result;
     } catch (e) {
+      removeResourceOverrides();
       return Promise.reject(e);
     }
   };
@@ -375,14 +386,23 @@ export class ArmyActionManager {
         ]);
       })
       .filter((d) => d !== undefined) as number[];
+    const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
+    const removeResourceOverrides = this._optimisticTravelFoodSpend(
+      explorerTroops?.owner,
+      explorerTroops?.troops,
+      directions.length,
+    );
 
     try {
-      return await this.systemCalls.explorer_travel({
+      const result = await this.systemCalls.explorer_travel({
         signer,
         explorer_id: this.entityId,
         directions,
       });
+      this._scheduleResourceCleanupOnTransaction(signer, result, removeResourceOverrides);
+      return result;
     } catch (e) {
+      removeResourceOverrides();
       console.log({ e });
       return Promise.reject(e);
     }
@@ -426,4 +446,104 @@ export class ArmyActionManager {
       return this._travelToHex(signer, path, currentArmiesTick);
     }
   };
+
+  private _optimisticExploreFoodSpend(
+    ownerId: ID | undefined,
+    troops: Parameters<typeof computeExploreFoodCosts>[0] | undefined,
+  ) {
+    if (!troops) return () => {};
+    const foodCosts = computeExploreFoodCosts(troops);
+    return this._optimisticFoodSpend(ownerId, foodCosts);
+  }
+
+  private _optimisticTravelFoodSpend(
+    ownerId: ID | undefined,
+    troops: Parameters<typeof computeTravelFoodCosts>[0] | undefined,
+    steps: number,
+  ) {
+    if (!troops || steps <= 0) return () => {};
+    const foodCosts = computeTravelFoodCosts(troops);
+    return this._optimisticFoodSpend(ownerId, {
+      wheatPayAmount: foodCosts.wheatPayAmount * steps,
+      fishPayAmount: foodCosts.fishPayAmount * steps,
+    });
+  }
+
+  private _optimisticFoodSpend(ownerId: ID | undefined, foodCosts: { wheatPayAmount: number; fishPayAmount: number }) {
+    if (!ownerId) return () => {};
+    const resourceManager = new ResourceManager(this.components, ownerId);
+    return resourceManager.optimisticResourceUpdates([
+      { resourceId: ResourcesIds.Wheat, amount: -foodCosts.wheatPayAmount },
+      { resourceId: ResourcesIds.Fish, amount: -foodCosts.fishPayAmount },
+    ]);
+  }
+
+  private _getOwnerResourceManager() {
+    const ownerId = getComponentValue(this.components.ExplorerTroops, this.entity)?.owner;
+    return ownerId ? new ResourceManager(this.components, ownerId) : null;
+  }
+
+  private _scheduleResourceCleanupOnTransaction(
+    signer: Account | AccountInterface,
+    result: unknown,
+    cleanup: () => void,
+  ) {
+    let cleanedUp = false;
+    const finalize = () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
+      cleanup();
+    };
+
+    const fallbackTimeout = setTimeout(finalize, OPTIMISTIC_RESOURCE_FALLBACK_TIMEOUT_MS);
+    if (typeof fallbackTimeout === "object" && typeof fallbackTimeout.unref === "function") {
+      fallbackTimeout.unref();
+    }
+
+    const transactionHash = this._extractTransactionHash(result);
+    const waitForTransaction = this._resolveTransactionWaiter(signer);
+    if (!transactionHash || !waitForTransaction) {
+      return;
+    }
+
+    void waitForTransaction(transactionHash).finally(() => {
+      clearTimeout(fallbackTimeout);
+      finalize();
+    });
+  }
+
+  private _extractTransactionHash(result: unknown): string | undefined {
+    const tx = result as { transaction_hash?: unknown; transactionHash?: unknown } | undefined;
+    const transactionHash = tx?.transaction_hash ?? tx?.transactionHash;
+    return typeof transactionHash === "string" ? transactionHash : undefined;
+  }
+
+  private _resolveTransactionWaiter(signer: Account | AccountInterface) {
+    const signerWithWaiters = signer as (Account | AccountInterface) & {
+      waitForTransaction?: (transactionHash: string) => Promise<unknown>;
+      waitForTransactionWithCheck?: (transactionHash: string) => Promise<unknown>;
+      provider?: {
+        waitForTransaction?: (transactionHash: string) => Promise<unknown>;
+        waitForTransactionWithCheck?: (transactionHash: string) => Promise<unknown>;
+      };
+    };
+
+    if (typeof signerWithWaiters.provider?.waitForTransactionWithCheck === "function") {
+      return signerWithWaiters.provider.waitForTransactionWithCheck.bind(signerWithWaiters.provider);
+    }
+
+    if (typeof signerWithWaiters.waitForTransactionWithCheck === "function") {
+      return signerWithWaiters.waitForTransactionWithCheck.bind(signerWithWaiters);
+    }
+
+    if (typeof signerWithWaiters.waitForTransaction === "function") {
+      return signerWithWaiters.waitForTransaction.bind(signerWithWaiters);
+    }
+
+    if (typeof signerWithWaiters.provider?.waitForTransaction === "function") {
+      return signerWithWaiters.provider.waitForTransaction.bind(signerWithWaiters.provider);
+    }
+
+    return null;
+  }
 }

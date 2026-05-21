@@ -396,7 +396,7 @@ export const UnifiedArmyCreationModal = ({
 
   const armyManager = useMemo(() => {
     if (!activeStructureId) return null;
-    return new ArmyManager(systemCalls, activeStructureId as ID);
+    return new ArmyManager(systemCalls, activeStructureId as ID, components);
   }, [activeStructureId, components, systemCalls]);
 
   useEffect(() => {

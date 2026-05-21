@@ -12,11 +12,6 @@ import { isSignerTransientError } from "@/ui/features/infrastructure/automation/
 import { computeAutomationConfigSignature } from "@/utils/automation-signature";
 import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import {
-  applyAutomationReservationsToSnapshot,
-  releaseAutomationReservation,
-  reserveAutomationResources,
-} from "./automation-resource-reservations";
-import {
   computeNextEligibleMs,
   computePostPassSchedulerUpdate,
   computeScheduleDelayMs,
@@ -34,7 +29,12 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { calculatePresetAllocations, getAutomationOverallocation } from "@/utils/automation-presets";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useDojo } from "@bibliothecadao/react";
-import { getAutomationProjectionTick, getBlockTimestamp, configManager } from "@bibliothecadao/eternum";
+import {
+  getAutomationProjectionTick,
+  getBlockTimestamp,
+  configManager,
+  ResourceManager,
+} from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
@@ -95,10 +95,10 @@ const formatCustomPercentagesLog = (percentages: Record<number, ResourceAutomati
     percentages: value,
   }));
 
-const buildProductionReservationResources = (plan: RealmProductionPlan) =>
+const buildProductionResourceDebits = (plan: RealmProductionPlan) =>
   Object.entries(plan.consumptionByResource).map(([resourceId, humanAmount]) => ({
     resourceId: Number(resourceId) as ResourcesIds,
-    humanAmount,
+    amount: -humanAmount,
   }));
 
 type ProcessRealmsResult = { ran: boolean; anyExecuted: boolean };
@@ -331,13 +331,7 @@ export const useAutomation = () => {
                 currentTick: conservativeTick,
               })
             : new Map();
-        const snapshot =
-          Number.isFinite(realmIdNum) && realmIdNum > 0
-            ? applyAutomationReservationsToSnapshot({
-                entityId: realmIdNum,
-                snapshot: rawSnapshot,
-              })
-            : rawSnapshot;
+        const snapshot = rawSnapshot;
 
         console.log("[Automation] Prepared realm snapshot", {
           realmId: activeRealmConfig.realmId,
@@ -482,13 +476,10 @@ export const useAutomation = () => {
 
         console.log("[Automation] Executing production plan", planLogPayloadWithStatus);
 
-        let reservationToken: string | null = null;
+        const removeResourceOverrides = new ResourceManager(components, plan.realmId).optimisticResourceUpdates(
+          buildProductionResourceDebits(plan),
+        );
         try {
-          reservationToken = reserveAutomationResources({
-            entityId: plan.realmId,
-            resources: buildProductionReservationResources(plan),
-          });
-
           await execute_realm_production_plan({
             signer: starknetSignerAccount,
             realm_entity_id: plan.realmId,
@@ -539,7 +530,6 @@ export const useAutomation = () => {
             toast.success(`Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
           }
         } catch (rawError) {
-          releaseAutomationReservation(reservationToken);
           const errorMessage = extractReadableErrorMessage(rawError, "Automation transaction failed");
           const isSignerFault = isSignerTransientError(rawError);
 
@@ -567,6 +557,8 @@ export const useAutomation = () => {
           } else {
             toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
           }
+        } finally {
+          removeResourceOverrides();
         }
       }
 

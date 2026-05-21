@@ -37,6 +37,47 @@ describe("ResourceManager.optimisticResourceUpdate", () => {
     expect(resourceManager.balance(ResourcesIds.Wood)).toBe(precise(100));
     expect(resourceManager.balance(ResourcesIds.Stone)).toBe(precise(100));
   });
+
+  it("keeps the latest same-resource optimistic debit visible when an older debit is cleaned up first", () => {
+    const components = createTestComponents();
+    seedResource(components, 1, {
+      WHEAT_BALANCE: precise(100),
+    });
+    const resourceManager = new ResourceManager(components, 1);
+
+    const removeFirstDebit = resourceManager.optimisticResourceUpdate(ResourcesIds.Wheat, -20);
+    const removeSecondDebit = resourceManager.optimisticResourceUpdate(ResourcesIds.Wheat, -30);
+
+    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(50));
+
+    removeFirstDebit();
+    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(50));
+
+    removeSecondDebit();
+    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(100));
+  });
+
+  it("cleans up grouped optimistic resource changes without persistent state", () => {
+    const components = createTestComponents();
+    seedResource(components, 1, {
+      WHEAT_BALANCE: precise(100),
+      FISH_BALANCE: precise(80),
+    });
+    const resourceManager = new ResourceManager(components, 1);
+
+    const cleanup = resourceManager.optimisticResourceUpdates([
+      { resourceId: ResourcesIds.Wheat, amount: -15 },
+      { resourceId: ResourcesIds.Fish, amount: -10 },
+    ]);
+
+    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(85));
+    expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(70));
+
+    cleanup();
+
+    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(100));
+    expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(80));
+  });
 });
 
 function createTestComponents() {

@@ -12,9 +12,10 @@ import {
   getBalance,
   getEntityIdFromKeys,
   getRealmInfo,
+  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ContractAddress, getLevelName } from "@bibliothecadao/types";
+import { ContractAddress, getLevelName, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo } from "react";
 import { toast } from "sonner";
@@ -287,6 +288,15 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     const toriiComponents = resolveRealmUpgradeToriiComponents(network.contractComponents);
 
     startUpgrade(structureInfo.entityId, nextLevel);
+    const removeResourceOverrides = new ResourceManager(
+      setup.components,
+      structureInfo.entityId,
+    ).optimisticResourceUpdates(
+      rawCosts.map((cost) => ({
+        resourceId: cost.resource as ResourcesIds,
+        amount: -cost.amount,
+      })),
+    );
 
     try {
       const upgradeResult = await setup.systemCalls.upgrade_realm({
@@ -329,6 +339,8 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     } catch (error) {
       clearUpgrade(structureInfo.entityId);
       throw error;
+    } finally {
+      removeResourceOverrides();
     }
   }, [
     account.account,
@@ -338,6 +350,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
     network.toriiClient,
     nextLevel,
     realmEntity,
+    rawCosts,
     setUpgradeStatus,
     setup.components,
     setup.systemCalls,

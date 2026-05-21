@@ -4,12 +4,15 @@ import {
   getNeighborHexes,
   type HexEntityInfo,
   type HexPosition,
+  RESOURCE_PRECISION,
+  ResourcesIds,
   TileOccupier,
   TroopType,
 } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ArmyActionManager } from "./army-action-manager";
 import { configManager } from "./config-manager";
+import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
 import { ActionPaths, ActionType } from "../utils/action-paths";
 
@@ -89,11 +92,17 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}) {
           coord: { x: oldFeltStart.col, y: oldFeltStart.row },
           troops: {
             category: TroopType.Knight,
-            count: 1_000n,
+            count: BigInt(RESOURCE_PRECISION),
           },
         },
       ],
     ]),
+    Resource: createOptimisticResourceComponent({
+      "77": buildResourceBalances({
+        WHEAT_BALANCE: precise(100),
+        FISH_BALANCE: precise(100),
+      }),
+    }),
     TileOpt: new Map(),
   } as any;
 
@@ -110,6 +119,62 @@ function createTestSetup(systemCalls: Record<string, unknown> = {}) {
     armyHexes: new Map<number, Map<number, HexEntityInfo>>(),
     chestHexes: new Map<number, Map<number, HexEntityInfo>>(),
   };
+}
+
+function createOptimisticResourceComponent(resourcesByEntity: Record<string, Record<string, unknown>>) {
+  const originalValues = new Map(Object.entries(resourcesByEntity).map(([entity, value]) => [entity, { ...value }]));
+  const component = new Map(Object.entries(resourcesByEntity).map(([entity, value]) => [entity, { ...value }]));
+  const overrides = new Map<string, { entity: string; value: Record<string, unknown> }>();
+  const overridesByEntity = new Map<string, string[]>();
+
+  return Object.assign(component, {
+    addOverride: (overrideId: string, update: { entity: string; value: Record<string, unknown> }) => {
+      overrides.set(overrideId, update);
+      const entityOverrides = overridesByEntity.get(update.entity) ?? [];
+      entityOverrides.push(overrideId);
+      overridesByEntity.set(update.entity, entityOverrides);
+      applyLatestOverride(component, originalValues, overrides, overridesByEntity, update.entity);
+    },
+    removeOverride: (overrideId: string) => {
+      const override = overrides.get(overrideId);
+      if (!override) return;
+      overrides.delete(overrideId);
+      const entityOverrides = overridesByEntity.get(override.entity)?.filter((id) => id !== overrideId) ?? [];
+      if (entityOverrides.length > 0) {
+        overridesByEntity.set(override.entity, entityOverrides);
+      } else {
+        overridesByEntity.delete(override.entity);
+      }
+      applyLatestOverride(component, originalValues, overrides, overridesByEntity, override.entity);
+    },
+  });
+}
+
+function applyLatestOverride(
+  component: Map<string, Record<string, unknown>>,
+  originalValues: Map<string, Record<string, unknown>>,
+  overrides: Map<string, { entity: string; value: Record<string, unknown> }>,
+  overridesByEntity: Map<string, string[]>,
+  entity: string,
+) {
+  const latestOverrideId = overridesByEntity.get(entity)?.at(-1);
+  const originalValue = originalValues.get(entity) ?? {};
+  const latestOverride = latestOverrideId ? overrides.get(latestOverrideId)?.value : undefined;
+  component.set(entity, latestOverride ? { ...originalValue, ...latestOverride } : { ...originalValue });
+}
+
+function buildResourceBalances(overrides: Record<string, bigint>) {
+  return {
+    entity_id: 77,
+    weight: { capacity: 0n, weight: 0n },
+    WHEAT_BALANCE: 0n,
+    FISH_BALANCE: 0n,
+    ...overrides,
+  };
+}
+
+function precise(amount: number) {
+  return BigInt(amount) * BigInt(RESOURCE_PRECISION);
 }
 
 describe("ArmyActionManager.findActionPaths origin precedence", () => {
@@ -306,6 +371,88 @@ describe("ArmyActionManager.moveArmy explore position-freshness guard", () => {
     await manager.moveArmy(signer, actionPath as any, false, 0);
 
     expect(systemCalls.explorer_explore).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("ArmyActionManager.moveArmy resource optimism", () => {
+  beforeEach(() => {
+    vi.spyOn(configManager, "getResourceWeightKg").mockReturnValue(0);
+    vi.spyOn(configManager, "getTravelFoodCostConfig").mockReturnValue({
+      travelWheatBurnAmount: 2,
+      travelFishBurnAmount: 1,
+      exploreWheatBurnAmount: 5,
+      exploreFishBurnAmount: 2,
+    } as any);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("applies travel wheat and fish debits before submitting the travel transaction", async () => {
+    let components: ReturnType<typeof createTestSetup>["components"];
+    const systemCalls = {
+      explorer_travel: vi.fn().mockImplementation(async () => {
+        const resourceManager = new ResourceManager(components, 77);
+        expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(96));
+        expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(98));
+        return {};
+      }),
+      explorer_explore: vi.fn().mockResolvedValue({}),
+      toggle_alternate: vi.fn().mockResolvedValue({}),
+    };
+    const setup = createTestSetup(systemCalls);
+    components = setup.components;
+    const firstStep = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
+    const secondStep = getNeighborHexes(firstStep.col, firstStep.row).find(
+      (hex) => hex.col !== setup.oldFeltStart.col || hex.row !== setup.oldFeltStart.row,
+    )!;
+
+    await setup.manager.moveArmy(
+      { address: "0x123" } as any,
+      [
+        { hex: setup.oldFeltStart, actionType: ActionType.Move },
+        { hex: firstStep, actionType: ActionType.Move },
+        { hex: secondStep, actionType: ActionType.Move },
+      ] as any,
+      true,
+      0,
+    );
+
+    expect(systemCalls.explorer_travel).toHaveBeenCalledTimes(1);
+  });
+
+  it("rolls back explore wheat and fish debits when submission fails", async () => {
+    let components: ReturnType<typeof createTestSetup>["components"];
+    const systemCalls = {
+      explorer_travel: vi.fn().mockResolvedValue({}),
+      explorer_explore: vi.fn().mockImplementation(async () => {
+        const resourceManager = new ResourceManager(components, 77);
+        expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(95));
+        expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(98));
+        throw new Error("submit failed");
+      }),
+      toggle_alternate: vi.fn().mockResolvedValue({}),
+    };
+    const setup = createTestSetup(systemCalls);
+    components = setup.components;
+    const target = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
+
+    await expect(
+      setup.manager.moveArmy(
+        { address: "0x123" } as any,
+        [
+          { hex: setup.oldFeltStart, actionType: ActionType.Explore },
+          { hex: target, actionType: ActionType.Explore },
+        ] as any,
+        false,
+        0,
+      ),
+    ).rejects.toThrow("submit failed");
+
+    const resourceManager = new ResourceManager(components, 77);
+    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(100));
+    expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(100));
   });
 });
 
