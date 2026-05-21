@@ -99,8 +99,18 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   }, []);
 
   const state = usePlayRouteBootController();
-  const { phase, progress, setupResult, account, connectWallet, retry, isReconnectRequired, currentTask, tasks } =
-    state;
+  const {
+    phase,
+    progress,
+    setupResult,
+    account,
+    connectWallet,
+    retry,
+    isReconnectRequired,
+    currentTask,
+    tasks,
+    bootToken,
+  } = state;
   const routeView = resolveGameRouteView({
     phase,
     hasSetupResult: setupResult !== null,
@@ -152,7 +162,7 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     );
   }
 
-  return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;
+  return <ReadyApp key={bootToken} backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;
 };
 
 /** @public Lazy route entry consumed by app-level dynamic imports. */

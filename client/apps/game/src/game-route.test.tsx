@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
@@ -139,5 +141,12 @@ describe("GameRoute", () => {
     });
 
     expect(container.textContent).toContain("Reconnect to Continue");
+  });
+
+  it("keys the ready app by the active boot token so route rebootstrap remounts DojoProvider", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/game-route.tsx"), "utf8");
+
+    expect(source).toContain("bootToken");
+    expect(source).toContain("<ReadyApp key={bootToken}");
   });
 });
