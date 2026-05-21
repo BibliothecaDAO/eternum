@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-21T08:33:48.128Z",
+  "updatedAt": "2026-05-21T08:34:17.230Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -989,11 +989,10 @@
       "path": "runs/mainnet/blitz/blitz-heresjohnny.json",
       "inputPath": "inputs/mainnet/blitz/blitz-heresjohnny/26214770465-1.json",
       "status": "running",
-      "updatedAt": "2026-05-21T08:33:48.128Z",
+      "updatedAt": "2026-05-21T08:34:17.230Z",
       "workflowRef": "next",
-      "currentStepId": "reserve-blitz-hyperstructures",
-      "activeLeaseExpiresAt": "2026-05-21T09:18:48.128Z",
-      "hasRunningStep": true,
+      "currentStepId": "grant-lootchest-role",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1779357600,
