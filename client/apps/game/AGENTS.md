@@ -97,11 +97,17 @@ Use this workflow before capturing screenshots or validating account-specific ga
 npx -y node@20.19.0 /opt/homebrew/bin/pnpm --dir /path/to/repo/client/apps/game dev --host 127.0.0.1 --port 4174 --mode mainnet.blitz
 ```
 
+When debugging Three.js, world-map rendering, or graphics state, enable the graphics debug mode:
+
+```bash
+VITE_PUBLIC_GRAPHICS_DEV=true npx -y node@20.19.0 /opt/homebrew/bin/pnpm --dir /path/to/repo/client/apps/game dev --host 127.0.0.1 --port 4174 --mode mainnet.blitz
+```
+
 If `npx` reports duplicate workspace names from the monorepo, run the command from `/tmp` and pass the absolute `pnpm`
 path as shown above.
 
-2. Open a headed browser on the game landing page with a persistent profile, then ask the user to log in themselves. Do
-   not ask for credentials.
+2. Open a headed browser on the game landing page with a persistent profile. If the player is already logged in,
+   continue immediately. If no wallet/account is visible, ask the user to log in themselves. Do not ask for credentials.
 
 ```bash
 mkdir -p .context/agent-browser-login-profile
@@ -110,8 +116,9 @@ npx -y agent-browser --session game-check \
   --headed open https://127.0.0.1:4174/ --ignore-https-errors
 ```
 
-3. Continue only after the UI shows the user's wallet/account, for example `RASCHEL0...`, and local storage has a real
-   `eternum_account_store.state.accountName`.
+3. Check whether the UI shows the user's wallet/account, for example `RASCHEL0...`, and local storage has a real
+   `eternum_account_store.state.accountName`. If both are already present, do not wait for the user; proceed to the live
+   game.
 
 4. Prefer `YOUR ACTIVE GAMES` with an `Enter` button on Slot or Mainnet. This is a live, playable game where the
    logged-in account is registered. Use spectate or review only if the user explicitly asks for it or no playable
