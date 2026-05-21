@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-21T23:26:48.139Z",
+  "updatedAt": "2026-05-21T23:32:05.200Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2642,6 +2642,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-21-05-26-1000 not found"
       },
       "updatedAt": "2026-05-21T23:21:52.815Z"
+    },
+    "bltz-boost-309": {
+      "gameName": "bltz-boost-309",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-boost-309/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-21T23:32:05.200Z"
+      },
+      "updatedAt": "2026-05-21T23:32:05.200Z"
     }
   }
 }
