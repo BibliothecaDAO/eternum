@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-ping-128/26205001151-1.json",
   "latestLaunchRequestId": "26205001151-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": "sync-paymaster",
   "createdAt": "2026-05-21T04:14:28.385Z",
-  "updatedAt": "2026-05-21T04:18:14.947Z",
+  "updatedAt": "2026-05-21T04:18:34.169Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-21T04:18:14.947Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-05-21T04:18:14.947Z",
+      "finishedAt": "2026-05-21T04:18:34.169Z"
     },
     {
       "id": "sync-paymaster",
@@ -96,14 +97,12 @@
     "worldConfigTxHash": "0x7af83b75d3cd378b15614e77b4be86655ed758a4f94349d702c61af8fb06a59",
     "reserveHyperstructuresTxHashes": [
       "0x36578884ecb9cfe0c9095d01a7c89a025b040d64f40ee54a59f1390eec7f751"
-    ]
-  },
-  "activeLease": {
-    "launchRequestId": "26205001151-1",
-    "workflowRunId": 26205001151,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-21T04:18:14.947Z",
-    "expiresAt": "2026-05-21T05:03:14.947Z"
+    ],
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-ping-128/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-21T04:18:32.853Z"
   }
 }
