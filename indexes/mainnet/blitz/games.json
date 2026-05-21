@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-21T07:22:36.978Z",
+  "updatedAt": "2026-05-21T08:30:50.020Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -981,6 +981,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-05-21T06:52:32.640Z"
       }
+    },
+    "blitz-heresjohnny": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "blitz-heresjohnny",
+      "path": "runs/mainnet/blitz/blitz-heresjohnny.json",
+      "inputPath": "inputs/mainnet/blitz/blitz-heresjohnny/26214770465-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-21T08:30:50.020Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-21T10:00:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
     }
   }
 }
