@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-21",
+    title: "Resource Spend Sync",
+    description:
+      "Fixed resource balances so spending actions update immediately across automation, transfers, trading, crafting, production, bridge, and army flows.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-20",
     title: "Runtime Network Selection",
     description:

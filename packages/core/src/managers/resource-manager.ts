@@ -585,6 +585,19 @@ export class ResourceManager {
             },
           });
           break;
+        case ResourcesIds.Research:
+          this.components.Resource.addOverride(overrideId, {
+            entity,
+            value: {
+              ...currentResource,
+              weight: {
+                ...currentWeight,
+                weight: currentWeight.weight + weightChange,
+              },
+              RESEARCH_BALANCE: currentBalance + amountWithPrecision,
+            },
+          });
+          break;
         default:
           break;
       }

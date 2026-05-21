@@ -40,6 +40,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { extractReadableErrorMessage } from "@/utils/error-message";
+import { scheduleAutomationResourceCleanup } from "./automation-resource-cleanup";
 
 const resolveResourceLabel = (resourceId: number): string => {
   const label = ResourcesIds[resourceId as ResourcesIds];
@@ -480,7 +481,7 @@ export const useAutomation = () => {
           buildProductionResourceDebits(plan),
         );
         try {
-          await execute_realm_production_plan({
+          const productionResult = await execute_realm_production_plan({
             signer: starknetSignerAccount,
             realm_entity_id: plan.realmId,
             resource_to_resource: plan.callset.resourceToResource.map((item) => ({
@@ -491,6 +492,11 @@ export const useAutomation = () => {
               resource_id: item.resourceId,
               cycles: item.cycles,
             })),
+          });
+          scheduleAutomationResourceCleanup({
+            signer: starknetSignerAccount,
+            result: productionResult,
+            cleanup: removeResourceOverrides,
           });
 
           const summary = buildExecutionSummary(plan, Date.now());
@@ -530,6 +536,7 @@ export const useAutomation = () => {
             toast.success(`Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
           }
         } catch (rawError) {
+          removeResourceOverrides();
           const errorMessage = extractReadableErrorMessage(rawError, "Automation transaction failed");
           const isSignerFault = isSignerTransientError(rawError);
 
@@ -557,8 +564,6 @@ export const useAutomation = () => {
           } else {
             toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
           }
-        } finally {
-          removeResourceOverrides();
         }
       }
 

@@ -58,6 +58,34 @@ describe("ArmyManager optimistic troop spend", () => {
 
     expect(resourceManager.balance(troopResourceId)).toBe(precise(100));
   });
+
+  it("cleans up troop resource debits when transaction confirmation rejects", async () => {
+    const components = createTestComponents();
+    const structureId = 7;
+    const troopResourceId = getTroopResourceId(TroopType.Knight, TroopTier.T1);
+    seedResource(components, structureId, {
+      KNIGHT_T1_BALANCE: precise(100),
+    });
+
+    const waitForTransactionWithCheck = vi.fn(() => Promise.reject(new Error("confirmation failed")));
+    const account = {
+      provider: {
+        waitForTransactionWithCheck,
+      },
+    } as unknown as AccountInterface;
+    const resourceManager = new ResourceManager(components, structureId);
+    const systemCalls = {
+      explorer_create: vi.fn(async () => ({ transaction_hash: "0xtroops" })),
+    } as unknown as SystemCalls;
+    const armyManager = new ArmyManager(systemCalls, structureId, components);
+
+    await armyManager.createExplorerArmy(account, TroopType.Knight, TroopTier.T1, 8, 1);
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(waitForTransactionWithCheck).toHaveBeenCalledWith("0xtroops");
+    expect(resourceManager.balance(troopResourceId)).toBe(precise(100));
+  });
 });
 
 function createTestComponents() {

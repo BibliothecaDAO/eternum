@@ -422,6 +422,36 @@ describe("ArmyActionManager.moveArmy resource optimism", () => {
     expect(systemCalls.explorer_travel).toHaveBeenCalledTimes(1);
   });
 
+  it("cleans up travel food debits immediately when the submit result has no transaction hash", async () => {
+    let components: ReturnType<typeof createTestSetup>["components"];
+    const systemCalls = {
+      explorer_travel: vi.fn().mockResolvedValue({}),
+      explorer_explore: vi.fn().mockResolvedValue({}),
+      toggle_alternate: vi.fn().mockResolvedValue({}),
+    };
+    const setup = createTestSetup(systemCalls);
+    components = setup.components;
+    const firstStep = getNeighborHexes(setup.oldFeltStart.col, setup.oldFeltStart.row)[0];
+    const secondStep = getNeighborHexes(firstStep.col, firstStep.row).find(
+      (hex) => hex.col !== setup.oldFeltStart.col || hex.row !== setup.oldFeltStart.row,
+    )!;
+
+    await setup.manager.moveArmy(
+      { address: "0x123" } as any,
+      [
+        { hex: setup.oldFeltStart, actionType: ActionType.Move },
+        { hex: firstStep, actionType: ActionType.Move },
+        { hex: secondStep, actionType: ActionType.Move },
+      ] as any,
+      true,
+      0,
+    );
+
+    const resourceManager = new ResourceManager(components, 77);
+    expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(100));
+    expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(100));
+  });
+
   it("rolls back explore wheat and fish debits when submission fails", async () => {
     let components: ReturnType<typeof createTestSetup>["components"];
     const systemCalls = {

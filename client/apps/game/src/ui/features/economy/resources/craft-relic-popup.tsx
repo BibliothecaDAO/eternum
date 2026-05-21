@@ -189,6 +189,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
   const [error, setError] = useState<string | null>(null);
   const [craftedRelicId, setCraftedRelicId] = useState<ResourcesIds | null>(null);
   const [craftedWithoutReveal, setCraftedWithoutReveal] = useState(false);
+  const [optimisticResearchBalance, setOptimisticResearchBalance] = useState<number | null>(null);
 
   const resourceManager = useResourceManager(structureId);
 
@@ -211,7 +212,13 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
     return data.balance;
   }, [currentDefaultTick, resourceManager]);
 
-  const displayedResearchBalance = currentResearchBalance;
+  const displayedResearchBalance = optimisticResearchBalance ?? currentResearchBalance;
+
+  useEffect(() => {
+    if (optimisticResearchBalance !== null && currentResearchBalance <= optimisticResearchBalance) {
+      setOptimisticResearchBalance(null);
+    }
+  }, [currentResearchBalance, optimisticResearchBalance]);
 
   const seasonConfig = configManager.getSeasonConfig();
   const seasonStarted = Number(seasonConfig.startMainAt) === 0 || nowSeconds >= Number(seasonConfig.startMainAt);
@@ -255,6 +262,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
     setCraftedRelicId(null);
     setCraftedWithoutReveal(false);
     setError(null);
+    setOptimisticResearchBalance(null);
   }, [structureId]);
 
   const handleCraftRelic = async () => {
@@ -289,6 +297,7 @@ export const CraftRelicPopup = ({ structureId, onClose }: CraftRelicPopupProps) 
       const craftedRelic = extractCraftedRelicId(receipt, structureId);
       setCraftedRelicId(craftedRelic);
       setCraftedWithoutReveal(craftedRelic === null);
+      setOptimisticResearchBalance(Math.max(displayedResearchBalance - configuredResearchCost, 0));
 
       triggerRelicsRefresh();
     } catch (craftError) {

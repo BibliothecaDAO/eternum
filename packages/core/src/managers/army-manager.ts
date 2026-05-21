@@ -2,6 +2,7 @@ import { ClientComponents, Direction, ID, SystemCalls, TroopTier, TroopType } fr
 import { Account, AccountInterface } from "starknet";
 import { getTroopResourceId, multiplyByPrecision } from "../utils";
 import { ResourceManager } from "./resource-manager";
+import { scheduleTransactionCleanup } from "./transaction-cleanup";
 
 const OPTIMISTIC_TROOP_SPEND_FALLBACK_TIMEOUT_MS = 180_000;
 
@@ -107,65 +108,11 @@ export class ArmyManager {
     result: unknown,
     cleanup: () => void,
   ) {
-    const transactionHash = this.extractTransactionHash(result);
-    if (!transactionHash) {
-      cleanup();
-      return;
-    }
-
-    let cleanedUp = false;
-    const finalize = () => {
-      if (cleanedUp) return;
-      cleanedUp = true;
-      cleanup();
-    };
-
-    const fallbackTimeout = setTimeout(finalize, OPTIMISTIC_TROOP_SPEND_FALLBACK_TIMEOUT_MS);
-    if (typeof fallbackTimeout === "object" && typeof fallbackTimeout.unref === "function") {
-      fallbackTimeout.unref();
-    }
-
-    const waitForTransaction = this.resolveTransactionWaiter(signer);
-    if (!waitForTransaction) return;
-
-    void waitForTransaction(transactionHash).finally(() => {
-      clearTimeout(fallbackTimeout);
-      finalize();
+    scheduleTransactionCleanup({
+      signer,
+      result,
+      cleanup,
+      fallbackTimeoutMs: OPTIMISTIC_TROOP_SPEND_FALLBACK_TIMEOUT_MS,
     });
-  }
-
-  private extractTransactionHash(result: unknown): string | undefined {
-    const tx = result as { transaction_hash?: unknown; transactionHash?: unknown } | undefined;
-    const transactionHash = tx?.transaction_hash ?? tx?.transactionHash;
-    return typeof transactionHash === "string" ? transactionHash : undefined;
-  }
-
-  private resolveTransactionWaiter(signer: Account | AccountInterface) {
-    const signerWithWaiters = signer as (Account | AccountInterface) & {
-      waitForTransaction?: (transactionHash: string) => Promise<unknown>;
-      waitForTransactionWithCheck?: (transactionHash: string) => Promise<unknown>;
-      provider?: {
-        waitForTransaction?: (transactionHash: string) => Promise<unknown>;
-        waitForTransactionWithCheck?: (transactionHash: string) => Promise<unknown>;
-      };
-    };
-
-    if (typeof signerWithWaiters.provider?.waitForTransactionWithCheck === "function") {
-      return signerWithWaiters.provider.waitForTransactionWithCheck.bind(signerWithWaiters.provider);
-    }
-
-    if (typeof signerWithWaiters.waitForTransactionWithCheck === "function") {
-      return signerWithWaiters.waitForTransactionWithCheck.bind(signerWithWaiters);
-    }
-
-    if (typeof signerWithWaiters.waitForTransaction === "function") {
-      return signerWithWaiters.waitForTransaction.bind(signerWithWaiters);
-    }
-
-    if (typeof signerWithWaiters.provider?.waitForTransaction === "function") {
-      return signerWithWaiters.provider.waitForTransaction.bind(signerWithWaiters.provider);
-    }
-
-    return null;
   }
 }

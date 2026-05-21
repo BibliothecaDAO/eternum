@@ -78,6 +78,22 @@ describe("ResourceManager.optimisticResourceUpdate", () => {
     expect(resourceManager.balance(ResourcesIds.Wheat)).toBe(precise(100));
     expect(resourceManager.balance(ResourcesIds.Fish)).toBe(precise(80));
   });
+
+  it("applies optimistic research debits", () => {
+    const components = createTestComponents();
+    seedResource(components, 1, {
+      RESEARCH_BALANCE: precise(100),
+    });
+    const resourceManager = new ResourceManager(components, 1);
+
+    const cleanup = resourceManager.optimisticResourceUpdate(ResourcesIds.Research, -25);
+
+    expect(resourceManager.balance(ResourcesIds.Research)).toBe(precise(75));
+
+    cleanup();
+
+    expect(resourceManager.balance(ResourcesIds.Research)).toBe(precise(100));
+  });
 });
 
 function createTestComponents() {

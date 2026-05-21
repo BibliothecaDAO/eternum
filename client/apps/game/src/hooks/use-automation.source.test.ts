@@ -65,8 +65,10 @@ describe("useAutomation source", () => {
 
     expect(source).toContain("new ResourceManager(components, plan.realmId).optimisticResourceUpdates");
     expect(source).toContain("buildProductionResourceDebits(plan)");
+    expect(source).toContain("scheduleAutomationResourceCleanup");
     expect(source).not.toContain("applyAutomationReservationsToSnapshot");
     expect(source).not.toContain("reserveAutomationResources");
+    expect(source).not.toMatch(/finally\s*{[\s\S]*removeResourceOverrides\(\);[\s\S]*}/);
   });
 
   it("scheduled transfer automation plans against RECS balances and debits the source before submit", () => {

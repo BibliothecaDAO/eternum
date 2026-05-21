@@ -22,4 +22,15 @@ describe("latestFeatures landing feed", () => {
       featureMetadata.every((feature) => feature.readMore === undefined || typeof feature.readMore === "string"),
     ).toBe(true);
   });
+
+  it("announces resource spend sync fixes in the latest feed", () => {
+    expect(latestFeatures).toContainEqual(
+      expect.objectContaining({
+        date: "2026-05-21",
+        title: "Resource Spend Sync",
+        type: "fix",
+        gameSlug: "world",
+      }),
+    );
+  });
 });
