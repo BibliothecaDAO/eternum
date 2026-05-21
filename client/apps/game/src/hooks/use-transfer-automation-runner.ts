@@ -124,6 +124,7 @@ export const useTransferAutomationRunner = () => {
       }
 
       processingRef.current = true;
+      const passResourceCleanups: Array<() => void> = [];
 
       try {
         for (const entry of due) {
@@ -207,8 +208,10 @@ export const useTransferAutomationRunner = () => {
                   },
                 ],
               });
-            } finally {
+              passResourceCleanups.push(removeResourceOverrides);
+            } catch (error) {
               removeResourceOverrides();
+              throw error;
             }
 
             update(entry.id, { lastRunAt: nowMs });
@@ -224,6 +227,7 @@ export const useTransferAutomationRunner = () => {
           }
         }
       } finally {
+        passResourceCleanups.toReversed().forEach((removeResourceOverrides) => removeResourceOverrides());
         processingRef.current = false;
         scheduleNextCheck();
       }
