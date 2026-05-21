@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26214770465-1",
   "currentStepId": null,
   "createdAt": "2026-05-21T08:30:50.020Z",
-  "updatedAt": "2026-05-21T11:41:08.579Z",
+  "updatedAt": "2026-05-21T11:42:55.780Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x3145e8871e433957aacd99d10d4250bb40e0f02d1eb89e51600f6de0875b43e"
     ],
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/blitz-heresjohnny/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-21T09:33:34.330Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-05-21T11:41:06.703Z"
+    "lastIndexerDescribeAt": "2026-05-21T11:42:55.779Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-05-21T08:35:19.159Z"
 }
