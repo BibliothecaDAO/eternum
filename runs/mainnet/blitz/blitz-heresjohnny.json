@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/blitz-heresjohnny/26214770465-1.json",
   "latestLaunchRequestId": "26214770465-1",
-  "currentStepId": "wait-for-factory-index",
+  "currentStepId": "configure-world",
   "createdAt": "2026-05-21T08:30:50.020Z",
-  "updatedAt": "2026-05-21T08:33:04.011Z",
+  "updatedAt": "2026-05-21T08:33:10.395Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,10 +36,11 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting for game started",
-      "startedAt": "2026-05-21T08:33:04.011Z"
+      "latestEvent": "Waiting for game succeeded",
+      "startedAt": "2026-05-21T08:33:04.011Z",
+      "finishedAt": "2026-05-21T08:33:10.395Z"
     },
     {
       "id": "configure-world",
@@ -83,13 +84,5 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-blitz-heresjohnny.json",
     "worldAddress": "0x064c7eeb73d45ae2a264f30359c83d2d5255f633aacf7fb051d11e3e65fa1e32",
     "createGameTxHash": "0x1a7707c60cf6612a3588d8f3c0eadc763a9b153c6a41d81bf85207fd98eff34"
-  },
-  "activeLease": {
-    "launchRequestId": "26214770465-1",
-    "workflowRunId": 26214770465,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-index",
-    "acquiredAt": "2026-05-21T08:33:04.011Z",
-    "expiresAt": "2026-05-21T09:18:04.011Z"
   }
 }
