@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-20T11:12:44.207Z",
+  "updatedAt": "2026-05-22T06:59:02.373Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1301,6 +1301,23 @@
         "indexerTier": "legendary",
         "lastIndexerDescribeAt": "2026-05-20T08:39:10.544Z"
       }
+    },
+    "bltz-pop-122": {
+      "kind": "game",
+      "environment": "slot.blitz",
+      "gameName": "bltz-pop-122",
+      "path": "runs/slot/blitz/bltz-pop-122.json",
+      "inputPath": "inputs/slot/blitz/bltz-pop-122/26273307352-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-22T06:59:02.373Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-22T07:00:00.000Z",
+      "durationSeconds": 432000,
+      "artifacts": {}
     }
   }
 }
