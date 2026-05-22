@@ -1,8 +1,9 @@
 import { useCallback, useMemo } from "react";
 
-import Button from "@/ui/design-system/atoms/button";
 import { HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import Trees from "lucide-react/dist/esm/icons/trees";
 import { formatBiomeBonus } from "@/ui/features/military";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
 import { battleSimulation } from "@/ui/features/world/components/config";
@@ -100,52 +101,51 @@ interface BiomeSummaryCardProps {
 
 export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction = false }: BiomeSummaryCardProps) => {
   const troopBonuses = useMemo(() => buildBiomeTroopBonusCards(biome), [biome]);
+  const biomeLabel = formatQuadrantBiomeLabel(biome);
+
+  const battleAction =
+    showSimulateAction && onSimulateBattle ? (
+      <button
+        type="button"
+        onClick={onSimulateBattle}
+        className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold transition hover:border-gold hover:bg-gold/20"
+        title="Simulate a battle in this biome"
+        aria-label="Simulate battle"
+      >
+        <CrosshairIcon className="h-3 w-3" />
+        Battle
+      </button>
+    ) : undefined;
 
   return (
-    <div className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col gap-2">
-      <div className="flex flex-col gap-0.5">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Biome</span>
-          {showSimulateAction && onSimulateBattle ? (
-            <Button
-              variant="outline"
-              size="xs"
-              className="h-11 min-w-[90px] gap-2 rounded-full border-gold/60 px-3 text-[11px]"
-              forceUppercase={false}
-              onClick={onSimulateBattle}
-              withoutSound
-            >
-              <CrosshairIcon className="h-3.5 w-3.5" />
-              Battle
-            </Button>
-          ) : null}
-        </div>
-        <span className={`truncate ${HUD_HEADLINE}`} title={formatQuadrantBiomeLabel(biome)}>
-          {formatQuadrantBiomeLabel(biome)}
+    <InfoBubble title="Biome" icon={Trees} cue={battleAction}>
+      <div className="flex flex-col gap-2">
+        <span className={`truncate ${HUD_HEADLINE}`} title={biomeLabel}>
+          {biomeLabel}
         </span>
-      </div>
-      <div aria-label="Army bonuses" className="mt-1 flex w-full flex-col gap-1.5" role="list">
-        {troopBonuses.map(({ troopType, config, tone, displayBonus }) => (
-          <div
-            key={troopType}
-            data-bonus-card="true"
-            role="listitem"
-            className={`flex w-full min-w-0 items-center gap-1.5 rounded-xl border p-1 text-left ${tone.cardClassName}`}
-          >
+        <div aria-label="Army bonuses" className="flex w-full flex-col gap-1.5" role="list">
+          {troopBonuses.map(({ troopType, config, tone, displayBonus }) => (
             <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${tone.iconWrapClassName}`}
+              key={troopType}
+              data-bonus-card="true"
+              role="listitem"
+              className={`flex w-full min-w-0 items-center gap-1.5 rounded-lg border p-1 text-left ${tone.cardClassName}`}
             >
-              <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
+              <div
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border ${tone.iconWrapClassName}`}
+              >
+                <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className={`break-words leading-[1.05] ${HUD_LABEL}`}>{config.label}</span>
+                <span className={`leading-none ${HUD_CUE} ${tone.stateTextClassName}`}>{tone.stateLabel}</span>
+              </div>
+              <span className={`shrink-0 leading-none ${HUD_VALUE} ${tone.valueClassName}`}>{displayBonus}</span>
             </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className={`break-words leading-[1.05] ${HUD_LABEL}`}>{config.label}</span>
-              <span className={`leading-none ${HUD_CUE} ${tone.stateTextClassName}`}>{tone.stateLabel}</span>
-            </div>
-            <span className={`shrink-0 leading-none ${HUD_VALUE} ${tone.valueClassName}`}>{displayBonus}</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
+    </InfoBubble>
   );
 };
 

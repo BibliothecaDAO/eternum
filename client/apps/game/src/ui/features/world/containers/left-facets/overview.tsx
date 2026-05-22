@@ -2,8 +2,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY, HUD_BODY_MUTED, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { useStructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import { ProductionModal } from "@/ui/features/settlement";
@@ -139,18 +138,23 @@ export const OverviewFacet = memo(({ structureEntityId }: OverviewFacetProps) =>
   if (!detail.structure) return null;
 
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <InfoBubble title="Suggested actions" icon={Lightbulb} cue={`${suggestions.length}`}>
-        {suggestions.length === 0 ? (
-          <p className={HUD_BODY_MUTED}>No suggestions right now — looking healthy.</p>
-        ) : (
-          <div className="flex flex-col gap-1.5">
-            {suggestions.map((suggestion) => (
-              <SuggestionChip key={suggestion.id} suggestion={suggestion} />
-            ))}
-          </div>
-        )}
-      </InfoBubble>
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-2 pt-1">
+        <span className={cn("flex items-center gap-1.5", HUD_LABEL)}>
+          <Lightbulb className="h-3.5 w-3.5 text-gold/70" />
+          Suggested actions
+        </span>
+        <span className={cn(HUD_LABEL, "text-gold/55")}>{suggestions.length}</span>
+      </div>
+      {suggestions.length === 0 ? (
+        <p className={HUD_BODY_MUTED}>No suggestions right now — looking healthy.</p>
+      ) : (
+        <div className="flex flex-col gap-1.5">
+          {suggestions.map((suggestion) => (
+            <SuggestionChip key={suggestion.id} suggestion={suggestion} />
+          ))}
+        </div>
+      )}
     </div>
   );
 });

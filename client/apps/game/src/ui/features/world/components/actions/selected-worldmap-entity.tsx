@@ -40,7 +40,6 @@ const occupiedEntityLayoutClass = "flex h-full min-h-0 min-w-0 flex-col gap-2 po
 const entityInfoScrollPaneClass = "min-w-0";
 const scrollableEntityDetailClass = "h-auto min-w-0 overflow-visible";
 const scrollableEntitySectionClass = "flex min-w-0";
-const supportingEntitySectionClass = "flex min-w-0";
 
 const EntityInfoScrollPane = ({ children }: { children: ReactNode }) => (
   <div className={entityInfoScrollPaneClass}>{children}</div>
@@ -164,9 +163,7 @@ const SelectedWorldmapEntityContent = ({
               <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
             </EntityDetailSection>
           </EntityInfoScrollPane>
-          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
-            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-          </EntityDetailSection>
+          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       ) : isReservedHyperstructure ? (
         <div className={occupiedEntityLayoutClass}>
@@ -175,9 +172,7 @@ const SelectedWorldmapEntityContent = ({
               <ReservedHyperstructurePanel selectedHex={selectedHex} />
             </EntityDetailSection>
           </EntityInfoScrollPane>
-          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
-            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-          </EntityDetailSection>
+          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       ) : isStructure ? (
         <div className={occupiedEntityLayoutClass}>
@@ -192,13 +187,11 @@ const SelectedWorldmapEntityContent = ({
               {...sharedDetailProps}
             />
           </EntityInfoScrollPane>
-          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
-            <SelectedStructureActionPanel
-              structureEntityId={occupierEntityId}
-              biome={biome}
-              onSimulateBattle={handleSimulateBattle}
-            />
-          </EntityDetailSection>
+          <SelectedStructureActionPanel
+            structureEntityId={occupierEntityId}
+            biome={biome}
+            onSimulateBattle={handleSimulateBattle}
+          />
         </div>
       ) : isChest ? (
         <div className={occupiedEntityLayoutClass}>
@@ -207,9 +200,7 @@ const SelectedWorldmapEntityContent = ({
               <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
             </EntityDetailSection>
           </EntityInfoScrollPane>
-          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
-            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-          </EntityDetailSection>
+          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       ) : isQuest ? (
         <EntityInfoScrollPane>
@@ -225,9 +216,7 @@ const SelectedWorldmapEntityContent = ({
               {...sharedDetailProps}
             />
           </EntityInfoScrollPane>
-          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
-            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-          </EntityDetailSection>
+          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       )}
     </div>

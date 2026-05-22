@@ -2,7 +2,7 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { OVERLAY_SURFACE_ACTIVE, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { OverviewFacet } from "@/ui/features/world/containers/left-facets/overview";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { STRUCTURE_GROUP_CONFIG } from "@/ui/features/world/containers/top-header/structure-groups";
@@ -144,6 +144,8 @@ const StructureCard = memo(
     const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-gold/60";
     const starTitle = statusTone?.title ?? (isFavorite ? "Remove from favorites" : "Favorite structure");
 
+    const hasStatsRow = Boolean(levelAbbrev || populationLabel || buildingTilesLabel || isActive);
+
     return (
       <div
         role="button"
@@ -153,15 +155,14 @@ const StructureCard = memo(
         className={cn(
           "pointer-events-auto cursor-pointer rounded-xl transition",
           isActive
-            ? cn(OVERLAY_SURFACE_ACTIVE, "border border-gold/60 shadow-[0_0_18px_rgba(223,170,84,0.18)]")
+            ? "border border-gold/65 ring-1 ring-gold/30 bg-gradient-to-b from-[#231913]/97 to-[#2c2018]/97 shadow-[0_0_18px_rgba(223,170,84,0.3),inset_0_1px_0_rgba(255,214,102,0.28)] backdrop-blur-sm"
             : cn(OVERLAY_SURFACE_BASE, "hover:border-gold/50"),
         )}
         aria-pressed={isActive}
         title={structure.displayName}
       >
-        {/* Header row — single line at 280px when it fits:
-            [★(status)] [icon] [name] [K] [👤12/18] [🔷11/36] [pencil] */}
-        <div className="flex items-center gap-1.5 px-2.5 py-2">
+        {/* Row 1 — name row: [★ status-tinted] [icon] [group-dot] [name] */}
+        <div className="flex items-center gap-1.5 px-2.5 pt-2">
           <button
             type="button"
             onClick={(event) => {
@@ -189,30 +190,38 @@ const StructureCard = memo(
           >
             {structure.displayName}
           </span>
-          {levelAbbrev && (
-            <span className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1 text-[9px] uppercase tracking-wide text-gold/70">
-              {levelAbbrev}
-            </span>
-          )}
-          {populationLabel && <InlineStat icon={Users} label={populationLabel} title="Population used / capacity" />}
-          {buildingTilesLabel && (
-            <InlineStat icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
-          )}
-          {isActive && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onRequestRename(structure.entityId);
-              }}
-              className="flex-shrink-0 rounded border border-gold/30 p-0.5 text-gold/70 hover:text-gold"
-              title="Rename structure"
-              aria-label="Rename structure"
-            >
-              <Pencil className="h-3 w-3" />
-            </button>
-          )}
         </div>
+
+        {/* Row 2 — stats row: [K] [👤 12/18] [🔷 11/36] [pencil (active)] */}
+        {hasStatsRow && (
+          <div className="flex items-center gap-1.5 px-2.5 pt-1.5 pb-2">
+            {levelAbbrev && (
+              <span className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1 text-[9px] uppercase tracking-wide text-gold/70">
+                {levelAbbrev}
+              </span>
+            )}
+            {populationLabel && (
+              <InlineStat icon={Users} label={populationLabel} title="Population used / capacity" />
+            )}
+            {buildingTilesLabel && (
+              <InlineStat icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
+            )}
+            {isActive && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onRequestRename(structure.entityId);
+                }}
+                className="ml-auto flex-shrink-0 rounded border border-gold/30 p-0.5 text-gold/70 hover:text-gold"
+                title="Rename structure"
+                aria-label="Rename structure"
+              >
+                <Pencil className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Realm action strip — level up + provision + info tooltip. Lives on
             its own row so the chevrons stay tappable without elbowing the

@@ -2,6 +2,7 @@ import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import Coins from "lucide-react/dist/esm/icons/coins";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import Loader from "lucide-react/dist/esm/icons/loader";
+import Settings from "lucide-react/dist/esm/icons/settings";
 import Shield from "lucide-react/dist/esm/icons/shield";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { memo, useCallback, useMemo } from "react";
@@ -200,10 +201,6 @@ const StructureBannerEntityDetailContent = memo(
     const showHyperstructureVP = isHyperstructure && hyperstructureRealmCount !== undefined;
     const occupiedGuardSlots = guards.filter((guard) => Number(guard.troops?.count ?? 0) > 0).length;
     const guardCue = guardSlotsMax !== undefined ? `${occupiedGuardSlots}/${guardSlotsMax}` : `${occupiedGuardSlots}`;
-    const productionCue =
-      productionSummary.totalProductionBuildings > 0
-        ? `${productionSummary.activeProductionBuildings}/${productionSummary.totalProductionBuildings}`
-        : "0";
     const totalRelicCount = inventoryCounts.totalRelics;
     const usableRelicCount = isMine ? inventoryCounts.usableRelics : 0;
     const relicCue = resolveEntityBannerRelicCue(usableRelicCount, totalRelicCount);
@@ -310,26 +307,31 @@ const StructureBannerEntityDetailContent = memo(
         </InfoBubble>
 
         {showProductionTab && (
-          <InfoBubble title="Production" icon={Factory} cue={productionCue}>
+          <InfoBubble
+            title="Production"
+            icon={Factory}
+            cue={
+              isMine ? (
+                <button
+                  type="button"
+                  onClick={handleOpenProductionModal}
+                  className="inline-flex items-center justify-center rounded-md border border-gold/40 bg-gold/10 p-1 text-gold transition hover:border-gold hover:bg-gold/20"
+                  title="Manage production / automation"
+                  aria-label="Manage production / automation"
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                </button>
+              ) : undefined
+            }
+          >
             {resources ? (
-              <div className="flex flex-col gap-2">
-                <StructureProductionPanelView
-                  compact
-                  smallTextClass="text-xxs"
-                  showProductionSummary={variant !== "banner"}
-                  showTooltip={false}
-                  productionSummary={productionSummary}
-                />
-                {isMine && handleOpenProductionModal && (
-                  <button
-                    type="button"
-                    onClick={handleOpenProductionModal}
-                    className="self-start rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold hover:bg-gold/20"
-                  >
-                    Modify automation
-                  </button>
-                )}
-              </div>
+              <StructureProductionPanelView
+                compact
+                smallTextClass="text-xxs"
+                showProductionSummary={variant !== "banner"}
+                showTooltip={false}
+                productionSummary={productionSummary}
+              />
             ) : (
               <p className={HUD_BODY_MUTED}>
                 {isFragmentMine
