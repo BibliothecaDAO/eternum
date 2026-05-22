@@ -20,7 +20,6 @@ import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
 import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
-import { BaseContainer } from "@/ui/shared/containers/base-container";
 import { setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, type ID } from "@bibliothecadao/types";
@@ -29,7 +28,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import type { ComponentProps, ReactNode } from "react";
-import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
 
@@ -123,20 +122,6 @@ const useRealtimeChatConfig = () => {
 };
 
 const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
-
-const getResponsiveButtonSize = (itemCount: number): CircleButtonProps["size"] => {
-  // Panel width is 420px, padding is 24px (px-3 on each side), available ~396px
-  // lg buttons: 48px + 8px gap = fits ~7 buttons
-  // md buttons: 40px + 8px gap = fits ~8 buttons
-  // sm buttons: 32px + 8px gap = fits ~10 buttons
-  if (itemCount <= 7) return "lg";
-  if (itemCount <= 8) return "md";
-  return "sm";
-};
-
-const HEADER_HEIGHT = 64;
-const PANEL_WIDTH = 420;
-const HANDLE_WIDTH = 14;
 
 const ORDERED_MENU_IDS: MenuEnum[] = [
   MenuEnum.entityDetails, // Realm Info
@@ -442,8 +427,6 @@ export const LeftCommandSidebar = memo(() => {
   const unreadChatTotal = unreadDirectTotal + unreadWorldTotal;
   const isChatOpen = useRealtimeChatSelector((state) => state.isShellOpen);
 
-  const navHeight = `calc(100vh - ${HEADER_HEIGHT}px)`;
-
   useEffect(() => {
     if (view === LeftView.ChatView) {
       chatActions.setShellOpen(true);
@@ -547,13 +530,6 @@ export const LeftCommandSidebar = memo(() => {
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const computedWidth = isCollapsed ? HANDLE_WIDTH : PANEL_WIDTH + HANDLE_WIDTH;
-  const panelHeightStyle = useMemo(() => ({ height: navHeight, maxHeight: navHeight }), [navHeight]);
-  const outerPanelStyle = useMemo(() => ({ ...panelHeightStyle, marginTop: `${HEADER_HEIGHT}px` }), [panelHeightStyle]);
-  const containerPanelStyle = useMemo(() => ({ ...panelHeightStyle, width: `${PANEL_WIDTH}px` }), [panelHeightStyle]);
-  const showEmptyState = false;
   const contentScrollClass = view === LeftView.ChatView ? "overflow-hidden" : "overflow-y-auto";
 
   const combinedNavigationItems = useMemo(() => {
@@ -562,11 +538,6 @@ export const LeftCommandSidebar = memo(() => {
       (item): item is NavigationItem => Boolean(item),
     );
   }, [realmNavigationItems, chatNavigationItem, economyNavigationItems]);
-
-  const responsiveButtonSize = useMemo(
-    () => getResponsiveButtonSize(combinedNavigationItems.length),
-    [combinedNavigationItems.length],
-  );
 
   const pendingRenameStructure = useComponentValue(
     components.Structure,
@@ -579,99 +550,102 @@ export const LeftCommandSidebar = memo(() => {
   const editingStructureId =
     pendingRenameStructureEntityId !== null ? Number(pendingRenameStructureEntityId) : null;
 
+  const closeView = useCallback(() => setView(LeftView.None), [setView]);
+
+  // Keyboard handling:
+  //   - Escape closes the floating view panel.
+  //   - Digits 1..N toggle the corresponding visible view-switcher pill.
+  // Ignore the digits while the user is typing in an input/textarea.
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) {
+        return;
+      }
+
+      if (event.key === "Escape") {
+        if (view !== LeftView.None) {
+          closeView();
+        }
+        return;
+      }
+
+      // Skip when any modifier is pressed so we don't shadow browser/system bindings.
+      if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
+
+      const digit = Number(event.key);
+      if (!Number.isFinite(digit) || digit < 1 || digit > 9) return;
+
+      const item = combinedNavigationItems[digit - 1];
+      if (!item || item.disabled) return;
+
+      event.preventDefault();
+      item.onClick?.();
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [closeView, combinedNavigationItems, view]);
+
+  const isPanelOpen = view !== LeftView.None;
+
   return (
     <>
-      <div className="pointer-events-none h-full" style={outerPanelStyle}>
-        <div className="flex h-full pointer-events-auto" style={{ width: `${computedWidth}px` }}>
-          {!isCollapsed && (
-            <BaseContainer
-              className="pointer-events-auto flex h-full w-full flex-col panel-wood panel-wood-corners overflow-hidden shadow-2xl"
-              style={containerPanelStyle}
-            >
-              <div className="flex-1 overflow-hidden">
-                <div className={clsx("h-full pr-1", contentScrollClass)}>
-                  <Suspense fallback={<div className="p-8">Loading...</div>}>
-                    {view === LeftView.StoryEvents && (
-                      <div className="story-events-selector flex h-full flex-col flex-1 overflow-y-auto">
-                        <StoryEventsChronicles />
-                      </div>
-                    )}
-                    {view === LeftView.PredictionMarket && (
-                      <div className="prediction-market-selector flex h-full flex-col flex-1 overflow-y-auto">
-                        <InGameMarket />
-                      </div>
-                    )}
-                    {view === LeftView.ChatView && (
-                      <div className="h-full">
-                        <LeftPanelChat
-                          initializer={realtimeInitializer}
-                          zoneIds={chatZoneIds}
-                          defaultZoneId={chatDefaultZoneId}
-                        />
-                      </div>
-                    )}
-                    {view !== LeftView.StoryEvents &&
-                      view !== LeftView.PredictionMarket &&
-                      (view === LeftView.EntityView || view === LeftView.None) && <EntityDetails />}
-                    {view !== LeftView.StoryEvents &&
-                      view !== LeftView.PredictionMarket &&
-                      view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
-                    {view !== LeftView.StoryEvents &&
-                      view !== LeftView.PredictionMarket &&
-                      view === LeftView.ConstructionView && <SelectPreviewBuildingMenu entityId={structureEntityId} />}
-                    {view !== LeftView.StoryEvents &&
-                      view !== LeftView.PredictionMarket &&
-                      view === LeftView.HyperstructuresView &&
-                      (() => {
-                        const HyperstructuresMenu = HYPERSTRUCTURES_MENU_BY_VARIANT[mode.ui.hyperstructuresMenuVariant];
-                        return <HyperstructuresMenu />;
-                      })()}
-                    {view !== LeftView.StoryEvents &&
-                      view !== LeftView.PredictionMarket &&
-                      view === LeftView.ResourceArrivals && (
-                        <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
-                      )}
-                    {view !== LeftView.StoryEvents &&
-                      view !== LeftView.PredictionMarket &&
-                      view === LeftView.BridgeView && (
-                        <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                          <Bridge structures={structures} />
-                        </div>
-                      )}
-                    {showEmptyState && (
-                      <div className="flex h-full items-center justify-center p-8 text-center text-sm text-gold/70">
-                        Select a module to view details.
-                      </div>
-                    )}
-                  </Suspense>
-                </div>
-              </div>
-              {ConnectedAccount && combinedNavigationItems.length > 0 && (
-                <div className="border-t border-gold/20 bg-black/40 px-3 py-3 overflow-x-auto">
-                  <div className="flex gap-2">
-                    {combinedNavigationItems.map((item) => (
-                      <CircleButton key={item.id} {...item} size={responsiveButtonSize} />
-                    ))}
-                  </div>
+      {/* View-switcher strip — vertical column of pills floating against the map. No container chrome. */}
+      {ConnectedAccount && combinedNavigationItems.length > 0 && (
+        <div className="fixed left-3 top-16 z-20 pointer-events-auto flex flex-col gap-2">
+          {combinedNavigationItems.map((item) => (
+            <CircleButton key={item.id} {...item} size="lg" />
+          ))}
+        </div>
+      )}
+
+      {/* Floating view panel — opens to the right of the strip when a view is active. */}
+      {isPanelOpen && (
+        <div
+          className="fixed left-20 top-16 z-30 pointer-events-auto flex w-[380px] max-h-[calc(100vh-120px)] flex-col overflow-hidden rounded-lg border border-gold/30 bg-black/85 shadow-2xl backdrop-blur-sm"
+        >
+          <div className={clsx("flex-1 min-h-0 pr-1", contentScrollClass)}>
+            <Suspense fallback={<div className="p-8">Loading...</div>}>
+              {view === LeftView.StoryEvents && (
+                <div className="story-events-selector flex h-full flex-col flex-1 overflow-y-auto">
+                  <StoryEventsChronicles />
                 </div>
               )}
-            </BaseContainer>
-          )}
-          <button
-            type="button"
-            onClick={() => setIsCollapsed((prev) => !prev)}
-            className="relative flex h-full w-[14px] items-center justify-center bg-black/20 text-gold/60 transition pointer-events-auto hover:bg-gold/20"
-            aria-label={isCollapsed ? "Open navigation panel" : "Collapse navigation panel"}
-            style={{ width: `${HANDLE_WIDTH}px` }}
-          >
-            <span className="sr-only">Toggle navigation panel</span>
-            <div className="pointer-events-none flex flex-col items-center gap-1">
-              <span className="h-12 w-px bg-gold/40" />
-              <span className="text-[10px] leading-none">{isCollapsed ? "⟩" : "⟨"}</span>
-            </div>
-          </button>
+              {view === LeftView.PredictionMarket && (
+                <div className="prediction-market-selector flex h-full flex-col flex-1 overflow-y-auto">
+                  <InGameMarket />
+                </div>
+              )}
+              {view === LeftView.ChatView && (
+                <div className="h-full">
+                  <LeftPanelChat
+                    initializer={realtimeInitializer}
+                    zoneIds={chatZoneIds}
+                    defaultZoneId={chatDefaultZoneId}
+                  />
+                </div>
+              )}
+              {view === LeftView.EntityView && <EntityDetails />}
+              {view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
+              {view === LeftView.ConstructionView && <SelectPreviewBuildingMenu entityId={structureEntityId} />}
+              {view === LeftView.HyperstructuresView &&
+                (() => {
+                  const HyperstructuresMenu = HYPERSTRUCTURES_MENU_BY_VARIANT[mode.ui.hyperstructuresMenuVariant];
+                  return <HyperstructuresMenu />;
+                })()}
+              {view === LeftView.ResourceArrivals && (
+                <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
+              )}
+              {view === LeftView.BridgeView && (
+                <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
+                  <Bridge structures={structures} />
+                </div>
+              )}
+            </Suspense>
+          </div>
         </div>
-      </div>
+      )}
+
       {pendingRenameStructureEntityId !== null && pendingRenameMetadata && editingStructureId !== null && (
         <StructureEditPopup
           currentName={pendingRenameMetadata.name}

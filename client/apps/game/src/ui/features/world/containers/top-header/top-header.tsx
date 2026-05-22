@@ -20,16 +20,15 @@ import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { motion } from "framer-motion";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { resolveTopHeaderPlayerStatus } from "./top-header-player-status";
 
-const slideDown = {
-  hidden: { y: "-100%" },
-  visible: { y: "0%", transition: { duration: 0.3 } },
-};
+// Shared visual base for each top-zone pill cluster. Floats independently
+// against the map — no shared dark-wood strip behind them.
+const PILL_SURFACE =
+  "pointer-events-auto rounded-full border border-gold/30 bg-black/55 backdrop-blur-sm shadow-lg shadow-black/40";
 
 export const TopHeader = memo(() => {
   const {
@@ -174,150 +173,149 @@ export const TopHeader = memo(() => {
   ]);
 
   return (
-    <div className="pointer-events-auto w-screen flex justify-between">
-      <motion.div
-        className="top-header-bar flex flex-nowrap items-center gap-3 bg-dark-wood panel-wood panel-wood-corners w-full px-3 py-2"
-        variants={slideDown}
-        initial="hidden"
-        animate="visible"
-      >
-        <div className="flex flex-1 min-w-0 items-center gap-3 overflow-hidden">
-          <div className="flex flex-1 min-w-0 flex-nowrap items-center gap-3">
-            <div className="flex max-w-[420px] flex-shrink-0 flex-wrap items-center gap-2 truncate text-gold font-[Cinzel]">
-              {isSpectating && <EyeIcon className="h-4 w-4 text-gold" aria-hidden="true" />}
-              <span className="truncate text-base font-semibold">
-                {accountName ?? playerEntry?.displayName ?? "Player"}
-              </span>
-              {playerStatus?.type === "spectating" ? (
-                <span className="text-xs text-gold/70 font-[Cinzel]">· Spectating</span>
-              ) : playerStatus?.type === "ranked" ? (
-                <span className="text-xs text-gold/70 font-[Cinzel]">
-                  · Rank #{playerStatus.rank} · {formatPoints(playerStatus.points)} pts
-                </span>
-              ) : null}
-            </div>
-
-            <StructurePickerStrip />
-
-
-            <div className="flex flex-shrink-0 flex-nowrap items-center gap-3 text-xs md:text-base">
-              <div className="cycle-selector flex justify-center md:justify-start gap-2 whitespace-nowrap">
-                <TickProgress />
-                <GameStartCountdown />
-                <GameEndTimer />
-              </div>
-              <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 px-3 whitespace-nowrap">
-                <span
-                  onClick={() => {
-                    playClick();
-                    goToStructure(
-                      structureEntityId,
-                      new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                      false,
-                    );
-                  }}
-                  onMouseEnter={() => playHover()}
-                  className={cn("text-xs", isLocalView && "text-gold font-bold")}
-                >
-                  Local
-                </span>
-                <label className="relative inline-flex items-center cursor-pointer" onMouseEnter={() => playHover()}>
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={isWorldView}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      playClick();
-                      goToStructure(
-                        // if there's a controlled structure, needs to go back there
-                        lastControlledStructureEntityId || structureEntityId,
-                        new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                        checked,
-                      );
-                    }}
-                  />
-                  <div className="w-9 h-5 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
-                </label>
-                <span
-                  onClick={() => {
-                    playClick();
-                    goToStructure(
-                      structureEntityId,
-                      new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                      true,
-                    );
-                  }}
-                  onMouseEnter={() => playHover()}
-                  className={cn("text-xs", isWorldView && "text-gold font-bold")}
-                >
-                  World
-                </span>
-                {showFastTravelLayerToggle && (
-                  <button
-                    type="button"
-                    onClick={navigateToFastTravelLayer}
-                    onMouseEnter={() => playHover()}
-                    className={cn(
-                      "rounded-md border px-2 py-0.5 text-[11px] transition-all duration-200",
-                      isFastTravelView
-                        ? "border-cyan-300 bg-cyan-400/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.35)]"
-                        : "border-gold/25 bg-gold/10 text-gold/75 hover:border-gold/40 hover:text-gold",
-                    )}
-                    title={isFastTravelView ? "Return to World Layer" : "Go to Ethereal Layer"}
-                  >
-                    Ethereal
-                  </button>
-                )}
-                {showFollowArmyToggle && (
-                  <div className="relative flex gap-2">
-                    <button
-                      type="button"
-                      className={cn(
-                        "rounded-full p-2 transition-all duration-300 border-2",
-                        followArmyCombats
-                          ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
-                          : "bg-gold/10 hover:bg-gold/20 border-gold/30",
-                      )}
-                      onClick={() => {
-                        setFollowArmyCombats(!followArmyCombats);
-                        playClick();
-                      }}
-                      onMouseEnter={() => playHover()}
-                      aria-pressed={followArmyCombats}
-                      title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
-                    >
-                      <Swords className={cn("w-4 h-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+    <>
+      {/* Layout container — pointer-events pass through the gaps between pills so the
+          map remains clickable. Each pill flips pointer-events back on. */}
+      <div className="fixed top-0 left-0 right-0 z-20 flex flex-wrap items-center gap-3 px-3 py-2 pointer-events-none">
+        {/* Identity pill */}
+        <div
+          className={cn(
+            PILL_SURFACE,
+            "flex max-w-[260px] items-center gap-2 px-3 py-1 text-gold font-[Cinzel]",
+          )}
+        >
+          {isSpectating && <EyeIcon className="h-4 w-4 flex-shrink-0 text-gold" aria-hidden="true" />}
+          <span className="truncate text-sm font-semibold">
+            {accountName ?? playerEntry?.displayName ?? "Player"}
+          </span>
+          {playerStatus?.type === "spectating" ? (
+            <span className="flex-shrink-0 text-[10px] text-gold/70">· Spectating</span>
+          ) : playerStatus?.type === "ranked" ? (
+            <span className="flex-shrink-0 text-[10px] text-gold/70">
+              · #{playerStatus.rank} · {formatPoints(playerStatus.points)} pts
+            </span>
+          ) : null}
         </div>
 
-        <div className="flex-shrink-0 ml-auto flex items-center gap-3">
+        {/* Structure picker — already a floating pill cluster of its own. */}
+        <div className="pointer-events-auto">
+          <StructurePickerStrip />
+        </div>
+
+        {/* Cycle timer pill — TickProgress + conditional game window timers */}
+        <div className={cn(PILL_SURFACE, "flex items-center gap-2 px-2 py-1")}>
+          <TickProgress />
+          <GameStartCountdown />
+          <GameEndTimer />
+        </div>
+
+        {/* Map view pill — Local/World toggle + conditional Ethereal/Follow Army */}
+        <div className={cn(PILL_SURFACE, "flex items-center gap-2 px-3 py-1 whitespace-nowrap")}>
+          <span
+            onClick={() => {
+              playClick();
+              goToStructure(
+                structureEntityId,
+                new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+                false,
+              );
+            }}
+            onMouseEnter={() => playHover()}
+            className={cn("cursor-pointer text-xs", isLocalView && "text-gold font-bold")}
+          >
+            Local
+          </span>
+          <label className="relative inline-flex items-center cursor-pointer" onMouseEnter={() => playHover()}>
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isWorldView}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                playClick();
+                goToStructure(
+                  lastControlledStructureEntityId || structureEntityId,
+                  new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+                  checked,
+                );
+              }}
+            />
+            <div className="w-9 h-5 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
+          </label>
+          <span
+            onClick={() => {
+              playClick();
+              goToStructure(
+                structureEntityId,
+                new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+                true,
+              );
+            }}
+            onMouseEnter={() => playHover()}
+            className={cn("cursor-pointer text-xs", isWorldView && "text-gold font-bold")}
+          >
+            World
+          </span>
+          {showFastTravelLayerToggle && (
+            <button
+              type="button"
+              onClick={navigateToFastTravelLayer}
+              onMouseEnter={() => playHover()}
+              className={cn(
+                "rounded-md border px-2 py-0.5 text-[11px] transition-all duration-200",
+                isFastTravelView
+                  ? "border-cyan-300 bg-cyan-400/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.35)]"
+                  : "border-gold/25 bg-gold/10 text-gold/75 hover:border-gold/40 hover:text-gold",
+              )}
+              title={isFastTravelView ? "Return to World Layer" : "Go to Ethereal Layer"}
+            >
+              Ethereal
+            </button>
+          )}
+        </div>
+
+        {showFollowArmyToggle && (
+          <button
+            type="button"
+            className={cn(
+              "pointer-events-auto rounded-full p-2 transition-all duration-300 border-2 backdrop-blur-sm shadow-lg shadow-black/40",
+              followArmyCombats
+                ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-gold/20 animate-pulse"
+                : "bg-black/55 hover:bg-gold/20 border-gold/30",
+            )}
+            onClick={() => {
+              setFollowArmyCombats(!followArmyCombats);
+              playClick();
+            }}
+            onMouseEnter={() => playHover()}
+            aria-pressed={followArmyCombats}
+            title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
+          >
+            <Swords className={cn("w-4 h-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
+          </button>
+        )}
+
+        {/* Push the right cluster to the far edge */}
+        <div className="ml-auto flex items-center gap-3 pointer-events-auto">
           <WalletPill />
           <SecondaryMenuItems />
         </div>
+      </div>
 
-        {/* Camera Following Status Indicator */}
-        {isFollowingArmy && (
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-5 z-50">
-            <div className="bg-dark-wood text-gold px-4 py-2 rounded-lg shadow-lg border-2 border-gold animate-bounce">
-              <div className="flex items-center gap-2">
-                {followingArmyMessage?.toLowerCase().includes("combat") ? (
-                  <Swords className="w-4 h-4 animate-pulse text-gold" />
-                ) : (
-                  <EyeIcon className="w-4 h-4 animate-pulse text-gold" />
-                )}
-                <span className="text-sm font-semibold text-gold">{followingArmyMessage ?? "Following Army"}</span>
-              </div>
-            </div>
+      {/* Camera-following status toast — extracted from the old wrapper so it floats independently. */}
+      {isFollowingArmy && (
+        <div className="fixed top-16 left-1/2 z-50 -translate-x-1/2 pointer-events-auto">
+          <div className="flex items-center gap-2 rounded-lg border-2 border-gold bg-dark-wood px-4 py-2 text-gold shadow-lg animate-bounce">
+            {followingArmyMessage?.toLowerCase().includes("combat") ? (
+              <Swords className="w-4 h-4 animate-pulse text-gold" />
+            ) : (
+              <EyeIcon className="w-4 h-4 animate-pulse text-gold" />
+            )}
+            <span className="text-sm font-semibold text-gold">{followingArmyMessage ?? "Following Army"}</span>
           </div>
-        )}
-      </motion.div>
-    </div>
+        </div>
+      )}
+    </>
   );
 });
 

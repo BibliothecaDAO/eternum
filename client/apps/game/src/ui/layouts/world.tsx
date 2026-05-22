@@ -149,17 +149,13 @@ const getNetworkErrorReason = (error: unknown): string => {
  */
 const HUD = () => (
   <>
-    {/* Top-left: Player info and controls */}
-    <div className="absolute top-0 left-0 pointer-events-auto z-20">
-      <TopHeader />
-    </div>
+    {/* Top zone — TopHeader positions its own pills with fixed offsets. */}
+    <TopHeader />
 
-    {/* Left side: Command sidebar */}
-    <div className="absolute z-20 w-auto top-0 h-screen left-0 flex pointer-events-none">
-      <LeftCommandSidebar />
-    </div>
+    {/* Left edge — view switcher + floating active view panel. */}
+    <LeftCommandSidebar />
 
-    {/* Bottom-right: Tile info and minimap */}
+    {/* Bottom-right — minimap + contextual tile inspector. */}
     <BottomRightPanel />
 
     {/* Floating modal windows (settings, social, etc.) - needs high z-index and pointer-events */}

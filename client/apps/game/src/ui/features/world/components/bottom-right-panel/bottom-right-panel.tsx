@@ -85,7 +85,6 @@ interface PanelFrameProps {
   children: ReactNode;
   headerAction?: ReactNode;
   className?: string;
-  attached?: boolean;
 }
 
 interface TilePanelScrollAreaProps {
@@ -125,11 +124,10 @@ const normalizeResourceEntries = (value: unknown): ResourceAmountEntry[] => {
     .filter((entry): entry is ResourceAmountEntry => Boolean(entry));
 };
 
-const PanelFrame = ({ title, children, headerAction, className, attached = false }: PanelFrameProps) => (
+const PanelFrame = ({ title, children, headerAction, className }: PanelFrameProps) => (
   <section
     className={cn(
-      "pointer-events-auto panel-wood panel-wood-corners border border-gold/20 bg-black/60 shadow-2xl flex h-full flex-col overflow-hidden",
-      attached && "rounded-t-none border-t-0",
+      "pointer-events-auto flex h-full flex-col overflow-hidden rounded-lg border border-gold/30 bg-black/85 shadow-2xl backdrop-blur-sm",
       className,
     )}
     style={{ height: BOTTOM_PANEL_HEIGHT }}
@@ -342,7 +340,7 @@ const MapTilePanel = () => {
     ) : null;
 
   return (
-    <PanelFrame title={panelTitle} headerAction={headerAction} attached>
+    <PanelFrame title={panelTitle} headerAction={headerAction}>
       {selectedHex ? (
         <div className="h-full min-h-0 overflow-hidden">
           <SelectedWorldmapEntity />
@@ -665,7 +663,7 @@ const LocalTilePanel = () => {
   };
 
   return (
-    <PanelFrame title={panelTitle} headerAction={headerAction} attached>
+    <PanelFrame title={panelTitle} headerAction={headerAction}>
       {selectedBuildingHex ? (
         isCastleTile ? (
           <TilePanelScrollArea>
@@ -975,7 +973,7 @@ const MinimapPanel = () => {
   }, [activeTab]);
 
   return (
-    <PanelFrame title="Minimap" attached>
+    <PanelFrame title="Minimap">
       <div className="relative flex h-full min-h-0 flex-col">
         <div className="relative flex-1 min-h-[220px] overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
           <HexMinimap

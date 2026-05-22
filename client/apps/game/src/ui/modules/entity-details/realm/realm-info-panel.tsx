@@ -6,7 +6,6 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { LeftView } from "@/types";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { ProductionModal } from "@/ui/features/settlement";
 import {
   buildRealmBuilding,
@@ -23,7 +22,6 @@ import {
 } from "@/ui/features/settlement/construction/realm-building-summary";
 import { productionAutomation } from "@/ui/features/world/components/config";
 import { ActiveRelicEffects } from "@/ui/features/world/components/entities/active-relic-effects";
-import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
 import { RealmAttentionRow } from "@/ui/modules/entity-details/realm/realm-attention-row";
 import { buildRealmTransferBarModels, RealmTransferBars } from "@/ui/modules/entity-details/realm/realm-transfer-bars";
@@ -46,9 +44,7 @@ import {
   BuildingType,
   ClientComponents,
   ContractAddress,
-  EntityType,
   getBuildingFromResource,
-  RelicRecipientType,
   ResourcesIds,
   StructureType,
 } from "@bibliothecadao/types";
@@ -57,7 +53,6 @@ import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
-import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import Bot from "lucide-react/dist/esm/icons/bot";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -175,10 +170,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
-  const openPopup = useUIStore((state) => state.openPopup);
   const togglePopup = useUIStore((state) => state.togglePopup);
-  const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
-  const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const setSelectedBuilding = useUIStore((state) => state.setSelectedBuilding);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
@@ -216,7 +208,6 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const isOwned = structure ? structure.owner === ContractAddress(account.account.address) : false;
   const structureCapabilities = useMemo(() => resolveStructureUiCapabilities(structure), [structure]);
   const canShowProductionCard = structureCapabilities.canOpenProduction;
-  const canShowBalanceCard = structureCapabilities.canOpenTransferInventory;
   const canShowArmiesCard = structureCapabilities.canCreateFieldArmy || structureCapabilities.canManageGuardArmy;
 
   const realmId = useMemo(() => {
@@ -238,14 +229,6 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     if (!realmId) return;
     toggleModal(<ProductionModal preSelectedRealmId={realmId} />);
   }, [realmId, toggleModal]);
-
-  const handleOpenTransfer = useCallback(() => {
-    if (!structureEntityId) return;
-    setTransferPanelSourceId(structureEntityId);
-    if (!isTransferPopupOpen) {
-      openPopup(TRANSFER_POPUP_NAME);
-    }
-  }, [isTransferPopupOpen, openPopup, setTransferPanelSourceId, structureEntityId]);
 
   const productionBoostBonus = useComponentValue(
     components.ProductionBoostBonus,
@@ -269,8 +252,6 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     const armyRelicEffects = getStructureArmyRelicEffects(structure, currentArmiesTick);
     return [...structureRelicEffects, ...armyRelicEffects];
   }, [productionBoostBonus, structure, currentArmiesTick]);
-
-  const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
 
   const guards = useMemo(
     () => (structure ? getGuardsByStructure(structure).filter((guard) => guard.troops && guard.troops.count > 0n) : []),
@@ -557,10 +538,10 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     }
   }, [account.account, canClaimVillageMilitia, network.provider, setup.systemCalls, structureEntityId]);
 
-  if (!structure || (!canShowProductionCard && !canShowBalanceCard && !canShowArmiesCard)) {
+  if (!structure || (!canShowProductionCard && !canShowArmiesCard)) {
     return (
       <div className={cn("p-3 text-xxs text-gold/70", className)}>
-        Select a structure from the left panel to view production, balance, and armies.
+        Select a structure to view production and armies.
       </div>
     );
   }
@@ -620,41 +601,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
         </div>
       )}
 
-      {canShowBalanceCard && (
-        <div className="rounded border border-gold/20 bg-black/50 p-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Balance</span>
-            <button
-              type="button"
-              onClick={handleOpenTransfer}
-              disabled={!structureEntityId}
-              className={cn(
-                "flex items-center gap-1 rounded-full border border-gold/30 bg-black/40 px-2.5 py-1 text-xxs font-semibold text-gold/80 transition",
-                !structureEntityId && "cursor-not-allowed opacity-50",
-                structureEntityId && "hover:bg-gold/10 hover:text-gold",
-              )}
-              aria-label="Open transfer panel"
-              title="Open transfer panel"
-            >
-              <ArrowLeftRight className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="mt-2">
-            <CompactEntityInventory
-              resources={resources}
-              recipientType={RelicRecipientType.Structure}
-              entityId={structureEntityId ?? undefined}
-              entityType={EntityType.STRUCTURE}
-              variant="tight"
-              showLabels={false}
-              maxItems={14}
-              heroCount={3}
-              allowRelicActivation
-              activeRelicIds={activeRelicIds}
-            />
-          </div>
-        </div>
-      )}
+      {/* Balance card removed: the WalletPill in the top zone is now the canonical access path. */}
 
       <RealmTransferBars current={transferBarModels.current} automation={transferBarModels.automation} />
 

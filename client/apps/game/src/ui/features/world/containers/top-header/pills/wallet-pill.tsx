@@ -60,10 +60,18 @@ export const WalletPill = memo(() => {
   const resources = useComponentValue(components.Resource, resourceEntityKey);
 
   const resourceTiers = useMemo(() => mode.resources.getTiers(), [mode]);
-  const items = useMemo(
-    () => buildDisplayItems(resources, currentDefaultTick, [], RelicRecipientType.Structure, resourceTiers),
-    [resources, currentDefaultTick, resourceTiers],
-  );
+  // Guard against pre-sync / spectate states where the default tick can be Infinity.
+  // buildDisplayItems forwards the tick into BigInt(...) inside the core balance math,
+  // which throws RangeError on non-finite values.
+  const items = useMemo(() => {
+    if (!resources || !Number.isFinite(currentDefaultTick)) return [];
+    try {
+      return buildDisplayItems(resources, currentDefaultTick, [], RelicRecipientType.Structure, resourceTiers);
+    } catch (error) {
+      console.warn("[WalletPill] buildDisplayItems failed", error);
+      return [];
+    }
+  }, [resources, currentDefaultTick, resourceTiers]);
 
   const heroItems = useMemo(() => items.slice(0, HERO_COUNT), [items]);
 
