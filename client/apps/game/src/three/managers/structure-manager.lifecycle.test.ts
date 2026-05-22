@@ -205,6 +205,7 @@ function createStructureManagerSubject() {
   const removeLabelFromGroup = vi.fn();
   const disposePointsA = vi.fn();
   const disposePointsB = vi.fn();
+  const disposeCompactLabels = vi.fn();
   const clearIntervalSpy = vi.spyOn(globalThis, "clearInterval");
 
   const structureModelDispose = vi.fn();
@@ -278,6 +279,9 @@ function createStructureManagerSubject() {
     a: { dispose: disposePointsA },
     b: { dispose: disposePointsB },
   };
+  subject.compactLabelRenderer = {
+    dispose: disposeCompactLabels,
+  };
 
   return {
     subject,
@@ -295,6 +299,7 @@ function createStructureManagerSubject() {
     cosmeticModelParentRemove,
     disposePointsA,
     disposePointsB,
+    disposeCompactLabels,
     clearIntervalSpy,
   };
 }
@@ -505,6 +510,7 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.cosmeticModelParentRemove).toHaveBeenCalledTimes(1);
     expect(fixture.disposePointsA).toHaveBeenCalledTimes(1);
     expect(fixture.disposePointsB).toHaveBeenCalledTimes(1);
+    expect(fixture.disposeCompactLabels).toHaveBeenCalledTimes(1);
     expect(fixture.subject.structureModels.size).toBe(0);
     expect(fixture.subject.cosmeticStructureModels.size).toBe(0);
     expect(fixture.subject.entityIdMaps.size).toBe(0);
@@ -528,6 +534,7 @@ describe("StructureManager destroy lifecycle", () => {
     expect(fixture.cosmeticModelDispose).toHaveBeenCalledTimes(1);
     expect(fixture.disposePointsA).toHaveBeenCalledTimes(1);
     expect(fixture.disposePointsB).toHaveBeenCalledTimes(1);
+    expect(fixture.disposeCompactLabels).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith("StructureManager already destroyed, skipping cleanup");
   });
 
