@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-22",
+    title: "Evening Map Readability",
+    description:
+      "Softened afternoon lighting and reduced heavy edge darkening so evening time previews stay readable across the full map.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
     title: "Clearer Day Cycle",
     description:
       "Improved world-map daylight and debug time previews so each day phase is easier to inspect while nights stay readable.",

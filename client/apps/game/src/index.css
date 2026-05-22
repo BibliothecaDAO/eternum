@@ -644,8 +644,8 @@ canvas {
   left: 0;
   width: 100vw;
   height: 100vh;
-  box-shadow: 0 0 300px 50px rgba(0, 0, 0, 1) inset;
-  opacity: 0.3;
+  box-shadow: 0 0 220px 36px rgba(0, 0, 0, 0.72) inset;
+  opacity: 0.16;
   z-index: 20;
   pointer-events: none;
 }

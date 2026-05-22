@@ -101,10 +101,10 @@ describe("WorldAtmosphereController", () => {
 
     fixture.manager.update(50);
 
-    expect((fixture.scene.background as Color).getHex()).toBe(0xaedbff);
-    expect(fixture.ambientLight.intensity).toBeCloseTo(0.86);
-    expect(fixture.hemisphereLight.intensity).toBeCloseTo(2.55);
-    expect(fixture.directionalLight.intensity).toBeCloseTo(4.25);
+    expect((fixture.scene.background as Color).getHex()).toBe(0xb8d8f2);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(0.74);
+    expect(fixture.hemisphereLight.intensity).toBeCloseTo(2.18);
+    expect(fixture.directionalLight.intensity).toBeCloseTo(3.55);
   });
 
   it("snaps forced debug time previews even when live-cycle smoothing is slow", () => {
@@ -115,9 +115,17 @@ describe("WorldAtmosphereController", () => {
     fixture.manager.update(0);
     fixture.manager.update(50, undefined, { snap: true });
 
-    expect((fixture.scene.background as Color).getHex()).toBe(0xaedbff);
-    expect(fixture.ambientLight.intensity).toBeCloseTo(0.86);
+    expect((fixture.scene.background as Color).getHex()).toBe(0xb8d8f2);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(0.74);
     expect(fixture.directionalLight.position.y).toBeCloseTo(12);
+  });
+
+  it("keeps evening key light above the horizon to avoid hard shadow curtains", () => {
+    const fixture = createFixture();
+
+    fixture.manager.update(83.3);
+
+    expect(fixture.directionalLight.position.y).toBeCloseTo(6.96);
   });
 
   it("enables a cool moon rim light at night while keeping it off during day", () => {

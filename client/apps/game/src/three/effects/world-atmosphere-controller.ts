@@ -67,6 +67,7 @@ const WEATHER_LIMITS = {
   maxKeyLightDimming: 0.2,
 } as const;
 
+const KEY_LIGHT_MIN_HEIGHT_RATIO = 0.58;
 const PREVIEW_SNAP_PROGRESS_THRESHOLD = 1.5;
 
 export class WorldAtmosphereController {
@@ -183,29 +184,29 @@ export class WorldAtmosphereController {
     },
     day: {
       // 50
-      skyColor: 0xaedbff,
-      groundColor: 0xe6d9bd,
-      sunColor: 0xffffff,
-      ambientColor: 0xfff4dc,
-      fogColor: 0xd8ecff,
-      hemisphereIntensity: 2.55,
-      sunIntensity: 4.25,
-      ambientIntensity: 0.86,
-      fogNear: 34,
-      fogFar: 90,
+      skyColor: 0xb8d8f2,
+      groundColor: 0xd6c7ad,
+      sunColor: 0xfff2dc,
+      ambientColor: 0xf2dfc7,
+      fogColor: 0xd2e2f0,
+      hemisphereIntensity: 2.18,
+      sunIntensity: 3.55,
+      ambientIntensity: 0.74,
+      fogNear: 32,
+      fogFar: 82,
     },
     afternoon: {
       // 58.3
-      skyColor: 0xc2def8,
-      groundColor: 0xe0ccb1,
-      sunColor: 0xffe3ba,
-      ambientColor: 0xffe1c6,
-      fogColor: 0xdedee6,
-      hemisphereIntensity: 2.25,
-      sunIntensity: 3.75,
-      ambientIntensity: 0.78,
-      fogNear: 30,
-      fogFar: 78,
+      skyColor: 0xb4cee8,
+      groundColor: 0xcab89f,
+      sunColor: 0xffd8aa,
+      ambientColor: 0xecc8b0,
+      fogColor: 0xcbd2dc,
+      hemisphereIntensity: 1.92,
+      sunIntensity: 3.05,
+      ambientIntensity: 0.68,
+      fogNear: 28,
+      fogFar: 72,
     },
     dusk: {
       // 66.7
@@ -223,13 +224,13 @@ export class WorldAtmosphereController {
     evening: {
       // 83.3
       skyColor: 0x667fb8,
-      groundColor: 0x4a5875,
-      sunColor: 0xcbd9ff,
-      ambientColor: 0x829bd0,
+      groundColor: 0x53617e,
+      sunColor: 0xd4e0ff,
+      ambientColor: 0x8aa2d2,
       fogColor: 0x637da5,
-      hemisphereIntensity: 1.15,
-      sunIntensity: 2.35,
-      ambientIntensity: 0.56,
+      hemisphereIntensity: 1.3,
+      sunIntensity: 2.05,
+      ambientIntensity: 0.62,
       fogNear: 20,
       fogFar: 54,
     },
@@ -533,9 +534,9 @@ export class WorldAtmosphereController {
     // - progress=50 (noon): cos(0) = 1 → sun at peak
     const angle = (progress / 100) * Math.PI * 2 + Math.PI;
 
-    // Keep the main key light high for noon sunlight and readable moonlit nights.
+    // Keep low-angle phases readable and avoid hard shadow-map curtains near the viewport edge.
     const offsetX = Math.sin(angle) * this.params.sunDistance;
-    const offsetY = Math.abs(Math.cos(angle)) * this.params.sunHeight;
+    const offsetY = Math.max(Math.abs(Math.cos(angle)) * this.params.sunHeight, this.getMinimumKeyLightHeight());
     const offsetZ = -Math.cos(angle) * this.params.sunDistance * 0.3; // Slight depth variation
 
     // Calculate target sun position and target
@@ -568,6 +569,10 @@ export class WorldAtmosphereController {
     this.directionalLight.position.copy(this.currentSunPosition);
     this.directionalLight.target.position.copy(this.currentSunTarget);
     this.directionalLight.target.updateMatrixWorld();
+  }
+
+  private getMinimumKeyLightHeight(): number {
+    return this.params.sunHeight * KEY_LIGHT_MIN_HEIGHT_RATIO;
   }
 
   private updateMoonRimLighting(progress: number, cameraTarget?: Vector3): void {
