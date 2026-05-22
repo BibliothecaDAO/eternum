@@ -86,7 +86,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
     // Create base label
     const labelDiv = createLabelBase(data.isMine, cameraView);
-    labelDiv.style.transform = "scale(0.5)";
+    labelDiv.style.transform = "scale(0.72)";
     labelDiv.style.transformOrigin = "center bottom";
 
     // Check if we have direction indicators and if view is expanded
@@ -218,7 +218,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       labelDiv.classList.add("flex", "flex-col");
 
       const contentRow = document.createElement("div");
-      contentRow.classList.add("flex", "items-center");
+      contentRow.classList.add("flex", "items-center", "gap-2");
       contentRow.setAttribute("data-component", "structure-content-row");
       contentRow.appendChild(iconContainer);
       contentRow.appendChild(contentContainer.wrapper);
@@ -302,7 +302,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
     if (hasDirections && isExpanded) {
       if (!structureContentRow && iconContainer && contentWrapper) {
         const newContentRow = document.createElement("div");
-        newContentRow.classList.add("flex", "items-center");
+        newContentRow.classList.add("flex", "items-center", "gap-2");
         newContentRow.setAttribute("data-component", "structure-content-row");
 
         if (iconContainer.parentElement) {

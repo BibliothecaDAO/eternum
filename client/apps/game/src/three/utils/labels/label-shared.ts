@@ -9,29 +9,33 @@ export const createLabelBase = (isMine: boolean, inputView: CameraView, isDaydre
   const cameraView = resolveCameraView(inputView);
   const labelDiv = document.createElement("div");
 
-  // Add common classes - using inline-flex for compact horizontal layout
+  labelDiv.dataset.component = "hover-detail-label";
   labelDiv.classList.add(
     "rounded-md",
-    "p-0.5",
+    "px-2",
+    "py-1.5",
     "-translate-x-1/2",
-    "text-xxs",
+    "text-[12px]",
     "inline-flex",
     "items-center",
+    "gap-2",
     "group",
-    "shadow-md",
+    "backdrop-blur-md",
+    "shadow-[0_10px_28px_rgba(0,0,0,0.38)]",
     "font-semibold",
+    "leading-tight",
   );
+  labelDiv.style.fontFamily = `"Space Grotesk", ui-sans-serif, system-ui, sans-serif`;
 
   if (cameraView === CameraView.Medium) {
-    labelDiv.classList.remove("p-0.5");
-    labelDiv.classList.add("px-1", "py-0.5", "gap-1", "text-[11px]");
+    labelDiv.classList.add("min-w-[230px]", "max-w-[360px]");
   } else if (cameraView === CameraView.Close) {
-    labelDiv.classList.add("px-1", "py-1", "gap-1");
+    labelDiv.classList.add("min-w-[240px]", "max-w-[380px]");
   }
 
   if (cameraView === CameraView.Far) {
     labelDiv.classList.remove("inline-flex", "items-center");
-    labelDiv.classList.add("flex", "flex-col", "items-center", "justify-center", "gap-1");
+    labelDiv.classList.add("flex", "flex-col", "items-center", "justify-center", "gap-1", "min-w-0");
   }
 
   // Get appropriate style

@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-22",
+    title: "Readable Hover Cards",
+    description:
+      "Improved detailed world-map hover cards with stronger contrast, clearer troop metrics, and numeric stamina so unit and building details are easier to read over terrain.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
     title: "Map Entity Labels",
     description:
       "Restored compact always-on world-map labels above armies, realms, camps, and key structures while keeping detailed hover cards available.",
