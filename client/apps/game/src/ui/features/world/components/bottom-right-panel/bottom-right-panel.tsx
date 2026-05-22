@@ -1025,12 +1025,17 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
   const setView = useUIStore((state) => state.setLeftNavigationView);
   const toggleModalAction = useUIStore((state) => state.toggleModal);
   const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
   const mode = useGameModeConfig();
   const showTradeAction = mode.ui.showTradeMenu;
   const handleOpenLogistics = useCallback(() => {
     setLogisticsActiveTab("transfer");
     setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals);
   }, [setLogisticsActiveTab, setView, view]);
+  const handleOpenProduction = useCallback(() => {
+    if (!structureEntityId) return;
+    toggleModalAction(<ProductionModal preSelectedRealmId={Number(structureEntityId)} />);
+  }, [structureEntityId, toggleModalAction]);
   const toggleView = useCallback(
     (target: LeftView) => () => setView(view === target ? LeftView.None : target),
     [setView, view],
@@ -1051,11 +1056,40 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
         variant="hud"
         size="md"
         tooltipLocation="top"
+        image={BuildingThumbs.production}
+        label="Production"
+        onClick={handleOpenProduction}
+        disabled={!structureEntityId}
+      />
+      <CircleButton
+        variant="hud"
+        size="md"
+        tooltipLocation="top"
+        image={BuildingThumbs.military}
+        label="Military"
+        active={view === LeftView.MilitaryView}
+        onClick={toggleView(LeftView.MilitaryView)}
+        disabled={!structureEntityId}
+      />
+      <CircleButton
+        variant="hud"
+        size="md"
+        tooltipLocation="top"
         image={BuildingThumbs.transfer}
         label="Transfer"
         active={view === LeftView.ResourceArrivals}
         onClick={handleOpenLogistics}
       />
+      <CircleButton
+        variant="hud"
+        size="md"
+        tooltipLocation="top"
+        label="Chat"
+        active={view === LeftView.ChatView}
+        onClick={toggleView(LeftView.ChatView)}
+      >
+        <MessageCircle className="h-4 w-4 md:h-5 md:w-5 text-gold" />
+      </CircleButton>
       {showTradeAction && (
         <CircleButton
           variant="hud"
@@ -1075,16 +1109,6 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
         active={view === LeftView.PredictionMarket}
         onClick={toggleView(LeftView.PredictionMarket)}
       />
-      <CircleButton
-        variant="hud"
-        size="md"
-        tooltipLocation="top"
-        label="Chat"
-        active={view === LeftView.ChatView}
-        onClick={toggleView(LeftView.ChatView)}
-      >
-        <MessageCircle className="h-4 w-4 md:h-5 md:w-5 text-gold" />
-      </CircleButton>
     </div>
   );
 };

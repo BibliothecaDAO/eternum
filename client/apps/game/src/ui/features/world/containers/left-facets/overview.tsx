@@ -63,7 +63,6 @@ export const OverviewFacet = memo(({ structureEntityId }: OverviewFacetProps) =>
   const provision = useBlitzRealmProvision(structureEntityId);
   const combined = useRealmUpgradeAndProvision(structureEntityId);
 
-  const setLeftFacet = useUIStore((state) => state.setLeftFacet);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const toggleModal = useUIStore((state) => state.toggleModal);
 
@@ -115,8 +114,8 @@ export const OverviewFacet = memo(({ structureEntityId }: OverviewFacetProps) =>
       onUpgradeAndProvision: () => void combined.handleUpgradeAndProvision(),
       onUpgrade: () => upgrade?.handleUpgrade && void upgrade.handleUpgrade(),
       onProvision: () => provision?.handleProvision && void provision.handleProvision(),
-      onOpenMilitary: () => setLeftFacet("military"),
-      onOpenEconomy: () => setLeftFacet("economy"),
+      onOpenMilitary: () => setLeftNavigationView(LeftView.MilitaryView),
+      onOpenEconomy: handleOpenProductionModal,
       onOpenConstruction: () => setLeftNavigationView(LeftView.ConstructionView),
       onOpenProductionModal: handleOpenProductionModal,
     });
@@ -133,7 +132,6 @@ export const OverviewFacet = memo(({ structureEntityId }: OverviewFacetProps) =>
     productionSummary.activeProductionBuildings,
     productionSummary.totalProductionBuildings,
     provision,
-    setLeftFacet,
     setLeftNavigationView,
     upgrade,
   ]);

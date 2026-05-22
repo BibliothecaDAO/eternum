@@ -3,9 +3,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_ACTIVE, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import { EconomyFacet } from "@/ui/features/world/containers/left-facets/economy";
-import { LeftFacetTabs } from "@/ui/features/world/containers/left-facets/left-facet-tabs";
-import { MilitaryFacet } from "@/ui/features/world/containers/left-facets/military";
 import { OverviewFacet } from "@/ui/features/world/containers/left-facets/overview";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { STRUCTURE_GROUP_CONFIG } from "@/ui/features/world/containers/top-header/structure-groups";
@@ -100,8 +97,6 @@ interface StructureCardProps {
   onSelect: (entityId: ID) => void;
   onToggleFavorite: (entityId: ID) => void;
   onRequestRename: (entityId: ID) => void;
-  leftFacet: "overview" | "economy" | "military";
-  attention?: Partial<Record<"overview" | "economy" | "military", boolean>>;
 }
 
 /**
@@ -111,16 +106,7 @@ interface StructureCardProps {
  * column reads as: list of structures, expanded around the one you control.
  */
 const StructureCard = memo(
-  ({
-    structure,
-    isActive,
-    isFavorite,
-    onSelect,
-    onToggleFavorite,
-    onRequestRename,
-    leftFacet,
-    attention,
-  }: StructureCardProps) => {
+  ({ structure, isActive, isFavorite, onSelect, onToggleFavorite, onRequestRename }: StructureCardProps) => {
     const capabilities = resolveStructureUiCapabilities(structure.structure);
     const groupConfig = structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor] : null;
     const statusTone = resolveStatusTone(structure);
@@ -237,15 +223,14 @@ const StructureCard = memo(
           </div>
         )}
 
-        {/* Expanded body: facet tabs + active facet content for the controlled
-            structure. Click handlers inside use stopPropagation so opening a
-            sub-modal doesn't re-trigger card selection. */}
+        {/* Expanded body for the active card: Suggested Actions only. Heavier
+            views (Production, Military) live in centered modals triggered from
+            the LeftActionsRow above the minimap. Click handlers inside use
+            stopPropagation so opening a sub-modal doesn't re-trigger card
+            selection. */}
         {isActive && (
           <div className="flex flex-col gap-2 px-2 pb-2" onClick={(event) => event.stopPropagation()}>
-            <LeftFacetTabs attention={attention} />
-            {leftFacet === "overview" && <OverviewFacet structureEntityId={structure.entityId} />}
-            {leftFacet === "economy" && <EconomyFacet structureEntityId={structure.entityId} />}
-            {leftFacet === "military" && <MilitaryFacet structureEntityId={structure.entityId} />}
+            <OverviewFacet structureEntityId={structure.entityId} />
           </div>
         )}
       </div>
@@ -255,17 +240,14 @@ const StructureCard = memo(
 
 StructureCard.displayName = "StructureCard";
 
-interface StructureListColumnProps {
-  attention?: Partial<Record<"overview" | "economy" | "military", boolean>>;
-}
-
 /**
  * Always-visible structure list that replaces the old picker pill +
  * dropdown. Each player structure is rendered as a status card; the active
- * one expands inline to host the facet tabs and bubbles. Browsing is just
- * scrolling the column.
+ * one expands inline to host the Suggested Actions bubble. Heavier views
+ * (Production, Military) live in centered modals triggered from the
+ * bottom-left action row.
  */
-export const StructureListColumn = memo(({ attention }: StructureListColumnProps) => {
+export const StructureListColumn = memo(() => {
   const { setup } = useDojo();
   const components = setup.components;
   const { isMapView } = useQuery();
@@ -276,7 +258,6 @@ export const StructureListColumn = memo(({ attention }: StructureListColumnProps
   const playerStructures = useUIStore((state) => state.playerStructures);
   const structureNameVersion = useUIStore((state) => state.structureNameVersion);
   const setPendingRenameStructureEntityId = useUIStore((state) => state.setPendingRenameStructureEntityId);
-  const leftFacet = useUIStore((state) => state.leftFacet);
 
   const goToStructure = useGoToStructure(setup);
   const { favorites, toggleFavorite } = useFavoriteStructures();
@@ -353,8 +334,6 @@ export const StructureListColumn = memo(({ attention }: StructureListColumnProps
           onSelect={handleSelectStructure}
           onToggleFavorite={toggleFavorite}
           onRequestRename={handleRequestRename}
-          leftFacet={leftFacet}
-          attention={attention}
         />
       ))}
     </div>

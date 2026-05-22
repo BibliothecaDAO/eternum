@@ -4,9 +4,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { LogisticsView } from "@/ui/features/world/containers/logistics-view";
+import { MilitaryModal } from "@/ui/features/world/containers/military-modal";
 import { StructureListColumn } from "@/ui/features/world/containers/left-facets/structure-list-column";
-import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
-import { useStructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import {
   RealtimeChatShell,
   useRealtimeChatActions,
@@ -199,16 +198,12 @@ export const LeftCommandSidebar = memo(() => {
   return (
     <>
       {/* Left control column — always-visible vertical list of all the player's
-          structures. The active card expands inline to show the facet tabs
-          (Overview / Economy / Military) and active facet content. This is
-          the control surface twin of the right-side read-only inspector. */}
+          structures. The active card expands to show Suggested Actions only.
+          Heavier views (Production, Military) live in centered modals
+          triggered from the LeftActionsRow above the minimap. */}
       {ConnectedAccount && (
         <div className="fixed left-3 top-3 z-20 pointer-events-auto flex w-[280px] max-h-[calc(100vh-320px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-          {structureEntityId > 0 ? (
-            <LeftStructureControlColumn structureEntityId={structureEntityId} />
-          ) : (
-            <StructureListColumn />
-          )}
+          <StructureListColumn />
         </div>
       )}
 
@@ -251,6 +246,11 @@ export const LeftCommandSidebar = memo(() => {
                   <LogisticsView hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
                 </div>
               )}
+              {view === LeftView.MilitaryView && (
+                <div className="h-full min-h-0 overflow-y-auto">
+                  <MilitaryModal structureEntityId={structureEntityId} />
+                </div>
+              )}
             </Suspense>
           </div>
         </div>
@@ -271,44 +271,3 @@ export const LeftCommandSidebar = memo(() => {
 });
 
 LeftCommandSidebar.displayName = "LeftCommandSidebar";
-
-// ----------------------------------------------------------------------------
-// LeftStructureControlColumn
-//
-// Renders the facet tab strip + the active facet's bubbles. Co-located here
-// because it consumes useStructureEntityDetail once for the attention badges
-// and forwards the same entity id into each facet — they call the hook
-// themselves but React Query dedupes the result, so there's no extra fetch.
-// ----------------------------------------------------------------------------
-
-const LeftStructureControlColumn = memo(({ structureEntityId }: { structureEntityId: ID }) => {
-  const detail = useStructureEntityDetail({ structureEntityId });
-  const productionSummary = useStructureProductionSummary(detail.structure, detail.resources ?? undefined);
-
-  const occupiedGuardSlots = useMemo(
-    () => detail.guards.filter((guard) => Number(guard.troops?.count ?? 0) > 0).length,
-    [detail.guards],
-  );
-
-  const attention = useMemo(() => {
-    const militaryNeedsAttention =
-      detail.guardSlotsMax !== undefined && detail.guardSlotsMax > 0 && occupiedGuardSlots < detail.guardSlotsMax;
-    const economyNeedsAttention =
-      productionSummary.totalProductionBuildings > 0 &&
-      productionSummary.activeProductionBuildings < productionSummary.totalProductionBuildings;
-    return {
-      overview: false,
-      economy: economyNeedsAttention,
-      military: militaryNeedsAttention,
-    } as const;
-  }, [
-    detail.guardSlotsMax,
-    occupiedGuardSlots,
-    productionSummary.activeProductionBuildings,
-    productionSummary.totalProductionBuildings,
-  ]);
-
-  return <StructureListColumn attention={attention} />;
-});
-
-LeftStructureControlColumn.displayName = "LeftStructureControlColumn";

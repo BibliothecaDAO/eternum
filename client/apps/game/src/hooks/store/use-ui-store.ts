@@ -15,8 +15,6 @@ type TooltipPlacement = "top" | "left" | "right" | "bottom";
 
 export type BottomPanelTabId = "tile" | "minimap";
 
-export type LeftFacet = "overview" | "economy" | "military";
-
 let lastResolvedAnchor: HTMLElement | null = null;
 
 const isInDocument = (element: HTMLElement | null) => {
@@ -148,11 +146,6 @@ interface UIStore {
   setBattleView: (participants: BattleViewInfo | null) => void;
   leftNavigationView: LeftView;
   setLeftNavigationView: (view: LeftView) => void;
-  // Which facet of the left control column is currently active. The column
-  // mirrors the right-side inspector visually, but is a *control surface* — each
-  // facet exposes a different set of actions/info for the player's structure.
-  leftFacet: LeftFacet;
-  setLeftFacet: (facet: LeftFacet) => void;
   activeBottomPanelTab: BottomPanelTabId | null;
   setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => void;
   showMinimap: boolean;
@@ -300,8 +293,6 @@ export const useUIStore = create(
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
     leftNavigationView: LeftView.EntityView,
     setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view, tooltip: null }),
-    leftFacet: "overview",
-    setLeftFacet: (facet: LeftFacet) => set({ leftFacet: facet }),
     activeBottomPanelTab: "tile",
     setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => set({ activeBottomPanelTab: tab }),
     showMinimap: false,
