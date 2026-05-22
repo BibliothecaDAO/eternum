@@ -20,6 +20,7 @@ export interface WorldmapHoverLabelTargets {
 interface ResolveWorldmapHoverLabelTargetsInput {
   cachedEntities: HoverLabelCachedEntities;
   hoveredHex: HexPosition;
+  managerEntities?: HoverLabelCachedEntities;
   raycastArmy?: RaycastArmyHoverTarget;
 }
 
@@ -28,14 +29,18 @@ export function resolveWorldmapHoverLabelTargets(
 ): WorldmapHoverLabelTargets {
   return {
     armyId: resolveArmyHoverTarget(input),
-    structureId: input.cachedEntities.structure?.id,
-    chestId: input.cachedEntities.chest?.id,
+    structureId: input.cachedEntities.structure?.id ?? input.managerEntities?.structure?.id,
+    chestId: input.cachedEntities.chest?.id ?? input.managerEntities?.chest?.id,
   };
 }
 
 function resolveArmyHoverTarget(input: ResolveWorldmapHoverLabelTargetsInput): ID | undefined {
   if (input.cachedEntities.army) {
     return input.cachedEntities.army.id;
+  }
+
+  if (input.managerEntities?.army) {
+    return input.managerEntities.army.id;
   }
 
   if (!input.raycastArmy?.position) {

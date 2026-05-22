@@ -2509,9 +2509,11 @@ export default class WorldmapScene extends WarpTravel {
 
   private resolveHoverLabelEntities(hexCoords: HexPosition) {
     const cachedEntities = this.getHexagonEntity(hexCoords);
+    const managerEntities = this.resolveManagerHoverLabelEntities(hexCoords, cachedEntities);
     const targets = resolveWorldmapHoverLabelTargets({
       cachedEntities,
       hoveredHex: hexCoords,
+      managerEntities,
       raycastArmy: cachedEntities.army ? undefined : this.resolveRaycastArmyHoverTarget(),
     });
 
@@ -2520,6 +2522,40 @@ export default class WorldmapScene extends WarpTravel {
       structure: resolveWorldmapHoverLabelEntity(targets.structureId, cachedEntities.structure),
       chest: resolveWorldmapHoverLabelEntity(targets.chestId, cachedEntities.chest),
     };
+  }
+
+  private resolveManagerHoverLabelEntities(
+    hexCoords: HexPosition,
+    cachedEntities: { army?: HexEntityInfo; structure?: HexEntityInfo; chest?: HexEntityInfo },
+  ) {
+    return {
+      army: cachedEntities.army ? undefined : this.resolveArmyHoverLabelEntityFromManager(hexCoords),
+      structure: cachedEntities.structure ? undefined : this.resolveStructureHoverLabelEntityFromManager(hexCoords),
+      chest: cachedEntities.chest ? undefined : this.resolveChestHoverLabelEntityFromManager(hexCoords),
+    };
+  }
+
+  private resolveArmyHoverLabelEntityFromManager(hexCoords: HexPosition): HexEntityInfo | undefined {
+    const army = this.armyManager.getArmies().find((candidate) => {
+      const normalized = candidate.hexCoords.getNormalized();
+      return normalized.x === hexCoords.col && normalized.y === hexCoords.row;
+    });
+
+    return army ? { id: army.entityId, owner: army.owner.address ?? 0n } : undefined;
+  }
+
+  private resolveStructureHoverLabelEntityFromManager(hexCoords: HexPosition): HexEntityInfo | undefined {
+    const structure = this.structureManager.getStructureByHexCoords(hexCoords);
+    return structure ? { id: structure.entityId, owner: structure.owner.address } : undefined;
+  }
+
+  private resolveChestHoverLabelEntityFromManager(hexCoords: HexPosition): HexEntityInfo | undefined {
+    const chest = Array.from(this.chestManager.chests.getChests().values()).find((candidate) => {
+      const normalized = candidate.hexCoords.getNormalized();
+      return normalized.x === hexCoords.col && normalized.y === hexCoords.row;
+    });
+
+    return chest ? { id: chest.entityId, owner: 0n } : undefined;
   }
 
   private resolveRaycastArmyHoverTarget() {

@@ -65,4 +65,18 @@ describe("resolveWorldmapHoverLabelTargets", () => {
       }),
     ).toEqual({ structureId: 3, chestId: 4 });
   });
+
+  it("uses manager entities when the hover cache is missing visible labels", () => {
+    expect(
+      resolveWorldmapHoverLabelTargets({
+        cachedEntities: {},
+        hoveredHex: { col: 4, row: 5 },
+        managerEntities: {
+          army: { id: 2, owner: 1n },
+          structure: { id: 3, owner: 1n },
+          chest: { id: 4, owner: 0n },
+        },
+      }),
+    ).toEqual({ armyId: 2, structureId: 3, chestId: 4 });
+  });
 });
