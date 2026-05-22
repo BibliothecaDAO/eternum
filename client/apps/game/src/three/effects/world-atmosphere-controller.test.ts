@@ -94,6 +94,32 @@ describe("WorldAtmosphereController", () => {
     expect((fixture.scene.background as Color).getHex()).not.toBe(0x111111);
   });
 
+  it("snaps the first update to the requested daylight phase instead of fading in from night", () => {
+    const fixture = createFixture();
+    fixture.manager.params.progressSmoothing = 0.02;
+    fixture.manager.params.colorTransitionSpeed = 0.02;
+
+    fixture.manager.update(50);
+
+    expect((fixture.scene.background as Color).getHex()).toBe(0xaedbff);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(0.86);
+    expect(fixture.hemisphereLight.intensity).toBeCloseTo(2.55);
+    expect(fixture.directionalLight.intensity).toBeCloseTo(4.25);
+  });
+
+  it("snaps forced debug time previews even when live-cycle smoothing is slow", () => {
+    const fixture = createFixture();
+    fixture.manager.params.progressSmoothing = 0.02;
+    fixture.manager.params.colorTransitionSpeed = 0.02;
+
+    fixture.manager.update(0);
+    fixture.manager.update(50, undefined, { snap: true });
+
+    expect((fixture.scene.background as Color).getHex()).toBe(0xaedbff);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(0.86);
+    expect(fixture.directionalLight.position.y).toBeCloseTo(12);
+  });
+
   it("enables a cool moon rim light at night while keeping it off during day", () => {
     const fixture = createFixture();
     const moonRimLight = findMoonRimLight(fixture.scene, fixture.directionalLight);
@@ -120,7 +146,8 @@ describe("WorldAtmosphereController", () => {
     expect(fixture.manager.getTimeOfDay(20)).toBe("Dawn");
     expect(fixture.manager.getTimeOfDay(40)).toBe("Day");
     expect(fixture.manager.getTimeOfDay(70)).toBe("Dusk");
-    expect(fixture.manager.getTimeOfDay(80)).toBe("Evening");
+    expect(fixture.manager.getTimeOfDay(80)).toBe("Dusk");
+    expect(fixture.manager.getTimeOfDay(90)).toBe("Evening");
   });
 
   it("restores original lighting state when disabled", () => {

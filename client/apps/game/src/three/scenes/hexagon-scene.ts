@@ -23,6 +23,7 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { BiomeType, type HexPosition } from "@bibliothecadao/types";
 import gsap from "gsap";
+import type GUI from "lil-gui";
 import throttle from "lodash/throttle";
 import {
   AmbientLight,
@@ -90,7 +91,7 @@ export abstract class HexagonScene {
 
   protected mainDirectionalLight!: DirectionalLight;
   protected hemisphereLight!: HemisphereLight;
-  protected lightHelper!: DirectionalLightHelper;
+  protected lightHelper?: DirectionalLightHelper;
   protected stormLight!: PointLight;
   protected ambientPurpleLight!: AmbientLight;
   protected lightningSystem!: LightningEffectSystem;
@@ -105,6 +106,7 @@ export abstract class HexagonScene {
   private groundMesh!: Mesh;
   private groundMeshTexture: Texture | null = null;
   private uiStateUnsubscribe?: () => void;
+  private readonly lightHelperDebugState = { showLightHelper: false };
   private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
   private cameraTransitionListeners: Set<(status: CameraTransitionStatus) => void> = new Set();
 
@@ -216,12 +218,14 @@ export abstract class HexagonScene {
         leftNavigationView: state.leftNavigationView,
         structureEntityId: state.structureEntityId,
         cycleProgress: state.cycleProgress,
+        debugCycleProgressOverride: state.debugCycleProgressOverride,
         cycleTime: state.cycleTime,
       }),
-      ({ leftNavigationView, structureEntityId, cycleProgress, cycleTime }) => {
+      ({ leftNavigationView, structureEntityId, cycleProgress, debugCycleProgressOverride, cycleTime }) => {
         this.state.leftNavigationView = leftNavigationView;
         this.state.structureEntityId = structureEntityId;
         this.state.cycleProgress = cycleProgress;
+        this.state.debugCycleProgressOverride = debugCycleProgressOverride;
         this.state.cycleTime = cycleTime;
       },
     );
@@ -288,8 +292,11 @@ export abstract class HexagonScene {
   }
 
   private setupLightHelper(): void {
+    if (env.VITE_PUBLIC_GRAPHICS_DEV !== true) {
+      return;
+    }
+
     this.lightHelper = new DirectionalLightHelper(this.mainDirectionalLight, 1);
-    if (env.VITE_PUBLIC_GRAPHICS_DEV == true) this.scene.add(this.lightHelper);
   }
 
   private setupWorldAtmosphere(): void {
@@ -427,12 +434,40 @@ export abstract class HexagonScene {
     directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.position, "y", -20, 20, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.position, "z", -20, 20, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight, "intensity", 0, 3, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight, "intensity", 0, 5, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
     directionalLightFolder.add(this.scene, "environmentIntensity", 0, 2, 0.01);
+    this.addLightHelperGUI(directionalLightFolder);
     directionalLightFolder.close();
+  }
+
+  private addLightHelperGUI(directionalLightFolder: GUI): void {
+    if (!this.lightHelper) {
+      return;
+    }
+
+    directionalLightFolder
+      .add(this.lightHelperDebugState, "showLightHelper")
+      .name("Show Light Helper")
+      .onChange((visible: boolean) => {
+        this.setLightHelperVisible(visible);
+      });
+  }
+
+  private setLightHelperVisible(visible: boolean): void {
+    if (!this.lightHelper) {
+      return;
+    }
+
+    if (visible) {
+      this.scene.add(this.lightHelper);
+      this.lightHelper.update();
+      return;
+    }
+
+    this.scene.remove(this.lightHelper);
   }
 
   private setupShadowGUI(): void {
@@ -973,7 +1008,7 @@ export abstract class HexagonScene {
 
     const geometry = new PlaneGeometry(2668, 1390.35);
     const material = new MeshStandardMaterial({
-      color: new Color(0x261838),
+      color: new Color(0x35445d),
       metalness: metalness,
       roughness: roughness,
       side: DoubleSide,
@@ -1118,7 +1153,9 @@ export abstract class HexagonScene {
 
     // Update world atmosphere with camera target for proper light positioning
     const cameraTarget = this.controls.target;
-    this.worldAtmosphereController.update(cycleProgress, cameraTarget);
+    this.worldAtmosphereController.update(cycleProgress, cameraTarget, {
+      snap: this.state.debugCycleProgressOverride !== null,
+    });
 
     const weatherState = this.weatherAtmosphereState;
     const cycleStormDepth = cycleProgress < 20 ? 1 - Math.abs(cycleProgress - 10) / 10 : 0;

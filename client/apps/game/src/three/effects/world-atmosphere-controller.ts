@@ -35,6 +35,24 @@ interface WorldAtmosphereParams {
   progressSmoothing: number; // How quickly progress eases toward target (0-1)
 }
 
+interface WorldAtmosphereUpdateOptions {
+  snap?: boolean;
+}
+
+interface AtmosphereProgressFrame {
+  progress: number;
+  snapVisualState: boolean;
+}
+
+const DAY_PHASE_PROGRESS = {
+  dawn: 100 / 6,
+  morning: 100 / 3,
+  afternoon: 50,
+  lateAfternoon: 175 / 3,
+  dusk: (100 / 6) * 4,
+  evening: (100 / 6) * 5,
+} as const;
+
 const VISIBILITY_FLOORS = {
   ambientIntensity: 0.48,
   hemisphereIntensity: 0.95,
@@ -49,6 +67,8 @@ const WEATHER_LIMITS = {
   maxKeyLightDimming: 0.2,
 } as const;
 
+const PREVIEW_SNAP_PROGRESS_THRESHOLD = 1.5;
+
 export class WorldAtmosphereController {
   private scene: Scene;
   private directionalLight: DirectionalLight;
@@ -62,7 +82,7 @@ export class WorldAtmosphereController {
     cycleSpeed: 1.0,
     sunHeight: 12,
     sunDistance: 15,
-    transitionSmoothness: 0.5,
+    transitionSmoothness: 0.45,
     colorTransitionSpeed: 0.02, // Smooth color transitions
     sunPositionEasing: 0.1, // Smooth sun movement when camera pans
     progressSmoothing: 0.02, // Slow progress easing for gradual day changes
@@ -71,9 +91,9 @@ export class WorldAtmosphereController {
   // Current color state (for smooth transitions)
   private currentColors: TimeOfDayColors = {
     skyColor: 0x344562,
-    groundColor: 0x12081f,
+    groundColor: 0x405477,
     sunColor: 0x7b5fd6,
-    ambientColor: 0x38245d,
+    ambientColor: 0x7891c4,
     fogColor: 0x536b8c,
     hemisphereIntensity: 1.05,
     sunIntensity: 1.85,
@@ -120,15 +140,14 @@ export class WorldAtmosphereController {
     fogColor: Color;
   };
 
-  // Color stops for different times of day
-  // Progress: 0-25 (Night→Dawn), 25-50 (Day), 50-75 (Dusk→Evening), 75-100 (Night)
+  // Color stops for the six in-game day phases.
   private readonly timeOfDayPresets: { [key: string]: TimeOfDayColors } = {
     deepNight: {
       // 0, 100
       skyColor: 0x344562,
-      groundColor: 0x1f1233,
+      groundColor: 0x405477,
       sunColor: 0x9b7ee8,
-      ambientColor: 0x5d4588,
+      ambientColor: 0x7891c4,
       fogColor: 0x536b8c,
       hemisphereIntensity: 1.05,
       sunIntensity: 1.85,
@@ -137,56 +156,82 @@ export class WorldAtmosphereController {
       fogFar: 56,
     },
     dawn: {
-      // 12.5
-      skyColor: 0xffb07a,
-      groundColor: 0x865480,
-      sunColor: 0xffc49a,
-      ambientColor: 0x9a7ab0,
-      fogColor: 0xbb8da8,
-      hemisphereIntensity: 1.2,
-      sunIntensity: 2.9,
-      ambientIntensity: 0.48,
-      fogNear: 20,
-      fogFar: 52,
+      // 16.7
+      skyColor: 0xffba8a,
+      groundColor: 0x9f7188,
+      sunColor: 0xffd0a5,
+      ambientColor: 0xb994b2,
+      fogColor: 0xd4a8b0,
+      hemisphereIntensity: 1.45,
+      sunIntensity: 3.05,
+      ambientIntensity: 0.6,
+      fogNear: 22,
+      fogFar: 58,
+    },
+    morning: {
+      // 33.3
+      skyColor: 0xb7dcff,
+      groundColor: 0xd8c7a9,
+      sunColor: 0xfff5d5,
+      ambientColor: 0xffecd3,
+      fogColor: 0xd2e5f4,
+      hemisphereIntensity: 2.15,
+      sunIntensity: 3.8,
+      ambientIntensity: 0.76,
+      fogNear: 30,
+      fogFar: 82,
     },
     day: {
-      // 37.5
-      skyColor: 0xcfe8ff,
-      groundColor: 0xf9e7c9,
+      // 50
+      skyColor: 0xaedbff,
+      groundColor: 0xe6d9bd,
       sunColor: 0xffffff,
-      ambientColor: 0xf1edf9,
-      fogColor: 0xe2defa,
-      hemisphereIntensity: 2.0,
-      sunIntensity: 3.6,
-      ambientIntensity: 0.65,
-      fogNear: 26,
-      fogFar: 70,
+      ambientColor: 0xfff4dc,
+      fogColor: 0xd8ecff,
+      hemisphereIntensity: 2.55,
+      sunIntensity: 4.25,
+      ambientIntensity: 0.86,
+      fogNear: 34,
+      fogFar: 90,
+    },
+    afternoon: {
+      // 58.3
+      skyColor: 0xc2def8,
+      groundColor: 0xe0ccb1,
+      sunColor: 0xffe3ba,
+      ambientColor: 0xffe1c6,
+      fogColor: 0xdedee6,
+      hemisphereIntensity: 2.25,
+      sunIntensity: 3.75,
+      ambientIntensity: 0.78,
+      fogNear: 30,
+      fogFar: 78,
     },
     dusk: {
-      // 62.5
-      skyColor: 0xff9b73,
-      groundColor: 0x845183,
-      sunColor: 0xffb080,
-      ambientColor: 0xa680b4,
-      fogColor: 0xc493b0,
-      hemisphereIntensity: 1.35,
-      sunIntensity: 2.6,
-      ambientIntensity: 0.48,
-      fogNear: 22,
-      fogFar: 55,
+      // 66.7
+      skyColor: 0xff9f72,
+      groundColor: 0x9a6682,
+      sunColor: 0xffbd8e,
+      ambientColor: 0xc591aa,
+      fogColor: 0xd39aab,
+      hemisphereIntensity: 1.55,
+      sunIntensity: 2.85,
+      ambientIntensity: 0.6,
+      fogNear: 24,
+      fogFar: 62,
     },
     evening: {
-      // 87.5
-      skyColor: 0x6077b2,
-      groundColor: 0x364567,
-      sunColor: 0xc3d4ff,
-      ambientColor: 0x708bc2,
-      fogColor: 0x5a739f,
-      hemisphereIntensity: 0.95,
-      sunIntensity: 2.2,
-      ambientIntensity: 0.5,
-      fogNear: 19,
-      fogFar: 50,
+      // 83.3
+      skyColor: 0x667fb8,
+      groundColor: 0x4a5875,
+      sunColor: 0xcbd9ff,
+      ambientColor: 0x829bd0,
+      fogColor: 0x637da5,
+      hemisphereIntensity: 1.15,
+      sunIntensity: 2.35,
+      ambientIntensity: 0.56,
+      fogNear: 20,
+      fogFar: 54,
     },
   };
 
@@ -231,29 +276,21 @@ export class WorldAtmosphereController {
    * @param cycleProgress - Game cycle progress (0-100)
    * @param cameraTarget - Optional camera target position to offset sun position
    */
-  update(cycleProgress: number, cameraTarget?: Vector3): void {
+  update(cycleProgress: number, cameraTarget?: Vector3, options: WorldAtmosphereUpdateOptions = {}): void {
     if (!this.params.enabled) return;
 
     // Apply cycle speed multiplier for testing
     const adjustedProgress = (cycleProgress * this.params.cycleSpeed) % 100;
-
-    const targetAngle = (adjustedProgress / 100) * this.fullRotation;
-    if (!this.isProgressInitialized) {
-      this.currentAngle = targetAngle;
-      this.isProgressInitialized = true;
-    } else {
-      this.currentAngle = this.lerpAngle(this.currentAngle, targetAngle, this.params.progressSmoothing);
-    }
-
-    const normalizedAngle = MathUtils.euclideanModulo(this.currentAngle, this.fullRotation);
-    const smoothedProgress = (normalizedAngle / this.fullRotation) * 100;
+    const progressFrame = this.resolveAtmosphereProgress(adjustedProgress, options.snap === true);
 
     // Get target colors for current time, then grade nighttime toward cooler tones
-    const interpolatedColors = this.getInterpolatedTimeColors(smoothedProgress);
-    const targetColors = this.applyNightTemperatureGrading(interpolatedColors, smoothedProgress);
+    const interpolatedColors = this.getInterpolatedTimeColors(progressFrame.progress);
+    const targetColors = this.applyNightTemperatureGrading(interpolatedColors, progressFrame.progress);
 
     // Smoothly transition current colors toward target colors
-    this.currentColors = this.lerpTimeColors(this.currentColors, targetColors, this.params.colorTransitionSpeed);
+    this.currentColors = progressFrame.snapVisualState
+      ? targetColors
+      : this.lerpTimeColors(this.currentColors, targetColors, this.params.colorTransitionSpeed);
 
     // Update lighting with smoothed colors
     this.updateLighting(this.currentColors);
@@ -268,8 +305,32 @@ export class WorldAtmosphereController {
     this.lastWeatherAdjustedAmbientIntensity = this.lastUpdateAmbientIntensity;
 
     // Update sun position (relative to camera target if provided)
-    this.updateSunPosition(smoothedProgress, cameraTarget);
-    this.updateMoonRimLighting(smoothedProgress, cameraTarget);
+    this.updateSunPosition(progressFrame.progress, cameraTarget, progressFrame.snapVisualState);
+    this.updateMoonRimLighting(progressFrame.progress, cameraTarget);
+  }
+
+  private resolveAtmosphereProgress(adjustedProgress: number, forceSnap: boolean): AtmosphereProgressFrame {
+    const targetAngle = (adjustedProgress / 100) * this.fullRotation;
+    const shouldSnap = forceSnap || !this.isProgressInitialized || this.shouldSnapToProgress(targetAngle);
+
+    if (shouldSnap) {
+      this.currentAngle = targetAngle;
+      this.isProgressInitialized = true;
+    } else {
+      this.currentAngle = this.lerpAngle(this.currentAngle, targetAngle, this.params.progressSmoothing);
+    }
+
+    const normalizedAngle = MathUtils.euclideanModulo(this.currentAngle, this.fullRotation);
+    return {
+      progress: (normalizedAngle / this.fullRotation) * 100,
+      snapVisualState: shouldSnap,
+    };
+  }
+
+  private shouldSnapToProgress(targetAngle: number): boolean {
+    const delta = Math.abs(this.getShortestAngleDelta(this.currentAngle, targetAngle));
+    const progressDelta = (delta / this.fullRotation) * 100;
+    return progressDelta >= PREVIEW_SNAP_PROGRESS_THRESHOLD;
   }
 
   /**
@@ -279,10 +340,12 @@ export class WorldAtmosphereController {
     // Define key points in the cycle
     const keyPoints = [
       { progress: 0, preset: "deepNight" },
-      { progress: 12.5, preset: "dawn" },
-      { progress: 37.5, preset: "day" },
-      { progress: 62.5, preset: "dusk" },
-      { progress: 87.5, preset: "evening" },
+      { progress: DAY_PHASE_PROGRESS.dawn, preset: "dawn" },
+      { progress: DAY_PHASE_PROGRESS.morning, preset: "morning" },
+      { progress: DAY_PHASE_PROGRESS.afternoon, preset: "day" },
+      { progress: DAY_PHASE_PROGRESS.lateAfternoon, preset: "afternoon" },
+      { progress: DAY_PHASE_PROGRESS.dusk, preset: "dusk" },
+      { progress: DAY_PHASE_PROGRESS.evening, preset: "evening" },
       { progress: 100, preset: "deepNight" },
     ];
 
@@ -453,28 +516,26 @@ export class WorldAtmosphereController {
   }
 
   /**
-   * Update sun position based on cycle progress
-   * Sun rises from east, peaks at noon, sets in west
+   * Update key-light position based on cycle progress.
    * @param progress - Cycle progress (0-100)
    * @param cameraTarget - Optional camera target to offset sun position
    */
-  private updateSunPosition(progress: number, cameraTarget?: Vector3): void {
+  private updateSunPosition(progress: number, cameraTarget?: Vector3, snapPosition: boolean = false): void {
     // Convert progress to angle (0-360 degrees)
-    // 0 = midnight (below horizon)
+    // 0 = moonlit night
     // 25 = sunrise (eastern horizon)
     // 50 = noon (directly above)
     // 75 = sunset (western horizon)
-    // 100 = midnight (below horizon)
+    // 100 = moonlit night
 
     // Offset angle by π so that:
-    // - progress=0 (midnight): cos(π) = -1 → sun below horizon
+    // - progress=0 (midnight): cos(π) = -1
     // - progress=50 (noon): cos(0) = 1 → sun at peak
     const angle = (progress / 100) * Math.PI * 2 + Math.PI;
 
-    // Calculate sun position offset in an arc
-    // Using -cos for Y so sun is LOW at midnight, HIGH at noon
+    // Keep the main key light high for noon sunlight and readable moonlit nights.
     const offsetX = Math.sin(angle) * this.params.sunDistance;
-    const offsetY = -Math.cos(angle) * this.params.sunHeight;
+    const offsetY = Math.abs(Math.cos(angle)) * this.params.sunHeight;
     const offsetZ = -Math.cos(angle) * this.params.sunDistance * 0.3; // Slight depth variation
 
     // Calculate target sun position and target
@@ -494,9 +555,14 @@ export class WorldAtmosphereController {
       targetSunTarget.set(0, 0, 5.2);
     }
 
-    // Smoothly lerp current sun position toward target
-    this.currentSunPosition.lerp(targetSunPosition, this.params.sunPositionEasing);
-    this.currentSunTarget.lerp(targetSunTarget, this.params.sunPositionEasing);
+    if (snapPosition) {
+      this.currentSunPosition.copy(targetSunPosition);
+      this.currentSunTarget.copy(targetSunTarget);
+    } else {
+      // Smoothly lerp current sun position toward target
+      this.currentSunPosition.lerp(targetSunPosition, this.params.sunPositionEasing);
+      this.currentSunTarget.lerp(targetSunTarget, this.params.sunPositionEasing);
+    }
 
     // Apply smoothed position to light
     this.directionalLight.position.copy(this.currentSunPosition);
@@ -656,13 +722,12 @@ export class WorldAtmosphereController {
    * Get current time of day as string (for debugging/UI)
    */
   getTimeOfDay(progress: number): string {
-    if (progress < 12.5) return "Night";
-    if (progress < 25) return "Dawn";
-    if (progress < 50) return "Day";
-    if (progress < 62.5) return "Afternoon";
-    if (progress < 75) return "Dusk";
-    if (progress < 87.5) return "Evening";
-    return "Night";
+    if (progress < DAY_PHASE_PROGRESS.dawn) return "Night";
+    if (progress < DAY_PHASE_PROGRESS.morning) return "Dawn";
+    if (progress < DAY_PHASE_PROGRESS.afternoon) return "Day";
+    if (progress < DAY_PHASE_PROGRESS.dusk) return "Afternoon";
+    if (progress < DAY_PHASE_PROGRESS.evening) return "Dusk";
+    return "Evening";
   }
 
   /**
@@ -726,7 +791,10 @@ export class WorldAtmosphereController {
    * Interpolate between two angles while respecting wrap-around
    */
   private lerpAngle(current: number, target: number, t: number): number {
-    const delta = MathUtils.euclideanModulo(target - current + Math.PI, this.fullRotation) - Math.PI;
-    return current + delta * MathUtils.clamp(t, 0, 1);
+    return current + this.getShortestAngleDelta(current, target) * MathUtils.clamp(t, 0, 1);
+  }
+
+  private getShortestAngleDelta(current: number, target: number): number {
+    return MathUtils.euclideanModulo(target - current + Math.PI, this.fullRotation) - Math.PI;
   }
 }
