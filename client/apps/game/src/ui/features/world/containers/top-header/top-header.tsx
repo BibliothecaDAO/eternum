@@ -195,7 +195,7 @@ export const TopHeader = memo(() => {
                 );
               }}
             />
-            <div className="w-9 h-4 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-3 after:w-3 after:transition-all bg-gold/30"></div>
+            <div className="w-10 h-5 rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
           </label>
           <span
             onClick={() => {

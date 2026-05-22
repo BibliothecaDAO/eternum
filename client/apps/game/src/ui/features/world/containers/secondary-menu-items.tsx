@@ -13,6 +13,7 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
+import Trophy from "lucide-react/dist/esm/icons/trophy";
 
 import { useCallback, useMemo } from "react";
 
@@ -115,6 +116,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
       aria-label="Open leaderboard"
       title="Open leaderboard"
     >
+      <Trophy className="h-3.5 w-3.5 text-gold/80" aria-hidden="true" />
       <span>#{rankPill.rank}</span>
       <span className="text-gold/50">·</span>
       <span>{formatPoints(rankPill.points)} VP</span>
