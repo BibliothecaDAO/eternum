@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-22",
+    title: "Unified Map Labels",
+    description:
+      "Aligned compact map labels and detailed hover labels around the same entity identity and metrics, so hover details now expand from the same information shown on the map.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
     title: "Map Entity Labels",
     description:
       "Restored compact always-on world-map labels above armies, realms, camps, and key structures while keeping detailed hover cards available.",

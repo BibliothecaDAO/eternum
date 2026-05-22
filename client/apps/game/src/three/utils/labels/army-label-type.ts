@@ -14,6 +14,7 @@ import { getOwnershipStyle, LABEL_TYPE_CONFIGS } from "./label-config";
 import { LabelData, LabelTypeDefinition } from "./label-types";
 import { resolveCameraView } from "./label-view";
 import { attachDirectionIndicators, createLabelBase } from "./label-shared";
+import { applyEntityLabelViewModelMetadata, buildArmyEntityLabelViewModel } from "./entity-label-view-model";
 
 export interface ArmyLabelData extends LabelData {
   category: TroopType;
@@ -41,8 +42,10 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
   createElement: (data: ArmyLabelData, inputView: CameraView): HTMLElement => {
     const cameraView = resolveCameraView(inputView);
+    const labelModel = buildArmyEntityLabelViewModel(data);
     // Create base label
     const labelDiv = createLabelBase(data.isMine, cameraView, data.isDaydreamsAgent);
+    applyEntityLabelViewModelMetadata(labelDiv, labelModel);
     labelDiv.style.transform = "scale(0.5)";
     labelDiv.style.transformOrigin = "center bottom";
 
@@ -63,7 +66,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
     // Add owner information
     const ownerDisplay = createOwnerDisplayElement({
-      owner: data.owner,
+      owner: { ...data.owner, ownerName: labelModel.title },
       isMine: data.isMine,
       cameraView,
       color: data.color,
@@ -163,6 +166,8 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
   updateElement: (element: HTMLElement, data: ArmyLabelData, inputView: CameraView): void => {
     const cameraView = resolveCameraView(inputView);
+    const labelModel = buildArmyEntityLabelViewModel(data);
+    applyEntityLabelViewModelMetadata(element, labelModel);
     // Check if we have direction indicators and if view is expanded
     const hasDirections = data.attackedFromDegrees !== undefined || data.attackedTowardDegrees !== undefined;
     const isExpanded = cameraView !== CameraView.Far;
@@ -210,7 +215,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
       }
 
       const ownerDisplay = createOwnerDisplayElement({
-        owner: data.owner,
+        owner: { ...data.owner, ownerName: labelModel.title },
         isMine: data.isMine,
         cameraView,
         color: data.color,

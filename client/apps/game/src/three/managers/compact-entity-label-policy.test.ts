@@ -46,6 +46,11 @@ describe("compact entity label policy", () => {
     );
   });
 
+  it("uses shared view-model compact identity and variants", () => {
+    expect(resolveArmyCompactEntityLabel(baseArmy)).toBe("Sable Order");
+    expect(resolveCompactEntityLabelVariant({ isMine: true, isAlly: false })).toBe("mine");
+  });
+
   it("uses explicit realm and camp names before type fallbacks", () => {
     expect(resolveStructureCompactEntityLabel(baseStructure)).toBe("North Camp");
     expect(
