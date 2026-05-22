@@ -15,10 +15,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
 
   return (
     <Sonner
-      // Top-center sits between the left structure list and right tile
-      // inspector, so toasts no longer obscure either column. Offset clears
-      // the top-bar pill row (~52px) by a comfortable margin.
-      position="top-center"
+      // Bottom-center sits between the left structure list and right tile
+      // inspector, above the minimap. Offset clears the bottom-right minimap
+      // / actions row by a comfortable margin.
+      position="bottom-center"
       offset="72px"
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
