@@ -6,9 +6,8 @@ import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { NetworkStatusPill } from "@/ui/features/world/components/network-status-pill";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
-import { latestFeatures, leaderboard, rewards, settings, shortcuts, transactions } from "@/ui/features/world";
+import { latestFeatures, leaderboard, rewards, settings, transactions } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
-import { HomeButton } from "@/ui/shared/components/home-button";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
@@ -110,35 +109,24 @@ export const SecondaryMenuItems = () => {
         {leaderboardButtons.map((a, index) => (
           <div key={index}>{a.button}</div>
         ))}
-        {/* Shortcuts */}
-        <CircleButton
-          className="shortcuts-selector border-none"
-          tooltipLocation="bottom"
-          active={isPopupOpen(shortcuts)}
-          image={BuildingThumbs.question}
-          label={"Shortcuts"}
-          size="md"
-          onClick={() => togglePopup(shortcuts)}
-        />
-        {/* Latest Features */}
-        <CircleButton
-          className="latest-features-selector border-none"
-          tooltipLocation="bottom"
-          active={isPopupOpen(latestFeatures)}
-          image={BuildingThumbs.latestUpdates}
-          label={"Latest Features"}
-          size="md"
-          onClick={() => togglePopup(latestFeatures)}
-          primaryNotification={
-            unseenFeaturesCount > 0
-              ? {
-                  value: unseenFeaturesCount,
-                  color: "gold",
-                  location: "topright",
-                }
-              : undefined
-          }
-        />
+        {/* Shortcuts moved into the Settings popover to reduce top-bar density. */}
+        {/* Latest Features — render only while there are unseen features. */}
+        {unseenFeaturesCount > 0 && (
+          <CircleButton
+            className="latest-features-selector border-none"
+            tooltipLocation="bottom"
+            active={isPopupOpen(latestFeatures)}
+            image={BuildingThumbs.latestUpdates}
+            label={"Latest Features"}
+            size="md"
+            onClick={() => togglePopup(latestFeatures)}
+            primaryNotification={{
+              value: unseenFeaturesCount,
+              color: "gold",
+              location: "topright",
+            }}
+          />
+        )}
         {/* Settings */}
         <CircleButton
           className="settings-selector border-none"
@@ -153,38 +141,38 @@ export const SecondaryMenuItems = () => {
         <div className="self-center">
           <NetworkStatusPill onRetry={triggerConnectionForceReconnect} />
         </div>
-        {/* Transactions */}
-        <div className="relative">
-          <CircleButton
-            className="transactions-selector border-none"
-            tooltipLocation="bottom"
-            active={isPopupOpen(transactions)}
-            image="/image-icons/network.png"
-            label={"Transactions"}
-            size="md"
-            onClick={() => togglePopup(transactions)}
-            primaryNotification={
-              txStatus.pendingCount > 0
-                ? {
-                    value: txStatus.pendingCount,
-                    color: txStatus.notificationColor as "green" | "red" | "orange" | "gold",
-                    location: "topright",
-                  }
-                : undefined
-            }
-          />
-          {/* Status dot indicator */}
-          <div
-            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-dark-brown
-                        ${txStatus.status === "idle" ? "bg-brilliance" : ""}
+        {/* Transactions — render only when there is an active signal (pending, stuck, or recent error). */}
+        {txStatus.status !== "idle" && (
+          <div className="relative">
+            <CircleButton
+              className="transactions-selector border-none"
+              tooltipLocation="bottom"
+              active={isPopupOpen(transactions)}
+              image="/image-icons/network.png"
+              label={"Transactions"}
+              size="md"
+              onClick={() => togglePopup(transactions)}
+              primaryNotification={
+                txStatus.pendingCount > 0
+                  ? {
+                      value: txStatus.pendingCount,
+                      color: txStatus.notificationColor as "green" | "red" | "orange" | "gold",
+                      location: "topright",
+                    }
+                  : undefined
+              }
+            />
+            {/* Status dot indicator */}
+            <div
+              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-dark-brown
                         ${txStatus.status === "pending" ? "bg-gold animate-pulse" : ""}
                         ${txStatus.status === "stuck" ? "bg-orange animate-pulse" : ""}
                         ${txStatus.status === "error" ? "bg-danger" : ""}
                         shadow-[0_0_6px_currentColor]`}
-          />
-        </div>
-        {/* Main menu (home) */}
-        <HomeButton />
+            />
+          </div>
+        )}
+        {/* Home moved into the Settings popover to reduce top-bar density. */}
         {/* Controller button */}
         <Controller />
       </div>

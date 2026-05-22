@@ -41,7 +41,7 @@ import {
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
-import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
+import { useDojo } from "@bibliothecadao/react";
 import {
   BuildingType,
   ClientComponents,
@@ -59,8 +59,6 @@ import { useStoryEvents } from "@/hooks/store/use-story-events-store";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import Bot from "lucide-react/dist/esm/icons/bot";
-import Shield from "lucide-react/dist/esm/icons/shield";
-import Sword from "lucide-react/dist/esm/icons/sword";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -274,19 +272,12 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
 
   const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
 
-  const explorers = useExplorersByStructure({
-    structureEntityId: structureEntityId ?? 0,
-  });
-
   const guards = useMemo(
     () => (structure ? getGuardsByStructure(structure).filter((guard) => guard.troops && guard.troops.count > 0n) : []),
     [structure],
   );
 
-  const attackArmyCount = explorers.length;
   const guardArmyCount = guards.length;
-  const maxAttackArmies =
-    structure?.base?.troop_max_explorer_count !== undefined ? Number(structure.base.troop_max_explorer_count) : null;
   const maxGuardArmies =
     structure?.base?.troop_max_guard_count !== undefined ? Number(structure.base.troop_max_guard_count) : null;
 
@@ -742,80 +733,6 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
         </div>
       )}
 
-      {canShowArmiesCard && (
-        <div className="mt-auto flex items-center justify-between text-xxs text-gold/70">
-          <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1">
-              <Sword className="h-3 w-3 text-gold/50" />
-              <span className="uppercase tracking-wide text-gold/50">Field</span>
-              <span className="font-semibold text-gold/90">
-                {attackArmyCount}
-                {maxAttackArmies !== null ? `/${maxAttackArmies}` : ""}
-              </span>
-            </span>
-            <span className="flex items-center gap-1">
-              <Shield className="h-3 w-3 text-gold/50" />
-              <span className="uppercase tracking-wide text-gold/50">Guard</span>
-              <span className="font-semibold text-gold/90">
-                {guardArmyCount}
-                {maxGuardArmies !== null ? `/${maxGuardArmies}` : ""}
-              </span>
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              className={cn(
-                "rounded-full border border-gold/30 bg-black/40 p-1 text-gold/80 transition",
-                (!isOwned || !structureEntityId || !structureCapabilities.canCreateFieldArmy) &&
-                  "cursor-not-allowed opacity-50",
-                isOwned &&
-                  structureEntityId &&
-                  structureCapabilities.canCreateFieldArmy &&
-                  "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
-              )}
-              onClick={() => {
-                if (!structureEntityId || !isOwned || !structureCapabilities.canCreateFieldArmy) return;
-                openArmyCreationPopup({
-                  structureId: Number(structureEntityId),
-                  isExplorer: true,
-                });
-              }}
-              disabled={!isOwned || !structureEntityId || !structureCapabilities.canCreateFieldArmy}
-              aria-label="Create field army"
-              title="Create field army"
-            >
-              <Sword className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              className={cn(
-                "rounded-full border border-gold/30 bg-black/40 p-1 text-gold/80 transition",
-                (!isOwned || !structureEntityId || !structureCapabilities.canManageGuardArmy) &&
-                  "cursor-not-allowed opacity-50",
-                isOwned &&
-                  structureEntityId &&
-                  structureCapabilities.canManageGuardArmy &&
-                  "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
-              )}
-              onClick={() => {
-                if (!structureEntityId || !isOwned || !structureCapabilities.canManageGuardArmy) return;
-                const maxDefenseSlots = Number(structure?.base?.troop_max_guard_count ?? 0);
-                openArmyCreationPopup({
-                  structureId: Number(structureEntityId),
-                  isExplorer: false,
-                  maxDefenseSlots,
-                });
-              }}
-              disabled={!isOwned || !structureEntityId || !structureCapabilities.canManageGuardArmy}
-              aria-label="Create defense army"
-              title="Create defense army"
-            >
-              <Shield className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 });

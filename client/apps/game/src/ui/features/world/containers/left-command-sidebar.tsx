@@ -528,19 +528,21 @@ const LeftPanelHeader = memo(
                 const Icon = tab.icon;
                 const count = tabCounts[index] ?? 0;
                 const isActiveTab = activeTab === index;
-                const isDisabledTab = count === 0 && tab.key !== "realms";
+                // Hide non-realms tabs entirely while empty. The realms tab is
+                // always rendered (a player has at least one realm to land on).
+                const isHiddenTab = count === 0 && tab.key !== "realms";
                 return (
                   <Tabs.Tab
                     key={tab.key}
                     aria-label={tab.label}
                     title={tab.label}
-                    disabled={isDisabledTab}
+                    disabled={isHiddenTab}
                     className={clsx(
                       "!mx-0 border",
+                      isHiddenTab && "hidden",
                       isActiveTab
                         ? "border-gold/60 bg-black/40 text-[#f4c24d]"
                         : "border-gold/25 bg-black/20 text-gold/70 hover:border-gold/40 hover:text-gold/90",
-                      isDisabledTab && "opacity-60 hover:border-gold/25 hover:text-gold/60",
                     )}
                   >
                     <span className="flex items-center gap-1">
@@ -548,17 +550,12 @@ const LeftPanelHeader = memo(
                         className={clsx(
                           "text-[12px] font-semibold transition-none",
                           isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
-                          isDisabledTab && "text-gold/40",
                         )}
                       >
                         {count}
                       </span>
                       <Icon
-                        className={clsx(
-                          "h-4 w-4",
-                          isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
-                          isDisabledTab && "text-gold/40",
-                        )}
+                        className={clsx("h-4 w-4", isActiveTab ? "text-[#f4c24d]" : "text-gold/60")}
                       />
                     </span>
                     <span className="sr-only">{tab.label}</span>
@@ -568,7 +565,7 @@ const LeftPanelHeader = memo(
             </Tabs.List>
           </Tabs>
 
-          {orderedStructures.length > 0 ? (
+          {orderedStructures.length > 0 &&
             (() => {
               const visibleStructures = showAllStructures
                 ? orderedStructures
@@ -596,12 +593,7 @@ const LeftPanelHeader = memo(
                   )}
                 </div>
               );
-            })()
-          ) : (
-            <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
-              No structures available for this category.
-            </div>
-          )}
+            })()}
         </div>
       </div>
     );

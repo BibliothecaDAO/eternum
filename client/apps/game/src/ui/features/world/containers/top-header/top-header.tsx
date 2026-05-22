@@ -45,6 +45,10 @@ export const TopHeader = memo(() => {
   const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
   const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
   const isSpectating = useUIStore((state) => state.isSpectating);
+  // Gate the follow-army-combats toggle: there's nothing to follow until the player actually owns
+  // an army. We keep it visible while it's already toggled on so a player can always turn it back off.
+  const hasOwnedArmies = useUIStore((state) => state.selectableArmies.length > 0);
+  const showFollowArmyToggle = hasOwnedArmies || followArmyCombats || isSpectating;
   const accountName = useAccountStore((state) => state.accountName);
   const mode = useGameModeConfig();
 
@@ -178,11 +182,7 @@ export const TopHeader = memo(() => {
         <div className="flex flex-1 min-w-0 items-center gap-3 overflow-hidden">
           <div className="flex flex-1 min-w-0 flex-nowrap items-center gap-3">
             <div className="flex max-w-[420px] flex-shrink-0 flex-wrap items-center gap-2 truncate text-gold font-[Cinzel]">
-              {isSpectating ? (
-                <EyeIcon className="h-4 w-4 text-gold" aria-hidden="true" />
-              ) : (
-                <Swords className="h-4 w-4 text-gold" aria-hidden="true" />
-              )}
+              {isSpectating && <EyeIcon className="h-4 w-4 text-gold" aria-hidden="true" />}
               <span className="truncate text-base font-semibold">
                 {accountName ?? playerEntry?.displayName ?? "Player"}
               </span>
@@ -264,26 +264,28 @@ export const TopHeader = memo(() => {
                     Ethereal
                   </button>
                 )}
-                <div className="relative flex gap-2">
-                  <button
-                    type="button"
-                    className={cn(
-                      "rounded-full p-2 transition-all duration-300 border-2",
-                      followArmyCombats
-                        ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
-                        : "bg-gold/10 hover:bg-gold/20 border-gold/30",
-                    )}
-                    onClick={() => {
-                      setFollowArmyCombats(!followArmyCombats);
-                      playClick();
-                    }}
-                    onMouseEnter={() => playHover()}
-                    aria-pressed={followArmyCombats}
-                    title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
-                  >
-                    <Swords className={cn("w-4 h-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
-                  </button>
-                </div>
+                {showFollowArmyToggle && (
+                  <div className="relative flex gap-2">
+                    <button
+                      type="button"
+                      className={cn(
+                        "rounded-full p-2 transition-all duration-300 border-2",
+                        followArmyCombats
+                          ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
+                          : "bg-gold/10 hover:bg-gold/20 border-gold/30",
+                      )}
+                      onClick={() => {
+                        setFollowArmyCombats(!followArmyCombats);
+                        playClick();
+                      }}
+                      onMouseEnter={() => playHover()}
+                      aria-pressed={followArmyCombats}
+                      title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
+                    >
+                      <Swords className={cn("w-4 h-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -12,8 +12,10 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { GraphicsSettings } from "@/ui/config";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
-import { OSWindow, settings } from "@/ui/features/world";
+import { OSWindow, settings, shortcuts } from "@/ui/features/world";
 import { redirectToLandingWorldSelection } from "@/ui/features/world-selector";
+import { resetBootstrap } from "@/init/bootstrap";
+import { useNavigate } from "react-router-dom";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { DEFAULT_TORII_SETTING } from "@/utils/config";
 import { getAddressName } from "@bibliothecadao/eternum";
@@ -71,6 +73,7 @@ export const SettingsWindow = () => {
   const [download, setDownload] = useState<boolean>(false);
   const [isResyncing, setIsResyncing] = useState(false);
 
+  const navigate = useNavigate();
   const setBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
 
   const addressName = getAddressName(ContractAddress(account.address), components);
@@ -222,6 +225,30 @@ export const SettingsWindow = () => {
                 }}
               >
                 Change Game
+              </Button>
+            </div>
+            <div className="flex items-center justify-between text-xs text-gray-gold">
+              <div>Return Home</div>
+              <Button
+                size="xs"
+                onClick={() => {
+                  resetBootstrap();
+                  navigate("/");
+                }}
+              >
+                Home
+              </Button>
+            </div>
+            <div className="flex items-center justify-between text-xs text-gray-gold">
+              <div>Keyboard Shortcuts</div>
+              <Button
+                size="xs"
+                onClick={() => {
+                  togglePopup(settings);
+                  togglePopup(shortcuts);
+                }}
+              >
+                View
               </Button>
             </div>
           </section>

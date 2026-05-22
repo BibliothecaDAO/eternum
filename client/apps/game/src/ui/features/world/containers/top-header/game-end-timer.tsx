@@ -203,6 +203,12 @@ export const GameEndTimer = memo(() => {
     setTooltip(null);
   }, [setTooltip]);
 
+  // Self-gate: only render when the game actually has a finite end and hasn't already finished.
+  // "Infinite" or already-ended states add clutter without information.
+  if (!hasFiniteGameEnd || hasGameEnded) {
+    return null;
+  }
+
   return (
     <div
       onMouseEnter={handleMouseEnter}
