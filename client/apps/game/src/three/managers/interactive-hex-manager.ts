@@ -128,6 +128,11 @@ export class InteractiveHexManager {
     this.hoverHexManager.applyHoverPalette(palette);
   }
 
+  public isHexInteractive(hexCoords: { col: number; row: number }): boolean {
+    const key = `${hexCoords.col},${hexCoords.row}`;
+    return this.isRenderingAllHexes ? this.allHexes.has(key) : this.visibleHexes.has(key);
+  }
+
   public setCameraView(cameraView: number) {
     this.hoverHexManager.setCameraView(cameraView);
   }
@@ -497,9 +502,7 @@ export class InteractiveHexManager {
 
   private resolveHexFromPoint(point: THREE.Vector3) {
     const hexCoords = getHexForWorldPosition(point);
-    const key = `${hexCoords.col},${hexCoords.row}`;
-    const isInteractive = this.isRenderingAllHexes ? this.allHexes.has(key) : this.visibleHexes.has(key);
-    if (!isInteractive) {
+    if (!this.isHexInteractive(hexCoords)) {
       return null;
     }
 

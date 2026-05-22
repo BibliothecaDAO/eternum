@@ -16,12 +16,16 @@ describe("world connection monitor wiring", () => {
     expect(source).not.toContain("const toriiBaseUrl = env.VITE_PUBLIC_TORII;");
   });
 
-  it("triggers a guarded full re-bootstrap from onDeadEnd so wedged consumers recover", () => {
+  it("requests a guarded route-level rebootstrap from onDeadEnd so wedged consumers recover", () => {
     const source = readSource("src/ui/layouts/world.tsx");
+    const bootstrapControllerSource = readSource("src/game-entry/bootstrap-controller.ts");
 
-    expect(source).toContain("resetBootstrap");
-    expect(source).toContain("bootstrapGameForEntryContext");
+    expect(source).toContain("requestGameRebootstrap");
+    expect(source).not.toContain("bootstrapGameForEntryContext");
+    expect(source).not.toContain("resetBootstrap");
     expect(source).toContain("shouldRunDeadEndRecovery");
     expect(source).toContain("toriiBaseUrl, reason");
+    expect(bootstrapControllerSource).toContain("export const requestGameRebootstrap");
+    expect(bootstrapControllerSource).toContain("resetBootstrap()");
   });
 });

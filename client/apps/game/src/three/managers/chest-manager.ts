@@ -32,6 +32,7 @@ import {
   waitForVisualSettle,
 } from "./manager-update-convergence";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
+import type { HoverLabelShowResult } from "./hover-label-show-result";
 
 const MAX_INSTANCES = 1000;
 
@@ -488,10 +489,10 @@ export class ChestManager {
     this.entityIdLabels.set(chest.entityId, label);
   }
 
-  public showLabel(entityId: ID): void {
+  public showLabel(entityId: ID): HoverLabelShowResult {
     const chest = this.chests.getChest(entityId);
     if (!chest) {
-      return;
+      return { status: "missing" };
     }
 
     const position = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
@@ -499,14 +500,21 @@ export class ChestManager {
 
     const existingLabel = this.entityIdLabels.get(entityId);
     if (existingLabel) {
+      const wasDetached = existingLabel.parent !== this.labelsGroup;
+      const wasHidden = existingLabel.visible !== true || existingLabel.element.style.display === "none";
       const updatedPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
       updatedPosition.y += 1.5;
       existingLabel.position.copy(updatedPosition);
+      if (wasDetached) {
+        this.labelsGroup.add(existingLabel);
+      }
+      existingLabel.visible = true;
+      existingLabel.element.style.display = "";
       // Highlight point icon on hover
       if (this.pointsRenderer) {
         this.pointsRenderer.setHover(entityId);
       }
-      return;
+      return wasDetached || wasHidden ? { status: "reattached" } : { status: "unchanged" };
     }
 
     this.addEntityIdLabel(chest, position);
@@ -515,6 +523,7 @@ export class ChestManager {
     if (this.pointsRenderer) {
       this.pointsRenderer.setHover(entityId);
     }
+    return { status: "shown" };
   }
 
   public hideLabel(entityId: ID): void {

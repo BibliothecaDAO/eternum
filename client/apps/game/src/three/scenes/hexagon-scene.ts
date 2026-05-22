@@ -37,6 +37,7 @@ import {
   Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
+  Plane,
   PlaneGeometry,
   PointLight,
   Quaternion,
@@ -112,6 +113,8 @@ export abstract class HexagonScene {
   protected currentCameraView = CameraView.Medium; // Track current camera view position
   protected targetCameraView = CameraView.Medium;
   private animationCameraTarget: Vector3 = new Vector3();
+  private readonly hoverGroundPlane = new Plane(new Vector3(0, 1, 0), 0);
+  private readonly hoverGroundIntersection = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
   private readonly animationVisibilityDistance = 140;
   private cameraTransitionState = createCameraTransitionState();
@@ -322,9 +325,42 @@ export abstract class HexagonScene {
     const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
     if (hoveredHex) {
       this.onHexagonMouseMove(hoveredHex);
-    } else {
-      this.onHexagonMouseMove(null);
+      return;
     }
+
+    const fallbackHex = this.tryArmyRaycastFallback(raycaster);
+    if (fallbackHex) {
+      this.onHexagonMouseMove({
+        hexCoords: fallbackHex,
+        position: getWorldPositionForHex(fallbackHex),
+      });
+      return;
+    }
+
+    const groundPlaneFallback = this.tryGroundPlaneHoverFallback(raycaster);
+    if (groundPlaneFallback) {
+      this.onHexagonMouseMove(groundPlaneFallback);
+      return;
+    }
+
+    this.onHexagonMouseMove(null);
+  }
+
+  private tryGroundPlaneHoverFallback(raycaster: Raycaster): { hexCoords: HexPosition; position: Vector3 } | null {
+    const intersection = raycaster.ray.intersectPlane(this.hoverGroundPlane, this.hoverGroundIntersection);
+    if (!intersection) {
+      return null;
+    }
+
+    const hexCoords = getHexForWorldPosition(intersection);
+    if (!this.interactiveHexManager.isHexInteractive(hexCoords)) {
+      return null;
+    }
+
+    return {
+      hexCoords,
+      position: getWorldPositionForHex(hexCoords),
+    };
   }
 
   private handleDoubleClick(_event: MouseEvent, raycaster: Raycaster): void {

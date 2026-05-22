@@ -3,14 +3,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { primeGameEntry } from "@/game-entry-preload";
 import { refreshSessionPolicies } from "@/hooks/context/session-policy-refresh";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useSyncStore } from "@/hooks/store/use-sync-store";
 import {
   bootstrapGameForEntryContext,
   getCachedBootstrappedEntrySession,
+  resetBootstrap,
   type BootstrappedEntrySession,
   type SetupResult,
 } from "@/init/bootstrap";
+import { addNetworkBreadcrumb } from "@/observability/network-health-reporting";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
+import { toast } from "sonner";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "./context";
 
@@ -114,6 +118,63 @@ interface GameEntryBootstrapControllerState {
   tasks: BootstrapTask[];
 }
 
+interface GameRebootstrapRequest {
+  reason: string;
+}
+
+type GameRebootstrapListener = (request: GameRebootstrapRequest) => void;
+
+const gameRebootstrapListeners = new Set<GameRebootstrapListener>();
+
+const subscribeGameRebootstrapRequests = (listener: GameRebootstrapListener): (() => void) => {
+  gameRebootstrapListeners.add(listener);
+  return () => {
+    gameRebootstrapListeners.delete(listener);
+  };
+};
+
+export const requestGameRebootstrap = (reason: string): void => {
+  const request = { reason };
+  gameRebootstrapListeners.forEach((listener) => listener(request));
+};
+
+const markConnectionRecoveredAfterRouteRebootstrap = (): void => {
+  const store = useConnectionStore.getState();
+  store.setSpatialStatus("connected");
+  store.setGlobalStatus("connected");
+  store.resetReconnectAttempts();
+};
+
+const getBootstrapErrorReason = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  return "unknown_error";
+};
+
+const recordRouteRebootstrapSucceeded = (reason?: string): void => {
+  addNetworkBreadcrumb({
+    event: "reconnect_success",
+    streamType: "global",
+    status: "route_rebootstrap",
+    reason,
+  });
+};
+
+const recordRouteRebootstrapFailed = (error: unknown): void => {
+  addNetworkBreadcrumb({
+    event: "reconnect_failure",
+    streamType: "global",
+    status: "route_rebootstrap",
+    reason: getBootstrapErrorReason(error),
+  });
+};
+
 export const useGameEntryBootstrapController = ({
   context,
   enabled,
@@ -186,70 +247,104 @@ export const useGameEntryBootstrapController = ({
     inFlightRef.current = null;
   }, []);
 
-  const start = useCallback(() => {
-    if (!context) {
-      refreshReadyState(null);
-      return;
-    }
+  const runBootstrap = useCallback(
+    ({ forceFresh = false, reason }: { forceFresh?: boolean; reason?: string } = {}) => {
+      if (!context) {
+        refreshReadyState(null);
+        return;
+      }
 
-    if (inFlightRef.current) {
-      return;
-    }
+      if (inFlightRef.current && !forceFresh) {
+        return;
+      }
 
-    const cachedSession = getCachedBootstrappedEntrySession(context);
-    if (cachedSession) {
-      refreshReadyState(context);
-      return;
-    }
+      const cachedSession = getCachedBootstrappedEntrySession(context);
+      if (cachedSession && !forceFresh) {
+        refreshReadyState(context);
+        return;
+      }
 
-    setError(null);
-    setSession(null);
-    setStatus("loading");
-    setTasks(createBootstrapTasks());
-    const runId = activeRunIdRef.current + 1;
-    activeRunIdRef.current = runId;
+      if (forceFresh) {
+        console.info(`[bootstrap] Route-level rebootstrap requested: ${reason ?? "unknown"}`);
+        activeRunIdRef.current += 1;
+        inFlightRef.current = null;
+        resetBootstrap();
+      }
 
-    const promise = bootstrapGameForEntryContext(context, {
-      onWorldSelectionStarted: () => {
-        setTaskStatus("world", "running");
-      },
-      onWorldSelectionCompleted: () => {
-        setTaskStatus("world", "complete");
-        setTaskStatus("manifest", "running");
-      },
-      onBootstrapStarted: () => {
-        markGameEntryMilestone("asset-prefetch-scheduled");
-        primeGameEntry("entry");
-      },
-    });
+      setError(null);
+      setSession(null);
+      setStatus("loading");
+      setTasks(createBootstrapTasks());
+      const runId = activeRunIdRef.current + 1;
+      activeRunIdRef.current = runId;
 
-    inFlightRef.current = promise;
-
-    promise
-      .then((result) => {
-        if (activeRunIdRef.current !== runId) {
-          return;
-        }
-
-        completeBootstrapRun(result);
-        refreshSessionPoliciesAfterEntryReady(runId);
-      })
-      .catch((incomingError: unknown) => {
-        if (activeRunIdRef.current !== runId) {
-          return;
-        }
-
-        const normalizedError = incomingError instanceof Error ? incomingError : new Error("Unknown bootstrap error");
-        setError(normalizedError);
-        setStatus("error");
-        setTasks((previousTasks) => updateTasksForError(previousTasks));
-      })
-      .finally(() => {
-        if (activeRunIdRef.current === runId) {
-          inFlightRef.current = null;
-        }
+      const promise = bootstrapGameForEntryContext(context, {
+        onWorldSelectionStarted: () => {
+          setTaskStatus("world", "running");
+        },
+        onWorldSelectionCompleted: () => {
+          setTaskStatus("world", "complete");
+          setTaskStatus("manifest", "running");
+        },
+        onBootstrapStarted: () => {
+          markGameEntryMilestone("asset-prefetch-scheduled");
+          primeGameEntry("entry");
+        },
       });
-  }, [completeBootstrapRun, context, refreshReadyState, refreshSessionPoliciesAfterEntryReady, setTaskStatus]);
+
+      inFlightRef.current = promise;
+
+      promise
+        .then((result) => {
+          if (activeRunIdRef.current !== runId) {
+            return;
+          }
+
+          completeBootstrapRun(result);
+          if (forceFresh) {
+            markConnectionRecoveredAfterRouteRebootstrap();
+            recordRouteRebootstrapSucceeded(reason);
+            toast.success("Game state refreshed", {
+              description: "Reconnected after a prolonged outage.",
+            });
+          }
+          refreshSessionPoliciesAfterEntryReady(runId);
+        })
+        .catch((incomingError: unknown) => {
+          if (activeRunIdRef.current !== runId) {
+            return;
+          }
+
+          const normalizedError = incomingError instanceof Error ? incomingError : new Error("Unknown bootstrap error");
+          if (forceFresh) {
+            recordRouteRebootstrapFailed(normalizedError);
+          }
+          setError(normalizedError);
+          setStatus("error");
+          setTasks((previousTasks) => updateTasksForError(previousTasks));
+        })
+        .finally(() => {
+          if (activeRunIdRef.current === runId) {
+            inFlightRef.current = null;
+          }
+        });
+    },
+    [completeBootstrapRun, context, refreshReadyState, refreshSessionPoliciesAfterEntryReady, setTaskStatus],
+  );
+
+  const start = useCallback(() => {
+    runBootstrap();
+  }, [runBootstrap]);
+
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
+    return subscribeGameRebootstrapRequests((request) => {
+      runBootstrap({ forceFresh: true, reason: request.reason });
+    });
+  }, [enabled, runBootstrap]);
 
   useEffect(() => {
     refreshReadyState(context);
