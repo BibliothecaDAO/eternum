@@ -12,9 +12,9 @@
   "requestedLaunchStep": "create-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26305404236-1.json",
   "latestLaunchRequestId": "26305404236-1",
-  "currentStepId": "configure-worlds",
+  "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-22T18:39:20.283Z",
+  "updatedAt": "2026-05-22T18:39:41.591Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
+    "nextRetryAt": "2026-05-22T18:54:41.591Z",
     "lastRetryAt": "2026-05-22T18:35:50.672Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-22T18:54:16.152Z",
-    "lastEvaluatedAt": "2026-05-22T18:39:16.152Z"
+    "nextEvaluationAt": "2026-05-22T18:54:41.591Z",
+    "lastEvaluatedAt": "2026-05-22T18:39:41.591Z"
   },
   "steps": [
     {
@@ -63,10 +64,11 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-05-22T18:39:20.283Z"
+      "latestEvent": "Applying settings is complete",
+      "startedAt": "2026-05-22T18:39:20.283Z",
+      "finishedAt": "2026-05-22T18:39:41.591Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -8786,9 +8788,126 @@
         },
         "seriesGameNumber": 47,
         "currentStepId": null,
-        "latestEvent": "Completed wait-for-factory-indexes",
+        "latestEvent": "Completed configure-worlds",
         "status": "succeeded",
-        "configSteps": [],
+        "configSteps": [
+          {
+            "id": "world-admin",
+            "description": "Set world admin config"
+          },
+          {
+            "id": "mercenaries-name",
+            "description": "Set mercenaries name config"
+          },
+          {
+            "id": "vrf",
+            "description": "Set VRF config"
+          },
+          {
+            "id": "game-mode",
+            "description": "Set game mode config"
+          },
+          {
+            "id": "factory-address",
+            "description": "Set factory address"
+          },
+          {
+            "id": "blitz-exploration",
+            "description": "Set blitz exploration config"
+          },
+          {
+            "id": "mmr",
+            "description": "Set MMR config"
+          },
+          {
+            "id": "victory-points",
+            "description": "Set victory points config"
+          },
+          {
+            "id": "camp-starting-resources",
+            "description": "Set camp starting resources config"
+          },
+          {
+            "id": "blitz-registration",
+            "description": "Set blitz registration config"
+          },
+          {
+            "id": "agent",
+            "description": "Set agent config"
+          },
+          {
+            "id": "season",
+            "description": "Set season config"
+          },
+          {
+            "id": "resource-bridge-fees",
+            "description": "Set resource bridge fees config"
+          },
+          {
+            "id": "battle",
+            "description": "Set battle config"
+          },
+          {
+            "id": "structure-max-level",
+            "description": "Set structure max level config"
+          },
+          {
+            "id": "tick",
+            "description": "Set tick config"
+          },
+          {
+            "id": "map",
+            "description": "Set map config"
+          },
+          {
+            "id": "quest",
+            "description": "Set quest config"
+          },
+          {
+            "id": "capacity",
+            "description": "Set capacity config"
+          },
+          {
+            "id": "speed",
+            "description": "Set speed config"
+          },
+          {
+            "id": "hyperstructure",
+            "description": "Set hyperstructure config"
+          },
+          {
+            "id": "settlement",
+            "description": "Set settlement config"
+          },
+          {
+            "id": "starting-resources",
+            "description": "Set starting resources config"
+          },
+          {
+            "id": "weight",
+            "description": "Set weight config"
+          },
+          {
+            "id": "realm-upgrade",
+            "description": "Set realm upgrade config"
+          },
+          {
+            "id": "troop",
+            "description": "Set troop config"
+          },
+          {
+            "id": "building-base",
+            "description": "Set base building config"
+          },
+          {
+            "id": "building-categories",
+            "description": "Set building category config"
+          },
+          {
+            "id": "resource-factory",
+            "description": "Set resource factory config"
+          }
+        ],
         "steps": [
           {
             "id": "create-series",
@@ -8809,8 +8928,9 @@
           },
           {
             "id": "configure-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed configure-worlds",
+            "updatedAt": "2026-05-22T18:39:37.764Z"
           },
           {
             "id": "reserve-blitz-hyperstructures",
@@ -8835,7 +8955,10 @@
         ],
         "artifacts": {
           "worldAddress": "0x07d202607a74100ace3550ae348b07cdd285bc39d1407616d212a341e3e909c2",
-          "createGameTxHash": "0x283a70e52b24fc9d141bb474699a36c120e7aa0efee5a3ee029c4c56a2db7e7"
+          "createGameTxHash": "0x283a70e52b24fc9d141bb474699a36c120e7aa0efee5a3ee029c4c56a2db7e7",
+          "entryTokenAddress": "0x56efcb16e15230b1c6e881dc398b35029382b13e27a1b886b1769c1b68f4",
+          "configureTxHash": "0xe05350aeb27abebd2922997c4b9fc23c4d41b32804cd201343b8a444bee81f",
+          "worldConfigTxHash": "0xe05350aeb27abebd2922997c4b9fc23c4d41b32804cd201343b8a444bee81f"
         }
       }
     ],
@@ -8846,13 +8969,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "26305404236-1",
-    "workflowRunId": 26305404236,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-worlds",
-    "acquiredAt": "2026-05-22T18:39:20.283Z",
-    "expiresAt": "2026-05-22T19:24:20.283Z"
   }
 }
