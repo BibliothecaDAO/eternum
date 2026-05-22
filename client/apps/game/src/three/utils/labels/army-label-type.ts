@@ -43,7 +43,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
     const cameraView = resolveCameraView(inputView);
     // Create base label
     const labelDiv = createLabelBase(data.isMine, cameraView, data.isDaydreamsAgent);
-    labelDiv.style.transform = "scale(0.72)";
+    labelDiv.style.transform = "scale(0.5)";
     labelDiv.style.transformOrigin = "center bottom";
 
     // Check if we have direction indicators and if view is expanded
@@ -129,7 +129,7 @@ export const ArmyLabelType: LabelTypeDefinition<ArmyLabelData> = {
 
       // Create content row for icon and text
       const contentRow = document.createElement("div");
-      contentRow.classList.add("flex", "items-center", "gap-2");
+      contentRow.classList.add("flex", "items-center");
       contentRow.appendChild(img);
       contentRow.appendChild(textContainer.wrapper);
       labelDiv.appendChild(contentRow);

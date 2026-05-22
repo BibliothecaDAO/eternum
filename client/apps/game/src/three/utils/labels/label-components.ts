@@ -17,7 +17,6 @@ import { resolveCameraView } from "./label-view";
  */
 
 const SOFT_LABEL_COLOR = "#f6f1e5";
-const MUTED_LABEL_COLOR = "rgba(246, 241, 229, 0.68)";
 
 /**
  * Clean text by removing null characters and trimming whitespace
@@ -231,14 +230,13 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
     fullText = `${displayName} - ${structureName}`;
   }
 
-  const mediumNameLimit = 30;
-  if (cameraView === CameraView.Medium && fullText.length > mediumNameLimit) {
-    nameSpan.textContent = `${fullText.slice(0, mediumNameLimit - 2)}…`;
+  if (cameraView === CameraView.Medium && fullText.length > 14) {
+    nameSpan.textContent = `${fullText.slice(0, 12)}…`;
     nameSpan.title = fullText;
   } else {
     nameSpan.textContent = fullText;
   }
-  nameSpan.classList.add("font-semibold", "tracking-normal");
+  nameSpan.classList.add("font-medium");
 
   // Determine text color
   let finalTextColor: string;
@@ -266,7 +264,7 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
     const [fromColor, toColor, borderColor] = colorSet;
 
     const guildBadge = document.createElement("span");
-    guildBadge.textContent = cleanedName || "Guild";
+    guildBadge.textContent = `⚔️ ${cleanedName || "Guild"}`;
     guildBadge.classList.add(
       "text-xxs",
       "bg-gradient-to-r",
@@ -304,70 +302,51 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
   container.setAttribute("data-component", "stamina-bar");
 
   if (cameraView === CameraView.Medium) {
-    buildReadableStaminaMeter(container, {
-      committedPercentage,
-      displayPercentage,
-      displayedCurrent,
-      maxStamina,
-      recharging,
-      widthPx: 46,
-    });
+    container.classList.add("flex", "items-center", "gap-1", "text-[11px]");
+
+    const icon = document.createElement("span");
+    icon.textContent = "⚡";
+    icon.classList.add("text-yellow-400");
+    if (recharging) {
+      icon.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
+    }
+    container.appendChild(icon);
+
+    const percent = document.createElement("span");
+    percent.textContent = formatStaminaPercent(displayedCurrent, maxStamina);
+    percent.classList.add("font-semibold", "tracking-tight");
+    if (recharging) {
+      percent.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
+    }
+    percent.style.color = SOFT_LABEL_COLOR;
+    percent.setAttribute("data-role", "stamina-percent");
+    container.appendChild(percent);
+
     return container;
   }
 
-  buildReadableStaminaMeter(container, {
-    committedPercentage,
-    displayPercentage,
-    displayedCurrent,
-    maxStamina,
-    recharging,
-    widthPx: 80,
-  });
-  return container;
-};
+  container.style.display = "flex";
+  container.style.alignItems = "center";
+  container.style.gap = "4px";
+  container.style.fontSize = "10px";
 
-interface ReadableStaminaMeterInput {
-  committedPercentage: number;
-  displayPercentage: number;
-  displayedCurrent: number;
-  maxStamina: number;
-  recharging: boolean;
-  widthPx: number;
-}
-
-function buildReadableStaminaMeter(container: HTMLElement, input: ReadableStaminaMeterInput): void {
-  container.classList.add(
-    "flex",
-    "items-center",
-    "gap-1.5",
-    "rounded",
-    "border",
-    "border-white/10",
-    "bg-black/35",
-    "px-1.5",
-    "py-0.5",
-    "text-[11px]",
-  );
-
-  const label = document.createElement("span");
-  label.textContent = "Stamina";
-  label.classList.add("uppercase", "tracking-wide", "text-[9px]", "font-semibold");
-  label.style.color = MUTED_LABEL_COLOR;
-  label.setAttribute("data-role", "metric-label");
-  container.appendChild(label);
+  const icon = document.createElement("span");
+  icon.textContent = "⚡";
+  icon.style.color = "#facc15";
+  container.appendChild(icon);
 
   const progressBar = document.createElement("div");
   progressBar.style.position = "relative";
-  progressBar.style.backgroundColor = "rgba(255, 255, 255, 0.14)";
+  progressBar.style.backgroundColor = "#374151";
   progressBar.style.borderRadius = "9999px";
-  progressBar.style.height = "5px";
-  progressBar.style.width = `${input.widthPx}px`;
-  progressBar.style.minWidth = `${input.widthPx}px`;
-  progressBar.style.maxWidth = `${input.widthPx}px`;
+  progressBar.style.height = "8px";
+  progressBar.style.width = "80px";
+  progressBar.style.minWidth = "80px";
+  progressBar.style.maxWidth = "80px";
   progressBar.style.overflow = "hidden";
-  progressBar.style.border = "1px solid rgba(255, 255, 255, 0.16)";
+  progressBar.style.border = "1px solid rgba(255, 255, 255, 0.2)";
   progressBar.setAttribute("data-role", "progress-container");
-  if (input.recharging) {
+  if (recharging) {
     progressBar.classList.add(STAMINA_RECHARGING_TRACK_CLASS);
   }
 
@@ -380,8 +359,8 @@ function buildReadableStaminaMeter(container: HTMLElement, input: ReadableStamin
   progressFill.style.borderRadius = "9999px";
   progressFill.style.transition = "width 0.3s ease-in-out";
   progressFill.setAttribute("data-role", "progress-fill");
-  progressFill.style.opacity = "0.45";
-  progressFill.style.width = `${input.committedPercentage}%`;
+  progressFill.style.opacity = "0.4";
+  progressFill.style.width = `${committedPercentage}%`;
 
   projectedFill.style.position = "absolute";
   projectedFill.style.top = "0";
@@ -390,15 +369,15 @@ function buildReadableStaminaMeter(container: HTMLElement, input: ReadableStamin
   projectedFill.style.borderRadius = "9999px";
   projectedFill.style.transition = "width 1s linear";
   projectedFill.setAttribute("data-role", "projected-progress-fill");
-  if (input.recharging) {
+  if (recharging) {
     projectedFill.classList.add(STAMINA_RECHARGING_FILL_CLASS);
   }
-  projectedFill.style.width = `${input.displayPercentage}%`;
+  projectedFill.style.width = `${displayPercentage}%`;
 
-  if (input.committedPercentage > 66) {
+  if (committedPercentage > 66) {
     progressFill.style.backgroundColor = "#10b981";
     projectedFill.style.backgroundColor = "#34d399";
-  } else if (input.committedPercentage > 33) {
+  } else if (committedPercentage > 33) {
     progressFill.style.backgroundColor = "#f59e0b";
     projectedFill.style.backgroundColor = "#fbbf24";
   } else {
@@ -411,17 +390,19 @@ function buildReadableStaminaMeter(container: HTMLElement, input: ReadableStamin
   container.appendChild(progressBar);
 
   const text = document.createElement("span");
-  text.textContent = `${input.displayedCurrent}/${input.maxStamina}`;
-  text.style.color = SOFT_LABEL_COLOR;
-  text.style.fontFamily = `"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace`;
+  text.textContent = `${displayedCurrent}/${maxStamina}`;
+  text.style.color = "#ffffff";
+  text.style.fontFamily = "monospace";
   text.style.fontSize = "10px";
-  text.style.fontWeight = "600";
-  if (input.recharging) {
+  text.style.fontWeight = "500";
+  if (recharging) {
     text.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
   }
   text.setAttribute("data-role", "stamina-text");
   container.appendChild(text);
-}
+
+  return container;
+};
 
 /**
  * Create troop count display
@@ -435,16 +416,7 @@ export const createTroopCountDisplay = (
   const cameraView = resolveCameraView(inputView);
   const container = document.createElement("div");
   container.setAttribute("data-component", "troop-count");
-  container.classList.add(
-    "flex",
-    "items-center",
-    "rounded",
-    "border",
-    "border-white/10",
-    "bg-black/35",
-    "text-xxs",
-    "w-fit",
-  );
+  container.classList.add("flex", "items-center", "rounded", "bg-black/40", "text-xxs", "w-fit");
 
   if (cameraView === CameraView.Medium) {
     container.classList.add("gap-1", "px-1", "py-0.5");
@@ -452,36 +424,28 @@ export const createTroopCountDisplay = (
     container.classList.add("gap-1", "px-1.5", "py-0.5");
   }
 
+  const swordIcon = document.createElement("span");
+  swordIcon.textContent = "⚔️";
+  if (cameraView === CameraView.Medium) {
+    swordIcon.classList.add("text-[11px]");
+  }
+  container.appendChild(swordIcon);
+
   const resourceId = getTroopResourceIdFromCategory(troopType);
-  if (resourceId) {
+  if (resourceId && cameraView !== CameraView.Medium) {
     const iconContainer = document.createElement("div");
-    iconContainer.classList.add(
-      cameraView === CameraView.Medium ? "w-4" : "w-6",
-      cameraView === CameraView.Medium ? "h-4" : "h-6",
-      "flex-shrink-0",
-      "flex",
-      "items-center",
-      "justify-center",
-    );
+    iconContainer.classList.add("w-6", "h-6", "flex-shrink-0", "flex", "items-center", "justify-center");
 
     const img = document.createElement("img");
     img.src = `/images/resources/${resourceId}.png`;
     img.classList.add("w-full", "h-full", "object-contain");
     iconContainer.appendChild(img);
     container.appendChild(iconContainer);
-  } else {
-    const troopLabel = document.createElement("span");
-    troopLabel.textContent = "TRP";
-    troopLabel.classList.add("text-[9px]", "font-semibold", "tracking-wide");
-    troopLabel.style.color = MUTED_LABEL_COLOR;
-    troopLabel.setAttribute("data-role", "troop-kind");
-    container.appendChild(troopLabel);
   }
 
   const countSpan = document.createElement("span");
   const tierValue = typeof tier === "string" ? parseInt(tier.replace("T", ""), 10) || 1 : tier;
-  countSpan.textContent = formatCompactNumber(count);
-  countSpan.title = count.toLocaleString();
+  countSpan.textContent = cameraView === CameraView.Medium ? formatCompactNumber(count) : count.toString();
   countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center");
   countSpan.style.color = SOFT_LABEL_COLOR;
   if (cameraView === CameraView.Medium) {
@@ -540,7 +504,6 @@ export const createGuardArmyDisplay = (
       }
 
       const troopDisplay = createTroopCountDisplay(guard.count, guard.category ?? "", guard.tier, cameraView);
-      troopDisplay.appendChild(createGuardStaminaValue(guard.stamina));
       container.appendChild(troopDisplay);
     });
 
@@ -591,6 +554,10 @@ export const createGuardArmyDisplay = (
     const guardDiv = document.createElement("div");
     guardDiv.classList.add("flex", "items-center", "gap-1", "rounded", "px-1.5", "py-0.5", "bg-black/40");
 
+    const shieldIcon = document.createElement("span");
+    shieldIcon.textContent = "🛡️";
+    guardDiv.appendChild(shieldIcon);
+
     const resourceId = getTroopResourceIdFromCategory(guard.category);
     if (resourceId) {
       const iconContainer = document.createElement("div");
@@ -604,8 +571,7 @@ export const createGuardArmyDisplay = (
     }
 
     const countSpan = document.createElement("span");
-    countSpan.textContent = formatCompactNumber(guard.count);
-    countSpan.title = guard.count.toLocaleString();
+    countSpan.textContent = guard.count.toString();
     countSpan.classList.add("font-semibold", "min-w-[1rem]", "text-center");
     countSpan.style.color = SOFT_LABEL_COLOR;
     guardDiv.appendChild(countSpan);
@@ -615,43 +581,12 @@ export const createGuardArmyDisplay = (
     tierBadge.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border");
     tierBadge.classList.add(...getTierStyle(guard.tier).split(" "));
     guardDiv.appendChild(tierBadge);
-    guardDiv.appendChild(createGuardStaminaValue(guard.stamina));
 
     container.appendChild(guardDiv);
   });
 
   return container;
 };
-
-function createGuardStaminaValue(stamina: number): HTMLElement {
-  const staminaContainer = document.createElement("span");
-  staminaContainer.classList.add(
-    "ml-0.5",
-    "flex",
-    "items-center",
-    "gap-0.5",
-    "rounded-sm",
-    "bg-white/10",
-    "px-1",
-    "py-0.5",
-    "font-mono",
-    "text-[10px]",
-  );
-  staminaContainer.style.color = "#fde68a";
-
-  const label = document.createElement("span");
-  label.textContent = "STA";
-  label.classList.add("text-[8px]", "font-semibold", "tracking-wide");
-  label.style.color = MUTED_LABEL_COLOR;
-  staminaContainer.appendChild(label);
-
-  const value = document.createElement("span");
-  value.textContent = formatCompactNumber(stamina);
-  value.setAttribute("data-role", "guard-stamina-text");
-  staminaContainer.appendChild(value);
-
-  return staminaContainer;
-}
 
 /**
  * Create production display
@@ -765,8 +700,8 @@ export const createContentContainer = (inputView: CameraView): HTMLElement & { w
 
   const expandedClasses =
     cameraView === CameraView.Medium
-      ? ["min-w-[190px]", "max-w-[320px]", "ml-1.5", "opacity-100"]
-      : ["min-w-[190px]", "max-w-[320px]", "ml-2", "opacity-100"];
+      ? ["max-w-[420px]", "ml-1.5", "opacity-100"]
+      : ["max-w-[1000px]", "ml-2", "opacity-100"];
   const collapsedClasses = ["max-w-0", "max-h-0", "h-0", "ml-0", "opacity-0", "pointer-events-none"];
 
   if (cameraView === CameraView.Far) {

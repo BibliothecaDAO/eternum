@@ -8,34 +8,34 @@ import { LabelConfig, LabelStyle } from "./label-types";
  */
 export const LABEL_STYLES: Record<string, LabelStyle> = {
   MINE: {
-    backgroundColor: "rgba(15, 31, 22, 0.88)",
+    backgroundColor: "rgba(30, 95, 55, 0.3)",
     textColor: "#d9f99d",
-    borderColor: "rgba(132, 204, 22, 0.72)",
+    borderColor: "rgba(22, 163, 74, 0.5)",
   },
   ALLY: {
-    backgroundColor: "rgba(15, 27, 49, 0.88)",
+    backgroundColor: "rgba(40, 70, 150, 0.3)",
     textColor: "#bae6fd",
-    borderColor: "rgba(56, 189, 248, 0.68)",
+    borderColor: "rgba(37, 99, 235, 0.5)",
   },
   ENEMY: {
-    backgroundColor: "rgba(45, 21, 24, 0.9)",
+    backgroundColor: "rgba(140, 40, 40, 0.3)",
     textColor: "#fecdd3",
-    borderColor: "rgba(248, 113, 113, 0.68)",
+    borderColor: "rgba(220, 38, 38, 0.5)",
   },
   NEUTRAL: {
-    backgroundColor: "rgba(24, 27, 31, 0.88)",
+    backgroundColor: "rgba(70, 70, 70, 0.3)",
     textColor: "#e5e7eb",
-    borderColor: "rgba(156, 163, 175, 0.62)",
+    borderColor: "rgba(156, 163, 175, 0.5)",
   },
   DAYDREAMS: {
-    backgroundColor: "rgba(28, 24, 35, 0.9)",
+    backgroundColor: "rgba(70, 70, 70, 0.8)",
     textColor: "#fbbf24",
-    borderColor: "rgba(244, 215, 130, 0.68)",
+    borderColor: "rgba(220, 220, 220, 0.5)",
   },
   CHEST: {
-    backgroundColor: "rgba(50, 36, 14, 0.9)",
+    backgroundColor: "rgba(251, 191, 36, 0.3)",
     textColor: "#fbbf24",
-    borderColor: "rgba(245, 158, 11, 0.72)",
+    borderColor: "rgba(245, 158, 11, 0.5)",
   },
 };
 
@@ -44,22 +44,22 @@ export const LABEL_STYLES: Record<string, LabelStyle> = {
  */
 export const HOVER_STYLES: Record<string, LabelStyle> = {
   MINE: {
-    backgroundColor: "rgba(18, 44, 28, 0.94)",
+    backgroundColor: "rgba(22, 101, 52, 0.4)",
   },
   ALLY: {
-    backgroundColor: "rgba(20, 42, 74, 0.94)",
+    backgroundColor: "rgba(30, 64, 175, 0.4)",
   },
   ENEMY: {
-    backgroundColor: "rgba(64, 25, 30, 0.94)",
+    backgroundColor: "rgba(153, 27, 27, 0.4)",
   },
   NEUTRAL: {
-    backgroundColor: "rgba(32, 36, 42, 0.94)",
+    backgroundColor: "rgba(90, 90, 90, 0.4)",
   },
   DAYDREAMS: {
-    backgroundColor: "rgba(39, 33, 49, 0.94)",
+    backgroundColor: "rgba(90, 90, 90, 0.85)",
   },
   CHEST: {
-    backgroundColor: "rgba(63, 44, 16, 0.94)",
+    backgroundColor: "rgba(245, 158, 11, 0.4)",
   },
 };
 
