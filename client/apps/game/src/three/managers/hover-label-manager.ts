@@ -6,7 +6,7 @@ interface HoverLabelEntity {
 }
 
 type HoverLabelController = {
-  show: (entityId: ID) => void;
+  show: (entityId: ID) => boolean | void;
   hide: (entityId: ID) => void;
   hideAll?: () => void;
 };
@@ -159,13 +159,25 @@ export class HoverLabelManager {
     if (currentId === entityId) {
       if (options?.retryActiveLabels) {
         // Re-issue show because lifecycle transitions can detach the CSS2D object while hover state stays active.
-        controller.show(entityId);
+        if (this.showAndTrackLabel(controller, type, entityId)) {
+          return true;
+        }
+
+        delete this.activeLabels[type];
         return true;
       }
       return labelChanged;
     }
 
-    controller.show(entityId);
+    return this.showAndTrackLabel(controller, type, entityId) || labelChanged;
+  }
+
+  private showAndTrackLabel(controller: HoverLabelController, type: HoverLabelType, entityId: ID): boolean {
+    const labelWasShown = controller.show(entityId) !== false;
+    if (!labelWasShown) {
+      return false;
+    }
+
     this.activeLabels[type] = entityId;
     return true;
   }

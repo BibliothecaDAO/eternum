@@ -1832,27 +1832,28 @@ export class StructureManager {
     this.applyFrustumVisibilityToLabels();
   }
 
-  public showLabel(entityId: ID): void {
+  public showLabel(entityId: ID): boolean {
     const normalizedEntityId = normalizeEntityId(entityId);
     if (normalizedEntityId === undefined) {
-      return;
+      return false;
     }
 
     const structure = this.structures.getStructureByEntityId(normalizedEntityId);
     if (!structure) {
-      return;
+      return false;
     }
 
     const existingLabel = this.entityIdLabels.get(normalizedEntityId);
     if (existingLabel) {
       this.refreshExistingStructureLabel(structure, existingLabel);
       this.highlightStructurePointIcon(structure, normalizedEntityId);
-      return;
+      return true;
     }
 
     this.addEntityIdLabel(structure, this.resolveStructureLabelPosition(structure));
     this.highlightStructurePointIcon(structure, normalizedEntityId);
     this.frustumVisibilityDirty = true;
+    return true;
   }
 
   public hideLabel(entityId: ID): void {

@@ -2829,10 +2829,10 @@ export class ArmyManager {
     this.frustumVisibilityDirty = true;
   }
 
-  public showLabel(entityId: ID): void {
+  public showLabel(entityId: ID): boolean {
     const army = this.armies.get(entityId);
     if (!army) {
-      return;
+      return false;
     }
 
     const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
@@ -2844,12 +2844,13 @@ export class ArmyManager {
       });
       this.updateArmyLabelData(entityId, army, label);
       this.highlightArmyPointHover(entityId, army);
-      return;
+      return true;
     }
 
     this.addEntityIdLabel(army, position);
     this.highlightArmyPointHover(entityId, army);
     this.frustumVisibilityDirty = true;
+    return true;
   }
 
   public hideLabel(entityId: ID): void {

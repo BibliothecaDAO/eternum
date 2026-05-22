@@ -488,10 +488,10 @@ export class ChestManager {
     this.entityIdLabels.set(chest.entityId, label);
   }
 
-  public showLabel(entityId: ID): void {
+  public showLabel(entityId: ID): boolean {
     const chest = this.chests.getChest(entityId);
     if (!chest) {
-      return;
+      return false;
     }
 
     const position = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
@@ -506,7 +506,7 @@ export class ChestManager {
       if (this.pointsRenderer) {
         this.pointsRenderer.setHover(entityId);
       }
-      return;
+      return true;
     }
 
     this.addEntityIdLabel(chest, position);
@@ -515,6 +515,7 @@ export class ChestManager {
     if (this.pointsRenderer) {
       this.pointsRenderer.setHover(entityId);
     }
+    return true;
   }
 
   public hideLabel(entityId: ID): void {

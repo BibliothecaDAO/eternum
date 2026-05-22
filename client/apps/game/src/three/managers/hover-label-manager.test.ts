@@ -121,4 +121,27 @@ describe("HoverLabelManager", () => {
 
     expect(manager.hasActiveLabels()).toBe(false);
   });
+
+  it("does not mark a hover target active until the controller can show it", () => {
+    const markLabelsDirty = vi.fn();
+    const army = {
+      show: vi.fn().mockReturnValueOnce(false).mockReturnValueOnce(true),
+      hide: vi.fn(),
+    };
+    const manager = new HoverLabelManager(
+      { army },
+      () => ({
+        army: { id: 42, owner: 1n },
+      }),
+      undefined,
+      markLabelsDirty,
+    );
+
+    manager.onHexHover({ col: 10, row: 12 });
+    manager.onHexHover({ col: 10, row: 12 });
+
+    expect(army.show).toHaveBeenCalledTimes(2);
+    expect(manager.hasActiveLabels()).toBe(true);
+    expect(markLabelsDirty).toHaveBeenCalledTimes(1);
+  });
 });
