@@ -17,6 +17,7 @@ import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
+import { ProductionModal } from "@/ui/features/settlement";
 import { EntityType, ID, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 import { formatTime, toHexString } from "@bibliothecadao/eternum";
 import { getAvatarUrl, usePlayerAvatar } from "@/hooks/use-player-avatar";
@@ -37,6 +38,13 @@ interface StructureBannerEntityDetailProps {
   maxInventory?: number;
   showButtons?: boolean;
   layoutVariant?: EntityDetailLayoutVariant;
+  /**
+   * Skip the owner bubble (avatar / player name / structure name / transfer
+   * shortcut). Used on the LeftStructureColumn where the picker pill already
+   * names the active structure — the owner header would otherwise duplicate
+   * it.
+   */
+  hideOwner?: boolean;
 }
 
 interface StructureBannerEntityDetailContentProps extends Omit<StructureBannerEntityDetailProps, "layoutVariant"> {
@@ -57,6 +65,7 @@ const StructureBannerEntityDetailContent = memo(
     maxInventory = Infinity,
     compact = true,
     variant,
+    hideOwner = false,
   }: StructureBannerEntityDetailContentProps) => {
     const {
       structure,
@@ -80,6 +89,7 @@ const StructureBannerEntityDetailContent = memo(
     const openPopup = useUIStore((state) => state.openPopup);
     const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
     const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
+    const toggleModal = useUIStore((state) => state.toggleModal);
 
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
     const resourceTiers = useMemo(() => mode.resources.getTiers(), [mode]);
@@ -103,6 +113,12 @@ const StructureBannerEntityDetailContent = memo(
           : null;
 
     const rawCategory = structure?.base?.category;
+    const handleOpenProductionModal = useCallback(() => {
+      if (!structure?.entity_id) return;
+      const entityId = Number(structure.entity_id);
+      if (!Number.isFinite(entityId)) return;
+      toggleModal(<ProductionModal preSelectedRealmId={entityId} />);
+    }, [structure?.entity_id, toggleModal]);
     const handleOpenTransferPopup = useCallback(() => {
       if (!structure?.entity_id) return;
       const entityId = Number(structure.entity_id);
@@ -165,8 +181,6 @@ const StructureBannerEntityDetailContent = memo(
       typeof structure.entity_id !== "undefined";
     const inventoryLimit = compact && variant === "banner" ? Math.min(maxInventory, 10) : maxInventory;
     const labelTextClass = compact ? "text-xxs" : "text-xs";
-    const headerTitleClass = compact ? "text-sm" : "text-base";
-    const headerMetaClass = compact ? "text-xxs" : "text-xs";
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
     const showHyperstructureVP = isHyperstructure && hyperstructureRealmCount !== undefined;
@@ -188,8 +202,10 @@ const StructureBannerEntityDetailContent = memo(
 
     return (
       <div className={cn("flex min-w-0 flex-col gap-2", className)}>
-        {/* Owner bubble — always-visible header. */}
-        <InfoBubble title={ownerDisplayName ?? "Owner"} cue={structureName} bodyClassName="pt-0">
+        {/* Owner bubble — visible on the right-side tile inspector. Hidden on
+            the LeftStructureColumn where the picker already names the
+            structure being controlled. */}
+        {!hideOwner && <InfoBubble title={ownerDisplayName ?? "Owner"} cue={structureName} bodyClassName="pt-0">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2 text-gold">
               <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
@@ -223,7 +239,7 @@ const StructureBannerEntityDetailContent = memo(
               </Button>
             )}
           </div>
-        </InfoBubble>
+        </InfoBubble>}
 
         {showHyperstructureVP && (
           <InfoBubble title="Hyperstructure" icon={Sparkles}>
@@ -278,13 +294,24 @@ const StructureBannerEntityDetailContent = memo(
         {showProductionTab && (
           <InfoBubble title="Production" icon={Factory} cue={productionCue}>
             {resources ? (
-              <StructureProductionPanelView
-                compact
-                smallTextClass="text-xxs"
-                showProductionSummary={variant !== "banner"}
-                showTooltip={false}
-                productionSummary={productionSummary}
-              />
+              <div className="flex flex-col gap-2">
+                <StructureProductionPanelView
+                  compact
+                  smallTextClass="text-xxs"
+                  showProductionSummary={variant !== "banner"}
+                  showTooltip={false}
+                  productionSummary={productionSummary}
+                />
+                {isMine && handleOpenProductionModal && (
+                  <button
+                    type="button"
+                    onClick={handleOpenProductionModal}
+                    className="self-start rounded-full border border-gold/40 bg-gold/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold hover:bg-gold/20"
+                  >
+                    Modify automation
+                  </button>
+                )}
+              </div>
             ) : (
               <p className={HUD_BODY_MUTED}>
                 {isFragmentMine
@@ -335,6 +362,7 @@ export const StructureBannerEntityDetail = memo(
     maxInventory = Infinity,
     showButtons = false,
     layoutVariant,
+    hideOwner = false,
   }: StructureBannerEntityDetailProps) => {
     const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (compact ? "default" : "banner");
 
@@ -346,6 +374,7 @@ export const StructureBannerEntityDetail = memo(
         showButtons={showButtons}
         compact={compact}
         variant={resolvedVariant}
+        hideOwner={hideOwner}
       />
     );
   },

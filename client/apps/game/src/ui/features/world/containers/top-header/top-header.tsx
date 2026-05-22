@@ -11,7 +11,6 @@ import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
 import { GameStartCountdown } from "./game-start-countdown";
 import { WalletPill } from "./pills/wallet-pill";
-import { StructurePickerStrip } from "./structure-picker/pills";
 import { TickProgress } from "./tick-progress";
 import {
   MIN_REFRESH_INTERVAL_MS,
@@ -164,10 +163,8 @@ export const TopHeader = memo(() => {
           </div>
         )}
 
-        {/* Structure picker — already a floating pill cluster of its own. */}
-        <div className="pointer-events-auto">
-          <StructurePickerStrip />
-        </div>
+        {/* Structure picker moved to LeftStructureColumn header — it sits above
+            the structure data it drives now. */}
 
         {/* Day-tick progress — its own pill, flattened so the SVG ring isn't nested in another border. */}
         <div className={cn(PILL_SURFACE, "flex items-center px-2 py-1")}>

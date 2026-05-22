@@ -5,6 +5,7 @@ import { LeftView } from "@/types";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { LogisticsView } from "@/ui/features/world/containers/logistics-view";
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
+import { StructurePickerStrip } from "@/ui/features/world/containers/top-header/structure-picker/pills";
 import {
   RealtimeChatShell,
   useRealtimeChatActions,
@@ -200,9 +201,13 @@ export const LeftCommandSidebar = memo(() => {
           structure. Mirrors the right-side tile-details column but is anchored
           top-down and driven by the picker pill's selection rather than the
           cursor. */}
-      {ConnectedAccount && structureEntityId > 0 && (
-        <div className="fixed left-3 top-16 z-20 pointer-events-auto flex w-[280px] max-h-[calc(100vh-460px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-          <StructureBannerEntityDetail structureEntityId={structureEntityId} maxInventory={14} />
+      {ConnectedAccount && (
+        <div className="fixed left-3 top-3 z-20 pointer-events-auto flex w-[280px] max-h-[calc(100vh-440px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+          {/* Picker pill — anchors the column to the structure it controls. */}
+          <StructurePickerStrip />
+          {structureEntityId > 0 && (
+            <StructureBannerEntityDetail structureEntityId={structureEntityId} maxInventory={14} hideOwner />
+          )}
         </div>
       )}
 
@@ -214,33 +219,38 @@ export const LeftCommandSidebar = memo(() => {
         >
           <div
             className={clsx(
-              "pointer-events-auto flex w-[520px] max-h-[calc(100vh-80px)] flex-col overflow-hidden rounded-xl",
+              "pointer-events-auto flex w-[840px] max-w-[92vw] h-[680px] max-h-[calc(100vh-64px)] flex-col overflow-hidden rounded-xl",
               OVERLAY_SURFACE_BASE,
             )}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-              <Suspense fallback={<div className="p-8">Loading...</div>}>
-                {view === LeftView.PredictionMarket && (
-                  <div className="prediction-market-selector flex h-full flex-col flex-1 overflow-y-auto">
-                    <InGameMarket />
-                  </div>
-                )}
-                {view === LeftView.ChatView && (
-                  <ChatModalContent
-                    initializer={realtimeInitializer}
-                    zoneIds={chatZoneIds}
-                    defaultZoneId={chatDefaultZoneId}
-                  />
-                )}
-                {view === LeftView.ConstructionView && (
+            {/* Each view manages its own scroll. The modal frame provides a fixed
+                height so inner flex-1 children resolve correctly — necessary for
+                chat (whose message list has internal scroll-to-bottom logic). */}
+            <Suspense fallback={<div className="flex h-full items-center justify-center p-8">Loading...</div>}>
+              {view === LeftView.PredictionMarket && (
+                <div className="prediction-market-selector flex h-full min-h-0 flex-col overflow-y-auto">
+                  <InGameMarket />
+                </div>
+              )}
+              {view === LeftView.ChatView && (
+                <ChatModalContent
+                  initializer={realtimeInitializer}
+                  zoneIds={chatZoneIds}
+                  defaultZoneId={chatDefaultZoneId}
+                />
+              )}
+              {view === LeftView.ConstructionView && (
+                <div className="h-full min-h-0 overflow-y-auto">
                   <SelectPreviewBuildingMenu entityId={structureEntityId} />
-                )}
-                {view === LeftView.ResourceArrivals && (
+                </div>
+              )}
+              {view === LeftView.ResourceArrivals && (
+                <div className="h-full min-h-0 overflow-hidden">
                   <LogisticsView hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
-                )}
-              </Suspense>
-            </div>
+                </div>
+              )}
+            </Suspense>
           </div>
         </div>
       )}

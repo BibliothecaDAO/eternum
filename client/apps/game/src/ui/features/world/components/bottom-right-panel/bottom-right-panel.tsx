@@ -1030,6 +1030,8 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
   const setView = useUIStore((state) => state.setLeftNavigationView);
   const toggleModalAction = useUIStore((state) => state.toggleModal);
   const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
+  const mode = useGameModeConfig();
+  const showTradeAction = mode.ui.showTradeMenu;
   const handleOpenLogistics = useCallback(() => {
     setLogisticsActiveTab("transfer");
     setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals);
@@ -1059,14 +1061,16 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
         active={view === LeftView.ResourceArrivals}
         onClick={handleOpenLogistics}
       />
-      <CircleButton
-        variant="hud"
-        size="md"
-        tooltipLocation="top"
-        image={BuildingThumbs.scale}
-        label="Trade"
-        onClick={() => toggleModalAction(<MarketModal />)}
-      />
+      {showTradeAction && (
+        <CircleButton
+          variant="hud"
+          size="md"
+          tooltipLocation="top"
+          image={BuildingThumbs.scale}
+          label="Trade"
+          onClick={() => toggleModalAction(<MarketModal />)}
+        />
+      )}
       <CircleButton
         variant="hud"
         size="md"
