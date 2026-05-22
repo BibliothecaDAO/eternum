@@ -72,4 +72,18 @@ describe("worldmap hover label wiring", () => {
     expect(attachWorldmapManagerLabels).not.toContain("addLabelsToScene");
     expect(attachWorldmapManagerLabels).not.toContain("showLabels()");
   });
+
+  it("clears active hover state before detaching manager labels", () => {
+    const source = readWorldmapSource();
+    const detachWorldmapManagerLabels = extractSourceBetween(
+      source,
+      "private detachWorldmapManagerLabels()",
+      "private async refreshWarpTravelScene()",
+    );
+
+    expect(detachWorldmapManagerLabels).toContain("this.hoverLabelManager.onHexLeave()");
+    expect(detachWorldmapManagerLabels.indexOf("this.hoverLabelManager.onHexLeave()")).toBeLessThan(
+      detachWorldmapManagerLabels.indexOf("this.armyManager.removeLabelsFromScene()"),
+    );
+  });
 });

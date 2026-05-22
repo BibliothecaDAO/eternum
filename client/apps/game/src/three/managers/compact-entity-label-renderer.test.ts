@@ -77,6 +77,26 @@ describe("CompactEntityLabelRenderer", () => {
     expect(textureRecord.height).toBe(34);
   });
 
+  it("keeps visual labels out of raycast picking", () => {
+    const scene = new THREE.Scene();
+    const renderer = new CompactEntityLabelRenderer(scene);
+
+    renderer.setLabel({
+      entityId: 1,
+      position: new THREE.Vector3(),
+      text: "Sable Order",
+      variant: "mine",
+    });
+
+    const group = (renderer as unknown as { group: THREE.Group }).group;
+    const mesh = group.children[0] as THREE.Mesh;
+    const intersections: THREE.Intersection[] = [];
+
+    mesh.raycast(new THREE.Raycaster(), intersections);
+
+    expect(intersections).toEqual([]);
+  });
+
   it("reuses cached textures and releases them after the last label is removed", () => {
     const scene = new THREE.Scene();
     const renderer = new CompactEntityLabelRenderer(scene);

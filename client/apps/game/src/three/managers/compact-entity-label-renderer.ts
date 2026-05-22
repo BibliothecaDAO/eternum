@@ -141,6 +141,7 @@ export class CompactEntityLabelRenderer {
     };
 
     mesh.name = `compact-entity-label-${input.entityId}`;
+    mesh.raycast = () => {};
     mesh.position.copy(input.position);
     mesh.renderOrder = baseRenderOrder;
     this.applyLabelScale(label, textureRecord);

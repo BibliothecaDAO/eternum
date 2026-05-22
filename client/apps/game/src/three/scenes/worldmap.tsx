@@ -4137,6 +4137,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private detachWorldmapManagerLabels(): void {
+    this.hoverLabelManager.onHexLeave();
     this.armyManager.removeLabelsFromScene();
     this.structureManager.removeLabelsFromScene();
     this.chestManager.removeLabelsFromScene();

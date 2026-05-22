@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-22",
+    title: "Hover Label Recovery",
+    description:
+      "Fixed detailed world-map hover labels so loading and scene transitions clear stale hover state before labels are rebuilt.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
     title: "Smaller Map Labels",
     description:
       "Reduced always-on world-map label size so army and structure names stay scannable without crowding the map.",
