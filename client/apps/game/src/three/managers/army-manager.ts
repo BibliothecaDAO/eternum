@@ -73,10 +73,6 @@ import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifec
 import { refreshVisibleArmyCosmeticsByOwner } from "./army-cosmetics-refresh";
 import { FXManager } from "./fx-manager";
 import {
-  syncArmyIndicatorPresentationState,
-  syncMovingArmyIndicatorPresentationState,
-} from "./army-indicator-presentation";
-import {
   buildArmyLabelLayoutDataKey,
   buildArmyLabelStaminaDataKey,
   syncArmyLabelContentState,
@@ -89,7 +85,6 @@ import {
 import { syncArmyLabelPresentationState } from "./army-label-presentation";
 import { removeArmyLabels, syncArmyLabelVisibility } from "./army-label-visibility";
 import { PathRenderer } from "./path-renderer";
-import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from "./army-instance-presentation";
 import { resolveArmyPointLabelSize } from "./army-point-label-policy";
 import {
@@ -110,7 +105,6 @@ import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
-import { MAX_INSTANCES } from "../constants/army-constants";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
 import {
   bindManagerChunkRuntimeState,
@@ -281,15 +275,10 @@ export class ArmyManager {
   private selectedArmyForPath: ID | null = null;
   private guiFolders: TrackableGuiFolder[] = [];
 
-  // Player indicator dots
-  private playerIndicatorManager: PlayerIndicatorManager;
-  private indicatorMetadataCache: Map<ID, number> = new Map(); // entityId -> yOffset
-
   // Reusable objects for memory optimization
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempIconPosition: Vector3 = new Vector3();
   private readonly tempWorldPosition: Vector3 = new Vector3();
-  private readonly tempColor: Color = new Color();
 
   constructor(
     scene: Scene,
@@ -353,9 +342,6 @@ export class ArmyManager {
     this.pathRenderer = new PathRenderer();
     this.pathRenderer.initialize(scene);
     this.pathRenderer.setVisibilityManager(this.visibilityManager);
-
-    // Initialize player indicator manager
-    this.playerIndicatorManager = new PlayerIndicatorManager(scene, MAX_INSTANCES);
 
     const createArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Create Army"));
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
@@ -1042,7 +1028,6 @@ export class ArmyManager {
     // to prevent frustum culling mismatches at chunk edges
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
-    this.playerIndicatorManager.computeBoundingSphere();
     this.frustumVisibilityDirty = true;
   }
 
@@ -1138,37 +1123,18 @@ export class ArmyManager {
     const updatedArmy = { ...army, matrixIndex: slot };
     this.armies.set(army.entityId, updatedArmy);
     this.armyModel.rebindMovementMatrixIndex(numericId, slot);
-    this.syncArmyAuxiliaryPresentation(updatedArmy, position, modelType, isSuppressed);
+    this.syncArmyAuxiliaryPresentation(updatedArmy, position, isSuppressed);
   }
 
-  private syncArmyAuxiliaryPresentation(
-    army: ArmyData,
-    position: Vector3,
-    modelType: ModelType,
-    isSuppressed: boolean,
-  ) {
+  private syncArmyAuxiliaryPresentation(army: ArmyData, position: Vector3, isSuppressed: boolean) {
     if (isSuppressed) {
       this.hideSuppressedArmyAuxiliaryVisuals(army.entityId);
       return;
     }
 
-    this.syncArmyIndicatorPresentation(army, position, modelType);
     this.recordLastKnownHexFromWorld(army.entityId, position);
     this.syncArmyLabelPresentation(army, position);
     this.syncArmyPointPresentation(army, position);
-  }
-
-  private syncArmyIndicatorPresentation(army: ArmyData, position: Vector3, modelType: ModelType) {
-    syncArmyIndicatorPresentationState({
-      entityId: army.entityId,
-      color: army.color,
-      modelType,
-      position,
-      indicatorMetadataCache: this.indicatorMetadataCache,
-      setIndicatorColor: (color) => this.tempColor.set(color),
-      updateIndicator: ({ entityId, position: indicatorPosition, color, yOffset }) =>
-        this.playerIndicatorManager.updateIndicator(entityId, indicatorPosition, color, yOffset),
-    });
   }
 
   private syncArmyLabelPresentation(army: ArmyData, position: Vector3) {
@@ -1208,10 +1174,6 @@ export class ArmyManager {
     this.removeArmyPointIcon(entityId);
     this.removeArmyCompactLabel(entityId);
     this.removeEntityIdLabel(entityId);
-
-    // Remove player indicator dot
-    this.playerIndicatorManager.removeIndicator(entityId);
-    this.indicatorMetadataCache.delete(entityId); // Clear cached metadata
 
     const numericId = this.toNumericId(entityId);
     const shouldNotifyMovementVisualCancel =
@@ -2559,7 +2521,7 @@ export class ArmyManager {
     }
 
     // Batch update: single pass over visible armies for all per-frame operations
-    // This consolidates point icons, attachment transforms, and indicators
+    // This consolidates point icons, compact labels, and attachment transforms.
     this.updateVisibleArmiesBatched();
     this.syncArmyBoundsForMovementState();
 
@@ -2612,7 +2574,6 @@ export class ArmyManager {
     this.lastMovingBoundsRefreshAt = now;
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
-    this.playerIndicatorManager.computeBoundingSphere();
     this.frustumVisibilityDirty = true;
   }
 
@@ -2620,23 +2581,21 @@ export class ArmyManager {
     this.lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
-    this.playerIndicatorManager.computeBoundingSphere();
     this.frustumVisibilityDirty = true;
   }
 
   /**
    * Batched update for all visible army per-frame operations.
-   * Consolidates point icon updates, attachment transforms, and indicator positions
+   * Consolidates point icon updates, compact labels, and attachment transforms
    * into a single iteration over visibleArmies to reduce iteration overhead.
    */
   private updateVisibleArmiesBatched() {
     const hasPointsRenderers = this.pointsRenderers !== undefined;
     const hasActiveAttachments = this.activeArmyAttachmentEntities.size > 0;
-    const hasIndicators = this.playerIndicatorManager.getVisibleCount() > 0;
     const hasMovingArmies = this.hasMovingArmies();
 
     // Early exit if nothing to update
-    if (!hasPointsRenderers && !hasActiveAttachments && !hasIndicators && !hasMovingArmies) {
+    if (!hasPointsRenderers && !hasActiveAttachments && !hasMovingArmies) {
       return;
     }
 
@@ -2679,19 +2638,6 @@ export class ArmyManager {
         this.updateArmyCompactLabel(army, instanceData.position);
       }
 
-      // 1b. Update indicator dot positions for moving armies
-      if (instanceData?.isMoving && instanceData.position) {
-        syncMovingArmyIndicatorPresentationState({
-          entityId: army.entityId,
-          color: army.color,
-          position: instanceData.position,
-          indicatorMetadataCache: this.indicatorMetadataCache,
-          setIndicatorColor: (color) => this.tempColor.set(color),
-          updateIndicator: ({ entityId, position: indicatorPosition, color, yOffset }) =>
-            this.playerIndicatorManager.updateIndicator(entityId, indicatorPosition, color, yOffset),
-        });
-      }
-
       // 2. Update attachment transforms
       if (hasActiveAttachments) {
         syncArmyAttachmentTransformState({
@@ -2723,7 +2669,6 @@ export class ArmyManager {
   }
 
   private hideSuppressedArmyAuxiliaryVisuals(entityId: ID): void {
-    this.playerIndicatorManager.removeIndicator(entityId);
     this.removeArmyPointIcon(entityId);
     this.removeArmyCompactLabel(entityId);
 
@@ -3496,10 +3441,6 @@ ${
 
     // Dispose army model resources including shared materials
     this.armyModel.dispose();
-
-    // Dispose player indicator manager
-    this.playerIndicatorManager.dispose();
-    this.indicatorMetadataCache.clear();
 
     // Tear down FX to avoid lingering RAF loops and textures
     this.fxManager.destroy();

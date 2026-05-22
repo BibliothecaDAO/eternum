@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-23",
+    title: "Cleaner Unit Markers",
+    description:
+      "Removed deprecated ownership dots above world-map units so armies rely on their model, labels, and selection states without extra marker clutter.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-22",
     title: "Hover Label Recovery",
     description:
