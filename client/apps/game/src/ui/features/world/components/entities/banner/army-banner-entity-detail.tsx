@@ -89,6 +89,8 @@ const ArmyBannerEntityDetailContent = memo(
 
     const hasWarnings = Boolean(structureResources && explorerResources);
     const inventoryLimit = compact ? 10 : undefined;
+    const combatRelicActionLimit = compact ? 4 : undefined;
+    const showUsableRelicsInline = derivedData.isMine && inventoryCounts.usableRelics > 0;
     const ownerDisplay = derivedData.addressName ?? `Army Owner`;
     const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
     const ownerInitial = (ownerDisplay || "?").charAt(0).toUpperCase();
@@ -180,6 +182,24 @@ const ArmyBannerEntityDetailContent = memo(
               }
             />
           ) : null}
+          {showUsableRelicsInline && (
+            <CompactEntityInventory
+              resources={explorerResources}
+              activeRelicIds={activeRelicIds}
+              recipientType={RelicRecipientType.Explorer}
+              entityId={armyEntityId}
+              entityType={EntityType.ARMY}
+              allowRelicActivation
+              variant="tight"
+              maxItems={combatRelicActionLimit}
+              filter="usableRelics"
+              showHiddenCount={false}
+              emptyMessage="No relics ready."
+            />
+          )}
+          {relicEffects.length > 0 && (
+            <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact />
+          )}
           {showResourceInventoryInline && (
             <CompactEntityInventory
               resources={explorerResources}
@@ -193,9 +213,6 @@ const ArmyBannerEntityDetailContent = memo(
               emptyMessage="No resources carried."
               showHiddenCount={false}
             />
-          )}
-          {relicEffects.length > 0 && (
-            <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact />
           )}
         </div>
 

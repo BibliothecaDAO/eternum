@@ -490,7 +490,7 @@ export const ChestContainer = ({
       : [];
 
   return (
-    <div className="flex flex-col items-center justify-center p-8 min-h-[80vh]">
+    <div className="flex flex-col items-center justify-center px-6 py-6 min-h-full">
       {/* Chest Name Header - Always visible */}
       <AnimatePresence mode="wait">
         {!showResult && (
