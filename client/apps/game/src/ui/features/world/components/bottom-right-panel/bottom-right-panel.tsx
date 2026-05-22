@@ -1,5 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { BottomPanelTabId, useUIStore } from "@/hooks/store/use-ui-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
@@ -43,11 +43,8 @@ import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/s
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { ProductionModal } from "@/ui/features/settlement";
 import { TileManager } from "@bibliothecadao/eternum";
-import { type LucideIcon } from "lucide-react";
-import CircleHelp from "lucide-react/dist/esm/icons/circle-help";
 import Info from "lucide-react/dist/esm/icons/info";
 import Loader from "lucide-react/dist/esm/icons/loader";
-import MapIcon from "lucide-react/dist/esm/icons/map";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
@@ -85,6 +82,12 @@ interface PanelFrameProps {
   children: ReactNode;
   headerAction?: ReactNode;
   className?: string;
+  /**
+   * Optional pixel height. Defaults to BOTTOM_PANEL_HEIGHT (used by the tile
+   * details panel); minimap renders at a smaller height since it's a constant
+   * reference widget rather than a content panel.
+   */
+  height?: number;
 }
 
 interface TilePanelScrollAreaProps {
@@ -124,13 +127,13 @@ const normalizeResourceEntries = (value: unknown): ResourceAmountEntry[] => {
     .filter((entry): entry is ResourceAmountEntry => Boolean(entry));
 };
 
-const PanelFrame = ({ title, children, headerAction, className }: PanelFrameProps) => (
+const PanelFrame = ({ title, children, headerAction, className, height }: PanelFrameProps) => (
   <section
     className={cn(
       "pointer-events-auto flex h-full flex-col overflow-hidden rounded-lg border border-gold/30 bg-black/85 shadow-2xl backdrop-blur-sm",
       className,
     )}
-    style={{ height: BOTTOM_PANEL_HEIGHT }}
+    style={{ height: height ?? BOTTOM_PANEL_HEIGHT }}
   >
     <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-2 py-1 lg:px-3 lg:py-1.5">
       <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">
@@ -150,52 +153,6 @@ const TilePanelScrollArea = ({ children, className }: TilePanelScrollAreaProps) 
     )}
   >
     {children}
-  </div>
-);
-
-type TabDefinition = {
-  id: BottomPanelTabId;
-  label: string;
-  icon: LucideIcon;
-};
-
-const BOTTOM_PANEL_TABS: TabDefinition[] = [
-  { id: "tile", label: "Selected tile", icon: CircleHelp },
-  { id: "minimap", label: "Minimap", icon: MapIcon },
-];
-
-const PanelTabs = ({
-  tabs,
-  activeTab,
-  onSelect,
-  className,
-}: {
-  tabs: TabDefinition[];
-  activeTab: BottomPanelTabId | null;
-  onSelect: (tab: BottomPanelTabId) => void;
-  className?: string;
-}) => (
-  <div className={cn("pointer-events-auto flex gap-2", className)}>
-    {tabs.map(({ id, label, icon: Icon }) => {
-      const isActive = activeTab === id;
-      return (
-        <button
-          key={id}
-          type="button"
-          onClick={() => onSelect(id)}
-          aria-pressed={isActive}
-          className={cn(
-            "flex h-11 w-11 items-center justify-center rounded-md border transition",
-            isActive
-              ? "border-gold/80 bg-black/80 text-gold shadow-[0_6px_18px_rgba(255,209,128,0.25)] ring-1 ring-gold/40"
-              : "border-gold/30 bg-black/70 text-gold/70 hover:border-gold/60 hover:text-gold",
-          )}
-          title={label}
-        >
-          <Icon className="h-4 w-4" />
-        </button>
-      );
-    })}
   </div>
 );
 
@@ -926,13 +883,12 @@ const MinimapPanel = () => {
   const [tiles, setTiles] = useState<MinimapTile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const activeTab = useUIStore((state) => state.activeBottomPanelTab);
   const selectedHex = useUIStore((state) => state.selectedHex);
   const navigationTarget = useUIStore((state) => state.navigationTarget);
   const cameraTargetHex = useUIStore((state) => state.cameraTargetHex);
 
   useEffect(() => {
-    if (activeTab !== "minimap") return;
+    // MinimapPanel only mounts in map view (parent gating), so fetch unconditionally.
     let cancelled = false;
     const loadTiles = async () => {
       setIsLoading(true);
@@ -970,10 +926,10 @@ const MinimapPanel = () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [activeTab]);
+  }, []);
 
   return (
-    <PanelFrame title="Minimap">
+    <PanelFrame title="Minimap" height={240}>
       <div className="relative flex h-full min-h-0 flex-col">
         <div className="relative flex-1 min-h-[220px] overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
           <HexMinimap
@@ -996,55 +952,49 @@ const MinimapPanel = () => {
   );
 };
 
+/**
+ * BottomRightPanel — atomized into two independent floating widgets:
+ *   - TileDetailsAtom: bottom-right, only when a tile/building is selected.
+ *   - MinimapAtom: bottom-left, persistent in map view.
+ * They no longer share a frame or tab strip.
+ */
 export const BottomRightPanel = memo(() => {
   const { isMapView } = useQuery();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const activeTab = useUIStore((state) => state.activeBottomPanelTab);
-  const setActiveTab = useUIStore((state) => state.setActiveBottomPanelTab);
-  const shouldShow = !showBlankOverlay;
-  const isPanelOpen = shouldShow && activeTab !== null;
+  const selectedHex = useUIStore((state) => state.selectedHex);
+  const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
 
-  const availableTabs = useMemo(
-    () => (isMapView ? BOTTOM_PANEL_TABS : BOTTOM_PANEL_TABS.filter((tab) => tab.id === "tile")),
-    [isMapView],
-  );
+  if (showBlankOverlay) return null;
 
-  useEffect(() => {
-    if (!isMapView && activeTab === "minimap") {
-      setActiveTab("tile");
-    }
-  }, [activeTab, isMapView, setActiveTab]);
-
-  const handleTabToggle = (tab: BottomPanelTabId) => {
-    setActiveTab(activeTab === tab ? null : tab);
-  };
+  // Tile details visibility: in map view follow the selected hex; in local
+  // (hex) view follow the selected building hex. Either source produces the
+  // same panel chrome but different content.
+  const showTileDetails = isMapView ? selectedHex !== null : selectedBuildingHex !== null;
+  // Minimap is map-view only and stays persistent so the player always has a
+  // navigation reference.
+  const showMinimap = isMapView;
 
   return (
-    <div
-      className={cn(
-        "pointer-events-none fixed inset-x-0 z-[35] flex flex-col gap-4 px-0 transition-all duration-300 md:flex-row md:items-end md:justify-end",
-        shouldShow ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 translate-y-6",
-      )}
-      aria-hidden={!shouldShow}
-      style={{ bottom: BOTTOM_PANEL_MARGIN }}
-    >
-      <div className="relative w-full min-h-[44px] md:ml-auto md:w-[55%] lg:w-[44%] xl:w-[36%] 2xl:w-[32%]">
-        <PanelTabs
-          tabs={availableTabs}
-          activeTab={activeTab}
-          onSelect={handleTabToggle}
-          className="absolute right-2 bottom-full pb-2"
-        />
-        <div className="pointer-events-auto">
-          <div className={cn(activeTab === "tile" && isPanelOpen ? "block" : "hidden")}>
-            {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
-          </div>
-          <div className={cn(activeTab === "minimap" && isPanelOpen ? "block" : "hidden")}>
-            <MinimapPanel />
-          </div>
+    <>
+      {showMinimap && (
+        <div
+          className="pointer-events-auto fixed left-3 z-[25] w-[240px]"
+          style={{ bottom: BOTTOM_PANEL_MARGIN }}
+          aria-label="Minimap"
+        >
+          <MinimapPanel />
         </div>
-      </div>
-    </div>
+      )}
+      {showTileDetails && (
+        <div
+          className="pointer-events-auto fixed right-3 z-30 w-[360px]"
+          style={{ bottom: BOTTOM_PANEL_MARGIN }}
+          aria-label="Tile details"
+        >
+          {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
+        </div>
+      )}
+    </>
   );
 });
 

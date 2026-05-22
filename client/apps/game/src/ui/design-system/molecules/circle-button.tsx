@@ -144,6 +144,10 @@ const CircleButton = ({
         onClick={handleClick}
         className={clsx(
           "flex transition-all duration-150 cursor-pointer items-center justify-center fill-current text-gold hover:border-gold shadow-2xl group bg-hex-bg hover:bg-gold border border-gold/40 button-wood",
+          // Hover/active grow — makes the icons feel tactile and emphasizes the
+          // current selection without changing layout. Disabled icons stay flat.
+          !disabled && "hover:scale-110 active:scale-95",
+          active && !disabled && "scale-110 ring-2 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.45)]",
           active ? "bg-gold !border-gold sepia-0" : "bg-dark-wood",
           className,
           sizes[size],
