@@ -12,11 +12,12 @@ import {
 import { FaithDevotionActionPanel } from "@/ui/features/world/components/actions/faith-devotion-action-panel";
 import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/banner/army-banner-entity-detail";
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
+import { useArmyEntityDetail } from "@/ui/features/world/components/entities/hooks/use-army-entity-detail";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
 import { battleSimulation } from "@/ui/features/world/components/config";
-import { HexPosition, ID, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { HexPosition, ID, StructureType, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
   Biome,
   Position,
@@ -155,7 +156,7 @@ const SelectedWorldmapEntityContent = ({
       className="grid h-full min-h-0 grid-cols-1 gap-2"
       style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
     >
-      {isStructure ? null : coordChip}
+      {isStructure || (!isSpire && !isReservedHyperstructure && !isChest && !isQuest && hasOccupier) ? null : coordChip}
       {isSpire ? (
         <div className={occupiedEntityLayoutClass}>
           <EntityInfoScrollPane>
@@ -207,18 +208,58 @@ const SelectedWorldmapEntityContent = ({
           <QuestEntityDetail questEntityId={occupierEntityId} className="min-h-full" {...sharedDetailProps} />
         </EntityInfoScrollPane>
       ) : (
-        <div className={occupiedEntityLayoutClass}>
-          <EntityInfoScrollPane>
-            <ArmyBannerEntityDetail
-              armyEntityId={occupierEntityId}
-              showButtons={false}
-              className={scrollableEntityDetailClass}
-              {...sharedDetailProps}
-            />
-          </EntityInfoScrollPane>
-          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-        </div>
+        <SelectedArmyTilePanel
+          armyEntityId={occupierEntityId}
+          biome={biome}
+          coordsLabel={coordsLabel}
+          headerAction={headerAction}
+          onSimulateBattle={handleSimulateBattle}
+        />
       )}
+    </div>
+  );
+};
+
+// Army tile panel — reads the army to figure out which troop type belongs to
+// the selected explorer so the biome card can highlight the matching bonus row.
+const SelectedArmyTilePanel = ({
+  armyEntityId,
+  biome,
+  coordsLabel,
+  headerAction,
+  onSimulateBattle,
+}: {
+  armyEntityId: ID;
+  biome: ReturnType<typeof Biome.getBiome>;
+  coordsLabel?: string;
+  headerAction?: ReactNode;
+  onSimulateBattle: () => void;
+}) => {
+  const { explorer } = useArmyEntityDetail({ armyEntityId });
+  const highlightTroopType =
+    explorer?.troops?.category !== undefined
+      ? (Number(explorer.troops.category) as unknown as TroopType)
+      : undefined;
+
+  return (
+    <div className={occupiedEntityLayoutClass}>
+      <EntityInfoScrollPane>
+        <ArmyBannerEntityDetail
+          armyEntityId={armyEntityId}
+          showButtons={false}
+          className={scrollableEntityDetailClass}
+          coordsLabel={coordsLabel}
+          headerAction={headerAction}
+          compact
+          layoutVariant="banner"
+        />
+      </EntityInfoScrollPane>
+      <BiomeSummaryCard
+        biome={biome}
+        showSimulateAction
+        onSimulateBattle={onSimulateBattle}
+        highlightTroopType={highlightTroopType}
+      />
     </div>
   );
 };

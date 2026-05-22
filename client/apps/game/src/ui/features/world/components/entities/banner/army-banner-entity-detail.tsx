@@ -11,6 +11,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import {
   isStaminaRecharging,
@@ -40,6 +41,14 @@ interface ArmyBannerEntityDetailProps {
   compact?: boolean;
   showButtons?: boolean;
   layoutVariant?: EntityDetailLayoutVariant;
+  /**
+   * Optional "ARMY TILE · (col, row)" band rendered above the avatar row, mirrors
+   * the StructureBannerEntityDetail merge so the right-side inspector only has
+   * one panel per tile.
+   */
+  coordsLabel?: string;
+  /** Action rendered to the right of {@link coordsLabel} (typically Re-sync). */
+  headerAction?: ReactNode;
 }
 
 interface ArmyBannerEntityDetailContentProps extends Omit<ArmyBannerEntityDetailProps, "layoutVariant"> {
@@ -47,7 +56,13 @@ interface ArmyBannerEntityDetailContentProps extends Omit<ArmyBannerEntityDetail
 }
 
 const ArmyBannerEntityDetailContent = memo(
-  ({ armyEntityId, className, compact = true }: ArmyBannerEntityDetailContentProps) => {
+  ({
+    armyEntityId,
+    className,
+    compact = true,
+    coordsLabel,
+    headerAction,
+  }: ArmyBannerEntityDetailContentProps) => {
     const {
       explorer,
       explorerResources,
@@ -114,8 +129,6 @@ const ArmyBannerEntityDetailContent = memo(
     const usableRelicCount = derivedData.isMine ? inventoryCounts.usableRelics : 0;
     const relicCue = resolveEntityBannerRelicCue(usableRelicCount, totalRelicCount);
     const relicTabLabel = relicCue.state === "empty" ? "Relics 0" : `Relics ${usableRelicCount}/${totalRelicCount}`;
-    const showCombatRelicActions = derivedData.isMine && usableRelicCount > 0;
-    const combatRelicActionLimit = compact ? 4 : undefined;
 
     return (
       <EntityDetailSection
@@ -123,6 +136,12 @@ const ArmyBannerEntityDetailContent = memo(
         tone={hasWarnings ? "highlight" : "default"}
         className={cn("flex h-full min-h-0 flex-col gap-2 overflow-hidden", className)}
       >
+        {coordsLabel && (
+          <div className="flex items-center justify-between gap-2 border-b border-gold/15 pb-2">
+            <span className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{coordsLabel}</span>
+            {headerAction}
+          </div>
+        )}
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
@@ -183,31 +202,6 @@ const ArmyBannerEntityDetailContent = memo(
                       />
                     ) : null
                   }
-                />
-              ) : null}
-              {showCombatRelicActions ? (
-                <CompactEntityInventory
-                  resources={explorerResources}
-                  activeRelicIds={activeRelicIds}
-                  recipientType={RelicRecipientType.Explorer}
-                  entityId={armyEntityId}
-                  entityType={EntityType.ARMY}
-                  allowRelicActivation
-                  variant="tight"
-                  maxItems={combatRelicActionLimit}
-                  filter="usableRelics"
-                  showHiddenCount={false}
-                  emptyMessage="No relics ready."
-                  className="min-h-0"
-                />
-              ) : null}
-              {visibleRelicEffects.length > 0 ? (
-                <ActiveRelicEffects
-                  relicEffects={relicEffects}
-                  entityId={armyEntityId}
-                  variant="inline"
-                  maxItems={compact ? 2 : undefined}
-                  className="min-h-0"
                 />
               ) : null}
             </Tabs.Panel>
@@ -283,7 +277,15 @@ const ArmyBannerEntityDetailContent = memo(
 ArmyBannerEntityDetailContent.displayName = "ArmyBannerEntityDetailContent";
 
 export const ArmyBannerEntityDetail = memo(
-  ({ armyEntityId, className, compact = true, showButtons = false, layoutVariant }: ArmyBannerEntityDetailProps) => {
+  ({
+    armyEntityId,
+    className,
+    compact = true,
+    showButtons = false,
+    layoutVariant,
+    coordsLabel,
+    headerAction,
+  }: ArmyBannerEntityDetailProps) => {
     const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (compact ? "default" : "banner");
 
     return (
@@ -293,6 +295,8 @@ export const ArmyBannerEntityDetail = memo(
         compact={compact}
         showButtons={showButtons}
         variant={resolvedVariant}
+        coordsLabel={coordsLabel}
+        headerAction={headerAction}
       />
     );
   },
