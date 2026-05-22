@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-22",
+    title: "Smaller Map Labels",
+    description:
+      "Reduced always-on world-map label size so army and structure names stay scannable without crowding the map.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
     title: "Unified Map Labels",
     description:
       "Aligned compact map labels and detailed hover labels around the same entity identity and metrics, so hover details now expand from the same information shown on the map.",

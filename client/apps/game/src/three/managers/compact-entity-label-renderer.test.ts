@@ -55,6 +55,28 @@ describe("CompactEntityLabelRenderer", () => {
     expect(mesh.material).not.toBeInstanceOf(THREE.ShaderMaterial);
   });
 
+  it("uses a compact default footprint for always-on map labels", () => {
+    const scene = new THREE.Scene();
+    const renderer = new CompactEntityLabelRenderer(scene);
+
+    renderer.setLabel({
+      entityId: 1,
+      position: new THREE.Vector3(),
+      text: "Sable Order",
+      variant: "mine",
+    });
+
+    const group = (renderer as unknown as { group: THREE.Group }).group;
+    const mesh = group.children[0] as THREE.Mesh;
+    const textureCache = renderer as unknown as {
+      textureCache: Map<string, { height: number }>;
+    };
+    const textureRecord = [...textureCache.textureCache.values()][0];
+
+    expect(mesh.scale.y).toBeCloseTo(0.46);
+    expect(textureRecord.height).toBe(34);
+  });
+
   it("reuses cached textures and releases them after the last label is removed", () => {
     const scene = new THREE.Scene();
     const renderer = new CompactEntityLabelRenderer(scene);

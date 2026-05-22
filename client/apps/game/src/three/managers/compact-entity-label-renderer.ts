@@ -33,15 +33,15 @@ interface CompactEntityLabelStyle {
 }
 
 const COMPACT_LABEL_RENDER_ORDER = 10_050;
-const DEFAULT_LABEL_SIZE = 0.62;
+const DEFAULT_LABEL_SIZE = 0.46;
 const HOVER_LABEL_SCALE = 1.12;
-const LABEL_FONT_SIZE = 20;
+const LABEL_FONT_SIZE = 16;
 const LABEL_FONT = `${LABEL_FONT_SIZE}px Cinzel, serif`;
-const LABEL_PADDING_X = 16;
-const LABEL_PADDING_Y = 8;
-const LABEL_RADIUS = 12;
-const LABEL_HEIGHT = 42;
-const LABEL_MAX_WIDTH = 220;
+const LABEL_PADDING_X = 12;
+const LABEL_PADDING_Y = 6;
+const LABEL_RADIUS = 10;
+const LABEL_HEIGHT = 34;
+const LABEL_MAX_WIDTH = 190;
 
 const LABEL_STYLES: Record<CompactEntityLabelVariant, CompactEntityLabelStyle> = {
   agent: {
