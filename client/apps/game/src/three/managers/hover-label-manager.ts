@@ -1,4 +1,4 @@
-import { CameraView } from "../scenes/hexagon-scene";
+import { CameraView } from "../scenes/camera-view";
 import { HexPosition, ID, HexEntityInfo } from "@bibliothecadao/types";
 
 type HoverLabelController = {
@@ -23,6 +23,10 @@ type HexagonEntities = {
   chest?: HexEntityInfo;
 };
 
+interface ReconcileHoveredHexLabelsOptions {
+  retryActiveLabels?: boolean;
+}
+
 /**
  * Manager responsible for creating and disposing of CSS labels as the pointer moves across hexes.
  * Labels now exist only while a player is actively hovering a tile. The concrete entity managers
@@ -40,6 +44,7 @@ export class HoverLabelManager {
     controllers: HoverLabelControllers,
     getHexagonEntityFn: (hexCoords: HexPosition) => HexagonEntities,
     initialCameraView: CameraView = CameraView.Medium,
+    private readonly markLabelsDirty: () => void = () => {},
   ) {
     this.controllers = controllers;
     this.getHexagonEntity = getHexagonEntityFn;
@@ -51,37 +56,38 @@ export class HoverLabelManager {
    * tears down labels from the previously hovered tile.
    */
   onHexHover(hexCoords: HexPosition): void {
-    if (
-      this.currentHoveredHex &&
-      this.currentHoveredHex.col === hexCoords.col &&
-      this.currentHoveredHex.row === hexCoords.row
-    ) {
+    if (this.isCurrentHoveredHex(hexCoords) && this.hasActiveLabels()) {
       return;
     }
 
-    const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
-
-    this.toggleLabel("army", army?.id);
-    this.toggleLabel("structure", structure?.id);
-    this.toggleLabel("quest", quest?.id);
-    this.toggleLabel("chest", chest?.id);
-
     this.currentHoveredHex = hexCoords;
+    this.reconcileHoveredHexLabels(hexCoords);
+  }
+
+  public refreshCurrentHover(): void {
+    if (!this.currentHoveredHex) {
+      return;
+    }
+
+    this.reconcileHoveredHexLabels(this.currentHoveredHex, { retryActiveLabels: true });
   }
 
   /**
    * Handle mouse leaving the grid. All active labels are removed.
    */
   onHexLeave(): void {
+    let labelsNeedRender = false;
     (Object.keys(this.activeLabels) as HoverLabelType[]).forEach((type) => {
       const activeId = this.activeLabels[type];
       if (activeId !== undefined) {
         this.controllers[type]?.hide(activeId);
+        labelsNeedRender = true;
       }
       delete this.activeLabels[type];
     });
 
     this.currentHoveredHex = null;
+    this.markDirtyIfLabelsNeedRender(labelsNeedRender);
   }
 
   /**
@@ -93,7 +99,7 @@ export class HoverLabelManager {
   }
 
   public hasActiveLabels(): boolean {
-    return this.currentHoveredHex !== null;
+    return this.getActiveLabelCount() > 0;
   }
 
   public getActiveLabelCount(): number {
@@ -107,28 +113,61 @@ export class HoverLabelManager {
     this.onHexLeave();
   }
 
-  private toggleLabel(type: HoverLabelType, entityId?: ID): void {
+  private isCurrentHoveredHex(hexCoords: HexPosition): boolean {
+    return (
+      this.currentHoveredHex !== null &&
+      this.currentHoveredHex.col === hexCoords.col &&
+      this.currentHoveredHex.row === hexCoords.row
+    );
+  }
+
+  private reconcileHoveredHexLabels(hexCoords: HexPosition, options?: ReconcileHoveredHexLabelsOptions): void {
+    const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
+    const labelsNeedRender = [
+      this.toggleLabel("army", army?.id, options),
+      this.toggleLabel("structure", structure?.id, options),
+      this.toggleLabel("quest", quest?.id, options),
+      this.toggleLabel("chest", chest?.id, options),
+    ].some(Boolean);
+
+    this.markDirtyIfLabelsNeedRender(labelsNeedRender);
+  }
+
+  private toggleLabel(type: HoverLabelType, entityId?: ID, options?: ReconcileHoveredHexLabelsOptions): boolean {
     const controller = this.controllers[type];
     if (!controller) {
-      return;
+      return false;
     }
 
     const currentId = this.activeLabels[type];
+    let labelChanged = false;
 
     if (currentId !== undefined && (entityId === undefined || currentId !== entityId)) {
       controller.hide(currentId);
       delete this.activeLabels[type];
+      labelChanged = true;
     }
 
     if (entityId === undefined || entityId === null) {
-      return;
+      return labelChanged;
     }
 
     if (currentId === entityId) {
-      return;
+      if (options?.retryActiveLabels) {
+        controller.show(entityId);
+        return true;
+      }
+      return labelChanged;
     }
 
     controller.show(entityId);
     this.activeLabels[type] = entityId;
+    return true;
+  }
+
+  private markDirtyIfLabelsNeedRender(labelsNeedRender: boolean): void {
+    if (labelsNeedRender) {
+      this.markLabelsDirty();
+    }
   }
 }

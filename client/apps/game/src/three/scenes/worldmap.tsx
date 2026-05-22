@@ -118,6 +118,7 @@ import { env } from "../../../env";
 import { playerCosmeticsStore, preloadAllCosmeticAssets } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
+import { resolveWorldmapHoverLabelTargets } from "./worldmap-hover-label-targets";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { ArrivalGhostManager } from "../managers/arrival-ghost-manager";
 import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
@@ -1058,6 +1059,7 @@ export default class WorldmapScene extends WarpTravel {
     explorerTroops: 0,
   };
   private toriiBoundsLogInterval: ReturnType<typeof setInterval> | null = null;
+  private readonly hoverLabelRaycaster: Raycaster;
 
   constructor(
     dojoContext: SetupResult,
@@ -1065,10 +1067,12 @@ export default class WorldmapScene extends WarpTravel {
     controls: MapControls,
     mouse: Vector2,
     sceneManager: SceneManager,
+    private readonly markLabelsDirty: () => void = () => {},
   ) {
     super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
 
     this.dojo = dojoContext;
+    this.hoverLabelRaycaster = raycaster;
     this.logWorldmapSceneConstruction();
     this.initializeGlobalSpatialMapSyncDebug();
     this.registerWorldmapRecoveryHandle();
@@ -1421,8 +1425,9 @@ export default class WorldmapScene extends WarpTravel {
           hideAll: () => this.chestManager.hideAllLabels(),
         },
       },
-      (hexCoords: HexPosition) => this.getHexagonEntity(hexCoords),
+      (hexCoords: HexPosition) => this.resolveHoverLabelEntities(hexCoords),
       this.getCurrentCameraView(),
+      this.markLabelsDirty,
     );
   }
 
@@ -2490,6 +2495,45 @@ export default class WorldmapScene extends WarpTravel {
     const chest = this.chestHexes.get(hex.x)?.get(hex.y);
 
     return { army, structure, chest };
+  }
+
+  private resolveHoverLabelEntities(hexCoords: HexPosition) {
+    const cachedEntities = this.getHexagonEntity(hexCoords);
+    const targets = resolveWorldmapHoverLabelTargets({
+      cachedEntities,
+      hoveredHex: hexCoords,
+      raycastArmy: cachedEntities.army ? undefined : this.resolveRaycastArmyHoverTarget(),
+    });
+
+    return {
+      army: this.resolveHoverLabelEntity(targets.armyId, cachedEntities.army),
+      structure: this.resolveHoverLabelEntity(targets.structureId, cachedEntities.structure),
+      chest: this.resolveHoverLabelEntity(targets.chestId, cachedEntities.chest),
+    };
+  }
+
+  private resolveRaycastArmyHoverTarget() {
+    const entityId = this.armyManager.onMouseMove(this.hoverLabelRaycaster);
+    if (entityId === undefined) {
+      return undefined;
+    }
+
+    return {
+      entityId,
+      position: this.armiesPositions.get(entityId),
+    };
+  }
+
+  private resolveHoverLabelEntity(entityId: ID | undefined, cachedEntity?: HexEntityInfo): HexEntityInfo | undefined {
+    if (entityId === undefined) {
+      return undefined;
+    }
+
+    return cachedEntity?.id === entityId ? cachedEntity : { id: entityId, owner: 0n };
+  }
+
+  private refreshCurrentHoverLabels(): void {
+    this.hoverLabelManager?.refreshCurrentHover();
   }
 
   protected tryArmyRaycastFallback(raycaster: Raycaster): HexPosition | null {
@@ -4626,6 +4670,7 @@ export default class WorldmapScene extends WarpTravel {
           }
           this.armiesPositions.delete(entityId);
           this.armyStructureOwners.delete(entityId);
+          this.refreshCurrentHoverLabels();
           return;
         }
       } else {
@@ -4678,6 +4723,7 @@ export default class WorldmapScene extends WarpTravel {
     this.armyHexes.get(newPos.col)?.set(newPos.row, armyHexData);
     gameWorkerManager.updateArmyHex(newPos.col, newPos.row, armyHexData);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
+    this.refreshCurrentHoverLabels();
   }
 
   public updateStructureHexes(update: {
@@ -4717,6 +4763,7 @@ export default class WorldmapScene extends WarpTravel {
     this.structureHexes.get(newPos.col)?.set(newPos.row, structureInfo);
     gameWorkerManager.updateStructureHex(newPos.col, newPos.row, structureInfo);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
+    this.refreshCurrentHoverLabels();
     return { oldPos, newPos };
   }
 
@@ -4736,6 +4783,7 @@ export default class WorldmapScene extends WarpTravel {
       this.chestHexes.set(newCol, new Map());
     }
     this.chestHexes.get(newCol)?.set(newRow, { id: occupierId, owner: 0n });
+    this.refreshCurrentHoverLabels();
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -9584,6 +9632,7 @@ export default class WorldmapScene extends WarpTravel {
       setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
+      this.refreshCurrentHoverLabels();
     }
 
     if (import.meta.env.DEV) {
@@ -9694,6 +9743,7 @@ export default class WorldmapScene extends WarpTravel {
       setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
+      this.refreshCurrentHoverLabels();
     }
 
     handleWorldmapCriticalManagerCatchUpFailures({

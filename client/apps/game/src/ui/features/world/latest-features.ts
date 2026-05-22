@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-22",
+    title: "Reliable Hover Labels",
+    description:
+      "Fixed world-map unit hover labels so they recover after loading and chunk transitions without needing to move the cursor away and back.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-21",
     title: "Population Build Guard",
     description:

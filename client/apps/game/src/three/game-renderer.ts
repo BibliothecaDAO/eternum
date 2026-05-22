@@ -231,6 +231,7 @@ export default class GameRenderer {
       fastTravelEnabled: this.isFastTravelEnabled(),
       initialSceneName,
       inputSurface: this.renderer.domElement,
+      markLabelsDirty: () => this.labelRuntime?.markDirty(),
       mouse: this.mouse,
       qualityFeatures: qualityController.getFeatures(),
       raycaster: this.raycaster,
