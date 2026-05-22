@@ -203,7 +203,7 @@ export const LeftCommandSidebar = memo(() => {
           (Overview / Economy / Military) and active facet content. This is
           the control surface twin of the right-side read-only inspector. */}
       {ConnectedAccount && (
-        <div className="fixed left-3 top-3 z-20 pointer-events-auto flex w-[280px] max-h-[calc(100vh-440px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+        <div className="fixed left-3 top-3 z-20 pointer-events-auto flex w-[280px] max-h-[calc(100vh-320px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           {structureEntityId > 0 ? (
             <LeftStructureControlColumn structureEntityId={structureEntityId} />
           ) : (

@@ -53,10 +53,10 @@ const CategoryIcon = ({
   className?: string;
 }) => createElement(getCategoryIcon(category), { className });
 
-// Glanceable red/amber/green dot. Red = no defenders, amber = under-staffed or
-// any other under-maintained state, green = all good. Non-realm structures
-// skip the dot.
-const resolveStatusDot = (
+// Status tone for the favorite star. Red = no defenders, amber = under-staffed,
+// green = all good. The star carries this color so we don't need a separate
+// dot indicator. Non-realm structures skip the tint and stay gold.
+const resolveStatusTone = (
   structure: StructureWithMetadata,
 ): { tone: "green" | "amber" | "red"; title: string } | null => {
   const capabilities = resolveStructureUiCapabilities(structure.structure);
@@ -75,20 +75,21 @@ const resolveStatusDot = (
   return { tone: "green", title: "Operating normally." };
 };
 
-const STATUS_DOT_TONE: Record<"green" | "amber" | "red", string> = {
-  green: "bg-emerald-300/80 shadow-[0_0_6px_rgba(110,231,183,0.6)]",
-  amber: "bg-amber-300 shadow-[0_0_6px_rgba(252,211,77,0.6)]",
-  red: "bg-rose-400 shadow-[0_0_6px_rgba(244,114,114,0.7)]",
+const STATUS_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
+  green: "text-emerald-300 drop-shadow-[0_0_4px_rgba(110,231,183,0.55)]",
+  amber: "text-amber-300 drop-shadow-[0_0_4px_rgba(252,211,77,0.55)]",
+  red: "text-rose-400 drop-shadow-[0_0_4px_rgba(244,114,114,0.7)]",
 };
 
-// Compact stat chip (pop / tiles). Two side-by-side, sized to fit the 280px column.
-const StatChip = ({ icon: Icon, label, title }: { icon: LucideIcon; label: string; title?: string }) => (
+// Compact inline stat (pop / tiles). No background — just icon + number — so
+// it fits beside the structure name on a single row at 280px.
+const InlineStat = ({ icon: Icon, label, title }: { icon: LucideIcon; label: string; title?: string }) => (
   <span
-    className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/30 px-1.5 py-0.5 text-[10px] text-gold/75"
+    className="inline-flex items-center gap-0.5 text-[10px] font-semibold tabular-nums text-gold/75"
     title={title}
   >
     <Icon className="h-3 w-3 text-gold/55" />
-    <span className="font-semibold tabular-nums">{label}</span>
+    <span>{label}</span>
   </span>
 );
 
@@ -122,7 +123,7 @@ const StructureCard = memo(
   }: StructureCardProps) => {
     const capabilities = resolveStructureUiCapabilities(structure.structure);
     const groupConfig = structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor] : null;
-    const statusDot = resolveStatusDot(structure);
+    const statusTone = resolveStatusTone(structure);
     const levelAbbrev = capabilities.hasPopulationDetails
       ? getLevelName(
           Math.min(Math.max(structure.realmLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels,
@@ -137,6 +138,7 @@ const StructureCard = memo(
       structure.buildingTilesTotal !== null
         ? formatUsedBuildingTilesLabel(structure.buildingTilesOccupied, structure.buildingTilesTotal)
         : null;
+    const isRealm = structure.category === StructureType.Realm;
 
     const handleCardClick = useCallback(() => {
       onSelect(structure.entityId);
@@ -153,6 +155,9 @@ const StructureCard = memo(
       [handleCardClick],
     );
 
+    const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-gold/60";
+    const starTitle = statusTone?.title ?? (isFavorite ? "Remove from favorites" : "Favorite structure");
+
     return (
       <div
         role="button"
@@ -168,15 +173,21 @@ const StructureCard = memo(
         aria-pressed={isActive}
         title={structure.displayName}
       >
-        {/* Row 1: status dot · icon · name · level · favorite */}
-        <div className="flex items-center gap-1.5 px-2.5 pt-2">
-          {statusDot && (
-            <span
-              className={cn("h-2 w-2 flex-shrink-0 rounded-full", STATUS_DOT_TONE[statusDot.tone])}
-              title={statusDot.title}
-              aria-label={statusDot.title}
-            />
-          )}
+        {/* Header row — single line at 280px when it fits:
+            [★(status)] [icon] [name] [K] [👤12/18] [🔷11/36] [pencil] */}
+        <div className="flex items-center gap-1.5 px-2.5 py-2">
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleFavorite(structure.entityId);
+            }}
+            className={cn("flex-shrink-0 rounded p-0.5 transition-colors", starTone)}
+            title={starTitle}
+            aria-label={starTitle}
+          >
+            <Star className={cn("h-3.5 w-3.5", isFavorite && "fill-current")} />
+          </button>
           <CategoryIcon
             category={structure.category}
             className={cn("h-4 w-4 flex-shrink-0", groupConfig ? groupConfig.textClass : "text-gold")}
@@ -197,18 +208,10 @@ const StructureCard = memo(
               {levelAbbrev}
             </span>
           )}
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleFavorite(structure.entityId);
-            }}
-            className="flex-shrink-0 rounded p-0.5 text-gold/60 hover:text-gold"
-            title={isFavorite ? "Remove from favorites" : "Favorite structure"}
-            aria-label={isFavorite ? "Remove from favorites" : "Favorite structure"}
-          >
-            <Star className={cn("h-3.5 w-3.5", isFavorite ? "fill-current text-gold" : "text-gold/60")} />
-          </button>
+          {populationLabel && <InlineStat icon={Users} label={populationLabel} title="Population used / capacity" />}
+          {buildingTilesLabel && (
+            <InlineStat icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
+          )}
           {isActive && (
             <button
               type="button"
@@ -220,23 +223,17 @@ const StructureCard = memo(
               title="Rename structure"
               aria-label="Rename structure"
             >
-              <Pencil className="h-3.5 w-3.5" />
+              <Pencil className="h-3 w-3" />
             </button>
           )}
         </div>
 
-        {/* Row 2: pop · tiles · level-up + provision + info (realm only) */}
-        {capabilities.hasPopulationDetails && (
-          <div className="flex flex-wrap items-center gap-1.5 px-2.5 pb-2 pt-1.5">
-            {populationLabel && <StatChip icon={Users} label={populationLabel} title="Population used / capacity" />}
-            {buildingTilesLabel && (
-              <StatChip icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
-            )}
-            {structure.category === StructureType.Realm && (
-              <div className="ml-auto" onClick={(event) => event.stopPropagation()}>
-                <StructureRealmActions structureEntityId={structure.entityId} />
-              </div>
-            )}
+        {/* Realm action strip — level up + provision + info tooltip. Lives on
+            its own row so the chevrons stay tappable without elbowing the
+            stats. Only realms render this. */}
+        {isRealm && (
+          <div className="flex items-center justify-end px-2.5 pb-2" onClick={(event) => event.stopPropagation()}>
+            <StructureRealmActions structureEntityId={structure.entityId} />
           </div>
         )}
 

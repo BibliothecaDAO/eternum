@@ -9,7 +9,7 @@ import { memo, useCallback, useMemo } from "react";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
-import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { InfoBubble } from "../collapsible-bubble";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -219,13 +219,11 @@ const StructureBannerEntityDetailContent = memo(
         {/* Owner bubble — visible on the right-side tile inspector. Hidden on
             the LeftStructureColumn where the picker already names the
             structure being controlled. */}
-        {!hideOwner && <InfoBubble title={ownerDisplayName ?? "Owner"} cue={structureName} bodyClassName="pt-0">
-          {coordsLabel && (
-            <div className="mb-2 flex items-center justify-between gap-2 border-b border-gold/15 pb-2">
-              <span className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{coordsLabel}</span>
-              {headerAction}
-            </div>
-          )}
+        {!hideOwner && <InfoBubble
+          title={coordsLabel ?? ownerDisplayName ?? "Owner"}
+          cue={coordsLabel ? headerAction : structureName}
+          bodyClassName="pt-0"
+        >
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2 text-gold">
               <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
