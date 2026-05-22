@@ -2,8 +2,9 @@ import { ReactComponent as Next } from "@/assets/icons/common/arrow-right.svg";
 import { ReactComponent as Copy } from "@/assets/icons/common/copy.svg";
 import { ReactComponent as Muted } from "@/assets/icons/common/muted.svg";
 import { ReactComponent as Unmuted } from "@/assets/icons/common/unmuted.svg";
-import { ReactComponent as Controller } from "@/assets/icons/controller.svg";
+import { ReactComponent as CartridgeLogo } from "@/assets/icons/controller.svg";
 import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.svg";
+import { Controller as WalletController } from "@/ui/modules/controller/controller";
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer, useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -196,7 +197,8 @@ export const SettingsWindow = () => {
             {addressName && <div className="px-4 text-xl border rounded border-gold">{addressName}</div>}
           </div>
           <div className="flex flex-col items-center space-y-2">
-            <Controller className="w-12" />
+            <CartridgeLogo className="w-12" />
+            <WalletController />
             <div className="flex items-center space-x-2">
               <div className="cursor-pointer" onClick={copyToClipBoard}>
                 {displayAddress(account.address)}

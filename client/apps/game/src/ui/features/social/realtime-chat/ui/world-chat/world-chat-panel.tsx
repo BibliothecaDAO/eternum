@@ -136,6 +136,12 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const topSentinelRef = useRef<HTMLDivElement | null>(null);
   const isLoadingRef = useRef(false);
+  // Gate the top-sentinel IntersectionObserver until the panel has anchored
+  // to the bottom at least once. Without this the observer fires while we're
+  // still at scrollTop=0 (the panel just mounted), triggers a history fetch,
+  // which keeps us at the top, which re-triggers the observer — an infinite
+  // load loop where the user never sees the latest messages.
+  const hasInitialAnchorRef = useRef(false);
 
   const navigateToMapView = useNavigateToMapView();
   const handleNavigateToCoordinates = useCallback(
@@ -180,13 +186,15 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
     }
   }, [resolvedZoneId, zone, messages.length]);
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages. Once we've ever pinned to bottom we
+  // mark the panel as "anchored" so the history-loading observer can start.
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
     const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
     if (isActive || isAtBottom) {
       el.scrollTop = el.scrollHeight;
+      if (messages.length > 0) hasInitialAnchorRef.current = true;
     }
   }, [messages.length, isActive]);
 
@@ -194,6 +202,9 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
   useEffect(() => {
     const el = scrollContainerRef.current;
     if (!el) return;
+
+    // Reset anchor flag when the panel re-activates so it has to settle again.
+    hasInitialAnchorRef.current = false;
 
     // Delay to ensure content is rendered
     const timer = setTimeout(() => {
@@ -221,10 +232,13 @@ export function WorldChatPanel({ zoneId, zoneLabel, className }: WorldChatPanelP
     return () => resizeObserver.disconnect();
   }, []);
 
-  // Intersection Observer for auto-loading older messages on scroll
+  // Intersection Observer for auto-loading older messages on scroll.
+  // Only activates after the first scroll-to-bottom so it doesn't fire while
+  // the panel is still mounting (which caused the infinite-history loop).
   useEffect(() => {
     const sentinel = topSentinelRef.current;
     if (!sentinel || !zone?.hasMoreHistory) return;
+    if (!hasInitialAnchorRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {

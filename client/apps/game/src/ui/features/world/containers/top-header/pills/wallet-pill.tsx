@@ -1,7 +1,7 @@
-import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { LeftView } from "@/types";
 import { Pill } from "@/ui/design-system/molecules/pill";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -41,8 +41,8 @@ const formatHeroAmount = (value: number): string => {
 export const WalletPill = memo(() => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
-  const openPopup = useUIStore((state) => state.openPopup);
-  const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
+  const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
+  const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
   const { setup } = useDojo();
   const components = setup.components;
   const mode = useGameModeConfig();
@@ -95,14 +95,16 @@ export const WalletPill = memo(() => {
     };
   }, [isOpen]);
 
+  // Send arrow → open the unified Logistics view with the Transfer tab
+  // pre-selected, using the wallet's structure as the source. The view lives in
+  // the FloatingViewPanel (no more centered modal).
   const handleOpenTransfer = useCallback(() => {
     if (!structureEntityId) return;
     setTransferPanelSourceId(structureEntityId);
-    if (!isTransferPopupOpen) {
-      openPopup(TRANSFER_POPUP_NAME);
-    }
+    setLogisticsActiveTab("transfer");
+    setLeftNavigationView(LeftView.ResourceArrivals);
     setIsOpen(false);
-  }, [isTransferPopupOpen, openPopup, setTransferPanelSourceId, structureEntityId]);
+  }, [setLeftNavigationView, setLogisticsActiveTab, setTransferPanelSourceId, structureEntityId]);
 
   // Don't render a pill when there's nothing to show. A structure with no balance
   // would surface an empty pill — pure noise. Also skips when no structure is

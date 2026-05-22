@@ -1,5 +1,4 @@
 import { TransactionWindow } from "@/ui/components/transaction-center";
-import { TransferAutomationPopup } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { ArmyCreationPopupManager } from "@/ui/features/military/components/unified-army-creation-modal";
 import { ExplorationAutomationWindow } from "@/ui/features/military/components/exploration-automation-dashboard";
 import { ProductionAutomationWindow } from "@/ui/features/infrastructure/automation/production-automation-dashboard";
@@ -20,7 +19,8 @@ export const TopNavigation = memo(() => {
         <ShortcutsWindow />
         <LatestFeaturesWindow />
         <TransactionWindow />
-        <TransferAutomationPopup />
+        {/* TransferAutomationPopup removed — Transfer now lives inside the
+            Logistics view (FloatingViewPanel), no centered modal. */}
         {/* <ExplorationAutomationWindow /> */}
         <ProductionAutomationWindow />
         <ArmyCreationPopupManager />

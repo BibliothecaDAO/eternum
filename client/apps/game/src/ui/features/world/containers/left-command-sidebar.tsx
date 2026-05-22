@@ -4,8 +4,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
-import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
+import { MarketModal } from "@/ui/features/economy/trading";
+import { LogisticsView } from "@/ui/features/world/containers/logistics-view";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import {
   RealtimeChatShell,
@@ -66,8 +66,6 @@ type EconomyNavigationContext = {
   setLeftView: (view: LeftView) => void;
   disableButtons: boolean;
   showBridgeMenu: boolean;
-  onOpenTransfer: () => void;
-  isTransferOpen: boolean;
 };
 
 const connectionTone = {
@@ -127,9 +125,8 @@ const ORDERED_MENU_IDS: MenuEnum[] = [
   MenuEnum.entityDetails, // Realm Info
   MenuEnum.construction, // Buildings
   MenuEnum.military, // Army
-  MenuEnum.resourceArrivals, // Donkey arrivals
+  MenuEnum.resourceArrivals, // Logistics (Arrivals + Transfer + Automation + Balances)
   MenuEnum.trade, // Trade
-  MenuEnum.transfer, // Transfers
   MenuEnum.bridge, // Bridge
   MenuEnum.chat, // Chat
   MenuEnum.storyEvents, // Chronicles
@@ -189,7 +186,10 @@ const buildRealmNavigationItems = ({
       id: MenuEnum.resourceArrivals,
       image: BuildingThumbs.trade,
       tooltipLocation: "top",
-      label: "Resource Arrivals",
+      // Renamed: this pill now opens the unified Logistics panel
+      // (Arrivals / Transfer / Automation / Balances). The old Transfer
+      // modal entry was removed.
+      label: "Logistics",
       size: DEFAULT_BUTTON_SIZE,
       disabled: disableButtons,
       active: view === LeftView.ResourceArrivals,
@@ -235,23 +235,9 @@ const buildEconomyNavigationItems = ({
   setLeftView,
   disableButtons,
   showBridgeMenu,
-  onOpenTransfer,
-  isTransferOpen,
 }: EconomyNavigationContext): NavigationItem[] => {
+  // Transfers were folded into the Logistics pill (resourceArrivals view).
   const items: NavigationItem[] = [
-    {
-      id: MenuEnum.transfer,
-      className: "transfer-selector",
-      image: BuildingThumbs.transfer,
-      tooltipLocation: "top",
-      label: "Transfers",
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
-      active: isTransferOpen,
-      onClick: () => {
-        onOpenTransfer();
-      },
-    },
     ...(showBridgeMenu
       ? ([
           {
@@ -298,7 +284,6 @@ const buildEconomyNavigationItems = ({
   ];
 
   const allowedMenus: MenuEnum[] = [
-    MenuEnum.transfer,
     ...(showBridgeMenu ? [MenuEnum.bridge] : []),
     MenuEnum.storyEvents,
     MenuEnum.predictionMarket,
@@ -384,10 +369,6 @@ export const LeftCommandSidebar = memo(() => {
   const setView = useUIStore((state) => state.setLeftNavigationView);
   const disableButtons = useUIStore((state) => state.disableButtons);
   const isTradeOpen = useUIStore((state) => state.openedPopups.includes(trade));
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
-  const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
-
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const structures = useUIStore((state) => state.playerStructures);
   const toggleModal = useUIStore((state) => state.toggleModal);
@@ -409,11 +390,6 @@ export const LeftCommandSidebar = memo(() => {
     },
     [bumpStructureNameVersion, setPendingRenameStructureEntityId],
   );
-
-  const handleOpenTransferPopup = useCallback(() => {
-    setTransferPanelSourceId(null);
-    togglePopup(TRANSFER_POPUP_NAME);
-  }, [setTransferPanelSourceId, togglePopup]);
 
   const {
     initializer: realtimeInitializer,
@@ -490,10 +466,8 @@ export const LeftCommandSidebar = memo(() => {
         setLeftView: setView,
         disableButtons,
         showBridgeMenu: mode.ui.showBridgeMenu,
-        onOpenTransfer: handleOpenTransferPopup,
-        isTransferOpen: isTransferPopupOpen,
       }),
-    [view, setView, disableButtons, handleOpenTransferPopup, isTransferPopupOpen, mode],
+    [view, setView, disableButtons, mode],
   );
 
   const chatNavigationItem = useMemo<NavigationItem>(() => {
@@ -634,7 +608,7 @@ export const LeftCommandSidebar = memo(() => {
                   return <HyperstructuresMenu />;
                 })()}
               {view === LeftView.ResourceArrivals && (
-                <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
+                <LogisticsView hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
               )}
               {view === LeftView.BridgeView && (
                 <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">

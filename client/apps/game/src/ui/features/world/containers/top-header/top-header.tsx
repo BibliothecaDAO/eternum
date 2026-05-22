@@ -15,7 +15,6 @@ import {
   MIN_REFRESH_INTERVAL_MS,
   useLandingLeaderboardStore,
 } from "@/services/leaderboard/use-landing-leaderboard-store";
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -23,8 +22,6 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { resolveTopHeaderPlayerStatus } from "./top-header-player-status";
-
 // Shared visual base for each top-zone pill cluster. Floats independently
 // against the map — no shared dark-wood strip behind them.
 const PILL_SURFACE =
@@ -50,7 +47,6 @@ export const TopHeader = memo(() => {
   // an army. We keep it visible while it's already toggled on so a player can always turn it back off.
   const hasOwnedArmies = useUIStore((state) => state.selectableArmies.length > 0);
   const showFollowArmyToggle = hasOwnedArmies || followArmyCombats || isSpectating;
-  const accountName = useAccountStore((state) => state.accountName);
   const mode = useGameModeConfig();
 
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
@@ -96,10 +92,9 @@ export const TopHeader = memo(() => {
     };
   }, []);
 
-  const normalizeAddress = useCallback((value: string) => value.trim().toLowerCase(), []);
-
-  const leaderboardEntries = useLandingLeaderboardStore((state) => state.entries);
-  const playerEntries = useLandingLeaderboardStore((state) => state.playerEntries);
+  // Keep the leaderboard cache warm for the rank pill in SecondaryMenuItems. The
+  // pill reads the cached entries from the store; we drive the fetch from here
+  // so a single mount handles polling.
   const fetchLeaderboardEntries = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
   const fetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
 
@@ -118,33 +113,6 @@ export const TopHeader = memo(() => {
     const intervalId = window.setInterval(refreshPlayer, MIN_REFRESH_INTERVAL_MS);
     return () => window.clearInterval(intervalId);
   }, [account.address, fetchPlayerEntry]);
-
-  const formatPoints = useCallback((points: number | null | undefined) => {
-    if (points === null || points === undefined) {
-      return "0";
-    }
-    const rounded = Math.round(points);
-    return Number.isFinite(rounded) ? rounded.toLocaleString() : "0";
-  }, []);
-
-  const playerEntry = useMemo(() => {
-    const normalizedAccount = normalizeAddress(account.address);
-    return (
-      playerEntries[normalizedAccount]?.data ??
-      leaderboardEntries.find((entry) => normalizeAddress(entry.address) === normalizedAccount) ??
-      null
-    );
-  }, [account.address, leaderboardEntries, normalizeAddress, playerEntries]);
-
-  const playerStatus = useMemo(
-    () =>
-      resolveTopHeaderPlayerStatus({
-        isSpectating,
-        rank: playerEntry?.rank,
-        points: playerEntry?.points,
-      }),
-    [isSpectating, playerEntry?.points, playerEntry?.rank],
-  );
 
   const navigateToFastTravelLayer = useCallback(() => {
     playClick();
@@ -177,37 +145,33 @@ export const TopHeader = memo(() => {
       {/* Layout container — pointer-events pass through the gaps between pills so the
           map remains clickable. Each pill flips pointer-events back on. */}
       <div className="fixed top-0 left-0 right-0 z-20 flex flex-wrap items-center gap-3 px-3 py-2 pointer-events-none">
-        {/* Identity pill */}
-        <div
-          className={cn(
-            PILL_SURFACE,
-            "flex max-w-[260px] items-center gap-2 px-3 py-1 text-gold font-[Cinzel]",
-          )}
-        >
-          {isSpectating && <EyeIcon className="h-4 w-4 flex-shrink-0 text-gold" aria-hidden="true" />}
-          <span className="truncate text-sm font-semibold">
-            {accountName ?? playerEntry?.displayName ?? "Player"}
-          </span>
-          {playerStatus?.type === "spectating" ? (
-            <span className="flex-shrink-0 text-[10px] text-gold/70">· Spectating</span>
-          ) : playerStatus?.type === "ranked" ? (
-            <span className="flex-shrink-0 text-[10px] text-gold/70">
-              · #{playerStatus.rank} · {formatPoints(playerStatus.points)} pts
-            </span>
-          ) : null}
-        </div>
+        {/* Spectating badge — only renders when actually spectating. The player
+            identity itself lives in the rank pill on the right. */}
+        {isSpectating && (
+          <div
+            className={cn(
+              PILL_SURFACE,
+              "flex items-center gap-1.5 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-gold font-[Cinzel]",
+            )}
+          >
+            <EyeIcon className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
+            <span>Spectating</span>
+          </div>
+        )}
 
         {/* Structure picker — already a floating pill cluster of its own. */}
         <div className="pointer-events-auto">
           <StructurePickerStrip />
         </div>
 
-        {/* Cycle timer pill — TickProgress + conditional game window timers */}
-        <div className={cn(PILL_SURFACE, "flex items-center gap-2 px-2 py-1")}>
+        {/* Day-tick progress — its own pill, flattened so the SVG ring isn't nested in another border. */}
+        <div className={cn(PILL_SURFACE, "flex items-center px-2 py-1")}>
           <TickProgress />
-          <GameStartCountdown />
-          <GameEndTimer />
         </div>
+
+        {/* Game start / end timers — each self-styled, only render when active. */}
+        <GameStartCountdown />
+        <GameEndTimer />
 
         {/* Map view pill — Local/World toggle + conditional Ethereal/Follow Army */}
         <div className={cn(PILL_SURFACE, "flex items-center gap-2 px-3 py-1 whitespace-nowrap")}>

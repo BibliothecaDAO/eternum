@@ -159,6 +159,11 @@ interface UIStore {
   setModal: (content: React.ReactNode | null, show: boolean) => void;
   transferPanelSourceId: number | null;
   setTransferPanelSourceId: (entityId: number | null) => void;
+  // Default tab to open inside the unified Logistics view (Arrivals / Transfer /
+  // Automation / All Balances). WalletPill's swap sets this to "transfer" so the
+  // panel opens straight to the send flow; the sidebar pill defaults to arrivals.
+  logisticsActiveTab: "arrivals" | "transfer" | "automation" | "balances";
+  setLogisticsActiveTab: (tab: "arrivals" | "transfer" | "automation" | "balances") => void;
   // Cross-component signal: when a non-null id is set, the StructureEditPopup
   // (mounted inside LeftCommandSidebar) opens for that structure. The picker
   // popover writes this from the top-zone pills without needing prop-drilling.
@@ -305,6 +310,8 @@ export const useUIStore = create(
       set({ modalContent: content, showModal: show, tooltip: null }),
     transferPanelSourceId: null,
     setTransferPanelSourceId: (entityId: number | null) => set({ transferPanelSourceId: entityId }),
+    logisticsActiveTab: "arrivals",
+    setLogisticsActiveTab: (tab) => set({ logisticsActiveTab: tab }),
     pendingRenameStructureEntityId: null,
     setPendingRenameStructureEntityId: (entityId: number | null) =>
       set({ pendingRenameStructureEntityId: entityId }),

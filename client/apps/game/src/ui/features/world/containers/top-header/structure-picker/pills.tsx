@@ -14,8 +14,8 @@ import type { LucideIcon } from "lucide-react";
 import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Tent from "lucide-react/dist/esm/icons/tent";
-import MoreHorizontal from "lucide-react/dist/esm/icons/more-horizontal";
-import { createElement, memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createElement, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { type StructureWithMetadata } from "./chip";
 import { StructurePickerPopover } from "./picker-popover";
 import { useStructuresWithMetadata } from "./use-structures-with-metadata";
@@ -111,7 +111,28 @@ export const StructurePickerStrip = memo(() => {
   });
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const [popoverPosition, setPopoverPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+
+  // Anchor the portaled popover to the trigger's current viewport rect.
+  // Re-measure on open, on window resize, and on scroll so the popover tracks
+  // the trigger even if the rest of the HUD reflows.
+  useLayoutEffect(() => {
+    if (!isPopoverOpen) return;
+    const measure = () => {
+      if (!wrapperRef.current) return;
+      const rect = wrapperRef.current.getBoundingClientRect();
+      setPopoverPosition({ top: rect.bottom + 8, left: rect.left });
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, true);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("scroll", measure, true);
+    };
+  }, [isPopoverOpen]);
 
   const handleSelectStructure = useCallback(
     (entityId: ID) => {
@@ -136,16 +157,17 @@ export const StructurePickerStrip = memo(() => {
     [playerStructures, goToStructure, isMapView, setSelectedHex, setStructureEntityId],
   );
 
-  // Close popover on outside click. Stays open while user clicks inside the
-  // popover content (chip click handler already closes explicitly).
+  // Close popover on outside click. Because the popover is portaled to the
+  // document body, "inside" means either the trigger wrapper OR the popover
+  // content itself.
   useEffect(() => {
     if (!isPopoverOpen) return;
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target as Node | null;
-      if (!target || !wrapperRef.current) return;
-      if (!wrapperRef.current.contains(target)) {
-        setIsPopoverOpen(false);
-      }
+      if (!target) return;
+      if (wrapperRef.current?.contains(target)) return;
+      if (popoverRef.current?.contains(target)) return;
+      setIsPopoverOpen(false);
     };
     document.addEventListener("mousedown", handlePointerDown);
     document.addEventListener("touchstart", handlePointerDown);
@@ -178,8 +200,6 @@ export const StructurePickerStrip = memo(() => {
     }
     return ordered;
   }, [favorites, structureEntityId, structuresWithMetadata]);
-
-  const showOverflow = structuresWithMetadata.length > 1 + favoritePills.length;
 
   // Nothing to render yet (fresh load, no structures synced).
   if (structuresWithMetadata.length === 0) {
@@ -233,29 +253,23 @@ export const StructurePickerStrip = memo(() => {
         />
       ))}
 
-      {showOverflow && (
-        <Pill
-          tone="default"
-          active={isPopoverOpen}
-          onClick={() => setIsPopoverOpen((prev) => !prev)}
-          aria-label="Open structure picker"
-          title="More structures"
-          className="px-2 py-1"
-        >
-          <MoreHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
-        </Pill>
-      )}
-
-      {isPopoverOpen && (
-        <div className="absolute left-0 top-full z-50 mt-2 w-[360px]">
-          <StructurePickerPopover
-            structures={structuresWithMetadata}
-            selectedEntityId={structureEntityId}
-            onSelectStructure={handleSelectStructure}
-            onToggleFavorite={toggleFavorite}
-          />
-        </div>
-      )}
+      {isPopoverOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={popoverRef}
+            className="fixed w-[360px] pointer-events-auto"
+            style={{ top: popoverPosition.top, left: popoverPosition.left, zIndex: 60 }}
+          >
+            <StructurePickerPopover
+              structures={structuresWithMetadata}
+              selectedEntityId={structureEntityId}
+              onSelectStructure={handleSelectStructure}
+              onToggleFavorite={toggleFavorite}
+            />
+          </div>,
+          document.body,
+        )}
     </div>
   );
 });

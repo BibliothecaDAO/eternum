@@ -213,10 +213,10 @@ export const GameEndTimer = memo(() => {
     <div
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="self-center text-center px-2 py-1 flex gap-2 items-center border-l border-gold/20"
+      className="pointer-events-auto self-center"
     >
       <div
-        className={`relative flex items-center gap-2 px-2 py-1 rounded border transition-all duration-300 ${containerToneClass}`}
+        className={`relative flex items-center gap-2 rounded-full border px-3 py-1 backdrop-blur-sm transition-all duration-300 ${containerToneClass}`}
         style={dynamicStyle}
       >
         <div className="relative flex h-6 w-6 items-center justify-center">

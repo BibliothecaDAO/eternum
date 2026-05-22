@@ -1,8 +1,9 @@
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
+import { useLandingLeaderboardStore } from "@/services/leaderboard/use-landing-leaderboard-store";
 import { BuildingThumbs } from "@/ui/config";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
 import { NetworkStatusPill } from "@/ui/features/world/components/network-status-pill";
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
@@ -14,6 +15,17 @@ import { Has } from "@dojoengine/recs";
 
 import { useCallback, useMemo } from "react";
 
+const PILL_SURFACE =
+  "pointer-events-auto rounded-full border border-gold/30 bg-black/55 backdrop-blur-sm shadow-lg shadow-black/40";
+
+const formatPoints = (points: number | null | undefined): string => {
+  if (points === null || points === undefined) return "0";
+  const rounded = Math.round(points);
+  return Number.isFinite(rounded) ? rounded.toLocaleString() : "0";
+};
+
+const normalizeAddress = (value: string) => value.trim().toLowerCase();
+
 export const SecondaryMenuItems = () => {
   const {
     setup: {
@@ -21,9 +33,8 @@ export const SecondaryMenuItems = () => {
         events: { SeasonEnded },
       },
     },
+    account: { account },
   } = useDojo();
-
-  const { connector } = useAccountStore((state) => state);
 
   const hasSeasonEnded = useEntityQuery([Has(SeasonEnded)]).length > 0;
 
@@ -31,7 +42,6 @@ export const SecondaryMenuItems = () => {
 
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const structureEntityId = useUIStore((state) => state.structureEntityId);
 
   // Transaction status for the network button indicator
   const txTransactions = useTransactionStore((state) => state.transactions);
@@ -58,20 +68,49 @@ export const SecondaryMenuItems = () => {
     };
   }, [txTransactions, txStuckThresholdMs]);
 
-  const handleTrophyClick = useCallback(() => {
-    if (!connector?.controller) {
-      console.error("Connector not initialized");
+  // Pull cached leaderboard data populated by TopHeader's auto-fetch.
+  const leaderboardEntries = useLandingLeaderboardStore((state) => state.entries);
+  const playerEntries = useLandingLeaderboardStore((state) => state.playerEntries);
+  const rankPill = useMemo(() => {
+    if (!account?.address) return null;
+    const normalized = normalizeAddress(account.address);
+    const entry =
+      playerEntries[normalized]?.data ??
+      leaderboardEntries.find((e) => normalizeAddress(e.address) === normalized) ??
+      null;
+    if (!entry || entry.rank === undefined || entry.rank === null) return null;
+    const rank = Number(entry.rank);
+    const points = Number(entry.points ?? 0);
+    // Match the gating in resolveTopHeaderPlayerStatus: only surface a rank suffix
+    // when the player is meaningfully ranked.
+    if (!Number.isFinite(rank)) return null;
+    if (rank > 500 && points <= 0) return null;
+    return { rank, points };
+  }, [account?.address, leaderboardEntries, playerEntries]);
 
-      return;
-    }
-    connector.controller.openProfile("trophies");
-  }, [connector]);
+  const handleOpenLeaderboard = useCallback(() => togglePopup(leaderboard), [togglePopup]);
 
-  // For leaderboard + (optionally) rewards, preserve current logic
-  const leaderboardButtons = useMemo(() => {
-    const buttons = [
-      {
-        button: (
+  return (
+    <div className="flex h-full ml-auto">
+      <div className="top-right-navigation-selector self-center flex items-center space-x-2 mr-1">
+        {/* Rank pill — replaces the dedicated Leaderboard CircleButton. Click opens the leaderboard popup. */}
+        {rankPill ? (
+          <button
+            type="button"
+            onClick={handleOpenLeaderboard}
+            className={cn(
+              PILL_SURFACE,
+              "flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-gold transition hover:bg-gold/15",
+              isPopupOpen(leaderboard) && "border-gold/60 bg-gold/15",
+            )}
+            aria-label="Open leaderboard"
+            title="Open leaderboard"
+          >
+            <span>#{rankPill.rank}</span>
+            <span className="text-gold/50">·</span>
+            <span>{formatPoints(rankPill.points)} pts</span>
+          </button>
+        ) : (
           <CircleButton
             className="social-selector border-none"
             tooltipLocation="bottom"
@@ -79,14 +118,12 @@ export const SecondaryMenuItems = () => {
             label={leaderboard}
             active={isPopupOpen(leaderboard)}
             size="md"
-            onClick={() => togglePopup(leaderboard)}
+            onClick={handleOpenLeaderboard}
           />
-        ),
-      },
-    ];
-    if (hasSeasonEnded) {
-      buttons.push({
-        button: (
+        )}
+
+        {/* End-of-season rewards stay as a CircleButton next to the rank pill while the season has ended. */}
+        {hasSeasonEnded && (
           <CircleButton
             tooltipLocation="bottom"
             image={BuildingThumbs.rewards}
@@ -96,20 +133,8 @@ export const SecondaryMenuItems = () => {
             className="border-none"
             onClick={() => togglePopup(rewards)}
           />
-        ),
-      });
-    }
-    return buttons;
-  }, [structureEntityId, hasSeasonEnded, isPopupOpen, togglePopup]);
+        )}
 
-  return (
-    <div className="flex h-full ml-auto">
-      <div className="top-right-navigation-selector self-center flex space-x-2 mr-1">
-        {/* Leaderboard/Rewards */}
-        {leaderboardButtons.map((a, index) => (
-          <div key={index}>{a.button}</div>
-        ))}
-        {/* Shortcuts moved into the Settings popover to reduce top-bar density. */}
         {/* Latest Features — render only while there are unseen features. */}
         {unseenFeaturesCount > 0 && (
           <CircleButton
@@ -127,7 +152,8 @@ export const SecondaryMenuItems = () => {
             }}
           />
         )}
-        {/* Settings */}
+
+        {/* Settings — now hosts the Controller (wallet) panel too. */}
         <CircleButton
           className="settings-selector border-none"
           tooltipLocation="bottom"
@@ -137,10 +163,12 @@ export const SecondaryMenuItems = () => {
           size="md"
           onClick={() => togglePopup(settings)}
         />
+
         {/* Connection health indicator - only visible when unhealthy */}
         <div className="self-center">
           <NetworkStatusPill onRetry={triggerConnectionForceReconnect} />
         </div>
+
         {/* Transactions — render only when there is an active signal (pending, stuck, or recent error). */}
         {txStatus.status !== "idle" && (
           <div className="relative">
@@ -172,9 +200,11 @@ export const SecondaryMenuItems = () => {
             />
           </div>
         )}
-        {/* Home moved into the Settings popover to reduce top-bar density. */}
-        {/* Controller button */}
-        <Controller />
+
+        {/* Controller (Cartridge wallet) — only surfaced here while the player is
+            logged out, so the Login button stays discoverable. Once connected,
+            the Controller lives inside the Settings popover. */}
+        {!account && <Controller />}
       </div>
     </div>
   );
