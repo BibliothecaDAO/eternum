@@ -4148,6 +4148,8 @@ export default class WorldmapScene extends WarpTravel {
     if (!didRefresh) {
       throw new Error("World map did not finish its initial interactive refresh.");
     }
+
+    this.reconcileHoverLabels();
   }
 
   private commitCurrentChunkAuthority(chunkKey: string): void {

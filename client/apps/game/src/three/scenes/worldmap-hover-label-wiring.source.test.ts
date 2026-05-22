@@ -73,6 +73,22 @@ describe("worldmap hover label wiring", () => {
     expect(attachWorldmapManagerLabels).not.toContain("showLabels()");
   });
 
+  it("reconciles current hover after initial chunk refresh hydrates managers", () => {
+    const source = readWorldmapSource();
+    const refreshWarpTravelScene = extractSourceBetween(
+      source,
+      "private async refreshWarpTravelScene()",
+      "private commitCurrentChunkAuthority(",
+    );
+
+    const refreshPos = refreshWarpTravelScene.indexOf("await this.updateVisibleChunks(true)");
+    const reconcilePos = refreshWarpTravelScene.indexOf("this.reconcileHoverLabels()");
+
+    expect(refreshPos).toBeGreaterThan(-1);
+    expect(reconcilePos).toBeGreaterThan(-1);
+    expect(reconcilePos).toBeGreaterThan(refreshPos);
+  });
+
   it("clears active hover state before detaching manager labels", () => {
     const source = readWorldmapSource();
     const detachWorldmapManagerLabels = extractSourceBetween(
