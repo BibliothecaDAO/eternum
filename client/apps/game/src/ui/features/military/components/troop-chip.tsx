@@ -55,33 +55,31 @@ export const TroopChip = ({
   return (
     <div className={`relative w-full ${className}`}>
       <div
-        className={`${currentSize.padding} bg-gold/10 h-full flex ${
+        className={`${currentSize.padding} bg-gold/10 h-full flex items-center ${
           direction === "row" ? "flex-row" : "flex-col"
-        } justify-between ${currentSize.gap} border border-gold/10`}
+        } ${currentSize.gap} border border-gold/10`}
       >
-        <div className={`flex items-center ${currentSize.gap}`}>
-          <ResourceIcon
-            withTooltip={false}
-            resource={
-              resources.find((r) => r.id === getTroopResourceId(troops.category as TroopType, TroopTier.T1))?.trait ||
-              ""
-            }
-            size={size}
-          />
-          <div
-            className={`${
-              Number(troops.count || 0) === 0 ? "text-gold" : negative ? "text-red" : "text-green"
-            } ${currentSize.text} self-center`}
-          >
-            {Number(troops.count || 0) === 0 ? "" : negative ? "-" : ""}
-            {currencyFormat(Number(troops.count || 0), 0)}
-          </div>
-        </div>
         <span
           className={`${currentSize.tierPadding} rounded ${currentSize.tierText} font-bold border relative ${getTierStyle(troops.tier)}`}
         >
           <span className="relative z-10">{troops.tier}</span>
         </span>
+        <ResourceIcon
+          withTooltip={false}
+          resource={
+            resources.find((r) => r.id === getTroopResourceId(troops.category as TroopType, TroopTier.T1))?.trait ||
+            ""
+          }
+          size={size}
+        />
+        <div
+          className={`${
+            Number(troops.count || 0) === 0 ? "text-gold" : negative ? "text-red" : "text-green"
+          } ${currentSize.text} self-center`}
+        >
+          {Number(troops.count || 0) === 0 ? "" : negative ? "-" : ""}
+          {currencyFormat(Number(troops.count || 0), 0)}
+        </div>
       </div>
     </div>
   );
