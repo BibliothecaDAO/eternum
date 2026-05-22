@@ -63,6 +63,12 @@ const DEFAULT_ENVIRONMENT_INTENSITY: Record<GraphicsSettings, number> = {
   [GraphicsSettings.LOW]: 0.25,
 };
 
+const WEATHER_POST_PROCESSING_LIMITS = {
+  brightnessReduction: 0.06,
+  saturationReduction: 0.18,
+  vignetteIncrease: 0.1,
+} as const;
+
 export interface RendererEffectsRuntime {
   applyEnvironment(): Promise<void>;
   applyQualityFeatures(features: QualityFeatures): void;
@@ -163,10 +169,19 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
       this.weatherBaseValuesInitialized = true;
     }
 
-    const saturationReduction = weatherState.intensity * 0.35 + weatherState.stormIntensity * 0.15;
+    const saturationReduction = Math.min(
+      WEATHER_POST_PROCESSING_LIMITS.saturationReduction,
+      weatherState.intensity * 0.35 + weatherState.stormIntensity * 0.15,
+    );
     const contrastBoost = weatherState.stormIntensity * 0.15;
-    const brightnessReduction = weatherState.intensity * 0.05;
-    const vignetteIncrease = weatherState.stormIntensity * 0.2;
+    const brightnessReduction = Math.min(
+      WEATHER_POST_PROCESSING_LIMITS.brightnessReduction,
+      weatherState.intensity * 0.05,
+    );
+    const vignetteIncrease = Math.min(
+      WEATHER_POST_PROCESSING_LIMITS.vignetteIncrease,
+      weatherState.stormIntensity * 0.2,
+    );
 
     this.postProcessController?.setColorGrade({
       brightness: this.basePostProcessingValues.brightness - brightnessReduction,

@@ -6,8 +6,15 @@ import { WeatherManager, type WeatherState } from "@/three/managers/weather-mana
 import { SceneManager } from "@/three/scene-manager";
 import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
 import { GUIManager } from "@/three/utils/";
+import { clampCycleProgress } from "@/utils/cycle-progress";
 import { AmbientLight, HemisphereLight, OrthographicCamera, Scene, Vector3 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+
+type GUIController = {
+  updateDisplay?: () => void;
+};
+
+const DEBUG_TIME_DISPLAY_SYNC_EPSILON = 0.05;
 
 export default class HUDScene {
   private scene: Scene;
@@ -25,6 +32,12 @@ export default class HUDScene {
   private navigationTargetUnsubscribe: (() => void) | null = null;
   private cycleProgress: number = 0;
   private particleSpawnCenter: Vector3 = new Vector3();
+  private readonly debugTimeControls = {
+    overrideTime: false,
+    dayProgress: 0,
+  };
+  private debugTimeOverrideController: GUIController | null = null;
+  private debugTimeProgressController: GUIController | null = null;
 
   constructor(sceneManager: SceneManager, controls: MapControls) {
     this.scene = new Scene();
@@ -57,6 +70,7 @@ export default class HUDScene {
 
     this.ambienceManager = new AmbienceManager();
     this.ambienceManager.addGUIControls(this.GUIFolder);
+    this.addDebugTimeControls();
 
     // Initialize ambient particle system (dust motes, fireflies)
     this.ambientParticles = new AmbientParticleSystem(this.scene);
@@ -117,6 +131,60 @@ export default class HUDScene {
     this.GUIFolder.add(this.hemisphereLight.position, "z", -10, 10).name("Hemisphere Light Z");
   }
 
+  private addDebugTimeControls() {
+    const timeFolder = this.GUIFolder.addFolder("Time Scrubber");
+
+    this.debugTimeOverrideController = timeFolder
+      .add(this.debugTimeControls, "overrideTime")
+      .name("Override Time")
+      .onChange((enabled: boolean) => this.setDebugTimeOverride(enabled));
+
+    this.debugTimeProgressController = timeFolder
+      .add(this.debugTimeControls, "dayProgress", 0, 100, 0.1)
+      .name("Day Progress")
+      .onChange((value: number) => this.previewDebugTime(value));
+
+    timeFolder.close();
+  }
+
+  private setDebugTimeOverride(enabled: boolean) {
+    this.debugTimeControls.overrideTime = enabled;
+
+    if (enabled) {
+      this.applyDebugCycleProgress(this.debugTimeControls.dayProgress);
+      return;
+    }
+
+    useUIStore.getState().setDebugCycleProgressOverride(null);
+  }
+
+  private previewDebugTime(value: number) {
+    const progress = clampCycleProgress(value);
+    this.debugTimeControls.dayProgress = progress;
+    this.debugTimeControls.overrideTime = true;
+    this.debugTimeOverrideController?.updateDisplay?.();
+    this.applyDebugCycleProgress(progress);
+  }
+
+  private applyDebugCycleProgress(progress: number) {
+    this.cycleProgress = progress;
+    useUIStore.getState().setDebugCycleProgressOverride(progress);
+  }
+
+  private syncDebugTimeControls(cycleProgress: number) {
+    if (this.debugTimeControls.overrideTime) {
+      return;
+    }
+
+    const progress = clampCycleProgress(cycleProgress);
+    if (Math.abs(this.debugTimeControls.dayProgress - progress) < DEBUG_TIME_DISPLAY_SYNC_EPSILON) {
+      return;
+    }
+
+    this.debugTimeControls.dayProgress = progress;
+    this.debugTimeProgressController?.updateDisplay?.();
+  }
+
   getScene(): Scene {
     return this.scene;
   }
@@ -146,6 +214,7 @@ export default class HUDScene {
     // Track cycle progress for ambience
     if (cycleProgress !== undefined) {
       this.cycleProgress = cycleProgress;
+      this.syncDebugTimeControls(cycleProgress);
     }
 
     // Get current weather state
@@ -204,6 +273,8 @@ export default class HUDScene {
     if (this.navigator && "destroy" in this.navigator && typeof (this.navigator as any).destroy === "function") {
       (this.navigator as any).destroy();
     }
+
+    useUIStore.getState().setDebugCycleProgressOverride(null);
 
     // Clean up rain effect resources
     if (this.rainEffect) {

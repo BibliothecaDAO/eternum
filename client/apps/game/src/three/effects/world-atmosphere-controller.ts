@@ -24,7 +24,7 @@ interface TimeOfDayColors {
   fogFar: number;
 }
 
-interface DayNightParams {
+interface WorldAtmosphereParams {
   enabled: boolean;
   cycleSpeed: number; // Multiplier for testing (1.0 = normal)
   sunHeight: number;
@@ -35,7 +35,21 @@ interface DayNightParams {
   progressSmoothing: number; // How quickly progress eases toward target (0-1)
 }
 
-export class DayNightCycleManager {
+const VISIBILITY_FLOORS = {
+  ambientIntensity: 0.48,
+  hemisphereIntensity: 0.95,
+  sunIntensity: 1.55,
+  moonRimIntensity: 0.26,
+} as const;
+
+const WEATHER_LIMITS = {
+  maxWeatherDimming: 0.24,
+  maxFogTintBlend: 0.38,
+  maxHaze: 0.45,
+  maxKeyLightDimming: 0.2,
+} as const;
+
+export class WorldAtmosphereController {
   private scene: Scene;
   private directionalLight: DirectionalLight;
   private moonRimLight: DirectionalLight;
@@ -43,7 +57,7 @@ export class DayNightCycleManager {
   private hemisphereLight: HemisphereLight;
   private ambientLight: AmbientLight;
   private fog: Fog;
-  public params: DayNightParams = {
+  public params: WorldAtmosphereParams = {
     enabled: true,
     cycleSpeed: 1.0,
     sunHeight: 12,
@@ -56,14 +70,14 @@ export class DayNightCycleManager {
 
   // Current color state (for smooth transitions)
   private currentColors: TimeOfDayColors = {
-    skyColor: 0x24153c,
+    skyColor: 0x344562,
     groundColor: 0x12081f,
     sunColor: 0x7b5fd6,
     ambientColor: 0x38245d,
-    fogColor: 0x271847,
-    hemisphereIntensity: 0.6,
-    sunIntensity: 1.4,
-    ambientIntensity: 0.28,
+    fogColor: 0x536b8c,
+    hemisphereIntensity: 1.05,
+    sunIntensity: 1.85,
+    ambientIntensity: 0.56,
     fogNear: 15,
     fogFar: 45,
   };
@@ -80,10 +94,13 @@ export class DayNightCycleManager {
   private readonly moonRimPosition: Vector3 = new Vector3();
   private readonly stormTint: Color = new Color(0x606880);
   private readonly lastUpdateSkyColor: Color = new Color();
+  private readonly lastUpdateFogColor: Color = new Color();
   private lastUpdateDirIntensity: number = 0;
   private lastUpdateHemiIntensity: number = 0;
   private lastUpdateAmbientIntensity: number = 0;
   private lastUpdateMoonRimIntensity: number = 0;
+  private lastWeatherAdjustedHemiIntensity: number = 0;
+  private lastWeatherAdjustedAmbientIntensity: number = 0;
   private currentAngle: number = 0; // Track smoothed angular progress
   private isProgressInitialized: boolean = false;
   private readonly fullRotation: number = Math.PI * 2;
@@ -108,14 +125,14 @@ export class DayNightCycleManager {
   private readonly timeOfDayPresets: { [key: string]: TimeOfDayColors } = {
     deepNight: {
       // 0, 100
-      skyColor: 0x3a2758,
+      skyColor: 0x344562,
       groundColor: 0x1f1233,
       sunColor: 0x9b7ee8,
       ambientColor: 0x5d4588,
-      fogColor: 0x433164,
-      hemisphereIntensity: 1.0,
-      sunIntensity: 2.2,
-      ambientIntensity: 0.52,
+      fogColor: 0x536b8c,
+      hemisphereIntensity: 1.05,
+      sunIntensity: 1.85,
+      ambientIntensity: 0.56,
       fogNear: 15,
       fogFar: 56,
     },
@@ -210,7 +227,7 @@ export class DayNightCycleManager {
   }
 
   /**
-   * Update the day/night cycle based on game cycle progress (0-100)
+   * Update the world atmosphere based on game cycle progress (0-100)
    * @param cycleProgress - Game cycle progress (0-100)
    * @param cameraTarget - Optional camera target position to offset sun position
    */
@@ -243,9 +260,12 @@ export class DayNightCycleManager {
 
     // Store baseline values so applyWeatherModulation can darken non-destructively
     this.lastUpdateSkyColor.copy(this.scene.background as Color);
+    this.lastUpdateFogColor.copy(this.fog.color);
     this.lastUpdateDirIntensity = this.directionalLight.intensity;
     this.lastUpdateHemiIntensity = this.hemisphereLight.intensity;
     this.lastUpdateAmbientIntensity = this.ambientLight.intensity;
+    this.lastWeatherAdjustedHemiIntensity = this.lastUpdateHemiIntensity;
+    this.lastWeatherAdjustedAmbientIntensity = this.lastUpdateAmbientIntensity;
 
     // Update sun position (relative to camera target if provided)
     this.updateSunPosition(smoothedProgress, cameraTarget);
@@ -343,11 +363,11 @@ export class DayNightCycleManager {
 
     return {
       ...colors,
-      skyColor: this.applyCoolTint(colors.skyColor, 0x6d84c8, tintStrength * 1.1, saturationScale),
+      skyColor: colors.skyColor,
       groundColor: this.applyCoolTint(colors.groundColor, 0x4f638f, tintStrength * 0.75, saturationScale * 0.95),
       sunColor: this.applyCoolTint(colors.sunColor, 0xc9d8ff, tintStrength * 0.85, saturationScale),
       ambientColor: this.applyCoolTint(colors.ambientColor, 0x8099d9, tintStrength, saturationScale),
-      fogColor: this.applyCoolTint(colors.fogColor, 0x6a82bd, tintStrength * 1.15, saturationScale * 0.9),
+      fogColor: colors.fogColor,
     };
   }
 
@@ -401,24 +421,35 @@ export class DayNightCycleManager {
    * Update all lighting based on interpolated time colors
    */
   private updateLighting(timeColors: TimeOfDayColors): void {
+    const readableTimeColors = this.applyVisibilityFloors(timeColors);
+
     // Update scene background (sky)
-    (this.scene.background as Color).setHex(timeColors.skyColor);
+    (this.scene.background as Color).setHex(readableTimeColors.skyColor);
 
     // Update directional light (sun/moon)
-    this.directionalLight.color.setHex(timeColors.sunColor);
-    this.directionalLight.intensity = timeColors.sunIntensity;
+    this.directionalLight.color.setHex(readableTimeColors.sunColor);
+    this.directionalLight.intensity = readableTimeColors.sunIntensity;
 
     // Update hemisphere light
-    this.hemisphereLight.color.setHex(timeColors.skyColor);
-    this.hemisphereLight.groundColor.setHex(timeColors.groundColor);
-    this.hemisphereLight.intensity = timeColors.hemisphereIntensity;
+    this.hemisphereLight.color.setHex(readableTimeColors.skyColor);
+    this.hemisphereLight.groundColor.setHex(readableTimeColors.groundColor);
+    this.hemisphereLight.intensity = readableTimeColors.hemisphereIntensity;
 
     // Update ambient light
-    this.ambientLight.color.setHex(timeColors.ambientColor);
-    this.ambientLight.intensity = timeColors.ambientIntensity;
+    this.ambientLight.color.setHex(readableTimeColors.ambientColor);
+    this.ambientLight.intensity = readableTimeColors.ambientIntensity;
 
     // Update fog
-    this.fog.color.setHex(timeColors.fogColor);
+    this.fog.color.setHex(readableTimeColors.fogColor);
+  }
+
+  private applyVisibilityFloors(timeColors: TimeOfDayColors): TimeOfDayColors {
+    return {
+      ...timeColors,
+      ambientIntensity: Math.max(timeColors.ambientIntensity, VISIBILITY_FLOORS.ambientIntensity),
+      hemisphereIntensity: Math.max(timeColors.hemisphereIntensity, VISIBILITY_FLOORS.hemisphereIntensity),
+      sunIntensity: Math.max(timeColors.sunIntensity, VISIBILITY_FLOORS.sunIntensity),
+    };
   }
 
   /**
@@ -481,7 +512,10 @@ export class DayNightCycleManager {
       return;
     }
 
-    const rimIntensity = MathUtils.lerp(0.3, 0.7, nightToneFactor);
+    const rimIntensity = Math.max(
+      VISIBILITY_FLOORS.moonRimIntensity,
+      MathUtils.lerp(VISIBILITY_FLOORS.moonRimIntensity, 0.56, nightToneFactor),
+    );
     this.moonRimLight.intensity = rimIntensity;
     this.lastUpdateMoonRimIntensity = rimIntensity;
     this.moonRimLight.color.setHex(this.lerpColor(0x88a9ff, 0xccdbff, nightToneFactor));
@@ -509,39 +543,55 @@ export class DayNightCycleManager {
 
   /**
    * Apply weather modulation to lighting
-   * Call this after update() to overlay weather effects on the day/night cycle
+   * Call this after update() to overlay weather effects on the current atmosphere
    *
    * @param skyDarkness - How much to darken the sky (0-1)
    * @param fogDensity - How much to increase fog density (0-1)
    * @param sunOcclusion - How much clouds block the sun (0-1)
+   * @param ambientBoost - How much weather should brighten shadows (0-1)
    */
-  applyWeatherModulation(skyDarkness: number, fogDensity: number, sunOcclusion: number = 0): void {
+  applyWeatherModulation(skyDarkness: number, fogDensity: number, sunOcclusion: number = 0, ambientBoost = 0): void {
     if (!this.params.enabled) return;
 
-    // Darken sky color based on weather — apply to baseline from update(), not current value
-    if (skyDarkness > 0) {
-      const darkenFactor = 1 - skyDarkness * 0.5; // Max 50% darkening
-      (this.scene.background as Color).copy(this.lastUpdateSkyColor).multiplyScalar(darkenFactor);
+    const haze = MathUtils.clamp(fogDensity, 0, WEATHER_LIMITS.maxHaze);
+    const keyLightDimming = MathUtils.clamp(sunOcclusion, 0, 1) * WEATHER_LIMITS.maxKeyLightDimming;
+    const shadowLift = MathUtils.clamp(ambientBoost, 0, 1);
+
+    const weatherDimming = MathUtils.clamp(skyDarkness, 0, 1) * WEATHER_LIMITS.maxWeatherDimming;
+    const darkenFactor = 1 - weatherDimming;
+    (this.scene.background as Color).copy(this.lastUpdateSkyColor).multiplyScalar(darkenFactor);
+
+    const reductionFactor = 1 - keyLightDimming;
+    this.directionalLight.intensity = Math.max(
+      VISIBILITY_FLOORS.sunIntensity,
+      this.lastUpdateDirIntensity * reductionFactor,
+    );
+    this.hemisphereLight.intensity = Math.max(
+      VISIBILITY_FLOORS.hemisphereIntensity,
+      this.lastUpdateHemiIntensity + shadowLift,
+    );
+    this.ambientLight.intensity = Math.max(
+      VISIBILITY_FLOORS.ambientIntensity,
+      this.lastUpdateAmbientIntensity + shadowLift,
+    );
+    this.lastWeatherAdjustedHemiIntensity = this.hemisphereLight.intensity;
+    this.lastWeatherAdjustedAmbientIntensity = this.ambientLight.intensity;
+
+    if (this.lastUpdateMoonRimIntensity > 0) {
+      this.moonRimLight.intensity = Math.max(
+        VISIBILITY_FLOORS.moonRimIntensity,
+        this.lastUpdateMoonRimIntensity * reductionFactor,
+      );
+    } else {
+      this.moonRimLight.intensity = 0;
     }
 
-    // Reduce sun intensity (clouds blocking light) — apply to baseline from update()
-    if (sunOcclusion > 0) {
-      const reductionFactor = 1 - sunOcclusion * 0.4; // Max 40% reduction
-      this.directionalLight.intensity = this.lastUpdateDirIntensity * reductionFactor;
-      // Also soften shadows by reducing contrast
-      this.hemisphereLight.intensity = this.lastUpdateHemiIntensity * (1 + sunOcclusion * 0.3); // Increase ambient to fill shadows
-      this.moonRimLight.intensity = this.lastUpdateMoonRimIntensity * reductionFactor;
-    }
-
-    // Increase fog density for storm atmosphere
-    if (fogDensity > 0) {
-      // Tint fog slightly gray-blue during storms
-      this.fog.color.lerp(this.stormTint, fogDensity * 0.3);
-    }
+    const fogTintBlend = Math.min(haze, WEATHER_LIMITS.maxFogTintBlend);
+    this.fog.color.copy(this.lastUpdateFogColor).lerp(this.stormTint, fogTintBlend);
   }
 
   /**
-   * Enable or disable the day/night cycle
+   * Enable or disable the atmosphere controller
    */
   setEnabled(enabled: boolean): void {
     this.params.enabled = enabled;
@@ -572,25 +622,27 @@ export class DayNightCycleManager {
 
     this.fog.color.copy(this.originalLightingState.fogColor);
     this.moonRimLight.intensity = 0;
+    this.lastWeatherAdjustedHemiIntensity = this.hemisphereLight.intensity;
+    this.lastWeatherAdjustedAmbientIntensity = this.ambientLight.intensity;
     this.isProgressInitialized = false;
   }
 
   /**
-   * Return the ambient-light intensity set during the most recent updateLighting() call.
-   * Storm-flicker code should read this instead of the live light value to avoid
-   * compounding drift.
+   * Return the ambient-light intensity from the current atmosphere frame.
+   * Storm-flicker code reads this instead of the live light value so weather
+   * boosts are preserved without compounding drift.
    */
   getLastAmbientIntensity(): number {
-    return this.lastUpdateAmbientIntensity;
+    return this.lastWeatherAdjustedAmbientIntensity;
   }
 
   /**
-   * Return the hemisphere-light intensity set during the most recent updateLighting() call.
-   * Storm-flicker code should read this instead of the live light value to avoid
-   * compounding drift.
+   * Return the hemisphere-light intensity from the current atmosphere frame.
+   * Storm-flicker code reads this instead of the live light value so weather
+   * boosts are preserved without compounding drift.
    */
   getLastHemisphereIntensity(): number {
-    return this.lastUpdateHemiIntensity;
+    return this.lastWeatherAdjustedHemiIntensity;
   }
 
   /**
@@ -614,35 +666,35 @@ export class DayNightCycleManager {
   }
 
   /**
-   * Add GUI controls for day/night cycle
+   * Add GUI controls for world atmosphere
    */
   addGUIControls(guiFolder: GUI): void {
-    const dayNightFolder = guiFolder.addFolder("Day/Night Cycle");
+    const atmosphereFolder = guiFolder.addFolder("World Atmosphere");
 
-    dayNightFolder
+    atmosphereFolder
       .add(this.params, "enabled")
-      .name("Enable Day/Night")
+      .name("Enable Atmosphere")
       .onChange((value: boolean) => {
         this.setEnabled(value);
       });
 
-    dayNightFolder.add(this.params, "cycleSpeed", 0.1, 10, 0.1).name("Cycle Speed");
+    atmosphereFolder.add(this.params, "cycleSpeed", 0.1, 10, 0.1).name("Cycle Speed");
 
-    dayNightFolder.add(this.params, "transitionSmoothness", 0, 1, 0.05).name("Transition Smoothness");
+    atmosphereFolder.add(this.params, "transitionSmoothness", 0, 1, 0.05).name("Transition Smoothness");
 
-    dayNightFolder.add(this.params, "colorTransitionSpeed", 0.01, 1.0, 0.01).name("Color Transition Speed");
+    atmosphereFolder.add(this.params, "colorTransitionSpeed", 0.01, 1.0, 0.01).name("Color Transition Speed");
 
-    dayNightFolder.add(this.params, "sunPositionEasing", 0.01, 1.0, 0.01).name("Sun Position Easing");
+    atmosphereFolder.add(this.params, "sunPositionEasing", 0.01, 1.0, 0.01).name("Sun Position Easing");
 
-    dayNightFolder.add(this.params, "sunHeight", 5, 20, 0.5).name("Sun Height");
+    atmosphereFolder.add(this.params, "sunHeight", 5, 20, 0.5).name("Sun Height");
 
-    dayNightFolder.add(this.params, "sunDistance", 10, 30, 1).name("Sun Distance");
+    atmosphereFolder.add(this.params, "sunDistance", 10, 30, 1).name("Sun Distance");
 
-    dayNightFolder.add(this.params, "progressSmoothing", 0.001, 0.5, 0.001).name("Progress Smoothing");
+    atmosphereFolder.add(this.params, "progressSmoothing", 0.001, 0.5, 0.001).name("Progress Smoothing");
 
     // Add manual time control for testing
     const timeControl = { manualProgress: 0 };
-    dayNightFolder
+    atmosphereFolder
       .add(timeControl, "manualProgress", 0, 100, 1)
       .name("Manual Time")
       .onChange((value: number) => {
@@ -652,7 +704,7 @@ export class DayNightCycleManager {
         this.update(value);
       });
 
-    dayNightFolder.close();
+    atmosphereFolder.close();
   }
 
   /**
@@ -660,7 +712,7 @@ export class DayNightCycleManager {
    */
   dispose(): void {
     if (this.isDisposed) {
-      console.warn("DayNightCycleManager already disposed, skipping cleanup");
+      console.warn("WorldAtmosphereController already disposed, skipping cleanup");
       return;
     }
     this.isDisposed = true;

@@ -23,6 +23,22 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-21",
+    title: "Debug Time Scrubber",
+    description:
+      "Added a debug HUD control for previewing world lighting at any point in the day cycle without waiting for live time.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-21",
+    title: "Readable World Atmosphere",
+    description:
+      "Improved world lighting so nights and storms stay readable with brighter blue night tones, stronger fill light, and capped weather darkness.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-21",
     title: "Population Build Guard",
     description:
       "Fixed construction checks so pending buildings update population limits immediately, preventing extra builds while transactions are still in flight.",

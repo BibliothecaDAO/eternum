@@ -1,5 +1,6 @@
 import { BattleViewInfo, LeftView } from "@/types";
 import { ContextMenuState } from "@/types/context-menu";
+import { clampCycleProgress, type DebugCycleProgressOverride } from "@/utils/cycle-progress";
 import { SelectableArmy } from "@bibliothecadao/eternum";
 import { BiomeType, ContractAddress, Direction } from "@bibliothecadao/types";
 import { create } from "zustand";
@@ -178,6 +179,8 @@ interface UIStore {
   // cycle timing for storm effects
   cycleProgress: number;
   setCycleProgress: (progress: number) => void;
+  debugCycleProgressOverride: DebugCycleProgressOverride;
+  setDebugCycleProgressOverride: (progress: DebugCycleProgressOverride) => void;
   cycleTime: number;
   setCycleTime: (time: number) => void;
   // map zoom controls
@@ -334,7 +337,17 @@ export const useUIStore = create(
     setSelectableArmies: (armies: SelectableArmy[]) => set({ selectableArmies: armies }),
     // cycle timing for storm effects
     cycleProgress: 0,
-    setCycleProgress: (progress: number) => set({ cycleProgress: progress }),
+    setCycleProgress: (progress: number) => set({ cycleProgress: clampCycleProgress(progress) }),
+    debugCycleProgressOverride: null,
+    setDebugCycleProgressOverride: (progress: DebugCycleProgressOverride) => {
+      if (progress === null) {
+        set({ debugCycleProgressOverride: null });
+        return;
+      }
+
+      const clampedProgress = clampCycleProgress(progress);
+      set({ cycleProgress: clampedProgress, debugCycleProgressOverride: clampedProgress });
+    },
     cycleTime: 0,
     setCycleTime: (time: number) => set({ cycleTime: time }),
     // map zoom controls - disabled by default for better UX

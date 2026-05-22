@@ -1,6 +1,6 @@
 import { AmbientLight, Color, DirectionalLight, Fog, HemisphereLight, Scene, Vector3 } from "three";
 import { describe, expect, it, vi } from "vitest";
-import { DayNightCycleManager } from "./day-night-cycle";
+import { WorldAtmosphereController } from "./world-atmosphere-controller";
 
 function createFixture() {
   const scene = new Scene();
@@ -14,7 +14,7 @@ function createFixture() {
   const ambientLight = new AmbientLight(0xcccccc, 0.5);
   const fog = new Fog(0x222222, 5, 50);
 
-  const manager = new DayNightCycleManager(scene, directionalLight, hemisphereLight, ambientLight, fog);
+  const manager = new WorldAtmosphereController(scene, directionalLight, hemisphereLight, ambientLight, fog);
   manager.params.progressSmoothing = 1;
   manager.params.sunPositionEasing = 1;
   manager.params.colorTransitionSpeed = 1;
@@ -31,7 +31,56 @@ function findMoonRimLight(scene: Scene, mainDirectionalLight: DirectionalLight):
   );
 }
 
-describe("DayNightCycleManager", () => {
+describe("WorldAtmosphereController", () => {
+  it("uses the readability-first night preset", () => {
+    const fixture = createFixture();
+    const moonRimLight = findMoonRimLight(fixture.scene, fixture.directionalLight);
+
+    fixture.manager.update(0);
+
+    expect((fixture.scene.background as Color).getHex()).toBe(0x344562);
+    expect(fixture.fog.color.getHex()).toBe(0x536b8c);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(0.56);
+    expect(fixture.hemisphereLight.intensity).toBeCloseTo(1.05);
+    expect(fixture.directionalLight.intensity).toBeCloseTo(1.85);
+    expect(moonRimLight?.intensity).toBeCloseTo(0.56);
+  });
+
+  it("applies visibility floors to low lighting inputs", () => {
+    const fixture = createFixture();
+    const managerWithLighting = fixture.manager as unknown as {
+      updateLighting(colors: {
+        skyColor: number;
+        groundColor: number;
+        sunColor: number;
+        ambientColor: number;
+        fogColor: number;
+        hemisphereIntensity: number;
+        sunIntensity: number;
+        ambientIntensity: number;
+        fogNear: number;
+        fogFar: number;
+      }): void;
+    };
+
+    managerWithLighting.updateLighting({
+      skyColor: 0x111111,
+      groundColor: 0x111111,
+      sunColor: 0xffffff,
+      ambientColor: 0xffffff,
+      fogColor: 0x111111,
+      hemisphereIntensity: 0.1,
+      sunIntensity: 0.1,
+      ambientIntensity: 0.1,
+      fogNear: 1,
+      fogFar: 2,
+    });
+
+    expect(fixture.ambientLight.intensity).toBe(0.48);
+    expect(fixture.hemisphereLight.intensity).toBe(0.95);
+    expect(fixture.directionalLight.intensity).toBe(1.55);
+  });
+
   it("updates lighting and sun target using cycle progress and camera target", () => {
     const fixture = createFixture();
     const cameraTarget = new Vector3(10, 2, 30);
@@ -95,26 +144,31 @@ describe("DayNightCycleManager", () => {
     expect(fixture.fog.far).toBe(72);
   });
 
-  it("applies weather modulation to sun, ambient fill, and fog color without overriding fog range", () => {
+  it("applies capped weather modulation to sun, ambient fill, and fog color without overriding fog range", () => {
     const fixture = createFixture();
 
     fixture.manager.update(37.5);
     const beforeSun = fixture.directionalLight.intensity;
+    const beforeSky = (fixture.scene.background as Color).clone();
     const beforeHemisphere = fixture.hemisphereLight.intensity;
+    const beforeAmbient = fixture.ambientLight.intensity;
     const beforeFogNear = fixture.fog.near;
     const beforeFogFar = fixture.fog.far;
-    const beforeFogColor = fixture.fog.color.getHex();
+    const beforeFogColor = fixture.fog.color.clone();
 
-    fixture.manager.applyWeatherModulation(0.8, 0.7, 0.6);
+    fixture.manager.applyWeatherModulation(1, 1, 1, 0.22);
 
     expect(fixture.directionalLight.intensity).toBeLessThan(beforeSun);
+    expect(fixture.directionalLight.intensity).toBeCloseTo(beforeSun * 0.8);
     expect(fixture.hemisphereLight.intensity).toBeGreaterThan(beforeHemisphere);
-    expect(fixture.fog.color.getHex()).not.toBe(beforeFogColor);
+    expect(fixture.ambientLight.intensity).toBeGreaterThan(beforeAmbient);
+    expect((fixture.scene.background as Color).getHex()).toBe(beforeSky.multiplyScalar(0.76).getHex());
+    expect(fixture.fog.color.getHex()).toBe(beforeFogColor.lerp(new Color(0x606880), 0.38).getHex());
     expect(fixture.fog.near).toBe(beforeFogNear);
     expect(fixture.fog.far).toBe(beforeFogFar);
   });
 
-  it("does not overwrite camera-owned fog near and far during the day-night update", () => {
+  it("does not overwrite camera-owned fog near and far during the atmosphere update", () => {
     const fixture = createFixture();
     fixture.fog.near = 24;
     fixture.fog.far = 81;
@@ -133,27 +187,57 @@ describe("DayNightCycleManager", () => {
     fixture.manager.applyWeatherModulation(0.5, 0, 0);
     const skyAfterFirst = (fixture.scene.background as Color).clone();
 
-    // Call again WITHOUT update() in between — should NOT darken further
+    // Call again WITHOUT update() in between - should NOT darken further
     fixture.manager.applyWeatherModulation(0.5, 0, 0);
     const skyAfterSecond = (fixture.scene.background as Color).clone();
 
     expect(skyAfterSecond.getHex()).toBe(skyAfterFirst.getHex());
   });
 
-  it("sky color recovers after update following applyWeatherModulation", () => {
+  it("weather modulation does not compound across sky, fog, light, or rim values", () => {
+    const fixture = createFixture();
+    const moonRimLight = findMoonRimLight(fixture.scene, fixture.directionalLight);
+
+    fixture.manager.update(0);
+
+    fixture.manager.applyWeatherModulation(1, 1, 1, 0.22);
+    const first = {
+      ambient: fixture.ambientLight.intensity,
+      fog: fixture.fog.color.getHex(),
+      hemisphere: fixture.hemisphereLight.intensity,
+      rim: moonRimLight?.intensity,
+      sky: (fixture.scene.background as Color).getHex(),
+      sun: fixture.directionalLight.intensity,
+    };
+
+    fixture.manager.applyWeatherModulation(1, 1, 1, 0.22);
+
+    expect(fixture.ambientLight.intensity).toBe(first.ambient);
+    expect(fixture.fog.color.getHex()).toBe(first.fog);
+    expect(fixture.hemisphereLight.intensity).toBe(first.hemisphere);
+    expect(moonRimLight?.intensity).toBe(first.rim);
+    expect((fixture.scene.background as Color).getHex()).toBe(first.sky);
+    expect(fixture.directionalLight.intensity).toBe(first.sun);
+  });
+
+  it("sky and fog color recover when weather modulation clears", () => {
     const fixture = createFixture();
 
     fixture.manager.update(37.5);
     const skyBeforeWeather = (fixture.scene.background as Color).getHex();
+    const fogBeforeWeather = fixture.fog.color.getHex();
 
-    fixture.manager.applyWeatherModulation(0.8, 0, 0);
+    fixture.manager.applyWeatherModulation(0.8, 0.8, 0);
     const skyDuringWeather = (fixture.scene.background as Color).getHex();
+    const fogDuringWeather = fixture.fog.color.getHex();
     expect(skyDuringWeather).not.toBe(skyBeforeWeather);
+    expect(fogDuringWeather).not.toBe(fogBeforeWeather);
 
-    // Next update() should restore the canonical sky color
-    fixture.manager.update(37.5);
+    fixture.manager.applyWeatherModulation(0, 0, 0);
     const skyAfterRecovery = (fixture.scene.background as Color).getHex();
+    const fogAfterRecovery = fixture.fog.color.getHex();
     expect(skyAfterRecovery).toBe(skyBeforeWeather);
+    expect(fogAfterRecovery).toBe(fogBeforeWeather);
   });
 
   it("applyWeatherModulation with skyDarkness=0 does not modify sky color", () => {
@@ -168,14 +252,14 @@ describe("DayNightCycleManager", () => {
     expect(skyAfter).toBe(skyBefore);
   });
 
-  it("getLastAmbientIntensity and getLastHemisphereIntensity return values from most recent updateLighting", () => {
+  it("getLastAmbientIntensity and getLastHemisphereIntensity return values from the current atmosphere frame", () => {
     const fixture = createFixture();
 
     // Before any update, getters return 0 (initial field value)
     expect(fixture.manager.getLastAmbientIntensity()).toBe(0);
     expect(fixture.manager.getLastHemisphereIntensity()).toBe(0);
 
-    // Update at day (progress 37.5) — should store the day-time intensities
+    // Update at day (progress 37.5) - should store the day-time intensities
     fixture.manager.update(37.5);
     const ambientAtDay = fixture.manager.getLastAmbientIntensity();
     const hemisphereAtDay = fixture.manager.getLastHemisphereIntensity();
@@ -187,7 +271,7 @@ describe("DayNightCycleManager", () => {
     expect(fixture.ambientLight.intensity).toBeCloseTo(ambientAtDay);
     expect(fixture.hemisphereLight.intensity).toBeCloseTo(hemisphereAtDay);
 
-    // Update at deep night (progress 0) — intensities should change
+    // Update at deep night (progress 0) - intensities should change
     fixture.manager.update(0);
     const ambientAtNight = fixture.manager.getLastAmbientIntensity();
     const hemisphereAtNight = fixture.manager.getLastHemisphereIntensity();
@@ -209,6 +293,23 @@ describe("DayNightCycleManager", () => {
     expect(fixture.manager.getLastAmbientIntensity()).toBe(first);
   });
 
+  it("keeps weather ambient boost in the storm-flicker baseline", () => {
+    const fixture = createFixture();
+
+    fixture.manager.update(37.5);
+    const baseAmbient = fixture.manager.getLastAmbientIntensity();
+
+    fixture.manager.applyWeatherModulation(0.2, 0.2, 0.2, 0.22);
+    const boostedAmbient = fixture.manager.getLastAmbientIntensity();
+
+    expect(boostedAmbient).toBeCloseTo(baseAmbient + 0.22);
+    expect(fixture.ambientLight.intensity).toBeCloseTo(boostedAmbient);
+
+    fixture.ambientLight.intensity = boostedAmbient * 1.06;
+
+    expect(fixture.manager.getLastAmbientIntensity()).toBeCloseTo(boostedAmbient);
+  });
+
   it("is idempotent on dispose", () => {
     const fixture = createFixture();
     const managerWithRestore = fixture.manager as unknown as { restoreOriginalLighting: () => void };
@@ -219,6 +320,6 @@ describe("DayNightCycleManager", () => {
     fixture.manager.dispose();
 
     expect(restoreSpy).toHaveBeenCalledTimes(1);
-    expect(warnSpy).toHaveBeenCalledWith("DayNightCycleManager already disposed, skipping cleanup");
+    expect(warnSpy).toHaveBeenCalledWith("WorldAtmosphereController already disposed, skipping cleanup");
   });
 });

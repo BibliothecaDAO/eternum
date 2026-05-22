@@ -1,5 +1,4 @@
-// @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ToneMappingMode } from "postprocessing";
 import { resetRendererDiagnostics, snapshotRendererDiagnostics } from "./renderer-diagnostics";
 import { createRendererBackendCapabilities } from "./renderer-backend-v2";
@@ -127,6 +126,15 @@ function createQualityFeatures(overrides: Partial<import("./utils/quality-contro
 describe("renderer effects runtime", () => {
   beforeEach(() => {
     resetRendererDiagnostics();
+    vi.stubGlobal("window", {
+      devicePixelRatio: 1,
+      innerHeight: 768,
+      innerWidth: 1024,
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("boots postprocess for supported graphics tiers and applies the backend plan", () => {
@@ -247,6 +255,40 @@ describe("renderer effects runtime", () => {
 
     expect(controller.setColorGrade).toHaveBeenCalledTimes(1);
     expect(controller.setVignette).toHaveBeenCalledTimes(1);
+  });
+
+  it("caps weather-driven post-processing darkness", () => {
+    const backend = createBackend();
+    const controller = {
+      setColorGrade: vi.fn(),
+      setVignette: vi.fn(),
+    };
+    backend.applyPostProcessPlan.mockReturnValue(controller);
+    const runtime = createRendererEffectsRuntime({
+      backend: backend as never,
+      createFolder: createFolderFactory(),
+      graphicsSetting: GraphicsSettings.HIGH,
+      isMobileDevice: false,
+      scenes: createScenes() as never,
+    });
+
+    runtime.setupPostProcessingEffects(
+      createQualityFeatures({
+        bloomIntensity: 0.6,
+        vignette: true,
+      }),
+    );
+    runtime.updateWeatherPostProcessing({
+      intensity: 10,
+      stormIntensity: 10,
+    });
+
+    const [colorGrade] = controller.setColorGrade.mock.calls[0];
+    const [vignette] = controller.setVignette.mock.calls[0];
+    expect(colorGrade.brightness).toBeCloseTo(0.04);
+    expect(colorGrade.contrast).toBeCloseTo(1.7);
+    expect(colorGrade.saturation).toBeCloseTo(-0.13);
+    expect(vignette.darkness).toBeCloseTo(0.5);
   });
 
   it("maps tone mapping modes into backend-neutral values", () => {
