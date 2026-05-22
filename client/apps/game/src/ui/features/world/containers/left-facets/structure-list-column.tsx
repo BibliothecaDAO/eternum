@@ -1,260 +1,144 @@
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
-import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useUIStore, type LeftListFilter, type LeftListSort } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import { OverviewFacet } from "@/ui/features/world/containers/left-facets/overview";
+import { StructureStatusRow } from "@/ui/features/world/components/structure-status-row/structure-status-row";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
-import { STRUCTURE_GROUP_CONFIG } from "@/ui/features/world/containers/top-header/structure-groups";
-import { StructureRealmActions, type StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
 import {
-  formatPopulationStatusLabel,
-  formatUsedBuildingTilesLabel,
-} from "@/ui/features/world/containers/structure-status";
-import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
+  CATEGORY_FILTER_OPTIONS,
+  filterStructures,
+  SORT_OPTIONS,
+  sortStructures,
+} from "@/ui/features/world/containers/structure-list-utils";
 import { Position } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { getLevelName, type ID, RealmLevels, StructureType } from "@bibliothecadao/types";
-import Castle from "lucide-react/dist/esm/icons/castle";
-import Crown from "lucide-react/dist/esm/icons/crown";
-import Hexagon from "lucide-react/dist/esm/icons/hexagon";
-import type { LucideIcon } from "lucide-react";
-import Pencil from "lucide-react/dist/esm/icons/pencil";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
-import Star from "lucide-react/dist/esm/icons/star";
-import Tent from "lucide-react/dist/esm/icons/tent";
-import Users from "lucide-react/dist/esm/icons/users";
-import { createElement, memo, useCallback, useMemo } from "react";
+import { type ID } from "@bibliothecadao/types";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { EmpireSuggestions } from "./empire-suggestions";
 
-// Re-uses the existing categorization → icon mapping from the old picker pill.
-const CATEGORY_ICONS: Partial<Record<StructureType, LucideIcon>> = {
-  [StructureType.Realm]: Crown,
-  [StructureType.Village]: Castle,
-  [StructureType.Camp]: Tent,
-  [StructureType.FragmentMine]: Pickaxe,
-  [StructureType.Hyperstructure]: Sparkles,
-};
-
-const getCategoryIcon = (category: StructureType | number | undefined): LucideIcon => {
-  if (category === undefined) return Crown;
-  return CATEGORY_ICONS[category as StructureType] ?? Crown;
-};
-
-const CategoryIcon = ({
-  category,
-  className,
-}: {
-  category: StructureType | number | undefined;
-  className?: string;
-}) => createElement(getCategoryIcon(category), { className });
-
-// Status tone for the favorite star. Red = no defenders, amber = under-staffed,
-// green = all good. The star carries this color so we don't need a separate
-// dot indicator. Non-realm structures skip the tint and stay gold.
-const resolveStatusTone = (
-  structure: StructureWithMetadata,
-): { tone: "green" | "amber" | "red"; title: string } | null => {
-  const capabilities = resolveStructureUiCapabilities(structure.structure);
-  if (!capabilities.hasPopulationDetails) return null;
-
-  const base = structure.structure.base;
-  const occupied = Number(base?.troop_guard_count ?? 0);
-  const max = Number(base?.troop_max_guard_count ?? 0);
-
-  if (max > 0 && occupied === 0) {
-    return { tone: "red", title: "No defenders stationed." };
-  }
-  if (max > 0 && occupied < max) {
-    return { tone: "amber", title: `Guards: ${occupied}/${max}` };
-  }
-  return { tone: "green", title: "Operating normally." };
-};
-
-const STATUS_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
-  green: "text-emerald-300 drop-shadow-[0_0_4px_rgba(110,231,183,0.55)]",
-  amber: "text-amber-300 drop-shadow-[0_0_4px_rgba(252,211,77,0.55)]",
-  red: "text-rose-400 drop-shadow-[0_0_4px_rgba(244,114,114,0.7)]",
-};
-
-// Compact inline stat (pop / tiles). No background — just icon + number — so
-// it fits beside the structure name on a single row at 280px.
-const InlineStat = ({ icon: Icon, label, title }: { icon: LucideIcon; label: string; title?: string }) => (
-  <span
-    className="inline-flex items-center gap-0.5 text-[10px] font-semibold tabular-nums text-gold/75"
-    title={title}
-  >
-    <Icon className="h-3 w-3 text-gold/55" />
-    <span>{label}</span>
-  </span>
+const FilterChips = memo(
+  ({
+    value,
+    onChange,
+  }: {
+    value: LeftListFilter;
+    onChange: (filter: LeftListFilter) => void;
+  }) => (
+    <div className={cn("pointer-events-auto flex flex-wrap items-center gap-1 rounded-xl p-1", OVERLAY_SURFACE_BASE)}>
+      {CATEGORY_FILTER_OPTIONS.map((option) => {
+        const isActive = option.value === value;
+        return (
+          <button
+            key={String(option.value)}
+            type="button"
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] transition",
+              isActive
+                ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_8px_rgba(223,170,84,0.25)]"
+                : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold",
+            )}
+            aria-pressed={isActive}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  ),
 );
+FilterChips.displayName = "FilterChips";
 
-interface StructureCardProps {
-  structure: StructureWithMetadata;
-  isActive: boolean;
-  isFavorite: boolean;
-  onSelect: (entityId: ID) => void;
-  onToggleFavorite: (entityId: ID) => void;
-  onRequestRename: (entityId: ID) => void;
-}
+const SortMenu = memo(
+  ({
+    value,
+    onChange,
+  }: {
+    value: LeftListSort;
+    onChange: (sort: LeftListSort) => void;
+  }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
 
-/**
- * Single row in the always-visible structure list. Collapsed by default —
- * status / pop / tiles / actions visible in two compact rows. The active card
- * also renders the facet tabs + active facet content underneath, so the
- * column reads as: list of structures, expanded around the one you control.
- */
-const StructureCard = memo(
-  ({ structure, isActive, isFavorite, onSelect, onToggleFavorite, onRequestRename }: StructureCardProps) => {
-    const capabilities = resolveStructureUiCapabilities(structure.structure);
-    const groupConfig = structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor] : null;
-    const statusTone = resolveStatusTone(structure);
-    const levelAbbrev = capabilities.hasPopulationDetails
-      ? getLevelName(
-          Math.min(Math.max(structure.realmLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels,
-        ).charAt(0)
-      : null;
-    const populationLabel = capabilities.hasPopulationDetails
-      ? formatPopulationStatusLabel(structure.population, structure.populationCapacity)
-      : null;
-    const buildingTilesLabel =
-      capabilities.hasPopulationDetails &&
-      structure.buildingTilesOccupied !== null &&
-      structure.buildingTilesTotal !== null
-        ? formatUsedBuildingTilesLabel(structure.buildingTilesOccupied, structure.buildingTilesTotal)
-        : null;
-    const isRealm = structure.category === StructureType.Realm;
+    useEffect(() => {
+      if (!open) return;
+      const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+        if (!ref.current?.contains(event.target as Node)) setOpen(false);
+      };
+      document.addEventListener("mousedown", handlePointerDown);
+      document.addEventListener("touchstart", handlePointerDown);
+      return () => {
+        document.removeEventListener("mousedown", handlePointerDown);
+        document.removeEventListener("touchstart", handlePointerDown);
+      };
+    }, [open]);
 
-    const handleCardClick = useCallback(() => {
-      onSelect(structure.entityId);
-    }, [onSelect, structure.entityId]);
-
-    const handleKeyDown = useCallback(
-      (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (event.target !== event.currentTarget) return;
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          handleCardClick();
-        }
-      },
-      [handleCardClick],
-    );
-
-    const starTone = statusTone ? STATUS_TONE_TEXT[statusTone.tone] : "text-gold/60";
-    const starTitle = statusTone?.title ?? (isFavorite ? "Remove from favorites" : "Favorite structure");
-
-    const hasStatsRow = Boolean(levelAbbrev || populationLabel || buildingTilesLabel || isActive);
+    const activeLabel = SORT_OPTIONS.find((option) => option.value === value)?.label ?? "Smart";
 
     return (
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={handleCardClick}
-        onKeyDown={handleKeyDown}
-        className={cn(
-          "pointer-events-auto cursor-pointer rounded-xl transition",
-          isActive
-            ? "border border-gold/65 ring-1 ring-gold/30 bg-gradient-to-b from-[#231913]/97 to-[#2c2018]/97 shadow-[0_0_18px_rgba(223,170,84,0.3),inset_0_1px_0_rgba(255,214,102,0.28)] backdrop-blur-sm"
-            : cn(OVERLAY_SURFACE_BASE, "hover:border-gold/50"),
-        )}
-        aria-pressed={isActive}
-        title={structure.displayName}
-      >
-        {/* Row 1 — name row: [★ status-tinted] [icon] [group-dot] [name] */}
-        <div className="flex items-center gap-1.5 px-2.5 pt-2">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleFavorite(structure.entityId);
-            }}
-            className={cn("flex-shrink-0 rounded p-0.5 transition-colors", starTone)}
-            title={starTitle}
-            aria-label={starTitle}
-          >
-            <Star className={cn("h-3.5 w-3.5", isFavorite && "fill-current")} />
-          </button>
-          <CategoryIcon
-            category={structure.category}
-            className={cn("h-4 w-4 flex-shrink-0", groupConfig ? groupConfig.textClass : "text-gold")}
-          />
-          {groupConfig && (
-            <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", groupConfig.dotClass)} />
+      <div ref={ref} className="pointer-events-auto relative">
+        <button
+          type="button"
+          onClick={() => setOpen((current) => !current)}
+          className={cn(
+            "inline-flex h-7 items-center gap-1 rounded-md border px-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-gold/80 transition",
+            open ? "border-gold/60 bg-gold/10 text-gold" : "border-gold/30 bg-black/30 hover:border-gold/50 hover:text-gold",
           )}
-          <span
+          aria-haspopup="listbox"
+          aria-expanded={open}
+        >
+          <span className="text-gold/55">Sort ·</span>
+          <span>{activeLabel}</span>
+          <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
+        </button>
+        {open && (
+          <div
             className={cn(
-              "min-w-0 flex-1 truncate text-sm font-semibold",
-              groupConfig ? groupConfig.textClass : "text-gold",
+              "absolute right-0 top-full z-30 mt-1 w-36 overflow-hidden rounded-md text-left",
+              OVERLAY_SURFACE_BASE,
             )}
+            role="listbox"
           >
-            {structure.displayName}
-          </span>
-        </div>
-
-        {/* Row 2 — stats row: [K] [👤 12/18] [🔷 11/36] [pencil (active)] */}
-        {hasStatsRow && (
-          <div className="flex items-center gap-1.5 px-2.5 pt-1.5 pb-2">
-            {levelAbbrev && (
-              <span className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1 text-[9px] uppercase tracking-wide text-gold/70">
-                {levelAbbrev}
-              </span>
-            )}
-            {populationLabel && (
-              <InlineStat icon={Users} label={populationLabel} title="Population used / capacity" />
-            )}
-            {buildingTilesLabel && (
-              <InlineStat icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
-            )}
-            {isActive && (
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onRequestRename(structure.entityId);
-                }}
-                className="ml-auto flex-shrink-0 rounded border border-gold/30 p-0.5 text-gold/70 hover:text-gold"
-                title="Rename structure"
-                aria-label="Rename structure"
-              >
-                <Pencil className="h-3 w-3" />
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Realm action strip — level up + provision + info tooltip. Lives on
-            its own row so the chevrons stay tappable without elbowing the
-            stats. Only realms render this. */}
-        {isRealm && (
-          <div className="flex items-center justify-end px-2.5 pb-2" onClick={(event) => event.stopPropagation()}>
-            <StructureRealmActions structureEntityId={structure.entityId} />
-          </div>
-        )}
-
-        {/* Expanded body for the active card: Suggested Actions only. Heavier
-            views (Production, Military) live in centered modals triggered from
-            the LeftActionsRow above the minimap. Click handlers inside use
-            stopPropagation so opening a sub-modal doesn't re-trigger card
-            selection. */}
-        {isActive && (
-          <div className="flex flex-col gap-2 px-2 pb-2" onClick={(event) => event.stopPropagation()}>
-            <OverviewFacet structureEntityId={structure.entityId} />
+            {SORT_OPTIONS.map((option) => {
+              const isActive = option.value === value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  role="option"
+                  aria-selected={isActive}
+                  onClick={() => {
+                    onChange(option.value);
+                    setOpen(false);
+                  }}
+                  className={cn(
+                    "block w-full px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] transition",
+                    isActive ? "bg-gold/15 text-gold" : "text-gold/75 hover:bg-gold/10 hover:text-gold",
+                  )}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
     );
   },
 );
-
-StructureCard.displayName = "StructureCard";
+SortMenu.displayName = "SortMenu";
 
 /**
- * Always-visible structure list that replaces the old picker pill +
- * dropdown. Each player structure is rendered as a status card; the active
- * one expands inline to host the Suggested Actions bubble. Heavier views
- * (Production, Military) live in centered modals triggered from the
- * bottom-left action row.
+ * The left rail. A flat, filterable, sortable list of every owned structure
+ * with the Empire-wide Suggested Actions panel pinned below. Default filter
+ * is realms-only; sort defaults to "smart" (attention first, then favorites,
+ * then alphabetical).
+ *
+ * Active structure always renders at the top regardless of sort, so the
+ * player's current focus is consistently the first row.
  */
 export const StructureListColumn = memo(() => {
   const { setup } = useDojo();
@@ -267,44 +151,35 @@ export const StructureListColumn = memo(() => {
   const playerStructures = useUIStore((state) => state.playerStructures);
   const structureNameVersion = useUIStore((state) => state.structureNameVersion);
   const setPendingRenameStructureEntityId = useUIStore((state) => state.setPendingRenameStructureEntityId);
+  const leftListFilter = useUIStore((state) => state.leftListFilter);
+  const setLeftListFilter = useUIStore((state) => state.setLeftListFilter);
+  const leftListSort = useUIStore((state) => state.leftListSort);
+  const setLeftListSort = useUIStore((state) => state.setLeftListSort);
 
   const goToStructure = useGoToStructure(setup);
   const { favorites, toggleFavorite } = useFavoriteStructures();
 
-  const structuresWithMetadata = useStructuresWithMetadata({
+  const allStructures = useStructuresWithMetadata({
     structures: playerStructures,
     components,
     nameUpdateVersion: structureNameVersion,
   });
 
-  const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
+  const favoriteOrder = useMemo(
+    () => new Map(favorites.map((id, index) => [id, index] as const)),
+    [favorites],
+  );
 
-  // Sort: active first, then favorites in user-defined order, then by
-  // category (Realms → Villages → Mines → Hyperstructures), then by name.
-  const orderedStructures = useMemo(() => {
-    const favoriteOrder = new Map(favorites.map((id, index) => [id, index]));
-    return structuresWithMetadata.toSorted((a, b) => {
-      if (a.entityId === structureEntityId) return -1;
-      if (b.entityId === structureEntityId) return 1;
-      const aFav = favoriteOrder.has(a.entityId);
-      const bFav = favoriteOrder.has(b.entityId);
-      if (aFav && !bFav) return -1;
-      if (!aFav && bFav) return 1;
-      if (aFav && bFav) {
-        return (favoriteOrder.get(a.entityId) ?? 0) - (favoriteOrder.get(b.entityId) ?? 0);
-      }
-      const catDiff = Number(a.category) - Number(b.category);
-      if (catDiff !== 0) return catDiff;
-      return a.displayName.localeCompare(b.displayName);
-    });
-  }, [favorites, structureEntityId, structuresWithMetadata]);
+  const visibleStructures = useMemo(() => {
+    const filtered = filterStructures(allStructures, leftListFilter);
+    return sortStructures(filtered, leftListSort, structureEntityId, favoriteOrder);
+  }, [allStructures, leftListFilter, leftListSort, structureEntityId, favoriteOrder]);
 
   const handleSelectStructure = useCallback(
     (entityId: ID) => {
       if (entityId === structureEntityId) return;
       const target = playerStructures.find((structure) => structure.entityId === entityId);
       const coords = target?.structure?.base;
-
       if (coords && coords.coord_x !== undefined && coords.coord_y !== undefined) {
         const col = Number(coords.coord_x);
         const row = Number(coords.coord_y);
@@ -324,7 +199,7 @@ export const StructureListColumn = memo(() => {
     [setPendingRenameStructureEntityId],
   );
 
-  if (orderedStructures.length === 0) {
+  if (allStructures.length === 0) {
     return (
       <div className={cn("pointer-events-auto rounded-xl px-3 py-2", OVERLAY_SURFACE_BASE)}>
         <span className={HUD_LABEL}>No structures synced yet</span>
@@ -333,18 +208,32 @@ export const StructureListColumn = memo(() => {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      {orderedStructures.map((structure) => (
-        <StructureCard
-          key={structure.entityId}
-          structure={structure}
-          isActive={structure.entityId === structureEntityId}
-          isFavorite={favoritesSet.has(structure.entityId)}
-          onSelect={handleSelectStructure}
-          onToggleFavorite={toggleFavorite}
-          onRequestRename={handleRequestRename}
-        />
-      ))}
+    <div className="flex min-w-0 flex-col gap-2">
+      <FilterChips value={leftListFilter} onChange={setLeftListFilter} />
+      <div className="flex items-center justify-between gap-2 px-1">
+        <span className={cn(HUD_LABEL, "text-gold/55")}>
+          {visibleStructures.length} {visibleStructures.length === 1 ? "structure" : "structures"}
+        </span>
+        <SortMenu value={leftListSort} onChange={setLeftListSort} />
+      </div>
+      {visibleStructures.length === 0 ? (
+        <p className={cn(HUD_BODY_MUTED, "px-1")}>No structures match this filter.</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {visibleStructures.map((structure) => (
+            <StructureStatusRow
+              key={structure.entityId}
+              structure={structure}
+              isActive={structure.entityId === structureEntityId}
+              onSelect={handleSelectStructure}
+              variant="full"
+              onToggleFavorite={toggleFavorite}
+              onRequestRename={handleRequestRename}
+            />
+          ))}
+        </div>
+      )}
+      <EmpireSuggestions />
     </div>
   );
 });

@@ -1,0 +1,126 @@
+import { useCallback, useMemo, useState } from "react";
+import { CallData, type Call } from "starknet";
+import { toast } from "sonner";
+import { getContractByName } from "@dojoengine/core";
+
+import { dojoConfig } from "../../../../../dojo-config";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { useDojo } from "@bibliothecadao/react";
+import { type ID } from "@bibliothecadao/types";
+
+const ETERNUM_NAMESPACE = "s1_eternum";
+
+/**
+ * Realm action firers that take `realmId` as an argument. Decouples the
+ * upgrade / provision / multicall tx submission from per-realm state hooks
+ * so the empire-wide Suggested Actions panel can fire any realm's action in
+ * one click without instantiating N hooks.
+ */
+export const useRealmActions = () => {
+  const { account } = useDojo();
+  const [pendingRealmId, setPendingRealmId] = useState<ID | null>(null);
+
+  const structureSystemsAddress = useMemo(() => {
+    const contract = getContractByName(dojoConfig.manifest, ETERNUM_NAMESPACE, "structure_systems");
+    return contract?.address ?? null;
+  }, []);
+
+  const blitzRealmSystemsAddress = useMemo(() => {
+    const contract = getContractByName(dojoConfig.manifest, ETERNUM_NAMESPACE, "blitz_realm_systems");
+    return contract?.address ?? null;
+  }, []);
+
+  const buildUpgradeCall = useCallback(
+    (realmId: ID): Call | null => {
+      if (!structureSystemsAddress) return null;
+      return {
+        contractAddress: structureSystemsAddress,
+        entrypoint: "level_up",
+        calldata: CallData.compile([realmId]),
+      };
+    },
+    [structureSystemsAddress],
+  );
+
+  const buildProvisionCall = useCallback(
+    (realmId: ID): Call | null => {
+      if (!blitzRealmSystemsAddress) return null;
+      return {
+        contractAddress: blitzRealmSystemsAddress,
+        entrypoint: "provision_realm",
+        calldata: CallData.compile([realmId]),
+      };
+    },
+    [blitzRealmSystemsAddress],
+  );
+
+  const execute = useCallback(
+    async (realmId: ID, calls: Call[], operation: string) => {
+      if (calls.length === 0) {
+        toast.error("Unable to resolve realm system contracts.");
+        return;
+      }
+
+      setPendingRealmId(realmId);
+      try {
+        await executeObservedClientTransaction({
+          account: account.account,
+          calls,
+          surface: "settlement",
+          operation,
+        });
+      } catch (error) {
+        console.error(`[realm-actions] ${operation} failed`, error);
+        toast.error(error instanceof Error ? error.message : "Failed to submit the transaction.");
+        throw error;
+      } finally {
+        setPendingRealmId((current) => (current === realmId ? null : current));
+      }
+    },
+    [account.account],
+  );
+
+  const fireUpgrade = useCallback(
+    async (realmId: ID) => {
+      const call = buildUpgradeCall(realmId);
+      if (!call) {
+        toast.error("Unable to resolve realm system contracts.");
+        return;
+      }
+      await execute(realmId, [call], "realm_systems.upgrade");
+    },
+    [buildUpgradeCall, execute],
+  );
+
+  const fireProvision = useCallback(
+    async (realmId: ID) => {
+      const call = buildProvisionCall(realmId);
+      if (!call) {
+        toast.error("Unable to resolve realm system contracts.");
+        return;
+      }
+      await execute(realmId, [call], "realm_systems.provision");
+    },
+    [buildProvisionCall, execute],
+  );
+
+  const fireUpgradeAndProvision = useCallback(
+    async (realmId: ID) => {
+      const upgradeCall = buildUpgradeCall(realmId);
+      const provisionCall = buildProvisionCall(realmId);
+      if (!upgradeCall || !provisionCall) {
+        toast.error("Unable to resolve realm system contracts.");
+        return;
+      }
+      await execute(realmId, [upgradeCall, provisionCall], "realm_systems.upgrade_and_provision");
+    },
+    [buildUpgradeCall, buildProvisionCall, execute],
+  );
+
+  return {
+    pendingRealmId,
+    fireUpgrade,
+    fireProvision,
+    fireUpgradeAndProvision,
+  };
+};

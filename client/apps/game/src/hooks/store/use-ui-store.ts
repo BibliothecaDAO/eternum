@@ -1,7 +1,7 @@
 import { BattleViewInfo, LeftView } from "@/types";
 import { ContextMenuState } from "@/types/context-menu";
 import { SelectableArmy } from "@bibliothecadao/eternum";
-import { BiomeType, ContractAddress, Direction } from "@bibliothecadao/types";
+import { BiomeType, ContractAddress, Direction, StructureType } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
@@ -14,6 +14,9 @@ import { createWorldStoreSlice, WorldStore } from "./use-world-loading";
 type TooltipPlacement = "top" | "left" | "right" | "bottom";
 
 export type BottomPanelTabId = "tile" | "minimap";
+
+export type LeftListFilter = StructureType | "all";
+export type LeftListSort = "smart" | "favorites" | "level" | "population" | "name";
 
 let lastResolvedAnchor: HTMLElement | null = null;
 
@@ -146,6 +149,13 @@ interface UIStore {
   setBattleView: (participants: BattleViewInfo | null) => void;
   leftNavigationView: LeftView;
   setLeftNavigationView: (view: LeftView) => void;
+  // Left rail: which structure category is shown (or "all"), and how the rows
+  // are ordered. Persisted to localStorage so the player's last view sticks
+  // across sessions.
+  leftListFilter: LeftListFilter;
+  setLeftListFilter: (filter: LeftListFilter) => void;
+  leftListSort: LeftListSort;
+  setLeftListSort: (sort: LeftListSort) => void;
   activeBottomPanelTab: BottomPanelTabId | null;
   setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => void;
   showMinimap: boolean;
@@ -211,6 +221,25 @@ const readLocalInt = (key: string, fallback: number): number => {
   if (typeof window === "undefined") return fallback;
   const v = localStorage.getItem(key);
   return v === null ? fallback : parseInt(v, 10);
+};
+
+const LEFT_LIST_FILTER_KEY = "leftListFilter";
+const LEFT_LIST_SORT_KEY = "leftListSort";
+
+const readLeftListFilter = (): LeftListFilter => {
+  if (typeof window === "undefined") return StructureType.Realm;
+  const raw = localStorage.getItem(LEFT_LIST_FILTER_KEY);
+  if (raw === null) return StructureType.Realm;
+  if (raw === "all") return "all";
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? (parsed as StructureType) : StructureType.Realm;
+};
+
+const readLeftListSort = (): LeftListSort => {
+  if (typeof window === "undefined") return "smart";
+  const raw = localStorage.getItem(LEFT_LIST_SORT_KEY);
+  const options: LeftListSort[] = ["smart", "favorites", "level", "population", "name"];
+  return options.includes(raw as LeftListSort) ? (raw as LeftListSort) : "smart";
 };
 
 export const useUIStore = create(
@@ -293,6 +322,20 @@ export const useUIStore = create(
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
     leftNavigationView: LeftView.EntityView,
     setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view, tooltip: null }),
+    leftListFilter: readLeftListFilter(),
+    setLeftListFilter: (filter: LeftListFilter) => {
+      set({ leftListFilter: filter });
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LEFT_LIST_FILTER_KEY, filter === "all" ? "all" : String(filter));
+      }
+    },
+    leftListSort: readLeftListSort(),
+    setLeftListSort: (sort: LeftListSort) => {
+      set({ leftListSort: sort });
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LEFT_LIST_SORT_KEY, sort);
+      }
+    },
     activeBottomPanelTab: "tile",
     setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => set({ activeBottomPanelTab: tab }),
     showMinimap: false,

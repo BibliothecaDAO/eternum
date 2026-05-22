@@ -3,37 +3,33 @@ import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import {
   HUD_BODY_MUTED,
-  HUD_HEADLINE,
   HUD_LABEL,
   HUD_LABEL_BRIGHT,
 } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { CompactDefenseDisplay } from "@/ui/features/military";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
+import { REALMS_ONLY_FILTER, StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
+import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { FELT_CENTER } from "@bibliothecadao/eternum";
 import { type ID } from "@bibliothecadao/types";
+import Crosshair from "lucide-react/dist/esm/icons/crosshair";
 import Shield from "lucide-react/dist/esm/icons/shield";
 import Swords from "lucide-react/dist/esm/icons/swords";
-import Crosshair from "lucide-react/dist/esm/icons/crosshair";
-import { memo, useMemo } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 
 interface MilitaryModalProps {
   structureEntityId: ID;
 }
 
-/**
- * Military view rendered as a centered modal. Replaces the old left-rail
- * Military facet. Two sections:
- *
- *   1. Guards — the structure's defenders (existing CompactDefenseDisplay).
- *      Slot management lives inside the display (ADD button per empty slot).
- *   2. Armies — the player's explorer armies on the map. Click a row to jump
- *      the camera to that army.
- */
-export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) => {
-  const detail = useStructureEntityDetail({ structureEntityId });
-  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
+// Right pane — guards + the player's roving armies. Lives below the sidebar
+// header so the realm name + level chip read first; sidebar handles the
+// realm switching.
+const MilitaryBody = ({ focusedRealmId }: { focusedRealmId: ID }) => {
+  const detail = useStructureEntityDetail({ structureEntityId: focusedRealmId });
   const selectableArmies = useUIStore((state) => state.selectableArmies);
+  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
 
   const occupiedGuardSlots = useMemo(
@@ -44,22 +40,23 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
   if (!detail.structure) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <p className={HUD_BODY_MUTED}>Select a structure to view its military.</p>
+        <p className={HUD_BODY_MUTED}>Loading structure...</p>
       </div>
     );
   }
 
   const guardCue =
-    detail.guardSlotsMax !== undefined
-      ? `${occupiedGuardSlots}/${detail.guardSlotsMax}`
-      : `${occupiedGuardSlots}`;
+    detail.guardSlotsMax !== undefined ? `${occupiedGuardSlots}/${detail.guardSlotsMax}` : `${occupiedGuardSlots}`;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-4 overflow-y-auto p-6">
-      <header className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Swords className="h-5 w-5 text-gold" />
-          <h2 className={HUD_HEADLINE}>Military · {detail.structureName ?? "Structure"}</h2>
+    <div className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto px-5 py-4">
+      <header className="flex items-center justify-between gap-2 border-b border-gold/15 pb-3">
+        <div className="flex flex-col gap-0.5">
+          <span className={cn("flex items-center gap-2", HUD_LABEL_BRIGHT)}>
+            <Swords className="h-4 w-4 text-gold" />
+            {detail.structureName ?? "Structure"}
+          </span>
+          <span className={cn(HUD_LABEL, "text-gold/55")}>Level {detail.structure.base?.level ?? 0}</span>
         </div>
       </header>
 
@@ -126,6 +123,56 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
         )}
       </section>
     </div>
+  );
+};
+
+/**
+ * Military view rendered as a centered modal with the shared realm switcher
+ * on the left. The player can cycle through every owned realm without
+ * leaving the panel — guards manager + explorer list update on each click.
+ *
+ * "Deploy everything at once" in this pass means one panel for all realms;
+ * each garrison action is still a per-realm tx.
+ */
+export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) => {
+  const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
+  const close = useCallback(() => setLeftNavigationView(LeftView.None), [setLeftNavigationView]);
+
+  // Local focus — swapping realms inside the modal doesn't touch the global
+  // active structure, so closing the modal returns the player to where they
+  // were before they opened it.
+  const [focusedRealmId, setFocusedRealmId] = useState<ID>(structureEntityId);
+
+  // If the global active structure changes while the modal is open (e.g. the
+  // player clicked a chip), sync focus so they see what they expect.
+  useEffect(() => {
+    setFocusedRealmId(structureEntityId);
+  }, [structureEntityId]);
+
+  // Empty guard slot = attention.
+  const attention = useCallback((structure: StructureWithMetadata) => {
+    const base = structure.structure?.base;
+    const occupied = Number(base?.troop_guard_count ?? 0);
+    const max = Number(base?.troop_max_guard_count ?? 0);
+    return max > 0 && occupied < max;
+  }, []);
+
+  return (
+    <CenteredModalShell title="Military" icon={Swords} onClose={close} size="wide">
+      <div className="grid h-full grid-cols-12 min-h-0">
+        <div className="col-span-4 border-r border-gold/15 min-h-0">
+          <StructureSidebar
+            selectedEntityId={focusedRealmId}
+            onSelectStructure={setFocusedRealmId}
+            attention={attention}
+            filter={REALMS_ONLY_FILTER}
+          />
+        </div>
+        <div className="col-span-8 min-h-0">
+          <MilitaryBody focusedRealmId={focusedRealmId} />
+        </div>
+      </div>
+    </CenteredModalShell>
   );
 });
 

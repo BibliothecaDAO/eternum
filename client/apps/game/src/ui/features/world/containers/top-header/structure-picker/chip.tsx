@@ -38,6 +38,13 @@ export type StructureWithMetadata = Structure & {
   groupColor: StructureGroupColor | null;
   isFavorite: boolean;
   canUpgrade: boolean;
+  /**
+   * Cheap empire-wide signal: this realm is in blitz, owned by the player,
+   * main phase has started, season hasn't ended, and the provision building
+   * has not been registered yet. Drives both the left-rail suggestion engine
+   * and the modal-sidebar attention dots without hitting torii per structure.
+   */
+  canProvision: boolean;
 };
 
 export const StructureInfoStat = ({

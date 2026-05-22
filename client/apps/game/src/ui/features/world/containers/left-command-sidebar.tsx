@@ -2,7 +2,8 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
+import { ConstructionModal } from "@/ui/features/world/containers/construction-modal";
 import { LogisticsView } from "@/ui/features/world/containers/logistics-view";
 import { MilitaryModal } from "@/ui/features/world/containers/military-modal";
 import { StructureListColumn } from "@/ui/features/world/containers/left-facets/structure-list-column";
@@ -20,7 +21,9 @@ import { useDojo } from "@bibliothecadao/react";
 import { type ID } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import clsx from "clsx";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
+import PackageIcon from "lucide-react/dist/esm/icons/package";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo } from "react";
 
 // ----------------------------------------------------------------------------
@@ -95,11 +98,6 @@ const ChatModalContent = ({
 // Lazy view components used inside the centered action modal
 // ----------------------------------------------------------------------------
 
-const SelectPreviewBuildingMenu = lazy(() =>
-  import("@/ui/features/settlement").then((module) => ({
-    default: module.SelectPreviewBuildingMenu,
-  })),
-);
 const InGameMarket = lazy(() =>
   import("@/ui/features/market").then((module) => ({
     default: module.InGameMarket,
@@ -175,15 +173,8 @@ export const LeftCommandSidebar = memo(() => {
   const isPanelOpen = view !== LeftView.None;
   const closeView = useCallback(() => setView(LeftView.None), [setView]);
 
-  // Dismiss the modal on Escape so it behaves like other overlays.
-  useEffect(() => {
-    if (!isPanelOpen) return;
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeView();
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [closeView, isPanelOpen]);
+  // Esc handling lives inside each modal's CenteredModalShell now, so we don't
+  // double-bind it here.
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
@@ -207,53 +198,41 @@ export const LeftCommandSidebar = memo(() => {
         </div>
       )}
 
-      {/* Centered action modal — opened by LeftActionsRow buttons. */}
-      {isPanelOpen && (
-        <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto"
-          onClick={closeView}
-        >
-          <div
-            className={clsx(
-              "pointer-events-auto flex w-[840px] max-w-[92vw] h-[680px] max-h-[calc(100vh-64px)] flex-col overflow-hidden rounded-xl",
-              OVERLAY_SURFACE_BASE,
-            )}
-            onClick={(event) => event.stopPropagation()}
-          >
-            {/* Each view manages its own scroll. The modal frame provides a fixed
-                height so inner flex-1 children resolve correctly — necessary for
-                chat (whose message list has internal scroll-to-bottom logic). */}
-            <Suspense fallback={<div className="flex h-full items-center justify-center p-8">Loading...</div>}>
-              {view === LeftView.PredictionMarket && (
-                <div className="prediction-market-selector flex h-full min-h-0 flex-col overflow-y-auto">
-                  <InGameMarket />
-                </div>
-              )}
-              {view === LeftView.ChatView && (
-                <ChatModalContent
-                  initializer={realtimeInitializer}
-                  zoneIds={chatZoneIds}
-                  defaultZoneId={chatDefaultZoneId}
-                />
-              )}
-              {view === LeftView.ConstructionView && (
-                <div className="h-full min-h-0 overflow-y-auto">
-                  <SelectPreviewBuildingMenu entityId={structureEntityId} />
-                </div>
-              )}
-              {view === LeftView.ResourceArrivals && (
-                <div className="h-full min-h-0 overflow-hidden">
-                  <LogisticsView hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
-                </div>
-              )}
-              {view === LeftView.MilitaryView && (
-                <div className="h-full min-h-0 overflow-y-auto">
-                  <MilitaryModal structureEntityId={structureEntityId} />
-                </div>
-              )}
-            </Suspense>
+      {/* Centered modals — each one renders its own CenteredModalShell so the
+          chrome (backdrop, bronze frame, header strip, close button) is the
+          same everywhere. We just dispatch by view. */}
+      {isPanelOpen && view === LeftView.PredictionMarket && (
+        <CenteredModalShell title="Prediction Market" icon={Sparkles} onClose={closeView}>
+          <Suspense fallback={<div className="flex h-full items-center justify-center p-8">Loading…</div>}>
+            <div className="prediction-market-selector flex h-full min-h-0 flex-col overflow-y-auto">
+              <InGameMarket />
+            </div>
+          </Suspense>
+        </CenteredModalShell>
+      )}
+      {isPanelOpen && view === LeftView.ChatView && (
+        <CenteredModalShell title="Chat" icon={MessageCircle} onClose={closeView}>
+          <div className="h-full">
+            <ChatModalContent
+              initializer={realtimeInitializer}
+              zoneIds={chatZoneIds}
+              defaultZoneId={chatDefaultZoneId}
+            />
           </div>
-        </div>
+        </CenteredModalShell>
+      )}
+      {isPanelOpen && view === LeftView.ConstructionView && (
+        <ConstructionModal structureEntityId={structureEntityId} />
+      )}
+      {isPanelOpen && view === LeftView.ResourceArrivals && (
+        <CenteredModalShell title="Logistics" icon={PackageIcon} onClose={closeView}>
+          <div className="h-full min-h-0 overflow-hidden">
+            <LogisticsView hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
+          </div>
+        </CenteredModalShell>
+      )}
+      {isPanelOpen && view === LeftView.MilitaryView && (
+        <MilitaryModal structureEntityId={structureEntityId} />
       )}
 
       {pendingRenameStructureEntityId !== null && pendingRenameMetadata && editingStructureId !== null && (

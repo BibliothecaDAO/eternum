@@ -1,4 +1,7 @@
-import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
 import {
@@ -6,13 +9,26 @@ import {
   resolveAvailableBuildingTiles,
 } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
-import { configManager } from "@bibliothecadao/eternum";
-import { type ClientComponents, getLevelName, RealmLevels, type Structure, StructureType } from "@bibliothecadao/types";
+import { configManager, getBuildingCount } from "@bibliothecadao/eternum";
+import {
+  BuildingType,
+  type ClientComponents,
+  ContractAddress,
+  getLevelName,
+  RealmLevels,
+  type Structure,
+  StructureType,
+} from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useMemo } from "react";
 import type { StructureWithMetadata } from "./chip";
+
+const readPackedCount = (value: bigint | number | string | undefined): bigint => {
+  if (value === undefined || value === null) return 0n;
+  return BigInt(value);
+};
 
 interface UseStructuresWithMetadataArgs {
   structures: Structure[];
@@ -37,6 +53,22 @@ export const useStructuresWithMetadata = ({
   const mode = useGameModeConfig();
   const { favorites } = useFavoriteStructures();
   const { structureGroups } = useStructureGroups();
+
+  // Inputs needed to compute `canProvision` per structure cheaply. All values
+  // are already available in store / RECS — no new torii calls.
+  const resolvedWorldGameMode = useResolvedWorldGameMode();
+  const currentBlockTimestamp = useCurrentBlockTimestamp();
+  const gameStartMainAt = useUIStore((state) => state.gameStartMainAt);
+  const gameEndAt = useUIStore((state) => state.gameEndAt);
+  const ownerAddress = useAccountStore((state) => state.account?.address ?? null);
+  const ownerContract = useMemo(
+    () => (ownerAddress ? ContractAddress(ownerAddress) : null),
+    [ownerAddress],
+  );
+  const isBlitzWorld = resolvedWorldGameMode === "blitz";
+  const isMainPhase =
+    typeof gameStartMainAt === "number" && currentBlockTimestamp >= gameStartMainAt;
+  const isSeasonOver = typeof gameEndAt === "number" && currentBlockTimestamp > gameEndAt;
 
   const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
 
@@ -105,6 +137,30 @@ export const useStructuresWithMetadata = ({
       const groupColor = structureGroups[structure.entityId] ?? null;
       const isFavorite = favoritesSet.has(structure.entityId);
 
+      // canProvision mirrors useBlitzRealmProvision but reads only RECS-cached
+      // state. We don't get the per-structure `isProvisioned` torii lookup, so
+      // approximate via the packed building counts (the same fallback the
+      // real hook uses when its provisioning building check is unavailable).
+      let canProvision = false;
+      if (
+        isBlitzWorld &&
+        structure.category === StructureType.Realm &&
+        ownerContract !== null &&
+        isMainPhase &&
+        !isSeasonOver
+      ) {
+        const ownerMatches = structure.structure?.owner === ownerContract;
+        if (ownerMatches) {
+          const packedCounts: bigint[] = [
+            readPackedCount(structureBuildings?.packed_counts_1),
+            readPackedCount(structureBuildings?.packed_counts_2),
+            readPackedCount(structureBuildings?.packed_counts_3),
+          ];
+          const provisioned = getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0;
+          canProvision = !provisioned;
+        }
+      }
+
       return {
         ...structure,
         displayName: name,
@@ -118,6 +174,7 @@ export const useStructuresWithMetadata = ({
         groupColor,
         isFavorite,
         canUpgrade: structure.category === StructureType.Realm && normalizedLevel < maxRealmLevel,
+        canProvision,
       };
     });
   }, [
@@ -128,5 +185,9 @@ export const useStructuresWithMetadata = ({
     favoritesSet,
     mode,
     buildingTileCountsByStructure,
+    isBlitzWorld,
+    isMainPhase,
+    isSeasonOver,
+    ownerContract,
   ]);
 };
