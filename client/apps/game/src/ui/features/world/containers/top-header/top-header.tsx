@@ -8,6 +8,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
 import { GameStartCountdown } from "./game-start-countdown";
+import { WalletPill } from "./pills/wallet-pill";
 import { TickProgress } from "./tick-progress";
 import {
   MIN_REFRESH_INTERVAL_MS,
@@ -291,7 +292,8 @@ export const TopHeader = memo(() => {
           </div>
         </div>
 
-        <div className="flex-shrink-0 ml-auto">
+        <div className="flex-shrink-0 ml-auto flex items-center gap-3">
+          <WalletPill />
           <SecondaryMenuItems />
         </div>
 
