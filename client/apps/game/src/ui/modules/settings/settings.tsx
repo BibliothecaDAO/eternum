@@ -85,7 +85,7 @@ export const SettingsWindow = () => {
   };
 
   return (
-    <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings}>
+    <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings} maxHeightCap={640}>
       <div className="flex flex-col space-y-6 p-6">
         {/* Header — avatar + Cartridge controller button, centered together.
             The controller already surfaces handle, address, and the wallet

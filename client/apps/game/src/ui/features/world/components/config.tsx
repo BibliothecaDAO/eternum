@@ -26,6 +26,8 @@ export interface OSInterface {
   width?: string;
   hintSection?: HintSection;
   className?: string;
+  /** Optional pixel cap for the popup body's auto-grow max-height. */
+  maxHeightCap?: number;
 }
 
 export interface ExpandableOSInterface extends OSInterface {
