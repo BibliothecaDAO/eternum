@@ -4,11 +4,14 @@ import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
-import { FELT_CENTER } from "@/ui/config";
+import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
+import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import Button from "@/ui/design-system/atoms/button";
+import CircleButton from "@/ui/design-system/molecules/circle-button";
+import { MarketModal } from "@/ui/features/economy/trading";
 import { sqlApi } from "@/services/api";
 import {
   configManager,
@@ -47,11 +50,12 @@ import { ProductionModal } from "@/ui/features/settlement";
 import { TileManager } from "@bibliothecadao/eternum";
 import Info from "lucide-react/dist/esm/icons/info";
 import Loader from "lucide-react/dist/esm/icons/loader";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
 
-import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN } from "./constants";
+import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, LEFT_ACTIONS_GAP_FROM_MINIMAP, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, normalizeMinimapTile, type MinimapTile } from "./hex-minimap";
 
 const compactResourceFormatter = new Intl.NumberFormat("en-US", {
@@ -935,7 +939,7 @@ const MinimapPanel = () => {
   }, []);
 
   return (
-    <PanelFrame title="Minimap" height={240}>
+    <PanelFrame title="Minimap" height={MINIMAP_SIZE}>
       <div className="relative flex h-full min-h-0 flex-col">
         <div className="relative flex-1 min-h-[220px] overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
           <HexMinimap
@@ -983,13 +987,18 @@ export const BottomRightPanel = memo(() => {
   return (
     <>
       {showMinimap && (
-        <div
-          className="pointer-events-auto fixed left-3 z-[25] w-[240px]"
-          style={{ bottom: BOTTOM_PANEL_MARGIN }}
-          aria-label="Minimap"
-        >
-          <MinimapPanel />
-        </div>
+        <>
+          <LeftActionsRow
+            style={{ bottom: `calc(${BOTTOM_PANEL_MARGIN} + ${MINIMAP_SIZE}px + ${LEFT_ACTIONS_GAP_FROM_MINIMAP}px)` }}
+          />
+          <div
+            className="pointer-events-auto fixed left-3 z-[25]"
+            style={{ bottom: BOTTOM_PANEL_MARGIN, width: MINIMAP_SIZE }}
+            aria-label="Minimap"
+          >
+            <MinimapPanel />
+          </div>
+        </>
       )}
       {showTileDetails && (
         <div
@@ -1004,3 +1013,79 @@ export const BottomRightPanel = memo(() => {
 });
 
 BottomRightPanel.displayName = "BottomRightPanel";
+
+// ---------------------------------------------------------------------------
+// LeftActionsRow — small horizontal row of CircleButtons floating above the
+// minimap. Each button opens its corresponding modal/popup:
+//   Build           → ConstructionView modal (SelectPreviewBuildingMenu)
+//   Transfer        → LogisticsView modal (with Transfer tab pre-selected)
+//   Chat            → Chat modal
+//   Trade           → MarketModal (toggleModal)
+//   Prediction      → PredictionMarket modal
+// Replaces the old vertical view-switcher pill strip on the left edge.
+// ---------------------------------------------------------------------------
+
+const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
+  const view = useUIStore((state) => state.leftNavigationView);
+  const setView = useUIStore((state) => state.setLeftNavigationView);
+  const toggleModalAction = useUIStore((state) => state.toggleModal);
+  const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
+  const handleOpenLogistics = useCallback(() => {
+    setLogisticsActiveTab("transfer");
+    setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals);
+  }, [setLogisticsActiveTab, setView, view]);
+  const toggleView = useCallback(
+    (target: LeftView) => () => setView(view === target ? LeftView.None : target),
+    [setView, view],
+  );
+
+  return (
+    <div className="pointer-events-auto fixed left-3 z-[25] flex gap-2" style={style} aria-label="Quick actions">
+      <CircleButton
+        variant="hud"
+        size="md"
+        tooltipLocation="top"
+        image={BuildingThumbs.construction}
+        label="Build"
+        active={view === LeftView.ConstructionView}
+        onClick={toggleView(LeftView.ConstructionView)}
+      />
+      <CircleButton
+        variant="hud"
+        size="md"
+        tooltipLocation="top"
+        image={BuildingThumbs.transfer}
+        label="Transfer"
+        active={view === LeftView.ResourceArrivals}
+        onClick={handleOpenLogistics}
+      />
+      <CircleButton
+        variant="hud"
+        size="md"
+        tooltipLocation="top"
+        image={BuildingThumbs.scale}
+        label="Trade"
+        onClick={() => toggleModalAction(<MarketModal />)}
+      />
+      <CircleButton
+        variant="hud"
+        size="md"
+        tooltipLocation="top"
+        image={BuildingThumbs.predictionMarket}
+        label="Prediction Market"
+        active={view === LeftView.PredictionMarket}
+        onClick={toggleView(LeftView.PredictionMarket)}
+      />
+      <CircleButton
+        variant="hud"
+        size="md"
+        tooltipLocation="top"
+        label="Chat"
+        active={view === LeftView.ChatView}
+        onClick={toggleView(LeftView.ChatView)}
+      >
+        <MessageCircle className="h-4 w-4 md:h-5 md:w-5 text-gold" />
+      </CircleButton>
+    </div>
+  );
+};
