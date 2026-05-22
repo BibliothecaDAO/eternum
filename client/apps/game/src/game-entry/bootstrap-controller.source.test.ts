@@ -19,4 +19,16 @@ describe("game entry bootstrap controller source", () => {
     expect(entryReadyIndex).toBeLessThan(backgroundRefreshIndex);
     expect(source).not.toContain("await refreshSessionPolicies(connector)");
   });
+
+  it("records structured route rebootstrap success and failure breadcrumbs", () => {
+    const source = readSource("src/game-entry/bootstrap-controller.ts");
+
+    const forceFreshSuccessIndex = source.indexOf('event: "reconnect_success"');
+    const forceFreshFailureIndex = source.indexOf('event: "reconnect_failure"');
+
+    expect(source).toContain("addNetworkBreadcrumb");
+    expect(forceFreshSuccessIndex).toBeGreaterThanOrEqual(0);
+    expect(forceFreshFailureIndex).toBeGreaterThanOrEqual(0);
+    expect(forceFreshSuccessIndex).toBeLessThan(forceFreshFailureIndex);
+  });
 });

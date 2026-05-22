@@ -29,22 +29,23 @@ describe("ConnectionMonitor heartbeat lifecycle wiring", () => {
     expect(source).toMatch(/heartbeat[A-Za-z]*\.dispose\(\)/);
   });
 
-  it("uses runDeadEndRecovery and records a stream reconnect on success", () => {
-    expect(source).toContain("runDeadEndRecovery");
-    expect(source).toContain("recordStreamReconnect");
+  it("requests route-level rebootstrap instead of running in-place dead-end bootstrap", () => {
+    expect(source).toContain("requestGameRebootstrap");
+    expect(source).not.toContain("runDeadEndRecovery");
+    expect(source).not.toContain("recordStreamReconnect");
   });
 
-  it("reopens the heartbeat as part of the dead-end recovery success path", () => {
-    const start = source.indexOf("triggerDeadEndRecovery");
-    const end = source.indexOf("const monitor = new ConnectionHealthMonitor", start);
+  it("keeps dead-end recovery inside the monitor onDeadEnd callback", () => {
+    const start = source.indexOf("onDeadEnd");
+    const end = source.indexOf("});", start);
     expect(start).toBeGreaterThan(-1);
     expect(end).toBeGreaterThan(start);
     const block = source.slice(start, end);
-    expect(block).toMatch(/heartbeat[A-Za-z]*\.reopenWith\(\(\) =>/);
-    expect(block).toContain("result.setupResult.network.toriiClient");
+    expect(block).toContain("shouldRunDeadEndRecovery");
+    expect(block).toContain("requestGameRebootstrap");
   });
 
-  it("resolves the torii client lazily so it picks up the post-dead-end-recovery client", () => {
+  it("resolves the torii client lazily for normal heartbeat reopen", () => {
     expect(source).not.toMatch(/subscribe:\s*\(\)\s*=>\s*subscribeToToriiHeartbeat\(setup\.network\.toriiClient\)/);
     expect(source).toContain("setupRef");
   });

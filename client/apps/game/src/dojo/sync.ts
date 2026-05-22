@@ -852,6 +852,7 @@ export const initialSync = async (
       await getGuildsFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
     }),
   ]);
+  await Promise.all(parallelTasks);
 
   const mapDataRefreshStart = performance.now();
   await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
