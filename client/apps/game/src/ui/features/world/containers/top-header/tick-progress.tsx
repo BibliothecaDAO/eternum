@@ -94,18 +94,18 @@ export const TickProgress = memo(() => {
     setTooltip(null);
   }, [setTooltip]);
 
-  const size = 32;
+  const size = 22;
   const center = size / 2;
-  const radius = 12;
-  const outerRadius = 14;
+  const radius = 8;
+  const outerRadius = 10;
 
   return (
     <div
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="self-center text-center px-1 py-1 flex gap-1 text-xl items-center"
+      className="flex items-center gap-1.5"
     >
-      <div className="relative w-8 h-8">
+      <div className="relative h-[22px] w-[22px]">
         <svg width={size} height={size} className="transform -rotate-90">
           {PHASES.map((phase, index) => {
             const angle = 360 / PHASES.length;
@@ -157,7 +157,9 @@ export const TickProgress = memo(() => {
           <ResourceIcon withTooltip={false} resource="Timeglass" size="xs" className="self-center" />
         </div>
       </div>
-      <span className="text-sm">{phaseData.phaseProgress.toFixed(0)}%</span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-gold tabular-nums">
+        {phaseData.phaseProgress.toFixed(0)}%
+      </span>
     </div>
   );
 });

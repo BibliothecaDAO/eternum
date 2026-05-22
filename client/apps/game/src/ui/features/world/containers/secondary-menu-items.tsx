@@ -16,7 +16,9 @@ import { Has } from "@dojoengine/recs";
 
 import { useCallback, useMemo } from "react";
 
-const PILL_SURFACE = `pointer-events-auto rounded-full ${OVERLAY_SURFACE_BASE}`;
+// Matches the unified TOP_PILL height (h-8) in top-header so the rank reads
+// as the same strip as every other pill.
+const PILL_SURFACE = `pointer-events-auto inline-flex h-8 items-center rounded-full ${OVERLAY_SURFACE_BASE}`;
 
 const formatPoints = (points: number | null | undefined): string => {
   if (points === null || points === undefined) return "0";
@@ -26,7 +28,18 @@ const formatPoints = (points: number | null | undefined): string => {
 
 const normalizeAddress = (value: string) => value.trim().toLowerCase();
 
-export const SecondaryMenuItems = () => {
+interface SecondaryMenuItemsProps {
+  /**
+   * "rank" → only the leaderboard rank pill (used at the left of the top bar).
+   * "rest" → settings + ancillary status icons (network, transactions, latest
+   *          features, rewards, controller) clustered to the right of settings.
+   * undefined → the legacy "everything in one group" rendering (kept so older
+   *           callers don't break, but new callers should pick a variant).
+   */
+  variant?: "rank" | "rest";
+}
+
+export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) => {
   const {
     setup: {
       components: {
@@ -90,121 +103,139 @@ export const SecondaryMenuItems = () => {
 
   const handleOpenLeaderboard = useCallback(() => togglePopup(leaderboard), [togglePopup]);
 
-  return (
-    <div className="flex h-full ml-auto">
-      <div className="top-right-navigation-selector self-center flex items-center space-x-2 mr-1">
-        {/* Rank pill — replaces the dedicated Leaderboard CircleButton. Click opens the leaderboard popup. */}
-        {rankPill ? (
-          <button
-            type="button"
-            onClick={handleOpenLeaderboard}
-            className={cn(
-              PILL_SURFACE,
-              "flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-gold transition hover:bg-gold/15",
-              isPopupOpen(leaderboard) && "border-gold/60 bg-gold/15",
-            )}
-            aria-label="Open leaderboard"
-            title="Open leaderboard"
-          >
-            <span>#{rankPill.rank}</span>
-            <span className="text-gold/50">·</span>
-            <span>{formatPoints(rankPill.points)} pts</span>
-          </button>
-        ) : (
-          <CircleButton variant="hud"
-            className="social-selector border-none"
-            tooltipLocation="bottom"
-            image={BuildingThumbs.guild}
-            label={leaderboard}
-            active={isPopupOpen(leaderboard)}
-            size="md"
-            onClick={handleOpenLeaderboard}
-          />
-        )}
+  const rankNode = rankPill ? (
+    <button
+      type="button"
+      onClick={handleOpenLeaderboard}
+      className={cn(
+        PILL_SURFACE,
+        "gap-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-gold transition hover:bg-gold/15",
+        isPopupOpen(leaderboard) && "border-gold/60 bg-gold/15",
+      )}
+      aria-label="Open leaderboard"
+      title="Open leaderboard"
+    >
+      <span>#{rankPill.rank}</span>
+      <span className="text-gold/50">·</span>
+      <span>{formatPoints(rankPill.points)} pts</span>
+    </button>
+  ) : (
+    <CircleButton
+      variant="hud"
+      className="social-selector border-none"
+      tooltipLocation="bottom"
+      image={BuildingThumbs.guild}
+      label={leaderboard}
+      active={isPopupOpen(leaderboard)}
+      size="sm"
+      onClick={handleOpenLeaderboard}
+    />
+  );
 
-        {/* End-of-season rewards stay as a CircleButton next to the rank pill while the season has ended. */}
-        {hasSeasonEnded && (
-          <CircleButton variant="hud"
-            tooltipLocation="bottom"
-            image={BuildingThumbs.rewards}
-            label={rewards}
-            active={isPopupOpen(rewards)}
-            size="md"
-            className="border-none"
-            onClick={() => togglePopup(rewards)}
-          />
-        )}
+  const restNodes = (
+    <>
+      {/* Settings — now hosts the Controller (wallet) panel too. */}
+      <CircleButton
+        variant="hud"
+        className="settings-selector border-none"
+        tooltipLocation="bottom"
+        active={isPopupOpen(settings)}
+        image={BuildingThumbs.settings}
+        label={"Settings"}
+        size="sm"
+        onClick={() => togglePopup(settings)}
+      />
 
-        {/* Latest Features — render only while there are unseen features. */}
-        {unseenFeaturesCount > 0 && (
-          <CircleButton variant="hud"
-            className="latest-features-selector border-none"
-            tooltipLocation="bottom"
-            active={isPopupOpen(latestFeatures)}
-            image={BuildingThumbs.latestUpdates}
-            label={"Latest Features"}
-            size="md"
-            onClick={() => togglePopup(latestFeatures)}
-            primaryNotification={{
-              value: unseenFeaturesCount,
-              color: "gold",
-              location: "topright",
-            }}
-          />
-        )}
-
-        {/* Settings — now hosts the Controller (wallet) panel too. */}
-        <CircleButton variant="hud"
-          className="settings-selector border-none"
+      {/* End-of-season rewards stay surfaced while the season has ended. */}
+      {hasSeasonEnded && (
+        <CircleButton
+          variant="hud"
           tooltipLocation="bottom"
-          active={isPopupOpen(settings)}
-          image={BuildingThumbs.settings}
-          label={"Settings"}
-          size="md"
-          onClick={() => togglePopup(settings)}
+          image={BuildingThumbs.rewards}
+          label={rewards}
+          active={isPopupOpen(rewards)}
+          size="sm"
+          className="border-none"
+          onClick={() => togglePopup(rewards)}
         />
+      )}
 
-        {/* Connection health indicator - only visible when unhealthy */}
-        <div className="self-center">
-          <NetworkStatusPill onRetry={triggerConnectionForceReconnect} />
-        </div>
+      {/* Latest Features — render only while there are unseen features. */}
+      {unseenFeaturesCount > 0 && (
+        <CircleButton
+          variant="hud"
+          className="latest-features-selector border-none"
+          tooltipLocation="bottom"
+          active={isPopupOpen(latestFeatures)}
+          image={BuildingThumbs.latestUpdates}
+          label={"Latest Features"}
+          size="sm"
+          onClick={() => togglePopup(latestFeatures)}
+          primaryNotification={{
+            value: unseenFeaturesCount,
+            color: "gold",
+            location: "topright",
+          }}
+        />
+      )}
 
-        {/* Transactions — render only when there is an active signal (pending, stuck, or recent error). */}
-        {txStatus.status !== "idle" && (
-          <div className="relative">
-            <CircleButton variant="hud"
-              className="transactions-selector border-none"
-              tooltipLocation="bottom"
-              active={isPopupOpen(transactions)}
-              image="/image-icons/network.png"
-              label={"Transactions"}
-              size="md"
-              onClick={() => togglePopup(transactions)}
-              primaryNotification={
-                txStatus.pendingCount > 0
-                  ? {
-                      value: txStatus.pendingCount,
-                      color: txStatus.notificationColor as "green" | "red" | "orange" | "gold",
-                      location: "topright",
-                    }
-                  : undefined
-              }
-            />
-            {/* Status dot indicator */}
-            <div
-              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-dark-brown
+      {/* Connection health indicator - only visible when unhealthy */}
+      <div className="self-center">
+        <NetworkStatusPill onRetry={triggerConnectionForceReconnect} />
+      </div>
+
+      {/* Transactions — render only when there is an active signal (pending, stuck, or recent error). */}
+      {txStatus.status !== "idle" && (
+        <div className="relative">
+          <CircleButton
+            variant="hud"
+            className="transactions-selector border-none"
+            tooltipLocation="bottom"
+            active={isPopupOpen(transactions)}
+            image="/image-icons/network.png"
+            label={"Transactions"}
+            size="sm"
+            onClick={() => togglePopup(transactions)}
+            primaryNotification={
+              txStatus.pendingCount > 0
+                ? {
+                    value: txStatus.pendingCount,
+                    color: txStatus.notificationColor as "green" | "red" | "orange" | "gold",
+                    location: "topright",
+                  }
+                : undefined
+            }
+          />
+          <div
+            className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-dark-brown
                         ${txStatus.status === "pending" ? "bg-gold animate-pulse" : ""}
                         ${txStatus.status === "stuck" ? "bg-orange animate-pulse" : ""}
                         ${txStatus.status === "error" ? "bg-danger" : ""}
                         shadow-[0_0_6px_currentColor]`}
-            />
-          </div>
-        )}
+          />
+        </div>
+      )}
 
-        {/* Controller (Cartridge wallet) — only surfaced here while the player is
-            logged out, so the Login button stays discoverable. Once connected,
-            the Controller lives inside the Settings popover. */}
-        {!account && <Controller />}
+      {/* Controller (Cartridge wallet) — only surfaced here while the player is
+          logged out, so the Login button stays discoverable. Once connected,
+          the Controller lives inside the Settings popover. */}
+      {!account && <Controller />}
+    </>
+  );
+
+  if (variant === "rank") {
+    return <div className="pointer-events-auto flex items-center">{rankNode}</div>;
+  }
+
+  if (variant === "rest") {
+    return <div className="pointer-events-auto flex items-center gap-2">{restNodes}</div>;
+  }
+
+  return (
+    <div className="flex h-full ml-auto">
+      <div className="top-right-navigation-selector self-center flex items-center space-x-2 mr-1">
+        {rankNode}
+        {restNodes}
       </div>
     </div>
   );

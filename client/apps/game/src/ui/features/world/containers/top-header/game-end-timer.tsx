@@ -210,16 +210,12 @@ export const GameEndTimer = memo(() => {
   }
 
   return (
-    <div
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className="pointer-events-auto self-center"
-    >
+    <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className="pointer-events-auto">
       <div
-        className={`relative flex items-center gap-2 rounded-full border px-3 py-1 backdrop-blur-sm transition-all duration-300 ${containerToneClass}`}
+        className={`relative flex h-8 items-center gap-1.5 rounded-full border px-3 backdrop-blur-sm transition-all duration-300 ${containerToneClass}`}
         style={dynamicStyle}
       >
-        <div className="relative flex h-6 w-6 items-center justify-center">
+        <div className="relative flex h-[18px] w-[18px] items-center justify-center">
           {showRing && (
             <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 32 32">
               <circle
@@ -248,9 +244,9 @@ export const GameEndTimer = memo(() => {
               />
             </svg>
           )}
-          <Clock className="h-3.5 w-3.5" />
+          <Clock className="h-3 w-3" />
         </div>
-        <span className="text-sm font-semibold font-mono tracking-wide">{timeDisplay}</span>
+        <span className="text-[11px] font-semibold font-mono tracking-wide tabular-nums">{timeDisplay}</span>
       </div>
     </div>
   );

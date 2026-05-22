@@ -22,10 +22,11 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-// Shared visual base for each top-zone pill cluster. Uses the Etched Bronze
-// surface so it visually matches the view-switcher, right-side bubbles, and
-// minimap — every HUD element shares one design language now.
-const PILL_SURFACE = `pointer-events-auto rounded-full ${OVERLAY_SURFACE_BASE}`;
+// Shared visual base for each top-zone pill. h-8 (32px) fixed height + same
+// padding + same surface so every pill in the bar reads as one strip instead
+// of a row of mismatched chips.
+const TOP_PILL =
+  `pointer-events-auto inline-flex h-8 items-center gap-1.5 rounded-full px-3 ${OVERLAY_SURFACE_BASE}`;
 
 export const TopHeader = memo(() => {
   const {
@@ -143,39 +144,23 @@ export const TopHeader = memo(() => {
   return (
     <>
       {/* Layout container — pointer-events pass through the gaps between pills so the
-          map remains clickable. Each pill flips pointer-events back on.
-          Centered horizontally so the top zone mirrors the right-side column's
-          vertical centering. */}
-      <div className="fixed top-0 left-0 right-0 z-20 flex flex-wrap items-center justify-center gap-3 px-3 py-2 pointer-events-none">
-        {/* Spectating badge — only renders when actually spectating. The player
-            identity itself lives in the rank pill on the right. */}
+          map remains clickable. Each pill flips pointer-events back on. The
+          center cluster carries the six headline pieces in canonical order
+          (rank · view · day · timer · army toggle · settings); the right
+          cluster carries ancillary status icons (network / tx / features). */}
+      <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-center gap-2 px-3 py-2 pointer-events-none">
         {isSpectating && (
-          <div
-            className={cn(
-              PILL_SURFACE,
-              "flex items-center gap-1.5 px-3 py-1",
-              HUD_LABEL_BRIGHT,
-            )}
-          >
+          <div className={cn(TOP_PILL, HUD_LABEL_BRIGHT)}>
             <EyeIcon className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
             <span>Spectating</span>
           </div>
         )}
 
-        {/* Structure picker moved to LeftStructureColumn header — it sits above
-            the structure data it drives now. */}
+        {/* 1. Player rank */}
+        <SecondaryMenuItems variant="rank" />
 
-        {/* Day-tick progress — its own pill, flattened so the SVG ring isn't nested in another border. */}
-        <div className={cn(PILL_SURFACE, "flex items-center px-2 py-1")}>
-          <TickProgress />
-        </div>
-
-        {/* Game start / end timers — each self-styled, only render when active. */}
-        <GameStartCountdown />
-        <GameEndTimer />
-
-        {/* Map view pill — Local/World toggle + conditional Ethereal/Follow Army */}
-        <div className={cn(PILL_SURFACE, "flex items-center gap-2 px-3 py-1 whitespace-nowrap")}>
+        {/* 2. Local / World toggle (+ conditional Ethereal layer chip) */}
+        <div className={cn(TOP_PILL, "whitespace-nowrap")}>
           <span
             onClick={() => {
               playClick();
@@ -186,7 +171,10 @@ export const TopHeader = memo(() => {
               );
             }}
             onMouseEnter={() => playHover()}
-            className={cn("cursor-pointer text-[11px] uppercase tracking-[0.16em] font-semibold text-gold/70", isLocalView && "text-gold")}
+            className={cn(
+              "cursor-pointer text-[11px] uppercase tracking-[0.16em] font-semibold text-gold/70",
+              isLocalView && "text-gold",
+            )}
           >
             Local
           </span>
@@ -205,7 +193,7 @@ export const TopHeader = memo(() => {
                 );
               }}
             />
-            <div className="w-9 h-5 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
+            <div className="w-8 h-4 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-3 after:w-3 after:transition-all bg-gold/30"></div>
           </label>
           <span
             onClick={() => {
@@ -217,7 +205,10 @@ export const TopHeader = memo(() => {
               );
             }}
             onMouseEnter={() => playHover()}
-            className={cn("cursor-pointer text-[11px] uppercase tracking-[0.16em] font-semibold text-gold/70", isWorldView && "text-gold")}
+            className={cn(
+              "cursor-pointer text-[11px] uppercase tracking-[0.16em] font-semibold text-gold/70",
+              isWorldView && "text-gold",
+            )}
           >
             World
           </span>
@@ -227,7 +218,7 @@ export const TopHeader = memo(() => {
               onClick={navigateToFastTravelLayer}
               onMouseEnter={() => playHover()}
               className={cn(
-                "rounded-md border px-2 py-0.5 text-[11px] transition-all duration-200",
+                "rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] transition-all duration-200",
                 isFastTravelView
                   ? "border-cyan-300 bg-cyan-400/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.35)]"
                   : "border-gold/25 bg-gold/10 text-gold/75 hover:border-gold/40 hover:text-gold",
@@ -239,11 +230,21 @@ export const TopHeader = memo(() => {
           )}
         </div>
 
+        {/* 3. Day-tick progress */}
+        <div className={TOP_PILL}>
+          <TickProgress />
+        </div>
+
+        {/* 4. Game start / end timers — each self-styled, only render when active. */}
+        <GameStartCountdown />
+        <GameEndTimer />
+
+        {/* 5. Army combat follow toggle */}
         {showFollowArmyToggle && (
           <button
             type="button"
             className={cn(
-              "pointer-events-auto rounded-full p-2 transition-all duration-300",
+              "pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300",
               OVERLAY_SURFACE_BASE,
               followArmyCombats
                 ? "border-gold ring-1 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.35)] animate-pulse"
@@ -257,14 +258,12 @@ export const TopHeader = memo(() => {
             aria-pressed={followArmyCombats}
             title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
           >
-            <Swords className={cn("w-4 h-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
+            <Swords className={cn("h-4 w-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
           </button>
         )}
 
-        {/* Push the right cluster to the far edge */}
-        <div className="flex items-center gap-3 pointer-events-auto">
-          <SecondaryMenuItems />
-        </div>
+        {/* 6. Settings + ancillary status icons (network, tx, latest features…) */}
+        <SecondaryMenuItems variant="rest" />
       </div>
 
       {/* Camera-following status toast — extracted from the old wrapper so it floats independently. */}
