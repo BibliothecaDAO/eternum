@@ -4,6 +4,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
@@ -274,7 +275,7 @@ export const CompactEntityInventory = memo(
 
       const heroPadding = "px-2.5 py-2";
       const heroIconSize = "sm";
-      const heroAmountClass = "text-base font-bold";
+      const heroAmountClass = HUD_VALUE;
       const itemVariant = options.hero ? "hero" : "default";
 
       const itemClasses = cn(

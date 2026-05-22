@@ -288,7 +288,7 @@ export const StructureChip = memo(({ structure, isSelected, onSelectStructure, o
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={clsx(
-        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-1 text-left text-xs transition cursor-pointer",
+        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-2 text-left text-xs transition cursor-pointer",
         isSelected
           ? "border-gold bg-gold/15 text-gold"
           : "border-gold/25 bg-black/30 text-gold/75 hover:border-gold/50 hover:bg-black/50",

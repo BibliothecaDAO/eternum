@@ -9,7 +9,7 @@ import { memo, useCallback, useMemo } from "react";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
-import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { InfoBubble } from "../collapsible-bubble";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -45,6 +45,18 @@ interface StructureBannerEntityDetailProps {
    * it.
    */
   hideOwner?: boolean;
+  /**
+   * Optional thin "STRUCTURE TILE · (col, row)"-style label rendered as a small
+   * band above the avatar in the owner bubble. Set by the right-side tile
+   * inspector so we don't need a second header bubble above this one.
+   */
+  coordsLabel?: string;
+  /**
+   * Optional action rendered to the right of {@link coordsLabel} (typically the
+   * Re-sync button surfaced by the right-side inspector). Without a coordsLabel
+   * the action is ignored.
+   */
+  headerAction?: React.ReactNode;
 }
 
 interface StructureBannerEntityDetailContentProps extends Omit<StructureBannerEntityDetailProps, "layoutVariant"> {
@@ -66,6 +78,8 @@ const StructureBannerEntityDetailContent = memo(
     compact = true,
     variant,
     hideOwner = false,
+    coordsLabel,
+    headerAction,
   }: StructureBannerEntityDetailContentProps) => {
     const {
       structure,
@@ -206,6 +220,12 @@ const StructureBannerEntityDetailContent = memo(
             the LeftStructureColumn where the picker already names the
             structure being controlled. */}
         {!hideOwner && <InfoBubble title={ownerDisplayName ?? "Owner"} cue={structureName} bodyClassName="pt-0">
+          {coordsLabel && (
+            <div className="mb-2 flex items-center justify-between gap-2 border-b border-gold/15 pb-2">
+              <span className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{coordsLabel}</span>
+              {headerAction}
+            </div>
+          )}
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2 text-gold">
               <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
@@ -363,6 +383,8 @@ export const StructureBannerEntityDetail = memo(
     showButtons = false,
     layoutVariant,
     hideOwner = false,
+    coordsLabel,
+    headerAction,
   }: StructureBannerEntityDetailProps) => {
     const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (compact ? "default" : "banner");
 
@@ -375,6 +397,8 @@ export const StructureBannerEntityDetail = memo(
         compact={compact}
         variant={resolvedVariant}
         hideOwner={hideOwner}
+        coordsLabel={coordsLabel}
+        headerAction={headerAction}
       />
     );
   },

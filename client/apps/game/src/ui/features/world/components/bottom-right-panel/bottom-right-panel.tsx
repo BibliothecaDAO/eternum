@@ -7,7 +7,7 @@ import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/li
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import Button from "@/ui/design-system/atoms/button";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
@@ -305,13 +305,8 @@ const MapTilePanel = () => {
 
   return (
     <>
-      {/* Header bubble — coords + (optionally) re-sync. */}
-      <div className={cn("pointer-events-auto flex items-center justify-between gap-2 rounded-xl px-3 py-2", OVERLAY_SURFACE_BASE)}>
-        <p className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{panelTitle}</p>
-        {headerAction}
-      </div>
       {selectedHex ? (
-        <SelectedWorldmapEntity />
+        <SelectedWorldmapEntity coordsLabel={panelTitle} headerAction={headerAction} />
       ) : (
         <div className={cn("pointer-events-auto rounded-xl px-4 py-6 text-center", OVERLAY_SURFACE_BASE)}>
           <p className={HUD_BODY}>Tap any tile on the world map to view its occupants and resources.</p>

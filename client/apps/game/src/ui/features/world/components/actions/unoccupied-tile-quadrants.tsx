@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 
 import Button from "@/ui/design-system/atoms/button";
+import { HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { formatBiomeBonus } from "@/ui/features/military";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
@@ -119,7 +120,7 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
             </Button>
           ) : null}
         </div>
-        <span className="truncate text-xs font-semibold text-gold" title={formatQuadrantBiomeLabel(biome)}>
+        <span className={`truncate ${HUD_HEADLINE}`} title={formatQuadrantBiomeLabel(biome)}>
           {formatQuadrantBiomeLabel(biome)}
         </span>
       </div>
@@ -137,14 +138,10 @@ export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction =
               <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className="break-words text-[9px] font-semibold uppercase leading-[1.05] tracking-[0.12em] text-gold/72">
-                {config.label}
-              </span>
-              <span className={`text-[10px] font-semibold uppercase leading-none ${tone.stateTextClassName}`}>
-                {tone.stateLabel}
-              </span>
+              <span className={`break-words leading-[1.05] ${HUD_LABEL}`}>{config.label}</span>
+              <span className={`leading-none ${HUD_CUE} ${tone.stateTextClassName}`}>{tone.stateLabel}</span>
             </div>
-            <span className={`shrink-0 text-xl font-bold leading-none ${tone.valueClassName}`}>{displayBonus}</span>
+            <span className={`shrink-0 leading-none ${HUD_VALUE} ${tone.valueClassName}`}>{displayBonus}</span>
           </div>
         ))}
       </div>

@@ -10,7 +10,6 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
 import { GameStartCountdown } from "./game-start-countdown";
-import { WalletPill } from "./pills/wallet-pill";
 import { TickProgress } from "./tick-progress";
 import {
   MIN_REFRESH_INTERVAL_MS,
@@ -264,7 +263,6 @@ export const TopHeader = memo(() => {
 
         {/* Push the right cluster to the far edge */}
         <div className="flex items-center gap-3 pointer-events-auto">
-          <WalletPill />
           <SecondaryMenuItems />
         </div>
       </div>

@@ -4,7 +4,12 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { LogisticsView } from "@/ui/features/world/containers/logistics-view";
-import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
+import { EconomyFacet } from "@/ui/features/world/containers/left-facets/economy";
+import { LeftFacetTabs } from "@/ui/features/world/containers/left-facets/left-facet-tabs";
+import { MilitaryFacet } from "@/ui/features/world/containers/left-facets/military";
+import { OverviewFacet } from "@/ui/features/world/containers/left-facets/overview";
+import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
+import { useStructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
 import { StructurePickerStrip } from "@/ui/features/world/containers/top-header/structure-picker/pills";
 import {
   RealtimeChatShell,
@@ -186,6 +191,7 @@ export const LeftCommandSidebar = memo(() => {
   }, [closeView, isPanelOpen]);
 
   const ConnectedAccount = useAccountStore((state) => state.account);
+  const leftFacet = useUIStore((state) => state.leftFacet);
 
   const pendingRenameStructure = useComponentValue(
     components.Structure,
@@ -197,16 +203,15 @@ export const LeftCommandSidebar = memo(() => {
 
   return (
     <>
-      {/* Left structure column — always-on bubbles for the player's active
-          structure. Mirrors the right-side tile-details column but is anchored
-          top-down and driven by the picker pill's selection rather than the
-          cursor. */}
+      {/* Left control column — picker pill at the top, then a facet tab strip
+          (Overview / Economy / Military), then the active facet's bubbles.
+          This is the *control surface* twin of the right-side read-only
+          inspector. Same Etched Bronze tone, different intent. */}
       {ConnectedAccount && (
         <div className="fixed left-3 top-3 z-20 pointer-events-auto flex w-[280px] max-h-[calc(100vh-440px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-          {/* Picker pill — anchors the column to the structure it controls. */}
           <StructurePickerStrip />
           {structureEntityId > 0 && (
-            <StructureBannerEntityDetail structureEntityId={structureEntityId} maxInventory={14} hideOwner />
+            <LeftStructureControlColumn structureEntityId={structureEntityId} leftFacet={leftFacet} />
           )}
         </div>
       )}
@@ -270,3 +275,55 @@ export const LeftCommandSidebar = memo(() => {
 });
 
 LeftCommandSidebar.displayName = "LeftCommandSidebar";
+
+// ----------------------------------------------------------------------------
+// LeftStructureControlColumn
+//
+// Renders the facet tab strip + the active facet's bubbles. Co-located here
+// because it consumes useStructureEntityDetail once for the attention badges
+// and forwards the same entity id into each facet — they call the hook
+// themselves but React Query dedupes the result, so there's no extra fetch.
+// ----------------------------------------------------------------------------
+
+const LeftStructureControlColumn = memo(
+  ({ structureEntityId, leftFacet }: { structureEntityId: ID; leftFacet: "overview" | "economy" | "military" }) => {
+    const detail = useStructureEntityDetail({ structureEntityId });
+    const productionSummary = useStructureProductionSummary(detail.structure, detail.resources ?? undefined);
+
+    const occupiedGuardSlots = useMemo(
+      () => detail.guards.filter((guard) => Number(guard.troops?.count ?? 0) > 0).length,
+      [detail.guards],
+    );
+
+    const attention = useMemo(() => {
+      const militaryNeedsAttention =
+        detail.guardSlotsMax !== undefined &&
+        detail.guardSlotsMax > 0 &&
+        occupiedGuardSlots < detail.guardSlotsMax;
+      const economyNeedsAttention =
+        productionSummary.totalProductionBuildings > 0 &&
+        productionSummary.activeProductionBuildings < productionSummary.totalProductionBuildings;
+      return {
+        overview: false,
+        economy: economyNeedsAttention,
+        military: militaryNeedsAttention,
+      } as const;
+    }, [
+      detail.guardSlotsMax,
+      occupiedGuardSlots,
+      productionSummary.activeProductionBuildings,
+      productionSummary.totalProductionBuildings,
+    ]);
+
+    return (
+      <>
+        <LeftFacetTabs attention={attention} />
+        {leftFacet === "overview" && <OverviewFacet structureEntityId={structureEntityId} />}
+        {leftFacet === "economy" && <EconomyFacet structureEntityId={structureEntityId} />}
+        {leftFacet === "military" && <MilitaryFacet structureEntityId={structureEntityId} />}
+      </>
+    );
+  },
+);
+
+LeftStructureControlColumn.displayName = "LeftStructureControlColumn";

@@ -16,11 +16,10 @@ import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Tent from "lucide-react/dist/esm/icons/tent";
 import { createElement, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { type StructureWithMetadata } from "./chip";
 import { StructurePickerPopover } from "./picker-popover";
 import { useStructuresWithMetadata } from "./use-structures-with-metadata";
-
-const MAX_VISIBLE_FAVORITE_PILLS = 4;
 
 const CATEGORY_ICONS: Partial<Record<StructureType, LucideIcon>> = {
   [StructureType.Realm]: Crown,
@@ -36,13 +35,6 @@ const getCategoryIcon = (category: StructureType | number | undefined): LucideIc
   return icon ?? Crown;
 };
 
-interface StructurePillBaseProps {
-  structure: StructureWithMetadata;
-  isActive: boolean;
-  onSelect: (entityId: ID) => void;
-  compact?: boolean;
-}
-
 // Render helper that resolves a category icon from a static lookup and emits
 // it via createElement. Avoids assigning a "Component" identifier inside
 // render, which the react-hooks/static-components rule (rightly) flags when
@@ -55,33 +47,35 @@ const CategoryIcon = ({
   className?: string;
 }) => createElement(getCategoryIcon(category), { className });
 
-const StructurePill = memo(({ structure, isActive, onSelect, compact = false }: StructurePillBaseProps) => {
-  const groupConfig = structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor] : null;
+// Resolve the green/amber/red status dot for the active pill. Goal: a glanceable
+// hint that the player should look at this structure (empty defense slot,
+// stalled production, etc.) without claiming any specific facet.
+const resolveStatusDot = (
+  structure: StructureWithMetadata,
+):
+  | { tone: "green" | "amber" | "red"; title: string }
+  | null => {
+  const capabilities = resolveStructureUiCapabilities(structure.structure);
+  if (!capabilities.hasPopulationDetails) return null;
 
-  return (
-    <Pill
-      tone="default"
-      active={isActive}
-      onClick={() => onSelect(structure.entityId)}
-      title={structure.displayName}
-      className={cn(
-        "max-w-[180px] gap-1.5 normal-case tracking-normal text-xs",
-        compact && "max-w-[140px] px-2 py-0.5 text-[11px]",
-      )}
-    >
-      <CategoryIcon
-        category={structure.category}
-        className={cn("h-3.5 w-3.5 flex-shrink-0", groupConfig ? groupConfig.textClass : "text-gold/80")}
-      />
-      {groupConfig && <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", groupConfig.dotClass)} />}
-      <span className={cn("truncate font-semibold", groupConfig ? groupConfig.textClass : "text-gold")}>
-        {structure.displayName}
-      </span>
-    </Pill>
-  );
-});
+  const base = structure.structure.base;
+  const occupied = Number(base?.troop_guard_count ?? 0);
+  const max = Number(base?.troop_max_guard_count ?? 0);
 
-StructurePill.displayName = "StructurePill";
+  if (max > 0 && occupied === 0) {
+    return { tone: "red", title: "No defenders stationed." };
+  }
+  if (max > 0 && occupied < max) {
+    return { tone: "amber", title: `Guards: ${occupied}/${max}` };
+  }
+  return { tone: "green", title: "All good." };
+};
+
+const STATUS_DOT_TONE: Record<"green" | "amber" | "red", string> = {
+  green: "bg-emerald-300/80 shadow-[0_0_6px_rgba(110,231,183,0.6)]",
+  amber: "bg-amber-300 shadow-[0_0_6px_rgba(252,211,77,0.6)]",
+  red: "bg-rose-400 shadow-[0_0_6px_rgba(244,114,114,0.7)]",
+};
 
 /**
  * StructurePickerStrip — top-zone surface that replaces the old
@@ -102,7 +96,7 @@ export const StructurePickerStrip = memo(() => {
   const playerStructures = useUIStore((state) => state.playerStructures);
   const goToStructure = useGoToStructure(setup);
 
-  const { favorites, toggleFavorite } = useFavoriteStructures();
+  const { toggleFavorite } = useFavoriteStructures();
   const structureNameVersion = useUIStore((state) => state.structureNameVersion);
   const structuresWithMetadata = useStructuresWithMetadata({
     structures: playerStructures,
@@ -182,25 +176,6 @@ export const StructurePickerStrip = memo(() => {
     [structuresWithMetadata, structureEntityId],
   );
 
-  // Favorites: take up to N pinned-favorites that aren't the active structure.
-  // Anything beyond the cap falls into the overflow popover (which always
-  // lists every structure, categorized).
-  const favoritePills = useMemo(() => {
-    const byId = new Map<ID, StructureWithMetadata>();
-    for (const structure of structuresWithMetadata) {
-      byId.set(structure.entityId, structure);
-    }
-    const ordered: StructureWithMetadata[] = [];
-    for (const favId of favorites) {
-      const match = byId.get(favId);
-      if (!match) continue;
-      if (match.entityId === structureEntityId) continue;
-      ordered.push(match);
-      if (ordered.length >= MAX_VISIBLE_FAVORITE_PILLS) break;
-    }
-    return ordered;
-  }, [favorites, structureEntityId, structuresWithMetadata]);
-
   // Nothing to render yet (fresh load, no structures synced).
   if (structuresWithMetadata.length === 0) {
     return null;
@@ -215,20 +190,34 @@ export const StructurePickerStrip = memo(() => {
           onClick={() => setIsPopoverOpen((prev) => !prev)}
           title={activeStructure.displayName}
           aria-label="Open structure picker"
-          className="max-w-[220px] gap-1.5 normal-case tracking-normal text-xs"
+          className="max-w-[260px] gap-1.5 normal-case tracking-normal text-xs"
         >
           {(() => {
             const groupConfig = activeStructure.groupColor ? STRUCTURE_GROUP_CONFIG[activeStructure.groupColor] : null;
+            const statusDot = resolveStatusDot(activeStructure);
+            const levelLabel = activeStructure.realmLevelLabel;
             return (
               <>
                 <CategoryIcon
                   category={activeStructure.category}
-                  className={cn("h-3.5 w-3.5 flex-shrink-0", groupConfig ? groupConfig.textClass : "text-gold")}
+                  className={cn("h-4 w-4 flex-shrink-0", groupConfig ? groupConfig.textClass : "text-gold")}
                 />
                 {groupConfig && <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", groupConfig.dotClass)} />}
-                <span className={cn("truncate font-semibold", groupConfig ? groupConfig.textClass : "text-gold")}>
+                <span className={cn("max-w-[200px] truncate font-semibold", groupConfig ? groupConfig.textClass : "text-gold")}>
                   {activeStructure.displayName}
                 </span>
+                {levelLabel && (
+                  <span className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1 text-[9px] uppercase tracking-wide text-gold/70">
+                    {levelLabel.charAt(0)}
+                  </span>
+                )}
+                {statusDot && (
+                  <span
+                    className={cn("h-2 w-2 flex-shrink-0 rounded-full", STATUS_DOT_TONE[statusDot.tone])}
+                    title={statusDot.title}
+                    aria-label={statusDot.title}
+                  />
+                )}
                 <ChevronDown
                   className={cn("h-3.5 w-3.5 flex-shrink-0 transition-transform", isPopoverOpen && "rotate-180")}
                   aria-hidden="true"
@@ -242,16 +231,6 @@ export const StructurePickerStrip = memo(() => {
           Select structure
         </Pill>
       )}
-
-      {favoritePills.map((structure) => (
-        <StructurePill
-          key={structure.entityId}
-          structure={structure}
-          isActive={false}
-          onSelect={handleSelectStructure}
-          compact
-        />
-      ))}
 
       {isPopoverOpen &&
         typeof document !== "undefined" &&

@@ -2,6 +2,9 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import {
   BiomeSummaryCard,
   UnoccupiedTileQuadrants,
@@ -43,17 +46,37 @@ const EntityInfoScrollPane = ({ children }: { children: ReactNode }) => (
   <div className={entityInfoScrollPaneClass}>{children}</div>
 );
 
-export const SelectedWorldmapEntity = () => {
+export const SelectedWorldmapEntity = ({
+  coordsLabel,
+  headerAction,
+}: {
+  coordsLabel?: string;
+  headerAction?: ReactNode;
+} = {}) => {
   const selectedHex = useUIStore((state) => state.selectedHex);
 
   if (!selectedHex) {
     return null;
   }
 
-  return <SelectedWorldmapEntityContent selectedHex={selectedHex} />;
+  return (
+    <SelectedWorldmapEntityContent
+      selectedHex={selectedHex}
+      coordsLabel={coordsLabel}
+      headerAction={headerAction}
+    />
+  );
 };
 
-const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
+const SelectedWorldmapEntityContent = ({
+  selectedHex,
+  coordsLabel,
+  headerAction,
+}: {
+  selectedHex: HexPosition;
+  coordsLabel?: string;
+  headerAction?: ReactNode;
+}) => {
   const { setup } = useDojo();
   const { handleUrlChange } = useQuery();
   const openPopup = useUIStore((state) => state.openPopup);
@@ -111,8 +134,27 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
     return renderUnexploredMessage();
   }
 
+  // Small fallback "STRUCTURE TILE · (x, y)" + re-sync chip for non-structure
+  // tiles. Structure tiles merge the same info into the owner bubble itself.
+  const coordChip = coordsLabel ? (
+    <div
+      className={cn(
+        "pointer-events-auto mb-2 flex items-center justify-between gap-2 rounded-xl px-3 py-2",
+        OVERLAY_SURFACE_BASE,
+      )}
+    >
+      <span className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{coordsLabel}</span>
+      {headerAction}
+    </div>
+  ) : null;
+
   if (!hasOccupier) {
-    return <UnoccupiedTileQuadrants biome={biome} />;
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        {coordChip}
+        <UnoccupiedTileQuadrants biome={biome} />
+      </div>
+    );
   }
 
   const gridAutoRows = "var(--selected-worldmap-entity-grid-auto-rows, minmax(0, auto))";
@@ -128,6 +170,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
       className="grid h-full min-h-0 grid-cols-1 gap-2"
       style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
     >
+      {isStructure ? null : coordChip}
       {isSpire ? (
         <div className={occupiedEntityLayoutClass}>
           <EntityInfoScrollPane>
@@ -158,6 +201,8 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
               maxInventory={14}
               showButtons={false}
               className={scrollableEntityDetailClass}
+              coordsLabel={coordsLabel}
+              headerAction={headerAction}
               {...sharedDetailProps}
             />
           </EntityInfoScrollPane>
