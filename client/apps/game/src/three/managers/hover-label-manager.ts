@@ -72,6 +72,7 @@ export class HoverLabelManager {
    */
   onHexHover(hexCoords: HexPosition): void {
     if (this.isCurrentHoveredHex(hexCoords) && this.hasActiveLabels()) {
+      this.refreshCurrentHover();
       return;
     }
 

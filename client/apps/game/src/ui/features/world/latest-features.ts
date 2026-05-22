@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-23",
+    title: "Reliable Hover Details",
+    description:
+      "Fixed intermittent world-map hover details by retrying active labels when loading or scene transitions temporarily detach them.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-23",
     title: "Cleaner Unit Markers",
     description:
       "Removed deprecated ownership dots above world-map units so armies rely on their model, labels, and selection states without extra marker clutter.",

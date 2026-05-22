@@ -105,6 +105,29 @@ describe("HoverLabelManager", () => {
     expect(markLabelsDirty).toHaveBeenCalledTimes(2);
   });
 
+  it("retries the same hovered hex when an active label needs reattachment", () => {
+    const markLabelsDirty = vi.fn();
+    const army = {
+      show: vi.fn().mockReturnValueOnce({ status: "shown" }).mockReturnValueOnce({ status: "reattached" }),
+      hide: vi.fn(),
+    };
+    const manager = new HoverLabelManager(
+      { army },
+      () => ({
+        army: { id: 42, owner: 1n },
+      }),
+      undefined,
+      markLabelsDirty,
+    );
+
+    manager.onHexHover({ col: 10, row: 12 });
+    manager.onHexHover({ col: 10, row: 12 });
+
+    expect(army.show).toHaveBeenCalledTimes(2);
+    expect(manager.hasActiveLabels()).toBe(true);
+    expect(markLabelsDirty).toHaveBeenCalledTimes(2);
+  });
+
   it("reports active labels only when at least one label target is active", () => {
     const manager = new HoverLabelManager(
       {
