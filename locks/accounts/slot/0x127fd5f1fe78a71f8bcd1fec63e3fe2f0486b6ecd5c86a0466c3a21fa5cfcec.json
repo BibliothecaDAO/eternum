@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-pulse-750",
-    "launchRequestId": "26150823291-1",
+    "gameName": "bltz-pop-122",
+    "launchRequestId": "26273307352-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26150823291,
+    "workflowRunId": 26273307352,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "43d281bd-9efd-434f-86c0-6e65285d1e93"
+    "stepId": "create-world",
+    "leaseId": "72aeb47c-d9bb-4476-ae3b-de43968eb6a4"
   },
-  "acquiredAt": "2026-05-20T08:31:57.240Z",
-  "heartbeatAt": "2026-05-20T08:32:12.844Z",
-  "expiresAt": "2026-05-20T08:32:12.844Z",
-  "releasedAt": "2026-05-20T08:32:12.844Z"
+  "acquiredAt": "2026-05-22T06:59:11.411Z",
+  "heartbeatAt": "2026-05-22T06:59:11.411Z",
+  "expiresAt": "2026-05-22T07:09:11.411Z"
 }
