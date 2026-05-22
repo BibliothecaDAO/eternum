@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-22T06:56:54.893Z",
+  "updatedAt": "2026-05-22T07:06:57.987Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2664,6 +2664,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-22-05-26-0100 not found"
       },
       "updatedAt": "2026-05-22T06:56:54.893Z"
+    },
+    "bltz-pop-122": {
+      "gameName": "bltz-pop-122",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-pop-122/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-22T07:06:57.986Z"
+      },
+      "updatedAt": "2026-05-22T07:06:57.987Z"
     }
   }
 }
