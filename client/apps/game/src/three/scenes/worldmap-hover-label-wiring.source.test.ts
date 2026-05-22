@@ -51,4 +51,12 @@ describe("worldmap hover label wiring", () => {
     expect(source).toContain("markLabelsDirty");
     expect(source).toMatch(/new WorldmapScene\([\s\S]*markLabelsDirty/);
   });
+
+  it("refreshes current hover labels after manager labels are reattached", () => {
+    const source = readWorldmapSource();
+
+    expect(
+      extractSourceBetween(source, "private attachWorldmapManagerLabels()", "private detachWorldmapManagerLabels()"),
+    ).toContain("this.refreshCurrentHoverLabels()");
+  });
 });

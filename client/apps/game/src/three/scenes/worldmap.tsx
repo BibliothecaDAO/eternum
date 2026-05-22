@@ -118,6 +118,7 @@ import { env } from "../../../env";
 import { playerCosmeticsStore, preloadAllCosmeticAssets } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
+import { resolveWorldmapHoverLabelEntity } from "./worldmap-hover-label-entities";
 import { resolveWorldmapHoverLabelTargets } from "./worldmap-hover-label-targets";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { ArrivalGhostManager } from "../managers/arrival-ghost-manager";
@@ -2506,9 +2507,9 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     return {
-      army: this.resolveHoverLabelEntity(targets.armyId, cachedEntities.army),
-      structure: this.resolveHoverLabelEntity(targets.structureId, cachedEntities.structure),
-      chest: this.resolveHoverLabelEntity(targets.chestId, cachedEntities.chest),
+      army: resolveWorldmapHoverLabelEntity(targets.armyId, cachedEntities.army),
+      structure: resolveWorldmapHoverLabelEntity(targets.structureId, cachedEntities.structure),
+      chest: resolveWorldmapHoverLabelEntity(targets.chestId, cachedEntities.chest),
     };
   }
 
@@ -2522,14 +2523,6 @@ export default class WorldmapScene extends WarpTravel {
       entityId,
       position: this.armiesPositions.get(entityId),
     };
-  }
-
-  private resolveHoverLabelEntity(entityId: ID | undefined, cachedEntity?: HexEntityInfo): HexEntityInfo | undefined {
-    if (entityId === undefined) {
-      return undefined;
-    }
-
-    return cachedEntity?.id === entityId ? cachedEntity : { id: entityId, owner: 0n };
   }
 
   private refreshCurrentHoverLabels(): void {
@@ -3938,9 +3931,7 @@ export default class WorldmapScene extends WarpTravel {
     this.selectionPulseManager.hideSelection(); // Hide selection pulse
     this.selectionPulseManager.clearOwnershipPulses();
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
-    this.armyManager.addLabelsToScene();
-    this.structureManager.showLabels();
-    this.chestManager.addLabelsToScene();
+    this.attachWorldmapManagerLabels();
   }
 
   private applyContextualHoverPalette(hexCoords: HexPosition | null): void {
@@ -4096,6 +4087,7 @@ export default class WorldmapScene extends WarpTravel {
     this.armyManager.addLabelsToScene();
     this.structureManager.showLabels();
     this.chestManager.addLabelsToScene();
+    this.refreshCurrentHoverLabels();
   }
 
   private detachWorldmapManagerLabels(): void {

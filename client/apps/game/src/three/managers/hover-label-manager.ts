@@ -1,5 +1,9 @@
 import { CameraView } from "../scenes/camera-view";
-import { HexPosition, ID, HexEntityInfo } from "@bibliothecadao/types";
+import { HexPosition, ID } from "@bibliothecadao/types";
+
+interface HoverLabelEntity {
+  id: ID;
+}
 
 type HoverLabelController = {
   show: (entityId: ID) => void;
@@ -17,10 +21,10 @@ type HoverLabelControllers = {
 type HoverLabelType = keyof HoverLabelControllers;
 
 type HexagonEntities = {
-  army?: HexEntityInfo;
-  structure?: HexEntityInfo;
-  quest?: HexEntityInfo;
-  chest?: HexEntityInfo;
+  army?: HoverLabelEntity;
+  structure?: HoverLabelEntity;
+  quest?: HoverLabelEntity;
+  chest?: HoverLabelEntity;
 };
 
 interface ReconcileHoveredHexLabelsOptions {
@@ -154,6 +158,7 @@ export class HoverLabelManager {
 
     if (currentId === entityId) {
       if (options?.retryActiveLabels) {
+        // Re-issue show because lifecycle transitions can detach the CSS2D object while hover state stays active.
         controller.show(entityId);
         return true;
       }
