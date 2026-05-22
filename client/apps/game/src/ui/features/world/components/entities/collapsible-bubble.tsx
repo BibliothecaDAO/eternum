@@ -1,4 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_CUE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
@@ -26,13 +27,11 @@ export const InfoBubble = ({ title, icon: Icon, cue, children, className, bodyCl
   return (
     <div className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto rounded-xl", className)}>
       <div className="flex items-center justify-between gap-2 px-3 py-2">
-        <span className="flex min-w-0 items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold/80">
+        <span className={cn("flex min-w-0 items-center gap-2", HUD_LABEL)}>
           {Icon && <Icon className="h-3.5 w-3.5 flex-shrink-0 text-gold/70" />}
           <span className="truncate">{title}</span>
         </span>
-        {cue && (
-          <span className="flex-shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold/55">{cue}</span>
-        )}
+        {cue && <span className={cn("flex-shrink-0", HUD_CUE)}>{cue}</span>}
       </div>
       <div className={cn("px-3 pb-3 pt-1", bodyClassName)}>{children}</div>
     </div>

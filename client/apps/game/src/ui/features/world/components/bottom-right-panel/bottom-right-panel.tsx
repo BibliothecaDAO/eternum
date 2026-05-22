@@ -6,6 +6,7 @@ import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
 import { FELT_CENTER } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_BODY, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import Button from "@/ui/design-system/atoms/button";
 import { sqlApi } from "@/services/api";
@@ -302,16 +303,14 @@ const MapTilePanel = () => {
     <>
       {/* Header bubble — coords + (optionally) re-sync. */}
       <div className={cn("pointer-events-auto flex items-center justify-between gap-2 rounded-xl px-3 py-2", OVERLAY_SURFACE_BASE)}>
-        <p className="min-w-0 flex-1 truncate text-[10px] font-semibold uppercase tracking-[0.25em] text-gold/70">
-          {panelTitle}
-        </p>
+        <p className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{panelTitle}</p>
         {headerAction}
       </div>
       {selectedHex ? (
         <SelectedWorldmapEntity />
       ) : (
         <div className={cn("pointer-events-auto rounded-xl px-4 py-6 text-center", OVERLAY_SURFACE_BASE)}>
-          <p className="text-xs text-gold/70">Tap any tile on the world map to view its occupants and resources.</p>
+          <p className={HUD_BODY}>Tap any tile on the world map to view its occupants and resources.</p>
         </div>
       )}
     </>

@@ -9,6 +9,7 @@ import { memo, useCallback, useMemo } from "react";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_HEADLINE } from "@/ui/design-system/atoms/hud-typography";
 import { InfoBubble } from "../collapsible-bubble";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -205,8 +206,8 @@ const StructureBannerEntityDetailContent = memo(
                 )}
               </div>
               <div className="min-w-0">
-                <p className={cn("truncate font-semibold text-gold", headerTitleClass)}>{ownerDisplayName}</p>
-                <span className={cn("block truncate text-gold/80", headerMetaClass)}>{structureName}</span>
+                <p className={cn("truncate", HUD_HEADLINE)}>{ownerDisplayName}</p>
+                <span className={cn("block truncate", HUD_BODY)}>{structureName}</span>
               </div>
             </div>
             {canOpenTransferPopup && (
@@ -270,7 +271,7 @@ const StructureBannerEntityDetailContent = memo(
               variant={defenseDisplayVariant}
             />
           ) : (
-            <p className="text-xxs text-gold/60 italic">No defenders stationed.</p>
+            <p className={HUD_BODY_MUTED}>No defenders stationed.</p>
           )}
         </InfoBubble>
 
@@ -285,7 +286,7 @@ const StructureBannerEntityDetailContent = memo(
                 productionSummary={productionSummary}
               />
             ) : (
-              <p className="text-xxs text-gold/60 italic">
+              <p className={HUD_BODY_MUTED}>
                 {isFragmentMine
                   ? `${mode.labels.fragmentMines} do not produce resources.`
                   : "Production data unavailable."}
@@ -314,7 +315,7 @@ const StructureBannerEntityDetailContent = memo(
                 maxItems={inventoryLimit}
               />
             ) : (
-              <p className="text-xxs text-gold/60 italic">No resources stored.</p>
+              <p className={HUD_BODY_MUTED}>No resources stored.</p>
             )}
             {/* labelTextClass kept referenced below so unused-var doesn't fire */}
             <span className={cn(labelTextClass, "sr-only")}>Balance</span>

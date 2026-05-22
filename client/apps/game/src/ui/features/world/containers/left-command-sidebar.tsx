@@ -567,7 +567,7 @@ export const LeftCommandSidebar = memo(() => {
     <>
       {/* View-switcher strip — vertical column of pills floating against the map. No container chrome. */}
       {ConnectedAccount && combinedNavigationItems.length > 0 && (
-        <div className="fixed left-3 top-16 z-20 pointer-events-auto flex flex-col gap-2">
+        <div className="fixed left-3 top-1/2 z-20 pointer-events-auto flex -translate-y-1/2 flex-col gap-2">
           {combinedNavigationItems.map((item) => (
             <CircleButton key={item.id} {...item} size="lg" variant="hud" />
           ))}
@@ -578,7 +578,7 @@ export const LeftCommandSidebar = memo(() => {
       {isPanelOpen && (
         <div
           className={clsx(
-            "fixed left-20 top-16 z-30 pointer-events-auto flex w-[380px] max-h-[calc(100vh-120px)] flex-col overflow-hidden rounded-xl",
+            "fixed left-20 top-1/2 z-30 pointer-events-auto flex w-[380px] max-h-[calc(100vh-32px)] -translate-y-1/2 flex-col overflow-hidden rounded-xl",
             OVERLAY_SURFACE_BASE,
           )}
         >

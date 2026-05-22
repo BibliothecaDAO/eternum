@@ -63,7 +63,7 @@ const toneClasses: Record<PillTone, { container: string; dot: string }> = {
 };
 
 const baseClasses = cn(
-  "relative inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em]",
+  "relative inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.16em]",
   OVERLAY_SURFACE_BASE,
 );
 

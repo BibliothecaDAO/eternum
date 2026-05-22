@@ -5,6 +5,7 @@ import { getBlockTimestamp, Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
@@ -144,15 +145,18 @@ export const TopHeader = memo(() => {
   return (
     <>
       {/* Layout container — pointer-events pass through the gaps between pills so the
-          map remains clickable. Each pill flips pointer-events back on. */}
-      <div className="fixed top-0 left-0 right-0 z-20 flex flex-wrap items-center gap-3 px-3 py-2 pointer-events-none">
+          map remains clickable. Each pill flips pointer-events back on.
+          Centered horizontally so the top zone mirrors the right-side column's
+          vertical centering. */}
+      <div className="fixed top-0 left-0 right-0 z-20 flex flex-wrap items-center justify-center gap-3 px-3 py-2 pointer-events-none">
         {/* Spectating badge — only renders when actually spectating. The player
             identity itself lives in the rank pill on the right. */}
         {isSpectating && (
           <div
             className={cn(
               PILL_SURFACE,
-              "flex items-center gap-1.5 px-3 py-1 text-[10px] uppercase tracking-[0.18em] text-gold font-[Cinzel]",
+              "flex items-center gap-1.5 px-3 py-1",
+              HUD_LABEL_BRIGHT,
             )}
           >
             <EyeIcon className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
@@ -186,7 +190,7 @@ export const TopHeader = memo(() => {
               );
             }}
             onMouseEnter={() => playHover()}
-            className={cn("cursor-pointer text-xs", isLocalView && "text-gold font-bold")}
+            className={cn("cursor-pointer text-[11px] uppercase tracking-[0.16em] font-semibold text-gold/70", isLocalView && "text-gold")}
           >
             Local
           </span>
@@ -217,7 +221,7 @@ export const TopHeader = memo(() => {
               );
             }}
             onMouseEnter={() => playHover()}
-            className={cn("cursor-pointer text-xs", isWorldView && "text-gold font-bold")}
+            className={cn("cursor-pointer text-[11px] uppercase tracking-[0.16em] font-semibold text-gold/70", isWorldView && "text-gold")}
           >
             World
           </span>
@@ -262,7 +266,7 @@ export const TopHeader = memo(() => {
         )}
 
         {/* Push the right cluster to the far edge */}
-        <div className="ml-auto flex items-center gap-3 pointer-events-auto">
+        <div className="flex items-center gap-3 pointer-events-auto">
           <WalletPill />
           <SecondaryMenuItems />
         </div>
