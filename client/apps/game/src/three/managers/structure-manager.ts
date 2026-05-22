@@ -40,6 +40,7 @@ import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions, transitionManager } from "../utils/labels/label-transitions";
 import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import { FXManager } from "./fx-manager";
+import type { HoverLabelShowResult } from "./hover-label-show-result";
 import {
   bindManagerChunkRuntimeState,
   recoverManagerChunkRuntimeAfterStall,
@@ -1832,28 +1833,39 @@ export class StructureManager {
     this.applyFrustumVisibilityToLabels();
   }
 
-  public showLabel(entityId: ID): boolean {
+  public showLabel(entityId: ID): HoverLabelShowResult {
     const normalizedEntityId = normalizeEntityId(entityId);
     if (normalizedEntityId === undefined) {
-      return false;
+      return { status: "missing" };
     }
 
     const structure = this.structures.getStructureByEntityId(normalizedEntityId);
     if (!structure) {
-      return false;
+      return { status: "missing" };
     }
 
     const existingLabel = this.entityIdLabels.get(normalizedEntityId);
     if (existingLabel) {
+      const wasDetached = existingLabel.parent !== this.labelsGroup;
+      const wasHidden = existingLabel.visible !== true || existingLabel.element.style.display === "none";
+      if (wasDetached) {
+        this.labelsGroup.add(existingLabel);
+      }
+      existingLabel.visible = true;
+      existingLabel.element.style.display = "";
       this.refreshExistingStructureLabel(structure, existingLabel);
       this.highlightStructurePointIcon(structure, normalizedEntityId);
-      return true;
+      if (wasDetached || wasHidden) {
+        this.frustumVisibilityDirty = true;
+        return { status: "reattached" };
+      }
+      return { status: "unchanged" };
     }
 
     this.addEntityIdLabel(structure, this.resolveStructureLabelPosition(structure));
     this.highlightStructurePointIcon(structure, normalizedEntityId);
     this.frustumVisibilityDirty = true;
-    return true;
+    return { status: "shown" };
   }
 
   public hideLabel(entityId: ID): void {

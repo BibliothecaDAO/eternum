@@ -24,17 +24,25 @@ function extractSourceBetween(source: string, startSignature: string, endSignatu
 }
 
 describe("worldmap hover label wiring", () => {
-  it("refreshes current hover after entity caches catch up", () => {
+  it("reconciles current hover only after entity managers catch up", () => {
     const source = readWorldmapSource();
 
-    expect(extractSourceBetween(source, "public updateArmyHexes(", "public updateStructureHexes(")).toContain(
-      "this.refreshCurrentHoverLabels()",
+    expect(
+      extractSourceBetween(
+        source,
+        "await this.armyManager.onTileUpdate(update)",
+        "this.clearPendingArmyMovementFromAuthoritativePosition(update)",
+      ),
+    ).toContain("this.reconcileHoverLabels()");
+    expect(extractSourceBetween(source, "processExplorerTroopsUpdate(update", "}),")).toContain("reconcileHoverLabels");
+    expect(extractSourceBetween(source, "await this.trackStructureHydrationUpdate(value", "const newCount")).toContain(
+      "this.reconcileHoverLabels()",
     );
-    expect(extractSourceBetween(source, "public updateStructureHexes(", "public updateChestHexes(")).toContain(
-      "this.refreshCurrentHoverLabels()",
+    expect(extractSourceBetween(source, "this.chestManager.onUpdate(update)", "}),")).toContain(
+      "this.reconcileHoverLabels()",
     );
-    expect(extractSourceBetween(source, "public updateChestHexes(", "public async updateExploredHex(")).toContain(
-      "this.refreshCurrentHoverLabels()",
+    expect(extractSourceBetween(source, "public updateArmyHexes(", "public updateStructureHexes(")).not.toContain(
+      "reconcileHoverLabels",
     );
   });
 
@@ -52,11 +60,16 @@ describe("worldmap hover label wiring", () => {
     expect(source).toMatch(/new WorldmapScene\([\s\S]*markLabelsDirty/);
   });
 
-  it("refreshes current hover labels after manager labels are reattached", () => {
+  it("does not reattach every tracked manager label on scene resume", () => {
     const source = readWorldmapSource();
+    const attachWorldmapManagerLabels = extractSourceBetween(
+      source,
+      "private attachWorldmapManagerLabels()",
+      "private detachWorldmapManagerLabels()",
+    );
 
-    expect(
-      extractSourceBetween(source, "private attachWorldmapManagerLabels()", "private detachWorldmapManagerLabels()"),
-    ).toContain("this.refreshCurrentHoverLabels()");
+    expect(attachWorldmapManagerLabels).toContain("this.reconcileHoverLabels()");
+    expect(attachWorldmapManagerLabels).not.toContain("addLabelsToScene");
+    expect(attachWorldmapManagerLabels).not.toContain("showLabels()");
   });
 });

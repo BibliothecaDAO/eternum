@@ -66,6 +66,7 @@ import { updateStaminaBar } from "../utils/labels/label-components";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import type { HoverLabelShowResult } from "./hover-label-show-result";
 import { removeArmyAttachmentsIfTracked, syncArmyAttachmentState } from "./army-attachment-state";
 import { syncArmyAttachmentTransformState } from "./army-attachment-transforms";
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
@@ -2829,28 +2830,37 @@ export class ArmyManager {
     this.frustumVisibilityDirty = true;
   }
 
-  public showLabel(entityId: ID): boolean {
+  public showLabel(entityId: ID): HoverLabelShowResult {
     const army = this.armies.get(entityId);
     if (!army) {
-      return false;
+      return { status: "missing" };
     }
 
     const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
     if (this.entityIdLabels.has(army.entityId)) {
       const label = this.entityIdLabels.get(army.entityId)!;
+      const wasDetached = label.parent !== this.labelsGroup;
+      const wasHidden = label.visible !== true || label.element.style.display === "none";
       syncArmyLabelPresentationState({
         label,
         position,
       });
+      this.revealArmyLabel(entityId, label);
+      label.visible = true;
+      label.element.style.display = "";
       this.updateArmyLabelData(entityId, army, label);
       this.highlightArmyPointHover(entityId, army);
-      return true;
+      if (wasDetached || wasHidden) {
+        this.frustumVisibilityDirty = true;
+        return { status: "reattached" };
+      }
+      return { status: "unchanged" };
     }
 
     this.addEntityIdLabel(army, position);
     this.highlightArmyPointHover(entityId, army);
     this.frustumVisibilityDirty = true;
-    return true;
+    return { status: "shown" };
   }
 
   public hideLabel(entityId: ID): void {

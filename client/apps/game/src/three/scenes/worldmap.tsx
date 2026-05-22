@@ -1061,6 +1061,7 @@ export default class WorldmapScene extends WarpTravel {
   };
   private toriiBoundsLogInterval: ReturnType<typeof setInterval> | null = null;
   private readonly hoverLabelRaycaster: Raycaster;
+  private currentHoverLabelHex: HexPosition | null = null;
 
   constructor(
     dojoContext: SetupResult,
@@ -1514,6 +1515,7 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         await this.armyManager.onTileUpdate(update);
+        this.reconcileHoverLabels();
         this.clearPendingArmyMovementFromAuthoritativePosition(update);
         recordArmyMovementLatencyPhase({
           phase: "army_manager_tile_update_applied",
@@ -1549,6 +1551,7 @@ export default class WorldmapScene extends WarpTravel {
           scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
           updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
           updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
+          onManagerUpdateApplied: () => this.reconcileHoverLabels(),
           recordLiveArmyPresenceUpdate: (update) => this.recordAuthoritativeArmyLiveUpdate(update.entityId),
           onAuthoritativePositionApplied: (update) => this.clearPendingArmyMovementFromAuthoritativePosition(update),
           recoverPendingArmyRemovalFromExplorerTroops: (update) =>
@@ -1613,6 +1616,7 @@ export default class WorldmapScene extends WarpTravel {
           const previousStructureOwner = this.getTrackedStructureOwner(update.entityId);
           this.updateStructureHexes(update);
           this.structureManager.updateStructureLabelFromStructureUpdate(update);
+          this.reconcileHoverLabels();
           if (previousStructureOwner !== update.owner.address) {
             this.syncAttachedArmiesForStructureOwner(update);
           }
@@ -1627,6 +1631,7 @@ export default class WorldmapScene extends WarpTravel {
         void this.trackStructureHydrationUpdate(update, () => {
           this.incrementToriiBoundsCounter("structureBuildings");
           this.structureManager.updateStructureLabelFromBuildingUpdate(update);
+          this.reconcileHoverLabels();
         }).catch((error) => {
           console.warn("[Worldmap] Structure-building hydration update failed", error);
         });
@@ -1665,6 +1670,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     await this.trackStructureHydrationUpdate(value, () => this.structureManager.onUpdate(value));
+    this.reconcileHoverLabels();
 
     const newCount = this.structureManager.getTotalStructures();
     const countChanged = this.totalStructures !== newCount;
@@ -1702,6 +1708,7 @@ export default class WorldmapScene extends WarpTravel {
       this.worldUpdateListener.Chest.onTileUpdate((update: ChestSystemUpdate) => {
         this.updateChestHexes(update);
         this.chestManager.onUpdate(update);
+        this.reconcileHoverLabels();
       }),
     );
     this.addWorldUpdateSubscription(
@@ -2380,6 +2387,7 @@ export default class WorldmapScene extends WarpTravel {
       document.body.style.cursor = "default";
 
       // Handle label collapse on hex leave
+      this.currentHoverLabelHex = null;
       this.hoverLabelManager.onHexLeave();
       return;
     }
@@ -2393,7 +2401,8 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     // Handle label expansion on hover
-    this.hoverLabelManager.onHexHover(hexCoords);
+    this.currentHoverLabelHex = hexCoords;
+    this.reconcileHoverLabels();
 
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
@@ -2525,8 +2534,12 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  private refreshCurrentHoverLabels(): void {
-    this.hoverLabelManager?.refreshCurrentHover();
+  private reconcileHoverLabels(): void {
+    if (!this.currentHoverLabelHex) {
+      return;
+    }
+
+    this.hoverLabelManager.reconcileHexHover(this.currentHoverLabelHex);
   }
 
   protected tryArmyRaycastFallback(raycaster: Raycaster): HexPosition | null {
@@ -4084,10 +4097,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private attachWorldmapManagerLabels(): void {
-    this.armyManager.addLabelsToScene();
-    this.structureManager.showLabels();
-    this.chestManager.addLabelsToScene();
-    this.refreshCurrentHoverLabels();
+    this.reconcileHoverLabels();
   }
 
   private detachWorldmapManagerLabels(): void {
@@ -4369,6 +4379,7 @@ export default class WorldmapScene extends WarpTravel {
     this.armyStructureOwners.delete(entityId);
     this.clearArmyMovementTxEntriesForEntity(entityId);
     this.clearPendingArmyMovement(entityId);
+    this.reconcileHoverLabels();
   }
 
   private resolveSupersededPendingArmyRemoval(
@@ -4600,6 +4611,7 @@ export default class WorldmapScene extends WarpTravel {
         }
       });
     });
+    this.reconcileHoverLabels();
   }
 
   // used to track the position of the armies on the map
@@ -4662,7 +4674,6 @@ export default class WorldmapScene extends WarpTravel {
           }
           this.armiesPositions.delete(entityId);
           this.armyStructureOwners.delete(entityId);
-          this.refreshCurrentHoverLabels();
           return;
         }
       } else {
@@ -4715,7 +4726,6 @@ export default class WorldmapScene extends WarpTravel {
     this.armyHexes.get(newPos.col)?.set(newPos.row, armyHexData);
     gameWorkerManager.updateArmyHex(newPos.col, newPos.row, armyHexData);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
-    this.refreshCurrentHoverLabels();
   }
 
   public updateStructureHexes(update: {
@@ -4755,7 +4765,6 @@ export default class WorldmapScene extends WarpTravel {
     this.structureHexes.get(newPos.col)?.set(newPos.row, structureInfo);
     gameWorkerManager.updateStructureHex(newPos.col, newPos.row, structureInfo);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
-    this.refreshCurrentHoverLabels();
     return { oldPos, newPos };
   }
 
@@ -4775,7 +4784,6 @@ export default class WorldmapScene extends WarpTravel {
       this.chestHexes.set(newCol, new Map());
     }
     this.chestHexes.get(newCol)?.set(newRow, { id: occupierId, owner: 0n });
-    this.refreshCurrentHoverLabels();
   }
 
   public async updateExploredHex(update: TileSystemUpdate) {
@@ -9624,7 +9632,7 @@ export default class WorldmapScene extends WarpTravel {
       setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
-      this.refreshCurrentHoverLabels();
+      this.reconcileHoverLabels();
     }
 
     if (import.meta.env.DEV) {
@@ -9735,7 +9743,7 @@ export default class WorldmapScene extends WarpTravel {
       setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
-      this.refreshCurrentHoverLabels();
+      this.reconcileHoverLabels();
     }
 
     handleWorldmapCriticalManagerCatchUpFailures({

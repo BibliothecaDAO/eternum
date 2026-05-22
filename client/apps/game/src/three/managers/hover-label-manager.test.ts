@@ -125,7 +125,7 @@ describe("HoverLabelManager", () => {
   it("does not mark a hover target active until the controller can show it", () => {
     const markLabelsDirty = vi.fn();
     const army = {
-      show: vi.fn().mockReturnValueOnce(false).mockReturnValueOnce(true),
+      show: vi.fn().mockReturnValueOnce({ status: "missing" }).mockReturnValueOnce({ status: "shown" }),
       hide: vi.fn(),
     };
     const manager = new HoverLabelManager(
@@ -141,6 +141,73 @@ describe("HoverLabelManager", () => {
     manager.onHexHover({ col: 10, row: 12 });
 
     expect(army.show).toHaveBeenCalledTimes(2);
+    expect(manager.hasActiveLabels()).toBe(true);
+    expect(markLabelsDirty).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not mark labels dirty when a target is still missing during reconcile", () => {
+    const markLabelsDirty = vi.fn();
+    const army = {
+      show: vi.fn(() => ({ status: "missing" })),
+      hide: vi.fn(),
+    };
+    const manager = new HoverLabelManager(
+      { army },
+      () => ({
+        army: { id: 42, owner: 1n },
+      }),
+      undefined,
+      markLabelsDirty,
+    );
+
+    manager.onHexHover({ col: 10, row: 12 });
+    manager.refreshCurrentHover();
+
+    expect(army.show).toHaveBeenCalledTimes(2);
+    expect(manager.hasActiveLabels()).toBe(false);
+    expect(markLabelsDirty).not.toHaveBeenCalled();
+  });
+
+  it("marks labels dirty when a current hover target is reattached", () => {
+    const markLabelsDirty = vi.fn();
+    const army = {
+      show: vi.fn().mockReturnValueOnce({ status: "shown" }).mockReturnValueOnce({ status: "reattached" }),
+      hide: vi.fn(),
+    };
+    const manager = new HoverLabelManager(
+      { army },
+      () => ({
+        army: { id: 42, owner: 1n },
+      }),
+      undefined,
+      markLabelsDirty,
+    );
+
+    manager.onHexHover({ col: 10, row: 12 });
+    manager.refreshCurrentHover();
+
+    expect(manager.hasActiveLabels()).toBe(true);
+    expect(markLabelsDirty).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not mark labels dirty when a current hover target is unchanged", () => {
+    const markLabelsDirty = vi.fn();
+    const army = {
+      show: vi.fn().mockReturnValueOnce({ status: "shown" }).mockReturnValueOnce({ status: "unchanged" }),
+      hide: vi.fn(),
+    };
+    const manager = new HoverLabelManager(
+      { army },
+      () => ({
+        army: { id: 42, owner: 1n },
+      }),
+      undefined,
+      markLabelsDirty,
+    );
+
+    manager.onHexHover({ col: 10, row: 12 });
+    manager.refreshCurrentHover();
+
     expect(manager.hasActiveLabels()).toBe(true);
     expect(markLabelsDirty).toHaveBeenCalledTimes(1);
   });

@@ -1,12 +1,18 @@
 import { CameraView } from "../scenes/camera-view";
 import { HexPosition, ID } from "@bibliothecadao/types";
+import {
+  didChangeHoverLabelRenderState,
+  didShowHoverLabel,
+  normalizeHoverLabelShowResult,
+  type HoverLabelShowResult,
+} from "./hover-label-show-result";
 
 interface HoverLabelEntity {
   id: ID;
 }
 
 type HoverLabelController = {
-  show: (entityId: ID) => boolean | void;
+  show: (entityId: ID) => HoverLabelShowResult | boolean | void;
   hide: (entityId: ID) => void;
   hideAll?: () => void;
 };
@@ -29,6 +35,11 @@ type HexagonEntities = {
 
 interface ReconcileHoveredHexLabelsOptions {
   retryActiveLabels?: boolean;
+}
+
+interface ShowAndTrackLabelResult {
+  renderChanged: boolean;
+  shown: boolean;
 }
 
 /**
@@ -66,6 +77,15 @@ export class HoverLabelManager {
 
     this.currentHoveredHex = hexCoords;
     this.reconcileHoveredHexLabels(hexCoords);
+  }
+
+  public reconcileHexHover(hexCoords: HexPosition): void {
+    if (!this.isCurrentHoveredHex(hexCoords)) {
+      this.onHexHover(hexCoords);
+      return;
+    }
+
+    this.refreshCurrentHover();
   }
 
   public refreshCurrentHover(): void {
@@ -159,8 +179,9 @@ export class HoverLabelManager {
     if (currentId === entityId) {
       if (options?.retryActiveLabels) {
         // Re-issue show because lifecycle transitions can detach the CSS2D object while hover state stays active.
-        if (this.showAndTrackLabel(controller, type, entityId)) {
-          return true;
+        const result = this.showAndTrackLabel(controller, type, entityId);
+        if (result.shown) {
+          return result.renderChanged;
         }
 
         delete this.activeLabels[type];
@@ -169,17 +190,30 @@ export class HoverLabelManager {
       return labelChanged;
     }
 
-    return this.showAndTrackLabel(controller, type, entityId) || labelChanged;
+    const result = this.showAndTrackLabel(controller, type, entityId);
+    return result.renderChanged || labelChanged;
   }
 
-  private showAndTrackLabel(controller: HoverLabelController, type: HoverLabelType, entityId: ID): boolean {
-    const labelWasShown = controller.show(entityId) !== false;
-    if (!labelWasShown) {
-      return false;
+  private showAndTrackLabel(
+    controller: HoverLabelController,
+    type: HoverLabelType,
+    entityId: ID,
+  ): ShowAndTrackLabelResult {
+    const currentId = this.activeLabels[type];
+    const result = normalizeHoverLabelShowResult(controller.show(entityId));
+
+    if (!didShowHoverLabel(result)) {
+      return {
+        renderChanged: false,
+        shown: false,
+      };
     }
 
     this.activeLabels[type] = entityId;
-    return true;
+    return {
+      renderChanged: currentId !== entityId || didChangeHoverLabelRenderState(result),
+      shown: true,
+    };
   }
 
   private markDirtyIfLabelsNeedRender(labelsNeedRender: boolean): void {
