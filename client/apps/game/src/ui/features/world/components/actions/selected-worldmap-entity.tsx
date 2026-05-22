@@ -116,22 +116,8 @@ const SelectedWorldmapEntityContent = ({
     handleUrlChange(`/play/travel?col=${normalizedSelectedHex.x}&row=${normalizedSelectedHex.y}`);
   }, [handleUrlChange, normalizedSelectedHex.x, normalizedSelectedHex.y]);
 
-  const renderUnexploredMessage = () => (
-    <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-center">
-      <p className="text-xs font-medium text-gold/60 italic text-center">
-        Unexplored Territory.
-        <br />
-        Send an explorer to discover what lies here.
-      </p>
-    </div>
-  );
-
-  if (!tile) {
-    return renderUnexploredMessage();
-  }
-
-  if (!isExplored) {
-    return renderUnexploredMessage();
+  if (!tile || !isExplored) {
+    return null;
   }
 
   // Small fallback "STRUCTURE TILE · (x, y)" + re-sync chip for non-structure

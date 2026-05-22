@@ -2,23 +2,15 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import {
-  HUD_BODY,
-  HUD_BODY_MUTED,
-  HUD_CUE,
-  HUD_LABEL,
-  HUD_VALUE,
-} from "@/ui/design-system/atoms/hud-typography";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { useStructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
-import { formatPopulationStatusLabel } from "@/ui/features/world/containers/structure-status";
 import { ProductionModal } from "@/ui/features/settlement";
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import { useRealmUpgradeAndProvision } from "@/ui/modules/entity-details/hooks/use-realm-upgrade-and-provision";
 import { ID, StructureType } from "@bibliothecadao/types";
-import Crown from "lucide-react/dist/esm/icons/crown";
 import Lightbulb from "lucide-react/dist/esm/icons/lightbulb";
 import { memo, useCallback, useMemo } from "react";
 import { useDojo } from "@bibliothecadao/react";
@@ -49,24 +41,16 @@ const SuggestionChip = ({ suggestion }: { suggestion: SuggestionDescriptor }) =>
     >
       <Icon className={cn("h-4 w-4 flex-shrink-0", isPrimary ? "text-gold" : "text-gold/70")} />
       <span className="min-w-0 flex-1">
-        <span className={cn("block truncate", isPrimary ? HUD_VALUE : HUD_BODY)}>{suggestion.label}</span>
+        <span className={cn("block leading-tight", isPrimary ? HUD_VALUE : HUD_BODY)}>{suggestion.label}</span>
         {suggestion.reason && (
-          <span className={cn("block truncate", HUD_BODY_MUTED, "not-italic text-gold/55")}>{suggestion.reason}</span>
+          <span className={cn("block leading-tight", HUD_BODY_MUTED, "not-italic text-gold/55")}>
+            {suggestion.reason}
+          </span>
         )}
       </span>
     </button>
   );
 };
-
-const StatusRow = ({ label, value, cue }: { label: string; value: string; cue?: string }) => (
-  <div className="flex items-center justify-between gap-2 py-1">
-    <span className={HUD_LABEL}>{label}</span>
-    <span className={cn("flex items-center gap-1.5")}>
-      <span className={HUD_VALUE}>{value}</span>
-      {cue && <span className={HUD_CUE}>{cue}</span>}
-    </span>
-  </div>
-);
 
 export const OverviewFacet = memo(({ structureEntityId }: OverviewFacetProps) => {
   const { setup } = useDojo();
@@ -156,26 +140,8 @@ export const OverviewFacet = memo(({ structureEntityId }: OverviewFacetProps) =>
 
   if (!detail.structure) return null;
 
-  const levelLabel = upgrade?.currentLevelName ?? `Level ${detail.structure.base?.level ?? 0}`;
-  const populationLabel = formatPopulationStatusLabel(populationCurrent, populationMax);
-  const productionCue =
-    productionSummary.totalProductionBuildings > 0
-      ? `${productionSummary.activeProductionBuildings}/${productionSummary.totalProductionBuildings}`
-      : "—";
-  const guardCue =
-    detail.guardSlotsMax !== undefined ? `${occupiedGuardSlots}/${detail.guardSlotsMax}` : `${occupiedGuardSlots}`;
-
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <InfoBubble title="Status" icon={Crown}>
-        <div className="flex flex-col">
-          <StatusRow label="Level" value={levelLabel} />
-          <StatusRow label="Population" value={populationLabel} />
-          <StatusRow label="Guards" value={guardCue} />
-          <StatusRow label="Production" value={productionCue} />
-        </div>
-      </InfoBubble>
-
       <InfoBubble title="Suggested actions" icon={Lightbulb} cue={`${suggestions.length}`}>
         {suggestions.length === 0 ? (
           <p className={HUD_BODY_MUTED}>No suggestions right now — looking healthy.</p>

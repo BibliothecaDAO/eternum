@@ -62,9 +62,9 @@ export const buildSuggestions = (input: SuggestionEngineInput): SuggestionDescri
   if (input.canUpgradeAndProvision) {
     all.push({
       id: "upgrade-and-provision",
-      label: input.nextLevelName ? `Upgrade to ${input.nextLevelName} + provision` : "Upgrade & provision",
+      label: input.nextLevelName ? `Upgrade → ${input.nextLevelName} + provision` : "Upgrade & provision",
       icon: ChevronsUp,
-      reason: "Realm meets both upgrade cost and provision conditions — one signature, one transaction.",
+      reason: "One signature handles both.",
       emphasis: "primary",
       onClick: input.onUpgradeAndProvision,
       disabled: input.isUpgradeOrProvisionPending,
@@ -72,7 +72,7 @@ export const buildSuggestions = (input: SuggestionEngineInput): SuggestionDescri
   } else if (input.canUpgrade) {
     all.push({
       id: "upgrade",
-      label: input.nextLevelName ? `Level up to ${input.nextLevelName}` : "Level up realm",
+      label: input.nextLevelName ? `Level up → ${input.nextLevelName}` : "Level up",
       icon: ArrowUpCircle,
       reason: "Upgrade requirements are met.",
       emphasis: "primary",
@@ -84,7 +84,7 @@ export const buildSuggestions = (input: SuggestionEngineInput): SuggestionDescri
       id: "provision",
       label: "Provision realm",
       icon: Pickaxe,
-      reason: "Main phase has started — claim your provision bonus before the season ends.",
+      reason: "Claim provision bonus.",
       emphasis: "primary",
       onClick: input.onProvision,
       disabled: input.isUpgradeOrProvisionPending,
@@ -94,18 +94,18 @@ export const buildSuggestions = (input: SuggestionEngineInput): SuggestionDescri
   if (input.guardSlotsMax > 0 && input.occupiedGuardSlots === 0) {
     all.push({
       id: "garrison",
-      label: "Garrison your structure",
+      label: "Garrison realm",
       icon: Shield,
-      reason: "All guard slots are empty — vulnerable to raids.",
+      reason: "No defenders stationed.",
       emphasis: "primary",
       onClick: input.onOpenMilitary,
     });
   } else if (input.guardSlotsMax > 0 && input.occupiedGuardSlots < input.guardSlotsMax) {
     all.push({
       id: "garrison-partial",
-      label: "Fill remaining guard slot",
+      label: "Fill guard slot",
       icon: Shield,
-      reason: `${input.occupiedGuardSlots} of ${input.guardSlotsMax} slots occupied.`,
+      reason: `${input.occupiedGuardSlots}/${input.guardSlotsMax} slots occupied.`,
       emphasis: "secondary",
       onClick: input.onOpenMilitary,
     });
@@ -116,16 +116,16 @@ export const buildSuggestions = (input: SuggestionEngineInput): SuggestionDescri
       id: "resume-production",
       label: "Resume production",
       icon: Factory,
-      reason: "One or more production buildings are paused.",
+      reason: "A building is paused.",
       emphasis: "secondary",
       onClick: input.onOpenProductionModal,
     });
   } else if (input.productionTotal === 0) {
     all.push({
       id: "build-first",
-      label: "Build your first production",
+      label: "Build first production",
       icon: Building2,
-      reason: "This structure has no production buildings yet.",
+      reason: "No production buildings yet.",
       emphasis: "primary",
       onClick: input.onOpenConstruction,
     });
@@ -134,7 +134,7 @@ export const buildSuggestions = (input: SuggestionEngineInput): SuggestionDescri
       id: "review-production",
       label: "Review production",
       icon: Factory,
-      reason: `${input.productionActive} of ${input.productionTotal} buildings active.`,
+      reason: `${input.productionActive}/${input.productionTotal} active.`,
       emphasis: "secondary",
       onClick: input.onOpenEconomy,
     });
@@ -150,7 +150,7 @@ export const buildSuggestions = (input: SuggestionEngineInput): SuggestionDescri
       id: "expand-population",
       label: "Expand population",
       icon: Sparkles,
-      reason: "Population is at capacity — build worker huts to unlock more.",
+      reason: "Pop at capacity — build worker huts.",
       emphasis: "secondary",
       onClick: input.onOpenConstruction,
     });
@@ -161,7 +161,7 @@ export const buildSuggestions = (input: SuggestionEngineInput): SuggestionDescri
       id: "review",
       label: "Review economy",
       icon: Factory,
-      reason: "Nothing urgent — take a look at your production breakdown.",
+      reason: "Nothing urgent.",
       emphasis: "secondary",
       onClick: input.onOpenEconomy,
     });
