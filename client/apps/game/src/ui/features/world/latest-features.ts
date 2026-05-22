@@ -11,9 +11,18 @@ interface LatestFeature {
 
 const MAX_LATEST_FEATURES = 10;
 
+const latestFeatureTypePriority: Record<FeatureType, number> = {
+  fix: 0,
+  feature: 1,
+  improvement: 2,
+  balance: 3,
+};
+
 const compareLatestFeatureDatesDescending = (left: LatestFeature, right: LatestFeature) => {
   const timestampDifference = new Date(right.date).getTime() - new Date(left.date).getTime();
   if (timestampDifference !== 0) return timestampDifference;
+  const typePriorityDifference = latestFeatureTypePriority[left.type] - latestFeatureTypePriority[right.type];
+  if (typePriorityDifference !== 0) return typePriorityDifference;
   return left.title.localeCompare(right.title);
 };
 
