@@ -29,13 +29,15 @@ import { useDojo, useQuery } from "@bibliothecadao/react";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 
-const occupiedEntityLayoutClass =
-  "grid h-full min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-2 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:grid-rows-1";
-const entityInfoScrollPaneClass =
-  "h-full min-h-0 min-w-0 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent";
-const scrollableEntityDetailClass = "h-auto min-h-full min-w-0 overflow-visible";
-const scrollableEntitySectionClass = "flex h-auto min-h-full min-w-0";
-const supportingEntitySectionClass = "flex min-h-0 min-w-0";
+// Layout: vertical column of bubbles. The outer parent (TileDetails atom in
+// bottom-right-panel) already provides positioning + scroll, so this layout
+// just stacks each section with a small gap and lets each child render its
+// own rounded bubble.
+const occupiedEntityLayoutClass = "flex h-full min-h-0 min-w-0 flex-col gap-2 pointer-events-auto";
+const entityInfoScrollPaneClass = "min-w-0";
+const scrollableEntityDetailClass = "h-auto min-w-0 overflow-visible";
+const scrollableEntitySectionClass = "flex min-w-0";
+const supportingEntitySectionClass = "flex min-w-0";
 
 const EntityInfoScrollPane = ({ children }: { children: ReactNode }) => (
   <div className={entityInfoScrollPaneClass}>{children}</div>

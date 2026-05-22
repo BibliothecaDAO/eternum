@@ -297,17 +297,22 @@ const MapTilePanel = () => {
     ) : null;
 
   return (
-    <PanelFrame title={panelTitle} headerAction={headerAction}>
+    <>
+      {/* Header bubble — coords + (optionally) re-sync. */}
+      <div className="pointer-events-auto flex items-center justify-between gap-2 rounded-2xl border border-gold/25 bg-black/85 px-3 py-2 shadow-lg shadow-black/40 backdrop-blur-sm">
+        <p className="min-w-0 flex-1 truncate text-[10px] font-semibold uppercase tracking-[0.25em] text-gold/70">
+          {panelTitle}
+        </p>
+        {headerAction}
+      </div>
       {selectedHex ? (
-        <div className="h-full min-h-0 overflow-hidden">
-          <SelectedWorldmapEntity />
-        </div>
+        <SelectedWorldmapEntity />
       ) : (
-        <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
+        <div className="pointer-events-auto rounded-2xl border border-gold/20 bg-black/75 px-4 py-6 text-center shadow-lg shadow-black/40 backdrop-blur-sm">
           <p className="text-xs text-gold/70">Tap any tile on the world map to view its occupants and resources.</p>
         </div>
       )}
-    </PanelFrame>
+    </>
   );
 };
 
@@ -987,8 +992,7 @@ export const BottomRightPanel = memo(() => {
       )}
       {showTileDetails && (
         <div
-          className="pointer-events-auto fixed right-3 z-30 w-[360px]"
-          style={{ bottom: BOTTOM_PANEL_MARGIN }}
+          className="pointer-events-auto fixed right-3 top-1/2 z-30 flex w-[340px] max-h-[calc(100vh-32px)] -translate-y-1/2 flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent"
           aria-label="Tile details"
         >
           {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
