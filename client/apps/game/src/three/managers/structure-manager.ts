@@ -59,6 +59,12 @@ import {
 } from "./manager-update-convergence";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
+import { CompactEntityLabelRenderer } from "./compact-entity-label-renderer";
+import {
+  resolveCompactEntityLabelVariant,
+  resolveStructureCompactEntityLabel,
+  type CompactEntityLabelVariant,
+} from "./compact-entity-label-policy";
 import {
   recordVisibleCosmeticStructureModelInstance,
   recordVisibleStructureModelInstance,
@@ -191,6 +197,7 @@ export class StructureManager {
     bank: PointsLabelRenderer;
     fragmentMine: PointsLabelRenderer;
   };
+  private compactLabelRenderer: CompactEntityLabelRenderer;
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
   private lastLabelVisibilityUpdate = 0;
@@ -221,6 +228,7 @@ export class StructureManager {
 
     // Remove associated label to prevent stale content
     this.removeEntityIdLabel(structure.entityId);
+    this.removeStructureCompactLabel(structure.entityId);
 
     // Remove from spatial index
     const { col, row } = structure.hexCoords;
@@ -334,6 +342,7 @@ export class StructureManager {
 
     // Initialize points-based icon renderers
     this.initializePointsRenderers();
+    this.compactLabelRenderer = new CompactEntityLabelRenderer(scene);
 
     // Start timed label updates
     this.startTimedLabelUpdates();
@@ -618,6 +627,7 @@ export class StructureManager {
     if (this.pointsRenderers) {
       Object.values(this.pointsRenderers).forEach((renderer) => renderer.dispose());
     }
+    this.compactLabelRenderer.dispose();
 
     if (this.unsubscribeVisibility) {
       this.unsubscribeVisibility();
@@ -999,6 +1009,7 @@ export class StructureManager {
         level: input.existingStructure.level,
         isMine: input.existingStructure.isMine,
         isAlly: input.existingStructure.isAlly,
+        ownerAddress: input.existingStructure.owner.address,
         cosmeticId: input.existingStructure.cosmeticId,
         attachmentSignature: input.existingAttachmentSignature,
       },
@@ -1009,6 +1020,7 @@ export class StructureManager {
         level: input.level,
         isMine: input.structureRecord?.isMine ?? false,
         isAlly: input.structureRecord?.isAlly ?? false,
+        ownerAddress: input.structureRecord?.owner.address,
         cosmeticId: input.cosmeticId,
         attachmentSignature: this.getAttachmentSignature(input.attachments ?? []),
       },
@@ -1397,6 +1409,7 @@ export class StructureManager {
       getWorldPositionForHexCoordsInto,
       getLabel: (entityId) => this.entityIdLabels.get(Number(entityId) as ID),
       updateLabel: (structure, label) => this.updateStructureLabelData(structure, label),
+      syncCompactLabel: (structure, position) => this.updateStructureCompactLabel(structure, position),
       getRendererForStructure: (structure) => this.getRendererForStructure(structure),
       resolveAttachments: (structure) => this.resolveStructureAttachmentsForRender(structure),
       getAttachmentSignature: (templates) => this.getAttachmentSignature(templates),
@@ -1464,6 +1477,7 @@ export class StructureManager {
       trackedLabelEntityIds: this.entityIdLabels.keys(),
       visibleStructureIds,
       removeEntityIdLabel: (entityId) => this.removeEntityIdLabel(entityId),
+      removeStructureCompactLabel: (entityId) => this.removeStructureCompactLabel(entityId),
       previousVisibleIds: this.previousVisibleIds,
       getStructureByEntityId: (entityId) => this.structures.getStructureByEntityId(entityId),
       removeStructurePoint: (entityId, structure) => {
@@ -1520,10 +1534,31 @@ export class StructureManager {
     if (structureType === StructureType.Bank) {
       return this.pointsRenderers.bank;
     }
-    if (structureType === StructureType.FragmentMine) {
+    if (structureType === StructureType.FragmentMine || structureType === StructureType.BitcoinMine) {
       return this.pointsRenderers.fragmentMine;
     }
     return null;
+  }
+
+  private updateStructureCompactLabel(structure: StructureInfo, position: Vector3): void {
+    this.compactLabelRenderer.setLabel({
+      entityId: structure.entityId,
+      position,
+      text: resolveStructureCompactEntityLabel(structure),
+      variant: this.resolveStructureCompactLabelVariant(structure),
+    });
+  }
+
+  private removeStructureCompactLabel(entityId: ID): void {
+    this.compactLabelRenderer.removeLabel(entityId);
+  }
+
+  private resolveStructureCompactLabelVariant(structure: StructureInfo): CompactEntityLabelVariant {
+    if (structure.owner.address === 0n) {
+      return "neutral";
+    }
+
+    return resolveCompactEntityLabelVariant(structure);
   }
 
   private getVisibleStructuresForChunk(startRow: number, startCol: number): StructureInfo[] {
@@ -1692,6 +1727,8 @@ export class StructureManager {
       return;
     }
 
+    this.updateCompactLabelCamera();
+
     const context = this.resolveAnimationVisibilityContext(visibility);
     this.structureModels.forEach((models) => {
       models.forEach((model) => model.updateAnimations(deltaTime, context));
@@ -1711,6 +1748,13 @@ export class StructureManager {
 
     // Flush batched label pool operations to minimize layout thrashing
     this.labelPool.flushBatch();
+  }
+
+  private updateCompactLabelCamera(): void {
+    const camera = this.hexagonScene?.getCamera();
+    if (camera) {
+      this.compactLabelRenderer.updateCamera(camera);
+    }
   }
 
   private resolveAnimationVisibilityContext(
@@ -1916,6 +1960,7 @@ export class StructureManager {
 
   private highlightStructurePointIcon(structure: StructureInfo, entityId: ID) {
     if (!this.pointsRenderers) {
+      this.compactLabelRenderer.setHover(entityId);
       return;
     }
 
@@ -1923,14 +1968,17 @@ export class StructureManager {
     if (renderer) {
       renderer.setHover(entityId);
     }
+    this.compactLabelRenderer.setHover(entityId);
   }
 
   private clearStructurePointHoverIcons() {
     if (!this.pointsRenderers) {
+      this.compactLabelRenderer.clearHover();
       return;
     }
 
     Object.values(this.pointsRenderers).forEach((renderer) => renderer.clearHover());
+    this.compactLabelRenderer.clearHover();
   }
 
   private removeOrphanedStructureSceneLabels() {
@@ -1970,6 +2018,7 @@ export class StructureManager {
     const previousOwnership = {
       isMine: structure.isMine,
       isAlly: structure.isAlly,
+      ownerAddress: structure.owner.address,
     };
 
     this.playStructureGuardDifferenceFx(entityId, structure, update.guardArmies);
@@ -2078,13 +2127,14 @@ export class StructureManager {
   }
 
   private refreshVisibleStructuresForOwnershipBucketChange(
-    previousOwnership: { isMine: boolean; isAlly: boolean },
-    structure: Pick<StructureInfo, "isMine" | "isAlly">,
+    previousOwnership: { isMine: boolean; isAlly: boolean; ownerAddress: bigint },
+    structure: Pick<StructureInfo, "isMine" | "isAlly" | "owner">,
   ) {
     if (
       shouldRefreshVisibleStructures(previousOwnership, {
         isMine: structure.isMine,
         isAlly: structure.isAlly,
+        ownerAddress: structure.owner.address,
       })
     ) {
       this.requestVisibleStructuresRefresh();

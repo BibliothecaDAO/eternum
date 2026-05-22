@@ -3,6 +3,7 @@ type StructureVisibilityBucket = "mine" | "ally" | "enemy";
 interface StructureOwnershipState {
   isMine: boolean;
   isAlly: boolean;
+  ownerAddress?: bigint;
 }
 
 interface StructureVisibleRefreshState extends StructureOwnershipState {
@@ -30,10 +31,32 @@ export function shouldRefreshVisibleStructures(
   previous: StructureOwnershipState,
   next: StructureOwnershipState,
 ): boolean {
+  return hasStructureVisibilityBucketChanged(previous, next) || hasStructureNeutralOwnershipChanged(previous, next);
+}
+
+function hasStructureVisibilityBucketChanged(
+  previous: StructureOwnershipState,
+  next: StructureOwnershipState,
+): boolean {
   return (
     getStructureVisibilityBucket(previous.isMine, previous.isAlly) !==
     getStructureVisibilityBucket(next.isMine, next.isAlly)
   );
+}
+
+function hasStructureNeutralOwnershipChanged(
+  previous: StructureOwnershipState,
+  next: StructureOwnershipState,
+): boolean {
+  if (previous.ownerAddress === undefined || next.ownerAddress === undefined) {
+    return false;
+  }
+
+  return isNeutralOwner(previous.ownerAddress) !== isNeutralOwner(next.ownerAddress);
+}
+
+function isNeutralOwner(ownerAddress: bigint): boolean {
+  return ownerAddress === 0n;
 }
 
 export function shouldRebuildVisibleStructuresForStructureUpdate(input: {

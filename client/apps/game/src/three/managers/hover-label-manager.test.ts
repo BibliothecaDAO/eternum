@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { HoverLabelManager } from "./hover-label-manager";
+import type { HoverLabelShowResult } from "./hover-label-show-result";
 
 describe("HoverLabelManager", () => {
   it("refreshes the same hovered hex when entity data arrives after loading", () => {
@@ -148,7 +149,7 @@ describe("HoverLabelManager", () => {
   it("does not mark labels dirty when a target is still missing during reconcile", () => {
     const markLabelsDirty = vi.fn();
     const army = {
-      show: vi.fn(() => ({ status: "missing" })),
+      show: vi.fn((): HoverLabelShowResult => ({ status: "missing" })),
       hide: vi.fn(),
     };
     const manager = new HoverLabelManager(

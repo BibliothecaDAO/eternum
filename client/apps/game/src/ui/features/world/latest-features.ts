@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-22",
+    title: "Map Entity Labels",
+    description:
+      "Restored compact always-on world-map labels above armies, realms, camps, and key structures while keeping detailed hover cards available.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
     title: "Reliable Hover Labels",
     description:
       "Fixed world-map unit hover labels so they recover after loading and chunk transitions without needing to move the cursor away and back.",

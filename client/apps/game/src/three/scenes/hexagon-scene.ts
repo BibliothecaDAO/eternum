@@ -350,6 +350,10 @@ export abstract class HexagonScene {
     }
 
     const hexCoords = getHexForWorldPosition(intersection);
+    if (!this.interactiveHexManager.isHexInteractive(hexCoords)) {
+      return null;
+    }
+
     return {
       hexCoords,
       position: getWorldPositionForHex(hexCoords),
