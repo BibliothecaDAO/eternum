@@ -22,6 +22,46 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-22",
+    title: "Hover Label Recovery",
+    description:
+      "Fixed detailed world-map hover labels so loading and scene transitions clear stale hover state before labels are rebuilt.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
+    title: "Smaller Map Labels",
+    description:
+      "Reduced always-on world-map label size so army and structure names stay scannable without crowding the map.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
+    title: "Unified Map Labels",
+    description:
+      "Aligned compact map labels and detailed hover labels around the same entity identity and metrics, so hover details now expand from the same information shown on the map.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
+    title: "Map Entity Labels",
+    description:
+      "Restored compact always-on world-map labels above armies, realms, camps, and key structures while keeping detailed hover cards available.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
+    title: "Reliable Hover Labels",
+    description:
+      "Fixed world-map unit hover labels so they recover after loading and chunk transitions without needing to move the cursor away and back.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-21",
     title: "Population Build Guard",
     description:

@@ -7,6 +7,7 @@ import { createLabelBase } from "./label-shared";
 import { ArmyLabelType, type ArmyLabelData } from "./army-label-type";
 import { StructureLabelType, convertStructureInfo } from "./structure-label-type";
 import type { StructureInfo } from "../../types/common";
+import { applyEntityLabelViewModelMetadata, buildChestEntityLabelViewModel } from "./entity-label-view-model";
 
 /**
  * Chest label data
@@ -24,7 +25,9 @@ const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
 
   createElement: (data: ChestLabelData, inputView: CameraView): HTMLElement => {
     const cameraView = resolveCameraView(inputView);
+    const labelModel = buildChestEntityLabelViewModel({ entityId: data.entityId });
     const labelDiv = createLabelBase(false, cameraView);
+    applyEntityLabelViewModelMetadata(labelDiv, labelModel);
 
     labelDiv.style.setProperty("color", LABEL_STYLES.CHEST.textColor!, "important");
     labelDiv.style.setProperty("background-color", LABEL_STYLES.CHEST.backgroundColor!, "important");

@@ -118,6 +118,8 @@ import { env } from "../../../env";
 import { playerCosmeticsStore, preloadAllCosmeticAssets } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
 import { HoverLabelManager } from "../managers/hover-label-manager";
+import { resolveWorldmapHoverLabelEntity } from "./worldmap-hover-label-entities";
+import { resolveWorldmapHoverLabelTargets } from "./worldmap-hover-label-targets";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { ArrivalGhostManager } from "../managers/arrival-ghost-manager";
 import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
@@ -1058,6 +1060,8 @@ export default class WorldmapScene extends WarpTravel {
     explorerTroops: 0,
   };
   private toriiBoundsLogInterval: ReturnType<typeof setInterval> | null = null;
+  private readonly hoverLabelRaycaster: Raycaster;
+  private currentHoverLabelHex: HexPosition | null = null;
 
   constructor(
     dojoContext: SetupResult,
@@ -1065,10 +1069,12 @@ export default class WorldmapScene extends WarpTravel {
     controls: MapControls,
     mouse: Vector2,
     sceneManager: SceneManager,
+    private readonly markLabelsDirty: () => void = () => {},
   ) {
     super(SceneName.WorldMap, controls, dojoContext, mouse, raycaster, sceneManager);
 
     this.dojo = dojoContext;
+    this.hoverLabelRaycaster = raycaster;
     this.logWorldmapSceneConstruction();
     this.initializeGlobalSpatialMapSyncDebug();
     this.registerWorldmapRecoveryHandle();
@@ -1421,8 +1427,9 @@ export default class WorldmapScene extends WarpTravel {
           hideAll: () => this.chestManager.hideAllLabels(),
         },
       },
-      (hexCoords: HexPosition) => this.getHexagonEntity(hexCoords),
+      (hexCoords: HexPosition) => this.resolveHoverLabelEntities(hexCoords),
       this.getCurrentCameraView(),
+      this.markLabelsDirty,
     );
   }
 
@@ -1508,6 +1515,7 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         await this.armyManager.onTileUpdate(update);
+        this.reconcileHoverLabels();
         this.clearPendingArmyMovementFromAuthoritativePosition(update);
         recordArmyMovementLatencyPhase({
           phase: "army_manager_tile_update_applied",
@@ -1543,6 +1551,7 @@ export default class WorldmapScene extends WarpTravel {
           scheduleArmyRemoval: (entityId, reason) => this.scheduleArmyRemoval(entityId, reason),
           updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
           updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
+          onManagerUpdateApplied: () => this.reconcileHoverLabels(),
           recordLiveArmyPresenceUpdate: (update) => this.recordAuthoritativeArmyLiveUpdate(update.entityId),
           onAuthoritativePositionApplied: (update) => this.clearPendingArmyMovementFromAuthoritativePosition(update),
           recoverPendingArmyRemovalFromExplorerTroops: (update) =>
@@ -1607,6 +1616,7 @@ export default class WorldmapScene extends WarpTravel {
           const previousStructureOwner = this.getTrackedStructureOwner(update.entityId);
           this.updateStructureHexes(update);
           this.structureManager.updateStructureLabelFromStructureUpdate(update);
+          this.reconcileHoverLabels();
           if (previousStructureOwner !== update.owner.address) {
             this.syncAttachedArmiesForStructureOwner(update);
           }
@@ -1621,6 +1631,7 @@ export default class WorldmapScene extends WarpTravel {
         void this.trackStructureHydrationUpdate(update, () => {
           this.incrementToriiBoundsCounter("structureBuildings");
           this.structureManager.updateStructureLabelFromBuildingUpdate(update);
+          this.reconcileHoverLabels();
         }).catch((error) => {
           console.warn("[Worldmap] Structure-building hydration update failed", error);
         });
@@ -1659,6 +1670,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     await this.trackStructureHydrationUpdate(value, () => this.structureManager.onUpdate(value));
+    this.reconcileHoverLabels();
 
     const newCount = this.structureManager.getTotalStructures();
     const countChanged = this.totalStructures !== newCount;
@@ -1696,6 +1708,7 @@ export default class WorldmapScene extends WarpTravel {
       this.worldUpdateListener.Chest.onTileUpdate((update: ChestSystemUpdate) => {
         this.updateChestHexes(update);
         this.chestManager.onUpdate(update);
+        this.reconcileHoverLabels();
       }),
     );
     this.addWorldUpdateSubscription(
@@ -2374,6 +2387,7 @@ export default class WorldmapScene extends WarpTravel {
       document.body.style.cursor = "default";
 
       // Handle label collapse on hex leave
+      this.currentHoverLabelHex = null;
       this.hoverLabelManager.onHexLeave();
       return;
     }
@@ -2387,7 +2401,8 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     // Handle label expansion on hover
-    this.hoverLabelManager.onHexHover(hexCoords);
+    this.currentHoverLabelHex = hexCoords;
+    this.reconcileHoverLabels();
 
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
@@ -2490,6 +2505,77 @@ export default class WorldmapScene extends WarpTravel {
     const chest = this.chestHexes.get(hex.x)?.get(hex.y);
 
     return { army, structure, chest };
+  }
+
+  private resolveHoverLabelEntities(hexCoords: HexPosition) {
+    const cachedEntities = this.getHexagonEntity(hexCoords);
+    const managerEntities = this.resolveManagerHoverLabelEntities(hexCoords, cachedEntities);
+    const targets = resolveWorldmapHoverLabelTargets({
+      cachedEntities,
+      hoveredHex: hexCoords,
+      managerEntities,
+      raycastArmy: cachedEntities.army ? undefined : this.resolveRaycastArmyHoverTarget(),
+    });
+
+    return {
+      army: resolveWorldmapHoverLabelEntity(targets.armyId, cachedEntities.army),
+      structure: resolveWorldmapHoverLabelEntity(targets.structureId, cachedEntities.structure),
+      chest: resolveWorldmapHoverLabelEntity(targets.chestId, cachedEntities.chest),
+    };
+  }
+
+  private resolveManagerHoverLabelEntities(
+    hexCoords: HexPosition,
+    cachedEntities: { army?: HexEntityInfo; structure?: HexEntityInfo; chest?: HexEntityInfo },
+  ) {
+    return {
+      army: cachedEntities.army ? undefined : this.resolveArmyHoverLabelEntityFromManager(hexCoords),
+      structure: cachedEntities.structure ? undefined : this.resolveStructureHoverLabelEntityFromManager(hexCoords),
+      chest: cachedEntities.chest ? undefined : this.resolveChestHoverLabelEntityFromManager(hexCoords),
+    };
+  }
+
+  private resolveArmyHoverLabelEntityFromManager(hexCoords: HexPosition): HexEntityInfo | undefined {
+    const army = this.armyManager.getArmies().find((candidate) => {
+      const normalized = candidate.hexCoords.getNormalized();
+      return normalized.x === hexCoords.col && normalized.y === hexCoords.row;
+    });
+
+    return army ? { id: army.entityId, owner: army.owner.address ?? 0n } : undefined;
+  }
+
+  private resolveStructureHoverLabelEntityFromManager(hexCoords: HexPosition): HexEntityInfo | undefined {
+    const structure = this.structureManager.getStructureByHexCoords(hexCoords);
+    return structure ? { id: structure.entityId, owner: structure.owner.address } : undefined;
+  }
+
+  private resolveChestHoverLabelEntityFromManager(hexCoords: HexPosition): HexEntityInfo | undefined {
+    const chest = Array.from(this.chestManager.chests.getChests().values()).find((candidate) => {
+      const normalized = candidate.hexCoords.getNormalized();
+      return normalized.x === hexCoords.col && normalized.y === hexCoords.row;
+    });
+
+    return chest ? { id: chest.entityId, owner: 0n } : undefined;
+  }
+
+  private resolveRaycastArmyHoverTarget() {
+    const entityId = this.armyManager.onMouseMove(this.hoverLabelRaycaster);
+    if (entityId === undefined) {
+      return undefined;
+    }
+
+    return {
+      entityId,
+      position: this.armiesPositions.get(entityId),
+    };
+  }
+
+  private reconcileHoverLabels(): void {
+    if (!this.currentHoverLabelHex) {
+      return;
+    }
+
+    this.hoverLabelManager.reconcileHexHover(this.currentHoverLabelHex);
   }
 
   protected tryArmyRaycastFallback(raycaster: Raycaster): HexPosition | null {
@@ -3894,9 +3980,7 @@ export default class WorldmapScene extends WarpTravel {
     this.selectionPulseManager.hideSelection(); // Hide selection pulse
     this.selectionPulseManager.clearOwnershipPulses();
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
-    this.armyManager.addLabelsToScene();
-    this.structureManager.showLabels();
-    this.chestManager.addLabelsToScene();
+    this.attachWorldmapManagerLabels();
   }
 
   private applyContextualHoverPalette(hexCoords: HexPosition | null): void {
@@ -4049,12 +4133,11 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private attachWorldmapManagerLabels(): void {
-    this.armyManager.addLabelsToScene();
-    this.structureManager.showLabels();
-    this.chestManager.addLabelsToScene();
+    this.reconcileHoverLabels();
   }
 
   private detachWorldmapManagerLabels(): void {
+    this.hoverLabelManager.onHexLeave();
     this.armyManager.removeLabelsFromScene();
     this.structureManager.removeLabelsFromScene();
     this.chestManager.removeLabelsFromScene();
@@ -4333,6 +4416,7 @@ export default class WorldmapScene extends WarpTravel {
     this.armyStructureOwners.delete(entityId);
     this.clearArmyMovementTxEntriesForEntity(entityId);
     this.clearPendingArmyMovement(entityId);
+    this.reconcileHoverLabels();
   }
 
   private resolveSupersededPendingArmyRemoval(
@@ -4564,6 +4648,7 @@ export default class WorldmapScene extends WarpTravel {
         }
       });
     });
+    this.reconcileHoverLabels();
   }
 
   // used to track the position of the armies on the map
@@ -9584,6 +9669,7 @@ export default class WorldmapScene extends WarpTravel {
       setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
+      this.reconcileHoverLabels();
     }
 
     if (import.meta.env.DEV) {
@@ -9694,6 +9780,7 @@ export default class WorldmapScene extends WarpTravel {
       setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
+      this.reconcileHoverLabels();
     }
 
     handleWorldmapCriticalManagerCatchUpFailures({

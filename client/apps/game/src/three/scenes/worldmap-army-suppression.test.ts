@@ -47,7 +47,7 @@ describe("worldmap army suppression integration", () => {
     );
     expect(listenerStart).toBeGreaterThan(-1);
 
-    const listenerBody = src.slice(listenerStart, listenerStart + 3200);
+    const listenerBody = src.slice(listenerStart, listenerStart + 4200);
     const movePos = listenerBody.indexOf("await this.armyManager.onTileUpdate(update)");
     const restorePos = listenerBody.indexOf("restoreArmyVisualIfVisible(update.entityId)");
 

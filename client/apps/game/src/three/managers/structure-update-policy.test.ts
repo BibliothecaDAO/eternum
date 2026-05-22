@@ -22,6 +22,15 @@ describe("structure-update-policy", () => {
     );
   });
 
+  it("requests refresh when a visible structure changes neutral ownership state", () => {
+    expect(
+      shouldRefreshVisibleStructures(
+        { isMine: false, isAlly: false, ownerAddress: 0n },
+        { isMine: false, isAlly: false, ownerAddress: 456n },
+      ),
+    ).toBe(true);
+  });
+
   it("allows incremental patching for visible structure moves when the model bucket is stable", () => {
     expect(
       resolveVisibleStructureUpdateMode({
