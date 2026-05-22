@@ -9,6 +9,7 @@ import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
 import { GameStartCountdown } from "./game-start-countdown";
 import { WalletPill } from "./pills/wallet-pill";
+import { StructurePickerStrip } from "./structure-picker/pills";
 import { TickProgress } from "./tick-progress";
 import {
   MIN_REFRESH_INTERVAL_MS,
@@ -195,6 +196,9 @@ export const TopHeader = memo(() => {
                 </span>
               ) : null}
             </div>
+
+            <StructurePickerStrip />
+
 
             <div className="flex flex-shrink-0 flex-nowrap items-center gap-3 text-xs md:text-base">
               <div className="cycle-selector flex justify-center md:justify-start gap-2 whitespace-nowrap">

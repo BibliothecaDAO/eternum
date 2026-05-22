@@ -159,6 +159,15 @@ interface UIStore {
   setModal: (content: React.ReactNode | null, show: boolean) => void;
   transferPanelSourceId: number | null;
   setTransferPanelSourceId: (entityId: number | null) => void;
+  // Cross-component signal: when a non-null id is set, the StructureEditPopup
+  // (mounted inside LeftCommandSidebar) opens for that structure. The picker
+  // popover writes this from the top-zone pills without needing prop-drilling.
+  pendingRenameStructureEntityId: number | null;
+  setPendingRenameStructureEntityId: (entityId: number | null) => void;
+  // Force-refresh counter bumped after a rename writes to localStorage. Consumers
+  // pass this into derivation memos so renames propagate without remounting.
+  structureNameVersion: number;
+  bumpStructureNameVersion: () => void;
   armyCreationPopup: ArmyCreationPopupState;
   openArmyCreationPopup: (config: ArmyCreationPopupConfig) => void;
   closeArmyCreationPopup: () => void;
@@ -296,6 +305,12 @@ export const useUIStore = create(
       set({ modalContent: content, showModal: show, tooltip: null }),
     transferPanelSourceId: null,
     setTransferPanelSourceId: (entityId: number | null) => set({ transferPanelSourceId: entityId }),
+    pendingRenameStructureEntityId: null,
+    setPendingRenameStructureEntityId: (entityId: number | null) =>
+      set({ pendingRenameStructureEntityId: entityId }),
+    structureNameVersion: 0,
+    bumpStructureNameVersion: () =>
+      set((state: AppStore) => ({ structureNameVersion: state.structureNameVersion + 1 })),
     armyCreationPopup: null,
     openArmyCreationPopup: (config: ArmyCreationPopupConfig) =>
       set((state: AppStore) => ({

@@ -1,13 +1,9 @@
-import type { VillageIconKey } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
-import { Tabs } from "@/ui/design-system/atoms";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
@@ -23,56 +19,16 @@ import {
 import { StoryEventsChronicles } from "@/ui/features/story-events";
 import { construction, military, trade } from "@/ui/features/world";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
-import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
-import {
-  STRUCTURE_GROUP_CONFIG,
-  StructureGroupColor,
-  StructureGroupsMap,
-  useStructureGroups,
-} from "@/ui/features/world/containers/top-header/structure-groups";
-import {
-  countOccupiedBuildingTilesByStructure,
-  formatPopulationStatusLabel,
-  formatUsedBuildingTilesLabel,
-  resolveAvailableBuildingTiles,
-} from "@/ui/features/world/containers/structure-status";
-import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
-import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
+import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
 import { BaseContainer } from "@/ui/shared/containers/base-container";
-import type { getEntityInfo } from "@bibliothecadao/eternum";
-import { configManager, Position, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
-import {
-  ClientComponents,
-  ContractAddress,
-  getLevelName,
-  ID,
-  RealmLevels,
-  ResourcesIds,
-  Structure,
-  StructureType,
-} from "@bibliothecadao/types";
-import { useComponentValue, useEntityQuery } from "@dojoengine/react";
-import { ComponentValue, getComponentValue, Has } from "@dojoengine/recs";
+import { setEntityNameLocalStorage } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
+import { ContractAddress, type ID } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import clsx from "clsx";
-import type { LucideIcon } from "lucide-react";
-import Castle from "lucide-react/dist/esm/icons/castle";
-import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
-import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
-import Crown from "lucide-react/dist/esm/icons/crown";
-import Hexagon from "lucide-react/dist/esm/icons/hexagon";
-import Info from "lucide-react/dist/esm/icons/info";
-import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
-import Pencil from "lucide-react/dist/esm/icons/pencil";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
-import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
-import Star from "lucide-react/dist/esm/icons/star";
-import Tent from "lucide-react/dist/esm/icons/tent";
-import Users from "lucide-react/dist/esm/icons/users";
-import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type CircleButtonProps = ComponentProps<typeof CircleButton>;
@@ -93,20 +49,6 @@ type NavigationItem = {
   | "size"
   | "tooltipLocation"
 >;
-
-type StructureWithMetadata = Structure & {
-  displayName: string;
-  originalName: string;
-  realmLevel: number;
-  realmLevelLabel: string | null;
-  population: number;
-  populationCapacity: number;
-  buildingTilesOccupied: number | null;
-  buildingTilesTotal: number | null;
-  groupColor: StructureGroupColor | null;
-  isFavorite: boolean;
-  canUpgrade: boolean;
-};
 
 type RealmNavigationContext = {
   view: LeftView;
@@ -129,29 +71,11 @@ type EconomyNavigationContext = {
   isTransferOpen: boolean;
 };
 
-type LeftPanelHeaderProps = {
-  structureEntityId: ID;
-  structures: Structure[];
-  structureInfo: ReturnType<typeof getEntityInfo> | null;
-  onSelectStructure: (entityId: ID) => void;
-  components: ClientComponents;
-  structureGroups: StructureGroupsMap;
-  onRequestNameChange: (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => void;
-  nameUpdateVersion: number;
-  favorites: number[];
-  onToggleFavorite: (entityId: number) => void;
-};
-
 const connectionTone = {
   connected: "bg-emerald-400 animate-pulse",
   error: "bg-red-400",
   default: "bg-neutral-500",
 } as const;
-
-const VILLAGE_ICON_BY_KEY: Record<VillageIconKey, LucideIcon> = {
-  castle: Castle,
-  tent: Tent,
-};
 
 const getConnectionToneClass = (status: string | undefined) => {
   if (status === "connected") {
@@ -200,31 +124,6 @@ const useRealtimeChatConfig = () => {
 
 const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
 
-const StructureInfoStat = ({ icon: Icon, label, title }: { icon: LucideIcon; label: string; title: string }) => (
-  <span
-    className="inline-flex items-center gap-1 rounded border border-gold/15 bg-black/25 px-1.5 py-0.5 text-xxs text-gold/75"
-    title={title}
-  >
-    <Icon className="h-3 w-3 text-gold/60" />
-    <span>{label}</span>
-  </span>
-);
-
-const StructureStatusStats = ({
-  populationLabel,
-  buildingTilesLabel,
-}: {
-  populationLabel: string;
-  buildingTilesLabel: string | null;
-}) => (
-  <div className="flex flex-wrap items-center gap-1.5">
-    <StructureInfoStat icon={Users} label={populationLabel} title="Population used / capacity" />
-    {buildingTilesLabel ? (
-      <StructureInfoStat icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
-    ) : null}
-  </div>
-);
-
 const getResponsiveButtonSize = (itemCount: number): CircleButtonProps["size"] => {
   // Panel width is 420px, padding is 24px (px-3 on each side), available ~396px
   // lg buttons: 48px + 8px gap = fits ~7 buttons
@@ -238,466 +137,6 @@ const getResponsiveButtonSize = (itemCount: number): CircleButtonProps["size"] =
 const HEADER_HEIGHT = 64;
 const PANEL_WIDTH = 420;
 const HANDLE_WIDTH = 14;
-const MAX_VISIBLE_STRUCTURE_ROWS = 5;
-
-const LeftPanelHeader = memo(
-  ({
-    structureEntityId,
-    structures,
-    structureInfo,
-    onSelectStructure,
-    components,
-    structureGroups,
-    onRequestNameChange,
-    nameUpdateVersion,
-    favorites,
-    onToggleFavorite,
-  }: LeftPanelHeaderProps) => {
-    const [activeTab, setActiveTab] = useState(0);
-    const [showAllStructures, setShowAllStructures] = useState(false);
-    const mode = useGameModeConfig();
-
-    const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
-    const structureTileStatIds = useMemo(
-      () =>
-        structures
-          .filter((structure) => resolveStructureUiCapabilities(structure.structure).hasPopulationDetails)
-          .map((structure) => Number(structure.entityId))
-          .filter((entityId) => Number.isFinite(entityId))
-          .toSorted((left, right) => left - right),
-      [structures],
-    );
-    const trackedStructureIds = useMemo(() => new Set(structureTileStatIds), [structureTileStatIds]);
-    const buildingEntities = useEntityQuery([Has(components.Building)]);
-    const buildingTileCountsByStructure = useMemo(
-      () =>
-        countOccupiedBuildingTilesByStructure({
-          trackedStructureIds,
-          buildings: Array.from(buildingEntities)
-            .map((entity) => getComponentValue(components.Building, entity))
-            .flatMap((building) => {
-              if (!building) {
-                return [];
-              }
-
-              return [
-                {
-                  outerEntityId: Number(building.outer_entity_id ?? 0),
-                  innerCol: Number(building.inner_col ?? 0),
-                  innerRow: Number(building.inner_row ?? 0),
-                },
-              ];
-            }),
-        }),
-      [buildingEntities, components.Building, trackedStructureIds],
-    );
-
-    const structureEntityKey = useMemo(() => {
-      try {
-        return getEntityIdFromKeys([BigInt(structureEntityId)]);
-      } catch {
-        return null;
-      }
-    }, [structureEntityId]);
-
-    const liveStructure = useComponentValue(components.Structure, structureEntityKey as any);
-    const liveStructureBuildings = useComponentValue(components.StructureBuildings, structureEntityKey as any);
-
-    const structureTabs = useMemo<Array<{ key: string; label: string; categories: StructureType[]; icon: LucideIcon }>>(
-      () => [
-        { key: "realms", label: mode.labels.realms, categories: [StructureType.Realm], icon: Crown },
-        {
-          key: "villages",
-          label: mode.labels.villages,
-          categories: [StructureType.Village, StructureType.Camp],
-          icon: VILLAGE_ICON_BY_KEY[mode.ui.villageIconKey],
-        },
-        {
-          key: "rifts",
-          label: mode.labels.fragmentMines,
-          categories: [StructureType.FragmentMine],
-          icon: Pickaxe,
-        },
-        {
-          key: "hyperstructures",
-          label: "Hyperstructures",
-          categories: [StructureType.Hyperstructure],
-          icon: Sparkles,
-        },
-      ],
-      [mode],
-    );
-
-    const structuresWithMetadata = useMemo<StructureWithMetadata[]>(() => {
-      // Force recomputation when a local rename occurs.
-      void nameUpdateVersion;
-      const basePopulationCapacityValue = configManager.getBasePopulationCapacity();
-      const maxRealmLevel = configManager.getMaxLevel(StructureType.Realm);
-      return structures.map((structure) => {
-        const { name, originalName } = mode.structure.getName(structure.structure);
-        const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
-        const baseLevel = structure.structure.base?.level;
-        const normalizedLevel =
-          typeof baseLevel === "number" ? baseLevel : typeof baseLevel === "bigint" ? Number(baseLevel) : 0;
-        const realmLevelLabel = structureCapabilities.hasPopulationDetails
-          ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
-          : null;
-        const structureEntity = getEntityIdFromKeys([BigInt(structure.entityId)]);
-        const structureBuildings = components.StructureBuildings
-          ? getComponentValue(components.StructureBuildings, structureEntity)
-          : null;
-        const population = Number(structureBuildings?.population.current ?? 0);
-        const normalizedBasePopulationCapacity = structureCapabilities.hasPopulationDetails
-          ? Math.max(Number(basePopulationCapacityValue ?? 0), 6)
-          : 0;
-        const populationCapacity = Number(structureBuildings?.population.max ?? 0) + normalizedBasePopulationCapacity;
-        const occupiedBuildingTiles = buildingTileCountsByStructure[structure.entityId];
-        const buildingTileSummary =
-          structureCapabilities.hasPopulationDetails && occupiedBuildingTiles !== undefined
-            ? resolveAvailableBuildingTiles({
-                level: normalizedLevel,
-                occupiedBuildingTiles,
-              })
-            : null;
-        const groupColor = structureGroups[structure.entityId] ?? null;
-
-        const isFavorite = favoritesSet.has(structure.entityId);
-
-        return {
-          ...structure,
-          displayName: name,
-          originalName,
-          realmLevel: normalizedLevel,
-          realmLevelLabel,
-          population,
-          populationCapacity,
-          buildingTilesOccupied: buildingTileSummary?.occupied ?? null,
-          buildingTilesTotal: buildingTileSummary?.total ?? null,
-          groupColor,
-          isFavorite,
-          canUpgrade: structure.category === StructureType.Realm && normalizedLevel < maxRealmLevel,
-        };
-      });
-    }, [
-      structures,
-      components.StructureBuildings,
-      structureGroups,
-      nameUpdateVersion,
-      favoritesSet,
-      mode,
-      buildingTileCountsByStructure,
-    ]);
-
-    const orderedStructures = useMemo(() => {
-      const currentTab = structureTabs[activeTab] ?? structureTabs[0];
-      return currentTab?.categories?.length === 0
-        ? structuresWithMetadata
-        : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
-    }, [activeTab, structureTabs, structuresWithMetadata]);
-
-    const categoryCounts = useMemo(() => {
-      const counts: Partial<Record<StructureType, number>> = {};
-      for (const structure of structuresWithMetadata) {
-        counts[structure.category] = (counts[structure.category] ?? 0) + 1;
-      }
-      return counts;
-    }, [structuresWithMetadata]);
-
-    const tabCounts = useMemo(
-      () =>
-        structureTabs.map((tab) =>
-          tab.categories.reduce((total, category) => total + (categoryCounts[category] ?? 0), 0),
-        ),
-      [structureTabs, categoryCounts],
-    );
-
-    const selectedStructureMetadata = useMemo(
-      () => structuresWithMetadata.find((structure) => structure.entityId === structureEntityId),
-      [structuresWithMetadata, structureEntityId],
-    );
-    const selectedGroupColor = selectedStructureMetadata?.groupColor ?? null;
-    const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
-    const normalizedLevelRaw =
-      liveStructure?.base?.level ??
-      selectedStructureMetadata?.realmLevel ??
-      selectedStructureMetadata?.structure.base?.level ??
-      0;
-    const normalizedLevel =
-      typeof normalizedLevelRaw === "bigint" ? Number(normalizedLevelRaw) : Number(normalizedLevelRaw ?? 0);
-    const selectedStructureCapabilities = resolveStructureUiCapabilities(selectedStructureMetadata?.structure);
-    const levelLabel = selectedStructureCapabilities.hasPopulationDetails
-      ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
-      : selectedStructureMetadata
-        ? `Level ${normalizedLevel}`
-        : "Level —";
-    const basePopulationCapacity = selectedStructureCapabilities.hasPopulationDetails
-      ? configManager.getBasePopulationCapacity()
-      : 0;
-    const normalizedBasePopulationCapacity = selectedStructureCapabilities.hasPopulationDetails
-      ? Math.max(Number(basePopulationCapacity ?? 0), 6)
-      : 0;
-    const livePopulation = Number(
-      liveStructureBuildings?.population.current ?? selectedStructureMetadata?.population ?? 0,
-    );
-    const livePopulationCapacity =
-      Number(liveStructureBuildings?.population.max ?? selectedStructureMetadata?.populationCapacity ?? 0) +
-      normalizedBasePopulationCapacity;
-    const populationStatusLabel = selectedStructureMetadata
-      ? formatPopulationStatusLabel(livePopulation, livePopulationCapacity)
-      : null;
-    const buildingTilesStatusLabel =
-      selectedStructureMetadata &&
-      selectedStructureMetadata.buildingTilesOccupied !== null &&
-      selectedStructureMetadata.buildingTilesTotal !== null
-        ? formatUsedBuildingTilesLabel(
-            selectedStructureMetadata.buildingTilesOccupied,
-            selectedStructureMetadata.buildingTilesTotal,
-          )
-        : null;
-    const showDetailedStats = Boolean(selectedStructureMetadata && selectedStructureCapabilities.hasPopulationDetails);
-    const headerTitle =
-      selectedStructureMetadata?.displayName ??
-      structureInfo?.name?.name ??
-      (structuresWithMetadata.length > 0 ? "Select a structure" : "No structures");
-    const ActiveStructureIcon = useMemo<LucideIcon | null>(() => {
-      if (!selectedStructureMetadata) {
-        return null;
-      }
-      for (const tab of structureTabs) {
-        if (tab.categories.includes(selectedStructureMetadata.category)) {
-          return tab.icon;
-        }
-      }
-      return null;
-    }, [selectedStructureMetadata, structureTabs]);
-
-    return (
-      <div className="border-b border-gold/20 bg-black/60 px-4 py-4 space-y-4">
-        <div className="border-b border-gold/20 pb-3">
-          <div className="flex items-center gap-2 text-sm text-gold min-w-0">
-            {ActiveStructureIcon && (
-              <span className={selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"}>
-                <ActiveStructureIcon className="h-5 w-5" />
-              </span>
-            )}
-            {selectedGroupColor && <span className={`h-2 w-2 rounded-full ${selectedGroupConfig?.dotClass ?? ""}`} />}
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              <p
-                className={`truncate min-w-0 font-[Cinzel] text-xl sm:text-2xl font-semibold ${
-                  selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"
-                }`}
-                title={headerTitle}
-              >
-                {headerTitle}
-              </p>
-              {showDetailedStats && populationStatusLabel && (
-                <div className="flex items-center gap-2 flex-shrink-0 text-xs text-gold/70">
-                  <span className="text-gold/40">•</span>
-                  <span>{levelLabel}</span>
-                  <span className="text-gold/40">•</span>
-                  <StructureStatusStats
-                    populationLabel={populationStatusLabel}
-                    buildingTilesLabel={buildingTilesStatusLabel}
-                  />
-                </div>
-              )}
-            </div>
-            {selectedStructureMetadata && (
-              <button
-                type="button"
-                onClick={() => onRequestNameChange(selectedStructureMetadata.structure)}
-                className="flex-shrink-0 rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
-                title="Rename structure"
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <Tabs
-            selectedIndex={activeTab}
-            onChange={setActiveTab}
-            variant="selection"
-            size="small"
-            className="text-xs text-gold"
-          >
-            <Tabs.List>
-              {structureTabs.map((tab, index) => {
-                const Icon = tab.icon;
-                const count = tabCounts[index] ?? 0;
-                const isActiveTab = activeTab === index;
-                // Hide non-realms tabs entirely while empty. The realms tab is
-                // always rendered (a player has at least one realm to land on).
-                const isHiddenTab = count === 0 && tab.key !== "realms";
-                return (
-                  <Tabs.Tab
-                    key={tab.key}
-                    aria-label={tab.label}
-                    title={tab.label}
-                    disabled={isHiddenTab}
-                    className={clsx(
-                      "!mx-0 border",
-                      isHiddenTab && "hidden",
-                      isActiveTab
-                        ? "border-gold/60 bg-black/40 text-[#f4c24d]"
-                        : "border-gold/25 bg-black/20 text-gold/70 hover:border-gold/40 hover:text-gold/90",
-                    )}
-                  >
-                    <span className="flex items-center gap-1">
-                      <span
-                        className={clsx(
-                          "text-[12px] font-semibold transition-none",
-                          isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
-                        )}
-                      >
-                        {count}
-                      </span>
-                      <Icon
-                        className={clsx("h-4 w-4", isActiveTab ? "text-[#f4c24d]" : "text-gold/60")}
-                      />
-                    </span>
-                    <span className="sr-only">{tab.label}</span>
-                  </Tabs.Tab>
-                );
-              })}
-            </Tabs.List>
-          </Tabs>
-
-          {orderedStructures.length > 0 &&
-            (() => {
-              const visibleStructures = showAllStructures
-                ? orderedStructures
-                : orderedStructures.slice(0, MAX_VISIBLE_STRUCTURE_ROWS);
-              const hiddenCount = Math.max(orderedStructures.length - MAX_VISIBLE_STRUCTURE_ROWS, 0);
-              return (
-                <div className="flex flex-col gap-1">
-                  {visibleStructures.map((structure) => (
-                    <StructureChip
-                      key={structure.entityId}
-                      structure={structure}
-                      isSelected={structure.entityId === structureEntityId}
-                      onSelectStructure={onSelectStructure}
-                      onToggleFavorite={onToggleFavorite}
-                    />
-                  ))}
-                  {hiddenCount > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllStructures((prev) => !prev)}
-                      className="w-full rounded border border-gold/20 bg-black/30 px-2 py-1 text-[10px] uppercase tracking-wide text-gold/70 hover:border-gold/40 hover:text-gold"
-                    >
-                      {showAllStructures ? "Show fewer" : `Show ${hiddenCount} more`}
-                    </button>
-                  )}
-                </div>
-              );
-            })()}
-        </div>
-      </div>
-    );
-  },
-);
-
-LeftPanelHeader.displayName = "LeftPanelHeader";
-
-type StructureChipProps = {
-  structure: StructureWithMetadata;
-  isSelected: boolean;
-  onSelectStructure: (entityId: ID) => void;
-  onToggleFavorite: (entityId: ID) => void;
-};
-
-const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggleFavorite }: StructureChipProps) => {
-  const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
-  const hasPopulationDetails = structureCapabilities.hasPopulationDetails;
-  const levelAbbrev = hasPopulationDetails
-    ? getLevelName(
-        Math.min(Math.max(structure.realmLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels,
-      ).charAt(0)
-    : null;
-
-  const populationStatusLabel = hasPopulationDetails
-    ? formatPopulationStatusLabel(structure.population, structure.populationCapacity)
-    : null;
-  const buildingTilesStatusLabel =
-    hasPopulationDetails && structure.buildingTilesOccupied !== null && structure.buildingTilesTotal !== null
-      ? formatUsedBuildingTilesLabel(structure.buildingTilesOccupied, structure.buildingTilesTotal)
-      : null;
-
-  const handleClick = useCallback(() => onSelectStructure(structure.entityId), [onSelectStructure, structure.entityId]);
-
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLDivElement>) => {
-      if (event.target !== event.currentTarget) return;
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        handleClick();
-      }
-    },
-    [handleClick],
-  );
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      className={clsx(
-        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-1 text-left text-xs transition cursor-pointer",
-        isSelected
-          ? "border-gold bg-gold/15 text-gold"
-          : "border-gold/25 bg-black/30 text-gold/75 hover:border-gold/50 hover:bg-black/50",
-      )}
-      title={structure.displayName}
-      aria-pressed={isSelected}
-    >
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          onToggleFavorite(structure.entityId);
-        }}
-        className="shrink-0 rounded p-0.5 text-gold/60 hover:text-gold"
-        title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
-        aria-label={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
-      >
-        <Star className={clsx("h-3.5 w-3.5", structure.isFavorite ? "fill-current text-gold" : "text-gold/60")} />
-      </button>
-      {structure.groupColor && (
-        <span
-          className={clsx(
-            "h-1.5 w-1.5 shrink-0 rounded-full",
-            STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? "",
-          )}
-        />
-      )}
-      <span
-        className={clsx(
-          "min-w-0 flex-1 truncate font-semibold",
-          structure.groupColor ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold") : undefined,
-        )}
-      >
-        {structure.displayName}
-      </span>
-      {levelAbbrev && (
-        <span className="shrink-0 rounded-sm bg-black/30 px-1 text-[9px] uppercase tracking-wide text-gold/60">
-          {levelAbbrev}
-        </span>
-      )}
-      {populationStatusLabel && (
-        <StructureStatusStats populationLabel={populationStatusLabel} buildingTilesLabel={buildingTilesStatusLabel} />
-      )}
-      {structure.category === StructureType.Realm && (
-        <StructureRealmActions structureEntityId={structure.entityId} className="shrink-0" />
-      )}
-    </div>
-  );
-});
-
-StructureChip.displayName = "StructureChip";
 
 const ORDERED_MENU_IDS: MenuEnum[] = [
   MenuEnum.entityDetails, // Realm Info
@@ -711,179 +150,6 @@ const ORDERED_MENU_IDS: MenuEnum[] = [
   MenuEnum.storyEvents, // Chronicles
   MenuEnum.predictionMarket, // Prediction Market
 ];
-
-type StructureRealmActionsProps = {
-  structureEntityId: ID | null;
-  className?: string;
-};
-
-const StructureRealmActions = ({ structureEntityId, className }: StructureRealmActionsProps) => {
-  const upgradeInfo = useStructureUpgrade(typeof structureEntityId === "number" ? structureEntityId : null);
-  const provisionInfo = useBlitzRealmProvision(typeof structureEntityId === "number" ? structureEntityId : null);
-  const setTooltip = useUIStore((state) => state.setTooltip);
-
-  if (!upgradeInfo) {
-    return null;
-  }
-
-  const currentLevel = upgradeInfo.currentLevel ?? 0;
-  const maxLevel = configManager.getMaxLevel(StructureType.Realm);
-  const isAtMaxLevel = upgradeInfo.isMaxLevel || currentLevel >= maxLevel;
-  const meetsRequirements = (upgradeInfo.missingRequirements?.length ?? 0) === 0;
-  const canUpgrade = upgradeInfo.isOwner && !isAtMaxLevel && meetsRequirements;
-  const isDisabled = !canUpgrade || upgradeInfo.isUpgradeLocked || isAtMaxLevel;
-  const shouldGlow = canUpgrade && !isDisabled;
-  const nextLevel = upgradeInfo.nextLevel ?? 0;
-
-  const requirementsContent = useMemo(() => {
-    if (!upgradeInfo) return null;
-    if (upgradeInfo.isMaxLevel) {
-      return <div className="text-xs text-gold/80">Castle fully upgraded.</div>;
-    }
-    if (!upgradeInfo.requirements?.length) {
-      return <div className="text-xs text-gold/80">No upgrade requirements found.</div>;
-    }
-
-    return (
-      <div className="min-w-[220px] space-y-2 text-gold">
-        <div className="flex items-center justify-between">
-          <span className="text-xxs uppercase tracking-[0.25em] text-gold/60">Upgrade</span>
-          {upgradeInfo.nextLevelName && <span className="text-xxs text-gold/80">to {upgradeInfo.nextLevelName}</span>}
-        </div>
-        <div className="space-y-1">
-          {upgradeInfo.requirements.map((req) => {
-            const isMet = req.current >= req.amount;
-            return (
-              <div
-                key={`${req.resource}-${req.amount}`}
-                className={clsx(
-                  "flex items-center gap-2 rounded border px-2 py-1",
-                  isMet ? "border-gold/20 bg-gold/5" : "border-red-400/40 bg-red-500/5",
-                )}
-              >
-                <ResourceIcon resource={ResourcesIds[req.resource]} size="xs" withTooltip={false} />
-                <span className="flex-1 text-xs text-gold/80">{ResourcesIds[req.resource]}</span>
-                <span className={clsx("text-xs font-semibold", isMet ? "text-gold" : "text-red-300")}>
-                  {Math.floor(req.current).toLocaleString()} / {req.amount.toLocaleString()}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }, [upgradeInfo]);
-
-  const showRequirementsTooltip = (event: MouseEvent<HTMLButtonElement>) => {
-    if (!requirementsContent) return;
-    setTooltip({
-      anchorElement: event.currentTarget,
-      position: "bottom",
-      content: requirementsContent,
-    });
-  };
-
-  const hideRequirementsTooltip = () => setTooltip(null);
-
-  const renderIcon = () => {
-    if (isAtMaxLevel) {
-      return <ShieldCheck className="h-3.5 w-3.5" />;
-    }
-    if (nextLevel >= 3) {
-      return (
-        <span className="relative flex h-4 w-4 items-center justify-center">
-          <ChevronUp className="absolute h-3 w-3 -translate-y-[6px]" />
-          <ChevronUp className="absolute h-3 w-3" />
-          <ChevronUp className="absolute h-3 w-3 translate-y-[6px]" />
-        </span>
-      );
-    }
-    if (nextLevel === 2) {
-      return <ChevronsUp className="h-3.5 w-3.5" />;
-    }
-    return <ChevronUp className="h-3.5 w-3.5" />;
-  };
-
-  const handleUpgrade = (event: MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    if (isDisabled) return;
-
-    void upgradeInfo.handleUpgrade().catch((error) => {
-      console.error("Failed to upgrade structure", error);
-    });
-  };
-
-  const canRenderProvisionAction = Boolean(
-    provisionInfo &&
-    (provisionInfo.canProvision ||
-      provisionInfo.isProvisionLoading ||
-      provisionInfo.provisionActionState === "syncTimeout"),
-  );
-  const canProvision = provisionInfo?.canProvision ?? false;
-  const isProvisionDisabled = !canProvision || Boolean(provisionInfo?.isProvisionLocked);
-  const shouldGlowProvision = canProvision && !isProvisionDisabled;
-
-  const handleProvision = (event: MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    if (!provisionInfo || isProvisionDisabled) return;
-
-    void provisionInfo.handleProvision().catch((error) => {
-      console.error("Failed to provision realm", error);
-    });
-  };
-
-  return (
-    <div className={clsx("flex items-center gap-2", className)}>
-      <button
-        type="button"
-        onClick={handleUpgrade}
-        disabled={isDisabled}
-        className={clsx(
-          "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
-          shouldGlow
-            ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.55)] animate-pulse"
-            : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
-        )}
-        aria-label="Level up realm"
-      >
-        {upgradeInfo.isUpgradeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : renderIcon()}
-      </button>
-      {canRenderProvisionAction && (
-        <button
-          type="button"
-          onClick={handleProvision}
-          disabled={isProvisionDisabled}
-          className={clsx(
-            "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
-            shouldGlowProvision
-              ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.35)]"
-              : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
-          )}
-          aria-label="Provision realm"
-          title="Provision realm"
-        >
-          {provisionInfo?.isProvisionLoading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Pickaxe className="h-3.5 w-3.5" />
-          )}
-        </button>
-      )}
-      <button
-        type="button"
-        onMouseEnter={showRequirementsTooltip}
-        onMouseLeave={hideRequirementsTooltip}
-        onFocus={showRequirementsTooltip as never}
-        onBlur={hideRequirementsTooltip}
-        onClick={(event) => event.stopPropagation()}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gold/30 bg-black/40 text-gold/70 hover:text-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
-        aria-label="View upgrade requirements"
-      >
-        <Info className="h-3.5 w-3.5" />
-      </button>
-    </div>
-  );
-};
 
 const buildRealmNavigationItems = ({
   view,
@@ -953,16 +219,6 @@ const buildRealmNavigationItems = ({
           ? { value: pendingArrivalsNumber, color: "orange", location: "bottomright" as const }
           : undefined,
     },
-    // {
-    //   id: MenuEnum.hyperstructures,
-    //   image: BuildingThumbs.hyperstructures,
-    //   tooltipLocation: "top",
-    //   label: hyperstructures,
-    //   size: DEFAULT_BUTTON_SIZE,
-    //   disabled: disableButtons,
-    //   active: view === LeftView.HyperstructuresView,
-    //   onClick: toggleView(LeftView.HyperstructuresView),
-    // },
     {
       id: MenuEnum.trade,
       className: "trade-selector",
@@ -974,20 +230,6 @@ const buildRealmNavigationItems = ({
       active: isTradeOpen,
       onClick: () => toggleModal(isTradeOpen ? null : <MarketModal />),
     },
-    // {
-    //   id: MenuEnum.relics,
-    //   image: BuildingThumbs.relics,
-    //   tooltipLocation: "top",
-    //   label: "Relics",
-    //   size: DEFAULT_BUTTON_SIZE,
-    //   disabled: disableButtons,
-    //   active: view === LeftView.RelicsView,
-    //   onClick: toggleView(LeftView.RelicsView),
-    //   primaryNotification:
-    //     availableRelicsNumber > 0
-    //       ? { value: availableRelicsNumber, color: "gold", location: "topright" as const }
-    //       : undefined,
-    // },
   ];
 
   const allowedMenus: MenuEnum[] = [
@@ -1143,18 +385,13 @@ const HYPERSTRUCTURES_MENU_BY_VARIANT = {
   blitz: BlitzHyperstructuresMenu,
   eternum: EternumHyperstructuresMenu,
 } as const;
-// const RelicsModule = lazy(() =>
-//   import("@/ui/features/relics").then((module) => ({
-//     default: module.RelicsModule,
-//   })),
-// );
+
 export const LeftCommandSidebar = memo(() => {
   const {
     account: { account },
     setup,
   } = useDojo();
   const components = setup.components;
-  const { isMapView } = useQuery();
 
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
@@ -1167,36 +404,26 @@ export const LeftCommandSidebar = memo(() => {
   const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
-  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
   const structures = useUIStore((state) => state.playerStructures);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const { structureGroups, updateStructureGroup } = useStructureGroups();
-  const { favorites, toggleFavorite } = useFavoriteStructures();
-  const goToStructure = useGoToStructure(setup);
   const mode = useGameModeConfig();
 
-  const [structureNameChange, setStructureNameChange] = useState<ComponentValue<
-    ClientComponents["Structure"]["schema"]
-  > | null>(null);
-  const [structureNameVersion, setStructureNameVersion] = useState(0);
-
-  const bumpStructureNameVersion = useCallback(() => {
-    setStructureNameVersion((version) => version + 1);
-  }, []);
+  // Rename popup signal lives in the global store now so the top-zone picker
+  // pills can trigger a rename without prop-drilling into this component.
+  const pendingRenameStructureEntityId = useUIStore((state) => state.pendingRenameStructureEntityId);
+  const setPendingRenameStructureEntityId = useUIStore((state) => state.setPendingRenameStructureEntityId);
+  const structureNameVersion = useUIStore((state) => state.structureNameVersion);
+  const bumpStructureNameVersion = useUIStore((state) => state.bumpStructureNameVersion);
 
   const handleNameChange = useCallback(
     (entityId: ID, newName: string) => {
       setEntityNameLocalStorage(entityId, newName);
-      setStructureNameChange(null);
+      setPendingRenameStructureEntityId(null);
       bumpStructureNameVersion();
     },
-    [bumpStructureNameVersion],
+    [bumpStructureNameVersion, setPendingRenameStructureEntityId],
   );
-
-  const handleRequestNameChange = useCallback((structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
-    setStructureNameChange(structure);
-  }, []);
 
   const handleOpenTransferPopup = useCallback(() => {
     setTransferPanelSourceId(null);
@@ -1341,30 +568,16 @@ export const LeftCommandSidebar = memo(() => {
     [combinedNavigationItems.length],
   );
 
-  const structureNameMetadata = structureNameChange ? mode.structure.getName(structureNameChange) : null;
-  const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : null;
-
-  const handleSelectStructure = useCallback(
-    (entityId: ID) => {
-      const target = structures.find((structure) => structure.entityId === entityId);
-      const coords = target?.structure?.base;
-
-      if (coords && coords.coord_x !== undefined && coords.coord_y !== undefined) {
-        const col = Number(coords.coord_x);
-        const row = Number(coords.coord_y);
-
-        if (Number.isFinite(col) && Number.isFinite(row)) {
-          setSelectedHex({ col, row });
-        }
-
-        void goToStructure(entityId, new Position({ x: coords.coord_x, y: coords.coord_y }), isMapView);
-        return;
-      }
-
-      setStructureEntityId(entityId);
-    },
-    [structures, goToStructure, isMapView, setStructureEntityId, setSelectedHex],
+  const pendingRenameStructure = useComponentValue(
+    components.Structure,
+    pendingRenameStructureEntityId
+      ? getEntityIdFromKeys([BigInt(pendingRenameStructureEntityId)])
+      : undefined,
   );
+
+  const pendingRenameMetadata = pendingRenameStructure ? mode.structure.getName(pendingRenameStructure) : null;
+  const editingStructureId =
+    pendingRenameStructureEntityId !== null ? Number(pendingRenameStructureEntityId) : null;
 
   return (
     <>
@@ -1375,18 +588,6 @@ export const LeftCommandSidebar = memo(() => {
               className="pointer-events-auto flex h-full w-full flex-col panel-wood panel-wood-corners overflow-hidden shadow-2xl"
               style={containerPanelStyle}
             >
-              <LeftPanelHeader
-                structureEntityId={structureEntityId}
-                structures={structures}
-                structureInfo={structureInfo}
-                onSelectStructure={handleSelectStructure}
-                components={components}
-                structureGroups={structureGroups}
-                onRequestNameChange={handleRequestNameChange}
-                nameUpdateVersion={structureNameVersion}
-                favorites={favorites}
-                onToggleFavorite={toggleFavorite}
-              />
               <div className="flex-1 overflow-hidden">
                 <div className={clsx("h-full pr-1", contentScrollClass)}>
                   <Suspense fallback={<div className="p-8">Loading...</div>}>
@@ -1442,7 +643,6 @@ export const LeftCommandSidebar = memo(() => {
                         Select a module to view details.
                       </div>
                     )}
-                    {/* {view === LeftView.RelicsView && <RelicsModule />} */}
                   </Suspense>
                 </div>
               </div>
@@ -1472,13 +672,13 @@ export const LeftCommandSidebar = memo(() => {
           </button>
         </div>
       </div>
-      {structureNameChange && structureNameMetadata && editingStructureId && (
+      {pendingRenameStructureEntityId !== null && pendingRenameMetadata && editingStructureId !== null && (
         <StructureEditPopup
-          currentName={structureNameMetadata.name}
-          originalName={structureNameMetadata.originalName ?? structureNameMetadata.name}
+          currentName={pendingRenameMetadata.name}
+          originalName={pendingRenameMetadata.originalName ?? pendingRenameMetadata.name}
           groupColor={structureGroups[editingStructureId] ?? null}
           onConfirm={(newName) => handleNameChange(editingStructureId, newName)}
-          onCancel={() => setStructureNameChange(null)}
+          onCancel={() => setPendingRenameStructureEntityId(null)}
           onUpdateColor={(color) => updateStructureGroup(editingStructureId, color)}
         />
       )}
