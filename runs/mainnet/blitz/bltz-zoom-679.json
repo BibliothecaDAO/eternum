@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26268571984-1",
   "currentStepId": null,
   "createdAt": "2026-05-22T04:34:27.471Z",
-  "updatedAt": "2026-05-22T11:00:54.709Z",
+  "updatedAt": "2026-05-22T11:02:50.767Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x3724c80e0ac6ce6aa06b099939766968c40cba989be2b1b1cf71f5444bff1b4"
     ],
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-zoom-679/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-22T04:38:43.591Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-05-22T11:00:53.204Z"
+    "lastIndexerDescribeAt": "2026-05-22T11:02:50.767Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-05-22T04:38:56.224Z"
 }
