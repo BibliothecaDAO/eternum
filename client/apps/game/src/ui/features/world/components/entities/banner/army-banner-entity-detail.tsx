@@ -12,6 +12,7 @@ import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
 import {
   isStaminaRecharging,
@@ -26,7 +27,7 @@ import { ActiveRelicEffects } from "../active-relic-effects";
 import { ArmyWarning } from "../../armies/army-warning";
 import { buildDisplayItems, CompactEntityInventory, countDisplayItems } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
-import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
+import { EntityDetailLayoutVariant } from "../layout";
 import { EntityBannerTabCue, resolveEntityBannerRelicCue } from "./entity-banner-tab-cue";
 import {
   ARMY_RESOURCE_INVENTORY_TAB_LABEL,
@@ -131,10 +132,13 @@ const ArmyBannerEntityDetailContent = memo(
     const relicTabLabel = relicCue.state === "empty" ? "Relics 0" : `Relics ${usableRelicCount}/${totalRelicCount}`;
 
     return (
-      <EntityDetailSection
-        compact={compact}
-        tone={hasWarnings ? "highlight" : "default"}
-        className={cn("flex h-full min-h-0 flex-col gap-2 overflow-hidden", className)}
+      <div
+        className={cn(
+          "pointer-events-auto flex h-full min-h-0 flex-col gap-2 overflow-hidden rounded-xl px-3 py-3",
+          OVERLAY_SURFACE_BASE,
+          hasWarnings && "ring-1 ring-gold/30",
+          className,
+        )}
       >
         {coordsLabel && (
           <div className="flex items-center justify-between gap-2 border-b border-gold/15 pb-2">
@@ -270,7 +274,7 @@ const ArmyBannerEntityDetailContent = memo(
         {/* {derivedData.isMine ? (
           <ExplorationAutomationCompact explorerId={explorer.explorer_id ?? armyEntityId} compact={compact} />
         ) : null} */}
-      </EntityDetailSection>
+      </div>
     );
   },
 );

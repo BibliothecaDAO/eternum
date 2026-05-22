@@ -284,23 +284,21 @@ const MapTilePanel = () => {
 
   const headerAction =
     syncableEntityType && syncableEntityId !== null ? (
-      <Button
-        variant="outline"
-        size="xs"
-        className="gap-1.5 rounded-full border-gold/60 px-3 py-1 text-[11px]"
-        forceUppercase={false}
+      <button
+        type="button"
         onClick={handleResyncCurrentEntity}
-        withoutSound
         disabled={isSyncingCurrentEntity}
         aria-label={`Re-sync ${syncableEntityType} ${String(syncableEntityId)}`}
+        title={isSyncingCurrentEntity ? "Syncing..." : "Re-sync"}
+        className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {isSyncingCurrentEntity ? (
-          <Loader className="h-3.5 w-3.5 animate-spin" />
+          <Loader className="h-3 w-3 animate-spin" />
         ) : (
-          <RefreshCw className="h-3.5 w-3.5" />
+          <RefreshCw className="h-3 w-3" />
         )}
-        <span>{isSyncingCurrentEntity ? "Syncing..." : "Re-sync"}</span>
-      </Button>
+        <span>{isSyncingCurrentEntity ? "Syncing" : "Re-sync"}</span>
+      </button>
     ) : null;
 
   return (
@@ -550,19 +548,17 @@ const LocalTilePanel = () => {
   }, [contractComponents, structureSyncTarget, syncEntity, toriiClient]);
 
   const headerAction = structureSyncTarget ? (
-    <Button
-      variant="outline"
-      size="xs"
-      className="gap-1.5 rounded-full border-gold/60 px-3 py-1 text-[11px]"
-      forceUppercase={false}
+    <button
+      type="button"
       onClick={handleResyncStructure}
-      withoutSound
       disabled={isSyncingStructure}
       aria-label={`Re-sync structure ${String(structureSyncTarget.entityId)}`}
+      title={isSyncingStructure ? "Syncing..." : "Re-sync"}
+      className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
     >
-      {isSyncingStructure ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-      <span>{isSyncingStructure ? "Syncing..." : "Re-sync"}</span>
-    </Button>
+      {isSyncingStructure ? <Loader className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+      <span>{isSyncingStructure ? "Syncing" : "Re-sync"}</span>
+    </button>
   ) : null;
 
   const handleToggleProduction = async () => {
