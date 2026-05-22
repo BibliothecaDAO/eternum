@@ -142,7 +142,7 @@ export const WalletPill = memo(() => {
       </Pill>
 
       {isOpen && (
-        <div className="absolute right-0 top-full z-40 mt-2 w-[340px] panel-wood panel-wood-corners rounded-lg border border-gold/20 bg-black/90 p-3 shadow-2xl">
+        <div className="absolute right-0 top-full z-40 mt-2 w-[340px] rounded-xl border border-gold/30 bg-gradient-to-b from-[#1a1410]/95 to-[#231a10]/95 p-3 shadow-[0_8px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(223,170,84,0.18)] backdrop-blur-sm">
           <div className="mb-2 flex items-center justify-between gap-2">
             <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Balance</span>
             <button

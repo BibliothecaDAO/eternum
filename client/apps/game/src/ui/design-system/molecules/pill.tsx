@@ -1,4 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { OVERLAY_SURFACE_ACTIVE, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { forwardRef, type ReactNode } from "react";
 
 export type PillTone = "default" | "gold" | "danger" | "warning" | "success" | "info";
@@ -30,35 +31,41 @@ interface StaticPillProps extends CommonPillProps {
 
 type PillProps = InteractivePillProps | StaticPillProps;
 
+// Tones share the same Etched Bronze base surface; only the text color and
+// optional accent overlay change. Danger/warning/success/info preserve the
+// status-color palette but apply it as a tint on top of the bronze base so
+// alert pills still feel like part of the HUD family.
 const toneClasses: Record<PillTone, { container: string; dot: string }> = {
   default: {
-    container: "border-gold/30 bg-black/55 text-gold/85 hover:border-gold/50 hover:text-gold",
+    container: "text-gold/85 hover:text-gold",
     dot: "bg-gold/80",
   },
   gold: {
-    container: "border-gold/60 bg-gold/15 text-gold shadow-[inset_0_1px_0_rgba(255,214,102,0.18)]",
+    container: "text-gold",
     dot: "bg-gold",
   },
   danger: {
-    container: "border-danger/60 bg-danger/15 text-danger hover:bg-danger/25",
+    container: "text-danger hover:bg-danger/15",
     dot: "bg-danger",
   },
   warning: {
-    container: "border-orange/60 bg-orange/15 text-orange hover:bg-orange/25",
+    container: "text-orange hover:bg-orange/15",
     dot: "bg-orange",
   },
   success: {
-    container: "border-emerald-400/60 bg-emerald-400/10 text-emerald-200 hover:bg-emerald-400/20",
+    container: "text-emerald-200 hover:bg-emerald-400/15",
     dot: "bg-emerald-400",
   },
   info: {
-    container: "border-cyan-300/45 bg-cyan-400/10 text-cyan-100 hover:bg-cyan-400/20",
+    container: "text-cyan-100 hover:bg-cyan-400/15",
     dot: "bg-cyan-300",
   },
 };
 
-const baseClasses =
-  "relative inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors";
+const baseClasses = cn(
+  "relative inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em]",
+  OVERLAY_SURFACE_BASE,
+);
 
 /**
  * Pill — the shared shell for floating top-zone widgets.
@@ -86,7 +93,7 @@ export const Pill = forwardRef<HTMLElement, PillProps>(
     ) : null;
 
     const sharedProps = {
-      className: cn(baseClasses, palette.container, className),
+      className: cn(baseClasses, palette.container, active && OVERLAY_SURFACE_ACTIVE, className),
       title,
       "aria-label": ariaLabel,
     };

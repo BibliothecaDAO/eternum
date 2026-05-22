@@ -5,6 +5,7 @@ import { getBlockTimestamp, Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
 import { GameStartCountdown } from "./game-start-countdown";
@@ -22,10 +23,10 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-// Shared visual base for each top-zone pill cluster. Floats independently
-// against the map — no shared dark-wood strip behind them.
-const PILL_SURFACE =
-  "pointer-events-auto rounded-full border border-gold/30 bg-black/55 backdrop-blur-sm shadow-lg shadow-black/40";
+// Shared visual base for each top-zone pill cluster. Uses the Etched Bronze
+// surface so it visually matches the view-switcher, right-side bubbles, and
+// minimap — every HUD element shares one design language now.
+const PILL_SURFACE = `pointer-events-auto rounded-full ${OVERLAY_SURFACE_BASE}`;
 
 export const TopHeader = memo(() => {
   const {
@@ -242,10 +243,11 @@ export const TopHeader = memo(() => {
           <button
             type="button"
             className={cn(
-              "pointer-events-auto rounded-full p-2 transition-all duration-300 border-2 backdrop-blur-sm shadow-lg shadow-black/40",
+              "pointer-events-auto rounded-full p-2 transition-all duration-300",
+              OVERLAY_SURFACE_BASE,
               followArmyCombats
-                ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-gold/20 animate-pulse"
-                : "bg-black/55 hover:bg-gold/20 border-gold/30",
+                ? "border-gold ring-1 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.35)] animate-pulse"
+                : "hover:border-gold/50",
             )}
             onClick={() => {
               setFollowArmyCombats(!followArmyCombats);

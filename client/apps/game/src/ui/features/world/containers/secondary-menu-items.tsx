@@ -9,14 +9,14 @@ import { NetworkStatusPill } from "@/ui/features/world/components/network-status
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { latestFeatures, leaderboard, rewards, settings, transactions } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 
 import { useCallback, useMemo } from "react";
 
-const PILL_SURFACE =
-  "pointer-events-auto rounded-full border border-gold/30 bg-black/55 backdrop-blur-sm shadow-lg shadow-black/40";
+const PILL_SURFACE = `pointer-events-auto rounded-full ${OVERLAY_SURFACE_BASE}`;
 
 const formatPoints = (points: number | null | undefined): string => {
   if (points === null || points === undefined) return "0";
@@ -111,7 +111,7 @@ export const SecondaryMenuItems = () => {
             <span>{formatPoints(rankPill.points)} pts</span>
           </button>
         ) : (
-          <CircleButton
+          <CircleButton variant="hud"
             className="social-selector border-none"
             tooltipLocation="bottom"
             image={BuildingThumbs.guild}
@@ -124,7 +124,7 @@ export const SecondaryMenuItems = () => {
 
         {/* End-of-season rewards stay as a CircleButton next to the rank pill while the season has ended. */}
         {hasSeasonEnded && (
-          <CircleButton
+          <CircleButton variant="hud"
             tooltipLocation="bottom"
             image={BuildingThumbs.rewards}
             label={rewards}
@@ -137,7 +137,7 @@ export const SecondaryMenuItems = () => {
 
         {/* Latest Features — render only while there are unseen features. */}
         {unseenFeaturesCount > 0 && (
-          <CircleButton
+          <CircleButton variant="hud"
             className="latest-features-selector border-none"
             tooltipLocation="bottom"
             active={isPopupOpen(latestFeatures)}
@@ -154,7 +154,7 @@ export const SecondaryMenuItems = () => {
         )}
 
         {/* Settings — now hosts the Controller (wallet) panel too. */}
-        <CircleButton
+        <CircleButton variant="hud"
           className="settings-selector border-none"
           tooltipLocation="bottom"
           active={isPopupOpen(settings)}
@@ -172,7 +172,7 @@ export const SecondaryMenuItems = () => {
         {/* Transactions — render only when there is an active signal (pending, stuck, or recent error). */}
         {txStatus.status !== "idle" && (
           <div className="relative">
-            <CircleButton
+            <CircleButton variant="hud"
               className="transactions-selector border-none"
               tooltipLocation="bottom"
               active={isPopupOpen(transactions)}

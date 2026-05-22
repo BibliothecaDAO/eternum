@@ -4,6 +4,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { BuildingThumbs, MenuEnum } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { MarketModal } from "@/ui/features/economy/trading";
 import { LogisticsView } from "@/ui/features/world/containers/logistics-view";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
@@ -568,7 +569,7 @@ export const LeftCommandSidebar = memo(() => {
       {ConnectedAccount && combinedNavigationItems.length > 0 && (
         <div className="fixed left-3 top-16 z-20 pointer-events-auto flex flex-col gap-2">
           {combinedNavigationItems.map((item) => (
-            <CircleButton key={item.id} {...item} size="lg" />
+            <CircleButton key={item.id} {...item} size="lg" variant="hud" />
           ))}
         </div>
       )}
@@ -576,7 +577,10 @@ export const LeftCommandSidebar = memo(() => {
       {/* Floating view panel — opens to the right of the strip when a view is active. */}
       {isPanelOpen && (
         <div
-          className="fixed left-20 top-16 z-30 pointer-events-auto flex w-[380px] max-h-[calc(100vh-120px)] flex-col overflow-hidden rounded-lg border border-gold/30 bg-black/85 shadow-2xl backdrop-blur-sm"
+          className={clsx(
+            "fixed left-20 top-16 z-30 pointer-events-auto flex w-[380px] max-h-[calc(100vh-120px)] flex-col overflow-hidden rounded-xl",
+            OVERLAY_SURFACE_BASE,
+          )}
         >
           <div className={clsx("flex-1 min-h-0 pr-1", contentScrollClass)}>
             <Suspense fallback={<div className="p-8">Loading...</div>}>

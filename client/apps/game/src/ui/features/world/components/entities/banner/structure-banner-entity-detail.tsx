@@ -9,7 +9,7 @@ import { memo, useCallback, useMemo } from "react";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { CompactDefenseDisplay } from "@/ui/features/military";
-import { CollapsibleBubble } from "../collapsible-bubble";
+import { InfoBubble } from "../collapsible-bubble";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -187,8 +187,8 @@ const StructureBannerEntityDetailContent = memo(
 
     return (
       <div className={cn("flex min-w-0 flex-col gap-2", className)}>
-        {/* Owner bubble — always-visible header. Not collapsible. */}
-        <CollapsibleBubble static title={ownerDisplayName ?? "Owner"} cue={structureName} bodyClassName="pt-0">
+        {/* Owner bubble — always-visible header. */}
+        <InfoBubble title={ownerDisplayName ?? "Owner"} cue={structureName} bodyClassName="pt-0">
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 items-center gap-2 text-gold">
               <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
@@ -222,26 +222,26 @@ const StructureBannerEntityDetailContent = memo(
               </Button>
             )}
           </div>
-        </CollapsibleBubble>
+        </InfoBubble>
 
         {showHyperstructureVP && (
-          <CollapsibleBubble title="Hyperstructure" icon={Sparkles}>
+          <InfoBubble title="Hyperstructure" icon={Sparkles}>
             <HyperstructureVPDisplay
               realmCount={hyperstructureRealmCount}
               isOwned={isHyperstructureOwned}
               className="w-full"
             />
-          </CollapsibleBubble>
+          </InfoBubble>
         )}
 
         {relicEffects.length > 0 && (
-          <CollapsibleBubble title="Active Relics" icon={Sparkles} defaultOpen={false}>
+          <InfoBubble title="Active Relics" icon={Sparkles}>
             <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
-          </CollapsibleBubble>
+          </InfoBubble>
         )}
 
         {shouldRenderVillageTimers && (
-          <CollapsibleBubble title="Village Intel">
+          <InfoBubble title="Village Intel">
             <div className="grid grid-cols-3 gap-1">
               <VillageTimerChip label="Militia" value={militiaUnlockLabel} title="Militia unlock timer" />
               <VillageTimerChip
@@ -255,11 +255,11 @@ const StructureBannerEntityDetailContent = memo(
                 title="Post-raid resource immunity window"
               />
             </div>
-          </CollapsibleBubble>
+          </InfoBubble>
         )}
 
         {/* Guards — always shown for structures that can hold defenders. */}
-        <CollapsibleBubble title="Guards" icon={Shield} cue={guardCue}>
+        <InfoBubble title="Guards" icon={Shield} cue={guardCue}>
           {guards.length > 0 ? (
             <CompactDefenseDisplay
               troops={guards.map((army) => ({ slot: army.slot, troops: army.troops }))}
@@ -272,10 +272,10 @@ const StructureBannerEntityDetailContent = memo(
           ) : (
             <p className="text-xxs text-gold/60 italic">No defenders stationed.</p>
           )}
-        </CollapsibleBubble>
+        </InfoBubble>
 
         {showProductionTab && (
-          <CollapsibleBubble title="Production" icon={Factory} cue={productionCue} defaultOpen={false}>
+          <InfoBubble title="Production" icon={Factory} cue={productionCue}>
             {resources ? (
               <StructureProductionPanelView
                 compact
@@ -291,17 +291,17 @@ const StructureBannerEntityDetailContent = memo(
                   : "Production data unavailable."}
               </p>
             )}
-          </CollapsibleBubble>
+          </InfoBubble>
         )}
 
         {showFaithTab && (
-          <CollapsibleBubble title="Faith" icon={Sparkles} defaultOpen={false}>
+          <InfoBubble title="Faith" icon={Sparkles}>
             <FaithDevotionActionPanel structureEntityId={structureEntityId} variant="tab" />
-          </CollapsibleBubble>
+          </InfoBubble>
         )}
 
         {(!showBalanceInline || showBalanceInline) && (
-          <CollapsibleBubble title={resourcesTabLabel} icon={Coins} defaultOpen={false}>
+          <InfoBubble title={resourcesTabLabel} icon={Coins}>
             {resources ? (
               <CompactEntityInventory
                 resources={resources}
@@ -318,7 +318,7 @@ const StructureBannerEntityDetailContent = memo(
             )}
             {/* labelTextClass kept referenced below so unused-var doesn't fire */}
             <span className={cn(labelTextClass, "sr-only")}>Balance</span>
-          </CollapsibleBubble>
+          </InfoBubble>
         )}
       </div>
     );

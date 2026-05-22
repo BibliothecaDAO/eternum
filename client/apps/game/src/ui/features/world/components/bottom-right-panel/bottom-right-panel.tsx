@@ -6,6 +6,7 @@ import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
 import { FELT_CENTER } from "@/ui/config";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import Button from "@/ui/design-system/atoms/button";
 import { sqlApi } from "@/services/api";
 import {
@@ -130,7 +131,8 @@ const normalizeResourceEntries = (value: unknown): ResourceAmountEntry[] => {
 const PanelFrame = ({ title, children, headerAction, className, height }: PanelFrameProps) => (
   <section
     className={cn(
-      "pointer-events-auto flex h-full flex-col overflow-hidden rounded-lg border border-gold/30 bg-black/85 shadow-2xl backdrop-blur-sm",
+      "pointer-events-auto flex h-full flex-col overflow-hidden rounded-xl",
+      OVERLAY_SURFACE_BASE,
       className,
     )}
     style={{ height: height ?? BOTTOM_PANEL_HEIGHT }}
@@ -299,7 +301,7 @@ const MapTilePanel = () => {
   return (
     <>
       {/* Header bubble — coords + (optionally) re-sync. */}
-      <div className="pointer-events-auto flex items-center justify-between gap-2 rounded-2xl border border-gold/25 bg-black/85 px-3 py-2 shadow-lg shadow-black/40 backdrop-blur-sm">
+      <div className={cn("pointer-events-auto flex items-center justify-between gap-2 rounded-xl px-3 py-2", OVERLAY_SURFACE_BASE)}>
         <p className="min-w-0 flex-1 truncate text-[10px] font-semibold uppercase tracking-[0.25em] text-gold/70">
           {panelTitle}
         </p>
@@ -308,7 +310,7 @@ const MapTilePanel = () => {
       {selectedHex ? (
         <SelectedWorldmapEntity />
       ) : (
-        <div className="pointer-events-auto rounded-2xl border border-gold/20 bg-black/75 px-4 py-6 text-center shadow-lg shadow-black/40 backdrop-blur-sm">
+        <div className={cn("pointer-events-auto rounded-xl px-4 py-6 text-center", OVERLAY_SURFACE_BASE)}>
           <p className="text-xs text-gold/70">Tap any tile on the world map to view its occupants and resources.</p>
         </div>
       )}

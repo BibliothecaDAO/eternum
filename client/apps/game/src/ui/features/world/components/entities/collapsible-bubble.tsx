@@ -1,75 +1,46 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import type { LucideIcon } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
-interface CollapsibleBubbleProps {
+interface InfoBubbleProps {
   title: ReactNode;
   icon?: LucideIcon;
   cue?: ReactNode;
-  defaultOpen?: boolean;
   children: ReactNode;
   className?: string;
   bodyClassName?: string;
-  /**
-   * Suppress the chevron + click handler so the bubble functions as a plain
-   * header card (e.g. the owner section, where there's nothing to hide).
-   */
-  static?: boolean;
 }
 
 /**
- * CollapsibleBubble — small standalone info bubble used on the right-edge
- * tile-details column. Click the header to toggle the body. Header stays
- * compact and consistent across bubbles; body content is provided by the
- * caller and only renders when expanded.
+ * InfoBubble — small standalone surface used inside the right-edge
+ * tile-details column. Always-open; the previous collapse mechanism was
+ * removed because the column already gates which bubbles render based on
+ * the tile's actual content.
+ *
+ * Surface uses the shared Etched Bronze tokens so it matches every other
+ * floating element in the HUD (top pills, view-switcher, minimap, view
+ * panel).
  */
-export const CollapsibleBubble = ({
-  title,
-  icon: Icon,
-  cue,
-  defaultOpen = true,
-  children,
-  className,
-  bodyClassName,
-  static: isStatic = false,
-}: CollapsibleBubbleProps) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  const expanded = isStatic || isOpen;
-  const HeaderTag = isStatic ? "div" : "button";
-
+export const InfoBubble = ({ title, icon: Icon, cue, children, className, bodyClassName }: InfoBubbleProps) => {
   return (
-    <div
-      className={cn(
-        "pointer-events-auto rounded-2xl border border-gold/25 bg-black/85 shadow-lg shadow-black/40 backdrop-blur-sm",
-        className,
-      )}
-    >
-      <HeaderTag
-        type={isStatic ? undefined : "button"}
-        onClick={isStatic ? undefined : () => setIsOpen((value) => !value)}
-        aria-expanded={isStatic ? undefined : isOpen}
-        className={cn(
-          "flex w-full items-center justify-between gap-2 px-3 py-2 text-left",
-          !isStatic && "transition hover:text-gold cursor-pointer",
-        )}
-      >
+    <div className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto rounded-xl", className)}>
+      <div className="flex items-center justify-between gap-2 px-3 py-2">
         <span className="flex min-w-0 items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold/80">
           {Icon && <Icon className="h-3.5 w-3.5 flex-shrink-0 text-gold/70" />}
           <span className="truncate">{title}</span>
-          {cue && <span className="flex-shrink-0 text-gold/55">{cue}</span>}
         </span>
-        {!isStatic && (
-          <ChevronDown
-            className={cn(
-              "h-3.5 w-3.5 flex-shrink-0 text-gold/60 transition-transform",
-              expanded && "rotate-180",
-            )}
-            aria-hidden
-          />
+        {cue && (
+          <span className="flex-shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold/55">{cue}</span>
         )}
-      </HeaderTag>
-      {expanded && <div className={cn("px-3 pb-3 pt-1", bodyClassName)}>{children}</div>}
+      </div>
+      <div className={cn("px-3 pb-3 pt-1", bodyClassName)}>{children}</div>
     </div>
   );
 };
+
+/**
+ * Backward-compatible export so consumers that imported `CollapsibleBubble`
+ * still work. Drop this alias once nothing references the old name.
+ */
+export const CollapsibleBubble = InfoBubble;

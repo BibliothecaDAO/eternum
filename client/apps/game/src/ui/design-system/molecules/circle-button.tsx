@@ -1,5 +1,6 @@
 import { useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { OVERLAY_SURFACE_ACTIVE, OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import clsx from "clsx";
 import { memo, useCallback, useMemo } from "react";
 
@@ -12,6 +13,12 @@ type CircleButtonProps = {
   active?: boolean;
   label?: string;
   image?: string;
+  /**
+   * "default" keeps the legacy wooden chrome (modals, in-panel uses).
+   * "hud" applies the shared Etched Bronze HUD surface so view-switcher
+   * + alert-cluster icons feel like part of the same family as pills.
+   */
+  variant?: "default" | "hud";
   tooltipLocation?: "top" | "bottom" | "left" | "right";
   primaryNotification?: {
     value: number;
@@ -103,6 +110,7 @@ const CircleButton = ({
   active,
   label,
   image,
+  variant = "default",
   tooltipLocation = "bottom",
   primaryNotification,
   secondaryNotification,
@@ -143,12 +151,18 @@ const CircleButton = ({
         onMouseLeave={handleMouseLeave}
         onClick={handleClick}
         className={clsx(
-          "flex transition-all duration-150 cursor-pointer items-center justify-center fill-current text-gold hover:border-gold shadow-2xl group bg-hex-bg hover:bg-gold border border-gold/40 button-wood",
+          "flex cursor-pointer items-center justify-center fill-current text-gold group",
+          variant === "hud"
+            ? clsx(OVERLAY_SURFACE_BASE, !disabled && "hover:border-gold/55", active && !disabled && OVERLAY_SURFACE_ACTIVE)
+            : clsx(
+                "transition-all duration-150 hover:border-gold shadow-2xl bg-hex-bg hover:bg-gold border border-gold/40 button-wood",
+                active ? "bg-gold !border-gold sepia-0" : "bg-dark-wood",
+              ),
           // Hover/active grow — makes the icons feel tactile and emphasizes the
           // current selection without changing layout. Disabled icons stay flat.
           !disabled && "hover:scale-110 active:scale-95",
-          active && !disabled && "scale-110 ring-2 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.45)]",
-          active ? "bg-gold !border-gold sepia-0" : "bg-dark-wood",
+          active && !disabled && variant !== "hud" && "scale-110 ring-2 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.45)]",
+          active && !disabled && variant === "hud" && "scale-110",
           className,
           sizes[size],
           { "cursor-not-allowed": disabled },
