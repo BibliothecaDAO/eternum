@@ -16,9 +16,9 @@ import { Has } from "@dojoengine/recs";
 
 import { useCallback, useMemo } from "react";
 
-// Matches the unified TOP_PILL height (h-8) in top-header so the rank reads
+// Matches the unified TOP_PILL height (h-9) in top-header so the rank reads
 // as the same strip as every other pill.
-const PILL_SURFACE = `pointer-events-auto inline-flex h-8 items-center rounded-full ${OVERLAY_SURFACE_BASE}`;
+const PILL_SURFACE = `pointer-events-auto inline-flex h-9 items-center rounded-full ${OVERLAY_SURFACE_BASE}`;
 
 const formatPoints = (points: number | null | undefined): string => {
   if (points === null || points === undefined) return "0";
@@ -109,7 +109,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
       onClick={handleOpenLeaderboard}
       className={cn(
         PILL_SURFACE,
-        "gap-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-gold transition hover:bg-gold/15",
+        "gap-2 px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] tabular-nums text-gold transition hover:bg-gold/15",
         isPopupOpen(leaderboard) && "border-gold/60 bg-gold/15",
       )}
       aria-label="Open leaderboard"
@@ -117,7 +117,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
     >
       <span>#{rankPill.rank}</span>
       <span className="text-gold/50">·</span>
-      <span>{formatPoints(rankPill.points)} pts</span>
+      <span>{formatPoints(rankPill.points)} VP</span>
     </button>
   ) : (
     <CircleButton
@@ -127,25 +127,13 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
       image={BuildingThumbs.guild}
       label={leaderboard}
       active={isPopupOpen(leaderboard)}
-      size="sm"
+      size="md"
       onClick={handleOpenLeaderboard}
     />
   );
 
   const restNodes = (
     <>
-      {/* Settings — now hosts the Controller (wallet) panel too. */}
-      <CircleButton
-        variant="hud"
-        className="settings-selector border-none"
-        tooltipLocation="bottom"
-        active={isPopupOpen(settings)}
-        image={BuildingThumbs.settings}
-        label={"Settings"}
-        size="sm"
-        onClick={() => togglePopup(settings)}
-      />
-
       {/* End-of-season rewards stay surfaced while the season has ended. */}
       {hasSeasonEnded && (
         <CircleButton
@@ -154,7 +142,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
           image={BuildingThumbs.rewards}
           label={rewards}
           active={isPopupOpen(rewards)}
-          size="sm"
+          size="md"
           className="border-none"
           onClick={() => togglePopup(rewards)}
         />
@@ -169,7 +157,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
           active={isPopupOpen(latestFeatures)}
           image={BuildingThumbs.latestUpdates}
           label={"Latest Features"}
-          size="sm"
+          size="md"
           onClick={() => togglePopup(latestFeatures)}
           primaryNotification={{
             value: unseenFeaturesCount,
@@ -184,28 +172,29 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
         <NetworkStatusPill onRetry={triggerConnectionForceReconnect} />
       </div>
 
-      {/* Transactions — render only when there is an active signal (pending, stuck, or recent error). */}
-      {txStatus.status !== "idle" && (
-        <div className="relative">
-          <CircleButton
-            variant="hud"
-            className="transactions-selector border-none"
-            tooltipLocation="bottom"
-            active={isPopupOpen(transactions)}
-            image="/image-icons/network.png"
-            label={"Transactions"}
-            size="sm"
-            onClick={() => togglePopup(transactions)}
-            primaryNotification={
-              txStatus.pendingCount > 0
-                ? {
-                    value: txStatus.pendingCount,
-                    color: txStatus.notificationColor as "green" | "red" | "orange" | "gold",
-                    location: "topright",
-                  }
-                : undefined
-            }
-          />
+      {/* Transactions — always visible, sits immediately to the left of Settings.
+          Status dot indicator overlays when there's an active signal. */}
+      <div className="relative">
+        <CircleButton
+          variant="hud"
+          className="transactions-selector border-none"
+          tooltipLocation="bottom"
+          active={isPopupOpen(transactions)}
+          image="/image-icons/network.png"
+          label={"Transactions"}
+          size="md"
+          onClick={() => togglePopup(transactions)}
+          primaryNotification={
+            txStatus.pendingCount > 0
+              ? {
+                  value: txStatus.pendingCount,
+                  color: txStatus.notificationColor as "green" | "red" | "orange" | "gold",
+                  location: "topright",
+                }
+              : undefined
+          }
+        />
+        {txStatus.status !== "idle" && (
           <div
             className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-dark-brown
                         ${txStatus.status === "pending" ? "bg-gold animate-pulse" : ""}
@@ -213,8 +202,20 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
                         ${txStatus.status === "error" ? "bg-danger" : ""}
                         shadow-[0_0_6px_currentColor]`}
           />
-        </div>
-      )}
+        )}
+      </div>
+
+      {/* Settings — now hosts the Controller (wallet) panel too. Always last. */}
+      <CircleButton
+        variant="hud"
+        className="settings-selector border-none"
+        tooltipLocation="bottom"
+        active={isPopupOpen(settings)}
+        image={BuildingThumbs.settings}
+        label={"Settings"}
+        size="md"
+        onClick={() => togglePopup(settings)}
+      />
 
       {/* Controller (Cartridge wallet) — only surfaced here while the player is
           logged out, so the Login button stays discoverable. Once connected,

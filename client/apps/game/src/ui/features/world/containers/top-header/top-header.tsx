@@ -22,11 +22,16 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-// Shared visual base for each top-zone pill. h-8 (32px) fixed height + same
+// Shared visual base for each top-zone pill. h-9 (36px) fixed height + same
 // padding + same surface so every pill in the bar reads as one strip instead
 // of a row of mismatched chips.
 const TOP_PILL =
-  `pointer-events-auto inline-flex h-8 items-center gap-1.5 rounded-full px-3 ${OVERLAY_SURFACE_BASE}`;
+  `pointer-events-auto inline-flex h-9 items-center gap-2 rounded-full px-3.5 ${OVERLAY_SURFACE_BASE}`;
+
+// Unified body text on every pill — same size, weight, tracking. Numbers use
+// tabular-nums so digit-width stays constant across timers/percentages/rank.
+export const TOP_PILL_TEXT =
+  "text-[11px] font-semibold uppercase tracking-[0.16em] text-gold tabular-nums";
 
 export const TopHeader = memo(() => {
   const {
@@ -171,10 +176,7 @@ export const TopHeader = memo(() => {
               );
             }}
             onMouseEnter={() => playHover()}
-            className={cn(
-              "cursor-pointer text-[11px] uppercase tracking-[0.16em] font-semibold text-gold/70",
-              isLocalView && "text-gold",
-            )}
+            className={cn("cursor-pointer", TOP_PILL_TEXT, !isLocalView && "text-gold/55")}
           >
             Local
           </span>
@@ -193,7 +195,7 @@ export const TopHeader = memo(() => {
                 );
               }}
             />
-            <div className="w-8 h-4 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-3 after:w-3 after:transition-all bg-gold/30"></div>
+            <div className="w-9 h-4 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-3 after:w-3 after:transition-all bg-gold/30"></div>
           </label>
           <span
             onClick={() => {
@@ -205,10 +207,7 @@ export const TopHeader = memo(() => {
               );
             }}
             onMouseEnter={() => playHover()}
-            className={cn(
-              "cursor-pointer text-[11px] uppercase tracking-[0.16em] font-semibold text-gold/70",
-              isWorldView && "text-gold",
-            )}
+            className={cn("cursor-pointer", TOP_PILL_TEXT, !isWorldView && "text-gold/55")}
           >
             World
           </span>
@@ -244,7 +243,7 @@ export const TopHeader = memo(() => {
           <button
             type="button"
             className={cn(
-              "pointer-events-auto inline-flex h-8 w-8 items-center justify-center rounded-full transition-all duration-300",
+              "pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300",
               OVERLAY_SURFACE_BASE,
               followArmyCombats
                 ? "border-gold ring-1 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.35)] animate-pulse"

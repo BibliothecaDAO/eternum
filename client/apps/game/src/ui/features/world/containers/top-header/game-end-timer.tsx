@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { hasFiniteSeasonEnd } from "@/ui/features/world/utils/season-timing";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import Clock from "lucide-react/dist/esm/icons/clock";
@@ -132,7 +133,9 @@ export const GameEndTimer = memo(() => {
       case "final":
         return "bg-danger/30 border-danger text-danger shadow-[0_0_20px_rgba(200,68,68,0.55)]";
       default:
-        return "bg-brown/80 border-gold/30 text-gold shadow-none";
+        // Empty string → the wrapper falls back to OVERLAY_SURFACE_BASE so the
+        // pill matches every other top-bar pill in its default state.
+        return "";
     }
   }, [urgencyState]);
 
@@ -209,13 +212,17 @@ export const GameEndTimer = memo(() => {
     return null;
   }
 
+  const isDefaultTone = urgencyState === "default";
+
   return (
     <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className="pointer-events-auto">
       <div
-        className={`relative flex h-8 items-center gap-1.5 rounded-full border px-3 backdrop-blur-sm transition-all duration-300 ${containerToneClass}`}
+        className={`relative flex h-9 items-center gap-2 rounded-full px-3.5 transition-all duration-300 ${
+          isDefaultTone ? OVERLAY_SURFACE_BASE : `border backdrop-blur-sm ${containerToneClass}`
+        }`}
         style={dynamicStyle}
       >
-        <div className="relative flex h-[18px] w-[18px] items-center justify-center">
+        <div className="relative flex h-5 w-5 items-center justify-center">
           {showRing && (
             <svg className="absolute inset-0 h-full w-full -rotate-90" viewBox="0 0 32 32">
               <circle
@@ -244,9 +251,15 @@ export const GameEndTimer = memo(() => {
               />
             </svg>
           )}
-          <Clock className="h-3 w-3" />
+          <Clock className="h-3.5 w-3.5" />
         </div>
-        <span className="text-[11px] font-semibold font-mono tracking-wide tabular-nums">{timeDisplay}</span>
+        <span
+          className={`text-[11px] font-semibold uppercase tracking-[0.16em] tabular-nums ${
+            isDefaultTone ? "text-gold" : ""
+          }`}
+        >
+          {timeDisplay}
+        </span>
       </div>
     </div>
   );
