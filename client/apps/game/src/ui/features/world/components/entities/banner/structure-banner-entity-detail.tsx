@@ -8,8 +8,8 @@ import { memo, useCallback, useMemo } from "react";
 
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Tabs } from "@/ui/design-system/atoms/tab";
 import { CompactDefenseDisplay } from "@/ui/features/military";
+import { CollapsibleBubble } from "../collapsible-bubble";
 import { HyperstructureVPDisplay } from "@/ui/features/world/components/hyperstructures/hyperstructure-vp-display";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -23,11 +23,11 @@ import { getAvatarUrl, usePlayerAvatar } from "@/hooks/use-player-avatar";
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { buildDisplayItems, CompactEntityInventory, countDisplayItems } from "../compact-entity-inventory";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
-import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
+import { EntityDetailLayoutVariant } from "../layout";
 import { StructureProductionPanelView } from "../structure-production-panel";
 import { useStructureProductionSummary } from "../structure-production-summary";
 import { FaithDevotionActionPanel } from "../../actions/faith-devotion-action-panel";
-import { EntityBannerTabCue, resolveEntityBannerRelicCue } from "./entity-banner-tab-cue";
+import { resolveEntityBannerRelicCue } from "./entity-banner-tab-cue";
 
 interface StructureBannerEntityDetailProps {
   structureEntityId: ID;
@@ -171,72 +171,78 @@ const StructureBannerEntityDetailContent = memo(
     const showHyperstructureVP = isHyperstructure && hyperstructureRealmCount !== undefined;
     const occupiedGuardSlots = guards.filter((guard) => Number(guard.troops?.count ?? 0) > 0).length;
     const guardCue = guardSlotsMax !== undefined ? `${occupiedGuardSlots}/${guardSlotsMax}` : `${occupiedGuardSlots}`;
-    const guardCueTone = occupiedGuardSlots > 0 ? "success" : "muted";
     const productionCue =
       productionSummary.totalProductionBuildings > 0
         ? `${productionSummary.activeProductionBuildings}/${productionSummary.totalProductionBuildings}`
         : "0";
-    const productionCueTone =
-      productionSummary.totalProductionBuildings === 0
-        ? "muted"
-        : productionSummary.activeProductionBuildings === productionSummary.totalProductionBuildings
-          ? "success"
-          : productionSummary.activeProductionBuildings > 0
-            ? "warning"
-            : "danger";
     const totalRelicCount = inventoryCounts.totalRelics;
     const usableRelicCount = isMine ? inventoryCounts.usableRelics : 0;
     const relicCue = resolveEntityBannerRelicCue(usableRelicCount, totalRelicCount);
     const resourcesTabLabel =
       relicCue.state === "empty" ? "Resources" : `Resources ${usableRelicCount}/${totalRelicCount}`;
 
+    // Unused now that we no longer render a Tabs.List with cues, but kept in
+    // case a future inline indicator wants to surface the same signal.
+    void relicCue;
+
     return (
-      <EntityDetailSection
-        compact={compact}
-        className={cn("flex h-full min-h-0 flex-col gap-1.5 overflow-hidden", className)}
-      >
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex min-w-0 items-center gap-2 text-gold">
-            <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
-              {ownerAvatarUrl ? (
-                <img className="h-full w-full object-cover" src={ownerAvatarUrl} alt={`${ownerDisplayName} avatar`} />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-gold/70">
-                  {ownerInitial}
-                </div>
-              )}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
+      <div className={cn("flex min-w-0 flex-col gap-2", className)}>
+        {/* Owner bubble — always-visible header. Not collapsible. */}
+        <CollapsibleBubble static title={ownerDisplayName ?? "Owner"} cue={structureName} bodyClassName="pt-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2 text-gold">
+              <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
+                {ownerAvatarUrl ? (
+                  <img
+                    className="h-full w-full object-cover"
+                    src={ownerAvatarUrl}
+                    alt={`${ownerDisplayName} avatar`}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-gold/70">
+                    {ownerInitial}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
                 <p className={cn("truncate font-semibold text-gold", headerTitleClass)}>{ownerDisplayName}</p>
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className={cn("truncate text-gold/80", headerMetaClass)}>{structureName}</span>
+                <span className={cn("block truncate text-gold/80", headerMetaClass)}>{structureName}</span>
               </div>
             </div>
+            {canOpenTransferPopup && (
+              <Button
+                size="xs"
+                variant="outline"
+                forceUppercase={false}
+                className="border-gold/30 bg-dark/40 text-gold hover:bg-dark/60 !px-2 !py-1 min-w-0"
+                onClick={handleOpenTransferPopup}
+                aria-label="Open transfer panel"
+              >
+                <ArrowLeftRight className="h-4 w-4" />
+              </Button>
+            )}
           </div>
-          {canOpenTransferPopup && (
-            <Button
-              size="xs"
-              variant="outline"
-              forceUppercase={false}
-              className="border-gold/30 bg-dark/40 text-gold hover:bg-dark/60 !px-2 !py-1 min-w-0"
-              onClick={handleOpenTransferPopup}
-              aria-label="Open transfer panel"
-            >
-              <ArrowLeftRight className="h-4 w-4" />
-            </Button>
-          )}
-        </div>
+        </CollapsibleBubble>
+
+        {showHyperstructureVP && (
+          <CollapsibleBubble title="Hyperstructure" icon={Sparkles}>
+            <HyperstructureVPDisplay
+              realmCount={hyperstructureRealmCount}
+              isOwned={isHyperstructureOwned}
+              className="w-full"
+            />
+          </CollapsibleBubble>
+        )}
 
         {relicEffects.length > 0 && (
-          <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
+          <CollapsibleBubble title="Active Relics" icon={Sparkles} defaultOpen={false}>
+            <ActiveRelicEffects relicEffects={relicEffects} entityId={structureEntityId} compact />
+          </CollapsibleBubble>
         )}
 
         {shouldRenderVillageTimers && (
-          <div className="rounded border border-gold/15 bg-black/30 px-2 py-1.5">
-            <div className="text-[10px] uppercase tracking-[0.2em] text-gold/65">Village Intel</div>
-            <div className="mt-1 grid grid-cols-3 gap-1">
+          <CollapsibleBubble title="Village Intel">
+            <div className="grid grid-cols-3 gap-1">
               <VillageTimerChip label="Militia" value={militiaUnlockLabel} title="Militia unlock timer" />
               <VillageTimerChip
                 label="Raid immunity"
@@ -249,121 +255,72 @@ const StructureBannerEntityDetailContent = memo(
                 title="Post-raid resource immunity window"
               />
             </div>
-          </div>
+          </CollapsibleBubble>
         )}
 
-        <Tabs variant="entityBanner" className="flex min-h-0 flex-1 flex-col gap-2">
-          <Tabs.Panels className="flex-1 min-h-0">
-            <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-1.5">
-              {showHyperstructureVP && (
-                <HyperstructureVPDisplay
-                  realmCount={hyperstructureRealmCount}
-                  isOwned={isHyperstructureOwned}
-                  className="w-full"
-                />
-              )}
-              {guards.length > 0 ? (
-                <CompactDefenseDisplay
-                  troops={guards.map((army) => ({ slot: army.slot, troops: army.troops }))}
-                  slotsUsed={guardSlotsUsed}
-                  slotsMax={guardSlotsMax}
-                  structureId={Number(structure.entity_id ?? 0)}
-                  canManageDefense={isMine}
-                  variant={defenseDisplayVariant}
-                />
-              ) : (
-                <p className="text-xxs text-gold/60 italic">No defenders stationed.</p>
-              )}
+        {/* Guards — always shown for structures that can hold defenders. */}
+        <CollapsibleBubble title="Guards" icon={Shield} cue={guardCue}>
+          {guards.length > 0 ? (
+            <CompactDefenseDisplay
+              troops={guards.map((army) => ({ slot: army.slot, troops: army.troops }))}
+              slotsUsed={guardSlotsUsed}
+              slotsMax={guardSlotsMax}
+              structureId={Number(structure.entity_id ?? 0)}
+              canManageDefense={isMine}
+              variant={defenseDisplayVariant}
+            />
+          ) : (
+            <p className="text-xxs text-gold/60 italic">No defenders stationed.</p>
+          )}
+        </CollapsibleBubble>
 
-              {showBalanceInline && (
-                <div className="flex flex-col gap-2">
-                  <span className={cn(labelTextClass, "uppercase tracking-[0.25em] text-gold/70")}>Balance</span>
-                  {resources ? (
-                    <CompactEntityInventory
-                      resources={resources}
-                      activeRelicIds={activeRelicIds}
-                      recipientType={RelicRecipientType.Structure}
-                      entityId={structureEntityId}
-                      entityType={EntityType.STRUCTURE}
-                      allowRelicActivation={isMine}
-                      variant="tight"
-                      maxItems={inventoryLimit}
-                    />
-                  ) : (
-                    <p className="text-xxs text-gold/60 italic">No resources stored.</p>
-                  )}
-                </div>
-              )}
-            </Tabs.Panel>
+        {showProductionTab && (
+          <CollapsibleBubble title="Production" icon={Factory} cue={productionCue} defaultOpen={false}>
+            {resources ? (
+              <StructureProductionPanelView
+                compact
+                smallTextClass="text-xxs"
+                showProductionSummary={variant !== "banner"}
+                showTooltip={false}
+                productionSummary={productionSummary}
+              />
+            ) : (
+              <p className="text-xxs text-gold/60 italic">
+                {isFragmentMine
+                  ? `${mode.labels.fragmentMines} do not produce resources.`
+                  : "Production data unavailable."}
+              </p>
+            )}
+          </CollapsibleBubble>
+        )}
 
-            {showProductionTab && (
-              <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-1.5 pt-1">
-                {resources ? (
-                  <StructureProductionPanelView
-                    compact
-                    smallTextClass="text-xxs"
-                    showProductionSummary={variant !== "banner"}
-                    showTooltip={false}
-                    productionSummary={productionSummary}
-                  />
-                ) : (
-                  <p className="text-xxs text-gold/60 italic">
-                    {isFragmentMine
-                      ? `${mode.labels.fragmentMines} do not produce resources.`
-                      : "Production data unavailable."}
-                  </p>
-                )}
-              </Tabs.Panel>
-            )}
+        {showFaithTab && (
+          <CollapsibleBubble title="Faith" icon={Sparkles} defaultOpen={false}>
+            <FaithDevotionActionPanel structureEntityId={structureEntityId} variant="tab" />
+          </CollapsibleBubble>
+        )}
 
-            {showFaithTab && (
-              <Tabs.Panel scrollable={true} className="flex h-full min-h-0 flex-col gap-1.5 pt-1">
-                <FaithDevotionActionPanel structureEntityId={structureEntityId} variant="tab" />
-              </Tabs.Panel>
+        {(!showBalanceInline || showBalanceInline) && (
+          <CollapsibleBubble title={resourcesTabLabel} icon={Coins} defaultOpen={false}>
+            {resources ? (
+              <CompactEntityInventory
+                resources={resources}
+                activeRelicIds={activeRelicIds}
+                recipientType={RelicRecipientType.Structure}
+                entityId={structureEntityId}
+                entityType={EntityType.STRUCTURE}
+                allowRelicActivation={isMine}
+                variant="tight"
+                maxItems={inventoryLimit}
+              />
+            ) : (
+              <p className="text-xxs text-gold/60 italic">No resources stored.</p>
             )}
-
-            {!showBalanceInline && (
-              <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-1.5">
-                {resources ? (
-                  <CompactEntityInventory
-                    resources={resources}
-                    activeRelicIds={activeRelicIds}
-                    recipientType={RelicRecipientType.Structure}
-                    entityId={structureEntityId}
-                    entityType={EntityType.STRUCTURE}
-                    allowRelicActivation={isMine}
-                    variant="tight"
-                    maxItems={inventoryLimit}
-                  />
-                ) : (
-                  <p className="text-xxs text-gold/60 italic">No resources stored.</p>
-                )}
-              </Tabs.Panel>
-            )}
-          </Tabs.Panels>
-
-          <Tabs.List>
-            <Tabs.Tab aria-label={`Guards ${guardCue}`} title={`Guards ${guardCue}`}>
-              <EntityBannerTabCue icon={Shield} label="Guards" cue={guardCue} tone={guardCueTone} />
-            </Tabs.Tab>
-            {showProductionTab && (
-              <Tabs.Tab aria-label={`Production ${productionCue}`} title={`Production ${productionCue}`}>
-                <EntityBannerTabCue icon={Factory} label="Production" cue={productionCue} tone={productionCueTone} />
-              </Tabs.Tab>
-            )}
-            {showFaithTab && (
-              <Tabs.Tab aria-label="Faith" title="Faith">
-                <EntityBannerTabCue icon={Sparkles} label="Faith" />
-              </Tabs.Tab>
-            )}
-            {!showBalanceInline && (
-              <Tabs.Tab aria-label={resourcesTabLabel} title={resourcesTabLabel}>
-                <EntityBannerTabCue icon={Coins} label="Resources" splitCue={relicCue.splitCue} tone="default" />
-              </Tabs.Tab>
-            )}
-          </Tabs.List>
-        </Tabs>
-      </EntityDetailSection>
+            {/* labelTextClass kept referenced below so unused-var doesn't fire */}
+            <span className={cn(labelTextClass, "sr-only")}>Balance</span>
+          </CollapsibleBubble>
+        )}
+      </div>
     );
   },
 );
