@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-22T00:01:41.847Z",
+  "updatedAt": "2026-05-22T00:06:41.959Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2580,7 +2580,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-20-05-26-1900 not found"
       },
-      "updatedAt": "2026-05-21T23:46:43.361Z"
+      "updatedAt": "2026-05-22T00:06:41.959Z"
     },
     "bltz-vibe-53": {
       "gameName": "bltz-vibe-53",
