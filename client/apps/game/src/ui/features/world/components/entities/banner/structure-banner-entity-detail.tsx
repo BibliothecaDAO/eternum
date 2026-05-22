@@ -254,17 +254,16 @@ const StructureBannerEntityDetailContent = memo(
               </Button>
             )}
           </div>
+          {showHyperstructureVP && (
+            <div className="mt-2 border-t border-gold/15 pt-2">
+              <HyperstructureVPDisplay
+                realmCount={hyperstructureRealmCount}
+                isOwned={isHyperstructureOwned}
+                className="w-full"
+              />
+            </div>
+          )}
         </InfoBubble>}
-
-        {showHyperstructureVP && (
-          <InfoBubble title="Hyperstructure" icon={Sparkles}>
-            <HyperstructureVPDisplay
-              realmCount={hyperstructureRealmCount}
-              isOwned={isHyperstructureOwned}
-              className="w-full"
-            />
-          </InfoBubble>
-        )}
 
         {relicEffects.length > 0 && (
           <InfoBubble title="Active Relics" icon={Sparkles}>
