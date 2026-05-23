@@ -19,8 +19,22 @@ import { ContractAddress, RealmLevels, ResourcesIds, StructureType } from "@bibl
 import { useMemo } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
-import Button from "@/ui/design-system/atoms/button";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
 import CrownIcon from "lucide-react/dist/esm/icons/crown";
+
+// One chip style for every requirement / produces row — matches the
+// building-tile inspector so the castle reads with the same vocabulary.
+const CHIP_BASE =
+  "flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-[11px] font-semibold tabular-nums";
+
+const SectionRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="space-y-1">
+    <span className={HUD_LABEL}>{label}</span>
+    <div className="flex flex-wrap items-center gap-1.5">{children}</div>
+  </div>
+);
 
 const RealmVillageDetails = () => {
   const dojo = useDojo();
@@ -118,35 +132,24 @@ export const RealmUpgradeCompact = () => {
 
   if (upgradeInfo.isMaxLevel) {
     return (
-      <div className="space-y-2">
-        <div className="rounded border border-gold/20 bg-black/40 p-3 space-y-3">
-          <div className="flex items-center gap-2">
-            <ResourceIcon resource={ResourcesIds[ResourcesIds.Labor]} size="sm" />
-            <div className="flex flex-col leading-tight">
-              <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Labor Production</span>
-              <span className="text-sm font-semibold text-gold">+1 /s</span>
-            </div>
-          </div>
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex flex-col leading-tight text-gold">
-              <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Upgrade</span>
-              <span className="text-sm font-semibold">Max level reached</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 rounded-full border border-gold/30 bg-black/30 px-2.5 py-1">
-                <CrownIcon className="h-4 w-4 text-gold" />
-                <span className="text-xxs font-semibold text-gold/90">Max</span>
-              </div>
-            </div>
-          </div>
-          <p className="text-xxs text-gold/60">No further upgrades available.</p>
-        </div>
+      <div className="flex flex-col gap-2.5">
+        <SectionRow label="Labor / sec">
+          <span className={CHIP_BASE} title="Labor Production">
+            <span className="text-emerald-300">+1</span>
+            <ResourceIcon withTooltip={false} resource={ResourcesIds[ResourcesIds.Labor]} size="xs" />
+          </span>
+        </SectionRow>
+        <SectionRow label="Upgrade">
+          <span className={CHIP_BASE} title="Max level reached">
+            <CrownIcon className="h-3.5 w-3.5 text-gold" />
+            <span className="text-gold">Max</span>
+          </span>
+        </SectionRow>
       </div>
     );
   }
 
-  const { nextLevel, missingRequirements, requirements, canUpgrade, handleUpgrade, nextLevelName, isOwner } =
-    upgradeInfo;
+  const { nextLevel, requirements, canUpgrade, handleUpgrade, nextLevelName, isOwner } = upgradeInfo;
 
   const onUpgrade = () => {
     if (!canUpgrade || upgradeInfo.isUpgradeLocked || !isOwner) return;
@@ -156,77 +159,58 @@ export const RealmUpgradeCompact = () => {
     });
   };
 
-  const missingLabel =
-    missingRequirements.length > 0
-      ? missingRequirements
-          .map(
-            (req) =>
-              `${Math.max(0, Math.ceil(req.amount - req.current)).toLocaleString()} ${ResourcesIds[req.resource] ?? req.resource}`,
-          )
-          .join(", ")
-      : "";
-
   const resolvedNextLevel = nextLevel != null ? RealmLevels[nextLevel as RealmLevels] : null;
   const upgradeTargetLabel = nextLevelName ?? resolvedNextLevel ?? "Next level";
-  const upgradeButtonLabel =
-    upgradeInfo.upgradeActionState === "syncTimeout" ? "Waiting for sync" : canUpgrade ? "Upgrade" : "Need resources";
+  const upgradeBlockedReason = upgradeInfo.upgradeActionState === "syncTimeout" ? "Waiting for sync" : "Need resources";
 
   return (
-    <div className="space-y-2">
-      <div className="rounded border border-gold/20 bg-black/40 p-3 space-y-3">
-        <div className="flex items-center gap-2">
-          <ResourceIcon resource={ResourcesIds[ResourcesIds.Labor]} size="sm" />
-          <div className="flex flex-col leading-tight">
-            <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Labor Production</span>
-            <span className="text-sm font-semibold text-gold">+1 /s</span>
-          </div>
-        </div>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex flex-col leading-tight text-gold">
-            <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Upgrade</span>
-            <span className="text-sm font-semibold">to {upgradeTargetLabel}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="flex flex-col leading-tight">
-              <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Missing</span>
-              <span className="text-xxs font-semibold text-red-300">
-                {missingRequirements.length > 0 ? missingLabel : "None"}
+    <div className="flex flex-col gap-2.5">
+      <SectionRow label="Labor / sec">
+        <span className={CHIP_BASE} title="Labor Production">
+          <span className="text-emerald-300">+1</span>
+          <ResourceIcon withTooltip={false} resource={ResourcesIds[ResourcesIds.Labor]} size="xs" />
+        </span>
+      </SectionRow>
+
+      <SectionRow label={`Upgrade to ${upgradeTargetLabel}`}>
+        {requirements.map((req) => {
+          const isMet = req.current >= req.amount;
+          return (
+            <span
+              key={`${req.resource}-${req.amount}`}
+              className={CHIP_BASE}
+              title={`${ResourcesIds[req.resource] ?? `Resource ${req.resource}`} — need ${req.amount.toLocaleString()}`}
+            >
+              <ResourceIcon withTooltip={false} resource={ResourcesIds[req.resource]} size="xs" />
+              <span className={isMet ? "text-gold" : "text-red-300"}>
+                {Math.floor(req.current).toLocaleString()}
               </span>
-            </div>
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {requirements.map((req) => {
-            const isMet = req.current >= req.amount;
-            return (
-              <div
-                key={`${req.resource}-${req.amount}`}
-                className={`flex items-center gap-2 rounded border px-2 py-1 ${
-                  isMet ? "border-gold/15 bg-gold/5" : "border-red-400/40 bg-red-500/5"
-                }`}
-              >
-                <ResourceIcon resource={ResourcesIds[req.resource]} size="sm" />
-                <div className={`text-xs ${isMet ? "text-gold" : "text-red-300"}`}>
-                  <span className="font-semibold">{Math.floor(req.current).toLocaleString()}</span>
-                  <span className={isMet ? "text-gold/50" : "text-red-200/70"}> / {req.amount.toLocaleString()}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        {isOwner && (
-          <Button
-            variant={canUpgrade ? "gold" : "outline"}
-            size="md"
-            className="w-full"
-            disabled={!canUpgrade || upgradeInfo.isUpgradeLocked}
-            isLoading={upgradeInfo.isUpgradeLoading}
+              <span className={isMet ? "text-gold/55" : "text-red-300/80"}>/ {req.amount.toLocaleString()}</span>
+            </span>
+          );
+        })}
+      </SectionRow>
+
+      {isOwner && (
+        <div className="flex items-center justify-center gap-1.5 pt-1">
+          <button
+            type="button"
             onClick={onUpgrade}
+            disabled={!canUpgrade || upgradeInfo.isUpgradeLocked}
+            className={cn(
+              "inline-flex h-7 items-center gap-1 rounded-md border px-3 text-[10px] font-semibold uppercase tracking-[0.16em] shadow transition",
+              canUpgrade
+                ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
+                : "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed",
+            )}
+            title={canUpgrade ? "Upgrade castle" : upgradeBlockedReason}
+            aria-label={canUpgrade ? "Upgrade castle" : upgradeBlockedReason}
           >
-            {upgradeButtonLabel}
-          </Button>
-        )}
-      </div>
+            <ChevronsUp className="h-3.5 w-3.5" />
+            <span>{canUpgrade ? "Upgrade" : upgradeBlockedReason}</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 };

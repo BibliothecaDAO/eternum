@@ -2,6 +2,7 @@ import { usePlayResourceSound } from "@/audio";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { LeftView } from "@/types";
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
 
@@ -159,6 +160,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const [timerTick, setTimerTick] = useState(0);
 
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+  const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const previewBuilding = useUIStore((state) => state.previewBuilding);
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setUseSimpleCost = useUIStore((state) => state.setUseSimpleCost);
@@ -746,6 +748,9 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 setPreviewBuilding({ type: building, resource: resourceId });
                                 playResourceSound(resourceId);
                                 AudioManager.getInstance().play("ui.summon");
+                                // Close the modal so the player can immediately
+                                // click an empty tile to place the preview.
+                                setLeftNavigationView(LeftView.None);
                               }
                             }}
                             active={previewBuilding?.resource === resourceId}
@@ -841,6 +846,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                 setPreviewBuilding({ type: building, resource: resourceId });
                                 playResourceSound(resourceId);
                                 AudioManager.getInstance().play("ui.summon");
+                                setLeftNavigationView(LeftView.None);
                               }
                             }}
                             active={previewBuilding?.resource === resourceId}
@@ -959,6 +965,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                       } else {
                         setPreviewBuilding({ type: building });
                         AudioManager.getInstance().play("ui.summon");
+                        setLeftNavigationView(LeftView.None);
                         if (building === BuildingType.ResourceWheat) {
                           playResourceSound(ResourcesIds.Wheat);
                         }
@@ -1104,6 +1111,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                                   } else {
                                     setPreviewBuilding({ type: building });
                                     AudioManager.getInstance().play("ui.summon");
+                                    setLeftNavigationView(LeftView.None);
                                   }
                                 }}
                                 active={previewBuilding?.type === building}

@@ -48,6 +48,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { ProductionModal } from "@/ui/features/settlement";
+import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
 import { TileManager } from "@bibliothecadao/eternum";
 import Bot from "lucide-react/dist/esm/icons/bot";
 import Factory from "lucide-react/dist/esm/icons/factory";
@@ -699,11 +700,27 @@ const LocalTilePanel = () => {
   };
 
   // "Build another" affordance — gated by owner + sufficient resources for
-  // every entry in the build cost. The player still needs to pick an empty
-  // tile to actually place it (we just toggle the preview building).
+  // every cost entry + at least one open building tile inside the realm
+  // radius. Computed inline (no hook) so it stays below the early returns
+  // without breaking hook order rules. resolveRealmHasAvailableBuildingTile
+  // is the same helper the Build modal uses; it reads from RECS so it's
+  // cheap to call once per render.
+  const hasAvailableTile = (() => {
+    if (!structureEntityId || !selectedStructure) return false;
+    return resolveRealmHasAvailableBuildingTile({
+      entityId: structureEntityId,
+      realmPosition: { x: selectedStructure.outerCol, y: selectedStructure.outerRow },
+      world: {
+        components: setup.components,
+        systemCalls: setup.systemCalls,
+      },
+    });
+  })();
+
   const canBuildAnother = (() => {
     if (!isOwnedByPlayer) return false;
     if (buildCost.length === 0) return false;
+    if (!hasAvailableTile) return false;
     return buildCost.every((entry) => {
       const balanceInfo = getBalance(
         structureEntityId ?? 0,
@@ -714,6 +731,14 @@ const LocalTilePanel = () => {
       return divideByPrecision(balanceInfo.balance) >= entry.amount;
     });
   })();
+
+  const buildBlockedReason = !isOwnedByPlayer
+    ? "Not your structure"
+    : !hasAvailableTile
+      ? "No empty tiles available — destroy a building to free a slot"
+      : !canBuildAnother
+        ? "Not enough resources to build another"
+        : "";
 
   return (
     <>
@@ -873,7 +898,7 @@ const LocalTilePanel = () => {
                         ? "Cancel build — click again to place a new building"
                         : canBuildAnother
                           ? "Build another — pick an empty tile to place it"
-                          : "Not enough resources to build another"
+                          : buildBlockedReason
                     }
                     aria-label={isPreviewing ? "Cancel build" : "Build another"}
                     aria-pressed={isPreviewing}
