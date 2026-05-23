@@ -77,6 +77,69 @@ type ArmyGroup = {
   bonus?: number;
 };
 
+// Blitz-flavored resource ordering. T1 base resources come first, then the
+// T2 troop resources in Paladin/Knight/Crossbow order, then T3 in the same
+// order. Each entry carries the troop hint we render on the card so the
+// player sees "this resource feeds Paladin T2" at a glance.
+type ResourceTroopHint = { tier: 2 | 3; troopResource: string; troopLabel: string };
+type ResourceTierSlot = {
+  resourceId: ResourcesIds;
+  troopHint?: ResourceTroopHint;
+};
+type ResourceTierGroup = {
+  tier: 1 | 2 | 3;
+  label: string;
+  slots: ResourceTierSlot[];
+};
+
+const RESOURCE_TIER_GROUPS: ResourceTierGroup[] = [
+  {
+    tier: 1,
+    label: "T1 · Basic resources",
+    slots: [
+      { resourceId: ResourcesIds.Wood },
+      { resourceId: ResourcesIds.Coal },
+      { resourceId: ResourcesIds.Copper },
+    ],
+  },
+  {
+    tier: 2,
+    label: "T2 · Troop resources",
+    slots: [
+      {
+        resourceId: ResourcesIds.Gold,
+        troopHint: { tier: 2, troopResource: ResourcesIds[ResourcesIds.Paladin], troopLabel: "Paladin" },
+      },
+      {
+        resourceId: ResourcesIds.ColdIron,
+        troopHint: { tier: 2, troopResource: ResourcesIds[ResourcesIds.Knight], troopLabel: "Knight" },
+      },
+      {
+        resourceId: ResourcesIds.Ironwood,
+        troopHint: { tier: 2, troopResource: ResourcesIds[ResourcesIds.Crossbowman], troopLabel: "Crossbowman" },
+      },
+    ],
+  },
+  {
+    tier: 3,
+    label: "T3 · Elite resources",
+    slots: [
+      {
+        resourceId: ResourcesIds.Dragonhide,
+        troopHint: { tier: 3, troopResource: ResourcesIds[ResourcesIds.Paladin], troopLabel: "Paladin" },
+      },
+      {
+        resourceId: ResourcesIds.Mithral,
+        troopHint: { tier: 3, troopResource: ResourcesIds[ResourcesIds.Knight], troopLabel: "Knight" },
+      },
+      {
+        resourceId: ResourcesIds.Adamantine,
+        troopHint: { tier: 3, troopResource: ResourcesIds[ResourcesIds.Crossbowman], troopLabel: "Crossbowman" },
+      },
+    ],
+  },
+];
+
 type ResourceProductionStatus = {
   resourceId: ResourcesIds;
   isProducing: boolean;
@@ -621,82 +684,202 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             <div className="resource-tab-selector">Resources</div>
           </div>
         ),
-        component: () => (
-          <div className="resource-cards-selector grid grid-cols-2 lg:grid-cols-3 gap-2 p-2">
-            {realm?.resources.map((resourceId) => {
-              const resource = findResourceById(resourceId)!;
-              const building = getBuildingFromResource(resourceId);
-              const productionStatus = productionStatusByResourceRef.current.get(resourceId as ResourcesIds);
+        component: () => {
+          const ownedResources = new Set(realm?.resources ?? []);
+          return (
+            <div className="resource-cards-selector flex flex-col gap-3 p-2">
+              {RESOURCE_TIER_GROUPS.map((group) => {
+                const slots = group.slots.filter((slot) => ownedResources.has(slot.resourceId));
+                if (slots.length === 0) return null;
+                return (
+                  <div key={group.tier} className="rounded-md border border-gold/15">
+                    <div className="border-b border-gold/10 px-3 py-1.5">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">
+                        {group.label}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 p-2">
+                      {slots.map(({ resourceId, troopHint }) => {
+                        const resource = findResourceById(resourceId)!;
+                        const building = getBuildingFromResource(resourceId);
+                        const productionStatus = productionStatusByResourceRef.current.get(
+                          resourceId as ResourcesIds,
+                        );
 
-              const buildability = resolveConstructionBuildability({
-                entityId,
-                buildingType: building,
-                useSimpleCost,
-                components: dojo.setup.components,
-                realm,
-                mode,
-                hasAvailableBuildingTile,
-              });
-              const canBuild = buildability.canSubmit;
-              const disabledReason = buildability.reason;
-              const disabled = !canBuild;
-              const buildKey = building.toString();
-              const isPending = Boolean(pendingBuilds[buildKey]);
-              const count = getBuildingCountFor(building);
-              const destroyPending = Boolean(pendingDestroys[buildKey]);
-              const destroyDisabled = count <= 0 || destroyPending;
+                        const buildability = resolveConstructionBuildability({
+                          entityId,
+                          buildingType: building,
+                          useSimpleCost,
+                          components: dojo.setup.components,
+                          realm,
+                          mode,
+                          hasAvailableBuildingTile,
+                        });
+                        const canBuild = buildability.canSubmit;
+                        const disabledReason = buildability.reason;
+                        const disabled = !canBuild;
+                        const buildKey = building.toString();
+                        const isPending = Boolean(pendingBuilds[buildKey]);
+                        const count = getBuildingCountFor(building);
+                        const destroyPending = Boolean(pendingDestroys[buildKey]);
+                        const destroyDisabled = count <= 0 || destroyPending;
 
-              const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
-              const allPausedState = pausedByCategory.get(building);
+                        const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
+                        const allPausedState = pausedByCategory.get(building);
 
-              return (
-                <BuildingCard
-                  key={resourceId}
-                  buildingId={building}
-                  resourceId={resourceId}
-                  onClick={() => {
-                    if (!canBuild) {
-                      return;
-                    }
-                    if (previewBuilding?.type === building && previewBuilding?.resource === resourceId) {
-                      setPreviewBuilding(null);
-                    } else {
-                      setPreviewBuilding({ type: building, resource: resourceId });
-                      playResourceSound(resourceId);
-                      AudioManager.getInstance().play("ui.summon");
-                    }
-                  }}
-                  active={previewBuilding?.resource === resourceId}
-                  buildingName={resource?.trait}
-                  resourceName={resource?.trait}
-                  productionStatus={productionStatus}
-                  currentTime={currentTimeRef.current}
-                  toolTip={
-                    <ResourceInfo
-                      buildingId={building}
-                      resourceId={resourceId}
-                      entityId={entityId}
-                      useSimpleCost={useSimpleCost}
-                    />
-                  }
-                  disabled={disabled}
-                  disabledReason={disabledReason}
-                  count={count}
-                  onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
-                  buildDisabled={!canBuild || isPending}
-                  buildLoading={isPending}
-                  onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
-                  destroyDisabled={destroyDisabled}
-                  destroyLoading={destroyPending}
-                  onPauseResumeAll={() => handlePauseResumeAll({ type: building, resource: resourceId })}
-                  pauseResumeAllDisabled={count <= 0 || pauseResumePending}
-                  pauseResumeAllLoading={pauseResumePending}
-                  allPaused={allPausedState ?? false}
-                />
-              );
-            })}
-          </div>
-        ),
+                        return (
+                          <BuildingCard
+                            key={resourceId}
+                            buildingId={building}
+                            resourceId={resourceId}
+                            onClick={() => {
+                              if (!canBuild) {
+                                return;
+                              }
+                              if (
+                                previewBuilding?.type === building &&
+                                previewBuilding?.resource === resourceId
+                              ) {
+                                setPreviewBuilding(null);
+                              } else {
+                                setPreviewBuilding({ type: building, resource: resourceId });
+                                playResourceSound(resourceId);
+                                AudioManager.getInstance().play("ui.summon");
+                              }
+                            }}
+                            active={previewBuilding?.resource === resourceId}
+                            buildingName={resource?.trait}
+                            resourceName={resource?.trait}
+                            productionStatus={productionStatus}
+                            currentTime={currentTimeRef.current}
+                            troopHint={troopHint}
+                            toolTip={
+                              <ResourceInfo
+                                buildingId={building}
+                                resourceId={resourceId}
+                                entityId={entityId}
+                                useSimpleCost={useSimpleCost}
+                              />
+                            }
+                            disabled={disabled}
+                            disabledReason={disabledReason}
+                            count={count}
+                            onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
+                            buildDisabled={!canBuild || isPending}
+                            buildLoading={isPending}
+                            onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
+                            destroyDisabled={destroyDisabled}
+                            destroyLoading={destroyPending}
+                            onPauseResumeAll={() =>
+                              handlePauseResumeAll({ type: building, resource: resourceId })
+                            }
+                            pauseResumeAllDisabled={count <= 0 || pauseResumePending}
+                            pauseResumeAllLoading={pauseResumePending}
+                            allPaused={allPausedState ?? false}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+              {/* Fallback for any owned resource we didn't slot — render under
+                  an "Other" group so non-blitz worlds still see them. */}
+              {(() => {
+                const slottedIds = new Set(
+                  RESOURCE_TIER_GROUPS.flatMap((group) => group.slots.map((slot) => slot.resourceId)),
+                );
+                const others = (realm?.resources ?? []).filter((id) => !slottedIds.has(id));
+                if (others.length === 0) return null;
+                return (
+                  <div className="rounded-md border border-gold/15">
+                    <div className="border-b border-gold/10 px-3 py-1.5">
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">
+                        Other
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 p-2">
+                      {others.map((resourceId) => {
+                        const resource = findResourceById(resourceId)!;
+                        const building = getBuildingFromResource(resourceId);
+                        const productionStatus = productionStatusByResourceRef.current.get(
+                          resourceId as ResourcesIds,
+                        );
+                        const buildability = resolveConstructionBuildability({
+                          entityId,
+                          buildingType: building,
+                          useSimpleCost,
+                          components: dojo.setup.components,
+                          realm,
+                          mode,
+                          hasAvailableBuildingTile,
+                        });
+                        const canBuild = buildability.canSubmit;
+                        const disabledReason = buildability.reason;
+                        const disabled = !canBuild;
+                        const buildKey = building.toString();
+                        const isPending = Boolean(pendingBuilds[buildKey]);
+                        const count = getBuildingCountFor(building);
+                        const destroyPending = Boolean(pendingDestroys[buildKey]);
+                        const destroyDisabled = count <= 0 || destroyPending;
+                        const pauseResumePending = Boolean(pendingPauseResume[buildKey]);
+                        const allPausedState = pausedByCategory.get(building);
+                        return (
+                          <BuildingCard
+                            key={resourceId}
+                            buildingId={building}
+                            resourceId={resourceId}
+                            onClick={() => {
+                              if (!canBuild) return;
+                              if (
+                                previewBuilding?.type === building &&
+                                previewBuilding?.resource === resourceId
+                              ) {
+                                setPreviewBuilding(null);
+                              } else {
+                                setPreviewBuilding({ type: building, resource: resourceId });
+                                playResourceSound(resourceId);
+                                AudioManager.getInstance().play("ui.summon");
+                              }
+                            }}
+                            active={previewBuilding?.resource === resourceId}
+                            buildingName={resource?.trait}
+                            resourceName={resource?.trait}
+                            productionStatus={productionStatus}
+                            currentTime={currentTimeRef.current}
+                            toolTip={
+                              <ResourceInfo
+                                buildingId={building}
+                                resourceId={resourceId}
+                                entityId={entityId}
+                                useSimpleCost={useSimpleCost}
+                              />
+                            }
+                            disabled={disabled}
+                            disabledReason={disabledReason}
+                            count={count}
+                            onBuild={() => handleAutoBuild({ type: building, resource: resourceId })}
+                            buildDisabled={!canBuild || isPending}
+                            buildLoading={isPending}
+                            onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
+                            destroyDisabled={destroyDisabled}
+                            destroyLoading={destroyPending}
+                            onPauseResumeAll={() =>
+                              handlePauseResumeAll({ type: building, resource: resourceId })
+                            }
+                            pauseResumeAllDisabled={count <= 0 || pauseResumePending}
+                            pauseResumeAllLoading={pauseResumePending}
+                            allPaused={allPausedState ?? false}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          );
+        },
       },
       {
         key: "economic",
@@ -1072,6 +1255,7 @@ const BuildingCard = ({
   pauseResumeAllDisabled,
   pauseResumeAllLoading,
   allPaused,
+  troopHint,
 }: {
   buildingId: BuildingType;
   onClick: () => void;
@@ -1083,6 +1267,12 @@ const BuildingCard = ({
   currentTime?: number;
   toolTip: React.ReactElement;
   resourceId?: ResourcesIds;
+  /**
+   * Optional "this resource feeds X troop tier" hint for the blitz T2/T3
+   * resource cards. Rendered as a tiny chip in the corner so the player
+   * can tell at a glance which troop the resource unlocks.
+   */
+  troopHint?: { tier: 2 | 3; troopResource: string; troopLabel: string };
   className?: string;
   disabled?: boolean;
   disabledReason?: string;
@@ -1245,6 +1435,16 @@ const BuildingCard = ({
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          {troopHint && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold/90 shadow-md"
+              title={`T${troopHint.tier} ${troopHint.troopLabel}`}
+              aria-label={`T${troopHint.tier} ${troopHint.troopLabel}`}
+            >
+              <span>T{troopHint.tier}</span>
+              <ResourceIcon resource={troopHint.troopResource} size="xs" withTooltip={false} />
+            </span>
+          )}
           {isWorkersHut && (
             <span className="inline-flex items-center justify-center rounded-full bg-black/80 px-2 py-0.5 text-[10px] font-semibold text-gold/90 shadow-md border border-gold/30">
               {count}
