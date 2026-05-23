@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26331040181-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-05-23T11:06:11.441Z",
-  "updatedAt": "2026-05-23T11:08:57.491Z",
+  "updatedAt": "2026-05-23T11:09:06.720Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,9 +72,10 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-05-23T11:09:06.720Z"
     }
   ],
   "artifacts": {
@@ -90,5 +91,13 @@
       "0x74c5bb767bbadc0c02f3373ec3b7148c7bd3383235c7a017d4c6eaf4e9cb87f"
     ],
     "lootChestRoleTxHash": "0x26a7f0e446d5c8ebe0c2e76c2a5a8356225994ce34534c482f30052e48535ce"
+  },
+  "activeLease": {
+    "launchRequestId": "26331040181-1",
+    "workflowRunId": 26331040181,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexer",
+    "acquiredAt": "2026-05-23T11:09:06.720Z",
+    "expiresAt": "2026-05-23T11:54:06.720Z"
   }
 }
