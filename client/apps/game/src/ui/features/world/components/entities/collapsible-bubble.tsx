@@ -26,7 +26,7 @@ interface InfoBubbleProps {
 export const InfoBubble = ({ title, icon: Icon, cue, children, className, bodyClassName }: InfoBubbleProps) => {
   return (
     <div className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto rounded-xl", className)}>
-      <div className="flex items-center justify-between gap-2 px-3 py-2">
+      <div className="flex items-center justify-between gap-2 border-b border-gold/15 px-3 py-2">
         <span className={cn("flex min-w-0 items-center gap-2", HUD_LABEL)}>
           {Icon && <Icon className="h-3.5 w-3.5 flex-shrink-0 text-gold/70" />}
           <span className="truncate">{title}</span>

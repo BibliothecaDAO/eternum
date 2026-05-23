@@ -7,7 +7,7 @@ import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/li
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY, HUD_BODY_MUTED, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import Button from "@/ui/design-system/atoms/button";
@@ -49,6 +49,7 @@ import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/s
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { ProductionModal } from "@/ui/features/settlement";
 import { TileManager } from "@bibliothecadao/eternum";
+import Bot from "lucide-react/dist/esm/icons/bot";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import Hammer from "lucide-react/dist/esm/icons/hammer";
 import Info from "lucide-react/dist/esm/icons/info";
@@ -57,7 +58,6 @@ import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import PauseIcon from "lucide-react/dist/esm/icons/pause";
 import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 import Play from "lucide-react/dist/esm/icons/play";
-import Plus from "lucide-react/dist/esm/icons/plus";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
@@ -662,6 +662,24 @@ const LocalTilePanel = () => {
     </div>
   );
 
+  // One chip style for every section (produces / consumes / population /
+  // build cost). The variant just colors the value text — the wrapper is
+  // always the same etched-bronze chip so the rows read as one design.
+  const chipBase =
+    "flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-[11px] font-semibold tabular-nums";
+  const valueClassFor = (variant: "neutral" | "good" | "bad" | "warn") => {
+    switch (variant) {
+      case "good":
+        return "text-emerald-300";
+      case "bad":
+        return "text-red-300";
+      case "warn":
+        return "text-amber-200";
+      default:
+        return "text-gold";
+    }
+  };
+
   // "Build another" affordance — gated by owner + sufficient resources for
   // every entry in the build cost. The player still needs to pick an empty
   // tile to actually place it (we just toggle the preview building).
@@ -704,11 +722,12 @@ const LocalTilePanel = () => {
 
           {producedResource && producedResourceName && (
             <SectionRow label="Produces / sec">
-              <span className={cn("font-semibold text-green-300", HUD_VALUE)}>+{producedPerTick}</span>
-              <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
+              <span className={chipBase} title={producedResourceName}>
+                <span className={valueClassFor("good")}>+{producedPerTick}</span>
+                <ResourceIcon withTooltip={false} resource={producedResourceName} size="xs" />
+              </span>
               <button
                 type="button"
-                className="text-xxs uppercase tracking-[0.2em] text-gold/60"
                 onMouseEnter={() =>
                   setTooltip({
                     position: "right",
@@ -740,8 +759,9 @@ const LocalTilePanel = () => {
                 }
                 onMouseLeave={() => setTooltip(null)}
                 aria-label="Show consumers"
+                className="inline-flex h-7 w-7 items-center justify-center rounded border border-gold/20 bg-black/40 text-gold/70 hover:text-gold"
               >
-                <Info className="h-4 w-4 text-gold/70" />
+                <Info className="h-3.5 w-3.5" />
               </button>
             </SectionRow>
           )}
@@ -751,12 +771,8 @@ const LocalTilePanel = () => {
               {ongoingCost.map((entry, index) => {
                 const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
                 return (
-                  <span
-                    key={`${entry.resource}-${index}`}
-                    className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-xxs"
-                    title={name}
-                  >
-                    <span className="font-semibold text-red-200">-{entry.amount}</span>
+                  <span key={`${entry.resource}-${index}`} className={chipBase} title={name}>
+                    <span className={valueClassFor("bad")}>-{entry.amount}</span>
                     <ResourceIcon withTooltip={false} resource={name} size="xs" />
                   </span>
                 );
@@ -767,11 +783,8 @@ const LocalTilePanel = () => {
           {populationChips.length > 0 && (
             <SectionRow label="Population">
               {populationChips.map((chip) => (
-                <span
-                  key={chip.key}
-                  className="rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold"
-                >
-                  {chip.label}
+                <span key={chip.key} className={chipBase} title={chip.label}>
+                  <span className={valueClassFor("neutral")}>{chip.label}</span>
                 </span>
               ))}
             </SectionRow>
@@ -779,13 +792,13 @@ const LocalTilePanel = () => {
         </div>
       </InfoBubble>
 
-      {/* Actions bubble — merges the build cost (so the player sees what
-          building another costs) with the live action buttons. The pickaxe
-          fires a "build another" by setting the preview building; clicking
-          a target tile then places it. */}
+      {/* Actions bubble — build cost + the live action buttons. Pickaxe
+          is always rendered (greyed out when constraints don't allow), so
+          the player knows it's a real affordance and gets a tooltip with
+          why it's disabled. */}
       {isOwnedByPlayer && (
         <InfoBubble title="Actions" icon={Hammer}>
-          <div className="flex flex-col gap-2.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-2.5">
+          <div className="flex flex-col gap-2.5">
             {buildCost.length > 0 && (
               <SectionRow label="Build cost">
                 {buildCost.map((entry, index) => {
@@ -799,37 +812,38 @@ const LocalTilePanel = () => {
                   const balance = divideByPrecision(balanceInfo.balance);
                   const hasEnough = balance >= entry.amount;
                   return (
-                    <span
-                      key={`build-cost-${entry.resource}-${index}`}
-                      className={cn(
-                        "flex items-center gap-1 rounded px-1.5 py-1 text-[10px] shadow-inner",
-                        hasEnough
-                          ? "bg-gold/5 border border-gold/10 text-gold/80"
-                          : "bg-red-900/15 border border-red-500/30 text-red-100",
-                      )}
-                      title={name}
-                    >
+                    <span key={`build-cost-${entry.resource}-${index}`} className={chipBase} title={name}>
                       <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                      <span className={cn(hasEnough ? "font-semibold text-gold" : "text-red-200")}>
+                      <span className={valueClassFor(hasEnough ? "neutral" : "bad")}>
                         {formatResourceAmount(balance)}
                       </span>
-                      <span className={cn(hasEnough ? "text-gold/70" : "text-red-200")}>/ {entry.amount}</span>
+                      <span className={hasEnough ? "text-gold/55" : "text-red-300/80"}>/ {entry.amount}</span>
                     </span>
                   );
                 })}
               </SectionRow>
             )}
 
-            <div className="flex items-center justify-end gap-1.5">
-              {canBuildAnother && buildingCategory !== null && (
+            <div className="flex items-center justify-center gap-1.5">
+              {buildingCategory !== null && (
                 <button
                   type="button"
                   onClick={() => {
+                    if (!canBuildAnother) return;
                     setPreviewBuilding({ type: buildingCategory, resource: producedResource });
                   }}
-                  disabled={isActionLoading}
-                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/80 bg-amber-400/90 text-black shadow transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
-                  title="Build another — pick an empty tile to place it"
+                  disabled={!canBuildAnother || isActionLoading}
+                  className={cn(
+                    "inline-flex h-7 w-7 items-center justify-center rounded-md border shadow transition",
+                    canBuildAnother
+                      ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
+                      : "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed",
+                  )}
+                  title={
+                    canBuildAnother
+                      ? "Build another — pick an empty tile to place it"
+                      : "Not enough resources to build another"
+                  }
                   aria-label="Build another"
                 >
                   <Pickaxe className="h-3.5 w-3.5" />
@@ -841,10 +855,10 @@ const LocalTilePanel = () => {
                   onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
                   disabled={isActionLoading}
                   className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gold/40 bg-gold/10 text-gold shadow transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
-                  title="Add production rule"
-                  aria-label="Add production rule"
+                  title="Automate production"
+                  aria-label="Automate production"
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Bot className="h-3.5 w-3.5" />
                 </button>
               )}
               {buildingCategory !== BuildingType.WorkersHut && (
