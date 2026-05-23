@@ -10,7 +10,9 @@ import {
 import Plus from "lucide-react/dist/esm/icons/plus";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 
-export const MILITARY_BUILDING_GROUP_ORDER = ["Archery", "Stable", "Barracks"] as const;
+// Paladins (Stable) → Knights (Barracks) → Crossbowmen (Archery). Player
+// preference: heavier infantry / cavalry surface first in the military tab.
+export const MILITARY_BUILDING_GROUP_ORDER = ["Stable", "Barracks", "Archery"] as const;
 
 type MilitaryBuildingGroup = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 

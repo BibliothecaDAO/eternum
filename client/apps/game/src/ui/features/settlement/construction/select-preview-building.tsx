@@ -848,15 +848,20 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         group.isRecommended && "border-emerald-500/40 shadow-emerald-500/10",
                       )}
                     >
-                      <div className="flex items-center justify-between gap-2 border-b border-gold/10 px-3 py-1.5">
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">
+                      <div className="flex items-center justify-between gap-2 border-b border-gold/10 px-3 py-2">
+                        <span className="text-xs font-semibold uppercase tracking-[0.16em] text-gold/85">
                           {group.armyType}
                         </span>
                         <span
                           className={clsx(
-                            "text-[11px] font-semibold tabular-nums",
-                            isPositiveBonus ? "text-emerald-300" : isNegativeBonus ? "text-red-400" : "text-gold/70",
+                            "rounded-md border px-2 py-0.5 text-sm font-bold tabular-nums",
+                            isPositiveBonus
+                              ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-200 shadow-[0_0_10px_rgba(110,231,183,0.35)]"
+                              : isNegativeBonus
+                                ? "border-red-400/60 bg-red-500/15 text-red-200 shadow-[0_0_10px_rgba(244,114,114,0.35)]"
+                                : "border-gold/30 bg-gold/10 text-gold/80",
                           )}
+                          title="Biome combat bonus for this army type"
                         >
                           {bonusLabel}
                         </span>
@@ -1160,10 +1165,10 @@ const BuildingCard = ({
     <div
       onClick={handleClick}
       className={clsx(
-        "overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 hover:bg-gold/20 rounded",
+        "overflow-hidden text-ellipsis cursor-pointer relative h-36 min-w-20 rounded border border-gold/20 bg-black/20 transition-colors hover:border-gold/50 hover:bg-gold/15",
         {
-          "!border-lightest": active,
-          "cursor-not-allowed hover:bg-gold/10": isDisabled,
+          "!border-gold": active,
+          "cursor-not-allowed hover:bg-gold/10 hover:border-gold/20": isDisabled,
         },
         className,
       )}
