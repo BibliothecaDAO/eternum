@@ -8,32 +8,32 @@
   "rotationName": "blitz-rotation",
   "seriesName": "blitz-rotation",
   "status": "attention",
-  "executionMode": "fast_trial",
-  "requestedLaunchStep": "full",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26329757754-1.json",
-  "latestLaunchRequestId": "26329757754-1",
-  "currentStepId": "configure-worlds",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "configure-worlds",
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26330306501-1.json",
+  "latestLaunchRequestId": "26330306501-1",
+  "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-23T10:25:38.635Z",
+  "updatedAt": "2026-05-23T10:26:38.475Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 26329757754,
+    "workflowRunId": 26330306501,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/26329757754",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/26330306501",
     "ref": "next",
     "sha": "60ba3a4f0855d1d28d0d4e4936657d376b4a6db6"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-05-23T10:40:38.635Z",
+    "nextRetryAt": "2026-05-23T10:41:38.475Z",
     "lastRetryAt": "2026-05-23T10:25:38.635Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-23T10:21:52.583Z",
-    "lastEvaluatedAt": "2026-05-23T10:06:52.583Z"
+    "nextEvaluationAt": "2026-05-23T10:41:38.475Z",
+    "lastEvaluatedAt": "2026-05-23T10:26:38.475Z"
   },
   "steps": [
     {
@@ -41,37 +41,28 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-05-23T09:56:42.296Z",
-      "finishedAt": "2026-05-23T09:56:47.458Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
       "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete",
-      "startedAt": "2026-05-23T09:56:51.486Z",
-      "finishedAt": "2026-05-23T09:57:00.408Z"
+      "latestEvent": "Creating games is complete"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
       "status": "succeeded",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-05-23T09:57:09.102Z",
-      "finishedAt": "2026-05-23T09:57:14.628Z"
+      "latestEvent": "Waiting for games is complete"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "failed",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings failed: Error: Failed to read branch \"factory-runs\": 401 {\r\n  \"message\": \"Bad credentials\",\r\n  \"documentation_url\": \"https://docs.github.com/rest\",\r\n  \"status\": \"401\"\r\n}\n    at readBranchRefSha (/home/runner/work/eternum/eternum/config/deployer/clean/run-store/github.ts:56:15)\n    at async ensureGitHubBranchExists (/home/runner/work/eternum/eternum/config/deployer/clean/run-store/github.ts:84:27)\n    at async updateGitHubBranchJsonFile (/home/runner/work/eternum/eternum/config/deployer/clean/run-store/github.ts:169:9)",
-      "startedAt": "2026-05-23T09:57:18.349Z",
-      "finishedAt": "2026-05-23T10:06:52.583Z",
-      "errorMessage": "Error: Failed to read branch \"factory-runs\": 401 {\r\n  \"message\": \"Bad credentials\",\r\n  \"documentation_url\": \"https://docs.github.com/rest\",\r\n  \"status\": \"401\"\r\n}\n    at readBranchRefSha (/home/runner/work/eternum/eternum/config/deployer/clean/run-store/github.ts:56:15)\n    at async ensureGitHubBranchExists (/home/runner/work/eternum/eternum/config/deployer/clean/run-store/github.ts:84:27)\n    at async updateGitHubBranchJsonFile (/home/runner/work/eternum/eternum/config/deployer/clean/run-store/github.ts:169:9)"
+      "latestEvent": "Applying settings is complete"
     },
     {
       "id": "reserve-blitz-hyperstructures",
