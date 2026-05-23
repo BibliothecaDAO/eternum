@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26331040181-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-05-23T11:06:11.441Z",
-  "updatedAt": "2026-05-23T11:07:28.173Z",
+  "updatedAt": "2026-05-23T11:07:32.272Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-23T11:07:32.272Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -77,5 +78,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-swish-882.json",
     "worldAddress": "0x06432a9ca0106fa74d217aa1f994f815412ff3e4d9992a4ad9ac2706bb63c325",
     "createGameTxHash": "0x3f69931e1fee58275f7ac67278c218bae49a883b45c25fdce1a46bc5860423a"
+  },
+  "activeLease": {
+    "launchRequestId": "26331040181-1",
+    "workflowRunId": 26331040181,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-05-23T11:07:32.272Z",
+    "expiresAt": "2026-05-23T11:52:32.272Z"
   }
 }
