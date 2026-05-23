@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-23T16:57:42.348Z",
+  "updatedAt": "2026-05-23T16:57:52.106Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2708,6 +2708,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-23-05-26-1200 not found"
       },
       "updatedAt": "2026-05-23T16:57:42.348Z"
+    },
+    "bltz-swish-882": {
+      "gameName": "bltz-swish-882",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-swish-882/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-23T16:57:52.105Z"
+      },
+      "updatedAt": "2026-05-23T16:57:52.106Z"
     }
   }
 }
