@@ -3,6 +3,7 @@ import { useUIStore, type LeftListFilter, type LeftListSort } from "@/hooks/stor
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { StructureStatusRow } from "@/ui/features/world/components/structure-status-row/structure-status-row";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
@@ -16,8 +17,20 @@ import { Position } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Crown from "lucide-react/dist/esm/icons/crown";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { EmpireSuggestions } from "./empire-suggestions";
+
+// One-liner descriptions exposed via the option tooltip so the player can
+// hover and find out what "Smart" actually means without leaving the menu.
+const SORT_DESCRIPTIONS: Record<LeftListSort, string> = {
+  smart: "Attention first (red → amber → green), then favorites, then name.",
+  favorites: "Favorites at the top, then alphabetical.",
+  level: "Highest realm level first.",
+  population: "Highest population % first.",
+  name: "Alphabetical.",
+};
 
 // Bundle filter chips + sort menu into one bar so the chrome above the list
 // reads as one control surface. We pass `availableCategories` so the rail
@@ -44,20 +57,23 @@ const ListControls = memo(
             availableCategories.includes(option.value),
           ).map((option) => {
             const isActive = option.value === filterValue;
+            const Icon = option.icon;
             return (
               <button
                 key={String(option.value)}
                 type="button"
                 onClick={() => onFilterChange(option.value)}
                 className={cn(
-                  "rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] transition",
+                  "inline-flex h-7 w-7 items-center justify-center rounded-md border transition",
                   isActive
                     ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_8px_rgba(223,170,84,0.25)]"
                     : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold",
                 )}
                 aria-pressed={isActive}
+                aria-label={option.label}
+                title={option.label}
               >
-                {option.label}
+                <Icon className="h-4 w-4" />
               </button>
             );
           })}
@@ -69,6 +85,9 @@ const ListControls = memo(
 );
 ListControls.displayName = "ListControls";
 
+// Portal the sort menu to document.body so it escapes the rail's
+// `overflow-y-auto` clipping — previously the dropdown rendered below the
+// fold and was unreachable.
 const SortMenu = memo(
   ({
     value,
@@ -78,12 +97,34 @@ const SortMenu = memo(
     onChange: (sort: LeftListSort) => void;
   }) => {
     const [open, setOpen] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
+    const [position, setPosition] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+      if (!open) return;
+      const measure = () => {
+        if (!buttonRef.current) return;
+        const rect = buttonRef.current.getBoundingClientRect();
+        // Anchor the right edge of the menu to the right edge of the button.
+        setPosition({ top: rect.bottom + 6, left: rect.right - 160 });
+      };
+      measure();
+      window.addEventListener("resize", measure);
+      window.addEventListener("scroll", measure, true);
+      return () => {
+        window.removeEventListener("resize", measure);
+        window.removeEventListener("scroll", measure, true);
+      };
+    }, [open]);
 
     useEffect(() => {
       if (!open) return;
       const handlePointerDown = (event: MouseEvent | TouchEvent) => {
-        if (!ref.current?.contains(event.target as Node)) setOpen(false);
+        const target = event.target as Node | null;
+        if (buttonRef.current?.contains(target)) return;
+        if (menuRef.current?.contains(target)) return;
+        setOpen(false);
       };
       document.addEventListener("mousedown", handlePointerDown);
       document.addEventListener("touchstart", handlePointerDown);
@@ -96,8 +137,9 @@ const SortMenu = memo(
     const activeLabel = SORT_OPTIONS.find((option) => option.value === value)?.label ?? "Smart";
 
     return (
-      <div ref={ref} className="pointer-events-auto relative">
+      <>
         <button
+          ref={buttonRef}
           type="button"
           onClick={() => setOpen((current) => !current)}
           className={cn(
@@ -106,43 +148,50 @@ const SortMenu = memo(
           )}
           aria-haspopup="listbox"
           aria-expanded={open}
+          title={SORT_DESCRIPTIONS[value]}
         >
           <span className="text-gold/55">Sort ·</span>
           <span>{activeLabel}</span>
           <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
         </button>
-        {open && (
-          <div
-            className={cn(
-              "absolute right-0 top-full z-30 mt-1 w-36 overflow-hidden rounded-md text-left",
-              OVERLAY_SURFACE_BASE,
-            )}
-            role="listbox"
-          >
-            {SORT_OPTIONS.map((option) => {
-              const isActive = option.value === value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  role="option"
-                  aria-selected={isActive}
-                  onClick={() => {
-                    onChange(option.value);
-                    setOpen(false);
-                  }}
-                  className={cn(
-                    "block w-full px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] transition",
-                    isActive ? "bg-gold/15 text-gold" : "text-gold/75 hover:bg-gold/10 hover:text-gold",
-                  )}
-                >
-                  {option.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+        {open &&
+          typeof document !== "undefined" &&
+          createPortal(
+            <div
+              ref={menuRef}
+              className={cn(
+                "pointer-events-auto fixed z-[110] w-40 overflow-hidden rounded-md text-left",
+                OVERLAY_SURFACE_BASE,
+              )}
+              style={{ top: position.top, left: position.left }}
+              role="listbox"
+            >
+              {SORT_OPTIONS.map((option) => {
+                const isActive = option.value === value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    role="option"
+                    aria-selected={isActive}
+                    onClick={() => {
+                      onChange(option.value);
+                      setOpen(false);
+                    }}
+                    title={SORT_DESCRIPTIONS[option.value]}
+                    className={cn(
+                      "block w-full px-3 py-1.5 text-[11px] uppercase tracking-[0.14em] transition",
+                      isActive ? "bg-gold/15 text-gold" : "text-gold/75 hover:bg-gold/10 hover:text-gold",
+                    )}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>,
+            document.body,
+          )}
+      </>
     );
   },
 );
@@ -253,6 +302,10 @@ export const StructureListColumn = memo(() => {
     );
   }
 
+  const activeFilterOption = CATEGORY_FILTER_OPTIONS.find((option) => option.value === effectiveFilter);
+  const filterLabel = activeFilterOption?.label ?? "Structures";
+  const FilterIcon = activeFilterOption?.icon ?? Crown;
+
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <ListControls
@@ -262,25 +315,28 @@ export const StructureListColumn = memo(() => {
         sortValue={leftListSort}
         onSortChange={setLeftListSort}
       />
-      {visibleStructures.length === 0 ? (
-        <p className={cn(HUD_BODY_MUTED, "px-1")}>No structures match this filter.</p>
-      ) : (
-        // Cap the list to roughly three card heights — the rest scrolls. Each
-        // card is ~95px (two compact rows + chrome) + 8px gap; 3 rows ≈ 300px.
-        <div className="flex max-h-[312px] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-          {visibleStructures.map((structure) => (
-            <StructureStatusRow
-              key={structure.entityId}
-              structure={structure}
-              isActive={structure.entityId === structureEntityId}
-              onSelect={handleSelectStructure}
-              variant="full"
-              onToggleFavorite={toggleFavorite}
-              onRequestRename={handleRequestRename}
-            />
-          ))}
-        </div>
-      )}
+      {/* Wrap the list in an InfoBubble so the left rail reads with the same
+          surface + header rhythm as the right-side tile inspector (Guards,
+          Production, Resources, Biome…). */}
+      <InfoBubble title={filterLabel} icon={FilterIcon} cue={`${visibleStructures.length}`}>
+        {visibleStructures.length === 0 ? (
+          <p className={cn(HUD_BODY_MUTED)}>No structures match this filter.</p>
+        ) : (
+          <div className="flex max-h-[312px] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+            {visibleStructures.map((structure) => (
+              <StructureStatusRow
+                key={structure.entityId}
+                structure={structure}
+                isActive={structure.entityId === structureEntityId}
+                onSelect={handleSelectStructure}
+                variant="full"
+                onToggleFavorite={toggleFavorite}
+                onRequestRename={handleRequestRename}
+              />
+            ))}
+          </div>
+        )}
+      </InfoBubble>
       <EmpireSuggestions />
     </div>
   );

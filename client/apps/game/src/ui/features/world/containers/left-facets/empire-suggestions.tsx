@@ -2,12 +2,8 @@ import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import {
-  HUD_BODY,
-  HUD_BODY_MUTED,
-  HUD_LABEL,
-  HUD_VALUE,
-} from "@/ui/design-system/atoms/hud-typography";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { ProductionModal } from "@/ui/features/settlement";
 import { useRealmActions } from "@/ui/modules/entity-details/hooks/use-realm-actions";
 import { Position } from "@bibliothecadao/eternum";
@@ -152,43 +148,34 @@ export const EmpireSuggestions = memo(() => {
   const hiddenCount = Math.max(suggestions.length - DEFAULT_VISIBLE_SUGGESTIONS, 0);
 
   return (
-    <div className="pointer-events-auto flex min-w-0 flex-col gap-1.5">
-      <div className="flex items-center justify-between gap-2 pt-1 px-1">
-        <span className={cn("flex items-center gap-1.5", HUD_LABEL)}>
-          <Lightbulb className="h-3.5 w-3.5 text-gold/70" />
-          Suggested actions
-        </span>
-        <span className={cn(HUD_LABEL, "text-gold/55")}>{suggestions.length}</span>
-      </div>
+    <InfoBubble title="Suggested actions" icon={Lightbulb} cue={`${suggestions.length}`}>
       {suggestions.length === 0 ? (
-        <p className={cn(HUD_BODY_MUTED, "px-1")}>No suggestions right now — empire looks healthy.</p>
+        <p className={HUD_BODY_MUTED}>No suggestions right now — empire looks healthy.</p>
       ) : (
-        <>
-          <div className="flex flex-col gap-1.5">
-            {visible.map((suggestion) => (
-              <SuggestionChip
-                key={suggestion.id}
-                suggestion={suggestion}
-                onClick={handleSuggestionClick}
-                isPending={pendingRealmId === suggestion.realmId}
-              />
-            ))}
-          </div>
+        <div className="flex flex-col gap-1.5">
+          {visible.map((suggestion) => (
+            <SuggestionChip
+              key={suggestion.id}
+              suggestion={suggestion}
+              onClick={handleSuggestionClick}
+              isPending={pendingRealmId === suggestion.realmId}
+            />
+          ))}
           {hiddenCount > 0 && (
             <button
               type="button"
               onClick={() => setShowAll((current) => !current)}
               className={cn(
-                "self-center rounded border border-gold/20 bg-black/30 px-2 py-1 transition hover:border-gold/40 hover:text-gold",
+                "mt-1 self-center rounded border border-gold/20 bg-black/30 px-2 py-1 transition hover:border-gold/40 hover:text-gold",
                 HUD_LABEL,
               )}
             >
               {showAll ? "Show fewer" : `Show ${hiddenCount} more`}
             </button>
           )}
-        </>
+        </div>
       )}
-    </div>
+    </InfoBubble>
   );
 });
 

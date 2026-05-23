@@ -2,6 +2,11 @@ import type { LeftListFilter, LeftListSort } from "@/hooks/store/use-ui-store";
 import { resolveStatusTone } from "@/ui/features/world/components/structure-status-row/structure-status-row";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { type ID, StructureType } from "@bibliothecadao/types";
+import Castle from "lucide-react/dist/esm/icons/castle";
+import Crown from "lucide-react/dist/esm/icons/crown";
+import type { LucideIcon } from "lucide-react";
+import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 
 /**
  * Returns structures matching `filter`. `"all"` keeps everything (only used
@@ -30,21 +35,19 @@ const compareNames = (a: StructureWithMetadata, b: StructureWithMetadata) =>
  * Sorts structures by the requested mode. "smart" surfaces what needs the
  * player's attention first (red star → amber star → green / none), then
  * favorites, then alphabetical — the default that drives the rail and every
- * modal sidebar.
+ * modal sidebar. The active structure is NOT pinned to the top; selection
+ * is purely a highlight so positions stay stable when the player clicks.
  */
 export const sortStructures = (
   structures: StructureWithMetadata[],
   sort: LeftListSort,
-  activeEntityId: ID,
+  _activeEntityId: ID,
   favoriteOrder?: ReadonlyMap<ID, number>,
 ): StructureWithMetadata[] => {
+  void _activeEntityId;
   const order = favoriteOrder ?? new Map<ID, number>();
 
   return structures.toSorted((a, b) => {
-    // Active structure always at the top — consistent across all surfaces.
-    if (a.entityId === activeEntityId) return -1;
-    if (b.entityId === activeEntityId) return 1;
-
     if (sort === "favorites") {
       if (a.isFavorite && !b.isFavorite) return -1;
       if (!a.isFavorite && b.isFavorite) return 1;
@@ -86,15 +89,17 @@ export const sortStructures = (
 /** Category filter chips, ordered. "All" is intentionally excluded — the
  *  player always sees exactly one category. The rail derives which chips to
  *  render from what they actually own; categories with zero structures don't
- *  get a chip. */
+ *  get a chip. Each option carries an icon so the filter bar is a row of
+ *  glyphs and the label only appears as the hover tooltip. */
 export const CATEGORY_FILTER_OPTIONS: Array<{
   value: StructureType;
   label: string;
+  icon: LucideIcon;
 }> = [
-  { value: StructureType.Realm, label: "Realms" },
-  { value: StructureType.Village, label: "Villages" },
-  { value: StructureType.FragmentMine, label: "Mines" },
-  { value: StructureType.Hyperstructure, label: "Hyperstructures" },
+  { value: StructureType.Realm, label: "Realms", icon: Crown },
+  { value: StructureType.Village, label: "Villages", icon: Castle },
+  { value: StructureType.FragmentMine, label: "Mines", icon: Pickaxe },
+  { value: StructureType.Hyperstructure, label: "Hyperstructures", icon: Sparkles },
 ];
 
 export const SORT_OPTIONS: Array<{ value: LeftListSort; label: string }> = [

@@ -206,6 +206,20 @@ export const StructureStatusRow = memo(
           >
             <Star className={cn("h-3.5 w-3.5", isFavorite && "fill-current")} />
           </button>
+          {isFull && onRequestRename && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRequestRename(structure.entityId);
+              }}
+              className="flex-shrink-0 rounded border border-gold/30 p-0.5 text-gold/70 hover:text-gold"
+              title="Rename structure"
+              aria-label="Rename structure"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          )}
           <CategoryIcon
             category={structure.category}
             className={cn("h-4 w-4 flex-shrink-0", groupConfig ? groupConfig.textClass : "text-gold")}
@@ -240,20 +254,6 @@ export const StructureStatusRow = memo(
             <div className="flex-shrink-0" onClick={(event) => event.stopPropagation()}>
               <StructureRealmActions structureEntityId={structure.entityId} />
             </div>
-          )}
-          {isFull && onRequestRename && (
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                onRequestRename(structure.entityId);
-              }}
-              className="flex-shrink-0 rounded border border-gold/30 p-0.5 text-gold/70 hover:text-gold"
-              title="Rename structure"
-              aria-label="Rename structure"
-            >
-              <Pencil className="h-3 w-3" />
-            </button>
           )}
         </div>
 
