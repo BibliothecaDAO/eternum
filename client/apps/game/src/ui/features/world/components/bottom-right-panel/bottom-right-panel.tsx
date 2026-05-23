@@ -7,7 +7,8 @@ import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/li
 import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import Button from "@/ui/design-system/atoms/button";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
@@ -48,11 +49,15 @@ import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/s
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { ProductionModal } from "@/ui/features/settlement";
 import { TileManager } from "@bibliothecadao/eternum";
+import Coins from "lucide-react/dist/esm/icons/coins";
+import Factory from "lucide-react/dist/esm/icons/factory";
+import Hammer from "lucide-react/dist/esm/icons/hammer";
 import Info from "lucide-react/dist/esm/icons/info";
 import Loader from "lucide-react/dist/esm/icons/loader";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
+import Users from "lucide-react/dist/esm/icons/users";
 import { toast } from "sonner";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, LEFT_ACTIONS_GAP_FROM_MINIMAP, MINIMAP_SIZE } from "./constants";
@@ -94,11 +99,6 @@ interface PanelFrameProps {
    * reference widget rather than a content panel.
    */
   height?: number;
-}
-
-interface TilePanelScrollAreaProps {
-  children: ReactNode;
-  className?: string;
 }
 
 interface ResourceAmountEntry {
@@ -150,17 +150,6 @@ const PanelFrame = ({ title, children, headerAction, className, height }: PanelF
     </header>
     <div className="flex-1 min-h-0 overflow-hidden px-1.5 py-1 lg:px-2.5 lg:py-2">{children}</div>
   </section>
-);
-
-const TilePanelScrollArea = ({ children, className }: TilePanelScrollAreaProps) => (
-  <div
-    className={cn(
-      "h-full min-h-0 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent",
-      className,
-    )}
-  >
-    {children}
-  </div>
 );
 
 const MapTilePanel = () => {
@@ -620,263 +609,246 @@ const LocalTilePanel = () => {
     }
   };
 
+  // ---- Atomized local-tile render ----------------------------------------
+  // Each concern (header, production, population, build cost, actions) lives
+  // in its own InfoBubble so the local-tile column matches the right-side
+  // world inspector visually (Guards / Production / Resources / Biome each
+  // get their own bubble there too).
+  if (!selectedBuildingHex) {
+    return (
+      <div className={cn("pointer-events-auto flex flex-col items-center justify-center rounded-xl px-4 py-6 text-center", OVERLAY_SURFACE_BASE)}>
+        <p className={HUD_BODY}>Tap a building tile to view its details.</p>
+      </div>
+    );
+  }
+
+  // Castle tile: realm-upgrade panel in a single bubble + the standard header
+  // band above it.
+  if (isCastleTile) {
+    return (
+      <>
+        <InfoBubble title={panelTitle} cue={headerAction} bodyClassName="pt-0">
+          <RealmUpgradeCompact />
+        </InfoBubble>
+      </>
+    );
+  }
+
+  if (!hasBuilding) {
+    return (
+      <InfoBubble title={panelTitle} cue={headerAction}>
+        <p className={HUD_BODY_MUTED}>Empty tile. Pick a building from the menu to start construction here.</p>
+      </InfoBubble>
+    );
+  }
+
+  const populationChips: Array<{ key: string; label: string }> = [];
+  if (populationCost !== 0) populationChips.push({ key: "cost", label: `Cost +${populationCost}` });
+  if (populationCapacity !== 0) populationChips.push({ key: "cap", label: `Capacity +${populationCapacity}` });
+
   return (
-    <PanelFrame title={panelTitle} headerAction={headerAction}>
-      {selectedBuildingHex ? (
-        isCastleTile ? (
-          <TilePanelScrollArea>
-            <RealmUpgradeCompact />
-          </TilePanelScrollArea>
-        ) : hasBuilding ? (
-          <TilePanelScrollArea>
-            <div className="grid min-h-full auto-rows-min grid-cols-2 gap-2 text-[11px] text-gold">
-              {isPaused && (
-                <div className="col-span-2 flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red/900/25 px-2 py-1.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
-                    ⚠️ Production Paused
-                  </span>
-                  {isOwnedByPlayer && (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="xs"
-                        variant="outline"
-                        disabled={isActionLoading}
-                        onClick={handleToggleProduction}
-                        className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
-                      >
-                        ▶ Resume
-                      </Button>
-                      <Button
-                        size="xs"
-                        variant="danger"
-                        disabled={isActionLoading}
-                        onClick={handleDestroy}
-                        className="h-7 px-2 text-xxs"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="col-span-2 rounded border border-gold/15 bg-black/30 px-2 py-1.5">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Produces per sec</p>
-                    {producedResource && producedResourceName ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-semibold text-green-300">+{producedPerTick}</span>
-                        <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
-                        <button
-                          type="button"
-                          className="text-xxs uppercase tracking-[0.2em] text-gold/60"
-                          onMouseEnter={() =>
-                            setTooltip({
-                              position: "right",
-                              content: (
-                                <div className="space-y-2">
-                                  <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed By</p>
-                                  {consumedBy.length > 0 ? (
-                                    <div className="grid grid-cols-3 gap-2">
-                                      {consumedBy.map((resourceId) => {
-                                        const name =
-                                          findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
-                                        return (
-                                          <div
-                                            key={resourceId}
-                                            className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
-                                          >
-                                            <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                                            <span className="text-xxs text-gold/80">{name}</span>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  ) : (
-                                    <p className="text-xxs text-gold/60">Not consumed by other buildings.</p>
-                                  )}
-                                </div>
-                              ),
-                            })
-                          }
-                          onMouseLeave={() => setTooltip(null)}
-                          aria-label="Show consumers"
-                        >
-                          <Info className="h-4 w-4 text-gold/70" />
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="text-xxs text-gold/60">No production</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Population</p>
-                    <div className="flex flex-wrap items-center gap-1">
-                      {populationCost !== 0 && (
-                        <span className="rounded bg-black/40 px-1.5 py-1 text-xxs font-semibold text-gold">
-                          Cost +{populationCost}
-                        </span>
-                      )}
-                      {populationCapacity !== 0 && (
-                        <span className="rounded bg-black/40 px-1.5 py-1 text-xxs font-semibold text-gold">
-                          Capacity +{populationCapacity}
-                        </span>
-                      )}
-                      {populationCost === 0 && populationCapacity === 0 && (
-                        <span className="text-xxs text-gold/60">No population impact</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded border border-gold/15 bg-black/30 px-2 py-1.5">
-                <p className="mb-1 text-xxs uppercase tracking-[0.2em] text-gold/60">Consumes per sec</p>
-                {ongoingCost.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {ongoingCost.map((entry, index) => {
-                      const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
-                      return (
-                        <div
-                          key={`${entry.resource}-${index}`}
-                          className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1"
-                        >
-                          <span className="text-xxs font-semibold text-red-200">-{entry.amount}</span>
-                          <button
-                            type="button"
-                            className="flex h-5 w-5 items-center justify-center rounded"
-                            onMouseEnter={() =>
-                              setTooltip({
-                                position: "top",
-                                content: (
-                                  <div className="flex items-center gap-2 text-xxs text-gold">
-                                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                                    <span className="font-semibold">{name}</span>
-                                  </div>
-                                ),
-                              })
-                            }
-                            onMouseLeave={() => setTooltip(null)}
-                            aria-label={`Consumes ${entry.amount} ${name} per second`}
-                          >
-                            <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-xxs text-gold/60">No ongoing inputs</p>
-                )}
-              </div>
-
-              <div className="rounded border border-gold/15 bg-black/30 px-2 py-1.5">
-                <p className="mb-1 text-xxs uppercase tracking-[0.2em] text-gold/60">Build Cost</p>
-                {buildCost.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {buildCost.map((entry, index) => {
-                      const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
-                      const balanceInfo = getBalance(
-                        structureEntityId ?? 0,
-                        entry.resource,
-                        currentDefaultTick,
-                        setup.components,
-                      );
-                      const balance = divideByPrecision(balanceInfo.balance);
-                      const hasEnough = balance >= entry.amount;
-                      return (
-                        <button
-                          type="button"
-                          key={`build-cost-${entry.resource}-${index}`}
-                          className={cn(
-                            "relative flex items-center gap-1 rounded px-1.5 py-1 text-[10px] shadow-inner",
-                            hasEnough
-                              ? "bg-gold/5 border border-gold/10 text-gold/80"
-                              : "bg-red-900/15 border border-red-500/30 text-red-100",
-                          )}
-                          onMouseEnter={() =>
-                            setTooltip({
-                              position: "top",
-                              content: (
-                                <div className="flex items-center gap-2 text-xxs text-gold">
-                                  <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                                  <span className="font-semibold">{name}</span>
-                                </div>
-                              ),
-                            })
-                          }
-                          onMouseLeave={() => setTooltip(null)}
-                          aria-label={`${name} build cost`}
-                        >
-                          <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                          <span className={cn("text-[10px]", hasEnough ? "font-semibold text-gold" : "text-red-200")}>
-                            {formatResourceAmount(balance)}
-                          </span>
-                          <span className={cn("text-[10px]", hasEnough ? "text-gold/70" : "text-red-200")}>
-                            / {entry.amount}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-xxs text-gold/60">No build cost data</p>
-                )}
-              </div>
-
-              {isOwnedByPlayer && (
-                <div className="col-span-2 flex flex-wrap gap-1.5 pt-0.5">
-                  {canAddProduction && (
-                    <Button
-                      size="xs"
-                      variant="gold"
-                      disabled={isActionLoading}
-                      onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
-                      className="h-8 px-2 text-xxs"
-                    >
-                      + Production
-                    </Button>
-                  )}
-                  {buildingCategory !== BuildingType.WorkersHut && (
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      disabled={isActionLoading}
-                      onClick={handleToggleProduction}
-                      className="h-8 px-2 text-xxs"
-                    >
-                      {isPaused ? "▶ Resume" : "⏸ Pause"}
-                    </Button>
-                  )}
-                  <Button
-                    size="xs"
-                    variant="danger"
-                    disabled={isActionLoading}
-                    onClick={handleDestroy}
-                    className="flex h-8 items-center gap-1.5 px-2 text-xxs"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    {showDestroyConfirm ? "Confirm" : "Delete"}
-                  </Button>
-                </div>
-              )}
-            </div>
-          </TilePanelScrollArea>
-        ) : (
-          <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
-            <p className="text-xs text-gold/70">
-              Empty tile. Pick a building from the menu to start construction here.
-            </p>
+    <>
+      {/* Header band — building name + coords + Re-sync. Cue holds the
+          re-sync chip the same way the right inspector does. */}
+      <InfoBubble title={panelTitle} cue={headerAction}>
+        {isPaused ? (
+          <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
+              ⚠️ Production paused
+            </span>
+            {isOwnedByPlayer && (
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={isActionLoading}
+                onClick={handleToggleProduction}
+                className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
+              >
+                ▶ Resume
+              </Button>
+            )}
           </div>
-        )
-      ) : (
-        <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
-          <p className="text-xs text-gold/70">Tap a building tile to view its details.</p>
+        ) : (
+          <p className={HUD_BODY_MUTED}>
+            {producedResourceName ? `Producing ${producedResourceName}.` : "No active production."}
+          </p>
+        )}
+      </InfoBubble>
+
+      {/* Production — produces + consumes. */}
+      <InfoBubble title="Production" icon={Factory}>
+        <div className="flex flex-col gap-2">
+          <div>
+            <span className={HUD_LABEL}>Produces / sec</span>
+            {producedResource && producedResourceName ? (
+              <div className="mt-1 flex items-center gap-1.5">
+                <span className={cn("text-sm font-semibold text-green-300", HUD_VALUE)}>+{producedPerTick}</span>
+                <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
+                <button
+                  type="button"
+                  className="text-xxs uppercase tracking-[0.2em] text-gold/60"
+                  onMouseEnter={() =>
+                    setTooltip({
+                      position: "right",
+                      content: (
+                        <div className="space-y-2">
+                          <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed by</p>
+                          {consumedBy.length > 0 ? (
+                            <div className="grid grid-cols-3 gap-2">
+                              {consumedBy.map((resourceId) => {
+                                const name =
+                                  findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
+                                return (
+                                  <div
+                                    key={resourceId}
+                                    className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
+                                  >
+                                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                                    <span className="text-xxs text-gold/80">{name}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : (
+                            <p className="text-xxs text-gold/60">Not consumed by other buildings.</p>
+                          )}
+                        </div>
+                      ),
+                    })
+                  }
+                  onMouseLeave={() => setTooltip(null)}
+                  aria-label="Show consumers"
+                >
+                  <Info className="h-4 w-4 text-gold/70" />
+                </button>
+              </div>
+            ) : (
+              <p className={cn("mt-1", HUD_BODY_MUTED)}>No production</p>
+            )}
+          </div>
+          <div>
+            <span className={HUD_LABEL}>Consumes / sec</span>
+            {ongoingCost.length > 0 ? (
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {ongoingCost.map((entry, index) => {
+                  const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                  return (
+                    <span
+                      key={`${entry.resource}-${index}`}
+                      className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-xxs"
+                      title={name}
+                    >
+                      <span className="font-semibold text-red-200">-{entry.amount}</span>
+                      <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                    </span>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className={cn("mt-1", HUD_BODY_MUTED)}>No ongoing inputs</p>
+            )}
+          </div>
         </div>
+      </InfoBubble>
+
+      {/* Population — cost / capacity chips. */}
+      <InfoBubble title="Population" icon={Users}>
+        {populationChips.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            {populationChips.map((chip) => (
+              <span
+                key={chip.key}
+                className="rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold"
+              >
+                {chip.label}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className={HUD_BODY_MUTED}>No population impact</p>
+        )}
+      </InfoBubble>
+
+      {/* Build cost — shows the resources consumed to construct, with player
+          balances side-by-side so the player can see what's missing. */}
+      <InfoBubble title="Build cost" icon={Coins}>
+        {buildCost.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {buildCost.map((entry, index) => {
+              const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+              const balanceInfo = getBalance(
+                structureEntityId ?? 0,
+                entry.resource,
+                currentDefaultTick,
+                setup.components,
+              );
+              const balance = divideByPrecision(balanceInfo.balance);
+              const hasEnough = balance >= entry.amount;
+              return (
+                <span
+                  key={`build-cost-${entry.resource}-${index}`}
+                  className={cn(
+                    "flex items-center gap-1 rounded px-1.5 py-1 text-[10px] shadow-inner",
+                    hasEnough
+                      ? "bg-gold/5 border border-gold/10 text-gold/80"
+                      : "bg-red-900/15 border border-red-500/30 text-red-100",
+                  )}
+                  title={name}
+                >
+                  <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                  <span className={cn(hasEnough ? "font-semibold text-gold" : "text-red-200")}>
+                    {formatResourceAmount(balance)}
+                  </span>
+                  <span className={cn(hasEnough ? "text-gold/70" : "text-red-200")}>/ {entry.amount}</span>
+                </span>
+              );
+            })}
+          </div>
+        ) : (
+          <p className={HUD_BODY_MUTED}>No build cost data</p>
+        )}
+      </InfoBubble>
+
+      {/* Actions — only for player-owned tiles. */}
+      {isOwnedByPlayer && (
+        <InfoBubble title="Actions" icon={Hammer}>
+          <div className="flex flex-wrap gap-1.5">
+            {canAddProduction && (
+              <Button
+                size="xs"
+                variant="gold"
+                disabled={isActionLoading}
+                onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
+                className="h-8 px-2 text-xxs"
+              >
+                + Production
+              </Button>
+            )}
+            {buildingCategory !== BuildingType.WorkersHut && (
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={isActionLoading}
+                onClick={handleToggleProduction}
+                className="h-8 px-2 text-xxs"
+              >
+                {isPaused ? "▶ Resume" : "⏸ Pause"}
+              </Button>
+            )}
+            <Button
+              size="xs"
+              variant="danger"
+              disabled={isActionLoading}
+              onClick={handleDestroy}
+              className="flex h-8 items-center gap-1.5 px-2 text-xxs"
+            >
+              <Trash2 className="h-3 w-3" />
+              {showDestroyConfirm ? "Confirm" : "Delete"}
+            </Button>
+          </div>
+        </InfoBubble>
       )}
-    </PanelFrame>
+    </>
   );
 };
 
@@ -971,9 +943,10 @@ export const BottomRightPanel = memo(() => {
   // (hex) view follow the selected building hex. Either source produces the
   // same panel chrome but different content.
   const showTileDetails = isMapView ? selectedHex !== null : selectedBuildingHex !== null;
-  // Minimap is map-view only and stays persistent so the player always has a
-  // navigation reference.
-  const showMinimap = isMapView;
+  // Minimap + action row stay persistent in both map and local views — the
+  // player wants to keep an eye on activity near their realm even while they
+  // manage tiles up close.
+  const showMinimap = true;
 
   return (
     <>
