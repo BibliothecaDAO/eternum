@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-23",
+    title: "Event-Driven Hover Details",
+    description:
+      "Improved world-map hover details so labels recover when unit, structure, or chest data finishes loading under the cursor.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-23",
     title: "Reliable Hover Details",
     description:
       "Fixed intermittent world-map hover details by retrying active labels when loading or scene transitions temporarily detach them.",

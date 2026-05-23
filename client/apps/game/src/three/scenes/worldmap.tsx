@@ -117,7 +117,7 @@ import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
 import { playerCosmeticsStore, preloadAllCosmeticAssets } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
-import { HoverLabelManager } from "../managers/hover-label-manager";
+import { HoverLabelManager, type HoverLabelReconcileResult } from "../managers/hover-label-manager";
 import { resolveWorldmapHoverLabelEntity } from "./worldmap-hover-label-entities";
 import { resolveWorldmapHoverLabelTargets } from "./worldmap-hover-label-targets";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
@@ -588,6 +588,7 @@ const WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS = Math.max(WORLDMAP_CHUNK_PHASE_
 const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
+const HOVER_LABEL_RECOVERY_FRAME_BUDGET = 12;
 const WORLDMAP_ZOOM_HARDENING = createWorldmapZoomHardeningConfig({
   enabled: env.VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING === true,
   telemetry: env.VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING_TELEMETRY === true,
@@ -599,6 +600,20 @@ type DirectionalPrefetchAnchor = {
   movementSign: -1 | 1;
 };
 type WorldmapCameraTransitionStatus = "idle" | "transitioning";
+type HoverLabelRecoveryReason =
+  | "hover"
+  | "initial_refresh"
+  | "manager_catch_up"
+  | "critical_manager_catch_up"
+  | "non_critical_manager_catch_up"
+  | "scene_ready"
+  | "frame_retry";
+
+interface PendingHoverLabelRecovery {
+  hex: HexPosition;
+  reason: HoverLabelRecoveryReason;
+  remainingFrameRetries: number;
+}
 
 let worldmapInteractionDebugInstanceCounter = 0;
 
@@ -1062,6 +1077,7 @@ export default class WorldmapScene extends WarpTravel {
   private toriiBoundsLogInterval: ReturnType<typeof setInterval> | null = null;
   private readonly hoverLabelRaycaster: Raycaster;
   private currentHoverLabelHex: HexPosition | null = null;
+  private pendingHoverLabelRecovery: PendingHoverLabelRecovery | null = null;
 
   constructor(
     dojoContext: SetupResult,
@@ -2388,6 +2404,7 @@ export default class WorldmapScene extends WarpTravel {
 
       // Handle label collapse on hex leave
       this.currentHoverLabelHex = null;
+      this.clearPendingHoverLabelRecovery("hex_leave");
       this.hoverLabelManager.onHexLeave();
       return;
     }
@@ -2402,7 +2419,7 @@ export default class WorldmapScene extends WarpTravel {
 
     // Handle label expansion on hover
     this.currentHoverLabelHex = hexCoords;
-    this.reconcileHoverLabels();
+    this.reconcileHoverLabels("hover");
 
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
@@ -2570,12 +2587,116 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  private reconcileHoverLabels(): void {
+  private reconcileHoverLabels(reason: HoverLabelRecoveryReason = "hover"): HoverLabelReconcileResult | null {
     if (!this.currentHoverLabelHex) {
+      this.clearPendingHoverLabelRecovery("no_hover");
+      return null;
+    }
+
+    const result = this.hoverLabelManager.reconcileHexHover(this.currentHoverLabelHex);
+    this.applyHoverLabelRecoveryResult(result, reason);
+    this.traceHoverLabelRecovery("reconcile", {
+      reason,
+      hex: this.currentHoverLabelHex,
+      result,
+      pending: this.pendingHoverLabelRecovery,
+    });
+
+    return result;
+  }
+
+  private applyHoverLabelRecoveryResult(result: HoverLabelReconcileResult, reason: HoverLabelRecoveryReason): void {
+    if (!this.currentHoverLabelHex || this.isSwitchedOff) {
+      this.clearPendingHoverLabelRecovery("inactive");
       return;
     }
 
-    this.hoverLabelManager.reconcileHexHover(this.currentHoverLabelHex);
+    if (result.shownAnyLabel && result.missingTypes.length === 0) {
+      this.clearPendingHoverLabelRecovery("resolved");
+      return;
+    }
+
+    const pendingHex = { ...this.currentHoverLabelHex };
+    if (reason === "frame_retry") {
+      if (!this.pendingHoverLabelRecovery || !this.isPendingHoverRecoveryForHex(pendingHex)) {
+        return;
+      }
+      this.pendingHoverLabelRecovery = {
+        ...this.pendingHoverLabelRecovery,
+        reason,
+      };
+      return;
+    }
+
+    this.pendingHoverLabelRecovery = {
+      hex: pendingHex,
+      reason,
+      remainingFrameRetries: HOVER_LABEL_RECOVERY_FRAME_BUDGET,
+    };
+  }
+
+  private retryPendingHoverLabelRecovery(reason: HoverLabelRecoveryReason): void {
+    if (!this.pendingHoverLabelRecovery && !this.currentHoverLabelHex) {
+      return;
+    }
+
+    if (this.isSwitchedOff || !this.currentHoverLabelHex) {
+      this.clearPendingHoverLabelRecovery("inactive_retry");
+      return;
+    }
+
+    this.reconcileHoverLabels(reason);
+  }
+
+  private runPendingHoverLabelRecoveryFrame(): void {
+    if (!this.pendingHoverLabelRecovery) {
+      return;
+    }
+
+    if (
+      this.isSwitchedOff ||
+      !this.currentHoverLabelHex ||
+      !this.isPendingHoverRecoveryForHex(this.currentHoverLabelHex)
+    ) {
+      this.clearPendingHoverLabelRecovery("frame_inactive");
+      return;
+    }
+
+    if (this.pendingHoverLabelRecovery.remainingFrameRetries <= 0) {
+      this.clearPendingHoverLabelRecovery("frame_budget_exhausted");
+      return;
+    }
+
+    this.pendingHoverLabelRecovery.remainingFrameRetries -= 1;
+    this.reconcileHoverLabels("frame_retry");
+  }
+
+  private isPendingHoverRecoveryForHex(hexCoords: HexPosition): boolean {
+    return (
+      this.pendingHoverLabelRecovery !== null &&
+      this.pendingHoverLabelRecovery.hex.col === hexCoords.col &&
+      this.pendingHoverLabelRecovery.hex.row === hexCoords.row
+    );
+  }
+
+  private clearPendingHoverLabelRecovery(reason: string): void {
+    if (!this.pendingHoverLabelRecovery) {
+      return;
+    }
+
+    this.traceHoverLabelRecovery("clear", {
+      reason,
+      pending: this.pendingHoverLabelRecovery,
+    });
+    this.pendingHoverLabelRecovery = null;
+  }
+
+  private traceHoverLabelRecovery(event: string, details: Record<string, unknown>): void {
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
+    console.debug(`[WorldmapHoverLabels] ${event}`, details);
   }
 
   protected tryArmyRaycastFallback(raycaster: Raycaster): HexPosition | null {
@@ -4108,6 +4229,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private announceWorldmapSceneReady(): void {
     usePlayRouteReadinessStore.getState().markWorldmapReady(getCurrentPlayRouteBootToken());
+    this.retryPendingHoverLabelRecovery("scene_ready");
 
     if (typeof window === "undefined") {
       return;
@@ -4137,6 +4259,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private detachWorldmapManagerLabels(): void {
+    this.clearPendingHoverLabelRecovery("detach");
     this.hoverLabelManager.onHexLeave();
     this.armyManager.removeLabelsFromScene();
     this.structureManager.removeLabelsFromScene();
@@ -4149,7 +4272,7 @@ export default class WorldmapScene extends WarpTravel {
       throw new Error("World map did not finish its initial interactive refresh.");
     }
 
-    this.reconcileHoverLabels();
+    this.reconcileHoverLabels("initial_refresh");
   }
 
   private commitCurrentChunkAuthority(chunkKey: string): void {
@@ -4315,6 +4438,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private resetWorldmapInteractionForSwitchOff(nextSceneName?: SceneName): void {
+    this.currentHoverLabelHex = null;
+    this.clearPendingHoverLabelRecovery("switch_off");
     this.resetInteractionSelectionForSwitchOff(nextSceneName);
     this.releaseInteractionOwnership("switch_off");
     this.clearAllPendingActionFx();
@@ -9671,7 +9796,7 @@ export default class WorldmapScene extends WarpTravel {
       setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
-      this.reconcileHoverLabels();
+      this.reconcileHoverLabels("manager_catch_up");
     }
 
     if (import.meta.env.DEV) {
@@ -9782,7 +9907,7 @@ export default class WorldmapScene extends WarpTravel {
       setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
-      this.reconcileHoverLabels();
+      this.retryPendingHoverLabelRecovery("critical_manager_catch_up");
     }
 
     handleWorldmapCriticalManagerCatchUpFailures({
@@ -9845,6 +9970,7 @@ export default class WorldmapScene extends WarpTravel {
       });
       recordWorldmapRenderDuration("chunkManagerCatchUpMs", durationMs);
       recordWorldmapRenderDuration("updateManagersForChunk", durationMs);
+      this.retryPendingHoverLabelRecovery("non_critical_manager_catch_up");
     }
   }
 
@@ -9867,6 +9993,7 @@ export default class WorldmapScene extends WarpTravel {
     this.chestManager.update(deltaTime);
     this.updateCameraTargetHexThrottled?.();
     setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
+    this.runPendingHoverLabelRecoveryFrame();
     if (WORLDMAP_ZOOM_HARDENING.terrainSelfHeal) {
       this.monitorTerrainVisibilityHealth();
     } else {
