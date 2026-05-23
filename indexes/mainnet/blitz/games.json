@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-23T10:58:39.939Z",
+  "updatedAt": "2026-05-23T11:14:16.520Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1076,6 +1076,23 @@
       "recoverableFailedStepId": "configure-world",
       "recoverablePendingStepId": "reserve-blitz-hyperstructures",
       "startTime": 1779535800,
+      "durationSeconds": 3600,
+      "artifacts": {}
+    },
+    "bltz-blink-664": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "bltz-blink-664",
+      "path": "runs/mainnet/blitz/bltz-blink-664.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-blink-664/26331187406-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-23T11:14:16.520Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-23T11:36:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
     }
