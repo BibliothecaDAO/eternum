@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-23T11:07:13.051Z",
+  "updatedAt": "2026-05-23T11:07:22.178Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1330,12 +1330,13 @@
       "path": "runs/slot/blitz/bltz-swish-882.json",
       "inputPath": "inputs/slot/blitz/bltz-swish-882/26331040181-1.json",
       "status": "running",
-      "updatedAt": "2026-05-23T11:07:13.051Z",
+      "updatedAt": "2026-05-23T11:07:22.178Z",
       "workflowRef": "next",
       "currentStepId": "wait-for-factory-index",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-23T11:52:22.178Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "wait-for-factory-index",
+      "recoverablePendingStepId": "configure-world",
       "startTime": 1779537600,
       "durationSeconds": 3600,
       "artifacts": {}
