@@ -63,6 +63,7 @@ import { useComponentValue } from "@dojoengine/react";
 import { getComponentValue } from "@dojoengine/recs";
 import clsx from "clsx";
 import InfoIcon from "lucide-react/dist/esm/icons/info";
+import Hammer from "lucide-react/dist/esm/icons/hammer";
 import Pause from "lucide-react/dist/esm/icons/pause";
 import Play from "lucide-react/dist/esm/icons/play";
 import Trash from "lucide-react/dist/esm/icons/trash";
@@ -1373,7 +1374,10 @@ const BuildingCard = ({
         className="absolute inset-0 w-full h-full object-contain"
       />
       <div className="absolute top-2 left-2 right-2 z-10 flex items-start justify-between gap-2">
-        <div className="flex flex-col items-start gap-2">
+        {/* Vertical action stack — every button is the same h-7 w-7 square so
+            the column is visually tidy. Build is the primary action (gold
+            chip); Pause + Destroy live below as smaller icon buttons. */}
+        <div className="flex flex-col items-start gap-1.5">
           <button
             type="button"
             disabled={Boolean(buildDisabled || isDisabled)}
@@ -1383,56 +1387,64 @@ const BuildingCard = ({
               onBuild?.();
             }}
             className={clsx(
-              "flex items-center justify-center rounded-md border border-amber-500/80 bg-amber-400/90 px-2.5 py-1 text-[10px] font-semibold text-black shadow transition",
+              "inline-flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/80 bg-amber-400/90 text-black shadow transition",
               !buildDisabled && !isDisabled && "hover:translate-y-[-1px] hover:bg-amber-300",
               (buildDisabled || isDisabled) && "opacity-60 cursor-not-allowed",
             )}
+            title="Build"
+            aria-label="Build"
           >
-            {buildLoading ? "…" : "Build"}
+            {buildLoading ? <span className="text-[10px] font-bold">…</span> : <Hammer className="h-3.5 w-3.5" />}
           </button>
-          <div className="flex items-center gap-1">
-            {onDestroy && (
-              <button
-                type="button"
-                disabled={Boolean(destroyDisabled)}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  if (destroyDisabled) return;
-                  onDestroy();
-                }}
-                className={clsx(
-                  "flex items-center justify-center rounded-md border border-red-700/80 bg-red-900/90 px-2.5 py-1 text-[10px] font-semibold text-white shadow transition",
-                  !destroyDisabled && "hover:translate-y-[-1px] hover:bg-red-800",
-                  destroyDisabled && "opacity-60 cursor-not-allowed",
-                )}
-                aria-label="Destroy building"
-              >
-                {destroyLoading ? "…" : <Trash className="w-3 h-3" />}
-              </button>
-            )}
-            {onPauseResumeAll && (
-              <button
-                type="button"
-                disabled={Boolean(pauseResumeAllDisabled)}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  if (pauseResumeAllDisabled) return;
-                  onPauseResumeAll();
-                }}
-                className={clsx(
-                  "flex items-center justify-center rounded-md border px-2.5 py-1 text-[10px] font-semibold text-white shadow transition",
-                  allPaused
-                    ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
-                    : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
-                  !pauseResumeAllDisabled && "hover:translate-y-[-1px]",
-                  pauseResumeAllDisabled && "opacity-60 cursor-not-allowed",
-                )}
-                aria-label={allPaused ? "Resume all" : "Pause all"}
-              >
-                {pauseResumeAllLoading ? "…" : allPaused ? <Play className="w-3 h-3" /> : <Pause className="w-3 h-3" />}
-              </button>
-            )}
-          </div>
+          {onPauseResumeAll && (
+            <button
+              type="button"
+              disabled={Boolean(pauseResumeAllDisabled)}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (pauseResumeAllDisabled) return;
+                onPauseResumeAll();
+              }}
+              className={clsx(
+                "inline-flex h-7 w-7 items-center justify-center rounded-md border text-white shadow transition",
+                allPaused
+                  ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
+                  : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
+                !pauseResumeAllDisabled && "hover:translate-y-[-1px]",
+                pauseResumeAllDisabled && "opacity-60 cursor-not-allowed",
+              )}
+              title={allPaused ? "Resume all" : "Pause all"}
+              aria-label={allPaused ? "Resume all" : "Pause all"}
+            >
+              {pauseResumeAllLoading ? (
+                <span className="text-[10px] font-bold">…</span>
+              ) : allPaused ? (
+                <Play className="h-3.5 w-3.5" />
+              ) : (
+                <Pause className="h-3.5 w-3.5" />
+              )}
+            </button>
+          )}
+          {onDestroy && (
+            <button
+              type="button"
+              disabled={Boolean(destroyDisabled)}
+              onClick={(event) => {
+                event.stopPropagation();
+                if (destroyDisabled) return;
+                onDestroy();
+              }}
+              className={clsx(
+                "inline-flex h-7 w-7 items-center justify-center rounded-md border border-red-700/80 bg-red-900/90 text-white shadow transition",
+                !destroyDisabled && "hover:translate-y-[-1px] hover:bg-red-800",
+                destroyDisabled && "opacity-60 cursor-not-allowed",
+              )}
+              title="Destroy building"
+              aria-label="Destroy building"
+            >
+              {destroyLoading ? <span className="text-[10px] font-bold">…</span> : <Trash className="h-3.5 w-3.5" />}
+            </button>
+          )}
         </div>
         <div className="ml-auto flex items-center gap-2">
           {isWorkersHut && (
