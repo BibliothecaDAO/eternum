@@ -1,5 +1,4 @@
 import type { LeftListFilter, LeftListSort } from "@/hooks/store/use-ui-store";
-import { resolveStatusTone } from "@/ui/features/world/components/structure-status-row/structure-status-row";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import Castle from "lucide-react/dist/esm/icons/castle";
@@ -22,21 +21,14 @@ export const filterStructures = (
   return structures.filter((structure) => structure.category === filter);
 };
 
-const STATUS_PRIORITY: Record<"red" | "amber" | "green", number> = {
-  red: 0,
-  amber: 1,
-  green: 2,
-};
-
 const compareNames = (a: StructureWithMetadata, b: StructureWithMetadata) =>
   a.displayName.localeCompare(b.displayName);
 
 /**
- * Sorts structures by the requested mode. "smart" surfaces what needs the
- * player's attention first (red star → amber star → green / none), then
- * favorites, then alphabetical — the default that drives the rail and every
- * modal sidebar. The active structure is NOT pinned to the top; selection
- * is purely a highlight so positions stay stable when the player clicks.
+ * Sorts structures by the requested mode. "favorites" is the default —
+ * starred entries first (in user-defined order), then alphabetical. The
+ * active structure is NOT pinned to the top; selection is purely a
+ * highlight so positions stay stable when the player clicks.
  */
 export const sortStructures = (
   structures: StructureWithMetadata[],
@@ -70,18 +62,6 @@ export const sortStructures = (
       return compareNames(a, b);
     }
 
-    if (sort === "name") {
-      return compareNames(a, b);
-    }
-
-    // "smart" — attention first, then favorites, then name.
-    const aTone = resolveStatusTone(a)?.tone ?? "green";
-    const bTone = resolveStatusTone(b)?.tone ?? "green";
-    const aPriority = STATUS_PRIORITY[aTone];
-    const bPriority = STATUS_PRIORITY[bTone];
-    if (aPriority !== bPriority) return aPriority - bPriority;
-    if (a.isFavorite && !b.isFavorite) return -1;
-    if (!a.isFavorite && b.isFavorite) return 1;
     return compareNames(a, b);
   });
 };
@@ -103,7 +83,6 @@ export const CATEGORY_FILTER_OPTIONS: Array<{
 ];
 
 export const SORT_OPTIONS: Array<{ value: LeftListSort; label: string }> = [
-  { value: "smart", label: "Smart" },
   { value: "favorites", label: "Favorites" },
   { value: "level", label: "Level" },
   { value: "population", label: "Population" },

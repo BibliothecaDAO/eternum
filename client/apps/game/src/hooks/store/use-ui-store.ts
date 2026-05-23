@@ -16,7 +16,7 @@ type TooltipPlacement = "top" | "left" | "right" | "bottom";
 export type BottomPanelTabId = "tile" | "minimap";
 
 export type LeftListFilter = StructureType | "all";
-export type LeftListSort = "smart" | "favorites" | "level" | "population" | "name";
+export type LeftListSort = "favorites" | "level" | "population" | "name";
 
 let lastResolvedAnchor: HTMLElement | null = null;
 
@@ -236,10 +236,10 @@ const readLeftListFilter = (): LeftListFilter => {
 };
 
 const readLeftListSort = (): LeftListSort => {
-  if (typeof window === "undefined") return "smart";
+  if (typeof window === "undefined") return "favorites";
   const raw = localStorage.getItem(LEFT_LIST_SORT_KEY);
-  const options: LeftListSort[] = ["smart", "favorites", "level", "population", "name"];
-  return options.includes(raw as LeftListSort) ? (raw as LeftListSort) : "smart";
+  const options: LeftListSort[] = ["favorites", "level", "population", "name"];
+  return options.includes(raw as LeftListSort) ? (raw as LeftListSort) : "favorites";
 };
 
 export const useUIStore = create(

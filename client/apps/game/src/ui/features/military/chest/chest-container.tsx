@@ -88,8 +88,59 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
 
   return (
     <div className="w-full">
+      {/* Hover detail panel — rendered ABOVE the carousel so the tooltip
+          doesn't sit underneath the chest UI / progress bar. Reserved space
+          stays even when nothing is hovered, so the carousel doesn't jump
+          when the player moves between cards. */}
+      <div className="flex w-full justify-center">
+        <div className="flex h-28 w-full max-w-2xl items-center">
+          <AnimatePresence mode="wait">
+            {hoveredRelicInfo && (
+              <motion.div
+                key={hoveredRelicInfo.id}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="w-full"
+              >
+                <div className="rounded-lg border border-gold/40 bg-dark-brown/95 p-4 shadow-xl backdrop-blur-md">
+                  <h3 className="mb-2 text-lg font-bold text-gold">{hoveredRelicInfo.name}</h3>
+                  <div className="mb-3 flex items-center gap-2">
+                    <span
+                      className={`rounded px-2 py-1 text-xs font-semibold ${getRelicTypeColor(hoveredRelicInfo.type)}`}
+                    >
+                      {hoveredRelicInfo.type}
+                    </span>
+                    <span
+                      className={`rounded px-2 py-1 text-xs font-semibold ${getRelicTypeColor(hoveredRelicInfo.type)}`}
+                    >
+                      {hoveredRelicInfo.recipientType}
+                    </span>
+                    <span
+                      className={`rounded px-2 py-1 text-xs font-bold ${
+                        hoveredRelicInfo.level === 2
+                          ? "bg-purple-600/20 text-purple-400"
+                          : "bg-blue-600/20 text-blue-400"
+                      }`}
+                    >
+                      Level {hoveredRelicInfo.level}
+                    </span>
+                  </div>
+                  <p className="mb-2 text-sm">{hoveredRelicInfo.effect}</p>
+                  {hoveredRelicInfo.duration && (
+                    <p className="mb-1 text-xs text-gold/70">Duration: {hoveredRelicInfo.duration}</p>
+                  )}
+                  {hoveredRelicInfo.craftable && <p className="text-xs text-blue-400">✨ Craftable</p>}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
       {/* Carousel Section */}
-      <div className="relative h-32 overflow-visible mb-8">
+      <div className="relative h-32 overflow-visible">
         {/* Gradient overlays for smooth edges */}
         <div className="absolute left-0 top-0 w-20 h-full bg-gradient-to-r from-dark-brown via-dark-brown/80 to-transparent z-10 pointer-events-none" />
         <div className="absolute right-0 top-0 w-20 h-full bg-gradient-to-l from-dark-brown via-dark-brown/80 to-transparent z-10 pointer-events-none" />
@@ -124,67 +175,6 @@ const RelicCarousel = ({ foundRelics }: { foundRelics: number[] }) => {
               </div>
             ))}
           </motion.div>
-        </div>
-      </div>
-
-      {/* Bottom Information Panel */}
-      <div className="w-full flex justify-center">
-        <div className="max-w-2xl w-full h-32 flex items-center">
-          <AnimatePresence mode="wait">
-            {hoveredRelicInfo ? (
-              <motion.div
-                key={hoveredRelicInfo.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ duration: 0.3 }}
-                className="w-full"
-              >
-                <div className="bg-dark-brown/95 backdrop-blur-md p-4 rounded-lg border border-gold/40 shadow-xl">
-                  <h3 className="text-gold font-bold text-lg mb-2">{hoveredRelicInfo.name}</h3>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${getRelicTypeColor(hoveredRelicInfo.type)}`}
-                    >
-                      {hoveredRelicInfo.type}
-                    </span>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-semibold ${getRelicTypeColor(hoveredRelicInfo.type)}`}
-                    >
-                      {hoveredRelicInfo.recipientType}
-                    </span>
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-bold ${
-                        hoveredRelicInfo.level === 2
-                          ? "bg-purple-600/20 text-purple-400"
-                          : "bg-blue-600/20 text-blue-400"
-                      }`}
-                    >
-                      Level {hoveredRelicInfo.level}
-                    </span>
-                  </div>
-                  <p className=" text-sm mb-2">{hoveredRelicInfo.effect}</p>
-                  {hoveredRelicInfo.duration && (
-                    <p className="text-gold/70 text-xs mb-1">Duration: {hoveredRelicInfo.duration}</p>
-                  )}
-                  {hoveredRelicInfo.craftable && <p className="text-blue-400 text-xs">✨ Craftable</p>}
-                </div>
-              </motion.div>
-            ) : (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="w-full flex items-start justify-center pt-4"
-              >
-                <div className="text-center text-gold/50">
-                  <div className="text-3xl mb-2">👆</div>
-                  <p className="text-sm">Drag to browse • Hover to see details</p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </div>
     </div>

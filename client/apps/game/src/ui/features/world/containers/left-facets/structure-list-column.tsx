@@ -23,9 +23,8 @@ import { createPortal } from "react-dom";
 import { EmpireSuggestions } from "./empire-suggestions";
 
 // One-liner descriptions exposed via the option tooltip so the player can
-// hover and find out what "Smart" actually means without leaving the menu.
+// hover and learn what each mode does without leaving the menu.
 const SORT_DESCRIPTIONS: Record<LeftListSort, string> = {
-  smart: "Attention first (red → amber → green), then favorites, then name.",
   favorites: "Favorites at the top, then alphabetical.",
   level: "Highest realm level first.",
   population: "Highest population % first.",
@@ -134,7 +133,7 @@ const SortMenu = memo(
       };
     }, [open]);
 
-    const activeLabel = SORT_OPTIONS.find((option) => option.value === value)?.label ?? "Smart";
+    const activeLabel = SORT_OPTIONS.find((option) => option.value === value)?.label ?? "Favorites";
 
     return (
       <>
@@ -200,7 +199,7 @@ SortMenu.displayName = "SortMenu";
 /**
  * The left rail. A flat, filterable, sortable list of every owned structure
  * with the Empire-wide Suggested Actions panel pinned below. Default filter
- * is realms-only; sort defaults to "smart" (attention first, then favorites,
+ * is realms-only; sort defaults to "favorites" (starred first, then
  * then alphabetical).
  *
  * Active structure always renders at the top regardless of sort, so the
