@@ -10,7 +10,7 @@ import {
   formatUsedBuildingTilesLabel,
 } from "@/ui/features/world/containers/structure-status";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
-import { getLevelName, type ID, RealmLevels, StructureType } from "@bibliothecadao/types";
+import { type ID, StructureType } from "@bibliothecadao/types";
 import Castle from "lucide-react/dist/esm/icons/castle";
 import Crown from "lucide-react/dist/esm/icons/crown";
 import Hexagon from "lucide-react/dist/esm/icons/hexagon";
@@ -132,10 +132,10 @@ export const StructureStatusRow = memo(
     const capabilities = resolveStructureUiCapabilities(structure.structure);
     const groupConfig = structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor] : null;
     const statusTone = resolveStatusTone(structure);
-    const levelAbbrev = capabilities.hasPopulationDetails
-      ? getLevelName(
-          Math.min(Math.max(structure.realmLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels,
-        ).charAt(0)
+    // Use numeric realm level (1..6) instead of the letter abbreviation —
+    // shorter, sortable at a glance, no Settlement-vs-Hamlet mental lookup.
+    const levelBadge = capabilities.hasPopulationDetails && Number.isFinite(structure.realmLevel)
+      ? String(Math.max(1, Math.trunc(structure.realmLevel)))
       : null;
     const populationLabel = capabilities.hasPopulationDetails
       ? formatPopulationStatusLabel(structure.population, structure.populationCapacity)
@@ -183,7 +183,7 @@ export const StructureStatusRow = memo(
         aria-pressed={isActive}
         title={structure.displayName}
       >
-        {/* Name row */}
+        {/* Row 1 — name + actions: star · icon · name · chevrons · info · pencil */}
         <div className="flex items-center gap-1.5 px-2.5 pt-2">
           <button
             type="button"
@@ -221,9 +221,12 @@ export const StructureStatusRow = memo(
           >
             {structure.displayName}
           </span>
-          {!isFull && levelAbbrev && (
-            <span className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1 text-[9px] uppercase tracking-wide text-gold/70">
-              {levelAbbrev}
+          {!isFull && levelBadge && (
+            <span
+              className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1.5 text-[10px] font-semibold tabular-nums text-gold/80"
+              title="Realm level"
+            >
+              {levelBadge}
             </span>
           )}
           {hasAttention && (
@@ -233,14 +236,36 @@ export const StructureStatusRow = memo(
               title="Needs attention"
             />
           )}
+          {isFull && isRealm && (
+            <div className="flex-shrink-0" onClick={(event) => event.stopPropagation()}>
+              <StructureRealmActions structureEntityId={structure.entityId} />
+            </div>
+          )}
+          {isFull && onRequestRename && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRequestRename(structure.entityId);
+              }}
+              className="flex-shrink-0 rounded border border-gold/30 p-0.5 text-gold/70 hover:text-gold"
+              title="Rename structure"
+              aria-label="Rename structure"
+            >
+              <Pencil className="h-3 w-3" />
+            </button>
+          )}
         </div>
 
-        {/* Stats row — only in `full` */}
-        {isFull && (levelAbbrev || populationLabel || buildingTilesLabel || isActive) && (
-          <div className="flex items-center gap-1.5 px-2.5 pt-1.5 pb-2">
-            {levelAbbrev && (
-              <span className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1 text-[9px] uppercase tracking-wide text-gold/70">
-                {levelAbbrev}
+        {/* Row 2 — stats: numeric level · pop · tiles */}
+        {isFull && (levelBadge || populationLabel || buildingTilesLabel) && (
+          <div className="flex items-center gap-1.5 px-2.5 pt-1 pb-2">
+            {levelBadge && (
+              <span
+                className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1.5 text-[10px] font-semibold tabular-nums text-gold/80"
+                title="Realm level"
+              >
+                {levelBadge}
               </span>
             )}
             {populationLabel && (
@@ -249,32 +274,9 @@ export const StructureStatusRow = memo(
             {buildingTilesLabel && (
               <InlineStat icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
             )}
-            {isActive && onRequestRename && (
-              <button
-                type="button"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onRequestRename(structure.entityId);
-                }}
-                className="ml-auto flex-shrink-0 rounded border border-gold/30 p-0.5 text-gold/70 hover:text-gold"
-                title="Rename structure"
-                aria-label="Rename structure"
-              >
-                <Pencil className="h-3 w-3" />
-              </button>
-            )}
           </div>
         )}
 
-        {/* Realm action chevrons — full variant only, realms only */}
-        {isFull && isRealm && (
-          <div
-            className="flex items-center justify-end px-2.5 pb-2"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <StructureRealmActions structureEntityId={structure.entityId} />
-          </div>
-        )}
       </div>
     );
   },

@@ -4,8 +4,10 @@ import type { StructureWithMetadata } from "@/ui/features/world/containers/top-h
 import { type ID, StructureType } from "@bibliothecadao/types";
 
 /**
- * Returns structures matching `filter`. `"all"` is a passthrough; otherwise we
- * keep entries whose `category` matches the requested StructureType.
+ * Returns structures matching `filter`. `"all"` keeps everything (only used
+ * when the player owns nothing in the currently-selected category and the
+ * rail falls back to "show what you have"); otherwise we keep entries whose
+ * `category` matches the requested StructureType.
  */
 export const filterStructures = (
   structures: StructureWithMetadata[],
@@ -81,12 +83,14 @@ export const sortStructures = (
   });
 };
 
-/** Categories you can scope the sidebar/rail to. Index matches StructureType. */
+/** Category filter chips, ordered. "All" is intentionally excluded — the
+ *  player always sees exactly one category. The rail derives which chips to
+ *  render from what they actually own; categories with zero structures don't
+ *  get a chip. */
 export const CATEGORY_FILTER_OPTIONS: Array<{
-  value: LeftListFilter;
+  value: StructureType;
   label: string;
 }> = [
-  { value: "all", label: "All" },
   { value: StructureType.Realm, label: "Realms" },
   { value: StructureType.Village, label: "Villages" },
   { value: StructureType.FragmentMine, label: "Mines" },

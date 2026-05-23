@@ -14,43 +14,60 @@ import {
 } from "@/ui/features/world/containers/structure-list-utils";
 import { Position } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { type ID } from "@bibliothecadao/types";
+import { type ID, StructureType } from "@bibliothecadao/types";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { EmpireSuggestions } from "./empire-suggestions";
 
-const FilterChips = memo(
-  ({
-    value,
-    onChange,
-  }: {
-    value: LeftListFilter;
-    onChange: (filter: LeftListFilter) => void;
-  }) => (
-    <div className={cn("pointer-events-auto flex flex-wrap items-center gap-1 rounded-xl p-1", OVERLAY_SURFACE_BASE)}>
-      {CATEGORY_FILTER_OPTIONS.map((option) => {
-        const isActive = option.value === value;
-        return (
-          <button
-            key={String(option.value)}
-            type="button"
-            onClick={() => onChange(option.value)}
-            className={cn(
-              "rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] transition",
-              isActive
-                ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_8px_rgba(223,170,84,0.25)]"
-                : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold",
-            )}
-            aria-pressed={isActive}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
-  ),
+// Bundle filter chips + sort menu into one bar so the chrome above the list
+// reads as one control surface. We pass `availableCategories` so the rail
+// only shows chips for categories the player actually owns.
+interface ListControlsProps {
+  availableCategories: StructureType[];
+  filterValue: LeftListFilter;
+  onFilterChange: (filter: LeftListFilter) => void;
+  sortValue: LeftListSort;
+  onSortChange: (sort: LeftListSort) => void;
+}
+
+const ListControls = memo(
+  ({ availableCategories, filterValue, onFilterChange, sortValue, onSortChange }: ListControlsProps) => {
+    return (
+      <div
+        className={cn(
+          "pointer-events-auto flex flex-wrap items-center justify-between gap-2 rounded-xl px-1.5 py-1",
+          OVERLAY_SURFACE_BASE,
+        )}
+      >
+        <div className="flex flex-wrap items-center gap-1">
+          {CATEGORY_FILTER_OPTIONS.filter((option) =>
+            availableCategories.includes(option.value),
+          ).map((option) => {
+            const isActive = option.value === filterValue;
+            return (
+              <button
+                key={String(option.value)}
+                type="button"
+                onClick={() => onFilterChange(option.value)}
+                className={cn(
+                  "rounded-md border px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] transition",
+                  isActive
+                    ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_8px_rgba(223,170,84,0.25)]"
+                    : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold",
+                )}
+                aria-pressed={isActive}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        <SortMenu value={sortValue} onChange={onSortChange} />
+      </div>
+    );
+  },
 );
-FilterChips.displayName = "FilterChips";
+ListControls.displayName = "ListControls";
 
 const SortMenu = memo(
   ({
@@ -170,10 +187,39 @@ export const StructureListColumn = memo(() => {
     [favorites],
   );
 
+  // Which categories does the player actually own? We use this both to render
+  // only the relevant chips and to auto-fall-back the filter when the player
+  // has nothing in their last-saved category (e.g. lost their last realm).
+  const availableCategories = useMemo(() => {
+    const present = new Set<StructureType>();
+    for (const structure of allStructures) {
+      present.add(structure.category as StructureType);
+    }
+    return [
+      StructureType.Realm,
+      StructureType.Village,
+      StructureType.FragmentMine,
+      StructureType.Hyperstructure,
+    ].filter((category) => present.has(category));
+  }, [allStructures]);
+
+  // If the saved filter no longer has any structures, fall back to the first
+  // category the player owns — never an empty list under a chip they can't
+  // see.
+  const effectiveFilter: LeftListFilter = useMemo(() => {
+    if (leftListFilter === "all") {
+      return availableCategories[0] ?? "all";
+    }
+    if (availableCategories.includes(leftListFilter as StructureType)) {
+      return leftListFilter;
+    }
+    return availableCategories[0] ?? "all";
+  }, [availableCategories, leftListFilter]);
+
   const visibleStructures = useMemo(() => {
-    const filtered = filterStructures(allStructures, leftListFilter);
+    const filtered = filterStructures(allStructures, effectiveFilter);
     return sortStructures(filtered, leftListSort, structureEntityId, favoriteOrder);
-  }, [allStructures, leftListFilter, leftListSort, structureEntityId, favoriteOrder]);
+  }, [allStructures, effectiveFilter, leftListSort, structureEntityId, favoriteOrder]);
 
   const handleSelectStructure = useCallback(
     (entityId: ID) => {
@@ -209,17 +255,19 @@ export const StructureListColumn = memo(() => {
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      <FilterChips value={leftListFilter} onChange={setLeftListFilter} />
-      <div className="flex items-center justify-between gap-2 px-1">
-        <span className={cn(HUD_LABEL, "text-gold/55")}>
-          {visibleStructures.length} {visibleStructures.length === 1 ? "structure" : "structures"}
-        </span>
-        <SortMenu value={leftListSort} onChange={setLeftListSort} />
-      </div>
+      <ListControls
+        availableCategories={availableCategories}
+        filterValue={effectiveFilter}
+        onFilterChange={setLeftListFilter}
+        sortValue={leftListSort}
+        onSortChange={setLeftListSort}
+      />
       {visibleStructures.length === 0 ? (
         <p className={cn(HUD_BODY_MUTED, "px-1")}>No structures match this filter.</p>
       ) : (
-        <div className="flex flex-col gap-2">
+        // Cap the list to roughly three card heights — the rest scrolls. Each
+        // card is ~95px (two compact rows + chrome) + 8px gap; 3 rows ≈ 300px.
+        <div className="flex max-h-[312px] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           {visibleStructures.map((structure) => (
             <StructureStatusRow
               key={structure.entityId}
