@@ -321,6 +321,7 @@ const LocalTilePanel = () => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+  const previewBuilding = useUIStore((state) => state.previewBuilding);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const mode = useGameModeConfig();
 
@@ -493,6 +494,23 @@ const LocalTilePanel = () => {
       typeof building.outer_entity_id === "bigint" ? Number(building.outer_entity_id) : building.outer_entity_id;
     return playerStructures.some((structure) => structure.entityId === ownerId);
   }, [building, playerStructures]);
+
+  // Cancel any active "build another" preview when the player picks a
+  // different tile. Otherwise the preview from one building leaks into the
+  // next click and ghost-places a new building on an occupied tile, which
+  // the player reads as the panel being broken.
+  useEffect(() => {
+    setPreviewBuilding(null);
+    // We intentionally only run on tile changes — the preview is local to a
+    // building selection, and resetting on every render would block the
+    // pickaxe toggle below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    selectedBuildingHex?.outerCol,
+    selectedBuildingHex?.outerRow,
+    selectedBuildingHex?.innerCol,
+    selectedBuildingHex?.innerRow,
+  ]);
 
   const canAddProduction =
     producedResource !== undefined &&
@@ -825,30 +843,45 @@ const LocalTilePanel = () => {
             )}
 
             <div className="flex items-center justify-center gap-1.5">
-              {buildingCategory !== null && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!canBuildAnother) return;
-                    setPreviewBuilding({ type: buildingCategory, resource: producedResource });
-                  }}
-                  disabled={!canBuildAnother || isActionLoading}
-                  className={cn(
-                    "inline-flex h-7 w-7 items-center justify-center rounded-md border shadow transition",
-                    canBuildAnother
-                      ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
-                      : "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed",
-                  )}
-                  title={
-                    canBuildAnother
-                      ? "Build another — pick an empty tile to place it"
-                      : "Not enough resources to build another"
-                  }
-                  aria-label="Build another"
-                >
-                  <Pickaxe className="h-3.5 w-3.5" />
-                </button>
-              )}
+              {buildingCategory !== null && (() => {
+                const isPreviewing =
+                  previewBuilding?.type === buildingCategory &&
+                  previewBuilding?.resource === producedResource;
+                return (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isPreviewing) {
+                        // Toggle off — exit build mode and unstick clicks.
+                        setPreviewBuilding(null);
+                        return;
+                      }
+                      if (!canBuildAnother) return;
+                      setPreviewBuilding({ type: buildingCategory, resource: producedResource });
+                    }}
+                    disabled={!isPreviewing && (!canBuildAnother || isActionLoading)}
+                    className={cn(
+                      "inline-flex h-7 w-7 items-center justify-center rounded-md border shadow transition",
+                      isPreviewing
+                        ? "border-emerald-400 bg-emerald-500/30 text-emerald-100 shadow-[0_0_10px_rgba(110,231,183,0.5)] animate-pulse"
+                        : canBuildAnother
+                          ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
+                          : "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed",
+                    )}
+                    title={
+                      isPreviewing
+                        ? "Cancel build — click again to place a new building"
+                        : canBuildAnother
+                          ? "Build another — pick an empty tile to place it"
+                          : "Not enough resources to build another"
+                    }
+                    aria-label={isPreviewing ? "Cancel build" : "Build another"}
+                    aria-pressed={isPreviewing}
+                  >
+                    <Pickaxe className="h-3.5 w-3.5" />
+                  </button>
+                );
+              })()}
               {canAddProduction && (
                 <button
                   type="button"
