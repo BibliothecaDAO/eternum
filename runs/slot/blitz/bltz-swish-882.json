@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26331040181-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-05-23T11:06:11.441Z",
-  "updatedAt": "2026-05-23T11:07:51.394Z",
+  "updatedAt": "2026-05-23T11:08:00.488Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -54,9 +54,10 @@
     {
       "id": "reserve-blitz-hyperstructures",
       "title": "Reserving hyperstructures",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Reserving hyperstructures",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Reserving hyperstructures started",
+      "startedAt": "2026-05-23T11:08:00.488Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -82,5 +83,13 @@
     "entryTokenAddress": "0x26bbfecfdea882a6f41c07f43e26f1f989b7aa86ca512d072d3d83452167e24",
     "configureTxHash": "0x6b77350c7e82596a65f93c433a2070f708203981fff577fbf2edf4514ece3db",
     "worldConfigTxHash": "0x6b77350c7e82596a65f93c433a2070f708203981fff577fbf2edf4514ece3db"
+  },
+  "activeLease": {
+    "launchRequestId": "26331040181-1",
+    "workflowRunId": 26331040181,
+    "workflowRunAttempt": 1,
+    "stepId": "reserve-blitz-hyperstructures",
+    "acquiredAt": "2026-05-23T11:08:00.488Z",
+    "expiresAt": "2026-05-23T11:53:00.488Z"
   }
 }
