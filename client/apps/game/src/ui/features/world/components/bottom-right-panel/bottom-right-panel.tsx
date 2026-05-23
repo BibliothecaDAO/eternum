@@ -55,6 +55,7 @@ import Info from "lucide-react/dist/esm/icons/info";
 import Loader from "lucide-react/dist/esm/icons/loader";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import PauseIcon from "lucide-react/dist/esm/icons/pause";
+import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 import Play from "lucide-react/dist/esm/icons/play";
 import Plus from "lucide-react/dist/esm/icons/plus";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
@@ -319,6 +320,7 @@ const LocalTilePanel = () => {
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const mode = useGameModeConfig();
 
@@ -660,207 +662,225 @@ const LocalTilePanel = () => {
     </div>
   );
 
+  // "Build another" affordance — gated by owner + sufficient resources for
+  // every entry in the build cost. The player still needs to pick an empty
+  // tile to actually place it (we just toggle the preview building).
+  const canBuildAnother = (() => {
+    if (!isOwnedByPlayer) return false;
+    if (buildCost.length === 0) return false;
+    return buildCost.every((entry) => {
+      const balanceInfo = getBalance(
+        structureEntityId ?? 0,
+        entry.resource,
+        currentDefaultTick,
+        setup.components,
+      );
+      return divideByPrecision(balanceInfo.balance) >= entry.amount;
+    });
+  })();
+
   return (
     <>
-      <InfoBubble title={panelTitle} cue={headerAction}>
-        {isPaused && isOwnedByPlayer ? (
-          <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
-              ⚠️ Production paused
-            </span>
-            <Button
-              size="xs"
-              variant="outline"
-              disabled={isActionLoading}
-              onClick={handleToggleProduction}
-              className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
-            >
-              ▶ Resume
-            </Button>
-          </div>
-        ) : (
-          <p className={HUD_BODY_MUTED}>
-            {producedResourceName ? `Producing ${producedResourceName}.` : "No active production."}
-          </p>
-        )}
+      {/* Building bubble — merges the tile header with the type's stats. The
+          name + coords + Re-sync live in the bubble's title/cue. */}
+      <InfoBubble title={panelTitle} cue={headerAction} icon={Factory}>
+        <div className="flex flex-col gap-2.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-2.5">
+          {isPaused && isOwnedByPlayer && (
+            <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
+                ⚠️ Production paused
+              </span>
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={isActionLoading}
+                onClick={handleToggleProduction}
+                className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
+              >
+                ▶ Resume
+              </Button>
+            </div>
+          )}
+
+          {producedResource && producedResourceName && (
+            <SectionRow label="Produces / sec">
+              <span className={cn("font-semibold text-green-300", HUD_VALUE)}>+{producedPerTick}</span>
+              <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
+              <button
+                type="button"
+                className="text-xxs uppercase tracking-[0.2em] text-gold/60"
+                onMouseEnter={() =>
+                  setTooltip({
+                    position: "right",
+                    content: (
+                      <div className="space-y-2">
+                        <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed by</p>
+                        {consumedBy.length > 0 ? (
+                          <div className="grid grid-cols-3 gap-2">
+                            {consumedBy.map((resourceId) => {
+                              const name =
+                                findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
+                              return (
+                                <div
+                                  key={resourceId}
+                                  className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
+                                >
+                                  <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                                  <span className="text-xxs text-gold/80">{name}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-xxs text-gold/60">Not consumed by other buildings.</p>
+                        )}
+                      </div>
+                    ),
+                  })
+                }
+                onMouseLeave={() => setTooltip(null)}
+                aria-label="Show consumers"
+              >
+                <Info className="h-4 w-4 text-gold/70" />
+              </button>
+            </SectionRow>
+          )}
+
+          {ongoingCost.length > 0 && (
+            <SectionRow label="Consumes / sec">
+              {ongoingCost.map((entry, index) => {
+                const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                return (
+                  <span
+                    key={`${entry.resource}-${index}`}
+                    className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-xxs"
+                    title={name}
+                  >
+                    <span className="font-semibold text-red-200">-{entry.amount}</span>
+                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                  </span>
+                );
+              })}
+            </SectionRow>
+          )}
+
+          {populationChips.length > 0 && (
+            <SectionRow label="Population">
+              {populationChips.map((chip) => (
+                <span
+                  key={chip.key}
+                  className="rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold"
+                >
+                  {chip.label}
+                </span>
+              ))}
+            </SectionRow>
+          )}
+        </div>
       </InfoBubble>
 
-      {/* Building details — type + produces / consumes / population. Each
-          section auto-hides when there's nothing to show, so a pure
-          producer doesn't get a "no inputs" placeholder. */}
-      {(producedResourceName || ongoingCost.length > 0 || populationChips.length > 0) && (
-        <InfoBubble title="Building" icon={Factory}>
+      {/* Actions bubble — merges the build cost (so the player sees what
+          building another costs) with the live action buttons. The pickaxe
+          fires a "build another" by setting the preview building; clicking
+          a target tile then places it. */}
+      {isOwnedByPlayer && (
+        <InfoBubble title="Actions" icon={Hammer}>
           <div className="flex flex-col gap-2.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-2.5">
-            {producedResource && producedResourceName && (
-              <SectionRow label="Produces / sec">
-                <span className={cn("font-semibold text-green-300", HUD_VALUE)}>+{producedPerTick}</span>
-                <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
-                <button
-                  type="button"
-                  className="text-xxs uppercase tracking-[0.2em] text-gold/60"
-                  onMouseEnter={() =>
-                    setTooltip({
-                      position: "right",
-                      content: (
-                        <div className="space-y-2">
-                          <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed by</p>
-                          {consumedBy.length > 0 ? (
-                            <div className="grid grid-cols-3 gap-2">
-                              {consumedBy.map((resourceId) => {
-                                const name =
-                                  findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
-                                return (
-                                  <div
-                                    key={resourceId}
-                                    className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
-                                  >
-                                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                                    <span className="text-xxs text-gold/80">{name}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <p className="text-xxs text-gold/60">Not consumed by other buildings.</p>
-                          )}
-                        </div>
-                      ),
-                    })
-                  }
-                  onMouseLeave={() => setTooltip(null)}
-                  aria-label="Show consumers"
-                >
-                  <Info className="h-4 w-4 text-gold/70" />
-                </button>
-              </SectionRow>
-            )}
-
-            {ongoingCost.length > 0 && (
-              <SectionRow label="Consumes / sec">
-                {ongoingCost.map((entry, index) => {
+            {buildCost.length > 0 && (
+              <SectionRow label="Build cost">
+                {buildCost.map((entry, index) => {
                   const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                  const balanceInfo = getBalance(
+                    structureEntityId ?? 0,
+                    entry.resource,
+                    currentDefaultTick,
+                    setup.components,
+                  );
+                  const balance = divideByPrecision(balanceInfo.balance);
+                  const hasEnough = balance >= entry.amount;
                   return (
                     <span
-                      key={`${entry.resource}-${index}`}
-                      className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-xxs"
+                      key={`build-cost-${entry.resource}-${index}`}
+                      className={cn(
+                        "flex items-center gap-1 rounded px-1.5 py-1 text-[10px] shadow-inner",
+                        hasEnough
+                          ? "bg-gold/5 border border-gold/10 text-gold/80"
+                          : "bg-red-900/15 border border-red-500/30 text-red-100",
+                      )}
                       title={name}
                     >
-                      <span className="font-semibold text-red-200">-{entry.amount}</span>
                       <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                      <span className={cn(hasEnough ? "font-semibold text-gold" : "text-red-200")}>
+                        {formatResourceAmount(balance)}
+                      </span>
+                      <span className={cn(hasEnough ? "text-gold/70" : "text-red-200")}>/ {entry.amount}</span>
                     </span>
                   );
                 })}
               </SectionRow>
             )}
 
-            {populationChips.length > 0 && (
-              <SectionRow label="Population">
-                {populationChips.map((chip) => (
-                  <span
-                    key={chip.key}
-                    className="rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold"
-                  >
-                    {chip.label}
-                  </span>
-                ))}
-              </SectionRow>
-            )}
-          </div>
-        </InfoBubble>
-      )}
-
-      {/* Build cost — its own bubble so the player reads cost separately
-          from the building's runtime behavior. */}
-      {buildCost.length > 0 && (
-        <InfoBubble title="Build cost" icon={Hammer}>
-          <div className="flex flex-wrap items-center gap-1.5">
-            {buildCost.map((entry, index) => {
-              const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
-              const balanceInfo = getBalance(
-                structureEntityId ?? 0,
-                entry.resource,
-                currentDefaultTick,
-                setup.components,
-              );
-              const balance = divideByPrecision(balanceInfo.balance);
-              const hasEnough = balance >= entry.amount;
-              return (
-                <span
-                  key={`build-cost-${entry.resource}-${index}`}
-                  className={cn(
-                    "flex items-center gap-1 rounded px-1.5 py-1 text-[10px] shadow-inner",
-                    hasEnough
-                      ? "bg-gold/5 border border-gold/10 text-gold/80"
-                      : "bg-red-900/15 border border-red-500/30 text-red-100",
-                  )}
-                  title={name}
+            <div className="flex items-center justify-end gap-1.5">
+              {canBuildAnother && buildingCategory !== null && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewBuilding({ type: buildingCategory, resource: producedResource });
+                  }}
+                  disabled={isActionLoading}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/80 bg-amber-400/90 text-black shadow transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+                  title="Build another — pick an empty tile to place it"
+                  aria-label="Build another"
                 >
-                  <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                  <span className={cn(hasEnough ? "font-semibold text-gold" : "text-red-200")}>
-                    {formatResourceAmount(balance)}
-                  </span>
-                  <span className={cn(hasEnough ? "text-gold/70" : "text-red-200")}>/ {entry.amount}</span>
-                </span>
-              );
-            })}
+                  <Pickaxe className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {canAddProduction && (
+                <button
+                  type="button"
+                  onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
+                  disabled={isActionLoading}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gold/40 bg-gold/10 text-gold shadow transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  title="Add production rule"
+                  aria-label="Add production rule"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {buildingCategory !== BuildingType.WorkersHut && (
+                <button
+                  type="button"
+                  onClick={handleToggleProduction}
+                  disabled={isActionLoading}
+                  className={cn(
+                    "inline-flex h-7 w-7 items-center justify-center rounded-md border text-white shadow transition disabled:cursor-not-allowed disabled:opacity-60",
+                    isPaused
+                      ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
+                      : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
+                  )}
+                  title={isPaused ? "Resume" : "Pause"}
+                  aria-label={isPaused ? "Resume" : "Pause"}
+                >
+                  {isPaused ? <Play className="h-3.5 w-3.5" /> : <PauseIcon className="h-3.5 w-3.5" />}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleDestroy}
+                disabled={isActionLoading}
+                className={cn(
+                  "inline-flex h-7 items-center gap-1 rounded-md border border-red-700/80 bg-red-900/90 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60",
+                  !showDestroyConfirm && "w-7 justify-center px-0",
+                )}
+                title={showDestroyConfirm ? "Confirm delete" : "Delete"}
+                aria-label={showDestroyConfirm ? "Confirm delete" : "Delete"}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {showDestroyConfirm && <span>OK</span>}
+              </button>
+            </div>
           </div>
         </InfoBubble>
-      )}
-
-      {/* Action row — icon-only buttons clustered into the header cue area
-          isn't quite right because they need to stay visible at all times.
-          Instead render a slim bubble with three same-size square buttons. */}
-      {isOwnedByPlayer && (
-        <div
-          className={cn(
-            "pointer-events-auto flex items-center justify-end gap-1.5 rounded-xl px-2 py-1.5",
-            OVERLAY_SURFACE_BASE,
-          )}
-        >
-          {canAddProduction && (
-            <button
-              type="button"
-              onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
-              disabled={isActionLoading}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/80 bg-amber-400/90 text-black shadow transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
-              title="Add production"
-              aria-label="Add production"
-            >
-              <Plus className="h-3.5 w-3.5" />
-            </button>
-          )}
-          {buildingCategory !== BuildingType.WorkersHut && (
-            <button
-              type="button"
-              onClick={handleToggleProduction}
-              disabled={isActionLoading}
-              className={cn(
-                "inline-flex h-7 w-7 items-center justify-center rounded-md border text-white shadow transition disabled:cursor-not-allowed disabled:opacity-60",
-                isPaused
-                  ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
-                  : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
-              )}
-              title={isPaused ? "Resume" : "Pause"}
-              aria-label={isPaused ? "Resume" : "Pause"}
-            >
-              {isPaused ? <Play className="h-3.5 w-3.5" /> : <PauseIcon className="h-3.5 w-3.5" />}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={handleDestroy}
-            disabled={isActionLoading}
-            className={cn(
-              "inline-flex h-7 items-center gap-1 rounded-md border border-red-700/80 bg-red-900/90 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60",
-              !showDestroyConfirm && "w-7 justify-center px-0",
-            )}
-            title={showDestroyConfirm ? "Confirm delete" : "Delete"}
-            aria-label={showDestroyConfirm ? "Confirm delete" : "Delete"}
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            {showDestroyConfirm && <span>OK</span>}
-          </button>
-        </div>
       )}
     </>
   );
