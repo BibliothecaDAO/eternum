@@ -54,10 +54,11 @@ import Hammer from "lucide-react/dist/esm/icons/hammer";
 import Info from "lucide-react/dist/esm/icons/info";
 import Loader from "lucide-react/dist/esm/icons/loader";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
+import PauseIcon from "lucide-react/dist/esm/icons/pause";
+import Play from "lucide-react/dist/esm/icons/play";
+import Plus from "lucide-react/dist/esm/icons/plus";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
-import Shield from "lucide-react/dist/esm/icons/shield";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
-import Users from "lucide-react/dist/esm/icons/users";
 import { toast } from "sonner";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, LEFT_ACTIONS_GAP_FROM_MINIMAP, MINIMAP_SIZE } from "./constants";
@@ -627,51 +628,15 @@ const LocalTilePanel = () => {
     );
   }
 
-  // Castle tile — header strip + realm summary chips + the existing upgrade
-  // card. Two bubbles instead of one so the player sees realm stats next to
-  // the upgrade progress.
+  // Castle tile — the realm rail already prints level / population / guards
+  // so we don't repeat them here. Just the header strip (coords + Re-sync)
+  // and the upgrade card, which carries its own production + missing-
+  // resource breakdown.
   if (isCastleTile) {
-    const castleStructure = playerStructures.find((entry) => entry.entityId === structureEntityId);
-    const castleBase = castleStructure?.structure?.base;
-    const castleLevel = Number(castleBase?.level ?? 0);
-    const castleStructureKey = (() => {
-      try {
-        return getEntityIdFromKeys([BigInt(structureEntityId ?? 0)]);
-      } catch {
-        return null;
-      }
-    })();
-    const castleBuildings = castleStructureKey
-      ? getComponentValue(setup.components.StructureBuildings, castleStructureKey)
-      : null;
-    const castlePopulation = Number(castleBuildings?.population.current ?? 0);
-    const castleCapacity = Number(castleBuildings?.population.max ?? 0);
-    const castleGuards = Number(castleBase?.troop_guard_count ?? 0);
-    const castleGuardMax = Number(castleBase?.troop_max_guard_count ?? 0);
-
     return (
-      <>
-        <InfoBubble title={panelTitle} cue={headerAction}>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold">
-              Level {castleLevel}
-            </span>
-            <span className="inline-flex items-center gap-1 rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold tabular-nums">
-              <Users className="h-3 w-3 text-gold/55" />
-              {castlePopulation}/{castleCapacity}
-            </span>
-            {castleGuardMax > 0 && (
-              <span className="inline-flex items-center gap-1 rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold tabular-nums">
-                <Shield className="h-3 w-3 text-gold/55" />
-                {castleGuards}/{castleGuardMax}
-              </span>
-            )}
-          </div>
-        </InfoBubble>
-        <InfoBubble title="Upgrade" icon={Hammer} bodyClassName="pt-0">
-          <RealmUpgradeCompact />
-        </InfoBubble>
-      </>
+      <InfoBubble title={panelTitle} cue={headerAction} bodyClassName="pt-0">
+        <RealmUpgradeCompact />
+      </InfoBubble>
     );
   }
 
@@ -720,14 +685,14 @@ const LocalTilePanel = () => {
         )}
       </InfoBubble>
 
-      {/* Building details — produces · consumes · population · build cost ·
-          actions in a single bubble with hairline-separated rows. */}
-      <InfoBubble title="Building" icon={Factory}>
-        <div className="flex flex-col gap-2.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-2.5">
-          {/* Produces row */}
-          <SectionRow label="Produces / sec">
-            {producedResource && producedResourceName ? (
-              <>
+      {/* Building details — type + produces / consumes / population. Each
+          section auto-hides when there's nothing to show, so a pure
+          producer doesn't get a "no inputs" placeholder. */}
+      {(producedResourceName || ongoingCost.length > 0 || populationChips.length > 0) && (
+        <InfoBubble title="Building" icon={Factory}>
+          <div className="flex flex-col gap-2.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-2.5">
+            {producedResource && producedResourceName && (
+              <SectionRow label="Produces / sec">
                 <span className={cn("font-semibold text-green-300", HUD_VALUE)}>+{producedPerTick}</span>
                 <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
                 <button
@@ -767,119 +732,136 @@ const LocalTilePanel = () => {
                 >
                   <Info className="h-4 w-4 text-gold/70" />
                 </button>
-              </>
-            ) : (
-              <span className={HUD_BODY_MUTED}>No production</span>
+              </SectionRow>
             )}
-          </SectionRow>
 
-          {/* Consumes row — only when present */}
-          {ongoingCost.length > 0 && (
-            <SectionRow label="Consumes / sec">
-              {ongoingCost.map((entry, index) => {
-                const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
-                return (
-                  <span
-                    key={`${entry.resource}-${index}`}
-                    className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-xxs"
-                    title={name}
-                  >
-                    <span className="font-semibold text-red-200">-{entry.amount}</span>
-                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                  </span>
-                );
-              })}
-            </SectionRow>
-          )}
-
-          {/* Population row — only when present */}
-          {populationChips.length > 0 && (
-            <SectionRow label="Population">
-              {populationChips.map((chip) => (
-                <span
-                  key={chip.key}
-                  className="rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold"
-                >
-                  {chip.label}
-                </span>
-              ))}
-            </SectionRow>
-          )}
-
-          {/* Build cost row */}
-          {buildCost.length > 0 && (
-            <SectionRow label="Build cost">
-              {buildCost.map((entry, index) => {
-                const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
-                const balanceInfo = getBalance(
-                  structureEntityId ?? 0,
-                  entry.resource,
-                  currentDefaultTick,
-                  setup.components,
-                );
-                const balance = divideByPrecision(balanceInfo.balance);
-                const hasEnough = balance >= entry.amount;
-                return (
-                  <span
-                    key={`build-cost-${entry.resource}-${index}`}
-                    className={cn(
-                      "flex items-center gap-1 rounded px-1.5 py-1 text-[10px] shadow-inner",
-                      hasEnough
-                        ? "bg-gold/5 border border-gold/10 text-gold/80"
-                        : "bg-red-900/15 border border-red-500/30 text-red-100",
-                    )}
-                    title={name}
-                  >
-                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                    <span className={cn(hasEnough ? "font-semibold text-gold" : "text-red-200")}>
-                      {formatResourceAmount(balance)}
+            {ongoingCost.length > 0 && (
+              <SectionRow label="Consumes / sec">
+                {ongoingCost.map((entry, index) => {
+                  const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                  return (
+                    <span
+                      key={`${entry.resource}-${index}`}
+                      className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-xxs"
+                      title={name}
+                    >
+                      <span className="font-semibold text-red-200">-{entry.amount}</span>
+                      <ResourceIcon withTooltip={false} resource={name} size="xs" />
                     </span>
-                    <span className={cn(hasEnough ? "text-gold/70" : "text-red-200")}>/ {entry.amount}</span>
-                  </span>
-                );
-              })}
-            </SectionRow>
-          )}
+                  );
+                })}
+              </SectionRow>
+            )}
 
-          {/* Actions row — only for player-owned tiles */}
-          {isOwnedByPlayer && (
-            <SectionRow label="Actions">
-              {canAddProduction && (
-                <Button
-                  size="xs"
-                  variant="gold"
-                  disabled={isActionLoading}
-                  onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
-                  className="h-7 px-2 text-xxs"
+            {populationChips.length > 0 && (
+              <SectionRow label="Population">
+                {populationChips.map((chip) => (
+                  <span
+                    key={chip.key}
+                    className="rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold"
+                  >
+                    {chip.label}
+                  </span>
+                ))}
+              </SectionRow>
+            )}
+          </div>
+        </InfoBubble>
+      )}
+
+      {/* Build cost — its own bubble so the player reads cost separately
+          from the building's runtime behavior. */}
+      {buildCost.length > 0 && (
+        <InfoBubble title="Build cost" icon={Hammer}>
+          <div className="flex flex-wrap items-center gap-1.5">
+            {buildCost.map((entry, index) => {
+              const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+              const balanceInfo = getBalance(
+                structureEntityId ?? 0,
+                entry.resource,
+                currentDefaultTick,
+                setup.components,
+              );
+              const balance = divideByPrecision(balanceInfo.balance);
+              const hasEnough = balance >= entry.amount;
+              return (
+                <span
+                  key={`build-cost-${entry.resource}-${index}`}
+                  className={cn(
+                    "flex items-center gap-1 rounded px-1.5 py-1 text-[10px] shadow-inner",
+                    hasEnough
+                      ? "bg-gold/5 border border-gold/10 text-gold/80"
+                      : "bg-red-900/15 border border-red-500/30 text-red-100",
+                  )}
+                  title={name}
                 >
-                  + Production
-                </Button>
-              )}
-              {buildingCategory !== BuildingType.WorkersHut && (
-                <Button
-                  size="xs"
-                  variant="outline"
-                  disabled={isActionLoading}
-                  onClick={handleToggleProduction}
-                  className="h-7 px-2 text-xxs"
-                >
-                  {isPaused ? "▶ Resume" : "⏸ Pause"}
-                </Button>
-              )}
-              <Button
-                size="xs"
-                variant="danger"
-                disabled={isActionLoading}
-                onClick={handleDestroy}
-                className="flex h-7 items-center gap-1.5 px-2 text-xxs"
-              >
-                <Trash2 className="h-3 w-3" />
-                {showDestroyConfirm ? "Confirm" : "Delete"}
-              </Button>
-            </SectionRow>
+                  <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                  <span className={cn(hasEnough ? "font-semibold text-gold" : "text-red-200")}>
+                    {formatResourceAmount(balance)}
+                  </span>
+                  <span className={cn(hasEnough ? "text-gold/70" : "text-red-200")}>/ {entry.amount}</span>
+                </span>
+              );
+            })}
+          </div>
+        </InfoBubble>
+      )}
+
+      {/* Action row — icon-only buttons clustered into the header cue area
+          isn't quite right because they need to stay visible at all times.
+          Instead render a slim bubble with three same-size square buttons. */}
+      {isOwnedByPlayer && (
+        <div
+          className={cn(
+            "pointer-events-auto flex items-center justify-end gap-1.5 rounded-xl px-2 py-1.5",
+            OVERLAY_SURFACE_BASE,
           )}
+        >
+          {canAddProduction && (
+            <button
+              type="button"
+              onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
+              disabled={isActionLoading}
+              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-amber-500/80 bg-amber-400/90 text-black shadow transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
+              title="Add production"
+              aria-label="Add production"
+            >
+              <Plus className="h-3.5 w-3.5" />
+            </button>
+          )}
+          {buildingCategory !== BuildingType.WorkersHut && (
+            <button
+              type="button"
+              onClick={handleToggleProduction}
+              disabled={isActionLoading}
+              className={cn(
+                "inline-flex h-7 w-7 items-center justify-center rounded-md border text-white shadow transition disabled:cursor-not-allowed disabled:opacity-60",
+                isPaused
+                  ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
+                  : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
+              )}
+              title={isPaused ? "Resume" : "Pause"}
+              aria-label={isPaused ? "Resume" : "Pause"}
+            >
+              {isPaused ? <Play className="h-3.5 w-3.5" /> : <PauseIcon className="h-3.5 w-3.5" />}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleDestroy}
+            disabled={isActionLoading}
+            className={cn(
+              "inline-flex h-7 items-center gap-1 rounded-md border border-red-700/80 bg-red-900/90 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60",
+              !showDestroyConfirm && "w-7 justify-center px-0",
+            )}
+            title={showDestroyConfirm ? "Confirm delete" : "Delete"}
+            aria-label={showDestroyConfirm ? "Confirm delete" : "Delete"}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {showDestroyConfirm && <span>OK</span>}
+          </button>
         </div>
-      </InfoBubble>
+      )}
     </>
   );
 };
