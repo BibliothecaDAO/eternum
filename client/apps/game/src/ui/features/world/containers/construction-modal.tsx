@@ -45,9 +45,9 @@ export const ConstructionModal = memo(({ structureEntityId }: ConstructionModalP
   }, [structureEntityId]);
 
   return (
-    <CenteredModalShell title="Build" icon={Hammer} onClose={close} size="wide">
+    <CenteredModalShell title="Build" icon={Hammer} onClose={close} size="xl">
       <div className="grid h-full grid-cols-12 min-h-0">
-        <div className="col-span-4 border-r border-gold/15 min-h-0">
+        <div className="col-span-3 border-r border-gold/15 min-h-0">
           <StructureSidebar
             selectedEntityId={focusedRealmId}
             onSelectStructure={setFocusedRealmId}
@@ -55,7 +55,7 @@ export const ConstructionModal = memo(({ structureEntityId }: ConstructionModalP
             filter={BUILDABLE_FILTER}
           />
         </div>
-        <div className="col-span-8 min-h-0 overflow-y-auto">
+        <div className="col-span-9 min-h-0 overflow-y-auto">
           <Suspense fallback={<div className="flex h-full items-center justify-center p-8">Loading…</div>}>
             <SelectPreviewBuildingMenu entityId={focusedRealmId} />
           </Suspense>

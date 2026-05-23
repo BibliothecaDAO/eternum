@@ -235,14 +235,6 @@ export const StructureStatusRow = memo(
           >
             {structure.displayName}
           </span>
-          {!isFull && levelBadge && (
-            <span
-              className="flex-shrink-0 rounded-sm border border-gold/25 bg-black/30 px-1.5 text-[10px] font-semibold tabular-nums text-gold/80"
-              title="Realm level"
-            >
-              {levelBadge}
-            </span>
-          )}
           {hasAttention && (
             <span
               className="h-2 w-2 flex-shrink-0 rounded-full bg-gold shadow-[0_0_6px_rgba(223,170,84,0.7)]"
@@ -257,8 +249,10 @@ export const StructureStatusRow = memo(
           )}
         </div>
 
-        {/* Row 2 — stats: numeric level · pop · tiles */}
-        {isFull && (levelBadge || populationLabel || buildingTilesLabel) && (
+        {/* Row 2 — stats: numeric level · pop · tiles. Rendered for both
+            full and compact variants because the modal sidebars want the
+            same status at a glance. */}
+        {(levelBadge || populationLabel || buildingTilesLabel) && (
           <div className="flex items-center gap-1.5 px-2.5 pt-1 pb-2">
             {levelBadge && (
               <span

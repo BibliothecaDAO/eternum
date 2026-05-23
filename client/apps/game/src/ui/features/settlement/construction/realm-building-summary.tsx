@@ -141,6 +141,7 @@ export const RealmBuildingSummary = ({
         <div className="mt-2 flex flex-wrap gap-1.5">
           {items.map((item) => {
             const buildAction = buildActions?.get(item.buildingId);
+            const military = getMilitaryBuildingInfo(item.buildingId);
 
             return (
               <div
@@ -149,12 +150,16 @@ export const RealmBuildingSummary = ({
                   "group relative flex items-center gap-1.5 rounded-full border border-gold/20 bg-brown/30 px-2 py-1 text-[11px] text-gold/90",
                   buildAction && "pr-8",
                 )}
+                title={item.label}
+                aria-label={`${item.label}: ${item.count}`}
               >
-                <span className="max-w-[8rem] truncate">{item.label}</span>
-                <span className="flex items-center gap-1 rounded-full bg-gold/15 px-1.5 py-0.5 text-[10px] font-semibold text-gold">
-                  <ResourceIcon resource={item.iconResource} size="xs" withTooltip={false} />
-                  <span>{item.count}</span>
-                </span>
+                {military && (
+                  <span className="rounded border border-gold/30 bg-black/40 px-1 text-[9px] font-semibold uppercase tracking-wide text-gold/80">
+                    T{military.tier}
+                  </span>
+                )}
+                <ResourceIcon resource={item.iconResource} size="xs" withTooltip={false} />
+                <span className="font-semibold tabular-nums text-gold">{item.count}</span>
                 {buildAction && (
                   <button
                     type="button"

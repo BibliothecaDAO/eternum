@@ -104,41 +104,27 @@ export const ProductionWorkflows = ({
   ];
 
   return (
-    <section className="space-y-5">
-      <div className="flex flex-col gap-1">
-        <h3 className="text-lg font-semibold text-gold">Production Workflows</h3>
-        <p className="text-sm text-gold/70">Choose how you want to manage this realm's output.</p>
-      </div>
-
+    <section className="space-y-3">
       <Tabs selectedIndex={activeTab} onChange={handleTabChange} className="w-full" variant="default">
-        <Tabs.List className="flex flex-col gap-2 rounded-xl border border-gold/25 bg-dark-brown/80 p-2 sm:flex-row sm:items-stretch sm:justify-start justify-start">
+        <Tabs.List className="flex flex-row items-stretch gap-1 rounded-lg border border-gold/25 bg-dark-brown/80 p-1">
           {workflows.map((workflow, index) => {
             const Icon = workflow.icon;
             const isActive = activeTab === index;
-            const tabClass = `group flex min-w-[220px] flex-1 items-center gap-3 rounded-lg border !space-x-0 ${
+            const tabClass = `flex flex-1 items-center justify-center gap-2 rounded-md border !space-x-0 ${
               isActive
-                ? "border-gold/60 bg-gold/15 text-gold shadow-lg shadow-gold/15"
-                : "border-transparent bg-dark-brown/90 text-gold/80 hover:border-gold/40"
-            } !px-4 !py-3 text-left !transition-none`;
-            const iconWrapperClass = `flex h-10 w-10 items-center justify-center rounded-md border ${
-              isActive ? "border-gold/60 bg-gold/20 text-gold" : "border-gold/40 bg-dark-brown/70 text-gold/70"
-            }`;
-
+                ? "border-gold/60 bg-gold/15 text-gold"
+                : "border-transparent bg-dark-brown/90 text-gold/75 hover:border-gold/40 hover:text-gold"
+            } !px-3 !py-1.5 text-center !transition-none`;
             return (
-              <Tabs.Tab key={workflow.label} className={tabClass}>
-                <div className={iconWrapperClass}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="flex flex-col items-start">
-                  <span className="text-sm font-semibold tracking-wide">{workflow.label}</span>
-                  <span className="text-xs text-gold/60">{workflow.description}</span>
-                </div>
+              <Tabs.Tab key={workflow.label} className={tabClass} title={workflow.description}>
+                <Icon className="h-4 w-4" />
+                <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">{workflow.label}</span>
               </Tabs.Tab>
             );
           })}
         </Tabs.List>
 
-        <Tabs.Panels className="mt-6">
+        <Tabs.Panels className="mt-4">
           {workflows.map((workflow) => (
             <Tabs.Panel key={workflow.label} className="flex flex-col gap-4">
               {workflow.content}

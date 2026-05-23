@@ -622,7 +622,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           </div>
         ),
         component: () => (
-          <div className="resource-cards-selector grid grid-cols-2 gap-2 p-2">
+          <div className="resource-cards-selector grid grid-cols-2 lg:grid-cols-3 gap-2 p-2">
             {realm?.resources.map((resourceId) => {
               const resource = findResourceById(resourceId)!;
               const building = getBuildingFromResource(resourceId);
@@ -706,7 +706,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
           </div>
         ),
         component: () => (
-          <div className="economy-selector grid grid-cols-2 gap-2 p-2">
+          <div className="economy-selector grid grid-cols-2 lg:grid-cols-3 gap-2 p-2">
             {buildingTypes
               .filter((a) => isEconomyBuilding(BuildingType[a as keyof typeof BuildingType]))
               .toSorted((a, b) => {
@@ -827,50 +827,19 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
             return <div className="p-2 text-xs text-gold/60">No military buildings available.</div>;
           }
 
-          const visibleGroups =
-            activeArmyType !== null ? armyGroups.filter((group) => group.armyType === activeArmyType) : armyGroups;
-
+          // With the wider Build modal all three tiers fit in one row, so we
+          // drop the troop-type filter entirely. Each army group renders with
+          // its bonus next to the group label so the player still sees
+          // biome-bonus info without an extra filter click.
           return (
-            <div className="p-2 space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
+            <div className="p-2 space-y-3">
+              <div className="space-y-3">
                 {armyGroups.map((group) => {
-                  const isActive = activeArmyType === group.armyType;
                   const bonusMultiplier = group.bonus ?? 1;
                   const bonusPercent = Math.round((bonusMultiplier - 1) * 100);
                   const bonusLabel = `${bonusPercent > 0 ? "+" : ""}${bonusPercent}%`;
                   const isPositiveBonus = bonusPercent > 0;
                   const isNegativeBonus = bonusPercent < 0;
-                  return (
-                    <button
-                      key={group.armyType}
-                      type="button"
-                      className={clsx(
-                        "h-8 rounded border px-3 py-1 text-xs transition-colors",
-                        isActive
-                          ? "border-gold/60 bg-gold/20 text-gold"
-                          : "border-gold/30 bg-brown/20 text-gold/70 hover:border-gold/50",
-                        group.isRecommended && !isActive && "border-emerald-500/40 text-emerald-200",
-                      )}
-                      onClick={() => setSelectedArmyType(group.armyType)}
-                    >
-                      <span className="flex items-center gap-1">
-                        <span>{group.armyType}</span>
-                        <span
-                          className={clsx(
-                            "text-[11px] font-semibold",
-                            isPositiveBonus ? "text-emerald-300" : isNegativeBonus ? "text-red-400" : "text-gold/80",
-                          )}
-                        >
-                          {bonusLabel}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className="space-y-3">
-                {visibleGroups.map((group) => {
                   return (
                     <div
                       key={group.armyType}
@@ -879,7 +848,20 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                         group.isRecommended && "border-emerald-500/40 shadow-emerald-500/10",
                       )}
                     >
-                      <div className="grid grid-cols-2 gap-2 p-2">
+                      <div className="flex items-center justify-between gap-2 border-b border-gold/10 px-3 py-1.5">
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">
+                          {group.armyType}
+                        </span>
+                        <span
+                          className={clsx(
+                            "text-[11px] font-semibold tabular-nums",
+                            isPositiveBonus ? "text-emerald-300" : isNegativeBonus ? "text-red-400" : "text-gold/70",
+                          )}
+                        >
+                          {bonusLabel}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 p-2">
                         {group.buildings
                           .toSorted((a, b) => {
                             const buildingA = BuildingType[a as keyof typeof BuildingType];
@@ -984,7 +966,6 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       playResourceSound,
       useSimpleCost,
       armyGroups,
-      activeArmyType,
       pendingBuilds,
       pendingDestroys,
       pendingPauseResume,
