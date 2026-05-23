@@ -1435,16 +1435,6 @@ const BuildingCard = ({
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          {troopHint && (
-            <span
-              className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold/90 shadow-md"
-              title={`T${troopHint.tier} ${troopHint.troopLabel}`}
-              aria-label={`T${troopHint.tier} ${troopHint.troopLabel}`}
-            >
-              <span>T{troopHint.tier}</span>
-              <ResourceIcon resource={troopHint.troopResource} size="xs" withTooltip={false} />
-            </span>
-          )}
           {isWorkersHut && (
             <span className="inline-flex items-center justify-center rounded-full bg-black/80 px-2 py-0.5 text-[10px] font-semibold text-gold/90 shadow-md border border-gold/30">
               {count}
@@ -1465,20 +1455,32 @@ const BuildingCard = ({
         </div>
       )}
       <div className="absolute inset-x-0 bottom-0 p-2 space-y-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <h6 className="truncate text-left">{buildingName}</h6>
-          <InfoIcon
-            onMouseEnter={() => {
-              setTooltip({
-                content: toolTip,
-                position: "right",
-              });
-            }}
-            onMouseLeave={() => {
-              setTooltip(null);
-            }}
-            className="w-4 h-4"
-          />
+          <div className="flex items-center gap-1.5">
+            {troopHint && (
+              <span
+                className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-gold/90 shadow-md"
+                title={`T${troopHint.tier} ${troopHint.troopLabel}`}
+                aria-label={`T${troopHint.tier} ${troopHint.troopLabel}`}
+              >
+                <span>T{troopHint.tier}</span>
+                <ResourceIcon resource={troopHint.troopResource} size="xs" withTooltip={false} />
+              </span>
+            )}
+            <InfoIcon
+              onMouseEnter={() => {
+                setTooltip({
+                  content: toolTip,
+                  position: "right",
+                });
+              }}
+              onMouseLeave={() => {
+                setTooltip(null);
+              }}
+              className="w-4 h-4"
+            />
+          </div>
         </div>
       </div>
     </div>
