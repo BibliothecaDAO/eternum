@@ -49,13 +49,13 @@ import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/s
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { ProductionModal } from "@/ui/features/settlement";
 import { TileManager } from "@bibliothecadao/eternum";
-import Coins from "lucide-react/dist/esm/icons/coins";
 import Factory from "lucide-react/dist/esm/icons/factory";
 import Hammer from "lucide-react/dist/esm/icons/hammer";
 import Info from "lucide-react/dist/esm/icons/info";
 import Loader from "lucide-react/dist/esm/icons/loader";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
+import Shield from "lucide-react/dist/esm/icons/shield";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import Users from "lucide-react/dist/esm/icons/users";
 import { toast } from "sonner";
@@ -609,25 +609,66 @@ const LocalTilePanel = () => {
     }
   };
 
-  // ---- Atomized local-tile render ----------------------------------------
-  // Each concern (header, production, population, build cost, actions) lives
-  // in its own InfoBubble so the local-tile column matches the right-side
-  // world inspector visually (Guards / Production / Resources / Biome each
-  // get their own bubble there too).
+  // ---- Local-tile render ---------------------------------------------------
+  // Two bubbles max for buildings: a header strip and a single "Building"
+  // bubble that groups production / consumes / population / build cost /
+  // actions into compact rows separated by hairlines. The previous version
+  // had five separate bubbles and felt over-atomized.
   if (!selectedBuildingHex) {
     return (
-      <div className={cn("pointer-events-auto flex flex-col items-center justify-center rounded-xl px-4 py-6 text-center", OVERLAY_SURFACE_BASE)}>
+      <div
+        className={cn(
+          "pointer-events-auto flex flex-col items-center justify-center rounded-xl px-4 py-6 text-center",
+          OVERLAY_SURFACE_BASE,
+        )}
+      >
         <p className={HUD_BODY}>Tap a building tile to view its details.</p>
       </div>
     );
   }
 
-  // Castle tile: realm-upgrade panel in a single bubble + the standard header
-  // band above it.
+  // Castle tile — header strip + realm summary chips + the existing upgrade
+  // card. Two bubbles instead of one so the player sees realm stats next to
+  // the upgrade progress.
   if (isCastleTile) {
+    const castleStructure = playerStructures.find((entry) => entry.entityId === structureEntityId);
+    const castleBase = castleStructure?.structure?.base;
+    const castleLevel = Number(castleBase?.level ?? 0);
+    const castleStructureKey = (() => {
+      try {
+        return getEntityIdFromKeys([BigInt(structureEntityId ?? 0)]);
+      } catch {
+        return null;
+      }
+    })();
+    const castleBuildings = castleStructureKey
+      ? getComponentValue(setup.components.StructureBuildings, castleStructureKey)
+      : null;
+    const castlePopulation = Number(castleBuildings?.population.current ?? 0);
+    const castleCapacity = Number(castleBuildings?.population.max ?? 0);
+    const castleGuards = Number(castleBase?.troop_guard_count ?? 0);
+    const castleGuardMax = Number(castleBase?.troop_max_guard_count ?? 0);
+
     return (
       <>
-        <InfoBubble title={panelTitle} cue={headerAction} bodyClassName="pt-0">
+        <InfoBubble title={panelTitle} cue={headerAction}>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold">
+              Level {castleLevel}
+            </span>
+            <span className="inline-flex items-center gap-1 rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold tabular-nums">
+              <Users className="h-3 w-3 text-gold/55" />
+              {castlePopulation}/{castleCapacity}
+            </span>
+            {castleGuardMax > 0 && (
+              <span className="inline-flex items-center gap-1 rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold tabular-nums">
+                <Shield className="h-3 w-3 text-gold/55" />
+                {castleGuards}/{castleGuardMax}
+              </span>
+            )}
+          </div>
+        </InfoBubble>
+        <InfoBubble title="Upgrade" icon={Hammer} bodyClassName="pt-0">
           <RealmUpgradeCompact />
         </InfoBubble>
       </>
@@ -646,27 +687,31 @@ const LocalTilePanel = () => {
   if (populationCost !== 0) populationChips.push({ key: "cost", label: `Cost +${populationCost}` });
   if (populationCapacity !== 0) populationChips.push({ key: "cap", label: `Capacity +${populationCapacity}` });
 
+  // Compact row helper used inside the consolidated building bubble.
+  const SectionRow = ({ label, children }: { label: string; children: ReactNode }) => (
+    <div className="space-y-1">
+      <span className={HUD_LABEL}>{label}</span>
+      <div className="flex flex-wrap items-center gap-1.5">{children}</div>
+    </div>
+  );
+
   return (
     <>
-      {/* Header band — building name + coords + Re-sync. Cue holds the
-          re-sync chip the same way the right inspector does. */}
       <InfoBubble title={panelTitle} cue={headerAction}>
-        {isPaused ? (
+        {isPaused && isOwnedByPlayer ? (
           <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">
             <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
               ⚠️ Production paused
             </span>
-            {isOwnedByPlayer && (
-              <Button
-                size="xs"
-                variant="outline"
-                disabled={isActionLoading}
-                onClick={handleToggleProduction}
-                className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
-              >
-                ▶ Resume
-              </Button>
-            )}
+            <Button
+              size="xs"
+              variant="outline"
+              disabled={isActionLoading}
+              onClick={handleToggleProduction}
+              className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
+            >
+              ▶ Resume
+            </Button>
           </div>
         ) : (
           <p className={HUD_BODY_MUTED}>
@@ -675,14 +720,15 @@ const LocalTilePanel = () => {
         )}
       </InfoBubble>
 
-      {/* Production — produces + consumes. */}
-      <InfoBubble title="Production" icon={Factory}>
-        <div className="flex flex-col gap-2">
-          <div>
-            <span className={HUD_LABEL}>Produces / sec</span>
+      {/* Building details — produces · consumes · population · build cost ·
+          actions in a single bubble with hairline-separated rows. */}
+      <InfoBubble title="Building" icon={Factory}>
+        <div className="flex flex-col gap-2.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-2.5">
+          {/* Produces row */}
+          <SectionRow label="Produces / sec">
             {producedResource && producedResourceName ? (
-              <div className="mt-1 flex items-center gap-1.5">
-                <span className={cn("text-sm font-semibold text-green-300", HUD_VALUE)}>+{producedPerTick}</span>
+              <>
+                <span className={cn("font-semibold text-green-300", HUD_VALUE)}>+{producedPerTick}</span>
                 <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
                 <button
                   type="button"
@@ -721,133 +767,119 @@ const LocalTilePanel = () => {
                 >
                   <Info className="h-4 w-4 text-gold/70" />
                 </button>
-              </div>
+              </>
             ) : (
-              <p className={cn("mt-1", HUD_BODY_MUTED)}>No production</p>
+              <span className={HUD_BODY_MUTED}>No production</span>
             )}
-          </div>
-          <div>
-            <span className={HUD_LABEL}>Consumes / sec</span>
-            {ongoingCost.length > 0 ? (
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {ongoingCost.map((entry, index) => {
-                  const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
-                  return (
-                    <span
-                      key={`${entry.resource}-${index}`}
-                      className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-xxs"
-                      title={name}
-                    >
-                      <span className="font-semibold text-red-200">-{entry.amount}</span>
-                      <ResourceIcon withTooltip={false} resource={name} size="xs" />
+          </SectionRow>
+
+          {/* Consumes row — only when present */}
+          {ongoingCost.length > 0 && (
+            <SectionRow label="Consumes / sec">
+              {ongoingCost.map((entry, index) => {
+                const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                return (
+                  <span
+                    key={`${entry.resource}-${index}`}
+                    className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-xxs"
+                    title={name}
+                  >
+                    <span className="font-semibold text-red-200">-{entry.amount}</span>
+                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                  </span>
+                );
+              })}
+            </SectionRow>
+          )}
+
+          {/* Population row — only when present */}
+          {populationChips.length > 0 && (
+            <SectionRow label="Population">
+              {populationChips.map((chip) => (
+                <span
+                  key={chip.key}
+                  className="rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold"
+                >
+                  {chip.label}
+                </span>
+              ))}
+            </SectionRow>
+          )}
+
+          {/* Build cost row */}
+          {buildCost.length > 0 && (
+            <SectionRow label="Build cost">
+              {buildCost.map((entry, index) => {
+                const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                const balanceInfo = getBalance(
+                  structureEntityId ?? 0,
+                  entry.resource,
+                  currentDefaultTick,
+                  setup.components,
+                );
+                const balance = divideByPrecision(balanceInfo.balance);
+                const hasEnough = balance >= entry.amount;
+                return (
+                  <span
+                    key={`build-cost-${entry.resource}-${index}`}
+                    className={cn(
+                      "flex items-center gap-1 rounded px-1.5 py-1 text-[10px] shadow-inner",
+                      hasEnough
+                        ? "bg-gold/5 border border-gold/10 text-gold/80"
+                        : "bg-red-900/15 border border-red-500/30 text-red-100",
+                    )}
+                    title={name}
+                  >
+                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                    <span className={cn(hasEnough ? "font-semibold text-gold" : "text-red-200")}>
+                      {formatResourceAmount(balance)}
                     </span>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className={cn("mt-1", HUD_BODY_MUTED)}>No ongoing inputs</p>
-            )}
-          </div>
+                    <span className={cn(hasEnough ? "text-gold/70" : "text-red-200")}>/ {entry.amount}</span>
+                  </span>
+                );
+              })}
+            </SectionRow>
+          )}
+
+          {/* Actions row — only for player-owned tiles */}
+          {isOwnedByPlayer && (
+            <SectionRow label="Actions">
+              {canAddProduction && (
+                <Button
+                  size="xs"
+                  variant="gold"
+                  disabled={isActionLoading}
+                  onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
+                  className="h-7 px-2 text-xxs"
+                >
+                  + Production
+                </Button>
+              )}
+              {buildingCategory !== BuildingType.WorkersHut && (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  disabled={isActionLoading}
+                  onClick={handleToggleProduction}
+                  className="h-7 px-2 text-xxs"
+                >
+                  {isPaused ? "▶ Resume" : "⏸ Pause"}
+                </Button>
+              )}
+              <Button
+                size="xs"
+                variant="danger"
+                disabled={isActionLoading}
+                onClick={handleDestroy}
+                className="flex h-7 items-center gap-1.5 px-2 text-xxs"
+              >
+                <Trash2 className="h-3 w-3" />
+                {showDestroyConfirm ? "Confirm" : "Delete"}
+              </Button>
+            </SectionRow>
+          )}
         </div>
       </InfoBubble>
-
-      {/* Population — cost / capacity chips. */}
-      <InfoBubble title="Population" icon={Users}>
-        {populationChips.length > 0 ? (
-          <div className="flex flex-wrap items-center gap-1.5">
-            {populationChips.map((chip) => (
-              <span
-                key={chip.key}
-                className="rounded border border-gold/25 bg-black/40 px-2 py-1 text-xxs font-semibold text-gold"
-              >
-                {chip.label}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className={HUD_BODY_MUTED}>No population impact</p>
-        )}
-      </InfoBubble>
-
-      {/* Build cost — shows the resources consumed to construct, with player
-          balances side-by-side so the player can see what's missing. */}
-      <InfoBubble title="Build cost" icon={Coins}>
-        {buildCost.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5">
-            {buildCost.map((entry, index) => {
-              const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
-              const balanceInfo = getBalance(
-                structureEntityId ?? 0,
-                entry.resource,
-                currentDefaultTick,
-                setup.components,
-              );
-              const balance = divideByPrecision(balanceInfo.balance);
-              const hasEnough = balance >= entry.amount;
-              return (
-                <span
-                  key={`build-cost-${entry.resource}-${index}`}
-                  className={cn(
-                    "flex items-center gap-1 rounded px-1.5 py-1 text-[10px] shadow-inner",
-                    hasEnough
-                      ? "bg-gold/5 border border-gold/10 text-gold/80"
-                      : "bg-red-900/15 border border-red-500/30 text-red-100",
-                  )}
-                  title={name}
-                >
-                  <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                  <span className={cn(hasEnough ? "font-semibold text-gold" : "text-red-200")}>
-                    {formatResourceAmount(balance)}
-                  </span>
-                  <span className={cn(hasEnough ? "text-gold/70" : "text-red-200")}>/ {entry.amount}</span>
-                </span>
-              );
-            })}
-          </div>
-        ) : (
-          <p className={HUD_BODY_MUTED}>No build cost data</p>
-        )}
-      </InfoBubble>
-
-      {/* Actions — only for player-owned tiles. */}
-      {isOwnedByPlayer && (
-        <InfoBubble title="Actions" icon={Hammer}>
-          <div className="flex flex-wrap gap-1.5">
-            {canAddProduction && (
-              <Button
-                size="xs"
-                variant="gold"
-                disabled={isActionLoading}
-                onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
-                className="h-8 px-2 text-xxs"
-              >
-                + Production
-              </Button>
-            )}
-            {buildingCategory !== BuildingType.WorkersHut && (
-              <Button
-                size="xs"
-                variant="outline"
-                disabled={isActionLoading}
-                onClick={handleToggleProduction}
-                className="h-8 px-2 text-xxs"
-              >
-                {isPaused ? "▶ Resume" : "⏸ Pause"}
-              </Button>
-            )}
-            <Button
-              size="xs"
-              variant="danger"
-              disabled={isActionLoading}
-              onClick={handleDestroy}
-              className="flex h-8 items-center gap-1.5 px-2 text-xxs"
-            >
-              <Trash2 className="h-3 w-3" />
-              {showDestroyConfirm ? "Confirm" : "Delete"}
-            </Button>
-          </div>
-        </InfoBubble>
-      )}
     </>
   );
 };
@@ -856,9 +888,26 @@ const MinimapPanel = () => {
   const [tiles, setTiles] = useState<MinimapTile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { isMapView } = useQuery();
   const selectedHex = useUIStore((state) => state.selectedHex);
   const navigationTarget = useUIStore((state) => state.navigationTarget);
   const cameraTargetHex = useUIStore((state) => state.cameraTargetHex);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const playerStructures = useUIStore((state) => state.playerStructures);
+
+  // Local mode: lock the minimap to the active realm's coords so the player
+  // keeps a stable reference while they're zoomed into one keep. World mode
+  // uses the camera/selected hex priority HexMinimap already implements.
+  const activeRealmHex = useMemo(() => {
+    if (isMapView) return null;
+    const active = playerStructures.find((entry) => entry.entityId === structureEntityId);
+    const base = active?.structure?.base;
+    if (!base || base.coord_x === undefined || base.coord_y === undefined) return null;
+    return { col: Number(base.coord_x), row: Number(base.coord_y) };
+  }, [isMapView, playerStructures, structureEntityId]);
+
+  const focusHex = activeRealmHex ?? cameraTargetHex;
+  const focusSelectedHex = activeRealmHex ?? selectedHex;
 
   useEffect(() => {
     // MinimapPanel only mounts in map view (parent gating), so fetch unconditionally.
@@ -907,9 +956,9 @@ const MinimapPanel = () => {
         <div className="relative flex-1 min-h-[220px] overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
           <HexMinimap
             tiles={tiles}
-            selectedHex={selectedHex}
+            selectedHex={focusSelectedHex}
             navigationTarget={navigationTarget}
-            cameraTargetHex={cameraTargetHex}
+            cameraTargetHex={focusHex}
           />
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
