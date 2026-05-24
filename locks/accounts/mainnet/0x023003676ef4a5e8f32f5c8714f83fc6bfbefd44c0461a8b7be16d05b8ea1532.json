@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-blink-511",
-    "launchRequestId": "26348233757-1",
+    "gameName": "bltz-dash-816",
+    "launchRequestId": "26349189108-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26348233757,
+    "workflowRunId": 26349189108,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "ff567332-e345-4fe5-abfc-5c3d1d4f2707"
+    "stepId": "create-world",
+    "leaseId": "394f2739-2801-4ac7-9693-1eacdc48a9b1"
   },
-  "acquiredAt": "2026-05-24T01:15:27.873Z",
-  "heartbeatAt": "2026-05-24T01:15:31.956Z",
-  "expiresAt": "2026-05-24T01:15:31.956Z",
-  "releasedAt": "2026-05-24T01:15:31.956Z"
+  "acquiredAt": "2026-05-24T02:04:12.052Z",
+  "heartbeatAt": "2026-05-24T02:04:12.052Z",
+  "expiresAt": "2026-05-24T02:14:12.052Z"
 }
