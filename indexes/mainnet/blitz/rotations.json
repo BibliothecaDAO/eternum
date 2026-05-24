@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-05-24T18:22:21.310Z",
+  "updatedAt": "2026-05-24T18:30:46.749Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -86,11 +86,11 @@
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
       "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26369137962-1.json",
       "status": "attention",
-      "updatedAt": "2026-05-24T18:22:21.310Z",
+      "updatedAt": "2026-05-24T18:30:46.749Z",
       "workflowRef": "next",
       "currentStepId": "reserve-blitz-hyperstructures",
       "hasRunningStep": false,
-      "recoverableFailedStepId": "reserve-blitz-hyperstructures",
+      "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-lootchest-roles",
       "autoRetry": {
         "enabled": true,
@@ -568,7 +568,10 @@
           "gameName": "eu-gladiator-24-05-26-1900",
           "startTime": 1779649200,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "pendingIndexerTierTarget": "legendary",
+            "pendingIndexerTierRequestedAt": "2026-05-24T18:30:45.303Z"
+          }
         },
         {
           "gameName": "na-gladiator-25-05-26-0100",
