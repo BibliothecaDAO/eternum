@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/eternum/etrn-gloom-467/26356337562-1.json",
   "latestLaunchRequestId": "26356337562-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-24T08:28:18.762Z",
-  "updatedAt": "2026-05-24T08:28:23.044Z",
+  "updatedAt": "2026-05-24T08:30:16.455Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-05-24T08:28:23.044Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-05-24T08:28:23.044Z",
+      "finishedAt": "2026-05-24T08:30:16.455Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -83,14 +84,10 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "2026-05-24T09:00:00.000Z"
-  },
-  "activeLease": {
-    "launchRequestId": "26356337562-1",
-    "workflowRunId": 26356337562,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-05-24T08:28:23.044Z",
-    "expiresAt": "2026-05-24T09:13:23.044Z"
+    "scheduledStartTime": 1779613200,
+    "summaryPath": ".context/game-launch/mainnet-eternum-etrn-gloom-467.json",
+    "durationSeconds": 7200,
+    "worldAddress": "0x00f72e055095987b5ed0ffa50ac5fa679fe4f06a99b51254ecad51dfde073d51",
+    "createGameTxHash": "0x2ac225b65050d1a192457cad6f9daa0793f033c3b1fbb371d1744b47b555c41"
   }
 }
