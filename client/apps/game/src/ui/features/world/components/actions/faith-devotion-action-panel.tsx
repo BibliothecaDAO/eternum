@@ -495,7 +495,7 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
               No wonders available in this world yet.
             </div>
           ) : (
-            <div className="max-h-[340px] overflow-auto rounded-md border border-gold/20 bg-black/25">
+            <div className="max-h-[clamp(280px,40vh,560px)] overflow-auto rounded-md border border-gold/20 bg-black/25">
               <div className="sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-gold/20 bg-[#1d160e] px-3 py-2 text-xxs uppercase tracking-[0.2em] text-gold/70">
                 <span>Wonder</span>
                 <span className="text-right">FP/sec</span>
