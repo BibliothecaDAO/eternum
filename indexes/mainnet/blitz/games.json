@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-24T01:15:24.200Z",
+  "updatedAt": "2026-05-24T01:15:34.466Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1103,11 +1103,10 @@
       "path": "runs/mainnet/blitz/bltz-blink-511.json",
       "inputPath": "inputs/mainnet/blitz/bltz-blink-511/26348233757-1.json",
       "status": "running",
-      "updatedAt": "2026-05-24T01:15:24.200Z",
+      "updatedAt": "2026-05-24T01:15:34.466Z",
       "workflowRef": "next",
-      "currentStepId": "grant-lootchest-role",
-      "activeLeaseExpiresAt": "2026-05-24T02:00:24.200Z",
-      "hasRunningStep": true,
+      "currentStepId": "create-indexer",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-indexer",
       "startTime": 1779588000,
