@@ -39,8 +39,17 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
   const setActiveTabKey = useUIStore((state) => state.setLogisticsActiveTab);
   const transferPanelSourceId = useUIStore((state) => state.transferPanelSourceId);
   const playerStructures = useUIStore((state) => state.playerStructures);
+  const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
+  const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
 
   const selectedIndex = TAB_INDEX_BY_KEY[activeTabKey];
+  const totalArrivals = arrivedArrivalsNumber + pendingArrivalsNumber;
+  // Ready-to-claim is more urgent (green) than still-in-flight (gold); pick the
+  // tone that better matches what's actually waiting.
+  const badgeTone =
+    arrivedArrivalsNumber > 0
+      ? "bg-progress-bar-good/90 text-dark"
+      : "bg-gold/90 text-dark";
 
   return (
     <div className="flex h-full flex-col gap-2 p-2">
@@ -50,7 +59,22 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
         className="flex flex-1 flex-col gap-2 min-h-0"
       >
         <Tabs.List className="grid grid-cols-4 gap-1">
-          <Tabs.Tab className={tabClass}>Arrivals</Tabs.Tab>
+          <Tabs.Tab className={tabClass}>
+            <span className="inline-flex items-center gap-1.5">
+              Arrivals
+              {totalArrivals > 0 && (
+                <span
+                  className={clsx(
+                    "inline-flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold tabular-nums",
+                    badgeTone,
+                  )}
+                  title={`${arrivedArrivalsNumber} ready · ${pendingArrivalsNumber} pending`}
+                >
+                  {totalArrivals}
+                </span>
+              )}
+            </span>
+          </Tabs.Tab>
           <Tabs.Tab className={tabClass}>Transfer</Tabs.Tab>
           <Tabs.Tab className={tabClass}>Automation</Tabs.Tab>
           <Tabs.Tab className={tabClass}>Balances</Tabs.Tab>

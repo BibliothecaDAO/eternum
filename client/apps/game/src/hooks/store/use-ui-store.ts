@@ -102,6 +102,17 @@ type ArmyCreationPopupConfig = {
 
 type ArmyCreationPopupState = (ArmyCreationPopupConfig & { openId: number }) | null;
 
+/**
+ * Right-click "Create Defense/Attack Army" no longer opens the legacy popup —
+ * it primes the merged Military modal with the target realm + intent. The
+ * modal consumes and clears this on mount.
+ */
+export type PendingMilitaryAction = {
+  structureId: number;
+  isExplorer: boolean;
+  initialGuardSlot?: number;
+};
+
 interface UIStore {
   disableButtons: boolean;
   setDisableButtons: (disable: boolean) => void;
@@ -186,6 +197,13 @@ interface UIStore {
   armyCreationPopup: ArmyCreationPopupState;
   openArmyCreationPopup: (config: ArmyCreationPopupConfig) => void;
   closeArmyCreationPopup: () => void;
+  pendingMilitaryAction: PendingMilitaryAction | null;
+  setPendingMilitaryAction: (action: PendingMilitaryAction | null) => void;
+  // Bumped whenever a military mutation lands (create / disband) so the deploy
+  // map can re-fetch tile occupancy. Plain RECS-side state isn't enough — the
+  // map reads via sqlApi, which doesn't auto-invalidate.
+  militaryMapVersion: number;
+  bumpMilitaryMapVersion: () => void;
   // labor
   useSimpleCost: boolean;
   setUseSimpleCost: (useSimpleCost: boolean) => void;
@@ -370,6 +388,11 @@ export const useUIStore = create(
         },
       })),
     closeArmyCreationPopup: () => set({ armyCreationPopup: null }),
+    pendingMilitaryAction: null,
+    setPendingMilitaryAction: (action: PendingMilitaryAction | null) => set({ pendingMilitaryAction: action }),
+    militaryMapVersion: 0,
+    bumpMilitaryMapVersion: () =>
+      set((state: AppStore) => ({ militaryMapVersion: state.militaryMapVersion + 1 })),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),

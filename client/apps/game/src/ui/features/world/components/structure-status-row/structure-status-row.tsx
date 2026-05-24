@@ -12,11 +12,13 @@ import {
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import Castle from "lucide-react/dist/esm/icons/castle";
+import Crosshair from "lucide-react/dist/esm/icons/crosshair";
 import Crown from "lucide-react/dist/esm/icons/crown";
 import Hexagon from "lucide-react/dist/esm/icons/hexagon";
 import type { LucideIcon } from "lucide-react";
 import Pencil from "lucide-react/dist/esm/icons/pencil";
 import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
+import Shield from "lucide-react/dist/esm/icons/shield";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Star from "lucide-react/dist/esm/icons/star";
 import Tent from "lucide-react/dist/esm/icons/tent";
@@ -111,6 +113,12 @@ interface StructureStatusRowProps {
    * painted next to the level chip.
    */
   hasAttention?: boolean;
+  /**
+   * Which stats badges to render under the name. `default` = pop + building
+   * tiles (left rail / construction). `military` = guard armies + explorer
+   * armies, which is what the Military modal cares about.
+   */
+  statsVariant?: "default" | "military";
 }
 
 /**
@@ -128,6 +136,7 @@ export const StructureStatusRow = memo(
     onToggleFavorite,
     onRequestRename,
     hasAttention,
+    statsVariant = "default",
   }: StructureStatusRowProps) => {
     const capabilities = resolveStructureUiCapabilities(structure.structure);
     const groupConfig = structure.groupColor ? STRUCTURE_GROUP_CONFIG[structure.groupColor] : null;
@@ -137,15 +146,29 @@ export const StructureStatusRow = memo(
     const levelBadge = capabilities.hasPopulationDetails && Number.isFinite(structure.realmLevel)
       ? String(Math.max(1, Math.trunc(structure.realmLevel)))
       : null;
-    const populationLabel = capabilities.hasPopulationDetails
-      ? formatPopulationStatusLabel(structure.population, structure.populationCapacity)
-      : null;
+    const populationLabel =
+      statsVariant === "default" && capabilities.hasPopulationDetails
+        ? formatPopulationStatusLabel(structure.population, structure.populationCapacity)
+        : null;
     const buildingTilesLabel =
+      statsVariant === "default" &&
       capabilities.hasPopulationDetails &&
       structure.buildingTilesOccupied !== null &&
       structure.buildingTilesTotal !== null
         ? formatUsedBuildingTilesLabel(structure.buildingTilesOccupied, structure.buildingTilesTotal)
         : null;
+
+    // Military stats: occupied/max guards and current/max explorer armies.
+    // Both numbers live on the structure base — no extra hooks needed.
+    const base = structure.structure.base;
+    const guardOccupied = Number(base?.troop_guard_count ?? 0);
+    const guardMax = Number(base?.troop_max_guard_count ?? 0);
+    const explorerOccupied = Number(base?.troop_explorer_count ?? 0);
+    const explorerMax = Number(base?.troop_max_explorer_count ?? 0);
+    const showMilitaryStats =
+      statsVariant === "military" && capabilities.hasPopulationDetails && (guardMax > 0 || explorerMax > 0);
+    const guardsLabel = showMilitaryStats && guardMax > 0 ? `${guardOccupied}/${guardMax}` : null;
+    const explorersLabel = showMilitaryStats && explorerMax > 0 ? `${explorerOccupied}/${explorerMax}` : null;
     const isRealm = structure.category === StructureType.Realm;
     const isFavorite = structure.isFavorite;
     const isFull = variant === "full";
@@ -249,10 +272,8 @@ export const StructureStatusRow = memo(
           )}
         </div>
 
-        {/* Row 2 — stats: numeric level · pop · tiles. Rendered for both
-            full and compact variants because the modal sidebars want the
-            same status at a glance. */}
-        {(levelBadge || populationLabel || buildingTilesLabel) && (
+        {/* Row 2 — stats: numeric level + variant-specific badges. */}
+        {(levelBadge || populationLabel || buildingTilesLabel || guardsLabel || explorersLabel) && (
           <div className="flex items-center gap-1.5 px-2.5 pt-1 pb-2">
             {levelBadge && (
               <span
@@ -267,6 +288,12 @@ export const StructureStatusRow = memo(
             )}
             {buildingTilesLabel && (
               <InlineStat icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
+            )}
+            {explorersLabel && (
+              <InlineStat icon={Crosshair} label={explorersLabel} title="Field armies / max" />
+            )}
+            {guardsLabel && (
+              <InlineStat icon={Shield} label={guardsLabel} title="Guard slots occupied / max" />
             )}
           </div>
         )}

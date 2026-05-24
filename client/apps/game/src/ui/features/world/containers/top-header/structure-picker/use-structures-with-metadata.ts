@@ -137,6 +137,20 @@ export const useStructuresWithMetadata = ({
       const groupColor = structureGroups[structure.entityId] ?? null;
       const isFavorite = favoritesSet.has(structure.entityId);
 
+      const packedCounts: bigint[] = [
+        readPackedCount(structureBuildings?.packed_counts_1),
+        readPackedCount(structureBuildings?.packed_counts_2),
+        readPackedCount(structureBuildings?.packed_counts_3),
+      ];
+
+      const buildingCounts = {
+        wheat: getBuildingCount(BuildingType.ResourceWheat, packedCounts),
+        wood: getBuildingCount(BuildingType.ResourceWood, packedCounts),
+        coal: getBuildingCount(BuildingType.ResourceCoal, packedCounts),
+        copper: getBuildingCount(BuildingType.ResourceCopper, packedCounts),
+        workerHut: getBuildingCount(BuildingType.WorkersHut, packedCounts),
+      };
+
       // canProvision mirrors useBlitzRealmProvision but reads only RECS-cached
       // state. We don't get the per-structure `isProvisioned` torii lookup, so
       // approximate via the packed building counts (the same fallback the
@@ -151,11 +165,6 @@ export const useStructuresWithMetadata = ({
       ) {
         const ownerMatches = structure.structure?.owner === ownerContract;
         if (ownerMatches) {
-          const packedCounts: bigint[] = [
-            readPackedCount(structureBuildings?.packed_counts_1),
-            readPackedCount(structureBuildings?.packed_counts_2),
-            readPackedCount(structureBuildings?.packed_counts_3),
-          ];
           const provisioned = getBuildingCount(BuildingType.ResourceLabor, packedCounts) > 0;
           canProvision = !provisioned;
         }
@@ -175,6 +184,7 @@ export const useStructuresWithMetadata = ({
         isFavorite,
         canUpgrade: structure.category === StructureType.Realm && normalizedLevel < maxRealmLevel,
         canProvision,
+        buildingCounts,
       };
     });
   }, [

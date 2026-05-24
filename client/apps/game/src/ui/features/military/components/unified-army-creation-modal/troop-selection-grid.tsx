@@ -12,6 +12,8 @@ interface TroopSelectionGridProps {
   selectedGuardCategory?: TroopType;
   selectedGuardTier?: TroopTier;
   onSelect: (type: TroopType, tier: TroopTier) => void;
+  /** Drop outer card chrome so the grid blends with a unified parent card. */
+  bare?: boolean;
 }
 
 // Match tier badge styling from label-preview.html
@@ -38,6 +40,7 @@ export const TroopSelectionGrid = ({
   selectedGuardCategory,
   selectedGuardTier,
   onSelect,
+  bare = false,
 }: TroopSelectionGridProps) => {
   const lockedMap = useMemo(() => {
     if (!isDefenseTroopLocked || selectedGuardCategory === undefined || selectedGuardTier === undefined) {
@@ -48,7 +51,7 @@ export const TroopSelectionGrid = ({
   }, [isDefenseTroopLocked, selectedGuardCategory, selectedGuardTier]);
 
   return (
-    <div className="rounded-lg bg-brown/5 border border-gold/30 p-2.5 shadow-sm">
+    <div className={bare ? "p-1" : "rounded-lg bg-brown/5 border border-gold/30 p-2.5 shadow-sm"}>
       <div className="grid grid-cols-3 gap-3">
         {options.map((option) => (
           <div key={option.type} className="flex flex-col gap-2">
@@ -135,16 +138,6 @@ export const TroopSelectionGrid = ({
                           ? `${(tierOption.available / 1000).toFixed(1)}k`
                           : tierOption.available.toLocaleString()}
                       </div>
-                    </div>
-
-                    {/* Bottom Row: Troop Name */}
-                    <div
-                      className={clsx(
-                        "text-center text-xxs font-bold uppercase tracking-wide",
-                        isSelected ? "text-gold" : "text-gold/80",
-                      )}
-                    >
-                      {option.type}
                     </div>
 
                     {/* Selected Pulse Effect */}

@@ -1118,12 +1118,17 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
   const toggleModalAction = useUIStore((state) => state.toggleModal);
   const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
+  const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
   const mode = useGameModeConfig();
   const showTradeAction = mode.ui.showTradeMenu;
   const handleOpenLogistics = useCallback(() => {
-    setLogisticsActiveTab("transfer");
+    // If anything is in flight or ready, land the user on Arrivals so the
+    // badge they just clicked actually points at the relevant tab.
+    const hasArrivals = arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0;
+    setLogisticsActiveTab(hasArrivals ? "arrivals" : "transfer");
     setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals);
-  }, [setLogisticsActiveTab, setView, view]);
+  }, [arrivedArrivalsNumber, pendingArrivalsNumber, setLogisticsActiveTab, setView, view]);
   const handleOpenProduction = useCallback(() => {
     if (!structureEntityId) return;
     toggleModalAction(<ProductionModal preSelectedRealmId={Number(structureEntityId)} />);
@@ -1171,6 +1176,16 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
         label="Transfer"
         active={view === LeftView.ResourceArrivals}
         onClick={handleOpenLogistics}
+        primaryNotification={
+          arrivedArrivalsNumber > 0
+            ? { value: arrivedArrivalsNumber, color: "green", location: "topright" }
+            : undefined
+        }
+        secondaryNotification={
+          pendingArrivalsNumber > 0
+            ? { value: pendingArrivalsNumber, color: "yellow", location: "bottomright" }
+            : undefined
+        }
       />
       <CircleButton
         variant="hud"

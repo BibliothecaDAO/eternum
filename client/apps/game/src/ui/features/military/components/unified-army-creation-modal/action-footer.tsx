@@ -9,12 +9,13 @@ interface ActionFooterProps {
   isLoading: boolean;
   isDisabled: boolean;
   onSubmit: () => void;
+  /** Embed mode: render just the button, no surrounding card chrome. */
+  embedded?: boolean;
 }
 
-export const ActionFooter = ({ armyType, label, isLoading, isDisabled, onSubmit }: ActionFooterProps) => {
-  return (
-    <div className="p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">
-      <Button
+export const ActionFooter = ({ armyType, label, isLoading, isDisabled, onSubmit, embedded = false }: ActionFooterProps) => {
+  const button = (
+    <Button
         variant="gold"
         onClick={onSubmit}
         disabled={isDisabled}
@@ -33,6 +34,13 @@ export const ActionFooter = ({ armyType, label, isLoading, isDisabled, onSubmit 
           <span className="drop-shadow-sm">{label}</span>
         </div>
       </Button>
+  );
+
+  if (embedded) return button;
+
+  return (
+    <div className="p-1.5 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">
+      {button}
     </div>
   );
 };

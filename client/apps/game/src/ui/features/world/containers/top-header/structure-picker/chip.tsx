@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
+import { useRealmUpgradeAndProvision } from "@/ui/modules/entity-details/hooks/use-realm-upgrade-and-provision";
 import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
 import {
   formatPopulationStatusLabel,
@@ -19,8 +20,8 @@ import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
 import Hexagon from "lucide-react/dist/esm/icons/hexagon";
 import Info from "lucide-react/dist/esm/icons/info";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Star from "lucide-react/dist/esm/icons/star";
 import Users from "lucide-react/dist/esm/icons/users";
 import type { LucideIcon } from "lucide-react";
@@ -45,6 +46,18 @@ export type StructureWithMetadata = Structure & {
    * and the modal-sidebar attention dots without hitting torii per structure.
    */
   canProvision: boolean;
+  /**
+   * Per-building-type counts read off StructureBuildings.packed_counts_*. Used
+   * by the suggestion engine to recommend construction targets (wheat farms,
+   * resource farms, worker huts) without extra torii calls.
+   */
+  buildingCounts: {
+    wheat: number;
+    wood: number;
+    coal: number;
+    copper: number;
+    workerHut: number;
+  };
 };
 
 export const StructureInfoStat = ({
@@ -86,8 +99,10 @@ type StructureRealmActionsProps = {
 };
 
 export const StructureRealmActions = ({ structureEntityId, className }: StructureRealmActionsProps) => {
-  const upgradeInfo = useStructureUpgrade(typeof structureEntityId === "number" ? structureEntityId : null);
-  const provisionInfo = useBlitzRealmProvision(typeof structureEntityId === "number" ? structureEntityId : null);
+  const entityIdOrNull = typeof structureEntityId === "number" ? structureEntityId : null;
+  const upgradeInfo = useStructureUpgrade(entityIdOrNull);
+  const provisionInfo = useBlitzRealmProvision(entityIdOrNull);
+  const bootstrapInfo = useRealmUpgradeAndProvision(entityIdOrNull);
   const setTooltip = useUIStore((state) => state.setTooltip);
 
   if (!upgradeInfo) {
@@ -181,60 +196,57 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
     });
   };
 
-  const canRenderProvisionAction = Boolean(
-    provisionInfo &&
-      (provisionInfo.canProvision ||
-        provisionInfo.isProvisionLoading ||
-        provisionInfo.provisionActionState === "syncTimeout"),
-  );
-  const canProvision = provisionInfo?.canProvision ?? false;
-  const isProvisionDisabled = !canProvision || Boolean(provisionInfo?.isProvisionLocked);
-  const shouldGlowProvision = canProvision && !isProvisionDisabled;
+  // Bootstrap mode: first-ever upgrade also provisions the realm in one tx.
+  // Triggered while the chain still allows provisioning (main phase, not yet
+  // provisioned). Falls back to plain upgrade once canProvision flips false.
+  const isBootstrapMode = Boolean(provisionInfo?.canProvision);
+  const isBootstrapDisabled =
+    !bootstrapInfo.canUpgradeAndProvision || bootstrapInfo.isPending || upgradeInfo.isUpgradeLoading;
+  const shouldGlowBootstrap = bootstrapInfo.canUpgradeAndProvision && !isBootstrapDisabled;
+  const isBootstrapLoading =
+    bootstrapInfo.isPending || upgradeInfo.isUpgradeLoading || Boolean(provisionInfo?.isProvisionLoading);
 
-  const handleProvision = (event: MouseEvent<HTMLButtonElement>) => {
+  const handleBootstrap = (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
-    if (!provisionInfo || isProvisionDisabled) return;
+    if (isBootstrapDisabled) return;
 
-    void provisionInfo.handleProvision().catch((error) => {
-      console.error("Failed to provision realm", error);
+    void bootstrapInfo.handleUpgradeAndProvision().catch((error) => {
+      console.error("Failed to bootstrap realm", error);
     });
   };
 
   return (
     <div className={clsx("flex items-center gap-2", className)}>
-      <button
-        type="button"
-        onClick={handleUpgrade}
-        disabled={isDisabled}
-        className={clsx(
-          "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
-          shouldGlow
-            ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.55)] animate-pulse"
-            : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
-        )}
-        aria-label="Level up realm"
-      >
-        {upgradeInfo.isUpgradeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : renderIcon()}
-      </button>
-      {canRenderProvisionAction && (
+      {isBootstrapMode ? (
         <button
           type="button"
-          onClick={handleProvision}
-          disabled={isProvisionDisabled}
+          onClick={handleBootstrap}
+          disabled={isBootstrapDisabled}
           className={clsx(
             "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
-            shouldGlowProvision
-              ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.35)]"
+            shouldGlowBootstrap
+              ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.55)] animate-pulse"
               : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
           )}
-          aria-label="Provision realm"
-          title="Provision realm"
+          aria-label="Bootstrap realm"
+          title="Bootstrap realm"
         >
-          {provisionInfo?.isProvisionLoading ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : (
-            <Pickaxe className="h-3.5 w-3.5" />
+          {isBootstrapLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={handleUpgrade}
+          disabled={isDisabled}
+          className={clsx(
+            "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
+            shouldGlow
+              ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.55)] animate-pulse"
+              : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
           )}
+          aria-label="Level up realm"
+        >
+          {upgradeInfo.isUpgradeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : renderIcon()}
         </button>
       )}
       <button

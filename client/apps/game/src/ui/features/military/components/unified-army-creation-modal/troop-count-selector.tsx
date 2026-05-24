@@ -8,6 +8,11 @@ interface TroopCountSelectorProps {
   onChange: (value: number) => void;
   capacityRemaining?: number | null;
   troopMaxSize?: number | null;
+  /**
+   * Embed mode: drop the "Available troops" line — the MAX TROOPS summary in
+   * the parent body already covers that info.
+   */
+  embedded?: boolean;
 }
 
 export const TroopCountSelector = ({
@@ -16,6 +21,7 @@ export const TroopCountSelector = ({
   onChange,
   capacityRemaining,
   troopMaxSize,
+  embedded = false,
 }: TroopCountSelectorProps) => {
   const capacityLimit =
     typeof capacityRemaining === "number" && Number.isFinite(capacityRemaining) ? capacityRemaining : null;
@@ -31,7 +37,13 @@ export const TroopCountSelector = ({
   };
 
   return (
-    <div className="mt-2 p-2 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20">
+    <div
+      className={
+        embedded
+          ? "p-1"
+          : "mt-2 p-2 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20"
+      }
+    >
       <div className="space-y-1.5">
         <div className="flex items-center gap-2">
           <div className="flex gap-1.5 flex-1">
@@ -70,16 +82,18 @@ export const TroopCountSelector = ({
           />
         </div>
 
-        <div className="flex justify-between items-center text-xs">
-          <span className="text-gold/60">
-            Available troops: <span className="text-gold font-bold">{maxAffordable.toLocaleString()}</span>
-          </span>
-          {shouldShowCapacityInfo && capacityLimitDisplay !== null && (
+        {!embedded && (
+          <div className="flex justify-between items-center text-xs">
             <span className="text-gold/60">
-              Cap remaining: <span className="text-gold/80 font-semibold">{capacityLimitDisplay.toLocaleString()}</span>
+              Available troops: <span className="text-gold font-bold">{maxAffordable.toLocaleString()}</span>
             </span>
-          )}
-        </div>
+            {shouldShowCapacityInfo && capacityLimitDisplay !== null && (
+              <span className="text-gold/60">
+                Cap remaining: <span className="text-gold/80 font-semibold">{capacityLimitDisplay.toLocaleString()}</span>
+              </span>
+            )}
+          </div>
+        )}
 
         {isAtCapacity && maxCapacity !== null && (
           <div className="bg-danger/10 border-l-2 border-danger rounded px-2 py-1 text-xxs text-danger font-semibold">

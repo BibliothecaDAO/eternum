@@ -25,6 +25,11 @@ interface StructureSidebarProps {
   filter?: StructureType[];
   /** Optional label shown above the list. */
   title?: string;
+  /**
+   * Which stats badges each row renders. `military` swaps pop/tiles for
+   * guard armies + explorer armies, which is what the Military modal wants.
+   */
+  statsVariant?: "default" | "military";
 }
 
 /**
@@ -34,7 +39,14 @@ interface StructureSidebarProps {
  * the same list in the same place every time.
  */
 export const StructureSidebar = memo(
-  ({ selectedEntityId, onSelectStructure, attention, filter, title = "Your realms" }: StructureSidebarProps) => {
+  ({
+    selectedEntityId,
+    onSelectStructure,
+    attention,
+    filter,
+    title = "Your realms",
+    statsVariant,
+  }: StructureSidebarProps) => {
     const {
       setup: { components },
     } = useDojo();
@@ -86,6 +98,7 @@ export const StructureSidebar = memo(
               onSelect={onSelectStructure}
               variant="compact"
               hasAttention={attention?.(structure) ?? false}
+              statsVariant={statsVariant}
             />
           ))}
         </div>

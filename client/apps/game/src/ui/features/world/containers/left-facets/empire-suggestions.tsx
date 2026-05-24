@@ -14,6 +14,17 @@ import { memo, useCallback, useMemo, useState } from "react";
 import { type EmpireSuggestion, useEmpireSuggestions } from "./use-empire-suggestions";
 
 const DEFAULT_VISIBLE_SUGGESTIONS = 6;
+const TITLE_LINE_MAX = 30;
+const SEPARATOR = " · ";
+
+// Truncate the realm name so `name · label` fits a single chip line. The label
+// is fixed copy so we shrink the name (player-controlled) instead.
+const buildTitle = (realmName: string, label: string): { name: string; label: string } => {
+  const budget = TITLE_LINE_MAX - SEPARATOR.length - label.length;
+  if (realmName.length <= budget) return { name: realmName, label };
+  if (budget <= 1) return { name: realmName.slice(0, 1) + "…", label };
+  return { name: realmName.slice(0, budget - 1) + "…", label };
+};
 
 const SuggestionChip = ({
   suggestion,
@@ -26,13 +37,14 @@ const SuggestionChip = ({
 }) => {
   const Icon = suggestion.icon;
   const isPrimary = suggestion.emphasis === "primary";
+  const { name: trimmedName } = buildTitle(suggestion.realmName, suggestion.label);
 
   return (
     <button
       type="button"
       onClick={() => onClick(suggestion)}
       disabled={isPending}
-      title={suggestion.reason}
+      title={`${suggestion.realmName} · ${suggestion.label}${suggestion.reason ? ` — ${suggestion.reason}` : ""}`}
       className={cn(
         "flex w-full items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition",
         isPrimary
@@ -43,13 +55,13 @@ const SuggestionChip = ({
     >
       <Icon className={cn("h-4 w-4 flex-shrink-0", isPrimary ? "text-gold" : "text-gold/70")} />
       <span className="min-w-0 flex-1">
-        <span className={cn("block leading-tight", isPrimary ? HUD_VALUE : HUD_BODY)}>
-          <span className="text-gold/55">{suggestion.realmName}</span>
+        <span className={cn("block truncate leading-tight", isPrimary ? HUD_VALUE : HUD_BODY)}>
+          <span className="text-gold/55">{trimmedName}</span>
           <span className="text-gold/40"> · </span>
           {suggestion.label}
         </span>
         {suggestion.reason && (
-          <span className={cn("block leading-tight not-italic text-gold/55", HUD_BODY_MUTED)}>
+          <span className={cn("block truncate leading-tight not-italic text-gold/55", HUD_BODY_MUTED)}>
             {suggestion.reason}
           </span>
         )}
@@ -127,6 +139,11 @@ export const EmpireSuggestions = memo(() => {
         case "garrison":
           setLeftNavigationView(LeftView.MilitaryView);
           return;
+        case "build-wheat":
+        case "build-wood":
+        case "build-coal":
+        case "build-copper":
+        case "build-worker-hut":
         case "build-first":
         case "expand-population":
           setLeftNavigationView(LeftView.ConstructionView);
@@ -152,7 +169,7 @@ export const EmpireSuggestions = memo(() => {
       {suggestions.length === 0 ? (
         <p className={HUD_BODY_MUTED}>No suggestions right now — empire looks healthy.</p>
       ) : (
-        <div className="flex flex-col gap-1.5">
+        <div className="flex max-h-[clamp(160px,22vh,360px)] flex-col gap-1.5 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           {visible.map((suggestion) => (
             <SuggestionChip
               key={suggestion.id}

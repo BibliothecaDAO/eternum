@@ -321,7 +321,7 @@ export const StructureListColumn = memo(() => {
         {visibleStructures.length === 0 ? (
           <p className={cn(HUD_BODY_MUTED)}>No structures match this filter.</p>
         ) : (
-          <div className="flex max-h-[312px] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+          <div className="flex max-h-[clamp(220px,32vh,520px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
             {visibleStructures.map((structure) => (
               <StructureStatusRow
                 key={structure.entityId}

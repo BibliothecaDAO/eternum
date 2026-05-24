@@ -37,6 +37,12 @@ interface CompactDefenseDisplayProps {
   structureId?: number;
   canManageDefense?: boolean;
   variant?: EntityDetailLayoutVariant;
+  /**
+   * Embed override — when present, slot clicks call this instead of opening the
+   * legacy popup. Used by the merged MilitaryModal to keep the action surface
+   * inline inside its right pane.
+   */
+  onRequestSlotAction?: (slot: GuardSlot) => void;
 }
 
 export const CompactDefenseDisplay = ({
@@ -47,6 +53,7 @@ export const CompactDefenseDisplay = ({
   structureId,
   canManageDefense = false,
   variant = "default",
+  onRequestSlotAction,
 }: CompactDefenseDisplayProps) => {
   const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
   const {
@@ -123,6 +130,10 @@ export const CompactDefenseDisplay = ({
 
   const handleSlotOpen = (slot: GuardSlot) => {
     if (!canOpenModal || !structureId) return;
+    if (onRequestSlotAction) {
+      onRequestSlotAction(slot);
+      return;
+    }
     openArmyCreationPopup({
       structureId,
       isExplorer: false,
