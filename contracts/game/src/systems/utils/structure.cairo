@@ -3,9 +3,10 @@ use dojo::event::EventStorage;
 use dojo::model::ModelStorage;
 use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
 use crate::alias::ID;
-use crate::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes};
+use crate::constants::{DAYDREAMS_AGENT_ID, RESOURCE_PRECISION, ResourceTypes, all_resource_ids};
 use crate::models::config::{
-    StartingResourcesConfig, StructureCapacityConfig, VictoryPointsGrantConfig, VillageTokenConfig, WorldConfigUtilImpl,
+    CombatConfigImpl, StartingResourcesConfig, StructureCapacityConfig, VictoryPointsGrantConfig, VillageTokenConfig,
+    WorldConfigUtilImpl,
 };
 use crate::models::events::{PointsActivity, PointsRegisteredStory, Story, StoryEvent};
 use crate::models::hyperstructure::PlayerRegisteredPointsImpl;
@@ -21,13 +22,14 @@ use crate::models::structure::{
     StructureMetadataStoreImpl, StructureOwnerStoreImpl, StructureResourcesImpl, StructureTroopExplorerStoreImpl,
     StructureTroopGuardStoreImpl, StructureVillageSlots,
 };
-use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, GuardTroops, TroopsImpl};
+use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, GuardTroops, TroopLimitTrait, TroopsImpl};
 use crate::models::weight::Weight;
 use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 use crate::systems::combat::contracts::troop_management::{
     ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
 };
 use crate::systems::utils::map::IMapImpl;
+use crate::systems::utils::resource::iResourceTransferImpl;
 use crate::systems::utils::troop::iExplorerImpl;
 use crate::systems::utils::village::iVillageImpl;
 use crate::utils::map::biomes::Biome;
@@ -231,6 +233,9 @@ pub impl iStructureImpl of IStructureTrait {
             );
             // store new owner
             StructureOwnerStoreImpl::store(explorer_owner_address, ref world, structure_id);
+            Self::auto_garrison_captured_hyperstructure(
+                ref world, ref structure_guards, ref structure_base, explorer, structure_id,
+            );
 
             // grant victory points to player for conquering hyperstructure
             let structure_was_owned_by_bandits: bool = previous_owner_address.is_zero();
@@ -288,6 +293,90 @@ pub impl iStructureImpl of IStructureTrait {
         }
     }
 
+    fn auto_garrison_captured_hyperstructure(
+        ref world: WorldStorage,
+        ref structure_guards: GuardTroops,
+        ref structure_base: StructureBase,
+        explorer: ExplorerTroops,
+        structure_id: ID,
+    ) {
+        if structure_base.category != StructureCategory::Hyperstructure.into() {
+            return;
+        }
+        if explorer.troops.count.is_zero() {
+            return;
+        }
+
+        Self::move_explorer_cargo_to_structure(ref world, explorer.explorer_id, structure_id);
+        Self::move_explorer_troops_to_delta_guard(
+            ref world, ref structure_guards, ref structure_base, explorer, structure_id,
+        );
+        Self::delete_garrisoned_explorer(ref world, explorer);
+    }
+
+    fn move_explorer_cargo_to_structure(ref world: WorldStorage, explorer_id: ID, structure_id: ID) {
+        let carried_resources = Self::read_nonzero_resource_balances(ref world, explorer_id);
+        if carried_resources.len().is_zero() {
+            return;
+        }
+
+        let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
+        let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+        iResourceTransferImpl::troop_to_structure_instant(
+            ref world, explorer_id, ref explorer_weight, structure_id, ref structure_weight, carried_resources.span(),
+        );
+    }
+
+    fn read_nonzero_resource_balances(ref world: WorldStorage, entity_id: ID) -> Array<(u8, u128)> {
+        let mut resources: Array<(u8, u128)> = array![];
+        for resource_type in all_resource_ids() {
+            let balance = ResourceImpl::read_balance(ref world, entity_id, resource_type);
+            if balance.is_non_zero() {
+                resources.append((resource_type, balance));
+            }
+        }
+        resources
+    }
+
+    fn move_explorer_troops_to_delta_guard(
+        ref world: WorldStorage,
+        ref structure_guards: GuardTroops,
+        ref structure_base: StructureBase,
+        explorer: ExplorerTroops,
+        structure_id: ID,
+    ) {
+        let troop_limit_config = CombatConfigImpl::troop_limit_config(ref world);
+        let max_army_size: u128 = troop_limit_config.max_army_size(structure_base.level, explorer.troops.tier).into();
+        assert!(
+            explorer.troops.count <= max_army_size * RESOURCE_PRECISION,
+            "reached limit of structure guard troop count. max: {}",
+            max_army_size,
+        );
+
+        structure_guards.to_slot(GuardSlot::Delta, explorer.troops, 0);
+        structure_base.troop_guard_count = 1;
+        StructureTroopGuardStoreImpl::store(ref structure_guards, ref world, structure_id);
+        StructureBaseStoreImpl::store(ref structure_base, ref world, structure_id);
+    }
+
+    fn delete_garrisoned_explorer(ref world: WorldStorage, explorer: ExplorerTroops) {
+        let mut deleted_explorer = explorer;
+        let mut explorer_owner_structure = StructureBaseStoreImpl::retrieve(ref world, deleted_explorer.owner);
+        let explorer_owner_structure_explorers = StructureTroopExplorerStoreImpl::retrieve(
+            ref world, deleted_explorer.owner,
+        )
+            .into();
+
+        deleted_explorer.troops.count = 0;
+        iExplorerImpl::explorer_from_structure_delete(
+            ref world,
+            ref deleted_explorer,
+            explorer_owner_structure_explorers,
+            ref explorer_owner_structure,
+            deleted_explorer.owner,
+        );
+    }
+
     fn claim(
         ref world: WorldStorage, ref structure_base: StructureBase, ref explorer: ExplorerTroops, structure_id: ID,
     ) {
@@ -301,4 +390,3 @@ pub impl iStructureImpl of IStructureTrait {
         }
     }
 }
-

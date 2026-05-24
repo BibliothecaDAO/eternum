@@ -619,6 +619,7 @@ pub fn namespace_def_combat() -> NamespaceDef {
             TestResource::Model("Wonder"), // Resource models
             TestResource::Model("Resource"),
             TestResource::Model("ResourceList"), TestResource::Model("ResourceFactoryConfig"),
+            TestResource::Model("PlayerRegisteredPoints"), TestResource::Model("SeasonPrize"),
             // Contracts
             TestResource::Contract("troop_management_systems"), TestResource::Contract("troop_movement_systems"),
             TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
