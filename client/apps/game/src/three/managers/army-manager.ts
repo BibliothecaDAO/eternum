@@ -356,6 +356,10 @@ export class ArmyManager {
 
     // Initialize player indicator manager
     this.playerIndicatorManager = new PlayerIndicatorManager(scene, MAX_INSTANCES);
+    // The colored ownership-dot above each army was perceived as visual noise.
+    // Keep the manager instantiated so bookkeeping (bounding sphere, dispose)
+    // still works, but hide the indicator mesh so no dots ever render.
+    this.playerIndicatorManager.setEnabled(false);
 
     const createArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Create Army"));
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
