@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-25",
+    title: "Safer Repeat Moves",
+    description:
+      "Hid movement options for units whose previous move is still resolving, preventing stale follow-up commands until the transaction catches up.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-23",
     title: "Event-Driven Hover Details",
     description:

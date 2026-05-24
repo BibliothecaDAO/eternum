@@ -2924,7 +2924,7 @@ export default class WorldmapScene extends WarpTravel {
     if (actionPath.length > 0 && this.isArmyMovementInputLocked(selectedEntityId)) {
       toast.info("Army movement is still resolving");
       this.state.updateEntityActionHoveredHex(null);
-      this.clearSelection();
+      this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       return;
     }
 
@@ -3483,6 +3483,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovements.add(entityId);
     this.pendingArmyMovementStartedAt.set(entityId, Date.now());
     this.pendingArmyMovementTargetKeys.set(entityId, targetKey);
+    this.clearMovementActionOptionsForSelectedArmy(entityId);
     this.schedulePendingArmyMovementFallback(entityId);
   }
 
@@ -3772,11 +3773,26 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private isArmyMovementInputLocked(entityId: ID): boolean {
+    return this.isArmyMovementActionUnavailable(entityId);
+  }
+
+  private isArmyMovementActionUnavailable(entityId: ID): boolean {
     return (
       this.pendingArmyMovements.has(entityId) ||
       this.pendingArmyMovementAuthoritativeResolutions.has(entityId) ||
+      this.hasPendingMovementTransactionForArmy(entityId) ||
       this.armyManager.hasUnresolvedOptimisticMovement(entityId)
     );
+  }
+
+  private hasPendingMovementTransactionForArmy(entityId: ID): boolean {
+    for (const pendingEntityId of this.pendingArmyMovementTxMap.values()) {
+      if (pendingEntityId === entityId) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private hasEligibleArmyForTabCycle(): boolean {
@@ -3887,10 +3903,6 @@ export default class WorldmapScene extends WarpTravel {
       this.requestChunkRefresh(true);
     }
 
-    if (selectionPlan.shouldBlockSelection) {
-      return false;
-    }
-
     // Check if army is currently being rendered or is in chunk transition
     if (this.isChunkTransitioning) {
       if (deferDuringChunkTransition) {
@@ -3950,6 +3962,12 @@ export default class WorldmapScene extends WarpTravel {
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
     playUnitCommandSound("select");
 
+    if (selectionPlan.shouldBlockSelection || this.isArmyMovementActionUnavailable(selectedEntityId)) {
+      this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
+      this.showSelectedArmyPulse(selectedEntityId);
+      return true;
+    }
+
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
@@ -3987,10 +4005,38 @@ export default class WorldmapScene extends WarpTravel {
     this.updateEntityActionPaths(paths);
     this.highlightHexManager.highlightHexes(highlightedHexes);
 
-    // Show selection pulse for the selected army
+    this.showSelectedArmyPulse(selectedEntityId);
+
+    const extraHexes: HexPosition[] = [];
+    if (armyPosition) {
+      extraHexes.push(armyPosition);
+    }
+
     const selectedArmyData = this.armyManager
       .getArmies()
       .find((army) => Number(army.entityId) === Number(selectedEntityId));
+    const owningStructureId =
+      selectedArmyData?.owningStructureId ?? this.armyStructureOwners.get(selectedEntityId) ?? null;
+
+    this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes, extraHexes);
+    this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
+    return true;
+  }
+
+  private clearMovementActionOptionsForSelectedArmy(entityId: ID): void {
+    const { selectedEntityId } = getLiveWorldmapEntityActions();
+    if (selectedEntityId !== entityId) {
+      return;
+    }
+
+    this.updateEntityActionPaths(new Map());
+    this.highlightHexManager.highlightHexes([]);
+    this.state.updateEntityActionHoveredHex(null);
+    this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
+  }
+
+  private showSelectedArmyPulse(selectedEntityId: ID): void {
+    const armyPosition = this.armiesPositions.get(selectedEntityId);
     if (armyPosition) {
       const worldPos = getWorldPositionForHex(armyPosition);
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
@@ -4000,18 +4046,6 @@ export default class WorldmapScene extends WarpTravel {
         console.warn(`[DEBUG] No army position found for ${selectedEntityId} in armiesPositions map`);
       }
     }
-
-    const extraHexes: HexPosition[] = [];
-    if (armyPosition) {
-      extraHexes.push(armyPosition);
-    }
-
-    const owningStructureId =
-      selectedArmyData?.owningStructureId ?? this.armyStructureOwners.get(selectedEntityId) ?? null;
-
-    this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes, extraHexes);
-    this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
-    return true;
   }
 
   private queueArmySelectionRecovery(selectedEntityId: ID, playerAddress: ContractAddress): void {

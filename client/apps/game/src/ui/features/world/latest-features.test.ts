@@ -23,11 +23,11 @@ describe("latestFeatures landing feed", () => {
     ).toBe(true);
   });
 
-  it("announces resource spend sync fixes in the latest feed", () => {
+  it("announces safer repeat moves in the latest feed", () => {
     expect(latestFeatures).toContainEqual(
       expect.objectContaining({
-        date: "2026-05-21",
-        title: "Resource Spend Sync",
+        date: "2026-05-25",
+        title: "Safer Repeat Moves",
         type: "fix",
         gameSlug: "world",
       }),
