@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-24T11:02:40.474Z",
+  "updatedAt": "2026-05-24T11:14:40.262Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2760,7 +2760,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-24-05-26-1100 not found"
       },
-      "updatedAt": "2026-05-24T10:52:15.500Z"
+      "updatedAt": "2026-05-24T11:14:40.262Z"
     },
     "bltz-dash-816": {
       "gameName": "bltz-dash-816",
