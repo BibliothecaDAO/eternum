@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.eternum",
   "kind": "game",
-  "updatedAt": "2026-05-24T08:31:10.819Z",
+  "updatedAt": "2026-05-24T08:31:18.996Z",
   "entries": {
     "etrn-gloom-467": {
       "kind": "game",
@@ -11,12 +11,13 @@
       "path": "runs/mainnet/eternum/etrn-gloom-467.json",
       "inputPath": "inputs/mainnet/eternum/etrn-gloom-467/26356337562-1.json",
       "status": "running",
-      "updatedAt": "2026-05-24T08:31:10.819Z",
+      "updatedAt": "2026-05-24T08:31:18.996Z",
       "workflowRef": "next",
       "currentStepId": "grant-village-pass-role",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-24T09:16:18.996Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "grant-village-pass-role",
+      "recoverablePendingStepId": "create-banks",
       "startTime": 1779613200,
       "durationSeconds": 7200,
       "artifacts": {}
