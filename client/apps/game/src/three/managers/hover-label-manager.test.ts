@@ -353,6 +353,34 @@ describe("HoverLabelManager", () => {
     expect(markLabelsDirty).not.toHaveBeenCalled();
   });
 
+  it("hides a previously active label when retrying the same target reports it missing", () => {
+    const markLabelsDirty = vi.fn();
+    const army = {
+      show: vi.fn().mockReturnValueOnce({ status: "shown" }).mockReturnValueOnce({ status: "missing" }),
+      hide: vi.fn(),
+    };
+    const manager = new HoverLabelManager(
+      { army },
+      () => ({
+        army: { id: 42, owner: 1n },
+      }),
+      undefined,
+      markLabelsDirty,
+    );
+
+    manager.onHexHover({ col: 10, row: 12 });
+    const result = manager.refreshCurrentHover();
+
+    expect(army.hide).toHaveBeenCalledWith(42);
+    expect(manager.hasActiveLabels()).toBe(false);
+    expect(result).toMatchObject({
+      activeLabelCount: 0,
+      missingTypes: ["army"],
+      resolvedAnyEntity: true,
+      shownAnyLabel: false,
+    });
+  });
+
   it("marks labels dirty when a current hover target is reattached", () => {
     const markLabelsDirty = vi.fn();
     const army = {

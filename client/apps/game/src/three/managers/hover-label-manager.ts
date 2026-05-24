@@ -220,6 +220,7 @@ export class HoverLabelManager {
           };
         }
 
+        controller.hide(currentId);
         delete this.activeLabels[type];
         return {
           labelsNeedRender: true,

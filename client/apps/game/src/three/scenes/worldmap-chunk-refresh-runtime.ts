@@ -93,12 +93,9 @@ export function waitForWorldmapRequestedChunkRefresh(input: WaitForWorldmapReque
     return Promise.resolve();
   }
 
-  if (!input.latestWinsRefresh) {
-    return new Promise((resolve) =>
-      input.setTimeoutFn(resolve, input.fallbackDelayMs ?? WORLDMAP_GENERIC_FORCED_REFRESH_DEBOUNCE_MS),
-    );
-  }
-
+  const pollDelayMs = input.latestWinsRefresh
+    ? 0
+    : (input.fallbackDelayMs ?? WORLDMAP_GENERIC_FORCED_REFRESH_DEBOUNCE_MS);
   return new Promise((resolve) => {
     const poll = () => {
       if (input.isSwitchedOff()) {
@@ -111,7 +108,7 @@ export function waitForWorldmapRequestedChunkRefresh(input: WaitForWorldmapReque
         return;
       }
 
-      input.setTimeoutFn(poll, 0);
+      input.setTimeoutFn(poll, pollDelayMs);
     };
 
     poll();

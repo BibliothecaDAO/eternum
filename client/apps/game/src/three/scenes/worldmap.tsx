@@ -155,6 +155,8 @@ import {
   createWorldmapHydratedRefreshQueueState,
   flushWorldmapHydratedChunkRefreshQueue,
   queueWorldmapHydratedChunkRefresh,
+  trackWorldmapHydratedRefreshQueueFlush,
+  waitForWorldmapHydratedRefreshQueueIdle,
 } from "./worldmap-hydrated-refresh-runtime";
 import {
   createWorldmapChunkRefreshRuntimeState,
@@ -600,6 +602,9 @@ type DirectionalPrefetchAnchor = {
   movementSign: -1 | 1;
 };
 type WorldmapCameraTransitionStatus = "idle" | "transitioning";
+interface WorldmapUrlLocationMoveOptions {
+  requestRefresh?: boolean;
+}
 type HoverLabelRecoveryReason =
   | "hover"
   | "initial_refresh"
@@ -718,6 +723,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly chunkRowsBehind = WORLDMAP_CHUNK_POLICY.pin.rowsBehind;
   private readonly chunkColsEachSide = WORLDMAP_CHUNK_POLICY.pin.colsEachSide;
   private hydratedRefreshQueueState = createWorldmapHydratedRefreshQueueState();
+  private skipNextUrlRefreshAfterInitialConvergence = false;
   private hydratedRefreshSuppressionAreaKeys: Set<string> = new Set();
   private cameraPositionScratch: Vector3 = new Vector3();
   private cameraDirectionScratch: Vector3 = new Vector3();
@@ -2120,16 +2126,43 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  public moveCameraToURLLocation() {
+  public moveCameraToURLLocation(options: WorldmapUrlLocationMoveOptions = {}): void {
+    const shouldRequestRefresh = this.resolveURLLocationRefreshRequest(options);
     const routeWorldPosition = resolvePlayRouteWorldPosition(window.location);
     if (routeWorldPosition) {
-      const { col, row } = routeWorldPosition;
-      this.moveCameraToColRow(col, row, 0);
-      this.requestChunkRefresh(true, "default");
+      this.moveCameraToRouteWorldPosition(routeWorldPosition);
+      this.requestURLLocationRefreshIfNeeded(shouldRequestRefresh);
     }
     if (!this.hasInitialized) {
       this.alignInitialWorldmapCameraView();
     }
+  }
+
+  private moveCameraToRouteWorldPosition(routeWorldPosition: HexPosition): void {
+    const { col, row } = routeWorldPosition;
+    this.moveCameraToColRow(col, row, 0);
+  }
+
+  private requestURLLocationRefreshIfNeeded(shouldRequestRefresh: boolean): void {
+    if (!shouldRequestRefresh) {
+      return;
+    }
+
+    this.requestChunkRefresh(true, "default");
+  }
+
+  private resolveURLLocationRefreshRequest(options: WorldmapUrlLocationMoveOptions): boolean {
+    if (options.requestRefresh === false) {
+      return false;
+    }
+
+    return !this.consumeInitialConvergenceUrlRefreshSkip();
+  }
+
+  private consumeInitialConvergenceUrlRefreshSkip(): boolean {
+    const shouldSkipRefresh = this.skipNextUrlRefreshAfterInitialConvergence;
+    this.skipNextUrlRefreshAfterInitialConvergence = false;
+    return shouldSkipRefresh;
   }
 
   private alignInitialWorldmapCameraView(): void {
@@ -2608,6 +2641,11 @@ export default class WorldmapScene extends WarpTravel {
   private applyHoverLabelRecoveryResult(result: HoverLabelReconcileResult, reason: HoverLabelRecoveryReason): void {
     if (!this.currentHoverLabelHex || this.isSwitchedOff) {
       this.clearPendingHoverLabelRecovery("inactive");
+      return;
+    }
+
+    if (!result.resolvedAnyEntity) {
+      this.clearPendingHoverLabelRecovery("no_entity");
       return;
     }
 
@@ -4208,7 +4246,7 @@ export default class WorldmapScene extends WarpTravel {
     return {
       onSetupStart: () => this.configureWarpTravelSetupStart(),
       onInitialSetupStart: () => this.prepareWarpTravelInitialSetup(),
-      moveCameraToSceneLocation: () => this.moveCameraToURLLocation(),
+      moveCameraToSceneLocation: () => this.moveCameraToURLLocation({ requestRefresh: false }),
       attachLabelGroupsToScene: () => this.attachWorldmapLabelGroupsToScene(),
       attachManagerLabels: () => this.attachWorldmapManagerLabels(),
       registerStoreSubscriptions: () => this.registerStoreSubscriptions(),
@@ -4267,12 +4305,43 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async refreshWarpTravelScene(): Promise<void> {
+    const isInitialSetup = !this.hasInitialized;
     const didRefresh = await this.updateVisibleChunks(true);
     if (!didRefresh) {
       throw new Error("World map did not finish its initial interactive refresh.");
     }
 
+    if (isInitialSetup) {
+      await this.awaitInitialTerrainConvergence();
+      this.skipNextUrlRefreshAfterInitialConvergence = true;
+    }
+
     this.reconcileHoverLabels("initial_refresh");
+  }
+
+  private async awaitInitialTerrainConvergence(): Promise<void> {
+    await waitForWorldmapHydratedRefreshQueueIdle({
+      isSwitchedOff: () => this.isSwitchedOff,
+      setTimeoutFn: (callback, delayMs) => window.setTimeout(callback, delayMs),
+      state: this.hydratedRefreshQueueState,
+    });
+
+    await this.waitForPendingChunkRefreshConvergence();
+  }
+
+  private async waitForPendingChunkRefreshConvergence(): Promise<void> {
+    const requestToken = this.chunkRefreshRequestToken;
+    if (!this.hasPendingChunkRefresh(requestToken)) {
+      return;
+    }
+
+    await this.waitForRequestedChunkRefresh(requestToken);
+  }
+
+  private hasPendingChunkRefresh(requestToken: number): boolean {
+    return (
+      this.chunkRefreshAppliedToken < requestToken || this.chunkRefreshRunning || this.chunkRefreshTimeout !== null
+    );
   }
 
   private commitCurrentChunkAuthority(chunkKey: string): void {
@@ -6446,39 +6515,53 @@ export default class WorldmapScene extends WarpTravel {
   private scheduleHydratedChunkRefresh(chunkKey: string) {
     queueWorldmapHydratedChunkRefresh({
       chunkKey,
-      scheduleFlush: () => {
-        Promise.resolve().then(() => this.flushHydratedChunkRefreshes());
-      },
+      scheduleFlush: () => this.scheduleHydratedRefreshFlush(),
       state: this.hydratedRefreshQueueState,
     });
   }
 
-  private async flushHydratedChunkRefreshes() {
-    await flushWorldmapHydratedChunkRefreshQueue({
-      awaitActiveChunkSwitch: this.globalChunkSwitchPromise
-        ? async () => {
-            await this.globalChunkSwitchPromise;
-          }
-        : undefined,
-      currentChunk: this.currentChunk,
-      isChunkTransitioning: this.isChunkTransitioning,
-      onAfterRefresh: () => {
-        this.retryDeferredChunkRemovals();
-      },
-      queueFlush: () => {
-        Promise.resolve().then(() => this.flushHydratedChunkRefreshes());
-      },
-      refreshCurrentChunk: async () => {
-        const refreshToken = this.requestChunkRefresh(true, "hydrated_chunk");
-        await this.waitForRequestedChunkRefresh(refreshToken);
-      },
-      reportRefreshError: (currentChunk, error) => {
-        console.error(`[CHUNK SYNC] Hydrated chunk refresh failed for ${currentChunk}`, error);
-      },
-      state: this.hydratedRefreshQueueState,
-      warn: (message, error) => {
-        console.warn(message, error);
-      },
+  private scheduleHydratedRefreshFlush(): void {
+    Promise.resolve().then(() => {
+      const activeFlush = this.hydratedRefreshQueueState.activeFlushPromise;
+      if (activeFlush) {
+        void activeFlush
+          .catch(() => undefined)
+          .finally(() => {
+            void this.flushHydratedChunkRefreshes();
+          });
+        return;
+      }
+
+      void this.flushHydratedChunkRefreshes();
+    });
+  }
+
+  private flushHydratedChunkRefreshes(): Promise<void> {
+    return trackWorldmapHydratedRefreshQueueFlush(this.hydratedRefreshQueueState, async () => {
+      await flushWorldmapHydratedChunkRefreshQueue({
+        awaitActiveChunkSwitch: this.globalChunkSwitchPromise
+          ? async () => {
+              await this.globalChunkSwitchPromise;
+            }
+          : undefined,
+        currentChunk: this.currentChunk,
+        isChunkTransitioning: this.isChunkTransitioning,
+        onAfterRefresh: () => {
+          this.retryDeferredChunkRemovals();
+        },
+        queueFlush: () => this.scheduleHydratedRefreshFlush(),
+        refreshCurrentChunk: async () => {
+          const refreshToken = this.requestChunkRefresh(true, "hydrated_chunk");
+          await this.waitForRequestedChunkRefresh(refreshToken);
+        },
+        reportRefreshError: (currentChunk, error) => {
+          console.error(`[CHUNK SYNC] Hydrated chunk refresh failed for ${currentChunk}`, error);
+        },
+        state: this.hydratedRefreshQueueState,
+        warn: (message, error) => {
+          console.warn(message, error);
+        },
+      });
     });
   }
 
@@ -9188,20 +9271,39 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private scheduleLegacyChunkRefresh(requestedDelayMs: number): void {
+    const scheduledToken = this.chunkRefreshRequestToken;
     scheduleWorldmapChunkRefreshTimer({
       clearTimeoutFn: (timeoutId) => window.clearTimeout(timeoutId),
       nowMs: performance.now(),
       onTimer: () => {
-        const shouldForce = this.pendingChunkRefreshForce;
-        const refreshReason = this.pendingChunkRefreshUiReason;
-        this.pendingChunkRefreshForce = false;
-        this.pendingChunkRefreshUiReason = "default";
-        void this.updateVisibleChunks(shouldForce, { reason: refreshReason }).catch((error) => {
-          console.error("[WorldMap] Legacy chunk refresh failed:", error);
-        });
+        void this.flushLegacyChunkRefresh(scheduledToken);
       },
       requestedDelayMs,
       setTimeoutFn: (callback, delayMs) => window.setTimeout(callback, delayMs),
+      state: this.chunkRefreshRuntimeState,
+    });
+  }
+
+  private async flushLegacyChunkRefresh(scheduledToken: number): Promise<void> {
+    const shouldForce = this.pendingChunkRefreshForce;
+    const refreshReason = this.pendingChunkRefreshUiReason;
+    this.pendingChunkRefreshForce = false;
+    this.pendingChunkRefreshUiReason = "default";
+
+    await runWorldmapChunkRefreshExecution({
+      executeRefresh: async () => {
+        await this.updateVisibleChunks(shouldForce, { reason: refreshReason });
+      },
+      onError: (error) => {
+        console.error("[WorldMap] Legacy chunk refresh failed:", error);
+      },
+      onExecutionComplete: () => {},
+      onRescheduleWhileRunning: () => {},
+      onSuperseded: () => {},
+      scheduledToken,
+      scheduleRerun: () => {
+        this.scheduleLegacyChunkRefresh(0);
+      },
       state: this.chunkRefreshRuntimeState,
     });
   }
@@ -10879,7 +10981,7 @@ export default class WorldmapScene extends WarpTravel {
             return;
           }
 
-          this.moveCameraToURLLocation();
+          this.moveCameraToURLLocation({ requestRefresh: false });
           this.refreshRouteOwnedChunkState();
         },
       ),
