@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-24T08:15:50.747Z",
+  "updatedAt": "2026-05-24T08:18:28.725Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1103,7 +1103,7 @@
       "path": "runs/mainnet/blitz/bltz-blink-511.json",
       "inputPath": "inputs/mainnet/blitz/bltz-blink-511/26348233757-1.json",
       "status": "complete",
-      "updatedAt": "2026-05-24T08:15:50.747Z",
+      "updatedAt": "2026-05-24T08:18:28.725Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -1113,10 +1113,8 @@
       "durationSeconds": 3600,
       "artifacts": {
         "indexerCreated": true,
-        "indexerTier": "basic",
-        "lastIndexerDescribeAt": "2026-05-24T01:16:00.616Z",
-        "pendingIndexerTierTarget": "pro",
-        "pendingIndexerTierRequestedAt": "2026-05-24T08:15:49.585Z"
+        "indexerTier": "pro",
+        "lastIndexerDescribeAt": "2026-05-24T08:18:28.725Z"
       }
     },
     "bltz-dash-816": {
