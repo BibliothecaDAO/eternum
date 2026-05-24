@@ -6,7 +6,6 @@ import { ChunkTransitionIndicator, ErrorBoundary, Toaster, TransactionNotificati
 import { useEffect } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
-import { env } from "../env";
 import { waitForSafeTransactionSubmit } from "./hooks/context/transaction-submit-guard";
 import { useAccountStore } from "./hooks/store/use-account-store";
 import { usePlayRouteBootController } from "./game-entry/play-route-boot";
@@ -71,33 +70,6 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
 
 const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   const navigate = useNavigate();
-  useEffect(() => {
-    if (!env.VITE_TRACING_ENABLED) {
-      return;
-    }
-
-    let cancelled = false;
-    let cleanup: (() => void) | undefined;
-
-    const setupTracing = async () => {
-      const { initializeTracing, cleanupTracing } = await import("./tracing");
-      if (cancelled) return;
-      initializeTracing({ enableMetricsCollection: false });
-      cleanup = () => {
-        void cleanupTracing();
-      };
-    };
-
-    void setupTracing();
-
-    return () => {
-      cancelled = true;
-      if (cleanup) {
-        cleanup();
-      }
-    };
-  }, []);
-
   const state = usePlayRouteBootController();
   const { phase, progress, setupResult, account, connectWallet, retry, isReconnectRequired, currentTask, tasks } =
     state;

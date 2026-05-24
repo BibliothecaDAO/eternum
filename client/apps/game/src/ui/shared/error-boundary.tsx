@@ -1,4 +1,4 @@
-import { captureError } from "@/posthog";
+import * as Sentry from "@sentry/react";
 import React, { Component, ReactNode } from "react";
 import {
   isDynamicImportChunkError,
@@ -39,13 +39,16 @@ export class ErrorBoundary extends Component<Props, State> {
 
     console.error("ErrorBoundary caught an error:", error, errorInfo);
 
-    // Send to PostHog
-    captureError(error, {
-      error_boundary: true,
-      dynamic_import_error: isDynamicImportError,
-      dynamic_import_auto_reload: shouldAutoReload,
-      component_stack: errorInfo.componentStack,
-      error_info: errorInfo,
+    Sentry.captureException(error, {
+      tags: {
+        feature: "error-boundary",
+        dynamic_import_error: String(isDynamicImportError),
+        dynamic_import_auto_reload: String(shouldAutoReload),
+      },
+      extra: {
+        component_stack: errorInfo.componentStack,
+        error_info: errorInfo,
+      },
     });
 
     if (shouldAutoReload) {

@@ -1,7 +1,7 @@
-import { captureSystemError } from "@/posthog";
 import { setup } from "@bibliothecadao/dojo";
 import { configManager, MapDataStore } from "@bibliothecadao/eternum";
 import { world } from "@bibliothecadao/types";
+import * as Sentry from "@sentry/react";
 import { inject } from "@vercel/analytics";
 import { ReactNode } from "react";
 
@@ -43,6 +43,29 @@ export interface BootstrappedEntrySession {
 type BootstrapResult = BootstrappedEntrySession;
 const bootstrapSession = createBootstrapSession<BootstrapResult>();
 const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
+
+type BootstrapExceptionContext = {
+  context: string;
+  error_type: string;
+  setup_phase?: string;
+  [key: string]: unknown;
+};
+
+const captureBootstrapException = (error: unknown, context: BootstrapExceptionContext) => {
+  const tags: Record<string, string> = {
+    feature: "dojo-bootstrap",
+    error_type: context.error_type,
+  };
+
+  if (context.setup_phase) {
+    tags.setup_phase = context.setup_phase;
+  }
+
+  Sentry.captureException(error, {
+    tags,
+    extra: context,
+  });
+};
 
 type BootstrapLifecycle = {
   onBootstrapCompleted?: () => void;
@@ -176,7 +199,7 @@ export const bootstrapGameForEntryContext = async (
     return result;
   } catch (error) {
     bootstrapSession.clearFailure();
-    captureSystemError(error, {
+    captureBootstrapException(error, {
       error_type: "dojo_setup",
       setup_phase: "bootstrap",
       context: "Unhandled error during Dojo bootstrap",
@@ -276,7 +299,7 @@ const runDojoSetup = async (): Promise<SetupResult> => {
       onError: (error: unknown) => {
         console.error("System call error:", error);
 
-        captureSystemError(error, {
+        captureBootstrapException(error, {
           error_type: "dojo_system_call",
           setup_phase: "post-setup",
           context: "System call error during post-setup phase",

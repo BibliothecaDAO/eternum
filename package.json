@@ -304,7 +304,6 @@
       "@types/react-dom": "^18",
       "bignumber.js": "^9.3.0",
       "open": "^10.1.0",
-      "posthog-js": "^1.160.0",
       "react": "^18",
       "react-dom": "^18",
       "starknet": "^8.5.2",

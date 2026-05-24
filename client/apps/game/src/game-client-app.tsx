@@ -1,6 +1,5 @@
 import { MusicRouterProvider } from "@/audio";
-import { cleanupTracing } from "@/tracing/cleanup";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { env } from "../env";
@@ -40,7 +39,6 @@ export const GameClientApp = () => {
   const [backgroundImage] = useState(() => getRandomBackgroundImage());
 
   useBootDocumentState(isConstructionMode ? "app-ready" : null);
-  useTracingCleanup();
 
   if (isConstructionMode) {
     return <ConstructionGate />;
@@ -122,19 +120,4 @@ const GameRouteShell = ({ backgroundImage }: { backgroundImage: string }) => {
       <LazyGameRoute backgroundImage={backgroundImage} />
     </Suspense>
   );
-};
-
-const useTracingCleanup = () => {
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      void cleanupTracing();
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      void cleanupTracing();
-    };
-  }, []);
 };

@@ -192,25 +192,11 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
             // UI & Animation libraries
             "ui-libs": ["gsap", "lil-gui", "@tanstack/react-query", "zustand"],
 
-            // OpenTelemetry observability - Can be lazy loaded
-            telemetry: [
-              "@opentelemetry/api",
-              "@opentelemetry/context-zone",
-              "@opentelemetry/exporter-trace-otlp-http",
-              "@opentelemetry/instrumentation",
-              "@opentelemetry/instrumentation-fetch",
-              "@opentelemetry/instrumentation-xml-http-request",
-              "@opentelemetry/resources",
-              "@opentelemetry/sdk-trace-base",
-              "@opentelemetry/sdk-trace-web",
-              "@opentelemetry/semantic-conventions",
-            ],
-
             // Utilities & Misc
             utils: ["lodash", "uuid", "platform", "buffer", "wouter"],
 
             // Communication & External APIs
-            external: ["graphql-request", "@vercel/analytics", "posthog-js"],
+            external: ["graphql-request", "@vercel/analytics"],
           },
           inlineDynamicImports: false,
           sourcemapIgnoreList: (relativeSourcePath) => {

@@ -68,12 +68,6 @@ vi.mock("./ui/layouts/world", () => ({
   World: () => <div>World</div>,
 }));
 
-vi.mock("../env", () => ({
-  env: {
-    VITE_TRACING_ENABLED: false,
-  },
-}));
-
 const { default: GameRoute } = await import("./game-route");
 
 describe("GameRoute", () => {

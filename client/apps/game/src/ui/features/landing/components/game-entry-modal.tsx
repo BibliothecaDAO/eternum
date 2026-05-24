@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRealmInfo } from "@bibliothecadao/eternum";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Castle, Check, ExternalLink, Eye, Loader2, MapPin, Play, Sparkles, X } from "lucide-react";
+import * as Sentry from "@sentry/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -25,7 +26,6 @@ import { useVillagePassInventory, type VillagePassInventoryItem } from "@/hooks/
 import { getWorldKey, useWorldsAvailability } from "@/hooks/use-world-availability";
 import { WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
-import { captureClientEvent } from "@/posthog";
 import { getFactorySqlBaseUrl } from "@/runtime/world/factory-endpoints";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
@@ -83,6 +83,16 @@ const NEXT_FREE_REALM_ID_SCAN_LIMIT = 512;
 const REALM_OWNER_LOOKUP_ENTRYPOINTS = ["owner_of", "ownerOf"] as const;
 const VILLAGE_PASS_DISTRIBUTOR_ADDRESS = "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec";
 const VILLAGE_PASS_DISTRIBUTOR_PRIVATE_KEY = "0xc5b2fcab997346f3ea1c00b002ecf6f382c5f9c9659a3894eb783c5320f912";
+
+const addPlannerBreadcrumb = (eventName: string, data?: Record<string, unknown>) => {
+  Sentry.addBreadcrumb({
+    category: "settlement-planner",
+    type: "default",
+    level: eventName.includes("failed") ? "warning" : "info",
+    message: eventName,
+    data,
+  });
+};
 
 const START_DIRECTIONS: ReadonlyArray<readonly [Direction, Direction]> = [
   [Direction.EAST, Direction.SOUTH_WEST],
@@ -3170,7 +3180,7 @@ export const GameEntryModal = ({
 
     setSettlementPlannerTarget(null);
     setSettlementPlannerConflict("That location just changed. The planner refreshed and cleared the stale selection.");
-    captureClientEvent("planner_conflict_refreshed", {
+    addPlannerBreadcrumb("planner_conflict_refreshed", {
       worldName,
       chain,
     });
@@ -3498,7 +3508,7 @@ export const GameEntryModal = ({
     }
 
     plannerOpenedRef.current = true;
-    captureClientEvent("planner_opened", {
+    addPlannerBreadcrumb("planner_opened", {
       worldName,
       chain,
       entryIntent,
@@ -3902,7 +3912,7 @@ export const GameEntryModal = ({
         setSelectedVillageDirection(target.slot.direction);
       }
 
-      captureClientEvent("planner_target_selected", {
+      addPlannerBreadcrumb("planner_target_selected", {
         worldName,
         chain,
         targetType: target.type,
@@ -4210,7 +4220,7 @@ export const GameEntryModal = ({
     setSettlementPlannerConflict(null);
 
     if (unifiedSettlementPlannerEnabled && settlementPlannerRealmTarget) {
-      captureClientEvent("planner_submit_clicked", {
+      addPlannerBreadcrumb("planner_submit_clicked", {
         worldName,
         chain,
         targetType: "realm_slot",
@@ -4341,7 +4351,7 @@ export const GameEntryModal = ({
         ]);
         setSettlementPlannerTarget(null);
         void settlementPlannerData.refetch();
-        captureClientEvent("planner_submit_succeeded", {
+        addPlannerBreadcrumb("planner_submit_succeeded", {
           worldName,
           chain,
           targetType: "realm_slot",
@@ -4351,7 +4361,7 @@ export const GameEntryModal = ({
       debugLog(worldName, "Season settlement failed:", error);
       setSeasonSettlementError(mapSeasonSettleError(error));
       if (unifiedSettlementPlannerEnabled) {
-        captureClientEvent("planner_submit_failed", {
+        addPlannerBreadcrumb("planner_submit_failed", {
           worldName,
           chain,
           targetType: "realm_slot",
@@ -4442,7 +4452,7 @@ export const GameEntryModal = ({
     setSettlementPlannerConflict(null);
 
     if (unifiedSettlementPlannerEnabled && settlementPlannerVillageTarget) {
-      captureClientEvent("planner_submit_clicked", {
+      addPlannerBreadcrumb("planner_submit_clicked", {
         worldName,
         chain,
         targetType: "village_slot",
@@ -4484,7 +4494,7 @@ export const GameEntryModal = ({
       void refetchRealmVillageSlots();
       void settlementPlannerData.refetch();
       if (unifiedSettlementPlannerEnabled) {
-        captureClientEvent("planner_submit_succeeded", {
+        addPlannerBreadcrumb("planner_submit_succeeded", {
           worldName,
           chain,
           targetType: "village_slot",
@@ -4494,7 +4504,7 @@ export const GameEntryModal = ({
       debugLog(worldName, "Village settlement failed:", error);
       setVillageSettlementError(mapVillageSettleError(error));
       if (unifiedSettlementPlannerEnabled) {
-        captureClientEvent("planner_submit_failed", {
+        addPlannerBreadcrumb("planner_submit_failed", {
           worldName,
           chain,
           targetType: "village_slot",

@@ -15,21 +15,10 @@ const makeProvider = () => {
   const provider = Object.create(EternumProvider.prototype) as any;
   provider.emit = vi.fn();
   provider.execute = vi.fn().mockResolvedValue({ transaction_hash: "0xabc" });
-  provider.startTransactionSpan = vi.fn(() => ({
-    setAttribute: vi.fn(),
-    addEvent: vi.fn(),
-    setAttributes: vi.fn(),
-    setStatus: vi.fn(),
-    recordException: vi.fn(),
-    end: vi.fn(),
-  }));
-  provider.failTransactionSpan = vi.fn();
-  provider.completeTransactionSpan = vi.fn();
   provider.waitForTransactionWithCheckInternal = vi.fn().mockResolvedValue({ isReverted: () => false });
   provider.waitForTransactionWithTimeout = vi
     .fn()
     .mockResolvedValue({ status: "confirmed", receipt: { isReverted: () => false } });
-  provider.pendingTransactionSpans = new Map();
   provider.pendingVrfExecutionLocks = new Map();
   provider.cachedExploreExecutionDetails = new Map();
   provider.TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
