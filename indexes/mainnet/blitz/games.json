@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-24T02:07:05.940Z",
+  "updatedAt": "2026-05-24T02:07:14.330Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1124,12 +1124,13 @@
       "path": "runs/mainnet/blitz/bltz-dash-816.json",
       "inputPath": "inputs/mainnet/blitz/bltz-dash-816/26349189108-1.json",
       "status": "running",
-      "updatedAt": "2026-05-24T02:07:05.940Z",
+      "updatedAt": "2026-05-24T02:07:14.330Z",
       "workflowRef": "next",
       "currentStepId": "grant-lootchest-role",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-24T02:52:14.330Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "grant-lootchest-role",
+      "recoverablePendingStepId": "create-indexer",
       "startTime": 1779622200,
       "durationSeconds": 3600,
       "artifacts": {}
