@@ -175,7 +175,9 @@ describe("waitForWorldmapHydratedRefreshQueueIdle", () => {
   it("waits for an active hydrated refresh flush before resolving startup readiness", async () => {
     const state = createWorldmapHydratedRefreshQueueState();
     const scheduledCallbacks: Array<() => void> = [];
-    let releaseFlush: (() => void) | null = null;
+    let releaseFlush: () => void = () => {
+      throw new Error("Flush release was not registered.");
+    };
 
     queueWorldmapHydratedChunkRefresh({
       chunkKey: "3,4",
@@ -207,7 +209,7 @@ describe("waitForWorldmapHydratedRefreshQueueIdle", () => {
     expect(didResolve).toBe(false);
     expect(state.activeFlushPromise).toBe(flushPromise);
 
-    releaseFlush?.();
+    releaseFlush();
     await flushPromise;
     await waitPromise;
 
