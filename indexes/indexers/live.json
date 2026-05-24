@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-24T10:57:18.136Z",
+  "updatedAt": "2026-05-24T11:02:40.474Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2761,6 +2761,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-24-05-26-1100 not found"
       },
       "updatedAt": "2026-05-24T10:52:15.500Z"
+    },
+    "bltz-dash-816": {
+      "gameName": "bltz-dash-816",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-dash-816/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-24T11:02:40.473Z"
+      },
+      "updatedAt": "2026-05-24T11:02:40.474Z"
     }
   }
 }
