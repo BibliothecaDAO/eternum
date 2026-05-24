@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-24T18:22:26.582Z",
+  "updatedAt": "2026-05-24T18:32:11.005Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2774,6 +2774,15 @@
         "describedAt": "2026-05-24T14:42:22.851Z"
       },
       "updatedAt": "2026-05-24T14:42:23.569Z"
+    },
+    "eu-gladiator-24-05-26-1900": {
+      "gameName": "eu-gladiator-24-05-26-1900",
+      "liveState": {
+        "state": "missing",
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-24-05-26-1900 not found"
+      },
+      "updatedAt": "2026-05-24T18:32:11.005Z"
     }
   }
 }
