@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.eternum",
   "kind": "game",
-  "updatedAt": "2026-05-24T08:31:01.535Z",
+  "updatedAt": "2026-05-24T08:31:10.819Z",
   "entries": {
     "etrn-gloom-467": {
       "kind": "game",
@@ -11,11 +11,10 @@
       "path": "runs/mainnet/eternum/etrn-gloom-467.json",
       "inputPath": "inputs/mainnet/eternum/etrn-gloom-467/26356337562-1.json",
       "status": "running",
-      "updatedAt": "2026-05-24T08:31:01.535Z",
+      "updatedAt": "2026-05-24T08:31:10.819Z",
       "workflowRef": "next",
-      "currentStepId": "grant-lootchest-role",
-      "activeLeaseExpiresAt": "2026-05-24T09:16:01.535Z",
-      "hasRunningStep": true,
+      "currentStepId": "grant-village-pass-role",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-village-pass-role",
       "startTime": 1779613200,
