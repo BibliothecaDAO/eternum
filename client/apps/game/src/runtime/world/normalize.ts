@@ -3,8 +3,6 @@ import type { Chain } from "@contracts";
 // Hex helpers
 const strip0x = (v: string) => (v.startsWith("0x") || v.startsWith("0X") ? v.slice(2) : v);
 
-const toLowerHex = (v: string) => `0x${strip0x(v).toLowerCase()}`;
-
 const leftPadHex = (hexWithout0x: string, width: number) => hexWithout0x.padStart(width, "0");
 
 // Normalize any hex to 0x + 64-char lowercase body

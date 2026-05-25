@@ -289,7 +289,6 @@ export const CombatSimulationPanel = () => {
         <label className="flex flex-col">
           <span className="text-lg font-semibold text-gold mb-3 flex items-center gap-2">🌍 Battle Environment</span>
           <SelectBiome
-            combatSimulator={combatSimulator}
             onSelect={(newBiome) => {
               if (newBiome) {
                 setBiome(newBiome as BiomeType);

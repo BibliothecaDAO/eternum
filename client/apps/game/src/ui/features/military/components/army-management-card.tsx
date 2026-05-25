@@ -206,6 +206,8 @@ export const ArmyCreate = ({
             structureId: owner_entity,
             direction: selectedDirection,
             troopResourceId: getTroopResourceId(troopType, troopTier),
+            troopType,
+            troopTier,
           });
           await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, selectedDirection);
         }

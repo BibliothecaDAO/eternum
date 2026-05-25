@@ -18,7 +18,7 @@ const resolveCurrentGameId = (): string => {
 
 export const isAutomationResourceBlocked = (
   resourceId: ResourcesIds,
-  entityType: RealmEntityType = "realm",
+  _entityType: RealmEntityType = "realm",
   role: "output" | "input" = "output",
 ): boolean => {
   if (role === "input") {
@@ -95,13 +95,6 @@ export interface RealmAutomationConfig {
   updatedAt: number;
   lastExecution?: RealmAutomationExecutionSummary;
   lastStatus?: RealmExecutionStatus;
-}
-
-enum ProductionType {
-  ResourceToResource = "resource-to-resource",
-  LaborToResource = "labor-to-resource",
-  ResourceToLabor = "resource-to-labor",
-  Transfer = "transfer",
 }
 
 type RealmAutomationInput = Partial<

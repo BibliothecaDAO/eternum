@@ -642,15 +642,3 @@ export const getStructuresFromToriiExact = async <S extends Schema>(
     false,
   );
 };
-
-export const getQuestsFromTorii = async (client: ToriiClient, components: Component<Schema, Metadata, undefined>[]) => {
-  const query = {
-    Keys: {
-      keys: [undefined, undefined],
-      pattern_matching: "VariableLen" as PatternMatching,
-      models: ["s1_eternum-Quest"],
-    },
-  };
-
-  return getEntities(client, query, components as any, [], ["s1_eternum-Quest"], EVENT_QUERY_LIMIT, false);
-};

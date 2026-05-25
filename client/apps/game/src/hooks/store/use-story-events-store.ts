@@ -4,23 +4,12 @@ import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { StoryEventData } from "@bibliothecadao/torii";
 import { useQuery } from "@tanstack/react-query";
-import { create } from "zustand";
 
 export interface ProcessedStoryEvent extends StoryEventData {
   id: string;
   timestampMs: number;
   presentation: ReturnType<typeof buildStoryEventPresentation>;
 }
-
-interface StoryEventsState {
-  lastRefreshTimestamp: number;
-  setLastRefreshTimestamp: (timestamp: number) => void;
-}
-
-const useStoryEventsStore = create<StoryEventsState>((set) => ({
-  lastRefreshTimestamp: 0,
-  setLastRefreshTimestamp: (timestamp: number) => set({ lastRefreshTimestamp: timestamp }),
-}));
 
 /**
  * Main hook for fetching story events.
@@ -67,30 +56,6 @@ export const useStoryEvents = (limit: number = 100) => {
     staleTime: POLLING_INTERVALS.storyEventsStaleMs,
     refetchInterval: POLLING_INTERVALS.storyEventsMs,
   });
-};
-
-/**
- * Selector hook for story events loading state.
- * Uses the same query as useStoryEvents - just returns isLoading.
- */
-const useStoryEventsLoading = (limit: number = 100) => {
-  return useStoryEvents(limit).isLoading;
-};
-
-/**
- * Selector hook for story events error state.
- * Uses the same query as useStoryEvents - just returns error message.
- */
-const useStoryEventsError = (limit: number = 100) => {
-  return useStoryEvents(limit).error?.message;
-};
-
-/**
- * Selector hook for story events data only.
- * Uses the same query as useStoryEvents - just returns data array.
- */
-const useStoryEventsData = (limit: number = 100) => {
-  return useStoryEvents(limit).data ?? [];
 };
 
 function parseMaybeJson<T = unknown>(value: unknown): unknown {

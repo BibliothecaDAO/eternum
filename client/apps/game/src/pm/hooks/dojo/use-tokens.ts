@@ -4,9 +4,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { deepEqual } from "../../utils";
 import { useDojoSdk } from "./use-dojo-sdk";
 
+const EMPTY_TOKENS: Token[] = [];
+
 export function useTokens(request: GetTokenRequest & GetTokenBalanceRequest, accountRequired = true) {
   const { sdk } = useDojoSdk();
-  const [tokens, setTokens] = useState<Token[]>([]);
   const requestRef = useRef<(GetTokenRequest & GetTokenBalanceRequest) | null>(null);
   const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
   const subscriptionRef = useRef<Subscription | null>(null);
@@ -21,14 +22,6 @@ export function useTokens(request: GetTokenRequest & GetTokenBalanceRequest, acc
       }
     };
   }, []);
-
-  const fetchTokens = useCallback(async () => {
-    // const tokens = await sdk.getTokens({
-    //   contractAddresses: request.contractAddresses ?? [],
-    //   tokenIds: request.tokenIds,
-    // });
-    // setTokens(tokens.items);
-  }, [sdk]);
 
   const fetchTokenBalances = useCallback(async () => {
     if (!requestRef.current) return;
@@ -66,7 +59,6 @@ export function useTokens(request: GetTokenRequest & GetTokenBalanceRequest, acc
   useEffect(() => {
     if (!deepEqual(request, requestRef.current)) {
       requestRef.current = request;
-      fetchTokens();
 
       if (accountRequired && (!request.accountAddresses || request.accountAddresses.length === 0)) {
         // No account provided but required - set loading to false
@@ -90,12 +82,11 @@ export function useTokens(request: GetTokenRequest & GetTokenBalanceRequest, acc
   }
 
   const refetchBalances = useCallback(async () => {
-    fetchTokens();
     fetchTokenBalances();
   }, []);
 
   return {
-    tokens,
+    tokens: EMPTY_TOKENS,
     balances: tokenBalances,
     getBalance,
     toDecimal,

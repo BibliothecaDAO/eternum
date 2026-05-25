@@ -893,7 +893,7 @@ export default class WorldmapScene extends WarpTravel {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
     const detail = (event as CustomEvent<PendingWorldmapFxStartPayload>).detail;
     if (!detail) return;
-    this.startPendingActionFx(detail);
+    void this.startPendingActionFx(detail);
   };
   private pendingWorldmapFxStopHandler = (event: Event) => {
     const detail = (event as CustomEvent<PendingWorldmapFxStopPayload>).detail;
@@ -987,7 +987,7 @@ export default class WorldmapScene extends WarpTravel {
   private pendingActionEffectTimeoutsByKey: Map<string, ReturnType<typeof setTimeout>> = new Map();
   private pendingCreateArmyEffectsByKey: Map<
     string,
-    { structureId: ID; direction: Direction; targetHex: HexPosition; troopResourceId: number }
+    { structureId: ID; direction: Direction; targetHex: HexPosition; ghostEntityId?: ID }
   > = new Map();
   private pendingAttackEffectsByKey: Map<string, { attackerId: ID; defenderId?: ID }> = new Map();
   private cancelHexGridComputation?: () => void;
@@ -3356,41 +3356,11 @@ export default class WorldmapScene extends WarpTravel {
     return false;
   }
 
-  private startPendingActionFx(payload: PendingWorldmapFxStartPayload): void {
+  private startPendingActionFx(payload: PendingWorldmapFxStartPayload): Promise<void> | void {
     this.clearPendingActionFx(payload.key);
 
     if (payload.kind === "create-army") {
-      const structureHex = this.structuresPositions.get(payload.structureId);
-      const targetHex = resolveCreateArmyEffectTargetHex(structureHex, payload.direction);
-      if (!targetHex) {
-        return;
-      }
-
-      const fxType = `create-army-resource-${payload.troopResourceId}`;
-      const textureUrl = `/images/resources/${payload.troopResourceId}.png`;
-      this.fxManager.ensureInfiniteIconFx(fxType, textureUrl, { renderMode: "ground" });
-
-      const createCleanup = this.playPendingFxAtHex({
-        type: fxType,
-        hex: targetHex,
-        size: 1.2,
-        yOffset: 0.45,
-      });
-      this.pendingActionEffectsByKey.set(payload.key, createCleanup);
-      this.pendingCreateArmyEffectsByKey.set(payload.key, {
-        structureId: payload.structureId,
-        direction: payload.direction,
-        targetHex,
-        troopResourceId: payload.troopResourceId,
-      });
-
-      const timeout = setTimeout(
-        () => this.clearPendingActionFx(payload.key),
-        Math.max(5_000, payload.timeoutMs ?? 45_000),
-      );
-      this.pendingActionEffectTimeoutsByKey.set(payload.key, timeout);
-      this.clearPendingCreateArmyFxForOccupiedTiles();
-      return;
+      return this.startPendingCreateArmyGhostFx(payload);
     }
 
     const attackerNormalized = new Position({ x: payload.attackerHex.col, y: payload.attackerHex.row }).getNormalized();
@@ -3448,6 +3418,52 @@ export default class WorldmapScene extends WarpTravel {
       cleaned = true;
       end();
     };
+  }
+
+  private async startPendingCreateArmyGhostFx(
+    payload: Extract<PendingWorldmapFxStartPayload, { kind: "create-army" }>,
+  ): Promise<void> {
+    const structureHex = this.structuresPositions.get(payload.structureId);
+    const targetHex = resolveCreateArmyEffectTargetHex(structureHex, payload.direction);
+    if (!targetHex) {
+      return;
+    }
+
+    const ghostSource = await this.armyManager.getPendingCreateArmyGhostSourceSnapshot({
+      hexCoords: targetHex,
+      troopType: payload.troopType,
+      troopTier: payload.troopTier,
+    });
+    if (!ghostSource) {
+      return;
+    }
+
+    const ghostEntityId = -(Date.now() + Math.floor(Math.random() * 10_000));
+    this.arrivalGhostManager.upsertLocalArrivalGhost({
+      entityId: ghostEntityId,
+      hexCoords: targetHex,
+      sourceScene: ghostSource.sourceScene,
+      visualStyle: resolveArrivalGhostVisualStyle({
+        armyColor: ghostSource.armyColor,
+      }),
+    });
+
+    this.pendingActionEffectsByKey.set(payload.key, () => {
+      this.arrivalGhostManager.clearArrivalGhost(ghostEntityId, "superseded");
+    });
+    this.pendingCreateArmyEffectsByKey.set(payload.key, {
+      structureId: payload.structureId,
+      direction: payload.direction,
+      targetHex,
+      ghostEntityId,
+    });
+
+    const timeout = setTimeout(
+      () => this.clearPendingActionFx(payload.key),
+      Math.max(5_000, payload.timeoutMs ?? 45_000),
+    );
+    this.pendingActionEffectTimeoutsByKey.set(payload.key, timeout);
+    this.clearPendingCreateArmyFxForOccupiedTiles();
   }
 
   private clearPendingActionFx(key: string): void {

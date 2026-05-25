@@ -1,4 +1,4 @@
-import { getGuildsFromTorii, getHyperstructureFromTorii, getMarketFromTorii, getQuestsFromTorii } from "@/dojo/queries";
+import { getGuildsFromTorii, getHyperstructureFromTorii, getMarketFromTorii } from "@/dojo/queries";
 import { sqlApi } from "@/services/api";
 import { ToriiClient } from "@dojoengine/torii-wasm";
 import { useCallback } from "react";
@@ -96,31 +96,4 @@ export const useSyncMarket = () => {
   });
 
   return { isSyncing };
-};
-
-const useSyncQuest = () => {
-  const syncQuest = useCallback(
-    async ({ toriiClient, contractComponents }: { toriiClient: ToriiClient; contractComponents: unknown }) => {
-      const start = performance.now();
-
-      const { subscriptions, setSubscription } = useSyncStore.getState();
-
-      if (!subscriptions[Subscription.Quest]) {
-        await getQuestsFromTorii(toriiClient, contractComponents as any);
-        setSubscription(Subscription.Quest, true);
-      }
-
-      const end = performance.now();
-      console.log("[sync] quest query", end - start);
-    },
-    [],
-  );
-
-  const { isSyncing, sync } = useToriiSync({
-    subscriptionKey: Subscription.Quest,
-    loadingKey: LoadingStateKey.Quest,
-    fetch: syncQuest,
-  });
-
-  return { isSyncing, sync };
 };

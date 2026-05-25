@@ -167,17 +167,6 @@ const buildReviewRegisteredPointsQuery = (playerAddress: string) => `
   LIMIT 1;
 `;
 
-const buildReviewUnclaimedPlayersQuery = (trialId: bigint) => `
-  SELECT
-    player,
-    rank,
-    paid
-  FROM "s1_eternum-PlayerRank"
-  WHERE ${buildTrialIdMatchCondition("trial_id", trialId)}
-    AND rank > 0
-  ORDER BY rank ASC;
-`;
-
 const buildToriiSqlUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii/sql`;
 
 const formatTokenAmount = (amount: bigint, decimals: number): string => {
@@ -414,12 +403,6 @@ interface PlayerRegisteredPointsRow {
   prize_claimed?: unknown;
 }
 
-interface PlayerRankClaimStatusRow {
-  player?: unknown;
-  rank?: unknown;
-  paid?: unknown;
-}
-
 interface TransactionsCountRow {
   transaction_count?: unknown;
 }
@@ -528,17 +511,6 @@ export interface GameReviewClaimSummary {
   lordsWonFormatted: string;
   chestsClaimedEstimate: number;
   claimBlockedReason: string | null;
-}
-
-interface GameReviewUnclaimedPlayer {
-  address: string;
-  rank: number;
-}
-
-interface GameReviewUnclaimedPlayersSummary {
-  rankingFinalized: boolean;
-  totalRankedPlayers: number;
-  unclaimedPlayers: GameReviewUnclaimedPlayer[];
 }
 
 interface FinalizeGameReviewResult {
@@ -1182,61 +1154,6 @@ export const fetchGameReviewClaimSummary = async ({
     lordsWonFormatted: rewards.lordsWonFormatted,
     chestsClaimedEstimate: rewards.chestsClaimedEstimate,
     claimBlockedReason: rewards.claimBlockedReason,
-  };
-};
-
-const fetchGameReviewUnclaimedPlayers = async ({
-  worldName,
-  chain,
-}: {
-  worldName: string;
-  chain: Chain;
-}): Promise<GameReviewUnclaimedPlayersSummary> => {
-  // Keep the chain param for stable query keys and future chain-dependent claim policies.
-  void chain;
-
-  const toriiSqlBaseUrl = buildToriiSqlUrl(worldName);
-  const finalization = await fetchReviewFinalizationMeta(toriiSqlBaseUrl);
-
-  if (!finalization.rankingFinalized || finalization.finalTrialId == null || finalization.finalTrialId <= 0n) {
-    return {
-      rankingFinalized: false,
-      totalRankedPlayers: 0,
-      unclaimedPlayers: [],
-    };
-  }
-
-  const playerRankRows = await queryToriiSql<PlayerRankClaimStatusRow>(
-    toriiSqlBaseUrl,
-    buildReviewUnclaimedPlayersQuery(finalization.finalTrialId),
-    "Failed to fetch player rank claim statuses",
-  );
-
-  const unclaimedPlayers: GameReviewUnclaimedPlayer[] = [];
-  let totalRankedPlayers = 0;
-
-  playerRankRows.forEach((row) => {
-    const playerAddress = parseAddress(row.player);
-    const playerRank = parseInteger(row.rank);
-    if (!playerAddress || playerRank == null || playerRank <= 0) {
-      return;
-    }
-
-    totalRankedPlayers += 1;
-    if (parseBoolean(row.paid)) {
-      return;
-    }
-
-    unclaimedPlayers.push({
-      address: playerAddress,
-      rank: playerRank,
-    });
-  });
-
-  return {
-    rankingFinalized: true,
-    totalRankedPlayers,
-    unclaimedPlayers,
   };
 };
 

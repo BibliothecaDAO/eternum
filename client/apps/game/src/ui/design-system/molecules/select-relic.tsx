@@ -50,17 +50,6 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
     });
   }, [searchInput, filterTypes]);
 
-  const handleOpenChange = (newOpen: boolean) => {
-    setOpen(newOpen);
-    if (newOpen && inputRef.current) {
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 0);
-    } else {
-      setSearchInput("");
-    }
-  };
-
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       if (!allowMultiple && filteredRelics.length > 0) {

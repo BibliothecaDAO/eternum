@@ -700,6 +700,10 @@ export class ArmyModel {
     return cosmeticId !== undefined && this.cosmeticModels.has(cosmeticId);
   }
 
+  public getLoadedModelData(modelType: ModelType): ModelData | undefined {
+    return this.models.get(modelType);
+  }
+
   public getModelForEntity(entityId: number): ModelData | undefined {
     // Check for cosmetic model first
     const cosmeticId = this.entityCosmeticMap.get(entityId);

@@ -78,11 +78,6 @@ export const setSelectedChain = (chain: Chain) => {
   notifySelectedChainChanged(chain);
 };
 
-const clearSelectedChain = () => {
-  writeStorageValue(CHAIN_KEY, null);
-  notifySelectedChainChanged(null);
-};
-
 export const resolveChain = (fallback: Chain): Chain => getSelectedChain() ?? fallback;
 
 export const subscribeSelectedChain = (listener: (chain: Chain | null) => void): (() => void) => {
@@ -137,11 +132,6 @@ export const subscribeActiveWorldName = (listener: (name: string | null) => void
     window.removeEventListener(ACTIVE_WORLD_EVENT, handleActiveWorldChanged as EventListener);
     window.removeEventListener("storage", handleStorage);
   };
-};
-
-export const listWorldNames = (): string[] => {
-  const profiles = safeParse<WorldProfilesMap>(localStorage.getItem(PROFILES_KEY), {});
-  return Object.keys(profiles);
 };
 
 export const listSavedWorldProfiles = (): WorldProfile[] => Object.values(getWorldProfiles());

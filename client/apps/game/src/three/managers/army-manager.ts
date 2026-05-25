@@ -28,6 +28,7 @@ import { Position } from "@bibliothecadao/eternum";
 import {
   ExplorerTroopsSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
+  FELT_CENTER,
   getBlockTimestamp,
   recordArmyMovementLatencyPhase,
 } from "@bibliothecadao/eternum";
@@ -2311,6 +2312,29 @@ export class ArmyManager {
 
   public getArmy(entityId: ID): ArmyData | undefined {
     return this.armies.get(entityId);
+  }
+
+  public async getPendingCreateArmyGhostSourceSnapshot(input: {
+    hexCoords: { col: number; row: number };
+    troopType: TroopType;
+    troopTier: TroopTier;
+  }): Promise<{ armyColor: string; sourceScene: Object3D } | null> {
+    const contractCol = input.hexCoords.col + FELT_CENTER();
+    const contractRow = input.hexCoords.row + FELT_CENTER();
+    const biome = Biome.getBiome(contractCol, contractRow);
+    const previewEntityId = hashCoordinates(contractCol, contractRow);
+    const modelType = this.armyModel.getModelTypeForEntity(previewEntityId, input.troopType, input.troopTier, biome);
+
+    await this.armyModel.preloadModels([modelType]);
+    const modelData = this.armyModel.getLoadedModelData(modelType);
+    if (!modelData) {
+      return null;
+    }
+
+    return {
+      armyColor: this.getArmyColor({ isMine: true, isDaydreamsAgent: false }),
+      sourceScene: modelData.sourceScene,
+    };
   }
 
   public getArrivalGhostSourceSnapshot(entityId: ID): { armyColor: string; sourceScene: Object3D } | null {

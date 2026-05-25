@@ -1,13 +1,8 @@
-import { SqlApi } from "@bibliothecadao/torii";
 import {
   normalizeNonZeroAddress,
-  parseAddress,
   parseBigIntValue,
-  parseBoolean,
   parseInteger,
-  parseNumeric,
   parseScaledAmount,
-  parseTroopTier,
   queryToriiSql,
 } from "./sql-parse-utils";
 
@@ -84,24 +79,9 @@ const REVIEW_FIRST_BLOOD_REALM_CAPTURE_QUERY = `
   LIMIT 1;
 `;
 
-const REVIEW_EXPLORER_CREATIONS_QUERY = `
-  SELECT
-    "owner.Some" AS owner_address,
-    "story.ExplorerCreateStory.tier" AS troop_tier,
-    "story.ExplorerCreateStory.amount" AS troop_amount
-  FROM "s1_eternum-StoryEvent"
-  WHERE story = 'ExplorerCreateStory'
-    AND "owner.Some" IS NOT NULL;
-`;
-
 const REVIEW_STRUCTURE_OWNERS_QUERY = `
   SELECT entity_id, owner
   FROM "s1_eternum-Structure";
-`;
-
-const REVIEW_EXPLORER_OWNERS_QUERY = `
-  SELECT explorer_id, owner AS owner_structure_id
-  FROM "s1_eternum-ExplorerTroops";
 `;
 
 const REVIEW_BATTLE_KILLS_QUERY = `
@@ -128,25 +108,9 @@ interface FirstBloodRow {
   attacker_owner_address?: unknown;
 }
 
-interface ExplorerCreationRow {
-  owner_address?: unknown;
-  troop_tier?: unknown;
-  troop_amount?: unknown;
-}
-
 interface StructureOwnerRow {
   entity_id?: unknown;
   owner?: unknown;
-}
-
-interface ExplorerOwnerRow {
-  explorer_id?: unknown;
-  owner_structure_id?: unknown;
-}
-
-interface OccupiedTileRow {
-  occupier_id?: unknown;
-  occupier_is_structure?: unknown;
 }
 
 interface BattleKillsRow {
@@ -165,10 +129,6 @@ export interface GameReviewValueMetric {
 interface GameReviewMilestoneTimings {
   timeToFirstT3Seconds: GameReviewValueMetric | null;
   timeToFirstHyperstructureSeconds: GameReviewValueMetric | null;
-}
-
-interface GameReviewBiggestArmyMetric extends GameReviewValueMetric {
-  tier: 1 | 2 | 3;
 }
 
 interface GameReviewCompetitiveMetrics {
@@ -252,52 +212,6 @@ const buildFirstMilestoneMetric = ({
   };
 };
 
-const computeBiggestArmyCreated = (rows: ExplorerCreationRow[]): GameReviewBiggestArmyMetric | null => {
-  const numericTiers = rows.map((row) => parseInteger(row.troop_tier)).filter((tier): tier is number => tier !== null);
-  const usesZeroBasedTierEncoding = numericTiers.includes(0);
-
-  const tierMetrics = new Map<1 | 2 | 3, Map<string, number>>([
-    [1, new Map<string, number>()],
-    [2, new Map<string, number>()],
-    [3, new Map<string, number>()],
-  ]);
-
-  for (const row of rows) {
-    const ownerAddress = normalizeNonZeroAddress(row.owner_address);
-    if (!ownerAddress) {
-      continue;
-    }
-
-    const troopTier = parseTroopTier(row.troop_tier, usesZeroBasedTierEncoding);
-    if (troopTier == null) {
-      continue;
-    }
-
-    const troopAmount = parseScaledAmount(row.troop_amount);
-    incrementMetric(tierMetrics.get(troopTier)!, ownerAddress, troopAmount);
-  }
-
-  const tierOrder: Array<1 | 2 | 3> = [3, 2, 1];
-  const selectedTier = tierOrder.find((tier) => {
-    const metrics = tierMetrics.get(tier);
-    return metrics != null && [...metrics.values()].some((value) => value > 0);
-  });
-
-  if (selectedTier == null) {
-    return null;
-  }
-
-  const topMetric = pickTopMetric(tierMetrics.get(selectedTier)!);
-  if (!topMetric) {
-    return null;
-  }
-
-  return {
-    ...topMetric,
-    tier: selectedTier,
-  };
-};
-
 const buildStructureOwnerLookup = (
   rows: StructureOwnerRow[],
 ): {
@@ -325,61 +239,6 @@ const buildStructureOwnerLookup = (
     structureOwnerByEntityId,
     ownerStructureCounts,
   };
-};
-
-const buildExplorerOwnerLookup = (rows: ExplorerOwnerRow[]): Map<number, number> => {
-  const ownerStructureByExplorerId = new Map<number, number>();
-
-  for (const row of rows) {
-    const explorerId = parseInteger(row.explorer_id);
-    const ownerStructureId = parseInteger(row.owner_structure_id);
-
-    if (explorerId == null || explorerId <= 0 || ownerStructureId == null || ownerStructureId <= 0) {
-      continue;
-    }
-
-    ownerStructureByExplorerId.set(explorerId, ownerStructureId);
-  }
-
-  return ownerStructureByExplorerId;
-};
-
-const computeBiggestHexesOccupied = ({
-  tiles,
-  structureOwnerByEntityId,
-  ownerStructureByExplorerId,
-}: {
-  tiles: OccupiedTileRow[];
-  structureOwnerByEntityId: Map<number, string | null>;
-  ownerStructureByExplorerId: Map<number, number>;
-}): GameReviewValueMetric | null => {
-  const occupiedHexesByOwner = new Map<string, number>();
-
-  for (const tile of tiles) {
-    const occupierId = parseInteger(tile.occupier_id);
-    if (occupierId == null || occupierId <= 0) {
-      continue;
-    }
-
-    let ownerAddress: string | null = null;
-
-    if (parseBoolean(tile.occupier_is_structure)) {
-      ownerAddress = structureOwnerByEntityId.get(occupierId) ?? null;
-    } else {
-      const ownerStructureId = ownerStructureByExplorerId.get(occupierId);
-      if (ownerStructureId != null) {
-        ownerAddress = structureOwnerByEntityId.get(ownerStructureId) ?? null;
-      }
-    }
-
-    if (!ownerAddress) {
-      continue;
-    }
-
-    incrementMetric(occupiedHexesByOwner, ownerAddress, 1);
-  }
-
-  return pickTopMetric(occupiedHexesByOwner);
 };
 
 const computeMostTroopsKilled = (rows: BattleKillsRow[]): GameReviewValueMetric | null => {
@@ -487,54 +346,6 @@ export const fetchFirstBloodMetric = async (toriiSqlBaseUrl: string): Promise<Ga
       value: elapsedSeconds,
       timestamp: Number.isFinite(timestamp) ? timestamp : undefined,
     };
-  } catch {
-    return null;
-  }
-};
-
-const fetchBiggestArmyCreatedMetric = async (toriiSqlBaseUrl: string): Promise<GameReviewBiggestArmyMetric | null> => {
-  try {
-    const creationRows = await queryToriiSql<ExplorerCreationRow>(
-      toriiSqlBaseUrl,
-      REVIEW_EXPLORER_CREATIONS_QUERY,
-      "Failed to fetch explorer creation events",
-    );
-    return computeBiggestArmyCreated(creationRows);
-  } catch {
-    return null;
-  }
-};
-
-const fetchBiggestStructuresOwnedMetric = async (toriiSqlBaseUrl: string): Promise<GameReviewValueMetric | null> => {
-  try {
-    const structureRows = await queryToriiSql<StructureOwnerRow>(
-      toriiSqlBaseUrl,
-      REVIEW_STRUCTURE_OWNERS_QUERY,
-      "Failed to fetch structures",
-    );
-    const { ownerStructureCounts } = buildStructureOwnerLookup(structureRows);
-    return pickTopMetric(ownerStructureCounts);
-  } catch {
-    return null;
-  }
-};
-
-const fetchBiggestHexesOccupiedMetric = async (toriiSqlBaseUrl: string): Promise<GameReviewValueMetric | null> => {
-  try {
-    const sqlClient = new SqlApi(toriiSqlBaseUrl);
-    const [structureRows, explorerRows, tiles] = await Promise.all([
-      queryToriiSql<StructureOwnerRow>(toriiSqlBaseUrl, REVIEW_STRUCTURE_OWNERS_QUERY, "Failed to fetch structures"),
-      queryToriiSql<ExplorerOwnerRow>(toriiSqlBaseUrl, REVIEW_EXPLORER_OWNERS_QUERY, "Failed to fetch explorers"),
-      sqlClient.fetchAllTiles() as Promise<OccupiedTileRow[]>,
-    ]);
-
-    const { structureOwnerByEntityId } = buildStructureOwnerLookup(structureRows);
-    const ownerStructureByExplorerId = buildExplorerOwnerLookup(explorerRows);
-    return computeBiggestHexesOccupied({
-      tiles,
-      structureOwnerByEntityId,
-      ownerStructureByExplorerId,
-    });
   } catch {
     return null;
   }

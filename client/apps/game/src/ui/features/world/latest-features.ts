@@ -511,6 +511,14 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-04-20",
+    title: "Ghost Army Spawn Preview",
+    description:
+      "Creating a new explorer army now shows the same ghost-unit world preview used for movement, so spawn tiles read like actual units instead of resource icons.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-20",
     title: "Blitz Settlement Sync",
     description:
       "Blitz settlement now waits for the requested settled realm count before advancing, so fresh entries no longer get stuck on finalizing when the index briefly returns an empty snapshot.",

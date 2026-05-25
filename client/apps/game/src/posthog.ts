@@ -1,40 +1,6 @@
 import posthog from "posthog-js";
 import { env } from "../env";
 
-const initPostHog = () => {
-  // Only initialize if we have a project API key
-  if (!env.VITE_PUBLIC_POSTHOG_KEY) {
-    console.log("PostHog API key not configured, skipping initialization");
-    return;
-  }
-
-  posthog.init(env.VITE_PUBLIC_POSTHOG_KEY, {
-    api_host: env.VITE_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
-    person_profiles: "identified_only",
-
-    // Environment-specific configuration
-    debug: env.VITE_PUBLIC_CHAIN !== "mainnet",
-
-    // Capture settings
-    capture_pageview: true,
-    capture_pageleave: true,
-
-    // Session recording - simplified to only include supported options
-    session_recording: {
-      maskAllInputs: true,
-    },
-
-    // Set properties
-    loaded: (posthog) => {
-      posthog.setPersonProperties({
-        environment: env.VITE_PUBLIC_CHAIN || "development",
-        game_client: "eternum",
-        client_version: env.VITE_PUBLIC_GAME_VERSION || "unknown",
-      });
-    },
-  });
-};
-
 export const captureClientEvent = (eventName: string, properties?: Record<string, unknown>) => {
   if (!env.VITE_PUBLIC_POSTHOG_KEY) return;
   posthog.capture(eventName, properties);

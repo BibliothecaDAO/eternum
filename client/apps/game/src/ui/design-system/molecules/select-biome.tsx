@@ -1,11 +1,10 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { CombatSimulator, configManager } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, resources, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import React, { useState } from "react";
 
 interface SelectBiomeProps {
-  combatSimulator: CombatSimulator;
   onSelect: (biome: BiomeType | null) => void;
   className?: string;
   defaultValue?: BiomeType;
@@ -18,7 +17,6 @@ const TROOP_RESOURCES = [
 ];
 
 export const SelectBiome: React.FC<SelectBiomeProps> = ({
-  combatSimulator,
   onSelect,
   className,
   defaultValue = BiomeType.Grassland,
