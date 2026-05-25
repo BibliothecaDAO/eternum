@@ -21,9 +21,13 @@ export interface ArrivalGhostVisualStyle {
 export function shouldCreatePredictiveArrivalGhost(input: {
   hasTargetHex: boolean;
   isLocalArmy: boolean;
-  isTravelAction: boolean;
+  movementType: "travel" | "explore";
 }): boolean {
-  return input.isLocalArmy && input.isTravelAction && input.hasTargetHex;
+  return input.isLocalArmy && input.hasTargetHex && isPredictiveArrivalGhostMovement(input.movementType);
+}
+
+function isPredictiveArrivalGhostMovement(movementType: "travel" | "explore"): boolean {
+  return movementType === "travel" || movementType === "explore";
 }
 
 export function shouldHideSourceArmyOnTileRemoval(input: {

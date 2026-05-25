@@ -35,6 +35,7 @@ interface PrepareGameRendererScenesInput {
   fastTravelEnabled: boolean;
   initialSceneName: SceneName;
   inputSurface: HTMLElement;
+  markLabelsDirty?: () => void;
   mouse: Vector2;
   qualityFeatures: QualityFeatures;
   raycaster: Raycaster;
@@ -48,6 +49,7 @@ export function prepareGameRendererScenes(input: PrepareGameRendererScenesInput)
     dojo: input.dojo,
     fastTravelEnabled: input.fastTravelEnabled,
     inputSurface: input.inputSurface,
+    markLabelsDirty: input.markLabelsDirty,
     mouse: input.mouse,
     raycaster: input.raycaster,
   });

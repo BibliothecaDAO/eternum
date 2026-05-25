@@ -65,6 +65,52 @@ describe("waitForWorldmapRequestedChunkRefresh", () => {
       }),
     ).resolves.toBeUndefined();
   });
+
+  it("waits for legacy scheduled refresh work to finish before resolving", async () => {
+    const state = createWorldmapChunkRefreshRuntimeState();
+    state.requestToken = 1;
+    state.timeoutId = 77;
+
+    const scheduledPolls: Array<() => void> = [];
+    let didResolve = false;
+
+    const waitPromise = waitForWorldmapRequestedChunkRefresh({
+      fallbackDelayMs: 0,
+      isSwitchedOff: () => false,
+      latestWinsRefresh: false,
+      requestToken: 1,
+      setTimeoutFn: (callback) => {
+        scheduledPolls.push(callback);
+        return scheduledPolls.length;
+      },
+      state,
+    }).then(() => {
+      didResolve = true;
+    });
+
+    await Promise.resolve();
+    expect(didResolve).toBe(false);
+    expect(scheduledPolls).toHaveLength(1);
+
+    scheduledPolls.shift()?.();
+    await Promise.resolve();
+    expect(didResolve).toBe(false);
+    expect(scheduledPolls).toHaveLength(1);
+
+    state.timeoutId = null;
+    state.running = true;
+    scheduledPolls.shift()?.();
+    await Promise.resolve();
+    expect(didResolve).toBe(false);
+    expect(scheduledPolls).toHaveLength(1);
+
+    state.running = false;
+    state.appliedToken = 1;
+    scheduledPolls.shift()?.();
+    await waitPromise;
+
+    expect(didResolve).toBe(true);
+  });
 });
 
 describe("runWorldmapChunkRefreshExecution", () => {

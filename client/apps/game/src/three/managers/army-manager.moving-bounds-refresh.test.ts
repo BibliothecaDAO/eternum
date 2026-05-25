@@ -24,7 +24,7 @@ describe("ArmyManager moving-bounds refresh", () => {
     expect(batchedUpdatePos).toBeLessThan(refreshPos);
   });
 
-  it("refreshMovingArmyBoundsIfNeeded recomputes army and indicator bounds", () => {
+  it("refreshMovingArmyBoundsIfNeeded recomputes army bounds", () => {
     const source = readSource("./army-manager.ts");
 
     const methodStart = source.indexOf("private refreshMovingArmyBoundsIfNeeded()");
@@ -33,7 +33,7 @@ describe("ArmyManager moving-bounds refresh", () => {
     const methodBody = source.slice(methodStart, methodStart + 800);
     expect(methodBody).toContain("this.armyModel.requestBoundsUpdate()");
     expect(methodBody).toContain("this.armyModel.applyPendingBounds()");
-    expect(methodBody).toContain("this.playerIndicatorManager.computeBoundingSphere()");
+    expect(methodBody).not.toContain("playerIndicatorManager");
   });
 
   it("syncArmyBoundsForMovementState performs one final bounds refresh when movement settles", () => {
@@ -49,7 +49,7 @@ describe("ArmyManager moving-bounds refresh", () => {
     expect(methodBody).toContain("this.refreshSettledArmyBounds()");
   });
 
-  it("refreshSettledArmyBounds resets moving-bounds cadence and recomputes bounds", () => {
+  it("refreshSettledArmyBounds resets moving-bounds cadence and recomputes army bounds", () => {
     const source = readSource("./army-manager.ts");
 
     const methodStart = source.indexOf("private refreshSettledArmyBounds()");
@@ -59,6 +59,6 @@ describe("ArmyManager moving-bounds refresh", () => {
     expect(methodBody).toContain("this.lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY");
     expect(methodBody).toContain("this.armyModel.requestBoundsUpdate()");
     expect(methodBody).toContain("this.armyModel.applyPendingBounds()");
-    expect(methodBody).toContain("this.playerIndicatorManager.computeBoundingSphere()");
+    expect(methodBody).not.toContain("playerIndicatorManager");
   });
 });

@@ -34,7 +34,7 @@ import {
 
 import { gameWorkerManager } from "@/managers/game-worker-manager";
 import { Biome, configManager } from "@bibliothecadao/eternum";
-import { ClientComponents, ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
@@ -42,7 +42,7 @@ import * as THREE from "three";
 import { Color, Euler, Group, Object3D, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { env } from "../../../env";
-import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
+import type { AttachmentTransform, CosmeticAttachmentTemplate, ResolvedCosmeticSkin } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
   findCosmeticById,
@@ -66,15 +66,12 @@ import { updateStaminaBar } from "../utils/labels/label-components";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import type { HoverLabelShowResult } from "./hover-label-show-result";
 import { removeArmyAttachmentsIfTracked, syncArmyAttachmentState } from "./army-attachment-state";
 import { syncArmyAttachmentTransformState } from "./army-attachment-transforms";
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
 import { refreshVisibleArmyCosmeticsByOwner } from "./army-cosmetics-refresh";
 import { FXManager } from "./fx-manager";
-import {
-  syncArmyIndicatorPresentationState,
-  syncMovingArmyIndicatorPresentationState,
-} from "./army-indicator-presentation";
 import {
   buildArmyLabelLayoutDataKey,
   buildArmyLabelStaminaDataKey,
@@ -88,7 +85,6 @@ import {
 import { syncArmyLabelPresentationState } from "./army-label-presentation";
 import { removeArmyLabels, syncArmyLabelVisibility } from "./army-label-visibility";
 import { PathRenderer } from "./path-renderer";
-import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from "./army-instance-presentation";
 import { resolveArmyPointLabelSize } from "./army-point-label-policy";
 import {
@@ -98,6 +94,8 @@ import {
   setArmyPointHoverState,
   syncArmyPointIconState,
 } from "./army-point-visuals";
+import { CompactEntityLabelRenderer } from "./compact-entity-label-renderer";
+import { resolveArmyCompactEntityLabel, resolveCompactEntityLabelVariant } from "./compact-entity-label-policy";
 import { createArmyRecord } from "./army-record";
 import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
 import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
@@ -107,7 +105,6 @@ import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
-import { MAX_INSTANCES } from "../constants/army-constants";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
 import {
   bindManagerChunkRuntimeState,
@@ -149,6 +146,11 @@ export interface ArmyMovementPlan {
   worldPath: Vector3[];
   armyCategory: TroopType;
   armyTier: TroopTier;
+}
+
+export interface PendingCreationGhostSource {
+  armyColor: string;
+  sourceScene: Object3D;
 }
 
 interface AddArmyParams {
@@ -208,6 +210,7 @@ export class ArmyManager {
     ally: PointsLabelRenderer;
     agent: PointsLabelRenderer;
   };
+  private compactLabelRenderer: CompactEntityLabelRenderer;
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
   private lastLabelVisibilityUpdate = 0;
@@ -277,15 +280,10 @@ export class ArmyManager {
   private selectedArmyForPath: ID | null = null;
   private guiFolders: TrackableGuiFolder[] = [];
 
-  // Player indicator dots
-  private playerIndicatorManager: PlayerIndicatorManager;
-  private indicatorMetadataCache: Map<ID, number> = new Map(); // entityId -> yOffset
-
   // Reusable objects for memory optimization
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempIconPosition: Vector3 = new Vector3();
   private readonly tempWorldPosition: Vector3 = new Vector3();
-  private readonly tempColor: Color = new Color();
 
   constructor(
     scene: Scene,
@@ -343,14 +341,12 @@ export class ArmyManager {
 
     // Initialize points-based icon renderers
     this.initializePointsRenderers();
+    this.compactLabelRenderer = new CompactEntityLabelRenderer(scene);
 
     // Initialize path renderer for movement visualization
     this.pathRenderer = new PathRenderer();
     this.pathRenderer.initialize(scene);
     this.pathRenderer.setVisibilityManager(this.visibilityManager);
-
-    // Initialize player indicator manager
-    this.playerIndicatorManager = new PlayerIndicatorManager(scene, MAX_INSTANCES);
 
     const createArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Create Army"));
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
@@ -1037,7 +1033,6 @@ export class ArmyManager {
     // to prevent frustum culling mismatches at chunk edges
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
-    this.playerIndicatorManager.computeBoundingSphere();
     this.frustumVisibilityDirty = true;
   }
 
@@ -1133,37 +1128,18 @@ export class ArmyManager {
     const updatedArmy = { ...army, matrixIndex: slot };
     this.armies.set(army.entityId, updatedArmy);
     this.armyModel.rebindMovementMatrixIndex(numericId, slot);
-    this.syncArmyAuxiliaryPresentation(updatedArmy, position, modelType, isSuppressed);
+    this.syncArmyAuxiliaryPresentation(updatedArmy, position, isSuppressed);
   }
 
-  private syncArmyAuxiliaryPresentation(
-    army: ArmyData,
-    position: Vector3,
-    modelType: ModelType,
-    isSuppressed: boolean,
-  ) {
+  private syncArmyAuxiliaryPresentation(army: ArmyData, position: Vector3, isSuppressed: boolean) {
     if (isSuppressed) {
       this.hideSuppressedArmyAuxiliaryVisuals(army.entityId);
       return;
     }
 
-    this.syncArmyIndicatorPresentation(army, position, modelType);
     this.recordLastKnownHexFromWorld(army.entityId, position);
     this.syncArmyLabelPresentation(army, position);
     this.syncArmyPointPresentation(army, position);
-  }
-
-  private syncArmyIndicatorPresentation(army: ArmyData, position: Vector3, modelType: ModelType) {
-    syncArmyIndicatorPresentationState({
-      entityId: army.entityId,
-      color: army.color,
-      modelType,
-      position,
-      indicatorMetadataCache: this.indicatorMetadataCache,
-      setIndicatorColor: (color) => this.tempColor.set(color),
-      updateIndicator: ({ entityId, position: indicatorPosition, color, yOffset }) =>
-        this.playerIndicatorManager.updateIndicator(entityId, indicatorPosition, color, yOffset),
-    });
   }
 
   private syncArmyLabelPresentation(army: ArmyData, position: Vector3) {
@@ -1175,6 +1151,7 @@ export class ArmyManager {
 
   private syncArmyPointPresentation(army: ArmyData, position: Vector3) {
     this.updateArmyPointIcon(army, position);
+    this.updateArmyCompactLabel(army, position);
   }
 
   private removeVisibleArmy(entityId: ID, options?: { notifyMovementVisualCancel?: boolean }): number | null {
@@ -1200,11 +1177,8 @@ export class ArmyManager {
     this.armyPaths.delete(entityId);
     this.lastKnownVisibleHexes.delete(entityId);
     this.removeArmyPointIcon(entityId);
+    this.removeArmyCompactLabel(entityId);
     this.removeEntityIdLabel(entityId);
-
-    // Remove player indicator dot
-    this.playerIndicatorManager.removeIndicator(entityId);
-    this.indicatorMetadataCache.delete(entityId); // Clear cached metadata
 
     const numericId = this.toNumericId(entityId);
     const shouldNotifyMovementVisualCancel =
@@ -1236,11 +1210,26 @@ export class ArmyManager {
     });
   }
 
+  private updateArmyCompactLabel(army: ArmyData, position: Vector3): void {
+    const labelPosition = this.tempIconPosition.copy(position);
+    labelPosition.y += 2.78;
+    this.compactLabelRenderer.setLabel({
+      entityId: army.entityId,
+      position: labelPosition,
+      text: resolveArmyCompactEntityLabel(army),
+      variant: resolveCompactEntityLabelVariant(army),
+    });
+  }
+
   private removeArmyPointIcon(entityId: ID): void {
     removeArmyPointIconState({
       renderers: this.pointsRenderers,
       entityId,
     });
+  }
+
+  private removeArmyCompactLabel(entityId: ID): void {
+    this.compactLabelRenderer.removeLabel(entityId);
   }
 
   private syncVisibleSlots(): void {
@@ -2173,6 +2162,10 @@ export class ArmyManager {
     if (slot !== undefined) {
       this.armyModel.restoreHiddenSlot(slot);
     }
+    const army = this.armies.get(entityId);
+    if (army) {
+      this.updateArmyCompactLabel(army, this.getArmyWorldPosition(entityId, army.hexCoords));
+    }
   }
 
   public getSuppressedArmiesRef(): Set<ID> {
@@ -2240,6 +2233,7 @@ export class ArmyManager {
     if (removedSlot === null) {
       this.runMovementVisualCancelListeners(numericEntityId);
       this.removeArmyPointIcon(entityId);
+      this.removeArmyCompactLabel(entityId);
       this.removeEntityIdLabel(entityId);
     }
 
@@ -2302,6 +2296,88 @@ export class ArmyManager {
       armyColor: army.color,
       sourceScene: modelData.sourceScene,
     };
+  }
+
+  public async resolvePendingCreationGhostSource(input: {
+    entityId: ID;
+    hexCoords: HexPosition;
+    troopType: TroopType;
+    troopTier: TroopTier;
+  }): Promise<PendingCreationGhostSource> {
+    const ownerAddress = this.resolvePendingCreationOwnerAddress();
+    this.hydratePendingCreationCosmetics(ownerAddress);
+
+    const baseModelType = this.resolvePendingCreationBaseModel(input);
+    const cosmetic = resolveArmyCosmetic({
+      owner: ownerAddress,
+      troopType: input.troopType,
+      tier: input.troopTier,
+      defaultModelType: baseModelType,
+    });
+    const sourceScene = await this.resolvePendingCreationSourceScene({
+      baseModelType: cosmetic.skin.modelType ?? baseModelType,
+      cosmeticSkin: cosmetic.skin,
+    });
+
+    return {
+      armyColor: this.resolvePendingCreationGhostColor(ownerAddress),
+      sourceScene,
+    };
+  }
+
+  private resolvePendingCreationOwnerAddress(): bigint {
+    return ContractAddress(useAccountStore.getState().account?.address || "0");
+  }
+
+  private hydratePendingCreationCosmetics(ownerAddress: bigint): void {
+    if (!this.components || ownerAddress === 0n) {
+      return;
+    }
+
+    playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerAddress);
+  }
+
+  private resolvePendingCreationBaseModel(input: {
+    entityId: ID;
+    hexCoords: HexPosition;
+    troopType: TroopType;
+    troopTier: TroopTier;
+  }): ModelType {
+    const contractHex = new Position({ x: input.hexCoords.col, y: input.hexCoords.row }).getContract();
+    const biome = Biome.getBiome(contractHex.x, contractHex.y);
+    return this.armyModel.getModelTypeForEntity(
+      this.toNumericId(input.entityId),
+      input.troopType,
+      input.troopTier,
+      biome,
+    );
+  }
+
+  private async resolvePendingCreationSourceScene(input: {
+    baseModelType: ModelType;
+    cosmeticSkin: ResolvedCosmeticSkin;
+  }): Promise<Object3D> {
+    if (this.shouldUsePendingCreationCosmeticSource(input.cosmeticSkin)) {
+      try {
+        return await this.armyModel.getCosmeticModelSourceScene(input.cosmeticSkin);
+      } catch (error) {
+        console.warn("[ArmyManager] Failed to load pending creation cosmetic ghost, falling back to base model", error);
+      }
+    }
+
+    return this.armyModel.getModelSourceScene(input.baseModelType);
+  }
+
+  private shouldUsePendingCreationCosmeticSource(skin: ResolvedCosmeticSkin): boolean {
+    return !skin.isFallback && skin.assetPaths.length > 0;
+  }
+
+  private resolvePendingCreationGhostColor(ownerAddress: bigint): string {
+    return this.getArmyColor({
+      isMine: true,
+      isDaydreamsAgent: false,
+      owner: { address: ownerAddress },
+    });
   }
 
   public syncAttachedArmiesOwnerForStructure(params: {
@@ -2514,6 +2590,7 @@ export class ArmyManager {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
     this.armyModel.updateAnimations(deltaTime, animationContext);
+    this.updateCompactLabelCamera();
 
     // Update FX
     this.fxManager.update(deltaTime);
@@ -2531,7 +2608,7 @@ export class ArmyManager {
     }
 
     // Batch update: single pass over visible armies for all per-frame operations
-    // This consolidates point icons, attachment transforms, and indicators
+    // This consolidates point icons, compact labels, and attachment transforms.
     this.updateVisibleArmiesBatched();
     this.syncArmyBoundsForMovementState();
 
@@ -2546,6 +2623,13 @@ export class ArmyManager {
 
     // Flush batched label pool operations to minimize layout thrashing
     this.labelPool.flushBatch();
+  }
+
+  private updateCompactLabelCamera(): void {
+    const camera = this.hexagonScene?.getCamera();
+    if (camera) {
+      this.compactLabelRenderer.updateCamera(camera);
+    }
   }
 
   private syncArmyBoundsForMovementState() {
@@ -2577,7 +2661,6 @@ export class ArmyManager {
     this.lastMovingBoundsRefreshAt = now;
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
-    this.playerIndicatorManager.computeBoundingSphere();
     this.frustumVisibilityDirty = true;
   }
 
@@ -2585,22 +2668,21 @@ export class ArmyManager {
     this.lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
-    this.playerIndicatorManager.computeBoundingSphere();
     this.frustumVisibilityDirty = true;
   }
 
   /**
    * Batched update for all visible army per-frame operations.
-   * Consolidates point icon updates, attachment transforms, and indicator positions
+   * Consolidates point icon updates, compact labels, and attachment transforms
    * into a single iteration over visibleArmies to reduce iteration overhead.
    */
   private updateVisibleArmiesBatched() {
     const hasPointsRenderers = this.pointsRenderers !== undefined;
     const hasActiveAttachments = this.activeArmyAttachmentEntities.size > 0;
-    const hasIndicators = this.playerIndicatorManager.getVisibleCount() > 0;
+    const hasMovingArmies = this.hasMovingArmies();
 
     // Early exit if nothing to update
-    if (!hasPointsRenderers && !hasActiveAttachments && !hasIndicators) {
+    if (!hasPointsRenderers && !hasActiveAttachments && !hasMovingArmies) {
       return;
     }
 
@@ -2639,17 +2721,8 @@ export class ArmyManager {
         });
       }
 
-      // 1b. Update indicator dot positions for moving armies
-      if (instanceData?.isMoving && instanceData.position) {
-        syncMovingArmyIndicatorPresentationState({
-          entityId: army.entityId,
-          color: army.color,
-          position: instanceData.position,
-          indicatorMetadataCache: this.indicatorMetadataCache,
-          setIndicatorColor: (color) => this.tempColor.set(color),
-          updateIndicator: ({ entityId, position: indicatorPosition, color, yOffset }) =>
-            this.playerIndicatorManager.updateIndicator(entityId, indicatorPosition, color, yOffset),
-        });
+      if (instanceData?.isMoving) {
+        this.updateArmyCompactLabel(army, instanceData.position);
       }
 
       // 2. Update attachment transforms
@@ -2683,8 +2756,8 @@ export class ArmyManager {
   }
 
   private hideSuppressedArmyAuxiliaryVisuals(entityId: ID): void {
-    this.playerIndicatorManager.removeIndicator(entityId);
     this.removeArmyPointIcon(entityId);
+    this.removeArmyCompactLabel(entityId);
 
     const label = this.entityIdLabels.get(entityId);
     if (label) {
@@ -2829,27 +2902,37 @@ export class ArmyManager {
     this.frustumVisibilityDirty = true;
   }
 
-  public showLabel(entityId: ID): void {
+  public showLabel(entityId: ID): HoverLabelShowResult {
     const army = this.armies.get(entityId);
     if (!army) {
-      return;
+      return { status: "missing" };
     }
 
     const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
     if (this.entityIdLabels.has(army.entityId)) {
       const label = this.entityIdLabels.get(army.entityId)!;
+      const wasDetached = label.parent !== this.labelsGroup;
+      const wasHidden = label.visible !== true || label.element.style.display === "none";
       syncArmyLabelPresentationState({
         label,
         position,
       });
+      this.revealArmyLabel(entityId, label);
+      label.visible = true;
+      label.element.style.display = "";
       this.updateArmyLabelData(entityId, army, label);
       this.highlightArmyPointHover(entityId, army);
-      return;
+      if (wasDetached || wasHidden) {
+        this.frustumVisibilityDirty = true;
+        return { status: "reattached" };
+      }
+      return { status: "unchanged" };
     }
 
     this.addEntityIdLabel(army, position);
     this.highlightArmyPointHover(entityId, army);
     this.frustumVisibilityDirty = true;
+    return { status: "shown" };
   }
 
   public hideLabel(entityId: ID): void {
@@ -2889,12 +2972,14 @@ export class ArmyManager {
       rendererKey: resolveArmyPointRendererKey(army),
       entityId,
     });
+    this.compactLabelRenderer.setHover(entityId);
   }
 
   private clearArmyPointHoverIcons() {
     clearArmyPointHoverState({
       renderers: this.pointsRenderers,
     });
+    this.compactLabelRenderer.clearHover();
   }
 
   removeLabelsFromScene() {
@@ -3444,10 +3529,6 @@ ${
     // Dispose army model resources including shared materials
     this.armyModel.dispose();
 
-    // Dispose player indicator manager
-    this.playerIndicatorManager.dispose();
-    this.indicatorMetadataCache.clear();
-
     // Tear down FX to avoid lingering RAF loops and textures
     this.fxManager.destroy();
 
@@ -3465,6 +3546,7 @@ ${
       this.pointsRenderers.ally.dispose();
       this.pointsRenderers.agent.dispose();
     }
+    this.compactLabelRenderer.dispose();
 
     // Clean up any other resources...
   }

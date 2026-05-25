@@ -4,14 +4,11 @@ import {
   subscribeToToriiHeartbeat,
 } from "@/dojo/connection-health-monitor";
 import { createConnectionDeadEndRecoveryGate } from "@/dojo/connection-dead-end-recovery-gate";
-import { runDeadEndRecovery } from "@/dojo/connection-dead-end-recovery";
 import { createToriiHeartbeatLifecycle } from "@/dojo/torii-heartbeat-lifecycle";
-import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { cancelEntityStreamSubscription, initialSync } from "@/dojo/sync";
 import { probeToriiHealth } from "@/dojo/torii-health-probe";
-import { resolveEntryContextFromPlayRoute } from "@/game-entry/context";
+import { requestGameRebootstrap } from "@/game-entry/bootstrap-controller";
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { bootstrapGameForEntryContext, resetBootstrap } from "@/init/bootstrap";
 import {
   addNetworkBreadcrumb,
   reportNetworkOutageDeadEnd,
@@ -203,39 +200,6 @@ const ConnectionMonitor = () => {
     });
     void heartbeatLifecycle.start();
 
-    const triggerDeadEndRecovery = () =>
-      runDeadEndRecovery({
-        resolveContext: () => {
-          const context = resolveEntryContextFromPlayRoute(window.location);
-          if (!context) {
-            console.warn("[ConnectionMonitor] Dead-end fired but no play-route context to recover into");
-            return null;
-          }
-          addNetworkBreadcrumb({ event: "reconnect_start", streamType: "global" });
-          return context;
-        },
-        resetBootstrap,
-        bootstrapForContext: (context) => bootstrapGameForEntryContext(context),
-        recordStreamReconnect: () => {
-          useConnectionStore.getState().recordStreamReconnect();
-        },
-        onSuccess: (result) => {
-          void heartbeatLifecycle.reopenWith(() => subscribeToToriiHeartbeat(result.setupResult.network.toriiClient));
-          addNetworkBreadcrumb({ event: "reconnect_success", streamType: "global" });
-          toast.success("Game state refreshed", {
-            description: "Reconnected after a prolonged outage.",
-          });
-        },
-        onFailure: (error) => {
-          console.warn("[ConnectionMonitor] Dead-end recovery failed", error);
-          addNetworkBreadcrumb({
-            event: "reconnect_failure",
-            streamType: "global",
-            reason: getNetworkErrorReason(error),
-          });
-        },
-      });
-
     const recoverWorldmapAfterConnectionFailure = () => {
       try {
         getActiveWorldmapRecoveryHandle()?.recoverAfterConnectionFailure();
@@ -287,7 +251,13 @@ const ConnectionMonitor = () => {
       onDeadEnd: (outageMs, attempts, reason) => {
         reportNetworkOutageDeadEnd({ streamType: "both", outageMs, attempts, reason });
         if (!shouldRunDeadEndRecovery({ toriiBaseUrl, reason })) return;
-        void triggerDeadEndRecovery();
+        addNetworkBreadcrumb({
+          event: "reconnect_start",
+          streamType: "global",
+          status: "route_rebootstrap",
+          reason,
+        });
+        requestGameRebootstrap(`connection_dead_end:${reason ?? "unknown"}`);
       },
     });
 

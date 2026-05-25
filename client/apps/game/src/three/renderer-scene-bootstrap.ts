@@ -71,6 +71,7 @@ interface CreateRendererSceneRegistryInput<
   createWorldmapScene: (input: {
     controls: TControls;
     dojo: TDojo;
+    markLabelsDirty: () => void;
     mouse: TMouse;
     raycaster: TRaycaster;
     sceneManager: TSceneManager;
@@ -78,6 +79,7 @@ interface CreateRendererSceneRegistryInput<
   dojo: TDojo;
   fastTravelEnabled: boolean;
   inputSurface: HTMLElement;
+  markLabelsDirty?: () => void;
   mouse: TMouse;
   raycaster: TRaycaster;
 }
@@ -142,6 +144,7 @@ export function createRendererSceneRegistry<
   const worldmapScene = input.createWorldmapScene({
     controls: input.controls,
     dojo: input.dojo,
+    markLabelsDirty: input.markLabelsDirty ?? (() => {}),
     mouse: input.mouse,
     raycaster: input.raycaster,
     sceneManager,
@@ -179,6 +182,7 @@ export function createGameRendererSceneRegistry(input: {
   dojo: SetupResult;
   fastTravelEnabled: boolean;
   inputSurface: HTMLElement;
+  markLabelsDirty?: () => void;
   mouse: Vector2;
   raycaster: Raycaster;
 }): RendererSceneRegistry<TransitionManager, SceneManager, HexceptionScene, WorldmapScene, FastTravelScene> {
@@ -190,11 +194,12 @@ export function createGameRendererSceneRegistry(input: {
       new HexceptionScene(controls, dojo, mouse, raycaster, sceneManager),
     createSceneManager: (transitionManager) => new SceneManager(transitionManager),
     createTransitionManager: () => new TransitionManager(),
-    createWorldmapScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
-      new WorldmapScene(dojo, raycaster, controls, mouse, sceneManager),
+    createWorldmapScene: ({ controls, dojo, markLabelsDirty, mouse, raycaster, sceneManager }) =>
+      new WorldmapScene(dojo, raycaster, controls, mouse, sceneManager, markLabelsDirty),
     dojo: input.dojo,
     fastTravelEnabled: input.fastTravelEnabled,
     inputSurface: input.inputSurface,
+    markLabelsDirty: input.markLabelsDirty,
     mouse: input.mouse,
     raycaster: input.raycaster,
   });

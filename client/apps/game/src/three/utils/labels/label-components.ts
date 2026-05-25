@@ -504,6 +504,7 @@ export const createGuardArmyDisplay = (
       }
 
       const troopDisplay = createTroopCountDisplay(guard.count, guard.category ?? "", guard.tier, cameraView);
+      troopDisplay.appendChild(createGuardStaminaDisplay(guard.stamina));
       container.appendChild(troopDisplay);
     });
 
@@ -581,12 +582,21 @@ export const createGuardArmyDisplay = (
     tierBadge.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border");
     tierBadge.classList.add(...getTierStyle(guard.tier).split(" "));
     guardDiv.appendChild(tierBadge);
+    guardDiv.appendChild(createGuardStaminaDisplay(guard.stamina));
 
     container.appendChild(guardDiv);
   });
 
   return container;
 };
+
+function createGuardStaminaDisplay(stamina: number): HTMLElement {
+  const staminaDisplay = document.createElement("span");
+  staminaDisplay.classList.add("font-mono", "text-[10px]", "text-yellow-200");
+  staminaDisplay.setAttribute("data-role", "guard-stamina");
+  staminaDisplay.textContent = `STA ${formatCompactNumber(stamina)}`;
+  return staminaDisplay;
+}
 
 /**
  * Create production display

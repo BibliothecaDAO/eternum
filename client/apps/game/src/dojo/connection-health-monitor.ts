@@ -151,7 +151,6 @@ export class ConnectionHealthMonitor {
     if (this.disposed) return;
     if (!this.hasObservedHealthyStreams) return;
 
-    useConnectionStore.getState().resetReconnectAttempts();
     void this.reconnectStaleStreams(true, true);
   };
 
@@ -208,15 +207,19 @@ export class ConnectionHealthMonitor {
     const store = useConnectionStore.getState();
     store.recordHealthCheck();
     this.consecutiveTransientHealthFailures = 0;
-    this.markConnectedIfNeeded();
-    store.resetReconnectAttempts();
 
     if (!this.hasObservedHealthyStreams) {
       this.hasObservedHealthyStreams = this.haveStreamsTickedSinceStart(store);
       if (!this.hasObservedHealthyStreams) return;
     }
 
-    this.reconnectSilentStreamsAfterCooldown(store);
+    const currentStore = useConnectionStore.getState();
+    if (this.haveStreamsRecovered(currentStore)) {
+      this.markConnectedIfNeeded();
+      currentStore.resetReconnectAttempts();
+    }
+
+    this.reconnectSilentStreamsAfterCooldown(currentStore);
   }
 
   private markTransientHealthCheckFailed(reason: ToriiHealthUnreachableReason): void {
@@ -289,6 +292,10 @@ export class ConnectionHealthMonitor {
     return store.toriiHeartbeatAvailable && Date.now() - store.lastToriiHeartbeat > this.staleThresholdMs;
   }
 
+  private haveStreamsRecovered(store: ReturnType<typeof useConnectionStore.getState>): boolean {
+    return store.spatialStatus === "connected" && store.globalStatus === "connected" && !this.isHeartbeatStale(store);
+  }
+
   private async reconnectStaleStreams(
     spatial: boolean,
     global: boolean,
@@ -320,6 +327,7 @@ export class ConnectionHealthMonitor {
         if (global) store.setGlobalStatus("connected");
         if (attempted) {
           this.markConnectedIfNeeded();
+          store.resetReconnectAttempts();
         }
       } else {
         if (spatial) store.setSpatialStatus("failed");
