@@ -22,6 +22,46 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-25",
+    title: "Explore Arrival Previews",
+    description:
+      "Added the travel-style destination ghost and pulsing arrival ring to explore commands, making queued exploration feedback visible immediately.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-25",
+    title: "Safer Repeat Moves",
+    description:
+      "Hid movement options for units whose previous move is still resolving, preventing stale follow-up commands until the transaction catches up.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-23",
+    title: "Event-Driven Hover Details",
+    description:
+      "Improved world-map hover details so labels recover when unit, structure, or chest data finishes loading under the cursor.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-23",
+    title: "Reliable Hover Details",
+    description:
+      "Fixed intermittent world-map hover details by retrying active labels when loading or scene transitions temporarily detach them.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-23",
+    title: "Cleaner Unit Markers",
+    description:
+      "Removed deprecated ownership dots above world-map units so armies rely on their model, labels, and selection states without extra marker clutter.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-22",
     title: "Hover Label Recovery",
     description:

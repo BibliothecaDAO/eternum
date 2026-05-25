@@ -6,12 +6,20 @@ import {
 } from "./arrival-ghost-policy";
 
 describe("arrival-ghost-policy", () => {
-  it("creates predictive ghosts only for local travel moves with a target hex", () => {
+  it("creates predictive ghosts for local travel and explore moves with a target hex", () => {
     expect(
       shouldCreatePredictiveArrivalGhost({
         hasTargetHex: true,
         isLocalArmy: true,
-        isTravelAction: true,
+        movementType: "travel",
+      }),
+    ).toBe(true);
+
+    expect(
+      shouldCreatePredictiveArrivalGhost({
+        hasTargetHex: true,
+        isLocalArmy: true,
+        movementType: "explore",
       }),
     ).toBe(true);
 
@@ -19,7 +27,15 @@ describe("arrival-ghost-policy", () => {
       shouldCreatePredictiveArrivalGhost({
         hasTargetHex: true,
         isLocalArmy: false,
-        isTravelAction: true,
+        movementType: "explore",
+      }),
+    ).toBe(false);
+
+    expect(
+      shouldCreatePredictiveArrivalGhost({
+        hasTargetHex: false,
+        isLocalArmy: true,
+        movementType: "travel",
       }),
     ).toBe(false);
   });

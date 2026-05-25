@@ -73,6 +73,57 @@ describe("worldmap hover label wiring", () => {
     expect(attachWorldmapManagerLabels).not.toContain("showLabels()");
   });
 
+  it("reconciles current hover after initial chunk refresh hydrates managers", () => {
+    const source = readWorldmapSource();
+    const refreshWarpTravelScene = extractSourceBetween(
+      source,
+      "private async refreshWarpTravelScene()",
+      "private commitCurrentChunkAuthority(",
+    );
+
+    const refreshPos = refreshWarpTravelScene.indexOf("await this.updateVisibleChunks(true)");
+    const reconcilePos = refreshWarpTravelScene.indexOf('this.reconcileHoverLabels("initial_refresh")');
+
+    expect(refreshPos).toBeGreaterThan(-1);
+    expect(reconcilePos).toBeGreaterThan(-1);
+    expect(reconcilePos).toBeGreaterThan(refreshPos);
+  });
+
+  it("routes hover reconciliation through pending recovery state", () => {
+    const source = readWorldmapSource();
+    const reconcileHoverLabels = extractSourceBetween(
+      source,
+      "private reconcileHoverLabels(",
+      "protected tryArmyRaycastFallback(",
+    );
+
+    expect(source).toContain("pendingHoverLabelRecovery");
+    expect(reconcileHoverLabels).toContain("this.applyHoverLabelRecoveryResult(");
+    expect(source).toContain("this.runPendingHoverLabelRecoveryFrame()");
+  });
+
+  it("retries pending hover labels after readiness events", () => {
+    const source = readWorldmapSource();
+
+    expect(
+      extractSourceBetween(source, "private announceWorldmapSceneReady()", "private prepareWarpTravelInitialSetup()"),
+    ).toContain("this.retryPendingHoverLabelRecovery");
+    expect(
+      extractSourceBetween(
+        source,
+        "private async updateCriticalManagersForChunk(",
+        "private async updateNonCriticalManagersForChunk(",
+      ),
+    ).toContain("this.retryPendingHoverLabelRecovery");
+    expect(
+      extractSourceBetween(
+        source,
+        "private async updateNonCriticalManagersForChunk(",
+        "private syncArrivalGhostChunkVisibility()",
+      ),
+    ).toContain("this.retryPendingHoverLabelRecovery");
+  });
+
   it("clears active hover state before detaching manager labels", () => {
     const source = readWorldmapSource();
     const detachWorldmapManagerLabels = extractSourceBetween(
@@ -85,5 +136,23 @@ describe("worldmap hover label wiring", () => {
     expect(detachWorldmapManagerLabels.indexOf("this.hoverLabelManager.onHexLeave()")).toBeLessThan(
       detachWorldmapManagerLabels.indexOf("this.armyManager.removeLabelsFromScene()"),
     );
+  });
+
+  it("clears pending hover recovery when hover or scene lifecycle ends", () => {
+    const source = readWorldmapSource();
+    const onHexagonMouseMove = extractSourceBetween(
+      source,
+      "protected onHexagonMouseMove(",
+      "protected onHexagonDoubleClick(",
+    );
+    const resetWorldmapInteractionForSwitchOff = extractSourceBetween(
+      source,
+      "private resetWorldmapInteractionForSwitchOff(",
+      "private clearWorldmapVisibilityRuntimeForSwitchOff()",
+    );
+
+    expect(onHexagonMouseMove).toContain('this.clearPendingHoverLabelRecovery("hex_leave")');
+    expect(resetWorldmapInteractionForSwitchOff).toContain("this.currentHoverLabelHex = null");
+    expect(resetWorldmapInteractionForSwitchOff).toContain('this.clearPendingHoverLabelRecovery("switch_off")');
   });
 });
