@@ -136,6 +136,12 @@ export const HyperstructurePanel = ({ entity }: any) => {
 
     setIsLoading(Loading.Contribute);
     setResetContributions(true);
+    const removeResourceOverrides = new ResourceManager(components, structureEntityId).optimisticResourceUpdates(
+      Object.entries(newContributions).map(([resourceId, amount]) => ({
+        resourceId: Number(resourceId) as ResourcesIds,
+        amount: -amount,
+      })),
+    );
 
     try {
       await contribute_to_construction({
@@ -145,6 +151,7 @@ export const HyperstructurePanel = ({ entity }: any) => {
         hyperstructure_entity_id: entity.entity_id,
       });
     } finally {
+      removeResourceOverrides();
       setIsLoading(Loading.None);
       setNewContributions({});
       setResetContributions(false);

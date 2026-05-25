@@ -16,6 +16,7 @@ import {
 import {
   createRendererBackendCapabilities,
   createRendererInitDiagnostics,
+  RendererInitTimeoutError,
   type RendererActiveMode,
   type RendererBackendV2,
   type RendererFramePipeline,
@@ -24,6 +25,7 @@ import {
   type RendererPostProcessPlan,
 } from "./renderer-backend-v2";
 import type { RendererBuildMode } from "./renderer-build-mode";
+import { recordRendererStartupTiming } from "./perf/renderer-startup-telemetry";
 import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 import { createWebGPUPostProcessRuntime } from "./webgpu-postprocess-runtime";
 
@@ -63,8 +65,16 @@ interface WebGPURendererBackendDependencies {
     graphicsSetting: GraphicsSettingsType;
     isMobileDevice: boolean;
     pixelRatio: number;
+    signal: AbortSignal;
   }): Promise<CreatedWebGPURenderer>;
   now(): number;
+}
+
+interface WebGpuRendererModules {
+  WebGPU: {
+    isAvailable(): boolean;
+  };
+  threeWebGPUModule: typeof import("three/webgpu");
 }
 
 async function createDefaultWebGPURenderer(input: {
@@ -72,15 +82,17 @@ async function createDefaultWebGPURenderer(input: {
   graphicsSetting: GraphicsSettingsType;
   isMobileDevice: boolean;
   pixelRatio: number;
+  signal: AbortSignal;
 }): Promise<CreatedWebGPURenderer> {
-  const [{ default: WebGPU }, threeWebGPUModule] = await Promise.all([
-    import("three/addons/capabilities/WebGPU.js"),
-    import("three/webgpu"),
-  ]);
+  const moduleImportStartedAt = performance.now();
+  const { WebGPU, threeWebGPUModule } = await loadWebGpuRendererModules(input.signal);
+  recordRendererStartupTiming("webgpu-module-import", performance.now() - moduleImportStartedAt);
 
   const { ACESFilmicToneMapping, HalfFloatType, PCFShadowMap, PCFSoftShadowMap, UnsignedByteType, WebGPURenderer } =
     threeWebGPUModule as typeof import("three/webgpu");
 
+  throwIfAborted(input.signal);
+  const rendererCreateStartedAt = performance.now();
   const renderer = new WebGPURenderer({
     forceWebGL: input.forceWebGL,
   }) as WebGPURendererSurface;
@@ -95,6 +107,7 @@ async function createDefaultWebGPURenderer(input: {
   if ("outputBufferType" in renderer) {
     renderer.outputBufferType = input.isMobileDevice ? UnsignedByteType : HalfFloatType;
   }
+  recordRendererStartupTiming("webgpu-renderer-create", performance.now() - rendererCreateStartedAt);
 
   return {
     activeMode: input.forceWebGL || !WebGPU.isAvailable() ? "webgl2-fallback" : "webgpu",
@@ -110,7 +123,10 @@ const defaultDependencies: WebGPURendererBackendDependencies = {
 };
 
 const ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME = false;
+const WEBGPU_BACKEND_STARTUP_TIMEOUT_MS = 15_000;
+const WEBGPU_RENDERER_INIT_TIMEOUT_MS = 12_000;
 let webGpuFrameRecoveryWarned = false;
+let webGpuRendererModulesPromise: Promise<WebGpuRendererModules> | null = null;
 
 const NOOP_POST_PROCESS_CONTROLLER: RendererPostProcessController = {
   setColorGrade: () => {},
@@ -126,6 +142,50 @@ const WEBGPU_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
   supportsVignette: false,
   supportsWideLines: false,
 });
+
+async function importWebGpuRendererModules(): Promise<WebGpuRendererModules> {
+  const [{ default: WebGPU }, threeWebGPUModule] = await Promise.all([
+    import("three/addons/capabilities/WebGPU.js"),
+    import("three/webgpu"),
+  ]);
+
+  return {
+    WebGPU,
+    threeWebGPUModule: threeWebGPUModule as typeof import("three/webgpu"),
+  };
+}
+
+async function loadWebGpuRendererModules(signal?: AbortSignal): Promise<WebGpuRendererModules> {
+  throwIfAborted(signal);
+  if (!webGpuRendererModulesPromise) {
+    webGpuRendererModulesPromise = importWebGpuRendererModules().catch((error) => {
+      webGpuRendererModulesPromise = null;
+      throw error;
+    });
+  }
+
+  const modules = await webGpuRendererModulesPromise;
+  throwIfAborted(signal);
+  return modules;
+}
+
+export function preloadWebGpuRendererModules(): void {
+  void loadWebGpuRendererModules().catch(() => {
+    // A later real renderer init will retry because the cached promise resets on failure.
+  });
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (!signal?.aborted) {
+    return;
+  }
+
+  throw createWebGpuStartupTimeoutError(WEBGPU_BACKEND_STARTUP_TIMEOUT_MS);
+}
+
+function createWebGpuStartupTimeoutError(timeoutMs: number): RendererInitTimeoutError {
+  return new RendererInitTimeoutError(`Experimental renderer startup timed out after ${timeoutMs}ms`);
+}
 
 function resolveWebGpuRendererDevice(renderer: WebGPURendererSurface): WebGPURendererDevice | undefined {
   const rendererWithBackend = renderer as WebGPURendererSurface & {
@@ -200,6 +260,74 @@ function logRecoverableWebGpuFrameError(error: TypeError): void {
 
   webGpuFrameRecoveryWarned = true;
   console.warn("[WebGPURendererBackend] Recovered from a transient WebGPU frame failure", error);
+}
+
+async function waitForRendererInitialization(
+  renderer: WebGPURendererSurface,
+  timeoutMs: number,
+  setTimeoutFn: typeof setTimeout = setTimeout,
+  clearTimeoutFn: typeof clearTimeout = clearTimeout,
+): Promise<void> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const initPromise = renderer.init().catch((error) => {
+    throw error;
+  });
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeoutFn(() => {
+      reject(new RendererInitTimeoutError(`WebGPU renderer init timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    await Promise.race([initPromise, timeoutPromise]);
+  } finally {
+    if (timeoutId !== undefined) {
+      clearTimeoutFn(timeoutId);
+    }
+  }
+}
+
+async function waitForWebGpuBackendStartup(input: {
+  abortController: AbortController;
+  clearTimeoutFn?: typeof clearTimeout;
+  disposeCreatedRenderer: () => void;
+  setTimeoutFn?: typeof setTimeout;
+  startupPromise: Promise<CreatedWebGPURenderer>;
+  timeoutMs: number;
+}): Promise<CreatedWebGPURenderer> {
+  const setTimeoutFn = input.setTimeoutFn ?? setTimeout;
+  const clearTimeoutFn = input.clearTimeoutFn ?? clearTimeout;
+  let timedOut = false;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutError = createWebGpuStartupTimeoutError(input.timeoutMs);
+  const guardedStartupPromise = input.startupPromise.then((createdRenderer) => {
+    if (timedOut) {
+      input.disposeCreatedRenderer();
+      throw timeoutError;
+    }
+
+    return createdRenderer;
+  });
+  void guardedStartupPromise.catch(() => {
+    // The race may already have rejected on timeout. Keep late async failures contained.
+  });
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeoutFn(() => {
+      timedOut = true;
+      input.abortController.abort();
+      input.disposeCreatedRenderer();
+      reject(timeoutError);
+    }, input.timeoutMs);
+  });
+
+  try {
+    return await Promise.race([guardedStartupPromise, timeoutPromise]);
+  } finally {
+    if (timeoutId !== undefined) {
+      clearTimeoutFn(timeoutId);
+    }
+  }
 }
 
 function renderMainFrameWithRecovery(renderer: RendererSurfaceLike, pipeline: RendererFramePipeline): void {
@@ -286,46 +414,81 @@ export function createWebGPURendererBackend(
     },
     async initialize() {
       const startTime = resolvedDependencies.now();
-      const createdRenderer = await resolvedDependencies.createRenderer({
-        forceWebGL: options.requestedMode === "experimental-webgpu-force-webgl",
-        graphicsSetting: options.graphicsSetting,
-        isMobileDevice: options.isMobileDevice,
-        pixelRatio: options.pixelRatio,
-      });
-      const releaseDeviceDiagnostics = attachWebGpuDeviceDiagnostics({
-        activeMode: createdRenderer.activeMode,
-        device: createdRenderer.device,
-      });
+      const abortController = new AbortController();
+      let createdRenderer: CreatedWebGPURenderer | undefined;
+      let releaseDeviceDiagnostics: (() => void) | undefined;
+      const disposeCreatedRenderer = () => {
+        releaseDeviceDiagnostics?.();
+        releaseDeviceDiagnostics = undefined;
+        createdRenderer?.renderer.dispose();
+        createdRenderer = undefined;
+      };
 
       try {
-        createdRenderer.renderer.setPixelRatio(options.pixelRatio);
-        createdRenderer.renderer.setSize(window.innerWidth, window.innerHeight);
-        await createdRenderer.renderer.init();
-      } catch (error) {
-        releaseDeviceDiagnostics();
-        createdRenderer.renderer.dispose();
-        throw error;
-      }
+        const startupPromise = (async () => {
+          createdRenderer = await resolvedDependencies.createRenderer({
+            forceWebGL: options.requestedMode === "experimental-webgpu-force-webgl",
+            graphicsSetting: options.graphicsSetting,
+            isMobileDevice: options.isMobileDevice,
+            pixelRatio: options.pixelRatio,
+            signal: abortController.signal,
+          });
+          if (abortController.signal.aborted) {
+            disposeCreatedRenderer();
+            throw createWebGpuStartupTimeoutError(WEBGPU_BACKEND_STARTUP_TIMEOUT_MS);
+          }
+          releaseDeviceDiagnostics = attachWebGpuDeviceDiagnostics({
+            activeMode: createdRenderer.activeMode,
+            device: createdRenderer.device,
+          });
 
-      cleanupDeviceDiagnostics?.();
-      cleanupDeviceDiagnostics = releaseDeviceDiagnostics;
-      renderer = createdRenderer.renderer;
-      if (ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME) {
-        postProcessRuntime = resolvedDependencies.createPostProcessRuntime({
-          renderer: createdRenderer.renderer,
+          try {
+            createdRenderer.renderer.setPixelRatio(options.pixelRatio);
+            createdRenderer.renderer.setSize(window.innerWidth, window.innerHeight);
+            const rendererInitStartedAt = resolvedDependencies.now();
+            await waitForRendererInitialization(createdRenderer.renderer, WEBGPU_RENDERER_INIT_TIMEOUT_MS);
+            if (abortController.signal.aborted) {
+              throw createWebGpuStartupTimeoutError(WEBGPU_BACKEND_STARTUP_TIMEOUT_MS);
+            }
+            recordRendererStartupTiming("webgpu-renderer-init", resolvedDependencies.now() - rendererInitStartedAt);
+          } catch (error) {
+            disposeCreatedRenderer();
+            throw error;
+          }
+
+          return createdRenderer;
+        })();
+
+        const initializedRenderer = await waitForWebGpuBackendStartup({
+          abortController,
+          disposeCreatedRenderer,
+          startupPromise,
+          timeoutMs: WEBGPU_BACKEND_STARTUP_TIMEOUT_MS,
         });
-      }
 
-      if (createdRenderer.activeMode === "webgpu" && createdRenderer.device) {
-        markRendererDiagnosticDeviceReady();
-      }
+        cleanupDeviceDiagnostics?.();
+        cleanupDeviceDiagnostics = releaseDeviceDiagnostics;
+        renderer = initializedRenderer.renderer;
+        if (ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME) {
+          postProcessRuntime = resolvedDependencies.createPostProcessRuntime({
+            renderer: initializedRenderer.renderer,
+          });
+        }
 
-      return createRendererInitDiagnostics({
-        activeMode: createdRenderer.activeMode,
-        buildMode: options.requestedMode,
-        initTimeMs: resolvedDependencies.now() - startTime,
-        requestedMode: options.requestedMode,
-      });
+        if (initializedRenderer.activeMode === "webgpu" && initializedRenderer.device) {
+          markRendererDiagnosticDeviceReady();
+        }
+
+        return createRendererInitDiagnostics({
+          activeMode: initializedRenderer.activeMode,
+          buildMode: options.requestedMode,
+          initTimeMs: resolvedDependencies.now() - startTime,
+          requestedMode: options.requestedMode,
+        });
+      } finally {
+        const totalDurationMs = resolvedDependencies.now() - startTime;
+        recordRendererStartupTiming("webgpu-backend-total", totalDurationMs);
+      }
     },
     renderFrame(pipeline: RendererFramePipeline) {
       if (!ENABLE_NATIVE_WEBGPU_POSTPROCESS_RUNTIME || !postProcessRuntime) {

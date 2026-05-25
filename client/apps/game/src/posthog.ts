@@ -35,6 +35,11 @@ const initPostHog = () => {
   });
 };
 
+export const captureClientEvent = (eventName: string, properties?: Record<string, unknown>) => {
+  if (!env.VITE_PUBLIC_POSTHOG_KEY) return;
+  posthog.capture(eventName, properties);
+};
+
 // Utility functions for error reporting
 export const captureError = (error: Error, context?: Record<string, unknown>) => {
   if (!env.VITE_PUBLIC_POSTHOG_KEY) return;

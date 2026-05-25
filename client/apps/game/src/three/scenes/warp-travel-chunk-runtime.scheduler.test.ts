@@ -14,6 +14,6 @@ describe("warp-travel chunk runtime scheduler wiring", () => {
 
     expect(worldmapSource).toMatch(/resolveWorldmapChunkHysteresis\(/);
     expect(worldmapSource).toMatch(/resolveWorldmapChunkRefreshDebounceMs\(/);
-    expect(worldmapSource).toMatch(/resolveWorldmapChunkRefreshSchedule\(/);
+    expect(worldmapSource).toMatch(/scheduleWorldmapChunkRefreshTimer\(/);
   });
 });

@@ -9,49 +9,74 @@ export enum GraphicsSettings {
   HIGH = "HIGH",
 }
 
+const getBrowserLocalStorage = (): Storage | null => {
+  return typeof globalThis.localStorage === "undefined" ? null : globalThis.localStorage;
+};
+
+const getBrowserNavigator = (): Navigator | null => {
+  return typeof globalThis.navigator === "undefined" ? null : globalThis.navigator;
+};
+
 const checkGraphicsSettings = async () => {
+  const browserLocalStorage = getBrowserLocalStorage();
+  if (!browserLocalStorage) {
+    return GraphicsSettings.HIGH;
+  }
+
   // Handle migration from old LOW_GRAPHICS_FLAG
-  const oldLowGraphicsFlag = localStorage.getItem("LOW_GRAPHICS_FLAG");
+  const oldLowGraphicsFlag = browserLocalStorage.getItem("LOW_GRAPHICS_FLAG");
   if (oldLowGraphicsFlag !== null) {
     // Migrate old setting to new format
     const newSetting = oldLowGraphicsFlag === "true" ? GraphicsSettings.LOW : GraphicsSettings.HIGH;
-    localStorage.setItem("GRAPHICS_SETTING", newSetting);
-    localStorage.removeItem("LOW_GRAPHICS_FLAG"); // Clean up old setting
+    browserLocalStorage.setItem("GRAPHICS_SETTING", newSetting);
+    browserLocalStorage.removeItem("LOW_GRAPHICS_FLAG"); // Clean up old setting
     return newSetting;
   }
 
   // Check if initial laptop check has been done
-  if (!localStorage.getItem("INITIAL_LAPTOP_CHECK")) {
-    try {
-      const battery = await (navigator as any).getBattery();
-      if (battery.charging && battery.chargingTime === 0) {
-        // It's likely a desktop
-        localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
-      } else {
-        // Default to high even on portable devices; users can dial it down if needed
-        localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
+  if (!browserLocalStorage.getItem("INITIAL_LAPTOP_CHECK")) {
+    const browserNavigator = getBrowserNavigator() as (Navigator & { getBattery?: () => Promise<any> }) | null;
+    if (typeof browserNavigator?.getBattery === "function") {
+      try {
+        const battery = await browserNavigator.getBattery();
+        if (battery.charging && battery.chargingTime === 0) {
+          // It's likely a desktop
+          browserLocalStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
+        } else {
+          // Default to high even on portable devices; users can dial it down if needed
+          browserLocalStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
+        }
+      } catch (error) {
+        console.error("Error calling getBattery():", error);
+        // Default to high when getBattery() is not supported
+        browserLocalStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
       }
-    } catch (error) {
-      console.error("Error calling getBattery():", error);
-      // Default to high when getBattery() is not supported
-      localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
-    } finally {
-      localStorage.setItem("INITIAL_LAPTOP_CHECK", "true");
+    } else {
+      browserLocalStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
     }
+
+    browserLocalStorage.setItem("INITIAL_LAPTOP_CHECK", "true");
   }
 
-  return (localStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
+  return (browserLocalStorage.getItem("GRAPHICS_SETTING") as GraphicsSettings) || GraphicsSettings.HIGH;
 };
 
 const getFlatMode = () => {
-  const flatMode = localStorage.getItem("FLAT_MODE");
+  const browserLocalStorage = getBrowserLocalStorage();
+  if (!browserLocalStorage) {
+    return false;
+  }
+
+  const flatMode = browserLocalStorage.getItem("FLAT_MODE");
   return flatMode === null ? false : flatMode === "true";
 };
 
 export const GRAPHICS_SETTING = await checkGraphicsSettings();
 export const IS_FLAT_MODE = getFlatMode();
 
-export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+export const IS_MOBILE = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+  getBrowserNavigator()?.userAgent ?? "",
+);
 
 export const CONTEXT_MENU_CONFIG = {
   radial: {
@@ -123,20 +148,20 @@ export const BuildingThumbs = {
   banks: `${prefix}banks.png`,
   worldStructures: `${prefix}world.png`,
   hyperstructures: `${prefix}hyperstructure.png`,
-  leaderboard: `${prefix}leaderboard.png`,
+  leaderboard: "/images/buildings/thumb/leaderboard.png",
   worldMap: `${prefix}world.png`,
-  squire: `${prefix}squire.png`,
+  squire: "/images/buildings/thumb/squire.png",
   question: `${prefix}shortcuts.png`,
   scale: `${prefix}trade.png`,
   settings: `${prefix}settings.png`,
   guild: `${prefix}guild.png`,
   trophy: `${prefix}trophy.png`,
   discord: `${prefix}discord.png`,
-  rewards: `${prefix}rewards.png`,
+  rewards: "/images/buildings/thumb/rewards.png",
   production: `${prefix}production.png`,
   house: `${prefix}house.png`,
   home: `${prefix}home.png`,
-  time: `${prefix}time.png`,
+  time: "/images/buildings/thumb/timeglass.png",
   leave: `${prefix}leave.png`,
   bridge: `${prefix}portal.png`,
   automation: `${prefix}robot.png`,

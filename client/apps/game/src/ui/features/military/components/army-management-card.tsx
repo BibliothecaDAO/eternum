@@ -205,7 +205,8 @@ export const ArmyCreate = ({
             kind: "create-army",
             structureId: owner_entity,
             direction: selectedDirection,
-            troopResourceId: getTroopResourceId(troopType, troopTier),
+            troopType,
+            troopTier,
           });
           await armyManager.createExplorerArmy(account, troopType, troopTier, troopCount, selectedDirection);
         }
@@ -424,6 +425,8 @@ export const ArmyCreate = ({
                           troopCount={projectedTroopCount}
                           maxTroopSize={troopCapacityLimit}
                           capacityRemaining={remainingCapacityDisplay}
+                          collapsible
+                          defaultExpanded={false}
                         />
                       </div>
                     )}
@@ -550,7 +553,7 @@ export const ArmyManagementCard = ({ owner_entity, army }: ArmyManagementCardPro
 
   const dojo = useDojo();
 
-  const armyManager = new ArmyManager(dojo.setup.systemCalls, army?.entityId || 0);
+  const armyManager = new ArmyManager(dojo.setup.systemCalls, owner_entity as ID, dojo.setup.components);
 
   const [isLoading, setIsLoading] = useState(false);
 

@@ -20,8 +20,8 @@ declare module "@config-deployer/config" {
   export const setMMRConfig: any;
   export const setBlitzRegistrationConfig: any;
   export const setBuildingConfig: any;
+  export const setCampStartingResourcesConfig: any;
   export const setCapacityConfig: any;
-  export const setDiscoverableVillageSpawnResourcesConfig: any;
   export const setAgentConfig: any;
   export const setBattleConfig: any;
   export const SetResourceFactoryConfig: any;

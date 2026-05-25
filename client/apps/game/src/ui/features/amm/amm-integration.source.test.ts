@@ -9,13 +9,14 @@ const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(),
 
 describe("AMM feature wiring", () => {
   it("nests the AMM route inside the landing dashboard instead of mounting a standalone shell", () => {
-    const appSource = readSource("src/app.tsx");
+    const appSource = readSource("src/game-client-app.tsx");
     const landingSource = readSource("src/ui/features/landing/index.ts");
     const layoutSource = readSource("src/ui/features/landing/landing-layout.tsx");
 
-    expect(appSource).toContain(
-      "import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView, AmmView }",
-    );
+    expect(appSource).toContain("import {");
+    expect(appSource).toContain("LandingLayout");
+    expect(appSource).toContain("AmmView");
+    expect(appSource).toContain('} from "./ui/features/landing";');
     expect(appSource).toContain('<Route path="amm" element={<AmmView />} />');
     expect(appSource).not.toContain('const LazyAmmDashboard = lazy(() => import("./ui/features/amm/amm-dashboard"))');
     expect(appSource).not.toContain('path="/amm"');
@@ -109,7 +110,7 @@ describe("AMM feature wiring", () => {
 
     expect(dashboardSource).toContain('label: "MCap"');
     expect(dashboardSource).toContain("statsQuery.data?.marketCapLords");
-    expect(dashboardSource).toContain("xl:grid-cols-4");
+    expect(dashboardSource).toContain('label: "LORDS in Pool"');
   });
 
   it("offers pool ordering controls for market cap, resource ids, and tvl", () => {
@@ -119,5 +120,92 @@ describe("AMM feature wiring", () => {
     expect(poolListSource).toContain('label: "Resource IDs"');
     expect(poolListSource).toContain('label: "TVL"');
     expect(poolListSource).toContain('orderBy: "mcap"');
+  });
+
+  it("defaults the pool rail to the new editorial order and uses a dropdown sorter", () => {
+    const poolListSource = readSource("src/ui/features/amm/amm-pool-list.tsx");
+
+    expect(poolListSource).toContain('label: "Default"');
+    expect(poolListSource).toContain('useState<AmmPoolOrder>("default")');
+    expect(poolListSource).toContain("<Select");
+    expect(poolListSource).toContain("<SelectTrigger");
+    expect(poolListSource).toContain("<SelectContent");
+    expect(poolListSource).toContain("<SelectItem");
+  });
+
+  it("shows spot price, market cap, and tvl in each pool row without the old crowded labels", () => {
+    const poolListSource = readSource("src/ui/features/amm/amm-pool-list.tsx");
+    const poolRowSource = readSource("src/ui/features/amm/amm-pool-row.tsx");
+
+    expect(poolListSource).toContain("marketCapByTokenAddress");
+    expect(poolRowSource).toContain("spotPrice");
+    expect(poolRowSource).toContain("marketCap");
+    expect(poolRowSource).toContain("TVL");
+    expect(poolRowSource).not.toContain("Spot Price");
+    expect(poolRowSource).not.toContain("pairLabel");
+    expect(poolRowSource).not.toContain("vs LORDS");
+    expect(poolRowSource).toContain("text-right");
+  });
+
+  it("keeps the desktop pool rail inside a viewport-bounded shell", () => {
+    const ammViewSource = readSource("src/ui/features/landing/views/amm-view.tsx");
+    const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
+
+    expect(ammViewSource).toContain("lg:h-[calc(100vh-7.5rem)]");
+    expect(ammViewSource).toContain("lg:overflow-hidden");
+    expect(dashboardSource).toContain("lg:h-full");
+    expect(dashboardSource).toContain("lg:overflow-hidden");
+  });
+
+  it("widens the desktop pool rail and keeps its column aligned with the action stack", () => {
+    const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
+
+    expect(dashboardSource).toContain("lg:w-[375px]");
+    expect(dashboardSource).toContain("lg:grid-cols-[375px_minmax(0,1fr)]");
+  });
+
+  it("gives pool names the full headline row and moves LORDS spot price underneath", () => {
+    const poolRowSource = readSource("src/ui/features/amm/amm-pool-row.tsx");
+
+    expect(poolRowSource).not.toContain("Resource Pool");
+    expect(poolRowSource).toContain("flex min-w-0 flex-col");
+    expect(poolRowSource).toContain("truncate text-xs font-semibold uppercase tracking-[0.14em] text-gold");
+    expect(poolRowSource).toContain("text-xs font-semibold uppercase tracking-[0.14em] text-gold/80");
+    expect(poolRowSource).toContain("text-right text-[10px] uppercase tracking-[0.14em] text-gold/55");
+  });
+
+  it("removes redundant swap panel copy and lets the metric cards fill the row", () => {
+    const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
+    const swapSource = readSource("src/ui/features/amm/amm-swap.tsx");
+
+    expect(dashboardSource).not.toContain("activeAsset ? `${activeAsset.displayName} / LORDS`");
+    expect(swapSource).not.toContain(">Route<");
+    expect(swapSource).toContain("lg:grid-cols-4");
+    expect(swapSource).not.toContain("xl:grid-cols-5");
+  });
+
+  it("adds reserve cards and a voyager fee link to the selected pool summary", () => {
+    const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
+
+    expect(dashboardSource).toContain("label: `${asset.displayName} in Pool`");
+    expect(dashboardSource).toContain('label: "LORDS in Pool"');
+    expect(dashboardSource).toContain("href={feeToHref}");
+  });
+
+  it("shows total swap fees only and caps minimum received precision", () => {
+    const swapSource = readSource("src/ui/features/amm/amm-swap.tsx");
+
+    expect(swapSource).toContain('label: "Total Fees"');
+    expect(swapSource).not.toContain('label: "LP Fee"');
+    expect(swapSource).not.toContain('label: "Protocol Fee"');
+    expect(swapSource).not.toContain('label: "Fee To"');
+    expect(swapSource).toContain("formatAmmMinimumReceived");
+  });
+
+  it("shows live pool balances in the liquidity tab", () => {
+    const dashboardSource = readSource("src/ui/features/amm/amm-dashboard.tsx");
+
+    expect(dashboardSource).toContain("Pool Balances");
+    expect(dashboardSource).toContain("in pool");
   });
 });

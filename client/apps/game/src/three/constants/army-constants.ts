@@ -39,3 +39,11 @@ export const MODEL_TYPE_TO_FILE: Record<ModelType, string> = {
   [ModelType.AgentIstarai]: "agents/istarai.glb",
   [ModelType.AgentYP]: "agents/ypanther.glb",
 };
+
+export const SHARED_ARMY_MODEL_PATHS = Object.freeze(
+  Object.values(MODEL_TYPE_TO_FILE).map((relativePath) => `/models/${relativePath}`),
+);
+
+export const buildArmyModelAssetPath = (modelType: ModelType): string => {
+  return `/models/${MODEL_TYPE_TO_FILE[modelType]}`;
+};

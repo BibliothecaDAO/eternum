@@ -22,21 +22,33 @@ describe("StructureManager deferred bounds", () => {
     expect(methodBody).not.toContain("setWorldBounds");
   });
 
-  it("performVisibleStructuresUpdate applies pending model world bounds after instance rebuild", () => {
+  it("setChunkBounds invalidates any in-flight visible structure pass before deferring new bounds", () => {
     const source = readSource("./structure-manager.ts");
 
-    // applyPendingModelBounds must appear AFTER the batch setCount loop
-    // and BEFORE recordWorldmapRenderDuration (end of method)
-    const setCountIdx = source.indexOf("model.setCount(count)");
-    const applyBoundsIdx = source.indexOf("this.applyPendingModelBounds()");
-    const recordDurationIdx = source.indexOf('recordWorldmapRenderDuration("performVisibleStructuresUpdate"');
+    const setChunkBoundsMatch = source.match(/public setChunkBounds\([^)]*\)\s*\{([\s\S]*?)\n  \}/);
+    expect(setChunkBoundsMatch).not.toBeNull();
+    const methodBody = setChunkBoundsMatch![1];
 
-    expect(setCountIdx).toBeGreaterThan(-1);
-    expect(applyBoundsIdx).toBeGreaterThan(-1);
+    expect(methodBody).toContain("this.visibleStructurePassFence.invalidate()");
+    expect(methodBody.indexOf("this.visibleStructurePassFence.invalidate()")).toBeLessThan(
+      methodBody.indexOf("this.hasPendingModelBounds = true"),
+    );
+  });
+
+  it("performVisibleStructuresUpdate applies pending model world bounds after instance rebuild", () => {
+    const managerSource = readSource("./structure-manager.ts");
+    const finalizerSource = readSource("./structure-visible-pass-finalizer.ts");
+
+    const finalizePassIdx = managerSource.indexOf("this.finalizeVisibleStructureModelPass(");
+    const recordDurationIdx = managerSource.indexOf('recordWorldmapRenderDuration("performVisibleStructuresUpdate"');
+    const setCountIdx = finalizerSource.indexOf("model.setCount(count)");
+    const applyBoundsIdx = finalizerSource.indexOf("input.applyPendingModelBounds()");
+
+    expect(finalizePassIdx).toBeGreaterThan(-1);
     expect(recordDurationIdx).toBeGreaterThan(-1);
-
-    // Ordering: setCount → applyPendingModelBounds → recordDuration
+    expect(applyBoundsIdx).toBeGreaterThan(-1);
+    expect(setCountIdx).toBeGreaterThan(-1);
     expect(applyBoundsIdx).toBeGreaterThan(setCountIdx);
-    expect(applyBoundsIdx).toBeLessThan(recordDurationIdx);
+    expect(finalizePassIdx).toBeLessThan(recordDurationIdx);
   });
 });

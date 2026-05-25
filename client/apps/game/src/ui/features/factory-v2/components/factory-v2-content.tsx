@@ -249,14 +249,14 @@ const FactoryV2AdminSecretControl = ({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 rounded-[24px] border border-black/8 px-3 py-3 shadow-[0_12px_30px_rgba(23,15,8,0.06)] sm:flex-row sm:items-center sm:px-4",
+        "flex flex-col gap-3 rounded-[24px] border border-gold/10 px-3 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.2)] sm:flex-row sm:items-center sm:px-4",
         appearance.quietSurfaceClassName,
       )}
     >
       <div className="flex items-center gap-2 sm:min-w-[108px]">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-black/42">Admin</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-gold/42">Admin</div>
         {hasSavedAdminSecret ? (
-          <span className="rounded-full border border-black/8 bg-white/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/56">
+          <span className="rounded-full border border-gold/10 bg-black/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-gold/56">
             Saved
           </span>
         ) : null}
@@ -269,7 +269,7 @@ const FactoryV2AdminSecretControl = ({
         value={adminSecret}
         onChange={(event) => onAdminSecretChange(event.target.value)}
         placeholder="Secret for admin actions"
-        className="h-11 min-w-0 flex-1 rounded-full border border-black/10 bg-white/84 px-4 text-sm text-black outline-none transition-colors focus:border-black/24"
+        className="h-11 min-w-0 flex-1 rounded-full border border-gold/15 bg-black/25 px-4 text-sm text-gold outline-none transition-colors focus:border-gold/30"
       />
 
       <div className="grid grid-cols-2 gap-2 sm:flex sm:w-auto">
@@ -290,7 +290,7 @@ const FactoryV2AdminSecretControl = ({
           data-testid="factory-admin-clear"
           disabled={isBusy || !hasSavedAdminSecret}
           onClick={onClearAdminSecret}
-          className="inline-flex h-11 items-center justify-center rounded-full border border-black/10 bg-white px-4 text-sm font-semibold text-black/62 transition-colors hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex h-11 items-center justify-center rounded-full border border-gold/15 bg-black/25 px-4 text-sm font-semibold text-gold/62 transition-colors hover:bg-gold/10 disabled:cursor-not-allowed disabled:opacity-50"
         >
           Clear
         </button>

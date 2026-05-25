@@ -524,12 +524,12 @@ const FactoryV2WatchRunCard = ({
           </div>
         ) : null}
 
-        <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-black/40">
-          <span className="max-w-full truncate rounded-full border border-black/8 bg-white/62 px-3 py-1 shadow-[0_10px_24px_rgba(15,23,42,0.06)]">
+        <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] font-semibold uppercase tracking-[0.22em] text-gold/40">
+          <span className="max-w-full truncate rounded-full border border-gold/10 bg-black/20 px-3 py-1 shadow-[0_10px_24px_rgba(0,0,0,0.12)]">
             {selectedRun.name}
           </span>
           {environmentLabel ? (
-            <span className="rounded-full border border-black/8 bg-white/45 px-3 py-1">{environmentLabel}</span>
+            <span className="rounded-full border border-gold/10 bg-black/20 px-3 py-1">{environmentLabel}</span>
           ) : null}
         </div>
 
@@ -546,7 +546,7 @@ const FactoryV2WatchRunCard = ({
           </div>
         ) : null}
 
-        <h3 className="text-[1.4rem] font-semibold tracking-tight text-black">{headline}</h3>
+        <h3 className="text-[1.4rem] font-semibold tracking-tight text-gold">{headline}</h3>
 
         {!showsInFlightState ? (
           <FactoryV2LiveStatus pollingState={pollingState} liveStatusLabel={liveStatusLabel} />
@@ -592,10 +592,10 @@ const FactoryV2WatchRunCard = ({
 
       <div className="space-y-2.5">
         <div className="mx-auto max-w-sm space-y-1 text-center">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42">
             {WATCH_TIMELINE_TITLE}
           </div>
-          <p className="text-[13px] leading-5 text-black/52">{WATCH_TIMELINE_DESCRIPTION}</p>
+          <p className="text-[13px] leading-5 text-gold/52">{WATCH_TIMELINE_DESCRIPTION}</p>
         </div>
         <div className="grid gap-2">
           {completedStep ? (
@@ -609,7 +609,7 @@ const FactoryV2WatchRunCard = ({
       </div>
 
       <div className="space-y-2">
-        <div className="text-center text-[13px] text-black/54">{getRunProgressLabel(timelineRun)}</div>
+        <div className="text-center text-[13px] text-gold/54">{getRunProgressLabel(timelineRun)}</div>
         <FactoryV2SegmentedProgressTrack steps={timelineRun.steps} />
       </div>
 
@@ -627,13 +627,13 @@ const FactoryV2WatchRunCard = ({
       <button
         type="button"
         onClick={onToggleShowAllSteps}
-        className="inline-flex w-full items-center justify-center rounded-full border border-black/10 bg-white/58 px-4 py-3 text-sm font-medium text-black/68 transition-colors hover:bg-white/72 hover:text-black"
+        className="inline-flex w-full items-center justify-center rounded-full border border-gold/15 bg-black/20 px-4 py-3 text-sm font-medium text-gold/68 transition-colors hover:bg-gold/10 hover:text-gold"
       >
         {showAllSteps ? "Hide details" : "See details"}
       </button>
 
       {showAllSteps ? (
-        <div className="space-y-2 rounded-[24px] border border-black/8 bg-white/38 p-3 text-left shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+        <div className="space-y-2 rounded-[24px] border border-gold/10 bg-black/20 p-3 text-left shadow-[0_12px_30px_rgba(0,0,0,0.2)]">
           {timelineRun.steps.map((step) => (
             <FactoryV2StepSummary key={step.id} step={step} />
           ))}
@@ -718,7 +718,7 @@ const FactoryV2PrizeFundingSection = ({
         type="button"
         data-testid="factory-prize-toggle"
         onClick={onTogglePrizeFunding}
-        className="inline-flex w-full items-center justify-center rounded-full border border-black/10 bg-white/58 px-4 py-3 text-sm font-medium text-black/68 transition-colors hover:bg-white/72 hover:text-black"
+        className="inline-flex w-full items-center justify-center rounded-full border border-gold/15 bg-black/20 px-4 py-3 text-sm font-medium text-gold/68 transition-colors hover:bg-gold/10 hover:text-gold"
       >
         {showsPrizeFunding ? "Hide prize funding" : "Open prize funding"}
       </button>
@@ -768,7 +768,7 @@ const FactoryV2CurrentStepCard = ({
   return (
     <div
       className={cn(
-        "rounded-[24px] border border-black/8 px-4 py-4 text-center shadow-[0_16px_36px_rgba(30,20,10,0.08)]",
+        "rounded-[24px] border border-gold/10 px-4 py-4 text-center shadow-[0_16px_36px_rgba(0,0,0,0.16)]",
         appearanceClassName,
       )}
     >
@@ -777,25 +777,25 @@ const FactoryV2CurrentStepCard = ({
           className={cn(
             "inline-flex items-center gap-2 rounded-full border px-3 py-1",
             isRunningStep
-              ? "border-[#c4a173]/75 bg-[rgba(255,250,244,0.94)] text-[#6b4a24] shadow-[0_6px_16px_rgba(90,62,29,0.08)]"
-              : "border-black/8 bg-white/60 text-black/44",
+              ? "border-gold/20 bg-[rgba(32,27,22,0.94)] text-[#dfaa54] shadow-[0_6px_16px_rgba(0,0,0,0.16)]"
+              : "border-gold/10 bg-black/20 text-gold/44",
           )}
         >
           <span className="relative flex h-2.5 w-2.5 items-center justify-center">
-            <span className={cn("relative h-2.5 w-2.5 rounded-full", isRunningStep ? "bg-[#8b5b2e]" : "bg-black/28")} />
+            <span className={cn("relative h-2.5 w-2.5 rounded-full", isRunningStep ? "bg-[#dfaa54]" : "bg-black/28")} />
           </span>
           {statusLabel}
         </span>
-        <span className="text-black/42">{progress.stepLabel}</span>
+        <span className="text-gold/42">{progress.stepLabel}</span>
       </div>
-      <div className="mt-3 text-[15px] font-semibold text-black">{currentStepLabel}</div>
-      <p className="mt-2 text-sm leading-6 text-black/56">{detailMessage}</p>
+      <div className="mt-3 text-[15px] font-semibold text-gold">{currentStepLabel}</div>
+      <p className="mt-2 text-sm leading-6 text-gold/56">{detailMessage}</p>
       {statusHighlights.length > 0 ? (
         <div className="mt-3 flex flex-wrap justify-center gap-2">
           {statusHighlights.map((highlight) => (
             <span
               key={highlight}
-              className="rounded-full border border-black/8 bg-white/72 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/48"
+              className="rounded-full border border-gold/10 bg-black/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-gold/48"
             >
               {highlight}
             </span>
@@ -803,7 +803,7 @@ const FactoryV2CurrentStepCard = ({
         </div>
       ) : null}
       <div className="mt-4 space-y-2">
-        <div className="flex items-center justify-between gap-3 text-[11px] font-medium text-black/46">
+        <div className="flex items-center justify-between gap-3 text-[11px] font-medium text-gold/46">
           <span>{progress.progressLabel}</span>
           <span>{progress.percentLabel}</span>
         </div>
@@ -839,9 +839,9 @@ const FactoryV2AutoRetryCard = ({ run }: { run: FactoryRun }) => {
       : `Retrying every ${autoRetry.intervalMinutes} minutes`;
 
   return (
-    <div className="rounded-[22px] border border-black/8 bg-white/40 px-4 py-3 text-center shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Auto-retry</div>
-      <p className="mt-2 text-sm leading-6 text-black/56">{statusLabel}</p>
+    <div className="rounded-[22px] border border-gold/10 bg-black/20 px-4 py-3 text-center shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42">Auto-retry</div>
+      <p className="mt-2 text-sm leading-6 text-gold/56">{statusLabel}</p>
     </div>
   );
 };
@@ -864,10 +864,10 @@ const FactoryV2RotationScheduleCard = ({ run }: { run: FactoryRun }) => {
   }
 
   return (
-    <div className="space-y-3 rounded-[24px] border border-black/8 bg-white/40 p-4 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+    <div className="space-y-3 rounded-[24px] border border-gold/10 bg-black/20 p-4 shadow-[0_12px_30px_rgba(0,0,0,0.2)]">
       <div className="mx-auto max-w-sm space-y-1 text-center">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Rotation schedule</div>
-        <p className="text-[13px] leading-5 text-black/52">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42">Rotation schedule</div>
+        <p className="text-[13px] leading-5 text-gold/52">
           This rotation keeps future games queued ahead until it reaches its maximum size.
         </p>
       </div>
@@ -877,7 +877,7 @@ const FactoryV2RotationScheduleCard = ({ run }: { run: FactoryRun }) => {
           value={`${run.rotation.createdGameCount} of ${run.rotation.maxGames}`}
         />
         <FactoryV2RotationMetric label="Queued ahead" value={`${run.rotation.queuedGameCount} games`} />
-        <FactoryV2RotationMetric label="Game interval" value={`Every ${run.rotation.gameIntervalMinutes} minutes`} />
+        <FactoryV2RotationMetric label="Cadence" value={resolveRotationCadenceLabel(run)} />
         <FactoryV2RotationMetric
           label="Next evaluation"
           value={
@@ -891,10 +891,19 @@ const FactoryV2RotationScheduleCard = ({ run }: { run: FactoryRun }) => {
   );
 };
 
+function resolveRotationCadenceLabel(run: FactoryRun) {
+  const weeklySlotCount = run.rotation?.weeklyCadence?.length ?? 0;
+  if (weeklySlotCount > 0) {
+    return `${weeklySlotCount} weekly slots`;
+  }
+
+  return `Every ${run.rotation?.gameIntervalMinutes ?? 0} minutes`;
+}
+
 const FactoryV2RotationMetric = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded-[18px] border border-black/8 bg-white/62 px-3 py-3 text-center">
-    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-black/40">{label}</div>
-    <div className="mt-1 text-[13px] font-semibold text-black">{value}</div>
+  <div className="rounded-[18px] border border-gold/10 bg-black/20 px-3 py-3 text-center">
+    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold/40">{label}</div>
+    <div className="mt-1 text-[13px] font-semibold text-gold">{value}</div>
   </div>
 );
 
@@ -912,10 +921,10 @@ const FactoryV2MultiGameChildrenCard = ({
   const copy = resolveMultiGameChildrenCopy(kind);
 
   return (
-    <div className="space-y-2 rounded-[24px] border border-black/8 bg-white/40 p-3 shadow-[0_12px_30px_rgba(15,23,42,0.05)]">
+    <div className="space-y-2 rounded-[24px] border border-gold/10 bg-black/20 p-3 shadow-[0_12px_30px_rgba(0,0,0,0.2)]">
       <div className="mx-auto max-w-sm space-y-1 text-center">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">{copy.title}</div>
-        <p className="text-[13px] leading-5 text-black/52">{copy.description}</p>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42">{copy.title}</div>
+        <p className="text-[13px] leading-5 text-gold/52">{copy.description}</p>
       </div>
       <div className="space-y-2">
         {children.map((child) => {
@@ -926,22 +935,22 @@ const FactoryV2MultiGameChildrenCard = ({
           return (
             <div
               key={child.id}
-              className="space-y-3 rounded-[18px] border border-black/8 bg-white/62 px-3 py-3 text-left"
+              className="space-y-3 rounded-[18px] border border-gold/10 bg-black/20 px-3 py-3 text-left"
             >
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-black/8 bg-white/72 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-black/48">
+                    <span className="rounded-full border border-gold/10 bg-black/25 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.16em] text-gold/48">
                       Game {child.seriesGameNumber}
                     </span>
-                    <span className="truncate text-[13px] font-semibold text-black">{child.gameName}</span>
+                    <span className="truncate text-[13px] font-semibold text-gold">{child.gameName}</span>
                   </div>
                   {fallbackSummary ? (
-                    <p className="mt-1 text-[12px] leading-5 text-black/50">{fallbackSummary}</p>
+                    <p className="mt-1 text-[12px] leading-5 text-gold/50">{fallbackSummary}</p>
                   ) : null}
                 </div>
                 <div className="flex shrink-0 items-center gap-2 self-start">
-                  <div className="rounded-full border border-black/8 bg-white/72 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-black/52">
+                  <div className="rounded-full border border-gold/10 bg-black/25 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-gold/52">
                     {resolveChildStatusLabel(child.status)}
                   </div>
                 </div>
@@ -1137,28 +1146,28 @@ const FactoryV2ChildStepGroup = ({
 function resolveChildStepGroupLabelClassName(tone: "done" | "current" | "pending" | "failed") {
   switch (tone) {
     case "done":
-      return "text-black/42";
+      return "text-gold/42";
     case "current":
-      return "text-[#7a4b22]";
+      return "text-[#dfaa54]";
     case "failed":
-      return "text-rose-700";
+      return "text-rose-400";
     case "pending":
     default:
-      return "text-black/44";
+      return "text-gold/44";
   }
 }
 
 function resolveChildStepChipClassName(tone: "done" | "current" | "pending" | "failed") {
   switch (tone) {
     case "done":
-      return "border-black/8 bg-black/[0.04] text-black/56";
+      return "border-gold/10 bg-black/20 text-gold/56";
     case "current":
-      return "border-[#d4b487]/65 bg-[rgba(255,249,239,0.92)] text-[#7a4b22]";
+      return "border-gold/20 bg-[rgba(32,27,22,0.92)] text-[#dfaa54]";
     case "failed":
-      return "border-rose-300/60 bg-rose-50 text-rose-700";
+      return "border-rose-300/60 bg-rose-950/30 text-rose-400";
     case "pending":
     default:
-      return "border-black/8 bg-white/68 text-black/50";
+      return "border-gold/10 bg-black/25 text-gold/50";
   }
 }
 
@@ -1186,12 +1195,10 @@ const FactoryV2WatchPendingCard = ({
         <FactoryV2LoaderHalo pollingState={pollingState} />
       </div>
       <div className="space-y-2">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42">
-          {WATCH_SEARCH_EYEBROW}
-        </div>
-        <h3 className="text-[1.2rem] font-semibold tracking-tight text-black">{headline}</h3>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-gold/42">{WATCH_SEARCH_EYEBROW}</div>
+        <h3 className="text-[1.2rem] font-semibold tracking-tight text-gold">{headline}</h3>
       </div>
-      <p className="text-sm leading-6 text-black/56">{primaryNotice}</p>
+      <p className="text-sm leading-6 text-gold/56">{primaryNotice}</p>
       {noticeMessage && noticeMessage !== primaryNotice ? (
         <FactoryV2CopyableMessageBox
           label="Run details"
@@ -1202,13 +1209,13 @@ const FactoryV2WatchPendingCard = ({
       ) : null}
       <div
         className={cn(
-          "rounded-[22px] border border-black/8 px-4 py-4 text-center shadow-[0_14px_34px_rgba(30,20,10,0.07)]",
+          "rounded-[22px] border border-gold/10 px-4 py-4 text-center shadow-[0_14px_34px_rgba(0,0,0,0.14)]",
           appearance.quietSurfaceClassName,
         )}
       >
-        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-black/42">Now</div>
-        <div className="mt-2 text-[15px] font-semibold text-black">Opening {launchPlaceholderName}</div>
-        <p className="mt-2 text-sm leading-6 text-black/56">{FIRST_UPDATE_WAIT_MESSAGE}</p>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold/42">Now</div>
+        <div className="mt-2 text-[15px] font-semibold text-gold">Opening {launchPlaceholderName}</div>
+        <p className="mt-2 text-sm leading-6 text-gold/56">{FIRST_UPDATE_WAIT_MESSAGE}</p>
       </div>
     </div>
   </FactoryV2WatchSurfaceCard>
@@ -1217,9 +1224,9 @@ const FactoryV2WatchPendingCard = ({
 const FactoryV2WatchEmptyCard = ({ appearanceClassName }: { appearanceClassName: string }) => (
   <FactoryV2WatchSurfaceCard appearanceClassName={appearanceClassName} dataTestId="factory-watch-empty-panel">
     <div className="mx-auto max-w-sm space-y-3 text-center">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42">{WATCH_SEARCH_EYEBROW}</div>
-      <h3 className="text-[1.15rem] font-semibold tracking-tight text-black">{WATCH_SEARCH_TITLE}</h3>
-      <p className="text-sm leading-6 text-black/56">{WATCH_EMPTY_DESCRIPTION}</p>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-gold/42">{WATCH_SEARCH_EYEBROW}</div>
+      <h3 className="text-[1.15rem] font-semibold tracking-tight text-gold">{WATCH_SEARCH_TITLE}</h3>
+      <p className="text-sm leading-6 text-gold/56">{WATCH_EMPTY_DESCRIPTION}</p>
     </div>
   </FactoryV2WatchSurfaceCard>
 );
@@ -1238,7 +1245,7 @@ const FactoryV2WatchSurfaceCard = ({
   <div
     data-testid={dataTestId}
     className={cn(
-      "relative overflow-hidden rounded-[30px] border border-black/8 px-4 py-5 shadow-[0_20px_46px_rgba(30,20,10,0.11)] sm:px-5 sm:py-6 md:rounded-[28px] md:px-6 md:py-7",
+      "relative overflow-hidden rounded-[30px] border border-gold/10 px-4 py-5 shadow-[0_20px_46px_rgba(0,0,0,0.18)] sm:px-5 sm:py-6 md:rounded-[28px] md:px-6 md:py-7",
       appearanceClassName,
     )}
   >
@@ -1261,7 +1268,7 @@ const FactoryV2LiveStatus = ({
   pollingState: FactoryPollingState;
   liveStatusLabel: string;
 }) => (
-  <div className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2 rounded-full border border-black/8 bg-white/45 px-3 py-1.5 text-[12px] text-black/52">
+  <div className="mx-auto flex w-fit max-w-full flex-wrap items-center justify-center gap-2 rounded-full border border-gold/10 bg-black/20 px-3 py-1.5 text-[12px] text-gold/52">
     <div className="relative flex h-3.5 w-3.5 items-center justify-center">
       {pollingState.status === "live" ? (
         <div className="absolute h-3.5 w-3.5 animate-ping rounded-full bg-emerald-400/55" />
@@ -1331,19 +1338,19 @@ const FactoryV2WatchSearchPanel = ({
   <div
     data-testid="factory-watch-search-panel"
     className={cn(
-      "rounded-[28px] border border-black/8 px-4 py-4 text-left shadow-[0_16px_40px_rgba(30,20,10,0.08)] sm:px-5",
+      "rounded-[28px] border border-gold/10 px-4 py-4 text-left shadow-[0_16px_40px_rgba(0,0,0,0.16)] sm:px-5",
       appearanceClassName,
     )}
   >
     <div className="mx-auto max-w-sm space-y-2 text-center">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42">{WATCH_SEARCH_EYEBROW}</div>
-      <h3 className="text-[1.15rem] font-semibold tracking-tight text-black">{WATCH_SEARCH_TITLE}</h3>
-      <p className="text-sm leading-6 text-black/54">{WATCH_SEARCH_DESCRIPTION}</p>
+      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-gold/42">{WATCH_SEARCH_EYEBROW}</div>
+      <h3 className="text-[1.15rem] font-semibold tracking-tight text-gold">{WATCH_SEARCH_TITLE}</h3>
+      <p className="text-sm leading-6 text-gold/54">{WATCH_SEARCH_DESCRIPTION}</p>
     </div>
     <div className="mx-auto mt-4 max-w-sm space-y-2 text-center">
       <label
         htmlFor="factory-watch-game"
-        className="block text-[11px] font-semibold uppercase tracking-[0.24em] text-black/42"
+        className="block text-[11px] font-semibold uppercase tracking-[0.24em] text-gold/42"
       >
         Run name
       </label>
@@ -1357,7 +1364,7 @@ const FactoryV2WatchSearchPanel = ({
           placeholder="Type a run name"
           disabled={Boolean(lookupDisabledReason)}
           className={cn(
-            "h-11 w-full rounded-[18px] border border-black/10 bg-white/78 px-4 pr-10 text-center text-sm font-medium text-black outline-none transition-colors placeholder:text-black/30 focus:border-black/25",
+            "h-11 w-full rounded-[18px] border border-gold/15 bg-black/25 px-4 pr-10 text-center text-sm font-medium text-gold outline-none transition-colors placeholder:text-gold/30 focus:border-gold/30",
             lookupDisabledReason ? "cursor-not-allowed opacity-60" : "",
             inputClassName,
           )}
@@ -1367,13 +1374,13 @@ const FactoryV2WatchSearchPanel = ({
           data-testid="factory-watch-run-picker-toggle"
           onClick={onFocusInput}
           disabled={Boolean(lookupDisabledReason)}
-          className="absolute right-3 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-black/45 transition-colors hover:bg-black/[0.04] hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+          className="absolute right-3 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-gold/45 transition-colors hover:bg-gold/10 hover:text-gold disabled:cursor-not-allowed disabled:opacity-50"
         >
           <ChevronDown className="h-4 w-4" />
         </button>
       </div>
-      {lookupDisabledReason ? <p className="text-sm leading-6 text-black/50">{lookupDisabledReason}</p> : null}
-      {isResolvingRunName ? <p className="text-sm leading-6 text-black/50">Looking for that run.</p> : null}
+      {lookupDisabledReason ? <p className="text-sm leading-6 text-gold/50">{lookupDisabledReason}</p> : null}
+      {isResolvingRunName ? <p className="text-sm leading-6 text-gold/50">Looking for that run.</p> : null}
       {searchNotice ? (
         <FactoryV2CopyableMessageBox
           label="Run details"
@@ -1383,11 +1390,11 @@ const FactoryV2WatchSearchPanel = ({
         />
       ) : null}
       {!lookupDisabledReason && !isResolvingRunName && !searchNotice ? (
-        <p className="text-sm leading-6 text-black/46">Press Enter to check its status.</p>
+        <p className="text-sm leading-6 text-gold/46">Press Enter to check its status.</p>
       ) : null}
       {matchingRuns.length > 0 ? (
-        <div className="space-y-2 rounded-[20px] border border-black/8 bg-white/56 p-2">
-          <div className="px-2 pt-1 text-center text-[9px] font-semibold uppercase tracking-[0.24em] text-black/34">
+        <div className="space-y-2 rounded-[20px] border border-gold/10 bg-black/20 p-2">
+          <div className="px-2 pt-1 text-center text-[9px] font-semibold uppercase tracking-[0.24em] text-gold/34">
             {watchGameName.trim() ? "Matching runs" : "Recent runs"}
           </div>
           <div className="grid gap-1.5">
@@ -1396,11 +1403,11 @@ const FactoryV2WatchSearchPanel = ({
                 key={run.id}
                 type="button"
                 onClick={() => onSelectRun(run)}
-                className="flex w-full flex-col items-start gap-1.5 rounded-[14px] border border-transparent bg-white/62 px-3 py-2.5 text-left text-[13px] text-black transition-colors hover:border-black/6 hover:bg-black/[0.035] sm:flex-row sm:items-center sm:justify-between"
+                className="flex w-full flex-col items-start gap-1.5 rounded-[14px] border border-transparent bg-black/20 px-3 py-2.5 text-left text-[13px] text-gold transition-colors hover:border-gold/10 hover:bg-gold/10 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0">
-                  <div className="truncate font-semibold text-black">{run.name}</div>
-                  <div className="mt-0.5 text-[11px] text-black/42">{getEnvironmentLabel(run.environment)}</div>
+                  <div className="truncate font-semibold text-gold">{run.name}</div>
+                  <div className="mt-0.5 text-[11px] text-gold/42">{getEnvironmentLabel(run.environment)}</div>
                 </div>
                 <div
                   className={cn(
@@ -1446,7 +1453,7 @@ const FactoryV2WatchActionBar = ({
   return (
     <div data-testid="factory-watch-action-bar" className="sticky bottom-3 z-10 md:static">
       <div className="mx-auto flex w-fit flex-col items-center gap-2">
-        <div className="flex items-center justify-center gap-2 rounded-full border border-black/8 bg-[rgba(250,243,233,0.72)] px-2 py-2 shadow-[0_10px_24px_rgba(23,15,8,0.06)] backdrop-blur-md">
+        <div className="flex items-center justify-center gap-2 rounded-full border border-gold/10 bg-[rgba(21,17,15,0.72)] px-2 py-2 shadow-[0_10px_24px_rgba(0,0,0,0.12)] backdrop-blur-md">
           {visiblePrimaryAction ? (
             <FactoryV2WatchActionButton
               label={visiblePrimaryAction.label}
@@ -1483,7 +1490,7 @@ const FactoryV2WatchActionBar = ({
               icon={<Pause className="h-4 w-4" />}
               onClick={onStopAutoRetry}
               disabled={stopAutoRetryDisabled}
-              className="border border-rose-200/70 bg-[rgba(255,241,242,0.88)] text-rose-700 hover:bg-[rgba(255,233,236,0.96)]"
+              className="border border-rose-200/70 bg-[rgba(166,47,40,0.15)] text-rose-400 hover:bg-[rgba(166,47,40,0.25)]"
             />
           ) : null}
 
@@ -1493,7 +1500,7 @@ const FactoryV2WatchActionBar = ({
               icon={<Trash2 className="h-4 w-4" />}
               onClick={onDeleteRun}
               disabled={deleteRunDisabled}
-              className="border border-[#d8a18f] bg-[rgba(255,244,239,0.92)] text-[#7b241c] hover:bg-[rgba(255,233,225,0.98)]"
+              className="border border-rose-700/40 bg-[rgba(123,36,28,0.15)] text-[#7b241c] hover:bg-[rgba(123,36,28,0.25)]"
             />
           ) : null}
 
@@ -1503,13 +1510,13 @@ const FactoryV2WatchActionBar = ({
               icon={<CircleHelp className="h-4 w-4" />}
               onClick={() => setShowsActionHelp((current) => !current)}
               disabled={false}
-              className="border border-black/10 bg-white/78 text-black/52 hover:bg-white hover:text-black/72"
+              className="border border-gold/15 bg-black/25 text-gold/52 hover:bg-gold/10 hover:text-gold/72"
             />
           ) : null}
         </div>
 
         {showsActionHelp ? (
-          <div className="flex flex-wrap items-center justify-center gap-1.5 text-[10px] font-medium text-black/44">
+          <div className="flex flex-wrap items-center justify-center gap-1.5 text-[10px] font-medium text-gold/44">
             {visiblePrimaryAction ? (
               <FactoryV2WatchActionLegend icon={<Play className="h-3 w-3" />} label="Continue" />
             ) : null}
@@ -1561,8 +1568,8 @@ const FactoryV2WatchActionButton = ({
 );
 
 const FactoryV2WatchActionLegend = ({ icon, label }: { icon: ReactNode; label: string }) => (
-  <span className="inline-flex items-center gap-1 rounded-full border border-black/8 bg-white/58 px-2 py-1">
-    <span className="inline-flex h-3 w-3 items-center justify-center text-black/55">{icon}</span>
+  <span className="inline-flex items-center gap-1 rounded-full border border-gold/10 bg-black/20 px-2 py-1">
+    <span className="inline-flex h-3 w-3 items-center justify-center text-gold/55">{icon}</span>
     <span>{label}</span>
   </span>
 );
@@ -1609,29 +1616,29 @@ function resolveStepMomentToneAppearance(tone: "done" | "now" | "next") {
   switch (tone) {
     case "done":
       return {
-        containerClassName: "border-black/8 bg-black/[0.025] opacity-45 shadow-none",
+        containerClassName: "border-gold/10 bg-black/[0.025] opacity-45 shadow-none",
         dotClassName: "bg-black/18",
-        labelClassName: "text-black/34",
-        stepLabelClassName: "font-medium text-black/50",
+        labelClassName: "text-gold/34",
+        stepLabelClassName: "font-medium text-gold/50",
         accentBarClassName: null,
         pulseClassName: null,
       };
     case "now":
       return {
-        containerClassName: "border-[#c6a777]/60 bg-[rgba(255,250,243,0.96)] shadow-[0_16px_34px_rgba(90,62,29,0.1)]",
-        dotClassName: "bg-[#8b5b2e]",
-        labelClassName: "text-[#6b4a24]",
-        stepLabelClassName: "font-semibold text-black",
+        containerClassName: "border-[#c6a777]/60 bg-[rgba(32,27,22,0.96)] shadow-[0_16px_34px_rgba(0,0,0,0.18)]",
+        dotClassName: "bg-[#dfaa54]",
+        labelClassName: "text-[#dfaa54]",
+        stepLabelClassName: "font-semibold text-gold",
         accentBarClassName: null,
         pulseClassName: null,
       };
     case "next":
     default:
       return {
-        containerClassName: "border-dashed border-black/10 bg-white/36 opacity-70 shadow-none",
+        containerClassName: "border-dashed border-gold/15 bg-black/20 opacity-70 shadow-none",
         dotClassName: "bg-black/24",
-        labelClassName: "text-black/34",
-        stepLabelClassName: "font-medium text-black/56",
+        labelClassName: "text-gold/34",
+        stepLabelClassName: "font-medium text-gold/56",
         accentBarClassName: null,
         pulseClassName: null,
       };
@@ -1649,7 +1656,7 @@ const FactoryV2SegmentedProgressTrack = ({ steps }: { steps: FactoryRun["steps"]
         )}
       >
         {step.status === "running" ? (
-          <span className="absolute inset-y-0 left-0 w-3/4 rounded-full bg-[#8b5b2e]" />
+          <span className="absolute inset-y-0 left-0 w-3/4 rounded-full bg-[#dfaa54]" />
         ) : null}
       </div>
     ))}
@@ -1732,7 +1739,7 @@ function resolveCurrentProgressFillClassName(isRunningStep: boolean, runStatus: 
   }
 
   if (runStatus === "complete") {
-    return "bg-[#1f1711]";
+    return "bg-[#7a4b22]";
   }
 
   if (runStatus === "attention") {
@@ -1767,11 +1774,11 @@ const FactoryV2StepSummary = ({ step }: { step: FactoryRun["steps"][number] }) =
   const errorMessage = resolveRunStepErrorMessage(step);
 
   return (
-    <div className="flex items-start gap-3 rounded-[16px] border border-black/8 bg-black/[0.03] px-3.5 py-3">
+    <div className="flex items-start gap-3 rounded-[16px] border border-gold/10 bg-black/[0.03] px-3.5 py-3">
       <div className={cn("mt-1.5 h-2.5 w-2.5 rounded-full", statusMeta.railClassName)} />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <div className="text-sm font-semibold text-black">{getSimpleStepTitle(step)}</div>
+          <div className="text-sm font-semibold text-gold">{getSimpleStepTitle(step)}</div>
           <div
             className={cn(
               "rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.2em]",
@@ -1781,7 +1788,7 @@ const FactoryV2StepSummary = ({ step }: { step: FactoryRun["steps"][number] }) =
             {statusMeta.label}
           </div>
         </div>
-        <div className="mt-2 text-sm leading-6 text-black/56">{getStepDetailMessage(step)}</div>
+        <div className="mt-2 text-sm leading-6 text-gold/56">{getStepDetailMessage(step)}</div>
         {errorMessage ? (
           <div className="mt-3">
             <FactoryV2CopyableMessageBox
@@ -1866,7 +1873,7 @@ const FactoryV2CopyableMessageBox = ({
             void copyMessage();
           }}
           className={cn(
-            "rounded-full bg-white/80 font-semibold uppercase tracking-[0.16em] transition-colors hover:bg-white",
+            "rounded-full bg-black/25 font-semibold uppercase tracking-[0.16em] transition-colors hover:bg-gold/10",
             resolveCopyableMessageActionClassName(tone),
             compact ? "px-2 py-0.5 text-[9px]" : "px-2.5 py-1 text-[10px]",
           )}
@@ -1876,7 +1883,7 @@ const FactoryV2CopyableMessageBox = ({
       </div>
       <pre
         className={cn(
-          "overflow-auto whitespace-pre-wrap break-words rounded-[12px] bg-white/70",
+          "overflow-auto whitespace-pre-wrap break-words rounded-[12px] bg-black/25",
           resolveCopyableMessagePreClassName(tone),
           compact ? "max-h-24 px-2.5 py-2 text-[10px] leading-4" : "max-h-40 px-3 py-2 text-[11px] leading-5",
         )}
@@ -1892,15 +1899,15 @@ function resolveCopyableMessageBoxClassName(tone: "info" | "error") {
     return "border border-rose-300/50 bg-rose-50/80 shadow-[0_10px_24px_rgba(190,24,93,0.06)]";
   }
 
-  return "border border-[#d6c3a0]/70 bg-[rgba(255,248,236,0.9)] shadow-[0_10px_24px_rgba(146,104,52,0.08)]";
+  return "border border-gold/20 bg-[rgba(32,27,22,0.9)] shadow-[0_10px_24px_rgba(0,0,0,0.16)]";
 }
 
 function resolveCopyableMessageLabelClassName(tone: "info" | "error") {
-  return tone === "error" ? "text-rose-700" : "text-[#7e5a2b]";
+  return tone === "error" ? "text-rose-400" : "text-[#7e5a2b]";
 }
 
 function resolveCopyableMessageActionClassName(tone: "info" | "error") {
-  return tone === "error" ? "border border-rose-200/80 text-rose-700" : "border border-[#dcc7a2]/80 text-[#7e5a2b]";
+  return tone === "error" ? "border border-rose-200/80 text-rose-400" : "border border-[#dcc7a2]/80 text-[#7e5a2b]";
 }
 
 function resolveCopyableMessagePreClassName(tone: "info" | "error") {

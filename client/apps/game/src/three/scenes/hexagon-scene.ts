@@ -37,6 +37,7 @@ import {
   Mesh,
   MeshStandardMaterial,
   PerspectiveCamera,
+  Plane,
   PlaneGeometry,
   PointLight,
   Quaternion,
@@ -109,6 +110,8 @@ export abstract class HexagonScene {
   protected currentCameraView = CameraView.Medium; // Track current camera view position
   protected targetCameraView = CameraView.Medium;
   private animationCameraTarget: Vector3 = new Vector3();
+  private readonly hoverGroundPlane = new Plane(new Vector3(0, 1, 0), 0);
+  private readonly hoverGroundIntersection = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
   private readonly animationVisibilityDistance = 140;
   private cameraTransitionState = createCameraTransitionState();
@@ -191,7 +194,7 @@ export abstract class HexagonScene {
     this.inputManager = new InputManager(this.sceneName, this.sceneManager, this.raycaster, this.mouse, this.camera);
     this.interactiveHexManager = new InteractiveHexManager(this.scene);
     this.worldUpdateListener = new WorldUpdateListener(this.dojo, sqlApi);
-    this.highlightHexManager = new HighlightHexManager(this.interactionOverlayScene);
+    this.highlightHexManager = new HighlightHexManager(this.scene);
     this.thunderBoltManager = new ThunderBoltManager(this.scene, this.controls);
     this.scene.background = new Color(0x2a1a3e);
     this.state = useUIStore.getState();
@@ -319,9 +322,42 @@ export abstract class HexagonScene {
     const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
     if (hoveredHex) {
       this.onHexagonMouseMove(hoveredHex);
-    } else {
-      this.onHexagonMouseMove(null);
+      return;
     }
+
+    const fallbackHex = this.tryArmyRaycastFallback(raycaster);
+    if (fallbackHex) {
+      this.onHexagonMouseMove({
+        hexCoords: fallbackHex,
+        position: getWorldPositionForHex(fallbackHex),
+      });
+      return;
+    }
+
+    const groundPlaneFallback = this.tryGroundPlaneHoverFallback(raycaster);
+    if (groundPlaneFallback) {
+      this.onHexagonMouseMove(groundPlaneFallback);
+      return;
+    }
+
+    this.onHexagonMouseMove(null);
+  }
+
+  private tryGroundPlaneHoverFallback(raycaster: Raycaster): { hexCoords: HexPosition; position: Vector3 } | null {
+    const intersection = raycaster.ray.intersectPlane(this.hoverGroundPlane, this.hoverGroundIntersection);
+    if (!intersection) {
+      return null;
+    }
+
+    const hexCoords = getHexForWorldPosition(intersection);
+    if (!this.interactiveHexManager.isHexInteractive(hexCoords)) {
+      return null;
+    }
+
+    return {
+      hexCoords,
+      position: getWorldPositionForHex(hexCoords),
+    };
   }
 
   private handleDoubleClick(_event: MouseEvent, raycaster: Raycaster): void {
@@ -779,7 +815,13 @@ export abstract class HexagonScene {
     return { col, row, x, z };
   }
 
-  cameraAnimate(newPosition: Vector3, newTarget: Vector3, transitionDuration: number, onFinish?: () => void) {
+  cameraAnimate(
+    newPosition: Vector3,
+    newTarget: Vector3,
+    transitionDuration: number,
+    onFinish?: () => void,
+    options?: { ease?: string },
+  ) {
     const camera = this.controls.object;
     const target = this.controls.target;
     const transitionStart = resolveCameraTransitionStart(this.cameraTransitionState);
@@ -797,6 +839,7 @@ export abstract class HexagonScene {
     if (transitionToken === null) {
       return;
     }
+    const ease = options?.ease ?? "power3.inOut";
     this.setCameraTransitionStatus("transitioning");
 
     this.cameraTransitionTimeline = gsap.timeline({
@@ -819,7 +862,7 @@ export abstract class HexagonScene {
         x: newPosition.x,
         y: newPosition.y,
         z: newPosition.z,
-        ease: "power3.inOut",
+        ease,
       },
       0,
     );
@@ -832,7 +875,7 @@ export abstract class HexagonScene {
         x: newTarget.x,
         y: newTarget.y,
         z: newTarget.z,
-        ease: "power3.inOut",
+        ease,
       },
       0,
     );
@@ -1402,7 +1445,7 @@ export abstract class HexagonScene {
     }
   }
 
-  private syncResolvedCameraViewFromDistance(distance: number): void {
+  protected syncResolvedCameraViewFromDistance(distance: number): void {
     const nextView = resolveWorldmapZoomBand({
       currentBand: this.currentCameraView,
       distance,

@@ -1,14 +1,17 @@
 import { getGameModeConfig } from "@/config/game-modes";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
+import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { Position } from "@bibliothecadao/eternum";
 import { BuildingType, ResourcesIds, StructureType } from "@bibliothecadao/types";
-import { CameraView } from "../../scenes/hexagon-scene";
+import type { StructureInfo } from "../../types/common";
+import { CameraView } from "../../scenes/camera-view";
 import {
   createContentContainer,
   createDirectionIndicators,
   createGuardArmyDisplay,
   createOwnerDisplayElement,
   createProductionDisplay,
+  updateIncomingTroopDisplay,
   updateDirectionIndicators,
   updateGuardArmyDisplay,
   updateProductionDisplay,
@@ -17,6 +20,7 @@ import { getOwnershipStyle, LABEL_TYPE_CONFIGS } from "./label-config";
 import { LabelData, LabelTypeDefinition } from "./label-types";
 import { resolveCameraView } from "./label-view";
 import { attachDirectionIndicators, createLabelBase } from "./label-shared";
+import { applyEntityLabelViewModelMetadata, buildStructureEntityLabelViewModel } from "./entity-label-view-model";
 
 /**
  * Structure icon paths
@@ -50,7 +54,9 @@ interface StructureLabelData extends LabelData {
   initialized: boolean;
   level: number;
   isMine: boolean;
+  isAlly: boolean;
   hasWonder: boolean;
+  structureName: string;
   owner: {
     address: bigint;
     ownerName: string;
@@ -58,33 +64,14 @@ interface StructureLabelData extends LabelData {
   };
   guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
   activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
+  incomingTroopArrivals?: IncomingTroopArrival[];
   hyperstructureRealmCount?: number;
   attackedFromDegrees?: number;
   attackedTowardDegrees?: number;
   battleTimerLeft?: number;
 }
 
-// For backward compatibility with existing StructureInfo type
-export interface StructureInfoCompat {
-  entityId: number;
-  structureName: string;
-  hexCoords: { col: number; row: number };
-  structureType: StructureType;
-  stage: number;
-  initialized: boolean;
-  level: number;
-  isMine: boolean;
-  hasWonder: boolean;
-  owner: {
-    address: bigint;
-    ownerName: string;
-    guildName: string;
-  };
-  guardArmies?: Array<{ slot: number; category: string | null; tier: number; count: number; stamina: number }>;
-  activeProductions?: Array<{ buildingCount: number; buildingType: BuildingType }>;
-}
-
-export const convertStructureInfo = (structure: StructureInfoCompat): StructureLabelData => {
+export const convertStructureInfo = (structure: StructureInfo): StructureLabelData => {
   return {
     ...structure,
     hexCoords: new Position({ x: structure.hexCoords.col, y: structure.hexCoords.row }),
@@ -97,11 +84,13 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
   createElement: (data: StructureLabelData, inputView: CameraView): HTMLElement => {
     const cameraView = resolveCameraView(inputView);
+    const labelModel = buildStructureEntityLabelViewModel(data);
     const mode = getGameModeConfig();
     const structureIcons = STRUCTURE_ICONS(mode.assets.labels.fragmentMine);
 
     // Create base label
     const labelDiv = createLabelBase(data.isMine, cameraView);
+    applyEntityLabelViewModelMetadata(labelDiv, labelModel);
     labelDiv.style.transform = "scale(0.5)";
     labelDiv.style.transformOrigin = "center bottom";
 
@@ -137,7 +126,7 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       owner: data.owner,
       isMine: data.isMine,
       cameraView,
-      structureName: data.structureName,
+      structureName: labelModel.title,
     });
 
     contentContainer.appendChild(ownerText);
@@ -147,6 +136,8 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
       const guardArmiesDisplay = createGuardArmyDisplay(data.guardArmies, cameraView);
       contentContainer.appendChild(guardArmiesDisplay);
     }
+
+    updateIncomingTroopDisplay(contentContainer, data.incomingTroopArrivals);
 
     if (data.activeProductions && data.activeProductions.length > 0) {
       const productionsDisplay = createProductionDisplay(data.activeProductions, cameraView);
@@ -265,6 +256,8 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
 
   updateElement: (element: HTMLElement, data: StructureLabelData, inputView: CameraView): void => {
     const cameraView = resolveCameraView(inputView);
+    const labelModel = buildStructureEntityLabelViewModel(data);
+    applyEntityLabelViewModelMetadata(element, labelModel);
     const mode = getGameModeConfig();
     const structureIcons = STRUCTURE_ICONS(mode.assets.labels.fragmentMine);
 
@@ -382,10 +375,14 @@ export const StructureLabelType: LabelTypeDefinition<StructureLabelData> = {
         owner: data.owner,
         isMine: data.isMine,
         cameraView,
-        structureName: data.structureName,
+        structureName: labelModel.title,
       });
 
       ownerDisplay.replaceWith(updatedOwnerDisplay);
+    }
+
+    if (contentContainer) {
+      updateIncomingTroopDisplay(contentContainer, data.incomingTroopArrivals);
     }
 
     // Update active productions display

@@ -11,4 +11,5 @@ export {
   type MarketWithDetailsRow,
   type VaultNumeratorRow,
 } from "./pm-sql-api";
+export { findMarketByPrizeAddressAcrossChains, type MarketDataChain } from "./market-chain-lookup";
 export { pmQueryKeys } from "./query-keys";

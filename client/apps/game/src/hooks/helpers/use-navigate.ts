@@ -3,6 +3,7 @@ import { useCallback } from "react";
 import { Position } from "@bibliothecadao/eternum";
 
 import { ensureStructureSynced } from "@/dojo/queries";
+import { buildPlayHref, parsePlayRoute, type PlayScene } from "@/play/navigation/play-route";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { useQuery } from "@bibliothecadao/react";
@@ -74,6 +75,23 @@ const toWorldMapPosition = (position: PositionLike): { col: number; row: number 
   return undefined;
 };
 
+const resolvePlaySceneHref = (scene: PlayScene, position: Position): string => {
+  const playRoute = typeof window !== "undefined" ? parsePlayRoute(window.location) : null;
+  const normalized = position.getNormalized();
+
+  if (playRoute) {
+    return buildPlayHref({
+      ...playRoute,
+      scene,
+      col: normalized.x,
+      row: normalized.y,
+    });
+  }
+
+  const search = `?col=${normalized.x}&row=${normalized.y}`;
+  return scene === "hex" ? `/play/hex${search}` : `/play/map${search}`;
+};
+
 const useNavigateToHexView = () => {
   const showBlankOverlay = useUIStore((state) => state.setShowBlankOverlay);
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
@@ -81,7 +99,7 @@ const useNavigateToHexView = () => {
   const { handleUrlChange } = useQuery();
 
   return (position: Position) => {
-    const url = position.toHexLocationUrl();
+    const url = resolvePlaySceneHref("hex", position);
 
     setIsLoadingScreenEnabled(true);
     showBlankOverlay(false);
@@ -97,12 +115,14 @@ export const useNavigateToMapView = () => {
   const setIsLoadingScreenEnabled = useUIStore((state) => state.setIsLoadingScreenEnabled);
 
   return (position: Position) => {
+    const url = resolvePlaySceneHref("map", position);
+
     if (!isMapView) {
       setIsLoadingScreenEnabled(true);
     }
     showBlankOverlay(false);
     setPreviewBuilding(null);
-    handleUrlChange(position.toMapLocationUrl());
+    handleUrlChange(url);
   };
 };
 

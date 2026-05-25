@@ -82,11 +82,50 @@ export function createGameRendererRuntimeHarness() {
     worldmapScene,
     hexceptionScene,
     createSubject() {
+      const controlBridge = {
+        handleInteractionChange: vi.fn(),
+        markLabelsDirty: vi.fn(),
+        setupGuiControls: vi.fn(),
+      };
+      const effectsBridge = {
+        applyEnvironment: vi.fn(),
+        applyQualityFeatures: vi.fn(),
+        dispose: vi.fn(),
+        setupPostProcessingEffects: vi.fn(),
+        subscribeToQualityController: vi.fn(),
+        updateWeatherPostProcessing: vi.fn(),
+      };
+      const monitoringRuntime = {
+        initialize: vi.fn(),
+        updateStatsPanel: vi.fn(),
+        startStatsRecording: vi.fn(),
+        stopStatsRecording: vi.fn(() => []),
+        captureStatsSample: vi.fn(),
+        exportStatsRecording: vi.fn(),
+        dispose: vi.fn(),
+      };
+      const routeRuntime = {
+        start: vi.fn(),
+        syncFromLocation: vi.fn(),
+        dispose: vi.fn(),
+      };
+
       return {
         backend,
         renderer: backend.renderer,
         camera: { aspect: 1, updateProjectionMatrix: vi.fn() },
-        labelRenderer: { render: vi.fn(), setSize: vi.fn() },
+        controlBridge,
+        effectsBridge,
+        monitoringRuntime,
+        routeRuntime,
+        labelRuntime: {
+          dispose: vi.fn(),
+          isReady: vi.fn(() => true),
+          markDirty: vi.fn(),
+          render: vi.fn(),
+          resize: vi.fn(),
+          shouldRender: vi.fn(() => false),
+        },
         controls: { update: vi.fn(), dispose: vi.fn() },
         hudScene: {
           update: vi.fn(),
@@ -101,7 +140,6 @@ export function createGameRendererRuntimeHarness() {
         hexceptionScene,
         fastTravelScene: undefined,
         sceneManager,
-        shouldRenderLabels: vi.fn(() => false),
         captureStatsSample: vi.fn(),
         lastTime: performance.now() - 16,
         getTargetFPS: vi.fn(() => null),
@@ -109,10 +147,28 @@ export function createGameRendererRuntimeHarness() {
         isDestroyed: false,
         cleanupIntervals: [],
         guiFolders: [],
+        supportRuntimeRegistry: {
+          ensureEffectsBridge: () => effectsBridge,
+          ensureMonitoring: () => monitoringRuntime,
+          ensureRoute: () => routeRuntime,
+          getControlBridge: () => controlBridge,
+          getEffectsBridge: () => effectsBridge,
+          getMonitoring: () => monitoringRuntime,
+          getRoute: () => routeRuntime,
+        },
+        sessionRuntime: {
+          captureStatsSample: vi.fn(),
+          createHudScene: vi.fn(),
+          exportStatsRecording: vi.fn(),
+          initializeMonitoring: vi.fn(),
+          startListeners: vi.fn(),
+          startStatsRecording: vi.fn(),
+          stopStatsRecording: vi.fn(() => []),
+          syncRouteFromLocation: vi.fn(),
+          updateStatsPanel: vi.fn(),
+        },
         handleURLChange: vi.fn(),
         handleWindowResize: vi.fn(),
-        handleDocumentFocus: vi.fn(),
-        handleDocumentBlur: vi.fn(),
       } as any;
     },
   };

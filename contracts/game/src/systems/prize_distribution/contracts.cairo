@@ -38,8 +38,7 @@ pub mod prize_distribution_systems {
     use starknet::ContractAddress;
     use crate::constants::{DEFAULT_NS, VELORDS_BURNER_ADDRESS, WORLD_CONFIG_ID};
     use crate::models::config::{
-        BlitzRealmPlayerRegister, BlitzRegistrationConfig, BlitzRegistrationConfigImpl, SeasonConfigImpl,
-        WorldConfigUtilImpl,
+        BlitzRegistrationConfig, BlitzRegistrationConfigImpl, BlitzSettlement, SeasonConfigImpl, WorldConfigUtilImpl,
     };
     use crate::models::events::{PrizeDistributedStory, PrizeDistributionFinalStory, Story, StoryEvent};
     use crate::models::hyperstructure::PlayerRegisteredPoints;
@@ -166,8 +165,8 @@ pub mod prize_distribution_systems {
             assert!(blitz_registration_config.registration_count == 1, "Eternum: More than 1 registered player");
 
             // ensure the registered_player parameter is the registered player
-            let mut blitz_player_register: BlitzRealmPlayerRegister = world.read_model(registered_player);
-            assert!(blitz_player_register.once_registered, "Eternum: Player not registered");
+            let settled_player: BlitzSettlement = world.read_model(registered_player);
+            assert!(settled_player.structure_ids.len() > 0, "Eternum: Player not settled");
 
             // create a trial with the registered player and finalize the rankings
             let prize_amount = blitz_registration_config.fee_amount.try_into().unwrap();
@@ -286,14 +285,16 @@ pub mod prize_distribution_systems {
 
                 // transfer 1 Game Chest to players above 500 points
                 let mut player_points: PlayerRegisteredPoints = world.read_model(player);
-                if player_points.registered_points >= GAME_REWARD_CHEST_POINTS_THRESHOLD {
+                if lootchest_erc721_dispatcher.contract_address.is_non_zero()
+                    && player_points.registered_points >= GAME_REWARD_CHEST_POINTS_THRESHOLD {
                     // game_chest_reward.distributed_chests += 1;
                     lootchest_erc721_dispatcher
                         .mint(player, blitz_registration_config.collectibles_lootchest_attrs_raw());
                 }
 
                 // transfer ERC721 Chest prize to player
-                if game_chest_reward.allocated_chests > game_chest_reward.distributed_chests {
+                if lootchest_erc721_dispatcher.contract_address.is_non_zero()
+                    && game_chest_reward.allocated_chests > game_chest_reward.distributed_chests {
                     let mut received_num_chests: u128 = (game_chest_reward.allocated_chests.into()
                         * player_points.registered_points)
                         / season_prize.total_registered_points;

@@ -6,9 +6,10 @@ import {
   isAutomationResourceBlocked,
   useAutomationStore,
 } from "@/hooks/store/use-automation-store";
+import { PROCESS_INTERVAL_MS } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import Button from "@/ui/design-system/atoms/button";
-import { configManager } from "@bibliothecadao/eternum";
+import { aggregateConsumptionPerSecond, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
@@ -295,26 +296,24 @@ export const RealmAutomationPanel = ({
   }, [aggregatedUsageMap]);
 
   const aggregatedConsumptionMap = useMemo(() => {
-    const totals = new Map<number, number>();
-
-    automationRows.forEach(({ percentages, complexInputs, simpleInputs }) => {
-      const resourceRatio = Math.min(1, Math.max(0, percentages.resourceToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
-      const laborRatio = Math.min(1, Math.max(0, percentages.laborToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
-
-      if (resourceRatio > 0) {
-        complexInputs.forEach((input) => {
-          totals.set(input.resource, (totals.get(input.resource) ?? 0) + resourceRatio * input.amount);
-        });
-      }
-
-      if (laborRatio > 0) {
-        simpleInputs.forEach((input) => {
-          totals.set(input.resource, (totals.get(input.resource) ?? 0) + laborRatio * input.amount);
-        });
-      }
+    const percentagesByResource: Record<number, ResourceAutomationPercentages> = {};
+    automationRows.forEach(({ resourceId, percentages }) => {
+      percentagesByResource[resourceId] = percentages;
     });
-
-    return totals;
+    const cycleSeconds = PROCESS_INTERVAL_MS / 1000;
+    const perSecond = aggregateConsumptionPerSecond(
+      automationRows.map((row) => row.resourceId),
+      percentagesByResource,
+      {
+        maxAllocationPercent: MAX_RESOURCE_ALLOCATION_PERCENT,
+        cycleSeconds,
+      },
+    );
+    const perCycle = new Map<number, number>();
+    perSecond.forEach((value, key) => {
+      perCycle.set(key, value * cycleSeconds);
+    });
+    return perCycle;
   }, [automationRows]);
 
   const aggregatedProductionMap = useMemo(() => {
@@ -592,7 +591,7 @@ export const RealmAutomationPanel = ({
         {usageDisplayList.length === 0 ? (
           <p className="text-xs text-gold/60">No resources allocated yet.</p>
         ) : (
-          <ul className="grid grid-cols-4 gap-2">
+          <ul className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
             {usageDisplayList.map(({ resourceId, percent, perCycle }) => {
               const label = resolveResourceLabel(resourceId);
               const isOverBudget = percent > MAX_RESOURCE_ALLOCATION_PERCENT;
@@ -601,17 +600,22 @@ export const RealmAutomationPanel = ({
                 <li
                   key={`usage-${resourceId}`}
                   className={clsx(
-                    "flex items-center gap-2 rounded border px-3 py-2 text-xs",
+                    "min-w-0 rounded border px-3 py-2 text-xs",
                     isOverBudget ? "border-danger/60 text-danger" : "border-gold/20 text-gold/80",
                   )}
                 >
-                  <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="xs" />
-                  <div className="flex-1 flex items-center justify-between gap-2">
-                    <span>{label}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gold/50">{perCycleLabel}</span>
-                      <span className="text-gold/40">•</span>
-                      <span className="font-semibold text-gold">{Math.round(percent)}%</span>
+                  <div className="flex items-start gap-2">
+                    <div className="shrink-0">
+                      <ResourceIcon resource={ResourcesIds[resourceId as ResourcesIds]} size="xs" />
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="truncate">{label}</span>
+                        <span className={clsx("shrink-0 font-semibold", isOverBudget ? "text-danger" : "text-gold")}>
+                          {Math.round(percent)}%
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-gold/50">{perCycleLabel}</div>
                     </div>
                   </div>
                 </li>

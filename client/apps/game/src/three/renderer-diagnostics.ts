@@ -14,6 +14,11 @@ import {
   resetRendererGpuTelemetry,
   snapshotRendererGpuTelemetry,
 } from "./perf/renderer-gpu-telemetry";
+import {
+  resetRendererStartupTimings,
+  snapshotRendererStartupTimings,
+  type RendererStartupTimingsSnapshot,
+} from "./perf/renderer-startup-telemetry";
 
 interface RendererDiagnosticsSnapshot {
   activeMode: RendererInitDiagnostics["activeMode"] | null;
@@ -29,6 +34,7 @@ interface RendererDiagnosticsSnapshot {
   postprocessPolicy: WebgpuPostprocessPolicy | null;
   requestedMode: RendererInitDiagnostics["requestedMode"] | null;
   sceneName: string | null;
+  startupTimings: RendererStartupTimingsSnapshot;
 }
 
 interface RendererDiagnosticsWindow {
@@ -49,6 +55,7 @@ const createRendererDiagnosticsState = (): RendererDiagnosticsSnapshot => ({
   postprocessPolicy: null,
   requestedMode: null,
   sceneName: null,
+  startupTimings: snapshotRendererStartupTimings(),
 });
 
 let rendererDiagnosticsState = createRendererDiagnosticsState();
@@ -74,6 +81,7 @@ export function syncRendererBackendDiagnostics(input: RendererInitDiagnostics): 
     initTimeMs: input.initTimeMs,
     gpuTelemetry: snapshotRendererGpuTelemetry(),
     requestedMode: input.requestedMode,
+    startupTimings: snapshotRendererStartupTimings(),
   };
   syncRendererDiagnosticsWindow();
 }
@@ -83,6 +91,7 @@ export function markRendererDiagnosticDeviceReady(): void {
   rendererDiagnosticsState = {
     ...rendererDiagnosticsState,
     gpuTelemetry: snapshotRendererGpuTelemetry(),
+    startupTimings: snapshotRendererStartupTimings(),
   };
   syncRendererDiagnosticsWindow();
 }
@@ -95,6 +104,7 @@ export function markRendererDiagnosticDeviceLost(message?: string): void {
     fallbackReason:
       rendererDiagnosticsState.activeMode === "webgpu" ? "webgpu-device-lost" : rendererDiagnosticsState.fallbackReason,
     gpuTelemetry: snapshotRendererGpuTelemetry(),
+    startupTimings: snapshotRendererStartupTimings(),
   };
   syncRendererDiagnosticsWindow();
 }
@@ -104,6 +114,7 @@ export function recordRendererDiagnosticUncapturedError(message?: string): void 
   rendererDiagnosticsState = {
     ...rendererDiagnosticsState,
     gpuTelemetry: snapshotRendererGpuTelemetry(),
+    startupTimings: snapshotRendererStartupTimings(),
   };
   syncRendererDiagnosticsWindow();
 }
@@ -184,6 +195,7 @@ export function snapshotRendererDiagnostics(): RendererDiagnosticsSnapshot {
         }
       : null,
     gpuTelemetry: snapshotRendererGpuTelemetry(),
+    startupTimings: snapshotRendererStartupTimings(),
     postprocessPolicy: rendererDiagnosticsState.postprocessPolicy
       ? {
           bloomRouting: rendererDiagnosticsState.postprocessPolicy.bloomRouting,
@@ -197,6 +209,7 @@ export function snapshotRendererDiagnostics(): RendererDiagnosticsSnapshot {
 
 export function resetRendererDiagnostics(): void {
   resetRendererGpuTelemetry();
+  resetRendererStartupTimings();
   rendererDiagnosticsState = createRendererDiagnosticsState();
   syncRendererDiagnosticsWindow();
 }

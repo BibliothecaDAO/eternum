@@ -8,14 +8,12 @@ export type MMRTier = {
 export const MMR_TOKEN_DECIMALS = 10n ** 18n;
 
 const MMR_TIERS: MMRTier[] = [
-  { name: "Elite", minMMR: 2850, maxMMR: Infinity, color: "text-relic2" },
-  { name: "Master", minMMR: 2400, maxMMR: 2850, color: "text-light-red" },
-  { name: "Diamond", minMMR: 1950, maxMMR: 2400, color: "text-blueish" },
-  { name: "Platinum", minMMR: 1500, maxMMR: 1950, color: "text-brilliance" },
-  { name: "Gold", minMMR: 1050, maxMMR: 1500, color: "text-gold" },
-  { name: "Silver", minMMR: 600, maxMMR: 1050, color: "text-light-pink" },
-  { name: "Bronze", minMMR: 150, maxMMR: 600, color: "text-orange" },
-  { name: "Iron", minMMR: 0, maxMMR: 150, color: "text-gray-gold" },
+  { name: "Storm Lord", minMMR: 2400, maxMMR: Infinity, color: "text-relic2" },
+  { name: "Warlord", minMMR: 2000, maxMMR: 2400, color: "text-light-red" },
+  { name: "Conqueror", minMMR: 1600, maxMMR: 2000, color: "text-blueish" },
+  { name: "Marauder", minMMR: 1200, maxMMR: 1600, color: "text-brilliance" },
+  { name: "Raider", minMMR: 600, maxMMR: 1200, color: "text-gold" },
+  { name: "Scrapper", minMMR: 0, maxMMR: 600, color: "text-gray-gold" },
 ];
 
 const toMmrInteger = (mmrRaw: bigint): number => Number(mmrRaw / MMR_TOKEN_DECIMALS);
@@ -36,13 +34,13 @@ export const toMmrIntegerFromRaw = (mmrRaw: bigint): number => toMmrInteger(mmrR
 
 export const getNextTier = (currentTier: MMRTier): MMRTier | null => {
   const idx = MMR_TIERS.indexOf(currentTier);
-  if (idx <= 0) return null; // Already Elite or not found
+  if (idx <= 0) return null; // Already top tier or not found
   return MMR_TIERS[idx - 1];
 };
 
 export const getTierProgress = (mmr: number, currentTier: MMRTier): number => {
   const nextTier = getNextTier(currentTier);
-  if (!nextTier) return 1; // Elite = 100%
+  if (!nextTier) return 1; // Top tier = 100%
   const range = nextTier.minMMR - currentTier.minMMR;
   if (range <= 0) return 1;
   return Math.min(1, Math.max(0, (mmr - currentTier.minMMR) / range));

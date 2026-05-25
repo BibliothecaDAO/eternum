@@ -1,5 +1,5 @@
 import { playerColorManager, PlayerColorProfile } from "../../systems/player-colors";
-import type { CameraView } from "../../scenes/hexagon-scene";
+import type { CameraView } from "../../scenes/camera-view";
 import { resolveCameraView } from "./label-view";
 import { LabelConfig, LabelStyle } from "./label-types";
 

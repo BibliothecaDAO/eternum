@@ -10,8 +10,8 @@ const DEFAULT_TICK_INTERVAL_SECONDS = 1;
 const ARMIES_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS;
 const DELIVERY_TICK_INTERVAL_SECONDS = ONE_MINUTE_IN_SECONDS * 3;
 const BITCOIN_PHASE_SECONDS = ONE_MINUTE_IN_SECONDS * 10;
-const DONKEY_SPEED = 9;
-const ARMY_SPEED = 1;
+const DONKEY_SPEED_FOR_RESOURCES = 9;
+const DONKEY_SPEED_FOR_TROOPS = 27;
 const BATTLE_GRACE_TICK_COUNT = 24;
 const VILLAGE_RAID_IMMUNITY_TICKS = 24;
 const SETTLEMENT_CENTER = 2147483646;
@@ -80,8 +80,8 @@ export function buildCommonBaseConfig(): ConfigPatch {
       [CapacityConfig.Storehouse]: 0,
     },
     speed: {
-      donkey: DONKEY_SPEED,
-      army: ARMY_SPEED,
+      donkey_for_resources: DONKEY_SPEED_FOR_RESOURCES,
+      donkey_for_troops: DONKEY_SPEED_FOR_TROOPS,
     },
     battle: {
       regularImmunityTicks: BATTLE_GRACE_TICK_COUNT,

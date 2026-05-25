@@ -1,3 +1,4 @@
+import type GUI from "lil-gui";
 import { gltfLoader } from "@/three/utils/utils";
 import { type HexPosition } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
@@ -13,11 +14,11 @@ export class Navigator {
   private controls: MapControls;
   private arrowModel: THREE.Object3D | null = null;
   private target: HexPosition | null = null;
-  private guiFolder: any;
+  private guiFolder: GUI;
   private label: THREE.Group | null = null;
   private distanceDiv: HTMLElement | null = null;
 
-  constructor(scene: THREE.Scene, controls: MapControls, guiFolder: any) {
+  constructor(scene: THREE.Scene, controls: MapControls, guiFolder: GUI) {
     this.scene = scene;
     this.controls = controls;
     this.guiFolder = guiFolder;

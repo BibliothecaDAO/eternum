@@ -15,7 +15,7 @@ import {
   resolveAmmTokenName,
   resolveSelectedAmmPool,
 } from "./amm-model";
-import { formatAmmFeeTo, formatAmmPercent, formatAmmSpotPrice } from "./amm-format";
+import { formatAmmMinimumReceived, formatAmmPercent, formatAmmSpotPrice } from "./amm-format";
 import { resolveAmmAssetPresentation } from "./amm-asset-presentation";
 import { AMM_READ_QUERY_OPTIONS, invalidateAmmReadQueries } from "./amm-queries";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -237,7 +237,6 @@ export const AmmSwap = () => {
   return (
     <div className="space-y-4">
       <div className="rounded-2xl border border-gold/10 bg-black/25 px-4 py-3">
-        <div className="text-[10px] uppercase tracking-[0.16em] text-gold/40 mb-2">Route</div>
         {route?.kind === "routed" ? (
           <div className="flex items-center gap-2 text-sm font-medium text-gold">
             <RouteToken asset={resolveAmmAssetPresentation(payToken, config.lordsAddress)} />
@@ -326,7 +325,7 @@ export const AmmSwap = () => {
       />
 
       {swapQuote && payAmount > 0 && (
-        <div className="grid gap-2 rounded-2xl border border-gold/10 bg-black/25 p-3 text-xs sm:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-2 rounded-2xl border border-gold/10 bg-black/25 p-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
           {[
             { label: "Spot Price", value: `${formatAmmSpotPrice(swapQuote.spotPrice)} LORDS` },
             {
@@ -334,14 +333,12 @@ export const AmmSwap = () => {
               value: formatAmmPercent(swapQuote.priceImpact),
               tone: swapQuote.priceImpact > 5 ? "text-danger" : "text-gold",
             },
-            { label: "Minimum Received", value: formatTokenAmount(swapQuote.minimumReceived) },
-            { label: "LP Fee", value: formatAmmPercent(feeBreakdown.lpFeePercent) },
-            { label: "Protocol Fee", value: formatAmmPercent(feeBreakdown.protocolFeePercent) },
-            { label: "Fee To", value: activePoolForFees ? formatAmmFeeTo(activePoolForFees.feeTo) : "--" },
+            { label: "Minimum Received", value: formatAmmMinimumReceived(swapQuote.minimumReceived) },
+            { label: "Total Fees", value: formatAmmPercent(feeBreakdown.totalFeePercent) },
           ].map((metric) => (
-            <div key={metric.label} className="rounded-xl border border-gold/10 bg-black/20 px-3 py-2">
+            <div key={metric.label} className="min-w-0 rounded-xl border border-gold/10 bg-black/20 px-3 py-2">
               <div className="text-[10px] uppercase tracking-[0.16em] text-gold/40">{metric.label}</div>
-              <div className={cn("mt-1 text-sm font-semibold text-gold", metric.tone)}>{metric.value}</div>
+              <div className={cn("mt-1 break-all text-sm font-semibold text-gold", metric.tone)}>{metric.value}</div>
             </div>
           ))}
         </div>

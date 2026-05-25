@@ -15,7 +15,12 @@ const LoadingSpinner = () => (
 
 export const AmmView = ({ className }: AmmViewProps) => {
   return (
-    <div className={cn("flex w-full max-w-[1500px] flex-col pb-10", className)}>
+    <div
+      className={cn(
+        "flex w-full max-w-[1500px] flex-col pb-10 lg:h-[calc(100vh-7.5rem)] lg:min-h-0 lg:overflow-hidden lg:pb-0",
+        className,
+      )}
+    >
       <Suspense fallback={<LoadingSpinner />}>
         <AmmDashboard />
       </Suspense>

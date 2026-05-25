@@ -33,6 +33,7 @@ const RECOVERABLE_FACTORY_STEP_IDS = new Set([
   "create-world",
   "wait-for-factory-index",
   "configure-world",
+  "reserve-blitz-hyperstructures",
   "grant-lootchest-role",
   "grant-village-pass-role",
   "create-banks",
@@ -44,6 +45,7 @@ const RECOVERABLE_FACTORY_SERIES_STEP_IDS = new Set([
   "create-worlds",
   "wait-for-factory-indexes",
   "configure-worlds",
+  "reserve-blitz-hyperstructures",
   "grant-lootchest-roles",
   "grant-village-pass-roles",
   "create-banks",
@@ -340,6 +342,7 @@ async function handleCreateFactoryRotationRun(request, env) {
     maxGames: body.maxGames,
     advanceWindowGames: body.advanceWindowGames,
     evaluationIntervalMinutes: body.evaluationIntervalMinutes,
+    weeklyCadence: body.weeklyCadence,
     devModeOn: body.devModeOn,
     singleRealmMode: body.singleRealmMode,
     twoPlayerMode: body.twoPlayerMode,
@@ -1135,7 +1138,13 @@ function validateCreateFactoryRotationRunBody(body) {
   validateWorkflowRef(body.workflowRef);
   validateMapConfigOverrides(body.mapConfigOverrides);
   validateBlitzRegistrationOverrides(body.blitzRegistrationOverrides);
-  validatePositiveNumber(body.gameIntervalMinutes, "gameIntervalMinutes");
+
+  if (hasWeeklyCadence(body)) {
+    validateWeeklyCadence(body.weeklyCadence);
+  } else {
+    validatePositiveNumber(body.gameIntervalMinutes, "gameIntervalMinutes");
+  }
+
   validatePositiveNumber(body.maxGames, "maxGames");
   validatePositiveNumber(body.evaluationIntervalMinutes, "evaluationIntervalMinutes");
 
@@ -1153,6 +1162,52 @@ function validateCreateFactoryRotationRunBody(body) {
   if (body.autoRetryIntervalMinutes !== undefined) {
     validatePositiveNumber(body.autoRetryIntervalMinutes, "autoRetryIntervalMinutes");
   }
+}
+
+const WEEKLY_CADENCE_WEEKDAYS = new Set(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]);
+
+function hasWeeklyCadence(body) {
+  return Array.isArray(body.weeklyCadence) && body.weeklyCadence.length > 0;
+}
+
+function validateWeeklyCadence(weeklyCadence) {
+  if (!Array.isArray(weeklyCadence) || weeklyCadence.length === 0) {
+    throw new HttpError(400, "weeklyCadence must be a non-empty array");
+  }
+
+  const scheduledOffsets = new Set();
+  for (const [index, entry] of weeklyCadence.entries()) {
+    validateWeeklyCadenceEntry(entry, index);
+    const scheduledOffset = resolveWeeklyCadenceOffsetKey(entry);
+    if (scheduledOffsets.has(scheduledOffset)) {
+      throw new HttpError(400, `weeklyCadence contains more than one game at ${entry.weekday} ${entry.utcTime} UTC`);
+    }
+    scheduledOffsets.add(scheduledOffset);
+  }
+}
+
+function resolveWeeklyCadenceOffsetKey(entry) {
+  return `${entry.weekday.toLowerCase()}-${entry.utcTime}`;
+}
+
+function validateWeeklyCadenceEntry(entry, index) {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+    throw new HttpError(400, `weeklyCadence entry ${index + 1} must be an object`);
+  }
+
+  if (typeof entry.gameNamePrefix !== "string" || !entry.gameNamePrefix.trim()) {
+    throw new HttpError(400, `weeklyCadence entry ${index + 1} requires gameNamePrefix`);
+  }
+
+  if (typeof entry.weekday !== "string" || !WEEKLY_CADENCE_WEEKDAYS.has(entry.weekday.toLowerCase())) {
+    throw new HttpError(400, `weeklyCadence entry ${index + 1} has an unsupported weekday`);
+  }
+
+  if (typeof entry.utcTime !== "string" || !/^([01]\d|2[0-3]):([0-5]\d)$/.test(entry.utcTime)) {
+    throw new HttpError(400, `weeklyCadence entry ${index + 1} utcTime must be HH:MM in UTC`);
+  }
+
+  validateBlitzRegistrationOverrides(entry.blitzRegistrationOverrides);
 }
 
 function validateContinueFactoryRunBody(body) {
@@ -1407,6 +1462,7 @@ function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchSte
   const normalizedLaunchStep = resolveRotationRecoveryLaunchScope(run, launchStep);
   const environment = inputRecord.environment || rawRequest.environmentId || route.environment;
   const rotationName = inputRecord.rotationName || rawRequest.rotationName || route.rotationName;
+  const weeklyCadence = resolveRotationWeeklyCadence(rawRequest, run.summary);
   const targetGameNames = resolveContinueTargetGameNames(run.summary?.games, requestedGameNames, normalizedLaunchStep, {
     label: "rotation",
     runName: rotationName || route.rotationName,
@@ -1428,10 +1484,11 @@ function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchSte
     environment,
     rotationName,
     firstGameStartTime: String(rawRequest.firstGameStartTime),
-    gameIntervalMinutes: rawRequest.gameIntervalMinutes,
-    maxGames: rawRequest.maxGames,
-    advanceWindowGames: rawRequest.advanceWindowGames,
-    evaluationIntervalMinutes: rawRequest.evaluationIntervalMinutes,
+    gameIntervalMinutes: resolveRotationGameIntervalMinutes(rawRequest, run.summary, weeklyCadence),
+    maxGames: rawRequest.maxGames ?? run.summary?.maxGames,
+    advanceWindowGames: rawRequest.advanceWindowGames ?? run.summary?.advanceWindowGames,
+    evaluationIntervalMinutes: rawRequest.evaluationIntervalMinutes ?? run.summary?.evaluationIntervalMinutes,
+    weeklyCadence,
     rpcUrl: rawRequest.rpcUrl,
     factoryAddress: rawRequest.factoryAddress,
     devModeOn: rawRequest.devModeOn,
@@ -1458,6 +1515,26 @@ function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchSte
     targetGameNames,
     launchStep: normalizedLaunchStep,
   };
+}
+
+function resolveRotationWeeklyCadence(rawRequest, summary) {
+  if (rawRequest.weeklyCadence?.length) {
+    return rawRequest.weeklyCadence;
+  }
+
+  if (summary?.weeklyCadence?.length) {
+    return summary.weeklyCadence;
+  }
+
+  return undefined;
+}
+
+function resolveRotationGameIntervalMinutes(rawRequest, summary, weeklyCadence) {
+  if (weeklyCadence?.length) {
+    return undefined;
+  }
+
+  return rawRequest.gameIntervalMinutes ?? summary?.gameIntervalMinutes;
 }
 
 function buildNudgeRotationWorkflowRequest(route, run, inputRecord) {
@@ -1777,6 +1854,7 @@ function validateLaunchWorkflowScope(scope) {
     scope !== "create-world" &&
     scope !== "wait-for-factory-index" &&
     scope !== "configure-world" &&
+    scope !== "reserve-blitz-hyperstructures" &&
     scope !== "grant-lootchest-role" &&
     scope !== "grant-village-pass-role" &&
     scope !== "create-banks" &&
@@ -1794,6 +1872,7 @@ function validateSeriesLaunchWorkflowScope(scope) {
     scope !== "create-worlds" &&
     scope !== "wait-for-factory-indexes" &&
     scope !== "configure-worlds" &&
+    scope !== "reserve-blitz-hyperstructures" &&
     scope !== "grant-lootchest-roles" &&
     scope !== "grant-village-pass-roles" &&
     scope !== "create-banks" &&
@@ -1813,6 +1892,10 @@ function validateLaunchWorkflowScopeForEnvironment(environment, scope) {
     return;
   }
 
+  if (scope === "reserve-blitz-hyperstructures" && !environment.endsWith(".blitz")) {
+    throw new HttpError(400, `Launch step "${scope}" is only supported for blitz environments`);
+  }
+
   if (scope === "sync-paymaster" && !environment.startsWith("mainnet.")) {
     throw new HttpError(400, `Launch step "${scope}" is only supported for mainnet environments`);
   }
@@ -1821,6 +1904,10 @@ function validateLaunchWorkflowScopeForEnvironment(environment, scope) {
 function validateSeriesLaunchWorkflowScopeForEnvironment(environment, scope) {
   if (scope === "full") {
     return;
+  }
+
+  if (scope === "reserve-blitz-hyperstructures" && !environment.endsWith(".blitz")) {
+    throw new HttpError(400, `Launch step "${scope}" is only supported for blitz environments`);
   }
 
   if (scope === "sync-paymaster" && !environment.startsWith("mainnet.")) {
@@ -3033,6 +3120,7 @@ function buildReplayableLaunchOptions(request) {
   assignOptionalLaunchOption(launchOptions, "singleRealmMode", request.singleRealmMode);
   assignOptionalLaunchOption(launchOptions, "twoPlayerMode", request.twoPlayerMode);
   assignOptionalLaunchOption(launchOptions, "durationSeconds", request.durationSeconds);
+  assignOptionalLaunchOption(launchOptions, "weeklyCadence", request.weeklyCadence);
   assignOptionalLaunchOption(launchOptions, "mapConfigOverrides", request.mapConfigOverrides);
   assignOptionalLaunchOption(launchOptions, "blitzRegistrationOverrides", request.blitzRegistrationOverrides);
   assignOptionalLaunchOption(launchOptions, "cartridgeApiBase", request.cartridgeApiBase);
@@ -4063,7 +4151,7 @@ async function evaluateEligibleFactoryRotationRuns(github, branch) {
       } catch (error) {
         logFactoryError("rotation_evaluation_failed", {
           environment,
-          rotationName: run.rotationName,
+          rotationName: entry.rotationName,
           message: error instanceof Error ? error.message : String(error),
         });
       }

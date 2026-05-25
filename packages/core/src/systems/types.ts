@@ -102,6 +102,12 @@ export type StructureSystemUpdate = {
   battleCooldownEnd: number;
 };
 
+export type StructureBuildingsSystemUpdate = {
+  entityId: ID;
+  activeProductions: ActiveProduction[];
+  hexCoords: HexPosition;
+};
+
 export type TileSystemUpdate = {
   hexCoords: HexPosition;
   removeExplored: boolean;
@@ -147,6 +153,11 @@ export type QuestSystemUpdate = {
 export type ChestSystemUpdate = {
   occupierId: ID;
   hexCoords: HexPosition;
+};
+
+export type ReservedHyperstructureTileSystemUpdate = {
+  hexCoords: HexPosition;
+  removed?: boolean;
 };
 
 export interface QuestData {

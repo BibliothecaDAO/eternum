@@ -1,7 +1,7 @@
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ProductionModal } from "@/ui/features/settlement";
+import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
 import { CountUpNumber } from "@/ui/shared";
 import { currencyFormat, currencyIntlFormat } from "@/ui/utils/utils";
 import {
@@ -64,7 +64,6 @@ export const ResourceChip = ({
 }) => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const {
     setup: { components },
   } = useDojo();
@@ -262,9 +261,13 @@ export const ResourceChip = ({
     }
 
     if (!resourceManager?.entityId) return;
-    setStructureEntityId(resourceManager.entityId);
-    toggleModal(<ProductionModal preSelectedResource={resourceId as ResourcesIds} />);
-  }, [canShowProductionShortcut, onManageProduction, resourceManager, resourceId, setStructureEntityId, toggleModal]);
+    toggleModal(
+      <ProductionModal
+        preSelectedRealmId={resourceManager.entityId}
+        preSelectedResource={resourceId as ResourcesIds}
+      />,
+    );
+  }, [canShowProductionShortcut, onManageProduction, resourceManager, resourceId, toggleModal]);
 
   // Check if this resource is a relic
   const isRelic = useMemo(() => {

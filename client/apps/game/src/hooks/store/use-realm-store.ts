@@ -1,5 +1,7 @@
+import { normalizeWorldMapRoutePosition } from "@/play/navigation/play-route-target";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import { countAvailableRelics } from "@/ui/features/relics/utils/count-available-relics";
+import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { PlayerRelicsData } from "@bibliothecadao/torii";
 import { ID, RelicRecipientType, Structure, StructureType } from "@bibliothecadao/types";
 
@@ -77,6 +79,8 @@ export interface RealmStore {
   setArrivedArrivalsNumber: (arrivedArrivalsNumber: number) => void;
   pendingArrivalsNumber: number;
   setPendingArrivalsNumber: (pendingArrivalsNumber: number) => void;
+  publicIncomingTroopArrivalsByStructure: Record<string, IncomingTroopArrival[]>;
+  setPublicIncomingTroopArrivalsByStructure: (value: Record<string, IncomingTroopArrival[]>) => void;
   availableRelicsNumber: number;
   setAvailableRelicsNumber: (availableRelicsNumber: number) => void;
   playerRelics: PlayerRelicsData | null;
@@ -88,7 +92,9 @@ export interface RealmStore {
   removeRelicFromEntity: (params: { entityId: ID; resourceId: ID; recipientType: RelicRecipientType }) => void;
 }
 
-export const createRealmStoreSlice = (set: any) => ({
+export const createRealmStoreSlice = (
+  set: (partial: Partial<RealmStore> | ((state: RealmStore) => Partial<RealmStore>)) => void,
+) => ({
   structureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
   lastControlledStructureEntityId: UNDEFINED_STRUCTURE_ENTITY_ID,
   isSpectating: false,
@@ -116,7 +122,7 @@ export const createRealmStoreSlice = (set: any) => ({
       };
 
       if (options?.worldMapPosition) {
-        updates.worldMapReturnPosition = options.worldMapPosition;
+        updates.worldMapReturnPosition = normalizeWorldMapRoutePosition(options.worldMapPosition);
       }
 
       if (shouldSpectate) {
@@ -202,6 +208,10 @@ export const createRealmStoreSlice = (set: any) => ({
   setArrivedArrivalsNumber: (arrivedArrivalsNumber: number) => set({ arrivedArrivalsNumber }),
   pendingArrivalsNumber: 0,
   setPendingArrivalsNumber: (pendingArrivalsNumber: number) => set({ pendingArrivalsNumber }),
+  publicIncomingTroopArrivalsByStructure: {},
+  setPublicIncomingTroopArrivalsByStructure: (
+    publicIncomingTroopArrivalsByStructure: Record<string, IncomingTroopArrival[]>,
+  ) => set({ publicIncomingTroopArrivalsByStructure }),
   availableRelicsNumber: 0,
   setAvailableRelicsNumber: (availableRelicsNumber: number) => set({ availableRelicsNumber }),
   playerRelics: null,

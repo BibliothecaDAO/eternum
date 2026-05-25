@@ -76,6 +76,7 @@ export enum TileOccupier {
   HolySite = 36,
   Camp = 37,
   BitcoinMine = 38,
+  ReservedHyperstructure = 39,
 }
 
 /**
@@ -513,8 +514,8 @@ export interface Config {
   };
   carryCapacityGram: Record<CapacityConfig, bigint | number | string>;
   speed: {
-    donkey: number;
-    army: number;
+    donkey_for_resources: number;
+    donkey_for_troops: number;
   };
   battle: {
     regularImmunityTicks: number;
@@ -639,7 +640,7 @@ export interface Config {
   };
   startingResources: ResourceCost[];
   villageStartingResources: ResourceCost[];
-  discoverableVillageStartingResources: ResourceMinMax[];
+  campStartingResources: ResourceMinMax[];
   realmUpgradeCosts: { [key in RealmLevels]: ResourceCost[] };
   realmMaxLevel: number;
   villageMaxLevel: number;

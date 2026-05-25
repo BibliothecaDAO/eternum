@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUISound } from "@/audio";
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
@@ -12,6 +12,7 @@ import {
   getTotalResourceWeightKg,
   isMilitaryResource,
   multiplyByPrecision,
+  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInterface } from "@bibliothecadao/types";
@@ -39,7 +40,7 @@ const MarketResource = memo(
     bidPrice: number;
     ammPrice: number;
   }) => {
-    const { currentDefaultTick } = useBlockTimestamp();
+    const currentDefaultTick = useCurrentDefaultTick();
     const resourceManager = useResourceManager(entityId);
 
     const balance = useMemo(() => {
@@ -280,7 +281,7 @@ const OrderRow = memo(
 
     const playTradeExecuteSound = useUISound("ui.trade_execute");
 
-    const { currentDefaultTick } = useBlockTimestamp();
+    const currentDefaultTick = useCurrentDefaultTick();
 
     const resourceManager = useResourceManager(entityId);
 
@@ -373,12 +374,22 @@ const OrderRow = memo(
         setConfirmOrderModal(false);
 
         const v = !isBuy ? calculatedResourceAmount : calculatedLords;
-        await dojo.setup.systemCalls.accept_order({
-          signer: dojo.account.account,
-          taker_id: entityId,
-          trade_id: offer.tradeId,
-          taker_buys_count: Math.ceil(v / offer.makerGivesMinResourceAmount),
-        });
+        const takerBuysCount = Math.ceil(v / offer.makerGivesMinResourceAmount);
+        const removeResourceOverride = new ResourceManager(dojo.setup.components, entityId).optimisticResourceUpdate(
+          offer.makerGets[0].resourceId,
+          -divideByPrecision(offer.takerPaysMinResourceAmount * takerBuysCount),
+        );
+
+        try {
+          await dojo.setup.systemCalls.accept_order({
+            signer: dojo.account.account,
+            taker_id: entityId,
+            trade_id: offer.tradeId,
+            taker_buys_count: takerBuysCount,
+          });
+        } finally {
+          removeResourceOverride();
+        }
       } catch (error) {
         console.error("Failed to accept order", error);
       } finally {
@@ -535,7 +546,7 @@ const OrderCreation = memo(
     const [lords, setLords] = useState(100);
     const [bid, setBid] = useState(String(lords / resource));
     const [showConfirmation, setShowConfirmation] = useState(false);
-    const { currentBlockTimestamp } = useBlockTimestamp();
+    const currentBlockTimestamp = useCurrentBlockTimestamp();
 
     const playTradePlaceSound = useUISound("ui.trade_place");
 
@@ -619,6 +630,10 @@ const OrderCreation = memo(
         taker_pays_min_resource_amount: createOrderParams.takerPaysMinResourceAmount,
         expires_at: currentBlockTimestamp + ONE_MONTH,
       };
+      const removeResourceOverride = new ResourceManager(components, entityId).optimisticResourceUpdate(
+        makerGives[0] as ResourcesIds,
+        -divideByPrecision(makerGives[1]),
+      );
 
       try {
         await create_order(calldata);
@@ -626,6 +641,7 @@ const OrderCreation = memo(
       } catch (error) {
         console.error("Failed to create order:", error);
       } finally {
+        removeResourceOverride();
         setLoading(false);
         setShowConfirmation(false);
       }
@@ -645,7 +661,7 @@ const OrderCreation = memo(
       return calculateDonkeysNeeded(orderWeightKg);
     }, [orderWeightKg]);
 
-    const { currentDefaultTick } = useBlockTimestamp();
+    const currentDefaultTick = useCurrentDefaultTick();
 
     const resourceManager = useResourceManager(entityId);
 

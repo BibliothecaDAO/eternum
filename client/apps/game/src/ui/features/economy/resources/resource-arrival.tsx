@@ -23,6 +23,11 @@ type ArrivalSummary = {
   isReady: boolean;
 };
 
+type ArrivalResourceLike = {
+  resourceId: ResourcesIds;
+  amount: number;
+};
+
 function isDefined<T>(value: T | null | undefined): value is T {
   return value != null;
 }
@@ -47,10 +52,12 @@ export const StructureArrivals = memo(({ structure, now: nowOverride }: { struct
 
   const arrivalSummaries = useMemo<ArrivalSummary[]>(() => {
     return arrivalsWithResources.map((arrival) => {
-      const resources: ArrivalSummaryResource[] = arrival.resources.filter(isDefined).map((resource) => ({
-        resourceId: resource.resourceId as ResourcesIds,
-        amount: divideByPrecision(resource.amount),
-      }));
+      const resources: ArrivalSummaryResource[] = arrival.resources
+        .filter(isDefined)
+        .map((resource: ArrivalResourceLike) => ({
+          resourceId: resource.resourceId,
+          amount: divideByPrecision(resource.amount),
+        }));
 
       const secondsUntilArrival = Math.max(0, Number(arrival.arrivesAt) + RESOURCE_ARRIVAL_READY_BUFFER_SECONDS - now);
       const isReady = secondsUntilArrival === 0;

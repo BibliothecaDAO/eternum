@@ -5,9 +5,1090 @@ interface LatestFeature {
   title: string;
   description: string;
   type: FeatureType;
+  gameSlug?: string;
+  readMore?: string;
 }
 
-export const latestFeatures: LatestFeature[] = [
+const MAX_LATEST_FEATURES = 10;
+
+const compareLatestFeatureDatesDescending = (left: LatestFeature, right: LatestFeature) => {
+  const timestampDifference = new Date(right.date).getTime() - new Date(left.date).getTime();
+  if (timestampDifference !== 0) return timestampDifference;
+  return left.title.localeCompare(right.title);
+};
+
+const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
+  features.toSorted(compareLatestFeatureDatesDescending).slice(0, MAX_LATEST_FEATURES);
+
+const allLatestFeatures: LatestFeature[] = [
+  {
+    date: "2026-05-26",
+    title: "Unit Creation Ghosts",
+    description:
+      "Added unit-shaped creation previews so newly submitted armies appear as ghosts on their spawn hex while the world catches up.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-25",
+    title: "Explore Arrival Previews",
+    description:
+      "Added the travel-style destination ghost and pulsing arrival ring to explore commands, making queued exploration feedback visible immediately.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-25",
+    title: "Safer Repeat Moves",
+    description:
+      "Hid movement options for units whose previous move is still resolving, preventing stale follow-up commands until the transaction catches up.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-23",
+    title: "Event-Driven Hover Details",
+    description:
+      "Improved world-map hover details so labels recover when unit, structure, or chest data finishes loading under the cursor.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-23",
+    title: "Reliable Hover Details",
+    description:
+      "Fixed intermittent world-map hover details by retrying active labels when loading or scene transitions temporarily detach them.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-23",
+    title: "Cleaner Unit Markers",
+    description:
+      "Removed deprecated ownership dots above world-map units so armies rely on their model, labels, and selection states without extra marker clutter.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
+    title: "Hover Label Recovery",
+    description:
+      "Fixed detailed world-map hover labels so loading and scene transitions clear stale hover state before labels are rebuilt.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
+    title: "Smaller Map Labels",
+    description:
+      "Reduced always-on world-map label size so army and structure names stay scannable without crowding the map.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
+    title: "Unified Map Labels",
+    description:
+      "Aligned compact map labels and detailed hover labels around the same entity identity and metrics, so hover details now expand from the same information shown on the map.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
+    title: "Map Entity Labels",
+    description:
+      "Restored compact always-on world-map labels above armies, realms, camps, and key structures while keeping detailed hover cards available.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-22",
+    title: "Reliable Hover Labels",
+    description:
+      "Fixed world-map unit hover labels so they recover after loading and chunk transitions without needing to move the cursor away and back.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-21",
+    title: "Population Build Guard",
+    description:
+      "Fixed construction checks so pending buildings update population limits immediately, preventing extra builds while transactions are still in flight.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-21",
+    title: "Resource Spend Sync",
+    description:
+      "Fixed resource balances so spending actions update immediately across automation, transfers, trading, crafting, production, bridge, and army flows.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-20",
+    title: "Runtime Network Selection",
+    description:
+      "Improved game selection so mainnet and slot games can launch from the same page without stale network preferences blocking startup.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-19",
+    title: "Review Popup Timing",
+    description:
+      "Fixed ended-game reviews so they no longer interrupt the landing page and only prompt automatically after you are in the game.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-19",
+    title: "Provision Sync Recovery",
+    description:
+      "Fixed realm provisioning so completed realms stay synced after refreshes and duplicate provision attempts recover back into the correct state.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-19",
+    title: "Relic Tab States",
+    description:
+      "Improved army and structure HUD relic cues so empty relic tabs look disabled, stored relics stay accessible, and activatable army relics appear directly in the default HUD.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-19",
+    title: "Selected Scout Destination",
+    description:
+      "Fixed scout movement so the destination hex stays selected after an explore or travel command, keeping the tile panel populated through chunk changes.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Accurate Supply Readiness",
+    description:
+      "Fixed army readiness icons so travel and explore each reflect their own stamina and food requirements before you commit a movement action.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Balanced Relic Cues",
+    description:
+      "Refined the army and structure HUD relic counts into a quieter usable/total cue that keeps available relics clear without overwhelming the tab.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Chunk Switch Recovery",
+    description:
+      "Fixed stalled world-map chunk switches so the map can recover in-session, restore army selection, and keep playing without a full refresh.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Clearer HUD Tabs",
+    description:
+      "Improved the selected army and structure HUD tabs so their bottom icon controls look clickable and the active section is easier to spot.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Continuous Map Terrain",
+    description:
+      "Improved map panning so terrain pages stream around the camera continuously, keeping more of the viewport covered during fast movement.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Offline Map Recovery",
+    description:
+      "Improved world-map network recovery so stalled terrain fetches time out cleanly and offline reconnect failures clear stuck map loading before retrying.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Relic Count Cues",
+    description:
+      "Improved army and structure HUD relic cues so usable relics stand out while total relic quantities stay visible at a glance.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Relic Usability Cues",
+    description:
+      "Relic inventory cards now use different borders to show which relics match the selected army or structure before activation.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Seamless Map Panning",
+    description:
+      "Improved world-map chunk presentation so nearby terrain stays visible while the next chunk hydrates, reducing blank map pop-in during travel.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Smoother Unit Tabbing",
+    description:
+      "Improved world-map unit tabbing so nearby army and structure snapshots reuse larger regions and avoid repeated territory-loading stalls.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-18",
+    title: "Usable Relic Alerts",
+    description:
+      "Army and structure HUD tabs now show a compact action cue when the selected entity has relics ready to activate.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-17",
+    title: "Map Streaming Stability",
+    description:
+      "World map streaming now holds wider live Torii regions, avoids unnecessary stream swaps while nearby areas stay covered, and keeps recently visited terrain warm.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-17",
+    title: "Wider Map Streaming",
+    description:
+      "World map streaming now keeps Torii subscriptions on larger regions, reducing stream swaps and terrain churn while traversing long distances.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-16",
+    title: "Building Count Sync",
+    description:
+      "Fixed construction cards so their building-count badges update from the same realm total as the built-here summary.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-15",
+    title: "Movement Visual Cleanup",
+    description:
+      "Fixed fast map movement so traveling labels and destination ghosts clear after the unit resolves, even when chunks update quickly.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-15",
+    title: "Safer Construction",
+    description:
+      "Building actions now catch more invalid placements before wallet submission and clear pending construction state after failures, reducing rejected builds and rollback cleanup.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-15",
+    title: "Blitz Leaderboard Fix",
+    description:
+      "Fixed the Blitz leaderboard and prize panel so settled-player rankings open reliably after entering a game.",
+    type: "fix",
+    gameSlug: "blitz",
+  },
+  {
+    date: "2026-05-15",
+    title: "Smarter Network Recovery",
+    description:
+      "The game now distinguishes unsupported health checks from real Torii outages, reducing unnecessary reconnect banners while keeping stale streams recoverable.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-14",
+    title: "Registered Game Entry",
+    description:
+      "Registered Blitz games now show an Enter action on the dashboard and display an in-game top-nav countdown until the main phase begins.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-13",
+    title: "Settle Or Spectate",
+    description:
+      "Blitz game cards now keep spectating alongside settling, so you can preview open worlds before joining and still jump straight into active matches from your game list.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-13",
+    title: "Open Games Refresh Fix",
+    description:
+      "The Open Games refresh button now refetches the same live summary feed the landing cards use, so new worlds and status changes show up without needing a full page reload.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-13",
+    title: "Faster Repeat Exploring",
+    description:
+      "Repeat explore actions now spend less time in the provider submit path and expose safer readiness tracking, so scouts become ready for the next explore sooner after world state catches up.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-13",
+    title: "Unconstructed Hyperstructures",
+    description:
+      "Reserved Hyperstructures now appear directly on the map before construction, and you can build them with a double-click or the Create Here action from tile details.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-12",
+    title: "Blitz Realm Provisioning",
+    description:
+      "Blitz realms now enter with a lighter initial setup and show a dedicated in-world provision action beside realm upgrades once the main phase starts, so delayed economy activation is available exactly when it matters.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-12",
+    title: "Saved Network Choice",
+    description:
+      "The landing network switch now remembers your last Mainnet or Slot choice after refresh, while first-time visits still start on Mainnet.",
+    type: "fix",
+  },
+  {
+    date: "2026-05-12",
+    title: "Mode-Aware Army Inventory",
+    description:
+      "Updated selected army HUD tabs so Blitz armies focus on combat and relics unless they actually carry resources, while Eternum armies keep their inventory view.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-12",
+    title: "Wider Biome Cards",
+    description:
+      "Fixed biome combat bonus cards in the selected tile HUD so advantage and penalty rows fill the available panel width.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-12",
+    title: "Clearer Tile HUD",
+    description:
+      "Improved selected structure and army panels with tab badges for defenders, production, inventory, and relics so key counts are visible before opening each tab.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-11",
+    title: "Safer Blitz Entry Tokens",
+    description:
+      "Blitz fee worlds now grant temporary entry-token collection approval only for the settlement transaction, then remove it immediately, so joining stays one-step without leaving broad NFT permissions behind.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-11",
+    title: "Single-Step Blitz Entry",
+    description:
+      "Blitz entry now stays centered on one settlement action instead of sending players through the older staged setup flow.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-05-07",
+    title: "Scrollable Tile HUD",
+    description:
+      "Fixed bottom-right entity and building detail panes so oversized info scrolls without moving the biome and action summary.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-05-06",
+    title: "Focused Chain Views",
+    description:
+      "Landing games, profile ranks, MMR, prediction markets, and cosmetics now follow the selected landing chain through one shared network state.",
+    type: "fix",
+  },
+  {
+    date: "2026-05-06",
+    title: "Map Sync Recovery",
+    description:
+      "Improved map stream recovery so delayed spatial updates enter a reconnecting state, retry cleanly, and surface network trouble when the map cannot restore live updates.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-30",
+    title: "Synced Army Positions",
+    description:
+      "Army visuals now follow live explorer coordinate updates even when tile occupancy events arrive late, so selected units no longer appear stranded on their previous hex.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-30",
+    title: "Reliable Army Stamina",
+    description:
+      "Fixed army movement stamina checks so explored moves use the freshest available stamina and no longer get blocked by stale optimistic state.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-30",
+    title: "Safer Rapid Building",
+    description:
+      "Rapid build clicks now reserve pending building spots immediately, so auto-build and manual placement avoid duplicate occupied-space errors while the chain catches up.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-29",
+    title: "Smoother Army Movement",
+    description:
+      "Army movement now starts as soon as the transaction is submitted, blocks follow-up commands until authoritative world state catches up, and rewinds cleanly if the transaction fails.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-29",
+    title: "Unblocked Spectating",
+    description:
+      "Spectate now opens directly from game cards and skips player-only settlement checks, so watching a world no longer gets stuck behind a wallet switch or blitz preflight.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-25",
+    title: "Sidebar Transfer Bars",
+    description:
+      "The realm sidebar now shows minimal transfer bars for active live and automated routes, so you can see what is moving between structures at a glance without reopening the transfers panel.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-25",
+    title: "Clearer Attention Reasons",
+    description:
+      "Attention warnings now explain why a resource is blocked, so chips like Knight T2 tell you whether they are waiting on inputs or missing an active producer instead of showing a bare name.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-25",
+    title: "Overview Build Shortcuts",
+    description:
+      "Realm building counts now show resource icons and hover build shortcuts in both construction and overview, so you can scan what is built and add the next structure faster.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-25",
+    title: "Realm Build Counts",
+    description:
+      "Construction now shows a compact built-here summary for the selected realm, so you can check existing building counts without hovering the map.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-24",
+    title: "Steadier Realm Sidebar",
+    description:
+      "Realm selection now stays in place when you switch structures, and balance cards use a cleaner 4-column layout with larger live values that stay readable as they update.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-24",
+    title: "Header Music Buttons",
+    description:
+      "Removed the landing header music slider so the compact audio pill keeps playback controls handy without stretching across the navigation bar.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-24",
+    title: "Slimmer Header Music",
+    description:
+      "Tightened the landing header music controls into a smaller pill, so audio stays accessible without crowding the home dashboard navigation.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-24",
+    title: "Header Music Controls",
+    description:
+      "Moved the landing music controls into the top header beside the network and wallet actions, so the home dashboard stays clear while playback controls remain close at hand.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-23",
+    title: "Bounded Renderer Startup",
+    description:
+      "Game entry now measures WebGPU startup and falls back cleanly when the experimental renderer stalls, so loading reaches the world instead of waiting indefinitely.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-21",
+    title: "Auto-Settle Timing Fix",
+    description:
+      "Blitz auto-settle now waits briefly after the visible countdown finishes before opening settlement, avoiding the early transaction failure popup.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-20",
+    title: "Cleaner Hyperstructure Setup",
+    description:
+      "Hyperstructure setup now waits for the dashboard entry data to be ready, shows a clearer remaining count, and reports setup failures instead of leaving the action feeling stuck.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-20",
+    title: "Rolling Blitz Cadence",
+    description:
+      "Factory rotations now support weekly cadence details and weekend buy-in overrides, making long-running Blitz schedules easier to monitor as future games stay queued.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-20",
+    title: "Blitz Settlement Sync",
+    description:
+      "Blitz settlement now waits for the requested settled realm count before advancing, so fresh entries no longer get stuck on finalizing when the index briefly returns an empty snapshot.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-20",
+    title: "Faster Game Lists",
+    description:
+      "Landing game lists now load from a shared world summary, reducing startup requests while keeping registration, rewards, and review actions available.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-19",
+    title: "Upcoming Game CTA",
+    description:
+      "Upcoming game lists now link directly to Create Game when there are no queued candidates, making it easier to start the next match.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-16",
+    title: "Live Stamina Labels",
+    description:
+      "World-map army labels now keep stamina values aligned with the computed stamina shown in army details, avoiding stale or over-projected label values.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-16",
+    title: "Accurate Army Stamina",
+    description:
+      "Fixed army stamina displays so numeric values show the committed on-chain computed state while recharge progress remains visible in the bar.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-16",
+    title: "Automation Skip Reasons",
+    description:
+      "Production automation now shows why a realm was skipped, making inactive buildings, missing inputs, and budget limits easier to diagnose.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-15",
+    title: "Blitz Settlement Handoff Fix",
+    description:
+      "Fresh Blitz registrations now stay on the settlement path even before indexing catches up, and sign-in handoffs wait for the full controller account so clicking Play no longer skips past settlement options.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-15",
+    title: "Animated Stamina Recharge",
+    description:
+      "Recharging army stamina now shows a soft pulse and sweep across world-map bars, labels, and attack panels, so it is clearer at a glance when stamina is actively refilling over time.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-15",
+    title: "Live Army Stamina Refresh",
+    description:
+      "Army stamina now stays in sync across world-map labels, selected-army details, and attack screens, so passive regeneration appears over time without waiting for another action to refresh the display.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-14",
+    title: "Blitz Auto-Settle Timer Gate",
+    description:
+      "Blitz auto-settle and manual entry now wait for the visible game countdown to finish before showing realm settlement, so registering early no longer pushes you into settling before the timer ends.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-14",
+    title: "Blitz Settlement Status Fix",
+    description:
+      "Blitz settlement now treats indexed realm creation as a successful finish and keeps the progress UI in sync, so completed entries no longer flash a false failure warning before you enter the game.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-14",
+    title: "Map Chunk Sync Fix",
+    description:
+      "World-map chunk repairs now wait for visible armies and structures to catch up before they settle, so terrain self-heals and reload recovery stop leaving ghost units or buildings behind.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-14",
+    title: "Reliable Auto-Settle Entry",
+    description:
+      "Auto-settle now keeps freshly registered Blitz players on the settlement path until their realm setup is ready, so dashboard handoffs stop dropping new entrants into the game as spectators.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-13",
+    title: "Stable Reload Chunk Refresh",
+    description:
+      "Direct world-map reloads now force their route-owned chunk refresh immediately after the entry overlay clears, so crossing into nearby map chunks no longer drops terrain out from under the camera.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-13",
+    title: "Settled Army Render Recovery",
+    description:
+      "Armies now refresh their world-map render bounds when movement fully settles, so multi-army moves no longer disappear at the destination until a chunk refresh happens.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-13",
+    title: "Unified Play Route Boot",
+    description:
+      "Dashboard entry and hard reload now follow the same map-first world boot flow, so fresh reloads stop diverging into stale sync state before the world becomes interactive.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-13",
+    title: "Stable Route Scene Resume",
+    description:
+      "Direct map and local-view play routes now agree on which realm to load and how to resume the camera, so reloads and dashboard handoffs stay on the intended route instead of drifting into the wrong scene state.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-13",
+    title: "Play Route Reload Resume",
+    description:
+      "Reloading a live game route now keeps you on that same world route and reconnects in place, so a desync refresh no longer sends you back through the dashboard entry flow.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Cleaner Game Entry Handoff",
+    description:
+      "Dashboard network switching, game entry bootstrap, and play-route loading now share one handoff flow, so switching networks or entering a world is less likely to drift into stale loading or mismatched wallet state.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Expanded Play Music Loop",
+    description:
+      "The in-game music rotation now includes Monophonic Mixtape 14, giving standard matches and Blitz one more track in the active background loop.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Juicier Move Ghosts",
+    description:
+      "Destination ghosts now breathe with a soft idle pulse, show a clearer ground ring, and burst into the arriving unit with a brighter handoff so delayed moves stay visible instead of feeling static.",
+    type: "improvement",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Longer Movement Sync Bridge",
+    description:
+      "Army move ghosts and travel effects now stay visible through longer world-sync delays, so confirmed moves no longer drop into an empty dead gap before the real unit catches up.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Synchronized Army Move Handoff",
+    description:
+      "Local army moves now stay locked until the rendered movement actually begins, and destination ghosts wait for the real arrival before resolving, so move confirmations no longer leave units stranded in a stale pre-move state.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Arrival Ghost Moves",
+    description:
+      "Local army moves now leave a ghosted unit at the destination while the world update catches up, so moves stay readable and the real unit can absorb into place on arrival instead of disappearing into a dead gap.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Smoother Army Move FX",
+    description:
+      "Army move effects now stay visible until the rendered unit actually starts and finishes its travel, so long chunk-sync updates no longer make movement look stalled or broken.",
+    type: "fix",
+    gameSlug: "eternum",
+  },
+  {
+    date: "2026-04-12",
+    title: "Faster Play Asset Warmup",
+    description:
+      "Shared play assets now start warming from the dashboard so common world models and textures are more likely to be ready before you enter a game.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Cleaner Hero Cards",
+    description:
+      "The Play dashboard hero cards now show a single artwork layer per mode, so hovering between Seasons and Blitz no longer creates a ghosted double-image effect.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Auto-Settle Card Switch",
+    description:
+      "Blitz registrations now turn on an Auto-settle switch directly on the game card, so the client can prewarm the entry flow, try settling as soon as the countdown ends, and push you into the game automatically unless you switch it off.",
+    type: "feature",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Entry Route Context Fixes",
+    description:
+      "Route-owned entry now keeps the right landing background and mode behind the modal, market watch opens the correct chain-specific spectate route, and wallet-switch prompts no longer replay blocked actions after you cancel or double-click.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-12",
+    title: "Unified Landing Network State",
+    description:
+      "Landing network controls, game entry prompts, markets, and factory tools now read the same preferred-versus-wallet network state, so switch prompts stay aligned with the header and temporary wallet detection no longer shows the wrong network warning.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-11",
+    title: "Network Switch State Fix",
+    description:
+      "Preferred network changes now stay aligned with the actual game world lookup, modal wallet-switch prompts keep the landing tag in sync, and the blocked action now continues automatically after a successful switch.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-11",
+    title: "Deep Link Routing Fixes",
+    description:
+      "Canonical world-map links, shared profile links, and the Factory V2 legacy handoff now keep you on the intended destination instead of bouncing through the wrong route or dropping shared context.",
+    type: "fix",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-11",
+    title: "Canonical Landing Routes",
+    description:
+      "Landing navigation now uses dedicated URLs for Play, Learn, News, and Factory, so shared links, reloads, and browser back-forward behavior stay aligned without relying on a hidden dashboard tab query.",
+    type: "improvement",
+    gameSlug: "landing",
+  },
+  {
+    date: "2026-04-10",
+    title: "Smoother Map Zoom Steps",
+    description:
+      "World map zoom now responds more gently to trackpad gestures and settles into each tactical camera band faster, so stepping between map heights feels less chunky without bringing back unstable in-between zoom states.",
+    type: "improvement",
+  },
+  {
+    date: "2026-04-10",
+    title: "Fixed World Map Zoom",
+    description:
+      "World map zoom now snaps between three intended tactical camera profiles instead of drifting through unstable in-between heights, so zooming feels steadier and no longer nudges chunk logic through extra camera-target movement.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
+    title: "Structure Claim Stamina Guard",
+    description:
+      "Taking an undefended enemy structure now respects the same stamina requirement as other attacks, so the world map no longer invites claims your army cannot legally complete yet.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
+    title: "World Map Ready Guard",
+    description:
+      "Fresh game entry now keeps the loading shell up until the first world map refresh actually succeeds, so players no longer drop into a visible map that cannot yet be clicked.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
+    title: "Structure Capacity Icons",
+    description:
+      "Realm and village entries in the left sidebar now show compact population and free building-tile stats with small icons, making it clearer how much capacity and construction room each structure still has.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
+    title: "Resource Action Tick Fix",
+    description:
+      "Trading, transfers, bridge checks, and realm upgrade requirements now use the live default tick again, so newly produced resources stop waiting on a coarse UI refresh window before they count toward actions.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
+    title: "Army Stamina Alignment",
+    description:
+      "World map army labels and selected-army stamina bars now stay aligned more reliably, including passive regen and live troop-state updates that previously drifted apart.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-10",
+    title: "Structure Ghosting Hardening",
+    description:
+      "World map structures now discard stale render passes when chunk bounds change mid-update, so old buildings stop flashing onto newly loaded terrain during fast chunk and zoom transitions.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-09",
+    title: "Biome Card Tightening",
+    description:
+      "Biome combat cards now use tighter spacing in the world action panel, so troop bonuses stay easier to scan without the terrain section crowding the rest of the tile details.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-09",
+    title: "Canvas Guard Cleanup",
+    description:
+      "Game entry no longer carries dead tutorial overlay guards, so the world canvas stops falling into a non-interactive state from stale legacy DOM classes.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-08",
+    title: "Chunk Structure Sync Fix",
+    description:
+      "Realm buildings, essence mines, and other structures now stay aligned with chunk streaming more reliably, so landmarks stop disappearing while nearby terrain is still visible during chunk crossings.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-07",
+    title: "Landing Hub Refresh",
+    description:
+      "The dashboard News, Learn, and Markets tabs now surface fresher updates, clearer onboarding, and more actionable market stats so you can find the right information faster.",
+    type: "improvement",
+    gameSlug: "landing",
+    readMore: "https://github.com/BibliothecaDAO/eternum/issues/4375",
+  },
+  {
+    date: "2026-04-07",
+    title: "Stamina Sync Fixes",
+    description:
+      "Army and guard stamina now stays aligned with live tick updates more reliably, so combat previews and action gating stop freezing on stale values or jumping to misleading full stamina.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-07",
+    title: "Chunk Stall Recovery",
+    description:
+      "World map chunk streaming now traces stalled Torii and hydration handoffs and automatically retries instead of leaving dead chunks stuck until you reload the game.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-06",
+    title: "Army Ghosting Suppression",
+    description:
+      "Armies hidden during removal recovery now stay hidden until fresh tile state proves they should return, so stale bodies, ownership dots, and attached visuals stop flashing back onto the world map.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-06",
+    title: "Smoother Market Boot",
+    description:
+      "Game entry and landing now avoid kicking off heavyweight prediction-market sync work until those panels actually need it, so world load spends less time competing with failing background market requests.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-06",
+    title: "Dashboard Network Switch",
+    description:
+      "The dashboard header now includes a compact network switcher, so you can swap the preferred game chain and prompt a wallet network switch from one cleaner control.",
+    type: "improvement",
+  },
+  {
+    date: "2026-04-06",
+    title: "Army Recovery Hardening",
+    description:
+      "Armies that recover from stale removal state now wait for fresh map data before redrawing, and real removals no longer risk flashing a dead unit back onto the world map while recovery work is still in flight.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-06",
+    title: "Army Ghosting Recovery",
+    description:
+      "Moving armies now keep their on-map visuals and ownership dots in sync more reliably, and stale removal recovery no longer depends on zooming the camera to make a valid unit reappear.",
+    type: "fix",
+  },
+  {
+    date: "2026-04-07",
+    title: "Blitz Rank Refresh",
+    description:
+      "Blitz MMR ranks now use the new Scrapper-to-Storm Lord naming ladder, so leaderboard, profile, and match views all reflect the updated progression language.",
+    type: "improvement",
+  },
+  {
+    date: "2026-04-02",
+    title: "Unit Command Audio",
+    description:
+      "Army commands now acknowledge what you actually ordered, with distinct cues for selection, movement, attacks, and exploration instead of relying on one generic unit response.",
+    type: "improvement",
+  },
+  {
+    date: "2026-04-01",
+    title: "Production Modal Height Restore",
+    description:
+      "The Production window now grows back to the full game viewport height, so resource controls and per-realm panels stay fully visible instead of being trapped in a cramped scroller.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-31",
+    title: "Faster World Selection",
+    description:
+      "Game entry now resolves factory world metadata and Torii profile details in parallel, reducing the time spent waiting on world selection before the world loader can continue.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-31",
+    title: "Game Entry Load Trim",
+    description:
+      "Entering a game now records each load milestone in the browser and defers non-critical world asset prefetch until bootstrap has already started, so the initial handoff spends less time competing with early preload work.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-31",
+    title: "Dashboard Settings Crash Fix",
+    description:
+      "Opening dashboard settings no longer crashes outside the game world, so landing-page audio, graphics, and fullscreen controls now open safely without needing an in-game Dojo context.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-31",
+    title: "Agora Layout Tightening",
+    description:
+      "The Agora now gives pool names more room, aligns the pool rail with the main trading panels, and stretches the swap stats cards across the action panel so the page reads more cleanly while you browse and trade.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-31",
+    title: "Instant Contour Boot Loader",
+    description:
+      "First load now opens on an instant contour-map splash with a segmented progress bar, so the game no longer flashes a blank white screen while the shell and world loader hand off.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-30",
+    title: "Agora Pool Rail Polish",
+    description:
+      "The Agora pool rail now keeps its own desktop scroll, uses a themed sort control, and trims each pool row down to the essentials so market cap and TVL stay readable while you browse.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-30",
+    title: "Blitz Army Structure Lock",
+    description:
+      "Army transfer windows now immediately explain when Blitz blocks returns into camps, rifts, or hyperstructures, and when army-to-army swaps cross realm boundaries, so invalid troop moves are clear before you try to confirm them.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-30",
+    title: "Agora Pool Review Pass",
+    description:
+      "The Agora pool rail now defaults to a curated resource order, shows spot price, market cap, and TVL more clearly, and keeps pool browsing scrollable without losing the active trading panels.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-30",
+    title: "World Map First Entry",
+    description:
+      "Entering a game now opens on the world map centered on your realm instead of dropping straight into local realm view, so first load starts with broader context.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-30",
+    title: "Dashboard Music Picker",
+    description:
+      "The landing dashboard now includes a compact music player with per-route song picks, quick mute and skip controls, and a smoother handoff into game playlists when you enter a match.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-30",
+    title: "Torii Stream Timeout Recovery",
+    description:
+      "World map chunk streaming now times out and cleans up stuck Torii subscription handoffs, so chunk traversal can recover from a bad stream swap instead of locking the map in place.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-30",
+    title: "Chunk Swap Stall Fix",
+    description:
+      "World map chunk swaps no longer wait on unrelated live tile and structure stream traffic, so traversal keeps moving even when the destination area is busy.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-29",
+    title: "Biome Bonus Card Refresh",
+    description:
+      "Biome tile panels now show army bonuses as clearer side-by-side combat cards, making troop advantages, penalties, and neutral terrain much faster to scan before a battle.",
+    type: "improvement",
+  },
+  {
+    date: "2026-03-28",
+    title: "Blitz Breakdown Precision",
+    description:
+      "Finalized Blitz leaderboard rows now keep decimal precision in each activity column, so the category point values line up visually with the final total instead of rounding whole columns up to the nearest thousand.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-28",
+    title: "Finalized Blitz Point Columns",
+    description:
+      "The in-game Blitz Players table now removes live hyperstructure share points from the held-points column after final rankings lock, so the per-row breakdown matches the finalized prize standings.",
+    type: "fix",
+  },
+  {
+    date: "2026-03-28",
+    title: "Blitz Leaderboard Alignment",
+    description:
+      "The in-game Blitz Players leaderboard now follows the same finalized rank and score order as the prize panel once rankings are locked, so both panels show the same standings.",
+    type: "fix",
+  },
   {
     date: "2026-03-27",
     title: "AMM Market Cap Summary",
@@ -590,3 +1671,5 @@ export const latestFeatures: LatestFeature[] = [
     type: "balance",
   },
 ];
+
+export const latestFeatures = buildLatestFeaturesFeed(allLatestFeatures);

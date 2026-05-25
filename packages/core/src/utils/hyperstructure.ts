@@ -3,19 +3,47 @@ import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { configManager } from "../managers";
 import { divideByPrecision, getEntityIdFromKeys } from "./utils";
 
-const HYPERSTRUCTURE_REALM_CHECK_RADIUS_THREE_REALM = 8;
-const HYPERSTRUCTURE_REALM_CHECK_RADIUS_SINGLE_REALM = 10;
+type BlitzMapDistanceProfile = {
+  baseDistance: number;
+  centerTileRadius: number;
+};
+
 const HYPERSTRUCTURE_REALM_COUNT_TWO_PLAYER_MODE = 2;
+const OFFICIAL_60_BLITZ_PROFILE_ID = 1;
+const OFFICIAL_90_BLITZ_PROFILE_ID = 2;
+
+const OFFICIAL_60_BLITZ_MAP_DISTANCE_PROFILE: BlitzMapDistanceProfile = {
+  baseDistance: 6,
+  centerTileRadius: 2,
+};
+
+const OFFICIAL_90_BLITZ_MAP_DISTANCE_PROFILE: BlitzMapDistanceProfile = {
+  baseDistance: 8,
+  centerTileRadius: 2,
+};
+
+export const resolveBlitzMapDistanceProfile = (blitzProfileId: number): BlitzMapDistanceProfile => {
+  switch (blitzProfileId) {
+    case OFFICIAL_60_BLITZ_PROFILE_ID:
+      return OFFICIAL_60_BLITZ_MAP_DISTANCE_PROFILE;
+    case 0:
+    case OFFICIAL_90_BLITZ_PROFILE_ID:
+      return OFFICIAL_90_BLITZ_MAP_DISTANCE_PROFILE;
+    default:
+      throw new Error("unknown blitz map distance profile");
+  }
+};
+
+export const resolveHyperstructureRealmCheckRadius = (
+  distanceProfile: BlitzMapDistanceProfile,
+  singleRealmMode: boolean,
+) => distanceProfile.baseDistance + (singleRealmMode ? distanceProfile.centerTileRadius : 0);
 
 export const getHyperstructureRealmCheckRadius = () => {
   const blitzConfig = configManager.getBlitzConfig();
+  const distanceProfile = resolveBlitzMapDistanceProfile(blitzConfig?.blitz_exploration_config?.reward_profile_id ?? 0);
   const isSingleRealmMode = blitzConfig?.blitz_settlement_config?.single_realm_mode ?? false;
-
-  if (isSingleRealmMode) {
-    return HYPERSTRUCTURE_REALM_CHECK_RADIUS_SINGLE_REALM;
-  }
-
-  return HYPERSTRUCTURE_REALM_CHECK_RADIUS_THREE_REALM;
+  return resolveHyperstructureRealmCheckRadius(distanceProfile, isSingleRealmMode);
 };
 
 export const getEffectiveHyperstructureRealmCount = (realmCountWithinRadius: number): number => {

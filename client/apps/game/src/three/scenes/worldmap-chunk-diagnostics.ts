@@ -6,6 +6,8 @@ export type WorldmapChunkDiagnosticsEvent =
   | "manager_update_started"
   | "manager_update_skipped_stale"
   | "manager_update_failed"
+  | "critical_manager_catch_up_started"
+  | "critical_manager_catch_up_failed"
   | "tile_fetch_started"
   | "tile_fetch_succeeded"
   | "tile_fetch_failed"
@@ -18,6 +20,7 @@ export type WorldmapChunkDiagnosticsEvent =
   | "bounds_switch_stale_dropped"
   | "bounds_switch_skipped_stale_token"
   | "bounds_switch_failed"
+  | "bounds_switch_subscription_timeout"
   | "refresh_requested"
   | "refresh_executed"
   | "refresh_superseded"
@@ -29,6 +32,7 @@ export type WorldmapChunkDiagnosticsEvent =
   | "first_visible_commit_duration_recorded"
   | "manager_duration_recorded"
   | "manager_catch_up_duration_recorded"
+  | "critical_manager_catch_up_duration_recorded"
   | "prepared_chunk_prewarm_hit"
   | "prepared_chunk_prewarm_miss"
   | "terrain_visible_commit"
@@ -52,6 +56,8 @@ export interface WorldmapChunkDiagnostics {
   managerUpdateStarted: number;
   managerUpdateSkippedStale: number;
   managerUpdateFailed: number;
+  criticalManagerCatchUpStarted: number;
+  criticalManagerCatchUpFailed: number;
   tileFetchStarted: number;
   tileFetchSucceeded: number;
   tileFetchFailed: number;
@@ -64,6 +70,7 @@ export interface WorldmapChunkDiagnostics {
   boundsSwitchStaleDropped: number;
   boundsSwitchSkippedStaleToken: number;
   boundsSwitchFailed: number;
+  boundsSwitchSubscriptionTimeout: number;
   refreshRequested: number;
   refreshExecuted: number;
   refreshSuperseded: number;
@@ -99,6 +106,9 @@ export interface WorldmapChunkDiagnostics {
   managerCatchUpDurationMsTotal: number;
   managerCatchUpDurationMsMax: number;
   managerCatchUpDurationMsSamples: number[];
+  criticalManagerCatchUpDurationMsTotal: number;
+  criticalManagerCatchUpDurationMsMax: number;
+  criticalManagerCatchUpDurationMsSamples: number[];
   preparedChunkPrewarmHit: number;
   preparedChunkPrewarmMiss: number;
   updatedAtMs: number;
@@ -119,6 +129,8 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     managerUpdateStarted: 0,
     managerUpdateSkippedStale: 0,
     managerUpdateFailed: 0,
+    criticalManagerCatchUpStarted: 0,
+    criticalManagerCatchUpFailed: 0,
     tileFetchStarted: 0,
     tileFetchSucceeded: 0,
     tileFetchFailed: 0,
@@ -131,6 +143,7 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     boundsSwitchStaleDropped: 0,
     boundsSwitchSkippedStaleToken: 0,
     boundsSwitchFailed: 0,
+    boundsSwitchSubscriptionTimeout: 0,
     refreshRequested: 0,
     refreshExecuted: 0,
     refreshSuperseded: 0,
@@ -166,6 +179,9 @@ export function createWorldmapChunkDiagnostics(): WorldmapChunkDiagnostics {
     managerCatchUpDurationMsTotal: 0,
     managerCatchUpDurationMsMax: 0,
     managerCatchUpDurationMsSamples: [],
+    criticalManagerCatchUpDurationMsTotal: 0,
+    criticalManagerCatchUpDurationMsMax: 0,
+    criticalManagerCatchUpDurationMsSamples: [],
     preparedChunkPrewarmHit: 0,
     preparedChunkPrewarmMiss: 0,
     updatedAtMs: Date.now(),
@@ -209,6 +225,12 @@ export function recordChunkDiagnosticsEvent(
     case "manager_update_failed":
       diagnostics.managerUpdateFailed += 1;
       break;
+    case "critical_manager_catch_up_started":
+      diagnostics.criticalManagerCatchUpStarted += 1;
+      break;
+    case "critical_manager_catch_up_failed":
+      diagnostics.criticalManagerCatchUpFailed += 1;
+      break;
     case "tile_fetch_started":
       diagnostics.tileFetchStarted += 1;
       break;
@@ -244,6 +266,9 @@ export function recordChunkDiagnosticsEvent(
       break;
     case "bounds_switch_failed":
       diagnostics.boundsSwitchFailed += 1;
+      break;
+    case "bounds_switch_subscription_timeout":
+      diagnostics.boundsSwitchSubscriptionTimeout += 1;
       break;
     case "refresh_requested":
       diagnostics.refreshRequested += 1;
@@ -342,6 +367,16 @@ export function recordChunkDiagnosticsEvent(
       diagnostics.managerCatchUpDurationMsTotal += durationMs;
       diagnostics.managerCatchUpDurationMsMax = Math.max(diagnostics.managerCatchUpDurationMsMax, durationMs);
       recordDurationSample(diagnostics.managerCatchUpDurationMsSamples, durationMs);
+      break;
+    }
+    case "critical_manager_catch_up_duration_recorded": {
+      const durationMs = options?.durationMs ?? 0;
+      diagnostics.criticalManagerCatchUpDurationMsTotal += durationMs;
+      diagnostics.criticalManagerCatchUpDurationMsMax = Math.max(
+        diagnostics.criticalManagerCatchUpDurationMsMax,
+        durationMs,
+      );
+      recordDurationSample(diagnostics.criticalManagerCatchUpDurationMsSamples, durationMs);
       break;
     }
   }

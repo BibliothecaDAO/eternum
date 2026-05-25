@@ -26,7 +26,18 @@ import { PromiseQueue, QueueableTransaction } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
 import { withRetry } from "./retry";
 import type { RetryConfig } from "./retry";
-import { BatchedTransactionDetail, TransactionType } from "./types";
+import {
+  BatchedTransactionDetail,
+  TransactionFailedPayload,
+  TransactionFailureStage,
+  TransactionLifecycleMeta,
+  TransactionProviderState,
+  TransactionRetrySafety,
+  TransactionSubmitFailureKind,
+  TransactionSubmitGuard,
+  TransactionSubmitGuardContext,
+  TransactionType,
+} from "./types";
 import { createVrfRequestRandomCall, isVrfEnabled, isVrfRequestRandomCall, type VrfSource } from "./vrf";
 export const NAMESPACE = "s1_eternum";
 export {
@@ -37,17 +48,34 @@ export {
   getDelayForTransaction,
 } from "./batch-config";
 export type { BatchDelayConfig } from "./batch-config";
-export { PromiseQueue, QueueableTransaction } from "./promise-queue";
-export { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
+export { PromiseQueue } from "./promise-queue";
+export type { QueueableTransaction } from "./promise-queue";
+export type { TransactionExecutor, ExecutionOptions } from "./transaction-executor";
 export { withRetry, isRetryableError, calculateBackoffDelay, DEFAULT_RETRY_CONFIG } from "./retry";
 export type { RetryConfig } from "./retry";
-export { BatchedTransactionDetail, TransactionType } from "./types";
+export { TransactionType } from "./types";
+export type {
+  BatchedTransactionDetail,
+  TransactionFailedPayload,
+  TransactionFailureStage,
+  TransactionLifecycleMeta,
+  TransactionProviderState,
+  TransactionRetrySafety,
+  TransactionSubmitFailureKind,
+  TransactionSubmitGuard,
+  TransactionSubmitGuardContext,
+} from "./types";
 export type { VrfSource } from "./vrf";
 
 // Mainnet currently rejects V3 invokes above this l2_gas max_amount ceiling.
 const MAX_V3_L2_GAS_MAX_AMOUNT = 1_200_000_000n;
 const V3_L2_GAS_OVERHEAD_PERCENT = 50n;
 const HUNDRED_PERCENT = 100n;
+const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
+const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
+const EXPLORE_RESOURCE_BOUNDS_CACHE_TTL_MS = 15_000;
+export const SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE =
+  "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.";
 const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
 const GENERIC_ERROR_MESSAGES = new Set([
   "transaction execution error",
@@ -63,6 +91,18 @@ const WRAPPED_ERROR_PREFIXES = [
   "Transaction failed while waiting for confirmation:",
   "Transaction failed with reason:",
 ];
+
+const formatTimeoutDuration = (timeoutMs: number): string =>
+  timeoutMs >= 1_000 ? `${Math.round(timeoutMs / 1_000)}s` : `${timeoutMs}ms`;
+
+class TransactionSubmissionTimeoutError extends Error {
+  constructor(timeoutMs: number) {
+    super(
+      `Transaction submission timed out after ${formatTimeoutDuration(timeoutMs)} before a transaction hash was returned`,
+    );
+    this.name = "TransactionSubmissionTimeoutError";
+  }
+}
 
 const normalizeErrorKey = (value: string): string =>
   value
@@ -333,6 +373,49 @@ const extractErrorMessage = (error: unknown, fallback = "Unknown error"): string
   return fallback;
 };
 
+const isTransactionSubmissionTimeoutError = (error: unknown): boolean => {
+  return error instanceof TransactionSubmissionTimeoutError;
+};
+
+const matchesDestroyedConnectionError = (error: unknown): boolean => {
+  const message = extractErrorMessage(error, "").toLowerCase();
+  return message.includes("destroyed connection") || message.includes("connection destroyed");
+};
+
+const classifySubmitFailure = (
+  error: unknown,
+): {
+  failureKind: TransactionSubmitFailureKind;
+  providerState: TransactionProviderState;
+  hasTxHash: boolean;
+  retrySafety: TransactionRetrySafety;
+} => {
+  if (isTransactionSubmissionTimeoutError(error)) {
+    return {
+      failureKind: "submission_timeout_no_hash",
+      providerState: "unknown",
+      hasTxHash: false,
+      retrySafety: "unsafe_until_wallet_checked",
+    };
+  }
+
+  if (matchesDestroyedConnectionError(error)) {
+    return {
+      failureKind: "provider_connection_destroyed",
+      providerState: "destroyed",
+      hasTxHash: false,
+      retrySafety: "safe_after_reconnect",
+    };
+  }
+
+  return {
+    failureKind: "submit_failed",
+    providerState: "unknown",
+    hasTxHash: false,
+    retrySafety: "unknown",
+  };
+};
+
 const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN | undefined => {
   if (!resourceBounds?.l2_gas || typeof resourceBounds.l2_gas.max_amount !== "bigint") {
     return resourceBounds;
@@ -356,15 +439,40 @@ const withL2GasHeadroom = (resourceBounds?: ResourceBoundsBN): ResourceBoundsBN 
   };
 };
 
-type TransactionFailureMeta = {
-  type?: TransactionType;
-  transactionCount?: number;
-  transactionHash?: string;
-};
-
 type VrfExecutionLock = {
   completed: Promise<void>;
   resolve: () => void;
+};
+
+type CachedExploreExecutionDetails = {
+  cachedAtMs: number;
+  resourceBounds: ResourceBoundsBN;
+};
+
+type TransactionFailureError = Error & {
+  transactionFailureStage?: TransactionFailureStage;
+};
+
+const attachTransactionFailureStage = (
+  error: unknown,
+  stage: TransactionFailureStage,
+  fallbackMessage = "Unknown error",
+): TransactionFailureError => {
+  const stagedError: TransactionFailureError =
+    error instanceof Error
+      ? (error as TransactionFailureError)
+      : (new Error(extractErrorMessage(error, fallbackMessage)) as TransactionFailureError);
+  stagedError.transactionFailureStage = stage;
+  return stagedError;
+};
+
+const resolveTransactionFailureStage = (error: unknown, fallback: TransactionFailureStage): TransactionFailureStage => {
+  const stagedError = error as TransactionFailureError | undefined;
+  if (error instanceof Error && typeof stagedError?.transactionFailureStage === "string") {
+    return stagedError.transactionFailureStage ?? fallback;
+  }
+
+  return fallback;
 };
 
 /**
@@ -463,9 +571,13 @@ export class EternumProvider extends EnhancedDojoProvider {
     transactionDetails: AllowArray<Call>,
   ) => Promise<GetTransactionReceiptResponse>;
   private readonly TRANSACTION_CONFIRM_TIMEOUT_MS = 10_000;
+  private readonly TRANSACTION_SUBMIT_TIMEOUT_MS = DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS;
+  private readonly FEE_ESTIMATE_TIMEOUT_MS = DEFAULT_FEE_ESTIMATE_TIMEOUT_MS;
   private pendingTransactionSpans = new Map<string, Span>();
   private pendingVrfExecutionLocks = new Map<string, VrfExecutionLock>();
+  private cachedExploreExecutionDetails = new Map<string, CachedExploreExecutionDetails>();
   private readonly retryConfig?: RetryConfig;
+  private transactionSubmitGuard?: TransactionSubmitGuard;
   /**
    * Create a new EternumProvider instance
    *
@@ -517,11 +629,62 @@ export class EternumProvider extends EnhancedDojoProvider {
     return this.normalizeAddress(call.calldata[2] as BigNumberish | undefined);
   }
 
+  private getTransactionCalls(transactionDetails: AllowArray<Call>): Call[] {
+    return Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
+  }
+
+  private serializeTransactionCacheValue(value: unknown): string {
+    if (Array.isArray(value)) {
+      return `[${value.map((item) => this.serializeTransactionCacheValue(item)).join(",")}]`;
+    }
+
+    if (typeof value === "bigint") {
+      return value.toString();
+    }
+
+    if (value === undefined) {
+      return "undefined";
+    }
+
+    if (value === null) {
+      return "null";
+    }
+
+    return String(value);
+  }
+
+  private buildTransactionCacheSignature(transactionDetails: AllowArray<Call>): string {
+    return this.getTransactionCalls(transactionDetails)
+      .map((detail) => {
+        const contractAddress = this.normalizeAddress(detail.contractAddress) ?? String(detail.contractAddress);
+        const calldata = Array.isArray(detail.calldata)
+          ? detail.calldata.map((item) => this.serializeTransactionCacheValue(item)).join(",")
+          : "";
+        return `${contractAddress}:${detail.entrypoint}:${calldata}`;
+      })
+      .join("|");
+  }
+
+  private getVrfRequestRandomCalls(transactionDetails: AllowArray<Call>): Call[] {
+    return this.getTransactionCalls(transactionDetails).filter((detail) => this.isVrfRequestRandomCall(detail));
+  }
+
+  private assertSingleVrfRequestRandomCall(transactionDetails: AllowArray<Call>): void {
+    const vrfRequestCalls = this.getVrfRequestRandomCalls(transactionDetails);
+    if (vrfRequestCalls.length <= 1) {
+      return;
+    }
+
+    throw new Error(
+      "Cannot execute a multicall with multiple VRF request_random calls. Submit VRF transactions separately.",
+    );
+  }
+
   private getVrfSerializationKey(
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
   ): string | undefined {
-    const details = Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
+    const details = this.getTransactionCalls(transactionDetails);
     const vrfRequestCall = details.find((detail) => this.isVrfRequestRandomCall(detail));
     if (!vrfRequestCall) {
       return undefined;
@@ -534,6 +697,116 @@ export class EternumProvider extends EnhancedDojoProvider {
 
     const sourceAddress = this.getVrfSourceAddress(vrfRequestCall) ?? signerAddress;
     return `${signerAddress}:${sourceAddress}`;
+  }
+
+  private getExploreSerializationKey(
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ): string | undefined {
+    const signerAddress = this.normalizeAddress((signer as { address?: BigNumberish }).address);
+    if (!signerAddress) {
+      return undefined;
+    }
+
+    const explorerId = this.getExploreTransactionExplorerId(transactionDetails) ?? "unknown";
+    return `${signerAddress}:explore:${explorerId}`;
+  }
+
+  private getExploreTransactionExplorerId(transactionDetails: AllowArray<Call>): string | undefined {
+    const explorerCall = this.getTransactionCalls(transactionDetails).find(
+      (detail) => detail.entrypoint === "explorer_move" || detail.entrypoint === "explorer_extract_reward",
+    );
+    if (!Array.isArray(explorerCall?.calldata)) {
+      return undefined;
+    }
+
+    const rawExplorerId = explorerCall.calldata[0] as BigNumberish | undefined;
+    return this.normalizeAddress(rawExplorerId) ?? (rawExplorerId !== undefined ? String(rawExplorerId) : undefined);
+  }
+
+  private getTransactionSerializationKey(
+    txType: TransactionType | undefined,
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ): string | undefined {
+    if (txType === TransactionType.EXPLORE) {
+      return this.getExploreSerializationKey(signer, transactionDetails);
+    }
+
+    return this.getVrfSerializationKey(signer, transactionDetails);
+  }
+
+  private getExploreExecutionDetailsCacheKey(
+    txType: TransactionType | undefined,
+    signer: Account | AccountInterface,
+    transactionDetails: AllowArray<Call>,
+  ): string | undefined {
+    if (txType !== TransactionType.EXPLORE) {
+      return undefined;
+    }
+
+    const signerAddress = this.normalizeAddress((signer as { address?: BigNumberish }).address);
+    if (!signerAddress) {
+      return undefined;
+    }
+
+    const worldAddress =
+      this.normalizeAddress((this.manifest?.world?.address as BigNumberish | undefined) ?? undefined) ?? "unknown";
+    const nodeUrl = (this.provider as any)?.channel?.nodeUrl ?? (this.manifest as any)?.world?.metadata?.rpc_url;
+    const transactionSignature = this.buildTransactionCacheSignature(transactionDetails);
+    return `${String(nodeUrl ?? "unknown")}:${worldAddress}:${signerAddress}:${txType}:${transactionSignature}`;
+  }
+
+  private getCachedExploreExecutionDetails(cacheKey: string | undefined): UniversalDetails | undefined {
+    if (!cacheKey) {
+      return undefined;
+    }
+
+    const cached = this.cachedExploreExecutionDetails.get(cacheKey);
+    if (!cached) {
+      return undefined;
+    }
+
+    if (Date.now() - cached.cachedAtMs > EXPLORE_RESOURCE_BOUNDS_CACHE_TTL_MS) {
+      this.cachedExploreExecutionDetails.delete(cacheKey);
+      return undefined;
+    }
+
+    return {
+      version: 3,
+      resourceBounds: cached.resourceBounds,
+    };
+  }
+
+  private cacheExploreExecutionDetails(cacheKey: string | undefined, resourceBounds: ResourceBoundsBN): void {
+    if (!cacheKey) {
+      return;
+    }
+
+    this.cachedExploreExecutionDetails.set(cacheKey, {
+      cachedAtMs: Date.now(),
+      resourceBounds,
+    });
+  }
+
+  private invalidateExploreExecutionDetailsCache(cacheKey: string | undefined): void {
+    if (!cacheKey) {
+      return;
+    }
+
+    this.cachedExploreExecutionDetails.delete(cacheKey);
+  }
+
+  private shouldRefreshExecutionDetailsAfterSubmitError(error: unknown): boolean {
+    const message = extractErrorMessage(error, "").toLowerCase();
+    return (
+      message.includes("nonce") ||
+      message.includes("max fee") ||
+      message.includes("fee too low") ||
+      message.includes("insufficient fee") ||
+      message.includes("resource bound") ||
+      message.includes("resource_bounds")
+    );
   }
 
   private createVrfExecutionLock(): VrfExecutionLock {
@@ -571,42 +844,39 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
   }
 
-  private dedupeVrfRequestCalls(transactionDetails: AllowArray<Call>): AllowArray<Call> {
-    if (!Array.isArray(transactionDetails)) {
-      return transactionDetails;
-    }
-
-    let foundVrfRequest = false;
-    return transactionDetails.filter((detail) => {
-      if (!this.isVrfRequestRandomCall(detail)) {
-        return true;
-      }
-      if (foundVrfRequest) {
-        return false;
-      }
-      foundVrfRequest = true;
-      return true;
-    });
-  }
-
   private async getV3ExecutionDetails(
     signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
+    options?: { cacheKey?: string; forceRefresh?: boolean },
   ): Promise<UniversalDetails> {
     const details: UniversalDetails = { version: 3 };
+    const cached = !options?.forceRefresh ? this.getCachedExploreExecutionDetails(options?.cacheKey) : undefined;
+    if (cached) {
+      return cached;
+    }
+
     const estimateInvokeFee = (signer as any)?.estimateInvokeFee;
     if (typeof estimateInvokeFee !== "function") {
       return details;
     }
 
     try {
-      const estimate = (await estimateInvokeFee.call(signer, transactionDetails, {
-        version: 3,
-      })) as { resourceBounds?: ResourceBoundsBN };
+      const estimate = (await this.withTimeout(
+        estimateInvokeFee.call(signer, transactionDetails, {
+          version: 3,
+        }),
+        this.FEE_ESTIMATE_TIMEOUT_MS,
+        () =>
+          new Error(
+            `Transaction fee estimation timed out after ${formatTimeoutDuration(this.FEE_ESTIMATE_TIMEOUT_MS)}`,
+          ),
+      )) as { resourceBounds?: ResourceBoundsBN };
       const resourceBounds = withL2GasHeadroom(estimate?.resourceBounds);
       if (!resourceBounds) {
         return details;
       }
+
+      this.cacheExploreExecutionDetails(options?.cacheKey, resourceBounds);
 
       return {
         ...details,
@@ -618,12 +888,125 @@ export class EternumProvider extends EnhancedDojoProvider {
     }
   }
 
-  private getTransactionSpanAttributes(
+  private async submitTransaction(
+    signer: Account | AccountInterface,
     transactionDetails: AllowArray<Call>,
-    transactionMeta: TransactionFailureMeta,
+    executionDetails: UniversalDetails,
+    options?: { executionDetailsCacheKey?: string },
+  ): Promise<{ transaction_hash: string }> {
+    if (this.retryConfig && this.retryConfig.maxRetries > 0) {
+      let currentExecutionDetails = executionDetails;
+      return await withRetry(
+        () => this.execute(signer as any, transactionDetails, NAMESPACE, currentExecutionDetails),
+        this.retryConfig,
+        async (error, attempt) => {
+          if (this.shouldRefreshExecutionDetailsAfterSubmitError(error)) {
+            this.invalidateExploreExecutionDetailsCache(options?.executionDetailsCacheKey);
+            currentExecutionDetails = await this.getV3ExecutionDetails(signer, transactionDetails, {
+              cacheKey: options?.executionDetailsCacheKey,
+              forceRefresh: true,
+            });
+          }
+          console.warn(`[provider] Retry attempt ${attempt} for transaction: ${extractErrorMessage(error)}`);
+        },
+      );
+    }
+
+    return await this.execute(signer as any, transactionDetails, NAMESPACE, executionDetails);
+  }
+
+  public setTransactionSubmitGuard(transactionSubmitGuard?: TransactionSubmitGuard): void {
+    this.transactionSubmitGuard = transactionSubmitGuard;
+  }
+
+  private getSignerAddress(signer: Account | AccountInterface): string | undefined {
+    const address = (signer as { address?: unknown }).address;
+    return typeof address === "string" && address.length > 0 ? address : undefined;
+  }
+
+  private async runTransactionSubmitGuard(
+    signer: Account | AccountInterface,
+    transactionMeta: TransactionLifecycleMeta,
+  ): Promise<void> {
+    const guard = this.transactionSubmitGuard;
+    if (!guard) {
+      return;
+    }
+
+    const context: TransactionSubmitGuardContext = {
+      ...transactionMeta,
+      transactionType: transactionMeta.type,
+      signerAddress: this.getSignerAddress(signer),
+      providerState: "ready",
+    };
+
+    await guard(context);
+  }
+
+  private async waitForTransactionSubmission(
+    submitPromise: Promise<{ transaction_hash: string }>,
+  ): Promise<{ transaction_hash: string }> {
+    return await this.withTimeout(
+      submitPromise,
+      this.TRANSACTION_SUBMIT_TIMEOUT_MS,
+      () => new TransactionSubmissionTimeoutError(this.TRANSACTION_SUBMIT_TIMEOUT_MS),
+    );
+  }
+
+  private async withTimeout<T>(promise: Promise<T>, timeoutMs: number, buildError: () => Error): Promise<T> {
+    if (timeoutMs <= 0) {
+      return await promise;
+    }
+
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeout = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(buildError()), timeoutMs);
+    });
+
+    try {
+      return await Promise.race([promise, timeout]);
+    } finally {
+      if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+      }
+    }
+  }
+
+  private getTransactionEntrypoints(transactionDetails: AllowArray<Call>): string[] {
+    const details = Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
+    return details.map((detail) => detail.entrypoint).filter((entrypoint): entrypoint is string => Boolean(entrypoint));
+  }
+
+  private getTransactionContractAddresses(transactionDetails: AllowArray<Call>): string[] {
+    const details = Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
+    return Array.from(
+      new Set(details.map((detail) => detail.contractAddress).filter((address): address is string => Boolean(address))),
+    );
+  }
+
+  private buildTransactionLifecycleMeta(
+    transactionDetails: AllowArray<Call>,
+    meta: Pick<
+      TransactionLifecycleMeta,
+      "type" | "transactionHash" | "signerAddress" | "transactionCount" | "batchDetails"
+    >,
+  ): TransactionLifecycleMeta {
+    const entrypoints = this.getTransactionEntrypoints(transactionDetails);
+    const contractAddresses = this.getTransactionContractAddresses(transactionDetails);
+
+    return {
+      ...meta,
+      ...(entrypoints.length > 0 ? { entrypoints } : {}),
+      ...(contractAddresses.length > 0 ? { contractAddresses } : {}),
+    };
+  }
+
+  private buildTransactionSpanAttributes(
+    transactionDetails: AllowArray<Call>,
+    transactionMeta: TransactionLifecycleMeta,
   ): Record<string, string | number | boolean | string[]> {
     const details = Array.isArray(transactionDetails) ? transactionDetails : [transactionDetails];
-    const entrypoints = details.map((detail) => detail.entrypoint).filter(Boolean);
+    const entrypoints = this.getTransactionEntrypoints(transactionDetails);
     const attributes: Record<string, string | number | boolean | string[]> = {
       "provider.namespace": NAMESPACE,
       "transaction.count": details.length,
@@ -654,11 +1037,11 @@ export class EternumProvider extends EnhancedDojoProvider {
     return attributes;
   }
 
-  private startTransactionSpan(transactionDetails: AllowArray<Call>, transactionMeta: TransactionFailureMeta): Span {
+  private startTransactionSpan(transactionDetails: AllowArray<Call>, transactionMeta: TransactionLifecycleMeta): Span {
     const tracer = trace.getTracer("eternum-provider");
     return tracer.startSpan("provider.transaction", {
       kind: SpanKind.CLIENT,
-      attributes: this.getTransactionSpanAttributes(transactionDetails, transactionMeta),
+      attributes: this.buildTransactionSpanAttributes(transactionDetails, transactionMeta),
     });
   }
 
@@ -691,6 +1074,66 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
     span.setStatus({ code: SpanStatusCode.ERROR, message });
     span.end();
+  }
+
+  private emitTransactionFailure(payload: TransactionFailedPayload): void {
+    this.emit("transactionFailed", payload);
+  }
+
+  private emitTransactionSubmitted(transactionHash: string, transactionMeta: TransactionLifecycleMeta): void {
+    this.emit("transactionSubmitted", {
+      transactionHash,
+      ...transactionMeta,
+    });
+  }
+
+  private emitTransactionPending(transactionHash: string, transactionMeta: TransactionLifecycleMeta): void {
+    this.emit("transactionPending", {
+      transactionHash,
+      ...transactionMeta,
+    });
+  }
+
+  private observeLateSubmittedTransaction(
+    submitPromise: Promise<{ transaction_hash: string }>,
+    transactionMeta: TransactionLifecycleMeta,
+    releaseVrfExecutionLock?: () => void,
+  ): void {
+    void submitPromise
+      .then((tx) => {
+        const recoveredTransactionMeta = {
+          ...transactionMeta,
+          recoveredFromSubmissionTimeout: true,
+        };
+        const recoveredTransactionMetaWithHash = {
+          ...recoveredTransactionMeta,
+          transactionHash: tx.transaction_hash,
+        };
+
+        this.emitTransactionSubmitted(tx.transaction_hash, recoveredTransactionMeta);
+        this.emitTransactionPending(tx.transaction_hash, recoveredTransactionMeta);
+
+        return this.waitForTransactionWithCheckInternal(tx.transaction_hash, recoveredTransactionMetaWithHash)
+          .then((receipt) => {
+            this.emit("transactionComplete", {
+              details: receipt,
+              ...recoveredTransactionMeta,
+            });
+          })
+          .catch((error) => {
+            this.emitTransactionFailure({
+              ...recoveredTransactionMetaWithHash,
+              message: extractErrorMessage(error),
+              stage: resolveTransactionFailureStage(error, "background_confirmation"),
+            });
+          });
+      })
+      .catch(() => {
+        // The original timeout path already emitted the submit failure.
+      })
+      .finally(() => {
+        releaseVrfExecutionLock?.();
+      });
   }
 
   // ============ Optional client-side batching API ============
@@ -779,18 +1222,12 @@ export class EternumProvider extends EnhancedDojoProvider {
     batchDetails?: BatchedTransactionDetail[],
     options?: ExecutionOptions & { transactionType?: TransactionType },
   ) {
-    const sanitizedTransactionDetails = this.dedupeVrfRequestCalls(transactionDetails);
-    if (Array.isArray(transactionDetails) && Array.isArray(sanitizedTransactionDetails)) {
-      const removedVrfCalls = transactionDetails.length - sanitizedTransactionDetails.length;
-      if (removedVrfCalls > 0) {
-        console.warn(`[provider] Removed ${removedVrfCalls} duplicate VRF request_random call(s) from transaction`);
-      }
-    }
+    this.assertSingleVrfRequestRandomCall(transactionDetails);
 
     if (typeof window !== "undefined") {
-      console.log({ signer, transactionDetails: sanitizedTransactionDetails });
+      console.log({ signer, transactionDetails });
     }
-    const isMultipleTransactions = Array.isArray(sanitizedTransactionDetails);
+    const isMultipleTransactions = Array.isArray(transactionDetails);
 
     // Get the transaction type based on the entrypoint name
     let txType: TransactionType;
@@ -799,56 +1236,79 @@ export class EternumProvider extends EnhancedDojoProvider {
       // For multiple calls, use the first call's entrypoint
       txType =
         TransactionType[
-          sanitizedTransactionDetails
+          transactionDetails
             // remove VRF provider call from the list to define the transaction type
             .filter((detail) => !this.isVrfRequestRandomCall(detail))[0]
             ?.entrypoint.toUpperCase() as keyof typeof TransactionType
         ];
     } else {
-      txType = TransactionType[sanitizedTransactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
+      txType = TransactionType[transactionDetails.entrypoint.toUpperCase() as keyof typeof TransactionType];
     }
     txType = options?.transactionType ?? txType;
 
-    const transactionMeta = {
+    const transactionMeta = this.buildTransactionLifecycleMeta(transactionDetails, {
       type: txType,
-      ...(isMultipleTransactions && { transactionCount: sanitizedTransactionDetails.length }),
-      ...(batchDetails && batchDetails.length > 0 && { batchDetails }),
-    };
+      signerAddress: this.getSignerAddress(signer),
+      ...(isMultipleTransactions ? { transactionCount: transactionDetails.length } : {}),
+      ...(batchDetails && batchDetails.length > 0 ? { batchDetails } : {}),
+    });
+    const executionDetailsCacheKey = this.getExploreExecutionDetailsCacheKey(txType, signer, transactionDetails);
+    const executionDetailsPromise =
+      txType === TransactionType.EXPLORE
+        ? this.getV3ExecutionDetails(signer, transactionDetails, {
+            cacheKey: executionDetailsCacheKey,
+          })
+        : undefined;
 
-    const span = this.startTransactionSpan(sanitizedTransactionDetails, transactionMeta);
+    await this.runTransactionSubmitGuard(signer, transactionMeta);
 
-    const executionDetails = await this.getV3ExecutionDetails(signer, sanitizedTransactionDetails);
-    const vrfSerializationKey =
-      txType === TransactionType.EXPLORE ? undefined : this.getVrfSerializationKey(signer, sanitizedTransactionDetails);
+    const vrfSerializationKey = this.getTransactionSerializationKey(txType, signer, transactionDetails);
     let releaseVrfExecutionLock: (() => void) | undefined;
     if (vrfSerializationKey) {
       releaseVrfExecutionLock = await this.acquireVrfExecutionLock(vrfSerializationKey);
+      if (txType === TransactionType.EXPLORE) {
+        this.emit("transactionProgress", {
+          stage: "explore_provider_lock_acquired",
+          type: txType,
+          explorerId: this.getExploreTransactionExplorerId(transactionDetails),
+          signerAddress: transactionMeta.signerAddress,
+        });
+      }
     }
 
+    const span = this.startTransactionSpan(transactionDetails, transactionMeta);
+    const executionDetails = executionDetailsPromise
+      ? await executionDetailsPromise
+      : await this.getV3ExecutionDetails(signer, transactionDetails, {
+          cacheKey: executionDetailsCacheKey,
+        });
+
     let tx;
+    let submitPromise: Promise<{ transaction_hash: string }> | undefined;
     try {
-      if (this.retryConfig && this.retryConfig.maxRetries > 0) {
-        let currentExecutionDetails = executionDetails;
-        tx = await withRetry(
-          () => this.execute(signer as any, sanitizedTransactionDetails, NAMESPACE, currentExecutionDetails),
-          this.retryConfig,
-          async (error, attempt) => {
-            // Re-estimate gas on nonce-related errors
-            const msg = error instanceof Error ? error.message.toLowerCase() : "";
-            if (msg.includes("nonce")) {
-              currentExecutionDetails = await this.getV3ExecutionDetails(signer, sanitizedTransactionDetails);
-            }
-            console.warn(`[provider] Retry attempt ${attempt} for transaction: ${extractErrorMessage(error)}`);
-          },
-        );
-      } else {
-        tx = await this.execute(signer as any, sanitizedTransactionDetails, NAMESPACE, executionDetails);
-      }
+      submitPromise = this.submitTransaction(signer, transactionDetails, executionDetails, {
+        executionDetailsCacheKey,
+      });
+      tx = await this.waitForTransactionSubmission(submitPromise);
     } catch (error) {
-      releaseVrfExecutionLock?.();
-      releaseVrfExecutionLock = undefined;
       const message = extractErrorMessage(error);
-      this.emit("transactionFailed", `Transaction failed to submit: ${message}`, transactionMeta);
+      const submitFailure = classifySubmitFailure(error);
+      if (this.shouldRefreshExecutionDetailsAfterSubmitError(error)) {
+        this.invalidateExploreExecutionDetailsCache(executionDetailsCacheKey);
+      }
+      if (submitPromise && submitFailure.failureKind === "submission_timeout_no_hash") {
+        this.observeLateSubmittedTransaction(submitPromise, transactionMeta, releaseVrfExecutionLock);
+        releaseVrfExecutionLock = undefined;
+      } else {
+        releaseVrfExecutionLock?.();
+        releaseVrfExecutionLock = undefined;
+      }
+      this.emitTransactionFailure({
+        ...transactionMeta,
+        message: `Transaction failed to submit: ${message}`,
+        stage: "submit",
+        ...submitFailure,
+      });
       this.failTransactionSpan(span, undefined, error);
       throw error;
     }
@@ -857,16 +1317,17 @@ export class EternumProvider extends EnhancedDojoProvider {
     span.addEvent("transaction.submitted", { "transaction.hash": tx.transaction_hash });
 
     // Emit immediately so UI can show pending state
-    this.emit("transactionSubmitted", {
-      transactionHash: tx.transaction_hash,
-      ...transactionMeta,
-    });
+    this.emitTransactionSubmitted(tx.transaction_hash, transactionMeta);
 
     const waitForConfirmation = options?.waitForConfirmation ?? true;
-    const waitPromiseWithoutLockRelease = this.waitForTransactionWithCheckInternal(tx.transaction_hash, {
+    const transactionMetaWithHash = {
       ...transactionMeta,
       transactionHash: tx.transaction_hash,
-    });
+    };
+    const waitPromiseWithoutLockRelease = this.waitForTransactionWithCheckInternal(
+      tx.transaction_hash,
+      transactionMetaWithHash,
+    );
     const waitPromise = releaseVrfExecutionLock
       ? waitPromiseWithoutLockRelease.finally(() => {
           releaseVrfExecutionLock?.();
@@ -875,10 +1336,7 @@ export class EternumProvider extends EnhancedDojoProvider {
       : waitPromiseWithoutLockRelease;
 
     if (!waitForConfirmation) {
-      this.emit("transactionPending", {
-        transactionHash: tx.transaction_hash,
-        ...transactionMeta,
-      });
+      this.emitTransactionPending(tx.transaction_hash, transactionMeta);
       span.setAttribute("transaction.status", "pending");
       span.addEvent("transaction.pending", { "transaction.hash": tx.transaction_hash });
       this.pendingTransactionSpans.set(tx.transaction_hash, span);
@@ -892,6 +1350,11 @@ export class EternumProvider extends EnhancedDojoProvider {
         })
         .catch((error) => {
           console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
+          this.emitTransactionFailure({
+            ...transactionMetaWithHash,
+            message: extractErrorMessage(error),
+            stage: resolveTransactionFailureStage(error, "background_confirmation"),
+          });
           this.failTransactionSpan(span, tx.transaction_hash, error);
         })
         .finally(() => {
@@ -908,15 +1371,17 @@ export class EternumProvider extends EnhancedDojoProvider {
     try {
       waitResult = await this.waitForTransactionWithTimeout(waitPromise, this.TRANSACTION_CONFIRM_TIMEOUT_MS);
     } catch (error) {
+      this.emitTransactionFailure({
+        ...transactionMetaWithHash,
+        message: extractErrorMessage(error),
+        stage: resolveTransactionFailureStage(error, "confirmation"),
+      });
       this.failTransactionSpan(span, tx.transaction_hash, error);
       throw error;
     }
 
     if (waitResult.status === "pending") {
-      this.emit("transactionPending", {
-        transactionHash: tx.transaction_hash,
-        ...transactionMeta,
-      });
+      this.emitTransactionPending(tx.transaction_hash, transactionMeta);
       span.setAttribute("transaction.status", "pending");
       span.addEvent("transaction.pending", { "transaction.hash": tx.transaction_hash });
       this.pendingTransactionSpans.set(tx.transaction_hash, span);
@@ -930,6 +1395,11 @@ export class EternumProvider extends EnhancedDojoProvider {
         })
         .catch((error) => {
           console.error(`Error waiting for transaction ${tx.transaction_hash}`, error);
+          this.emitTransactionFailure({
+            ...transactionMetaWithHash,
+            message: extractErrorMessage(error),
+            stage: resolveTransactionFailureStage(error, "background_confirmation"),
+          });
           this.failTransactionSpan(span, tx.transaction_hash, error);
         })
         .finally(() => {
@@ -1205,7 +1675,7 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   private async waitForTransactionWithCheckInternal(
     transactionHash: string,
-    transactionMeta?: TransactionFailureMeta,
+    transactionMeta?: TransactionLifecycleMeta,
   ): Promise<GetTransactionReceiptResponse> {
     let receipt;
     const nodeUrl = (this.provider as any)?.channel?.nodeUrl;
@@ -1223,17 +1693,12 @@ export class EternumProvider extends EnhancedDojoProvider {
         retryInterval: 500,
       });
     } catch (error) {
-      const message = extractErrorMessage(error);
-      this.emit("transactionFailed", `Transaction failed while waiting for confirmation: ${message}`, {
-        ...transactionMeta,
-        transactionHash,
-      });
       console.error(`Error waiting for transaction ${transactionHash}`, {
         nodeUrl,
         manifestRpcUrl,
         worldAddress: this.manifest?.world?.address,
       });
-      throw error;
+      throw attachTransactionFailureStage(error, "confirmation");
     }
 
     const receiptAny = receipt as any;
@@ -1253,11 +1718,7 @@ export class EternumProvider extends EnhancedDojoProvider {
         "Unknown revert reason",
       );
       const message = `Transaction failed with reason: ${revertReason}`;
-      this.emit("transactionFailed", message, {
-        ...transactionMeta,
-        transactionHash,
-      });
-      throw new Error(message);
+      throw attachTransactionFailureStage(new Error(message), "revert", message);
     }
 
     return receipt;
@@ -3273,9 +3734,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
   }
 
-  public async set_discoverable_village_starting_resources_config(
-    props: SystemProps.SetDiscoveredVillageSpawnResourcesConfigProps,
-  ) {
+  public async set_camp_starting_resources_config(props: SystemProps.SetCampStartingResourcesConfigProps) {
     const { resources, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
@@ -3549,12 +4008,12 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   public async set_donkey_speed_config(props: SystemProps.SetDonkeySpeedConfigProps) {
-    const { sec_per_km, signer } = props;
+    const { sec_per_km, sec_per_km_troops, signer } = props;
 
     return await this.executeAndCheckTransaction(signer, {
       contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
       entrypoint: "set_donkey_speed_config",
-      calldata: [sec_per_km],
+      calldata: [sec_per_km, sec_per_km_troops],
     });
   }
 

@@ -9,32 +9,40 @@ import {
 } from "./queries";
 
 // Queue class to manage requests
+type QueuedRequest = {
+  request: () => Promise<void>;
+  onComplete?: () => void;
+  resolve: () => void;
+  reject: (error: unknown) => void;
+};
+
 class RequestQueue {
-  private queue: Array<() => Promise<void>> = [];
+  private queue: QueuedRequest[] = [];
   private processing = false;
   private batchSize = 3; // Number of concurrent requests
   private batchDelayMs = 100; // Delay between batches
 
   async add(request: () => Promise<void>, onComplete?: () => void) {
-    this.queue.push(async () => {
-      await request();
-      onComplete?.(); // Call onComplete after the request is processed
+    return new Promise<void>((resolve, reject) => {
+      this.queue.push({
+        request,
+        onComplete,
+        resolve,
+        reject,
+      });
+
+      if (!this.processing) {
+        this.processing = true;
+        void this.processQueue();
+      }
     });
-    if (!this.processing) {
-      this.processing = true;
-      this.processQueue();
-    }
   }
 
   private async processQueue() {
     while (this.queue.length > 0) {
       const batch = this.queue.splice(0, this.batchSize);
 
-      try {
-        await Promise.all(batch.map((request) => request()));
-      } catch (error) {
-        console.error("Error processing request batch:", error);
-      }
+      await Promise.all(batch.map((request) => this.processRequest(request)));
 
       if (this.queue.length > 0) {
         // Add delay between batches to prevent overwhelming the server
@@ -44,8 +52,23 @@ class RequestQueue {
     this.processing = false;
   }
 
+  private async processRequest(queuedRequest: QueuedRequest) {
+    try {
+      await queuedRequest.request();
+      queuedRequest.onComplete?.();
+      queuedRequest.resolve();
+    } catch (error) {
+      console.error("Error processing queued request:", error);
+      queuedRequest.reject(error);
+    }
+  }
+
   clear() {
-    this.queue = [];
+    const queuedRequests = this.queue.splice(0);
+    queuedRequests.forEach((queuedRequest) => {
+      queuedRequest.onComplete?.();
+      queuedRequest.resolve();
+    });
   }
 }
 
@@ -101,24 +124,6 @@ export const debouncedGetBuildingsFromTorii = async <S extends Schema>(
     await subscriptionQueue.add(() => getBuildingsFromTorii(client, components, structurePositions), onComplete);
   } catch (error) {
     console.error("Error in debouncedGetBuildingsFromTorii:", error);
-    // Make sure onComplete is called even if there's an error
-    onComplete?.();
-  }
-};
-
-const debouncedGetTilesForPositionsFromTorii = async <S extends Schema>(
-  client: ToriiClient,
-  components: Component<S, Metadata, undefined>[],
-  positions: HexPosition[],
-  onComplete?: () => void,
-) => {
-  try {
-    await subscriptionQueue.add(async () => {
-      await getTilesForPositionsFromTorii(client, components, positions);
-      return;
-    }, onComplete);
-  } catch (error) {
-    console.error("Error in debouncedGetTilesForPositionsFromTorii:", error);
     // Make sure onComplete is called even if there's an error
     onComplete?.();
   }

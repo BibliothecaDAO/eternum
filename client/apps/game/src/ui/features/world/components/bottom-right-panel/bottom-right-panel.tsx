@@ -16,8 +16,10 @@ import {
   getBuildingCosts,
   getBalance,
   getBlockTimestamp,
+  hasTileOccupier,
   isTileOccupierChest,
   isTileOccupierQuest,
+  isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
   Position as PositionInterface,
   getTileAt,
@@ -86,6 +88,11 @@ interface PanelFrameProps {
   attached?: boolean;
 }
 
+interface TilePanelScrollAreaProps {
+  children: ReactNode;
+  className?: string;
+}
+
 interface ResourceAmountEntry {
   resource: number;
   amount: number;
@@ -135,6 +142,17 @@ const PanelFrame = ({ title, children, headerAction, className, attached = false
     </header>
     <div className="flex-1 min-h-0 overflow-hidden px-1.5 py-1 lg:px-2.5 lg:py-2">{children}</div>
   </section>
+);
+
+const TilePanelScrollArea = ({ children, className }: TilePanelScrollAreaProps) => (
+  <div
+    className={cn(
+      "h-full min-h-0 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent",
+      className,
+    )}
+  >
+    {children}
+  </div>
 );
 
 type TabDefinition = {
@@ -202,7 +220,7 @@ const MapTilePanel = () => {
 
   const hasOccupier = useMemo(() => {
     if (!tile) return false;
-    return tile.occupier_id !== 0;
+    return hasTileOccupier(tile.occupier_type);
   }, [tile]);
 
   const occupierType = useMemo(() => tile?.occupier_type ?? 0, [tile]);
@@ -214,6 +232,10 @@ const MapTilePanel = () => {
   const isStructure = useMemo(() => {
     return Boolean(tile?.occupier_is_structure) || isTileOccupierStructure(occupierType);
   }, [occupierType, tile?.occupier_is_structure]);
+
+  const isReservedHyperstructure = useMemo(() => {
+    return isTileOccupierReservedHyperstructure(occupierType);
+  }, [occupierType]);
 
   const isChest = useMemo(() => {
     return isTileOccupierChest(occupierType);
@@ -227,20 +249,21 @@ const MapTilePanel = () => {
     if (!tile) return "Hex Tile";
     if (!hasOccupier) return "Biome Tile";
     if (isSpire) return "Spire Tile";
+    if (isReservedHyperstructure) return "Unconstructed Hyperstructure";
     if (isStructure) return "Structure Tile";
     if (isChest) return "Relic Tile";
     if (isQuest) return "Quest Tile";
     return "Army Tile";
-  }, [tile, hasOccupier, isSpire, isStructure, isChest, isQuest]);
+  }, [tile, hasOccupier, isSpire, isReservedHyperstructure, isStructure, isChest, isQuest]);
 
   const panelTitle = selectedHex
     ? `${tileTypeLabel} · (${selectedHex.col - FELT_CENTER()}, ${selectedHex.row - FELT_CENTER()})`
     : "No Tile Selected";
 
   const syncableEntityType = useMemo<SyncableEntityType | null>(() => {
-    if (!tile || !hasOccupier || isSpire || isChest || isQuest) return null;
+    if (!tile || !hasOccupier || isSpire || isChest || isQuest || isReservedHyperstructure) return null;
     return isStructure ? "structure" : "explorer";
-  }, [hasOccupier, isChest, isQuest, isSpire, isStructure, tile]);
+  }, [hasOccupier, isChest, isQuest, isReservedHyperstructure, isSpire, isStructure, tile]);
 
   const syncableEntityId = useMemo<ID | null>(() => {
     if (!tile || !syncableEntityType) return null;
@@ -645,12 +668,12 @@ const LocalTilePanel = () => {
     <PanelFrame title={panelTitle} headerAction={headerAction} attached>
       {selectedBuildingHex ? (
         isCastleTile ? (
-          <div className="h-full min-h-0 overflow-auto">
+          <TilePanelScrollArea>
             <RealmUpgradeCompact />
-          </div>
+          </TilePanelScrollArea>
         ) : hasBuilding ? (
-          <div className="h-full min-h-0 overflow-hidden">
-            <div className="grid h-full min-h-0 auto-rows-min grid-cols-2 gap-2 text-[11px] text-gold">
+          <TilePanelScrollArea>
+            <div className="grid min-h-full auto-rows-min grid-cols-2 gap-2 text-[11px] text-gold">
               {isPaused && (
                 <div className="col-span-2 flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red/900/25 px-2 py-1.5">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
@@ -884,7 +907,7 @@ const LocalTilePanel = () => {
                 </div>
               )}
             </div>
-          </div>
+          </TilePanelScrollArea>
         ) : (
           <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
             <p className="text-xs text-gold/70">

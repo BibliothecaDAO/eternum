@@ -4,21 +4,21 @@ import { memo } from "react";
 
 interface AmmPoolRowProps {
   iconResource: string | null;
-  pairLabel: string;
+  marketCap: string;
+  spotPrice: string;
   tokenName: string;
-  price: string;
   tvl: string;
   isSelected: boolean;
   onClick: () => void;
 }
 
 export const AmmPoolRow = memo(
-  ({ iconResource, pairLabel, tokenName, price, tvl, isSelected, onClick }: AmmPoolRowProps) => {
+  ({ iconResource, marketCap, spotPrice, tokenName, tvl, isSelected, onClick }: AmmPoolRowProps) => {
     return (
       <button
         type="button"
         className={cn(
-          "group flex min-h-[60px] w-full items-center gap-3 rounded-2xl border px-3 py-2 text-left transition-all duration-200",
+          "group flex min-h-[76px] w-full items-center gap-3 rounded-2xl border px-3 py-2.5 text-left transition-all duration-200",
           isSelected
             ? "border-gold/20 border-l-gold/60 border-l-2 bg-gold/12 shadow-[0_12px_30px_-24px_rgba(223,170,84,0.22)] backdrop-blur-[10px]"
             : "border-gold/10 bg-black/25 hover:border-gold/20 hover:bg-gold/8 backdrop-blur-[10px]",
@@ -35,14 +35,17 @@ export const AmmPoolRow = memo(
           )}
         </div>
 
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-3">
-            <span className="truncate text-sm font-semibold text-gold">{tokenName}</span>
-            <span className="text-xs font-medium uppercase tracking-[0.12em] text-gold/70">{tvl}</span>
+        <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-xs font-semibold uppercase tracking-[0.14em] text-gold">{tokenName}</span>
+            <span className="mt-1 text-xs font-semibold uppercase tracking-[0.14em] text-gold/80">
+              {spotPrice} LORDS
+            </span>
           </div>
-          <div className="mt-0.5 flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.12em]">
-            <span className="truncate text-gold/40">{pairLabel}</span>
-            <span className="text-gold/60">{price} LORDS</span>
+
+          <div className="shrink-0 text-right text-[10px] uppercase tracking-[0.14em] text-gold/55">
+            <div className="whitespace-nowrap">MCap {marketCap}</div>
+            <div className="mt-1 whitespace-nowrap">TVL {tvl} LORDS</div>
           </div>
         </div>
       </button>

@@ -1,14 +1,14 @@
-import type { WorldSelectionInput } from "@/runtime/world";
+class LandingWorldSelectionRedirectError extends Error {
+  constructor() {
+    super("Redirecting to the landing page for world selection.");
+    this.name = "LandingWorldSelectionRedirectError";
+  }
+}
 
-type WorldSelection = WorldSelectionInput;
+export const redirectToLandingWorldSelection = (): never => {
+  if (typeof window !== "undefined") {
+    window.location.assign("/");
+  }
 
-/**
- * Redirects to the landing page for world selection.
- * The landing page now handles all world selection and registration.
- */
-export const openWorldSelectorModal = (): Promise<WorldSelection> => {
-  // Redirect to landing page instead of opening a modal
-  window.location.href = "/";
-  // Return a never-resolving promise since we're navigating away
-  return new Promise(() => {});
+  throw new LandingWorldSelectionRedirectError();
 };

@@ -1,11 +1,17 @@
+import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { Panel } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import {
+  isStaminaRecharging,
+  STAMINA_RECHARGING_FILL_CLASS,
+  STAMINA_RECHARGING_TEXT_CLASS,
+  STAMINA_RECHARGING_TRACK_CLASS,
+} from "@/ui/shared/lib/stamina-visuals";
 import { BiomeInfoPanel } from "@/ui/features";
 import { formatStringNumber } from "@/ui/utils/utils";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
-
 import {
   Biome,
   CombatSimulator,
@@ -69,6 +75,7 @@ export const RaidContainer = ({
 
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
   const selectedHex = useUIStore((state) => state.selectedHex);
+  const currentArmiesTick = useCurrentArmiesTick();
 
   const combatConfig = useMemo(() => {
     return configManager.getCombatConfig();
@@ -81,10 +88,9 @@ export const RaidContainer = ({
   // Get the current army states for display
   const attackerArmyData = useMemo(() => {
     const army = getArmy(attackerEntityId, ContractAddress(account.address), components);
-    const { currentArmiesTick } = getBlockTimestamp();
-
-    // Convert attacker relic effects to resource IDs for StaminaManager
-    const attackerRelicResourceIds = attackerActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
+    const projectedStamina = army
+      ? StaminaManager.getStamina(army.troops, currentArmiesTick)
+      : { amount: 0n, updated_tick: 0n };
 
     return {
       capacity: army?.totalCapacity,
@@ -92,11 +98,13 @@ export const RaidContainer = ({
         count: Number(army?.troops.count || 0),
         category: army?.troops.category as TroopType,
         tier: army?.troops.tier as TroopTier,
-        stamina: army ? StaminaManager.getStamina(army?.troops, currentArmiesTick) : { amount: 0n, updated_tick: 0n },
+        stamina: projectedStamina,
         battle_cooldown_end: army?.troops.battle_cooldown_end || 0,
       },
     };
-  }, [attackerEntityId, attackerActiveRelicEffects]);
+  }, [account.address, attackerEntityId, components, currentArmiesTick]);
+  const attackerCurrentStaminaValue = Number(attackerArmyData?.troops.stamina.amount ?? 0n);
+  const attackerRecharging = isStaminaRecharging(attackerCurrentStaminaValue, combatConfig.stamina_attack_req);
 
   const params = configManager.getCombatConfig();
   const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
@@ -105,8 +113,6 @@ export const RaidContainer = ({
   // Simulate raid outcome
   const raidSimulation = useMemo(() => {
     if (!attackerArmyData) return null;
-
-    const { currentArmiesTick } = getBlockTimestamp();
 
     // Convert game armies to simulator armies
     const attackerArmy = {
@@ -160,8 +166,6 @@ export const RaidContainer = ({
   }, [
     attackerEntityId,
     target,
-    account,
-    components,
     attackerArmyData,
     biome,
     combatConfig,
@@ -178,7 +182,7 @@ export const RaidContainer = ({
       remainingCapacity -
       (raidSimulation?.raiderDamageTaken || 0) * configManager.getCapacityConfigKg(CapacityConfig.Army);
     return { beforeRaid: remainingCapacity, afterRaid: remainingCapacityAfterRaid };
-  }, [raidSimulation]);
+  }, [attackerEntityId, components.Resource, raidSimulation]);
 
   const stealableResources = useMemo(() => {
     let capacityAfterRaid = remainingCapacity.afterRaid;
@@ -337,10 +341,23 @@ export const RaidContainer = ({
 
                           <div className="mt-3 flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <span className="text-gold/70">Current Stamina:</span>
-                              <div className="w-28 h-3 bg-brown-800 rounded-full overflow-hidden">
+                              <span className={cn("text-gold/70", attackerRecharging && STAMINA_RECHARGING_TEXT_CLASS)}>
+                                Current Stamina:
+                              </span>
+                              <div
+                                className={cn(
+                                  "w-28 h-3 bg-brown-800 rounded-full overflow-hidden",
+                                  attackerRecharging && STAMINA_RECHARGING_TRACK_CLASS,
+                                )}
+                              >
                                 <div
-                                  className={`h-full ${Number(attackerArmyData.troops.stamina.amount) >= combatConfig.stamina_attack_req ? "bg-green-600" : "bg-red-600"}`}
+                                  className={cn(
+                                    "h-full",
+                                    Number(attackerArmyData.troops.stamina.amount) >= combatConfig.stamina_attack_req
+                                      ? "bg-green-600"
+                                      : "bg-red-600",
+                                    attackerRecharging && STAMINA_RECHARGING_FILL_CLASS,
+                                  )}
                                   style={{
                                     width: `${Math.min(100, (Number(attackerArmyData.troops.stamina.amount) / 100) * 100)}%`,
                                   }}
@@ -348,7 +365,13 @@ export const RaidContainer = ({
                               </div>
                             </div>
                             <span
-                              className={`text-sm font-medium ${Number(attackerArmyData.troops.stamina.amount) >= combatConfig.stamina_attack_req ? "text-green-400" : "text-red-400"}`}
+                              className={cn(
+                                "text-sm font-medium",
+                                Number(attackerArmyData.troops.stamina.amount) >= combatConfig.stamina_attack_req
+                                  ? "text-green-400"
+                                  : "text-red-400",
+                                attackerRecharging && STAMINA_RECHARGING_TEXT_CLASS,
+                              )}
                             >
                               {Number(attackerArmyData.troops.stamina.amount)} / {combatConfig.stamina_attack_req}{" "}
                               required

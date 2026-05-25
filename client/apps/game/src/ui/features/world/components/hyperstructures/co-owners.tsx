@@ -1,5 +1,5 @@
 import { ReactComponent as Trash } from "@/assets/icons/common/trashcan.svg";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
@@ -58,7 +58,7 @@ const CoOwnersRows = ({
 
   const setTooltip = useUIStore((state) => state.setTooltip);
 
-  const { currentBlockTimestamp } = useBlockTimestamp();
+  const currentBlockTimestamp = useCurrentBlockTimestamp();
 
   const hyperstructureConfig = useMemo(() => {
     return getComponentValue(WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));

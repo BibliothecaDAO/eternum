@@ -14,15 +14,29 @@ bun config/deployer/clean/cli/create.ts \
   --start-time 1763112600
 ```
 
+Or load the same launch request from a YAML file:
+
+```bash
+bun config/deployer/clean/cli/create.ts \
+  --config-path config/deployer/clean/examples/blitz-weekly-series.yaml
+```
+
 Required inputs:
 
 - `--environment`: `slot.blitz`, `slot.eternum`, `mainnet.blitz`, or `mainnet.eternum`
 - `--game`
 - `--start-time`: unix seconds, unix milliseconds, or ISO-8601
 
+When `--config-path` is present, the YAML file can provide those required fields instead. The file uses the clean
+deployer request shape, so finite weekly schedules can be modeled as `launchKind: series` with an explicit `games:`
+list. Rolling weekly schedules should use `launchKind: rotation` with `weeklyCadence:` entries so the worker keeps the
+advance window filled until the rotation is cancelled. A weekly cadence entry can include `blitzRegistrationOverrides`
+when a slot needs a different buy-in from the parent/default Blitz registration config.
+
 Optional env or flags:
 
 - `RPC_URL` or `--rpc-url` to override the environment default
+- `GAME_LAUNCH_CONFIG_PATH` or `--config-path` to load a YAML launch request
 - `FACTORY_ADDRESS` or `--factory-address` to override the environment default
 - `DOJO_ACCOUNT_ADDRESS` or `--account-address` to override the environment default
 - `DOJO_PRIVATE_KEY` or `--private-key` to override the environment default
@@ -144,6 +158,26 @@ shows each launch step separately:
 - Sync paymaster
 
 The launch summary artifact upload now runs with `always()` so partial summaries still upload when a later step fails.
+
+The workflow also accepts `config_path` for repo-relative YAML launch files. GitHub still needs `launch_kind` and
+`environment` as dispatch inputs because the job routes on them before the shell scripts run, so config-backed weekly
+schedules should be dispatched like:
+
+```text
+launch_kind = series
+environment = slot.blitz
+config_path = config/deployer/clean/examples/blitz-weekly-series.yaml
+launch_step = full
+```
+
+The committed rolling Blitz cadence should be dispatched as:
+
+```text
+launch_kind = rotation
+environment = mainnet.blitz
+config_path = config/deployer/clean/examples/blitz-rotation.yaml
+launch_step = full
+```
 
 The workflow also writes launch state to the dedicated `factory-runs` branch:
 

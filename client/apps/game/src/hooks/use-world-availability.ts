@@ -4,26 +4,28 @@
  * by caching results and sharing them across components.
  */
 import { getFactorySqlBaseUrl } from "@/runtime/world";
-import { isToriiAvailable, resolveWorldContracts } from "@/runtime/world/factory-resolver";
+import { BULK_WORLD_AVAILABILITY_QUERY_KEY, WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
+import { fetchBulkAvailability, isToriiAvailable, resolveWorldContracts } from "@/runtime/world/factory-resolver";
 import { normalizeSelector } from "@/runtime/world/normalize";
 import {
   parseMaybeBooleanFlag,
   resolveGameModeFromBlitzFlag,
   type ResolvedGameMode,
 } from "@/config/game-modes/resolved-mode";
+import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import type { Chain } from "@contracts";
-import { useQueries } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { RpcProvider } from "starknet";
+import { env } from "../../env";
 
 const WORLD_CONFIG_TABLE = "s1_eternum-WorldConfig";
-const HYPERSTRUCTURE_GLOBALS_TABLE = "s1_eternum-HyperstructureGlobals";
 const ZERO_OWNER_ADDRESS = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 const WORLD_MODE_QUERY = `SELECT "blitz_mode_on" AS blitz_mode_on FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Note: registration_end_at uses start_main_at because registration ends when the main game starts.
-const WORLD_CONFIG_BLITZ_QUERY = `SELECT "season_config.start_settling_at" AS start_settling_at, "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.registration_count_max" AS registration_count_max, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_hypers_settlement_config.max_ring_count" AS max_ring_count, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
+const WORLD_CONFIG_BLITZ_QUERY = `SELECT "season_config.start_settling_at" AS start_settling_at, "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "season_config.dev_mode_on" AS dev_mode_on, "blitz_registration_config.registration_count" AS registration_count, "blitz_registration_config.registration_count_max" AS registration_count_max, "blitz_registration_config.entry_token_address" AS entry_token_address, "blitz_registration_config.fee_token" AS fee_token, "blitz_registration_config.fee_amount" AS fee_amount, "blitz_registration_config.registration_start_at" AS registration_start_at, "season_config.start_main_at" AS registration_end_at, "mmr_config.enabled" AS mmr_enabled, "blitz_settlement_config.single_realm_mode" AS single_realm_mode, "blitz_settlement_config.two_player_mode" AS two_player_mode FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
 
 // Eternum worlds do not rely on blitz_registration_config. Fetch season timing + spacing config instead.
 const WORLD_CONFIG_ETERNUM_QUERY = `
@@ -61,21 +63,9 @@ const WORLD_CONFIG_ETERNUM_QUERY = `
   LIMIT 1;
 `;
 
-// Query to get hyperstructure created count (separate table)
-const HYPERSTRUCTURE_GLOBALS_QUERY = `SELECT created_count FROM "${HYPERSTRUCTURE_GLOBALS_TABLE}" LIMIT 1;`;
 const PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR = "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179";
 const prizeDistributionSelector = normalizeSelector(PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR);
 const rpcProviderCache = new Map<string, RpcProvider>();
-
-/**
- * Calculate number of hyperstructures left to create based on mode, max ring count, and created count.
- * - 2-player mode: total = max_ring_count + 1 (rings 0..max_ring_count)
- * - multi-player mode: total = 1 + 6*(1+2+...+max_ring_count)
- */
-const calculateHyperstructuresLeft = (maxRingCount: number, createdCount: number, twoPlayerMode: boolean): number => {
-  const total = twoPlayerMode ? maxRingCount + 1 : 1 + 6 * ((maxRingCount * (maxRingCount + 1)) / 2);
-  return Math.max(0, total - createdCount);
-};
 
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
@@ -162,6 +152,7 @@ export interface WorldConfigMeta {
   villagePassAddress: string | null;
   registrationCount: number | null;
   registrationCountMax: number | null;
+  singleRealmMode: boolean;
   twoPlayerMode: boolean;
   // Blitz registration config
   entryTokenAddress: string | null;
@@ -171,9 +162,9 @@ export interface WorldConfigMeta {
   registrationEndAt: number | null;
   // MMR
   mmrEnabled: boolean;
-  // Dev mode - allows registration during ongoing games
+  // Dev mode - allows blitz settlement during ongoing games.
   devModeOn: boolean;
-  // Player registration status (null if not checked or no player)
+  // Blitz-only: whether the connected player already settled into the world.
   isPlayerRegistered: boolean | null;
   // Eternum-only: whether the connected player already has at least one settled realm.
   hasPlayerSettledRealm: boolean | null;
@@ -181,8 +172,6 @@ export interface WorldConfigMeta {
   settledPlayersCount: number | null;
   settledRealmsCount: number | null;
   settledVillagesCount: number | null;
-  // Number of hyperstructures left to create (for forging)
-  numHyperstructuresLeft: number | null;
   // Reward distribution contract for this world
   prizeDistributionAddress: string | null;
   // Current fee-token balance held by the reward distribution contract
@@ -207,24 +196,17 @@ interface WorldAvailability {
 }
 
 /**
- * Fetch player registration status from Torii SQL endpoint.
- * Uses `once_registered` field which stays true even after settlement
- * (the `registered` field gets set to 0 after settlement)
+ * Fetch whether a player has already entered a blitz world.
+ * Blitz now settles in one step, so the settlement row itself is the source of truth.
  */
 const fetchPlayerRegistration = async (toriiBaseUrl: string, playerAddress: string): Promise<boolean | null> => {
   try {
-    // Use once_registered - it stays true after settlement, while registered gets set to 0
-    const query = `SELECT once_registered FROM "s1_eternum-BlitzRealmPlayerRegister" WHERE player = "${playerAddress}" LIMIT 1;`;
+    const query = buildPlayerBlitzSettlementStatusQuery(playerAddress);
     const url = `${toriiBaseUrl}/sql?query=${encodeURIComponent(query)}`;
     const response = await fetch(url);
     if (!response.ok) return null;
     const data = (await response.json()) as Record<string, unknown>[];
-    const [row] = data;
-    if (row && row.once_registered != null) {
-      return parseMaybeBooleanFlag(row.once_registered);
-    }
-    // Query succeeded but no row found — player is not registered
-    return false;
+    return data.length > 0;
   } catch {
     // Silently fail - registration check is best-effort
   }
@@ -305,6 +287,7 @@ const fetchWorldConfigMeta = async (
     villagePassAddress: null,
     registrationCount: null,
     registrationCountMax: null,
+    singleRealmMode: false,
     twoPlayerMode: false,
     entryTokenAddress: null,
     feeTokenAddress: null,
@@ -318,7 +301,6 @@ const fetchWorldConfigMeta = async (
     settledPlayersCount: null,
     settledRealmsCount: null,
     settledVillagesCount: null,
-    numHyperstructuresLeft: null,
     prizeDistributionAddress: null,
     winnerJackpotAmount: 0n,
   };
@@ -366,32 +348,8 @@ const fetchWorldConfigMeta = async (
         if (row.registration_end_at != null)
           meta.registrationEndAt = parseMaybeHexToNumber(row.registration_end_at) ?? null;
 
+        meta.singleRealmMode = parseMaybeBooleanFlag(row.single_realm_mode) ?? false;
         meta.twoPlayerMode = parseMaybeBooleanFlag(row.two_player_mode) ?? false;
-
-        // Calculate hyperstructures left from max_ring_count
-        const maxRingCount = parseMaybeHexToNumber(row.max_ring_count) ?? 0;
-        if (maxRingCount > 0) {
-          // Fetch created count from HyperstructureGlobals
-          try {
-            const globalsUrl = `${toriiBaseUrl}/sql?query=${encodeURIComponent(HYPERSTRUCTURE_GLOBALS_QUERY)}`;
-            const globalsResponse = await fetch(globalsUrl);
-            if (globalsResponse.ok) {
-              const [globalsRow] = (await globalsResponse.json()) as Record<string, unknown>[];
-              const createdCount = parseMaybeHexToNumber(globalsRow?.created_count) ?? 0;
-              meta.numHyperstructuresLeft = calculateHyperstructuresLeft(
-                maxRingCount,
-                createdCount,
-                meta.twoPlayerMode,
-              );
-            } else {
-              // If no globals exist yet, all hyperstructures are available
-              meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, meta.twoPlayerMode);
-            }
-          } catch {
-            // If query fails, calculate based on zero created
-            meta.numHyperstructuresLeft = calculateHyperstructuresLeft(maxRingCount, 0, meta.twoPlayerMode);
-          }
-        }
       }
 
       if (meta.mode === "eternum") {
@@ -479,9 +437,15 @@ const checkWorldAvailability = async (
   worldName: string,
   chain?: Chain,
   playerAddress?: string | null,
+  bulkAvailability?: Record<string, boolean>,
 ): Promise<{ isAvailable: boolean; meta: WorldConfigMeta | null }> => {
   const toriiBaseUrl = buildToriiBaseUrl(worldName);
-  const isAvailable = await isToriiAvailable(toriiBaseUrl);
+
+  // Use bulk availability if available, otherwise fall back to direct probe
+  const isAvailable =
+    bulkAvailability != null
+      ? (bulkAvailability[worldName] ?? (await isToriiAvailable(toriiBaseUrl)))
+      : await isToriiAvailable(toriiBaseUrl);
 
   if (!isAvailable) {
     return { isAvailable: false, meta: null };
@@ -491,24 +455,38 @@ const checkWorldAvailability = async (
   return { isAvailable: true, meta };
 };
 
+/** Fetch bulk world availability from the realtime server, cached with React Query. */
+const useBulkAvailability = (enabled: boolean) => {
+  return useQuery({
+    queryKey: BULK_WORLD_AVAILABILITY_QUERY_KEY,
+    queryFn: () => fetchBulkAvailability(env.VITE_PUBLIC_REALTIME_URL),
+    enabled,
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+  });
+};
+
 /**
  * Hook to check multiple worlds' availability with batched queries.
  * Uses React Query's useQueries for parallel execution with caching.
- * Auto-refreshes every 30 seconds to catch registration/hyperstructure updates.
+ * Auto-refreshes every 30 seconds to catch registration and phase updates.
  * @param worlds - List of worlds to check
  * @param enabled - Whether to enable the queries
  * @param playerAddress - Optional player address (padded felt) to check registration status
  */
 export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, playerAddress?: string | null) => {
+  const { data: bulkAvailability, isPending: isBulkAvailabilityPending } = useBulkAvailability(enabled);
+
   const queries = useQueries({
     queries: worlds.map((world) => ({
       // Include playerAddress in query key so it refetches when user connects
-      queryKey: ["worldAvailability", getWorldKey(world), playerAddress ?? "anonymous"],
-      queryFn: () => checkWorldAvailability(world.name, world.chain, playerAddress),
-      enabled: enabled && !!world.name,
+      queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, getWorldKey(world), playerAddress ?? "anonymous"],
+      queryFn: () => checkWorldAvailability(world.name, world.chain, playerAddress, bulkAvailability),
+      enabled: enabled && !!world.name && !isBulkAvailabilityPending,
       staleTime: 30 * 1000, // 30 seconds - data is fresh for 30s
       gcTime: 10 * 60 * 1000, // 10 minutes
-      refetchInterval: 30 * 1000, // Auto-refresh every 30s to catch new registrations/forges
+      refetchInterval: 30 * 1000, // Auto-refresh every 30s to catch new registrations and phase changes
       refetchIntervalInBackground: false, // Only refetch when tab is active
       retry: 1,
     })),
@@ -525,13 +503,14 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
       chain: world.chain,
       isAvailable: query.data?.isAvailable ?? false,
       meta: query.data?.meta ?? null,
-      isLoading: query.isLoading,
+      isLoading: isBulkAvailabilityPending || query.isLoading || (query.data === undefined && query.error == null),
       error: query.error as Error | null,
     });
   });
 
-  const isAnyLoading = queries.some((q) => q.isLoading);
-  const allSettled = queries.every((q) => !q.isLoading);
+  const isAnyLoading =
+    isBulkAvailabilityPending || queries.some((q) => q.isLoading || (q.data === undefined && q.error == null));
+  const allSettled = !isBulkAvailabilityPending && queries.every((q) => q.data !== undefined || q.error != null);
 
   return {
     results,
@@ -539,13 +518,4 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
     allSettled,
     refetchAll: () => Promise.all(queries.map((q) => q.refetch())),
   };
-};
-
-/**
- * Get availability status string for a world.
- */
-export const getAvailabilityStatus = (availability: WorldAvailability | undefined): "checking" | "ok" | "fail" => {
-  if (!availability) return "checking";
-  if (availability.isLoading) return "checking";
-  return availability.isAvailable ? "ok" : "fail";
 };

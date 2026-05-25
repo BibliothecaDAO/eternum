@@ -1,19 +1,26 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Controller } from "@/ui/modules/controller/controller";
 import { BlankOverlayContainer } from "@/ui/shared/containers/blank-overlay-container";
 import { useCallback, useEffect, useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { DynamicBackground } from "./components/background/dynamic-background";
+import { DashboardNetworkSwitch } from "./components/dashboard-network-switch";
 import { LandingHeader } from "./components/landing-header";
+import { LandingMusicPlayer } from "./components/landing-music-player";
 import { LandingSettings } from "./components/landing-settings";
 import { LandingSidebar } from "./components/landing-sidebar";
 import { MobileBottomNav } from "./components/mobile-bottom-nav";
 import { LandingProvider, useLandingContext } from "./context/landing-context";
+import { resolveLandingSurfacePath, type LandingEntryRouteState } from "./lib/landing-entry-state";
 
 // Route to background mapping
 const ROUTE_BACKGROUNDS: Record<string, string> = {
   "/": "01",
+  "/learn": "01",
+  "/news": "01",
+  "/factory": "03",
   "/profile": "05",
   "/markets": "04",
   "/amm": "04",
@@ -30,9 +37,13 @@ const ROUTE_BACKGROUNDS: Record<string, string> = {
  */
 export const LandingLayout = () => {
   const location = useLocation();
+  const surfacePath = resolveLandingSurfacePath({
+    pathname: location.pathname,
+    state: location.state as LandingEntryRouteState | null,
+  });
 
   // Get default background for current route
-  const routeBackground = ROUTE_BACKGROUNDS[location.pathname] ?? "01";
+  const routeBackground = ROUTE_BACKGROUNDS[surfacePath] ?? "01";
 
   return (
     <LandingProvider defaultBackground={routeBackground}>
@@ -45,14 +56,20 @@ export const LandingLayout = () => {
  * Inner layout content that can access the landing context.
  */
 const LandingLayoutContent = () => {
+  useBootDocumentState("app-ready");
+
   const location = useLocation();
+  const surfacePath = resolveLandingSurfacePath({
+    pathname: location.pathname,
+    state: location.state as LandingEntryRouteState | null,
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { backgroundId, resetBackground } = useLandingContext();
 
   // Reset background when route changes
   useEffect(() => {
     resetBackground();
-  }, [location.pathname, resetBackground]);
+  }, [resetBackground, surfacePath]);
 
   const handleSettingsClick = useCallback(() => {
     setSettingsOpen(true);
@@ -70,8 +87,17 @@ const LandingLayoutContent = () => {
       {/* Left sidebar (desktop only) */}
       <LandingSidebar onSettingsClick={handleSettingsClick} />
 
-      {/* Top header with wallet */}
-      <LandingHeader walletButton={<Controller />} onSettingsClick={handleSettingsClick} />
+      {/* Top header with landing controls */}
+      <LandingHeader
+        headerControls={
+          <>
+            <LandingMusicPlayer className="hidden lg:flex" presentation="header" />
+            <DashboardNetworkSwitch className="hidden md:flex" />
+            <Controller />
+          </>
+        }
+        onSettingsClick={handleSettingsClick}
+      />
 
       {/* Main content area */}
       <main

@@ -19,14 +19,12 @@ const sizeConfig: Record<BadgeSize, { container: string; icon: string }> = {
 };
 
 const TIER_RESOURCE_ICON_IDS: Record<string, number> = {
-  Iron: 1, // Stone
-  Bronze: 25, // Donkey (requested override)
-  Silver: 8, // Silver
-  Gold: 7, // Gold
-  Platinum: 19, // Adamantine
-  Diamond: 14, // Diamonds
-  Master: 13, // Ruby
-  Elite: 17, // Twilight Quartz
+  Scrapper: 1, // Stone
+  Raider: 7, // Gold
+  Marauder: 19, // Adamantine
+  Conqueror: 14, // Diamonds
+  Warlord: 13, // Ruby
+  "Storm Lord": 17, // Twilight Quartz
 };
 
 export const MMRTierBadge = ({ tier, size = "sm" }: MMRTierBadgeProps) => {

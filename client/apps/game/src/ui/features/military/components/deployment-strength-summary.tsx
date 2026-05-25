@@ -1,6 +1,8 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { configManager } from "@bibliothecadao/eternum";
 import { TroopTier } from "@bibliothecadao/types";
+import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
+import { useId, useState } from "react";
 
 interface DeploymentStrengthSummaryProps {
   structureLevel?: number | null;
@@ -9,6 +11,8 @@ interface DeploymentStrengthSummaryProps {
   maxTroopSize?: number | null;
   capacityRemaining?: number | null;
   className?: string;
+  collapsible?: boolean;
+  defaultExpanded?: boolean;
 }
 
 const FALLBACK_STRENGTH_BY_TIER: Record<number, number> = {
@@ -44,7 +48,11 @@ export const DeploymentStrengthSummary = ({
   maxTroopSize,
   capacityRemaining,
   className,
+  collapsible = false,
+  defaultExpanded = true,
 }: DeploymentStrengthSummaryProps) => {
+  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const metricsId = useId();
   const limitConfig = configManager.getTroopConfig().troop_limit_config;
   const resolvedLevel = typeof structureLevel === "number" && Number.isFinite(structureLevel) ? structureLevel : 0;
   const resolvedTierNumber = resolveTierNumber(troopTier);
@@ -75,22 +83,52 @@ export const DeploymentStrengthSummary = ({
     typeof capacityRemaining === "number" && Number.isFinite(capacityRemaining)
       ? Math.max(0, Math.floor(capacityRemaining))
       : null;
+  const metrics = (
+    <div className="grid grid-cols-2 gap-2">
+      <Metric label={`${levelLabel} cap`} value={`${deploymentCap.toLocaleString()} strength`} />
+      <Metric label="Tier strength" value={`T${resolvedTierNumber} = ${safeTierStrength}`} />
+      <Metric label="Projected strength" value={projectedArmyStrength.toLocaleString()} />
+      <Metric
+        label="Max troops (tier)"
+        value={resolvedMaxTroopSize !== null ? resolvedMaxTroopSize.toLocaleString() : "—"}
+      />
+      {resolvedCapacityRemaining !== null && (
+        <Metric label="Cap remaining" value={resolvedCapacityRemaining.toLocaleString()} />
+      )}
+    </div>
+  );
+
+  if (!collapsible) {
+    return (
+      <div className={cn("rounded border border-gold/20 bg-black/35 px-2 py-2", className)}>
+        <div className="text-[10px] uppercase tracking-[0.16em] text-gold/60">Deployment & Strength</div>
+        <div className="mt-2">{metrics}</div>
+      </div>
+    );
+  }
 
   return (
-    <div className={cn("rounded border border-gold/20 bg-black/35 px-2 py-2", className)}>
-      <div className="text-[10px] uppercase tracking-[0.16em] text-gold/60">Deployment & Strength</div>
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <Metric label={`${levelLabel} cap`} value={`${deploymentCap.toLocaleString()} strength`} />
-        <Metric label="Tier strength" value={`T${resolvedTierNumber} = ${safeTierStrength}`} />
-        <Metric label="Projected strength" value={projectedArmyStrength.toLocaleString()} />
-        <Metric
-          label="Max troops (tier)"
-          value={resolvedMaxTroopSize !== null ? resolvedMaxTroopSize.toLocaleString() : "—"}
-        />
-        {resolvedCapacityRemaining !== null && (
-          <Metric label="Cap remaining" value={resolvedCapacityRemaining.toLocaleString()} />
-        )}
-      </div>
+    <div className={cn("rounded border border-gold/20 bg-black/35", className)}>
+      <button
+        type="button"
+        className="flex w-full items-center justify-between gap-3 px-2 py-2 text-left transition hover:bg-black/25"
+        onClick={() => setIsExpanded((current) => !current)}
+        aria-expanded={isExpanded}
+        aria-controls={metricsId}
+      >
+        <span className="flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-[0.16em] text-gold/60">Deployment & Strength</span>
+          <span className="text-[10px] uppercase tracking-[0.12em] text-gold/45">
+            {isExpanded ? "Hide details" : "Show details"}
+          </span>
+        </span>
+        <ChevronDown className={cn("h-4 w-4 text-gold/70 transition-transform", isExpanded && "rotate-180")} />
+      </button>
+      {isExpanded ? (
+        <div id={metricsId} className="border-t border-gold/15 px-2 py-2">
+          {metrics}
+        </div>
+      ) : null}
     </div>
   );
 };

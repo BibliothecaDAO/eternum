@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { getRenderAreaKeyForChunk } from "./worldmap-chunk-bounds";
 import { resolveWarpTravelDirectionalPrefetchPlan } from "./warp-travel-directional-prefetch";
 
 describe("resolveWarpTravelDirectionalPrefetchPlan", () => {
@@ -92,5 +93,29 @@ describe("resolveWarpTravelDirectionalPrefetchPlan", () => {
     });
 
     expect(result.presentationChunkKeysToPrewarm).toEqual(["48,24", "72,24", "96,24"]);
+  });
+
+  it("queues the next hydration area before crossing a super-area boundary", () => {
+    const result = resolveWarpTravelDirectionalPrefetchPlan({
+      anchor: {
+        forwardChunkKey: "0,336",
+        movementAxis: "x",
+        movementSign: 1,
+      },
+      chunkSize: 24,
+      forwardDepthStrides: 1,
+      sideRadiusStrides: 0,
+      areaBoundaryLookaheadStrides: 3,
+      fetchSuperAreaStrides: 16,
+      pinnedChunkKeys: new Set(["0,336", "0,360"]),
+      currentChunk: "0,288",
+      prefetchedAhead: [],
+      maxPrefetchedAhead: 4,
+      getRenderAreaKeyForChunk: (chunkKey) => getRenderAreaKeyForChunk(chunkKey, 24, 16),
+    });
+
+    expect(result.desiredAreaKeys).toEqual(["0,384"]);
+    expect(result.chunkKeysToEnqueue).toEqual(["0,384"]);
+    expect(result.nextPrefetchedAhead).toEqual(["0,384"]);
   });
 });

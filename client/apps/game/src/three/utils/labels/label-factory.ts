@@ -1,11 +1,13 @@
-import { CameraView } from "../../scenes/hexagon-scene";
+import { CameraView } from "../../scenes/camera-view";
 import { createContentContainer } from "./label-components";
 import { LABEL_STYLES, LABEL_TYPE_CONFIGS } from "./label-config";
 import { LabelData, LabelTypeDefinition } from "./label-types";
 import { resolveCameraView } from "./label-view";
 import { createLabelBase } from "./label-shared";
 import { ArmyLabelType, type ArmyLabelData } from "./army-label-type";
-import { StructureLabelType, convertStructureInfo, type StructureInfoCompat } from "./structure-label-type";
+import { StructureLabelType, convertStructureInfo } from "./structure-label-type";
+import type { StructureInfo } from "../../types/common";
+import { applyEntityLabelViewModelMetadata, buildChestEntityLabelViewModel } from "./entity-label-view-model";
 
 /**
  * Chest label data
@@ -23,7 +25,9 @@ const ChestLabelType: LabelTypeDefinition<ChestLabelData> = {
 
   createElement: (data: ChestLabelData, inputView: CameraView): HTMLElement => {
     const cameraView = resolveCameraView(inputView);
+    const labelModel = buildChestEntityLabelViewModel({ entityId: data.entityId });
     const labelDiv = createLabelBase(false, cameraView);
+    applyEntityLabelViewModelMetadata(labelDiv, labelModel);
 
     labelDiv.style.setProperty("color", LABEL_STYLES.CHEST.textColor!, "important");
     labelDiv.style.setProperty("background-color", LABEL_STYLES.CHEST.backgroundColor!, "important");
@@ -80,13 +84,13 @@ export const updateArmyLabel = (
   ArmyLabelType.updateElement?.(labelElement, army, cameraView);
 };
 
-export const createStructureLabel = (structure: StructureInfoCompat, cameraView: CameraView): HTMLElement => {
+export const createStructureLabel = (structure: StructureInfo, cameraView: CameraView): HTMLElement => {
   return StructureLabelType.createElement(convertStructureInfo(structure), cameraView);
 };
 
 export const updateStructureLabel = (
   labelElement: HTMLElement,
-  structure: StructureInfoCompat,
+  structure: StructureInfo,
   cameraView: CameraView = CameraView.Medium,
 ): void => {
   StructureLabelType.updateElement?.(labelElement, convertStructureInfo(structure), cameraView);

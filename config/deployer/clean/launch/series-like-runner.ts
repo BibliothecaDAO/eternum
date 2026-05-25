@@ -71,6 +71,9 @@ function updateSeriesLikeGameSuccess(
     artifacts: {
       ...game.artifacts,
       worldAddress: gameSummary.worldAddress || game.artifacts.worldAddress,
+      entryTokenAddress: gameSummary.entryTokenAddress || game.artifacts.entryTokenAddress,
+      reserveHyperstructuresTxHashes:
+        gameSummary.reserveHyperstructuresTxHashes || game.artifacts.reserveHyperstructuresTxHashes,
       createGameTxHash: gameSummary.createGameTxHash || game.artifacts.createGameTxHash,
       configureTxHash: gameSummary.configureTxHash || game.artifacts.configureTxHash,
       lootChestRoleTxHash: gameSummary.lootChestRoleTxHash || game.artifacts.lootChestRoleTxHash,
@@ -145,7 +148,7 @@ function buildSeriesLikeGameRequest(
     twoPlayerMode: request.twoPlayerMode,
     durationSeconds: request.durationSeconds,
     mapConfigOverrides: request.mapConfigOverrides,
-    blitzRegistrationOverrides: request.blitzRegistrationOverrides,
+    blitzRegistrationOverrides: game.blitzRegistrationOverrides ?? request.blitzRegistrationOverrides,
     cartridgeApiBase: request.cartridgeApiBase,
     toriiNamespaces: request.toriiNamespaces,
     vrfProviderAddress: request.vrfProviderAddress,

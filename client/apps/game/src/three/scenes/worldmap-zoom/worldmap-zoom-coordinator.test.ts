@@ -28,6 +28,29 @@ describe("WorldmapZoomCoordinator", () => {
     expect(coordinator.getSnapshot().anchorWorldPoint?.toArray()).toEqual([2, 0, 0]);
   });
 
+  it("preserves the active anchor when clamped input cannot move the target any farther", () => {
+    const coordinator = new WorldmapZoomCoordinator({
+      initialDistance: 20,
+      minDistance: 10,
+      maxDistance: 40,
+    });
+
+    coordinator.applyIntent({
+      type: "snap_to_band",
+      band: CameraView.Far,
+      anchor: { mode: "world_point", worldPoint: new Vector3(1, 0, 0) },
+    });
+
+    coordinator.applyIntent({
+      type: "continuous_delta",
+      delta: WORLDMAP_STEP_WHEEL_DELTA,
+      anchor: { mode: "world_point", worldPoint: new Vector3(5, 0, 0) },
+    });
+
+    expect(coordinator.getSnapshot().targetDistance).toBe(40);
+    expect(coordinator.getSnapshot().anchorWorldPoint?.toArray()).toEqual([1, 0, 0]);
+  });
+
   it("routes snap-to-band through the same target distance pipeline", () => {
     const coordinator = new WorldmapZoomCoordinator({
       initialDistance: 20,

@@ -16,6 +16,13 @@ import { applyLabelTransitions, transitionManager } from "../utils/labels/label-
 import { gltfLoader } from "../utils/utils";
 import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import { resolveChestPointLabelSize } from "./chest-point-label-policy";
+import {
+  bindManagerChunkRuntimeState,
+  recoverManagerChunkRuntimeAfterStall,
+  type ManagerChunkUpdateOptions,
+  type RecoverManagerChunkRuntimeAfterStallInput,
+  runManagerChunkUpdateRuntime,
+} from "./manager-chunk-runtime";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import {
   isCommittedManagerChunk,
@@ -25,6 +32,7 @@ import {
   waitForVisualSettle,
 } from "./manager-update-convergence";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
+import type { HoverLabelShowResult } from "./hover-label-show-result";
 
 const MAX_INSTANCES = 1000;
 
@@ -53,14 +61,6 @@ export class ChestManager {
   private transitionChunkByToken: Map<number, string> = new Map();
   private pointsRenderer?: PointsLabelRenderer; // Points-based icon renderer
   private chunkToChests: Map<string, Set<ID>> = new Map();
-
-  private pruneTransitionChunkHistory(): void {
-    this.transitionChunkByToken.forEach((_, token) => {
-      if (token < this.latestTransitionToken) {
-        this.transitionChunkByToken.delete(token);
-      }
-    });
-  }
 
   constructor(
     scene: THREE.Scene,
@@ -229,88 +229,53 @@ export class ChestManager {
     }
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
-    const force = options?.force ?? false;
-    const transitionToken = options?.transitionToken;
-    if (
-      !shouldAcceptManagerChunkRequest({
-        chunkKey,
-        transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken:
-          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
-      })
-    ) {
-      return;
-    }
-    if (transitionToken !== undefined) {
-      this.latestTransitionToken = Math.max(this.latestTransitionToken, transitionToken);
-      this.transitionChunkByToken.set(transitionToken, chunkKey);
-      this.pruneTransitionChunkHistory();
-    }
+  async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
+    await runManagerChunkUpdateRuntime({
+      chunkKey,
+      executeChunkUpdate: (nextChunkKey, nextOptions) => {
+        if (
+          !shouldRunManagerChunkUpdate({
+            chunkKey: nextChunkKey,
+            currentChunk: this.currentChunkKey,
+            transitionToken: nextOptions?.transitionToken,
+            latestTransitionToken: this.latestTransitionToken,
+          })
+        ) {
+          return false;
+        }
 
-    if (!force && this.currentChunkKey === chunkKey) {
-      return;
-    }
-
-    // Wait for any ongoing chunk switch to complete first
-    if (this.chunkSwitchPromise) {
-      // console.log(`[CHUNK SYNC] Waiting for previous chest chunk switch to complete before switching to ${chunkKey}`);
-      try {
-        await this.chunkSwitchPromise;
-      } catch (error) {
+        this.renderVisibleChests(nextChunkKey);
+      },
+      onPreviousUpdateFailed: (error) => {
         console.warn(`Previous chest chunk switch failed:`, error);
-      }
-    }
+      },
+      options,
+      shouldAcceptRequest: shouldAcceptManagerChunkRequest,
+      state: this.resolveChunkUpdateRuntimeState(),
+      waitForSettle: waitForVisualSettle,
+    });
+  }
 
-    // Check again if chunk key is still different (might have changed while waiting)
-    if (!force && this.currentChunkKey === chunkKey) {
-      return;
-    }
+  recoverChunkUpdateAfterStall(input: RecoverManagerChunkRuntimeAfterStallInput): void {
+    recoverManagerChunkRuntimeAfterStall(this.resolveChunkUpdateRuntimeState(), input);
+  }
 
-    if (
-      !shouldAcceptManagerChunkRequest({
-        chunkKey,
-        transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken:
-          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
-      })
-    ) {
-      return;
-    }
-
-    const previousChunk = this.currentChunkKey;
-    const isSwitch = previousChunk !== chunkKey;
-    if (isSwitch) {
-      // console.log(`[CHUNK SYNC] Switching chest chunk from ${this.currentChunkKey} to ${chunkKey}`);
-      this.currentChunkKey = chunkKey;
-    } else if (force) {
-      // console.log(`[CHUNK SYNC] Refreshing chest chunk ${chunkKey}`);
-    }
-
-    // Create and track the chunk switch promise
-    this.chunkSwitchPromise = (async () => {
-      if (
-        !shouldRunManagerChunkUpdate({
-          chunkKey,
-          currentChunk: this.currentChunkKey,
-          transitionToken,
-          latestTransitionToken: this.latestTransitionToken,
-        })
-      ) {
-        return;
-      }
-      this.renderVisibleChests(chunkKey);
-      await waitForVisualSettle();
-    })();
-
-    try {
-      await this.chunkSwitchPromise;
-      // console.log(`[CHUNK SYNC] Chest chunk ${isSwitch ? "switch" : "refresh"} for ${chunkKey} completed`);
-    } finally {
-      this.chunkSwitchPromise = null;
-    }
+  private resolveChunkUpdateRuntimeState() {
+    return bindManagerChunkRuntimeState({
+      getCurrentChunk: () => this.currentChunkKey,
+      setCurrentChunk: (chunkKey) => {
+        this.currentChunkKey = chunkKey;
+      },
+      getInFlightPromise: () => this.chunkSwitchPromise,
+      setInFlightPromise: (promise) => {
+        this.chunkSwitchPromise = promise;
+      },
+      getLatestTransitionToken: () => this.latestTransitionToken,
+      setLatestTransitionToken: (transitionToken) => {
+        this.latestTransitionToken = transitionToken;
+      },
+      transitionChunkByToken: this.transitionChunkByToken,
+    });
   }
 
   private getChestWorldPosition = (chestEntityId: ID, hexCoords: Position) => {
@@ -524,10 +489,10 @@ export class ChestManager {
     this.entityIdLabels.set(chest.entityId, label);
   }
 
-  public showLabel(entityId: ID): void {
+  public showLabel(entityId: ID): HoverLabelShowResult {
     const chest = this.chests.getChest(entityId);
     if (!chest) {
-      return;
+      return { status: "missing" };
     }
 
     const position = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
@@ -535,14 +500,21 @@ export class ChestManager {
 
     const existingLabel = this.entityIdLabels.get(entityId);
     if (existingLabel) {
+      const wasDetached = existingLabel.parent !== this.labelsGroup;
+      const wasHidden = existingLabel.visible !== true || existingLabel.element.style.display === "none";
       const updatedPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
       updatedPosition.y += 1.5;
       existingLabel.position.copy(updatedPosition);
+      if (wasDetached) {
+        this.labelsGroup.add(existingLabel);
+      }
+      existingLabel.visible = true;
+      existingLabel.element.style.display = "";
       // Highlight point icon on hover
       if (this.pointsRenderer) {
         this.pointsRenderer.setHover(entityId);
       }
-      return;
+      return wasDetached || wasHidden ? { status: "reattached" } : { status: "unchanged" };
     }
 
     this.addEntityIdLabel(chest, position);
@@ -551,6 +523,7 @@ export class ChestManager {
     if (this.pointsRenderer) {
       this.pointsRenderer.setHover(entityId);
     }
+    return { status: "shown" };
   }
 
   public hideLabel(entityId: ID): void {

@@ -14,12 +14,7 @@
     "declare:slottest": "source ../../../../common/.env.slottest && bun --env-file=../../../../common/.env.slottest ./declare.js",
     "declare:sepolia": "source ../../../../common/.env.sepolia && bun --env-file=../../../../common/.env.sepolia ./declare.js",
     "declare:mainnet": "source ../../../../common/.env.mainnet && bun --env-file=../../../../common/.env.mainnet ./declare.js",
-    "link-indexer:local": "source ../../../../common/.env.local && bun --env-file=../../../../common/.env.local ./link-indexer.js",
-    "link-indexer:slot": "source ../../../../common/.env.slot && bun --env-file=../../../../common/.env.slot ./link-indexer.js",
-    "link-indexer:slottest": "source ../../../../common/.env.slottest && bun --env-file=../../../../common/.env.slottest ./link-indexer.js",
-    "link-indexer:sepolia": "source ../../../../common/.env.sepolia && bun --env-file=../../../../common/.env.sepolia ./link-indexer.js",
-    "link-indexer:mainnet": "source ../../../../common/.env.mainnet && bun --env-file=../../../../common/.env.mainnet ./link-indexer.js",
-    "test": "node --test ./link-indexer-env.test.js"
+    "test": "node --test"
   },
   "dependencies": {
     "colors": "^1.4.0",

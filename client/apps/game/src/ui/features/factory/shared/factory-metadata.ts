@@ -1,8 +1,12 @@
 import type { RawArgsArray } from "starknet";
 
+import {
+  resolveFactoryConfigDefaultVersion as resolveSharedFactoryConfigDefaultVersion,
+  type FactoryDefaultVersionGameMode,
+} from "../../../../../../../../config/shared/factory-defaults";
 import { getGameManifest, type Chain } from "../../../../../../../../contracts/utils/utils";
 
-type FactoryConfigGameMode = "eternum" | "blitz";
+type FactoryConfigGameMode = FactoryDefaultVersionGameMode;
 
 export interface FactoryManifestContract {
   class_hash: string;
@@ -44,11 +48,6 @@ export interface FactoryConfigManifest {
   libraries?: FactoryManifestLibrary[];
 }
 
-const DEFAULT_FACTORY_VERSION_BY_MODE: Record<FactoryConfigGameMode, string> = {
-  eternum: "180",
-  blitz: "180",
-};
-
 function readOptionalFactoryEnv(name: string): string | undefined {
   const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
   return env?.[name];
@@ -74,7 +73,7 @@ export const FACTORY_ADDRESSES: Record<Chain, string> = {
 };
 
 export const resolveFactoryConfigDefaultVersion = (gameMode: FactoryConfigGameMode): string =>
-  DEFAULT_FACTORY_VERSION_BY_MODE[gameMode];
+  resolveSharedFactoryConfigDefaultVersion(gameMode);
 
 export const resolveFactoryAddress = (chain: Chain): string => FACTORY_ADDRESSES[chain];
 

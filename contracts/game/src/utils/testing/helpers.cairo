@@ -368,8 +368,11 @@ pub fn tspawn_simple_realm(
     tstore_production_config(ref world, ResourceTypes::LABOR);
     tstore_production_config(ref world, ResourceTypes::EARTHEN_SHARD);
 
-    // create realm
-    let realm_entity_id = iRealmImpl::create_realm(ref world, owner, realm_id, array![], 1, 0, 1, coord.into(), true);
+    let realm_entity_id = iRealmImpl::create_realm_structure(
+        ref world, owner, realm_id, array![], 1, 1, coord.into(), true,
+    );
+    iRealmImpl::grant_realm_starting_troops(ref world, realm_entity_id);
+    iRealmImpl::provision_realm(ref world, realm_entity_id);
 
     realm_entity_id
 }
@@ -395,14 +398,15 @@ pub fn tspawn_realm(
     realm_id: ID,
     order: u8,
     produced_resources: Array<u8>,
-    level: u8,
+    _level: u8,
     wonder: u8,
     coord: Coord,
 ) -> ID {
-    // create realm
-    let realm_entity_id = iRealmImpl::create_realm(
-        ref world, owner, realm_id, produced_resources, order, level, wonder, coord.into(), true,
+    let realm_entity_id = iRealmImpl::create_realm_structure(
+        ref world, owner, realm_id, produced_resources, order, wonder, coord.into(), true,
     );
+    iRealmImpl::grant_realm_starting_troops(ref world, realm_entity_id);
+    iRealmImpl::provision_realm(ref world, realm_entity_id);
 
     realm_entity_id
 }
@@ -537,6 +541,7 @@ pub fn tspawn_village(ref world: WorldStorage, realm_id: ID, owner: ContractAddr
             coord_x: coord.x,
             coord_y: coord.y,
             level: 1,
+            starting_troops_granted: false,
         },
         troop_guards: GuardTroops { // Initialize empty guards
             delta: basic_troops,
@@ -619,8 +624,8 @@ pub fn namespace_def_combat() -> NamespaceDef {
             TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_14")),
-            TestResource::Library(("biome_library", "0_1_12")), TestResource::Library(("rng_library", "0_1_14")),
+            TestResource::Library(("structure_creation_library", "0_1_17")),
+            TestResource::Library(("biome_library", "0_1_12")), TestResource::Library(("rng_library", "0_1_15")),
             TestResource::Library(
                 ("combat_library", "0_1_12"),
             ), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
@@ -786,6 +791,7 @@ pub fn spawn_test_realm(ref world: WorldStorage, realm_id: u32, owner: ContractA
             coord_x: coord.x,
             coord_y: coord.y,
             level: 1,
+            starting_troops_granted: false,
         },
         troop_guards: GuardTroops {
             delta: default_troops,
@@ -842,6 +848,7 @@ pub fn spawn_guard_test_realm(ref world: WorldStorage, realm_id: u32, owner: Con
             coord_x: coord.x,
             coord_y: coord.y,
             level: 1,
+            starting_troops_granted: false,
         },
         troop_guards: GuardTroops {
             delta: default_troops,
@@ -1188,8 +1195,8 @@ pub fn namespace_def_troop_management() -> NamespaceDef {
             TestResource::Contract("troop_movement_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_14")),
-            TestResource::Library(("biome_library", "0_1_12")), TestResource::Library(("rng_library", "0_1_14")),
+            TestResource::Library(("structure_creation_library", "0_1_17")),
+            TestResource::Library(("biome_library", "0_1_12")), TestResource::Library(("rng_library", "0_1_15")),
             TestResource::Library(("combat_library", "0_1_12")),
         ]
             .span(),

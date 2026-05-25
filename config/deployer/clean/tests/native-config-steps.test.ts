@@ -1,10 +1,13 @@
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { describe, expect, test } from "bun:test";
 import { getGameManifest } from "../../../../contracts/utils/utils";
+import { buildBlitzEntryTokenDeployCalldata } from "../blitz/entry-token";
 import { FACTORY_WORLD_CONFIG_STEPS, resolveFactoryWorldConfigSteps } from "../config/steps";
 import { applyDeploymentConfigOverrides, loadEnvironmentConfiguration } from "../config/config-loader";
 import {
   setBlitzExplorationConfig,
   setBlitzRegistrationParametersConfig,
+  setCampStartingResourcesConfig,
   setFaithConfig,
   setResourceFactoryConfig,
   setSeasonConfig,
@@ -24,6 +27,7 @@ describe("native config steps", () => {
     expect(stepIds).toContain("building-categories");
     expect(stepIds).toContain("blitz-exploration");
     expect(stepIds).toContain("blitz-registration");
+    expect(stepIds).toContain("camp-starting-resources");
     expect(stepIds).toContain("season");
     expect(stepIds).toContain("faith");
 
@@ -100,6 +104,34 @@ describe("native config steps", () => {
     });
 
     expect(capturedCalls).toEqual([{ signer: expect.anything(), reward_profile_id: 2 }]);
+  });
+
+  test("writes camp starting resources through the renamed provider method", async () => {
+    const config = loadEnvironmentConfiguration("slot.blitz");
+    const capturedCalls: Array<Record<string, unknown>> = [];
+    const provider = {
+      manifest: getGameManifest("slot") as any,
+      set_camp_starting_resources_config: async (payload: Record<string, unknown>) => {
+        capturedCalls.push(payload);
+        return { statusReceipt: "ok" };
+      },
+    };
+
+    await setCampStartingResourcesConfig({
+      account: { address: "0x1" } as any,
+      provider: provider as any,
+      config,
+    });
+
+    expect(capturedCalls).toHaveLength(1);
+    expect(capturedCalls[0]).toMatchObject({
+      signer: expect.anything(),
+      resources: config.campStartingResources.map((resource) => ({
+        resource: resource.resource,
+        min_amount: resource.min_amount * RESOURCE_PRECISION,
+        max_amount: resource.max_amount * RESOURCE_PRECISION,
+      })),
+    });
   });
 
   test("applies faith config with the expected payload scaling", async () => {
@@ -179,6 +211,9 @@ describe("native config steps", () => {
     const registrationStartAt = registrationPayload.registration_start_at as number;
 
     expect(registrationStartAt).toBe(1_700_000_010);
+    expect(registrationPayload.entry_token_deploy_calldata).toEqual(
+      buildBlitzEntryTokenDeployCalldata(provider.manifest as any),
+    );
     expect(seasonPayload.start_settling_at).toBe(registrationStartAt);
     expect(seasonPayload.start_main_at).toBe(registrationStartAt + 100);
     expect(seasonPayload.end_at).toBe((seasonPayload.start_main_at as number) + config.season.durationSeconds);

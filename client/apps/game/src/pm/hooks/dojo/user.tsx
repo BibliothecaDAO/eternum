@@ -1,13 +1,13 @@
 import { LordsAbi } from "@bibliothecadao/eternum";
-import type { Token, TokenBalance } from "@dojoengine/torii-client";
 import { useAccount, useCall } from "@starknet-react/core";
 import { createContext, useCallback, useContext, useMemo } from "react";
 import { Abi } from "starknet";
+import type { PredictionMarketChain } from "../../manifest-loader";
 import { getPredictionMarketConfig } from "../../prediction-market-config";
-import { useTokens } from "./use-tokens";
 
 type UserProviderProps = {
   children: React.ReactNode;
+  chain?: PredictionMarketChain;
 };
 
 type UserProviderState =
@@ -16,16 +16,6 @@ type UserProviderState =
       lordsBalance: bigint;
       lordsBalanceLoading: boolean;
       refetchLordsBalance: () => void;
-      // Token balances from Torii (for VaultPositions, VaultFees, etc.)
-      tokens: {
-        tokens: Token[];
-        getBalance: (token: Token) => TokenBalance | undefined;
-        toDecimal: (token: Token, balance: TokenBalance | undefined) => number;
-        balances: TokenBalance[];
-        getTokens: (ca: string[]) => Token[];
-        getBalances: (ca: string[]) => TokenBalance[];
-        refetchBalances: () => Promise<void>;
-      };
     }
   | undefined;
 
@@ -59,9 +49,9 @@ const normalizeUint256 = (value: unknown): bigint => {
   }
 };
 
-export function UserProvider({ children, ...props }: UserProviderProps) {
+export function UserProvider({ children, chain, ...props }: UserProviderProps) {
   const { account } = useAccount();
-  const collateralToken = getPredictionMarketConfig().collateralToken;
+  const collateralToken = getPredictionMarketConfig(chain).collateralToken;
 
   // LORDS balance from RPC
   const lordsBalanceCall = useCall({
@@ -80,28 +70,6 @@ export function UserProvider({ children, ...props }: UserProviderProps) {
     lordsBalanceCall.refetch?.();
   }, [lordsBalanceCall]);
 
-  // Token balances from Torii (for VaultPositions, VaultFees, etc.)
-  const { tokens, getBalance, toDecimal, balances, refetchBalances } = useTokens({
-    accountAddresses: account ? [account.address] : undefined,
-    contractAddresses: [],
-  });
-
-  const getTokens = useCallback(
-    (contractAddresses: string[]) => {
-      return tokens.filter((i) => contractAddresses.map((addr) => BigInt(addr)).includes(BigInt(i.contract_address)));
-    },
-    [tokens],
-  );
-
-  const getBalances = useCallback(
-    (contractAddresses: string[]) => {
-      return balances
-        .filter((i) => contractAddresses.map((addr) => BigInt(addr)).includes(BigInt(i.contract_address)))
-        .filter((i) => BigInt(i.account_address) === BigInt(account?.address || 0));
-    },
-    [balances, account?.address],
-  );
-
   return (
     <UserProviderContext.Provider
       {...props}
@@ -109,15 +77,6 @@ export function UserProvider({ children, ...props }: UserProviderProps) {
         lordsBalance,
         lordsBalanceLoading: lordsBalanceCall.isLoading,
         refetchLordsBalance,
-        tokens: {
-          tokens,
-          getBalance,
-          toDecimal,
-          balances,
-          getTokens,
-          getBalances,
-          refetchBalances,
-        },
       }}
     >
       {children}

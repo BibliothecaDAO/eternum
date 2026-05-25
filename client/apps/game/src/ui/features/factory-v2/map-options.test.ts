@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { buildFactoryCreateRotationRunRequest } from "./create-rotation-run-request";
 import { buildFactoryCreateRunRequest } from "./create-run-request";
+import { buildFactoryCreateSeriesRunRequest } from "./create-series-run-request";
 import {
   createFactoryMoreOptionsDraft,
   getFactoryMoreOptionField,
@@ -32,7 +34,7 @@ describe("Factory V2 map options", () => {
       "Relic discovery interval",
     );
     expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).toContain(
-      "Prize token address",
+      "Entry ticket payment token address",
     );
     expect(blitzSections.find((section) => section.id === "explorationRewards")?.previewRows).toHaveLength(9);
   });
@@ -252,5 +254,67 @@ describe("Factory V2 map options", () => {
       fee_token: "0x1234",
       fee_amount: "40000",
     });
+  });
+
+  it("passes workflow ref overrides through game, series, and rotation launches", () => {
+    const workflowRef = "credence0x/blitz-hex-map";
+
+    const gameRequest = buildFactoryCreateRunRequest({
+      environmentId: "slot.blitz",
+      gameName: "bltz-test-12",
+      gameStartTime: "2026-03-18T10:00:00Z",
+      workflowRef,
+      selectedMode: "blitz",
+      selectedPreset: null,
+      twoPlayerMode: false,
+      singleRealmMode: false,
+      durationMinutes: 30,
+      showsDuration: true,
+    });
+
+    const seriesRequest = buildFactoryCreateSeriesRunRequest({
+      environmentId: "slot.blitz",
+      seriesName: "bltz-series-12",
+      workflowRef,
+      games: [
+        {
+          id: "game-1",
+          gameName: "bltz-series-12-1",
+          startAt: "2026-03-18T10:00:00Z",
+          seriesGameNumber: 1,
+        },
+      ],
+      selectedMode: "blitz",
+      selectedPreset: null,
+      twoPlayerMode: false,
+      singleRealmMode: false,
+      durationMinutes: 30,
+      showsDuration: true,
+      autoRetryIntervalMinutes: 15,
+      resolveStartTime: (startAt) => startAt,
+    });
+
+    const rotationRequest = buildFactoryCreateRotationRunRequest({
+      environmentId: "slot.blitz",
+      rotationName: "bltz-rotation-12",
+      workflowRef,
+      firstGameStartTime: "2026-03-18T10:00:00Z",
+      gameIntervalMinutes: 60,
+      maxGames: 10,
+      advanceWindowGames: 3,
+      evaluationIntervalMinutes: 15,
+      selectedMode: "blitz",
+      selectedPreset: null,
+      twoPlayerMode: false,
+      singleRealmMode: false,
+      durationMinutes: 30,
+      showsDuration: true,
+      autoRetryIntervalMinutes: 15,
+      resolveStartTime: (startAt) => startAt,
+    });
+
+    expect(gameRequest.workflowRef).toBe(workflowRef);
+    expect(seriesRequest.workflowRef).toBe(workflowRef);
+    expect(rotationRequest.workflowRef).toBe(workflowRef);
   });
 });

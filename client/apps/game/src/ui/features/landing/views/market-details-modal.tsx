@@ -57,6 +57,12 @@ const TRADE_SYNC_INTERVAL_MS = 2_000;
 const cx = (...classes: Array<string | null | undefined | false>) => classes.filter(Boolean).join(" ");
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+const MarketDetailsModalLoadingFallback = () => (
+  <div className="flex h-[60vh] items-center justify-center">
+    <Loader2 className="h-6 w-6 animate-spin text-orange" />
+  </div>
+);
+
 const formatTimeLeft = (targetSeconds: number | null) => {
   if (targetSeconds == null || targetSeconds <= 0) return "TBD";
   const nowSec = Math.floor(Date.now() / 1_000);
@@ -209,7 +215,7 @@ const MarketDetailsModalContent = ({
   const [refreshKey, setRefreshKey] = useState(0);
   const [isTradeSyncing, setIsTradeSyncing] = useState(false);
   const [isResolveActionPending, setIsResolveActionPending] = useState(false);
-  const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
+  const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch(chain);
   const { address } = useAccount();
   const {
     config: { manifest },
@@ -225,7 +231,7 @@ const MarketDetailsModalContent = ({
   }, [initialMarket.market_id]);
   const { market: fetchedMarket, refresh: refreshMarket, isLoading } = useMarket(marketId);
   const market = fetchedMarket ?? initialMarket;
-  const resolutionController = useMarketResolutionController(market);
+  const resolutionController = useMarketResolutionController(market, chain);
 
   const watchState = getWatchState(market);
   const isWatching = watchingMarketId === String(market.market_id);
@@ -646,12 +652,8 @@ const MarketDetailsModalContent = ({
 
           <div className="min-h-0 scrollbar-hide lg:h-full lg:w-[340px] lg:overflow-y-auto lg:pl-1">
             <div className="flex flex-col gap-4">
-              <MarketTrade
-                market={market}
-                selectedOutcome={selectedOutcome}
-                onTradeSuccess={handleTradeSuccess}
-                chain={chain}
-              />
+              {/* prettier-ignore */}
+              <MarketTrade market={market} selectedOutcome={selectedOutcome} onTradeSuccess={handleTradeSuccess} chain={chain} />
               <MarketFees market={market} />
             </div>
           </div>
@@ -666,7 +668,7 @@ const MarketDetailsModalContent = ({
  */
 export const MarketDetailsModal = ({ market, chain, initialOutcomeIndex, onClose }: MarketDetailsModalProps) => {
   return (
-    <MarketsProviders chain={chain}>
+    <MarketsProviders chain={chain} loadingFallback={<MarketDetailsModalLoadingFallback />}>
       <MarketDetailsModalContent
         initialMarket={market}
         chain={chain}

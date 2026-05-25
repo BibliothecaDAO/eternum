@@ -5,6 +5,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { MMRLeaderboard } from "./mmr-leaderboard";
 
+const landingNetworkStateMock = vi.hoisted(() => ({
+  preferredChain: "mainnet" as "mainnet" | "slot",
+}));
+
+vi.mock("@starknet-react/core", () => ({
+  useAccount: vi.fn(() => ({ address: null })),
+}));
+
+vi.mock("@/ui/features/landing/hooks/use-landing-network-state", () => ({
+  useLandingNetworkState: () => ({
+    preferredChain: landingNetworkStateMock.preferredChain,
+  }),
+}));
+
+vi.mock("@/ui/utils/network-switch", () => ({
+  getChainLabel: (chain: string) => (chain === "mainnet" ? "Mainnet" : "Slot"),
+}));
+
 vi.mock("@/ui/utils/utils", () => ({
   displayAddress: vi.fn((address: string) => address),
 }));
@@ -51,10 +69,20 @@ const buildRow = (overrides: Record<string, unknown> = {}) => ({
   new_mmr_low: "0x0",
   new_mmr_high: "0x0",
   event_timestamp: "0x65c8f0f0",
-  mmr_rank: 1,
+  mmr_rank: 4,
   total_rows: 1,
   ...overrides,
 });
+
+const getLeaderboardSqlUrl = (chainHost: string) =>
+  vi
+    .mocked(fetch)
+    .mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()))
+    .find((url) => {
+      if (!url.includes(chainHost)) return false;
+      const query = new URL(url).searchParams.get("query")?.toLowerCase() ?? "";
+      return query.includes("from events") && query.includes("mmr_rank");
+    });
 
 describe("MMRLeaderboard", () => {
   let container: HTMLDivElement;
@@ -63,6 +91,7 @@ describe("MMRLeaderboard", () => {
   beforeEach(() => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     vi.useFakeTimers();
+    landingNetworkStateMock.preferredChain = "mainnet";
 
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = typeof input === "string" ? input : input.toString();
@@ -123,20 +152,14 @@ describe("MMRLeaderboard", () => {
     expect(fetchMock.mock.calls.length).toBe(initialCallCount);
   });
 
-  it("defaults to mainnet and allows switching to slot", async () => {
+  it("follows the selected landing chain", async () => {
     await act(async () => {
       root.render(<MMRLeaderboard />);
       await waitForAsyncWork();
     });
 
-    const buttons = Array.from(container.querySelectorAll("button"));
-    const slotButton = buttons.find((button) => button.textContent?.toLowerCase().includes("slot"));
-    const mainnetButton = buttons.find((button) => button.textContent?.toLowerCase().includes("mainnet"));
-
-    expect(slotButton).toBeDefined();
-    expect(mainnetButton).toBeDefined();
-    expect(mainnetButton?.textContent?.toLowerCase()).not.toContain("coming soon");
-    expect((mainnetButton as HTMLButtonElement).disabled).toBe(false);
+    expect(container.textContent).toContain("Chain:");
+    expect(container.textContent).toContain("Mainnet");
 
     const fetchMock = vi.mocked(fetch);
     const fetchedUrls = fetchMock.mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
@@ -144,7 +167,7 @@ describe("MMRLeaderboard", () => {
     expect(fetchedUrls.some((url) => url.includes("blitz-mainnet-global-1"))).toBe(true);
     expect(fetchedUrls.some((url) => url.includes("blitz-slot-global-1"))).toBe(false);
 
-    const mainnetUrl = fetchedUrls.find((url) => url.includes("blitz-mainnet-global-1"));
+    const mainnetUrl = getLeaderboardSqlUrl("blitz-mainnet-global-1");
     expect(mainnetUrl).toBeDefined();
 
     const mainnetQuery = new URL(mainnetUrl ?? "").searchParams.get("query") ?? "";
@@ -157,9 +180,12 @@ describe("MMRLeaderboard", () => {
     expect(mainnetQuery.toLowerCase()).toContain(`${EVENT_CONTRACT_EXPR} = '${mainnetToken}'`);
 
     await act(async () => {
-      (slotButton as HTMLButtonElement).click();
+      landingNetworkStateMock.preferredChain = "slot";
+      root.render(<MMRLeaderboard />);
       await waitForAsyncWork();
     });
+
+    expect(container.textContent).toContain("Slot");
 
     await vi.waitFor(() => {
       const urls = vi.mocked(fetch).mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
@@ -169,7 +195,7 @@ describe("MMRLeaderboard", () => {
     const fetchedUrlsAfterSwitch = vi
       .mocked(fetch)
       .mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
-    const slotUrl = fetchedUrlsAfterSwitch.find((url) => url.includes("blitz-slot-global-1"));
+    const slotUrl = getLeaderboardSqlUrl("blitz-slot-global-1");
     expect(slotUrl).toBeDefined();
 
     const slotQuery = new URL(slotUrl ?? "").searchParams.get("query") ?? "";
@@ -187,7 +213,7 @@ describe("MMRLeaderboard", () => {
 
     await vi.waitFor(() => {
       expect(container.textContent).toContain("Tier");
-      expect(container.textContent).toContain("Iron");
+      expect(container.textContent).toContain("Scrapper");
     });
   });
 

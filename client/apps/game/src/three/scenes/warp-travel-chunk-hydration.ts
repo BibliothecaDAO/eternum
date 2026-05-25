@@ -1,4 +1,11 @@
-import { prepareWorldmapChunkPresentation } from "./worldmap-chunk-presentation";
+import {
+  prepareWorldmapChunkPresentation,
+  type WorldmapChunkPresentationTimeoutInfo,
+} from "./worldmap-chunk-presentation";
+
+export interface ComputeTileEntitiesOptions {
+  requireStructures: boolean;
+}
 
 export interface WarpTravelChunkHydrationInput<TPreparedTerrain> {
   chunkKey: string;
@@ -10,7 +17,7 @@ export interface WarpTravelChunkHydrationInput<TPreparedTerrain> {
     height: number;
     width: number;
   };
-  computeTileEntities: (chunkKey: string) => Promise<boolean>;
+  computeTileEntities: (chunkKey: string, options: ComputeTileEntitiesOptions) => Promise<boolean>;
   updatePinnedChunks: (chunkKeys: string[]) => void;
   updateBoundsSubscription: (chunkKey: string, transitionToken: number) => Promise<void>;
   waitForTileHydrationIdle: (chunkKey: string) => Promise<void>;
@@ -18,19 +25,23 @@ export interface WarpTravelChunkHydrationInput<TPreparedTerrain> {
   prewarmChunkAssets: (chunkKey: string) => Promise<void>;
   prepareTerrainChunk: (startRow: number, startCol: number, height: number, width: number) => Promise<TPreparedTerrain>;
   onChunkHydrated: (chunkKey: string) => void;
+  phaseTimeoutMs?: number;
+  onPhaseTimeout?: (info: WorldmapChunkPresentationTimeoutInfo) => void;
 }
 
 export async function hydrateWarpTravelChunk<TPreparedTerrain>(
   input: WarpTravelChunkHydrationInput<TPreparedTerrain>,
 ): Promise<{ tileFetchSucceeded: boolean; preparedTerrain: TPreparedTerrain | null }> {
-  const tileFetchPromise = input.computeTileEntities(input.chunkKey);
+  const tileFetchPromise = input.computeTileEntities(input.chunkKey, { requireStructures: true });
   const structureReadyPromise = input.waitForStructureHydrationIdle(input.chunkKey);
   const assetPrewarmPromise = input.prewarmChunkAssets(input.chunkKey);
 
   input.updatePinnedChunks(input.surroundingChunks);
   const boundsSwitchPromise = input.updateBoundsSubscription(input.chunkKey, input.transitionToken);
   input.surroundingChunks.forEach((chunkKey) => {
-    void input.computeTileEntities(chunkKey);
+    void input.computeTileEntities(chunkKey, { requireStructures: false }).catch((error) => {
+      console.warn(`[ChunkHydration] Prefetch failed for surrounding chunk "${chunkKey}"`, error);
+    });
   });
 
   return prepareWorldmapChunkPresentation({
@@ -45,5 +56,7 @@ export async function hydrateWarpTravelChunk<TPreparedTerrain>(
     assetPrewarmPromise,
     prepareTerrainChunk: input.prepareTerrainChunk,
     onChunkReady: input.onChunkHydrated,
+    phaseTimeoutMs: input.phaseTimeoutMs,
+    onPhaseTimeout: input.onPhaseTimeout,
   });
 }

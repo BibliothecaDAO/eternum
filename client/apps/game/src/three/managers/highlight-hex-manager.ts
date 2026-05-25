@@ -91,7 +91,7 @@ export class HighlightHexManager {
     this.routeLayer = this.createLayer(hexagonGeometry, {
       color: 0xffffff,
       opacity: 0.16,
-      renderOrder: 40,
+      renderOrder: 5,
       baseOpacity: 0.16,
       opacityPulseScale: 1.25,
       targetScale: 0.92,
@@ -100,7 +100,7 @@ export class HighlightHexManager {
     this.endpointLayer = this.createLayer(hexagonGeometry, {
       color: 0xffffff,
       opacity: 0.22,
-      renderOrder: 41,
+      renderOrder: 6,
       baseOpacity: 0.22,
       opacityPulseScale: 1.5,
       targetScale: 0.56,
@@ -109,7 +109,7 @@ export class HighlightHexManager {
     this.frontierLayer = this.createLayer(hexagonGeometry, {
       color: 0xffffff,
       opacity: 0.3,
-      renderOrder: 42,
+      renderOrder: 7,
       baseOpacity: 0.3,
       opacityPulseScale: 1.8,
       targetScale: 0.74,
@@ -358,7 +358,7 @@ export class HighlightHexManager {
     glowMesh.position.set(position.x, this.routeLayer.baseY + this.yOffset, position.z);
     glowMesh.rotation.x = -Math.PI / 2;
     glowMesh.scale.setScalar(0.42);
-    glowMesh.renderOrder = 43;
+    glowMesh.renderOrder = 8;
     glowMesh.raycast = () => {};
 
     const glowEntry = { mesh: glowMesh, material: glowMaterial };

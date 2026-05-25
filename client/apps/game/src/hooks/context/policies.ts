@@ -1,43 +1,11 @@
-import { getActiveWorld } from "@/runtime/world";
+import { getActiveWorld, resolveRuntimeChain } from "@/runtime/world";
 import { getSeasonPassAddress, getVillagePassAddress } from "@/utils/addresses";
-import { getSeasonAddresses } from "@contracts";
+import { Chain, getSeasonAddresses } from "@contracts";
 import { toSessionPolicies } from "@cartridge/controller";
 import { getContractByName } from "@dojoengine/core";
 import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
-import { messages } from "./signing-policy";
-
-// Get entry token address from active world profile, fallback to env var
-const activeWorld = getActiveWorld();
-const entryTokenAddress = activeWorld?.entryTokenAddress || env.VITE_PUBLIC_ENTRY_TOKEN_ADDRESS;
-const feeTokenAddress = activeWorld?.feeTokenAddress || env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
-
-const entryTokenPolicies =
-  entryTokenAddress && entryTokenAddress !== "0x0"
-    ? {
-        [entryTokenAddress]: {
-          methods: [
-            {
-              name: "token_lock",
-              entrypoint: "token_lock",
-            },
-          ],
-        },
-      }
-    : {};
-
-const feeTokenPolicies = feeTokenAddress
-  ? {
-      [feeTokenAddress]: {
-        methods: [
-          {
-            name: "approve",
-            entrypoint: "approve",
-          },
-        ],
-      },
-    }
-  : {};
+import { buildSigningMessages } from "./signing-policy";
 
 const seasonPassMethodPolicies = [
   {
@@ -50,50 +18,90 @@ const seasonPassMethodPolicies = [
   },
 ];
 
-const seasonPassAddresses = Array.from(new Set([getSeasonPassAddress(), getSeasonAddresses("slot").seasonPass])).filter(
-  (address): address is string => Boolean(address && address !== "0x0"),
-);
+const buildFeeTokenPolicies = (feeTokenAddress: string | null | undefined) =>
+  feeTokenAddress
+    ? {
+        [feeTokenAddress]: {
+          methods: [
+            {
+              name: "approve",
+              entrypoint: "approve",
+            },
+          ],
+        },
+      }
+    : {};
 
-const seasonPassPolicies = Object.fromEntries(
-  seasonPassAddresses.map((address) => [
-    address,
-    {
-      methods: seasonPassMethodPolicies,
-    },
-  ]),
-);
+const buildEntryTokenPolicies = (entryTokenAddress: string | null | undefined) =>
+  entryTokenAddress
+    ? {
+        [entryTokenAddress]: {
+          methods: [
+            {
+              name: "set_approval_for_all",
+              entrypoint: "set_approval_for_all",
+            },
+          ],
+        },
+      }
+    : {};
 
-export const buildPolicies = (manifest: any) =>
-  toSessionPolicies({
+const resolvePolicyChain = (): Chain => resolveRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
+
+const resolveSeasonPassAddresses = (chain: Chain): string[] =>
+  Array.from(new Set([getSeasonPassAddress(chain), getSeasonAddresses("slot").seasonPass])).filter(
+    (address): address is string => Boolean(address && address !== "0x0"),
+  );
+
+const buildSeasonPassPolicies = (chain: Chain) =>
+  Object.fromEntries(
+    resolveSeasonPassAddresses(chain).map((address) => [
+      address,
+      {
+        methods: seasonPassMethodPolicies,
+      },
+    ]),
+  );
+
+const buildActiveWorldTokenPolicies = () => {
+  const activeWorld = getActiveWorld();
+  const feeTokenAddress = activeWorld?.feeTokenAddress || env.VITE_PUBLIC_FEE_TOKEN_ADDRESS;
+  const entryTokenAddress = activeWorld?.entryTokenAddress || null;
+
+  return {
+    feeTokenPolicies: buildFeeTokenPolicies(feeTokenAddress),
+    entryTokenPolicies: buildEntryTokenPolicies(entryTokenAddress),
+  };
+};
+
+export const buildPolicies = (manifest: any) => {
+  const chain = resolvePolicyChain();
+  const { feeTokenPolicies, entryTokenPolicies } = buildActiveWorldTokenPolicies();
+  const seasonPassPolicies = buildSeasonPassPolicies(chain);
+  const villagePassAddress = getVillagePassAddress(chain);
+
+  return toSessionPolicies({
     contracts: {
-      ...entryTokenPolicies,
       ...feeTokenPolicies,
+      ...entryTokenPolicies,
       ...seasonPassPolicies,
       [getContractByName(manifest, "s1_eternum", "blitz_realm_systems").address]: {
         methods: [
           {
-            name: "make_hyperstructures",
-            entrypoint: "make_hyperstructures",
+            name: "settle",
+            entrypoint: "settle",
           },
           {
-            name: "register",
-            entrypoint: "register",
+            name: "provision_realm",
+            entrypoint: "provision_realm",
           },
+        ],
+      },
+      [getContractByName(manifest, "s1_eternum", "hyperstructure_create_systems").address]: {
+        methods: [
           {
-            name: "obtain_entry_token",
-            entrypoint: "obtain_entry_token",
-          },
-          {
-            name: "create",
-            entrypoint: "create",
-          },
-          {
-            name: "assign_realm_positions",
-            entrypoint: "assign_realm_positions",
-          },
-          {
-            name: "settle_realms",
-            entrypoint: "settle_realms",
+            name: "create_hyperstructure",
+            entrypoint: "create_hyperstructure",
           },
         ],
       },
@@ -113,7 +121,7 @@ export const buildPolicies = (manifest: any) =>
           },
         ],
       },
-      [getVillagePassAddress()]: {
+      [villagePassAddress]: {
         methods: [
           {
             name: "set_approval_for_all",
@@ -815,7 +823,7 @@ export const buildPolicies = (manifest: any) =>
           },
         ],
       },
-      [getVillagePassAddress()]: {
+      [villagePassAddress]: {
         methods: [
           {
             name: "set_approval_for_all",
@@ -824,5 +832,6 @@ export const buildPolicies = (manifest: any) =>
         ],
       },
     },
-    messages,
+    messages: buildSigningMessages(chain),
   });
+};

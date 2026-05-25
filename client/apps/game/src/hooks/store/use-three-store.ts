@@ -21,6 +21,8 @@ export interface ThreeStore {
   setHoveredBattle: (hex: Position | null) => void;
   selectedBuilding: BuildingType;
   setSelectedBuilding: (building: BuildingType) => void;
+  selectedBuildingEntityId: ID | null;
+  setSelectedBuildingEntityId: (selectedBuildingEntityId: ID | null) => void;
   selectedBuildingHex: {
     outerCol: number;
     outerRow: number;
@@ -41,7 +43,10 @@ interface EntityActions {
   selectedEntityId: ID | null;
 }
 
-export const createThreeStoreSlice = (set: any, _get: any) => ({
+export const createThreeStoreSlice = (
+  set: (partial: Partial<ThreeStore> | ((state: ThreeStore) => Partial<ThreeStore>)) => void,
+  _get: () => ThreeStore,
+) => ({
   navigationTarget: null,
   setNavigationTarget: (hex: HexPosition | null) => set({ navigationTarget: hex }),
   cameraTargetHex: null,

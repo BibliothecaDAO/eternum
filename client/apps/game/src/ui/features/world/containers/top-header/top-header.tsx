@@ -7,6 +7,7 @@ import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
+import { GameStartCountdown } from "./game-start-countdown";
 import { TickProgress } from "./tick-progress";
 import {
   MIN_REFRESH_INTERVAL_MS,
@@ -21,6 +22,7 @@ import { motion } from "framer-motion";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { resolveTopHeaderPlayerStatus } from "./top-header-player-status";
 
 const slideDown = {
   hidden: { y: "-100%" },
@@ -43,7 +45,6 @@ export const TopHeader = memo(() => {
   const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
   const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
   const isSpectating = useUIStore((state) => state.isSpectating);
-  const playerStructures = useUIStore((state) => state.playerStructures);
   const accountName = useAccountStore((state) => state.accountName);
   const mode = useGameModeConfig();
 
@@ -130,6 +131,16 @@ export const TopHeader = memo(() => {
     );
   }, [account.address, leaderboardEntries, normalizeAddress, playerEntries]);
 
+  const playerStatus = useMemo(
+    () =>
+      resolveTopHeaderPlayerStatus({
+        isSpectating,
+        rank: playerEntry?.rank,
+        points: playerEntry?.points,
+      }),
+    [isSpectating, playerEntry?.points, playerEntry?.rank],
+  );
+
   const navigateToFastTravelLayer = useCallback(() => {
     playClick();
 
@@ -175,20 +186,19 @@ export const TopHeader = memo(() => {
               <span className="truncate text-base font-semibold">
                 {accountName ?? playerEntry?.displayName ?? "Player"}
               </span>
-              {isSpectating && playerStructures.length === 0 ? (
+              {playerStatus?.type === "spectating" ? (
                 <span className="text-xs text-gold/70 font-[Cinzel]">· Spectating</span>
-              ) : playerEntry?.rank ? (
+              ) : playerStatus?.type === "ranked" ? (
                 <span className="text-xs text-gold/70 font-[Cinzel]">
-                  · Rank #{playerEntry.rank} · {formatPoints(playerEntry.points)} pts
+                  · Rank #{playerStatus.rank} · {formatPoints(playerStatus.points)} pts
                 </span>
-              ) : (
-                <span className="text-xs text-gold/70 font-[Cinzel]">· Spectating</span>
-              )}
+              ) : null}
             </div>
 
             <div className="flex flex-shrink-0 flex-nowrap items-center gap-3 text-xs md:text-base">
               <div className="cycle-selector flex justify-center md:justify-start gap-2 whitespace-nowrap">
                 <TickProgress />
+                <GameStartCountdown />
                 <GameEndTimer />
               </div>
               <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 px-3 whitespace-nowrap">

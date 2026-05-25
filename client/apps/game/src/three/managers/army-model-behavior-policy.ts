@@ -17,6 +17,18 @@ interface ResolveMovementProgressUpdateResult {
   shouldCompletePath: boolean;
 }
 
+interface ResolveJourneyProgressUpdateInput {
+  currentProgress: number;
+  totalLength: number;
+  speed: number;
+  deltaTime: number;
+}
+
+interface ResolveJourneyProgressUpdateResult {
+  nextProgress: number;
+  isComplete: boolean;
+}
+
 interface ShouldSwitchModelForPositionInput<TModel> {
   currentModel: TModel | undefined;
   resolvedModel: TModel;
@@ -67,4 +79,22 @@ export function resolveNearestIntersection<TMesh>(
   }
 
   return current;
+}
+
+export function resolveJourneyProgressUpdate(
+  input: ResolveJourneyProgressUpdateInput,
+): ResolveJourneyProgressUpdateResult {
+  const { currentProgress, totalLength, speed, deltaTime } = input;
+
+  if (!Number.isFinite(totalLength) || totalLength <= 0) {
+    return { nextProgress: 1, isComplete: true };
+  }
+
+  const progressStep = (speed * deltaTime) / totalLength;
+  const nextProgress = currentProgress + progressStep;
+
+  return {
+    nextProgress,
+    isComplete: nextProgress >= 1,
+  };
 }

@@ -1,10 +1,11 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { useConnectionStore } from "@/hooks/store/use-connection-store";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useLatestFeaturesSeen } from "@/hooks/use-latest-features-seen";
 import { BuildingThumbs } from "@/ui/config";
 import CircleButton from "@/ui/design-system/molecules/circle-button";
+import { NetworkStatusPill } from "@/ui/features/world/components/network-status-pill";
+import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { latestFeatures, leaderboard, rewards, settings, shortcuts, transactions } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
 import { HomeButton } from "@/ui/shared/components/home-button";
@@ -32,9 +33,6 @@ export const SecondaryMenuItems = () => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isPopupOpen = useUIStore((state) => state.isPopupOpen);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-
-  // Connection health status
-  const connectionStatus = useConnectionStore((state) => state.status);
 
   // Transaction status for the network button indicator
   const txTransactions = useTransactionStore((state) => state.transactions);
@@ -152,19 +150,9 @@ export const SecondaryMenuItems = () => {
           onClick={() => togglePopup(settings)}
         />
         {/* Connection health indicator - only visible when unhealthy */}
-        {connectionStatus !== "connected" && (
-          <div
-            className="relative self-center"
-            title={connectionStatus === "degraded" ? "Connection Degraded" : "Disconnected"}
-          >
-            <div
-              className={`w-3 h-3 rounded-full animate-pulse border border-dark-brown
-                          ${connectionStatus === "degraded" ? "bg-orange" : ""}
-                          ${connectionStatus === "disconnected" ? "bg-danger" : ""}
-                          shadow-[0_0_6px_currentColor]`}
-            />
-          </div>
-        )}
+        <div className="self-center">
+          <NetworkStatusPill onRetry={triggerConnectionForceReconnect} />
+        </div>
         {/* Transactions */}
         <div className="relative">
           <CircleButton

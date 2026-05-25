@@ -1,5 +1,10 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
+import {
+  resolveArmyToArmyTransferRestriction,
+  resolveArmyToStructureTransferRestriction,
+} from "@/ui/lib/structure-capabilities";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { formatNumber } from "@/ui/utils/utils";
 
@@ -32,8 +37,9 @@ import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
-import { TransferDirection } from "./help-container";
 import { TransferBalanceCardData, TransferBalanceCards } from "./transfer-troops/transfer-balance-cards";
+import { TransferDirection } from "./transfer-troops/transfer-direction";
+import { BALANCE_TRANSFER_SLOT, getSameStructureTransferBlockReason } from "./transfer-troops/transfer-eligibility";
 import { TransferSlotSelection } from "./transfer-troops/transfer-slot-selection";
 import { DeploymentStrengthSummary } from "./deployment-strength-summary";
 
@@ -48,7 +54,7 @@ interface TransferTroopsContainerProps {
   canToggleDirection?: boolean;
 }
 
-const BALANCE_SLOT = "balance" as const;
+const BALANCE_SLOT = BALANCE_TRANSFER_SLOT;
 
 type GuardSelection = number | typeof BALANCE_SLOT | null;
 
@@ -69,6 +75,7 @@ export const TransferTroopsContainer = ({
   onToggleDirection,
   canToggleDirection = false,
 }: TransferTroopsContainerProps) => {
+  const mode = useGameModeConfig();
   const {
     account: { account },
     network: { toriiClient },
@@ -99,12 +106,14 @@ export const TransferTroopsContainer = ({
         getStructureFromToriiClient(toriiClient, selectedEntityId),
         getExplorerFromToriiClient(toriiClient, selectedEntityId),
       ]);
+      const explorerOwner = explorerData?.explorer?.owner ?? 0;
 
       return {
         structure: structureData.structure,
         structureResources: structureData.resources,
         explorer: explorerData.explorer,
         explorerResources: explorerData.resources,
+        explorerConnectedStructure: await getStructureFromToriiClient(toriiClient, explorerOwner),
       };
     },
     staleTime: 10000, // 10 seconds
@@ -150,9 +159,54 @@ export const TransferTroopsContainer = ({
   const selectedStructure = selectedEntityData?.structure;
   const selectedExplorerTroops = selectedEntityData?.explorer;
   const selectedExplorerResources = selectedEntityData?.explorerResources;
+  const selectedExplorerConnectedStructure = selectedEntityData?.explorerConnectedStructure?.structure;
   const targetStructure = targetEntityData?.structure;
   const targetExplorerTroops = targetEntityData?.explorer;
   const targetExplorerConnectedStructure = targetEntityData?.explorerConnectedStructure?.structure;
+  const sameStructureBlockReason = useMemo(
+    () =>
+      getSameStructureTransferBlockReason({
+        transferDirection,
+        selectedEntityId,
+        targetEntityId,
+        selectedExplorerOwner: selectedExplorerTroops?.owner ?? null,
+        targetExplorerOwner: targetExplorerTroops?.owner ?? null,
+        guardSlot,
+      }),
+    [
+      guardSlot,
+      selectedEntityId,
+      selectedExplorerTroops?.owner,
+      targetEntityId,
+      targetExplorerTroops?.owner,
+      transferDirection,
+    ],
+  );
+  const transferRestriction = useMemo(() => {
+    if (transferDirection === TransferDirection.ExplorerToStructure) {
+      return resolveArmyToStructureTransferRestriction({
+        modeId: mode.id,
+        destination: targetStructure,
+      });
+    }
+
+    if (transferDirection === TransferDirection.ExplorerToExplorer) {
+      return resolveArmyToArmyTransferRestriction({
+        modeId: mode.id,
+        source: selectedExplorerConnectedStructure,
+        destination: targetExplorerConnectedStructure,
+      });
+    }
+
+    return null;
+  }, [
+    mode.id,
+    selectedExplorerConnectedStructure,
+    targetExplorerConnectedStructure,
+    targetStructure,
+    transferDirection,
+  ]);
+  const isTransferBlocked = transferRestriction !== null;
 
   const troopCapacityLimit = useMemo(() => {
     const tier = (targetExplorerTroops?.troops?.tier as TroopTier) ?? TroopTier.T1;
@@ -758,12 +812,14 @@ export const TransferTroopsContainer = ({
   // Handle transfer
   const handleTransfer = async () => {
     if (!selectedHex || !targetEntityId) return;
+    if (isTransferBlocked) return;
 
     const direction = getDirectionBetweenAdjacentHexes(
       { col: selectedHex.x, row: selectedHex.y },
       { col: targetHex.x, row: targetHex.y },
     );
     if (direction === null) return;
+    if (sameStructureBlockReason) return;
 
     try {
       setLoading(true);
@@ -881,17 +937,14 @@ export const TransferTroopsContainer = ({
   };
 
   const isTroopsTransferDisabled = (() => {
+    if (isTransferBlocked) return true;
     if (troopAmount === 0) return true;
 
     if (guardSelectionRequired && guardSlot === null) {
       return true;
     }
 
-    if (
-      transferDirection === TransferDirection.StructureToExplorer &&
-      guardSlot === BALANCE_SLOT &&
-      !isStructureOwnerOfExplorer
-    ) {
+    if (sameStructureBlockReason) {
       return true;
     }
 
@@ -1011,18 +1064,15 @@ export const TransferTroopsContainer = ({
 
   const getDisabledMessage = () => {
     if (loading) return "Processing transfer...";
+    if (transferRestriction) return transferRestriction;
     if (troopAmount === 0) return "Please select an amount of troops to transfer";
 
     if (guardSelectionRequired && guardSlot === null) {
       return "Please select a guard slot";
     }
 
-    if (
-      transferDirection === TransferDirection.StructureToExplorer &&
-      guardSlot === BALANCE_SLOT &&
-      !isStructureOwnerOfExplorer
-    ) {
-      return "Cannot use structure balance: Explorer is not owned by this structure";
+    if (sameStructureBlockReason) {
+      return sameStructureBlockReason;
     }
 
     if (transferDirection === TransferDirection.ExplorerToExplorer) {

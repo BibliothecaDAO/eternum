@@ -451,7 +451,7 @@ export interface SetMMRConfigProps extends SystemSigner {
   min_players: BigNumberish;
 }
 
-export interface SetDiscoveredVillageSpawnResourcesConfigProps extends SystemSigner {
+export interface SetCampStartingResourcesConfigProps extends SystemSigner {
   resources: {
     resource: ResourcesIds;
     min_amount: BigNumberish;
@@ -630,6 +630,7 @@ export interface SetMercenariesNameConfigProps extends SystemSigner {
 }
 export interface SetDonkeySpeedConfigProps extends SystemSigner {
   sec_per_km: BigNumberish;
+  sec_per_km_troops: BigNumberish;
 }
 
 export interface SetSeasonConfigProps extends SystemSigner {

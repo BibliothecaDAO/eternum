@@ -4,6 +4,7 @@ import {
   resolveMovementProgressUpdate,
   resolveRotationUpdate,
   shouldSwitchModelForPosition,
+  resolveJourneyProgressUpdate,
 } from "./army-model-behavior-policy";
 
 describe("resolveRotationUpdate", () => {
@@ -73,6 +74,42 @@ describe("shouldSwitchModelForPosition", () => {
   it("switches model only when resolved model differs from current", () => {
     expect(shouldSwitchModelForPosition({ currentModel: "boat", resolvedModel: "knight1" })).toBe(true);
     expect(shouldSwitchModelForPosition({ currentModel: "boat", resolvedModel: "boat" })).toBe(false);
+  });
+});
+
+describe("resolveJourneyProgressUpdate", () => {
+  it("advances progress based on totalLength, speed, and deltaTime", () => {
+    const result = resolveJourneyProgressUpdate({
+      currentProgress: 0.25,
+      totalLength: 10,
+      speed: 2,
+      deltaTime: 0.5,
+    });
+    // progressStep = (2 * 0.5) / 10 = 0.1
+    expect(result.nextProgress).toBeCloseTo(0.35);
+    expect(result.isComplete).toBe(false);
+  });
+
+  it("completes when progress reaches 1", () => {
+    const result = resolveJourneyProgressUpdate({
+      currentProgress: 0.95,
+      totalLength: 10,
+      speed: 2,
+      deltaTime: 0.5,
+    });
+    expect(result.nextProgress).toBeGreaterThanOrEqual(1);
+    expect(result.isComplete).toBe(true);
+  });
+
+  it("handles zero totalLength gracefully", () => {
+    const result = resolveJourneyProgressUpdate({
+      currentProgress: 0.1,
+      totalLength: 0,
+      speed: 2,
+      deltaTime: 0.5,
+    });
+    expect(result.nextProgress).toBe(1);
+    expect(result.isComplete).toBe(true);
   });
 });
 

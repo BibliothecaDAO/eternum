@@ -11,6 +11,8 @@ interface ActiveRelicEffectsProps {
   entityId: ID;
   compact?: boolean;
   className?: string;
+  variant?: "default" | "inline";
+  maxItems?: number;
 }
 
 const RELIC_TYPE_BORDER: Record<RelicInfo["type"], string> = {
@@ -43,7 +45,14 @@ const getTimerUrgency = (remainingSeconds: number): string => {
   return "text-relics-stamina-text";
 };
 
-export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, className }: ActiveRelicEffectsProps) => {
+export const ActiveRelicEffects = ({
+  relicEffects,
+  entityId,
+  compact = false,
+  className,
+  variant = "default",
+  maxItems,
+}: ActiveRelicEffectsProps) => {
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
 
   const activeEffects = useMemo(() => {
@@ -77,6 +86,45 @@ export const ActiveRelicEffects = ({ relicEffects, entityId, compact = false, cl
 
   if (activeEffects.length === 0) {
     return null;
+  }
+
+  if (variant === "inline") {
+    const visibleEffects = maxItems ? activeEffects.slice(0, maxItems) : activeEffects;
+    const hiddenEffectsCount = Math.max(activeEffects.length - visibleEffects.length, 0);
+
+    return (
+      <div className={`flex flex-wrap gap-1.5 ${className ?? ""}`}>
+        {visibleEffects.map((effect) => {
+          const type = effect.relicInfo.type;
+          const border = RELIC_TYPE_BORDER[type] ?? "border-gold/20";
+          const bg = RELIC_TYPE_BG[type] ?? "bg-dark-brown/80";
+          const text = RELIC_TYPE_TEXT[type] ?? "text-gold";
+          const timerColor = getTimerUrgency(effect.remainingSeconds);
+
+          return (
+            <div
+              key={`${entityId}-${effect.resourceId}`}
+              className={`flex max-w-full items-center gap-1.5 rounded border ${border} ${bg} px-2 py-1`}
+              title={`${effect.relicInfo.name}: ${effect.relicInfo.effect}`}
+            >
+              <ResourceIcon resource={ResourcesIds[effect.resourceId]} size="xs" withTooltip={false} />
+              <span className={`truncate text-[11px] font-semibold ${text}`}>{effect.bonusText}</span>
+              <span className={`shrink-0 text-[10px] font-medium ${timerColor}`}>
+                {formatTime(effect.remainingSeconds)}
+              </span>
+            </div>
+          );
+        })}
+        {hiddenEffectsCount > 0 ? (
+          <div
+            className="flex items-center rounded border border-gold/25 bg-black/40 px-2 py-1 text-[10px] font-semibold text-gold/70"
+            title={`${hiddenEffectsCount} more active relic effect${hiddenEffectsCount === 1 ? "" : "s"}`}
+          >
+            +{hiddenEffectsCount}
+          </div>
+        ) : null}
+      </div>
+    );
   }
 
   if (compact) {

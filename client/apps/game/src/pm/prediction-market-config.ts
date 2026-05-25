@@ -1,4 +1,6 @@
 import { env } from "../../env";
+import { resolveRuntimeChain } from "@/runtime/world";
+import type { Chain } from "@contracts";
 import type { PredictionMarketChain } from "./manifest-loader";
 
 type PredictionMarketConfig = {
@@ -35,17 +37,22 @@ export function getPredictionMarketConfigForChain(chain: PredictionMarketChain):
   return CONFIG_BY_CHAIN[chain];
 }
 
+const resolvePredictionMarketChain = (chain: Chain | null | undefined): PredictionMarketChain => {
+  return chain === "mainnet" ? "mainnet" : "slot";
+};
+
 /**
- * Returns the prediction market chain based on VITE_PUBLIC_CHAIN env variable.
+ * Returns the prediction market chain for the active runtime world.
  * Maps "mainnet" to "mainnet", everything else to "slot".
  */
-export function getPredictionMarketChain(): PredictionMarketChain {
-  return env.VITE_PUBLIC_CHAIN === "mainnet" ? "mainnet" : "slot";
+export function getPredictionMarketChain(chain?: Chain | null): PredictionMarketChain {
+  const runtimeChain = chain ?? resolveRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
+  return resolvePredictionMarketChain(runtimeChain);
 }
 
 /**
  * Returns the prediction market configuration based on the current chain.
  */
-export function getPredictionMarketConfig(): PredictionMarketConfig {
-  return getPredictionMarketConfigForChain(getPredictionMarketChain());
+export function getPredictionMarketConfig(chain?: Chain | null): PredictionMarketConfig {
+  return getPredictionMarketConfigForChain(getPredictionMarketChain(chain));
 }

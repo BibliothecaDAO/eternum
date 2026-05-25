@@ -223,6 +223,8 @@ describe("ExplorationAutomationWindow", () => {
     };
 
     await act(async () => {
+      root.unmount();
+      root = createRoot(container);
       root.render(<ExplorationAutomationWindow />);
       await waitForAsyncWork();
     });

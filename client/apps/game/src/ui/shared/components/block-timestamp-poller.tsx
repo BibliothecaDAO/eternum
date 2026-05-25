@@ -1,7 +1,7 @@
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
 import { useEffect } from "react";
 
-const POLL_INTERVAL_MS = 10_000;
+const POLL_INTERVAL_MS = 1_000;
 
 export const BlockTimestampPoller = () => {
   const tick = useBlockTimestampStore((state) => state.tick);

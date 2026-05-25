@@ -17,12 +17,15 @@ import { fetchLandingLeaderboardEntryByAddress } from "@/services/leaderboard/la
 import TextInput from "@/ui/design-system/atoms/text-input";
 
 import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
+import { buildSharedSlotRpcUrl } from "@/runtime/world/normalize";
 import { Button } from "@/ui/design-system/atoms";
 import { Tabs } from "@/ui/design-system/atoms/tab";
 import { AvatarImageGrid } from "@/ui/features/avatars/avatar-image-grid";
+import { useLandingNetworkState } from "@/ui/features/landing/hooks/use-landing-network-state";
 import { MMRTierBadge } from "@/ui/shared/components/mmr-tier-badge";
 import { copyElementAsPng, openShareOnX } from "@/ui/shared/lib/share-image";
 import { buildProfileShareMessage } from "@/ui/shared/lib/x-share-messages";
+import { getChainLabel } from "@/ui/utils/network-switch";
 import type { MMRTier } from "@/ui/utils/mmr-tiers";
 import {
   getMMRTierFromRaw,
@@ -44,18 +47,23 @@ import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
 
 import { hash } from "starknet";
-import { dojoConfig } from "../../../../../dojo-config";
 import { env } from "../../../../../env";
 
 // MMR fetching utilities
 const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
-const CHAIN_OPTIONS: Chain[] = ["mainnet", "slot"];
-const DEFAULT_CHAIN: Chain = "mainnet";
-const MMR_CHAIN_STORAGE_KEY = "landing-player-mmr-chain-mainnet-priority";
 
 const RPC_FALLBACK_BY_CHAIN: Partial<Record<Chain, string>> = {
   mainnet: "https://api.cartridge.gg/x/starknet/mainnet",
-  slot: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+};
+
+const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
+
+const resolveProfileMmrRpcUrl = (chain: Chain): string | undefined => {
+  if (chain === "slot") {
+    return buildSharedSlotRpcUrl(cartridgeApiBase);
+  }
+
+  return RPC_FALLBACK_BY_CHAIN[chain];
 };
 
 // Map tier color classes to actual hex values for gradients/glows
@@ -157,6 +165,8 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
   const normalizedSelectedAddress = getNormalizedProfileAddress(selectedPlayerAddress);
   const viewedPlayerAddress = normalizedSelectedAddress ?? normalizedConnectedAddress;
   const isOwnProfile = viewedPlayerAddress != null && viewedPlayerAddress === normalizedConnectedAddress;
+  const { preferredChain } = useLandingNetworkState();
+  const selectedChain = preferredChain;
 
   const { username: cartridgeUsername, isLoading: isCartridgeUsernameLoading } = useCartridgeUsername();
   const ownDisplayName = accountName || cartridgeUsername || "";
@@ -171,20 +181,13 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
     : externalPlayerName || (viewedPlayerAddress ? displayAddress(viewedPlayerAddress) : "Anonymous");
   const isTrimmed = variant === "trimmed";
 
-  const [selectedChain, setSelectedChain] = useState<Chain>(DEFAULT_CHAIN);
-
   // MMR state
   const [playerMMR, setPlayerMMR] = useState<bigint | null>(null);
   const [isLoadingMMR, setIsLoadingMMR] = useState(false);
   const profileCardRef = useRef<HTMLDivElement>(null);
   const [isCopyingProfileCard, setIsCopyingProfileCard] = useState(false);
 
-  const rpcUrl = useMemo(() => {
-    if (selectedChain === "slot") {
-      return dojoConfig.rpcUrl || env.VITE_PUBLIC_NODE_URL || RPC_FALLBACK_BY_CHAIN.slot;
-    }
-    return RPC_FALLBACK_BY_CHAIN[selectedChain];
-  }, [selectedChain]);
+  const rpcUrl = useMemo(() => resolveProfileMmrRpcUrl(selectedChain), [selectedChain]);
 
   const mmrTokenAddress = useMemo(() => MMR_TOKEN_BY_CHAIN[selectedChain], [selectedChain]);
 
@@ -212,19 +215,6 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
       cancelled = true;
     };
   }, [isOwnProfile, selectedPlayerNameTrimmed, viewedPlayerAddress]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const storedChain = window.localStorage.getItem(MMR_CHAIN_STORAGE_KEY);
-    if (storedChain && CHAIN_OPTIONS.includes(storedChain as Chain)) {
-      setSelectedChain(storedChain as Chain);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(MMR_CHAIN_STORAGE_KEY, selectedChain);
-  }, [selectedChain]);
 
   // Avatar management
   const [avatarPrompt, setAvatarPrompt] = useState("");
@@ -617,22 +607,9 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
                     {displayName || "Anonymous"}
                   </motion.h2>
                   <div className="flex items-center gap-1.5 justify-center sm:justify-start">
-                    {CHAIN_OPTIONS.map((chain) => {
-                      const isSelected = selectedChain === chain;
-
-                      return (
-                        <button
-                          key={chain}
-                          type="button"
-                          onClick={() => setSelectedChain(chain)}
-                          className={`rounded-md px-2 py-0.5 text-[10px] font-medium capitalize transition-all duration-150 ${
-                            isSelected ? "bg-white/[0.08] text-white/70" : "text-white/30 hover:text-white/50"
-                          }`}
-                        >
-                          {chain}
-                        </button>
-                      );
-                    })}
+                    <span className="rounded-md bg-white/[0.08] px-2 py-0.5 text-[10px] font-medium text-white/70">
+                      {getChainLabel(selectedChain)}
+                    </span>
                   </div>
                 </div>
 
@@ -692,9 +669,7 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
                         </div>
                       </div>
                     )}
-                    {!nextTier && playerTier?.name === "Elite" && (
-                      <p className="text-[11px] text-white/25 italic">Peak rank achieved</p>
-                    )}
+                    {!nextTier && playerTier && <p className="text-[11px] text-white/25 italic">Peak rank achieved</p>}
                   </div>
                 ) : (
                   <div className="space-y-1">

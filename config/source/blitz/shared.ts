@@ -92,10 +92,7 @@ export function buildOfficialBlitzComplexRecipes(profileMultiplier: number): Res
   };
 }
 
-export function buildOfficialBlitzResourceOutputs(
-  profileMultiplier: number,
-  donkeyOutputAmount: number,
-): ResourceOutputs {
+export function buildOfficialBlitzResourceOutputs(profileMultiplier: number): ResourceOutputs {
   return {
     ...RESOURCE_PRODUCTION_OUTPUT_AMOUNTS,
     [ResourcesIds.Wood]: profileMultiplier,
@@ -107,7 +104,6 @@ export function buildOfficialBlitzResourceOutputs(
     [ResourcesIds.Adamantine]: profileMultiplier,
     [ResourcesIds.Mithral]: profileMultiplier,
     [ResourcesIds.Dragonhide]: profileMultiplier,
-    [ResourcesIds.Donkey]: donkeyOutputAmount,
     [ResourcesIds.Labor]: profileMultiplier,
     [ResourcesIds.Knight]: 5 * profileMultiplier,
     [ResourcesIds.KnightT2]: 5 * profileMultiplier,

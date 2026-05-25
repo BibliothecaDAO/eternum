@@ -1,10 +1,19 @@
+import Route from "lucide-react/dist/esm/icons/route";
+import Telescope from "lucide-react/dist/esm/icons/telescope";
+import Wheat from "lucide-react/dist/esm/icons/wheat";
+import type { ReactNode } from "react";
+import { useMemo } from "react";
+
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
   Biome,
   computeExploreFoodCosts,
+  computeTravelFoodCosts,
   configManager,
   divideByPrecision,
   ResourceManager,
@@ -12,7 +21,13 @@ import {
 } from "@bibliothecadao/eternum";
 import { ClientComponents, getNeighborHexes, ResourcesIds, TroopType } from "@bibliothecadao/types";
 import { ComponentValue } from "@dojoengine/recs";
-import { useMemo } from "react";
+import {
+  formatArmyFoodRequirement,
+  getArmyMovementFoodRequirementWarnings,
+  getArmyFoodRequirementLabel,
+  getArmyReadinessTitle,
+  getArmyStaminaRequirementWarnings,
+} from "./army-warning-copy";
 
 interface ArmyWarningProps {
   army: ComponentValue<ClientComponents["ExplorerTroops"]["schema"]>;
@@ -27,6 +42,9 @@ export const ArmyWarning = ({
   structureResources,
   currentArmiesTick: currentArmiesTickProp,
 }: ArmyWarningProps) => {
+  const gameMode = useGameModeConfig();
+  const foodRequirementLabel = getArmyFoodRequirementLabel(gameMode.id);
+
   const food = useMemo(() => {
     // cannot use instantiated resource manager because it uses recs, which isn't synced for all armies (only yours)
     const { balance: wheat } = ResourceManager.balanceWithProduction(
@@ -42,17 +60,25 @@ export const ArmyWarning = ({
     return { wheat: divideByPrecision(wheat), fish: divideByPrecision(fish) };
   }, [structureResources, army.owner]);
 
-  const exploreFoodCosts = useMemo(
-    () => (!army?.owner ? { wheatPayAmount: 0, fishPayAmount: 0 } : computeExploreFoodCosts(army.troops)),
+  const movementFoodCosts = useMemo(
+    () =>
+      !army?.owner
+        ? {
+            travel: { wheatPayAmount: 0, fishPayAmount: 0 },
+            explore: { wheatPayAmount: 0, fishPayAmount: 0 },
+          }
+        : {
+            travel: computeTravelFoodCosts(army.troops),
+            explore: computeExploreFoodCosts(army.troops),
+          },
     [army],
   );
 
-  const { missingWheat, missingFish, notEnoughFood } = useMemo(() => {
-    const missingWheat = Math.max(0, exploreFoodCosts.wheatPayAmount - food.wheat);
-    const missingFish = Math.max(0, exploreFoodCosts.fishPayAmount - food.fish);
-    const notEnoughFood = missingWheat > 0 || missingFish > 0;
-    return { missingWheat, missingFish, notEnoughFood };
-  }, [exploreFoodCosts.wheatPayAmount, exploreFoodCosts.fishPayAmount, food.wheat, food.fish]);
+  const foodWarnings = getArmyMovementFoodRequirementWarnings({
+    travelFoodCosts: movementFoodCosts.travel,
+    exploreFoodCosts: movementFoodCosts.explore,
+    food,
+  });
 
   const storeArmiesTick = useBlockTimestampStore((state) => state.currentArmiesTick);
   const currentArmiesTick = currentArmiesTickProp ?? storeArmiesTick;
@@ -76,42 +102,107 @@ export const ArmyWarning = ({
     return configManager.getExploreStaminaCost();
   }, []);
 
-  const hasTravelStaminaWarning = stamina.amount < minStaminaNeeded;
-  const hasExploreStaminaWarning = stamina.amount < minStaminaNeededExplore && stamina.amount >= minStaminaNeeded;
+  const { hasTravelStaminaWarning, hasExploreStaminaWarning } = getArmyStaminaRequirementWarnings({
+    currentStamina: Number(stamina.amount),
+    minTravelStamina: minStaminaNeeded,
+    minExploreStamina: minStaminaNeededExplore,
+  });
 
-  const hasWarnings = hasTravelStaminaWarning || hasExploreStaminaWarning || notEnoughFood;
+  const hasTravelFoodWarning = foodWarnings.travel.hasWarning;
+  const hasExploreFoodWarning = foodWarnings.explore.hasWarning;
+  const hasWarnings = hasTravelStaminaWarning || hasExploreStaminaWarning || foodWarnings.combined.hasWarning;
+  const statusTitle = getArmyReadinessTitle({
+    hasTravelStaminaWarning,
+    hasExploreStaminaWarning,
+    hasTravelFoodWarning,
+    hasExploreFoodWarning,
+  });
+  const missingFoodText = getMissingFoodText(foodWarnings.combined, foodRequirementLabel);
+  const missingTravelFoodText = getMissingFoodText(foodWarnings.travel, foodRequirementLabel);
+  const missingExploreFoodText = getMissingFoodText(foodWarnings.explore, foodRequirementLabel);
+
+  const travelTitle = formatRequirementTitle({
+    label: "Travel",
+    readyLabel: "Travel ready",
+    requirements: [
+      hasTravelStaminaWarning ? `${minStaminaNeeded}+ stamina` : null,
+      hasTravelFoodWarning ? missingTravelFoodText : null,
+    ],
+  });
+  const exploreTitle = formatRequirementTitle({
+    label: "Explore",
+    readyLabel: "Explore ready",
+    requirements: [
+      hasExploreStaminaWarning ? `${minStaminaNeededExplore}+ stamina` : null,
+      hasExploreFoodWarning ? missingExploreFoodText : null,
+    ],
+  });
+  const supplyTitle = foodWarnings.combined.hasWarning ? `Missing ${missingFoodText}` : `${foodRequirementLabel} ready`;
+
+  const statusDescription = hasWarnings
+    ? missingFoodText
+      ? `${statusTitle}. Missing ${missingFoodText}.`
+      : statusTitle
+    : `${statusTitle}. Enough ${foodRequirementLabel} and stamina.`;
 
   return (
-    <div className="flex flex-col gap-0.5 mt-1 mb-1">
-      {hasTravelStaminaWarning && (
-        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
-          <div className="flex">
-            <span className="w-5">⚠️</span>
-            <span>Not enough stamina to explore/travel</span>
-          </div>
-        </div>
-      )}
-      {hasExploreStaminaWarning && (
-        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
-          <div className="flex">
-            <span className="w-5">⚠️</span>
-            <span>Not enough stamina to explore (min {minStaminaNeededExplore})</span>
-          </div>
-        </div>
-      )}
-      {notEnoughFood && (
-        <div className="text-xxs font-semibold text-center bg-danger rounded px-1 py-0.5">
-          <div className="flex">
-            <span className="w-5">⚠️</span>
-            <span>
-              Missing {missingWheat > 0 && `${formatNumber(Number(missingWheat), 0)} wheat`}
-              {missingWheat > 0 && missingFish > 0 && " and "}
-              {missingFish > 0 && `${formatNumber(Number(missingFish), 0)} fish`}
-            </span>
-          </div>
-        </div>
-      )}
-      {!hasWarnings && <div className="min-h-0 text-xs font-medium text-gold/60 italic">✓ Enough food and stamina</div>}
+    <div aria-label={statusDescription} title={statusDescription} className="flex items-center justify-end gap-1">
+      <ReadinessIcon
+        icon={<Route className="h-3.5 w-3.5" />}
+        active={!hasTravelStaminaWarning && !hasTravelFoodWarning}
+        title={travelTitle}
+      />
+      <ReadinessIcon
+        icon={<Telescope className="h-3.5 w-3.5" />}
+        active={!hasExploreStaminaWarning && !hasExploreFoodWarning}
+        title={exploreTitle}
+      />
+      <ReadinessIcon
+        icon={<Wheat className="h-3.5 w-3.5" />}
+        active={!foodWarnings.combined.hasWarning}
+        title={supplyTitle}
+      />
     </div>
+  );
+};
+
+const getMissingFoodText = (foodWarning: { missingWheat: number; missingFish: number }, foodRequirementLabel: string) =>
+  formatArmyFoodRequirement({
+    missingWheat: foodWarning.missingWheat,
+    missingFish: foodWarning.missingFish,
+    wheatLabel: foodRequirementLabel,
+    formatAmount: (amount) => formatNumber(Number(amount), 0),
+  });
+
+const formatRequirementTitle = ({
+  label,
+  readyLabel,
+  requirements,
+}: {
+  label: string;
+  readyLabel: string;
+  requirements: Array<string | null>;
+}) => {
+  const missingRequirements = requirements.filter(Boolean);
+
+  if (missingRequirements.length === 0) return readyLabel;
+
+  return `${label} needs ${missingRequirements.join(" and ")}`;
+};
+
+const ReadinessIcon = ({ icon, active, title }: { icon: ReactNode; active: boolean; title: string }) => {
+  return (
+    <span
+      aria-label={title}
+      title={title}
+      className={cn(
+        "flex h-6 w-6 shrink-0 items-center justify-center rounded-md border",
+        active
+          ? "border-order-brilliance/30 bg-order-brilliance/10 text-order-brilliance"
+          : "border-danger/35 bg-danger/10 text-danger",
+      )}
+    >
+      {icon}
+    </span>
   );
 };

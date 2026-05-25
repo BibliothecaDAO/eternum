@@ -80,11 +80,42 @@ function buildApiUrl(baseUrl: string, query: string): string {
   return `${baseUrl}?query=${encodeURIComponent(query)}`;
 }
 
+type JsonRpcErrorResponse = {
+  error?: {
+    message?: string;
+  };
+};
+
+async function extractHttpErrorDetails(response: Response): Promise<string | null> {
+  let text: string;
+  try {
+    text = (await response.clone().text()).trim();
+  } catch {
+    return null;
+  }
+  if (!text) return null;
+
+  const contentType = response.headers.get("content-type") ?? "";
+  if (contentType.includes("application/json")) {
+    try {
+      const payload = JSON.parse(text) as JsonRpcErrorResponse;
+      const message = payload.error?.message?.trim();
+      if (message) return message;
+    } catch {
+      // Not valid JSON — fall through to raw text.
+    }
+  }
+
+  return text;
+}
+
 async function fetchWithErrorHandling<T>(url: string, errorMessage: string): Promise<T[]> {
   const response = await fetch(url);
 
   if (!response.ok) {
-    throw new Error(`${errorMessage}: ${response.statusText}`);
+    const details = await extractHttpErrorDetails(response);
+    const statusMessage = `HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ""}`;
+    throw new Error(details ? `${errorMessage}: ${statusMessage}. ${details}` : `${errorMessage}: ${statusMessage}`);
   }
 
   const result = await response.json();

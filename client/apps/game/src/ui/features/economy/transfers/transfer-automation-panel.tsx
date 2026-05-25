@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import { useTransferPanelDraftStore } from "@/hooks/store/use-transfer-panel-draft-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -45,7 +45,7 @@ const ETERNUM_FRAGMENT_MINE_ALLOWED_RESOURCES = new Set<ResourcesIds>([
   ResourcesIds.AncientFragment,
 ]);
 const FRAGMENT_MINE_TRANSFER_MESSAGE_BY_MODE: Record<GameModeId, string> = {
-  blitz: "Essence rifts can only transfer Donkeys and Essence.",
+  blitz: "For non-military transfers, Essence rifts can only transfer Donkeys and Essence.",
   eternum: "Fragment mines can only transfer Donkeys and Ancient Fragments.",
 };
 
@@ -80,7 +80,7 @@ interface TransferAutomationPanelProps {
 
 export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationPanelProps) => {
   const playerStructures = useUIStore((s) => s.playerStructures);
-  const { currentDefaultTick } = useBlockTimestamp();
+  const currentDefaultTick = useCurrentDefaultTick();
   const mode = useGameModeConfig();
   const { favorites } = useFavoriteStructures();
   const favoriteDestinationIds = useMemo(() => new Set(favorites), [favorites]);

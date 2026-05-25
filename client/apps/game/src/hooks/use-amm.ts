@@ -2,21 +2,31 @@ import { useMemo, useCallback } from "react";
 import { useAccount } from "@starknet-react/core";
 import type { Call } from "starknet";
 import { env } from "../../env";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { useRuntimeChain } from "@/runtime/world";
 import { GameAmmClient } from "@/services/amm";
+import type { Chain } from "@contracts";
 
 interface AmmRuntimeConfig {
+  chain: string;
+  explorerBaseUrl: string;
   indexerUrl: string;
   isConfigured: boolean;
   lordsAddress: string;
   routerAddress: string;
 }
 
-function resolveAmmRuntimeConfig(): AmmRuntimeConfig {
+function resolveAmmRuntimeConfig(chain: Chain): AmmRuntimeConfig {
   const routerAddress = env.VITE_PUBLIC_AMM_ROUTER_ADDRESS;
   const lordsAddress = env.VITE_PUBLIC_AMM_LORDS_ADDRESS;
   const indexerUrl = env.VITE_PUBLIC_AMM_INDEXER_URL;
 
   return {
+    chain,
+    explorerBaseUrl:
+      chain === "mainnet"
+        ? (env.VITE_PUBLIC_EXPLORER_MAINNET ?? "https://voyager.online")
+        : (env.VITE_PUBLIC_EXPLORER_SEPOLIA ?? "https://sepolia.voyager.online"),
     routerAddress,
     lordsAddress,
     indexerUrl,
@@ -26,7 +36,8 @@ function resolveAmmRuntimeConfig(): AmmRuntimeConfig {
 
 export function useAmm() {
   const { account } = useAccount();
-  const runtimeConfig = useMemo(() => resolveAmmRuntimeConfig(), []);
+  const runtimeChain = useRuntimeChain((env.VITE_PUBLIC_CHAIN ?? "sepolia") as Chain);
+  const runtimeConfig = useMemo(() => resolveAmmRuntimeConfig(runtimeChain), [runtimeChain]);
 
   const client = useMemo(
     () =>
@@ -49,7 +60,12 @@ export function useAmm() {
         throw new Error("Wallet not connected");
       }
       const callArray = Array.isArray(calls) ? calls : [calls];
-      const result = await account.execute(callArray);
+      const result = await executeObservedClientTransaction<{ transaction_hash: string }>({
+        account,
+        calls: callArray,
+        surface: "amm",
+        operation: "amm_execute",
+      });
       return result.transaction_hash;
     },
     [account, client],

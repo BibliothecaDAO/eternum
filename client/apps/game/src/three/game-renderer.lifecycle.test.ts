@@ -65,6 +65,10 @@ const mockWindow = {
   innerWidth: 1280,
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
+  setInterval,
+  clearInterval,
+  setTimeout,
+  clearTimeout,
 };
 
 const mockNavigator = {
@@ -91,6 +95,12 @@ vi.stubGlobal("localStorage", mockLocalStorage);
 vi.stubGlobal("sessionStorage", mockLocalStorage);
 vi.stubGlobal("requestAnimationFrame", (cb: () => void) => setTimeout(cb, 0));
 vi.stubGlobal("cancelAnimationFrame", clearTimeout);
+vi.stubGlobal(
+  "ProgressEvent",
+  class {
+    constructor(public readonly type: string) {}
+  },
+);
 vi.stubGlobal("matchMedia", () => ({ matches: false, addListener: vi.fn(), removeListener: vi.fn() }));
 vi.stubGlobal(
   "ResizeObserver",
@@ -115,7 +125,12 @@ vi.stubGlobal(
     disconnect() {}
   },
 );
-vi.stubGlobal("performance", { now: () => Date.now(), mark: vi.fn(), measure: vi.fn() });
+vi.stubGlobal("performance", {
+  mark: vi.fn(),
+  markResourceTiming: vi.fn(),
+  measure: vi.fn(),
+  now: () => Date.now(),
+});
 
 class MockGUI {
   domElement = createMockElement("div");
@@ -226,6 +241,13 @@ vi.mock("@/three/scenes/worldmap", () => ({ default: class MockWorldmapScene {} 
 vi.mock("@/three/scenes/hexception", () => ({ default: class MockHexceptionScene {} }));
 vi.mock("@/three/scenes/hud-scene", () => ({ default: class MockHUDScene {} }));
 vi.mock("@/three/scenes/fast-travel", () => ({ default: class MockFastTravelScene {} }));
+vi.mock("../../env", () => ({
+  env: {
+    VITE_PUBLIC_ENABLE_MEMORY_MONITORING: false,
+    VITE_PUBLIC_GRAPHICS_DEV: false,
+    VITE_PUBLIC_RENDERER_BUILD_MODE: "experimental-webgpu-auto",
+  },
+}));
 vi.mock("@/three/scenes/hexagon-scene", () => ({
   HexagonScene: class MockHexagonScene {},
   CameraView: {
@@ -233,6 +255,12 @@ vi.mock("@/three/scenes/hexagon-scene", () => ({
     Medium: 2,
     Far: 3,
   },
+}));
+
+const destroyRendererRuntime = vi.fn();
+
+vi.mock("./renderer-destroy-runtime", () => ({
+  destroyRendererRuntime,
 }));
 
 const { default: GameRenderer } = await import("./game-renderer");
@@ -245,75 +273,51 @@ function createGameRendererSubject() {
   canvasParent.appendChild(canvas);
   document.body.appendChild(canvasParent);
 
-  const memoryStatsElement = document.createElement("div");
-  const statsDomElement = document.createElement("div");
-  const labelRendererElement = document.createElement("div");
-  labelRendererElement.appendChild(document.createElement("span"));
-  const statsRecordingIndicator = document.createElement("div");
-  const pulseStyle = document.createElement("style");
-  pulseStyle.id = "stats-recording-pulse";
-
-  document.body.appendChild(memoryStatsElement);
-  document.body.appendChild(statsDomElement);
-  document.body.appendChild(statsRecordingIndicator);
-  document.body.appendChild(pulseStyle);
-
-  const unsubscribeEnableMapZoom = vi.fn();
-  const unsubscribeQualityController = vi.fn();
+  const effectsBridgeRuntime = { dispose: vi.fn() };
   const worldmapDestroy = vi.fn();
   const hexceptionDestroy = vi.fn();
   const hudDestroy = vi.fn();
-  const controlsDispose = vi.fn();
+  const interactionRuntimeDispose = vi.fn();
+  const monitoringRuntime = { dispose: vi.fn() };
+  const routeRuntime = { dispose: vi.fn() };
   const rendererDispose = vi.fn();
   const envDispose = vi.fn();
   const backendDispose = vi.fn(() => {
     rendererDispose();
     envDispose();
   });
-  const keyHandler = vi.fn();
 
   subject.isDestroyed = false;
-  subject.memoryMonitorTimeoutId = setTimeout(() => {}, 60_000);
-  subject.unsubscribeEnableMapZoom = unsubscribeEnableMapZoom;
-  subject.unsubscribeQualityController = unsubscribeQualityController;
+  subject.supportRuntimeRegistry = {
+    getEffectsBridge: vi.fn(() => effectsBridgeRuntime),
+    getMonitoring: vi.fn(() => monitoringRuntime),
+    getRoute: vi.fn(() => routeRuntime),
+  };
   subject.cleanupIntervals = [setInterval(() => {}, 60_000), setInterval(() => {}, 60_000)];
   subject.renderer = { domElement: canvas, dispose: rendererDispose };
   subject.backend = { dispose: backendDispose };
   subject.worldmapScene = { destroy: worldmapDestroy };
   subject.hexceptionScene = { destroy: hexceptionDestroy };
   subject.hudScene = { destroy: hudDestroy };
-  subject.controls = { dispose: controlsDispose };
+  subject.interactionRuntime = { dispose: interactionRuntimeDispose };
   subject.environmentTarget = { dispose: envDispose };
   subject.guiFolders = [];
-  subject.memoryStatsElement = memoryStatsElement;
-  subject.statsDomElement = statsDomElement;
-  subject.labelRenderer = { domElement: document.createElement("div") };
-  subject.labelRendererElement = labelRendererElement;
-  subject.statsRecorder = {
-    destroy: vi.fn(() => {
-      statsRecordingIndicator.remove();
-      pulseStyle.remove();
-      window.removeEventListener("keydown", keyHandler);
-    }),
-  };
-  subject.handleURLChange = vi.fn();
+  subject.labelRuntime = { dispose: vi.fn() };
   subject.handleWindowResize = vi.fn();
-  subject.handleDocumentFocus = vi.fn();
-  subject.handleDocumentBlur = vi.fn();
 
   return {
     subject,
     canvas,
-    unsubscribeEnableMapZoom,
-    unsubscribeQualityController,
+    effectsBridgeRuntime,
     worldmapDestroy,
     hexceptionDestroy,
     hudDestroy,
-    controlsDispose,
+    interactionRuntimeDispose,
+    monitoringRuntime,
+    routeRuntime,
     rendererDispose,
     envDispose,
     backendDispose,
-    keyHandler,
   };
 }
 
@@ -329,40 +333,31 @@ describe("GameRenderer destroy lifecycle", () => {
 
   it("cleans timers, listeners, scenes, and DOM resources on destroy", () => {
     const fixture = createGameRendererSubject();
-    const clearTimeoutSpy = vi.spyOn(globalThis, "clearTimeout");
-    const clearIntervalSpy = vi.spyOn(globalThis, "clearInterval");
-    const removeWindowListenerSpy = vi.spyOn(window, "removeEventListener");
-    const removeDocumentListenerSpy = vi.spyOn(document, "removeEventListener");
 
     fixture.subject.destroy();
 
     expect(fixture.subject.isDestroyed).toBe(true);
-    expect(fixture.unsubscribeEnableMapZoom).toHaveBeenCalledTimes(1);
-    expect(fixture.unsubscribeQualityController).toHaveBeenCalledTimes(1);
-    expect(clearTimeoutSpy).toHaveBeenCalled();
-    expect(clearIntervalSpy).toHaveBeenCalledTimes(2);
-    expect(fixture.subject.cleanupIntervals).toEqual([]);
-    expect(fixture.rendererDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.worldmapDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.hexceptionDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.hudDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.controlsDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.envDispose).toHaveBeenCalledTimes(1);
-    expect(fixture.canvas.isConnected).toBe(false);
-
-    expect(removeWindowListenerSpy).toHaveBeenCalledWith("urlChanged", fixture.subject.handleURLChange);
-    expect(removeWindowListenerSpy).toHaveBeenCalledWith("popstate", fixture.subject.handleURLChange);
-    expect(removeWindowListenerSpy).toHaveBeenCalledWith("resize", fixture.subject.handleWindowResize);
-    expect(removeWindowListenerSpy).toHaveBeenCalledWith("keydown", fixture.keyHandler);
-    expect(removeDocumentListenerSpy).toHaveBeenCalledWith("focus", fixture.subject.handleDocumentFocus, true);
-    expect(removeDocumentListenerSpy).toHaveBeenCalledWith("blur", fixture.subject.handleDocumentBlur, true);
-
-    expect(fixture.subject.memoryStatsElement.isConnected).toBe(false);
-    expect(fixture.subject.statsDomElement).toBeUndefined();
-    expect(fixture.subject.labelRenderer).toBeUndefined();
-    expect(fixture.subject.labelRendererElement).toBeUndefined();
-    expect(fixture.subject.statsRecorder.destroy).toHaveBeenCalledTimes(1);
-    expect(document.getElementById("stats-recording-pulse")).toBeNull();
+    expect(destroyRendererRuntime).toHaveBeenCalledWith(
+      expect.objectContaining({
+        backend: fixture.subject.backend,
+        cleanupIntervals: fixture.subject.cleanupIntervals,
+        effectsBridgeRuntime: fixture.effectsBridgeRuntime,
+        guiFolders: fixture.subject.guiFolders,
+        handleWindowResize: fixture.subject.handleWindowResize,
+        interactionRuntime: fixture.subject.interactionRuntime,
+        labelRuntime: fixture.subject.labelRuntime,
+        monitoringRuntime: fixture.monitoringRuntime,
+        renderer: fixture.subject.renderer,
+        routeRuntime: fixture.routeRuntime,
+        scenes: {
+          fastTravelScene: fixture.subject.fastTravelScene,
+          hexceptionScene: fixture.subject.hexceptionScene,
+          hudScene: fixture.subject.hudScene,
+          worldmapScene: fixture.subject.worldmapScene,
+        },
+        transitionManager: fixture.subject.transitionManager,
+      }),
+    );
   });
 
   it("is idempotent and skips cleanup work after the first destroy call", () => {
@@ -372,21 +367,21 @@ describe("GameRenderer destroy lifecycle", () => {
     fixture.subject.destroy();
     fixture.subject.destroy();
 
-    expect(fixture.worldmapDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.hexceptionDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.hudDestroy).toHaveBeenCalledTimes(1);
-    expect(fixture.controlsDispose).toHaveBeenCalledTimes(1);
+    expect(destroyRendererRuntime).toHaveBeenCalledTimes(1);
     expect(warnSpy).toHaveBeenCalledWith("GameRenderer already destroyed, skipping cleanup");
   });
 
   it("cancels transition cleanup during destroy", () => {
     const fixture = createGameRendererSubject();
-    const transitionDestroy = vi.fn();
-    fixture.subject.transitionManager = { destroy: transitionDestroy };
+    fixture.subject.transitionManager = { destroy: vi.fn() };
 
     fixture.subject.destroy();
 
-    expect(transitionDestroy).toHaveBeenCalledTimes(1);
+    expect(destroyRendererRuntime).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transitionManager: fixture.subject.transitionManager,
+      }),
+    );
   });
 });
 
@@ -403,12 +398,17 @@ describe("initScene destruction guard", () => {
   it("skips all setup when destroyed during backend initialization wait", async () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     let resolveBackend!: () => void;
+    const sessionRuntime = {
+      startListeners: vi.fn(),
+    };
     subject.backendInitializationPromise = new Promise<void>((r) => {
       resolveBackend = r;
     });
     subject.isDestroyed = false;
-    subject.setupGUIControls = vi.fn();
-    subject.setupListeners = vi.fn();
+    subject.supportRuntimeRegistry = {
+      getControlBridge: () => ({ setupGuiControls: vi.fn() }),
+    };
+    subject.sessionRuntime = sessionRuntime;
 
     const initPromise = subject.initScene();
 
@@ -417,19 +417,24 @@ describe("initScene destruction guard", () => {
     resolveBackend();
     await initPromise;
 
-    expect(subject.setupGUIControls).not.toHaveBeenCalled();
-    expect(subject.setupListeners).not.toHaveBeenCalled();
+    expect(sessionRuntime.startListeners).not.toHaveBeenCalled();
   });
 
   it("does not append a canvas after destroy during backend wait", async () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     let resolveBackend!: () => void;
+    const controlBridge = { setupGuiControls: vi.fn() };
+    const sessionRuntime = {
+      startListeners: vi.fn(),
+    };
     subject.backendInitializationPromise = new Promise<void>((r) => {
       resolveBackend = r;
     });
     subject.isDestroyed = false;
-    subject.setupGUIControls = vi.fn();
-    subject.setupListeners = vi.fn();
+    subject.supportRuntimeRegistry = {
+      getControlBridge: () => controlBridge,
+    };
+    subject.sessionRuntime = sessionRuntime;
     subject.renderer = { domElement: document.createElement("canvas") };
 
     const initPromise = subject.initScene();
@@ -443,12 +448,17 @@ describe("initScene destruction guard", () => {
   it("does not register cleanup intervals after destroy during backend wait", async () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     let resolveBackend!: () => void;
+    const sessionRuntime = {
+      startListeners: vi.fn(),
+    };
     subject.backendInitializationPromise = new Promise<void>((r) => {
       resolveBackend = r;
     });
     subject.isDestroyed = false;
-    subject.setupGUIControls = vi.fn();
-    subject.setupListeners = vi.fn();
+    subject.supportRuntimeRegistry = {
+      getControlBridge: () => ({ setupGuiControls: vi.fn() }),
+    };
+    subject.sessionRuntime = sessionRuntime;
     subject.cleanupIntervals = [];
 
     const initPromise = subject.initScene();
@@ -461,10 +471,16 @@ describe("initScene destruction guard", () => {
 
   it("proceeds with normal setup when not destroyed", async () => {
     const subject = Object.create(GameRenderer.prototype) as any;
+    const controlBridge = { setupGuiControls: vi.fn() };
+    const sessionRuntime = {
+      startListeners: vi.fn(),
+    };
     subject.backendInitializationPromise = Promise.resolve();
     subject.isDestroyed = false;
-    subject.setupGUIControls = vi.fn();
-    subject.setupListeners = vi.fn();
+    subject.supportRuntimeRegistry = {
+      getControlBridge: () => controlBridge,
+    };
+    subject.sessionRuntime = sessionRuntime;
     subject.camera = {};
     subject.graphicsSetting = "HIGH";
     subject.cleanupIntervals = [];
@@ -475,7 +491,7 @@ describe("initScene destruction guard", () => {
 
     // Stub out the downstream calls that initScene makes
     const origInitScene = GameRenderer.prototype.initScene;
-    // We just verify setupGUIControls and setupListeners are called
+    // We just verify the control bridge and listener setup are called
     // by letting it run until it hits the first thing that would throw
     try {
       await subject.initScene();
@@ -483,7 +499,7 @@ describe("initScene destruction guard", () => {
       // Expected: will fail on MapControls or other deps, but setup fns should have been called
     }
 
-    expect(subject.setupGUIControls).toHaveBeenCalledTimes(1);
-    expect(subject.setupListeners).toHaveBeenCalledTimes(1);
+    expect(controlBridge.setupGuiControls).toHaveBeenCalledTimes(1);
+    expect(sessionRuntime.startListeners).toHaveBeenCalledTimes(1);
   });
 });

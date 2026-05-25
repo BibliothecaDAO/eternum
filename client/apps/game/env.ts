@@ -4,13 +4,14 @@ import {
   DEFAULT_STANDALONE_AMMV2_LORDS_ADDRESS,
   DEFAULT_STANDALONE_AMMV2_ROUTER_ADDRESS,
 } from "@bibliothecadao/ammv2-sdk";
-import { getSelectedChain } from "./src/runtime/world/store";
 
 const _rawEnv = import.meta.env as Record<string, string | undefined>;
 
 function resolveLegacyAmmRouterAddress(rawEnv: Record<string, string | undefined>) {
   return rawEnv.VITE_PUBLIC_AMM_ROUTER_ADDRESS ?? rawEnv.VITE_PUBLIC_AMM_ADDRESS;
 }
+
+const optionalUrlOrEmpty = z.union([z.string().url(), z.literal("")]).optional();
 
 const envSchema = z.object({
   // Master account
@@ -115,9 +116,9 @@ const envSchema = z.object({
   VITE_PUBLIC_SLOT: z.string(),
 
   // Social
-  VITE_SOCIAL_LINK: z.string().url().optional().default(""),
+  VITE_SOCIAL_LINK: optionalUrlOrEmpty.default(""),
 
-  VITE_PUBLIC_MOBILE_VERSION_URL: z.string().url().optional().default("m.eternum.realms.world"),
+  VITE_PUBLIC_MOBILE_VERSION_URL: z.string().url().optional().default("https://m.eternum.realms.world"),
 
   // timestamp
   VITE_PUBLIC_SEASON_START_TIME: z
@@ -157,6 +158,7 @@ const envSchema = z.object({
   // Sentry
   VITE_PUBLIC_SENTRY_DSN: z.string().url().optional(),
   VITE_PUBLIC_SENTRY_ENVIRONMENT: z.string().optional(),
+  VITE_PUBLIC_SENTRY_RELEASE: z.string().optional(),
   VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: z
     .string()
     .optional()
@@ -177,6 +179,37 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+  VITE_PUBLIC_SENTRY_TX_FAILURES_ENABLED: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
+  VITE_PUBLIC_SENTRY_TX_FAILURE_SAMPLE_RATE: z
+    .string()
+    .optional()
+    .default("1.0")
+    .transform((v) => Number(v)),
+  VITE_PUBLIC_SENTRY_TX_CAPTURE_USER_REJECTIONS: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
+  VITE_PUBLIC_SENTRY_TX_WALLET_IDENTITY: z.enum(["hashed", "raw", "none"]).optional().default("hashed"),
+  VITE_PUBLIC_SENTRY_NETWORK_HEALTH_ENABLED: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
+  VITE_PUBLIC_SENTRY_NETWORK_HEALTH_MIN_OUTAGE_MS: z
+    .string()
+    .optional()
+    .default("10000")
+    .transform((v) => Number(v)),
+  VITE_PUBLIC_SENTRY_NETWORK_HEALTH_MAX_PER_SESSION: z
+    .string()
+    .optional()
+    .default("50")
+    .transform((v) => Number(v)),
 
   // Tracing Configuration
   VITE_TRACING_ENABLED: z
@@ -198,11 +231,34 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+
   VITE_PUBLIC_TORII_BOUNDS_DEBUG: z
     .string()
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+  VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
+  VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS: z
+    .string()
+    .optional()
+    .default("8000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS"),
+  VITE_PUBLIC_TORII_SPATIAL_SUBSCRIPTION_UPDATE_ENABLED: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
+  VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS: z
+    .string()
+    .optional()
+    .default("12000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS"),
   VITE_PUBLIC_WORLDMAP_STREAMING_STAGED: z
     .string()
     .transform((v) => v === "true")
@@ -218,6 +274,11 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+  VITE_PUBLIC_ETERNUM_UNIFIED_SETTLEMENT_PLANNER: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
   VITE_PERF_FPS_THRESHOLD: z.string().optional().default("30"),
   VITE_PERF_NETWORK_TIMEOUT: z.string().optional().default("5000"),
 
@@ -227,22 +288,30 @@ const envSchema = z.object({
   VITE_NEW_RELIC_LICENSE_KEY: z.string().optional(),
 });
 
-let env: z.infer<typeof envSchema>;
-try {
-  env = envSchema.parse({
+type PublicEnv = z.infer<typeof envSchema>;
+
+const parsePublicEnv = (): PublicEnv => {
+  return envSchema.parse({
     ...import.meta.env,
     VITE_PUBLIC_AMM_ROUTER_ADDRESS: resolveLegacyAmmRouterAddress(_rawEnv),
   });
+};
+
+const resolveValidatedPublicEnv = (): PublicEnv => {
+  const parsedEnv = parsePublicEnv();
+  return parsedEnv;
+};
+
+let env: PublicEnv;
+try {
+  env = resolveValidatedPublicEnv();
 } catch (error) {
   if (error instanceof z.ZodError) {
     console.error("❌ Invalid environment variables:", JSON.stringify(error.errors, null, 2));
+  } else {
+    console.error("❌ Invalid environment variables:", error);
   }
   throw new Error("Invalid environment variables");
-}
-
-const storedChain = getSelectedChain();
-if (storedChain) {
-  env = { ...env, VITE_PUBLIC_CHAIN: storedChain };
 }
 
 export { env };

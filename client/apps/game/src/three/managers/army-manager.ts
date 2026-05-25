@@ -1,4 +1,7 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
+import { getFreshPendingStaminaSource } from "@/lib/army-stamina/source-store";
+import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
@@ -10,25 +13,36 @@ import {
   recordWorldmapRenderDuration,
   setWorldmapRenderGauge,
 } from "@/three/perf/worldmap-render-diagnostics";
+import {
+  queuePendingExplorerTroopsUpdate,
+  resolvePendingArmySpawnState,
+  takeFreshPendingExplorerTroopsUpdate,
+  type PendingExplorerTroopsUpdate,
+} from "@/three/managers/army-explorer-delta";
 import { resolveArmyOwnerState } from "@/three/managers/army-owner-resolution";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { Position } from "@bibliothecadao/eternum";
 
-import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
+import {
+  ExplorerTroopsSystemUpdate,
+  ExplorerTroopsTileSystemUpdate,
+  getBlockTimestamp,
+  recordArmyMovementLatencyPhase,
+} from "@bibliothecadao/eternum";
 
 import { gameWorkerManager } from "@/managers/game-worker-manager";
-import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
-import { ClientComponents, ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { Biome, configManager } from "@bibliothecadao/eternum";
+import { ClientComponents, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import * as THREE from "three";
-import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
+import { Color, Euler, Group, Object3D, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { env } from "../../../env";
-import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
+import type { AttachmentTransform, CosmeticAttachmentTemplate, ResolvedCosmeticSkin } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
   findCosmeticById,
@@ -48,24 +62,57 @@ import { getRenderBounds } from "../utils/chunk-geometry";
 import { trackGuiFolder, type TrackableGuiFolder } from "../utils/gui-folder-lifecycle";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
+import { updateStaminaBar } from "../utils/labels/label-components";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import type { HoverLabelShowResult } from "./hover-label-show-result";
+import { removeArmyAttachmentsIfTracked, syncArmyAttachmentState } from "./army-attachment-state";
+import { syncArmyAttachmentTransformState } from "./army-attachment-transforms";
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
+import { refreshVisibleArmyCosmeticsByOwner } from "./army-cosmetics-refresh";
 import { FXManager } from "./fx-manager";
+import {
+  buildArmyLabelLayoutDataKey,
+  buildArmyLabelStaminaDataKey,
+  syncArmyLabelContentState,
+} from "./army-label-content";
+import {
+  configureArmyLabelHoverPriority,
+  initializeArmyLabelState,
+  revealArmyLabelState,
+} from "./army-label-lifecycle";
+import { syncArmyLabelPresentationState } from "./army-label-presentation";
+import { removeArmyLabels, syncArmyLabelVisibility } from "./army-label-visibility";
 import { PathRenderer } from "./path-renderer";
-import { PlayerIndicatorManager } from "./player-indicator-manager";
+import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from "./army-instance-presentation";
 import { resolveArmyPointLabelSize } from "./army-point-label-policy";
+import {
+  clearArmyPointHoverState,
+  removeArmyPointIconState,
+  resolveArmyPointRendererKey,
+  setArmyPointHoverState,
+  syncArmyPointIconState,
+} from "./army-point-visuals";
+import { CompactEntityLabelRenderer } from "./compact-entity-label-renderer";
+import { resolveArmyCompactEntityLabel, resolveCompactEntityLabelVariant } from "./compact-entity-label-policy";
+import { createArmyRecord } from "./army-record";
 import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
+import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
-import { getIndicatorYOffset } from "../constants/indicator-constants";
-import { MAX_INSTANCES } from "../constants/army-constants";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
+import {
+  bindManagerChunkRuntimeState,
+  recoverManagerChunkRuntimeAfterStall,
+  type RecoverManagerChunkRuntimeAfterStallInput,
+  type ManagerChunkUpdateOptions,
+  runManagerChunkUpdateRuntime,
+} from "./manager-chunk-runtime";
 import {
   isCommittedManagerChunk,
   MANAGER_UNCOMMITTED_CHUNK,
@@ -77,24 +124,33 @@ import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
-interface PendingExplorerTroopsUpdate {
-  troopCount: number;
-  onChainStamina: { amount: bigint; updatedTick: number };
-  ownerAddress: bigint;
-  ownerName: string;
-  timestamp: number; // When this update was received
-  updateTick: number; // Game tick when this update occurred
-  ownerStructureId?: ID | null;
-  attackedFromDegrees?: number;
-  attackedTowardDegrees?: number;
-  battleCooldownEnd?: number;
-  battleTimerLeft?: number;
-}
+// Auto-release window for an optimistic position lock. If no authoritative
+// update matches the locked destination within this window, the lock is
+// released so the next update can drive a correction tween — covers the rare
+// server-divergent-path case without stranding the visual state.
+const OPTIMISTIC_POSITION_LOCK_TTL_MS = 15_000;
 
 interface MovingArmySourceState {
   bucketKey: string;
   col: number;
   row: number;
+}
+
+export interface ArmyMovementPlan {
+  entityId: ID;
+  numericEntityId: number;
+  sourceNormalized: { x: number; y: number };
+  targetNormalized: { x: number; y: number };
+  targetHexCoords: Position;
+  path: Position[];
+  worldPath: Vector3[];
+  armyCategory: TroopType;
+  armyTier: TroopTier;
+}
+
+export interface PendingCreationGhostSource {
+  armyColor: string;
+  sourceScene: Object3D;
 }
 
 interface AddArmyParams {
@@ -145,17 +201,24 @@ export class ArmyManager {
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
   private components?: ClientComponents;
+  private movementStartListeners: Map<number, Set<() => void>> = new Map();
   private movementCompleteListeners: Map<number, Set<() => void>> = new Map();
+  private movementVisualCancelListeners: Map<number, Set<() => void>> = new Map();
   private pointsRenderers?: {
     player: PointsLabelRenderer;
     enemy: PointsLabelRenderer;
     ally: PointsLabelRenderer;
     agent: PointsLabelRenderer;
   };
+  private compactLabelRenderer: CompactEntityLabelRenderer;
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
   private lastLabelVisibilityUpdate = 0;
   private labelVisibilityIntervalMs = 66;
+  // Keep moving-army culling bounds fresh without paying a full recompute every frame.
+  private lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
+  private readonly movingBoundsRefreshIntervalMs = 1000 / 20;
+  private hadMovingArmiesLastFrame = false;
   private unsubscribeFrustum?: () => void;
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
@@ -179,8 +242,35 @@ export class ArmyManager {
   private isDestroyed = false;
   private isArmyChunkTransitioning = false;
   private deferredArmyQueue: Set<ID> = new Set();
+  // Armies that arrived before any chunk was committed — drained on first executeRenderForChunk
+  private preCommitArmyQueue: Set<ID> = new Set();
   // Track source buckets for moving armies to keep them visible during animation
   private movingArmySourceBuckets: Map<ID, MovingArmySourceState> = new Map();
+  // Armies animating via an optimistic tween started at tx submission. Used to
+  // distinguish predicted moves from authoritative ones so we can reconcile or
+  // rewind without double-animating when Torii eventually delivers the update.
+  private optimisticallyMovingArmies: Set<ID> = new Set();
+  // Entities for which the authoritative Torii tile update has already arrived
+  // after an optimistic submission. Phase C's dequeue consults this to avoid
+  // firing a second explorer_explore before the chain+indexer are settled —
+  // fixes the "VrfProvider: not consumed" race on rapid queued explores.
+  private authoritativeReconciledArmies: Set<ID> = new Set();
+  private authoritativeReconcileListeners: Map<number, Set<() => void>> = new Map();
+  // Position locks pinned at the optimistic destination. Suppresses stale
+  // position data from TileOpt / ExplorerTroops snapshot replays (bound-shift,
+  // chunk re-hydration) that would otherwise rubber-band the army back to its
+  // pre-tx tile. normalizedSource is retained so explore-discovery reverts —
+  // where the chain leaves `explorer.coord = from` after rolling a treasure —
+  // are recognised as authoritative and allowed through instead of being
+  // suppressed as stale. Auto-release on matching update or TTL expiry.
+  private optimisticPositionLocks: Map<
+    ID,
+    {
+      normalizedSource: { x: number; y: number };
+      normalizedTarget: { x: number; y: number };
+      lockedAtMs: number;
+    }
+  > = new Map();
   // Armies that have been visually hidden but not yet fully removed — all rendering
   // paths must skip these to prevent ghost units from reappearing during chunk transitions
   private suppressedArmies: Set<ID> = new Set();
@@ -190,23 +280,10 @@ export class ArmyManager {
   private selectedArmyForPath: ID | null = null;
   private guiFolders: TrackableGuiFolder[] = [];
 
-  // Player indicator dots
-  private playerIndicatorManager: PlayerIndicatorManager;
-  private indicatorMetadataCache: Map<ID, number> = new Map(); // entityId -> yOffset
-
   // Reusable objects for memory optimization
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempIconPosition: Vector3 = new Vector3();
   private readonly tempWorldPosition: Vector3 = new Vector3();
-  private readonly tempColor: Color = new Color();
-
-  private pruneTransitionChunkHistory(): void {
-    this.transitionChunkByToken.forEach((_, token) => {
-      if (token < this.latestTransitionToken) {
-        this.transitionChunkByToken.delete(token);
-      }
-    });
-  }
 
   constructor(
     scene: Scene,
@@ -264,14 +341,12 @@ export class ArmyManager {
 
     // Initialize points-based icon renderers
     this.initializePointsRenderers();
+    this.compactLabelRenderer = new CompactEntityLabelRenderer(scene);
 
     // Initialize path renderer for movement visualization
     this.pathRenderer = new PathRenderer();
     this.pathRenderer.initialize(scene);
     this.pathRenderer.setVisibilityManager(this.visibilityManager);
-
-    // Initialize player indicator manager
-    this.playerIndicatorManager = new PlayerIndicatorManager(scene, MAX_INSTANCES);
 
     const createArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Create Army"));
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
@@ -348,18 +423,22 @@ export class ArmyManager {
 
   private scheduleTickCheck() {
     this.tickCheckTimeout = setTimeout(() => {
-      const { currentArmiesTick } = getBlockTimestamp();
-      const tickRefresh = resolveArmyStaminaTickRefresh({
-        currentTick: currentArmiesTick,
-        previousTick: this.lastKnownArmiesTick,
-      });
-      if (tickRefresh.shouldRecompute) {
-        this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
+      try {
+        const { currentArmiesTick } = getBlockTimestamp();
+        const tickRefresh = resolveArmyStaminaTickRefresh({
+          currentTick: currentArmiesTick,
+          previousTick: this.lastKnownArmiesTick,
+        });
+        if (tickRefresh.shouldRecompute) {
+          this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
+        }
+        // Update stamina and battle timers every second
         this.recomputeStaminaForAllArmies();
+        this.recomputeBattleTimersForAllArmies();
+      } catch {
+        // Swallow errors to keep the tick loop alive
       }
-      // Update battle timers every second
-      this.recomputeBattleTimersForAllArmies();
-      // Schedule the next check
+      // Always schedule next check even if current cycle threw
       this.scheduleTickCheck();
     }, 1000);
   }
@@ -591,6 +670,11 @@ export class ArmyManager {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier, battleData } = update;
 
+    const incomingNormalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+    if (this.shouldSkipStalePositionUpdate(entityId, incomingNormalized)) {
+      return;
+    }
+
     const {
       battleCooldownEnd,
       latestAttackerId,
@@ -729,89 +813,128 @@ export class ArmyManager {
     return true;
   }
 
-  async updateChunk(chunkKey: string, options?: { force?: boolean; transitionToken?: number }) {
-    if (this.isDestroyed) {
-      return;
+  private resolveArmyOwnerFromStructure(params: {
+    armyEntityId: ID;
+    ownerStructureId?: ID | null;
+    fallbackOwnerAddress: bigint;
+    fallbackOwnerName: string;
+    logContext: "spawn" | "explorer update";
+  }): { ownerAddress: bigint; ownerName: string } {
+    if (params.ownerStructureId === null || params.ownerStructureId === undefined || !this.components?.Structure) {
+      return {
+        ownerAddress: params.fallbackOwnerAddress,
+        ownerName: params.fallbackOwnerName,
+      };
     }
 
-    const force = options?.force ?? false;
-    const transitionToken = options?.transitionToken;
-    if (
-      !shouldAcceptManagerChunkRequest({
-        chunkKey,
-        transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken:
-          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
-      })
-    ) {
-      return;
-    }
-    if (transitionToken !== undefined) {
-      this.latestTransitionToken = Math.max(this.latestTransitionToken, transitionToken);
-      this.transitionChunkByToken.set(transitionToken, chunkKey);
-      this.pruneTransitionChunkHistory();
-    }
+    try {
+      const structureEntityId = getEntityIdFromKeys([BigInt(params.ownerStructureId)]);
+      const liveStructure = getComponentValue(this.components.Structure, structureEntityId);
+      const liveOwnerRaw = liveStructure?.owner;
+      if (liveOwnerRaw === undefined || liveOwnerRaw === null) {
+        return {
+          ownerAddress: params.fallbackOwnerAddress,
+          ownerName: params.fallbackOwnerName,
+        };
+      }
 
-    await this.armyModel.loadPromise;
-
-    if (this.isDestroyed) {
-      return;
+      const ownerAddress = typeof liveOwnerRaw === "bigint" ? liveOwnerRaw : BigInt(liveOwnerRaw ?? 0);
+      return {
+        ownerAddress,
+        ownerName: this.resolveArmyOwnerNameForAddress(
+          params.armyEntityId,
+          ownerAddress,
+          params.fallbackOwnerName,
+          params.logContext,
+        ),
+      };
+    } catch (error) {
+      console.warn(
+        `[ArmyManager] Failed to resolve owner from Structure component during ${params.logContext} for army ${params.armyEntityId}:`,
+        error,
+      );
+      return {
+        ownerAddress: params.fallbackOwnerAddress,
+        ownerName: params.fallbackOwnerName,
+      };
     }
+  }
 
-    if (!force && this.currentChunkKey === chunkKey) {
-      return;
-    }
+  private resolveArmyOwnerNameForAddress(
+    armyEntityId: ID,
+    ownerAddress: bigint,
+    fallbackOwnerName: string,
+    logContext: "spawn" | "explorer update",
+  ): string {
+    let ownerName = fallbackOwnerName;
 
-    // Wait for any ongoing chunk switch to complete first
-    if (this.chunkSwitchPromise) {
-      // console.log(`[CHUNK SYNC] Waiting for previous chunk switch to complete before switching to ${chunkKey}`);
-      try {
-        await this.chunkSwitchPromise;
-      } catch (error) {
-        console.warn(`Previous chunk switch failed:`, error);
+    if (this.components?.AddressName) {
+      const addressName = getComponentValue(this.components.AddressName, getEntityIdFromKeys([ownerAddress]));
+
+      if (addressName?.name) {
+        try {
+          ownerName = shortString.decodeShortString(addressName.name.toString());
+        } catch (error) {
+          console.warn(
+            `[ArmyManager] Failed to decode owner name during ${logContext} for army ${armyEntityId}:`,
+            error,
+          );
+        }
       }
     }
 
+    if (!ownerName || ownerName.length === 0) {
+      ownerName = `0x${ownerAddress.toString(16)}`;
+    }
+
+    return ownerName;
+  }
+
+  async updateChunk(chunkKey: string, options?: ManagerChunkUpdateOptions) {
     if (this.isDestroyed) {
       return;
     }
+    await runManagerChunkUpdateRuntime({
+      chunkKey,
+      executeChunkUpdate: (nextChunkKey, nextOptions) => this.renderVisibleArmies(nextChunkKey, nextOptions),
+      isDestroyed: () => this.isDestroyed,
+      onPreviousUpdateFailed: (error) => {
+        console.warn(`Previous chunk switch failed:`, error);
+      },
+      options,
+      prepareForUpdate: () => this.armyModel.loadPromise,
+      shouldAcceptRequest: shouldAcceptManagerChunkRequest,
+      state: this.resolveChunkUpdateRuntimeState(),
+      waitForSettle: waitForVisualSettle,
+    });
+  }
 
-    // Check again if chunk key is still different (might have changed while waiting)
-    if (!force && this.currentChunkKey === chunkKey) {
+  recoverChunkUpdateAfterStall(input: RecoverManagerChunkRuntimeAfterStallInput): void {
+    const { didApply } = recoverManagerChunkRuntimeAfterStall(this.resolveChunkUpdateRuntimeState(), input);
+    if (!didApply) {
       return;
     }
+    this.isArmyChunkTransitioning = false;
+    this.drainDeferredArmyQueue();
+    this.drainPreCommitArmyQueue();
+  }
 
-    if (
-      !shouldAcceptManagerChunkRequest({
-        chunkKey,
-        transitionToken,
-        latestTransitionToken: this.latestTransitionToken,
-        knownChunkForToken:
-          transitionToken !== undefined ? this.transitionChunkByToken.get(transitionToken) : undefined,
-      })
-    ) {
-      return;
-    }
-
-    const previousChunkKey = this.currentChunkKey;
-    const chunkChanged = previousChunkKey !== chunkKey;
-
-    if (chunkChanged) {
-      // console.log(`[CHUNK SYNC] Switching army chunk from ${this.currentChunkKey} to ${chunkKey}`);
-      this.currentChunkKey = chunkKey;
-    }
-
-    // Create and track the chunk switch promise
-    const renderOptions = { force: force || chunkChanged, transitionToken };
-    this.chunkSwitchPromise = this.renderVisibleArmies(chunkKey, renderOptions);
-
-    try {
-      await this.chunkSwitchPromise;
-      await waitForVisualSettle();
-    } finally {
-      this.chunkSwitchPromise = null;
-    }
+  private resolveChunkUpdateRuntimeState() {
+    return bindManagerChunkRuntimeState({
+      getCurrentChunk: () => this.currentChunkKey,
+      setCurrentChunk: (chunkKey) => {
+        this.currentChunkKey = chunkKey;
+      },
+      getInFlightPromise: () => this.chunkSwitchPromise,
+      setInFlightPromise: (promise) => {
+        this.chunkSwitchPromise = promise;
+      },
+      getLatestTransitionToken: () => this.latestTransitionToken,
+      setLatestTransitionToken: (transitionToken) => {
+        this.latestTransitionToken = transitionToken;
+      },
+      transitionChunkByToken: this.transitionChunkByToken,
+    });
   }
 
   private renderVisibleArmies(
@@ -910,7 +1033,6 @@ export class ArmyManager {
     // to prevent frustum culling mismatches at chunk edges
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
-    this.playerIndicatorManager.computeBoundingSphere();
     this.frustumVisibilityDirty = true;
   }
 
@@ -957,22 +1079,16 @@ export class ArmyManager {
 
   private refreshArmyInstance(army: ArmyData, slot: number, modelType: ModelType, reResolveCosmetics?: boolean): void {
     const numericId = this.toNumericId(army.entityId);
-    const path = this.armyPaths.get(army.entityId);
-
-    let sourceHex = army.hexCoords;
-    if (path && path.length > 0) {
-      sourceHex = path[0];
-    }
-
+    const isSuppressed = this.suppressedArmies.has(army.entityId);
     const isMoving = this.armyModel.isEntityMoving(numericId);
-    let position: Vector3;
-    if (isMoving) {
-      position =
-        this.armyModel.getEntityWorldPosition(numericId)?.clone() ??
-        this.getArmyWorldPosition(army.entityId, sourceHex);
-    } else {
-      position = this.getArmyWorldPosition(army.entityId, sourceHex);
-    }
+    const position = resolveArmyPresentationPosition({
+      entityId: army.entityId,
+      hexCoords: army.hexCoords,
+      path: this.armyPaths.get(army.entityId),
+      isMoving,
+      movingPosition: this.armyModel.getEntityWorldPosition(numericId),
+      getArmyWorldPosition: (entityId, hexCoords) => this.getArmyWorldPosition(entityId, hexCoords),
+    });
 
     this.armyModel.assignModelToEntity(numericId, modelType);
 
@@ -980,43 +1096,18 @@ export class ArmyManager {
       this.armyModel.setIsAgent(true);
     }
 
-    // Handle cosmetic model assignment
-    let cosmeticId = army.cosmeticId;
-    let cosmeticAssetPaths = army.cosmeticAssetPaths;
-    let usesFallbackCosmeticSkin = army.usesFallbackCosmeticSkin ?? true;
-
-    // Re-resolve cosmetics if requested (for debug mode)
-    if (reResolveCosmetics) {
-      const cosmetic = resolveArmyCosmetic({
-        owner: army.owner.address,
-        troopType: army.category,
-        tier: army.tier,
-        defaultModelType: modelType,
-      });
-      cosmeticId = cosmetic.skin.cosmeticId;
-      cosmeticAssetPaths = cosmetic.skin.assetPaths;
-      usesFallbackCosmeticSkin = cosmetic.skin.isFallback;
-
-      // Update army data with new cosmetic info
-      army.cosmeticId = cosmeticId;
-      army.cosmeticAssetPaths = cosmeticAssetPaths;
-      army.usesFallbackCosmeticSkin = usesFallbackCosmeticSkin;
-      army.attachments = cosmetic.attachments;
-    }
-
-    const hasCosmeticSkin = Boolean(
-      cosmeticId && cosmeticAssetPaths && cosmeticAssetPaths.length > 0 && !usesFallbackCosmeticSkin,
-    );
-
-    if (hasCosmeticSkin) {
-      this.armyModel.assignCosmeticToEntity(numericId, {
-        cosmeticId: cosmeticId!,
-        assetPaths: cosmeticAssetPaths!,
-        isFallback: false,
-        registryEntry: findCosmeticById(cosmeticId!),
-      });
-    } else {
-      // Clear any existing cosmetic assignment
+    const cosmeticPresentation = resolveArmyCosmeticPresentation({
+      army,
+      modelType,
+      reResolveCosmetics,
+    });
+    army.cosmeticId = cosmeticPresentation.cosmeticId;
+    army.cosmeticAssetPaths = cosmeticPresentation.cosmeticAssetPaths;
+    army.usesFallbackCosmeticSkin = cosmeticPresentation.usesFallbackCosmeticSkin;
+    army.attachments = cosmeticPresentation.attachments;
+    if (cosmeticPresentation.cosmeticAssignment) {
+      this.armyModel.assignCosmeticToEntity(numericId, cosmeticPresentation.cosmeticAssignment);
+    } else if (cosmeticPresentation.clearCosmeticAssignment) {
       this.armyModel.clearCosmeticForEntity(numericId);
     }
 
@@ -1034,28 +1125,36 @@ export class ArmyManager {
       new Color(army.color),
     );
 
-    // Update player indicator dot above unit
-    const indicatorYOffset = getIndicatorYOffset(modelType);
-    this.indicatorMetadataCache.set(army.entityId, indicatorYOffset); // Cache for movement updates
-    this.tempColor.set(army.color);
-    this.playerIndicatorManager.updateIndicator(army.entityId, position, this.tempColor, indicatorYOffset);
-
-    this.recordLastKnownHexFromWorld(army.entityId, position);
-
-    const activeLabel = this.entityIdLabels.get(army.entityId);
-    if (activeLabel) {
-      activeLabel.position.copy(position);
-      activeLabel.position.y += 1.5;
-    }
-
-    this.updateArmyPointIcon(army, position);
-
     const updatedArmy = { ...army, matrixIndex: slot };
     this.armies.set(army.entityId, updatedArmy);
     this.armyModel.rebindMovementMatrixIndex(numericId, slot);
+    this.syncArmyAuxiliaryPresentation(updatedArmy, position, isSuppressed);
   }
 
-  private removeVisibleArmy(entityId: ID): number | null {
+  private syncArmyAuxiliaryPresentation(army: ArmyData, position: Vector3, isSuppressed: boolean) {
+    if (isSuppressed) {
+      this.hideSuppressedArmyAuxiliaryVisuals(army.entityId);
+      return;
+    }
+
+    this.recordLastKnownHexFromWorld(army.entityId, position);
+    this.syncArmyLabelPresentation(army, position);
+    this.syncArmyPointPresentation(army, position);
+  }
+
+  private syncArmyLabelPresentation(army: ArmyData, position: Vector3) {
+    syncArmyLabelPresentationState({
+      label: this.entityIdLabels.get(army.entityId),
+      position,
+    });
+  }
+
+  private syncArmyPointPresentation(army: ArmyData, position: Vector3) {
+    this.updateArmyPointIcon(army, position);
+    this.updateArmyCompactLabel(army, position);
+  }
+
+  private removeVisibleArmy(entityId: ID, options?: { notifyMovementVisualCancel?: boolean }): number | null {
     const slot = this.visibleArmyIndices.get(entityId);
     if (slot === undefined) {
       return null;
@@ -1078,60 +1177,59 @@ export class ArmyManager {
     this.armyPaths.delete(entityId);
     this.lastKnownVisibleHexes.delete(entityId);
     this.removeArmyPointIcon(entityId);
+    this.removeArmyCompactLabel(entityId);
     this.removeEntityIdLabel(entityId);
 
-    // Remove player indicator dot
-    this.playerIndicatorManager.removeIndicator(entityId);
-    this.indicatorMetadataCache.delete(entityId); // Clear cached metadata
-
     const numericId = this.toNumericId(entityId);
-    if (this.activeArmyAttachmentEntities.has(numericId)) {
-      this.attachmentManager.removeAttachments(numericId);
-      this.activeArmyAttachmentEntities.delete(numericId);
-      this.armyAttachmentSignatures.delete(numericId);
-    }
+    const shouldNotifyMovementVisualCancel =
+      options?.notifyMovementVisualCancel === true || this.armyModel.isEntityMoving(numericId);
+    this.removeTrackedArmyAttachments(entityId);
 
     // Clean up movement source bucket before freeing the slot, since
     // freeInstanceSlot kills the movement callback that would normally do this
     this.cleanupMovementSourceBucket(entityId);
+    // Chunk reconciliation can evict a moving army before the tween completes.
+    // Surface that as a visual cancellation so arrival ghosts and travel effects
+    // do not survive the lost movement-complete callback.
+    if (shouldNotifyMovementVisualCancel) {
+      this.runMovementVisualCancelListeners(numericId);
+    }
 
     this.armyModel.freeInstanceSlot(numericId, slot);
     return slot;
   }
 
   private updateArmyPointIcon(army: ArmyData, position: Vector3): void {
-    if (!this.pointsRenderers) {
-      return;
-    }
-
     const iconPosition = this.tempIconPosition.copy(position);
     iconPosition.y += 2.1; // Match CSS2D label height
-    const renderer = army.isDaydreamsAgent
-      ? this.pointsRenderers.agent
-      : army.isMine
-        ? this.pointsRenderers.player
-        : this.pointsRenderers.enemy;
-    renderer.setPoint({
+    syncArmyPointIconState({
+      renderers: this.pointsRenderers,
+      rendererKey: resolveArmyPointRendererKey(army),
       entityId: army.entityId,
       position: iconPosition,
     });
   }
 
-  private removeArmyPointIcon(entityId: ID): void {
-    if (!this.pointsRenderers) {
-      return;
-    }
-
-    [
-      this.pointsRenderers.player,
-      this.pointsRenderers.enemy,
-      this.pointsRenderers.ally,
-      this.pointsRenderers.agent,
-    ].forEach((renderer) => {
-      if (renderer.hasPoint(entityId)) {
-        renderer.removePoint(entityId);
-      }
+  private updateArmyCompactLabel(army: ArmyData, position: Vector3): void {
+    const labelPosition = this.tempIconPosition.copy(position);
+    labelPosition.y += 2.78;
+    this.compactLabelRenderer.setLabel({
+      entityId: army.entityId,
+      position: labelPosition,
+      text: resolveArmyCompactEntityLabel(army),
+      variant: resolveCompactEntityLabelVariant(army),
     });
+  }
+
+  private removeArmyPointIcon(entityId: ID): void {
+    removeArmyPointIconState({
+      renderers: this.pointsRenderers,
+      entityId,
+    });
+  }
+
+  private removeArmyCompactLabel(entityId: ID): void {
+    this.compactLabelRenderer.removeLabel(entityId);
   }
 
   private syncVisibleSlots(): void {
@@ -1149,47 +1247,14 @@ export class ArmyManager {
   }
 
   private syncVisibleArmyAttachments(visibleArmies: ArmyData[]): void {
-    const retain = new Set<number>();
-
-    visibleArmies.forEach((army) => {
-      const templates = army.attachments ?? [];
-      const entityId = this.toNumericId(army.entityId);
-
-      if (templates.length === 0) {
-        if (this.activeArmyAttachmentEntities.has(entityId)) {
-          this.attachmentManager.removeAttachments(entityId);
-          this.activeArmyAttachmentEntities.delete(entityId);
-        }
-        this.armyAttachmentSignatures.delete(entityId);
-        return;
-      }
-
-      retain.add(entityId);
-      const signature = this.getAttachmentSignature(templates);
-      const isActive = this.activeArmyAttachmentEntities.has(entityId);
-
-      if (!isActive || this.armyAttachmentSignatures.get(entityId) !== signature) {
-        this.attachmentManager.spawnAttachments(entityId, templates);
-        this.armyAttachmentSignatures.set(entityId, signature);
-        this.activeArmyAttachmentEntities.add(entityId);
-      }
-    });
-
-    if (this.activeArmyAttachmentEntities.size === 0) {
-      return;
-    }
-
-    const toRemove: number[] = [];
-    this.activeArmyAttachmentEntities.forEach((entityId) => {
-      if (!retain.has(entityId)) {
-        toRemove.push(entityId);
-      }
-    });
-
-    toRemove.forEach((entityId) => {
-      this.attachmentManager.removeAttachments(entityId);
-      this.activeArmyAttachmentEntities.delete(entityId);
-      this.armyAttachmentSignatures.delete(entityId);
+    syncArmyAttachmentState({
+      visibleArmies,
+      activeArmyAttachmentEntities: this.activeArmyAttachmentEntities,
+      armyAttachmentSignatures: this.armyAttachmentSignatures,
+      toNumericId: (entityId) => this.toNumericId(entityId),
+      getAttachmentSignature: (templates) => this.getAttachmentSignature(templates),
+      spawnAttachments: (entityId, templates) => this.attachmentManager.spawnAttachments(entityId, templates),
+      removeAttachments: (entityId) => this.attachmentManager.removeAttachments(entityId),
     });
   }
 
@@ -1200,31 +1265,33 @@ export class ArmyManager {
 
     this.visibleArmies.forEach((army) => {
       const entityId = this.toNumericId(army.entityId);
-      if (!this.activeArmyAttachmentEntities.has(entityId)) {
-        return;
-      }
-
       const instanceData = this.armyModel.getInstanceData(entityId);
-      if (instanceData?.position) {
-        this.tempCosmeticPosition.copy(instanceData.position);
-      } else {
-        const worldPosition = this.getArmyWorldPosition(army.entityId, army.hexCoords);
-        this.tempCosmeticPosition.copy(worldPosition);
-      }
+      syncArmyAttachmentTransformState({
+        entityId,
+        army,
+        instanceData,
+        activeArmyAttachmentEntities: this.activeArmyAttachmentEntities,
+        tempPosition: this.tempCosmeticPosition,
+        scale: this.scale,
+        attachmentTransformScratch: this.armyAttachmentTransformScratch,
+        getWorldPositionInto: (out, hexCoords) => this.getArmyWorldPositionInto(out, hexCoords),
+        resolveBiome: (x, y) => Biome.getBiome(x, y),
+        getModelTypeForEntity: (trackedEntityId, category, tier, biome) =>
+          this.armyModel.getModelTypeForEntity(trackedEntityId, category, tier, biome),
+        resolveMountTransforms: (modelType, baseTransform, scratch) =>
+          resolveArmyMountTransforms(modelType, baseTransform, scratch),
+        updateAttachmentTransforms: (trackedEntityId, baseTransform, mountTransforms) =>
+          this.attachmentManager.updateAttachmentTransforms(trackedEntityId, baseTransform, mountTransforms),
+      });
+    });
+  }
 
-      const baseTransform = {
-        position: this.tempCosmeticPosition,
-        rotation: instanceData?.rotation,
-        scale: instanceData?.scale ?? this.scale,
-      };
-
-      const { x, y } = army.hexCoords.getContract();
-      const biome = Biome.getBiome(x, y);
-      const modelType = this.armyModel.getModelTypeForEntity(entityId, army.category, army.tier, biome);
-
-      const mountTransforms = resolveArmyMountTransforms(modelType, baseTransform, this.armyAttachmentTransformScratch);
-
-      this.attachmentManager.updateAttachmentTransforms(entityId, baseTransform, mountTransforms);
+  private removeTrackedArmyAttachments(entityId: ID): void {
+    removeArmyAttachmentsIfTracked({
+      entityId: this.toNumericId(entityId),
+      activeArmyAttachmentEntities: this.activeArmyAttachmentEntities,
+      armyAttachmentSignatures: this.armyAttachmentSignatures,
+      removeAttachments: (trackedEntityId) => this.attachmentManager.removeAttachments(trackedEntityId),
     });
   }
 
@@ -1282,68 +1349,11 @@ export class ArmyManager {
         (a, b) => this.toNumericId(a.entityId) - this.toNumericId(b.entityId),
       );
       ({ modelTypesByEntity } = this.collectModelInfo(sortedVisibleArmies));
-
-      let buffersDirty = false;
-
-      const desiredOrder = visibleArmies.map((army) => army.entityId);
-      const desiredIds = new Set(desiredOrder);
-      const toRemove = this.visibleArmyOrder
-        .filter((entityId) => !desiredIds.has(entityId))
-        .toSorted((a, b) => {
-          const aNum = this.toNumericId(a);
-          const bNum = this.toNumericId(b);
-          return aNum - bNum;
-        });
-
-      toRemove.forEach((entityId) => {
-        const removalResult = this.removeVisibleArmy(entityId);
-        if (removalResult !== null) {
-          buffersDirty = true;
-        }
-      });
-
-      visibleArmies
-        .filter((army) => !this.visibleArmyIndices.has(army.entityId))
-        .forEach((army) => {
-          const modelType = modelTypesByEntity.get(army.entityId);
-          if (!modelType) {
-            return;
-          }
-          this.addVisibleArmy(army, modelType);
-          buffersDirty = true;
-        });
-
-      if (options?.force) {
-        visibleArmies.forEach((army) => {
-          const slot = this.visibleArmyIndices.get(army.entityId);
-          const modelType = modelTypesByEntity.get(army.entityId);
-          if (slot !== undefined && modelType) {
-            // Re-resolve cosmetics on force refresh to pick up debug override changes
-            this.refreshArmyInstance(army, slot, modelType, true);
-            buffersDirty = true;
-          }
-        });
-      }
-
-      const visibleArmySet = new Set(this.visibleArmyOrder);
-      this.entityIdLabels.forEach((_, entityId) => {
-        if (!visibleArmySet.has(entityId)) {
-          this.removeEntityIdLabel(entityId);
-        }
-      });
-
-      this.setVisibleArmyOrder(desiredOrder.filter((id) => this.visibleArmyIndices.has(id)));
-      this.refreshVisibleArmyCollection();
-
-      this.syncVisibleArmyAttachments(this.visibleArmies);
-      this.updateArmyAttachmentTransforms();
-
-      if (buffersDirty) {
-        this.updateVisibleArmyBuffers();
-      }
+      this.reconcileVisibleArmies(visibleArmies, modelTypesByEntity, options?.force);
     } finally {
       this.isArmyChunkTransitioning = false;
       this.drainDeferredArmyQueue();
+      this.drainPreCommitArmyQueue();
       recordWorldmapRenderDuration("executeRenderForChunk", performance.now() - renderStartedAt);
       setWorldmapRenderGauge("visibleArmies", this.visibleArmyOrder.length);
       setWorldmapRenderGauge("activePaths", this.getActivePathCount());
@@ -1405,6 +1415,36 @@ export class ArmyManager {
 
   private getChunkBounds(startRow: number, startCol: number) {
     return getRenderBounds(startRow, startCol, this.renderChunkSize, this.chunkStride);
+  }
+
+  private reconcileVisibleArmies(
+    visibleArmies: ArmyData[],
+    modelTypesByEntity: Map<ID, ModelType>,
+    forceRefresh?: boolean,
+  ): void {
+    reconcileVisibleArmySet({
+      desiredVisibleArmies: visibleArmies,
+      modelTypesByEntity,
+      forceRefresh,
+      currentVisibleOrder: this.visibleArmyOrder,
+      forEachTrackedLabel: (visit) => {
+        this.entityIdLabels.forEach((_, entityId) => visit(entityId));
+      },
+      getVisibleArmySlot: (entityId) => this.visibleArmyIndices.get(entityId),
+      removeVisibleArmy: (entityId) => this.removeVisibleArmy(entityId),
+      addVisibleArmy: (army, modelType) => this.addVisibleArmy(army, modelType),
+      refreshVisibleArmy: (army, slot, modelType) => {
+        // Re-resolve cosmetics on force refresh to pick up debug override changes.
+        this.refreshArmyInstance(army, slot, modelType, true);
+      },
+      removeEntityIdLabel: (entityId) => this.removeEntityIdLabel(entityId),
+      commitVisibleArmyOrder: (entityIds) => this.setVisibleArmyOrder(entityIds),
+      refreshVisibleArmyCollection: () => this.refreshVisibleArmyCollection(),
+      syncVisibleArmyAttachments: () => this.syncVisibleArmyAttachments(this.visibleArmies),
+      updateArmyAttachmentTransforms: () => this.updateArmyAttachmentTransforms(),
+      flushVisibleArmyBuffers: () => this.updateVisibleArmyBuffers(),
+      sortEntityIds: (entityIds) => entityIds.toSorted((a, b) => this.toNumericId(a) - this.toNumericId(b)),
+    });
   }
 
   private updateSpatialIndex(entityId: ID, oldHex: Position | undefined, newHex: Position) {
@@ -1577,6 +1617,17 @@ export class ArmyManager {
     }
   }
 
+  private drainPreCommitArmyQueue(): void {
+    if (this.preCommitArmyQueue.size === 0) return;
+    const queued = [...this.preCommitArmyQueue];
+    this.preCommitArmyQueue.clear();
+    for (const entityId of queued) {
+      if (!this.suppressedArmies.has(entityId)) {
+        void this.renderArmyIntoCurrentChunkIfVisible(entityId);
+      }
+    }
+  }
+
   private async renderArmyIntoCurrentChunkIfVisible(entityId: ID): Promise<boolean> {
     if (this.isArmyChunkTransitioning) {
       this.deferredArmyQueue.add(entityId);
@@ -1584,6 +1635,7 @@ export class ArmyManager {
     }
 
     if (!isCommittedManagerChunk(this.currentChunkKey)) {
+      this.preCommitArmyQueue.add(entityId);
       return false;
     }
 
@@ -1603,7 +1655,7 @@ export class ArmyManager {
     await this.armyModel.preloadModels([modelType]);
 
     const latestArmy = this.armies.get(entityId);
-    if (!latestArmy || !this.isArmyVisibleInCurrentChunk(latestArmy)) {
+    if (this.suppressedArmies.has(entityId) || !latestArmy || !this.isArmyVisibleInCurrentChunk(latestArmy)) {
       return false;
     }
 
@@ -1615,8 +1667,14 @@ export class ArmyManager {
     }
 
     this.refreshVisibleArmyCollection();
+    this.syncVisibleArmyAttachments(this.visibleArmies);
+    this.updateArmyAttachmentTransforms();
     this.updateVisibleArmyBuffers();
     return true;
+  }
+
+  public restoreArmyVisualIfVisible(entityId: ID): Promise<boolean> {
+    return this.renderArmyIntoCurrentChunkIfVisible(entityId);
   }
 
   public async addArmy(params: AddArmyParams) {
@@ -1655,130 +1713,58 @@ export class ArmyManager {
         : undefined,
     );
 
-    // Check for pending label updates and apply them if they exist
-    const pendingUpdate = this.pendingExplorerTroopsUpdate.get(params.entityId);
-    if (pendingUpdate) {
-      // Check if pending update is not too old (max 30 seconds)
-      const isPendingStale = Date.now() - pendingUpdate.timestamp > 30000;
-
-      if (isPendingStale) {
-        this.pendingExplorerTroopsUpdate.delete(params.entityId);
-      } else {
-        finalOnChainStamina = pendingUpdate.onChainStamina;
-
-        // Apply any pending battle degrees data
-        if (pendingUpdate.attackedFromDegrees !== undefined) {
-          attackedFromDegrees = pendingUpdate.attackedFromDegrees;
-        }
-        if (pendingUpdate.attackedTowardDegrees !== undefined) {
-          attackTowardDegrees = pendingUpdate.attackedTowardDegrees;
-        }
-
-        // Calculate current stamina using the pending update data
-        const { currentArmiesTick } = getBlockTimestamp();
-        const updatedStamina = Number(
-          StaminaManager.getStamina(
-            {
-              category: params.category,
-              tier: params.tier,
-              count: BigInt(pendingUpdate.troopCount),
-              stamina: {
-                amount: BigInt(pendingUpdate.onChainStamina.amount),
-                updated_tick: BigInt(pendingUpdate.onChainStamina.updatedTick),
-              },
-              // todo: add boosts
-              boosts: {
-                incr_stamina_regen_percent_num: 0,
-                incr_stamina_regen_tick_count: 0,
-                incr_explore_reward_percent_num: 0,
-                incr_explore_reward_end_tick: 0,
-                incr_damage_dealt_percent_num: 0,
-                incr_damage_dealt_end_tick: 0,
-                decr_damage_gotten_percent_num: 0,
-                decr_damage_gotten_end_tick: 0,
-              },
-              battle_cooldown_end: 0,
-            },
-            currentArmiesTick,
-          ).amount,
-        );
-
-        // Use pending update data instead of initial data
-        finalTroopCount = pendingUpdate.troopCount;
-        finalCurrentStamina = updatedStamina;
-        finalOnChainStamina = pendingUpdate.onChainStamina;
-        const pendingOwner = resolveArmyOwnerState({
-          existingOwner: {
-            address: finalOwnerAddress,
-            ownerName: finalOwnerName,
-            guildName: finalGuildName,
-          },
-          incomingOwner: {
-            address: pendingUpdate.ownerAddress,
-            ownerName: pendingUpdate.ownerName,
-            guildName: finalGuildName,
-          },
-        });
-        finalOwnerAddress = pendingOwner.address;
-        finalOwnerName = pendingOwner.ownerName;
-        finalBattleCooldownEnd = pendingUpdate.battleCooldownEnd;
-        finalBattleTimerLeft = pendingUpdate.battleTimerLeft;
-        if (pendingUpdate.ownerStructureId !== undefined && pendingUpdate.ownerStructureId !== null) {
-          finalOwningStructureId = pendingUpdate.ownerStructureId;
-        }
-
-        // Clear the pending update
-        this.pendingExplorerTroopsUpdate.delete(params.entityId);
-      }
-    }
+    const pendingUpdate = takeFreshPendingExplorerTroopsUpdate(this.pendingExplorerTroopsUpdate, params.entityId);
+    const pendingSpawnState = resolvePendingArmySpawnState({
+      troopCount: finalTroopCount,
+      currentStamina: finalCurrentStamina,
+      onChainStamina: finalOnChainStamina,
+      owner: {
+        address: finalOwnerAddress,
+        ownerName: finalOwnerName,
+        guildName: finalGuildName,
+      },
+      owningStructureId: finalOwningStructureId,
+      category: params.category,
+      tier: params.tier,
+      battleCooldownEnd: finalBattleCooldownEnd,
+      battleTimerLeft: finalBattleTimerLeft,
+      attackedFromDegrees: attackedFromDegrees ?? undefined,
+      attackTowardDegrees: attackTowardDegrees ?? undefined,
+      pendingUpdate,
+      resolveCurrentStamina: ({ troopCount, onChainStamina, category, tier }) =>
+        this.resolveArmyStaminaSnapshot({
+          entityId: params.entityId,
+          troopCount,
+          onChainStamina,
+          category,
+          tier,
+        })?.current ?? finalCurrentStamina,
+    });
+    finalTroopCount = pendingSpawnState.troopCount;
+    finalCurrentStamina = pendingSpawnState.currentStamina;
+    finalOnChainStamina = pendingSpawnState.onChainStamina;
+    finalOwnerAddress = pendingSpawnState.owner.address;
+    finalOwnerName = pendingSpawnState.owner.ownerName;
+    finalOwningStructureId = pendingSpawnState.owningStructureId;
+    attackedFromDegrees = pendingSpawnState.attackedFromDegrees;
+    attackTowardDegrees = pendingSpawnState.attackTowardDegrees;
+    finalBattleCooldownEnd = pendingSpawnState.battleCooldownEnd;
+    finalBattleTimerLeft = pendingSpawnState.battleTimerLeft;
 
     const structureIdForOwner =
       finalOwningStructureId !== null && finalOwningStructureId !== undefined
         ? finalOwningStructureId
         : (params.owningStructureId ?? null);
 
-    if (structureIdForOwner !== null && this.components?.Structure) {
-      try {
-        const structureEntityId = getEntityIdFromKeys([BigInt(structureIdForOwner)]);
-        const liveStructure = getComponentValue(this.components.Structure, structureEntityId);
-
-        if (liveStructure) {
-          const liveOwnerRaw = liveStructure.owner;
-          if (liveOwnerRaw !== undefined && liveOwnerRaw !== null) {
-            const normalizedOwnerAddress = typeof liveOwnerRaw === "bigint" ? liveOwnerRaw : BigInt(liveOwnerRaw ?? 0);
-
-            finalOwnerAddress = normalizedOwnerAddress;
-
-            let resolvedOwnerName = finalOwnerName;
-            if (this.components.AddressName) {
-              const addressName = getComponentValue(
-                this.components.AddressName,
-                getEntityIdFromKeys([normalizedOwnerAddress]),
-              );
-
-              if (addressName?.name) {
-                try {
-                  resolvedOwnerName = shortString.decodeShortString(addressName.name.toString());
-                } catch (error) {
-                  console.warn(`[ArmyManager] Failed to decode owner name for army ${params.entityId}:`, error);
-                }
-              }
-            }
-
-            if (!resolvedOwnerName || resolvedOwnerName.length === 0) {
-              resolvedOwnerName = `0x${normalizedOwnerAddress.toString(16)}`;
-            }
-
-            finalOwnerName = resolvedOwnerName;
-          }
-        }
-      } catch (error) {
-        console.warn(
-          `[ArmyManager] Failed to resolve owner from Structure component for army ${params.entityId}:`,
-          error,
-        );
-      }
-    }
+    const resolvedOwnerFromStructure = this.resolveArmyOwnerFromStructure({
+      armyEntityId: params.entityId,
+      ownerStructureId: structureIdForOwner,
+      fallbackOwnerAddress: finalOwnerAddress ?? 0n,
+      fallbackOwnerName: finalOwnerName,
+      logContext: "spawn",
+    });
+    finalOwnerAddress = resolvedOwnerFromStructure.ownerAddress;
+    finalOwnerName = resolvedOwnerFromStructure.ownerName;
 
     finalOwningStructureId = structureIdForOwner ?? finalOwningStructureId;
 
@@ -1816,53 +1802,67 @@ export class ArmyManager {
       owner: { address: finalOwnerAddress || 0n },
     });
 
-    this.armies.set(params.entityId, {
+    const initialStaminaPresentation = this.resolveArmyStaminaSnapshot({
       entityId: params.entityId,
-      hexCoords: params.hexCoords,
-      isMine,
-      owningStructureId: finalOwningStructureId,
-      owner: {
-        address: finalOwnerAddress || 0n,
-        ownerName: finalOwnerName,
-        guildName: finalGuildName,
-      },
-      cosmeticId: cosmetic.skin.cosmeticId,
-      cosmeticAssetPaths,
-      usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
-      attachments: cosmetic.attachments,
-      color,
+      troopCount: finalTroopCount,
+      onChainStamina: finalOnChainStamina,
       category: params.category,
       tier: params.tier,
-      isDaydreamsAgent: params.isDaydreamsAgent,
-      // Enhanced data
-      troopCount: finalTroopCount,
-      currentStamina: finalCurrentStamina,
-      maxStamina: finalMaxStamina,
-      // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
-      onChainStamina: finalOnChainStamina,
-      attackedFromDegrees: attackedFromDegrees ?? undefined,
-      attackedTowardDegrees: attackTowardDegrees ?? undefined,
-      battleCooldownEnd: finalBattleCooldownEnd,
-      battleTimerLeft: finalBattleTimerLeft,
     });
+    finalCurrentStamina = initialStaminaPresentation?.current ?? finalCurrentStamina;
+
+    this.armies.set(
+      params.entityId,
+      createArmyRecord({
+        entityId: params.entityId,
+        hexCoords: params.hexCoords,
+        isMine,
+        owningStructureId: finalOwningStructureId,
+        owner: {
+          address: finalOwnerAddress || 0n,
+          ownerName: finalOwnerName,
+          guildName: finalGuildName,
+        },
+        cosmeticId: cosmetic.skin.cosmeticId,
+        cosmeticAssetPaths,
+        usesFallbackCosmeticSkin: cosmetic.skin.isFallback,
+        attachments: cosmetic.attachments,
+        color,
+        category: params.category,
+        tier: params.tier,
+        isDaydreamsAgent: params.isDaydreamsAgent,
+        // Enhanced data
+        troopCount: finalTroopCount,
+        currentStamina: finalCurrentStamina,
+        maxStamina: finalMaxStamina,
+        displayStaminaRatio: initialStaminaPresentation?.displayRatio,
+        // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
+        onChainStamina: finalOnChainStamina,
+        attackedFromDegrees: attackedFromDegrees ?? undefined,
+        attackedTowardDegrees: attackTowardDegrees ?? undefined,
+        battleCooldownEnd: finalBattleCooldownEnd,
+        battleTimerLeft: finalBattleTimerLeft,
+      }),
+    );
 
     this.updateSpatialIndex(params.entityId, undefined, params.hexCoords);
 
     await this.renderArmyIntoCurrentChunkIfVisible(params.entityId);
   }
 
-  public async moveArmy(entityId: ID, hexCoords: Position) {
-    // Monitor memory usage before army movement
+  public async computeMovementPlan(entityId: ID, hexCoords: Position): Promise<ArmyMovementPlan | null> {
     this.memoryMonitor?.getCurrentStats(`moveArmy-start-${entityId}`);
 
     const armyData = this.armies.get(entityId);
-    if (!armyData) return;
+    if (!armyData) return null;
 
     const numericEntityId = this.toNumericId(entityId);
-    const startPos = armyData.hexCoords.getNormalized();
-    const targetPos = hexCoords.getNormalized();
+    const sourceNormalized = armyData.hexCoords.getNormalized();
+    const targetNormalized = hexCoords.getNormalized();
 
-    if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
+    if (sourceNormalized.x === targetNormalized.x && sourceNormalized.y === targetNormalized.y) {
+      return null;
+    }
 
     // todo: currently taking max stamina of paladin as max stamina but need to refactor
     const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin, TroopTier.T3);
@@ -1879,65 +1879,266 @@ export class ArmyManager {
       ? await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex)
       : null;
     const path = resolveMovementPath(armyData.hexCoords, hexCoords, workerPath);
-
-    // Convert path to world positions
     const worldPath = path.map((pos) => this.getArmyWorldPositionInto(new Vector3(), pos));
 
-    // Track source bucket so army remains visible during movement animation.
-    // The spatial index will have the army in BOTH source and destination buckets
-    // until movement completes.
-    const sourceNorm = armyData.hexCoords.getNormalized();
-    const sourceBucketKey = this.getSpatialKey(sourceNorm.x, sourceNorm.y);
-    const destNorm = hexCoords.getNormalized();
-    const destBucketKey = this.getSpatialKey(destNorm.x, destNorm.y);
+    return {
+      entityId,
+      numericEntityId,
+      sourceNormalized,
+      targetNormalized,
+      targetHexCoords: hexCoords,
+      path,
+      worldPath,
+      armyCategory: armyData.category,
+      armyTier: armyData.tier,
+    };
+  }
 
-    // Only track source if buckets are different
+  /**
+   * Apply a pre-computed movement plan. Returns `true` when the plan wrote a
+   * local predicted or authoritative position. For optimistic calls, `true`
+   * means a rewind/reconcile lock exists, so sibling caches can mirror safely.
+   */
+  public async applyMovementPlan(plan: ArmyMovementPlan, options: { optimistic: boolean }): Promise<boolean> {
+    const { entityId, numericEntityId, sourceNormalized, targetNormalized, targetHexCoords, path, worldPath } = plan;
+
+    const armyData = this.armies.get(entityId);
+    if (!armyData) return false;
+
+    const currentNorm = armyData.hexCoords.getNormalized();
+    // Already at target (either this plan or a later authoritative update landed first).
+    if (currentNorm.x === targetNormalized.x && currentNorm.y === targetNormalized.y) return false;
+    // Source drifted (another update moved the army since plan was computed). Abandon this plan.
+    if (currentNorm.x !== sourceNormalized.x || currentNorm.y !== sourceNormalized.y) return false;
+
+    const sourceBucketKey = this.getSpatialKey(sourceNormalized.x, sourceNormalized.y);
+    const destBucketKey = this.getSpatialKey(targetNormalized.x, targetNormalized.y);
+
     if (sourceBucketKey !== destBucketKey) {
       this.movingArmySourceBuckets.set(entityId, {
         bucketKey: sourceBucketKey,
-        col: sourceNorm.x,
-        row: sourceNorm.y,
+        col: sourceNormalized.x,
+        row: sourceNormalized.y,
       });
     }
 
-    // Add to destination bucket (keep in source bucket too - updateSpatialIndex modified below)
-    this.addToSpatialBucket(entityId, hexCoords);
-    this.armies.set(entityId, { ...armyData, hexCoords });
+    this.addToSpatialBucket(entityId, targetHexCoords);
+    this.armies.set(entityId, { ...armyData, hexCoords: targetHexCoords });
+
+    if (options.optimistic) {
+      // Reset any prior reconciliation flag from an earlier optimistic move on
+      // this entity — we're starting fresh and will wait for the next authoritative
+      // update.
+      this.authoritativeReconciledArmies.delete(entityId);
+      this.optimisticPositionLocks.set(entityId, {
+        normalizedSource: { x: sourceNormalized.x, y: sourceNormalized.y },
+        normalizedTarget: { x: targetNormalized.x, y: targetNormalized.y },
+        lockedAtMs: Date.now(),
+      });
+    }
 
     const matrixIndex = armyData.matrixIndex;
     if (matrixIndex === undefined) {
       this.armyPaths.delete(entityId);
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
-      // Clean up source bucket tracking since movement won't actually happen
       this.cleanupMovementSourceBucket(entityId);
+      await this.renderArmyIntoCurrentChunkIfVisible(entityId);
+      this.runMovementStartListeners(numericEntityId);
       this.runMovementCompleteListeners(numericEntityId);
-      return;
+      // No tween played, but optimistic callers still own a lock that can
+      // reconcile or rewind the predicted position.
+      return options.optimistic;
     }
 
     this.armyPaths.set(entityId, path);
 
     this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
-      // Guard: if the army was removed during movement, skip all callbacks
-      // to prevent re-adding to spatial buckets that were already cleaned up
       if (!this.armies.has(entityId)) return;
       this.armyPaths.delete(entityId);
-      // Remove from source bucket now that movement is complete
       this.cleanupMovementSourceBucket(entityId);
-      // Remove path visualization
       this.pathRenderer.removePath(numericEntityId);
+      this.optimisticallyMovingArmies.delete(entityId);
       this.runMovementCompleteListeners(numericEntityId);
     });
 
-    // Start movement in ArmyModel with troop information
-    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, armyData.category, armyData.tier);
+    if (options.optimistic) {
+      this.optimisticallyMovingArmies.add(entityId);
+    }
 
-    // Create path visualization with player-specific color
+    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
+    this.runMovementStartListeners(numericEntityId);
+
     const colorProfile = this.getArmyColorProfile(armyData);
     const displayState = this.selectedArmyForPath === entityId ? "selected" : "moving";
     this.pathRenderer.createPath(numericEntityId, worldPath, colorProfile.primary, displayState);
 
-    // Monitor memory usage after army movement setup
     this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
+    return true;
+  }
+
+  public async moveArmy(entityId: ID, hexCoords: Position): Promise<void> {
+    if (this.optimisticallyMovingArmies.has(entityId)) {
+      this.markOptimisticMovementReconciled(entityId);
+    }
+
+    const plan = await this.computeMovementPlan(entityId, hexCoords);
+    if (!plan) return;
+    await this.applyMovementPlan(plan, { optimistic: false });
+  }
+
+  public isArmyMovingOptimistically(entityId: ID): boolean {
+    return this.optimisticallyMovingArmies.has(entityId);
+  }
+
+  public hasUnresolvedOptimisticMovement(entityId: ID): boolean {
+    return this.optimisticallyMovingArmies.has(entityId) || this.optimisticPositionLocks.has(entityId);
+  }
+
+  public hasReceivedAuthoritativeReconciliation(entityId: ID): boolean {
+    return this.authoritativeReconciledArmies.has(entityId);
+  }
+
+  /**
+   * True when an incoming position update should be skipped because it disagrees
+   * with an active optimistic lock and the TTL hasn't elapsed. Matching updates
+   * release the lock as a side effect.
+   *
+   * Source-match is treated the same as target-match: `explorer_explore` can
+   * roll a treasure that leaves `explorer.coord = from` on-chain
+   * (troop_movement.cairo:193). That authoritative revert would otherwise be
+   * swallowed as "stale" and the army would stay visually stranded on the
+   * discovered tile until the TTL expired.
+   */
+  public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean {
+    const lock = this.optimisticPositionLocks.get(entityId);
+    if (!lock) return false;
+
+    const matchesTarget =
+      lock.normalizedTarget.x === incomingNormalized.x && lock.normalizedTarget.y === incomingNormalized.y;
+    if (matchesTarget) {
+      this.optimisticPositionLocks.delete(entityId);
+      this.markOptimisticMovementReconciled(entityId);
+      return false;
+    }
+
+    const matchesSource =
+      lock.normalizedSource.x === incomingNormalized.x && lock.normalizedSource.y === incomingNormalized.y;
+    if (matchesSource) {
+      // Discovery revert: `explorer_explore` rolled a treasure, the chain left
+      // `explorer.coord = from`, and the tx emits an ExplorerTroops delta
+      // (stamina/biomes) but no TileOpt change for the source tile. The
+      // optimistic tween has already parked the visual on `target`, so merely
+      // releasing the lock isn't enough — callers that only touch armyHexes
+      // (processExplorerTroopsUpdate) would leave the visual stranded while
+      // the spatial index reconciled to `from`, producing a clickable-but-
+      // invisible army at `from` and a visible-but-unclickable ghost at
+      // `target`. Tear the tween down here so the visual snaps back to
+      // source. rewindOptimisticMovement also clears the lock.
+      this.rewindOptimisticMovement(entityId);
+      return false;
+    }
+
+    if (Date.now() - lock.lockedAtMs > OPTIMISTIC_POSITION_LOCK_TTL_MS) {
+      this.optimisticPositionLocks.delete(entityId);
+      return false;
+    }
+
+    return true;
+  }
+
+  private markOptimisticMovementReconciled(entityId: ID): void {
+    recordArmyMovementLatencyPhase({
+      phase: "optimistic_animation_reconciled",
+      source: "world_update_listener",
+      entityId,
+    });
+    this.optimisticallyMovingArmies.delete(entityId);
+    this.optimisticPositionLocks.delete(entityId);
+    this.authoritativeReconciledArmies.add(entityId);
+    this.runAuthoritativeReconcileListeners(this.toNumericId(entityId));
+  }
+
+  public onAuthoritativeReconciliation(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.authoritativeReconcileListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.authoritativeReconcileListeners.set(numericEntityId, listeners);
+    }
+    listeners.add(callback);
+
+    return () => {
+      const active = this.authoritativeReconcileListeners.get(numericEntityId);
+      if (!active) return;
+      active.delete(callback);
+      if (active.size === 0) this.authoritativeReconcileListeners.delete(numericEntityId);
+    };
+  }
+
+  private runAuthoritativeReconcileListeners(entityId: number): void {
+    const listeners = this.authoritativeReconcileListeners.get(entityId);
+    if (!listeners || listeners.size === 0) return;
+
+    this.authoritativeReconcileListeners.delete(entityId);
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Authoritative reconciliation listener failed", error);
+      }
+    });
+  }
+
+  public rewindOptimisticMovement(entityId: ID): { col: number; row: number } | null {
+    // Read the lock's normalizedSource before the delete below — it's the
+    // canonical source-of-truth for the pre-tx hex, set for every optimistic
+    // move regardless of whether the source/dest share a spatial bucket.
+    const lock = this.optimisticPositionLocks.get(entityId);
+    if (!this.optimisticallyMovingArmies.has(entityId) && !lock) return null;
+
+    const lockedSource = lock ? { col: lock.normalizedSource.x, row: lock.normalizedSource.y } : null;
+
+    this.optimisticallyMovingArmies.delete(entityId);
+    this.authoritativeReconciledArmies.delete(entityId);
+    this.authoritativeReconcileListeners.delete(this.toNumericId(entityId));
+    this.optimisticPositionLocks.delete(entityId);
+
+    const numericEntityId = this.toNumericId(entityId);
+    const sourceState = this.movingArmySourceBuckets.get(entityId);
+    const armyData = this.armies.get(entityId);
+
+    // Clear the complete callback so cancelMovement's teardown doesn't fire listeners.
+    this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
+    this.armyModel.cancelMovement(numericEntityId);
+
+    this.armyPaths.delete(entityId);
+    this.pathRenderer.removePath(numericEntityId);
+
+    // Drop any pending start/complete listeners — they were registered for the
+    // optimistic tween we just cancelled and should not fire.
+    this.movementStartListeners.delete(numericEntityId);
+    this.movementCompleteListeners.delete(numericEntityId);
+    this.movementVisualCancelListeners.delete(numericEntityId);
+
+    if (armyData && (sourceState || lockedSource)) {
+      const sourcePosition = new Position({
+        x: sourceState?.col ?? lockedSource!.col,
+        y: sourceState?.row ?? lockedSource!.row,
+      });
+      const previousHex = armyData.hexCoords;
+      this.armies.set(entityId, { ...armyData, hexCoords: sourcePosition });
+      this.atomicSpatialTransfer(entityId, previousHex, sourcePosition);
+      this.movingArmySourceBuckets.delete(entityId);
+      void this.renderArmyIntoCurrentChunkIfVisible(entityId);
+    }
+
+    recordArmyMovementLatencyPhase({
+      phase: "optimistic_animation_rewound",
+      source: "worldmap",
+      entityId,
+    });
+
+    return lockedSource;
   }
 
   /**
@@ -1951,11 +2152,20 @@ export class ArmyManager {
     if (slot !== undefined) {
       this.armyModel.hideInstanceSlot(slot);
     }
+    this.hideSuppressedArmyAuxiliaryVisuals(entityId);
     this.cleanupMovementSourceBucket(entityId);
   }
 
   public unsuppressArmy(entityId: ID): void {
     this.suppressedArmies.delete(entityId);
+    const slot = this.visibleArmyIndices.get(entityId);
+    if (slot !== undefined) {
+      this.armyModel.restoreHiddenSlot(slot);
+    }
+    const army = this.armies.get(entityId);
+    if (army) {
+      this.updateArmyCompactLabel(army, this.getArmyWorldPosition(entityId, army.hexCoords));
+    }
   }
 
   public getSuppressedArmiesRef(): Set<ID> {
@@ -1970,11 +2180,7 @@ export class ArmyManager {
     this.suppressedArmies.delete(entityId);
 
     const numericEntityId = this.toNumericId(entityId);
-    if (this.activeArmyAttachmentEntities.has(numericEntityId)) {
-      this.attachmentManager.removeAttachments(numericEntityId);
-      this.activeArmyAttachmentEntities.delete(numericEntityId);
-    }
-    this.armyAttachmentSignatures.delete(numericEntityId);
+    this.removeTrackedArmyAttachments(entityId);
 
     // Monitor memory usage before removing army
     this.memoryMonitor?.getCurrentStats(`removeArmy-${entityId}`);
@@ -1983,7 +2189,6 @@ export class ArmyManager {
 
     this.armyPaths.delete(entityId);
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
-    this.runMovementCompleteListeners(numericEntityId);
     this.lastKnownVisibleHexes.delete(entityId);
 
     // Remove path visualization
@@ -2024,9 +2229,11 @@ export class ArmyManager {
     // console.debug(`[ArmyManager] Preparing world cleanup for entity ${entityId}`);
     const worldPosition = this.getArmyWorldPosition(entityId, army.hexCoords);
 
-    const removedSlot = this.removeVisibleArmy(entityId);
+    const removedSlot = this.removeVisibleArmy(entityId, { notifyMovementVisualCancel: true });
     if (removedSlot === null) {
+      this.runMovementVisualCancelListeners(numericEntityId);
       this.removeArmyPointIcon(entityId);
+      this.removeArmyCompactLabel(entityId);
       this.removeEntityIdLabel(entityId);
     }
 
@@ -2073,6 +2280,106 @@ export class ArmyManager {
     return this.armies.get(entityId);
   }
 
+  public getArrivalGhostSourceSnapshot(entityId: ID): { armyColor: string; sourceScene: Object3D } | null {
+    const army = this.armies.get(entityId);
+    if (!army) {
+      return null;
+    }
+
+    const numericEntityId = this.toNumericId(entityId);
+    const modelData = this.armyModel.getModelForEntity(numericEntityId);
+    if (!modelData) {
+      return null;
+    }
+
+    return {
+      armyColor: army.color,
+      sourceScene: modelData.sourceScene,
+    };
+  }
+
+  public async resolvePendingCreationGhostSource(input: {
+    entityId: ID;
+    hexCoords: HexPosition;
+    troopType: TroopType;
+    troopTier: TroopTier;
+  }): Promise<PendingCreationGhostSource> {
+    const ownerAddress = this.resolvePendingCreationOwnerAddress();
+    this.hydratePendingCreationCosmetics(ownerAddress);
+
+    const baseModelType = this.resolvePendingCreationBaseModel(input);
+    const cosmetic = resolveArmyCosmetic({
+      owner: ownerAddress,
+      troopType: input.troopType,
+      tier: input.troopTier,
+      defaultModelType: baseModelType,
+    });
+    const sourceScene = await this.resolvePendingCreationSourceScene({
+      baseModelType: cosmetic.skin.modelType ?? baseModelType,
+      cosmeticSkin: cosmetic.skin,
+    });
+
+    return {
+      armyColor: this.resolvePendingCreationGhostColor(ownerAddress),
+      sourceScene,
+    };
+  }
+
+  private resolvePendingCreationOwnerAddress(): bigint {
+    return ContractAddress(useAccountStore.getState().account?.address || "0");
+  }
+
+  private hydratePendingCreationCosmetics(ownerAddress: bigint): void {
+    if (!this.components || ownerAddress === 0n) {
+      return;
+    }
+
+    playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerAddress);
+  }
+
+  private resolvePendingCreationBaseModel(input: {
+    entityId: ID;
+    hexCoords: HexPosition;
+    troopType: TroopType;
+    troopTier: TroopTier;
+  }): ModelType {
+    const contractHex = new Position({ x: input.hexCoords.col, y: input.hexCoords.row }).getContract();
+    const biome = Biome.getBiome(contractHex.x, contractHex.y);
+    return this.armyModel.getModelTypeForEntity(
+      this.toNumericId(input.entityId),
+      input.troopType,
+      input.troopTier,
+      biome,
+    );
+  }
+
+  private async resolvePendingCreationSourceScene(input: {
+    baseModelType: ModelType;
+    cosmeticSkin: ResolvedCosmeticSkin;
+  }): Promise<Object3D> {
+    if (this.shouldUsePendingCreationCosmeticSource(input.cosmeticSkin)) {
+      try {
+        return await this.armyModel.getCosmeticModelSourceScene(input.cosmeticSkin);
+      } catch (error) {
+        console.warn("[ArmyManager] Failed to load pending creation cosmetic ghost, falling back to base model", error);
+      }
+    }
+
+    return this.armyModel.getModelSourceScene(input.baseModelType);
+  }
+
+  private shouldUsePendingCreationCosmeticSource(skin: ResolvedCosmeticSkin): boolean {
+    return !skin.isFallback && skin.assetPaths.length > 0;
+  }
+
+  private resolvePendingCreationGhostColor(ownerAddress: bigint): string {
+    return this.getArmyColor({
+      isMine: true,
+      isDaydreamsAgent: false,
+      owner: { address: ownerAddress },
+    });
+  }
+
   public syncAttachedArmiesOwnerForStructure(params: {
     structureId: ID;
     ownerAddress: bigint;
@@ -2104,30 +2411,14 @@ export class ArmyManager {
   }
 
   public refreshCosmeticsForOwner(owner: string | bigint): void {
-    const normalizedOwner =
-      typeof owner === "bigint"
-        ? `0x${owner.toString(16)}`
-        : owner.toLowerCase().startsWith("0x")
-          ? owner.toLowerCase()
-          : owner;
-
-    this.armies.forEach((army, entityId) => {
-      const armyOwner = `0x${army.owner.address.toString(16)}`;
-      if (armyOwner !== normalizedOwner) {
-        return;
-      }
-
-      const slot = this.visibleArmyIndices.get(entityId);
-      if (slot === undefined) {
-        return;
-      }
-
-      const assignedModelType = this.armyModel.getAssignedModelType(this.toNumericId(entityId));
-      if (!assignedModelType) {
-        return;
-      }
-
-      this.refreshArmyInstance(army, slot, assignedModelType, true);
+    refreshVisibleArmyCosmeticsByOwner({
+      owner,
+      armies: this.armies,
+      visibleArmyIndices: this.visibleArmyIndices,
+      getAssignedModelType: (entityId) => this.armyModel.getAssignedModelType(entityId),
+      toNumericId: (entityId) => this.toNumericId(entityId),
+      refreshArmyInstance: (army, slot, assignedModelType, reResolveCosmetics) =>
+        this.refreshArmyInstance(army, slot, assignedModelType, reResolveCosmetics),
     });
   }
 
@@ -2168,6 +2459,28 @@ export class ArmyManager {
     return this.selectedArmyForPath;
   }
 
+  public onMovementStart(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.movementStartListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.movementStartListeners.set(numericEntityId, listeners);
+    }
+
+    listeners.add(callback);
+
+    return () => {
+      const active = this.movementStartListeners.get(numericEntityId);
+      if (!active) {
+        return;
+      }
+      active.delete(callback);
+      if (active.size === 0) {
+        this.movementStartListeners.delete(numericEntityId);
+      }
+    };
+  }
+
   public onMovementComplete(entityId: ID, callback: () => void): () => void {
     const numericEntityId = this.toNumericId(entityId);
     let listeners = this.movementCompleteListeners.get(numericEntityId);
@@ -2190,8 +2503,51 @@ export class ArmyManager {
     };
   }
 
+  public onMovementVisualCancel(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.movementVisualCancelListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.movementVisualCancelListeners.set(numericEntityId, listeners);
+    }
+
+    listeners.add(callback);
+
+    return () => {
+      const active = this.movementVisualCancelListeners.get(numericEntityId);
+      if (!active) {
+        return;
+      }
+
+      active.delete(callback);
+      if (active.size === 0) {
+        this.movementVisualCancelListeners.delete(numericEntityId);
+      }
+    };
+  }
+
   public hasMovingArmies(): boolean {
     return this.armyModel.hasMovingInstances();
+  }
+
+  public isArmyMoving(entityId: ID): boolean {
+    return this.armyModel.isEntityMoving(this.toNumericId(entityId));
+  }
+
+  private runMovementStartListeners(entityId: number): void {
+    const listeners = this.movementStartListeners.get(entityId);
+    if (!listeners || listeners.size === 0) {
+      return;
+    }
+
+    this.movementStartListeners.delete(entityId);
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Movement start listener failed", error);
+      }
+    });
   }
 
   private runMovementCompleteListeners(entityId: number): void {
@@ -2201,6 +2557,7 @@ export class ArmyManager {
     }
 
     this.movementCompleteListeners.delete(entityId);
+    this.movementVisualCancelListeners.delete(entityId);
     listeners.forEach((listener) => {
       try {
         listener();
@@ -2210,10 +2567,30 @@ export class ArmyManager {
     });
   }
 
+  private runMovementVisualCancelListeners(entityId: number): void {
+    const listeners = this.movementVisualCancelListeners.get(entityId);
+    this.movementVisualCancelListeners.delete(entityId);
+    this.movementStartListeners.delete(entityId);
+    this.movementCompleteListeners.delete(entityId);
+
+    if (!listeners || listeners.size === 0) {
+      return;
+    }
+
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Movement visual cancel listener failed", error);
+      }
+    });
+  }
+
   update(deltaTime: number, animationContext?: AnimationVisibilityContext) {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
     this.armyModel.updateAnimations(deltaTime, animationContext);
+    this.updateCompactLabelCamera();
 
     // Update FX
     this.fxManager.update(deltaTime);
@@ -2231,8 +2608,9 @@ export class ArmyManager {
     }
 
     // Batch update: single pass over visible armies for all per-frame operations
-    // This consolidates point icons, attachment transforms, and indicators
+    // This consolidates point icons, compact labels, and attachment transforms.
     this.updateVisibleArmiesBatched();
+    this.syncArmyBoundsForMovementState();
 
     if (this.frustumVisibilityDirty) {
       const now = performance.now();
@@ -2247,18 +2625,64 @@ export class ArmyManager {
     this.labelPool.flushBatch();
   }
 
+  private updateCompactLabelCamera(): void {
+    const camera = this.hexagonScene?.getCamera();
+    if (camera) {
+      this.compactLabelRenderer.updateCamera(camera);
+    }
+  }
+
+  private syncArmyBoundsForMovementState() {
+    const hasMovingArmies = this.hasMovingArmies();
+
+    if (hasMovingArmies) {
+      this.refreshMovingArmyBoundsIfNeeded();
+      this.hadMovingArmiesLastFrame = true;
+      return;
+    }
+
+    if (this.hadMovingArmiesLastFrame) {
+      this.refreshSettledArmyBounds();
+    }
+
+    this.hadMovingArmiesLastFrame = false;
+  }
+
+  private refreshMovingArmyBoundsIfNeeded() {
+    if (!this.hasMovingArmies()) {
+      return;
+    }
+
+    const now = performance.now();
+    if (now - this.lastMovingBoundsRefreshAt < this.movingBoundsRefreshIntervalMs) {
+      return;
+    }
+
+    this.lastMovingBoundsRefreshAt = now;
+    this.armyModel.requestBoundsUpdate();
+    this.armyModel.applyPendingBounds();
+    this.frustumVisibilityDirty = true;
+  }
+
+  private refreshSettledArmyBounds() {
+    this.lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
+    this.armyModel.requestBoundsUpdate();
+    this.armyModel.applyPendingBounds();
+    this.frustumVisibilityDirty = true;
+  }
+
   /**
    * Batched update for all visible army per-frame operations.
-   * Consolidates point icon updates, attachment transforms, and indicator positions
+   * Consolidates point icon updates, compact labels, and attachment transforms
    * into a single iteration over visibleArmies to reduce iteration overhead.
    */
   private updateVisibleArmiesBatched() {
     const hasPointsRenderers = this.pointsRenderers !== undefined;
     const hasActiveAttachments = this.activeArmyAttachmentEntities.size > 0;
-    const hasIndicators = this.playerIndicatorManager.getVisibleCount() > 0;
+    const hasMovingArmies = this.hasMovingArmies();
 
     // Early exit if nothing to update
-    if (!hasPointsRenderers && !hasActiveAttachments && !hasIndicators) {
+    if (!hasPointsRenderers && !hasActiveAttachments && !hasMovingArmies) {
       return;
     }
 
@@ -2277,6 +2701,9 @@ export class ArmyManager {
     // Single pass over visible armies
     for (let i = 0; i < this.visibleArmies.length; i++) {
       const army = this.visibleArmies[i];
+      if (this.suppressedArmies.has(army.entityId)) {
+        continue;
+      }
       const numericEntityId = this.toNumericId(army.entityId);
       const instanceData = this.armyModel.getInstanceData(numericEntityId);
 
@@ -2286,56 +2713,37 @@ export class ArmyManager {
         const iconPosition = this.tempIconPosition.copy(instanceData.position);
         iconPosition.y += 2.1; // Match CSS2D label height
 
-        const renderer = army.isDaydreamsAgent
-          ? this.pointsRenderers!.agent
-          : army.isMine
-            ? this.pointsRenderers!.player
-            : this.pointsRenderers!.enemy;
-        renderer.setPoint({
+        syncArmyPointIconState({
+          renderers: this.pointsRenderers,
+          rendererKey: resolveArmyPointRendererKey(army),
           entityId: army.entityId,
           position: iconPosition,
         });
       }
 
-      // 1b. Update indicator dot positions for moving armies
-      if (instanceData?.isMoving && instanceData.position) {
-        // Use cached yOffset to avoid redundant lookups every frame
-        const indicatorYOffset = this.indicatorMetadataCache.get(army.entityId) ?? 2.5;
-
-        this.tempColor.set(army.color);
-        this.playerIndicatorManager.updateIndicator(
-          army.entityId,
-          instanceData.position,
-          this.tempColor,
-          indicatorYOffset,
-        );
+      if (instanceData?.isMoving) {
+        this.updateArmyCompactLabel(army, instanceData.position);
       }
 
       // 2. Update attachment transforms
-      if (hasActiveAttachments && this.activeArmyAttachmentEntities.has(numericEntityId)) {
-        if (instanceData?.position) {
-          this.tempCosmeticPosition.copy(instanceData.position);
-        } else {
-          this.getArmyWorldPositionInto(this.tempCosmeticPosition, army.hexCoords);
-        }
-
-        const baseTransform = {
-          position: this.tempCosmeticPosition,
-          rotation: instanceData?.rotation,
-          scale: instanceData?.scale ?? this.scale,
-        };
-
-        const { x, y } = army.hexCoords.getContract();
-        const biome = Biome.getBiome(x, y);
-        const modelType = this.armyModel.getModelTypeForEntity(numericEntityId, army.category, army.tier, biome);
-
-        const mountTransforms = resolveArmyMountTransforms(
-          modelType,
-          baseTransform,
-          this.armyAttachmentTransformScratch,
-        );
-
-        this.attachmentManager.updateAttachmentTransforms(numericEntityId, baseTransform, mountTransforms);
+      if (hasActiveAttachments) {
+        syncArmyAttachmentTransformState({
+          entityId: numericEntityId,
+          army,
+          instanceData,
+          activeArmyAttachmentEntities: this.activeArmyAttachmentEntities,
+          tempPosition: this.tempCosmeticPosition,
+          scale: this.scale,
+          attachmentTransformScratch: this.armyAttachmentTransformScratch,
+          getWorldPositionInto: (out, hexCoords) => this.getArmyWorldPositionInto(out, hexCoords),
+          resolveBiome: (x, y) => Biome.getBiome(x, y),
+          getModelTypeForEntity: (trackedEntityId, category, tier, biome) =>
+            this.armyModel.getModelTypeForEntity(trackedEntityId, category, tier, biome),
+          resolveMountTransforms: (modelType, baseTransform, scratch) =>
+            resolveArmyMountTransforms(modelType, baseTransform, scratch),
+          updateAttachmentTransforms: (trackedEntityId, baseTransform, mountTransforms) =>
+            this.attachmentManager.updateAttachmentTransforms(trackedEntityId, baseTransform, mountTransforms),
+        });
       }
     }
 
@@ -2347,33 +2755,26 @@ export class ArmyManager {
     }
   }
 
+  private hideSuppressedArmyAuxiliaryVisuals(entityId: ID): void {
+    this.removeArmyPointIcon(entityId);
+    this.removeArmyCompactLabel(entityId);
+
+    const label = this.entityIdLabels.get(entityId);
+    if (label) {
+      label.visible = false;
+      label.userData.isVisible = false;
+      label.element.style.display = "none";
+      this.frustumVisibilityDirty = true;
+    }
+
+    this.removeTrackedArmyAttachments(entityId);
+  }
+
   private applyFrustumVisibilityToLabels() {
-    this.entityIdLabels.forEach((label) => {
-      const isVisible = this.visibilityManager
-        ? this.visibilityManager.isPointVisible(label.position)
-        : (this.frustumManager?.isPointVisible(label.position) ?? true);
-      const wasVisible = label.userData.isVisible === true;
-      if (isVisible === wasVisible) {
-        return;
-      }
-
-      label.userData.isVisible = isVisible;
-      label.visible = isVisible;
-      label.element.style.display = isVisible ? "" : "none";
-
-      if (isVisible) {
-        if (label.parent !== this.labelsGroup) {
-          this.labelsGroup.add(label);
-        }
-
-        // Force update data when showing again to ensure it's fresh
-        const entityId = label.userData.entityId;
-        const army = this.armies.get(entityId);
-        if (army) {
-          // Use the internal update function directly to avoid the visibility check in the wrapper
-          updateArmyLabel(label.element, army, this.currentCameraView);
-        }
-      }
+    syncArmyLabelVisibility<ID>({
+      labels: this.entityIdLabels.values(),
+      setLabelVisible: (label) => this.isArmyLabelVisible(label),
+      revealLabel: (entityId, label) => this.revealArmyLabel(entityId, label),
     });
   }
 
@@ -2484,18 +2885,15 @@ export class ArmyManager {
   private async addEntityIdLabel(army: ArmyData, position: Vector3) {
     const { label } = this.labelPool.acquire(() => {
       const element = createArmyLabel(army, this.currentCameraView);
-      const cssLabel = new CSS2DObject(element);
-      cssLabel.userData.baseRenderOrder = cssLabel.renderOrder;
-      return cssLabel;
+      return new CSS2DObject(element);
     });
 
-    label.position.copy(position);
-    label.position.y += 2.1;
-    label.userData.entityId = army.entityId;
-    // Clear stale lastDataKey from pool recycling to ensure fresh DOM update
-    label.userData.lastDataKey = null;
-
-    this.configureArmyLabelInteractions(label);
+    initializeArmyLabelState({
+      label,
+      entityId: army.entityId,
+      position,
+    });
+    configureArmyLabelHoverPriority(label);
 
     this.entityIdLabels.set(army.entityId, label);
     this.armyModel.addLabel(this.toNumericId(army.entityId), label);
@@ -2504,73 +2902,84 @@ export class ArmyManager {
     this.frustumVisibilityDirty = true;
   }
 
-  public showLabel(entityId: ID): void {
+  public showLabel(entityId: ID): HoverLabelShowResult {
     const army = this.armies.get(entityId);
     if (!army) {
-      return;
+      return { status: "missing" };
     }
 
     const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
     if (this.entityIdLabels.has(army.entityId)) {
       const label = this.entityIdLabels.get(army.entityId)!;
-      label.position.copy(position);
-      label.position.y += 1.5;
+      const wasDetached = label.parent !== this.labelsGroup;
+      const wasHidden = label.visible !== true || label.element.style.display === "none";
+      syncArmyLabelPresentationState({
+        label,
+        position,
+      });
+      this.revealArmyLabel(entityId, label);
+      label.visible = true;
+      label.element.style.display = "";
       this.updateArmyLabelData(entityId, army, label);
-
-      // Highlight point icon on hover
-      if (this.pointsRenderers) {
-        const renderer = army.isDaydreamsAgent
-          ? this.pointsRenderers.agent
-          : army.isMine
-            ? this.pointsRenderers.player
-            : this.pointsRenderers.enemy;
-        renderer.setHover(entityId);
+      this.highlightArmyPointHover(entityId, army);
+      if (wasDetached || wasHidden) {
+        this.frustumVisibilityDirty = true;
+        return { status: "reattached" };
       }
-      return;
+      return { status: "unchanged" };
     }
 
     this.addEntityIdLabel(army, position);
-
-    // Highlight point icon on hover
-    if (this.pointsRenderers) {
-      const renderer = army.isDaydreamsAgent
-        ? this.pointsRenderers.agent
-        : army.isMine
-          ? this.pointsRenderers.player
-          : this.pointsRenderers.enemy;
-      renderer.setHover(entityId);
-    }
+    this.highlightArmyPointHover(entityId, army);
     this.frustumVisibilityDirty = true;
+    return { status: "shown" };
   }
 
   public hideLabel(entityId: ID): void {
     this.removeEntityIdLabel(entityId);
-
-    // Remove hover highlight from point icon
-    if (this.pointsRenderers) {
-      [
-        this.pointsRenderers.player,
-        this.pointsRenderers.enemy,
-        this.pointsRenderers.ally,
-        this.pointsRenderers.agent,
-      ].forEach((renderer) => renderer.clearHover());
-    }
+    this.clearArmyPointHoverIcons();
     this.frustumVisibilityDirty = true;
   }
 
   public hideAllLabels(): void {
-    Array.from(this.entityIdLabels.keys()).forEach((armyId) => this.removeEntityIdLabel(armyId));
-
-    // Clear hover highlight from all points
-    if (this.pointsRenderers) {
-      [
-        this.pointsRenderers.player,
-        this.pointsRenderers.enemy,
-        this.pointsRenderers.ally,
-        this.pointsRenderers.agent,
-      ].forEach((renderer) => renderer.clearHover());
-    }
+    removeArmyLabels({
+      trackedLabelEntityIds: Array.from(this.entityIdLabels.keys()),
+      shouldRetainLabel: () => false,
+      removeEntityIdLabel: (armyId) => this.removeEntityIdLabel(armyId),
+    });
+    this.clearArmyPointHoverIcons();
     this.frustumVisibilityDirty = true;
+  }
+
+  private isArmyLabelVisible(label: CSS2DObject): boolean {
+    return this.visibilityManager
+      ? this.visibilityManager.isPointVisible(label.position)
+      : (this.frustumManager?.isPointVisible(label.position) ?? true);
+  }
+
+  private revealArmyLabel(entityId: ID, label: CSS2DObject) {
+    revealArmyLabelState({
+      label,
+      labelsGroup: this.labelsGroup,
+      army: this.armies.get(entityId),
+      renderLabel: (army) => updateArmyLabel(label.element, army, this.currentCameraView),
+    });
+  }
+
+  private highlightArmyPointHover(entityId: ID, army: Pick<ArmyData, "isDaydreamsAgent" | "isMine">): void {
+    setArmyPointHoverState({
+      renderers: this.pointsRenderers,
+      rendererKey: resolveArmyPointRendererKey(army),
+      entityId,
+    });
+    this.compactLabelRenderer.setHover(entityId);
+  }
+
+  private clearArmyPointHoverIcons() {
+    clearArmyPointHoverState({
+      renderers: this.pointsRenderers,
+    });
+    this.compactLabelRenderer.clearHover();
   }
 
   removeLabelsFromScene() {
@@ -2595,20 +3004,6 @@ export class ArmyManager {
     this.labelPool.release(label);
     this.entityIdLabels.delete(entityId);
     this.frustumVisibilityDirty = true;
-  }
-
-  private configureArmyLabelInteractions(label: CSS2DObject): void {
-    const element = label.element as HTMLElement;
-    const baseRenderOrder = (label.userData.baseRenderOrder as number | undefined) ?? label.renderOrder;
-    label.userData.baseRenderOrder = baseRenderOrder;
-
-    element.onmouseenter = () => {
-      label.renderOrder = Infinity;
-    };
-
-    element.onmouseleave = () => {
-      label.renderOrder = baseRenderOrder;
-    };
   }
 
   private initializePointsRenderers(): void {
@@ -2777,48 +3172,84 @@ ${
     `);
   }
 
+  private resolveLiveExplorerTroops(entityId: ID) {
+    if (!this.components) {
+      return null;
+    }
+
+    return getComponentValue(this.components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId)]))?.troops ?? null;
+  }
+
+  private resolveArmyStaminaSnapshot(input: {
+    entityId: ID;
+    troopCount: number;
+    onChainStamina: { amount: bigint; updatedTick: number };
+    category: TroopType;
+    tier: TroopTier;
+  }): { current: number; max: number; displayRatio: number } | null {
+    const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestampStore.getState();
+    if (!Number.isFinite(currentArmiesTick) || currentArmiesTick <= 0) {
+      return null;
+    }
+
+    const pendingStamina = getFreshPendingStaminaSource(input.entityId);
+    const staminaSnapshot = getExplorerStaminaSnapshot({
+      entityId: input.entityId,
+      currentArmiesTick,
+      liveTroops: this.resolveLiveExplorerTroops(input.entityId),
+      fallbackArmy: {
+        category: input.category,
+        tier: input.tier,
+        troopCount: input.troopCount,
+        onChainStamina: input.onChainStamina,
+      },
+      pendingStamina: pendingStamina
+        ? {
+            amount: pendingStamina.amount,
+            updatedTick: pendingStamina.updatedTick,
+          }
+        : null,
+    });
+    if (!staminaSnapshot) {
+      return null;
+    }
+
+    // staminaSnapshot.current is already the computed regen value from
+    // StaminaManager.getStamina(troops, currentArmiesTick). Use it directly.
+    return {
+      current: staminaSnapshot.current,
+      max: staminaSnapshot.max,
+      displayRatio: staminaSnapshot.max > 0 ? staminaSnapshot.current / staminaSnapshot.max : 0,
+    };
+  }
+
   /**
    * Recompute stamina for all armies and update visible labels when armies tick changes
    */
   private recomputeStaminaForAllArmies(): void {
-    const { currentArmiesTick } = getBlockTimestamp();
-
     // Update all army data in cache
     this.armies.forEach((army, entityId) => {
-      // Calculate current stamina using StaminaManager with the last known stamina values
-      const updatedStamina = Number(
-        StaminaManager.getStamina(
-          {
-            category: army.category,
-            tier: army.tier,
-            count: BigInt(army.troopCount),
-            stamina: {
-              amount: BigInt(army.onChainStamina.amount),
-              updated_tick: BigInt(army.onChainStamina.updatedTick),
-            },
-            boosts: {
-              incr_stamina_regen_percent_num: 0,
-              incr_stamina_regen_tick_count: 0,
-              incr_explore_reward_percent_num: 0,
-              incr_explore_reward_end_tick: 0,
-              incr_damage_dealt_percent_num: 0,
-              incr_damage_dealt_end_tick: 0,
-              decr_damage_gotten_percent_num: 0,
-              decr_damage_gotten_end_tick: 0,
-            },
-            battle_cooldown_end: 0,
-          },
-          currentArmiesTick,
-        ).amount,
-      );
+      try {
+        const staminaSnapshot = this.resolveArmyStaminaSnapshot({
+          entityId,
+          troopCount: army.troopCount,
+          onChainStamina: army.onChainStamina,
+          category: army.category,
+          tier: army.tier,
+        });
 
-      // Update cached army data with new stamina
-      army.currentStamina = updatedStamina;
+        // Update cached army data with new stamina
+        army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
+        army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
+        army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;
 
-      // Update visible label if it exists
-      const label = this.entityIdLabels.get(entityId);
-      if (label) {
-        this.updateArmyLabelData(entityId, army, label);
+        // Update visible label if it exists
+        const label = this.entityIdLabels.get(entityId);
+        if (label) {
+          this.updateArmyLabelData(entityId, army, label);
+        }
+      } catch {
+        // Skip this army — don't let one bad entity block all others
       }
     });
   }
@@ -2850,25 +3281,27 @@ ${
    * Update an army label with fresh data
    */
   private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
-    // Build data key from fields that affect label appearance
-    const dataKey = `${army.troopCount}-${army.currentStamina}-${army.battleTimerLeft ?? 0}-${army.isMine}-${army.owner.ownerName}-${army.attackedFromDegrees ?? ""}-${army.attackedTowardDegrees ?? ""}`;
+    const layoutDataKey = buildArmyLabelLayoutDataKey(army);
+    const staminaDataKey = buildArmyLabelStaminaDataKey(army);
 
-    // Skip DOM update if data hasn't changed (dirty-flag pattern for performance)
-    // Only skip if label is currently visible - culled labels need update when shown
-    const isVisible = this.labelsGroup.parent !== null && existingLabel.visible === true;
-    if (isVisible && existingLabel.userData.lastDataKey === dataKey) {
+    syncArmyLabelContentState({
+      label: existingLabel,
+      layoutDataKey,
+      staminaDataKey,
+      labelsAttachedToScene: this.labelsGroup.parent !== null,
+      renderLabel: () => updateArmyLabel(existingLabel.element, army, this.currentCameraView),
+      renderStamina: () => this.updateArmyLabelStamina(existingLabel.element, army),
+    });
+  }
+
+  private updateArmyLabelStamina(labelElement: HTMLElement, army: ArmyData): void {
+    const staminaBar = labelElement.querySelector('[data-component="stamina-bar"]');
+    if (!staminaBar) {
+      updateArmyLabel(labelElement, army, this.currentCameraView);
       return;
     }
 
-    // If label is culled, mark it dirty so it updates when becoming visible
-    if (!isVisible) {
-      existingLabel.userData.lastDataKey = null; // Force update on next show
-      return;
-    }
-
-    // Update the existing label content in-place with correct camera view
-    existingLabel.userData.lastDataKey = dataKey;
-    updateArmyLabel(existingLabel.element, army, this.currentCameraView);
+    updateStaminaBar(staminaBar as HTMLElement, army.currentStamina, army.maxStamina);
   }
 
   /**
@@ -2901,34 +3334,22 @@ ${
 
     // If army doesn't exist yet, store the update as pending
     if (!army) {
-      const currentTime = Date.now();
-      const currentTick = update.onChainStamina.updatedTick;
-
-      // Check if we already have a pending update for this entity
-      const existingPending = this.pendingExplorerTroopsUpdate.get(update.entityId);
-
-      // Only store if this is newer than the existing pending update
-      if (!existingPending || currentTick >= existingPending.updateTick) {
-        // console.log(`[PENDING LABEL UPDATE] Storing pending update for army ${update.entityId} (tick: ${currentTick})`);
-        const ownerStructureId = (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null;
-        this.pendingExplorerTroopsUpdate.set(update.entityId, {
-          troopCount: update.troopCount,
-          onChainStamina: update.onChainStamina,
-          ownerAddress: update.ownerAddress,
-          ownerName: update.ownerName,
-          timestamp: currentTime,
-          updateTick: currentTick,
-          ownerStructureId,
-          // Note: ExplorerTroopsSystemUpdate doesn't have battle degrees data
-          // Degrees would need to come from tile updates
-          attackedFromDegrees: undefined,
-          attackedTowardDegrees: undefined,
-          battleCooldownEnd: update.battleCooldownEnd,
-          battleTimerLeft: getBattleTimerLeft(update.battleCooldownEnd),
-        });
-      }
+      queuePendingExplorerTroopsUpdate({
+        pendingExplorerTroopsUpdate: this.pendingExplorerTroopsUpdate,
+        entityId: update.entityId,
+        troopCount: update.troopCount,
+        onChainStamina: update.onChainStamina,
+        ownerAddress: update.ownerAddress,
+        ownerName: update.ownerName,
+        ownerStructureId: (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null,
+        battleCooldownEnd: update.battleCooldownEnd,
+        updateTick: update.onChainStamina.updatedTick,
+      });
       return;
     }
+
+    this.markAuthoritativeMovementReconciliation(update.entityId);
+    this.reconcileArmyPositionFromExplorerTroopsUpdate(update, army);
 
     // Log troop count diff and play visual FX for battle damage/healing
     const previousCount = army.troopCount;
@@ -2948,92 +3369,38 @@ ${
 
     // Update cached army data
     army.troopCount = update.troopCount;
+    army.onChainStamina = update.onChainStamina;
 
-    // Calculate current stamina using StaminaManager
-    const { currentArmiesTick } = getBlockTimestamp();
-    army.currentStamina = Number(
-      StaminaManager.getStamina(
-        {
-          category: army.category,
-          tier: army.tier,
-          count: BigInt(update.troopCount),
-          stamina: {
-            amount: BigInt(update.onChainStamina.amount),
-            updated_tick: BigInt(update.onChainStamina.updatedTick),
-          },
-          boosts: {
-            incr_stamina_regen_percent_num: 0,
-            incr_stamina_regen_tick_count: 0,
-            incr_explore_reward_percent_num: 0,
-            incr_explore_reward_end_tick: 0,
-            incr_damage_dealt_percent_num: 0,
-            incr_damage_dealt_end_tick: 0,
-            decr_damage_gotten_percent_num: 0,
-            decr_damage_gotten_end_tick: 0,
-          },
-          battle_cooldown_end: 0,
-        },
-        currentArmiesTick,
-      ).amount,
-    );
+    const staminaSnapshot = this.resolveArmyStaminaSnapshot({
+      entityId: update.entityId,
+      troopCount: update.troopCount,
+      onChainStamina: update.onChainStamina,
+      category: army.category,
+      tier: army.tier,
+    });
+    army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
+    army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
+    army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;
 
     army.troopCount = update.troopCount;
 
-    let resolvedOwnerAddress =
-      typeof update.ownerAddress === "bigint" ? update.ownerAddress : BigInt(update.ownerAddress ?? 0);
-    let resolvedOwnerName = update.ownerName;
-
-    if (update.ownerStructureId !== null && update.ownerStructureId !== undefined && this.components?.Structure) {
-      try {
-        const structureEntityId = getEntityIdFromKeys([BigInt(update.ownerStructureId)]);
-        const liveStructure = getComponentValue(this.components.Structure, structureEntityId);
-
-        if (liveStructure) {
-          const liveOwnerRaw = liveStructure.owner;
-          if (liveOwnerRaw !== undefined && liveOwnerRaw !== null) {
-            resolvedOwnerAddress = typeof liveOwnerRaw === "bigint" ? liveOwnerRaw : BigInt(liveOwnerRaw ?? 0);
-
-            if (this.components.AddressName) {
-              const addressName = getComponentValue(
-                this.components.AddressName,
-                getEntityIdFromKeys([resolvedOwnerAddress]),
-              );
-
-              if (addressName?.name) {
-                try {
-                  resolvedOwnerName = shortString.decodeShortString(addressName.name.toString());
-                } catch (error) {
-                  console.warn(
-                    `[ArmyManager] Failed to decode owner name during explorer update for army ${update.entityId}:`,
-                    error,
-                  );
-                }
-              }
-            }
-
-            if (!resolvedOwnerName || resolvedOwnerName.length === 0) {
-              resolvedOwnerName = `0x${resolvedOwnerAddress.toString(16)}`;
-            }
-          }
-        }
-      } catch (error) {
-        console.warn(
-          `[ArmyManager] Failed to resolve owner from Structure component during explorer update for army ${update.entityId}:`,
-          error,
-        );
-      }
-    }
-
     const ownerStructureId = (update as { ownerStructureId?: ID | null }).ownerStructureId ?? null;
+    const resolvedOwnerFromStructure = this.resolveArmyOwnerFromStructure({
+      armyEntityId: update.entityId,
+      ownerStructureId,
+      fallbackOwnerAddress:
+        typeof update.ownerAddress === "bigint" ? update.ownerAddress : BigInt(update.ownerAddress ?? 0),
+      fallbackOwnerName: update.ownerName,
+      logContext: "explorer update",
+    });
     this.syncTrackedArmyOwnerState({
       entityId: update.entityId,
-      ownerAddress: resolvedOwnerAddress,
-      ownerName: resolvedOwnerName,
+      ownerAddress: resolvedOwnerFromStructure.ownerAddress,
+      ownerName: resolvedOwnerFromStructure.ownerName,
       guildName: army.owner.guildName,
       ownerStructureId,
     });
 
-    army.onChainStamina = update.onChainStamina;
     army.battleCooldownEnd = update.battleCooldownEnd;
     army.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
 
@@ -3042,6 +3409,46 @@ ${
     if (label) {
       this.updateArmyLabelData(update.entityId, army, label);
     }
+  }
+
+  private markAuthoritativeMovementReconciliation(entityId: ID): void {
+    if (!this.optimisticallyMovingArmies.has(entityId)) {
+      return;
+    }
+
+    this.markOptimisticMovementReconciled(entityId);
+  }
+
+  private reconcileArmyPositionFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate, army: ArmyData): void {
+    const nextHexCoords = new Position({ x: update.hexCoords.col, y: update.hexCoords.row });
+    const currentNormalized = army.hexCoords.getNormalized();
+    const nextNormalized = nextHexCoords.getNormalized();
+
+    if (currentNormalized.x === nextNormalized.x && currentNormalized.y === nextNormalized.y) {
+      return;
+    }
+
+    const previousHexCoords = army.hexCoords;
+    army.hexCoords = nextHexCoords;
+    this.armies.set(update.entityId, army);
+    this.updateSpatialIndex(update.entityId, previousHexCoords, nextHexCoords);
+    this.refreshArmyPositionPresentation(army);
+  }
+
+  private refreshArmyPositionPresentation(army: ArmyData): void {
+    const slot = this.visibleArmyIndices.get(army.entityId);
+    if (slot === undefined) {
+      return;
+    }
+
+    const numericId = this.toNumericId(army.entityId);
+    const { x, y } = army.hexCoords.getContract();
+    const biome = Biome.getBiome(x, y);
+    const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
+
+    this.refreshArmyInstance(army, slot, modelType);
+    this.refreshVisibleArmyCollection();
+    this.updateVisibleArmyBuffers();
   }
 
   public destroy() {
@@ -3102,9 +3509,16 @@ ${
 
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
+    this.optimisticallyMovingArmies.clear();
+    this.authoritativeReconciledArmies.clear();
+    this.authoritativeReconcileListeners.clear();
+    this.optimisticPositionLocks.clear();
     this.suppressedArmies.clear();
+    this.preCommitArmyQueue.clear();
     this.chunkToArmies.clear();
+    this.movementStartListeners.clear();
     this.movementCompleteListeners.clear();
+    this.movementVisualCancelListeners.clear();
 
     destroyArmyManagerOwnedResources({
       pathRenderer: this.pathRenderer,
@@ -3114,10 +3528,6 @@ ${
 
     // Dispose army model resources including shared materials
     this.armyModel.dispose();
-
-    // Dispose player indicator manager
-    this.playerIndicatorManager.dispose();
-    this.indicatorMetadataCache.clear();
 
     // Tear down FX to avoid lingering RAF loops and textures
     this.fxManager.destroy();
@@ -3136,6 +3546,7 @@ ${
       this.pointsRenderers.ally.dispose();
       this.pointsRenderers.agent.dispose();
     }
+    this.compactLabelRenderer.dispose();
 
     // Clean up any other resources...
   }

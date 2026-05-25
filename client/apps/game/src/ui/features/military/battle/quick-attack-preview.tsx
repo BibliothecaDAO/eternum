@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
+import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -23,6 +24,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 
 import X from "lucide-react/dist/esm/icons/x";
+import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
 import { CombatModal } from "./combat-modal";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { TargetType } from "./types";
@@ -73,6 +75,14 @@ const buildTroopSnapshot = (troops: Troops) => ({
     incr_explore_reward_end_tick: 0,
   },
   battle_cooldown_end: troops.battle_cooldown_end || 0,
+});
+
+const buildProjectedTroopSnapshot = (
+  troops: Troops,
+  stamina: { amount: bigint; updated_tick: bigint } = troops.stamina || { amount: 0n, updated_tick: 0n },
+) => ({
+  ...buildTroopSnapshot(troops),
+  stamina,
 });
 
 const toRelicResourceIds = (effects: RelicEffectWithEndTick[]): ResourcesIds[] =>
@@ -174,16 +184,28 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     if (attackerType === AttackerType.Structure) {
       const guard = structureGuards[0];
       if (!guard) return null;
-      return { troops: buildTroopSnapshot(guard.troops) };
+      return {
+        troops: buildProjectedTroopSnapshot(guard.troops, {
+          amount: attackerStamina,
+          updated_tick: BigInt(currentArmiesTick),
+        }),
+      };
     }
 
     const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attacker.id)]));
-    return army ? { troops: buildTroopSnapshot(army.troops) } : null;
-  }, [attackerType, structureGuards, ExplorerTroops, attacker.id]);
+    return army
+      ? {
+          troops: buildProjectedTroopSnapshot(army.troops, {
+            amount: attackerStamina,
+            updated_tick: BigInt(currentArmiesTick),
+          }),
+        }
+      : null;
+  }, [ExplorerTroops, attacker.id, attackerStamina, attackerType, currentArmiesTick, structureGuards]);
 
   const targetTroopSnapshots = useMemo(() => {
     if (!targetData?.info) return [];
-    return targetData.info.map((info) => buildTroopSnapshot(info));
+    return targetData.info.map((info) => buildProjectedTroopSnapshot(info, info.stamina));
   }, [targetData]);
 
   const isStructureTarget = targetData?.targetType === TargetType.Structure;
@@ -266,17 +288,27 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const attackerOnCooldown = attackerCooldownRemaining > 0;
 
   const hasDefenders = !!targetArmyData;
-  const attackDisabled =
-    (hasDefenders && (attackerOnCooldown || attackerStamina < combatConfig.stamina_attack_req)) || !attackerArmyData;
+  const attackStaminaState = useMemo(
+    () =>
+      resolveAttackStaminaState({
+        attackerStamina,
+        hasAttackerTroops: Boolean(attackerArmyData),
+        hasDefenders,
+        requiredStamina: requiredAttackStamina,
+      }),
+    [attackerArmyData, attackerStamina, hasDefenders, requiredAttackStamina],
+  );
+  const cooldownBlocksAttack = hasDefenders && attackerOnCooldown;
+  const attackDisabled = cooldownBlocksAttack || attackStaminaState.isBlocked || !attackerArmyData;
 
-  const isLowStamina = hasDefenders && !attackerOnCooldown && attackerStamina < combatConfig.stamina_attack_req;
+  const isLowStamina = attackStaminaState.isBlocked;
 
   const attackButtonLabel = (() => {
     if (!attackerArmyData) return "No troops selected";
+    if (cooldownBlocksAttack) return "On cooldown";
+    if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
     if (!hasDefenders) return "Claim";
-    if (attackerOnCooldown) return "On cooldown";
-    if (attackerStamina < combatConfig.stamina_attack_req) return `Need ${combatConfig.stamina_attack_req} stamina`;
-    return "Attack";
+    return attackStaminaState.actionLabel;
   })();
 
   const outcomeLabel = (() => {
@@ -306,7 +338,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   })();
 
   const handleAttack = async () => {
-    if (!selectedHex || !targetData) return;
+    if (!selectedHex || !targetData || attackDisabled) return;
 
     let pendingFxKey: string | null = null;
     try {
@@ -327,6 +359,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         const guardSlot = structureGuards[0]?.slot;
         if (direction === null || guardSlot === undefined) return;
 
+        playUnitCommandSound("attack");
         await attack_guard_vs_explorer({
           signer: account,
           structure_id: attacker.id,
@@ -338,6 +371,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
         if (direction === null) return;
 
+        playUnitCommandSound("attack");
         await attack_explorer_vs_explorer({
           signer: account,
           aggressor_id: attacker.id,
@@ -349,6 +383,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
         if (direction === null) return;
 
+        playUnitCommandSound("attack");
         await attack_explorer_vs_guard({
           signer: account,
           explorer_id: attacker.id,
@@ -473,7 +508,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           {attackDisabled && (
             <div className="rounded-md border border-red-400/30 bg-red-900/20 px-3 py-2 text-xs text-red-200">
               <span>{attackButtonLabel}</span>
-              {attackerOnCooldown && attackerCooldownRemaining > 0 && (
+              {cooldownBlocksAttack && attackerCooldownRemaining > 0 && (
                 <div className="mt-1 text-[11px] text-gold/70">{formatTime(attackerCooldownRemaining)} remaining</div>
               )}
               {isLowStamina && (
@@ -499,7 +534,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           forceUppercase={false}
           className="px-3 py-1 text-xs tracking-wide"
         >
-          Attack
+          {hasDefenders ? "Attack" : "Claim"}
         </Button>
         <Button
           variant="outline"

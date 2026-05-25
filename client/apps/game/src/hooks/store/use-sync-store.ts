@@ -15,7 +15,9 @@ interface SyncStore {
   setInitialSyncProgress: (progress: number) => void;
 }
 
-const createSyncStoreSlice = (set: any) => ({
+const createSyncStoreSlice = (
+  set: (partial: Partial<SyncStore> | ((state: SyncStore) => Partial<SyncStore>)) => void,
+) => ({
   subscriptions: {},
   setSubscription: (type: Subscription, subscribed: boolean) =>
     set((state: SyncStore) => ({

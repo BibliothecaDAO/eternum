@@ -2,9 +2,13 @@
   "name": "eternum-game-client",
   "version": "0.0.1",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "build": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
     "build:webgpu": "VITE_PUBLIC_RENDERER_BUILD_MODE=experimental-webgpu-auto NODE_OPTIONS=\"--max-old-space-size=8192\" tsc && VITE_PUBLIC_RENDERER_BUILD_MODE=experimental-webgpu-auto NODE_OPTIONS=\"--max-old-space-size=8192\" vite build",
+    "benchmark:renderer-load": "node ./scripts/run-renderer-load-benchmark.mjs",
     "coverage": "vitest run --coverage",
     "coverage:three": "vitest run --coverage src/three",
     "dev": "vite",
@@ -16,12 +20,14 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "preview": "vite preview",
+    "smoke:renderer-debug": "node ./scripts/run-renderer-debug-smoke.mjs",
     "smoke:renderer-scenes": "node ./scripts/run-renderer-scene-smoke.mjs",
     "test": "node ./scripts/run-vitest.mjs",
     "test:three:changed-guard": "node ./scripts/check-three-changed-tests.mjs",
     "test:three:types": "tsc --noEmit --pretty false -p tsconfig.three-types.json",
     "test:ui": "vitest --ui",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "NODE_OPTIONS=\"--max-old-space-size=8192\" tsc --pretty false"
   },
   "dependencies": {
     "@bibliothecadao/ammv2-sdk": "workspace:*",

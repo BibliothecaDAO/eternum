@@ -17,13 +17,13 @@ Priority 6: Ambient (subtle atmosphere)
 
 ```typescript
 categoryVolumes: {
-  [AudioCategory.UI]: 0.8,          // High - needs to be heard
-  [AudioCategory.COMBAT]: 0.7,      // High - important gameplay
-  [AudioCategory.BUILDING]: 0.5,    // Medium - frequent, shouldn't dominate
-  [AudioCategory.RESOURCE]: 0.5,    // Medium - frequent, shouldn't dominate
-  [AudioCategory.MUSIC]: 0.4,       // Low - background layer
-  [AudioCategory.ENVIRONMENT]: 0.45, // Low-Medium - weather effects
-  [AudioCategory.AMBIENT]: 0.3,     // Very Low - subtle atmosphere
+  [AudioCategory.UI]: 0.2,          // Kept present, but well below overwhelming
+  [AudioCategory.COMBAT]: 0.1,      // Reserved for clearer, more isolated impact cues
+  [AudioCategory.BUILDING]: 0.2,    // Construction remains audible without crowding the mix
+  [AudioCategory.RESOURCE]: 0.25,   // Slightly above UI because gathering is a core gameplay loop
+  [AudioCategory.MUSIC]: 0.08,      // Very low bed under active gameplay
+  [AudioCategory.ENVIRONMENT]: 0.2, // Present enough for weather texture
+  [AudioCategory.AMBIENT]: 0.15,    // Subtle atmosphere
 }
 ```
 
@@ -141,11 +141,11 @@ Current implementation is good! Key principles:
 
 ### 9. Music System
 
-Current music volume (0.5 category × 1.0 individual = 0.5) is too high.
+Current preferred music volume is very low, with category volume set around `0.08`.
 
 **Recommendations:**
 
-- Reduce category to 0.4
+- Keep category near 0.08 unless a calmer scene specifically needs a fuller music bed
 - Implement dynamic music intensity based on gameplay state
 - Duck music during important events
 - Crossfade between tracks (500ms-1000ms)

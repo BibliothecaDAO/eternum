@@ -1,4 +1,4 @@
-import { brotliCompressSync, gzipSync } from "zlib";
+import * as nodeZlib from "node:zlib";
 
 export type SerializedJson = string;
 
@@ -24,13 +24,13 @@ export const createJsonPayload = (value: unknown): CachedJsonPayload => {
 const getCompressedPayload = (payload: CachedJsonPayload, encoding: "br" | "gzip"): Uint8Array => {
   if (encoding === "br") {
     if (!payload.br) {
-      payload.br = brotliCompressSync(payload.json);
+      payload.br = nodeZlib.brotliCompressSync(payload.json);
     }
     return payload.br;
   }
 
   if (!payload.gzip) {
-    payload.gzip = gzipSync(payload.json);
+    payload.gzip = nodeZlib.gzipSync(payload.json);
   }
   return payload.gzip;
 };

@@ -1,6 +1,11 @@
 import { BatchedTransactionDetail, TransactionType } from "@bibliothecadao/provider";
 import { create } from "zustand";
 
+import {
+  computeStaleTransactionTelemetry,
+  type StaleTransactionTelemetry,
+} from "./compute-stale-transaction-telemetry";
+
 export type TransactionStatus = "pending" | "success" | "reverted";
 
 export interface Transaction {
@@ -40,6 +45,7 @@ interface TransactionStoreState {
   getRevertedTransactions: () => Transaction[];
   getStuckTransactions: () => Transaction[];
   getOverallStatus: () => "idle" | "pending" | "stuck" | "error";
+  getStaleTransactionTelemetry: () => StaleTransactionTelemetry;
 }
 
 export const useTransactionStore = create<TransactionStoreState>((set, get) => ({
@@ -146,6 +152,11 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
     if (hasPending) return "pending";
 
     return "idle";
+  },
+
+  getStaleTransactionTelemetry: () => {
+    const { transactions, stuckThresholdMs } = get();
+    return computeStaleTransactionTelemetry(transactions, Date.now(), stuckThresholdMs);
   },
 }));
 

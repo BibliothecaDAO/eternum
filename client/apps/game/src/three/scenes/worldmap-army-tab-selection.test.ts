@@ -3,6 +3,7 @@ import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
   resolvePendingArmyMovementSelectionPlan,
+  resolvePendingArmyMovementTxFailurePlan,
   shouldAcceptArmyTabSelectionAttempt,
   shouldClearPendingArmyMovement,
   shouldQueueArmySelectionRecovery,
@@ -217,6 +218,54 @@ describe("resolvePendingArmyMovementSelectionPlan", () => {
       shouldBlockSelection: false,
     });
   });
+
+  it("blocks re-selection while optimistic movement is still unresolved", () => {
+    expect(
+      resolvePendingArmyMovementSelectionPlan({
+        hasPendingMovement: true,
+        isOptimisticMovementActive: true,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 2000,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+      shouldBlockSelection: true,
+    });
+  });
+
+  it("blocks selection when pending state cleared but optimistic movement is still unresolved", () => {
+    expect(
+      resolvePendingArmyMovementSelectionPlan({
+        hasPendingMovement: false,
+        isOptimisticMovementActive: true,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 2000,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+      shouldBlockSelection: true,
+    });
+  });
+
+  it("still blocks selection when pending but optimistic has not started yet", () => {
+    expect(
+      resolvePendingArmyMovementSelectionPlan({
+        hasPendingMovement: true,
+        isOptimisticMovementActive: false,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 2000,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: true,
+      shouldBlockSelection: true,
+    });
+  });
 });
 
 describe("resolvePendingArmyMovementFallbackPlan", () => {
@@ -224,6 +273,7 @@ describe("resolvePendingArmyMovementFallbackPlan", () => {
     expect(
       resolvePendingArmyMovementFallbackPlan({
         hasPendingMovement: false,
+        hasPendingMovementResolution: false,
         pendingMovementStartedAtMs: 1000,
         nowMs: 9000,
         staleAfterMs: 8000,
@@ -232,6 +282,38 @@ describe("resolvePendingArmyMovementFallbackPlan", () => {
       shouldDeleteFallbackTimeout: true,
       shouldClearPendingMovement: false,
       shouldRequestChunkRefresh: false,
+    });
+  });
+
+  it("keeps fallback armed after movement handoff while resolution is still pending", () => {
+    expect(
+      resolvePendingArmyMovementFallbackPlan({
+        hasPendingMovement: false,
+        hasPendingMovementResolution: true,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 8500,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldDeleteFallbackTimeout: false,
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+    });
+  });
+
+  it("clears stale movement after visual handoff when resolution never arrives", () => {
+    expect(
+      resolvePendingArmyMovementFallbackPlan({
+        hasPendingMovement: false,
+        hasPendingMovementResolution: true,
+        pendingMovementStartedAtMs: 1000,
+        nowMs: 9000,
+        staleAfterMs: 8000,
+      }),
+    ).toEqual({
+      shouldDeleteFallbackTimeout: false,
+      shouldClearPendingMovement: true,
+      shouldRequestChunkRefresh: true,
     });
   });
 
@@ -262,6 +344,75 @@ describe("resolvePendingArmyMovementFallbackPlan", () => {
       shouldDeleteFallbackTimeout: false,
       shouldClearPendingMovement: true,
       shouldRequestChunkRefresh: true,
+    });
+  });
+});
+
+describe("resolvePendingArmyMovementTxFailurePlan", () => {
+  it("clears pending movement when txHash maps to a pending entity", () => {
+    const txEntityMap = new Map<string, number>([["0xabc", 42]]);
+    const pendingEntities = new Set<number>([42]);
+
+    expect(
+      resolvePendingArmyMovementTxFailurePlan({
+        txHash: "0xabc",
+        txEntityMap,
+        pendingEntities,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: true,
+      entityId: 42,
+    });
+  });
+
+  it("does not clear when txHash is not in the mapping", () => {
+    const txEntityMap = new Map<string, number>();
+    const pendingEntities = new Set<number>([42]);
+
+    expect(
+      resolvePendingArmyMovementTxFailurePlan({
+        txHash: "0xunknown",
+        txEntityMap,
+        pendingEntities,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      entityId: undefined,
+    });
+  });
+
+  it("does not clear when entity is no longer pending (already resolved)", () => {
+    const txEntityMap = new Map<string, number>([["0xabc", 42]]);
+    const pendingEntities = new Set<number>();
+
+    expect(
+      resolvePendingArmyMovementTxFailurePlan({
+        txHash: "0xabc",
+        txEntityMap,
+        pendingEntities,
+        optimisticEntities: new Set<number>(),
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      entityId: 42,
+    });
+  });
+
+  it("clears when txHash maps to an active optimistic tween after pending selection state cleared", () => {
+    const txEntityMap = new Map<string, number>([["0xabc", 42]]);
+    const pendingEntities = new Set<number>();
+    const optimisticEntities = new Set<number>([42]);
+
+    expect(
+      resolvePendingArmyMovementTxFailurePlan({
+        txHash: "0xabc",
+        txEntityMap,
+        pendingEntities,
+        optimisticEntities,
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: true,
+      entityId: 42,
     });
   });
 });

@@ -17,6 +17,11 @@ mock.module("../launch/runner", () => ({
   runLaunchStep: runLaunchStepMock,
 }));
 
+mock.module("../launch/grouped-role-grants", () => ({
+  grantLootChestRolesForSeriesLikeGames: mock(async () => undefined),
+  grantVillagePassRolesForSeriesLikeGames: mock(async () => undefined),
+}));
+
 const { runGroupedSeriesLikeGameStep } = await import("../launch/series-like-runner");
 const { buildInitialSeriesLaunchSummary } = await import("../launch/series-summary");
 
@@ -55,6 +60,47 @@ describe("grouped series-like runner fail-fast behavior", () => {
     expect(persistedSummary?.games[1]?.status).toBe("pending");
     expect(persistedSummary?.games[1]?.currentStepId).toBeNull();
     expect(persistedSummary?.games[1]?.steps.find((step) => step.id === "create-worlds")?.status).toBe("pending");
+  });
+
+  test("passes child registration overrides into grouped game launches", async () => {
+    const request = buildSeriesRequest({
+      games: [
+        { gameName: "weekday-gladiator", startTime: "2099-01-01T06:00:00Z" },
+        { gameName: "weekend-gladiator", startTime: "2099-01-02T06:00:00Z" },
+      ],
+      blitzRegistrationOverrides: {
+        fee_amount: "500000000000000000000",
+      },
+    });
+    const initialSummary = buildInitialSeriesLaunchSummary(request);
+    const summary = {
+      ...initialSummary,
+      seriesCreated: true,
+      games: [
+        initialSummary.games[0],
+        {
+          ...initialSummary.games[1],
+          blitzRegistrationOverrides: {
+            fee_amount: "1000000000000000000000",
+          },
+        },
+      ],
+    };
+
+    await runGroupedSeriesLikeGameStep({
+      request,
+      summary,
+      stepId: "create-worlds",
+      persistSummary: (next) => next,
+    });
+
+    expect(runLaunchStepMock).toHaveBeenCalledTimes(2);
+    expect(runLaunchStepMock.mock.calls[0]?.[0].blitzRegistrationOverrides).toEqual({
+      fee_amount: "500000000000000000000",
+    });
+    expect(runLaunchStepMock.mock.calls[1]?.[0].blitzRegistrationOverrides).toEqual({
+      fee_amount: "1000000000000000000000",
+    });
   });
 });
 

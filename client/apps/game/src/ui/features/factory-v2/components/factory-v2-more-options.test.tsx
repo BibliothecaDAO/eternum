@@ -135,8 +135,8 @@ describe("FactoryV2MoreOptions", () => {
       await waitForAsyncWork();
     });
 
-    const prizeButton = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Prize") && button.textContent?.includes("Token and amount"),
+    const prizeButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Entry Ticket"),
     );
 
     await act(async () => {
@@ -144,8 +144,8 @@ describe("FactoryV2MoreOptions", () => {
       await waitForAsyncWork();
     });
 
-    expect(container.textContent).toContain("Prize token address");
-    expect(container.textContent).toContain("Prize amount");
+    expect(container.textContent).toContain("Entry ticket payment token address");
+    expect(container.textContent).toContain("Entry cost");
     expect(container.textContent).toContain("Token decimals");
   });
 

@@ -25,6 +25,7 @@ import { buildPolicies } from "./policies";
  */
 let _lastPolicyHash = "";
 let _isRefreshingPolicies = false;
+const refreshWaiters = new Set<() => void>();
 
 function hashPolicies(manifest: unknown): string {
   try {
@@ -42,6 +43,23 @@ const hasPoliciesChanged = (): boolean => {
 };
 
 export const isSessionPolicyRefreshInProgress = (): boolean => _isRefreshingPolicies;
+
+const resolveSessionPolicyRefreshWaiters = (): void => {
+  for (const resolve of refreshWaiters) {
+    resolve();
+  }
+  refreshWaiters.clear();
+};
+
+export const waitForSessionPolicyRefresh = async (): Promise<void> => {
+  if (!_isRefreshingPolicies) {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    refreshWaiters.add(resolve);
+  });
+};
 
 /**
  * Refresh the controller's session policies in-place and recreate the
@@ -129,5 +147,6 @@ export const refreshSessionPolicies = async (
     return true;
   } finally {
     _isRefreshingPolicies = false;
+    resolveSessionPolicyRefreshWaiters();
   }
 };

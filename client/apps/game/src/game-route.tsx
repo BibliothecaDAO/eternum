@@ -2,17 +2,22 @@
  * Game route module - lazy loaded to avoid pulling heavy deps (World, Dojo, Three.js, etc.)
  * into the landing page bundle.
  */
-import { ErrorBoundary, Toaster, TransactionNotification, WorldLoading } from "@/ui/shared";
+import { ChunkTransitionIndicator, ErrorBoundary, Toaster, TransactionNotification, WorldLoading } from "@/ui/shared";
 import { useEffect } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import type { Account, AccountInterface } from "starknet";
 import { env } from "../env";
+import { waitForSafeTransactionSubmit } from "./hooks/context/transaction-submit-guard";
+import { useAccountStore } from "./hooks/store/use-account-store";
+import { usePlayRouteBootController } from "./game-entry/play-route-boot";
 import { DojoProvider } from "./hooks/context/dojo-context";
-import { useUnifiedOnboarding } from "./hooks/context/use-unified-onboarding";
 import { useTransactionListener } from "./hooks/use-transaction-listener";
 import type { SetupResult } from "./init/bootstrap";
+import { PlayRouteReconnectScreen } from "./ui/layouts/play-route-reconnect-screen";
+import { NewsHeadlineBridge } from "./ui/features/news-headlines";
 import { StoryEventToastBridge } from "./ui/features/story-events";
 import { LoadingScreen } from "./ui/modules/loading-screen";
+import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { World } from "./ui/layouts/world";
 import { resolveGameRouteView } from "./game-route.utils";
 
@@ -27,14 +32,36 @@ const TransactionListenerBridge = () => {
   return null;
 };
 
+const TransactionSubmitGuardBridge = ({ setupResult, account }: Pick<ReadyAppProps, "setupResult" | "account">) => {
+  useEffect(() => {
+    const provider = setupResult.network.provider;
+    provider.setTransactionSubmitGuard((context) =>
+      waitForSafeTransactionSubmit({
+        account,
+        connector: useAccountStore.getState().connector,
+        context,
+      }),
+    );
+
+    return () => {
+      provider.setTransactionSubmitGuard(undefined);
+    };
+  }, [account, setupResult]);
+
+  return null;
+};
+
 const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   return (
     <DojoProvider value={setupResult} account={account}>
       <ErrorBoundary>
         <StoryEventToastBridge />
+        <NewsHeadlineBridge />
+        <TransactionSubmitGuardBridge setupResult={setupResult} account={account} />
         <TransactionListenerBridge />
         <TransactionNotification />
         <World backgroundImage={backgroundImage} />
+        <ChunkTransitionIndicator />
         <WorldLoading />
         <Toaster />
       </ErrorBoundary>
@@ -42,7 +69,8 @@ const ReadyApp = ({ backgroundImage, setupResult, account }: ReadyAppProps) => {
   );
 };
 
-export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
+const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
+  const navigate = useNavigate();
   useEffect(() => {
     if (!env.VITE_TRACING_ENABLED) {
       return;
@@ -70,25 +98,72 @@ export const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
     };
   }, []);
 
-  const state = useUnifiedOnboarding(backgroundImage);
-  const { phase, setupResult, account } = state;
+  const state = usePlayRouteBootController();
+  const {
+    phase,
+    progress,
+    setupResult,
+    account,
+    connectWallet,
+    retry,
+    isReconnectRequired,
+    currentTask,
+    tasks,
+    bootToken,
+  } = state;
   const routeView = resolveGameRouteView({
     phase,
     hasSetupResult: setupResult !== null,
     hasAccount: account !== null,
+    isReconnectRequired,
   });
+  useBootDocumentState(
+    routeView === "loading" ? "app-loading" : routeView === "ready" ? "app-ready" : null,
+    routeView === "ready" ? "boot_world_visible" : routeView === "loading" ? "boot_react_loader_visible" : undefined,
+  );
+
+  // Resolve a human-readable label for the active task so the boot debug
+  // panel can show "Connecting to world" rather than "dojo".
+  const currentTaskLabel = currentTask ? (tasks.find((task) => task.id === currentTask)?.label ?? currentTask) : phase;
 
   if (routeView === "redirect") {
     return <Navigate to="/" replace />;
   }
 
+  if (routeView === "reconnect") {
+    return (
+      <PlayRouteReconnectScreen
+        onReconnect={connectWallet}
+        onRetry={retry}
+        onReturnToDashboard={() => navigate("/")}
+        showRetry={phase === "error"}
+      />
+    );
+  }
+
   if (routeView === "loading") {
-    return <LoadingScreen />;
+    return (
+      <LoadingScreen
+        progress={progress > 0 ? progress : undefined}
+        title="Charting the World"
+        subtitle="Following contour lines while world state comes online."
+        currentTaskLabel={currentTaskLabel}
+      />
+    );
   }
 
   if (!setupResult || !account) {
-    return <LoadingScreen />;
+    return (
+      <LoadingScreen
+        title="Charting the World"
+        subtitle="Resolving the last world details."
+        currentTaskLabel={currentTaskLabel}
+      />
+    );
   }
 
-  return <ReadyApp backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;
+  return <ReadyApp key={bootToken} backgroundImage={backgroundImage} setupResult={setupResult} account={account} />;
 };
+
+/** @public Lazy route entry consumed by app-level dynamic imports. */
+export default GameRoute;

@@ -43,6 +43,42 @@ export interface RealmVillageSlot {
   directions_left: Array<Partial<Record<DirectionString, []>>>;
 }
 
+export interface SettlementPlannerRealm {
+  entityId: number;
+  realmId: number | null;
+  ownerAddress: string;
+  ownerName: string | null;
+  coordX: number;
+  coordY: number;
+  villagesCount: number;
+  directionsLeft: Array<Partial<Record<DirectionString, []>>>;
+}
+
+export interface SettlementPlannerVillage {
+  entityId: number;
+  coordX: number;
+  coordY: number;
+}
+
+export interface SettlementPlannerTile {
+  coordX: number;
+  coordY: number;
+  biome: number;
+  alt: boolean;
+}
+
+export interface SettlementPlannerSnapshot {
+  realms: SettlementPlannerRealm[];
+  villages: SettlementPlannerVillage[];
+}
+
+export interface ExploredTileBounds {
+  minX: number;
+  maxX: number;
+  minY: number;
+  maxY: number;
+}
+
 export interface TokenTransfer {
   to_address: string;
   contract_address: string;
@@ -511,6 +547,23 @@ export interface RawRealmVillageSlot {
   connected_realm_entity_id: ID;
   connected_realm_id: ID;
   directions_left: string; // JSON string that needs parsing
+}
+
+export interface RawSettlementPlannerRealm {
+  entity_id: number;
+  realm_id: number | null;
+  owner_address: string;
+  owner_name: string | null;
+  coord_x: number;
+  coord_y: number;
+  villages_count: number | string | null;
+  directions_left: string | null;
+}
+
+export interface RawSettlementPlannerVillage {
+  entity_id: number;
+  coord_x: number;
+  coord_y: number;
 }
 
 export interface GuardData {

@@ -319,10 +319,6 @@ CosmeticsDebug.help()                    - Show this help
       },
       attachments,
       metadata: skinEntry?.metadata,
-      cosmeticId: skinEntry?.id ?? attachmentEntry?.id ?? "debug-override",
-      modelKey: skinEntry?.id ?? params.target,
-      modelType: (skinEntry?.metadata?.baseModelType as any) ?? undefined,
-      registryEntry: skinEntry,
     };
   }
 }

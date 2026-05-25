@@ -16,6 +16,8 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.transitionPrepareStaleDropped).toBe(0);
     expect(diagnostics.managerUpdateStarted).toBe(0);
     expect(diagnostics.managerUpdateSkippedStale).toBe(0);
+    expect(diagnostics.criticalManagerCatchUpStarted).toBe(0);
+    expect(diagnostics.criticalManagerCatchUpFailed).toBe(0);
     expect(diagnostics.tileFetchStarted).toBe(0);
     expect(diagnostics.tileFetchSucceeded).toBe(0);
     expect(diagnostics.tileFetchFailed).toBe(0);
@@ -48,6 +50,9 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.managerCatchUpDurationMsTotal).toBe(0);
     expect(diagnostics.managerCatchUpDurationMsMax).toBe(0);
     expect(diagnostics.managerCatchUpDurationMsSamples).toEqual([]);
+    expect(diagnostics.criticalManagerCatchUpDurationMsTotal).toBe(0);
+    expect(diagnostics.criticalManagerCatchUpDurationMsMax).toBe(0);
+    expect(diagnostics.criticalManagerCatchUpDurationMsSamples).toEqual([]);
     expect(diagnostics.preparedChunkPrewarmHit).toBe(0);
     expect(diagnostics.preparedChunkPrewarmMiss).toBe(0);
   });
@@ -62,6 +67,8 @@ describe("worldmap-chunk-diagnostics", () => {
       "manager_update_started",
       "manager_update_skipped_stale",
       "manager_update_failed",
+      "critical_manager_catch_up_started",
+      "critical_manager_catch_up_failed",
       "tile_fetch_started",
       "tile_fetch_succeeded",
       "tile_fetch_failed",
@@ -92,6 +99,8 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.managerUpdateStarted).toBe(1);
     expect(diagnostics.managerUpdateSkippedStale).toBe(1);
     expect(diagnostics.managerUpdateFailed).toBe(1);
+    expect(diagnostics.criticalManagerCatchUpStarted).toBe(1);
+    expect(diagnostics.criticalManagerCatchUpFailed).toBe(1);
     expect(diagnostics.tileFetchStarted).toBe(1);
     expect(diagnostics.tileFetchSucceeded).toBe(1);
     expect(diagnostics.tileFetchFailed).toBe(1);
@@ -128,6 +137,8 @@ describe("worldmap-chunk-diagnostics", () => {
     recordChunkDiagnosticsEvent(diagnostics, "manager_duration_recorded", { durationMs: 9 });
     recordChunkDiagnosticsEvent(diagnostics, "manager_catch_up_duration_recorded", { durationMs: 6 });
     recordChunkDiagnosticsEvent(diagnostics, "manager_catch_up_duration_recorded", { durationMs: 9 });
+    recordChunkDiagnosticsEvent(diagnostics, "critical_manager_catch_up_duration_recorded", { durationMs: 7 });
+    recordChunkDiagnosticsEvent(diagnostics, "critical_manager_catch_up_duration_recorded", { durationMs: 10 });
 
     expect(diagnostics.switchDurationMsTotal).toBeCloseTo(17);
     expect(diagnostics.switchDurationMsMax).toBeCloseTo(12.5);
@@ -147,6 +158,9 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.managerCatchUpDurationMsTotal).toBeCloseTo(15);
     expect(diagnostics.managerCatchUpDurationMsMax).toBeCloseTo(9);
     expect(diagnostics.managerCatchUpDurationMsSamples).toEqual([6, 9]);
+    expect(diagnostics.criticalManagerCatchUpDurationMsTotal).toBeCloseTo(17);
+    expect(diagnostics.criticalManagerCatchUpDurationMsMax).toBeCloseTo(10);
+    expect(diagnostics.criticalManagerCatchUpDurationMsSamples).toEqual([7, 10]);
   });
 
   it("caps duration samples to the latest bounded window", () => {
@@ -169,6 +183,7 @@ describe("worldmap-chunk-diagnostics", () => {
       recordChunkDiagnosticsEvent(diagnostics, "terrain_commit_duration_recorded", { durationMs: i });
       recordChunkDiagnosticsEvent(diagnostics, "first_visible_commit_duration_recorded", { durationMs: i });
       recordChunkDiagnosticsEvent(diagnostics, "manager_catch_up_duration_recorded", { durationMs: i });
+      recordChunkDiagnosticsEvent(diagnostics, "critical_manager_catch_up_duration_recorded", { durationMs: i });
     }
 
     expect(diagnostics.terrainReadyDurationMsSamples).toHaveLength(512);
@@ -177,6 +192,7 @@ describe("worldmap-chunk-diagnostics", () => {
     expect(diagnostics.terrainCommitDurationMsSamples).toHaveLength(512);
     expect(diagnostics.firstVisibleCommitDurationMsSamples).toHaveLength(512);
     expect(diagnostics.managerCatchUpDurationMsSamples).toHaveLength(512);
+    expect(diagnostics.criticalManagerCatchUpDurationMsSamples).toHaveLength(512);
   });
 });
 

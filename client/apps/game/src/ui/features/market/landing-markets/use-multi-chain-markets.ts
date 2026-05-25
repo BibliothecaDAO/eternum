@@ -12,6 +12,7 @@ import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 type MarketDataChain = "slot" | "mainnet";
 export type MarketChainFilter = "all" | MarketDataChain;
 export type MarketStatusKey = "all" | "live" | "awaiting" | "resolved";
+export type MarketSortKey = "creation-date" | "end-time" | "volume" | "pool-size";
 
 type SourceStatus = {
   ok: boolean;
@@ -24,6 +25,8 @@ export type EnrichedMarket = {
   market: MarketClass;
   volumeRaw: bigint;
   volumeDisplay: string;
+  tvlRaw: bigint;
+  tvlDisplay: string;
 };
 
 const STATUS_TO_FILTER: Record<MarketStatusKey, MarketStatusFilter> = {
@@ -223,7 +226,7 @@ const transformToMarketClass = (
   });
 };
 
-const formatVolumeDisplay = (amountRaw: bigint, decimals: number) => {
+const formatTokenAmountDisplay = (amountRaw: bigint, decimals: number) => {
   const normalized = formatUnits(amountRaw, decimals, 6).replace(/,/g, "");
   const amount = Number(normalized);
   if (!Number.isFinite(amount) || amount <= 0) return "0";
@@ -292,13 +295,16 @@ const fetchChainMarkets = async ({
 
       const volumeRaw = volumeByMarketId.get(row.market_id) ?? 0n;
       const decimals = Number(market.collateralToken?.decimals ?? 18);
+      const tvlRaw = toBigInt(market.vaultDenominator?.value ?? 0);
 
       return {
         key: `${chain}:${row.market_id}`,
         chain,
         market,
         volumeRaw,
-        volumeDisplay: formatVolumeDisplay(volumeRaw, decimals),
+        volumeDisplay: formatTokenAmountDisplay(volumeRaw, decimals),
+        tvlRaw,
+        tvlDisplay: formatTokenAmountDisplay(tvlRaw, decimals),
       } satisfies EnrichedMarket;
     })
     .filter((item): item is EnrichedMarket => Boolean(item));
@@ -311,16 +317,51 @@ const getMarketStatusPriority = (market: MarketClass) => {
   return 3; // Resolved.
 };
 
-const mergeAndSortMarkets = (markets: EnrichedMarket[], status: MarketStatusKey) =>
+const compareBigIntDescending = (left: bigint, right: bigint) => {
+  if (left === right) return 0;
+  return left > right ? -1 : 1;
+};
+
+const compareNumberDescending = (left: number, right: number) => right - left;
+
+const compareNumberAscending = (left: number, right: number) => left - right;
+
+const resolveSortableEndTime = (market: MarketClass) => {
+  if (!market.end_at || market.end_at <= 0) return Number.MAX_SAFE_INTEGER;
+  return market.end_at;
+};
+
+const getMarketSortDifference = (left: EnrichedMarket, right: EnrichedMarket, sort: MarketSortKey) => {
+  switch (sort) {
+    case "end-time":
+      return compareNumberAscending(resolveSortableEndTime(left.market), resolveSortableEndTime(right.market));
+    case "volume":
+      return compareBigIntDescending(left.volumeRaw, right.volumeRaw);
+    case "pool-size":
+      return compareBigIntDescending(left.tvlRaw, right.tvlRaw);
+    case "creation-date":
+    default:
+      return compareNumberDescending(Number(left.market.created_at ?? 0), Number(right.market.created_at ?? 0));
+  }
+};
+
+const mergeAndSortMarkets = (markets: EnrichedMarket[], status: MarketStatusKey, sort: MarketSortKey) =>
   markets.toSorted((a, b) => {
     if (status === "all") {
       const statusDifference = getMarketStatusPriority(a.market) - getMarketStatusPriority(b.market);
       if (statusDifference !== 0) return statusDifference;
     }
 
-    const createdAtDifference = Number(b.market.created_at ?? 0) - Number(a.market.created_at ?? 0);
+    const sortDifference = getMarketSortDifference(a, b, sort);
+    if (sortDifference !== 0) return sortDifference;
+
+    const createdAtDifference = compareNumberDescending(
+      Number(a.market.created_at ?? 0),
+      Number(b.market.created_at ?? 0),
+    );
     if (createdAtDifference !== 0) return createdAtDifference;
-    if (a.volumeRaw !== b.volumeRaw) return a.volumeRaw > b.volumeRaw ? -1 : 1;
+    if (a.volumeRaw !== b.volumeRaw) return compareBigIntDescending(a.volumeRaw, b.volumeRaw);
+    if (a.tvlRaw !== b.tvlRaw) return compareBigIntDescending(a.tvlRaw, b.tvlRaw);
     return a.key.localeCompare(b.key);
   });
 
@@ -405,12 +446,14 @@ export function useMultiChainMarketCounts(chainFilter: MarketChainFilter) {
 
 export function useMultiChainMarkets({
   status,
+  sort,
   chainFilter,
   limit,
   offset,
   blockedOracleAddresses = [],
 }: {
   status: MarketStatusKey;
+  sort: MarketSortKey;
   chainFilter: MarketChainFilter;
   limit: number;
   offset: number;
@@ -429,7 +472,7 @@ export function useMultiChainMarkets({
   );
 
   const query = useQuery({
-    queryKey: ["pm", "multi-chain", "markets", status, chainFilter, blockedOracleAddressesKey],
+    queryKey: ["pm", "multi-chain", "markets", status, sort, chainFilter, blockedOracleAddressesKey],
     queryFn: async () => {
       const now = Math.ceil(Date.now() / 1000);
       const sourceStatus = createEmptySourceStatus(selectedChains);
@@ -481,7 +524,7 @@ export function useMultiChainMarkets({
             });
 
       return {
-        markets: mergeAndSortMarkets(filteredMarkets, status),
+        markets: mergeAndSortMarkets(filteredMarkets, status, sort),
         sourceStatus,
       };
     },

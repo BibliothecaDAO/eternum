@@ -99,7 +99,7 @@ mod tests {
                 // Events
                 TestResource::Event("BurnResearchForRelicEvent"), // Contract
                 TestResource::Contract("artificer_systems"), // Libraries
-                TestResource::Library(("rng_library", "0_1_14")),
+                TestResource::Library(("rng_library", "0_1_15")),
             ]
                 .span(),
         }
@@ -171,6 +171,7 @@ mod tests {
                 coord_x: 100,
                 coord_y: 100,
                 level: 1,
+                starting_troops_granted: false,
             },
             troop_guards: GuardTroops {
                 delta: default_troops,
@@ -224,6 +225,7 @@ mod tests {
                 coord_x: 300,
                 coord_y: 300,
                 level: 1,
+                starting_troops_granted: false,
             },
             troop_guards: GuardTroops {
                 delta: default_troops,

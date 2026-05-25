@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { Button } from "@/ui/design-system/atoms";
@@ -11,7 +12,7 @@ import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import { toast } from "sonner";
 import { Call, uint256 } from "starknet";
 
-import { buildWorldProfile, getFactorySqlBaseUrl, patchManifestWithFactory } from "@/runtime/world";
+import { buildWorldProfile, getFactorySqlBaseUrl, patchManifestWithFactory, useRuntimeChain } from "@/runtime/world";
 import { Chain, getGameManifest } from "@contracts";
 import { env } from "../../../../../../env";
 import { decodePaddedFeltAscii } from "../market-utils";
@@ -187,11 +188,13 @@ export interface MarketResolutionController {
   onResolveWithCompute: () => Promise<boolean>;
 }
 
-export const useMarketResolutionController = (market: MarketClass): MarketResolutionController => {
+export const useMarketResolutionController = (market: MarketClass, chain?: Chain): MarketResolutionController => {
   const {
     config: { manifest },
   } = useDojoSdk();
   const { account } = useAccount();
+  const runtimeChain = useRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
+  const resolutionChain = chain ?? runtimeChain;
   const [isResolving, setIsResolving] = useState(false);
   const [isComputingScores, setIsComputingScores] = useState(false);
   const [isResolvingWithCompute, setIsResolvingWithCompute] = useState(false);
@@ -213,7 +216,7 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
   useEffect(() => {
     setServerName(null);
     setServerLookupStatus("pending");
-  }, [market.market_id, market.title]);
+  }, [market.market_id, market.title, resolutionChain]);
 
   useEffect(() => {
     let cancelled = false;
@@ -221,8 +224,7 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
       if (serverLookupStatus === "done") return;
 
       try {
-        const chain = env.VITE_PUBLIC_CHAIN as Chain;
-        const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
+        const factorySqlBaseUrl = getFactorySqlBaseUrl(resolutionChain);
         const titleFallback = market.title?.replace(/<br\s*\/?>/gi, " ").trim() || "";
 
         if (!prizeContractAddress || !factorySqlBaseUrl) {
@@ -244,7 +246,7 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
           .map((felt: string) => decodePaddedFeltAscii(String(felt)))
           .filter((name: string, idx: number, arr: string[]) => Boolean(name) && arr.indexOf(name) === idx);
 
-        const chainManifest = getGameManifest(chain);
+        const chainManifest = getGameManifest(resolutionChain);
         const target = prizeContractAddress;
         const limit = 4;
         let index = 0;
@@ -255,7 +257,7 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
             const i = index++;
             const name = names[i];
             try {
-              const profile = await buildWorldProfile(chain, name);
+              const profile = await buildWorldProfile(resolutionChain, name);
               const patched = patchManifestWithFactory(
                 chainManifest as any,
                 profile.worldAddress,
@@ -291,7 +293,7 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
     return () => {
       cancelled = true;
     };
-  }, [market.title, prizeContractAddress, serverLookupStatus]);
+  }, [market.title, prizeContractAddress, resolutionChain, serverLookupStatus]);
 
   const loadPlayers = useCallback(async (): Promise<string[]> => {
     if (serverLookupStatus !== "done") return [];
@@ -386,7 +388,15 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
 
       setIsResolving(true);
       try {
-        const executeResult = await withTxTimeout(account.execute([resolveCall]), "Resolve transaction");
+        const executeResult = await executeObservedClientTransaction({
+          account,
+          calls: [resolveCall],
+          surface: "prediction_market",
+          operation: "market_resolve",
+          waitForConfirmation: false,
+          confirm: false,
+          submit: async (callArray) => await withTxTimeout(account.execute(callArray), "Resolve transaction"),
+        });
         await waitForTxConfirmationIfAvailable(
           account as {
             waitForTransaction?: (txHash: string) => Promise<unknown>;
@@ -458,9 +468,8 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
         }
 
         setComputeStatus("Resolving prize distribution contract...");
-        const chain = env.VITE_PUBLIC_CHAIN as Chain;
-        const profile = await buildWorldProfile(chain, serverName);
-        const baseManifest = getGameManifest(chain);
+        const profile = await buildWorldProfile(resolutionChain, serverName);
+        const baseManifest = getGameManifest(resolutionChain);
         const patchedManifest = patchManifestWithFactory(
           baseManifest as any,
           profile.worldAddress,
@@ -491,7 +500,17 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
             entrypoint: "blitz_prize_claim_no_game",
             calldata: [solePlayer],
           };
-          const executeResult = await withTxTimeout(account.execute([claimCall]), "Compute scores transaction");
+          const executeResult = await executeObservedClientTransaction({
+            account,
+            calls: [claimCall],
+            surface: "prediction_market",
+            operation: "market_compute_scores_claim_no_game",
+            chain: resolutionChain,
+            worldName: serverName,
+            waitForConfirmation: false,
+            confirm: false,
+            submit: async (callArray) => await withTxTimeout(account.execute(callArray), "Compute scores transaction"),
+          });
           await waitForTxConfirmationIfAvailable(
             account as {
               waitForTransaction?: (txHash: string) => Promise<unknown>;
@@ -520,10 +539,21 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
             entrypoint: "blitz_prize_player_rank",
             calldata: [randomTrialId(), i === 0 ? total : 0, batch.length, ...batch],
           };
-          const executeResult = await withTxTimeout(
-            account.execute([rankCall]),
-            `Compute scores transaction (batch ${i + 1}/${batches.length})`,
-          );
+          const executeResult = await executeObservedClientTransaction({
+            account,
+            calls: [rankCall],
+            surface: "prediction_market",
+            operation: "market_compute_scores_rank_batch",
+            chain: resolutionChain,
+            worldName: serverName,
+            waitForConfirmation: false,
+            confirm: false,
+            submit: async (callArray) =>
+              await withTxTimeout(
+                account.execute(callArray),
+                `Compute scores transaction (batch ${i + 1}/${batches.length})`,
+              ),
+          });
           await waitForTxConfirmationIfAvailable(
             account as {
               waitForTransaction?: (txHash: string) => Promise<unknown>;
@@ -554,7 +584,7 @@ export const useMarketResolutionController = (market: MarketClass): MarketResolu
         setIsComputingScores(false);
       }
     },
-    [account, hasFinalRanking, loadPlayers, market, refetchRanks, serverName],
+    [account, hasFinalRanking, loadPlayers, market, refetchRanks, resolutionChain, serverName],
   );
 
   const onResolveWithCompute = useCallback(async (): Promise<boolean> => {

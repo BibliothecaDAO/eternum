@@ -1,26 +1,31 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { getFreshPendingStaminaSource, useArmyStaminaSourceStore } from "@/lib/army-stamina/source-store";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { getCharacterName } from "@/utils/agent";
-import {
-  getAddressName,
-  getArmyRelicEffects,
-  getBlockTimestamp,
-  getGuildFromPlayerAddress,
-  StaminaManager,
-} from "@bibliothecadao/eternum";
+import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
+import { getAddressName, getArmyRelicEffects, getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import { ArmyInfo, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { useComponentValue } from "@dojoengine/react";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useQuery } from "@tanstack/react-query";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface UseArmyEntityDetailOptions {
   armyEntityId: ID;
 }
 
+interface StaminaDisplayData {
+  isRecharging: boolean;
+  displayCurrent: number;
+  displayRatio: number;
+}
+
 interface DerivedArmyData {
   stamina: { amount: bigint; updated_tick: bigint };
   maxStamina: number;
+  staminaDisplay: StaminaDisplayData | null;
   playerGuild?: { name: string } | undefined;
   addressName?: string;
   isMine: boolean;
@@ -48,6 +53,12 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const [isLoadingDelete, setIsLoadingDelete] = useState(false);
   const [lastRefresh, setLastRefresh] = useState(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const setAuthoritativeTroopsSnapshot = useArmyStaminaSourceStore((state) => state.setAuthoritativeTroopsSnapshot);
+  const pendingStamina = useArmyStaminaSourceStore((state) => state.pendingSources[String(armyEntityId)]);
+  const liveExplorerTroops = useComponentValue(
+    components.ExplorerTroops,
+    getEntityIdFromKeys([BigInt(armyEntityId)]),
+  )?.troops;
 
   const {
     data: explorerData,
@@ -57,18 +68,45 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     queryKey: ["explorer", String(armyEntityId)],
     queryFn: async () => {
       if (!toriiClient || !armyEntityId) return undefined;
-      const explorer = await getExplorerFromToriiClient(toriiClient, armyEntityId);
-      const relicEffects = explorer.explorer
-        ? getArmyRelicEffects(explorer.explorer.troops, getBlockTimestamp().currentArmiesTick)
-        : [];
-      return { ...explorer, relicEffects };
+      return getExplorerFromToriiClient(toriiClient, armyEntityId);
     },
     staleTime: 5000,
   });
 
   const explorer = explorerData?.explorer;
   const explorerResources = explorerData?.resources;
-  const relicEffects = explorerData?.relicEffects ?? [];
+
+  useEffect(() => {
+    if (!explorer?.troops) return;
+
+    setAuthoritativeTroopsSnapshot({
+      entityId: armyEntityId,
+      source: "snapshot",
+      troops: explorer.troops,
+    });
+  }, [armyEntityId, explorer?.troops, setAuthoritativeTroopsSnapshot]);
+
+  const staminaSnapshot = useMemo(() => {
+    const freshPendingStamina = getFreshPendingStaminaSource(armyEntityId);
+    return getExplorerStaminaSnapshot({
+      entityId: armyEntityId,
+      currentArmiesTick,
+      snapshotTroops: explorer?.troops,
+      liveTroops: liveExplorerTroops,
+      pendingStamina: freshPendingStamina
+        ? {
+            amount: freshPendingStamina.amount,
+            updatedTick: freshPendingStamina.updatedTick,
+          }
+        : null,
+    });
+  }, [armyEntityId, currentArmiesTick, explorer?.troops, liveExplorerTroops, pendingStamina]);
+
+  const currentTroops = staminaSnapshot?.troops ?? null;
+  const relicEffects = useMemo(
+    () => (currentTroops ? getArmyRelicEffects(currentTroops, currentArmiesTick) : []),
+    [currentArmiesTick, currentTroops],
+  );
 
   const {
     data: structureData,
@@ -106,11 +144,18 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
   const derivedData: DerivedArmyData | undefined = useMemo(() => {
     if (!explorer) return undefined;
 
-    const stamina = StaminaManager.getStamina(explorer.troops, currentArmiesTick);
-    const maxStamina = StaminaManager.getMaxStamina(
-      explorer.troops.category as TroopType,
-      explorer.troops.tier as TroopTier,
-    );
+    // staminaSnapshot.current is the computed regen value from
+    // StaminaManager.getStamina(troops, currentArmiesTick). Use directly.
+    const computedAmount = staminaSnapshot?.current ?? 0;
+    const maxStamina = staminaSnapshot?.max ?? 0;
+    const stamina = staminaSnapshot?.stamina ?? { amount: 0n, updated_tick: 0n };
+    const staminaDisplay: StaminaDisplayData | null = staminaSnapshot
+      ? {
+          isRecharging: computedAmount >= 0 && computedAmount < maxStamina,
+          displayCurrent: computedAmount,
+          displayRatio: maxStamina > 0 ? computedAmount / maxStamina : 0,
+        }
+      : null;
 
     const guild = structure ? getGuildFromPlayerAddress(ContractAddress(structure.owner), components) : undefined;
     const isMine = structure?.owner === userAddress;
@@ -124,12 +169,13 @@ export const useArmyEntityDetail = ({ armyEntityId }: UseArmyEntityDetailOptions
     return {
       stamina,
       maxStamina,
+      staminaDisplay,
       playerGuild: guild,
       addressName,
       isMine: Boolean(isMine),
       structureOwnerName,
     };
-  }, [explorer, structure, components, userAddress, armyEntityId, mode, currentArmiesTick]);
+  }, [armyEntityId, components, currentArmiesTick, explorer, mode, staminaSnapshot, structure, userAddress]);
 
   const alignmentBadge: AlignmentBadge | undefined = useMemo(() => {
     if (!derivedData) return undefined;

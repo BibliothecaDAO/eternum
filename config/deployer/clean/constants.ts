@@ -1,7 +1,8 @@
+import { DEFAULT_FACTORY_CONFIG_VERSION } from "../../shared/factory-defaults";
 import type { DeploymentEnvironment, DeploymentEnvironmentId } from "./types";
 
 export const DEFAULT_NAMESPACE = "s1_eternum";
-export const DEFAULT_VERSION = "180";
+export const DEFAULT_VERSION = DEFAULT_FACTORY_CONFIG_VERSION;
 export const DEFAULT_SLOT_MAX_ACTIONS = 300;
 export const DEFAULT_MAINNET_MAX_ACTIONS = 50;
 export const DEFAULT_MAINNET_CREATE_GAME_SUBMISSION_COUNT = 3;

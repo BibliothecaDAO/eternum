@@ -5,6 +5,11 @@ import type { RendererSurfaceLike } from "./renderer-backend";
 import type { RendererBuildMode } from "./renderer-build-mode";
 
 export type RendererActiveMode = "legacy-webgl" | "webgpu" | "webgl2-fallback";
+export type RendererFallbackReason =
+  | "experimental-init-error"
+  | "experimental-init-timeout"
+  | "webgpu-device-lost"
+  | null;
 
 export interface RendererBackendCapabilities {
   supportsEnvironmentIbl: boolean;
@@ -34,7 +39,7 @@ export interface RendererFeatureDegradation {
 export interface RendererInitDiagnostics {
   activeMode: RendererActiveMode;
   buildMode: RendererBuildMode;
-  fallbackReason: string | null;
+  fallbackReason: RendererFallbackReason;
   initTimeMs: number;
   requestedMode: RendererBuildMode;
 }
@@ -121,6 +126,17 @@ export function createRendererBackendCapabilities(
     supportsVignette: input.supportsVignette ?? false,
     supportsWideLines: input.supportsWideLines ?? false,
   };
+}
+
+export class RendererInitTimeoutError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RendererInitTimeoutError";
+  }
+}
+
+export function isRendererInitTimeoutError(error: unknown): error is RendererInitTimeoutError {
+  return error instanceof RendererInitTimeoutError || (error as { name?: string })?.name === "RendererInitTimeoutError";
 }
 
 export function createRendererInitDiagnostics(

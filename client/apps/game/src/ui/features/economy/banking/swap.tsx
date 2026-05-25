@@ -3,7 +3,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUISound } from "@/audio";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules";
-import { ConfirmationPopup } from "@/ui/features/economy/banking";
+import { ConfirmationPopup } from "./confirmation-popup";
 import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
 import { TravelInfo } from "@/ui/features/economy/resources";
 import { formatNumber } from "@/ui/utils/utils";
@@ -20,6 +20,7 @@ import {
   isMilitaryResource,
   MarketManager,
   multiplyByPrecision,
+  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, Resources, resources, ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -94,6 +95,10 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
     const closestBank = getClosestBank(entityId, components);
 
     if (!closestBank) return;
+    const removeResourceOverrides = new ResourceManager(components, entityId).optimisticResourceUpdate(
+      isBuyResource ? ResourcesIds.Lords : resourceId,
+      -(isBuyResource ? lordsAmount + ownerFee : resourceAmount),
+    );
 
     const performSwap = () => {
       return operation({
@@ -107,11 +112,24 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
 
     // If no bank protector, just perform swap
     performSwap().finally(() => {
+      removeResourceOverrides();
       playTradeExecuteSound();
       setIsLoading(false);
       setOpenConfirmation(false);
     });
-  }, [isBuyResource, setup, account, entityId, resourceId, resourceAmount]);
+  }, [
+    isBuyResource,
+    account,
+    components,
+    entityId,
+    lordsAmount,
+    ownerFee,
+    playTradeExecuteSound,
+    resourceAmount,
+    resourceId,
+    systemCalls.buy_resources,
+    systemCalls.sell_resources,
+  ]);
 
   const chosenResourceName = resources.find((r) => r.id === Number(resourceId))?.trait;
 

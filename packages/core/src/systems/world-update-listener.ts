@@ -33,12 +33,16 @@ import { MAP_DATA_REFRESH_INTERVAL } from "../utils/constants";
 import { getStructureName } from "../utils/entities";
 import { getBlockTimestamp } from "../utils/timestamp";
 import { DataEnhancer } from "./data-enhancer";
+import { recordArmyMovementLatencyPhase } from "./army-movement-latency-trace";
+import { resolveFreshestArmyStaminaSource } from "./army-stamina-source";
 import {
   type BattleEventSystemUpdate,
   type BuildingSystemUpdate,
   ExplorerRewardSystemUpdate,
   ExplorerTroopsSystemUpdate,
   type ExplorerTroopsTileSystemUpdate,
+  type ReservedHyperstructureTileSystemUpdate,
+  type StructureBuildingsSystemUpdate,
   StructureSystemUpdate,
   type StructureTileSystemUpdate,
   type TileSystemUpdate,
@@ -108,6 +112,46 @@ export class WorldUpdateListener {
     // console.trace(`🔍 [WorldUpdateListener] Missing entityId stack trace (${context})`);
   }
 
+  private resolveLiveArmySnapshot(
+    entityId: ID,
+    currentArmiesTick: number,
+  ):
+    | {
+        troopCount: number;
+        currentStamina: number;
+        onChainStamina?: {
+          amount: bigint;
+          updatedTick: number;
+        };
+        ownerStructureId?: ID;
+      }
+    | undefined {
+    try {
+      const explorerTroops = getComponentValue(
+        this.setup.components.ExplorerTroops,
+        getEntityIdFromKeys([BigInt(entityId)]),
+      );
+      if (!explorerTroops?.troops) {
+        return undefined;
+      }
+
+      const ownerStructureId = explorerTroops.owner && explorerTroops.owner !== 0 ? explorerTroops.owner : undefined;
+
+      return {
+        troopCount: divideByPrecision(Number(explorerTroops.troops.count)),
+        currentStamina: Number(StaminaManager.getStamina(explorerTroops.troops, currentArmiesTick).amount),
+        onChainStamina: {
+          amount: BigInt(explorerTroops.troops.stamina.amount),
+          updatedTick: Number(explorerTroops.troops.stamina.updated_tick),
+        },
+        ownerStructureId,
+      };
+    } catch (error) {
+      console.warn(`[DEBUG] Could not get live explorer stamina snapshot for army ${entityId}:`, error);
+      return undefined;
+    }
+  }
+
   private buildGuardArmies(troopGuards: any): GuardArmy[] {
     if (!troopGuards) {
       return [];
@@ -145,6 +189,40 @@ export class WorldUpdateListener {
       troopGuards.charlie?.battle_cooldown_end ?? 0,
       troopGuards.delta?.battle_cooldown_end ?? 0,
     );
+  }
+
+  private shouldResolveOwnerNameFromAddress(
+    ownerAddress: bigint | undefined,
+    ownerName: string | undefined,
+  ): ownerAddress is bigint {
+    if (ownerAddress === undefined || ownerAddress === 0n) {
+      return false;
+    }
+
+    const trimmedOwnerName = ownerName?.trim() ?? "";
+    return trimmedOwnerName.length === 0 || trimmedOwnerName === BANDITS_NAME;
+  }
+
+  private resolveOwnerNameFromAddress(ownerAddress: bigint | undefined, fallbackOwnerName: string | undefined): string {
+    let resolvedOwnerName = fallbackOwnerName?.trim() ?? "";
+
+    if (this.shouldResolveOwnerNameFromAddress(ownerAddress, resolvedOwnerName) && this.setup.components.AddressName) {
+      try {
+        const addressName = getComponentValue(this.setup.components.AddressName, getEntityIdFromKeys([ownerAddress]));
+
+        if (addressName?.name) {
+          resolvedOwnerName = shortString.decodeShortString(addressName.name.toString());
+        }
+      } catch (error) {
+        console.warn(`Failed to decode address name for owner ${ownerAddress}:`, error);
+      }
+    }
+
+    if ((ownerAddress === undefined || ownerAddress === 0n) && resolvedOwnerName.length === 0) {
+      return BANDITS_NAME;
+    }
+
+    return resolvedOwnerName;
   }
 
   private setupSystem<T>(
@@ -270,6 +348,41 @@ export class WorldUpdateListener {
                 return;
               }
 
+              // Cross-check TileOpt against the fresher ExplorerTroops coord. If they
+              // disagree, this TileOpt is stale (e.g. a subscription replay after a
+              // chunk-bounds shift) — emitting it would rubber-band the visual back
+              // to the outdated tile and then forward again when the fresh update
+              // arrives.
+              try {
+                const explorerTroops = getComponentValue(
+                  this.setup.components.ExplorerTroops,
+                  getEntityIdFromKeys([BigInt(rawOccupierId)]),
+                );
+                if (explorerTroops?.coord) {
+                  const explorerCol = Number((explorerTroops.coord as { x?: unknown }).x ?? NaN);
+                  const explorerRow = Number((explorerTroops.coord as { y?: unknown }).y ?? NaN);
+                  if (
+                    Number.isFinite(explorerCol) &&
+                    Number.isFinite(explorerRow) &&
+                    (explorerCol !== currentState.col || explorerRow !== currentState.row)
+                  ) {
+                    return;
+                  }
+                }
+              } catch (_) {
+                // ExplorerTroops unavailable — fall through and emit the TileOpt as-is.
+              }
+
+              recordArmyMovementLatencyPhase({
+                phase: "tileopt_component_received",
+                source: "world_update_listener",
+                entityId: rawOccupierId,
+                details: {
+                  col: currentState.col,
+                  row: currentState.row,
+                },
+              });
+
               const { currentArmiesTick } = getBlockTimestamp();
 
               // Use sequential update processing to prevent race conditions
@@ -296,6 +409,13 @@ export class WorldUpdateListener {
                   currentArmiesTick,
                   normalizedStructureOwnerId,
                 );
+                const liveArmySnapshot = this.resolveLiveArmySnapshot(rawOccupierId, currentArmiesTick);
+                const freshestArmyStaminaSource = resolveFreshestArmyStaminaSource({
+                  liveSnapshot: liveArmySnapshot,
+                  enhancedSnapshot: enhancedData,
+                });
+                const freshestArmyStaminaSnapshot =
+                  freshestArmyStaminaSource === "live" ? liveArmySnapshot : enhancedData;
 
                 const maxStamina = StaminaManager.getMaxStamina(explorer.troopType, explorer.troopTier);
 
@@ -309,17 +429,32 @@ export class WorldUpdateListener {
                   troopType: explorer.troopType as TroopType,
                   troopTier: explorer.troopTier as TroopTier,
                   isDaydreamsAgent: explorer.isDaydreamsAgent,
-                  ownerStructureId: normalizedStructureOwnerId ?? enhancedData.ownerStructureId ?? null,
+                  ownerStructureId:
+                    liveArmySnapshot?.ownerStructureId ??
+                    normalizedStructureOwnerId ??
+                    enhancedData.ownerStructureId ??
+                    null,
                   // Enhanced data from DataEnhancer
-                  troopCount: enhancedData.troopCount,
-                  currentStamina: enhancedData.currentStamina,
-                  onChainStamina: enhancedData.onChainStamina,
+                  troopCount: liveArmySnapshot?.troopCount ?? enhancedData.troopCount,
+                  currentStamina: freshestArmyStaminaSnapshot?.currentStamina ?? enhancedData.currentStamina,
+                  onChainStamina: freshestArmyStaminaSnapshot?.onChainStamina ?? enhancedData.onChainStamina,
                   battleData: enhancedData.battleData,
                   maxStamina,
                 };
               });
 
               // Return undefined if update was cancelled due to being outdated
+              if (result) {
+                recordArmyMovementLatencyPhase({
+                  phase: "tileopt_component_ready",
+                  source: "world_update_listener",
+                  entityId: rawOccupierId,
+                  details: {
+                    col: result.hexCoords.col,
+                    row: result.hexCoords.row,
+                  },
+                });
+              }
               return result || undefined;
             }
           },
@@ -368,7 +503,7 @@ export class WorldUpdateListener {
               };
             }
           },
-          false,
+          true,
         );
       },
       onDeadArmy: (callback: (value: ID) => void) => {
@@ -415,125 +550,10 @@ export class WorldUpdateListener {
             if (isComponentUpdate(update, this.setup.components.TileOpt)) {
               const [currentStateOpt, _prevStateOpt] = update.value;
               const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
-              // const _prevState = _prevStateOpt ? tileOptToTile(_prevStateOpt) : undefined;
-
-              const structureInfo = currentState && getStructureInfoFromTileOccupier(currentState?.occupier_type);
-
-              if (!structureInfo) return;
-
-              const hyperstructure = getComponentValue(
-                this.setup.components.Hyperstructure,
-                getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
-              );
-
-              const initialized = hyperstructure?.initialized || false;
-
-              const rawOccupierId = currentState?.occupier_id;
-
-              if (rawOccupierId === undefined || rawOccupierId === null) {
-                this.logMissingEntityId("Structure.onTileUpdate", {
-                  update,
-                  currentState,
-                  structureInfo,
-                });
-                return;
-              }
-
-              let hyperstructureRealmCount: number | undefined;
-
-              if (structureInfo.type === StructureType.Hyperstructure) {
-                hyperstructureRealmCount = this.dataEnhancer.getHyperstructureRealmCount(rawOccupierId);
-              }
-
-              // Use sequential update processing to prevent race conditions
-              const result = await this.processSequentialUpdate(rawOccupierId, async () => {
-                // Use DataEnhancer to fetch all enhanced data
-                const enhancedData = await this.dataEnhancer.enhanceStructureData(rawOccupierId);
-
-                const structureComponent = getComponentValue(
-                  this.setup.components.Structure,
-                  getEntityIdFromKeys([BigInt(rawOccupierId)]),
-                );
-                const troopGuards = structureComponent?.troop_guards ?? null;
-                const guardArmies = troopGuards ? this.buildGuardArmies(troopGuards) : enhancedData.guardArmies;
-                const battleCooldownEnd = troopGuards
-                  ? this.getBattleCooldownEnd(troopGuards)
-                  : enhancedData.battleData?.battleCooldownEnd;
-
-                if (troopGuards) {
-                  this.mapDataStore.updateStructureGuards(rawOccupierId, guardArmies, battleCooldownEnd);
-                }
-
-                let ownerAddress = structureComponent?.owner ?? enhancedData.owner.address ?? 0n;
-                let ownerName = enhancedData.owner.ownerName;
-
-                if ((!ownerName || ownerName.length === 0) && ownerAddress && ownerAddress !== 0n) {
-                  try {
-                    const addressName = getComponentValue(
-                      this.setup.components.AddressName,
-                      getEntityIdFromKeys([ownerAddress]),
-                    );
-
-                    if (addressName?.name) {
-                      ownerName = shortString.decodeShortString(addressName.name.toString());
-                    }
-                  } catch (error) {
-                    console.warn(`Failed to decode address name for owner ${ownerAddress}:`, error);
-                  }
-                }
-
-                ownerName = ownerName || "";
-                if (ownerAddress === 0n && ownerName.length === 0) {
-                  ownerName = BANDITS_NAME;
-                }
-
-                this.dataEnhancer.updateStructureOwner(rawOccupierId, ownerAddress, ownerName);
-
-                const isBlitz = getIsBlitz();
-                const fallbackTypeName = getStructureTypeName(structureInfo.type, isBlitz) || "Structure";
-                const enhancedStructureName = enhancedData.structureName?.trim();
-                const structureName = structureComponent
-                  ? getStructureName(structureComponent, isBlitz).name
-                  : enhancedStructureName || `${fallbackTypeName} ${rawOccupierId}`;
-
-                const battleData = enhancedData.battleData
-                  ? {
-                      ...enhancedData.battleData,
-                      battleCooldownEnd: battleCooldownEnd ?? enhancedData.battleData.battleCooldownEnd,
-                    }
-                  : undefined;
-
-                return {
-                  entityId: rawOccupierId,
-                  structureName,
-                  hexCoords: {
-                    col: currentState.col,
-                    row: currentState.row,
-                  },
-                  structureType: structureInfo.type,
-                  initialized,
-                  stage: structureInfo.stage,
-                  level: structureInfo.level,
-                  owner: {
-                    address: ownerAddress,
-                    ownerName,
-                    guildName: enhancedData.owner.guildName,
-                  },
-                  hasWonder: structureInfo.hasWonder,
-                  isAlly: false,
-                  // Enhanced data from DataEnhancer
-                  guardArmies,
-                  activeProductions: enhancedData.activeProductions,
-                  hyperstructureRealmCount,
-                  battleData,
-                };
-              });
-
-              // Return undefined if update was cancelled due to being outdated
-              return result || undefined;
+              return this.resolveStructureTileUpdateFromTileState(currentState, update);
             }
           },
-          false,
+          true,
         );
       },
       onStructureUpdate: (callback: (value: StructureSystemUpdate) => void) => {
@@ -559,11 +579,6 @@ export class WorldUpdateListener {
                   ? ownerValue.toString()
                   : (ownerValue ?? "0");
 
-              let playerName = await this.dataEnhancer.getPlayerName(ownerString);
-              if (ownerValue === 0n && (!playerName || playerName.length === 0)) {
-                playerName = BANDITS_NAME;
-              }
-
               const entityId = this.resolveEntityId(currentState.entity_id as ID | undefined, update.entity, () => {
                 const componentState = getComponentValue(this.setup.components.Structure, update.entity) as
                   | { entity_id?: ID }
@@ -576,48 +591,57 @@ export class WorldUpdateListener {
                 return;
               }
 
-              this.dataEnhancer.updateStructureOwner(entityId, ownerValue, playerName);
+              return (
+                (await this.processSequentialUpdate(entityId, async () => {
+                  const playerName = this.resolveOwnerNameFromAddress(
+                    ownerValue,
+                    await this.dataEnhancer.getPlayerName(ownerString),
+                  );
 
-              const baseCoords = currentState.base ?? { coord_x: 0, coord_y: 0 };
-              let col = baseCoords.coord_x ?? 0;
-              let row = baseCoords.coord_y ?? 0;
+                  this.dataEnhancer.updateStructureOwner(entityId, ownerValue, playerName);
 
-              // Fall back to mapDataStore if coords are 0,0 (partial update, e.g. ownership change)
-              if (col === 0 && row === 0) {
-                const existing = this.mapDataStore.getStructureById(entityId);
-                if (existing) {
-                  col = existing.coordX;
-                  row = existing.coordY;
-                }
-              }
+                  const baseCoords = currentState.base ?? { coord_x: 0, coord_y: 0 };
+                  let col = baseCoords.coord_x ?? 0;
+                  let row = baseCoords.coord_y ?? 0;
 
-              const battleCooldownEnd = this.getBattleCooldownEnd(troopGuards);
+                  // Fall back to mapDataStore if coords are 0,0 (partial update, e.g. ownership change)
+                  if (col === 0 && row === 0) {
+                    const existing = this.mapDataStore.getStructureById(entityId);
+                    if (existing) {
+                      col = existing.coordX;
+                      row = existing.coordY;
+                    }
+                  }
 
-              this.mapDataStore.updateStructureGuards(entityId, guardArmies, battleCooldownEnd);
+                  const battleCooldownEnd = this.getBattleCooldownEnd(troopGuards);
 
-              const structureSystemUpdate: StructureSystemUpdate = {
-                entityId,
-                guardArmies,
-                owner: {
-                  address: currentState.owner,
-                  ownerName: playerName,
-                  guildName: "",
-                },
-                hexCoords: { col, row },
-                battleCooldownEnd,
-              };
+                  this.mapDataStore.updateStructureGuards(entityId, guardArmies, battleCooldownEnd);
 
-              return structureSystemUpdate;
+                  const structureSystemUpdate: StructureSystemUpdate = {
+                    entityId,
+                    guardArmies,
+                    owner: {
+                      address: currentState.owner,
+                      ownerName: playerName,
+                      guildName: "",
+                    },
+                    hexCoords: { col, row },
+                    battleCooldownEnd,
+                  };
+
+                  return structureSystemUpdate;
+                })) ?? undefined
+              );
             }
           },
           false,
         );
       },
-      onStructureBuildingsUpdate: (callback: (value: any) => void) => {
+      onStructureBuildingsUpdate: (callback: (value: StructureBuildingsSystemUpdate) => void) => {
         this.setupSystem(
           this.setup.components.StructureBuildings,
           callback,
-          (update: any) => {
+          async (update: any): Promise<StructureBuildingsSystemUpdate | undefined> => {
             if (isComponentUpdate(update, this.setup.components.StructureBuildings)) {
               const [currentState, _prevState] = update.value;
 
@@ -664,6 +688,10 @@ export class WorldUpdateListener {
               return {
                 entityId,
                 activeProductions,
+                hexCoords: {
+                  col: Number(currentState.coord?.x ?? 0),
+                  row: Number(currentState.coord?.y ?? 0),
+                },
               };
             }
           },
@@ -671,6 +699,110 @@ export class WorldUpdateListener {
         );
       },
     };
+  }
+
+  public async resolveStructureTileUpdateFromTileOpt(
+    tileOpt: Parameters<typeof tileOptToTile>[0],
+  ): Promise<StructureTileSystemUpdate | undefined> {
+    const currentState = tileOpt ? tileOptToTile(tileOpt) : undefined;
+    return this.resolveStructureTileUpdateFromTileState(currentState, { tileOpt });
+  }
+
+  private async resolveStructureTileUpdateFromTileState(
+    currentState: ReturnType<typeof tileOptToTile> | undefined,
+    missingEntityContext: unknown,
+  ): Promise<StructureTileSystemUpdate | undefined> {
+    if (!currentState) return;
+
+    const structureInfo = getStructureInfoFromTileOccupier(currentState.occupier_type);
+
+    if (!structureInfo || structureInfo.reserved) return;
+
+    const hyperstructure = getComponentValue(
+      this.setup.components.Hyperstructure,
+      getEntityIdFromKeys([BigInt(currentState.occupier_id)]),
+    );
+
+    const initialized = hyperstructure?.initialized || false;
+    const rawOccupierId = currentState?.occupier_id;
+
+    if (rawOccupierId === undefined || rawOccupierId === null) {
+      this.logMissingEntityId("Structure.onTileUpdate", {
+        update: missingEntityContext,
+        currentState,
+        structureInfo,
+      });
+      return;
+    }
+
+    let hyperstructureRealmCount: number | undefined;
+
+    if (structureInfo.type === StructureType.Hyperstructure) {
+      hyperstructureRealmCount = this.dataEnhancer.getHyperstructureRealmCount(rawOccupierId);
+    }
+
+    const result = await this.processSequentialUpdate(rawOccupierId, async () => {
+      const enhancedData = await this.dataEnhancer.enhanceStructureData(rawOccupierId);
+
+      const structureComponent = getComponentValue(
+        this.setup.components.Structure,
+        getEntityIdFromKeys([BigInt(rawOccupierId)]),
+      );
+      const troopGuards = structureComponent?.troop_guards ?? null;
+      const guardArmies = troopGuards ? this.buildGuardArmies(troopGuards) : enhancedData.guardArmies;
+      const battleCooldownEnd = troopGuards
+        ? this.getBattleCooldownEnd(troopGuards)
+        : enhancedData.battleData?.battleCooldownEnd;
+
+      if (troopGuards) {
+        this.mapDataStore.updateStructureGuards(rawOccupierId, guardArmies, battleCooldownEnd);
+      }
+
+      const ownerAddress = structureComponent?.owner ?? enhancedData.owner.address ?? 0n;
+      const ownerName = this.resolveOwnerNameFromAddress(ownerAddress, enhancedData.owner.ownerName);
+
+      this.dataEnhancer.updateStructureOwner(rawOccupierId, ownerAddress, ownerName);
+
+      const isBlitz = getIsBlitz();
+      const fallbackTypeName = getStructureTypeName(structureInfo.type, isBlitz) || "Structure";
+      const enhancedStructureName = enhancedData.structureName?.trim();
+      const structureName = structureComponent
+        ? getStructureName(structureComponent, isBlitz).name
+        : enhancedStructureName || `${fallbackTypeName} ${rawOccupierId}`;
+
+      const battleData = enhancedData.battleData
+        ? {
+            ...enhancedData.battleData,
+            battleCooldownEnd: battleCooldownEnd ?? enhancedData.battleData.battleCooldownEnd,
+          }
+        : undefined;
+
+      return {
+        entityId: rawOccupierId,
+        structureName,
+        hexCoords: {
+          col: currentState.col,
+          row: currentState.row,
+        },
+        structureType: structureInfo.type,
+        initialized,
+        stage: structureInfo.stage,
+        level: structureInfo.level,
+        owner: {
+          address: ownerAddress,
+          ownerName,
+          guildName: enhancedData.owner.guildName,
+        },
+        hasWonder: structureInfo.hasWonder,
+        isAlly: false,
+        guardArmies,
+        activeProductions: enhancedData.activeProductions,
+        hyperstructureRealmCount,
+        battleData,
+      };
+    });
+
+    return result || undefined;
   }
 
   public get Tile() {
@@ -699,6 +831,40 @@ export class WorldUpdateListener {
             return result;
           },
           false,
+        );
+      },
+    };
+  }
+
+  public get ReservedHyperstructure() {
+    return {
+      onTileUpdate: (callback: (value: ReservedHyperstructureTileSystemUpdate) => void) => {
+        this.setupSystem(
+          this.setup.components.TileOpt,
+          callback,
+          async (update: any): Promise<ReservedHyperstructureTileSystemUpdate | undefined> => {
+            if (!isComponentUpdate(update, this.setup.components.TileOpt)) {
+              return;
+            }
+
+            const [currentStateOpt, prevStateOpt] = update.value;
+            const currentState = currentStateOpt ? tileOptToTile(currentStateOpt) : undefined;
+            const prevState = prevStateOpt ? tileOptToTile(prevStateOpt) : undefined;
+
+            if (currentState?.occupier_type === TileOccupier.ReservedHyperstructure) {
+              return {
+                hexCoords: { col: currentState.col, row: currentState.row },
+              };
+            }
+
+            if (prevState?.occupier_type === TileOccupier.ReservedHyperstructure) {
+              return {
+                hexCoords: { col: prevState.col, row: prevState.row },
+                removed: true,
+              };
+            }
+          },
+          true,
         );
       },
     };

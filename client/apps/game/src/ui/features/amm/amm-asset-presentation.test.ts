@@ -95,4 +95,25 @@ describe("amm-asset-presentation", () => {
     expect(formatAmmCompactAmount(125_430n * E18)).toBe("125.4K");
     expect(formatAmmCompactAmount(950n * E18)).toBe("950");
   });
+
+  it("formats minimum received values to no more than eight decimals", async () => {
+    const formatModule = await import("./amm-format");
+    const formatAmmMinimumReceived = formatModule["formatAmmMinimumReceived"] as
+      | ((value: bigint) => string)
+      | undefined;
+
+    expect(formatAmmMinimumReceived).toBeTypeOf("function");
+    expect(formatAmmMinimumReceived?.(1_234_567_891_234_567_890n)).toBe("1.23456789");
+  });
+
+  it("builds voyager fee-recipient links for enabled fee receivers", async () => {
+    const formatModule = await import("./amm-format");
+    const resolveAmmFeeToHref = formatModule["resolveAmmFeeToHref"] as
+      | ((address: string, chain: string) => string | null)
+      | undefined;
+
+    expect(resolveAmmFeeToHref).toBeTypeOf("function");
+    expect(resolveAmmFeeToHref?.("0x1234", "mainnet")).toBe("https://voyager.online/contract/0x1234");
+    expect(resolveAmmFeeToHref?.("0x0", "mainnet")).toBeNull();
+  });
 });

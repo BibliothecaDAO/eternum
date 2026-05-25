@@ -1,0 +1,16 @@
+// @vitest-environment node
+
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
+
+describe("SecondaryMenuItems network switch placement", () => {
+  it("does not mount the dashboard network switch in the in-world top-right menu", () => {
+    const source = readSource("src/ui/features/world/containers/secondary-menu-items.tsx");
+
+    expect(source).not.toContain("DashboardNetworkSwitch");
+  });
+});

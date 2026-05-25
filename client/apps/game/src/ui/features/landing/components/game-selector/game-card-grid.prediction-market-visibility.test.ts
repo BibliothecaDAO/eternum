@@ -11,7 +11,7 @@ describe("Game card prediction market visibility", () => {
     );
 
     expect(source).toContain("game.config?.prizeDistributionAddress");
-    expect(source).toContain("fetchMarketByPrizeAddress");
+    expect(source).toContain("findMarketByPrizeAddressAcrossChains");
     expect(source).toContain("Market Live");
   });
 
@@ -28,13 +28,14 @@ describe("Game card prediction market visibility", () => {
     expect(source).not.toContain(">Bet<");
   });
 
-  it("does not rely on controllers provider in game cards", () => {
+  it("keeps controller lookups behind the shared display wrapper", () => {
     const source = readFileSync(
       resolve(process.cwd(), "src/ui/features/landing/components/game-selector/game-card-grid.tsx"),
       "utf8",
     );
 
-    expect(source).toContain("const formatOutcomeLabel = (value: string)");
-    expect(source).not.toContain("MaybeController");
+    expect(source).toContain("MaybeController");
+    expect(source).not.toContain("useOptionalControllers");
+    expect(source).not.toContain("useControllers(");
   });
 });

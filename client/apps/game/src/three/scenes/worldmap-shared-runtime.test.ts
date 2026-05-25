@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createWorldmapSharedRuntimeFixture } from "./worldmap-shared-runtime-fixture";
 
 describe("worldmap shared runtime baseline", () => {
-  it("runs the same shared label-group and manager-label lifecycle on setup and resume", async () => {
+  it("runs the same shared label-group and hover-label reconciliation lifecycle on setup and resume", async () => {
     const fixture = createWorldmapSharedRuntimeFixture();
 
     await fixture.setup();

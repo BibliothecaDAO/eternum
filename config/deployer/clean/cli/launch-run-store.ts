@@ -47,7 +47,7 @@ function usage(): void {
       "  --series-name <series-name> --series-games-json <json-array>",
       "",
       "Rotation launch:",
-      "  --rotation-name <rotation-name> --first-game-start-time <unix|iso> --game-interval-minutes <n> --max-games <n> --evaluation-interval-minutes <n>",
+      "  --rotation-name <rotation-name> --first-game-start-time <unix|iso> --max-games <n> --evaluation-interval-minutes <n> (--game-interval-minutes <n> or --weekly-cadence-json <json-array>)",
       "",
       "Required for step events:",
       "  --step <single-game-step-id|series-step-id>",
@@ -228,7 +228,7 @@ main().catch((error: unknown) => {
     message.includes("--environment, --game, and --start-time are required") ||
     message.includes("--environment and --series-name are required for series launches") ||
     message.includes(
-      "--environment, --rotation-name, --first-game-start-time, --game-interval-minutes, --max-games, and --evaluation-interval-minutes are required for rotation launches",
+      "--environment, --rotation-name, --first-game-start-time, --max-games, and --evaluation-interval-minutes are required for rotation launches",
     ) ||
     message.includes("--series-games-json is required for series launches") ||
     message.includes('Unsupported run-store event "') ||

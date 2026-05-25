@@ -1,4 +1,4 @@
-import { CameraView } from "../../scenes/hexagon-scene";
+import { CameraView } from "../../scenes/camera-view";
 import { getOwnershipStyle } from "./label-config";
 import { resolveCameraView } from "./label-view";
 

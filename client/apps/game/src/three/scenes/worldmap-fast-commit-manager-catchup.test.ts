@@ -9,17 +9,20 @@ function readSceneSource(relativePath: string): string {
 }
 
 describe("worldmap fast commit manager catch-up wiring", () => {
-  it("defers switch manager catch-up instead of awaiting it in the finalize path", () => {
-    const finalizeSource = readSceneSource("./warp-travel-chunk-switch-commit.ts");
-
-    expect(finalizeSource).toMatch(/scheduleManagerCatchUp\(/);
-    expect(finalizeSource).not.toMatch(/await input\.updateManagersForChunk\(/);
-  });
-
-  it("defers same-chunk refresh manager catch-up after terrain commit", () => {
+  it("routes staged switch commits through immediate critical catch-up and deferred non-critical catch-up", () => {
     const worldmapSource = readSceneSource("./worldmap.tsx");
 
-    expect(worldmapSource).toMatch(/deferManagerCatchUpForChunk\(/);
+    expect(worldmapSource).toMatch(/updateCriticalManagersForChunk\(/);
+    expect(worldmapSource).toMatch(/deferNonCriticalManagerCatchUpForCommittedChunk\(/);
+    expect(worldmapSource).toMatch(/WORLDMAP_STREAMING_ROLLOUT\.stagedPathEnabled/);
+  });
+
+  it("keeps same-chunk refresh critical catch-up immediate after terrain commit", () => {
+    const worldmapSource = readSceneSource("./worldmap.tsx");
+
+    expect(worldmapSource).toMatch(/runImmediateCriticalManagerCatchUp:/);
+    expect(worldmapSource).toMatch(/scheduleDeferredNonCriticalManagerCatchUp:/);
+    expect(worldmapSource).not.toMatch(/scheduleDeferredManagerCatchUp:/);
     expect(worldmapSource).toMatch(/WORLDMAP_STREAMING_ROLLOUT\.stagedPathEnabled/);
   });
 });

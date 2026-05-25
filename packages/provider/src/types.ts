@@ -7,6 +7,45 @@ export interface BatchedTransactionDetail {
   count: number;
 }
 
+export type TransactionFailureStage = "submit" | "confirmation" | "revert" | "background_confirmation";
+
+export type TransactionSubmitFailureKind =
+  | "provider_connection_destroyed"
+  | "submission_timeout_no_hash"
+  | "submit_failed";
+
+export type TransactionProviderState = "ready" | "destroyed" | "unavailable" | "unknown";
+
+export type TransactionRetrySafety = "safe_after_reconnect" | "unsafe_until_wallet_checked" | "unknown";
+
+export interface TransactionLifecycleMeta {
+  type?: TransactionType;
+  transactionHash?: string;
+  signerAddress?: string;
+  transactionCount?: number;
+  batchDetails?: BatchedTransactionDetail[];
+  entrypoints?: string[];
+  contractAddresses?: string[];
+  recoveredFromSubmissionTimeout?: boolean;
+}
+
+export interface TransactionFailedPayload extends TransactionLifecycleMeta {
+  message: string;
+  stage: TransactionFailureStage;
+  failureKind?: TransactionSubmitFailureKind;
+  providerState?: TransactionProviderState;
+  hasTxHash?: boolean;
+  retrySafety?: TransactionRetrySafety;
+}
+
+export interface TransactionSubmitGuardContext extends TransactionLifecycleMeta {
+  transactionType?: TransactionType;
+  signerAddress?: string;
+  providerState?: TransactionProviderState;
+}
+
+export type TransactionSubmitGuard = (context: TransactionSubmitGuardContext) => Promise<void> | void;
+
 export enum TransactionType {
   // Exploration & Movement
   EXPLORE = "explore",

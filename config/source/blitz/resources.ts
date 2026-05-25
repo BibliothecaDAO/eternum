@@ -238,7 +238,7 @@ const VILLAGE_STARTING_RESOURCES: ResourceCost[] = [
   { resource: ResourcesIds.Paladin, amount: 500 },
 ];
 
-const DISCOVERABLE_VILLAGE_STARTING_RESOURCES: ResourceMinMax[] = [
+const CAMP_STARTING_RESOURCES: ResourceMinMax[] = [
   { resource: ResourcesIds.Wheat, min_amount: 500, max_amount: 500 },
   { resource: ResourcesIds.Labor, min_amount: 2_500, max_amount: 2_500 },
   { resource: ResourcesIds.Donkey, min_amount: 200, max_amount: 200 },
@@ -378,5 +378,5 @@ export const blitzResourceConfig: ConfigPatch = {
   },
   startingResources: STARTING_RESOURCES,
   villageStartingResources: VILLAGE_STARTING_RESOURCES,
-  discoverableVillageStartingResources: DISCOVERABLE_VILLAGE_STARTING_RESOURCES,
+  campStartingResources: CAMP_STARTING_RESOURCES,
 };

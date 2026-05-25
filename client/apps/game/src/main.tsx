@@ -6,7 +6,8 @@ import ReactDOM from "react-dom/client";
 import * as Sentry from "@sentry/react";
 
 import App from "./app";
-import { env } from "../env";
+import { resolveSentryRuntimeOptions } from "./sentry-config";
+import { BootLoaderCrashFallback, markBootMilestone, setBootDocumentState } from "./ui/modules/boot-loader";
 
 declare global {
   interface Window {
@@ -21,19 +22,50 @@ if (!rootElement) {
   throw new Error("React root not found");
 }
 
-const sentryEnabled = import.meta.env.PROD && Boolean(env.VITE_PUBLIC_SENTRY_DSN);
+const sentryDsn = import.meta.env.VITE_PUBLIC_SENTRY_DSN;
+const sentryEnabled = Boolean(sentryDsn);
+
+interface BootCrashBoundaryProps {
+  children: React.ReactNode;
+  fallback: React.ReactNode;
+}
+
+interface BootCrashBoundaryState {
+  hasError: boolean;
+}
+
+class BootCrashBoundary extends React.Component<BootCrashBoundaryProps, BootCrashBoundaryState> {
+  public state: BootCrashBoundaryState = {
+    hasError: false,
+  };
+
+  public static getDerivedStateFromError(): BootCrashBoundaryState {
+    return { hasError: true };
+  }
+
+  public componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error("BootCrashBoundary caught an error:", error, errorInfo);
+  }
+
+  public render() {
+    return this.state.hasError ? this.props.fallback : this.props.children;
+  }
+}
 
 if (sentryEnabled) {
+  const sentryOptions = resolveSentryRuntimeOptions(import.meta.env);
+
   Sentry.init({
-    dsn: env.VITE_PUBLIC_SENTRY_DSN,
-    sendDefaultPii: env.VITE_PUBLIC_SENTRY_SEND_DEFAULT_PII,
+    dsn: sentryDsn,
+    sendDefaultPii: sentryOptions.sendDefaultPii,
     integrations: [Sentry.browserTracingIntegration(), Sentry.replayIntegration()],
-    tracesSampleRate: env.VITE_PUBLIC_SENTRY_TRACES_SAMPLE_RATE,
-    tracePropagationTargets: ["localhost", /^https:\/\/yourserver\.io\/api/],
-    replaysSessionSampleRate: env.VITE_PUBLIC_SENTRY_REPLAYS_SESSION_SAMPLE_RATE,
-    replaysOnErrorSampleRate: env.VITE_PUBLIC_SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE,
-    environment: env.VITE_PUBLIC_SENTRY_ENVIRONMENT || env.VITE_PUBLIC_CHAIN || "development",
-    release: env.VITE_PUBLIC_GAME_VERSION || undefined,
+    tracesSampleRate: sentryOptions.tracesSampleRate,
+    tracePropagationTargets: sentryOptions.tracePropagationTargets,
+    replaysSessionSampleRate: sentryOptions.replaysSessionSampleRate,
+    replaysOnErrorSampleRate: sentryOptions.replaysOnErrorSampleRate,
+    environment: sentryOptions.environment,
+    release: sentryOptions.release,
+    beforeSend: sentryOptions.beforeSend,
   });
 }
 
@@ -49,14 +81,19 @@ const root = ReactDOM.createRoot(rootElement as HTMLElement, {
     : undefined,
 });
 
+markBootMilestone("boot_react_mount_start");
+setBootDocumentState("react-mounted");
+
 root.render(
   <React.StrictMode>
     {sentryEnabled ? (
-      <Sentry.ErrorBoundary fallback={<div />}>
+      <Sentry.ErrorBoundary fallback={<BootLoaderCrashFallback />}>
         <App />
       </Sentry.ErrorBoundary>
     ) : (
-      <App />
+      <BootCrashBoundary fallback={<BootLoaderCrashFallback />}>
+        <App />
+      </BootCrashBoundary>
     )}
   </React.StrictMode>,
 );

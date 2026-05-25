@@ -1,5 +1,6 @@
 import { env } from "@/../env";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { playUnitCommandSound } from "@/audio/unit-command-audio";
+import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
@@ -49,6 +50,11 @@ import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { GuardStaminaBar } from "../components/guard-stamina-bar";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
+import {
+  buildAttackStaminaRequirementLabel,
+  buildAttackStaminaWarning,
+  resolveAttackStaminaState,
+} from "./attack-stamina-state";
 import { BattleCooldownTimer } from "./battle-cooldown-timer";
 import { BattleStats, CombatLoading, ResourceStealing, TroopDisplay } from "./components";
 import { AttackTarget, TargetType } from "./types";
@@ -57,6 +63,27 @@ enum AttackerType {
   Structure,
   Army,
 }
+
+const buildProjectedTroopSnapshot = (input: {
+  troops: Troops;
+  stamina: { amount: bigint; updated_tick: bigint };
+}): Troops => ({
+  count: input.troops.count || 0n,
+  category: input.troops.category as TroopType,
+  tier: input.troops.tier as TroopTier,
+  stamina: input.stamina,
+  boosts: input.troops.boosts || {
+    incr_damage_dealt_percent_num: 0,
+    incr_damage_dealt_end_tick: 0,
+    decr_damage_gotten_percent_num: 0,
+    decr_damage_gotten_end_tick: 0,
+    incr_stamina_regen_percent_num: 0,
+    incr_stamina_regen_tick_count: 0,
+    incr_explore_reward_percent_num: 0,
+    incr_explore_reward_end_tick: 0,
+  },
+  battle_cooldown_end: input.troops.battle_cooldown_end || 0,
+});
 
 // Add the new function before the CombatContainer component
 const getFormattedCombatTweet = ({
@@ -112,7 +139,7 @@ export const CombatContainer = ({
 
   const [loading, setLoading] = useState(false);
   const [selectedGuardSlot, setSelectedGuardSlot] = useState<number | null>(null);
-  const { currentArmiesTick } = useBlockTimestamp();
+  const currentArmiesTick = useCurrentArmiesTick();
 
   const accountName = useAccountStore((state) => state.accountName);
 
@@ -194,73 +221,53 @@ export const CombatContainer = ({
 
       const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
       if (!selectedGuard) return null;
+      const staminaSnapshot = getGuardStaminaSnapshot(selectedGuard.troops, currentArmiesTick);
+      const stamina = BigInt(Math.floor(staminaSnapshot?.current ?? Number(selectedGuard.troops.stamina.amount ?? 0n)));
 
       return {
-        troops: {
-          count: selectedGuard.troops.count || 0n,
-          category: selectedGuard.troops.category as TroopType,
-          tier: selectedGuard.troops.tier as TroopTier,
-          stamina: selectedGuard.troops.stamina || { amount: 0n, updated_tick: 0n },
-          boosts: selectedGuard.troops.boosts || {
-            incr_damage_dealt_percent_num: 0,
-            incr_damage_dealt_end_tick: 0,
-            decr_damage_gotten_percent_num: 0,
-            decr_damage_gotten_end_tick: 0,
-            incr_stamina_regen_percent_num: 0,
-            incr_stamina_regen_tick_count: 0,
-            incr_explore_reward_percent_num: 0,
-            incr_explore_reward_end_tick: 0,
+        troops: buildProjectedTroopSnapshot({
+          troops: selectedGuard.troops,
+          stamina: {
+            amount: stamina,
+            updated_tick: BigInt(currentArmiesTick),
           },
-          battle_cooldown_end: 0,
-        },
+        }),
       };
     } else {
       // attacker always synced already
       const army = getComponentValue(ExplorerTroops, getEntityIdFromKeys([BigInt(attackerEntityId)]));
+      if (!army) {
+        return null;
+      }
 
       return {
-        troops: {
-          count: army?.troops.count || 0n,
-          category: army?.troops.category as TroopType,
-          tier: army?.troops.tier as TroopTier,
-          stamina: army?.troops.stamina || { amount: 0n, updated_tick: 0n },
-          boosts: army?.troops.boosts || {
-            incr_damage_dealt_percent_num: 0,
-            incr_damage_dealt_end_tick: 0,
-            decr_damage_gotten_percent_num: 0,
-            decr_damage_gotten_end_tick: 0,
-            incr_stamina_regen_percent_num: 0,
-            incr_stamina_regen_tick_count: 0,
-            incr_explore_reward_percent_num: 0,
-            incr_explore_reward_end_tick: 0,
+        troops: buildProjectedTroopSnapshot({
+          troops: army.troops,
+          stamina: {
+            amount: attackerStamina,
+            updated_tick: BigInt(currentArmiesTick),
           },
-          battle_cooldown_end: army?.troops.battle_cooldown_end || 0,
-        },
+        }),
       };
     }
-  }, [attackerEntityId, attackerType, selectedGuardSlot, structureGuards]);
+  }, [
+    ExplorerTroops,
+    attackerEntityId,
+    attackerStamina,
+    attackerType,
+    currentArmiesTick,
+    selectedGuardSlot,
+    structureGuards,
+  ]);
 
   const targetArmyData: { troops: Troops } | null = useMemo(() => {
     if (!target?.info[0]) return null;
 
     return {
-      troops: {
-        count: target.info[0].count || 0n,
-        category: target.info[0].category as TroopType,
-        tier: target.info[0].tier as TroopTier,
+      troops: buildProjectedTroopSnapshot({
+        troops: target.info[0],
         stamina: target.info[0].stamina,
-        boosts: target.info[0].boosts || {
-          incr_damage_dealt_percent_num: 0,
-          incr_damage_dealt_end_tick: 0,
-          decr_damage_gotten_percent_num: 0,
-          decr_damage_gotten_end_tick: 0,
-          incr_stamina_regen_percent_num: 0,
-          incr_stamina_regen_tick_count: 0,
-          incr_explore_reward_percent_num: 0,
-          incr_explore_reward_end_tick: 0,
-        },
-        battle_cooldown_end: target.info[0].battle_cooldown_end || 0,
-      },
+      }),
     };
   }, [target]);
 
@@ -421,7 +428,7 @@ export const CombatContainer = ({
   }, [attackerArmyData, target, accountName, account.address, targetArmyData, components]);
 
   const onAttack = async () => {
-    if (!selectedHex) return;
+    if (!selectedHex || isAttackerOnCooldown || attackStaminaState.isBlocked) return;
 
     let pendingFxKey: string | null = null;
     try {
@@ -442,10 +449,13 @@ export const CombatContainer = ({
       });
 
       if (attackerType === AttackerType.Structure) {
+        playUnitCommandSound("attack");
         await onGuardVsExplorerAttack();
       } else if (target?.targetType === TargetType.Army) {
+        playUnitCommandSound("attack");
         await onExplorerVsExplorerAttack();
       } else {
+        playUnitCommandSound("attack");
         await onExplorerVsGuardAttack();
       }
 
@@ -605,13 +615,23 @@ export const CombatContainer = ({
     return attackerArmyData.troops.battle_cooldown_end > currentTime;
   }, [attackerArmyData]);
 
+  const attackStaminaState = useMemo(
+    () =>
+      resolveAttackStaminaState({
+        attackerStamina,
+        hasAttackerTroops: Boolean(attackerArmyData),
+        hasDefenders: Boolean(targetArmyData),
+        requiredStamina: Number(combatConfig.stamina_attack_req),
+      }),
+    [attackerArmyData, attackerStamina, combatConfig, targetArmyData],
+  );
+
   const buttonMessage = useMemo(() => {
     if (isAttackerOnCooldown) return "On Battle Cooldown";
-    if (attackerStamina < combatConfig.stamina_attack_req)
-      return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
+    if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
     if (!attackerArmyData) return "No Troops Present";
-    return "Attack!";
-  }, [isAttackerOnCooldown, attackerStamina, attackerArmyData, combatConfig]);
+    return attackStaminaState.actionLabel;
+  }, [attackStaminaState, attackerArmyData, isAttackerOnCooldown]);
 
   const trueAttackDamage = useMemo(() => {
     if (!battleSimulation || !targetArmyData) return 0;
@@ -796,18 +816,18 @@ export const CombatContainer = ({
           variant="primary"
           className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-base sm:text-lg transition-colors w-full sm:w-auto min-w-[200px]"
           isLoading={loading}
-          disabled={attackerStamina < combatConfig.stamina_attack_req || !attackerArmyData || isAttackerOnCooldown}
+          disabled={attackStaminaState.isBlocked || !attackerArmyData || isAttackerOnCooldown}
           onClick={onAttack}
           aria-label={`Attack button: ${buttonMessage}`}
-          aria-describedby={attackerStamina < combatConfig.stamina_attack_req ? "stamina-warning" : undefined}
+          aria-describedby={attackStaminaState.isBlocked ? "stamina-warning" : undefined}
         >
           {buttonMessage}
         </Button>
 
         {/* Stamina Warning */}
-        {attackerStamina < combatConfig.stamina_attack_req && (
+        {attackStaminaState.isBlocked && (
           <div id="stamina-warning" className="text-sm text-red-400 text-center" role="alert">
-            Insufficient stamina: {Number(attackerStamina)} / {combatConfig.stamina_attack_req} required
+            {buildAttackStaminaWarning(attackStaminaState)}
           </div>
         )}
 

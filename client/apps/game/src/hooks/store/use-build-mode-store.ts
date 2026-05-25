@@ -9,7 +9,7 @@ export interface BuildModeStore {
     existingBuildings: { col: number; row: number; type: BuildingType; entity?: Entity; resource?: ResourcesIds }[],
   ) => void;
 }
-export const createBuildModeStoreSlice = (set: any) => ({
+export const createBuildModeStoreSlice = (set: (partial: Partial<BuildModeStore>) => void) => ({
   previewBuilding: null,
   setPreviewBuilding: (previewBuilding: { type: BuildingType | StructureType; resource?: ResourcesIds } | null) => {
     set({ previewBuilding });

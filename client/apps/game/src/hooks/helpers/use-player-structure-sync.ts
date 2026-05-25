@@ -8,7 +8,9 @@ import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { MemberClause } from "@dojoengine/sdk";
 import type { PatternMatching } from "@dojoengine/torii-client";
 import type { Clause } from "@dojoengine/torii-wasm/types";
+import { env } from "../../../env";
 import { useAccountStore } from "../store/use-account-store";
+import { useConnectionStore } from "../store/use-connection-store";
 import { selectUnsyncedOwnedStructureTargets } from "./player-structure-sync-utils";
 
 // Models synced per-player via a scoped subscription (see usePlayerStructureSync)
@@ -77,6 +79,7 @@ export const usePlayerStructureSync = () => {
   );
 
   const accountAddress = useAccountStore().account?.address;
+  const streamReconnectVersion = useConnectionStore((state) => state.streamReconnectVersion);
   const toriiComponents = contractComponents as unknown as Parameters<typeof getStructuresDataFromTorii>[1];
   const structureEntityIdsRef = useRef<ReadonlySet<number>>(new Set());
   const isBackfillRunning = useRef(false);
@@ -138,7 +141,7 @@ export const usePlayerStructureSync = () => {
         backfillOwnedStructuresRef.current = null;
       }
     };
-  }, [accountAddress, toriiClient, toriiComponents]);
+  }, [accountAddress, streamReconnectVersion, toriiClient, toriiComponents]);
 
   useEffect(() => {
     if (!accountAddress || !toriiClient) return;
@@ -171,7 +174,9 @@ export const usePlayerStructureSync = () => {
       ownerStructureSubscriptionRef.current = ownerSubscription;
     };
 
-    void subscribeToOwnedStructureUpdates();
+    void subscribeToOwnedStructureUpdates().catch((error) => {
+      console.error("[usePlayerStructureSync] Failed to subscribe to owned structure updates", error);
+    });
 
     return () => {
       cancelled = true;
@@ -180,7 +185,7 @@ export const usePlayerStructureSync = () => {
         ownerStructureSubscriptionRef.current = null;
       }
     };
-  }, [accountAddress, toriiClient]);
+  }, [accountAddress, streamReconnectVersion, toriiClient]);
 
   // Sync newly-seen structures into RECS (e.g. first settlement).
   useEffect(() => {
@@ -220,6 +225,8 @@ export const usePlayerStructureSync = () => {
   }, [playerStructures, toriiClient, toriiComponents]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const subscribe = async () => {
       // Cancel previous subscription
       if (subscriptionRef.current) {
@@ -257,16 +264,29 @@ export const usePlayerStructureSync = () => {
         },
       };
 
-      subscriptionRef.current = await syncEntitiesDebounced(toriiClient, setup, clause, false);
+      const subscription = await syncEntitiesDebounced(toriiClient, setup, clause, false, undefined, {
+        streamType: "player",
+        subscriptionSetupTimeoutMs: env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS,
+      });
+
+      if (cancelled) {
+        subscription.cancel();
+        return;
+      }
+
+      subscriptionRef.current = subscription;
     };
 
-    subscribe();
+    void subscribe().catch((error) => {
+      console.error("[usePlayerStructureSync] Failed to subscribe to player structure updates", error);
+    });
 
     return () => {
+      cancelled = true;
       if (subscriptionRef.current) {
         subscriptionRef.current.cancel();
         subscriptionRef.current = null;
       }
     };
-  }, [structureEntityIds, structurePositions, accountAddress, toriiClient, setup]);
+  }, [structureEntityIds, structurePositions, accountAddress, streamReconnectVersion, toriiClient, setup]);
 };

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { RpcProvider } from "starknet";
 import type { Chain } from "@contracts";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
+import { createContractEntrypointSupportResolver, parseUint256CallResult } from "./pass-inventory-rpc";
 
 export interface VillagePassInventoryItem {
   tokenId: bigint;
@@ -24,13 +25,6 @@ interface UseVillagePassInventoryReturn {
   refetch: () => void;
 }
 
-const parseUint256 = (result: string[] | undefined): bigint => {
-  if (!result || result.length < 2) return 0n;
-  const low = BigInt(result[0] ?? 0);
-  const high = BigInt(result[1] ?? 0);
-  return low + (high << 128n);
-};
-
 export const useVillagePassInventory = ({
   chain,
   ownerAddress,
@@ -52,6 +46,7 @@ export const useVillagePassInventory = ({
   }, [chain, rpcUrl]);
 
   const provider = useMemo(() => new RpcProvider({ nodeUrl: resolvedRpcUrl }), [resolvedRpcUrl]);
+  const supportsEntrypoint = useMemo(() => createContractEntrypointSupportResolver(provider), [provider]);
 
   const refetch = useCallback(() => {
     setRefreshTick((prev) => prev + 1);
@@ -90,7 +85,7 @@ export const useVillagePassInventory = ({
           entrypoint: "balance_of",
           calldata: [ownerAddress],
         });
-        const balance = parseUint256(balanceResult as string[]);
+        const balance = parseUint256CallResult(balanceResult as string[]);
         if (!cancelled) {
           setVillagePassBalance(balance);
         }
@@ -98,6 +93,15 @@ export const useVillagePassInventory = ({
         if (balance === 0n) {
           if (!cancelled) {
             setVillagePasses([]);
+          }
+          return;
+        }
+
+        const canEnumerateVillagePasses = await supportsEntrypoint(villagePassAddress, "token_of_owner_by_index");
+        if (!canEnumerateVillagePasses) {
+          if (!cancelled) {
+            setVillagePasses([]);
+            setError("Village pass detected, but this contract does not expose token enumeration.");
           }
           return;
         }
@@ -110,7 +114,7 @@ export const useVillagePassInventory = ({
             entrypoint: "token_of_owner_by_index",
             calldata: [ownerAddress, index.toString(), "0"],
           });
-          const tokenId = parseUint256(tokenResult as string[]);
+          const tokenId = parseUint256CallResult(tokenResult as string[]);
           items.push({ tokenId });
         }
 
@@ -144,7 +148,7 @@ export const useVillagePassInventory = ({
     return () => {
       cancelled = true;
     };
-  }, [enabled, ownerAddress, provider, refreshTick, villagePassAddress]);
+  }, [enabled, ownerAddress, provider, refreshTick, supportsEntrypoint, villagePassAddress]);
 
   return {
     villagePassBalance,

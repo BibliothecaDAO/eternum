@@ -1,5 +1,14 @@
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
+import {
+  isStaminaRecharging,
+  STAMINA_RECHARGING_FILL_CLASS,
+  STAMINA_RECHARGING_TEXT_CLASS,
+  STAMINA_RECHARGING_TRACK_CLASS,
+} from "@/ui/shared/lib/stamina-visuals";
+import { resolveStaminaDisplay } from "@/ui/shared/lib/stamina-display";
+import type { IncomingTroopArrival } from "@bibliothecadao/eternum";
 import { BANDITS_NAME, BuildingType, ResourcesIds, TroopTier } from "@bibliothecadao/types";
-import { CameraView } from "../../scenes/hexagon-scene";
+import { CameraView } from "../../scenes/camera-view";
 import { resolveOwnerDisplayName } from "./owner-display-name";
 import { resolveCameraView } from "./label-view";
 
@@ -69,15 +78,6 @@ const getTierStyle = (tier: number): string => {
     default:
       return "bg-gradient-to-b from-gold/30 to-gold/10 border-gold/40 text-gold shadow-gold/10";
   }
-};
-
-/**
- * Troop tier to stars mapping
- */
-const TIERS_TO_STARS: Record<TroopTier, string> = {
-  [TroopTier.T1]: "⭐",
-  [TroopTier.T2]: "⭐⭐",
-  [TroopTier.T3]: "⭐⭐⭐",
 };
 
 const formatCompactNumber = (value?: number | null): string => {
@@ -293,6 +293,11 @@ export const createOwnerDisplayElement = (options: OwnerDisplayOptions): HTMLEle
  */
 export const createStaminaBar = (currentStamina: number, maxStamina: number, inputView: CameraView): HTMLElement => {
   const cameraView = resolveCameraView(inputView);
+  const recharging = isStaminaRecharging(currentStamina, maxStamina);
+  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
+    current: currentStamina,
+    max: maxStamina,
+  });
   const container = document.createElement("div");
   container.setAttribute("data-component", "stamina-bar");
 
@@ -302,11 +307,17 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
     const icon = document.createElement("span");
     icon.textContent = "⚡";
     icon.classList.add("text-yellow-400");
+    if (recharging) {
+      icon.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
+    }
     container.appendChild(icon);
 
     const percent = document.createElement("span");
-    percent.textContent = formatStaminaPercent(currentStamina, maxStamina);
+    percent.textContent = formatStaminaPercent(displayedCurrent, maxStamina);
     percent.classList.add("font-semibold", "tracking-tight");
+    if (recharging) {
+      percent.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
+    }
     percent.style.color = SOFT_LABEL_COLOR;
     percent.setAttribute("data-role", "stamina-percent");
     container.appendChild(percent);
@@ -335,8 +346,12 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
   progressBar.style.overflow = "hidden";
   progressBar.style.border = "1px solid rgba(255, 255, 255, 0.2)";
   progressBar.setAttribute("data-role", "progress-container");
+  if (recharging) {
+    progressBar.classList.add(STAMINA_RECHARGING_TRACK_CLASS);
+  }
 
   const progressFill = document.createElement("div");
+  const projectedFill = document.createElement("div");
   progressFill.style.position = "absolute";
   progressFill.style.top = "0";
   progressFill.style.left = "0";
@@ -344,27 +359,45 @@ export const createStaminaBar = (currentStamina: number, maxStamina: number, inp
   progressFill.style.borderRadius = "9999px";
   progressFill.style.transition = "width 0.3s ease-in-out";
   progressFill.setAttribute("data-role", "progress-fill");
+  progressFill.style.opacity = "0.4";
+  progressFill.style.width = `${committedPercentage}%`;
 
-  const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
-  progressFill.style.width = `${percentage}%`;
+  projectedFill.style.position = "absolute";
+  projectedFill.style.top = "0";
+  projectedFill.style.left = "0";
+  projectedFill.style.height = "100%";
+  projectedFill.style.borderRadius = "9999px";
+  projectedFill.style.transition = "width 1s linear";
+  projectedFill.setAttribute("data-role", "projected-progress-fill");
+  if (recharging) {
+    projectedFill.classList.add(STAMINA_RECHARGING_FILL_CLASS);
+  }
+  projectedFill.style.width = `${displayPercentage}%`;
 
-  if (percentage > 66) {
+  if (committedPercentage > 66) {
     progressFill.style.backgroundColor = "#10b981";
-  } else if (percentage > 33) {
+    projectedFill.style.backgroundColor = "#34d399";
+  } else if (committedPercentage > 33) {
     progressFill.style.backgroundColor = "#f59e0b";
+    projectedFill.style.backgroundColor = "#fbbf24";
   } else {
     progressFill.style.backgroundColor = "#ef4444";
+    projectedFill.style.backgroundColor = "#fb7185";
   }
 
   progressBar.appendChild(progressFill);
+  progressBar.appendChild(projectedFill);
   container.appendChild(progressBar);
 
   const text = document.createElement("span");
-  text.textContent = `${currentStamina}/${maxStamina}`;
+  text.textContent = `${displayedCurrent}/${maxStamina}`;
   text.style.color = "#ffffff";
   text.style.fontFamily = "monospace";
   text.style.fontSize = "10px";
   text.style.fontWeight = "500";
+  if (recharging) {
+    text.classList.add(STAMINA_RECHARGING_TEXT_CLASS);
+  }
   text.setAttribute("data-role", "stamina-text");
   container.appendChild(text);
 
@@ -471,6 +504,7 @@ export const createGuardArmyDisplay = (
       }
 
       const troopDisplay = createTroopCountDisplay(guard.count, guard.category ?? "", guard.tier, cameraView);
+      troopDisplay.appendChild(createGuardStaminaDisplay(guard.stamina));
       container.appendChild(troopDisplay);
     });
 
@@ -548,12 +582,21 @@ export const createGuardArmyDisplay = (
     tierBadge.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border");
     tierBadge.classList.add(...getTierStyle(guard.tier).split(" "));
     guardDiv.appendChild(tierBadge);
+    guardDiv.appendChild(createGuardStaminaDisplay(guard.stamina));
 
     container.appendChild(guardDiv);
   });
 
   return container;
 };
+
+function createGuardStaminaDisplay(stamina: number): HTMLElement {
+  const staminaDisplay = document.createElement("span");
+  staminaDisplay.classList.add("font-mono", "text-[10px]", "text-yellow-200");
+  staminaDisplay.setAttribute("data-role", "guard-stamina");
+  staminaDisplay.textContent = `STA ${formatCompactNumber(stamina)}`;
+  return staminaDisplay;
+}
 
 /**
  * Create production display
@@ -683,34 +726,188 @@ export const createContentContainer = (inputView: CameraView): HTMLElement & { w
   return result;
 };
 
+const resolveTroopTierValue = (troopTier: TroopTier): number => {
+  return Number.parseInt(troopTier.replace("T", ""), 10) || 1;
+};
+
+const createIncomingTroopIcon = (resourceId: ResourcesIds): HTMLElement => {
+  const iconContainer = document.createElement("div");
+  iconContainer.classList.add("w-5", "h-5", "flex-shrink-0", "flex", "items-center", "justify-center");
+
+  const img = document.createElement("img");
+  img.src = `/images/resources/${resourceId}.png`;
+  img.classList.add("w-full", "h-full", "object-contain");
+  img.setAttribute("data-role", "incoming-troop-icon");
+  iconContainer.appendChild(img);
+
+  return iconContainer;
+};
+
+const createIncomingTroopCount = (count: number): HTMLElement => {
+  const countSpan = document.createElement("span");
+  countSpan.classList.add("font-semibold", "text-white");
+  countSpan.setAttribute("data-role", "incoming-troop-count");
+  countSpan.textContent = formatCompactNumber(count);
+  return countSpan;
+};
+
+const createIncomingTroopTierIndicator = (troopTier: TroopTier): HTMLElement => {
+  const tierValue = resolveTroopTierValue(troopTier);
+  const tierIndicator = document.createElement("span");
+  tierIndicator.classList.add("px-1", "py-0.5", "rounded", "text-[10px]", "font-bold", "border", "leading-none");
+  tierIndicator.classList.add(...getTierStyle(tierValue).split(" "));
+  tierIndicator.setAttribute("data-role", "incoming-troop-tier");
+  tierIndicator.textContent = `T${tierValue}`;
+  return tierIndicator;
+};
+
+const createIncomingTroopEta = (arrivesAt: bigint, nowSeconds: number): HTMLElement => {
+  const etaContainer = document.createElement("span");
+  etaContainer.classList.add("flex", "items-center", "gap-1", "text-gold/70");
+  etaContainer.setAttribute("data-role", "incoming-troop-eta");
+
+  const etaIcon = document.createElement("span");
+  etaIcon.textContent = "⏳";
+  etaContainer.appendChild(etaIcon);
+
+  const etaValue = document.createElement("span");
+  etaValue.textContent = formatTime(Math.max(0, Number(arrivesAt) - nowSeconds));
+  etaContainer.appendChild(etaValue);
+
+  return etaContainer;
+};
+
+const createIncomingTroopRow = (arrival: IncomingTroopArrival, nowSeconds: number): HTMLElement => {
+  const row = document.createElement("div");
+  row.classList.add("flex", "items-center", "gap-1.5", "w-fit", "rounded", "bg-black/35", "px-2", "py-0.5");
+  row.setAttribute("data-role", "incoming-troop-row");
+
+  row.appendChild(createIncomingTroopIcon(arrival.resourceId));
+  row.appendChild(createIncomingTroopCount(arrival.count));
+  row.appendChild(createIncomingTroopTierIndicator(arrival.troopTier));
+  row.appendChild(createIncomingTroopEta(arrival.arrivesAt, nowSeconds));
+
+  return row;
+};
+
+const createIncomingTroopList = (arrivals: IncomingTroopArrival[]): HTMLElement => {
+  const container = document.createElement("div");
+  container.setAttribute("data-component", "incoming-troops-list");
+  container.classList.add("flex", "flex-col", "gap-1");
+
+  const nowSeconds = useChainTimeStore.getState().getNowSeconds();
+  const visibleArrivals = arrivals.slice(0, 3);
+
+  visibleArrivals.forEach((arrival) => {
+    container.appendChild(createIncomingTroopRow(arrival, nowSeconds));
+  });
+
+  if (arrivals.length > visibleArrivals.length) {
+    const overflow = document.createElement("div");
+    overflow.setAttribute("data-role", "incoming-troops-overflow");
+    overflow.classList.add("text-[10px]", "font-medium", "text-gold/70");
+    overflow.textContent = `+${arrivals.length - visibleArrivals.length} more`;
+    container.appendChild(overflow);
+  }
+
+  return container;
+};
+
+export const updateIncomingTroopDisplay = (
+  contentContainer: HTMLElement,
+  arrivals: IncomingTroopArrival[] | undefined,
+): void => {
+  const existingContainer = contentContainer.querySelector('[data-component="incoming-troops"]') as HTMLElement | null;
+  const hasArrivals = Array.isArray(arrivals) && arrivals.length > 0;
+
+  if (!hasArrivals) {
+    existingContainer?.remove();
+    return;
+  }
+
+  if (!existingContainer) {
+    const container = document.createElement("div");
+    container.setAttribute("data-component", "incoming-troops");
+    container.classList.add("flex", "flex-col", "gap-1");
+    container.appendChild(createIncomingTroopList(arrivals));
+    const productionsDisplay = contentContainer.querySelector('[data-component="productions"]');
+    if (productionsDisplay) {
+      contentContainer.insertBefore(container, productionsDisplay);
+    } else {
+      contentContainer.appendChild(container);
+    }
+    return;
+  }
+
+  const existingList = existingContainer.querySelector('[data-component="incoming-troops-list"]');
+  const nextList = createIncomingTroopList(arrivals);
+  if (existingList) {
+    existingList.replaceWith(nextList);
+  } else {
+    existingContainer.appendChild(nextList);
+  }
+};
+
 /**
  * Update an existing stamina bar with new values
  */
 export const updateStaminaBar = (staminaBarElement: HTMLElement, currentStamina: number, maxStamina: number): void => {
   const percentElement = staminaBarElement.querySelector("[data-role='stamina-percent']") as HTMLElement | null;
+  const progressContainer = staminaBarElement.querySelector("[data-role='progress-container']") as HTMLElement | null;
   const progressFill = staminaBarElement.querySelector("[data-role='progress-fill']") as HTMLElement;
+  const projectedFill = staminaBarElement.querySelector("[data-role='projected-progress-fill']") as HTMLElement | null;
   const textElement = staminaBarElement.querySelector("[data-role='stamina-text']") as HTMLElement;
+  const recharging = isStaminaRecharging(currentStamina, maxStamina);
+  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
+    current: currentStamina,
+    max: maxStamina,
+  });
 
   if (percentElement) {
-    percentElement.textContent = formatStaminaPercent(currentStamina, maxStamina);
+    percentElement.textContent = formatStaminaPercent(displayedCurrent, maxStamina);
+    percentElement.classList.toggle(STAMINA_RECHARGING_TEXT_CLASS, recharging);
   }
 
   if (textElement) {
-    textElement.textContent = `${currentStamina}/${maxStamina}`;
+    textElement.textContent = `${displayedCurrent}/${maxStamina}`;
+    textElement.classList.toggle(STAMINA_RECHARGING_TEXT_CLASS, recharging);
+  }
+
+  const iconElement = staminaBarElement.firstElementChild as HTMLElement | null;
+  if (iconElement) {
+    iconElement.classList.toggle(STAMINA_RECHARGING_TEXT_CLASS, recharging);
   }
 
   if (progressFill) {
-    const percentage = Math.max(0, Math.min(100, (currentStamina / maxStamina) * 100));
-    progressFill.style.width = `${percentage}%`;
+    progressFill.style.width = `${committedPercentage}%`;
+    progressFill.classList.toggle(STAMINA_RECHARGING_FILL_CLASS, recharging);
 
     // Color based on stamina level
-    if (percentage > 66) {
+    if (committedPercentage > 66) {
       progressFill.style.backgroundColor = "#10b981"; // green-500
-    } else if (percentage > 33) {
+      if (projectedFill) {
+        projectedFill.style.backgroundColor = "#34d399";
+      }
+    } else if (committedPercentage > 33) {
       progressFill.style.backgroundColor = "#f59e0b"; // amber-500
+      if (projectedFill) {
+        projectedFill.style.backgroundColor = "#fbbf24";
+      }
     } else {
       progressFill.style.backgroundColor = "#ef4444"; // red-500
+      if (projectedFill) {
+        projectedFill.style.backgroundColor = "#fb7185";
+      }
     }
+
+    if (projectedFill) {
+      projectedFill.style.width = `${displayPercentage}%`;
+      projectedFill.classList.toggle(STAMINA_RECHARGING_FILL_CLASS, recharging);
+    }
+  }
+
+  if (progressContainer) {
+    progressContainer.classList.toggle(STAMINA_RECHARGING_TRACK_CLASS, recharging);
   }
 };
 

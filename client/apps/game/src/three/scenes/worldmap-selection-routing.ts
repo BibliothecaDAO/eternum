@@ -10,7 +10,6 @@ interface ChestSummary {
 }
 
 interface ResolveWorldmapHexClickPlanInput {
-  hasBlockingOverlay: boolean;
   hexCoords: HexPosition | null;
   accountAddress?: bigint;
   army?: OwnedEntitySummary;
@@ -27,14 +26,13 @@ type WorldmapHexClickPlan =
     };
 
 export function resolveWorldmapHexClickPlan({
-  hasBlockingOverlay,
   hexCoords,
   accountAddress,
   army,
   structure,
   chest,
 }: ResolveWorldmapHexClickPlanInput): WorldmapHexClickPlan {
-  if (hasBlockingOverlay || !hexCoords) {
+  if (!hexCoords) {
     return { kind: "ignore" };
   }
 

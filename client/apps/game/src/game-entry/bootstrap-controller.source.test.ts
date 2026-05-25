@@ -1,0 +1,34 @@
+// @vitest-environment node
+
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { describe, expect, it } from "vitest";
+
+const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
+
+describe("game entry bootstrap controller source", () => {
+  it("marks entry ready before refreshing session policies", () => {
+    const source = readSource("src/game-entry/bootstrap-controller.ts");
+
+    const entryReadyIndex = source.indexOf('markGameEntryMilestone("entry-ready")');
+    const backgroundRefreshIndex = source.lastIndexOf("refreshSessionPoliciesAfterEntryReady(runId);");
+
+    expect(entryReadyIndex).toBeGreaterThanOrEqual(0);
+    expect(backgroundRefreshIndex).toBeGreaterThanOrEqual(0);
+    expect(entryReadyIndex).toBeLessThan(backgroundRefreshIndex);
+    expect(source).not.toContain("await refreshSessionPolicies(connector)");
+  });
+
+  it("records structured route rebootstrap success and failure breadcrumbs", () => {
+    const source = readSource("src/game-entry/bootstrap-controller.ts");
+
+    const forceFreshSuccessIndex = source.indexOf('event: "reconnect_success"');
+    const forceFreshFailureIndex = source.indexOf('event: "reconnect_failure"');
+
+    expect(source).toContain("addNetworkBreadcrumb");
+    expect(forceFreshSuccessIndex).toBeGreaterThanOrEqual(0);
+    expect(forceFreshFailureIndex).toBeGreaterThanOrEqual(0);
+    expect(forceFreshSuccessIndex).toBeLessThan(forceFreshFailureIndex);
+  });
+});

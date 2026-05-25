@@ -1,4 +1,3 @@
-import type { ActionPath } from "@bibliothecadao/eternum";
 import {
   ActionPaths,
   ActionType,
@@ -25,6 +24,12 @@ import {
   useExplorationAutomationStore,
 } from "@/hooks/store/use-exploration-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import {
+  computeEffectiveStaminaCost,
+  filterFreshExplorationPaths,
+  selectDueEntries,
+  shouldRepeatExplore,
+} from "./exploration-automation-planner";
 
 const isExplorerOwnedByAccount = (
   components: any,
@@ -45,9 +50,6 @@ const isExplorerOwnedByAccount = (
 
 const REPEAT_EXPLORE_DELAY_MS = 3_000;
 const FAST_CACHE_TTL_MS = 15_000;
-
-const getPathStaminaCost = (path: { staminaCost?: number }[]): number =>
-  path.reduce((total, step) => total + (step.staminaCost ?? 0), 0);
 
 type SnapshotCache = {
   snapshot: ExplorationMapSnapshot;
@@ -74,12 +76,6 @@ export const useExplorationAutomationRunner = () => {
   const processRef = useRef<() => Promise<void>>(async () => {});
   const timeoutIdRef = useRef<number | null>(null);
   const snapshotCacheRef = useRef<Map<string, SnapshotCache>>(new Map());
-
-  const normalizeNextRunAt = useCallback((value: unknown): number | null => {
-    if (value === null || value === undefined) return null;
-    const numeric = typeof value === "number" ? value : Number(value);
-    return Number.isFinite(numeric) ? numeric : null;
-  }, []);
 
   const activeEntries = useMemo(() => Object.values(entries).filter((e) => e.active), [entries]);
   const activeEntriesRef = useRef(activeEntries);
@@ -195,11 +191,7 @@ export const useExplorationAutomationRunner = () => {
 
       // Use wall clock time for scheduling (matches store and UI expectations)
       const nowMs = Date.now();
-      const due = activeEntriesRef.current.filter((entry) => {
-        const nextRunAt = normalizeNextRunAt(entry.nextRunAt);
-        if (nextRunAt === null) return true;
-        return nextRunAt <= nowMs;
-      });
+      const due = selectDueEntries(activeEntriesRef.current, nowMs);
 
       if (!due.length) {
         scheduleNextCheck();
@@ -283,14 +275,9 @@ export const useExplorationAutomationRunner = () => {
             let actionPathMap = actionPaths.getPaths();
 
             if (useFastCache && cached) {
-              const filtered = new Map<string, ActionPath[]>();
-              actionPathMap.forEach((path, key) => {
-                if (ActionPaths.getActionType(path) !== ActionType.Explore) return;
-                const endHex = path[path.length - 1]?.hex;
-                if (!endHex) return;
-                const normalized = new Position({ x: endHex.col, y: endHex.row }).getNormalized();
-                if (cached.recentlyExplored.has(`${normalized.x},${normalized.y}`)) return;
-                filtered.set(key, path);
+              const filtered = filterFreshExplorationPaths(actionPathMap, cached.recentlyExplored, (hex) => {
+                const normalized = new Position({ x: hex.col, y: hex.row }).getNormalized();
+                return { x: normalized.x, y: normalized.y };
               });
 
               if (filtered.size === 0) {
@@ -349,11 +336,9 @@ export const useExplorationAutomationRunner = () => {
               currentArmiesTick,
             );
 
-            const pathStaminaCost = getPathStaminaCost(selection.path);
-            const effectiveCost =
-              pathStaminaCost > 0 || actionType !== ActionType.Explore ? pathStaminaCost : exploreStaminaCost;
+            const effectiveCost = computeEffectiveStaminaCost(selection.path, actionType, exploreStaminaCost);
             const remainingStamina = Math.max(0, Number(currentStamina.amount) - effectiveCost);
-            const shouldRepeat = actionType === ActionType.Explore && remainingStamina >= exploreStaminaCost;
+            const shouldRepeat = shouldRepeatExplore(actionType, remainingStamina, exploreStaminaCost);
             const repeatAt = nowMs + REPEAT_EXPLORE_DELAY_MS;
 
             if (shouldRepeat) {
@@ -400,7 +385,6 @@ export const useExplorationAutomationRunner = () => {
     isSeasonOver,
     network?.contractComponents,
     network?.toriiClient,
-    normalizeNextRunAt,
     scheduleNext,
     scheduleNextCheck,
     stopAutomation,

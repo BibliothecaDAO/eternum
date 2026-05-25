@@ -25,11 +25,18 @@ import { env } from "../../../env";
 import {
   ANIMATION_STATE_IDLE,
   ANIMATION_STATE_MOVING,
+  buildArmyModelAssetPath,
   MAX_INSTANCES,
-  MODEL_TYPE_TO_FILE,
   TROOP_TO_MODEL,
 } from "../constants";
-import { AnimatedInstancedMesh, ArmyInstanceData, ModelData, ModelType, MovementData } from "../types/army";
+import {
+  AnimatedInstancedMesh,
+  ArmyInstanceData,
+  ModelData,
+  ModelType,
+  MovementData,
+  SplineMovementData,
+} from "../types/army";
 import type { AnimationVisibilityContext } from "../types/animation";
 import { getHexForWorldPosition } from "../utils";
 import { applyEasing, EasingType } from "../utils/easing";
@@ -45,8 +52,21 @@ import {
   resolveRotationUpdate,
   shouldSwitchModelForPosition,
 } from "./army-model-behavior-policy";
+import {
+  buildMovementSpline,
+  resolveSplinePosition,
+  resolveSplineTangent,
+  resolveJourneyProgressUpdate,
+  resolveAnticipationScale,
+  resolveSettlementOffset,
+  resolvePathBankAngle,
+  resolveTerrainSpeedMultiplier,
+  resolveRhythmicBob,
+  resolveArrivalSlamScale,
+} from "../utils/spline-path";
 import { installArmyModelDebugHooks } from "./army-model-debug-hooks";
 import { resolveRenderableBaseModel } from "./army-model-render-policy";
+import { findAnimationByName } from "./animation-clip-matcher";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const CONTACT_SHADOW_Y_OFFSET = 0.02;
@@ -99,12 +119,13 @@ export class ArmyModel {
   private bucketIndicesMaxCount = 0;
   private readonly freeSlots: number[] = [];
   private readonly freeSlotSet: Set<number> = new Set();
+  private readonly hiddenSlots: Set<number> = new Set();
   private nextInstanceIndex = 0;
   private hasPendingBounds = false;
 
   // Configuration constants
   private readonly SCALE_TRANSITION_SPEED = 5.0;
-  private readonly MOVEMENT_SPEED = 1.25;
+  private readonly MOVEMENT_SPEED = 3.75;
   private readonly FLOAT_HEIGHT = 0.5;
   private readonly FLOAT_TRANSITION_SPEED = 3.0;
   private readonly ROTATION_SPEED = 5.0;
@@ -115,6 +136,10 @@ export class ArmyModel {
   private readonly zeroInstanceMatrix = new Matrix4().makeScale(0, 0, 0);
   private readonly MODEL_ANIMATION_UPDATE_INTERVAL = 1000 / 20; // 20 FPS per model
   private readonly INITIAL_INSTANCE_CAPACITY = 64;
+
+  // Spline-based movement
+  private readonly USE_SPLINE_MOVEMENT = true;
+  private readonly splineMovingInstances: Map<number, SplineMovementData> = new Map();
 
   // agent
   private isAgent: boolean = false;
@@ -177,14 +202,11 @@ export class ArmyModel {
       return pending;
     }
 
-    const fileName = MODEL_TYPE_TO_FILE[modelType];
-    if (!fileName) {
-      throw new Error(`Missing model file for ${modelType}`);
-    }
+    const assetPath = buildArmyModelAssetPath(modelType);
 
     pending = new Promise<ModelData>((resolve, reject) => {
       gltfLoader.load(
-        `models/${fileName}`,
+        assetPath,
         (gltf) => {
           try {
             const modelData = this.createModelData(gltf);
@@ -306,6 +328,7 @@ export class ArmyModel {
 
   private createModelData(gltf: any): ModelData {
     const group = new Group();
+    const sourceScene = this.createRenderableSourceScene(gltf.scene);
     const instancedMeshes: AnimatedInstancedMesh[] = [];
     const baseMeshes: Mesh[] = [];
 
@@ -327,8 +350,16 @@ export class ArmyModel {
 
     const mixer = new AnimationMixer(gltf.scene);
 
+    // Name-based animation lookup with fallbacks
+    const idleClip = findAnimationByName(gltf.animations, ["idle", "stand", "rest"]) ?? gltf.animations[0];
+    const runClip =
+      findAnimationByName(gltf.animations, ["run", "walk", "moving"]) ?? gltf.animations[1] ?? idleClip?.clone();
+    const attackClip = findAnimationByName(gltf.animations, ["attack", "strike", "combat"]);
+    const deathClip = findAnimationByName(gltf.animations, ["death", "die", "dead", "defeat"]);
+
     return {
       group,
+      sourceScene,
       instancedMeshes,
       contactShadowMesh,
       contactShadowScale,
@@ -345,6 +376,26 @@ export class ArmyModel {
       lastAnimationUpdate: 0,
       animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
     };
+  }
+
+  private createRenderableSourceScene(scene: Object3D): Object3D {
+    const template = new Group();
+    scene.updateMatrixWorld(true);
+    this.dummyMatrix.copy(scene.matrixWorld).invert();
+
+    scene.traverse((child: Object3D) => {
+      if (!(child instanceof Mesh)) {
+        return;
+      }
+
+      const clone = child.clone();
+      clone.raycast = () => {};
+      this.contactShadowMatrix.copy(this.dummyMatrix).multiply(child.matrixWorld);
+      this.contactShadowMatrix.decompose(clone.position, clone.quaternion, clone.scale);
+      template.add(clone);
+    });
+
+    return template;
   }
 
   private computeContactShadowScale(gltf: any): number {
@@ -482,43 +533,80 @@ export class ArmyModel {
   }
 
   private clearInstanceSlot(matrixIndex: number): void {
-    // O(1) slot clearing: only clear the specific model(s) that own this slot
     const entityId = this.matrixIndexOwners.get(matrixIndex);
 
     if (entityId !== undefined) {
-      // Clear from the active base model (if any)
-      const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
-      if (activeBaseModel) {
-        const modelData = this.models.get(activeBaseModel);
-        if (modelData) {
-          modelData.activeInstances.delete(matrixIndex);
-          this.clearModelSlot(modelData, matrixIndex);
-        }
-      }
-
-      // Clear from the active cosmetic model (if any)
-      const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
-      if (activeCosmetic) {
-        const cosmeticData = this.cosmeticModels.get(activeCosmetic);
-        if (cosmeticData) {
-          cosmeticData.activeInstances.delete(matrixIndex);
-          this.clearModelSlot(cosmeticData, matrixIndex);
-        }
-      }
+      this.clearKnownOwnerSlot(entityId, matrixIndex);
     } else {
-      // Fallback: if we don't know the owner, clear all models (legacy behavior)
-      // This should rarely happen in practice
-      this.models.forEach((modelData) => {
-        modelData.activeInstances.delete(matrixIndex);
-        this.clearModelSlot(modelData, matrixIndex);
-      });
-      this.cosmeticModels.forEach((modelData) => {
-        modelData.activeInstances.delete(matrixIndex);
-        this.clearModelSlot(modelData, matrixIndex);
-      });
+      this.clearSlotFromEveryRenderable(matrixIndex);
     }
 
     this.setAnimationState(matrixIndex, false);
+  }
+
+  private clearKnownOwnerSlot(entityId: number, matrixIndex: number): void {
+    this.clearActiveBaseModelSlot(entityId, matrixIndex);
+    this.clearActiveCosmeticModelSlot(entityId, matrixIndex);
+    this.clearStaleRenderableSlotMemberships(matrixIndex);
+  }
+
+  private clearActiveBaseModelSlot(entityId: number, matrixIndex: number): void {
+    const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
+    if (!activeBaseModel) {
+      return;
+    }
+
+    const modelData = this.models.get(activeBaseModel);
+    if (!modelData) {
+      return;
+    }
+
+    modelData.activeInstances.delete(matrixIndex);
+    this.clearModelSlot(modelData, matrixIndex);
+  }
+
+  private clearActiveCosmeticModelSlot(entityId: number, matrixIndex: number): void {
+    const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
+    if (!activeCosmetic) {
+      return;
+    }
+
+    const cosmeticData = this.cosmeticModels.get(activeCosmetic);
+    if (!cosmeticData) {
+      return;
+    }
+
+    cosmeticData.activeInstances.delete(matrixIndex);
+    this.clearModelSlot(cosmeticData, matrixIndex);
+  }
+
+  private clearStaleRenderableSlotMemberships(matrixIndex: number): void {
+    this.models.forEach((modelData) => {
+      this.clearModelSlotIfActive(modelData, matrixIndex);
+    });
+    this.cosmeticModels.forEach((modelData) => {
+      this.clearModelSlotIfActive(modelData, matrixIndex);
+    });
+  }
+
+  private clearSlotFromEveryRenderable(matrixIndex: number): void {
+    this.models.forEach((modelData) => {
+      modelData.activeInstances.delete(matrixIndex);
+      this.clearModelSlot(modelData, matrixIndex);
+    });
+    this.cosmeticModels.forEach((modelData) => {
+      modelData.activeInstances.delete(matrixIndex);
+      this.clearModelSlot(modelData, matrixIndex);
+    });
+  }
+
+  private clearModelSlotIfActive(modelData: ModelData, matrixIndex: number): void {
+    if (!modelData.activeInstances.has(matrixIndex)) {
+      return;
+    }
+
+    modelData.activeInstances.delete(matrixIndex);
+    this.clearModelSlot(modelData, matrixIndex);
   }
 
   /**
@@ -551,6 +639,16 @@ export class ArmyModel {
     } catch (error) {
       console.error("Failed to preload army models", error);
     }
+  }
+
+  public async getModelSourceScene(modelType: ModelType): Promise<Object3D> {
+    const modelData = await this.ensureModel(modelType);
+    return modelData.sourceScene;
+  }
+
+  public async getCosmeticModelSourceScene(skin: ResolvedCosmeticSkin): Promise<Object3D> {
+    const modelData = await this.ensureCosmeticModel(skin);
+    return modelData.sourceScene;
   }
 
   public assignModelToEntity(entityId: number, modelType: ModelType): void {
@@ -656,6 +754,7 @@ export class ArmyModel {
 
     this.clearMovementState(entityId);
     this.clearInstanceSlot(resolvedSlot);
+    this.hiddenSlots.delete(resolvedSlot);
     this.matrixIndexOwners.delete(resolvedSlot);
 
     if (this.freeSlotSet.has(resolvedSlot)) return;
@@ -685,6 +784,10 @@ export class ArmyModel {
     }
 
     this.takeFreedSlot(newSlot);
+    const wasHidden = this.hiddenSlots.delete(previousSlot);
+    if (wasHidden) {
+      this.hiddenSlots.add(newSlot);
+    }
     const wasWalking = this.animationStates[previousSlot] === ANIMATION_STATE_MOVING;
     this.updateInstance(
       entityId,
@@ -738,6 +841,10 @@ export class ArmyModel {
     this.matrixIndexOwners.set(index, entityId);
 
     const state = this.storeInstanceState(entityId, index, position, scale, rotation, color);
+    if (this.hiddenSlots.has(index)) {
+      this.writeHiddenSlotMatrices(entityId, index);
+      return;
+    }
 
     const desiredModelType = this.entityModelMap.get(entityId) ?? null;
     const desiredCosmeticId = this.entityCosmeticMap.get(entityId);
@@ -855,6 +962,44 @@ export class ArmyModel {
 
     state.matrixIndex = matrixIndex;
     return state;
+  }
+
+  private writeHiddenSlotMatrices(entityId: number, matrixIndex: number): void {
+    const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
+    if (activeBaseModel) {
+      const modelData = this.models.get(activeBaseModel);
+      if (modelData) {
+        this.ensureModelCapacity(modelData, matrixIndex + 1);
+        modelData.instancedMeshes.forEach((mesh) => {
+          mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+          mesh.instanceMatrix.needsUpdate = true;
+        });
+        if (modelData.contactShadowMesh) {
+          modelData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+          modelData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+        }
+      }
+    }
+
+    const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
+    if (!activeCosmetic) {
+      return;
+    }
+
+    const cosmeticData = this.cosmeticModels.get(activeCosmetic);
+    if (!cosmeticData) {
+      return;
+    }
+
+    this.ensureModelCapacity(cosmeticData, matrixIndex + 1);
+    cosmeticData.instancedMeshes.forEach((mesh) => {
+      mesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+      mesh.instanceMatrix.needsUpdate = true;
+    });
+    if (cosmeticData.contactShadowMesh) {
+      cosmeticData.contactShadowMesh.setMatrixAt(matrixIndex, this.zeroInstanceMatrix);
+      cosmeticData.contactShadowMesh.instanceMatrix.needsUpdate = true;
+    }
   }
 
   private updateInstanceTransform(position: Vector3, scale: Vector3, rotation?: Euler): void {
@@ -1272,6 +1417,39 @@ export class ArmyModel {
     this.initializeMovement(entityId, currentPos, nextPos, path, matrixIndex, category, tier);
     this.setAnimationState(matrixIndex, true);
     this.updateInstanceDirection(entityId, currentPos, nextPos);
+
+    // Build spline for smooth whole-path movement
+    if (this.USE_SPLINE_MOVEMENT && path.length >= 2) {
+      const spline = buildMovementSpline(path);
+      const totalLength = spline.getLength();
+
+      // Get current rotation from the movement data we just created
+      const movement = this.movingInstances.get(entityId);
+      const currentRotation = movement?.currentRotation ?? 0;
+
+      // Determine easing type based on tier
+      const easingType = this.getSplineEasingType(tier);
+
+      this.splineMovingInstances.set(entityId, {
+        spline,
+        totalLength,
+        journeyProgress: 0,
+        matrixIndex,
+        floatingHeight: 0,
+        currentRotation,
+        easingType,
+        anticipationTimer: 0,
+        settlementTimer: 0,
+        isAnticipating: true,
+        isSettling: false,
+        finalTangent: null,
+        currentSpeedMultiplier: 1.0,
+        elapsedTime: 0,
+        arrivalSlamTimer: 0,
+        isArrivalSlamming: false,
+        endpointCache: new Vector3(),
+      });
+    }
   }
 
   private initializeMovement(
@@ -1339,6 +1517,13 @@ export class ArmyModel {
 
       if (movement.currentPathIndex === -1) {
         this.handleDescent(movement, entityId, instanceData, deltaTime);
+        return;
+      }
+
+      // Use spline movement if available
+      const splineData = this.splineMovingInstances.get(entityId);
+      if (splineData) {
+        this.updateSplineMovement(splineData, movement, entityId, instanceData, deltaTime);
         return;
       }
 
@@ -1414,6 +1599,237 @@ export class ArmyModel {
     this.updateInstance(
       entityId,
       movement.matrixIndex,
+      this.tempVector2,
+      instanceData.scale,
+      this.dummyObject.rotation,
+      instanceData.color,
+    );
+
+    this.updateLabelPosition(entityId, this.tempVector2);
+  }
+
+  private getSplineEasingType(_tier: TroopTier): EasingType {
+    // All tiers use journey easing for smooth whole-path movement
+    return EasingType.EaseJourney;
+  }
+
+  private static readonly ANTICIPATION_DURATION = 0.15;
+  private static readonly SETTLEMENT_DURATION = 0.25;
+  private static readonly OVERSHOOT_DISTANCE = 0.05;
+  private static readonly MAX_BANK_RADIANS = 0.15;
+  private static readonly SPEED_MULTIPLIER_LERP_RATE = 5.0;
+  private static readonly BOB_AMPLITUDE = 0.03;
+  private static readonly BOB_FREQUENCY = 1.8;
+  private static readonly ARRIVAL_SLAM_DURATION = 0.2;
+  // Pre-allocated vectors for spline sampling (avoid GC pressure)
+  private readonly splinePositionTarget: Vector3 = new Vector3();
+  private readonly splineTangentTarget: Vector3 = new Vector3();
+
+  private updateSplineMovement(
+    splineData: SplineMovementData,
+    movement: MovementData,
+    entityId: number,
+    instanceData: ArmyInstanceData,
+    deltaTime: number,
+  ): void {
+    const modelType = this.entityModelMap.get(entityId);
+    const isBoat = modelType === ModelType.Boat;
+
+    // Track elapsed time for rhythmic bob
+    splineData.elapsedTime += deltaTime;
+
+    // Float up (same as existing)
+    if (!isBoat) {
+      splineData.floatingHeight = Math.min(
+        this.FLOAT_HEIGHT,
+        splineData.floatingHeight + deltaTime * this.FLOAT_TRANSITION_SPEED,
+      );
+      // Sync to legacy movement data for descent phase
+      movement.floatingHeight = splineData.floatingHeight;
+    }
+
+    // Anticipation — squash before launch
+    if (splineData.isAnticipating) {
+      splineData.anticipationTimer += deltaTime;
+      const scale = resolveAnticipationScale(splineData.anticipationTimer, ArmyModel.ANTICIPATION_DURATION);
+      instanceData.scale.set(scale.x, scale.y, scale.z);
+
+      if (splineData.anticipationTimer >= ArmyModel.ANTICIPATION_DURATION) {
+        splineData.isAnticipating = false;
+        instanceData.scale.copy(this.normalScale);
+      }
+
+      // During anticipation, don't advance progress — just render squash
+      this.tempVector2.copy(instanceData.position);
+      if (!isBoat) {
+        this.tempVector2.y += splineData.floatingHeight;
+      }
+      this.updateInstance(
+        entityId,
+        splineData.matrixIndex,
+        this.tempVector2,
+        instanceData.scale,
+        this.dummyObject.rotation,
+        instanceData.color,
+      );
+      this.updateLabelPosition(entityId, this.tempVector2);
+      return;
+    }
+
+    // Terrain speed variation — sample biome and lerp multiplier
+    const { col, row } = getHexForWorldPosition(instanceData.position);
+    const biome = Biome.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
+    const targetMultiplier = resolveTerrainSpeedMultiplier(biome);
+    splineData.currentSpeedMultiplier +=
+      (targetMultiplier - splineData.currentSpeedMultiplier) *
+      Math.min(1, ArmyModel.SPEED_MULTIPLIER_LERP_RATE * deltaTime);
+
+    const currentSpeed = this.MOVEMENT_SPEED * splineData.currentSpeedMultiplier;
+
+    // Advance journey progress with terrain-adjusted speed
+    const progressResult = resolveJourneyProgressUpdate({
+      currentProgress: splineData.journeyProgress,
+      totalLength: splineData.totalLength,
+      speed: currentSpeed,
+      deltaTime,
+    });
+    splineData.journeyProgress = progressResult.nextProgress;
+
+    if (progressResult.isComplete) {
+      // Begin settlement overshoot + arrival slam instead of stopping immediately
+      if (!splineData.isSettling) {
+        splineData.isSettling = true;
+        splineData.settlementTimer = 0;
+        splineData.isArrivalSlamming = true;
+        splineData.arrivalSlamTimer = 0;
+        splineData.finalTangent = resolveSplineTangent(
+          splineData.spline,
+          1,
+          EasingType.Linear,
+          this.splineTangentTarget,
+        )
+          .clone()
+          .normalize();
+        // Cache endpoint once for the entire settlement phase
+        resolveSplinePosition(splineData.spline, 1, EasingType.Linear, splineData.endpointCache);
+        instanceData.position.copy(splineData.endpointCache);
+      }
+    }
+
+    // Settlement overshoot + arrival slam animation
+    if (splineData.isSettling) {
+      splineData.settlementTimer += deltaTime;
+
+      // Arrival slam scale punch
+      if (splineData.isArrivalSlamming) {
+        splineData.arrivalSlamTimer += deltaTime;
+        const slamScale = resolveArrivalSlamScale(splineData.arrivalSlamTimer, ArmyModel.ARRIVAL_SLAM_DURATION);
+        instanceData.scale.set(slamScale.x, slamScale.y, slamScale.z);
+        if (splineData.arrivalSlamTimer >= ArmyModel.ARRIVAL_SLAM_DURATION) {
+          splineData.isArrivalSlamming = false;
+          instanceData.scale.copy(this.normalScale);
+        }
+      }
+
+      if (splineData.finalTangent) {
+        const offset = resolveSettlementOffset(
+          splineData.settlementTimer,
+          ArmyModel.SETTLEMENT_DURATION,
+          ArmyModel.OVERSHOOT_DISTANCE,
+        );
+        // Use cached endpoint — no recomputation
+        instanceData.position.copy(splineData.endpointCache);
+        instanceData.position.x += splineData.finalTangent.x * offset;
+        instanceData.position.z += splineData.finalTangent.z * offset;
+      }
+
+      if (splineData.settlementTimer >= ArmyModel.SETTLEMENT_DURATION) {
+        instanceData.position.copy(splineData.endpointCache);
+        instanceData.scale.copy(this.normalScale);
+        this.splineMovingInstances.delete(entityId);
+        this.stopMovement(entityId);
+        return;
+      }
+
+      // Render during settlement
+      this.tempVector2.copy(instanceData.position);
+      if (!isBoat) {
+        this.tempVector2.y += splineData.floatingHeight;
+      }
+      this.updateInstance(
+        entityId,
+        splineData.matrixIndex,
+        this.tempVector2,
+        instanceData.scale,
+        this.dummyObject.rotation,
+        instanceData.color,
+      );
+      this.updateLabelPosition(entityId, this.tempVector2);
+      return;
+    }
+
+    // Sample position from spline with easing (pre-allocated target avoids GC)
+    resolveSplinePosition(
+      splineData.spline,
+      splineData.journeyProgress,
+      splineData.easingType,
+      this.splinePositionTarget,
+    );
+    instanceData.position.copy(this.splinePositionTarget);
+
+    // Derive rotation from tangent (pre-allocated target avoids GC)
+    resolveSplineTangent(
+      splineData.spline,
+      splineData.journeyProgress,
+      splineData.easingType,
+      this.splineTangentTarget,
+    );
+    const targetRotation = Math.atan2(this.splineTangentTarget.x, this.splineTangentTarget.z);
+
+    // Smooth rotation using existing system
+    splineData.currentRotation = resolveRotationUpdate({
+      currentRotation: splineData.currentRotation,
+      targetRotation,
+      rotationSpeed: this.ROTATION_SPEED,
+      deltaTime,
+    });
+
+    // Banking into turns
+    const bankAngle = resolvePathBankAngle(
+      splineData.spline,
+      Math.max(0, Math.min(1, splineData.journeyProgress)),
+      ArmyModel.MAX_BANK_RADIANS,
+    );
+
+    // Rhythmic bob + forward lean (not for boats)
+    let bobYOffset = 0;
+    let pitchAngle = 0;
+    if (!isBoat) {
+      const bob = resolveRhythmicBob({
+        elapsedTime: splineData.elapsedTime,
+        speed: currentSpeed,
+        amplitude: ArmyModel.BOB_AMPLITUDE,
+        baseFrequency: ArmyModel.BOB_FREQUENCY,
+      });
+      bobYOffset = bob.yOffset;
+      pitchAngle = bob.pitchAngle;
+    }
+    this.dummyObject.rotation.set(pitchAngle, splineData.currentRotation, bankAngle);
+
+    // Update model type based on current position (biome switching)
+    if (instanceData.category && instanceData.tier) {
+      this.updateModelTypeForPosition(entityId, instanceData.position, instanceData.category, instanceData.tier);
+    }
+
+    // Apply floating height + rhythmic bob
+    this.tempVector2.copy(instanceData.position);
+    if (!isBoat) {
+      this.tempVector2.y += splineData.floatingHeight + bobYOffset;
+    }
+
+    this.updateInstance(
+      entityId,
+      splineData.matrixIndex,
       this.tempVector2,
       instanceData.scale,
       this.dummyObject.rotation,
@@ -1561,6 +1977,8 @@ export class ArmyModel {
   }
 
   private stopMovement(entityId: number): void {
+    this.splineMovingInstances.delete(entityId);
+
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
 
@@ -1673,6 +2091,26 @@ export class ArmyModel {
       return;
     }
     this.movementCompleteCallbacks.set(entityId, callback);
+  }
+
+  /**
+   * Cancel an in-flight tween WITHOUT invoking the complete callback. Used by
+   * optimistic rewinds where the tween should be torn down silently — the
+   * caller owns the visual restore (snap back to source position).
+   */
+  public cancelMovement(entityId: number): void {
+    this.splineMovingInstances.delete(entityId);
+    const movement = this.movingInstances.get(entityId);
+    if (movement) {
+      this.setAnimationState(movement.matrixIndex, false);
+    }
+    this.movingInstances.delete(entityId);
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData) {
+      instanceData.isMoving = false;
+      instanceData.path = undefined;
+    }
+    this.movementCompleteCallbacks.delete(entityId);
   }
 
   public rebindMovementMatrixIndex(entityId: number, newMatrixIndex: number): void {
@@ -1971,6 +2409,7 @@ export class ArmyModel {
    * matchable for supersede logic.
    */
   public hideInstanceSlot(matrixIndex: number): void {
+    this.hiddenSlots.add(matrixIndex);
     this.models.forEach((modelData) => {
       if (modelData.activeInstances.has(matrixIndex)) {
         modelData.instancedMeshes.forEach((mesh) => {
@@ -1995,6 +2434,10 @@ export class ArmyModel {
         }
       }
     });
+  }
+
+  public restoreHiddenSlot(matrixIndex: number): void {
+    this.hiddenSlots.delete(matrixIndex);
   }
 
   public requestBoundsUpdate(): void {

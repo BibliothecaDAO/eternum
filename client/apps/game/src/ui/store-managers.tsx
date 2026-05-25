@@ -7,9 +7,16 @@ import { sqlApi } from "@/services/api";
 import { RESOURCE_ARRIVAL_AUTO_CLAIM_RETRY_DELAY_SECONDS, RESOURCE_ARRIVAL_READY_BUFFER_SECONDS } from "@/ui/constants";
 import { resolveFiniteSeasonEndAt, resolveSeasonStartTimestamp } from "@/ui/features/world/utils/season-timing";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
+import {
+  clearUncertainClaimSharePointsSubmission,
+  isNoHashSubmissionTimeout,
+  rememberUncertainClaimSharePointsSubmission,
+  shouldSkipAutomaticClaimSharePointsSubmission,
+} from "@/ui/utils/uncertain-transaction-registry";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import {
   formatArmies,
+  formatArrivals,
   getAddressName,
   getAllArrivals,
   getEntityIdFromKeys,
@@ -17,12 +24,13 @@ import {
   LeaderboardManager,
   ResourceArrivalManager,
   SelectableArmy,
+  summarizeIncomingTroopArrivals,
 } from "@bibliothecadao/eternum";
 import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { SeasonEnded } from "@bibliothecadao/torii";
-import { ContractAddress, ResourceArrivalInfo, WORLD_CONFIG_ID } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, ResourceArrivalInfo, WORLD_CONFIG_ID } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
-import { getComponentValue, Has } from "@dojoengine/recs";
+import { ComponentValue, getComponentValue, Has } from "@dojoengine/recs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { env } from "../../env";
 
@@ -241,6 +249,31 @@ const ResourceArrivalsStoreManager = () => {
   return null;
 };
 
+const PublicTroopArrivalsStoreManager = () => {
+  const setPublicIncomingTroopArrivalsByStructure = useUIStore(
+    (state) => state.setPublicIncomingTroopArrivalsByStructure,
+  );
+  const chainNowMs = useChainTimeStore((state) => state.nowMs);
+  const {
+    setup: { components },
+  } = useDojo();
+  const resourceArrivals = useEntityQuery([Has(components.ResourceArrival)]);
+
+  useEffect(() => {
+    const rawArrivals = resourceArrivals
+      .map((entity) => getComponentValue(components.ResourceArrival, entity))
+      .filter(
+        (arrival): arrival is ComponentValue<ClientComponents["ResourceArrival"]["schema"]> =>
+          arrival !== undefined && arrival !== null,
+      );
+    const nowSeconds = Math.floor(chainNowMs / 1000);
+
+    setPublicIncomingTroopArrivalsByStructure(summarizeIncomingTroopArrivals(formatArrivals(rawArrivals), nowSeconds));
+  }, [chainNowMs, components.ResourceArrival, resourceArrivals, setPublicIncomingTroopArrivalsByStructure]);
+
+  return null;
+};
+
 const RelicsStoreManager = () => {
   const {
     account: { account },
@@ -409,6 +442,10 @@ const AutoRegisterPointsStoreManager = () => {
       let txHash: string | null = null;
       try {
         const playerAddress = ContractAddress(account.address);
+        if (shouldSkipAutomaticClaimSharePointsSubmission(playerAddress)) {
+          log("Skipped: unresolved no-hash claim submission");
+          return;
+        }
         const claimedPointsAtSubmit = leaderboardManager.getPlayerHyperstructureUnregisteredShareholderPoints(
           playerAddress,
           { ignorePendingClaimOverride: true },
@@ -436,6 +473,7 @@ const AutoRegisterPointsStoreManager = () => {
         }
 
         leaderboardManager.confirmPendingSharePointsClaim(playerAddress, txHash ?? undefined);
+        clearUncertainClaimSharePointsSubmission(playerAddress);
         log("Points registered successfully");
 
         // Refresh leaderboard
@@ -443,6 +481,12 @@ const AutoRegisterPointsStoreManager = () => {
         leaderboardManager.updatePoints();
         log("Leaderboard refreshed");
       } catch (error) {
+        if (isNoHashSubmissionTimeout(error)) {
+          rememberUncertainClaimSharePointsSubmission({
+            walletAddress: ContractAddress(account.address),
+            failureKind: "submission_timeout_no_hash",
+          });
+        }
         leaderboardManager.clearPendingSharePointsClaim(ContractAddress(account.address), txHash ?? undefined);
         leaderboardManager.updatePoints();
         console.error("[AutoRegisterPoints] Failed:", error);
@@ -612,6 +656,7 @@ export const StoreManagers = () => {
   return (
     <>
       <ResourceArrivalsStoreManager />
+      <PublicTroopArrivalsStoreManager />
       <RelicsStoreManager />
       <AutoRegisterPointsStoreManager />
       <PlayerStructuresStoreManager />

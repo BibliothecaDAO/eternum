@@ -57,5 +57,46 @@ describe("chunk-eviction ghosting prevention", () => {
       // cleanup must happen before freeInstanceSlot (which kills the movement callback)
       expect(cleanupPos).toBeLessThan(freeSlotPos);
     });
+
+    it("notifies movement visual cancellation when chunk reconciliation evicts a moving army", () => {
+      const src = readSource("army-manager.ts");
+
+      const methodStart = src.indexOf("private removeVisibleArmy(");
+      expect(methodStart).toBeGreaterThan(-1);
+
+      const methodBody = src.slice(methodStart, methodStart + 2800);
+
+      const movingCheckPos = methodBody.indexOf("this.armyModel.isEntityMoving(numericId)");
+      const cancelPos = methodBody.indexOf("this.runMovementVisualCancelListeners(numericId)");
+      const freeSlotPos = methodBody.indexOf("this.armyModel.freeInstanceSlot(");
+      const removeArmyPos = src.indexOf("this.removeVisibleArmy(entityId, { notifyMovementVisualCancel: true })");
+
+      expect(src).toContain("public onMovementVisualCancel(entityId: ID, callback: () => void): () => void");
+      expect(src).toContain("options?: { notifyMovementVisualCancel?: boolean }");
+      expect(movingCheckPos).toBeGreaterThan(-1);
+      expect(cancelPos).toBeGreaterThan(-1);
+      expect(freeSlotPos).toBeGreaterThan(-1);
+      expect(removeArmyPos).toBeGreaterThan(-1);
+      expect(cancelPos).toBeLessThan(freeSlotPos);
+    });
+
+    it("routes real army removals through movement cancellation instead of movement completion", () => {
+      const src = readSource("army-manager.ts");
+
+      const methodStart = src.indexOf("public removeArmy(");
+      expect(methodStart).toBeGreaterThan(-1);
+
+      const methodBody = src.slice(methodStart, methodStart + 2800);
+      const removeVisibleArmyPos = methodBody.indexOf(
+        "this.removeVisibleArmy(entityId, { notifyMovementVisualCancel: true })",
+      );
+      const completePos = methodBody.indexOf("this.runMovementCompleteListeners(numericEntityId)");
+      const nullSlotCancelPos = methodBody.indexOf("this.runMovementVisualCancelListeners(numericEntityId)");
+
+      expect(removeVisibleArmyPos).toBeGreaterThan(-1);
+      expect(completePos).toBe(-1);
+      expect(nullSlotCancelPos).toBeGreaterThan(-1);
+      expect(nullSlotCancelPos).toBeGreaterThan(removeVisibleArmyPos);
+    });
   });
 });

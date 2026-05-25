@@ -37,11 +37,33 @@ export type WorldmapRenderCounter =
   | "terrainVisibleReplaceCount"
   | "terrainVisibleAppendCount"
   | "terrainVisibleRebuildCount"
+  | "terrainShellStarted"
+  | "terrainShellCommitted"
+  | "terrainShellReplaced"
+  | "terrainCompositeRebuilt"
+  | "terrainShellStaleDropped"
+  | "visualWindowResolved"
+  | "visualPageQueued"
+  | "visualPageBuilt"
+  | "visualPageCommitted"
+  | "visualPageReplaced"
+  | "visualPageEvicted"
+  | "visualPageStaleDropped"
+  | "visualPageBudgetExhausted"
   | "staleTerrainCacheFingerprintRejectCount"
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
+  | "globalSpatialRecsHydratedTiles"
+  | "spatialTileOptRecsApplied"
+  | "spatialTileOptReadyTimeouts"
+  | "spatialTileOptStreamReceived"
   | "postCommitManagerCatchUpImmediate"
-  | "postCommitManagerCatchUpDeferred";
+  | "postCommitManagerCatchUpDeferred"
+  | "pendingArmyRemovalCancelledByTileRecovery"
+  | "pendingArmyRemovalCancelledByDelete"
+  | "pendingArmyRemovalCancelledBySuperseded"
+  | "pendingArmyRemovalCancelledByExplorerTroopsZero"
+  | "pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -65,7 +87,9 @@ export type WorldmapForceRefreshReason =
   | "offscreen_chunk"
   | "tile_overlap_repair"
   | "shortcut"
-  | "army_dead";
+  | "army_dead"
+  | "reconnect"
+  | "manager_recovery";
 
 export interface WorldmapRenderDurationStats {
   count: number;
@@ -134,11 +158,33 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     terrainVisibleReplaceCount: 0,
     terrainVisibleAppendCount: 0,
     terrainVisibleRebuildCount: 0,
+    terrainShellStarted: 0,
+    terrainShellCommitted: 0,
+    terrainShellReplaced: 0,
+    terrainCompositeRebuilt: 0,
+    terrainShellStaleDropped: 0,
+    visualWindowResolved: 0,
+    visualPageQueued: 0,
+    visualPageBuilt: 0,
+    visualPageCommitted: 0,
+    visualPageReplaced: 0,
+    visualPageEvicted: 0,
+    visualPageStaleDropped: 0,
+    visualPageBudgetExhausted: 0,
     staleTerrainCacheFingerprintRejectCount: 0,
     preparedChunkPrewarmHits: 0,
     preparedChunkPrewarmMisses: 0,
+    globalSpatialRecsHydratedTiles: 0,
+    spatialTileOptRecsApplied: 0,
+    spatialTileOptReadyTimeouts: 0,
+    spatialTileOptStreamReceived: 0,
     postCommitManagerCatchUpImmediate: 0,
     postCommitManagerCatchUpDeferred: 0,
+    pendingArmyRemovalCancelledByTileRecovery: 0,
+    pendingArmyRemovalCancelledByDelete: 0,
+    pendingArmyRemovalCancelledBySuperseded: 0,
+    pendingArmyRemovalCancelledByExplorerTroopsZero: 0,
+    pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery: 0,
   },
   forceRefreshReasons: {
     default: 0,
@@ -152,6 +198,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     tile_overlap_repair: 0,
     shortcut: 0,
     army_dead: 0,
+    reconnect: 0,
+    manager_recovery: 0,
   },
   updatedAtMs: Date.now(),
 });

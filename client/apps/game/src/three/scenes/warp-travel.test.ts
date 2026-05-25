@@ -220,7 +220,7 @@ describe("runWarpTravelSetupLifecycle", () => {
     });
   });
 
-  it("keeps setup green when refresh fails and reports the failed phase", async () => {
+  it("fails closed when the initial refresh fails", async () => {
     const refreshError = new Error("refresh failed");
     const reportSetupError = vi.fn();
     const { adapter, events } = createAdapter({
@@ -230,14 +230,16 @@ describe("runWarpTravelSetupLifecycle", () => {
       reportSetupError,
     });
 
-    const result = await runWarpTravelSetupLifecycle(
-      {
-        hasInitialized: false,
-        initialSetupPromise: null,
-        isSwitchedOff: true,
-      },
-      adapter,
-    );
+    await expect(
+      runWarpTravelSetupLifecycle(
+        {
+          hasInitialized: false,
+          initialSetupPromise: null,
+          isSwitchedOff: true,
+        },
+        adapter,
+      ),
+    ).rejects.toThrow(refreshError);
 
     expect(reportSetupError).toHaveBeenCalledWith(refreshError, "initial");
     expect(events).toEqual([
@@ -248,10 +250,44 @@ describe("runWarpTravelSetupLifecycle", () => {
       "labels:managers:attach",
       "subscriptions:register",
       "zoom:setup",
-      "setup:initial:complete",
     ]);
-    expect(result.hasInitialized).toBe(true);
-    expect(result.isSwitchedOff).toBe(false);
+  });
+
+  it("still reports and continues when the resume refresh fails", async () => {
+    const refreshError = new Error("resume refresh failed");
+    const reportSetupError = vi.fn();
+    const { adapter, events } = createAdapter({
+      refreshScene: async () => {
+        throw refreshError;
+      },
+      reportSetupError,
+    });
+
+    const result = await runWarpTravelSetupLifecycle(
+      {
+        hasInitialized: true,
+        initialSetupPromise: null,
+        isSwitchedOff: true,
+      },
+      adapter,
+    );
+
+    expect(reportSetupError).toHaveBeenCalledWith(refreshError, "resume");
+    expect(events).toEqual([
+      "setup:start",
+      "setup:resume:start",
+      "camera:move",
+      "labels:groups:attach",
+      "labels:managers:attach",
+      "subscriptions:register",
+      "zoom:setup",
+      "setup:resume:complete",
+    ]);
+    expect(result).toEqual({
+      hasInitialized: true,
+      initialSetupPromise: null,
+      isSwitchedOff: false,
+    });
   });
 });
 

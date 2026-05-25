@@ -1,3 +1,4 @@
+import type GUI from "lil-gui";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { WeatherType } from "./weather-manager";
 
@@ -523,7 +524,7 @@ export class AmbienceManager {
   /**
    * Add GUI controls
    */
-  addGUIControls(guiFolder: any): void {
+  addGUIControls(guiFolder: GUI): void {
     const ambienceFolder = guiFolder.addFolder("Ambience System");
 
     ambienceFolder

@@ -1,9 +1,9 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Button } from "@/ui/design-system/atoms";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ProductionModal } from "@/ui/features/settlement";
+import { ProductionModal } from "@/ui/features/settlement/production/production-modal";
 import {
   calculateDonkeysNeeded,
   configManager,
@@ -166,7 +166,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const mode = useGameModeConfig();
   const goToStructure = useGoToStructure(setup);
-  const { currentDefaultTick } = useBlockTimestamp();
+  const currentDefaultTick = useCurrentDefaultTick();
 
   const selectedStructureId = entityId && entityId !== 0 ? Number(entityId) : null;
 
@@ -328,11 +328,9 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
 
   const handleManageProduction = useCallback(
     (structureId: number, resourceId: ResourcesIds) => {
-      // Select the structure first by setting entity ID, then open modal
-      setStructureEntityId(structureId);
-      toggleModal(<ProductionModal preSelectedResource={resourceId} />);
+      toggleModal(<ProductionModal preSelectedRealmId={structureId} preSelectedResource={resourceId} />);
     },
-    [setStructureEntityId, toggleModal],
+    [toggleModal],
   );
 
   const handleOpenCraftRelic = useCallback(
@@ -388,6 +386,12 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
       setTransferDrafts((prev) => prev.map((t) => (ids.has(t.id) ? { ...t, isProcessing: true } : t)));
 
       setTransferAnimations((prev) => new Set([...prev, ...animationKeys]));
+      const removeResourceOverrides = transfers.map((transfer) =>
+        new ResourceManager(components, transfer.fromStructureId).optimisticResourceUpdate(
+          transfer.resourceId,
+          -transfer.amount,
+        ),
+      );
 
       try {
         await send_resources_multiple({
@@ -405,6 +409,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         setTransferDrafts((prev) => prev.map((t) => (ids.has(t.id) ? { ...t, isProcessing: false } : t)));
         throw error;
       } finally {
+        removeResourceOverrides.forEach((removeOverride) => removeOverride());
         setTimeout(() => {
           setTransferAnimations((prev) => {
             const next = new Set(prev);
@@ -414,7 +419,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         }, 2000);
       }
     },
-    [account, send_resources_multiple],
+    [account, components, send_resources_multiple],
   );
 
   const executeTransfer = useCallback(

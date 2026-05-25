@@ -33,8 +33,9 @@ export const Combat = () => {
         <div className="space-y-4 text-gray-200">
           <p className="leading-relaxed">
             Armies consist of a single troop type and tier. Each hex can host only one army. Realms and Villages have
-            limits on guard and field armies, which can be increased by upgrading or constructing military buildings.
-            The maximum size of an army depends on the structure level and troop tier:
+            limits on guard and field armies. Army limits increase with your structure level, not from building more
+            military buildings. Higher Settlement, City, Kingdom, and Empire levels unlock more field armies and guard
+            slots. The maximum size of an army depends on the structure level and troop tier:
           </p>
           <table className="w-full text-sm border-collapse">
             <thead>

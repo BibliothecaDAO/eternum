@@ -1,30 +1,4 @@
-import { shortString } from "starknet";
-
-export const decodePaddedFeltAscii = (hex: string): string => {
-  if (!hex) return "";
-  const normalizedHex = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
-  if (normalizedHex === "0") return "";
-
-  try {
-    const asDecimal = BigInt(`0x${normalizedHex}`).toString();
-    const decoded = shortString.decodeShortString(asDecimal);
-    if (decoded && decoded.trim().length > 0) return decoded;
-  } catch {
-    // Ignore decode failures and fall back to manual byte parsing.
-  }
-
-  let index = 0;
-  while (index + 1 < normalizedHex.length && normalizedHex.slice(index, index + 2) === "00") index += 2;
-
-  let output = "";
-  for (; index + 1 < normalizedHex.length; index += 2) {
-    const byte = parseInt(normalizedHex.slice(index, index + 2), 16);
-    if (byte === 0) continue;
-    output += String.fromCharCode(byte);
-  }
-
-  return output;
-};
+export { decodePaddedFeltAscii, extractNameFelt, fetchFactoryRows } from "../../../../../../common/factory/endpoints";
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {
   if (!value) return null;
@@ -46,19 +20,6 @@ const asRecord = (value: unknown): Record<string, unknown> | null => {
 
   return null;
 };
-
-export const extractNameFelt = (row: Record<string, unknown>): string | null => {
-  const direct = row.name ?? row["data.name"];
-  if (typeof direct === "string") return direct;
-
-  const data = asRecord(row.data);
-  if (data && typeof data.name === "string") {
-    return data.name;
-  }
-
-  return null;
-};
-
 const normalizeValue = (value: unknown): bigint | null => {
   if (typeof value === "bigint") return value;
   if (typeof value === "number" && Number.isFinite(value)) return BigInt(Math.floor(value));
@@ -146,23 +107,4 @@ const findGameNumber = (record: Record<string, unknown>, depth = 0): bigint | nu
 
 export const extractGameNumberFromRow = (row: Record<string, unknown>): bigint | null => {
   return findGameNumber(row);
-};
-
-export const fetchFactoryRows = async (
-  factorySqlBaseUrl: string,
-  query: string,
-): Promise<Record<string, unknown>[]> => {
-  const url = `${factorySqlBaseUrl}?query=${encodeURIComponent(query)}`;
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    throw new Error(`Factory query failed: ${response.status} ${response.statusText}`);
-  }
-
-  const rows = (await response.json()) as Record<string, unknown>[];
-  if (!Array.isArray(rows)) {
-    throw new Error("Factory query returned unexpected payload");
-  }
-
-  return rows;
 };

@@ -11,6 +11,13 @@ let timestampSource: TimestampSource = defaultTimestampSource;
 // preventing tx failures when client clock is ahead of chain.
 const CONSERVATIVE_TICK_BUFFER = 1;
 
+// Deeper buffer used specifically for automation projections. Automation plans
+// spend up to AUTOMATION_INPUT_BUDGET_PERCENT of a projected balance, so any
+// overshoot in the projection (wall-clock drift, torii lag, tx-queue wait before
+// block inclusion) directly causes on-chain "Insufficient Balance" reverts.
+// Holding the projection further behind chain time widens the safety margin.
+const CONSERVATIVE_TICK_BUFFER_AUTOMATION = 3;
+
 export const setBlockTimestampSource = (source: TimestampSource | null) => {
   timestampSource = source ? () => Math.floor(source()) : defaultTimestampSource;
 };
@@ -43,5 +50,20 @@ export const getConservativeBlockTimestamp = () => {
     currentBlockTimestamp,
     currentDefaultTick: Math.max(0, currentDefaultTick - CONSERVATIVE_TICK_BUFFER),
     currentArmiesTick: Math.max(0, currentArmiesTick - CONSERVATIVE_TICK_BUFFER),
+  };
+};
+
+/**
+ * Projection tick for automation plan building. Uses a deeper buffer than the
+ * default conservative accessor so the projected balance stays behind what the
+ * chain will report at tx-inclusion time, preventing Insufficient Balance reverts.
+ */
+export const getAutomationProjectionTick = () => {
+  const { currentBlockTimestamp, currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
+
+  return {
+    currentBlockTimestamp,
+    currentDefaultTick: Math.max(0, currentDefaultTick - CONSERVATIVE_TICK_BUFFER_AUTOMATION),
+    currentArmiesTick: Math.max(0, currentArmiesTick - CONSERVATIVE_TICK_BUFFER_AUTOMATION),
   };
 };

@@ -2,7 +2,9 @@
 
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+  beginRealmBuildPlacement,
   clearAllBuildReservationState,
+  completeRealmBuildPlacement,
   getBuildReservationState,
   reserveOccupiedBuildSpot,
   reserveVacatedBuildSpot,
@@ -73,5 +75,31 @@ describe("build-reservation-store", () => {
     const state = getBuildReservationState(505);
     expect(state.occupied.has(toSpotKey({ col: 1, row: 1 }))).toBe(false);
     expect(state.vacated.has(toSpotKey({ col: 2, row: 2 }))).toBe(false);
+  });
+
+  it("blocks duplicate build placements synchronously until the placement completes", () => {
+    const firstPlacement = beginRealmBuildPlacement(606, 29, 1000);
+    const duplicatePlacement = beginRealmBuildPlacement(606, 29, 1000);
+    const otherBuildingPlacement = beginRealmBuildPlacement(606, 30, 1000);
+
+    expect(firstPlacement).toEqual({ started: true });
+    expect(duplicatePlacement).toEqual({ started: false });
+    expect(otherBuildingPlacement).toEqual({ started: true });
+
+    completeRealmBuildPlacement(606, 29);
+
+    expect(beginRealmBuildPlacement(606, 29, 1000)).toEqual({ started: true });
+  });
+
+  it("clears stale build placement locks", () => {
+    beginRealmBuildPlacement(707, 29, 1000);
+
+    reconcileBuildReservationState(707, () => false, {
+      now: 120000,
+      settleMs: 3000,
+      staleMs: 90000,
+    });
+
+    expect(beginRealmBuildPlacement(707, 29, 120000)).toEqual({ started: true });
   });
 });

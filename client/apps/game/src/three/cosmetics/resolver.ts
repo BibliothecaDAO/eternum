@@ -199,10 +199,6 @@ export function resolveArmyCosmetic(params: ArmyCosmeticParams): CosmeticResolut
     skin,
     attachments,
     metadata: resolvedEntry?.metadata,
-    cosmeticId: skin.cosmeticId,
-    modelKey: skin.modelKey,
-    modelType: skin.modelType,
-    registryEntry: skin.registryEntry,
   };
 }
 
@@ -266,9 +262,5 @@ export function resolveStructureCosmetic(params: StructureCosmeticParams): Cosme
     skin,
     attachments,
     metadata: resolvedEntry?.metadata,
-    cosmeticId: skin.cosmeticId,
-    modelKey: skin.modelKey,
-    modelType: skin.modelType,
-    registryEntry: skin.registryEntry,
   };
 }

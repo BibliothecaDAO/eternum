@@ -1,40 +1,31 @@
 import { useEffect } from "react";
-import { BatchedTransactionDetail, TransactionType } from "@bibliothecadao/provider";
+import { TransactionFailedPayload, TransactionLifecycleMeta, TransactionType } from "@bibliothecadao/provider";
 import { useDojo } from "@bibliothecadao/react";
+import {
+  addClientTransactionBreadcrumb,
+  reportClientTransactionFailure,
+} from "@/observability/transaction-failure-reporting";
 import { useTransactionStore } from "@/hooks/store/use-transaction-store";
 import { getTxMessage } from "@/ui/components/transaction-center/types";
+import { clearUncertainClaimSharePointsSubmission } from "@/ui/utils/uncertain-transaction-registry";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
-interface TransactionSubmittedPayload {
+interface TransactionSubmittedPayload extends TransactionLifecycleMeta {
   transactionHash: string;
   type: TransactionType;
-  transactionCount?: number;
-  batchDetails?: BatchedTransactionDetail[];
 }
 
-interface TransactionPendingPayload {
+interface TransactionPendingPayload extends TransactionLifecycleMeta {
   transactionHash: string;
   type: TransactionType;
-  transactionCount?: number;
-  batchDetails?: BatchedTransactionDetail[];
 }
 
-interface TransactionCompletePayload {
+interface TransactionCompletePayload extends TransactionLifecycleMeta {
   details: {
     transaction_hash: string;
     // Other fields from GetTransactionReceiptResponse
   };
   type: TransactionType;
-  transactionCount?: number;
-  batchDetails?: BatchedTransactionDetail[];
-}
-
-interface TransactionFailedPayload {
-  message?: string;
-  type?: TransactionType;
-  transactionCount?: number;
-  transactionHash?: string;
-  batchDetails?: BatchedTransactionDetail[];
 }
 
 export const useTransactionListener = () => {
@@ -48,8 +39,33 @@ export const useTransactionListener = () => {
   const updateTransaction = useTransactionStore((state) => state.updateTransaction);
 
   useEffect(() => {
+    const clearRecoveredClaimSharePointsMarker = (payload: TransactionLifecycleMeta) => {
+      if (
+        payload.recoveredFromSubmissionTimeout &&
+        payload.type === TransactionType.CLAIM_SHARE_POINTS &&
+        payload.signerAddress
+      ) {
+        clearUncertainClaimSharePointsSubmission(payload.signerAddress);
+      }
+    };
+
     // Called immediately when transaction is submitted to the network
     const handleTransactionSubmitted = (payload: TransactionSubmittedPayload) => {
+      addClientTransactionBreadcrumb({
+        stage: "submitted",
+        message: payload.type ? getTxMessage(payload.type) : "Transaction submitted",
+        context: {
+          surface: "dojo_provider",
+          operation: payload.type ?? "transaction_submitted",
+          stage: "submit",
+          transactionType: payload.type,
+          transactionHash: payload.transactionHash,
+          transactionCount: payload.transactionCount,
+          batchDetails: payload.batchDetails,
+          entrypoints: payload.entrypoints,
+          contractAddresses: payload.contractAddresses,
+        },
+      });
       addTransaction({
         hash: payload.transactionHash,
         type: payload.type,
@@ -63,6 +79,21 @@ export const useTransactionListener = () => {
     // Called if transaction is still pending after timeout (10s)
     // We already added it in handleTransactionSubmitted, so just ensure it exists
     const handleTransactionPending = (payload: TransactionPendingPayload) => {
+      addClientTransactionBreadcrumb({
+        stage: "pending",
+        message: payload.type ? getTxMessage(payload.type) : "Transaction pending",
+        context: {
+          surface: "dojo_provider",
+          operation: payload.type ?? "transaction_pending",
+          stage: "background_confirmation",
+          transactionType: payload.type,
+          transactionHash: payload.transactionHash,
+          transactionCount: payload.transactionCount,
+          batchDetails: payload.batchDetails,
+          entrypoints: payload.entrypoints,
+          contractAddresses: payload.contractAddresses,
+        },
+      });
       const existingTx = useTransactionStore.getState().transactions.find((t) => t.hash === payload.transactionHash);
       if (!existingTx) {
         addTransaction({
@@ -78,6 +109,22 @@ export const useTransactionListener = () => {
 
     const handleTransactionComplete = (payload: TransactionCompletePayload) => {
       const hash = payload.details.transaction_hash;
+      clearRecoveredClaimSharePointsMarker(payload);
+      addClientTransactionBreadcrumb({
+        stage: "completed",
+        message: payload.type ? getTxMessage(payload.type) : "Transaction completed",
+        context: {
+          surface: "dojo_provider",
+          operation: payload.type ?? "transaction_complete",
+          stage: "confirmation",
+          transactionType: payload.type,
+          transactionHash: hash,
+          transactionCount: payload.transactionCount,
+          batchDetails: payload.batchDetails,
+          entrypoints: payload.entrypoints,
+          contractAddresses: payload.contractAddresses,
+        },
+      });
 
       // First try to update existing transaction
       const existingTx = useTransactionStore.getState().transactions.find((t) => t.hash === hash);
@@ -102,41 +149,47 @@ export const useTransactionListener = () => {
       }
     };
 
-    const handleTransactionFailed = (error: string | TransactionFailedPayload, meta?: TransactionFailedPayload) => {
-      const message = extractReadableErrorMessage(error, extractReadableErrorMessage(meta, "Transaction failed"));
+    const handleTransactionFailed = (payload: TransactionFailedPayload) => {
+      const message = extractReadableErrorMessage(payload.message, "Transaction failed");
+      clearRecoveredClaimSharePointsMarker(payload);
+      void reportClientTransactionFailure({
+        error: new Error(message),
+        context: {
+          surface: "dojo_provider",
+          operation: payload.type ?? "provider_transaction_failure",
+          stage: payload.stage,
+          transactionType: payload.type,
+          transactionHash: payload.transactionHash,
+          transactionCount: payload.transactionCount,
+          batchDetails: payload.batchDetails,
+          entrypoints: payload.entrypoints,
+          contractAddresses: payload.contractAddresses,
+          failureKind: payload.failureKind,
+          providerState: payload.providerState,
+          hasTxHash: payload.hasTxHash ?? Boolean(payload.transactionHash),
+          retrySafety: payload.retrySafety,
+        },
+      });
 
-      const type = typeof error === "object" && error?.type ? error.type : (meta?.type ?? null);
-
-      const transactionHash =
-        typeof error === "object" && error?.transactionHash ? error.transactionHash : (meta?.transactionHash ?? null);
-
-      const transactionCount =
-        typeof error === "object" && typeof error?.transactionCount === "number"
-          ? error.transactionCount
-          : (meta?.transactionCount ?? undefined);
-
-      const batchDetails =
-        typeof error === "object" && error?.batchDetails ? error.batchDetails : (meta?.batchDetails ?? undefined);
-
-      if (transactionHash) {
+      if (payload.transactionHash) {
         // Try to update existing transaction
-        const existingTx = useTransactionStore.getState().transactions.find((t) => t.hash === transactionHash);
+        const existingTx = useTransactionStore.getState().transactions.find((t) => t.hash === payload.transactionHash);
 
         if (existingTx) {
-          updateTransaction(transactionHash, {
+          updateTransaction(payload.transactionHash, {
             status: "reverted",
             confirmedAt: Date.now(),
             errorMessage: message,
           });
-        } else if (type) {
+        } else if (payload.type) {
           // Add as failed transaction if we have the type
           addTransaction({
-            hash: transactionHash,
-            type,
+            hash: payload.transactionHash,
+            type: payload.type,
             status: "reverted",
-            description: getTxMessage(type),
-            transactionCount,
-            batchDetails,
+            description: getTxMessage(payload.type),
+            transactionCount: payload.transactionCount,
+            batchDetails: payload.batchDetails,
             confirmedAt: Date.now(),
             errorMessage: message,
           });

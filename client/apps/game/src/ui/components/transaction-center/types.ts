@@ -1,14 +1,28 @@
 import { BatchedTransactionDetail, TransactionType } from "@bibliothecadao/provider";
+import type { Chain } from "@contracts";
 import type { TransactionStatus } from "@/hooks/store/use-transaction-store";
+import { getActiveWorld, resolveRuntimeChain } from "@/runtime/world";
 
 const getChain = () => import.meta.env.VITE_PUBLIC_CHAIN as string | undefined;
 const getSlotName = () => import.meta.env.VITE_PUBLIC_SLOT as string | undefined;
+const getFallbackChain = (): Chain => (getChain() ?? "mainnet") as Chain;
+const isSlotExplorerChain = (chain: Chain): boolean => chain === "slot" || chain === "slottest";
+
+const getRuntimeSlotName = (chain: Chain): string | undefined => {
+  const activeWorld = getActiveWorld();
+
+  if (activeWorld && isSlotExplorerChain(activeWorld.chain) && activeWorld.chain === chain) {
+    return activeWorld.name;
+  }
+
+  return getSlotName();
+};
 
 export const getExplorerTxUrl = (hash: string): string => {
-  const chain = getChain();
-  const slotName = getSlotName();
+  const chain = resolveRuntimeChain(getFallbackChain());
+  const slotName = getRuntimeSlotName(chain);
 
-  if (chain === "slot" && slotName) {
+  if (isSlotExplorerChain(chain) && slotName) {
     return `https://api.cartridge.gg/x/${slotName}/katana/explorer/tx/${hash}`;
   }
 
@@ -21,8 +35,8 @@ export const getExplorerTxUrl = (hash: string): string => {
 };
 
 export const getExplorerName = (): string => {
-  const chain = getChain();
-  if (chain === "slot") return "Katana Explorer";
+  const chain = resolveRuntimeChain(getFallbackChain());
+  if (isSlotExplorerChain(chain)) return "Katana Explorer";
   return "Voyager";
 };
 

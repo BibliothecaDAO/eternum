@@ -1,13 +1,35 @@
-import { ConnectionHealthMonitor } from "@/dojo/connection-health-monitor";
+import {
+  ConnectionHealthMonitor,
+  resolveConnectionHealthToriiBaseUrl,
+  subscribeToToriiHeartbeat,
+} from "@/dojo/connection-health-monitor";
+import { createConnectionDeadEndRecoveryGate } from "@/dojo/connection-dead-end-recovery-gate";
+import { createToriiHeartbeatLifecycle } from "@/dojo/torii-heartbeat-lifecycle";
 import { cancelEntityStreamSubscription, initialSync } from "@/dojo/sync";
-import { getActiveSpatialStreamManager } from "@/three/scenes/worldmap";
+import { probeToriiHealth } from "@/dojo/torii-health-probe";
+import { requestGameRebootstrap } from "@/game-entry/bootstrap-controller";
+import { useAccountStore } from "@/hooks/store/use-account-store";
+import {
+  addNetworkBreadcrumb,
+  reportNetworkOutageDeadEnd,
+  reportNetworkOutageResolved,
+  setNetworkHealthScopeTags,
+} from "@/observability/network-health-reporting";
+import { SentryUserSync } from "@/observability/sentry-user-sync";
+import { useActiveWorldProfile } from "@/runtime/world";
+import { getActiveWorldmapRecoveryHandle } from "@/three/scenes/worldmap-reconnect-recovery-handle";
 import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { useDojo } from "@bibliothecadao/react";
 import { Leva } from "leva";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
+import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { useUIStore } from "../../hooks/store/use-ui-store";
+import { ArmyMovementLatencyOverlay } from "../debug/army-movement-latency-overlay";
 import { Tooltip } from "../design-system/molecules/tooltip";
+import { NetworkStatusBanner } from "../features/world/components/network-status-banner";
+import { triggerConnectionForceReconnect } from "../features/world/components/network-status-retry";
 import { RealmTransferManager } from "../features/economy/resources";
 import { AutomationManager } from "../features/infrastructure/automation/automation-manager";
 import { ExplorationAutomationManager } from "../features/infrastructure/automation/exploration-automation-manager";
@@ -24,6 +46,8 @@ import { BlockTimestampPoller } from "../shared/components/block-timestamp-polle
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { StoreManagers } from "../store-managers";
 import { PlayOverlayManager } from "./play-overlay-manager";
+
+const shouldRunDeadEndRecovery = createConnectionDeadEndRecoveryGate();
 
 export const World = ({ backgroundImage }: { backgroundImage: string }) => {
   return (
@@ -54,6 +78,7 @@ export const World = ({ backgroundImage }: { backgroundImage: string }) => {
         <Leva hidden={!env.VITE_PUBLIC_GRAPHICS_DEV} collapsed titleBar={{ position: { x: 0, y: 50 } }} />
         <Tooltip />
         <VersionDisplay />
+        <ArmyMovementLatencyOverlay />
         <div id="labelrenderer" className="absolute top-0 pointer-events-none z-10" />
       </div>
     </>
@@ -76,6 +101,8 @@ const BackgroundSystems = () => (
     <TransferAutomationManager />
     <ExplorationAutomationManager />
     <ConnectionMonitor />
+    <NetworkStatusBanner onRetry={triggerConnectionForceReconnect} />
+    <SentryUserSync />
   </>
 );
 
@@ -99,6 +126,18 @@ const ActionOverlays = () => (
     <ActionInfo />
   </>
 );
+
+const getNetworkErrorReason = (error: unknown): string => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (typeof error === "string") {
+    return error;
+  }
+
+  return "unknown_error";
+};
 
 /**
  * HUD (Heads-Up Display) - persistent UI elements positioned around the screen.
@@ -137,34 +176,97 @@ const HUD = () => (
  */
 const ConnectionMonitor = () => {
   const { setup } = useDojo();
+  const activeWorld = useActiveWorldProfile();
   const state = useUIStore.getState();
+  const fallbackToriiBaseUrl = activeWorld?.toriiBaseUrl ?? env.VITE_PUBLIC_TORII;
+
+  // Reconnect handlers can fire after this effect is created, so heartbeat
+  // reopen uses a ref instead of the setup value captured by this closure.
+  const setupRef = useRef(setup);
+  setupRef.current = setup;
 
   useEffect(() => {
-    const toriiBaseUrl = env.VITE_PUBLIC_TORII;
+    const toriiBaseUrl = resolveConnectionHealthToriiBaseUrl({
+      activeWorld,
+      fallbackToriiUrl: fallbackToriiBaseUrl,
+      runtimeToriiUrl: dojoConfig.toriiUrl,
+    });
+
+    const walletAddress = useAccountStore.getState().account?.address ?? null;
+    void setNetworkHealthScopeTags({ toriiBaseUrl, walletAddress });
+
+    const heartbeatLifecycle = createToriiHeartbeatLifecycle({
+      subscribe: () => subscribeToToriiHeartbeat(setupRef.current.network.toriiClient),
+    });
+    void heartbeatLifecycle.start();
+
+    const recoverWorldmapAfterConnectionFailure = () => {
+      try {
+        getActiveWorldmapRecoveryHandle()?.recoverAfterConnectionFailure();
+      } catch (error) {
+        console.warn("[ConnectionMonitor] Worldmap connection-failure recovery failed", error);
+      }
+    };
 
     const monitor = new ConnectionHealthMonitor({
       onReconnectSpatial: async () => {
-        const manager = getActiveSpatialStreamManager();
-        if (manager) {
-          await manager.resubscribe();
-        }
+        addNetworkBreadcrumb({ event: "reconnect_start", streamType: "spatial" });
+        addNetworkBreadcrumb({
+          event: "reconnect_success",
+          streamType: "spatial",
+          status: "global_initial_sync_owned",
+        });
       },
       onReconnectGlobal: async () => {
-        cancelEntityStreamSubscription();
-        await initialSync(setup, state, () => {}, { logging: false, reportProgress: false });
+        addNetworkBreadcrumb({ event: "reconnect_start", streamType: "global" });
+        try {
+          cancelEntityStreamSubscription();
+          await initialSync(setup, state, () => {}, { logging: false, reportProgress: false });
+          addNetworkBreadcrumb({ event: "reconnect_success", streamType: "global" });
+        } catch (error) {
+          addNetworkBreadcrumb({
+            event: "reconnect_failure",
+            streamType: "global",
+            reason: getNetworkErrorReason(error),
+          });
+          recoverWorldmapAfterConnectionFailure();
+          throw error;
+        }
       },
-      healthCheckFn: async () => {
-        const response = await fetch(`${toriiBaseUrl}/health`, {
-          method: "GET",
-          signal: AbortSignal.timeout(5_000),
+      onReconnectComplete: () => {
+        void heartbeatLifecycle.reopen();
+        try {
+          getActiveWorldmapRecoveryHandle()?.refreshAfterReconnect();
+        } catch (error) {
+          console.warn("[ConnectionMonitor] Worldmap reconnect refresh failed", error);
+        }
+      },
+      healthCheckFn: () => probeToriiHealth(toriiBaseUrl),
+      onRecovery: (outageMs, attempts) => {
+        toast.success("Back online", {
+          description: `Reconnected after ${Math.max(1, Math.round(outageMs / 1000))}s offline.`,
         });
-        return response.ok;
+        reportNetworkOutageResolved({ streamType: "both", outageMs, attempts });
+      },
+      onDeadEnd: (outageMs, attempts, reason) => {
+        reportNetworkOutageDeadEnd({ streamType: "both", outageMs, attempts, reason });
+        if (!shouldRunDeadEndRecovery({ toriiBaseUrl, reason })) return;
+        addNetworkBreadcrumb({
+          event: "reconnect_start",
+          streamType: "global",
+          status: "route_rebootstrap",
+          reason,
+        });
+        requestGameRebootstrap(`connection_dead_end:${reason ?? "unknown"}`);
       },
     });
 
     monitor.start();
-    return () => monitor.dispose();
-  }, [setup, state]);
+    return () => {
+      heartbeatLifecycle.dispose();
+      monitor.dispose();
+    };
+  }, [activeWorld, fallbackToriiBaseUrl, setup, state]);
 
   return null;
 };

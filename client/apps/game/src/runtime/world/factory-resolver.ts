@@ -1,10 +1,17 @@
 import { normalizeSelector, nameToPaddedFelt } from "./normalize";
 import { FACTORY_QUERIES, buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
+import type { Chain } from "@contracts";
 import type { FactoryContractRow } from "./types";
+import { env } from "../../../env";
 
 interface WorldDeployment {
   worldAddress: string | null;
   rpcUrl: string | null;
+}
+
+interface RealtimeWorldDeploymentResponse {
+  worldAddress?: string | null;
+  rpcUrl?: string | null;
 }
 
 // Use shared SQL utils from @bibliothecadao/torii
@@ -39,6 +46,119 @@ export const isToriiAvailable = async (toriiBaseUrl: string): Promise<boolean> =
     return res.ok;
   } catch {
     return false;
+  }
+};
+
+type WorldToriiProbePath = "/sql" | "/health";
+
+const buildWorldToriiProbeUrl = (toriiBaseUrl: string, path: WorldToriiProbePath): string =>
+  `${toriiBaseUrl.replace(/\/+$/, "")}${path}`;
+
+const classifyWorldToriiProbeResponse = (response: Response): boolean | null => {
+  if (response.ok) return true;
+  if (response.status === 404) return false;
+  return null;
+};
+
+const probeWorldToriiPath = async (
+  toriiBaseUrl: string,
+  path: WorldToriiProbePath,
+  timeoutMs: number,
+): Promise<boolean | null> => {
+  try {
+    const response = await fetch(buildWorldToriiProbeUrl(toriiBaseUrl, path), {
+      method: "GET",
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    return classifyWorldToriiProbeResponse(response);
+  } catch {
+    return null;
+  }
+};
+
+/**
+ * Probes a world's Torii endpoint without requiring any world-specific tables.
+ * Returns:
+ *   - `true`  : Torii responded on `/sql` or `/health`
+ *   - `false` : `/sql` explicitly 404'd, which means the indexed world route is gone
+ *   - `null`  : indeterminate; callers must not evict saved state on this value
+ */
+export const probeWorldToriiAlive = async (
+  toriiBaseUrl: string | null | undefined,
+  timeoutMs = 2_000,
+): Promise<boolean | null> => {
+  if (!toriiBaseUrl) return null;
+
+  const sqlProbeResult = await probeWorldToriiPath(toriiBaseUrl, "/sql", timeoutMs);
+  if (sqlProbeResult !== null) return sqlProbeResult;
+
+  const healthProbeResult = await probeWorldToriiPath(toriiBaseUrl, "/health", timeoutMs);
+  if (healthProbeResult === true) return true;
+
+  return null;
+};
+
+/**
+ * Fetch bulk world availability from the realtime server.
+ * Returns a map of world names to alive/dead status.
+ */
+export const fetchBulkAvailability = async (realtimeServerUrl: string): Promise<Record<string, boolean>> => {
+  try {
+    const response = await fetch(`${realtimeServerUrl}/api/availability/worlds`, {
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) return {};
+    return (await response.json()) as Record<string, boolean>;
+  } catch {
+    return {};
+  }
+};
+
+/**
+ * Probes a slot world's RPC URL with a `starknet_chainId` call — the exact
+ * request `ControllerConnector` makes during init. Returns:
+ *   - `true`  : RPC responded with a chain ID (deployment is alive)
+ *   - `false` : RPC explicitly reports the deployment is gone (HTTP 404, or
+ *               JSON-RPC `-32000 deployment {name} not found`). Caller should
+ *               evict the saved profile and fall back to env defaults.
+ *   - `null`  : indeterminate (network error, timeout, CORS). Caller MUST NOT
+ *               false-evict on null — a transient blip would wipe profiles
+ *               that are actually fine.
+ *
+ * The realtime-server's bulk availability endpoint isn't used here because it
+ * has a 30s polling lag plus a 5-min stale cache, so a freshly-GC'd Cartridge
+ * deployment can stay flagged "alive" long after `starknet_chainId` is 404'ing.
+ */
+export const probeSlotDeploymentRpcAlive = async (
+  rpcUrl: string | null | undefined,
+  timeoutMs = 2_000,
+): Promise<boolean | null> => {
+  if (!rpcUrl) return null;
+
+  try {
+    const response = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", method: "starknet_chainId", params: [], id: 1 }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+
+    if (response.status === 404) return false;
+    if (!response.ok) return null;
+
+    const payload = (await response.json()) as { result?: string; error?: { code?: number; message?: string } };
+    if (payload?.result) return true;
+
+    // Only treat as dead on EXPLICIT deployment-not-found message text. The
+    // `-32000` JSON-RPC code alone is too broad — Cartridge uses it for many
+    // transient server errors (rate limits, gateway hiccups), and treating
+    // those as "dead" would false-evict live worlds and bounce the user out.
+    const errorMessage = String(payload?.error?.message ?? "").toLowerCase();
+    if (errorMessage.includes("deployment") && errorMessage.includes("not found")) return false;
+    if (errorMessage.includes("no such deployment")) return false;
+    return null;
+  } catch {
+    return null;
   }
 };
 
@@ -120,11 +240,45 @@ const extractWorldAddressFromRow = (row: Record<string, unknown>): string | null
   );
 };
 
+const resolveWorldDeploymentFromRealtime = async (chain: Chain, worldName: string): Promise<WorldDeployment | null> => {
+  const realtimeBaseUrl = env.VITE_PUBLIC_REALTIME_URL;
+  if (!realtimeBaseUrl) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(`${realtimeBaseUrl}/api/world-deployments/${chain}/${encodeURIComponent(worldName)}`, {
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (!response.ok) {
+      return null;
+    }
+
+    const payload = (await response.json()) as RealtimeWorldDeploymentResponse;
+    const worldAddress = normalizeAddress(payload.worldAddress);
+    const rpcUrl = normalizeString(payload.rpcUrl);
+
+    if (!worldAddress && !rpcUrl) {
+      return null;
+    }
+
+    return { worldAddress, rpcUrl };
+  } catch {
+    return null;
+  }
+};
+
 export const resolveWorldDeploymentFromFactory = async (
   factorySqlBaseUrl: string,
+  chain: Chain,
   worldName: string,
 ): Promise<WorldDeployment | null> => {
   if (!factorySqlBaseUrl) return null;
+
+  const realtimeDeployment = await resolveWorldDeploymentFromRealtime(chain, worldName);
+  if (realtimeDeployment) {
+    return realtimeDeployment;
+  }
 
   const paddedName = nameToPaddedFelt(worldName);
   const query = FACTORY_QUERIES.WORLD_DEPLOYED_BY_PADDED_NAME(paddedName);
@@ -150,8 +304,9 @@ export const resolveWorldDeploymentFromFactory = async (
  */
 export const resolveWorldAddressFromFactory = async (
   factorySqlBaseUrl: string,
+  chain: Chain,
   worldName: string,
 ): Promise<string | null> => {
-  const deployment = await resolveWorldDeploymentFromFactory(factorySqlBaseUrl, worldName);
+  const deployment = await resolveWorldDeploymentFromFactory(factorySqlBaseUrl, chain, worldName);
   return deployment?.worldAddress ?? null;
 };

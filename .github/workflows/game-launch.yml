@@ -27,6 +27,10 @@ on:
       game_start_time:
         description: "Game start time (unix seconds, unix milliseconds, or ISO-8601)"
         required: false
+      config_path:
+        description: "Optional repo-relative YAML config file for game, series, or rotation launches"
+        required: false
+        type: string
       series_name:
         description: "Series name (required when launch_kind=series)"
         required: false
@@ -91,6 +95,7 @@ on:
           - create-world
           - wait-for-factory-index
           - configure-world
+          - reserve-blitz-hyperstructures
           - grant-lootchest-role
           - grant-village-pass-role
           - create-banks
@@ -117,6 +122,7 @@ jobs:
       GAME_LAUNCH_ENVIRONMENT: ${{ github.event.inputs.environment }}
       GAME_LAUNCH_GAME_NAME: ${{ github.event.inputs.game_name }}
       GAME_LAUNCH_START_TIME: ${{ github.event.inputs.game_start_time }}
+      GAME_LAUNCH_CONFIG_PATH: ${{ github.event.inputs.config_path }}
       GAME_LAUNCH_SERIES_NAME: ${{ github.event.inputs.series_name }}
       GAME_LAUNCH_SERIES_GAMES_JSON: ${{ github.event.inputs.series_games_json }}
       GAME_LAUNCH_ROTATION_NAME: ${{ github.event.inputs.rotation_name }}
@@ -143,12 +149,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: latest
+        uses: pnpm/action-setup@v4
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
@@ -176,6 +180,19 @@ jobs:
         run: |
           set -euo pipefail
 
+          mkdir -p .context/game-launch
+
+          if [ -n "${GAME_LAUNCH_CONFIG_PATH:-}" ]; then
+            bun config/deployer/clean/cli/print-launch-workflow-env.ts \
+              --config-path "${GAME_LAUNCH_CONFIG_PATH}" \
+              --launch-kind "${GAME_LAUNCH_KIND}" \
+              --environment "${GAME_LAUNCH_ENVIRONMENT}" \
+              > .context/game-launch/launch-config-inputs.sh
+
+            # shellcheck disable=SC1091
+            source .context/game-launch/launch-config-inputs.sh
+          fi
+
           GAME_LAUNCH_NETWORK="${GAME_LAUNCH_ENVIRONMENT%%.*}"
           GAME_LAUNCH_GAME_TYPE="${GAME_LAUNCH_ENVIRONMENT##*.}"
 
@@ -186,6 +203,11 @@ jobs:
 
           if [ "${GAME_LAUNCH_STEP}" = "sync-paymaster" ] && [ "${GAME_LAUNCH_NETWORK}" != "mainnet" ]; then
             echo "sync-paymaster is only supported for mainnet environments" >&2
+            exit 1
+          fi
+
+          if [ "${GAME_LAUNCH_STEP}" = "reserve-blitz-hyperstructures" ] && [ "${GAME_LAUNCH_GAME_TYPE}" != "blitz" ]; then
+            echo "reserve-blitz-hyperstructures is only supported for blitz environments" >&2
             exit 1
           fi
 
@@ -221,6 +243,7 @@ jobs:
             singleRealmMode: "GAME_LAUNCH_SINGLE_REALM_MODE",
             twoPlayerMode: "GAME_LAUNCH_TWO_PLAYER_MODE",
             durationSeconds: "GAME_LAUNCH_DURATION_SECONDS",
+            weeklyCadence: "GAME_LAUNCH_WEEKLY_CADENCE_JSON",
             mapConfigOverrides: "GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON",
             blitzRegistrationOverrides: "GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON",
             cartridgeApiBase: "GAME_LAUNCH_CARTRIDGE_API_BASE",
@@ -236,6 +259,8 @@ jobs:
             skipLootChestRoleGrant: "GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT",
             skipBanks: "GAME_LAUNCH_SKIP_BANKS",
             dryRun: "GAME_LAUNCH_DRY_RUN",
+            workflowFile: "GAME_LAUNCH_WORKFLOW_FILE",
+            ref: "GAME_LAUNCH_REF",
           };
 
           function shellQuote(value) {
@@ -255,7 +280,6 @@ jobs:
           NODE
           }
 
-          mkdir -p .context/game-launch
           write_launch_options_shell
 
           # shellcheck disable=SC1091
@@ -269,6 +293,11 @@ jobs:
           fi
 
           cat > .context/game-launch/launch-env.sh <<'EOF'
+          if [ -f .context/game-launch/launch-config-inputs.sh ]; then
+            # shellcheck disable=SC1091
+            source .context/game-launch/launch-config-inputs.sh
+          fi
+
           if [ -f .context/game-launch/launch-options.sh ]; then
             # shellcheck disable=SC1091
             source .context/game-launch/launch-options.sh
@@ -313,6 +342,7 @@ jobs:
             append_optional_arg "${args_name}" --single-realm-mode "${GAME_LAUNCH_SINGLE_REALM_MODE:-}"
             append_optional_arg "${args_name}" --two-player-mode "${GAME_LAUNCH_TWO_PLAYER_MODE:-}"
             append_optional_arg "${args_name}" --duration-seconds "${GAME_LAUNCH_DURATION_SECONDS:-}"
+            append_optional_arg "${args_name}" --weekly-cadence-json "${GAME_LAUNCH_WEEKLY_CADENCE_JSON:-}"
             append_optional_arg "${args_name}" --cartridge-api-base "${GAME_LAUNCH_CARTRIDGE_API_BASE:-}"
             append_optional_arg "${args_name}" --torii-namespaces "${GAME_LAUNCH_TORII_NAMESPACES:-}"
             append_optional_arg "${args_name}" --vrf-provider-address "${GAME_LAUNCH_VRF_PROVIDER_ADDRESS:-}"
@@ -325,6 +355,8 @@ jobs:
             append_optional_arg "${args_name}" --skip-lootchest-role-grant "${GAME_LAUNCH_SKIP_LOOTCHEST_ROLE_GRANT:-}"
             append_optional_arg "${args_name}" --skip-banks "${GAME_LAUNCH_SKIP_BANKS:-}"
             append_optional_arg "${args_name}" --dry-run "${GAME_LAUNCH_DRY_RUN:-}"
+            append_optional_arg "${args_name}" --workflow-file "${GAME_LAUNCH_WORKFLOW_FILE:-}"
+            append_optional_arg "${args_name}" --ref "${GAME_LAUNCH_REF:-}"
             append_optional_arg "${args_name}" --map-config-overrides-json "${GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON:-}"
             append_optional_arg "${args_name}" --blitz-registration-overrides-json "${GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON:-}"
           }
@@ -353,18 +385,19 @@ jobs:
               --series-games-json "${GAME_LAUNCH_SERIES_GAMES_JSON}"
             )
           elif [ "${GAME_LAUNCH_KIND}" = "rotation" ]; then
-            if [ -z "${GAME_LAUNCH_ROTATION_NAME}" ] || [ -z "${GAME_LAUNCH_FIRST_GAME_START_TIME}" ] || [ -z "${GAME_LAUNCH_GAME_INTERVAL_MINUTES}" ] || [ -z "${GAME_LAUNCH_MAX_GAMES}" ] || [ -z "${GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES}" ]; then
-              echo "Rotation launches require rotation_name, first_game_start_time, game_interval_minutes, max_games, and evaluation_interval_minutes" >&2
+            if [ -z "${GAME_LAUNCH_ROTATION_NAME}" ] || [ -z "${GAME_LAUNCH_FIRST_GAME_START_TIME}" ] || [ -z "${GAME_LAUNCH_MAX_GAMES}" ] || [ -z "${GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES}" ] || { [ -z "${GAME_LAUNCH_GAME_INTERVAL_MINUTES}" ] && [ -z "${GAME_LAUNCH_WEEKLY_CADENCE_JSON:-}" ]; }; then
+              echo "Rotation launches require rotation_name, first_game_start_time, max_games, evaluation_interval_minutes, and either game_interval_minutes or weekly_cadence_json" >&2
               exit 1
             fi
 
             args+=(
               --rotation-name "${GAME_LAUNCH_ROTATION_NAME}"
               --first-game-start-time "${GAME_LAUNCH_FIRST_GAME_START_TIME}"
-              --game-interval-minutes "${GAME_LAUNCH_GAME_INTERVAL_MINUTES}"
               --max-games "${GAME_LAUNCH_MAX_GAMES}"
               --evaluation-interval-minutes "${GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES}"
             )
+
+            append_optional_arg args --game-interval-minutes "${GAME_LAUNCH_GAME_INTERVAL_MINUTES}"
 
             if [ -n "${GAME_LAUNCH_ADVANCE_WINDOW_GAMES}" ]; then
               args+=(--advance-window-games "${GAME_LAUNCH_ADVANCE_WINDOW_GAMES}")
@@ -411,11 +444,12 @@ jobs:
               --environment "${GAME_LAUNCH_ENVIRONMENT}"
               --rotation-name "${GAME_LAUNCH_ROTATION_NAME}"
               --first-game-start-time "${GAME_LAUNCH_FIRST_GAME_START_TIME}"
-              --game-interval-minutes "${GAME_LAUNCH_GAME_INTERVAL_MINUTES}"
               --max-games "${GAME_LAUNCH_MAX_GAMES}"
               --evaluation-interval-minutes "${GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES}"
               --launch-step "${GAME_LAUNCH_STEP}"
             )
+
+            append_optional_arg run_store_args --game-interval-minutes "${GAME_LAUNCH_GAME_INTERVAL_MINUTES}"
 
             if [ -n "${GAME_LAUNCH_ADVANCE_WINDOW_GAMES}" ]; then
               run_store_args+=(--advance-window-games "${GAME_LAUNCH_ADVANCE_WINDOW_GAMES}")
@@ -552,6 +586,9 @@ jobs:
                 ;;
               configure-world|configure-worlds)
                 printf 'configure-world'
+                ;;
+              reserve-blitz-hyperstructures)
+                printf 'reserve-blitz-hyperstructures'
                 ;;
               grant-lootchest-role|grant-lootchest-roles)
                 printf 'grant-lootchest-role'
@@ -833,6 +870,29 @@ jobs:
           set -euo pipefail
           source .context/game-launch/launch-env.sh
           run_launch_step configure-worlds
+
+      - name: Reserve blitz hyperstructures
+        if:
+          ${{ github.event.inputs.launch_kind == 'game' && endsWith(github.event.inputs.environment, '.blitz') &&
+          (github.event.inputs.launch_step == 'full' || github.event.inputs.launch_step == 'create-world' ||
+          github.event.inputs.launch_step == 'wait-for-factory-index' || github.event.inputs.launch_step ==
+          'configure-world' || github.event.inputs.launch_step == 'reserve-blitz-hyperstructures') }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step reserve-blitz-hyperstructures
+
+      - name: Reserve blitz hyperstructures for series
+        if:
+          ${{ (github.event.inputs.launch_kind == 'series' || github.event.inputs.launch_kind == 'rotation') &&
+          endsWith(github.event.inputs.environment, '.blitz') && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'create-series' || github.event.inputs.launch_step == 'create-worlds' ||
+          github.event.inputs.launch_step == 'wait-for-factory-indexes' || github.event.inputs.launch_step ==
+          'configure-worlds' || github.event.inputs.launch_step == 'reserve-blitz-hyperstructures') }}
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+          run_launch_step reserve-blitz-hyperstructures
 
       - name: Grant loot chest role
         if:

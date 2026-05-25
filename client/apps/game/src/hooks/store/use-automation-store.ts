@@ -28,6 +28,12 @@ export const isAutomationResourceBlocked = (
 };
 
 export const MAX_RESOURCE_ALLOCATION_PERCENT = 90;
+// Execution-time safety ceiling on per-input spend. User-facing percentages remain
+// clamped at MAX_RESOURCE_ALLOCATION_PERCENT, but the effective budget applied during
+// plan building is bounded here to absorb drift between the client's projected balance
+// and the on-chain balance at tx inclusion (torii indexer lag, production projection
+// overshoot, un-indexed sibling burns).
+export const AUTOMATION_INPUT_BUDGET_PERCENT = 75;
 export const DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES: ResourceAutomationPercentages = {
   resourceToResource: 0,
   laborToResource: 5,
@@ -61,6 +67,12 @@ export interface RealmAutomationExecutionSummary {
   consumptionByResource: Record<number, number>;
   outputsByResource: Record<number, number>;
   skipped: { resourceId: ResourcesIds; reason: string }[];
+  /**
+   * Skip reasons keyed by resourceId, derived from `skipped`. Useful for consumers
+   * (e.g. the realm sidebar) that want a direct map lookup without scanning the
+   * `skipped` array each render.
+   */
+  skippedByResource: Record<number, string>;
 }
 
 export type AutomationExecutionStatus = "success" | "failed" | "skipped";
@@ -426,13 +438,31 @@ export const useAutomationStore = create<ProductionAutomationState>()(
           let sanitizedLastExecution: RealmAutomationExecutionSummary | undefined;
           if (realm.lastExecution && typeof realm.lastExecution === "object") {
             const { resourceToLabor: _deprecated, ...rest } = realm.lastExecution as any;
+            const skipped: { resourceId: ResourcesIds; reason: string }[] = Array.isArray(rest.skipped)
+              ? rest.skipped
+              : [];
+            const skippedByResource: Record<number, string> = {};
+            if (rest.skippedByResource && typeof rest.skippedByResource === "object") {
+              Object.entries(rest.skippedByResource as Record<string, unknown>).forEach(([key, reason]) => {
+                if (typeof reason === "string") {
+                  skippedByResource[Number(key)] = reason;
+                }
+              });
+            } else {
+              skipped.forEach((entry) => {
+                if (entry && typeof entry.resourceId === "number" && typeof entry.reason === "string") {
+                  skippedByResource[entry.resourceId] = entry.reason;
+                }
+              });
+            }
             sanitizedLastExecution = {
               executedAt: typeof rest.executedAt === "number" ? rest.executedAt : Date.now(),
               resourceToResource: Array.isArray(rest.resourceToResource) ? rest.resourceToResource : [],
               laborToResource: Array.isArray(rest.laborToResource) ? rest.laborToResource : [],
               consumptionByResource: rest.consumptionByResource ?? {},
               outputsByResource: rest.outputsByResource ?? {},
-              skipped: Array.isArray(rest.skipped) ? rest.skipped : [],
+              skipped,
+              skippedByResource,
             };
           }
 

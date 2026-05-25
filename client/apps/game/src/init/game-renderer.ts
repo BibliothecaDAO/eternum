@@ -1,54 +1,31 @@
 import type { SetupResult } from "@bibliothecadao/dojo";
 
-import GameRenderer from "../three/game-renderer";
+import { createGameRendererSession, type GameRendererSession } from "./game-renderer-session";
+
+let activeGameRendererSession: GameRendererSession | null = null;
 
 export const initializeGameRenderer = async (setupResult: SetupResult, enableDevTools: boolean) => {
-  // CRITICAL: Clean up any existing GameRenderer before creating a new one
-  // This prevents memory leaks when navigating home and back to the game
-  if ((window as any).__cleanupGameRenderer) {
-    console.log("[initializeGameRenderer] Cleaning up existing GameRenderer before creating new one");
-    (window as any).__cleanupGameRenderer();
-  }
+  disposeActiveGameRendererSession();
+  const session = await createGameRendererSession({
+    enableDevTools,
+    setupResult,
+  });
+  activeGameRendererSession = session;
 
-  const renderer = new GameRenderer(setupResult);
-
-  await renderer.initScene();
-  if (enableDevTools) {
-    renderer.initStats();
-  }
-
-  const existingUnloadHandler = window.onbeforeunload;
-  let isDestroyed = false;
-
-  const cleanup = () => {
-    if (isDestroyed) {
-      return;
-    }
-    isDestroyed = true;
-
-    try {
-      renderer.destroy();
-      console.log("GameRenderer cleaned up");
-    } catch (error) {
-      console.error("Error during GameRenderer cleanup:", error);
-    } finally {
-      window.removeEventListener("pagehide", cleanup);
-      window.onbeforeunload = existingUnloadHandler;
-      if ((window as any).__cleanupGameRenderer === cleanup) {
-        delete (window as any).__cleanupGameRenderer;
-      }
+  return () => {
+    session.cleanup();
+    if (activeGameRendererSession === session) {
+      activeGameRendererSession = null;
     }
   };
-
-  window.onbeforeunload = (event) => {
-    if (existingUnloadHandler) {
-      existingUnloadHandler.call(window, event);
-    }
-    cleanup();
-  };
-
-  window.addEventListener("pagehide", cleanup);
-  (window as any).__cleanupGameRenderer = cleanup;
-
-  return cleanup;
 };
+
+function disposeActiveGameRendererSession() {
+  if (!activeGameRendererSession) {
+    return;
+  }
+
+  console.log("[initializeGameRenderer] Cleaning up existing GameRenderer before creating new one");
+  activeGameRendererSession.cleanup();
+  activeGameRendererSession = null;
+}

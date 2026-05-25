@@ -9,6 +9,7 @@ type BuildReservationState = {
 type InternalBuildReservationState = BuildReservationState & {
   occupiedUpdatedAt: Map<string, number>;
   vacatedUpdatedAt: Map<string, number>;
+  activeBuildsByType: Map<number, number>;
 };
 
 type ReconcileOptions = {
@@ -40,6 +41,7 @@ const getOrCreateState = (realmEntityId: number): InternalBuildReservationState 
     vacated: new Set<string>(),
     occupiedUpdatedAt: new Map<string, number>(),
     vacatedUpdatedAt: new Map<string, number>(),
+    activeBuildsByType: new Map<number, number>(),
   };
   stateByRealm.set(realmEntityId, state);
   return state;
@@ -58,8 +60,37 @@ const clearVacated = (state: InternalBuildReservationState, key: string) => {
 const isSettled = (updatedAt: number, now: number, settleMs: number) => now - updatedAt >= settleMs;
 const isStale = (updatedAt: number, now: number, staleMs: number) => now - updatedAt >= staleMs;
 
+const clearStaleBuildPlacements = (state: InternalBuildReservationState, now: number, staleMs: number) => {
+  Array.from(state.activeBuildsByType.entries()).forEach(([buildingType, updatedAt]) => {
+    if (isStale(updatedAt, now, staleMs)) {
+      state.activeBuildsByType.delete(buildingType);
+    }
+  });
+};
+
 export const getBuildReservationState = (realmEntityId: number): BuildReservationState => {
   return getOrCreateState(realmEntityId);
+};
+
+export const beginRealmBuildPlacement = (
+  realmEntityId: number,
+  buildingType: number,
+  now: number = Date.now(),
+): { started: boolean } => {
+  const state = getOrCreateState(realmEntityId);
+  clearStaleBuildPlacements(state, now, RESERVATION_STALE_MS);
+
+  if (state.activeBuildsByType.has(buildingType)) {
+    return { started: false };
+  }
+
+  state.activeBuildsByType.set(buildingType, now);
+  return { started: true };
+};
+
+export const completeRealmBuildPlacement = (realmEntityId: number, buildingType: number) => {
+  const state = getOrCreateState(realmEntityId);
+  state.activeBuildsByType.delete(buildingType);
 };
 
 export const reserveOccupiedBuildSpot = (realmEntityId: number, spot: SpotInput, now: number = Date.now()) => {
@@ -98,6 +129,8 @@ export const reconcileBuildReservationState = (
   const now = options.now ?? Date.now();
   const settleMs = options.settleMs ?? RESERVATION_RECONCILE_SETTLE_MS;
   const staleMs = options.staleMs ?? RESERVATION_STALE_MS;
+
+  clearStaleBuildPlacements(state, now, staleMs);
 
   Array.from(state.occupied).forEach((key) => {
     const updatedAt = state.occupiedUpdatedAt.get(key) ?? now;

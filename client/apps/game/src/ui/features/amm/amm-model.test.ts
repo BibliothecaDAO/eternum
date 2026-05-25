@@ -17,6 +17,9 @@ const LORDS_ADDRESS = "0xlords";
 const STONE_ADDRESS = "0x439a1c010e3e1bb2d43d43411000893c0042bd88f6c701611a0ea914d426da4";
 const COAL_ADDRESS = "0xce635e3f241b0ae78c46a929d84a9101910188f9c4024eaa7559556503c31a";
 const WOOD_ADDRESS = "0x40d8907cec0f7ae9c364dfb12485a1314d84c129bf1898d2f3d4b7fcc7d44f4";
+const DONKEY_ADDRESS = "0x264be95a4a2ace20add68cb321acdccd2f9f8440ee1c7abd85da44ddab01085";
+const KNIGHT_ADDRESS = "0xac965f9e67164723c16735a9da8dbc9eb8e43b1bd0323591e87c056badf606";
+const WHEAT_ADDRESS = "0x57a3f1ee475e072ce3be41785c0e889b7295d7a0dcc22b992c5b9408dbeb280";
 
 function createPool(tokenAddress: string, overrides?: Partial<Pool>): Pool {
   return {
@@ -162,5 +165,34 @@ describe("amm-model", () => {
     });
 
     expect(orderedPools.map((pool) => pool.tokenAddress)).toEqual([COAL_ADDRESS, WOOD_ADDRESS, STONE_ADDRESS]);
+  });
+
+  it("orders AMM pools by the requested default editorial sequence", () => {
+    const orderedPools = orderAmmPools(
+      [KNIGHT_ADDRESS, DONKEY_ADDRESS, WOOD_ADDRESS, WHEAT_ADDRESS].map((address) => createPool(address)),
+      {
+        lordsAddress: LORDS_ADDRESS,
+        orderBy: "default" as unknown as "mcap" | "resourceIds" | "tvl",
+        marketCapByTokenAddress: new Map(),
+      },
+    );
+
+    expect(orderedPools.map((pool) => pool.tokenAddress)).toEqual([
+      WOOD_ADDRESS,
+      DONKEY_ADDRESS,
+      WHEAT_ADDRESS,
+      KNIGHT_ADDRESS,
+    ]);
+  });
+
+  it("places unknown pools after the known default editorial sequence", () => {
+    const UNKNOWN_ADDRESS = "0x999999999";
+    const orderedPools = orderAmmPools([createPool(UNKNOWN_ADDRESS), createPool(DONKEY_ADDRESS)], {
+      lordsAddress: LORDS_ADDRESS,
+      orderBy: "default" as unknown as "mcap" | "resourceIds" | "tvl",
+      marketCapByTokenAddress: new Map(),
+    });
+
+    expect(orderedPools.map((pool) => pool.tokenAddress)).toEqual([DONKEY_ADDRESS, UNKNOWN_ADDRESS]);
   });
 });

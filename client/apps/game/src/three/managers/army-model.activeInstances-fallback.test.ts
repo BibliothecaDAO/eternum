@@ -158,6 +158,35 @@ describe("ArmyModel activeInstances fallback fix (Stage 0)", () => {
     expect(modelData.activeInstances.has(slot)).toBe(false);
   });
 
+  it("clearInstanceSlot removes stale model memberships when owner is known", () => {
+    const subject = new ArmyModel(new Scene());
+    const entityId = 101;
+    const slot = subject.allocateInstanceSlot(entityId);
+
+    const activeModelData = createModelData();
+    const staleModelData = createModelData();
+    (subject as any).models.set(ModelType.Knight1, activeModelData);
+    (subject as any).models.set(ModelType.Crossbowman1, staleModelData);
+    (subject as any).entityModelMap.set(entityId, ModelType.Knight1);
+    (subject as any).activeBaseModelByEntity.set(entityId, ModelType.Knight1);
+
+    activeModelData.activeInstances.add(slot);
+    staleModelData.activeInstances.add(slot);
+    (subject as any).ensureModelCapacity(activeModelData, slot + 1);
+    (subject as any).ensureModelCapacity(staleModelData, slot + 1);
+
+    const oldPosition = new Matrix4().makeTranslation(5, 0, 5);
+    activeModelData.instancedMeshes[0].setMatrixAt(slot, oldPosition);
+    staleModelData.instancedMeshes[0].setMatrixAt(slot, oldPosition);
+
+    (subject as any).clearInstanceSlot(slot);
+
+    expect(activeModelData.activeInstances.has(slot)).toBe(false);
+    expect(staleModelData.activeInstances.has(slot)).toBe(false);
+    expectSlotToBeZeroed(activeModelData.instancedMeshes[0], slot);
+    expectSlotToBeZeroed(staleModelData.instancedMeshes[0], slot);
+  });
+
   it("clearInstanceSlot removes index from activeInstances in fallback path", () => {
     const subject = new ArmyModel(new Scene());
     const entityId = 200;
@@ -268,3 +297,12 @@ describe("ArmyModel activeInstances fallback fix (Stage 0)", () => {
     expect(modelData.instancedMeshes[0].count).toBe(0);
   });
 });
+
+function expectSlotToBeZeroed(mesh: InstancedMesh, slot: number) {
+  const resultMatrix = new Matrix4();
+  mesh.getMatrixAt(slot, resultMatrix);
+  const elements = resultMatrix.elements;
+  expect(elements[0]).toBe(0);
+  expect(elements[5]).toBe(0);
+  expect(elements[10]).toBe(0);
+}

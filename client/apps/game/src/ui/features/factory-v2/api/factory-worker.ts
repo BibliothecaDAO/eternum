@@ -268,6 +268,11 @@ export interface FactoryWorkerRotationRunRecord extends FactoryWorkerBaseRunReco
     maxGames: number;
     advanceWindowGames: number;
     evaluationIntervalMinutes: number;
+    weeklyCadence?: Array<{
+      gameNamePrefix: string;
+      weekday: string;
+      utcTime: string;
+    }>;
     rpcUrl: string;
     factoryAddress: string;
     autoRetryEnabled: boolean;
@@ -299,6 +304,7 @@ export interface CreateFactoryRunRequest {
   environment: FactoryWorkerEnvironmentId;
   gameName: string;
   gameStartTime: string;
+  workflowRef?: string;
   devModeOn?: boolean;
   twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
@@ -310,6 +316,7 @@ export interface CreateFactoryRunRequest {
 export interface CreateFactorySeriesRunRequest {
   environment: FactoryWorkerEnvironmentId;
   seriesName: string;
+  workflowRef?: string;
   games: Array<{
     gameName: string;
     startTime: string;
@@ -327,6 +334,7 @@ export interface CreateFactorySeriesRunRequest {
 export interface CreateFactoryRotationRunRequest {
   environment: FactoryWorkerEnvironmentId;
   rotationName: string;
+  workflowRef?: string;
   firstGameStartTime: string;
   gameIntervalMinutes: number;
   maxGames: number;

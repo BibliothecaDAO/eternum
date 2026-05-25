@@ -1,18 +1,38 @@
+import Package from "lucide-react/dist/esm/icons/package";
 import Loader from "lucide-react/dist/esm/icons/loader";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Swords from "lucide-react/dist/esm/icons/swords";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
-import { memo, useMemo } from "react";
+import { memo, type ReactNode, useMemo } from "react";
 
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
+import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
+import { Tabs } from "@/ui/design-system/atoms/tab";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
+import {
+  isStaminaRecharging,
+  STAMINA_RECHARGING_FILL_CLASS,
+  STAMINA_RECHARGING_TEXT_CLASS,
+  STAMINA_RECHARGING_TRACK_CLASS,
+} from "@/ui/shared/lib/stamina-visuals";
+import { resolveStaminaDisplay } from "@/ui/shared/lib/stamina-display";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, EntityType, ID, RelicRecipientType, TroopType } from "@bibliothecadao/types";
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { ArmyWarning } from "../../armies/army-warning";
-import { CompactEntityInventory } from "../compact-entity-inventory";
+import { buildDisplayItems, CompactEntityInventory, countDisplayItems } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
 import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
+import { EntityBannerTabCue, resolveEntityBannerRelicCue } from "./entity-banner-tab-cue";
+import {
+  ARMY_RESOURCE_INVENTORY_TAB_LABEL,
+  formatArmyCombatTabCue,
+  formatArmyTroopCountLabel,
+  shouldShowArmyResourceInventoryTab,
+} from "./army-banner-tabs";
 
 interface ArmyBannerEntityDetailProps {
   armyEntityId: ID;
@@ -40,6 +60,13 @@ const ArmyBannerEntityDetailContent = memo(
       isLoadingDelete,
     } = useArmyEntityDetail({ armyEntityId });
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
+    const currentDefaultTick = useCurrentDefaultTick();
+    const inventoryItems = useMemo(
+      () => buildDisplayItems(explorerResources, currentDefaultTick, activeRelicIds, RelicRecipientType.Explorer),
+      [activeRelicIds, currentDefaultTick, explorerResources],
+    );
+    const inventoryCounts = useMemo(() => countDisplayItems(inventoryItems), [inventoryItems]);
+    const resolvedWorldMode = useResolvedWorldGameMode();
     const ownerUsername = derivedData?.addressName ?? null;
     const { data: ownerProfileByUsername } = usePlayerAvatarByUsername(ownerUsername);
     const ownerAvatarUrl = ownerProfileByUsername?.avatarUrl ?? null;
@@ -67,6 +94,28 @@ const ArmyBannerEntityDetailContent = memo(
     const statusClass = derivedData.isMine
       ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
       : "border-red-400/40 bg-red-400/15 text-red-200";
+    const troopCount = explorer.troops.count;
+    const troopCountLabel = formatArmyTroopCountLabel(troopCount);
+    const combatTabCue = formatArmyCombatTabCue(troopCount);
+    const currentStamina = derivedData.staminaDisplay?.displayCurrent ?? Number(derivedData.stamina.amount);
+    const maxStamina = derivedData.maxStamina;
+    const minTravelCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
+    const combatCueTone =
+      maxStamina === 0
+        ? "muted"
+        : currentStamina < minTravelCost
+          ? "danger"
+          : currentStamina < maxStamina
+            ? "warning"
+            : "success";
+    const showResourceInventoryTab = shouldShowArmyResourceInventoryTab(resolvedWorldMode, inventoryCounts.resources);
+    const resourceInventoryCueTone = inventoryCounts.resources > 0 ? "default" : "muted";
+    const totalRelicCount = inventoryCounts.totalRelics;
+    const usableRelicCount = derivedData.isMine ? inventoryCounts.usableRelics : 0;
+    const relicCue = resolveEntityBannerRelicCue(usableRelicCount, totalRelicCount);
+    const relicTabLabel = relicCue.state === "empty" ? "Relics 0" : `Relics ${usableRelicCount}/${totalRelicCount}`;
+    const showCombatRelicActions = derivedData.isMine && usableRelicCount > 0;
+    const combatRelicActionLimit = compact ? 4 : undefined;
 
     return (
       <EntityDetailSection
@@ -116,41 +165,113 @@ const ArmyBannerEntityDetailContent = memo(
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-2">
-          <TroopChip troops={explorer.troops} size="sm" className="w-full" />
-          {derivedData.stamina && derivedData.maxStamina ? (
-            <InlineStaminaBar stamina={derivedData.stamina} maxStamina={derivedData.maxStamina} />
-          ) : null}
-        </div>
+        <Tabs variant="entityBanner" className="flex min-h-0 flex-1 flex-col gap-2">
+          <Tabs.Panels className="flex-1 min-h-0">
+            <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-2">
+              <TroopChip troops={explorer.troops} size="sm" className="w-full" />
+              {derivedData.stamina && derivedData.maxStamina ? (
+                <InlineStaminaBar
+                  currentStamina={currentStamina}
+                  maxStamina={maxStamina}
+                  isRecharging={derivedData.staminaDisplay?.isRecharging}
+                  rightAccessory={
+                    hasWarnings && explorerResources && structureResources ? (
+                      <ArmyWarning
+                        army={explorer}
+                        explorerResources={explorerResources}
+                        structureResources={structureResources}
+                      />
+                    ) : null
+                  }
+                />
+              ) : null}
+              {showCombatRelicActions ? (
+                <CompactEntityInventory
+                  resources={explorerResources}
+                  activeRelicIds={activeRelicIds}
+                  recipientType={RelicRecipientType.Explorer}
+                  entityId={armyEntityId}
+                  entityType={EntityType.ARMY}
+                  allowRelicActivation
+                  variant="tight"
+                  maxItems={combatRelicActionLimit}
+                  filter="usableRelics"
+                  showHiddenCount={false}
+                  emptyMessage="No relics ready."
+                  className="min-h-0"
+                />
+              ) : null}
+              {visibleRelicEffects.length > 0 ? (
+                <ActiveRelicEffects
+                  relicEffects={relicEffects}
+                  entityId={armyEntityId}
+                  variant="inline"
+                  maxItems={compact ? 2 : undefined}
+                  className="min-h-0"
+                />
+              ) : null}
+            </Tabs.Panel>
 
-        {hasWarnings && explorerResources && structureResources ? (
-          <ArmyWarning army={explorer} explorerResources={explorerResources} structureResources={structureResources} />
-        ) : null}
+            {showResourceInventoryTab && (
+              <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-2">
+                <CompactEntityInventory
+                  resources={explorerResources}
+                  activeRelicIds={activeRelicIds}
+                  recipientType={RelicRecipientType.Explorer}
+                  entityId={armyEntityId}
+                  entityType={EntityType.ARMY}
+                  variant="tight"
+                  maxItems={inventoryLimit}
+                  filter="resources"
+                  emptyMessage="No resources carried."
+                />
+              </Tabs.Panel>
+            )}
 
-        {visibleRelicEffects.length > 0 && (
-          <ActiveRelicEffects relicEffects={visibleRelicEffects} entityId={armyEntityId} compact />
-        )}
-        {hiddenRelicEffects > 0 && (
-          <p className="text-xxs text-gold/60 italic">+{hiddenRelicEffects} more relic effect(s) active</p>
-        )}
+            <Tabs.Panel scrollable={false} className="flex h-full min-h-0 flex-col gap-2">
+              {visibleRelicEffects.length > 0 && (
+                <ActiveRelicEffects relicEffects={visibleRelicEffects} entityId={armyEntityId} compact />
+              )}
+              {hiddenRelicEffects > 0 && (
+                <p className="text-xxs text-gold/60 italic">+{hiddenRelicEffects} more relic effect(s) active</p>
+              )}
+              <CompactEntityInventory
+                resources={explorerResources}
+                activeRelicIds={activeRelicIds}
+                recipientType={RelicRecipientType.Explorer}
+                entityId={armyEntityId}
+                entityType={EntityType.ARMY}
+                allowRelicActivation={derivedData.isMine}
+                variant="tight"
+                maxItems={inventoryLimit}
+                filter="relics"
+                emptyMessage="No relics attached."
+              />
+            </Tabs.Panel>
+          </Tabs.Panels>
 
-        <div className="flex flex-col gap-2">
-          <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Relics</span>
-          {explorerResources ? (
-            <CompactEntityInventory
-              resources={explorerResources}
-              activeRelicIds={activeRelicIds}
-              recipientType={RelicRecipientType.Explorer}
-              entityId={armyEntityId}
-              entityType={EntityType.ARMY}
-              allowRelicActivation={derivedData.isMine}
-              variant="tight"
-              maxItems={inventoryLimit}
-            />
-          ) : (
-            <p className="text-xxs text-gold/60 italic">No relics attached.</p>
-          )}
-        </div>
+          <Tabs.List>
+            <Tabs.Tab aria-label={`Combat ${troopCountLabel}`} title={`Combat ${troopCountLabel}`}>
+              <EntityBannerTabCue icon={Swords} label="Combat" cue={combatTabCue} tone={combatCueTone} />
+            </Tabs.Tab>
+            {showResourceInventoryTab && (
+              <Tabs.Tab
+                aria-label={`${ARMY_RESOURCE_INVENTORY_TAB_LABEL} ${inventoryCounts.resources}`}
+                title={`${ARMY_RESOURCE_INVENTORY_TAB_LABEL} ${inventoryCounts.resources}`}
+              >
+                <EntityBannerTabCue
+                  icon={Package}
+                  label={ARMY_RESOURCE_INVENTORY_TAB_LABEL}
+                  cue={inventoryCounts.resources}
+                  tone={resourceInventoryCueTone}
+                />
+              </Tabs.Tab>
+            )}
+            <Tabs.Tab aria-label={relicTabLabel} title={relicTabLabel} disabled={relicCue.disabled}>
+              <EntityBannerTabCue icon={Sparkles} label="Relics" splitCue={relicCue.splitCue} />
+            </Tabs.Tab>
+          </Tabs.List>
+        </Tabs>
 
         {/* {derivedData.isMine ? (
           <ExplorationAutomationCompact explorerId={explorer.explorer_id ?? armyEntityId} compact={compact} />
@@ -180,33 +301,60 @@ export const ArmyBannerEntityDetail = memo(
 ArmyBannerEntityDetail.displayName = "ArmyBannerEntityDetail";
 
 const InlineStaminaBar = ({
-  stamina,
+  currentStamina,
   maxStamina,
+  isRecharging,
+  rightAccessory,
 }: {
-  stamina: { amount: bigint; updated_tick: bigint };
+  currentStamina: number;
   maxStamina: number;
+  isRecharging?: boolean | null;
+  rightAccessory?: ReactNode;
 }) => {
-  if (!stamina || maxStamina === 0) return null;
-  const staminaValue = Number(stamina.amount);
-  const percentage = (staminaValue / maxStamina) * 100;
+  if (maxStamina === 0) return null;
+  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
+    current: currentStamina,
+    max: maxStamina,
+  });
   const minTravelCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
+  const recharging = isRecharging ?? isStaminaRecharging(displayedCurrent, maxStamina);
 
   let fillClass = "bg-progress-bar-danger";
-  if (staminaValue >= minTravelCost) {
+  if (displayedCurrent >= minTravelCost) {
     fillClass =
-      percentage > 66 ? "bg-progress-bar-good" : percentage > 33 ? "bg-progress-bar-medium" : "bg-progress-bar-danger";
+      displayPercentage > 66
+        ? "bg-progress-bar-good"
+        : displayPercentage > 33
+          ? "bg-progress-bar-medium"
+          : "bg-progress-bar-danger";
   }
 
   return (
     <div className="flex items-center gap-2 text-xxs text-gold/80">
-      <Lightning className="h-3 w-3 fill-order-power" />
-      <div className="flex-1 h-2 rounded-full border border-gray-600 overflow-hidden">
+      <Lightning className={cn("h-3 w-3 fill-order-power", recharging && STAMINA_RECHARGING_TEXT_CLASS)} />
+      <div
+        className={cn(
+          "flex-1 h-2 rounded-full border border-gray-600 overflow-hidden",
+          recharging && STAMINA_RECHARGING_TRACK_CLASS,
+        )}
+      >
         <div
-          className={`${fillClass} h-full rounded-full transition-all duration-300`}
-          style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+          className={cn(fillClass, "h-full rounded-full opacity-45 transition-all duration-300")}
+          style={{ width: `${committedPercentage}%` }}
+        />
+        <div
+          className={cn(
+            fillClass,
+            "h-full rounded-full transition-all duration-1000 -mt-2",
+            recharging && STAMINA_RECHARGING_FILL_CLASS,
+          )}
+          style={{ width: `${displayPercentage}%` }}
         />
       </div>
-      <span className="whitespace-nowrap">{`${staminaValue}/${maxStamina}`}</span>
+      <span className={cn("whitespace-nowrap", recharging && STAMINA_RECHARGING_TEXT_CLASS)}>
+        {`${displayedCurrent}/${maxStamina}`}
+      </span>
+      {rightAccessory ? <div className="flex shrink-0 items-center">{rightAccessory}</div> : null}
     </div>
   );
 };

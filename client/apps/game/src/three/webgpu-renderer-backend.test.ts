@@ -5,6 +5,8 @@ import {
   snapshotRendererDiagnostics,
   syncRendererBackendDiagnostics,
 } from "./renderer-diagnostics";
+import { RendererInitTimeoutError } from "./renderer-backend-v2";
+import { resetRendererStartupTimings, snapshotRendererStartupTimings } from "./perf/renderer-startup-telemetry";
 import { createWebGPURendererBackend } from "./webgpu-renderer-backend";
 
 beforeEach(() => {
@@ -16,6 +18,7 @@ beforeEach(() => {
     createElement: vi.fn(() => ({ nodeName: "CANVAS" })),
   });
   resetRendererDiagnostics();
+  resetRendererStartupTimings();
 });
 
 function createRendererSurface() {
@@ -96,6 +99,117 @@ describe("createWebGPURendererBackend", () => {
     expect(backend.renderer).toBeUndefined();
   });
 
+  it("disposes a partially created renderer when initialization hangs past the timeout", async () => {
+    vi.useFakeTimers();
+    const renderer = Object.assign(createRendererSurface(), {
+      init: vi.fn(
+        () =>
+          new Promise<void>(() => {
+            // Keep initialization pending to exercise the timeout fallback path.
+          }),
+      ),
+    });
+    const backend = createWebGPURendererBackend(
+      {
+        graphicsSetting: "HIGH" as never,
+        isMobileDevice: false,
+        pixelRatio: 1,
+        requestedMode: "experimental-webgpu-auto",
+      },
+      {
+        createRenderer: vi.fn(async () => ({
+          activeMode: "webgpu" as const,
+          renderer,
+        })),
+        now: vi.fn(() => 0),
+      },
+    );
+
+    const initPromise = backend.initialize();
+    const initExpectation = expect(initPromise).rejects.toThrow("WebGPU renderer init timed out after 12000ms");
+    await vi.advanceTimersByTimeAsync(12_000);
+
+    await initExpectation;
+    expect(renderer.dispose).toHaveBeenCalledTimes(1);
+    expect(backend.renderer).toBeUndefined();
+    vi.useRealTimers();
+  });
+
+  it("times out the whole experimental backend when renderer creation never resolves", async () => {
+    vi.useFakeTimers();
+    let receivedSignal: AbortSignal | undefined;
+    const backend = createWebGPURendererBackend(
+      {
+        graphicsSetting: "HIGH" as never,
+        isMobileDevice: false,
+        pixelRatio: 1,
+        requestedMode: "experimental-webgpu-auto",
+      },
+      {
+        createRenderer: vi.fn(
+          ({ signal }: { signal: AbortSignal }) =>
+            new Promise<never>(() => {
+              receivedSignal = signal;
+            }),
+        ),
+        now: vi.fn().mockReturnValueOnce(0).mockReturnValue(15_000),
+      },
+    );
+
+    const initPromise = backend.initialize();
+    const initExpectation = expect(initPromise).rejects.toThrow(RendererInitTimeoutError);
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    await initExpectation;
+    expect(receivedSignal?.aborted).toBe(true);
+    expect(snapshotRendererStartupTimings()).toEqual({
+      "webgpu-backend-total": 15000,
+    });
+    vi.useRealTimers();
+  });
+
+  it("disposes a renderer that resolves after the total startup timeout", async () => {
+    vi.useFakeTimers();
+    const renderer = Object.assign(createRendererSurface(), {
+      init: vi.fn(async () => {}),
+    });
+    const backend = createWebGPURendererBackend(
+      {
+        graphicsSetting: "HIGH" as never,
+        isMobileDevice: false,
+        pixelRatio: 1,
+        requestedMode: "experimental-webgpu-auto",
+      },
+      {
+        createRenderer: vi.fn(
+          ({ signal }: { signal: AbortSignal }) =>
+            new Promise<{ activeMode: "webgpu"; renderer: typeof renderer }>((resolve) => {
+              setTimeout(() => {
+                expect(signal.aborted).toBe(true);
+                resolve({
+                  activeMode: "webgpu" as const,
+                  renderer,
+                });
+              }, 15_100);
+            }),
+        ),
+        now: vi
+          .fn(() => 0)
+          .mockReturnValueOnce(0)
+          .mockReturnValueOnce(15_000),
+      },
+    );
+
+    const initPromise = backend.initialize();
+    const initExpectation = expect(initPromise).rejects.toThrow(RendererInitTimeoutError);
+    await vi.advanceTimersByTimeAsync(15_000);
+    await initExpectation;
+    await vi.advanceTimersByTimeAsync(100);
+
+    expect(renderer.dispose).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
   it("marks the diagnostics as degraded when the gpu device is lost", async () => {
     let resolveLost: ((value: { message: string }) => void) | undefined;
     const renderer = Object.assign(createRendererSurface(), {
@@ -158,9 +272,12 @@ describe("createWebGPURendererBackend", () => {
           renderer: Object.assign(renderer, { init }),
         })),
         now: vi
-          .fn(() => 100)
+          .fn()
           .mockReturnValueOnce(100)
-          .mockReturnValueOnce(124),
+          .mockReturnValueOnce(110)
+          .mockReturnValueOnce(120)
+          .mockReturnValueOnce(124)
+          .mockReturnValue(124),
       },
     );
 

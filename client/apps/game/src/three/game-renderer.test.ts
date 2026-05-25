@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { waitForRendererLabelElement } from "./renderer-label-runtime";
 
 /**
  * These tests validate the lifecycle safety fixes in game-renderer.ts:
@@ -16,71 +17,35 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // Bug 2a: waitForLabelRendererElement promise rejection on destroy
 // ---------------------------------------------------------------------------
 
-/**
- * Mirrors the fixed waitForLabelRendererElement logic.
- * The key change: reject(new Error(...)) when isDestroyed, instead of bare return.
- */
-function waitForLabelRendererElement(context: {
-  isDestroyed: boolean;
-  getElementById: (id: string) => HTMLDivElement | null;
-  requestAnimationFrame: (cb: () => void) => void;
-}): Promise<HTMLDivElement> {
-  return new Promise((resolve, reject) => {
-    const WARN_AFTER_ATTEMPTS = 300;
-    let attempts = 0;
-
-    const checkElement = () => {
-      if (context.isDestroyed) {
-        reject(new Error("GameRenderer destroyed while waiting for label renderer element"));
-        return;
-      }
-
-      const element = context.getElementById("labelrenderer");
-      if (element) {
-        resolve(element);
-        return;
-      }
-
-      attempts++;
-      if (attempts === WARN_AFTER_ATTEMPTS) {
-        // warn suppressed in test
-      }
-
-      context.requestAnimationFrame(checkElement);
-    };
-
-    checkElement();
-  });
-}
-
 describe("waitForLabelRendererElement lifecycle safety", () => {
   it("rejects with an error when isDestroyed is true before element is found", async () => {
     const context = {
-      isDestroyed: true,
+      isDisposed: () => true,
       getElementById: () => null,
       requestAnimationFrame: () => {},
     };
 
-    await expect(waitForLabelRendererElement(context)).rejects.toThrow(
+    await expect(waitForRendererLabelElement(context)).rejects.toThrow(
       "GameRenderer destroyed while waiting for label renderer element",
     );
   });
 
   it("rejects when isDestroyed becomes true mid-poll", async () => {
     const rafCallbacks: (() => void)[] = [];
+    let isDisposed = false;
     const context = {
-      isDestroyed: false,
+      isDisposed: () => isDisposed,
       getElementById: () => null,
       requestAnimationFrame: (cb: () => void) => {
         rafCallbacks.push(cb);
       },
     };
 
-    const promise = waitForLabelRendererElement(context);
+    const promise = waitForRendererLabelElement(context);
 
     // First rAF was scheduled (element not found); now destroy
     expect(rafCallbacks.length).toBe(1);
-    context.isDestroyed = true;
+    isDisposed = true;
 
     // Fire the queued rAF callback
     rafCallbacks[0]();
@@ -91,18 +56,18 @@ describe("waitForLabelRendererElement lifecycle safety", () => {
   it("resolves normally when element exists and isDestroyed is false", async () => {
     const mockElement = { id: "labelrenderer" } as unknown as HTMLDivElement;
     const context = {
-      isDestroyed: false,
+      isDisposed: () => false,
       getElementById: () => mockElement,
       requestAnimationFrame: () => {},
     };
 
-    const result = await waitForLabelRendererElement(context);
+    const result = await waitForRendererLabelElement(context);
     expect(result).toBe(mockElement);
   });
 
   it("rejection is caught gracefully in the .then().catch() chain (no unhandled rejection)", async () => {
     const context = {
-      isDestroyed: true,
+      isDisposed: () => true,
       getElementById: () => null,
       requestAnimationFrame: () => {},
     };
@@ -110,7 +75,7 @@ describe("waitForLabelRendererElement lifecycle safety", () => {
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     // Simulate the exact .then().catch() chain from the constructor
-    await waitForLabelRendererElement(context)
+    await waitForRendererLabelElement(context)
       .then((_labelRendererElement) => {
         // This should NOT fire when promise is rejected
         throw new Error("then() should not have been called");

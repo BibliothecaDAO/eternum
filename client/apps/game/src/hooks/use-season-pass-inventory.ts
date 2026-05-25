@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { RpcProvider } from "starknet";
 import type { Chain } from "@contracts";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
+import { createContractEntrypointSupportResolver, parseUint256CallResult } from "./pass-inventory-rpc";
 
 export interface SeasonPassInventoryItem {
   tokenId: bigint;
@@ -26,13 +27,6 @@ interface UseSeasonPassInventoryReturn {
   error: string | null;
   refetch: () => void;
 }
-
-const parseUint256 = (result: string[] | undefined): bigint => {
-  if (!result || result.length < 2) return 0n;
-  const low = BigInt(result[0] ?? 0);
-  const high = BigInt(result[1] ?? 0);
-  return low + (high << 128n);
-};
 
 const toLittleEndianBytes = (value: bigint): number[] => {
   const bytes: number[] = [];
@@ -107,6 +101,7 @@ export const useSeasonPassInventory = ({
   }, [chain, rpcUrl]);
 
   const provider = useMemo(() => new RpcProvider({ nodeUrl: resolvedRpcUrl }), [resolvedRpcUrl]);
+  const supportsEntrypoint = useMemo(() => createContractEntrypointSupportResolver(provider), [provider]);
 
   const refetch = useCallback(() => {
     setRefreshTick((prev) => prev + 1);
@@ -145,7 +140,7 @@ export const useSeasonPassInventory = ({
           entrypoint: "balance_of",
           calldata: [ownerAddress],
         });
-        const balance = parseUint256(balanceResult as string[]);
+        const balance = parseUint256CallResult(balanceResult as string[]);
         if (!cancelled) {
           setSeasonPassBalance(balance);
         }
@@ -153,6 +148,15 @@ export const useSeasonPassInventory = ({
         if (balance === 0n) {
           if (!cancelled) {
             setSeasonPasses([]);
+          }
+          return;
+        }
+
+        const canEnumerateSeasonPasses = await supportsEntrypoint(seasonPassAddress, "token_of_owner_by_index");
+        if (!canEnumerateSeasonPasses) {
+          if (!cancelled) {
+            setSeasonPasses([]);
+            setError("Season pass detected, but this contract does not expose token enumeration.");
           }
           return;
         }
@@ -165,7 +169,7 @@ export const useSeasonPassInventory = ({
             entrypoint: "token_of_owner_by_index",
             calldata: [ownerAddress, index.toString(), "0"],
           });
-          const tokenId = parseUint256(tokenResult as string[]);
+          const tokenId = parseUint256CallResult(tokenResult as string[]);
 
           let realmName = `Realm #${tokenId.toString()}`;
           let resourceIds: number[] = [];
@@ -224,7 +228,7 @@ export const useSeasonPassInventory = ({
     return () => {
       cancelled = true;
     };
-  }, [enabled, ownerAddress, provider, refreshTick, seasonPassAddress]);
+  }, [enabled, ownerAddress, provider, refreshTick, seasonPassAddress, supportsEntrypoint]);
 
   return {
     seasonPassBalance,

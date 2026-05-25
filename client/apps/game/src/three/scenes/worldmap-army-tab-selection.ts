@@ -24,10 +24,12 @@ interface ShouldClearPendingArmyMovementInput {
 
 interface ResolvePendingArmyMovementSelectionPlanInput extends ShouldClearPendingArmyMovementInput {
   hasPendingMovement: boolean;
+  isOptimisticMovementActive?: boolean;
 }
 
 interface ResolvePendingArmyMovementFallbackPlanInput extends ShouldClearPendingArmyMovementInput {
   hasPendingMovement: boolean;
+  hasPendingMovementResolution?: boolean;
 }
 
 interface PendingArmyMovementSelectionPlan {
@@ -40,6 +42,18 @@ interface PendingArmyMovementFallbackPlan {
   shouldDeleteFallbackTimeout: boolean;
   shouldClearPendingMovement: boolean;
   shouldRequestChunkRefresh: boolean;
+}
+
+interface ResolvePendingArmyMovementTxFailurePlanInput {
+  txHash: string;
+  txEntityMap: Map<string, number>;
+  pendingEntities: Set<number>;
+  optimisticEntities?: Set<number>;
+}
+
+interface PendingArmyMovementTxFailurePlan {
+  shouldClearPendingMovement: boolean;
+  entityId: number | undefined;
 }
 
 /**
@@ -93,10 +107,22 @@ export function shouldClearPendingArmyMovement(input: ShouldClearPendingArmyMove
 
 /**
  * Decide stale-clear behavior when an army selection is attempted.
+ *
+ * When optimistic movement is unresolved, selection stays blocked. The tx is
+ * still valid, just visually running ahead of the indexer, and accepting a new
+ * command here would create a hidden follow-up intent rather than a real tx.
  */
 export function resolvePendingArmyMovementSelectionPlan(
   input: ResolvePendingArmyMovementSelectionPlanInput,
 ): PendingArmyMovementSelectionPlan {
+  if (input.isOptimisticMovementActive) {
+    return {
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+      shouldBlockSelection: true,
+    };
+  }
+
   if (!input.hasPendingMovement) {
     return {
       shouldClearPendingMovement: false,
@@ -120,7 +146,9 @@ export function resolvePendingArmyMovementSelectionPlan(
 export function resolvePendingArmyMovementFallbackPlan(
   input: ResolvePendingArmyMovementFallbackPlanInput,
 ): PendingArmyMovementFallbackPlan {
-  if (!input.hasPendingMovement) {
+  const hasMovementToResolve = input.hasPendingMovement || input.hasPendingMovementResolution === true;
+
+  if (!hasMovementToResolve) {
     return {
       shouldDeleteFallbackTimeout: true,
       shouldClearPendingMovement: false,
@@ -135,4 +163,27 @@ export function resolvePendingArmyMovementFallbackPlan(
     shouldClearPendingMovement,
     shouldRequestChunkRefresh: shouldClearPendingMovement,
   };
+}
+
+/**
+ * Decide whether to clear pending movement when a transaction fails on-chain.
+ * The txEntityMap correlates transaction hashes to the entity that initiated the move.
+ */
+export function resolvePendingArmyMovementTxFailurePlan(
+  input: ResolvePendingArmyMovementTxFailurePlanInput,
+): PendingArmyMovementTxFailurePlan {
+  const entityId = input.txEntityMap.get(input.txHash);
+
+  if (entityId === undefined) {
+    return { shouldClearPendingMovement: false, entityId: undefined };
+  }
+
+  const hasPendingMovement = input.pendingEntities.has(entityId);
+  const hasOptimisticMovement = input.optimisticEntities?.has(entityId) ?? false;
+
+  if (!hasPendingMovement && !hasOptimisticMovement) {
+    return { shouldClearPendingMovement: false, entityId };
+  }
+
+  return { shouldClearPendingMovement: true, entityId };
 }

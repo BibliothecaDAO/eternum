@@ -899,6 +899,9 @@ export class ClientConfigManager {
             single_realm_mode: Boolean(blitzSettlementConfig.single_realm_mode),
             two_player_mode: twoPlayerMode,
           },
+          blitz_exploration_config: {
+            reward_profile_id: Number(config.blitz_exploration_config?.reward_profile_id ?? 0),
+          },
           blitz_registration_config: {
             fee_amount: BigInt(blitzRegistrationConfig.fee_amount),
             fee_token: BigInt(blitzRegistrationConfig.fee_token),
@@ -931,6 +934,9 @@ export class ClientConfigManager {
           point: 0,
           single_realm_mode: false,
           two_player_mode: false,
+        },
+        blitz_exploration_config: {
+          reward_profile_id: 0,
         },
         blitz_registration_config: {
           fee_amount: BigInt(0),

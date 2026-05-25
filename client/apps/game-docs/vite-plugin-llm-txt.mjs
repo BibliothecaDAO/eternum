@@ -12,9 +12,7 @@ import remarkStringify from "remark-stringify";
 const __dirname = path.dirname(new URL(import.meta.url).pathname);
 const docsDir = path.resolve(__dirname, "docs");
 const publicDir = path.resolve(__dirname, "../../public"); // Assumes public dir is client/public
-const botDir = path.resolve(__dirname, "../bot"); // New output directory
 const outputFile = path.resolve(publicDir, "llm.txt");
-const botOutputFile = path.resolve(botDir, "llm.txt"); // New output file path
 
 const processor = remark().use(remarkMdx).use(remarkInclude).use(remarkGfm).use(remarkStringify);
 
@@ -58,11 +56,8 @@ ${processed.toString()}
         const combinedContent = scanned.join("\n\n---\n\n"); // Separator between files
 
         await fs.promises.writeFile(outputFile, combinedContent);
-        // Also write to the bot directory
-        await fs.promises.mkdir(botDir, { recursive: true }); // Ensure bot directory exists
-        await fs.promises.writeFile(botOutputFile, combinedContent);
 
-        console.log(`Successfully generated llm.txt at ${outputFile} and ${botOutputFile}`);
+        console.log(`Successfully generated llm.txt at ${outputFile}`);
       } catch (error) {
         console.error("Error generating llm.txt:", error);
       }

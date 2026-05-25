@@ -22,7 +22,8 @@ const LOCAL_BLITZ_CHAIN_CONFIG: ConfigPatch = {
     delaySeconds: 0,
   },
   speed: {
-    donkey: 0,
+    donkey_for_resources: 0,
+    donkey_for_troops: 0,
   },
   season: {
     startSettlingAfterSeconds: 59,
@@ -61,7 +62,7 @@ const SEPOLIA_BLITZ_CHAIN_CONFIG: ConfigPatch = {
   troop: {
     limit: {
       mercenariesTroopLowerBound: 100,
-      mercenariesTroopUpperBound: 1500,
+      mercenariesTroopUpperBound: 1600,
     },
   },
   exploration: {

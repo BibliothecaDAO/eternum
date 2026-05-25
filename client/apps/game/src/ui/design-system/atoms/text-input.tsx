@@ -8,9 +8,9 @@ interface TextInputProps {
   className?: string;
   placeholder?: string;
   maxLength?: number;
-  onBlur?: (e: any) => void;
-  onFocus?: (e: any) => void;
-  onKeyDown?: (e: any) => void;
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onFocus?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
 }
 
 const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref) => {
@@ -21,7 +21,7 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref
       onSubmit={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        (e.target as any).reset();
+        (e.target as HTMLFormElement).reset();
       }}
       className={clsx(
         "w-full transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder-white/25 flex-grow bg-transparent button-wood rounded-lg",

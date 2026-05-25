@@ -9,26 +9,37 @@ function readSource(relativePath: string): string {
 }
 
 describe("Stage 5: removal visual hide", () => {
-  it("scheduleArmyRemoval calls hideArmyVisual before scheduling timeout", () => {
+  it("scheduleArmyRemoval keeps source visuals alive while movement is still in flight", () => {
     const src = readSource("worldmap.tsx");
 
     // Find the method definition (private scheduleArmyRemoval)
     const methodStart = src.indexOf("private scheduleArmyRemoval(");
     expect(methodStart).toBeGreaterThan(-1);
 
-    const methodBody = src.slice(methodStart, methodStart + 2000);
+    const methodBody = src.slice(methodStart, methodStart + 2600);
 
-    const metaSetPos = methodBody.indexOf("pendingArmyRemovalMeta.set(");
-    const hideVisualPos = methodBody.indexOf("hideArmyVisual(");
-    const schedulePos = methodBody.indexOf("const schedule =");
+    expect(methodBody).toContain(
+      'const hasPendingMovement = reason === "tile" && this.pendingArmyMovements.has(entityId);',
+    );
+    expect(methodBody).toContain("this.armyManager.isArmyMoving(entityId)");
+    expect(methodBody).toContain("hasMovementInFlight");
+    expect(methodBody).toContain("shouldHideSourceArmyOnTileRemoval({");
+    expect(methodBody).toContain("hasMovementInFlight");
+    expect(methodBody).not.toContain("if (!hasPendingMovement) {");
+    expect(methodBody).toContain("this.armyManager.hideArmyVisual(entityId);");
+  });
 
-    expect(metaSetPos).toBeGreaterThan(-1);
-    expect(hideVisualPos).toBeGreaterThan(-1);
-    expect(schedulePos).toBeGreaterThan(-1);
+  it("scheduleArmyRemoval ignores stale tile removals after the tracked army already moved", () => {
+    const src = readSource("worldmap.tsx");
 
-    // hideArmyVisual must appear after pendingArmyRemovalMeta.set and before const schedule
-    expect(hideVisualPos).toBeGreaterThan(metaSetPos);
-    expect(hideVisualPos).toBeLessThan(schedulePos);
+    const methodStart = src.indexOf("private scheduleArmyRemoval(");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodBody = src.slice(methodStart, methodStart + 2600);
+    expect(methodBody).toContain("isStaleTrackedArmyTileRemoval({");
+    expect(methodBody).toContain("this.armyManager.unsuppressArmy(entityId)");
+    expect(methodBody).toContain("restoreArmyVisualIfVisible(entityId)");
+    expect(methodBody).toContain("this.armyManager.hideArmyVisual(entityId);");
   });
 
   it("hideArmyVisual is a public method on ArmyManager", () => {

@@ -87,8 +87,6 @@ export const COSMETICS_NETWORK_CONFIG: Record<
   },
 };
 
-export const COSMETICS_NETWORKS: CosmeticsNetwork[] = ["mainnet", "sepolia"];
-
 const normalizeChainId = (value: bigint | string | null | undefined): string | null => {
   if (value === null || value === undefined) return null;
 

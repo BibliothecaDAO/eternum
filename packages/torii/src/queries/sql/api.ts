@@ -17,6 +17,7 @@ import {
   BattleLogEvent,
   ChestInfo,
   ChestTile,
+  ExploredTileBounds,
   EntityWithRelics,
   EventType,
   Guard,
@@ -28,11 +29,15 @@ import {
   PlayersData,
   PlayerStructure,
   QuestTileData,
+  RawSettlementPlannerRealm,
+  RawSettlementPlannerVillage,
   RawPlayerLeaderboardRow,
   RawRealmVillageSlot,
   RealmVillageSlot,
   ResourceBalanceRow,
   SeasonEnded,
+  SettlementPlannerSnapshot,
+  SettlementPlannerTile,
   StoryEventData,
   StructureDetails,
   StructureLocation,
@@ -79,11 +84,30 @@ type TileOptRow = {
   data: TileDataInput;
 };
 
+const parseDirectionSlots = (rawDirections: string | null | undefined): RealmVillageSlot["directions_left"] => {
+  if (!rawDirections) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(rawDirections);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 const buildCacheUrl = (baseUrl: string, path: string): URL => {
   const trimmed = baseUrl.trim().replace(/\/+$/, "");
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
   return new URL(`${trimmed}${normalizedPath}`);
 };
+
+// Short-lived dedupe + TTL for fetchStructuresByOwner. Callers mount concurrently
+// during boot (use-player-structure-sync + others) and re-query the same owner
+// within a few hundred ms. gRPC subscription reconciles any staleness within a block.
+const STRUCTURES_BY_OWNER_TTL_MS = 500;
+const structuresByOwnerCache = new Map<string, { promise: Promise<StructureLocation[]>; expiresAt: number }>();
 
 export class SqlApi {
   constructor(
@@ -156,12 +180,36 @@ export class SqlApi {
   /**
    * Fetch structures by owner from the SQL database.
    * SQL queries always return arrays.
+   *
+   * Concurrent calls for the same owner share a single in-flight request, and
+   * repeats within {@link STRUCTURES_BY_OWNER_TTL_MS} reuse the resolved result.
    */
   async fetchStructuresByOwner(owner: string): Promise<StructureLocation[]> {
+    const cacheKey = `${this.baseUrl}|${owner}`;
+    const cached = structuresByOwnerCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.promise;
+    }
+
     const formattedOwner = formatAddressForQuery(owner);
     const query = STRUCTURE_QUERIES.STRUCTURES_BY_OWNER.replace("{owner}", formattedOwner);
     const url = buildApiUrl(this.baseUrl, query);
-    return await fetchWithErrorHandling<StructureLocation>(url, "Failed to fetch structures by owner");
+    const promise = fetchWithErrorHandling<StructureLocation>(url, "Failed to fetch structures by owner");
+
+    // Evict on rejection so the next caller retries instead of inheriting the error.
+    promise.catch(() => {
+      const current = structuresByOwnerCache.get(cacheKey);
+      if (current?.promise === promise) {
+        structuresByOwnerCache.delete(cacheKey);
+      }
+    });
+
+    structuresByOwnerCache.set(cacheKey, {
+      promise,
+      expiresAt: Date.now() + STRUCTURES_BY_OWNER_TTL_MS,
+    });
+
+    return promise;
   }
 
   /**
@@ -171,8 +219,6 @@ export class SqlApi {
   async fetchRealmVillageSlots(): Promise<RealmVillageSlot[]> {
     const url = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.REALM_VILLAGE_SLOTS);
     const rawData = await fetchWithErrorHandling<RawRealmVillageSlot>(url, "Failed to fetch village slots");
-
-    // Parse the directions_left string for each item
     return rawData.map((item) => ({
       connected_realm_coord: {
         col: item["connected_realm_coord.x"],
@@ -180,8 +226,55 @@ export class SqlApi {
       },
       connected_realm_entity_id: item.connected_realm_entity_id,
       connected_realm_id: item.connected_realm_id,
-      directions_left: JSON.parse(item.directions_left || "[]"),
+      directions_left: parseDirectionSlots(item.directions_left),
     }));
+  }
+
+  async fetchSettlementPlannerSnapshot(): Promise<SettlementPlannerSnapshot> {
+    const realmsUrl = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.SETTLEMENT_PLANNER_REALMS);
+    const villagesUrl = buildApiUrl(this.baseUrl, STRUCTURE_QUERIES.SETTLEMENT_PLANNER_VILLAGES);
+
+    const [rawRealms, rawVillages] = await Promise.all([
+      fetchWithErrorHandling<RawSettlementPlannerRealm>(realmsUrl, "Failed to fetch settlement planner realms"),
+      fetchWithErrorHandling<RawSettlementPlannerVillage>(villagesUrl, "Failed to fetch settlement planner villages"),
+    ]);
+
+    return {
+      realms: rawRealms.map((realm) => ({
+        entityId: realm.entity_id,
+        realmId: realm.realm_id,
+        ownerAddress: realm.owner_address,
+        ownerName: realm.owner_name,
+        coordX: realm.coord_x,
+        coordY: realm.coord_y,
+        villagesCount: Number(realm.villages_count ?? 0),
+        directionsLeft: parseDirectionSlots(realm.directions_left),
+      })),
+      villages: rawVillages.map((village) => ({
+        entityId: village.entity_id,
+        coordX: village.coord_x,
+        coordY: village.coord_y,
+      })),
+    };
+  }
+
+  async fetchExploredTilesInBounds(bounds: ExploredTileBounds): Promise<SettlementPlannerTile[]> {
+    const query = TILES_QUERIES.TILES_IN_BOUNDS.replace("{minX}", bounds.minX.toString())
+      .replace("{maxX}", bounds.maxX.toString())
+      .replace("{minY}", bounds.minY.toString())
+      .replace("{maxY}", bounds.maxY.toString());
+    const url = buildApiUrl(this.baseUrl, query);
+    const rows = await fetchWithErrorHandling<TileOptRow>(url, "Failed to fetch explored tiles in bounds");
+
+    return rows
+      .map((row) => tileDataToTile(row.data))
+      .filter((tile) => !tile.alt && Number(tile.biome) !== 0)
+      .map((tile) => ({
+        coordX: tile.col,
+        coordY: tile.row,
+        biome: Number(tile.biome),
+        alt: tile.alt,
+      }));
   }
 
   /**

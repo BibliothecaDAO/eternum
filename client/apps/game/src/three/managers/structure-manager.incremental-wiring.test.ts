@@ -13,7 +13,7 @@ describe("StructureManager incremental update wiring", () => {
     const source = readStructureManagerSource();
 
     expect(source).toMatch(/resolveVisibleStructureUpdateMode\(/);
-    expect(source).toMatch(/visibleUpdateMode === "patch" && existingStructure && structureRecord/);
+    expect(source).toMatch(/visibleUpdateMode === "patch" && input\.existingStructure && input\.structureRecord/);
     expect(source).toMatch(/this\.patchVisibleStructure\(/);
   });
 });

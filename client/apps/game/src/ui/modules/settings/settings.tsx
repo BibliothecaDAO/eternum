@@ -7,19 +7,18 @@ import { ReactComponent as DojoMark } from "@/assets/icons/dojo-mark-full-dark.s
 import { ReactComponent as RealmsWorld } from "@/assets/icons/rw-logo.svg";
 import { AudioCategory, ScrollingTrackName, useAudio, useMusicPlayer, useUISound } from "@/audio";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { applyWorldSelection } from "@/runtime/world";
 import { ToriiSetting } from "@/types";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { GraphicsSettings } from "@/ui/config";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
 import { OSWindow, settings } from "@/ui/features/world";
-import { openWorldSelectorModal } from "@/ui/features/world-selector";
+import { redirectToLandingWorldSelection } from "@/ui/features/world-selector";
 import { addressToNumber, displayAddress } from "@/ui/utils/utils";
 import { DEFAULT_TORII_SETTING } from "@/utils/config";
 import { getAddressName } from "@bibliothecadao/eternum";
 import { useDojo, useGuilds, useScreenOrientation } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
-import type { Chain } from "@contracts";
 import * as platform from "platform";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -89,6 +88,7 @@ export const SettingsWindow = () => {
 
   const { toggleFullScreen, isFullScreen } = useScreenOrientation();
   const [fullScreen, setFullScreen] = useState<boolean>(isFullScreen());
+  const mode = useGameModeConfig();
 
   const initialToriiSetting = (localStorage.getItem("TORII_SETTING") as ToriiSetting) || DEFAULT_TORII_SETTING;
   const [toriiSetting, setToriiSetting] = useState<ToriiSetting>(initialToriiSetting);
@@ -212,16 +212,12 @@ export const SettingsWindow = () => {
               <div>Switch Game</div>
               <Button
                 size="xs"
-                onClick={async () => {
+                onClick={() => {
+                  toast("Redirecting to the landing page to change games…");
                   try {
-                    const selection = await openWorldSelectorModal();
-                    await applyWorldSelection(selection, gameEnv.VITE_PUBLIC_CHAIN as Chain);
-                    toast(`World set to ${selection.name}. Reloading…`);
-                    setTimeout(() => {
-                      window.location.href = "/play";
-                    }, 600);
-                  } catch (e) {
-                    // cancelled
+                    redirectToLandingWorldSelection();
+                  } catch {
+                    // Redirect helper throws to terminate legacy async flows.
                   }
                 }}
               >
@@ -442,7 +438,7 @@ export const SettingsWindow = () => {
                   <Muted className="w-4 cursor-pointer fill-gold" />
                 </Button>
               )}
-              <ScrollingTrackName trackName={trackName || "Loading..."} />
+              <ScrollingTrackName trackName={trackName || "Loading..."} trackArtist={mode.audio.trackArtist} />
               <Button variant="outline" onClick={nextTrack}>
                 <Next className="w-2 cursor-pointer fill-gold" />
               </Button>

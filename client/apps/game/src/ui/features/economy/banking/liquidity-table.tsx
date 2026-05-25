@@ -2,7 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 
 import TextInput from "@/ui/design-system/atoms/text-input";
-import { LiquidityResourceRow } from "@/ui/features/economy/banking";
+import { LiquidityResourceRow } from "./liquidity-resource-row";
 import { ID, ResourcesIds, resources } from "@bibliothecadao/types";
 import { useState } from "react";
 

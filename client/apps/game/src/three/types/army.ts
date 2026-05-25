@@ -3,13 +3,16 @@ import {
   Vector3,
   Euler,
   Color,
+  CatmullRomCurve3,
   InstancedMesh,
   Group,
   Mesh,
+  Object3D,
   AnimationMixer,
   AnimationClip,
   AnimationAction,
 } from "three";
+import { EasingType } from "../utils/easing";
 
 export interface MovementData {
   startPos: Vector3;
@@ -20,6 +23,29 @@ export interface MovementData {
   floatingHeight: number;
   currentRotation: number;
   targetRotation: number;
+}
+
+export interface SplineMovementData {
+  spline: CatmullRomCurve3;
+  totalLength: number;
+  journeyProgress: number;
+  matrixIndex: number;
+  floatingHeight: number;
+  currentRotation: number;
+  easingType: EasingType;
+  // Anticipation + Overshoot
+  anticipationTimer: number;
+  settlementTimer: number;
+  isAnticipating: boolean;
+  isSettling: boolean;
+  finalTangent: Vector3 | null;
+  endpointCache: Vector3;
+  // Terrain speed
+  currentSpeedMultiplier: number;
+  // Rhythmic bob + arrival slam
+  elapsedTime: number;
+  arrivalSlamTimer: number;
+  isArrivalSlamming: boolean;
 }
 
 export interface ArmyInstanceData {
@@ -58,6 +84,7 @@ export interface AnimatedInstancedMesh extends InstancedMesh {
 
 export interface ModelData {
   group: Group;
+  sourceScene: Object3D;
   instancedMeshes: AnimatedInstancedMesh[];
   contactShadowMesh?: InstancedMesh;
   contactShadowScale?: number;

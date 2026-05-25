@@ -1,6 +1,6 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useOwnedMilitaryStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   createPendingWorldmapFxKey,
   dispatchPendingWorldmapFxStart,
@@ -111,7 +111,7 @@ export const UnifiedArmyCreationModal = ({
   const [troopCount, setTroopCount] = useState(0);
   const [guardSlot, setGuardSlot] = useState(initialGuardSlot ?? 0);
   const [armyType, setArmyType] = useState(isExplorer);
-  const { currentArmiesTick } = useBlockTimestamp();
+  const currentArmiesTick = useCurrentArmiesTick();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const previousStructureIdRef = useRef<number | null>(null);
 
@@ -396,7 +396,7 @@ export const UnifiedArmyCreationModal = ({
 
   const armyManager = useMemo(() => {
     if (!activeStructureId) return null;
-    return new ArmyManager(systemCalls, activeStructureId as ID);
+    return new ArmyManager(systemCalls, activeStructureId as ID, components);
   }, [activeStructureId, components, systemCalls]);
 
   useEffect(() => {
@@ -530,7 +530,8 @@ export const UnifiedArmyCreationModal = ({
           kind: "create-army",
           structureId: activeStructureId,
           direction: selectedDirection,
-          troopResourceId: getTroopResourceId(selectedTroopCombo.type, selectedTroopCombo.tier),
+          troopType: selectedTroopCombo.type,
+          troopTier: selectedTroopCombo.tier,
         });
         await armyManager.createExplorerArmy(
           account,
@@ -716,6 +717,8 @@ export const UnifiedArmyCreationModal = ({
                 troopCount={projectedTroopCountForSummary}
                 maxTroopSize={troopCapacityLimit}
                 capacityRemaining={capacityRemainingForSelector}
+                collapsible
+                defaultExpanded={false}
               />
             </div>
 

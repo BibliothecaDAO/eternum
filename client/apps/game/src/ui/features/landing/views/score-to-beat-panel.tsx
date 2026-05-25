@@ -6,9 +6,8 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import Download from "lucide-react/dist/esm/icons/download";
 
 import { useFactorySeriesIndex, type FactorySeriesIndex } from "@/hooks/use-factory-series-index";
-import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
-import { useWorldsAvailability } from "@/hooks/use-world-availability";
+import { useWorldsSummary } from "@/hooks/use-worlds-summary";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import { displayAddress } from "@/ui/utils/utils";
 import type { Chain } from "@contracts";
@@ -385,26 +384,20 @@ export const ScoreToBeatPanel = () => {
   const [selectorMode, setSelectorMode] = useState<SelectorMode>("games");
   const [expandedAddress, setExpandedAddress] = useState<string | null>(null);
 
-  // Fetch available games from factory
-  const { worlds: factoryWorlds, isLoading: isLoadingGames } = useFactoryWorlds([selectedChain], true);
+  // Worlds summary (shared bulk fetch; partition/filter client-side).
+  const { data: worldsSummary, isPending: isLoadingGames } = useWorldsSummary();
+  const isCheckingWorlds = isLoadingGames;
 
   // Fetch series and linked games from factory
   const { series: factorySeries, isLoading: isLoadingSeries } = useFactorySeriesIndex([selectedChain], true);
 
-  // Check which worlds have working indexers
-  const worldRefs = useMemo(
-    () => factoryWorlds.map((w) => ({ name: w.name, chain: selectedChain })),
-    [factoryWorlds, selectedChain],
-  );
-  const { results: worldAvailability, isAnyLoading: isCheckingWorlds } = useWorldsAvailability(worldRefs, true);
-
-  // Filter to only show games with working indexers
+  // Filter to only show games on the selected chain with alive indexers.
   const availableGames = useMemo(() => {
-    return factoryWorlds.filter((w) => {
-      const availability = worldAvailability.get(`${selectedChain}:${w.name}`);
-      return availability?.isAvailable;
-    });
-  }, [factoryWorlds, worldAvailability, selectedChain]);
+    if (!worldsSummary) return [];
+    return worldsSummary
+      .filter((summary) => summary.chain === selectedChain && summary.alive)
+      .map((summary) => ({ name: summary.name, chain: selectedChain, worldAddress: summary.worldAddress }));
+  }, [worldsSummary, selectedChain]);
 
   const staticGamesForSelectedChain = useMemo(
     () => (selectedChain === "mainnet" ? [...SCORE_TO_BEAT_STATIC_GAMES] : []),

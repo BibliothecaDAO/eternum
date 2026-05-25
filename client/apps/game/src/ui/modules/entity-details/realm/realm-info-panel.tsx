@@ -1,32 +1,53 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import type { RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { LeftView } from "@/types";
 import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
 import { ProductionModal } from "@/ui/features/settlement";
+import {
+  buildRealmBuilding,
+  resolveRealmHasAvailableBuildingTile,
+} from "@/ui/features/settlement/construction/realm-build-actions";
+import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
+import {
+  beginRealmBuildPlacement,
+  completeRealmBuildPlacement,
+} from "@/ui/features/settlement/construction/build-reservation-store";
+import {
+  buildRealmBuildingSummary,
+  RealmBuildingSummary,
+} from "@/ui/features/settlement/construction/realm-building-summary";
 import { productionAutomation } from "@/ui/features/world/components/config";
 import { ActiveRelicEffects } from "@/ui/features/world/components/entities/active-relic-effects";
 import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { StructureProductionPanel } from "@/ui/features/world/components/entities/structure-production-panel";
+import { RealmAttentionRow } from "@/ui/modules/entity-details/realm/realm-attention-row";
+import { buildRealmTransferBarModels, RealmTransferBars } from "@/ui/modules/entity-details/realm/realm-transfer-bars";
+import { useRealmStarvedResources } from "@/ui/modules/entity-details/realm/use-realm-starved-resources";
+import { useRealmConsumptionPerSecond } from "@/ui/modules/entity-details/realm/use-realm-consumption-per-second";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { inferRealmPreset } from "@/utils/automation-presets";
-import { getRealmStatusColor, getRealmStatusLabel, getFailureSeverity, timeAgo } from "@/utils/automation-status";
+import { getRealmStatusColor, getFailureSeverity, timeAgo } from "@/utils/automation-status";
 import {
-  Position,
   formatTime,
+  getBuildingCount,
   getGuardsByStructure,
+  getRealmInfo,
   getStructureArmyRelicEffects,
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
-import { useDojo, useExplorersByStructure, useQuery } from "@bibliothecadao/react";
+import { useDojo, useExplorersByStructure } from "@bibliothecadao/react";
 import {
+  BuildingType,
   ClientComponents,
   ContractAddress,
   EntityType,
+  getBuildingFromResource,
   RelicRecipientType,
   ResourcesIds,
   StructureType,
@@ -34,6 +55,8 @@ import {
 import { useComponentValue } from "@dojoengine/react";
 import { ComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { useStoryEvents } from "@/hooks/store/use-story-events-store";
+import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import Bot from "lucide-react/dist/esm/icons/bot";
 import Shield from "lucide-react/dist/esm/icons/shield";
@@ -93,69 +116,55 @@ const resolveAutomationStatusLabel = (automation?: RealmAutomationConfig | null)
   return "Idle";
 };
 
-const NextAutomationRunLabel = memo(() => {
+const RealmAutomationStatusLine = memo(({ realmId }: { realmId: string }) => {
+  const lastStatus = useAutomationStore(useCallback((state) => state.realms[realmId]?.lastStatus, [realmId]));
   const nextRunTimestamp = useAutomationStore((state) => state.nextRunTimestamp);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
-    if (typeof nextRunTimestamp !== "number") return;
+    if (typeof nextRunTimestamp !== "number" && !lastStatus) return;
     const id = window.setInterval(() => setNowMs(Date.now()), 1000);
     return () => window.clearInterval(id);
-  }, [nextRunTimestamp]);
+  }, [nextRunTimestamp, lastStatus]);
 
-  if (typeof nextRunTimestamp !== "number") {
-    return <span>Automation schedule pending.</span>;
-  }
+  if (!lastStatus && typeof nextRunTimestamp !== "number") return null;
 
-  const remainingSeconds = Math.max(0, Math.ceil((nextRunTimestamp - nowMs) / 1000));
-  return <span>Next automation run in {remainingSeconds}s</span>;
-});
+  const statusColor = lastStatus ? getRealmStatusColor(lastStatus) : "text-gold/40";
+  const failureSeverity = lastStatus ? getFailureSeverity(lastStatus) : "none";
 
-NextAutomationRunLabel.displayName = "NextAutomationRunLabel";
+  // Build the compact one-liner: "✓ 7s ago · next in 25s".
+  const statusGlyph = !lastStatus
+    ? ""
+    : lastStatus.status === "success"
+      ? "✓"
+      : lastStatus.status === "failed"
+        ? "✕"
+        : "⟳";
 
-const RealmAutomationStatusLine = memo(({ realmId }: { realmId: string }) => {
-  const lastStatus = useAutomationStore(useCallback((state) => state.realms[realmId]?.lastStatus, [realmId]));
-  const lastExecution = useAutomationStore(useCallback((state) => state.realms[realmId]?.lastExecution, [realmId]));
-
-  if (!lastStatus) return null;
-
-  const statusColor = getRealmStatusColor(lastStatus);
-  const statusLabel = getRealmStatusLabel(lastStatus);
-  const failureSeverity = getFailureSeverity(lastStatus);
-  const timeSince = timeAgo(lastStatus.attemptedAt);
+  const sinceLabel = lastStatus ? timeAgo(lastStatus.attemptedAt) : null;
+  const remainingSeconds =
+    typeof nextRunTimestamp === "number" ? Math.max(0, Math.ceil((nextRunTimestamp - nowMs) / 1000)) : null;
 
   return (
     <div className="space-y-1">
-      <div className="flex items-center gap-1.5">
-        <span
-          className={`inline-block h-1.5 w-1.5 rounded-full ${
-            lastStatus.status === "success"
-              ? "bg-emerald-400"
-              : lastStatus.status === "failed"
-                ? "bg-red-400"
-                : "bg-amber-400"
-          }`}
-        />
-        <span className={`text-[10px] ${statusColor}`}>{statusLabel}</span>
-        <span className="text-[10px] text-gold/30">{timeSince}</span>
+      <div className="flex items-center justify-end gap-1.5 text-[10px]">
+        {lastStatus && (
+          <>
+            <span className={statusColor}>{statusGlyph}</span>
+            <span className="text-gold/40">{sinceLabel}</span>
+          </>
+        )}
+        {remainingSeconds !== null && (
+          <>
+            {lastStatus && <span className="text-gold/20">·</span>}
+            <span className="text-gold/40">next in {remainingSeconds}s</span>
+          </>
+        )}
       </div>
 
-      {failureSeverity === "critical" && (
+      {failureSeverity === "critical" && lastStatus && (
         <div className="rounded border border-danger/30 bg-danger/5 px-2 py-1 text-[10px] text-danger">
           {lastStatus.consecutiveFailures} consecutive failures: {lastStatus.message}
-        </div>
-      )}
-
-      {lastStatus.status === "success" && lastExecution?.outputsByResource && (
-        <div className="text-[10px] text-gold/40">
-          Produced:{" "}
-          {Object.entries(lastExecution.outputsByResource)
-            .filter(([, amount]) => amount > 0)
-            .map(([resId, amount]) => {
-              const label = ResourcesIds[Number(resId) as ResourcesIds];
-              return `${Math.round(amount).toLocaleString()} ${typeof label === "string" ? label : `#${resId}`}`;
-            })
-            .join(", ")}
         </div>
       )}
     </div>
@@ -172,14 +181,19 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
   const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+  const setSelectedBuilding = useUIStore((state) => state.setSelectedBuilding);
+  const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
+  const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
+  const useSimpleCost = useUIStore((state) => state.useSimpleCost);
+  const playerStructures = useUIStore((state) => state.playerStructures);
   const automationRealms = useAutomationStore((state) => state.realms);
+  const transferAutomationEntriesById = useTransferAutomationStore((state) => state.entries);
   const hasAutomationFailures = useAutomationStore(
     useCallback((state) => Object.values(state.realms).some((r) => (r.lastStatus?.consecutiveFailures ?? 0) >= 3), []),
   );
   const { setup, account, network } = useDojo();
   const components = setup.components as ClientComponents;
-  const { isMapView } = useQuery();
-  const goToStructure = useGoToStructure(setup);
 
   const structure = useComponentValue(
     components.Structure,
@@ -190,10 +204,15 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     components.Resource,
     structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
   ) as ComponentValue<ClientComponents["Resource"]["schema"]> | null;
+  const structureBuildings = useComponentValue(
+    components.StructureBuildings,
+    structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
+  );
   const villageTroop = useComponentValue(
     components.VillageTroop,
     structureEntityId ? getEntityIdFromKeys([BigInt(structureEntityId)]) : undefined,
   ) as ComponentValue<ClientComponents["VillageTroop"]["schema"]> | null;
+  const realm = structureEntityId ? getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), components) : null;
 
   const isVillage = structure?.base?.category === StructureType.Village;
   const isOwned = structure ? structure.owner === ContractAddress(account.account.address) : false;
@@ -208,27 +227,19 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     return Number.isFinite(numericId) ? numericId : null;
   }, [structureEntityId]);
 
-  const structurePosition = useMemo(() => {
-    const x = structure?.base?.coord_x;
-    const y = structure?.base?.coord_y;
-    if (x === undefined || y === undefined) return null;
-    const numericX = Number(x);
-    const numericY = Number(y);
-    return Number.isFinite(numericX) && Number.isFinite(numericY) ? { x: numericX, y: numericY } : null;
-  }, [structure]);
-
   const automationConfig = useMemo(() => {
     if (!realmId) return null;
     return automationRealms[String(realmId)];
   }, [automationRealms, realmId]);
   const statusLabel = resolveAutomationStatusLabel(automationConfig);
 
+  const starvedResources = useRealmStarvedResources(realmId);
+  const consumptionPerSecondById = useRealmConsumptionPerSecond(structure, resources, realmId);
+
   const handleModifyClick = useCallback(() => {
-    if (!realmId || !structurePosition) return;
-    const position = new Position({ x: structurePosition.x, y: structurePosition.y });
-    void goToStructure(realmId, position, isMapView);
-    toggleModal(<ProductionModal />);
-  }, [realmId, structurePosition, goToStructure, isMapView, toggleModal]);
+    if (!realmId) return;
+    toggleModal(<ProductionModal preSelectedRealmId={realmId} />);
+  }, [realmId, toggleModal]);
 
   const handleOpenTransfer = useCallback(() => {
     if (!structureEntityId) return;
@@ -244,6 +255,13 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   );
 
   const { currentArmiesTick, currentBlockTimestamp } = useBlockTimestamp();
+  const { data: storyEvents = [] } = useStoryEvents(200);
+  const mode = useGameModeConfig();
+  const [pendingBuilds, setPendingBuilds] = useState<Record<string, boolean>>({});
+  const structureName = useMemo(
+    () => (structure ? mode.structure.getName(structure).name : "Structure"),
+    [mode, structure],
+  );
 
   const relicEffects = useMemo(() => {
     if (!structure) return [];
@@ -271,6 +289,214 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
     structure?.base?.troop_max_explorer_count !== undefined ? Number(structure.base.troop_max_explorer_count) : null;
   const maxGuardArmies =
     structure?.base?.troop_max_guard_count !== undefined ? Number(structure.base.troop_max_guard_count) : null;
+
+  const canManageGuards = isOwned && structureCapabilities.canManageGuardArmy;
+  const emptyGuardSlots = canManageGuards && maxGuardArmies !== null ? Math.max(maxGuardArmies - guardArmyCount, 0) : 0;
+  const attentionStarvedResources = canShowProductionCard ? starvedResources : new Map<ResourcesIds, string>();
+  const canBuildFromAttention = isOwned && structureCapabilities.canOpenConstruction;
+  const hasAvailableBuildingTile = useMemo(
+    () =>
+      resolveRealmHasAvailableBuildingTile({
+        entityId: realmId ?? 0,
+        realmPosition: realm?.position,
+        world: {
+          components,
+          systemCalls: setup.systemCalls,
+        },
+      }),
+    [components, pendingBuilds, realm?.position, realmId, setup.systemCalls],
+  );
+
+  const handleManageGuards = useCallback(() => {
+    if (!structureEntityId || !canManageGuards) return;
+    const maxDefenseSlots = Number(structure?.base?.troop_max_guard_count ?? 0);
+    openArmyCreationPopup({
+      structureId: Number(structureEntityId),
+      isExplorer: false,
+      maxDefenseSlots,
+    });
+  }, [canManageGuards, openArmyCreationPopup, structure?.base?.troop_max_guard_count, structureEntityId]);
+
+  const handleBuildForResource = useCallback(
+    (resourceId: ResourcesIds) => {
+      if (!realmId) return;
+
+      const building = getBuildingFromResource(resourceId);
+      if (building === BuildingType.None) return;
+
+      const buildability = resolveConstructionBuildability({
+        entityId: realmId,
+        buildingType: building,
+        useSimpleCost,
+        components,
+        realm,
+        mode,
+        hasAvailableBuildingTile,
+      });
+
+      if (!buildability.canSubmit) {
+        toast.error(buildability.reason ?? "Building cannot be submitted.");
+        return;
+      }
+
+      setSelectedBuilding(building);
+      setPreviewBuilding({ type: building, resource: resourceId });
+      setLeftNavigationView(LeftView.ConstructionView);
+    },
+    [
+      components,
+      hasAvailableBuildingTile,
+      mode,
+      realm,
+      realmId,
+      setLeftNavigationView,
+      setPreviewBuilding,
+      setSelectedBuilding,
+      useSimpleCost,
+    ],
+  );
+  const getBuildingCountFor = useCallback(
+    (buildingType: BuildingType) => {
+      if (!structureBuildings) return 0;
+
+      const packedCounts = [
+        structureBuildings.packed_counts_1 || 0n,
+        structureBuildings.packed_counts_2 || 0n,
+        structureBuildings.packed_counts_3 || 0n,
+      ];
+      return getBuildingCount(buildingType, packedCounts) || 0;
+    },
+    [structureBuildings],
+  );
+  const allowedBuildingTypes = useMemo(
+    () =>
+      Object.keys(BuildingType)
+        .filter((buildingType) => mode.rules.isBuildingTypeAllowed(buildingType))
+        .map((buildingType) => BuildingType[buildingType as keyof typeof BuildingType])
+        .filter((buildingType): buildingType is BuildingType => typeof buildingType === "number"),
+    [mode],
+  );
+  const realmBuildingSummary = useMemo(
+    () =>
+      buildRealmBuildingSummary({
+        realmResourceIds: realm?.resources ?? [],
+        allowedBuildingTypes,
+        getBuildingCount: getBuildingCountFor,
+      }),
+    [allowedBuildingTypes, getBuildingCountFor, realm?.resources],
+  );
+  const handleBuildSummaryItem = useCallback(
+    async (buildingId: BuildingType) => {
+      if (!realmId) return;
+
+      const buildingKey = buildingId.toString();
+      const placement = beginRealmBuildPlacement(realmId, buildingId);
+
+      if (!placement.started) return;
+
+      setPendingBuilds((prev) => ({ ...prev, [buildingKey]: true }));
+
+      try {
+        await buildRealmBuilding({
+          entityId: realmId,
+          realmPosition: realm?.position,
+          realm,
+          mode,
+          target: { type: buildingId },
+          useSimpleCost,
+          world: {
+            account: account.account,
+            components,
+            systemCalls: setup.systemCalls,
+          },
+          onBuildSuccess: (selection) => setSelectedBuildingHex(selection),
+        });
+      } finally {
+        setPendingBuilds((prev) => {
+          const next = { ...prev };
+          delete next[buildingKey];
+          return next;
+        });
+        completeRealmBuildPlacement(realmId, buildingId);
+      }
+    },
+    [
+      account.account,
+      components,
+      mode,
+      realm,
+      realm?.position,
+      realmId,
+      setSelectedBuildingHex,
+      setup.systemCalls,
+      useSimpleCost,
+    ],
+  );
+  const realmBuildingSummaryActions = useMemo(
+    () =>
+      new Map(
+        realmBuildingSummary.map((item) => {
+          const buildState = resolveConstructionBuildability({
+            entityId: realmId ?? 0,
+            buildingType: item.buildingId,
+            useSimpleCost,
+            components,
+            realm,
+            mode,
+            hasAvailableBuildingTile,
+          });
+          const isPending = Boolean(pendingBuilds[item.buildingId.toString()]);
+
+          return [
+            item.buildingId,
+            {
+              onBuild: () => void handleBuildSummaryItem(item.buildingId),
+              disabled: !isOwned || !buildState.canSubmit || isPending,
+              loading: isPending,
+              title: !isOwned
+                ? "You do not own this realm."
+                : isPending
+                  ? `Building ${item.label}...`
+                  : (buildState.reason ?? `Build ${item.label}`),
+            },
+          ] as const;
+        }),
+      ),
+    [
+      components,
+      handleBuildSummaryItem,
+      hasAvailableBuildingTile,
+      isOwned,
+      mode,
+      pendingBuilds,
+      realm,
+      realmBuildingSummary,
+      realmId,
+      useSimpleCost,
+    ],
+  );
+  const resolveTransferStructureName = useCallback(
+    (entityId: number) => {
+      if (realmId === entityId) return structureName;
+
+      const matchingStructure = playerStructures.find(
+        (playerStructure) => Number(playerStructure.entityId) === entityId,
+      );
+      return matchingStructure ? mode.structure.getName(matchingStructure.structure).name : null;
+    },
+    [mode, playerStructures, realmId, structureName],
+  );
+  const transferBarModels = useMemo(
+    () =>
+      buildRealmTransferBarModels({
+        selectedStructureId: realmId,
+        currentTimeMs: Date.now(),
+        storyEvents,
+        automationEntries: Object.values(transferAutomationEntriesById),
+        resolveStructureName: resolveTransferStructureName,
+      }),
+    [realmId, resolveTransferStructureName, storyEvents, transferAutomationEntriesById],
+  );
   const shouldRenderVillageUi = isVillage;
   const isVillageMilitiaClaimed = Boolean(villageTroop?.claimed);
   const [isClaimingVillageMilitia, setIsClaimingVillageMilitia] = useState(false);
@@ -349,7 +575,13 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
   }
 
   return (
-    <div className={cn("flex h-full flex-col gap-3 p-3 text-gold", className)}>
+    <div className={cn("flex h-full flex-col gap-2 p-2 text-gold", className)}>
+      <RealmAttentionRow
+        starvedResources={attentionStarvedResources}
+        emptyGuardSlots={emptyGuardSlots}
+        onManageGuards={canManageGuards ? handleManageGuards : undefined}
+        onBuildForResource={canBuildFromAttention ? handleBuildForResource : undefined}
+      />
       {canShowProductionCard && (
         <div className="rounded border border-gold/20 bg-black/50 p-2">
           <div className="flex items-center justify-between gap-3">
@@ -369,7 +601,7 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
             </div>
             <div className="flex items-center gap-2">
               <ProductionStatusPill statusLabel={statusLabel} />
-              <ProductionModifyButton onClick={handleModifyClick} disabled={!realmId || !structurePosition} />
+              <ProductionModifyButton onClick={handleModifyClick} disabled={!realmId} />
             </div>
           </div>
           <div className="mt-2">
@@ -379,19 +611,18 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
                 resources={resources}
                 compact
                 smallTextClass="text-xxs"
-                showTooltip={false}
+                showTooltip
                 showProductionSummary={false}
                 badgeVariant="detailed"
+                starvedResources={starvedResources}
+                consumptionPerSecondById={consumptionPerSecondById}
               />
             ) : (
               <p className="text-xxs text-gold/60 italic">Production data unavailable.</p>
             )}
           </div>
-          <div className="mt-3 text-right text-[10px] text-gold/50">
-            <NextAutomationRunLabel />
-          </div>
           {realmId && (
-            <div className="mt-1">
+            <div className="mt-3 text-right">
               <RealmAutomationStatusLine realmId={String(realmId)} />
             </div>
           )}
@@ -426,11 +657,23 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
               variant="tight"
               showLabels={false}
               maxItems={14}
+              heroCount={3}
               allowRelicActivation
               activeRelicIds={activeRelicIds}
             />
           </div>
         </div>
+      )}
+
+      <RealmTransferBars current={transferBarModels.current} automation={transferBarModels.automation} />
+
+      {structureCapabilities.canOpenConstruction && (
+        <RealmBuildingSummary
+          headline="Built here"
+          items={realmBuildingSummary}
+          variant="card"
+          buildActions={realmBuildingSummaryActions}
+        />
       )}
 
       {relicEffects.length > 0 && structureEntityId && (
@@ -500,77 +743,76 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
       )}
 
       {canShowArmiesCard && (
-        <div className="rounded border border-gold/20 bg-black/50 p-2">
-          <div className="flex items-center justify-between gap-2">
-            <span className="text-xxs uppercase tracking-[0.2em] text-gold/60">Armies</span>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className={cn(
-                  "rounded-full border border-gold/30 bg-black/40 px-2.5 py-1 text-xxs font-semibold text-gold/80 transition",
-                  (!isOwned || !structureEntityId || !structureCapabilities.canCreateFieldArmy) &&
-                    "cursor-not-allowed opacity-50",
-                  isOwned &&
-                    structureEntityId &&
-                    structureCapabilities.canCreateFieldArmy &&
-                    "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
-                )}
-                onClick={() => {
-                  if (!structureEntityId || !isOwned || !structureCapabilities.canCreateFieldArmy) return;
-                  openArmyCreationPopup({
-                    structureId: Number(structureEntityId),
-                    isExplorer: true,
-                  });
-                }}
-                disabled={!isOwned || !structureEntityId || !structureCapabilities.canCreateFieldArmy}
-                aria-label="Create field army"
-                title="Create field army"
-              >
-                <Sword className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                className={cn(
-                  "rounded-full border border-gold/30 bg-black/40 px-2.5 py-1 text-xxs font-semibold text-gold/80 transition",
-                  (!isOwned || !structureEntityId || !structureCapabilities.canManageGuardArmy) &&
-                    "cursor-not-allowed opacity-50",
-                  isOwned &&
-                    structureEntityId &&
-                    structureCapabilities.canManageGuardArmy &&
-                    "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
-                )}
-                onClick={() => {
-                  if (!structureEntityId || !isOwned || !structureCapabilities.canManageGuardArmy) return;
-                  const maxDefenseSlots = Number(structure?.base?.troop_max_guard_count ?? 0);
-                  openArmyCreationPopup({
-                    structureId: Number(structureEntityId),
-                    isExplorer: false,
-                    maxDefenseSlots,
-                  });
-                }}
-                disabled={!isOwned || !structureEntityId || !structureCapabilities.canManageGuardArmy}
-                aria-label="Create defense army"
-                title="Create defense army"
-              >
-                <Shield className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-          <div className="mt-2 grid grid-cols-2 gap-2">
-            <div className="rounded border border-gold/10 bg-[#1b140f]/80 p-2">
-              <div className="text-xxs uppercase tracking-[0.12em] text-gold/60">Field Armies</div>
-              <div className="mt-1 text-sm font-semibold text-gold">
+        <div className="mt-auto flex items-center justify-between text-xxs text-gold/70">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1">
+              <Sword className="h-3 w-3 text-gold/50" />
+              <span className="uppercase tracking-wide text-gold/50">Field</span>
+              <span className="font-semibold text-gold/90">
                 {attackArmyCount}
-                {maxAttackArmies !== null ? ` / ${maxAttackArmies}` : ""}
-              </div>
-            </div>
-            <div className="rounded border border-gold/10 bg-[#1b140f]/80 p-2">
-              <div className="text-xxs uppercase tracking-[0.12em] text-gold/60">Guard Armies</div>
-              <div className="mt-1 text-sm font-semibold text-gold">
+                {maxAttackArmies !== null ? `/${maxAttackArmies}` : ""}
+              </span>
+            </span>
+            <span className="flex items-center gap-1">
+              <Shield className="h-3 w-3 text-gold/50" />
+              <span className="uppercase tracking-wide text-gold/50">Guard</span>
+              <span className="font-semibold text-gold/90">
                 {guardArmyCount}
-                {maxGuardArmies !== null ? ` / ${maxGuardArmies}` : ""}
-              </div>
-            </div>
+                {maxGuardArmies !== null ? `/${maxGuardArmies}` : ""}
+              </span>
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              className={cn(
+                "rounded-full border border-gold/30 bg-black/40 p-1 text-gold/80 transition",
+                (!isOwned || !structureEntityId || !structureCapabilities.canCreateFieldArmy) &&
+                  "cursor-not-allowed opacity-50",
+                isOwned &&
+                  structureEntityId &&
+                  structureCapabilities.canCreateFieldArmy &&
+                  "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
+              )}
+              onClick={() => {
+                if (!structureEntityId || !isOwned || !structureCapabilities.canCreateFieldArmy) return;
+                openArmyCreationPopup({
+                  structureId: Number(structureEntityId),
+                  isExplorer: true,
+                });
+              }}
+              disabled={!isOwned || !structureEntityId || !structureCapabilities.canCreateFieldArmy}
+              aria-label="Create field army"
+              title="Create field army"
+            >
+              <Sword className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              className={cn(
+                "rounded-full border border-gold/30 bg-black/40 p-1 text-gold/80 transition",
+                (!isOwned || !structureEntityId || !structureCapabilities.canManageGuardArmy) &&
+                  "cursor-not-allowed opacity-50",
+                isOwned &&
+                  structureEntityId &&
+                  structureCapabilities.canManageGuardArmy &&
+                  "hover:bg-gold/10 hover:text-gold focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold",
+              )}
+              onClick={() => {
+                if (!structureEntityId || !isOwned || !structureCapabilities.canManageGuardArmy) return;
+                const maxDefenseSlots = Number(structure?.base?.troop_max_guard_count ?? 0);
+                openArmyCreationPopup({
+                  structureId: Number(structureEntityId),
+                  isExplorer: false,
+                  maxDefenseSlots,
+                });
+              }}
+              disabled={!isOwned || !structureEntityId || !structureCapabilities.canManageGuardArmy}
+              aria-label="Create defense army"
+              title="Create defense army"
+            >
+              <Shield className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
       )}

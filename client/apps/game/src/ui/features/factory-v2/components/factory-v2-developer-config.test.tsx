@@ -20,6 +20,9 @@ const mocks = vi.hoisted(() => ({
   switchWalletToChain: vi.fn(),
   extractTransactionHash: vi.fn(),
   waitForTransactionConfirmation: vi.fn(),
+  addClientTransactionBreadcrumb: vi.fn(),
+  reportClientTransactionFailure: vi.fn().mockResolvedValue(undefined),
+  resolveClientTransactionFailureStageFromError: vi.fn((_error, fallback) => fallback),
 }));
 
 vi.mock("@/ui/design-system/atoms/lib/utils", () => ({
@@ -55,6 +58,12 @@ vi.mock("@/ui/features/factory/shared/factory-metadata", () => ({
 vi.mock("@/ui/utils/transactions", () => ({
   extractTransactionHash: mocks.extractTransactionHash,
   waitForTransactionConfirmation: mocks.waitForTransactionConfirmation,
+}));
+
+vi.mock("@/observability/transaction-failure-reporting", () => ({
+  addClientTransactionBreadcrumb: mocks.addClientTransactionBreadcrumb,
+  reportClientTransactionFailure: mocks.reportClientTransactionFailure,
+  resolveClientTransactionFailureStageFromError: mocks.resolveClientTransactionFailureStageFromError,
 }));
 
 vi.mock("@/ui/utils/network-switch", () => ({
@@ -128,6 +137,11 @@ describe("FactoryV2DeveloperConfig", () => {
     mocks.switchWalletToChain.mockReset();
     mocks.extractTransactionHash.mockReset();
     mocks.waitForTransactionConfirmation.mockReset();
+    mocks.addClientTransactionBreadcrumb.mockReset();
+    mocks.reportClientTransactionFailure.mockReset();
+    mocks.reportClientTransactionFailure.mockResolvedValue(undefined);
+    mocks.resolveClientTransactionFailureStageFromError.mockReset();
+    mocks.resolveClientTransactionFailureStageFromError.mockImplementation((_error, fallback) => fallback);
 
     mocks.useAccount.mockReturnValue({
       chainId: "0xslot",

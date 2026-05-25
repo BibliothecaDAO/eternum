@@ -3,45 +3,18 @@ import { toast } from "sonner";
 import { useDojo } from "@bibliothecadao/react";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {
-  calculateDonkeysNeeded,
   configManager,
+  getAutomationProjectionTick,
   getBlockTimestamp,
-  getConservativeBlockTimestamp,
-  getEntityIdFromKeys,
-  getTotalResourceWeightKg,
   isMilitaryResource,
   ResourceManager,
 } from "@bibliothecadao/eternum";
-import { ClientComponents, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { getComponentValue } from "@dojoengine/recs";
+import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { canTransferMilitaryInventoryBetweenStructureIds } from "@/ui/lib/structure-capabilities";
+import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
-
-const toRaw = (amountHuman: number) => BigInt(Math.floor(amountHuman * RESOURCE_PRECISION));
-
-const normalizeOwnerValue = (owner: unknown): string | null => {
-  if (typeof owner === "string") return owner.trim().toLowerCase();
-  if (typeof owner === "bigint") return `0x${owner.toString(16)}`;
-  if (typeof owner === "number" && Number.isFinite(owner)) return `0x${BigInt(owner).toString(16)}`;
-  return null;
-};
-
-const isEntityOwnedByAccount = (
-  components: ClientComponents | null | undefined,
-  entityId: number,
-  accountAddress: string | undefined,
-): boolean => {
-  if (!components || !entityId || !accountAddress) return false;
-  try {
-    const structure = getComponentValue(components.Structure, getEntityIdFromKeys([BigInt(entityId)]));
-    const owner = normalizeOwnerValue(structure?.owner);
-    const accountOwner = normalizeOwnerValue(accountAddress);
-    return Boolean(owner && accountOwner && owner === accountOwner);
-  } catch {
-    return false;
-  }
-};
+import { assessDonkeyCapacity, buildSendResourcesArgs, planTransferAmounts } from "./transfer-automation-planner";
 
 export const useTransferAutomationRunner = () => {
   const {
@@ -136,7 +109,7 @@ export const useTransferAutomationRunner = () => {
 
       const { currentBlockTimestamp } = getBlockTimestamp();
       // Use conservative tick for resource validation to prevent tx failures from clock desync
-      const { currentDefaultTick: conservativeTick } = getConservativeBlockTimestamp();
+      const { currentDefaultTick: conservativeTick } = getAutomationProjectionTick();
       if (isSeasonOver(currentBlockTimestamp)) {
         stopTransferAutomation();
         return;
@@ -151,6 +124,7 @@ export const useTransferAutomationRunner = () => {
       }
 
       processingRef.current = true;
+      const passResourceCleanups: Array<() => void> = [];
 
       try {
         for (const entry of due) {
@@ -198,54 +172,47 @@ export const useTransferAutomationRunner = () => {
             const donkeyBalRaw = rm.balanceWithProduction(conservativeTick, ResourcesIds.Donkey).balance ?? 0n;
             const donkeyBalHuman = Number(donkeyBalRaw) / RESOURCE_PRECISION;
 
-            // compute human amounts per resource based on per-resource configs (fallback to legacy fields)
-            const transferList: { resourceId: ResourcesIds; humanAmount: number }[] = [];
-            const configMap = new Map<number, number>();
-            if (entry.resourceConfigs && Array.isArray(entry.resourceConfigs)) {
-              for (const c of entry.resourceConfigs) {
-                configMap.set(c.resourceId, Math.max(0, Math.floor(c.amount ?? 0)));
-              }
-            }
-            for (const rid of entry.resourceIds) {
-              const desired = Math.max(0, Math.floor(configMap.get(rid) ?? 0));
-              if (desired <= 0) continue;
+            const transferList = planTransferAmounts(entry, (rid) => {
               const balRaw = rm.balanceWithProduction(conservativeTick, rid).balance ?? 0n;
-              const balHuman = Number(balRaw) / RESOURCE_PRECISION;
-              const amt = Math.max(0, Math.min(balHuman, desired));
-              if (amt > 0) transferList.push({ resourceId: rid, humanAmount: amt });
-            }
+              return Number(balRaw) / RESOURCE_PRECISION;
+            });
 
             if (transferList.length === 0) {
               scheduleNext(entry.id, nowMs);
               continue;
             }
 
-            // donkey capacity check
-            const totalKg = getTotalResourceWeightKg(
-              transferList.map((t) => ({ resourceId: t.resourceId, amount: t.humanAmount })),
-            );
-            const neededDonkeys = calculateDonkeysNeeded(totalKg);
-            if (donkeyBalHuman < neededDonkeys) {
+            const capacity = assessDonkeyCapacity(transferList, donkeyBalHuman);
+            if (!capacity.ok) {
               toast.error("Scheduled transfer blocked: insufficient donkeys at source.");
               scheduleNext(entry.id, nowMs);
               continue;
             }
 
-            const resources: (bigint | number)[] = [];
-            for (const t of transferList) {
-              resources.push(t.resourceId, toRaw(t.humanAmount));
-            }
+            const resources = buildSendResourcesArgs(transferList);
+            const removeResourceOverrides = rm.optimisticResourceUpdates(
+              transferList.map((transfer) => ({
+                resourceId: transfer.resourceId,
+                amount: -transfer.humanAmount,
+              })),
+            );
 
-            await systemCalls.send_resources_multiple({
-              signer: account,
-              calls: [
-                {
-                  sender_entity_id: BigInt(sourceId),
-                  recipient_entity_id: BigInt(destId),
-                  resources,
-                },
-              ],
-            });
+            try {
+              await systemCalls.send_resources_multiple({
+                signer: account,
+                calls: [
+                  {
+                    sender_entity_id: BigInt(sourceId),
+                    recipient_entity_id: BigInt(destId),
+                    resources,
+                  },
+                ],
+              });
+              passResourceCleanups.push(removeResourceOverrides);
+            } catch (error) {
+              removeResourceOverrides();
+              throw error;
+            }
 
             update(entry.id, { lastRunAt: nowMs });
             scheduleNext(entry.id, nowMs);
@@ -260,6 +227,7 @@ export const useTransferAutomationRunner = () => {
           }
         }
       } finally {
+        passResourceCleanups.toReversed().forEach((removeResourceOverrides) => removeResourceOverrides());
         processingRef.current = false;
         scheduleNextCheck();
       }

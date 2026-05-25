@@ -228,6 +228,7 @@ class LegacySpriteWorldFxEffect extends BaseIconWorldFxEffect {
     super(scene, spec, labelEnabled);
 
     this.material = new THREE.SpriteMaterial({
+      depthTest: false,
       depthWrite: false,
       map: spec.texture,
       opacity: 0,
@@ -268,6 +269,7 @@ class WebGpuBillboardWorldFxEffect extends BaseIconWorldFxEffect {
     super(scene, spec, labelEnabled);
 
     this.material = new THREE.MeshBasicMaterial({
+      depthTest: false,
       depthWrite: false,
       map: spec.texture,
       opacity: 0,
@@ -277,6 +279,7 @@ class WebGpuBillboardWorldFxEffect extends BaseIconWorldFxEffect {
 
     this.pivot = new THREE.Group();
     this.mesh = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), this.material);
+    this.mesh.renderOrder = WORLD_FX_RENDER_ORDER;
     this.mesh.onBeforeRender = (_renderer, _scene, camera) => {
       this.pivot.quaternion.copy(camera.quaternion);
       this.applyScale();

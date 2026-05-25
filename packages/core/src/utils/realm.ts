@@ -15,11 +15,16 @@ let realms: {
 
 const loadRealms = async () => {
   if (typeof window === "undefined") return;
-  const response = await fetch("/jsons/realms.json");
-  realms = await response.json();
+  try {
+    const response = await fetch("/jsons/realms.json");
+    if (!response.ok) return;
+    realms = await response.json();
+  } catch {
+    // No base URL (e.g. jsdom) or asset unavailable — consumers fall back to bundled realmsJson.
+  }
 };
 
-loadRealms();
+void loadRealms();
 
 export const getRealmNameById = (realmId: ID): string => {
   const features = realmsJson["features"][realmId - 1];

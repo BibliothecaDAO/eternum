@@ -1,3 +1,4 @@
+use core::array::SpanTrait;
 use core::fmt::{Display, Error, Formatter};
 use core::num::traits::zero::Zero;
 use dojo::model::{Model, ModelStorage};
@@ -119,6 +120,18 @@ pub impl TroopResourceImpl of TroopResourceTrait {
             || resource_type == ResourceTypes::PALADIN_T1
             || resource_type == ResourceTypes::PALADIN_T2
             || resource_type == ResourceTypes::PALADIN_T3
+    }
+
+    fn contains_troops(resources: Span<(u8, u128)>) -> bool {
+        let mut index = 0;
+        while index < resources.len() {
+            let (resource_type, _) = *resources.at(index);
+            if Self::is_troop(resource_type) {
+                return true;
+            }
+            index += 1;
+        }
+        false
     }
 
     fn is_t2_troop(resource_type: u8) -> bool {

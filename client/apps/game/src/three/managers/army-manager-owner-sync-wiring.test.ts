@@ -16,4 +16,11 @@ describe("army manager owner-sync wiring", () => {
     expect(source).toMatch(/private\s+syncTrackedArmyOwnerState\s*\(/);
     expect(source).toMatch(/this\.syncTrackedArmyOwnerState\s*\(\s*\{\s*entityId:\s*update\.entityId/);
   });
+
+  it("routes owner-structure lookups through a shared resolver", () => {
+    const source = readArmyManagerSource();
+
+    expect(source).toMatch(/private\s+resolveArmyOwnerFromStructure\s*\(/);
+    expect(source).toMatch(/this\.resolveArmyOwnerFromStructure\s*\(/);
+  });
 });

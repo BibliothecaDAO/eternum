@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { getFactorySqlBaseUrl } from "@/runtime/world";
-import { isToriiAvailable } from "@/runtime/world/factory-resolver";
+import { getFactorySqlBaseUrl, useRuntimeChain } from "@/runtime/world";
+import { fetchBulkAvailability, isToriiAvailable } from "@/runtime/world/factory-resolver";
+import { buildSettledBlitzPlayersWithNamesQuery } from "@/services/blitz/blitz-settlement-sql";
+import type { Chain } from "@contracts";
 
 import { env } from "../../../../../env";
 import { decodePaddedFeltAscii, normalizeHex, parseMaybeHexToNumber } from "./market-utils";
@@ -9,8 +11,7 @@ import { decodePaddedFeltAscii, normalizeHex, parseMaybeHexToNumber } from "./ma
 const WORLD_CONFIG_QUERY =
   'SELECT "season_config.start_main_at" AS start_main_at, "season_config.end_at" AS end_at, "blitz_registration_config.registration_count" AS registration_count FROM "s1_eternum-WorldConfig" LIMIT 1;';
 
-const PLAYERS_QUERY =
-  'SELECT r.player AS player, n.name AS name FROM "s1_eternum-BlitzRealmPlayerRegister" r LEFT JOIN "s1_eternum-AddressName" n ON r.player = n.address WHERE r.once_registered = TRUE OR r.registered = TRUE;';
+const PLAYERS_QUERY = buildSettledBlitzPlayersWithNamesQuery();
 
 export const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
@@ -87,6 +88,7 @@ type MarketServer = {
 };
 
 const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayerFallback?: boolean } = {}) => {
+  const runtimeChain = useRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
   const [servers, setServers] = useState<MarketServer[]>([]);
   const serversRef = useRef<MarketServer[]>([]);
   const [loading, setLoading] = useState(false);
@@ -107,7 +109,7 @@ const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayer
       setLoading(true);
       setError(null);
 
-      const factorySqlBaseUrl = getFactorySqlBaseUrl(env.VITE_PUBLIC_CHAIN as any);
+      const factorySqlBaseUrl = getFactorySqlBaseUrl(runtimeChain);
       if (!factorySqlBaseUrl) {
         setServers([]);
         return;
@@ -124,24 +126,38 @@ const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayer
         .map((felt: string) => decodePaddedFeltAscii(String(felt)))
         .filter((name: string, idx: number, arr: string[]) => Boolean(name) && arr.indexOf(name) === idx);
 
+      // Fetch bulk availability from realtime server first
+      const bulkAvailability = await fetchBulkAvailability(env.VITE_PUBLIC_REALTIME_URL);
+      const hasBulkData = Object.keys(bulkAvailability).length > 0;
+
+      // Filter to alive worlds using bulk data, or fall back to individual probes
+      const aliveNames = hasBulkData
+        ? names.filter((name) => bulkAvailability[name] === true)
+        : await (async () => {
+            const alive: string[] = [];
+            const limit = 6;
+            let index = 0;
+            const worker = async () => {
+              while (index < names.length) {
+                const i = index++;
+                const name = names[i];
+                try {
+                  if (await isToriiAvailable(buildToriiBaseUrl(name))) alive.push(name);
+                } catch {
+                  /* skip */
+                }
+              }
+            };
+            await Promise.all(Array.from({ length: limit }, () => worker()));
+            return alive;
+          })();
+
       const nextServers: MarketServer[] = [];
-      const limit = 6;
-      let index = 0;
 
-      const worker = async () => {
-        while (index < names.length) {
-          const i = index++;
-          const name = names[i];
+      // Fetch metadata for alive worlds in parallel
+      await Promise.all(
+        aliveNames.map(async (name) => {
           const toriiBaseUrl = buildToriiBaseUrl(name);
-
-          let online = false;
-          try {
-            online = await isToriiAvailable(toriiBaseUrl);
-          } catch {
-            online = false;
-          }
-          if (!online) continue;
-
           const meta = await fetchWorldConfigMeta(toriiBaseUrl);
           nextServers.push({
             name,
@@ -154,11 +170,8 @@ const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayer
             loadingPlayers: false,
             playerError: null,
           });
-        }
-      };
-
-      const workers = Array.from({ length: limit }, () => worker());
-      await Promise.all(workers);
+        }),
+      );
 
       const sortedServers = nextServers.toSorted((a, b) => {
         const aStart = a.startAt ?? Infinity;
@@ -173,7 +186,7 @@ const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayer
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [runtimeChain]);
 
   useEffect(() => {
     void refresh();

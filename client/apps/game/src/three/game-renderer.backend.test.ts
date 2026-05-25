@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ToneMappingMode } from "postprocessing";
-import { resetRendererDiagnostics, snapshotRendererDiagnostics } from "./renderer-diagnostics";
+import { resetRendererDiagnostics } from "./renderer-diagnostics";
 import { createRendererBackendCapabilities } from "./renderer-backend-v2";
 
 const initializeSelectedRendererBackendMock = vi.fn();
@@ -83,6 +82,11 @@ vi.mock("@/three/scenes/hexagon-scene", () => ({
 Object.defineProperty(navigator, "getBattery", {
   configurable: true,
   value: vi.fn(async () => ({ charging: true })),
+});
+
+Object.defineProperty(URL, "createObjectURL", {
+  configurable: true,
+  value: vi.fn(() => "blob:mock"),
 });
 
 vi.stubGlobal("GPUShaderStage", {
@@ -187,124 +191,17 @@ describe("GameRenderer backend seam", () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     subject.backend = backend;
     subject.camera = { aspect: 0, updateProjectionMatrix: vi.fn() };
-    subject.labelRenderer = { setSize: vi.fn() };
+    subject.labelRuntime = { markDirty: vi.fn(), resize: vi.fn() };
     subject.hudScene = { onWindowResize: vi.fn() };
-    subject.labelsDirty = false;
+    subject.supportRuntimeRegistry = {
+      getControlBridge: () => ({ markLabelsDirty: vi.fn() }),
+    };
 
     subject.onWindowResize();
 
     expect(backend.resize).toHaveBeenCalledWith(320, 200);
     expect(subject.hudScene.onWindowResize).toHaveBeenCalledWith(320, 200);
-    expect(subject.labelRenderer.setSize).toHaveBeenCalledWith(320, 200);
-  });
-
-  it("delegates quality application through the backend", () => {
-    const backend = createFakeBackend();
-    const subject = Object.create(GameRenderer.prototype) as any;
-    subject.backend = backend;
-    subject.isMobileDevice = false;
-    subject.graphicsSetting = "HIGH";
-    subject.postProcessingConfig = undefined;
-    subject.toneMappingEffect = undefined;
-    subject.worldmapScene = { applyQualityFeatures: vi.fn() };
-    subject.fastTravelScene = { applyQualityFeatures: vi.fn() };
-    subject.hexceptionScene = { applyQualityFeatures: vi.fn() };
-    subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
-    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 2 });
-
-    subject.applyQualityFeatures({
-      pixelRatio: 1.5,
-      shadows: true,
-      fxaa: false,
-      bloom: false,
-      bloomIntensity: 0,
-      vignette: false,
-      chromaticAberration: false,
-    });
-
-    expect(backend.applyQuality).toHaveBeenCalledWith({
-      height: window.innerHeight,
-      pixelRatio: 1.5,
-      shadows: true,
-      width: window.innerWidth,
-    });
-  });
-
-  it("disables unsupported optional effects before applying the backend plan and reports degradations", () => {
-    const backend = createFakeBackend();
-    backend.capabilities = createRendererBackendCapabilities({
-      supportsEnvironmentIbl: false,
-      supportsToneMappingControl: true,
-    });
-
-    const subject = Object.create(GameRenderer.prototype) as any;
-    subject.backend = backend;
-    subject.isMobileDevice = false;
-    subject.graphicsSetting = "HIGH";
-    subject.postProcessingConfig = {
-      bloomIntensity: 0.25,
-      brightness: 0,
-      contrast: 0,
-      hue: 0,
-      saturation: 0.1,
-      toneMapping: {
-        exposure: 0.7,
-        mode: ToneMappingMode.OPTIMIZED_CINEON,
-        whitePoint: 1.2,
-      },
-      vignette: {
-        darkness: 0.9,
-        offset: 0.35,
-      },
-    };
-    subject.resolvePixelRatio = GameRenderer.prototype.resolvePixelRatio.bind(subject);
-    subject.resolveRendererToneMappingMode = (GameRenderer.prototype as any).resolveRendererToneMappingMode.bind(
-      subject,
-    );
-    Object.defineProperty(window, "devicePixelRatio", { configurable: true, value: 2 });
-
-    subject.applyQualityFeatures({
-      pixelRatio: 1.5,
-      shadows: true,
-      fxaa: true,
-      bloom: true,
-      bloomIntensity: 0.25,
-      vignette: true,
-      chromaticAberration: true,
-    });
-
-    expect(backend.applyPostProcessPlan).toHaveBeenCalledWith({
-      antiAlias: "fxaa",
-      bloom: {
-        enabled: false,
-        intensity: 0.25,
-      },
-      chromaticAberration: {
-        enabled: false,
-      },
-      colorGrade: {
-        brightness: 0,
-        contrast: 0,
-        hue: 0,
-        saturation: 0,
-      },
-      toneMapping: {
-        exposure: 0.7,
-        mode: "cineon",
-        whitePoint: 1.2,
-      },
-      vignette: {
-        darkness: 0.9,
-        enabled: false,
-        offset: 0.35,
-      },
-    });
-    expect(snapshotRendererDiagnostics().degradations).toEqual([
-      { feature: "colorGrade", reason: "unsupported-backend" },
-      { feature: "bloom", reason: "unsupported-backend" },
-      { feature: "vignette", reason: "unsupported-backend" },
-      { feature: "chromaticAberration", reason: "unsupported-backend" },
-    ]);
+    expect(subject.labelRuntime.resize).toHaveBeenCalledWith(320, 200);
   });
 
   it("uses the backend-owned frame pipeline during animate", () => {
@@ -315,7 +212,11 @@ describe("GameRenderer backend seam", () => {
     subject.backend = backend;
     subject.renderer = backend.renderer;
     subject.isDestroyed = false;
-    subject.labelRenderer = { render: vi.fn() };
+    subject.labelRuntime = {
+      isReady: vi.fn(() => true),
+      render: vi.fn(),
+      shouldRender: vi.fn(() => false),
+    };
     subject.controls = { update: vi.fn() };
     subject.hudScene = {
       update: vi.fn(),
@@ -344,12 +245,18 @@ describe("GameRenderer backend seam", () => {
     subject.sceneManager = {
       getCurrentScene: vi.fn(() => "map"),
     };
+    subject.sessionRuntime = {
+      captureStatsSample: vi.fn(),
+      updateStatsPanel: vi.fn(),
+    };
     subject.camera = "camera";
-    subject.shouldRenderLabels = vi.fn(() => false);
-    subject.captureStatsSample = vi.fn();
     subject.lastTime = performance.now() - 16;
     subject.getTargetFPS = vi.fn(() => null);
     subject.updateWeatherPostProcessing = vi.fn();
+    subject.supportRuntimeRegistry = {
+      getEffectsBridge: vi.fn(() => undefined),
+      getMonitoring: vi.fn(() => undefined),
+    };
 
     subject.animate();
 
@@ -371,50 +278,5 @@ describe("GameRenderer backend seam", () => {
       sceneName: "map",
     });
     expect(requestAnimationFrameSpy).toHaveBeenCalled();
-  });
-
-  it("applies environment ibl with the graphics-tier intensity when the backend supports it", () => {
-    const backend = createFakeBackend();
-    const subject = Object.create(GameRenderer.prototype) as any;
-    subject.backend = backend;
-    subject.graphicsSetting = "HIGH";
-    subject.worldmapScene = { setEnvironment: vi.fn() };
-    subject.hexceptionScene = { setEnvironment: vi.fn() };
-    subject.fastTravelScene = { setEnvironment: vi.fn() };
-
-    subject.applyEnvironment();
-
-    expect(backend.applyEnvironment).toHaveBeenCalledWith({
-      fastTravelScene: subject.fastTravelScene,
-      hexceptionScene: subject.hexceptionScene,
-      intensity: 0.55,
-      worldmapScene: subject.worldmapScene,
-    });
-    expect(snapshotRendererDiagnostics().degradations).toEqual([]);
-  });
-
-  it("reports explicit fallback lighting when environment ibl is unavailable", () => {
-    const backend = createFakeBackend();
-    backend.capabilities = createRendererBackendCapabilities({
-      supportsToneMappingControl: true,
-    });
-
-    const subject = Object.create(GameRenderer.prototype) as any;
-    subject.backend = backend;
-    subject.graphicsSetting = "MID";
-    subject.worldmapScene = { setEnvironment: vi.fn() };
-    subject.hexceptionScene = { setEnvironment: vi.fn() };
-    subject.fastTravelScene = { setEnvironment: vi.fn() };
-
-    subject.applyEnvironment();
-
-    expect(backend.applyEnvironment).not.toHaveBeenCalled();
-    expect(snapshotRendererDiagnostics().degradations).toEqual([
-      {
-        detail: "Using scene key/fill fallback lighting policy at target environment intensity 0.45",
-        feature: "environmentIbl",
-        reason: "unsupported-backend",
-      },
-    ]);
   });
 });

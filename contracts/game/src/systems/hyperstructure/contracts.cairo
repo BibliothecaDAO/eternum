@@ -153,7 +153,7 @@ pub mod hyperstructure_systems {
     use crate::alias::ID;
     use crate::constants::{DEFAULT_NS, RESOURCE_PRECISION, ResourceTypes, WORLD_CONFIG_ID};
     use crate::models::config::{
-        BlitzSettlementConfig, HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl,
+        BlitzExplorationConfig, BlitzSettlementConfig, HyperstructureConfig, HyperstructureCostConfig, SeasonConfigImpl,
         VictoryPointsGrantConfig, WorldConfigUtilImpl,
     };
     use crate::models::events::{PointsActivity, PointsRegisteredStory, Story, StoryEvent};
@@ -162,7 +162,7 @@ pub mod hyperstructure_systems {
         ConstructionAccess, Hyperstructure, HyperstructureConstructionAccessImpl, HyperstructureGlobals,
         HyperstructureRequirementsImpl, HyperstructureShareholders, PlayerRegisteredPoints,
     };
-    use crate::models::map::Tile;
+    use crate::models::map::{Tile, TileImpl};
     use crate::models::map2::TileOpt;
     use crate::models::owner::{OwnerAddressImpl, OwnerAddressTrait};
     use crate::models::position::Coord;
@@ -181,7 +181,6 @@ pub mod hyperstructure_systems {
 
 
     const HYPERSTRUCTURE_POINT_MULTIPLIER: u128 = 1_000_000;
-
 
     #[abi(embed_v0)]
     impl HyperstructureSystemsImpl of super::IHyperstructureSystems<ContractState> {
@@ -443,11 +442,11 @@ pub mod hyperstructure_systems {
                     let blitz_settlement_config: BlitzSettlementConfig = WorldConfigUtilImpl::get_member(
                         world, selector!("blitz_settlement_config"),
                     );
+                    let blitz_exploration_config: BlitzExplorationConfig = WorldConfigUtilImpl::get_member(
+                        world, selector!("blitz_exploration_config"),
+                    );
                     let surrounding_realms_count: u8 = iHyperstructureBlitzImpl::count_surrounding_realms(
-                        ref world,
-                        structure_coord,
-                        blitz_settlement_config.single_realm_mode,
-                        blitz_settlement_config.two_player_mode,
+                        ref world, structure_coord, blitz_settlement_config, blitz_exploration_config.reward_profile_id,
                     );
                     hyperstructure.points_multiplier = surrounding_realms_count;
                     world.write_model(@hyperstructure);

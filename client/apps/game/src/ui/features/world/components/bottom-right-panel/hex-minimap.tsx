@@ -6,6 +6,8 @@ import { BIOME_COLORS } from "@/three/managers/biome-colors";
 import {
   getExplorerInfoFromTileOccupier,
   getStructureInfoFromTileOccupier,
+  hasTileOccupier,
+  isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
 } from "@bibliothecadao/eternum";
 import { BiomeIdToType, BiomeType, HexPosition, StructureType, TileOccupier } from "@bibliothecadao/types";
@@ -111,9 +113,10 @@ const getBiomeColor = (biomeId?: number) => {
 };
 
 const getOccupierColor = (tile: MinimapTile) => {
-  if (!tile.occupier_id) return null;
   const type = tile.occupier_type ?? 0;
+  if (!hasTileOccupier(type)) return null;
   if (type === TileOccupier.Spire) return "#67e8f9";
+  if (isTileOccupierReservedHyperstructure(type as TileOccupier)) return "#fbbf24";
   const isStructure = tile.occupier_is_structure || isTileOccupierStructure(type);
   return isStructure ? "#22d3ee" : "#f97316";
 };
@@ -466,7 +469,10 @@ export const HexMinimap = ({ tiles, selectedHex, navigationTarget, cameraTargetH
                 : LABEL_ICONS.realmEnemy,
             } satisfies TileMarker;
           case StructureType.Hyperstructure:
-            return { iconSrc: LABEL_ICONS.hyperstructure, sizeMultiplier: 1.1 } satisfies TileMarker;
+            return {
+              iconSrc: LABEL_ICONS.hyperstructure,
+              sizeMultiplier: info.reserved ? 1.05 : 1.1,
+            } satisfies TileMarker;
           default:
             return null;
         }
