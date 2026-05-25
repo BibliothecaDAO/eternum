@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "26380774652-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-25T02:57:20.965Z",
+  "updatedAt": "2026-05-25T03:02:16.955Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -9216,10 +9216,10 @@
           "configureTxHash": "0x57cbedb1a644869a76711eb1b3119c907dbe58ea56b152e5c865c7c4497fa3a",
           "worldConfigTxHash": "0x57cbedb1a644869a76711eb1b3119c907dbe58ea56b152e5c865c7c4497fa3a",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-25T02:42:21.296Z",
+          "pendingIndexerTierRequestedAt": "2026-05-25T03:02:16.955Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-05-25T02:42:21.296Z",
+          "lastIndexerTierDispatchFailedAt": "2026-05-25T03:02:16.955Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-25-05-26-0100\" does not exist"
         }
       },
