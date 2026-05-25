@@ -14,7 +14,7 @@ mod tests {
     use crate::models::map::{Tile, TileOccupier};
     use crate::models::map2::TileOpt;
     use crate::models::position::{Coord, CoordTrait, Direction};
-    use crate::models::resource::resource::ResourceImpl;
+    use crate::models::resource::resource::{ResourceImpl, ResourceWeightImpl};
     use crate::models::structure::{
         Structure, StructureBase, StructureBaseStoreImpl, StructureCategory, StructureMetadata, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
@@ -544,6 +544,37 @@ mod tests {
 
         let hyperstructure_wheat = ResourceImpl::read_balance(ref world, hyperstructure_id, ResourceTypes::WHEAT);
         assert!(hyperstructure_wheat == cargo_amount, "Explorer cargo should move into captured hyperstructure");
+    }
+
+    #[test]
+    #[should_panic(expected: "captured hyperstructure cannot store explorer cargo")]
+    fn test_hyperstructure_capture_fails_when_explorer_cargo_exceeds_structure_capacity() {
+        let (mut world, systems) = setup_battle_world();
+        start_cheat_block_timestamp_global(MOCK_TICK_CONFIG().armies_tick_in_seconds);
+        let owner = starknet::contract_address_const::<'overweight_cargo_hyper_owner'>();
+        let realm_id = spawn_test_realm(ref world, 1, owner, Coord { alt: false, x: 80, y: 80 });
+        let hyperstructure_id = spawn_test_structure(
+            ref world, Zero::zero(), StructureCategory::Hyperstructure, Coord { alt: false, x: 82, y: 80 },
+        );
+        let troop_amount = 1_000 * RESOURCE_PRECISION;
+        let cargo_amount = 25 * RESOURCE_PRECISION;
+        tgrant_resources(ref world, realm_id, array![(ResourceTypes::PALADIN_T3, troop_amount)].span());
+        let explorer = create_explorer(
+            ref world,
+            systems,
+            RealmTestContext { entity_id: realm_id, owner, coord: Coord { alt: false, x: 80, y: 80 } },
+            TroopType::Paladin,
+            TroopTier::T3,
+            troop_amount,
+            Direction::East,
+        );
+        tgrant_resources(ref world, explorer.explorer_id, array![(ResourceTypes::WHEAT, cargo_amount)].span());
+
+        let wheat_weight_grams = ResourceWeightImpl::grams(ref world, ResourceTypes::WHEAT);
+        let insufficient_capacity = cargo_amount * wheat_weight_grams - 1;
+        ResourceImpl::write_weight(ref world, hyperstructure_id, Weight { capacity: insufficient_capacity, weight: 0 });
+
+        attack_explorer_vs_guard(ref world, systems, explorer, hyperstructure_id, Direction::East);
     }
 
     #[test]

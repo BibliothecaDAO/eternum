@@ -23,7 +23,7 @@ use crate::models::structure::{
     StructureTroopGuardStoreImpl, StructureVillageSlots,
 };
 use crate::models::troop::{ExplorerTroops, GuardSlot, GuardTrait, GuardTroops, TroopLimitTrait, TroopsImpl};
-use crate::models::weight::Weight;
+use crate::models::weight::{Weight, WeightImpl};
 use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
 use crate::systems::combat::contracts::troop_management::{
     ITroopManagementSystemsDispatcher, ITroopManagementSystemsDispatcherTrait,
@@ -320,11 +320,32 @@ pub impl iStructureImpl of IStructureTrait {
             return;
         }
 
-        let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
         let mut structure_weight: Weight = WeightStoreImpl::retrieve(ref world, structure_id);
+        Self::assert_structure_can_store_explorer_cargo(ref world, structure_weight, carried_resources.span());
+        let mut explorer_weight: Weight = WeightStoreImpl::retrieve(ref world, explorer_id);
         iResourceTransferImpl::troop_to_structure_instant(
             ref world, explorer_id, ref explorer_weight, structure_id, ref structure_weight, carried_resources.span(),
         );
+    }
+
+    fn assert_structure_can_store_explorer_cargo(
+        ref world: WorldStorage, mut structure_weight: Weight, carried_resources: Span<(u8, u128)>,
+    ) {
+        let carried_weight = Self::resource_span_weight(ref world, carried_resources);
+        assert!(carried_weight <= structure_weight.unused(), "captured hyperstructure cannot store explorer cargo");
+    }
+
+    fn resource_span_weight(ref world: WorldStorage, mut resources: Span<(u8, u128)>) -> u128 {
+        let mut total_weight: u128 = 0;
+        loop {
+            match resources.pop_front() {
+                Option::Some((
+                    resource_type, amount,
+                )) => { total_weight += *amount * ResourceWeightImpl::grams(ref world, *resource_type); },
+                Option::None => { break; },
+            }
+        }
+        total_weight
     }
 
     fn read_nonzero_resource_balances(ref world: WorldStorage, entity_id: ID) -> Array<(u8, u128)> {
