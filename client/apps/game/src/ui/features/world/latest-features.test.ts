@@ -23,12 +23,12 @@ describe("latestFeatures landing feed", () => {
     ).toBe(true);
   });
 
-  it("announces safer repeat moves in the latest feed", () => {
+  it("announces explore arrival previews in the latest feed", () => {
     expect(latestFeatures).toContainEqual(
       expect.objectContaining({
         date: "2026-05-25",
-        title: "Safer Repeat Moves",
-        type: "fix",
+        title: "Explore Arrival Previews",
+        type: "improvement",
         gameSlug: "world",
       }),
     );

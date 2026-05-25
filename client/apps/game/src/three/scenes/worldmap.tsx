@@ -3052,7 +3052,7 @@ export default class WorldmapScene extends WarpTravel {
       const shouldTrackArrivalGhost = shouldCreatePredictiveArrivalGhost({
         hasTargetHex: true,
         isLocalArmy: selectedArmy?.isMine ?? false,
-        isTravelAction,
+        movementType: actionType === ActionType.Explore ? "explore" : "travel",
       });
 
       if (shouldTrackArrivalGhost) {
@@ -5132,6 +5132,7 @@ export default class WorldmapScene extends WarpTravel {
     for (const entityId of pendingExploreEntities) {
       this.clearPendingArmyMovement(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
+      this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived");
     }
 
     const endCompass = this.travelEffects.get(key);
