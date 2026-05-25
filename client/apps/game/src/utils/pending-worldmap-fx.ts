@@ -1,4 +1,4 @@
-import { Direction, HexPosition, ID } from "@bibliothecadao/types";
+import { Direction, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 
 export const WORLDMAP_PENDING_FX_START_EVENT = "worldmapPendingFxStart";
 export const WORLDMAP_PENDING_FX_STOP_EVENT = "worldmapPendingFxStop";
@@ -9,7 +9,8 @@ export type PendingWorldmapFxStartPayload =
       kind: "create-army";
       structureId: ID;
       direction: Direction;
-      troopResourceId: number;
+      troopType: TroopType;
+      troopTier: TroopTier;
       timeoutMs?: number;
     }
   | {

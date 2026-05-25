@@ -34,7 +34,7 @@ import {
 
 import { gameWorkerManager } from "@/managers/game-worker-manager";
 import { Biome, configManager } from "@bibliothecadao/eternum";
-import { ClientComponents, ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { ClientComponents, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
@@ -42,7 +42,7 @@ import * as THREE from "three";
 import { Color, Euler, Group, Object3D, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { env } from "../../../env";
-import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
+import type { AttachmentTransform, CosmeticAttachmentTemplate, ResolvedCosmeticSkin } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
   findCosmeticById,
@@ -146,6 +146,11 @@ export interface ArmyMovementPlan {
   worldPath: Vector3[];
   armyCategory: TroopType;
   armyTier: TroopTier;
+}
+
+export interface PendingCreationGhostSource {
+  armyColor: string;
+  sourceScene: Object3D;
 }
 
 interface AddArmyParams {
@@ -2291,6 +2296,88 @@ export class ArmyManager {
       armyColor: army.color,
       sourceScene: modelData.sourceScene,
     };
+  }
+
+  public async resolvePendingCreationGhostSource(input: {
+    entityId: ID;
+    hexCoords: HexPosition;
+    troopType: TroopType;
+    troopTier: TroopTier;
+  }): Promise<PendingCreationGhostSource> {
+    const ownerAddress = this.resolvePendingCreationOwnerAddress();
+    this.hydratePendingCreationCosmetics(ownerAddress);
+
+    const baseModelType = this.resolvePendingCreationBaseModel(input);
+    const cosmetic = resolveArmyCosmetic({
+      owner: ownerAddress,
+      troopType: input.troopType,
+      tier: input.troopTier,
+      defaultModelType: baseModelType,
+    });
+    const sourceScene = await this.resolvePendingCreationSourceScene({
+      baseModelType: cosmetic.skin.modelType ?? baseModelType,
+      cosmeticSkin: cosmetic.skin,
+    });
+
+    return {
+      armyColor: this.resolvePendingCreationGhostColor(ownerAddress),
+      sourceScene,
+    };
+  }
+
+  private resolvePendingCreationOwnerAddress(): bigint {
+    return ContractAddress(useAccountStore.getState().account?.address || "0");
+  }
+
+  private hydratePendingCreationCosmetics(ownerAddress: bigint): void {
+    if (!this.components || ownerAddress === 0n) {
+      return;
+    }
+
+    playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerAddress);
+  }
+
+  private resolvePendingCreationBaseModel(input: {
+    entityId: ID;
+    hexCoords: HexPosition;
+    troopType: TroopType;
+    troopTier: TroopTier;
+  }): ModelType {
+    const contractHex = new Position({ x: input.hexCoords.col, y: input.hexCoords.row }).getContract();
+    const biome = Biome.getBiome(contractHex.x, contractHex.y);
+    return this.armyModel.getModelTypeForEntity(
+      this.toNumericId(input.entityId),
+      input.troopType,
+      input.troopTier,
+      biome,
+    );
+  }
+
+  private async resolvePendingCreationSourceScene(input: {
+    baseModelType: ModelType;
+    cosmeticSkin: ResolvedCosmeticSkin;
+  }): Promise<Object3D> {
+    if (this.shouldUsePendingCreationCosmeticSource(input.cosmeticSkin)) {
+      try {
+        return await this.armyModel.getCosmeticModelSourceScene(input.cosmeticSkin);
+      } catch (error) {
+        console.warn("[ArmyManager] Failed to load pending creation cosmetic ghost, falling back to base model", error);
+      }
+    }
+
+    return this.armyModel.getModelSourceScene(input.baseModelType);
+  }
+
+  private shouldUsePendingCreationCosmeticSource(skin: ResolvedCosmeticSkin): boolean {
+    return !skin.isFallback && skin.assetPaths.length > 0;
+  }
+
+  private resolvePendingCreationGhostColor(ownerAddress: bigint): string {
+    return this.getArmyColor({
+      isMine: true,
+      isDaydreamsAgent: false,
+      owner: { address: ownerAddress },
+    });
   }
 
   public syncAttachedArmiesOwnerForStructure(params: {
