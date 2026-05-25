@@ -5,15 +5,14 @@
   "owner": {
     "environment": "mainnet.blitz",
     "gameName": "blitz-rotation",
-    "launchRequestId": "26413678531-1",
+    "launchRequestId": "26414368228-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26413678531,
+    "workflowRunId": 26414368228,
     "workflowRunAttempt": 1,
     "stepId": "grant-lootchest-role",
-    "leaseId": "6a462eef-e0de-425c-bfee-44a27d67dd85"
+    "leaseId": "8eb385f8-2493-4e1b-a630-dbb4acf7a730"
   },
-  "acquiredAt": "2026-05-25T18:07:09.723Z",
-  "heartbeatAt": "2026-05-25T18:07:13.873Z",
-  "expiresAt": "2026-05-25T18:07:13.873Z",
-  "releasedAt": "2026-05-25T18:07:13.873Z"
+  "acquiredAt": "2026-05-25T18:26:51.751Z",
+  "heartbeatAt": "2026-05-25T18:26:51.751Z",
+  "expiresAt": "2026-05-25T18:36:51.751Z"
 }
