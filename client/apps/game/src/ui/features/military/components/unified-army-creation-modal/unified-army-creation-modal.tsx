@@ -530,7 +530,8 @@ export const UnifiedArmyCreationModal = ({
           kind: "create-army",
           structureId: activeStructureId,
           direction: selectedDirection,
-          troopResourceId: getTroopResourceId(selectedTroopCombo.type, selectedTroopCombo.tier),
+          troopType: selectedTroopCombo.type,
+          troopTier: selectedTroopCombo.tier,
         });
         await armyManager.createExplorerArmy(
           account,

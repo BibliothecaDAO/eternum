@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-26",
+    title: "Unit Creation Ghosts",
+    description:
+      "Added unit-shaped creation previews so newly submitted armies appear as ghosts on their spawn hex while the world catches up.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-25",
     title: "Explore Arrival Previews",
     description:

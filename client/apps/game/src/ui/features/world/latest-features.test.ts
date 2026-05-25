@@ -33,4 +33,15 @@ describe("latestFeatures landing feed", () => {
       }),
     );
   });
+
+  it("announces unit creation ghosts in the latest feed", () => {
+    expect(latestFeatures).toContainEqual(
+      expect.objectContaining({
+        date: "2026-05-26",
+        title: "Unit Creation Ghosts",
+        type: "improvement",
+        gameSlug: "world",
+      }),
+    );
+  });
 });
