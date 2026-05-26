@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.eternum",
   "kind": "game",
-  "updatedAt": "2026-05-26T23:42:32.538Z",
+  "updatedAt": "2026-05-26T23:42:41.154Z",
   "entries": {
     "etrn-gloom-467": {
       "kind": "game",
@@ -28,12 +28,13 @@
       "path": "runs/mainnet/eternum/etrn-cred-598.json",
       "inputPath": "inputs/mainnet/eternum/etrn-cred-598/26481498203-1.json",
       "status": "running",
-      "updatedAt": "2026-05-26T23:42:32.538Z",
+      "updatedAt": "2026-05-26T23:42:41.154Z",
       "workflowRef": "next",
       "currentStepId": "wait-for-factory-index",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-27T00:27:41.154Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "wait-for-factory-index",
+      "recoverablePendingStepId": "configure-world",
       "startTime": 1779843600,
       "durationSeconds": 7200,
       "artifacts": {}
