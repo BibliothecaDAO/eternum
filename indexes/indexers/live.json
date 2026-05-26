@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-26T09:12:34.029Z",
+  "updatedAt": "2026-05-26T09:32:31.068Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2282,11 +2282,11 @@
     "apac-gladiator-14-05-26-1000": {
       "gameName": "apac-gladiator-14-05-26-1000",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-14-05-26-1000 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "bltz-flux-865": {
       "gameName": "bltz-flux-865",
@@ -2317,74 +2317,74 @@
     "na-gladiator-15-05-26-0100": {
       "gameName": "na-gladiator-15-05-26-0100",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-15-05-26-0100 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "eu-gladiator-15-05-26-1800": {
       "gameName": "eu-gladiator-15-05-26-1800",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-15-05-26-1800 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "apac-gladiator-16-05-26-1200": {
       "gameName": "apac-gladiator-16-05-26-1200",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-16-05-26-1200 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "eu-gladiator-16-05-26-2000": {
       "gameName": "eu-gladiator-16-05-26-2000",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-16-05-26-2000 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "na-gladiator-17-05-26-0300": {
       "gameName": "na-gladiator-17-05-26-0300",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-17-05-26-0300 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "apac-gladiator-17-05-26-1100": {
       "gameName": "apac-gladiator-17-05-26-1100",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-17-05-26-1100 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "eu-gladiator-17-05-26-1900": {
       "gameName": "eu-gladiator-17-05-26-1900",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-17-05-26-1900 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "na-gladiator-18-05-26-0100": {
       "gameName": "na-gladiator-18-05-26-0100",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-18-05-26-0100 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "aussie-noobs": {
       "gameName": "aussie-noobs",
@@ -2493,11 +2493,11 @@
     "apac-gladiator-19-05-26-1100": {
       "gameName": "apac-gladiator-19-05-26-1100",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-19-05-26-1100 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "bltz-glow-22": {
       "gameName": "bltz-glow-22",
@@ -2528,11 +2528,11 @@
     "na-gladiator-20-05-26-0200": {
       "gameName": "na-gladiator-20-05-26-0200",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-20-05-26-0200 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "bltz-swish-900": {
       "gameName": "bltz-swish-900",
@@ -2576,11 +2576,11 @@
     "eu-gladiator-20-05-26-1900": {
       "gameName": "eu-gladiator-20-05-26-1900",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-20-05-26-1900 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "bltz-vibe-53": {
       "gameName": "bltz-vibe-53",
@@ -2637,11 +2637,11 @@
     "apac-gladiator-21-05-26-1000": {
       "gameName": "apac-gladiator-21-05-26-1000",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-21-05-26-1000 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "bltz-boost-309": {
       "gameName": "bltz-boost-309",
@@ -2659,11 +2659,11 @@
     "na-gladiator-22-05-26-0100": {
       "gameName": "na-gladiator-22-05-26-0100",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-22-05-26-0100 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "bltz-pop-122": {
       "gameName": "bltz-pop-122",
@@ -2694,20 +2694,20 @@
     "eu-gladiator-22-05-26-1800": {
       "gameName": "eu-gladiator-22-05-26-1800",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-22-05-26-1800 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "apac-gladiator-23-05-26-1200": {
       "gameName": "apac-gladiator-23-05-26-1200",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-23-05-26-1200 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "bltz-swish-882": {
       "gameName": "bltz-swish-882",
@@ -2738,29 +2738,29 @@
     "eu-gladiator-23-05-26-2000": {
       "gameName": "eu-gladiator-23-05-26-2000",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-23-05-26-2000 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "na-gladiator-24-05-26-0300": {
       "gameName": "na-gladiator-24-05-26-0300",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-24-05-26-0300 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "apac-gladiator-24-05-26-1100": {
       "gameName": "apac-gladiator-24-05-26-1100",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-24-05-26-1100 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "bltz-dash-816": {
       "gameName": "bltz-dash-816",
@@ -2778,20 +2778,20 @@
     "eu-gladiator-24-05-26-1900": {
       "gameName": "eu-gladiator-24-05-26-1900",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-24-05-26-1900 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     },
     "na-gladiator-25-05-26-0100": {
       "gameName": "na-gladiator-25-05-26-0100",
       "liveState": {
-        "state": "missing",
-        "stateSource": "describe-not-found",
-        "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-25-05-26-0100 not found"
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-05-26T09:12:34.029Z"
+      "updatedAt": "2026-05-26T09:32:31.068Z"
     }
   }
 }
