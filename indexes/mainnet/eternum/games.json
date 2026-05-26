@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.eternum",
   "kind": "game",
-  "updatedAt": "2026-05-24T08:31:28.464Z",
+  "updatedAt": "2026-05-26T23:40:28.705Z",
   "entries": {
     "etrn-gloom-467": {
       "kind": "game",
@@ -19,6 +19,22 @@
       "recoverablePendingStepId": "create-banks",
       "startTime": 1779613200,
       "durationSeconds": 7200,
+      "artifacts": {}
+    },
+    "etrn-cred-598": {
+      "kind": "game",
+      "environment": "mainnet.eternum",
+      "gameName": "etrn-cred-598",
+      "path": "runs/mainnet/eternum/etrn-cred-598.json",
+      "inputPath": "inputs/mainnet/eternum/etrn-cred-598/26481498203-1.json",
+      "status": "running",
+      "updatedAt": "2026-05-26T23:40:28.705Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-05-27T01:00:00.000Z",
       "artifacts": {}
     }
   }
