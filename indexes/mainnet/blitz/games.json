@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-26T10:40:30.907Z",
+  "updatedAt": "2026-05-26T10:40:36.400Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1145,11 +1145,10 @@
       "path": "runs/mainnet/blitz/bltz-twist-345.json",
       "inputPath": "inputs/mainnet/blitz/bltz-twist-345/26447287815-1.json",
       "status": "running",
-      "updatedAt": "2026-05-26T10:40:30.907Z",
+      "updatedAt": "2026-05-26T10:40:36.400Z",
       "workflowRef": "next",
-      "currentStepId": "wait-for-factory-index",
-      "activeLeaseExpiresAt": "2026-05-26T11:25:30.907Z",
-      "hasRunningStep": true,
+      "currentStepId": "configure-world",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "configure-world",
       "startTime": 1779795300,
