@@ -4,15 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-twist-345",
-    "launchRequestId": "26447287815-1",
+    "gameName": "blitz-rotation",
+    "launchRequestId": "26449032226-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26447287815,
+    "workflowRunId": 26449032226,
     "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "leaseId": "8991fcdf-0c75-4843-963a-99d5160a63de"
+    "stepId": "grant-lootchest-role",
+    "leaseId": "7257268c-2425-444b-8e29-da8ddc9e6cb1"
   },
-  "acquiredAt": "2026-05-26T10:40:44.241Z",
-  "heartbeatAt": "2026-05-26T10:40:44.241Z",
-  "expiresAt": "2026-05-26T10:50:44.241Z"
+  "acquiredAt": "2026-05-26T12:52:08.506Z",
+  "heartbeatAt": "2026-05-26T12:52:08.506Z",
+  "expiresAt": "2026-05-26T13:02:08.506Z"
 }
