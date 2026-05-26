@@ -20,7 +20,7 @@ const ROUTE_BACKGROUNDS: Record<string, string> = {
   "/": "01",
   "/learn": "01",
   "/news": "01",
-  "/factory": "03",
+  "/factory": "02",
   "/profile": "05",
   "/markets": "04",
   "/amm": "04",

@@ -25,7 +25,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-05-26",
     title: "Faster Dashboard Loading",
     description:
-      "Improved the dashboard startup path so game routes, manifests, and generated configs load only when the selected view needs them.",
+      "Improved the dashboard startup path so game routes, manifests, generated configs, and large background images load only when the selected view needs them.",
     type: "improvement",
     gameSlug: "world",
   },
