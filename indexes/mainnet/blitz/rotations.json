@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-05-26T03:51:49.648Z",
+  "updatedAt": "2026-05-26T03:52:00.028Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -86,22 +86,22 @@
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
       "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26431181747-1.json",
       "status": "attention",
-      "updatedAt": "2026-05-26T03:51:49.648Z",
+      "updatedAt": "2026-05-26T03:52:00.028Z",
       "workflowRef": "next",
-      "currentStepId": "grant-lootchest-roles",
-      "activeLeaseExpiresAt": "2026-05-26T04:36:49.648Z",
-      "hasRunningStep": true,
+      "currentStepId": "reserve-blitz-hyperstructures",
+      "hasRunningStep": false,
       "recoverableFailedStepId": "reserve-blitz-hyperstructures",
-      "recoverablePendingStepId": "create-indexers",
+      "recoverablePendingStepId": "grant-lootchest-roles",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15,
+        "nextRetryAt": "2026-05-26T04:07:00.028Z",
         "lastRetryAt": "2026-05-26T03:50:44.317Z"
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-05-26T04:06:44.178Z",
-        "lastEvaluatedAt": "2026-05-26T03:51:44.178Z"
+        "nextEvaluationAt": "2026-05-26T04:07:00.028Z",
+        "lastEvaluatedAt": "2026-05-26T03:52:00.028Z"
       },
       "games": [
         {
