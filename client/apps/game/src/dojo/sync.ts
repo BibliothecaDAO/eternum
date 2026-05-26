@@ -740,6 +740,9 @@ export const initialSync = async (
       subscriptionSetupTimeoutMs,
       onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
     });
+    // The global stream remains active for live owner/event updates. Startup
+    // only blocks on the spatial snapshot and targeted queries below, because
+    // the stream's first entity replay can resolve by timeout on busy worlds.
     // Handshakes are transport freshness. Data freshness is recorded by stream
     // updates, so quiet worlds do not look stale after a successful boot.
     useConnectionStore.getState().recordSpatialHandshake();
@@ -858,42 +861,7 @@ export const initialSync = async (
   await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
   recordGameEntryDuration("initial-sync-map-data-refresh", performance.now() - mapDataRefreshStart);
 
-  // Block on the Torii stream's initial entity flush so the worldmap scene
-  // observes populated RECS state instead of an empty world on fast loads.
-  if (entityStreamSubscription) {
-    const flushStart = performance.now();
-    await waitForInitialEntityFlush(entityStreamSubscription.ready, subscriptionSetupTimeoutMs);
-    recordGameEntryDuration("initial-sync-initial-entity-flush", performance.now() - flushStart);
-  }
-
   updateProgress(100);
-};
-
-const waitForInitialEntityFlush = async (ready: Promise<void>, timeoutMs: number): Promise<void> => {
-  const flushStart = performance.now();
-  const readyPromise = ready.catch((error) => {
-    console.warn("[sync] Initial entity flush did not settle cleanly", error);
-  });
-
-  if (!timeoutMs || timeoutMs <= 0) {
-    await readyPromise;
-    console.log("[sync] initial entity flush", performance.now() - flushStart);
-    return;
-  }
-
-  let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
-  const timeoutPromise = new Promise<void>((resolve) => {
-    timeoutHandle = setTimeout(() => {
-      console.warn(`[sync] Initial entity flush timed out after ${timeoutMs}ms, continuing`);
-      resolve();
-    }, timeoutMs);
-  });
-
-  await Promise.race([readyPromise, timeoutPromise]);
-  if (timeoutHandle !== undefined) {
-    clearTimeout(timeoutHandle);
-  }
-  console.log("[sync] initial entity flush", performance.now() - flushStart);
 };
 
 const resubscribeEntityStream = async (
