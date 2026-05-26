@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.eternum",
   "kind": "game",
-  "updatedAt": "2026-05-26T23:42:50.328Z",
+  "updatedAt": "2026-05-26T23:43:15.497Z",
   "entries": {
     "etrn-gloom-467": {
       "kind": "game",
@@ -28,11 +28,10 @@
       "path": "runs/mainnet/eternum/etrn-cred-598.json",
       "inputPath": "inputs/mainnet/eternum/etrn-cred-598/26481498203-1.json",
       "status": "running",
-      "updatedAt": "2026-05-26T23:42:50.328Z",
+      "updatedAt": "2026-05-26T23:43:15.497Z",
       "workflowRef": "next",
-      "currentStepId": "configure-world",
-      "activeLeaseExpiresAt": "2026-05-27T00:27:50.328Z",
-      "hasRunningStep": true,
+      "currentStepId": "grant-lootchest-role",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1779843600,
