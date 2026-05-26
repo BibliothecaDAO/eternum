@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "26445152021-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-26T12:31:04.992Z",
+  "updatedAt": "2026-05-26T12:40:57.212Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -9170,7 +9170,7 @@
         },
         "seriesGameNumber": 49,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to legendary",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "failed",
         "configSteps": [
           {
@@ -9343,8 +9343,8 @@
           "entryTokenAddress": "0xf020b6d929540515811bf84a94c84d5be781a4be2dab9bb1484afd019ae33b",
           "configureTxHash": "0x3c517161212315767155a4965bb546e7f64e280b37230b8f7556de8569df2b1",
           "worldConfigTxHash": "0x3c517161212315767155a4965bb546e7f64e280b37230b8f7556de8569df2b1",
-          "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-05-26T12:31:03.089Z"
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-05-26T12:40:55.458Z"
         }
       },
       {
