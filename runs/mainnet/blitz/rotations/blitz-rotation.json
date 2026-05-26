@@ -10,30 +10,30 @@
   "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "grant-lootchest-roles",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26445152021-1.json",
-  "latestLaunchRequestId": "26445152021-1",
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26449032226-1.json",
+  "latestLaunchRequestId": "26449032226-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-26T12:51:02.295Z",
+  "updatedAt": "2026-05-26T12:51:58.271Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 26445152021,
+    "workflowRunId": 26449032226,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/26445152021",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/26449032226",
     "ref": "next",
     "sha": "1d16b37e8d5b46dfbdab60f1be3e37e61a8b5f2a"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-05-26T13:05:53.158Z",
+    "nextRetryAt": "2026-05-26T13:06:58.271Z",
     "lastRetryAt": "2026-05-26T12:50:53.158Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-26T10:07:31.012Z",
-    "lastEvaluatedAt": "2026-05-26T09:52:31.012Z"
+    "nextEvaluationAt": "2026-05-26T13:06:58.271Z",
+    "lastEvaluatedAt": "2026-05-26T12:51:58.271Z"
   },
   "steps": [
     {
@@ -46,23 +46,23 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -76,24 +76,21 @@
       "title": "Setting up loot chests",
       "status": "pending",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-05-26T09:51:53.613Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
       "status": "pending",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-05-26T09:52:14.572Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
       "status": "pending",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-05-26T09:52:25.062Z"
+      "latestEvent": "Waiting to run"
     }
   ],
   "summary": {
@@ -10086,6 +10083,63 @@
           "configureTxHash": "0x43c2ec3dd67951448f9374f8f281623710bac0aa3d00af1c0c1c9d74c156893",
           "worldConfigTxHash": "0x43c2ec3dd67951448f9374f8f281623710bac0aa3d00af1c0c1c9d74c156893"
         }
+      },
+      {
+        "gameName": "eu-gladiator-29-05-26-1800",
+        "startTime": 1780077600,
+        "startTimeIso": "2026-05-29T18:00:00.000Z",
+        "durationSeconds": 3600,
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        },
+        "seriesGameNumber": 54,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "reserve-blitz-hyperstructures",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
