@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-26T23:34:29.637Z",
+  "updatedAt": "2026-05-26T23:34:46.891Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1351,11 +1351,10 @@
       "path": "runs/slot/blitz/bltz-kick-418.json",
       "inputPath": "inputs/slot/blitz/bltz-kick-418/26481243166-1.json",
       "status": "running",
-      "updatedAt": "2026-05-26T23:34:29.637Z",
+      "updatedAt": "2026-05-26T23:34:46.891Z",
       "workflowRef": "next",
-      "currentStepId": "configure-world",
-      "activeLeaseExpiresAt": "2026-05-27T00:19:29.637Z",
-      "hasRunningStep": true,
+      "currentStepId": "reserve-blitz-hyperstructures",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "reserve-blitz-hyperstructures",
       "startTime": 1779840000,
