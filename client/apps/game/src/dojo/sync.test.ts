@@ -503,6 +503,26 @@ describe("initialSync global streams", () => {
     expect(snapshotCall[4]).not.toContain("s1_eternum-Structure");
   });
 
+  it("reports sync complete after the spatial bootstrap snapshot without waiting for an entity stream flush", async () => {
+    getEntitiesMock.mockClear();
+    getEntitiesMock.mockResolvedValue(undefined);
+    const harness = createSyncHarness();
+    const syncPromise = initialSync(harness.setup as any, createInitialSyncState() as any, vi.fn(), {
+      logging: false,
+      reportProgress: false,
+      subscriptionSetupTimeoutMs: 25,
+    });
+    let syncResolved = false;
+    syncPromise.then(() => {
+      syncResolved = true;
+    });
+
+    await flushMicrotasks(20);
+
+    expect(syncResolved).toBe(true);
+    expect(getEntitiesMock).toHaveBeenCalledTimes(1);
+  });
+
   it("fails initial sync when the ownerless global spatial bootstrap snapshot times out", async () => {
     vi.useFakeTimers();
     getEntitiesMock.mockImplementation(() => new Promise(() => undefined));
