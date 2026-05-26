@@ -1,4 +1,6 @@
-import { useActiveWorldProfile, useRuntimeChain } from "@/runtime/world";
+import { useActiveWorldProfile } from "@/runtime/world/use-active-world";
+import { useRuntimeChain } from "@/runtime/world/use-selected-chain";
+import type { Chain as RuntimeChain } from "@contracts";
 import { ControllerConnector } from "@cartridge/connector";
 import { usePredeployedAccounts } from "@dojoengine/predeployed-connector/react";
 import { Chain, getSlotChain, mainnet, sepolia } from "@starknet-react/chains";
@@ -7,7 +9,6 @@ import { QueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { useCallback, useMemo } from "react";
 import { shortString } from "starknet";
-import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { resolveStarknetRuntimeConfig } from "./starknet-chain-config";
 import { useControllerAccount } from "./use-controller-account";
@@ -21,7 +22,7 @@ const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const KATANA_CHAIN_NETWORK = "Katana Local";
 const KATANA_CHAIN_NAME = "katana";
 const KATANA_RPC_URL = "http://localhost:5050";
-const fallbackChain = env.VITE_PUBLIC_CHAIN as import("@contracts").Chain;
+const fallbackChain = env.VITE_PUBLIC_CHAIN as RuntimeChain;
 const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
 const katanaLocalChain = {
@@ -69,13 +70,15 @@ const queryClient = new QueryClient({
 export function StarknetProvider({ children }: { children: React.ReactNode }) {
   const activeWorld = useActiveWorldProfile();
   const runtimeChain = useRuntimeChain(fallbackChain);
-  const baseRpcUrl = useMemo(() => {
-    if (runtimeChain === "local") {
-      return KATANA_RPC_URL;
-    }
-
-    return activeWorld?.rpcUrl ?? dojoConfig.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;
-  }, [activeWorld?.rpcUrl, runtimeChain]);
+  const baseRpcUrl = useMemo(
+    () =>
+      resolveWalletProviderBaseRpcUrl({
+        runtimeChain,
+        profileRpcUrl: activeWorld?.rpcUrl,
+        defaultRpcUrl: env.VITE_PUBLIC_NODE_URL,
+      }),
+    [activeWorld?.rpcUrl, runtimeChain],
+  );
   const runtimeConfig = useMemo(
     () =>
       resolveStarknetRuntimeConfig({
@@ -151,6 +154,22 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     </StarknetConfig>
   );
 }
+
+const resolveWalletProviderBaseRpcUrl = ({
+  runtimeChain,
+  profileRpcUrl,
+  defaultRpcUrl,
+}: {
+  runtimeChain: RuntimeChain;
+  profileRpcUrl?: string;
+  defaultRpcUrl: string;
+}): string => {
+  if (runtimeChain === "local") {
+    return KATANA_RPC_URL;
+  }
+
+  return profileRpcUrl ?? defaultRpcUrl;
+};
 
 const StarknetAccountSync = ({ children }: { children: React.ReactNode }) => {
   useControllerAccount();
