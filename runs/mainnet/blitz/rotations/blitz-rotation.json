@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "26449032226-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-26T13:01:02.317Z",
+  "updatedAt": "2026-05-26T13:02:53.248Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -9233,7 +9233,7 @@
         },
         "seriesGameNumber": 49,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-26-05-26-1100: Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`",
         "status": "failed",
         "configSteps": [
           {
@@ -9407,7 +9407,11 @@
           "configureTxHash": "0x3c517161212315767155a4965bb546e7f64e280b37230b8f7556de8569df2b1",
           "worldConfigTxHash": "0x3c517161212315767155a4965bb546e7f64e280b37230b8f7556de8569df2b1",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-05-26T13:00:59.816Z"
+          "pendingIndexerTierRequestedAt": "2026-05-26T13:02:53.248Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-05-26T13:02:53.248Z",
+          "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
       {
