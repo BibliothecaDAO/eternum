@@ -1,8 +1,8 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { type TransitionEvent, useCallback, useEffect, useRef, useState } from "react";
 
-const DEFAULT_BACKGROUND_ID = "01";
-const OPTIMIZED_BACKGROUND_IDS = new Set(["01", "02", "04", "05", "07"]);
+const DEFAULT_BACKGROUND_ID = "02";
+const OPTIMIZED_BACKGROUND_IDS = new Set(["02", "07"]);
 
 interface DynamicBackgroundProps {
   backgroundId: string;
@@ -144,6 +144,6 @@ const resolveLandingBackgroundSources = (backgroundId: string) => {
 
   return {
     webp: `/images/covers/dashboard/${resolvedBackgroundId}.webp`,
-    png: `/images/covers/${resolvedBackgroundId}.png`,
+    png: `/images/covers/blitz/${resolvedBackgroundId}.png`,
   };
 };
