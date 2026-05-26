@@ -17,13 +17,13 @@ import { resolveLandingSurfacePath, type LandingEntryRouteState } from "./lib/la
 
 // Route to background mapping
 const ROUTE_BACKGROUNDS: Record<string, string> = {
-  "/": "01",
-  "/learn": "01",
-  "/news": "01",
-  "/factory": "03",
-  "/profile": "05",
-  "/markets": "04",
-  "/amm": "04",
+  "/": "02",
+  "/learn": "02",
+  "/news": "02",
+  "/factory": "02",
+  "/profile": "02",
+  "/markets": "02",
+  "/amm": "02",
   "/leaderboard": "07",
 };
 
@@ -43,7 +43,7 @@ export const LandingLayout = () => {
   });
 
   // Get default background for current route
-  const routeBackground = ROUTE_BACKGROUNDS[surfacePath] ?? "01";
+  const routeBackground = ROUTE_BACKGROUNDS[surfacePath] ?? "02";
 
   return (
     <LandingProvider defaultBackground={routeBackground}>

@@ -1,6 +1,6 @@
 import type { Chain } from "@contracts";
 
-import { buildSharedSlotRpcUrl, isRpcUrlCompatibleForChain, normalizeRpcUrl } from "@/runtime/world";
+import { buildSharedSlotRpcUrl, isRpcUrlCompatibleForChain, normalizeRpcUrl } from "@/runtime/world/normalize";
 import { constants, shortString } from "starknet";
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
