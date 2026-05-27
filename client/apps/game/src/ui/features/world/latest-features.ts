@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-27",
+    title: "Hyperstructure Auto-Garrison",
+    description:
+      "Armies that capture an unguarded hyperstructure now automatically move their surviving troops into the first available guard slot.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-26",
     title: "Faster Dashboard Loading",
     description:

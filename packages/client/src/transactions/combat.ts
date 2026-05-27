@@ -40,6 +40,28 @@ export class CombatTransactions {
     });
   }
 
+  async attackGuardAndGarrison(
+    signer: Signer,
+    props: {
+      explorerId: number;
+      structureId: number;
+      structureDirection: number;
+      toGuardSlot: number;
+      count: number;
+      resources?: { resourceId: number; amount: number }[];
+    },
+  ) {
+    return this.provider.attack_explorer_vs_guard_and_garrison({
+      signer,
+      explorer_id: props.explorerId,
+      structure_id: props.structureId,
+      structure_direction: props.structureDirection,
+      to_guard_slot: props.toGuardSlot,
+      count: props.count,
+      resources: props.resources ?? [],
+    });
+  }
+
   async guardAttackExplorer(
     signer: Signer,
     props: {

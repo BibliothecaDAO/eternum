@@ -51,10 +51,27 @@ describe("getSameStructureTransferBlockReason", () => {
         selectedEntityId: 1,
         targetEntityId: 202,
         selectedExplorerOwner: 101,
+        selectedExplorerOwnerAddress: 0xaaa,
+        targetStructureOwnerAddress: 0xbbb,
         targetExplorerOwner: 0,
         guardSlot: 1,
       }),
     ).toBe("Cannot transfer troops: Explorer must belong to the target structure");
+  });
+
+  it("allows explorer-to-structure transfers when the source and target structures share an owner", () => {
+    expect(
+      getSameStructureTransferBlockReason({
+        transferDirection: TransferDirection.ExplorerToStructure,
+        selectedEntityId: 1,
+        targetEntityId: 202,
+        selectedExplorerOwner: 101,
+        selectedExplorerOwnerAddress: 0xaaa,
+        targetStructureOwnerAddress: 0xaaa,
+        targetExplorerOwner: 0,
+        guardSlot: 1,
+      }),
+    ).toBeNull();
   });
 
   it("allows structure-to-explorer guard transfers when the explorer belongs to the selected structure", () => {

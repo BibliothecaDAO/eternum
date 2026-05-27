@@ -387,6 +387,12 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     return await provider.attack_explorer_vs_guard(props);
   };
 
+  const attack_explorer_vs_guard_and_garrison = async (
+    props: SystemProps.AttackExplorerVsGuardAndGarrisonProps,
+  ): Promise<GetTransactionReceiptResponse> => {
+    return await provider.attack_explorer_vs_guard_and_garrison(props);
+  };
+
   const attack_guard_vs_explorer = async (
     props: SystemProps.AttackGuardVsExplorerProps,
   ): Promise<GetTransactionReceiptResponse> => {
@@ -621,6 +627,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     explorer_explore: withAuth(explorer_explore),
     attack_explorer_vs_explorer: withAuth(attack_explorer_vs_explorer),
     attack_explorer_vs_guard: withAuth(attack_explorer_vs_guard),
+    attack_explorer_vs_guard_and_garrison: withAuth(attack_explorer_vs_guard_and_garrison),
     attack_guard_vs_explorer: withAuth(attack_guard_vs_explorer),
     raid_explorer_vs_guard: withAuth(raid_explorer_vs_guard),
 

@@ -10,6 +10,8 @@ export interface AttackTarget {
   id: ID;
   targetType: TargetType;
   structureCategory: StructureType | null;
+  structureLevel?: number | null;
+  guardSlotLimit?: number | null;
   hex: { x: number; y: number };
   addressOwner: ContractAddress | null;
 }

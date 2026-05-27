@@ -35,6 +35,7 @@ import { useQuery } from "@tanstack/react-query";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { resolveAutoGarrisonResources } from "../battle/hyperstructure-auto-garrison";
 import { getStructureDefenseSlotLimit, getUnlockedGuardSlots, MAX_GUARD_SLOT_COUNT } from "../utils/defense-slot-utils";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
 import { TransferBalanceCardData, TransferBalanceCards } from "./transfer-troops/transfer-balance-cards";
@@ -57,11 +58,6 @@ interface TransferTroopsContainerProps {
 const BALANCE_SLOT = BALANCE_TRANSFER_SLOT;
 
 type GuardSelection = number | typeof BALANCE_SLOT | null;
-
-type RelicResourceTransfer = {
-  resourceId: number;
-  amount: number;
-};
 
 const RELIC_RESOURCE_IDS: number[] = RELICS.map((relic) => Number(relic.id));
 
@@ -170,15 +166,19 @@ export const TransferTroopsContainer = ({
         selectedEntityId,
         targetEntityId,
         selectedExplorerOwner: selectedExplorerTroops?.owner ?? null,
+        selectedExplorerOwnerAddress: selectedExplorerConnectedStructure?.owner ?? null,
         targetExplorerOwner: targetExplorerTroops?.owner ?? null,
+        targetStructureOwnerAddress: targetStructure?.owner ?? null,
         guardSlot,
       }),
     [
       guardSlot,
       selectedEntityId,
+      selectedExplorerConnectedStructure?.owner,
       selectedExplorerTroops?.owner,
       targetEntityId,
       targetExplorerTroops?.owner,
+      targetStructure?.owner,
       transferDirection,
     ],
   );
@@ -845,17 +845,15 @@ export const TransferTroopsContainer = ({
           throw new Error("Unable to load explorer resources for auto relic transfer");
         }
 
-        const relicResources: RelicResourceTransfer[] = RELIC_RESOURCE_IDS.map((resourceId) => {
-          const { balance } = ResourceManager.balanceWithProduction(
-            resolvedExplorerResources,
-            currentDefaultTick,
-            resourceId as ResourcesIds,
-          );
-          return {
-            resourceId,
-            amount: balance,
-          };
-        }).filter((entry) => entry.amount > 0);
+        const relicResources = resolveAutoGarrisonResources({
+          resourceIds: RELIC_RESOURCE_IDS,
+          readBalance: (resourceId) =>
+            ResourceManager.balanceWithProduction(
+              resolvedExplorerResources,
+              currentDefaultTick,
+              resourceId as ResourcesIds,
+            ).balance,
+        });
 
         if (relicResources.length > 0) {
           if (transferDirection === TransferDirection.ExplorerToExplorer) {

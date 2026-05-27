@@ -16,9 +16,10 @@ import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@biblio
 import { getComponentValue } from "@dojoengine/recs";
 import { useEffect, useMemo, useState } from "react";
 
+import { getStructureDefenseSlotLimit, MAX_GUARD_SLOT_COUNT } from "../../utils/defense-slot-utils";
 import { AttackTarget, TargetType } from "../types";
 
-import type { ID, RelicEffectWithEndTick } from "@bibliothecadao/types";
+import type { ID, RelicEffectWithEndTick, StructureType } from "@bibliothecadao/types";
 import { STEALABLE_RESOURCES } from "@bibliothecadao/types";
 
 const orderResourcesByPriority = (resourceBalances: Array<{ resourceId: number; amount: number }>) => {
@@ -39,6 +40,28 @@ interface UseAttackTargetResult {
 
 type StructureTargetFetchResult = Awaited<ReturnType<typeof getStructureFromToriiClient>>;
 type ExplorerTargetFetchResult = Awaited<ReturnType<typeof getExplorerFromToriiClient>>;
+
+const resolveStructureGuardSlotLimit = (structure: NonNullable<StructureTargetFetchResult["structure"]>) => {
+  const limits: number[] = [];
+  const derivedLimit = getStructureDefenseSlotLimit(
+    structure.category as StructureType | undefined,
+    structure.base?.level,
+  );
+  if (typeof derivedLimit === "number" && Number.isFinite(derivedLimit)) {
+    limits.push(derivedLimit);
+  }
+
+  const baseLimit = Number(structure.base?.troop_max_guard_count);
+  if (Number.isFinite(baseLimit)) {
+    limits.push(baseLimit);
+  }
+
+  if (limits.length === 0) {
+    return null;
+  }
+
+  return Math.max(0, Math.min(Math.min(...limits), MAX_GUARD_SLOT_COUNT));
+};
 
 type FetchedAttackTarget =
   | {
@@ -193,6 +216,8 @@ export const useAttackTargetData = (
         id: fetchedTarget.id,
         targetType: TargetType.Structure,
         structureCategory: fetchedTarget.structure.category,
+        structureLevel: Number(fetchedTarget.structure.base?.level ?? 0),
+        guardSlotLimit: resolveStructureGuardSlotLimit(fetchedTarget.structure),
         hex: fetchedTarget.hex,
         addressOwner: fetchedTarget.structure.owner,
       };
@@ -208,6 +233,8 @@ export const useAttackTargetData = (
       id: fetchedTarget.id,
       targetType: TargetType.Army,
       structureCategory: null,
+      structureLevel: null,
+      guardSlotLimit: null,
       hex: fetchedTarget.hex,
       addressOwner: fetchedTarget.addressOwner,
     };

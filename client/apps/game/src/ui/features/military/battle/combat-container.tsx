@@ -1,6 +1,6 @@
 import { env } from "@/../env";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
-import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
+import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import {
@@ -13,6 +13,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import TwitterShareButton from "@/ui/design-system/molecules/twitter-share-button";
 import { formatSocialText, twitterTemplates } from "@/ui/socials";
 import { getRelicBonusSummary } from "@/ui/utils/relic-utils";
+import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { currencyFormat } from "@/ui/utils/utils";
 
 import {
@@ -26,9 +27,11 @@ import {
   getGuildFromPlayerAddress,
   getRemainingCapacityInKg,
   getTroopResourceId,
+  ResourceManager,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { getExplorerFromToriiClient, getStructureFromToriiClient } from "@bibliothecadao/torii";
 import {
   CapacityConfig,
   ClientComponents,
@@ -36,6 +39,7 @@ import {
   DISPLAYED_SLOT_NUMBER_MAP,
   getDirectionBetweenAdjacentHexes,
   ID,
+  RELICS,
   RelicEffectWithEndTick,
   RESOURCE_PRECISION,
   resources,
@@ -46,7 +50,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import Users from "lucide-react/dist/esm/icons/users";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { GuardStaminaBar } from "../components/guard-stamina-bar";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
@@ -57,12 +61,33 @@ import {
 } from "./attack-stamina-state";
 import { BattleCooldownTimer } from "./battle-cooldown-timer";
 import { BattleStats, CombatLoading, ResourceStealing, TroopDisplay } from "./components";
+import {
+  addressesMatch,
+  AutoGarrisonPlan,
+  resolveAutoGarrisonPlan,
+  resolveAutoGarrisonResources,
+  resolveLiveAutoGarrisonCount,
+} from "./hyperstructure-auto-garrison";
 import { AttackTarget, TargetType } from "./types";
 
 enum AttackerType {
   Structure,
   Army,
 }
+
+const AUTO_GARRISON_MAX_POLL_ATTEMPTS = 8;
+const AUTO_GARRISON_POLL_INTERVAL_MS = 750;
+const RELIC_RESOURCE_IDS: number[] = RELICS.map((relic) => Number(relic.id));
+
+type CapturedAutoGarrisonState = {
+  explorer: Awaited<ReturnType<typeof getExplorerFromToriiClient>>["explorer"];
+  explorerResources: Awaited<ReturnType<typeof getExplorerFromToriiClient>>["resources"];
+};
+
+type ToriiClient = Parameters<typeof getExplorerFromToriiClient>[0];
+
+const waitForAutoGarrisonPollInterval = () =>
+  new Promise((resolve) => setTimeout(resolve, AUTO_GARRISON_POLL_INTERVAL_MS));
 
 const buildProjectedTroopSnapshot = (input: {
   troops: Troops;
@@ -85,7 +110,39 @@ const buildProjectedTroopSnapshot = (input: {
   battle_cooldown_end: input.troops.battle_cooldown_end || 0,
 });
 
-// Add the new function before the CombatContainer component
+const pollCapturedAutoGarrisonState = async ({
+  toriiClient,
+  explorerId,
+  structureId,
+  ownerAddress,
+}: {
+  toriiClient: ToriiClient;
+  explorerId: ID;
+  structureId: ID;
+  ownerAddress: string;
+}): Promise<CapturedAutoGarrisonState | null> => {
+  for (let attempt = 0; attempt < AUTO_GARRISON_MAX_POLL_ATTEMPTS; attempt += 1) {
+    const [structureData, explorerData] = await Promise.all([
+      getStructureFromToriiClient(toriiClient, structureId),
+      getExplorerFromToriiClient(toriiClient, explorerId),
+    ]);
+
+    const explorerCount = resolveLiveAutoGarrisonCount(explorerData.explorer);
+    if (addressesMatch(structureData.structure?.owner, ownerAddress) && explorerCount > 0) {
+      return {
+        explorer: explorerData.explorer,
+        explorerResources: explorerData.resources,
+      };
+    }
+
+    if (attempt < AUTO_GARRISON_MAX_POLL_ATTEMPTS - 1) {
+      await waitForAutoGarrisonPollInterval();
+    }
+  }
+
+  return null;
+};
+
 const getFormattedCombatTweet = ({
   attackerArmyData,
   target,
@@ -130,16 +187,24 @@ export const CombatContainer = ({
 }) => {
   const {
     account: { account },
+    network: { provider, toriiClient },
     setup: {
-      systemCalls: { attack_explorer_vs_explorer, attack_explorer_vs_guard, attack_guard_vs_explorer },
+      systemCalls: {
+        attack_explorer_vs_explorer,
+        attack_explorer_vs_guard,
+        attack_explorer_vs_guard_and_garrison,
+        attack_guard_vs_explorer,
+        explorer_guard_swap,
+        troop_structure_adjacent_transfer,
+      },
       components,
-      components: { Structure, ExplorerTroops },
+      components: { Structure, ExplorerTroops, Resource },
     },
   } = useDojo();
 
   const [loading, setLoading] = useState(false);
   const [selectedGuardSlot, setSelectedGuardSlot] = useState<number | null>(null);
-  const currentArmiesTick = useCurrentArmiesTick();
+  const { currentArmiesTick, currentDefaultTick } = useBlockTimestamp();
 
   const accountName = useAccountStore((state) => state.accountName);
 
@@ -148,6 +213,27 @@ export const CombatContainer = ({
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   const selectedHex = useUIStore((state) => state.selectedHex);
+
+  const attackerResources = useMemo(
+    () => getComponentValue(Resource, getEntityIdFromKeys([BigInt(attackerEntityId)])),
+    [attackerEntityId, Resource],
+  );
+
+  const resolveExplorerRelicResources = useCallback(
+    (explorerResources = attackerResources) => {
+      if (!explorerResources) {
+        return [];
+      }
+
+      return resolveAutoGarrisonResources({
+        resourceIds: RELIC_RESOURCE_IDS,
+        readBalance: (resourceId) =>
+          ResourceManager.balanceWithProduction(explorerResources, currentDefaultTick, resourceId as ResourcesIds)
+            .balance,
+      });
+    },
+    [attackerResources, currentDefaultTick],
+  );
 
   const combatConfig = useMemo(() => {
     return configManager.getCombatConfig();
@@ -405,6 +491,20 @@ export const CombatContainer = ({
 
   const remainingTroops = battleSimulation?.getRemainingTroops();
   const winner = battleSimulation?.winner;
+  const attackerTroopCount = Number(attackerArmyData?.troops.count ?? 0n);
+  const projectedAttackerTroopCount = remainingTroops
+    ? Math.max(0, Math.floor(remainingTroops.attackerTroops * RESOURCE_PRECISION))
+    : attackerTroopCount;
+  const autoGarrisonPlan = useMemo(
+    () =>
+      resolveAutoGarrisonPlan({
+        attackerType: attackerType === AttackerType.Army ? "army" : "structure",
+        target,
+        attackerTroopCount,
+        projectedAttackerTroopCount,
+      }),
+    [attackerTroopCount, attackerType, projectedAttackerTroopCount, target],
+  );
 
   const totalDefenderTroopsRaw = useMemo(() => {
     if (!target?.info || target.info.length === 0) return 0;
@@ -472,27 +572,107 @@ export const CombatContainer = ({
     }
   };
 
+  const submitPostConfirmationAutoGarrison = async ({
+    attackResult,
+    direction,
+    plan,
+  }: {
+    attackResult: unknown;
+    direction: number;
+    plan: Extract<AutoGarrisonPlan, { mode: "post-confirmation" }>;
+  }) => {
+    const txHash = extractTransactionHash(attackResult);
+    if (!txHash) {
+      return;
+    }
+
+    await waitForTransactionConfirmation({
+      txHash,
+      provider,
+      account,
+      label: "hyperstructure capture",
+    });
+
+    try {
+      const capturedState = await pollCapturedAutoGarrisonState({
+        toriiClient,
+        explorerId: attackerEntityId,
+        structureId: target.id,
+        ownerAddress: account.address,
+      });
+      if (!capturedState?.explorer) {
+        return;
+      }
+
+      const liveCount = resolveLiveAutoGarrisonCount(capturedState.explorer);
+      if (liveCount <= 0) {
+        return;
+      }
+
+      const relicResources = resolveExplorerRelicResources(capturedState.explorerResources);
+      if (relicResources.length > 0) {
+        await troop_structure_adjacent_transfer({
+          signer: account,
+          from_explorer_id: attackerEntityId,
+          to_structure_id: target.id,
+          resources: relicResources,
+        });
+      }
+
+      await explorer_guard_swap({
+        signer: account,
+        from_explorer_id: attackerEntityId,
+        to_structure_id: target.id,
+        to_structure_direction: direction,
+        to_guard_slot: plan.toGuardSlot,
+        count: liveCount,
+      });
+    } catch (error) {
+      console.error("Auto-garrison failed:", error);
+    }
+  };
+
   const onExplorerVsGuardAttack = async () => {
     if (!selectedHex) return;
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
     if (direction === null) return;
 
-    await attack_explorer_vs_guard({
+    if (autoGarrisonPlan.mode === "atomic") {
+      await attack_explorer_vs_guard_and_garrison({
+        signer: account,
+        explorer_id: attackerEntityId,
+        structure_id: target.id,
+        structure_direction: direction,
+        to_guard_slot: autoGarrisonPlan.toGuardSlot,
+        count: autoGarrisonPlan.count,
+        resources: resolveExplorerRelicResources(),
+      });
+      return;
+    }
+
+    const attackResult = await attack_explorer_vs_guard({
       signer: account,
       explorer_id: attackerEntityId,
-      structure_id: target?.id || 0,
+      structure_id: target.id,
       structure_direction: direction,
     });
+
+    if (autoGarrisonPlan.mode === "post-confirmation") {
+      await submitPostConfirmationAutoGarrison({
+        attackResult,
+        direction,
+        plan: autoGarrisonPlan,
+      });
+    }
   };
 
   const remainingCapacity = useMemo(() => {
-    const resource = getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(attackerEntityId)]));
-    const remainingCapacity = resource ? getRemainingCapacityInKg(resource) : 0;
+    const remainingCapacity = attackerResources ? getRemainingCapacityInKg(attackerResources) : 0;
     const remainingCapacityAfterRaid =
       remainingCapacity -
       (battleSimulation?.defenderDamage || 0) * configManager.getCapacityConfigKg(CapacityConfig.Army);
     return { beforeRaid: remainingCapacity, afterRaid: remainingCapacityAfterRaid };
-  }, [battleSimulation]);
+  }, [attackerResources, battleSimulation]);
 
   const stealableResources = useMemo(() => {
     let capacityAfterRaid = remainingCapacity.afterRaid;

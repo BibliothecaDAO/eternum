@@ -31,6 +31,7 @@ function createProvider() {
 
     attack_explorer_vs_explorer: vi.fn().mockResolvedValue({}),
     attack_explorer_vs_guard: vi.fn().mockResolvedValue({}),
+    attack_explorer_vs_guard_and_garrison: vi.fn().mockResolvedValue({}),
     attack_guard_vs_explorer: vi.fn().mockResolvedValue({}),
     raid_explorer_vs_guard: vi.fn().mockResolvedValue({}),
 
@@ -247,6 +248,24 @@ describe("transaction payload mapping", () => {
       explorer_id: 6,
       structure_id: 7,
       structure_direction: 8,
+    });
+
+    await tx.attackGuardAndGarrison(signer, {
+      explorerId: 6,
+      structureId: 7,
+      structureDirection: 8,
+      toGuardSlot: 3,
+      count: 90,
+      resources: [{ resourceId: 12, amount: 34 }],
+    });
+    expect(provider.attack_explorer_vs_guard_and_garrison).toHaveBeenCalledWith({
+      signer,
+      explorer_id: 6,
+      structure_id: 7,
+      structure_direction: 8,
+      to_guard_slot: 3,
+      count: 90,
+      resources: [{ resourceId: 12, amount: 34 }],
     });
 
     await tx.guardAttackExplorer(signer, {

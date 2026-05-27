@@ -491,6 +491,44 @@ export const getContractByName = (manifest: Manifest, name: string) => {
   return contract.address;
 };
 
+const buildExplorerVsGuardAttackCall = (
+  manifest: Manifest,
+  { explorer_id, structure_id, structure_direction }: SystemProps.AttackExplorerVsGuardProps,
+): Call => ({
+  contractAddress: getContractByName(manifest, `${NAMESPACE}-troop_battle_systems`),
+  entrypoint: "attack_explorer_vs_guard",
+  calldata: [explorer_id, structure_id, structure_direction],
+});
+
+const buildTroopStructureAdjacentTransferCall = (
+  manifest: Manifest,
+  { explorer_id, structure_id, resources }: SystemProps.AttackExplorerVsGuardAndGarrisonProps,
+): Call => ({
+  contractAddress: getContractByName(manifest, `${NAMESPACE}-resource_systems`),
+  entrypoint: "troop_structure_adjacent_transfer",
+  calldata: [
+    explorer_id,
+    structure_id,
+    resources?.length ?? 0,
+    ...(resources ?? []).flatMap(({ resourceId, amount }) => [resourceId, amount]),
+  ],
+});
+
+const buildExplorerGuardSwapCall = (
+  manifest: Manifest,
+  {
+    explorer_id,
+    structure_id,
+    structure_direction,
+    to_guard_slot,
+    count,
+  }: SystemProps.AttackExplorerVsGuardAndGarrisonProps,
+): Call => ({
+  contractAddress: getContractByName(manifest, `${NAMESPACE}-troop_management_systems`),
+  entrypoint: "explorer_guard_swap",
+  calldata: [explorer_id, structure_id, structure_direction, to_guard_slot, count],
+});
+
 /**
  * Higher order function that adds event emitter functionality to a class
  *
@@ -3397,6 +3435,34 @@ export class EternumProvider extends EnhancedDojoProvider {
         calldata: [explorer_id, structure_id, structure_direction],
       },
       transactionType: TransactionType.ATTACK_EXPLORER_VS_GUARD,
+    });
+  }
+
+  /**
+   * Attack a guard with an explorer and garrison surviving troops into the captured structure.
+   *
+   * @param props - Properties for explorer vs guard attack and garrison
+   * @param props.explorer_id - ID of the attacking explorer
+   * @param props.structure_id - ID of the structure with defending guard
+   * @param props.structure_direction - Direction to the structure
+   * @param props.to_guard_slot - Guard slot to place surviving troops in
+   * @param props.count - Number of surviving troops to garrison
+   * @param props.resources - Optional resources to transfer before emptying the explorer
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async attack_explorer_vs_guard_and_garrison(props: SystemProps.AttackExplorerVsGuardAndGarrisonProps) {
+    const { resources = [], signer } = props;
+    const calls = [
+      buildExplorerVsGuardAttackCall(this.manifest, props),
+      ...(resources.length > 0 ? [buildTroopStructureAdjacentTransferCall(this.manifest, props)] : []),
+      buildExplorerGuardSwapCall(this.manifest, props),
+    ];
+
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls,
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_GUARD_AND_GARRISON,
     });
   }
 

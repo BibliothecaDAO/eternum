@@ -9,17 +9,30 @@ interface SameStructureTransferParams {
   transferDirection: TransferDirection;
   selectedEntityId: ID;
   targetEntityId: ID;
-  selectedExplorerOwner?: ID | bigint | null;
-  targetExplorerOwner?: ID | bigint | null;
+  selectedExplorerOwner?: ID | bigint | number | string | null;
+  selectedExplorerOwnerAddress?: ID | bigint | number | string | null;
+  targetExplorerOwner?: ID | bigint | number | string | null;
+  targetStructureOwnerAddress?: ID | bigint | number | string | null;
   guardSlot: GuardSelection;
 }
 
-const idsMatch = (left: ID | bigint | null | undefined, right: ID | bigint | null | undefined): boolean => {
+const idsMatch = (
+  left: ID | bigint | number | string | null | undefined,
+  right: ID | bigint | number | string | null | undefined,
+): boolean => {
   if (left === null || left === undefined || right === null || right === undefined) {
     return false;
   }
 
-  return String(left) === String(right);
+  return normalizeComparableId(left) === normalizeComparableId(right);
+};
+
+const normalizeComparableId = (value: ID | bigint | number | string): string => {
+  try {
+    return BigInt(value).toString();
+  } catch {
+    return String(value).trim().toLowerCase();
+  }
 };
 
 export const getSameStructureTransferBlockReason = ({
@@ -27,7 +40,9 @@ export const getSameStructureTransferBlockReason = ({
   selectedEntityId,
   targetEntityId,
   selectedExplorerOwner,
+  selectedExplorerOwnerAddress,
   targetExplorerOwner,
+  targetStructureOwnerAddress,
   guardSlot,
 }: SameStructureTransferParams): string | null => {
   if (transferDirection === TransferDirection.ExplorerToExplorer) {
@@ -37,7 +52,9 @@ export const getSameStructureTransferBlockReason = ({
   }
 
   if (transferDirection === TransferDirection.ExplorerToStructure) {
-    return idsMatch(selectedExplorerOwner, targetEntityId)
+    const sourceBelongsToTarget = idsMatch(selectedExplorerOwner, targetEntityId);
+    const sourceOwnerMatchesTargetOwner = idsMatch(selectedExplorerOwnerAddress, targetStructureOwnerAddress);
+    return sourceBelongsToTarget || sourceOwnerMatchesTargetOwner
       ? null
       : "Cannot transfer troops: Explorer must belong to the target structure";
   }
