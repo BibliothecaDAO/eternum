@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26494970372-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-05-27T06:34:10.955Z",
-  "updatedAt": "2026-05-27T06:37:51.145Z",
+  "updatedAt": "2026-05-27T06:38:00.250Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,9 +72,10 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-05-27T06:38:00.250Z"
     },
     {
       "id": "sync-paymaster",
@@ -96,5 +97,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x2b7bb2fc30f8c25d502cbe42f5e8bce4d21b481e577c1d576cd64b1326009c4"
     ]
+  },
+  "activeLease": {
+    "launchRequestId": "26494970372-1",
+    "workflowRunId": 26494970372,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexer",
+    "acquiredAt": "2026-05-27T06:38:00.250Z",
+    "expiresAt": "2026-05-27T07:23:00.250Z"
   }
 }
