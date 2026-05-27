@@ -9,11 +9,10 @@
     "workflowName": "Game Launch",
     "workflowRunId": 26494970372,
     "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "leaseId": "310efe8e-3c32-4b48-a5fe-0f8aa33cf5ec"
+    "stepId": "reserve-blitz-hyperstructures",
+    "leaseId": "4fa01da5-df40-4170-b40c-021ba208e3b7"
   },
-  "acquiredAt": "2026-05-27T06:36:37.025Z",
-  "heartbeatAt": "2026-05-27T06:36:51.181Z",
-  "expiresAt": "2026-05-27T06:36:51.181Z",
-  "releasedAt": "2026-05-27T06:36:51.181Z"
+  "acquiredAt": "2026-05-27T06:37:07.000Z",
+  "heartbeatAt": "2026-05-27T06:37:07.000Z",
+  "expiresAt": "2026-05-27T06:47:07.000Z"
 }
