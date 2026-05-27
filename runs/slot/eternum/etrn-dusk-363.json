@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-dusk-363",
-  "status": "running",
+  "status": "complete",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/eternum/etrn-dusk-363/26482662807-1.json",
   "latestLaunchRequestId": "26482662807-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-05-27T00:04:04.941Z",
-  "updatedAt": "2026-05-27T00:14:27.958Z",
+  "updatedAt": "2026-05-27T00:14:33.419Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -81,11 +81,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
+      "latestEvent": "Finishing setup succeeded",
       "startedAt": "2026-05-27T00:14:27.958Z",
-      "finishedAt": "2026-05-27T00:13:33.807Z"
+      "finishedAt": "2026-05-27T00:14:33.419Z"
     }
   ],
   "artifacts": {
@@ -104,14 +104,7 @@
     "indexerUrl": "https://api.cartridge.gg/x/etrn-dusk-363/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-27T00:13:32.471Z"
+    "lastIndexerDescribeAt": "2026-05-27T00:14:32.058Z"
   },
-  "activeLease": {
-    "launchRequestId": "26482662807-1",
-    "workflowRunId": 26482662807,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-27T00:14:27.958Z",
-    "expiresAt": "2026-05-27T00:59:27.958Z"
-  }
+  "completedAt": "2026-05-27T00:14:33.419Z"
 }
