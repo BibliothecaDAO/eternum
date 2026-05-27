@@ -3,17 +3,16 @@
   "chain": "mainnet",
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
-    "environment": "mainnet.eternum",
-    "gameName": "etrn-cred-598",
-    "launchRequestId": "26481498203-1",
+    "environment": "mainnet.blitz",
+    "gameName": "blitz-rotation",
+    "launchRequestId": "26490095378-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26481498203,
+    "workflowRunId": 26490095378,
     "workflowRunAttempt": 1,
-    "stepId": "grant-village-pass-role",
-    "leaseId": "cd206141-d7f1-43bd-9f05-27f940b5f310"
+    "stepId": "grant-lootchest-role",
+    "leaseId": "fb5b8520-1bf9-4e0c-bfcf-90ffdbe21f4b"
   },
-  "acquiredAt": "2026-05-26T23:43:47.577Z",
-  "heartbeatAt": "2026-05-26T23:43:52.560Z",
-  "expiresAt": "2026-05-26T23:43:52.560Z",
-  "releasedAt": "2026-05-26T23:43:52.560Z"
+  "acquiredAt": "2026-05-27T04:07:08.038Z",
+  "heartbeatAt": "2026-05-27T04:07:08.038Z",
+  "expiresAt": "2026-05-27T04:17:08.038Z"
 }
