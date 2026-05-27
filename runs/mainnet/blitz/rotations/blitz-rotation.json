@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "26536707496-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-27T20:32:09.440Z",
+  "updatedAt": "2026-05-27T20:40:43.280Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -9615,7 +9615,7 @@
         },
         "seriesGameNumber": 51,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Indexer maintenance failed for eu-gladiator-27-05-26-1900: Torii deployment \"eu-gladiator-27-05-26-1900\" does not exist",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "failed",
         "configSteps": [
           {
@@ -9788,12 +9788,9 @@
           "entryTokenAddress": "0x4f7cc51b5bd0218dff1a9e9353ff288c7666e3fa31aa9147b2ae2666f2385b5",
           "configureTxHash": "0x7f24cba967adc6e7e550feb2c5a5d01ddd2129780d3745f6a755df738bb63d6",
           "worldConfigTxHash": "0x7f24cba967adc6e7e550feb2c5a5d01ddd2129780d3745f6a755df738bb63d6",
-          "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-05-27T20:32:09.440Z",
-          "indexerCreated": false,
-          "lastIndexerTierDispatchTarget": "legendary",
-          "lastIndexerTierDispatchFailedAt": "2026-05-27T20:32:09.440Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-27-05-26-1900\" does not exist"
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-05-27T20:40:41.572Z",
+          "indexerCreated": false
         }
       },
       {
