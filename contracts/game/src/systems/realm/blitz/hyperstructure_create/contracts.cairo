@@ -21,7 +21,7 @@ pub mod hyperstructure_create_systems {
     use crate::models::position::{Coord, CoordImpl};
     use crate::systems::utils::hyperstructure::iHyperstructureDiscoveryImpl;
     use crate::systems::utils::map::IMapImpl;
-    use crate::utils::map::biomes::get_biome;
+    use crate::utils::map::biomes::get_biome_from_world;
 
     ////////////////////////////////////////////////
     // Public Entrypoints
@@ -137,7 +137,9 @@ pub mod hyperstructure_create_systems {
 
             // Reserved hyperstructures are visible and collision-proof before they become real
             // bandit-owned structures later in the season.
-            IMapImpl::explore(ref world, ref tile, get_biome(coord.alt, coord.x.into(), coord.y.into()));
+            IMapImpl::explore(
+                ref world, ref tile, get_biome_from_world(world, coord.alt, coord.x.into(), coord.y.into()),
+            );
             IMapImpl::occupy(ref world, ref tile, TileOccupier::ReservedHyperstructure, 0);
 
             blitz_hyperstructure_settlement_config.next(two_player_mode);

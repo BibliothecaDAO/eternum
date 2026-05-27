@@ -15,6 +15,7 @@ type NativeConfigProvider = Pick<
   | "manifest"
   | "set_starting_resources_config"
   | "set_world_config"
+  | "set_biome_climate_config"
   | "set_mercenaries_name_config"
   | "set_resource_factory_config"
   | "set_building_config"
@@ -212,9 +213,27 @@ export const setMercenariesNameConfig: NativeStep = async ({ account, provider }
   );
 };
 
+function buildBiomeClimateConfig(config: NativeConfig) {
+  return {
+    elevation_scale_bps: config.biomeClimate.elevationScaleBps,
+    moisture_scale_bps: config.biomeClimate.moistureScaleBps,
+    elevation_bias_bps: config.biomeClimate.elevationBiasBps,
+    moisture_bias_bps: config.biomeClimate.moistureBiasBps,
+  };
+}
+
+export const setBiomeClimateConfig: NativeStep = async ({ account, provider, config }) => {
+  await provider.set_biome_climate_config(
+    withSigner(account, {
+      biome_climate_config: buildBiomeClimateConfig(config),
+    }),
+  );
+};
+
 export const setWorldConfig: NativeStep = async (context) => {
   await setWorldAdminConfig(context);
   await setMercenariesNameConfig(context);
+  await setBiomeClimateConfig(context);
 };
 
 function buildResourceFactoryCalls(config: NativeConfig) {
@@ -829,6 +848,7 @@ export const NATIVE_FACTORY_WORLD_CONFIG_IMPLEMENTATIONS = {
   setStartingResourcesConfig,
   setWorldAdminConfig,
   setMercenariesNameConfig,
+  setBiomeClimateConfig,
   setWorldConfig,
   setResourceFactoryConfig,
   setBaseBuildingConfig,

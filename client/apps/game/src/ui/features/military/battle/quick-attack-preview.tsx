@@ -11,7 +11,6 @@ import {
 } from "@/utils/pending-worldmap-fx";
 import Button from "@/ui/design-system/atoms/button";
 import {
-  Biome,
   CombatSimulator,
   configManager,
   DEFAULT_COORD_ALT,
@@ -125,7 +124,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   } = useAttackTargetData(attacker.id, target.hex, target.alt ?? DEFAULT_COORD_ALT);
 
   const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
-  const biome = useMemo(() => Biome.getBiome(target.hex.x, target.hex.y), [target.hex.x, target.hex.y]);
+  const biome = useMemo(() => configManager.getBiome(target.hex.x, target.hex.y), [target.hex.x, target.hex.y]);
   const combatSimulator = useMemo(() => new CombatSimulator(combatConfig), [combatConfig]);
 
   const attackerRelicResourceIds = useMemo(() => toRelicResourceIds(attackerRelicEffects), [attackerRelicEffects]);

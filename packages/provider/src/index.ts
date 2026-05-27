@@ -4191,6 +4191,22 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [admin_address],
     });
   }
+
+  public async set_biome_climate_config(props: SystemProps.SetBiomeClimateConfigProps) {
+    const { biome_climate_config, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_biome_climate_config",
+      calldata: [
+        biome_climate_config.elevation_scale_bps,
+        biome_climate_config.moisture_scale_bps,
+        biome_climate_config.elevation_bias_bps,
+        biome_climate_config.moisture_bias_bps,
+      ],
+    });
+  }
+
   public async set_mercenaries_name_config(props: SystemProps.SetMercenariesNameConfigProps) {
     const { name, signer } = props;
 

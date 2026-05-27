@@ -26,6 +26,7 @@ pub struct WorldConfig {
     pub admin_address: ContractAddress,
     pub vrf_provider_address: ContractAddress,
     pub map_center_offset: u32,
+    pub biome_climate_config: BiomeClimateConfig,
     pub season_addresses_config: SeasonAddressesConfig,
     pub hyperstructure_config: HyperstructureConfig,
     pub hyperstructure_cost_config: HyperstructureCostConfig,
@@ -67,6 +68,14 @@ pub struct WorldConfig {
     pub faith_config: FaithConfig,
     pub artificer_config: ArtificerConfig,
     pub bitcoin_mine_config: BitcoinMineConfig,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct BiomeClimateConfig {
+    pub elevation_scale_bps: u16,
+    pub moisture_scale_bps: u16,
+    pub elevation_bias_bps: u16,
+    pub moisture_bias_bps: u16,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]

@@ -403,7 +403,7 @@ pub impl iQuestDiscoveryImpl of iQuestDiscoveryTrait {
         // explore the tile if biome is not set
         if tile.biome == Biome::None.into() {
             let biome_library = biome_library::get_dispatcher(@world);
-            let biome: Biome = biome_library.get_biome(tile.alt, tile.col.into(), tile.row.into());
+            let biome: Biome = biome_library.get_biome(world, tile.alt, tile.col.into(), tile.row.into());
             IMapImpl::explore(ref world, ref tile, biome);
         }
 

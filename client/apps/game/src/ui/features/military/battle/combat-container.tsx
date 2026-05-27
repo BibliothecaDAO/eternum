@@ -16,7 +16,6 @@ import { getRelicBonusSummary } from "@/ui/utils/relic-utils";
 import { currencyFormat } from "@/ui/utils/utils";
 
 import {
-  Biome,
   CombatSimulator,
   configManager,
   divideByPrecision,
@@ -154,7 +153,7 @@ export const CombatContainer = ({
   }, []);
 
   const biome = useMemo(() => {
-    return Biome.getBiome(target.hex.x, target.hex.y);
+    return configManager.getBiome(target.hex.x, target.hex.y);
   }, [target]);
 
   // Determine if the attacker is a structure or an explorer

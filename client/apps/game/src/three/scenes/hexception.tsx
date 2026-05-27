@@ -54,7 +54,6 @@ import { resolveConstructionBuildability } from "@/ui/features/settlement/constr
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionType,
-  Biome,
   ResourceIdToMiningType,
   ResourceManager,
   TileManager,
@@ -1267,7 +1266,7 @@ export default class HexceptionScene extends HexagonScene {
     existingBuildings: any[],
     biomeHexes: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
-    const biome = Biome.getBiome(targetHex.col, targetHex.row);
+    const biome = configManager.getBiome(targetHex.col, targetHex.row);
     const biomeVariant = getBiomeVariant(biome, targetHex.col, targetHex.row);
     const buildableAreaBiome = "Empty";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;

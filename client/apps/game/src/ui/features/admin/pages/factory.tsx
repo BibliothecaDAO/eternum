@@ -399,6 +399,10 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const [battleDelaySecondsOverrides, setBattleDelaySecondsOverrides] = useState<Record<string, string>>({});
   const [agentMaxCurrentCountOverrides, setAgentMaxCurrentCountOverrides] = useState<Record<string, string>>({});
   const [agentMaxLifetimeCountOverrides, setAgentMaxLifetimeCountOverrides] = useState<Record<string, string>>({});
+  const [biomeElevationScaleBpsOverrides, setBiomeElevationScaleBpsOverrides] = useState<Record<string, string>>({});
+  const [biomeMoistureScaleBpsOverrides, setBiomeMoistureScaleBpsOverrides] = useState<Record<string, string>>({});
+  const [biomeElevationBiasBpsOverrides, setBiomeElevationBiasBpsOverrides] = useState<Record<string, string>>({});
+  const [biomeMoistureBiasBpsOverrides, setBiomeMoistureBiasBpsOverrides] = useState<Record<string, string>>({});
   const activeGameMode: GameMode = deployProfileMode;
 
   // Shared Eternum config (static values), manifest will be patched per-world at runtime
@@ -2341,6 +2345,109 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                           </div>
                                         </div>
 
+                                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Biome Elevation Scale BPS
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              max={65535}
+                                              step={1}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.biomeClimate?.elevationScaleBps ?? 10000,
+                                              )}
+                                              value={
+                                                biomeElevationScaleBpsOverrides[name] ??
+                                                String((eternumConfig as any)?.biomeClimate?.elevationScaleBps ?? 10000)
+                                              }
+                                              onChange={(e) =>
+                                                setBiomeElevationScaleBpsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Biome Moisture Scale BPS
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              max={65535}
+                                              step={1}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.biomeClimate?.moistureScaleBps ?? 10000,
+                                              )}
+                                              value={
+                                                biomeMoistureScaleBpsOverrides[name] ??
+                                                String((eternumConfig as any)?.biomeClimate?.moistureScaleBps ?? 10000)
+                                              }
+                                              onChange={(e) =>
+                                                setBiomeMoistureScaleBpsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Biome Elevation Bias BPS
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              max={65535}
+                                              step={1}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.biomeClimate?.elevationBiasBps ?? 10000,
+                                              )}
+                                              value={
+                                                biomeElevationBiasBpsOverrides[name] ??
+                                                String((eternumConfig as any)?.biomeClimate?.elevationBiasBps ?? 10000)
+                                              }
+                                              onChange={(e) =>
+                                                setBiomeElevationBiasBpsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                          <div className="space-y-1">
+                                            <label className="text-xs font-semibold text-gold/70">
+                                              Biome Moisture Bias BPS
+                                            </label>
+                                            <input
+                                              type="number"
+                                              min={0}
+                                              max={65535}
+                                              step={1}
+                                              placeholder={String(
+                                                (eternumConfig as any)?.biomeClimate?.moistureBiasBps ?? 10000,
+                                              )}
+                                              value={
+                                                biomeMoistureBiasBpsOverrides[name] ??
+                                                String((eternumConfig as any)?.biomeClimate?.moistureBiasBps ?? 10000)
+                                              }
+                                              onChange={(e) =>
+                                                setBiomeMoistureBiasBpsOverrides((p) => ({
+                                                  ...p,
+                                                  [name]: e.target.value,
+                                                }))
+                                              }
+                                              className="w-full px-3 py-2 text-sm bg-black/40 border border-gold/20 rounded-md font-mono"
+                                            />
+                                          </div>
+                                        </div>
+
                                         <div className="flex items-center gap-2">
                                           <button
                                             onClick={async () => {
@@ -2475,6 +2582,10 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                     battleDelaySeconds: battleDelaySecondsOverrides[name],
                                                     agentMaxCurrentCount: agentMaxCurrentCountOverrides[name],
                                                     agentMaxLifetimeCount: agentMaxLifetimeCountOverrides[name],
+                                                    biomeElevationScaleBps: biomeElevationScaleBpsOverrides[name],
+                                                    biomeMoistureScaleBps: biomeMoistureScaleBpsOverrides[name],
+                                                    biomeElevationBiasBps: biomeElevationBiasBpsOverrides[name],
+                                                    biomeMoistureBiasBps: biomeMoistureBiasBpsOverrides[name],
                                                   },
                                                 });
 

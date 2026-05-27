@@ -50,7 +50,7 @@ import {
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
-import { Biome, configManager, Position } from "@bibliothecadao/eternum";
+import { configManager, Position } from "@bibliothecadao/eternum";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -1323,7 +1323,7 @@ export default class WorldmapScene extends WarpTravel {
       this.exploredTiles,
       targetNormalized.x,
       targetNormalized.y,
-      Biome.getBiome(targetContract.x, targetContract.y),
+      configManager.getBiome(targetContract.x, targetContract.y),
     );
 
     if (provisionalSpawn.action !== "write_provisional") return;
@@ -1536,7 +1536,7 @@ export default class WorldmapScene extends WarpTravel {
           // Biome is computed from felt-offset (contract) coords, matching
           // the Cairo biome_library. update.hexCoords arrives in contract
           // format from world-update-listener (TileOpt currentState.col/row).
-          Biome.getBiome(update.hexCoords.col, update.hexCoords.row),
+          configManager.getBiome(update.hexCoords.col, update.hexCoords.row),
         );
         if (spawnResult.action === "write_provisional") {
           if (!this.exploredTiles.has(normalizedPos.x)) {

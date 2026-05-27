@@ -18,7 +18,7 @@ use crate::system_libraries::structure_libraries::structure_creation_library::{
     IStructureCreationlibraryDispatcherTrait, structure_creation_library,
 };
 use crate::systems::utils::map::IMapImpl;
-use crate::utils::map::biomes::{Biome, get_biome};
+use crate::utils::map::biomes::{Biome, get_biome_from_world};
 
 #[starknet::interface]
 pub trait ISeasonPass<TState> {
@@ -137,7 +137,9 @@ pub impl iRealmImpl of iRealmTrait {
                 continue;
             }
 
-            let biome: Biome = get_biome(neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into());
+            let biome: Biome = get_biome_from_world(
+                world, neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into(),
+            );
             IMapImpl::explore(ref world, ref neighbor_tile, biome);
         }
     }

@@ -44,6 +44,12 @@ const BASE_CONFIG = {
     max_current_count: 20,
     max_lifetime_count: 200,
   },
+  biomeClimate: {
+    elevationScaleBps: 10000,
+    moistureScaleBps: 10000,
+    elevationBiasBps: 10000,
+    moistureBiasBps: 10000,
+  },
 };
 
 describe("buildWorldConfigForFactory", () => {
@@ -90,6 +96,10 @@ describe("buildWorldConfigForFactory", () => {
         battleDelaySeconds: "80",
         agentMaxCurrentCount: "99",
         agentMaxLifetimeCount: "999",
+        biomeElevationScaleBps: "12000",
+        biomeMoistureScaleBps: "9000",
+        biomeElevationBiasBps: "11000",
+        biomeMoistureBiasBps: "8000",
       },
     });
 
@@ -101,8 +111,19 @@ describe("buildWorldConfigForFactory", () => {
     const trade = result.trade;
     const battle = result.battle;
     const agent = result.agent;
+    const biomeClimate = result.biomeClimate;
 
-    if (!dev?.mode || !mmr || !season || !blitzRegistration || !settlement || !trade || !battle || !agent) {
+    if (
+      !dev?.mode ||
+      !mmr ||
+      !season ||
+      !blitzRegistration ||
+      !settlement ||
+      !trade ||
+      !battle ||
+      !agent ||
+      !biomeClimate
+    ) {
       throw new Error("Expected all config sections to be defined");
     }
 
@@ -131,6 +152,10 @@ describe("buildWorldConfigForFactory", () => {
     expect(battle.delaySeconds).toBe(80);
     expect(agent.max_current_count).toBe(99);
     expect(agent.max_lifetime_count).toBe(999);
+    expect(biomeClimate.elevationScaleBps).toBe(12000);
+    expect(biomeClimate.moistureScaleBps).toBe(9000);
+    expect(biomeClimate.elevationBiasBps).toBe(11000);
+    expect(biomeClimate.moistureBiasBps).toBe(8000);
   });
 
   test("uses defaults when optional overrides are not set", () => {
@@ -232,5 +257,26 @@ describe("buildWorldConfigForFactory", () => {
         },
       }),
     ).toThrow("single_realm_mode and two_player_mode cannot both be enabled");
+
+    expect(() =>
+      buildWorldConfigForFactory({
+        baseConfig: BASE_CONFIG,
+        defaults: {
+          factoryAddress: "0xfactory",
+          devModeOn: true,
+          mmrEnabledOn: false,
+          durationHours: 1,
+          baseDurationMinutes: 0,
+          defaultBlitzRegistration: {
+            amount: "1",
+            precision: 18,
+            token: "0xdefaulttoken",
+          },
+        },
+        overrides: {
+          biomeElevationScaleBps: "65536",
+        },
+      }),
+    ).toThrow("Biome elevation scale bps must be at most 65535");
   });
 });

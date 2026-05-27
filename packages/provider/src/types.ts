@@ -233,6 +233,7 @@ export enum TransactionType {
   SET_BATTLE_CONFIG = "set_battle_config",
   SET_STRUCTURE_LEVEL_CONFIG = "set_structure_level_config",
   SET_WORLD_CONFIG = "set_world_config",
+  SET_BIOME_CLIMATE_CONFIG = "set_biome_climate_config",
   SET_MERCENARIES_NAME_CONFIG = "set_mercenaries_name_config",
   SET_STRUCTURE_MAX_LEVEL_CONFIG = "set_structure_max_level_config",
   SET_BUILDING_CONFIG = "set_building_config",

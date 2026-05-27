@@ -21,11 +21,55 @@ const LEVEL = {
   MOUNTAIN: FixedTrait.fromRatio(56n, 100n), // 0.56
 };
 
+export interface BiomeClimateConfig {
+  elevation_scale_bps: number;
+  moisture_scale_bps: number;
+  elevation_bias_bps: number;
+  moisture_bias_bps: number;
+}
+
+export const NEUTRAL_BIOME_CLIMATE: BiomeClimateConfig = {
+  elevation_scale_bps: 10_000,
+  moisture_scale_bps: 10_000,
+  elevation_bias_bps: 10_000,
+  moisture_bias_bps: 10_000,
+};
+
+const CLIMATE_BPS_DENOMINATOR = 10_000n;
+
 export class Biome {
-  static getBiome(col: number, row: number): BiomeType {
-    const elevation = Biome.calculateElevation(col, row, MAP_AMPLITUDE, ELEVATION_OCTAVES, ELEVATION_OCTAVES_SUM);
-    const moisture = Biome.calculateMoisture(col, row, MAP_AMPLITUDE, MOISTURE_OCTAVE);
+  static getBiome(col: number, row: number, climate: BiomeClimateConfig = NEUTRAL_BIOME_CLIMATE): BiomeType {
+    const elevation = Biome.applyClimateAdjustment(
+      Biome.calculateElevation(col, row, MAP_AMPLITUDE, ELEVATION_OCTAVES, ELEVATION_OCTAVES_SUM),
+      climate.elevation_scale_bps,
+      climate.elevation_bias_bps,
+    );
+    const moisture = Biome.applyClimateAdjustment(
+      Biome.calculateMoisture(col, row, MAP_AMPLITUDE, MOISTURE_OCTAVE),
+      climate.moisture_scale_bps,
+      climate.moisture_bias_bps,
+    );
     return Biome.determineBiome(elevation, moisture, LEVEL);
+  }
+
+  private static applyClimateAdjustment(value: Fixed, scaleBps: number, biasBps: number): Fixed {
+    const scale = Biome.resolveClimateBps(scaleBps);
+    const bias = Biome.resolveClimateBps(biasBps);
+    const adjustedValue = value
+      .mul(FixedTrait.fromRatio(BigInt(scale), CLIMATE_BPS_DENOMINATOR))
+      .add(FixedTrait.fromRatio(BigInt(bias) - CLIMATE_BPS_DENOMINATOR, CLIMATE_BPS_DENOMINATOR));
+
+    return Biome.clampClimateValue(adjustedValue);
+  }
+
+  private static resolveClimateBps(value: number): number {
+    return Number.isFinite(value) && value > 0 ? Math.trunc(value) : Number(CLIMATE_BPS_DENOMINATOR);
+  }
+
+  private static clampClimateValue(value: Fixed): Fixed {
+    if (value.value < FixedTrait.ZERO.value) return FixedTrait.ZERO;
+    if (value.value > FixedTrait.ONE.value) return FixedTrait.ONE;
+    return value;
   }
 
   private static calculateElevation(

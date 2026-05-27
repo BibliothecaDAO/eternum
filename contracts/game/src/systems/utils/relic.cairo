@@ -71,7 +71,9 @@ pub impl iRelicChestDiscoveryImpl of iRelicChestDiscoveryTrait {
                 if tile.not_discovered() {
                     let biome_library = biome_library::get_dispatcher(@world);
                     let biome: Biome = biome_library
-                        .get_biome(destination_coord.alt, destination_coord.x.into(), destination_coord.y.into());
+                        .get_biome(
+                            world, destination_coord.alt, destination_coord.x.into(), destination_coord.y.into(),
+                        );
                     IMapImpl::explore(ref world, ref tile, biome);
                 }
                 IMapImpl::occupy(ref world, ref tile, TileOccupier::Chest, world.dispatcher.uuid());

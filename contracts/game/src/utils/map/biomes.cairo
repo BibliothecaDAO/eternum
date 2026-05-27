@@ -1,6 +1,8 @@
 use cubit::f128::procgen::simplex3;
 use cubit::f128::types::fixed::{Fixed, FixedTrait};
 use cubit::f128::types::vec3::Vec3Trait;
+use dojo::world::WorldStorage;
+use crate::models::config::{BiomeClimateConfig, WorldConfigUtilImpl};
 use crate::utils::fixed_constants as fc;
 #[derive(Copy, Drop, Serde, Introspect, Debug, PartialEq)]
 pub enum Biome {
@@ -182,15 +184,78 @@ fn ELEVATION_OCTAVES_SUM() -> Fixed {
     sum
 }
 
+fn CLIMATE_BPS_DENOMINATOR() -> u16 {
+    10000
+}
+
+fn neutral_biome_climate() -> BiomeClimateConfig {
+    BiomeClimateConfig {
+        elevation_scale_bps: CLIMATE_BPS_DENOMINATOR(),
+        moisture_scale_bps: CLIMATE_BPS_DENOMINATOR(),
+        elevation_bias_bps: CLIMATE_BPS_DENOMINATOR(),
+        moisture_bias_bps: CLIMATE_BPS_DENOMINATOR(),
+    }
+}
+
+fn resolve_climate_bps(value: u16) -> u16 {
+    if value == 0 {
+        CLIMATE_BPS_DENOMINATOR()
+    } else {
+        value
+    }
+}
+
+fn climate_bps_to_fixed(value: u16) -> Fixed {
+    FixedTrait::new_unscaled(resolve_climate_bps(value).into(), false)
+        / FixedTrait::new_unscaled(CLIMATE_BPS_DENOMINATOR().into(), false)
+}
+
+fn climate_bias_to_fixed(value: u16) -> Fixed {
+    let bps = resolve_climate_bps(value);
+    let denominator = CLIMATE_BPS_DENOMINATOR();
+    let diff = if bps >= denominator {
+        FixedTrait::new_unscaled((bps - denominator).into(), false)
+    } else {
+        FixedTrait::new_unscaled((denominator - bps).into(), true)
+    };
+    diff / FixedTrait::new_unscaled(denominator.into(), false)
+}
+
+fn apply_climate_adjustment(value: Fixed, scale_bps: u16, bias_bps: u16) -> Fixed {
+    clamp_climate_value(value * climate_bps_to_fixed(scale_bps) + climate_bias_to_fixed(bias_bps))
+}
+
+fn clamp_climate_value(value: Fixed) -> Fixed {
+    if value < fc::_0() {
+        fc::_0()
+    } else if value > fc::_1() {
+        fc::_1()
+    } else {
+        value
+    }
+}
 
 pub fn get_biome(alt: bool, col: u128, row: u128) -> Biome {
+    get_biome_with_climate(alt, col, row, neutral_biome_climate())
+}
+
+pub fn get_biome_from_world(world: WorldStorage, alt: bool, col: u128, row: u128) -> Biome {
+    let climate: BiomeClimateConfig = WorldConfigUtilImpl::get_member(world, selector!("biome_climate_config"));
+    get_biome_with_climate(alt, col, row, climate)
+}
+
+pub fn get_biome_with_climate(alt: bool, col: u128, row: u128, climate: BiomeClimateConfig) -> Biome {
     if alt {
         return Biome::Underground;
     }
     let col_fixed = FixedTrait::new_unscaled(col, false);
     let row_fixed = FixedTrait::new_unscaled(row, false);
-    let elevation = _elevation(col_fixed, row_fixed);
-    let moisture = _moisture(col_fixed, row_fixed);
+    let elevation = apply_climate_adjustment(
+        _elevation(col_fixed, row_fixed), climate.elevation_scale_bps, climate.elevation_bias_bps,
+    );
+    let moisture = apply_climate_adjustment(
+        _moisture(col_fixed, row_fixed), climate.moisture_scale_bps, climate.moisture_bias_bps,
+    );
     _environment(elevation, moisture)
 }
 
@@ -284,7 +349,9 @@ fn _environment(elevation: Fixed, moisture: Fixed) -> Biome {
 #[cfg(test)]
 mod tests {
     // use cubit::f128::types::fixed::{Fixed, FixedTrait};
-    use super::get_biome;
+    use crate::models::config::BiomeClimateConfig;
+    use crate::utils::map::biomes::Biome;
+    use super::{get_biome, get_biome_with_climate};
 
     // #[test]
     // #[available_gas(9000000000000000000)]
@@ -314,5 +381,43 @@ mod tests {
     #[test]
     fn test_noisy() {
         get_biome(false, 1128, 389);
+    }
+
+    #[test]
+    fn test_neutral_climate_matches_default_biome_generation() {
+        let climate = BiomeClimateConfig {
+            elevation_scale_bps: 10000, moisture_scale_bps: 10000, elevation_bias_bps: 10000, moisture_bias_bps: 10000,
+        };
+
+        let default_biome = get_biome(false, 0, 0);
+        let neutral_biome = get_biome_with_climate(false, 0, 0, climate);
+
+        assert!(neutral_biome == default_biome, "neutral climate changed biome");
+        assert!(neutral_biome == Biome::Beach, "neutral fixture changed");
+    }
+
+    #[test]
+    fn test_climate_adjusts_biome_generation() {
+        let snowy_climate = BiomeClimateConfig {
+            elevation_scale_bps: 10000, moisture_scale_bps: 10000, elevation_bias_bps: 20000, moisture_bias_bps: 20000,
+        };
+        let deep_ocean_climate = BiomeClimateConfig {
+            elevation_scale_bps: 10000, moisture_scale_bps: 10000, elevation_bias_bps: 1, moisture_bias_bps: 1,
+        };
+
+        assert!(get_biome_with_climate(false, 0, 0, snowy_climate) == Biome::Snow, "wet high climate should snow");
+        assert!(
+            get_biome_with_climate(false, 0, 0, deep_ocean_climate) == Biome::DeepOcean,
+            "low climate should deep ocean",
+        );
+    }
+
+    #[test]
+    fn test_zero_climate_values_are_neutral() {
+        let climate = BiomeClimateConfig {
+            elevation_scale_bps: 0, moisture_scale_bps: 0, elevation_bias_bps: 0, moisture_bias_bps: 0,
+        };
+
+        assert!(get_biome_with_climate(false, 0, 0, climate) == Biome::Beach, "zero climate should be neutral");
     }
 }

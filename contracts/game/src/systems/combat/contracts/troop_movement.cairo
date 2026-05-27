@@ -131,7 +131,7 @@ pub mod troop_movement_systems {
 
                 // add biome to biomes
                 let biome_library = biome_library::get_dispatcher(@world);
-                let biome = biome_library.get_biome(next.alt, next.x.into(), next.y.into());
+                let biome = biome_library.get_biome(world, next.alt, next.x.into(), next.y.into());
                 biomes.append(biome);
 
                 let mut occupy_destination: bool = true;

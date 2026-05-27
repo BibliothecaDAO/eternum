@@ -20,6 +20,7 @@ const SETTLEMENT_LAYERS_SKIPPED = 2;
 const SETTLEMENT_LAYER_MAX = 6;
 const SETTLEMENT_LAYER_CAPACITY_BPS = 8000;
 const SETTLEMENT_LAYER_CAPACITY_INCREMENT = 6;
+const NEUTRAL_BIOME_CLIMATE_BPS = 10000;
 const VELORDS_FEE_ON_DEPOSIT = 250;
 const SEASON_POOL_FEE_ON_DEPOSIT = 250;
 const CLIENT_FEE_ON_DEPOSIT = 250;
@@ -98,6 +99,12 @@ export function buildCommonBaseConfig(): ConfigPatch {
       layer_capacity_bps: SETTLEMENT_LAYER_CAPACITY_BPS,
       single_realm_mode: false,
       two_player_mode: false,
+    },
+    biomeClimate: {
+      elevationScaleBps: NEUTRAL_BIOME_CLIMATE_BPS,
+      moistureScaleBps: NEUTRAL_BIOME_CLIMATE_BPS,
+      elevationBiasBps: NEUTRAL_BIOME_CLIMATE_BPS,
+      moistureBiasBps: NEUTRAL_BIOME_CLIMATE_BPS,
     },
     season: {
       startSettlingAfterSeconds: SEASON_SETTLING_AFTER_SECONDS,

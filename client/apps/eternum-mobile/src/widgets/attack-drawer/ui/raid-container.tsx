@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { Separator } from "@/shared/ui/separator";
 import {
-  Biome,
   configManager,
   divideByPrecision,
   getArmy,
@@ -85,7 +84,7 @@ export const RaidContainer = ({ attackerEntityId, targetHex }: RaidContainerProp
   }, []);
 
   const biome = useMemo(() => {
-    return Biome.getBiome(targetHex.x, targetHex.y);
+    return configManager.getBiome(targetHex.x, targetHex.y);
   }, [targetHex]);
 
   // Get the current army states for display

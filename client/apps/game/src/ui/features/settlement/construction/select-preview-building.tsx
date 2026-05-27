@@ -33,7 +33,6 @@ import {
 } from "./realm-building-summary";
 
 import {
-  Biome,
   configManager,
   divideByPrecision,
   getBalance,
@@ -378,7 +377,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const realmBiome = useMemo<BiomeType | null>(() => {
     if (!realm?.position) return null;
 
-    return Biome.getBiome(Number(realm.position.x), Number(realm.position.y)) as BiomeType;
+    return configManager.getBiome(Number(realm.position.x), Number(realm.position.y)) as BiomeType;
   }, [realm?.position?.x, realm?.position?.y]);
 
   const biomeRecommendation = useMemo(() => {

@@ -365,8 +365,31 @@ export const setWorldConfig = async (config: Config) => {
   `),
   );
 
+  await setBiomeClimateConfig(config);
+
   return adminAddresstx.transaction_hash;
 };
+
+const setBiomeClimateConfig = async (config: Config) => {
+  const biomeClimateTx = await config.provider.set_biome_climate_config({
+    signer: config.account,
+    biome_climate_config: buildBiomeClimateConfig(config.config),
+  });
+
+  console.log(
+    chalk.cyan(`
+    ${chalk.gray("Biome Climate Transaction:")} ${chalk.white(biomeClimateTx.statusReceipt)}
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  `),
+  );
+};
+
+const buildBiomeClimateConfig = (config: EternumConfig) => ({
+  elevation_scale_bps: config.biomeClimate.elevationScaleBps,
+  moisture_scale_bps: config.biomeClimate.moistureScaleBps,
+  elevation_bias_bps: config.biomeClimate.elevationBiasBps,
+  moisture_bias_bps: config.biomeClimate.moistureBiasBps,
+});
 
 function requireWorldConfigTxHash(worldConfigTxHash: string | undefined): string {
   if (worldConfigTxHash) {

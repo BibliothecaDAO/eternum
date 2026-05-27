@@ -2,7 +2,7 @@ import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
 import { FELT_CENTER, GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
-import { Biome } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
   AnimationAction,
@@ -1678,7 +1678,7 @@ export class ArmyModel {
 
     // Terrain speed variation — sample biome and lerp multiplier
     const { col, row } = getHexForWorldPosition(instanceData.position);
-    const biome = Biome.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
+    const biome = configManager.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
     const targetMultiplier = resolveTerrainSpeedMultiplier(biome);
     splineData.currentSpeedMultiplier +=
       (targetMultiplier - splineData.currentSpeedMultiplier) *
@@ -1906,7 +1906,7 @@ export class ArmyModel {
 
   private updateModelTypeForPosition(entityId: number, position: Vector3, category: TroopType, tier: TroopTier): void {
     const { col, row } = getHexForWorldPosition(position);
-    const biome = Biome.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
+    const biome = configManager.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
 
     const modelType = this.getModelTypeForEntity(entityId, category, tier, biome);
     if (shouldSwitchModelForPosition({ currentModel: this.entityModelMap.get(entityId), resolvedModel: modelType })) {

@@ -583,6 +583,12 @@ export interface Config {
     single_realm_mode: boolean;
     two_player_mode: boolean;
   };
+  biomeClimate: {
+    elevationScaleBps: number;
+    moistureScaleBps: number;
+    elevationBiasBps: number;
+    moistureBiasBps: number;
+  };
   season: {
     // we expect one or the other. The
     // startSettlingAt takes precedence

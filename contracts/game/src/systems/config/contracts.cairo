@@ -1,8 +1,8 @@
 use crate::models::config::{
-    BattleConfig, CapacityConfig, HyperstrtConstructConfig, MapConfig, QuestConfig, ResourceBridgeConfig,
-    ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, SettlementConfig, StructureCapacityConfig, TradeConfig,
-    TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig, VictoryPointsGrantConfig, VictoryPointsWinConfig,
-    VillageTokenConfig,
+    BattleConfig, BiomeClimateConfig, CapacityConfig, HyperstrtConstructConfig, MapConfig, QuestConfig,
+    ResourceBridgeConfig, ResourceBridgeFeeSplitConfig, ResourceBridgeWtlConfig, SettlementConfig,
+    StructureCapacityConfig, TradeConfig, TroopDamageConfig, TroopLimitConfig, TroopStaminaConfig,
+    VictoryPointsGrantConfig, VictoryPointsWinConfig, VillageTokenConfig,
 };
 use crate::models::resource::production::building::BuildingCategory;
 
@@ -122,6 +122,11 @@ pub trait IBankConfig<T> {
 #[starknet::interface]
 pub trait IMapConfig<T> {
     fn set_map_config(ref self: T, map_config: MapConfig);
+}
+
+#[starknet::interface]
+pub trait IBiomeClimateConfig<T> {
+    fn set_biome_climate_config(ref self: T, biome_climate_config: BiomeClimateConfig);
 }
 
 #[starknet::interface]
@@ -280,8 +285,8 @@ pub mod config_systems {
     use crate::constants::{DEFAULT_NS, WORLD_CONFIG_ID};
     use crate::models::agent::AgentConfig;
     use crate::models::config::{
-        AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BitcoinMineConfig, BlitzExplorationConfig,
-        BlitzHypersSettlementConfigImpl, BlitzMapDistanceProfileImpl, BlitzRegistrationConfig,
+        AgentControllerConfig, ArtificerConfig, BankConfig, BattleConfig, BiomeClimateConfig, BitcoinMineConfig,
+        BlitzExplorationConfig, BlitzHypersSettlementConfigImpl, BlitzMapDistanceProfileImpl, BlitzRegistrationConfig,
         BlitzRegistrationConfigImpl, BlitzSettlementConfig, BlitzSettlementConfigImpl, BuildingCategoryConfig,
         BuildingConfig, CapacityConfig, FaithConfig, HyperstrtConstructConfig, HyperstructureConfig,
         HyperstructureCostConfig, MapConfig, QuestConfig, ResourceBridgeConfig, ResourceBridgeFeeSplitConfig,
@@ -509,6 +514,16 @@ pub mod config_systems {
             assert_caller_is_admin(world);
 
             WorldConfigUtilImpl::set_member(ref world, selector!("map_config"), map_config);
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl BiomeClimateConfigImpl of super::IBiomeClimateConfig<ContractState> {
+        fn set_biome_climate_config(ref self: ContractState, biome_climate_config: BiomeClimateConfig) {
+            let mut world: WorldStorage = self.world(DEFAULT_NS());
+            assert_caller_is_admin(world);
+
+            WorldConfigUtilImpl::set_member(ref world, selector!("biome_climate_config"), biome_climate_config);
         }
     }
 

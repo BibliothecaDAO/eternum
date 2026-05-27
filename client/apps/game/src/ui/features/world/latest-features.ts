@@ -22,6 +22,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-27",
+    title: "Biome Climate Controls",
+    description:
+      "Added factory setup controls for biome climate tuning so new worlds can adjust elevation and moisture generation during configuration.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-26",
     title: "Faster Dashboard Loading",
     description:

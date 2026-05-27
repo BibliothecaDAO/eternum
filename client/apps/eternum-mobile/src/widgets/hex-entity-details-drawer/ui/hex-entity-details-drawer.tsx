@@ -1,7 +1,7 @@
 import { useStore } from "@/shared/store";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/shared/ui/drawer";
 import {
-  Biome,
+  configManager,
   FELT_CENTER,
   isTileOccupierQuest,
   isTileOccupierStructure,
@@ -35,7 +35,7 @@ export const HexEntityDetailsDrawer = ({ open, onOpenChange }: HexEntityDetailsD
   }, [selectedHex?.col, selectedHex?.row]);
 
   const biome = useMemo(() => {
-    return Biome.getBiome(selectedHex?.col || 0, selectedHex?.row || 0);
+    return configManager.getBiome(selectedHex?.col || 0, selectedHex?.row || 0);
   }, [selectedHex]);
 
   const hasOccupier = useMemo(() => {

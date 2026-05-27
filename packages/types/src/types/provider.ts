@@ -625,6 +625,17 @@ export interface SetWorldConfigProps extends SystemSigner {
   admin_address: BigNumberish;
 }
 
+export interface BiomeClimateConfigProps {
+  elevation_scale_bps: BigNumberish;
+  moisture_scale_bps: BigNumberish;
+  elevation_bias_bps: BigNumberish;
+  moisture_bias_bps: BigNumberish;
+}
+
+export interface SetBiomeClimateConfigProps extends SystemSigner {
+  biome_climate_config: BiomeClimateConfigProps;
+}
+
 export interface SetMercenariesNameConfigProps extends SystemSigner {
   name: BigNumberish;
 }

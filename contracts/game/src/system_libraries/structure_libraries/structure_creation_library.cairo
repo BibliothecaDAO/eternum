@@ -60,7 +60,7 @@ pub mod structure_creation_library {
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::troop::iExplorerImpl;
     use crate::systems::utils::village::iVillageImpl;
-    use crate::utils::map::biomes::{Biome, get_biome};
+    use crate::utils::map::biomes::{Biome, get_biome_from_world};
     use crate::utils::village::{IVillagePassDispatcher, IVillagePassDispatcherTrait};
 
 
@@ -129,7 +129,7 @@ pub mod structure_creation_library {
 
             // explore the tile if biome is not set
             if tile.biome == Biome::None.into() {
-                let biome: Biome = get_biome(coord.alt, coord.x.into(), coord.y.into());
+                let biome: Biome = get_biome_from_world(world, coord.alt, coord.x.into(), coord.y.into());
                 IMapImpl::explore(ref world, ref tile, biome);
             }
 
@@ -156,8 +156,8 @@ pub mod structure_creation_library {
                         .read_model((village_coord.alt, village_coord.x, village_coord.y));
                     let mut village_tile: Tile = village_tile_opt.into();
                     if !village_tile.discovered() {
-                        let village_biome: Biome = get_biome(
-                            village_coord.alt, village_coord.x.into(), village_coord.y.into(),
+                        let village_biome: Biome = get_biome_from_world(
+                            world, village_coord.alt, village_coord.x.into(), village_coord.y.into(),
                         );
                         IMapImpl::explore(ref world, ref village_tile, village_biome);
                     }
@@ -301,7 +301,9 @@ pub mod structure_creation_library {
                 continue;
             }
 
-            let biome: Biome = get_biome(neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into());
+            let biome: Biome = get_biome_from_world(
+                world, neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into(),
+            );
             IMapImpl::explore(ref world, ref neighbor_tile, biome);
         }
     }
@@ -333,7 +335,9 @@ pub mod structure_creation_library {
         ref structure_weight: Weight,
         resources: Span<ResourceList>,
     ) {
-        let biome: Biome = get_biome(structure_coord.alt, structure_coord.x.into(), structure_coord.y.into());
+        let biome: Biome = get_biome_from_world(
+            world, structure_coord.alt, structure_coord.x.into(), structure_coord.y.into(),
+        );
         let (start_troop_resource_type, (start_troop_type, start_troop_tier)) = TroopsImpl::start_troop_type(biome);
 
         for resource in resources {

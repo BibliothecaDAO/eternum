@@ -131,6 +131,7 @@ pub mod troop_raid_systems {
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
                 .get_biome(
+                    world,
                     guarded_structure.coord().alt,
                     guarded_structure.coord().x.into(),
                     guarded_structure.coord().y.into(),

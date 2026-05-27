@@ -11,19 +11,32 @@ describe("legacy bank placement", () => {
       statusReceipt: "PENDING",
       transaction_hash: "0xmercenaries",
     }));
+    const setBiomeClimateConfigMock = mock(async () => ({
+      statusReceipt: "PENDING",
+      transaction_hash: "0xbiome-climate",
+    }));
 
     const transactionHash = await setWorldConfig({
       account: { address: "0xadmin" } as any,
       provider: {
         set_world_config: setWorldConfigMock,
         set_mercenaries_name_config: setMercenariesNameConfigMock,
+        set_biome_climate_config: setBiomeClimateConfigMock,
       } as any,
-      config: {} as any,
+      config: {
+        biomeClimate: {
+          elevationScaleBps: 10000,
+          moistureScaleBps: 10000,
+          elevationBiasBps: 10000,
+          moistureBiasBps: 10000,
+        },
+      } as any,
     });
 
     expect(transactionHash).toBe("0xworld-config");
     expect(setWorldConfigMock).toHaveBeenCalledTimes(1);
     expect(setMercenariesNameConfigMock).toHaveBeenCalledTimes(1);
+    expect(setBiomeClimateConfigMock).toHaveBeenCalledTimes(1);
   });
 
   test("uses the world config tx hash to place banks around the shifted center", async () => {
