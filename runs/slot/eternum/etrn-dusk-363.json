@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26482318574-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-05-27T00:04:04.941Z",
-  "updatedAt": "2026-05-27T00:05:08.413Z",
+  "updatedAt": "2026-05-27T00:05:12.179Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-27T00:05:12.179Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -84,5 +85,13 @@
     "durationSeconds": 0,
     "worldAddress": "0x05a89bd271f6ce4b148b06482566bbf21e6e02d677f024e34e397d2d86ff1d0d",
     "createGameTxHash": "0x2653b158ffadb0ace8289702aa425329c43fdf4c5591b05948deb2cdbc0eeb4"
+  },
+  "activeLease": {
+    "launchRequestId": "26482318574-1",
+    "workflowRunId": 26482318574,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-05-27T00:05:12.179Z",
+    "expiresAt": "2026-05-27T00:50:12.179Z"
   }
 }
