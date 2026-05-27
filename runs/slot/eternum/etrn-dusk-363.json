@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-dusk-363/26482318574-1.json",
   "latestLaunchRequestId": "26482318574-1",
-  "currentStepId": "configure-world",
+  "currentStepId": "grant-lootchest-role",
   "createdAt": "2026-05-27T00:04:04.941Z",
-  "updatedAt": "2026-05-27T00:05:12.179Z",
+  "updatedAt": "2026-05-27T00:05:31.928Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,10 +45,11 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-05-27T00:05:12.179Z"
+      "latestEvent": "Applying settings succeeded",
+      "startedAt": "2026-05-27T00:05:12.179Z",
+      "finishedAt": "2026-05-27T00:05:31.928Z"
     },
     {
       "id": "grant-lootchest-role",
@@ -84,14 +85,8 @@
     "summaryPath": ".context/game-launch/slot-eternum-etrn-dusk-363.json",
     "durationSeconds": 0,
     "worldAddress": "0x05a89bd271f6ce4b148b06482566bbf21e6e02d677f024e34e397d2d86ff1d0d",
-    "createGameTxHash": "0x2653b158ffadb0ace8289702aa425329c43fdf4c5591b05948deb2cdbc0eeb4"
-  },
-  "activeLease": {
-    "launchRequestId": "26482318574-1",
-    "workflowRunId": 26482318574,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "acquiredAt": "2026-05-27T00:05:12.179Z",
-    "expiresAt": "2026-05-27T00:50:12.179Z"
+    "createGameTxHash": "0x2653b158ffadb0ace8289702aa425329c43fdf4c5591b05948deb2cdbc0eeb4",
+    "configureTxHash": "0xfbdfcff92a7b6d05f631cee1cda316e695144d0e21d07c4bfdad5a0a5b5ba0",
+    "worldConfigTxHash": "0xfbdfcff92a7b6d05f631cee1cda316e695144d0e21d07c4bfdad5a0a5b5ba0"
   }
 }
