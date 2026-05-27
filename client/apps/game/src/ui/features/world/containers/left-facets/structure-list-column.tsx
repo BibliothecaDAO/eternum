@@ -1,9 +1,8 @@
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore, type LeftListFilter, type LeftListSort } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { HUD_BODY_MUTED, HUD_CUE, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
-import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
 import { StructureStatusRow } from "@/ui/features/world/components/structure-status-row/structure-status-row";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
@@ -17,10 +16,8 @@ import { Position } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { type ID, StructureType } from "@bibliothecadao/types";
 import ChevronDown from "lucide-react/dist/esm/icons/chevron-down";
-import Crown from "lucide-react/dist/esm/icons/crown";
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { EmpireSuggestions } from "./empire-suggestions";
 
 // One-liner descriptions exposed via the option tooltip so the player can
 // hover and learn what each mode does without leaving the menu.
@@ -31,58 +28,48 @@ const SORT_DESCRIPTIONS: Record<LeftListSort, string> = {
   name: "Alphabetical.",
 };
 
-// Bundle filter chips + sort menu into one bar so the chrome above the list
-// reads as one control surface. We pass `availableCategories` so the rail
-// only shows chips for categories the player actually owns.
-interface ListControlsProps {
-  availableCategories: StructureType[];
-  filterValue: LeftListFilter;
-  onFilterChange: (filter: LeftListFilter) => void;
-  sortValue: LeftListSort;
-  onSortChange: (sort: LeftListSort) => void;
-}
-
-const ListControls = memo(
-  ({ availableCategories, filterValue, onFilterChange, sortValue, onSortChange }: ListControlsProps) => {
+// Compact filter chip row, designed to live inside the REALMS panel header.
+// Used to be a standalone strip above the panel; merging it removed one row
+// of vertical chrome.
+const FilterChipsRow = memo(
+  ({
+    availableCategories,
+    filterValue,
+    onFilterChange,
+  }: {
+    availableCategories: StructureType[];
+    filterValue: LeftListFilter;
+    onFilterChange: (filter: LeftListFilter) => void;
+  }) => {
     return (
-      <div
-        className={cn(
-          "pointer-events-auto flex flex-wrap items-center justify-between gap-2 rounded-xl px-1.5 py-1",
-          OVERLAY_SURFACE_BASE,
-        )}
-      >
-        <div className="flex flex-wrap items-center gap-1">
-          {CATEGORY_FILTER_OPTIONS.filter((option) =>
-            availableCategories.includes(option.value),
-          ).map((option) => {
-            const isActive = option.value === filterValue;
-            const Icon = option.icon;
-            return (
-              <button
-                key={String(option.value)}
-                type="button"
-                onClick={() => onFilterChange(option.value)}
-                className={cn(
-                  "inline-flex h-7 w-7 items-center justify-center rounded-md border transition",
-                  isActive
-                    ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_8px_rgba(223,170,84,0.25)]"
-                    : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold",
-                )}
-                aria-pressed={isActive}
-                aria-label={option.label}
-                title={option.label}
-              >
-                <Icon className="h-4 w-4" />
-              </button>
-            );
-          })}
-        </div>
-        <SortMenu value={sortValue} onChange={onSortChange} />
+      <div className="flex flex-wrap items-center gap-1">
+        {CATEGORY_FILTER_OPTIONS.filter((option) => availableCategories.includes(option.value)).map((option) => {
+          const isActive = option.value === filterValue;
+          const Icon = option.icon;
+          return (
+            <button
+              key={String(option.value)}
+              type="button"
+              onClick={() => onFilterChange(option.value)}
+              className={cn(
+                "inline-flex h-6 w-6 items-center justify-center rounded-md border transition",
+                isActive
+                  ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_6px_rgba(223,170,84,0.22)]"
+                  : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold",
+              )}
+              aria-pressed={isActive}
+              aria-label={option.label}
+              title={option.label}
+            >
+              <Icon className="h-3.5 w-3.5" />
+            </button>
+          );
+        })}
       </div>
     );
   },
 );
-ListControls.displayName = "ListControls";
+FilterChipsRow.displayName = "FilterChipsRow";
 
 // Portal the sort menu to document.body so it escapes the rail's
 // `overflow-y-auto` clipping — previously the dropdown rendered below the
@@ -303,40 +290,47 @@ export const StructureListColumn = memo(() => {
 
   const activeFilterOption = CATEGORY_FILTER_OPTIONS.find((option) => option.value === effectiveFilter);
   const filterLabel = activeFilterOption?.label ?? "Structures";
-  const FilterIcon = activeFilterOption?.icon ?? Crown;
 
   return (
-    <div className="flex min-w-0 flex-col gap-2">
-      <ListControls
-        availableCategories={availableCategories}
-        filterValue={effectiveFilter}
-        onFilterChange={setLeftListFilter}
-        sortValue={leftListSort}
-        onSortChange={setLeftListSort}
-      />
-      {/* Wrap the list in an InfoBubble so the left rail reads with the same
-          surface + header rhythm as the right-side tile inspector (Guards,
-          Production, Resources, Biome…). */}
-      <InfoBubble title={filterLabel} icon={FilterIcon} cue={`${visibleStructures.length}`}>
-        {visibleStructures.length === 0 ? (
-          <p className={cn(HUD_BODY_MUTED)}>No structures match this filter.</p>
-        ) : (
-          <div className="flex max-h-[clamp(220px,32vh,520px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-            {visibleStructures.map((structure) => (
-              <StructureStatusRow
-                key={structure.entityId}
-                structure={structure}
-                isActive={structure.entityId === structureEntityId}
-                onSelect={handleSelectStructure}
-                variant="full"
-                onToggleFavorite={toggleFavorite}
-                onRequestRename={handleRequestRename}
-              />
-            ))}
+    <div className="flex min-w-0 flex-col">
+      {/* Custom bubble: header carries the filter chips + sort menu so the
+          control surface is fused into the panel it filters (no separate strip
+          above the list). Body matches the InfoBubble rhythm used elsewhere. */}
+      <div className={cn(OVERLAY_SURFACE_BASE, "pointer-events-auto rounded-xl")}>
+        <div className="flex items-center justify-between gap-2 border-b border-gold/15 px-3 py-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <FilterChipsRow
+              availableCategories={availableCategories}
+              filterValue={effectiveFilter}
+              onFilterChange={setLeftListFilter}
+            />
+            <span className={cn(HUD_LABEL, "truncate")}>{filterLabel}</span>
           </div>
-        )}
-      </InfoBubble>
-      <EmpireSuggestions />
+          <div className="flex flex-shrink-0 items-center gap-2">
+            <span className={HUD_CUE}>{visibleStructures.length}</span>
+            <SortMenu value={leftListSort} onChange={setLeftListSort} />
+          </div>
+        </div>
+        <div className="px-3 pb-3 pt-1">
+          {visibleStructures.length === 0 ? (
+            <p className={cn(HUD_BODY_MUTED)}>No structures match this filter.</p>
+          ) : (
+            <div className="flex max-h-[clamp(220px,32vh,520px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+              {visibleStructures.map((structure) => (
+                <StructureStatusRow
+                  key={structure.entityId}
+                  structure={structure}
+                  isActive={structure.entityId === structureEntityId}
+                  onSelect={handleSelectStructure}
+                  variant="full"
+                  onToggleFavorite={toggleFavorite}
+                  onRequestRename={handleRequestRename}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 });

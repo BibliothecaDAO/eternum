@@ -10,6 +10,7 @@ import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
 import { GameStartCountdown } from "./game-start-countdown";
+import { SuggestionsPill } from "./pills/suggestions-pill";
 import { TickProgress } from "./tick-progress";
 import {
   MIN_REFRESH_INTERVAL_MS,
@@ -238,7 +239,10 @@ export const TopHeader = memo(() => {
         <GameStartCountdown />
         <GameEndTimer />
 
-        {/* 5. Army combat follow toggle */}
+        {/* 5. Empire-wide suggested actions */}
+        <SuggestionsPill />
+
+        {/* 6. Army combat follow toggle */}
         {showFollowArmyToggle && (
           <button
             type="button"
@@ -261,7 +265,7 @@ export const TopHeader = memo(() => {
           </button>
         )}
 
-        {/* 6. Settings + ancillary status icons (network, tx, latest features…) */}
+        {/* 7. Settings + ancillary status icons (network, tx, latest features…) */}
         <SecondaryMenuItems variant="rest" />
       </div>
 

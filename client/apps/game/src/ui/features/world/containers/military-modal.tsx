@@ -4,7 +4,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY_MUTED, HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { ExistingArmiesPanel, UnifiedArmyCreationBody } from "@/ui/features/military/components/unified-army-creation-modal";
 import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
-import { REALMS_ONLY_FILTER, StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
+import { StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { type ID } from "@bibliothecadao/types";
@@ -87,14 +87,14 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
   }, []);
 
   return (
-    <CenteredModalShell title="Military" icon={Swords} onClose={close} size="xl">
+    <CenteredModalShell title="Military" icon={Swords} onClose={close} size="wide">
       <div className="grid h-full grid-cols-12 min-h-0">
         <div className="col-span-3 border-r border-gold/15 min-h-0">
           <StructureSidebar
             selectedEntityId={focusedRealmId}
             onSelectStructure={handleSelectStructure}
             attention={attention}
-            filter={REALMS_ONLY_FILTER}
+            title="Your structures"
             statsVariant="military"
           />
         </div>

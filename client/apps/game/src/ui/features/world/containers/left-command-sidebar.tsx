@@ -6,6 +6,7 @@ import { CenteredModalShell } from "@/ui/features/world/containers/centered-moda
 import { ConstructionModal } from "@/ui/features/world/containers/construction-modal";
 import { LogisticsView } from "@/ui/features/world/containers/logistics-view";
 import { MilitaryModal } from "@/ui/features/world/containers/military-modal";
+import { EmpireCockpit } from "@/ui/features/world/containers/left-facets/empire-cockpit";
 import { StructureListColumn } from "@/ui/features/world/containers/left-facets/structure-list-column";
 import {
   RealtimeChatShell,
@@ -195,6 +196,7 @@ export const LeftCommandSidebar = memo(() => {
       {ConnectedAccount && (
         <div className="fixed left-3 top-3 z-20 pointer-events-auto flex w-[280px] max-h-[calc(100vh-380px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           <StructureListColumn />
+          <EmpireCockpit />
         </div>
       )}
 

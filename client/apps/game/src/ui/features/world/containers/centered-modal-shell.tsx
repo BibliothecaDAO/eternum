@@ -10,11 +10,21 @@ interface CenteredModalShellProps {
   icon?: LucideIcon;
   onClose: () => void;
   /**
-   * "default" → 840×680 (matches the Chat / Logistics frames).
-   * "wide" → 920×700 (chest reveal + sidebar-style modals).
-   * "xl" → 1320×calc(100vh-48px) (Production needs the canvas room).
+   * "default" → 840×680 (Chat / Logistics / Prediction Market — these need
+   * room for tabs and lists, smaller felt cramped in user testing).
+   * "wide" → 920×700 (the Create Field Army reference shape — Military and
+   * any sidebar-style modal that wants a touch more horizontal room).
+   * "xl" → 1320×calc(100vh-48px) (Production / Construction need the canvas).
    */
   size?: "default" | "wide" | "xl";
+  /**
+   * Backdrop intensity. "soft" (default) is a thin black wash that keeps the
+   * map texture visible — matches the right-click-deploy feel where the modal
+   * never feels disconnected from the world. "full" returns to the heavier
+   * focus-blur for surfaces that truly need isolation. "none" omits the dim
+   * entirely (chest reveal style).
+   */
+  dim?: "soft" | "full" | "none";
   /**
    * Optional override of the outer modal wrapper class. Body content can opt
    * out of the default vertical scroll if it manages its own layout (e.g.
@@ -40,6 +50,7 @@ export const CenteredModalShell = ({
   icon: Icon,
   onClose,
   size = "default",
+  dim = "soft",
   bodyClassName,
   children,
 }: CenteredModalShellProps) => {
@@ -58,9 +69,11 @@ export const CenteredModalShell = ({
         ? "w-[920px] max-w-[92vw] h-[700px] max-h-[calc(100vh-64px)]"
         : "w-[840px] max-w-[92vw] h-[680px] max-h-[calc(100vh-64px)]";
 
+  const dimClass = dim === "full" ? "bg-black/60 backdrop-blur-sm" : dim === "soft" ? "bg-black/40" : "";
+
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm pointer-events-auto"
+      className={cn("fixed inset-0 z-[100] flex items-center justify-center pointer-events-auto", dimClass)}
       onClick={onClose}
     >
       <div
