@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-dusk-363/26482318574-1.json",
   "latestLaunchRequestId": "26482318574-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-05-27T00:04:04.941Z",
-  "updatedAt": "2026-05-27T00:04:10.617Z",
+  "updatedAt": "2026-05-27T00:04:54.003Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-05-27T00:04:10.617Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-05-27T00:04:10.617Z",
+      "finishedAt": "2026-05-27T00:04:54.003Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -76,14 +77,10 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "2026-05-27T01:00:00.000Z"
-  },
-  "activeLease": {
-    "launchRequestId": "26482318574-1",
-    "workflowRunId": 26482318574,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-05-27T00:04:10.617Z",
-    "expiresAt": "2026-05-27T00:49:10.617Z"
+    "scheduledStartTime": 1779843600,
+    "summaryPath": ".context/game-launch/slot-eternum-etrn-dusk-363.json",
+    "durationSeconds": 0,
+    "worldAddress": "0x05a89bd271f6ce4b148b06482566bbf21e6e02d677f024e34e397d2d86ff1d0d",
+    "createGameTxHash": "0x2653b158ffadb0ace8289702aa425329c43fdf4c5591b05948deb2cdbc0eeb4"
   }
 }
