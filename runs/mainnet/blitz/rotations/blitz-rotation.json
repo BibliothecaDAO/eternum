@@ -7,14 +7,14 @@
   "gameType": "blitz",
   "rotationName": "blitz-rotation",
   "seriesName": "blitz-rotation",
-  "status": "attention",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "configure-worlds",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26534672572-1.json",
   "latestLaunchRequestId": "26534672572-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-27T19:47:59.432Z",
+  "updatedAt": "2026-05-27T19:48:09.396Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,7 +27,6 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-05-27T20:02:59.432Z",
     "lastRetryAt": "2026-05-27T19:45:39.152Z"
   },
   "evaluation": {
@@ -69,9 +68,10 @@
     {
       "id": "reserve-blitz-hyperstructures",
       "title": "Reserving hyperstructures",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Reserving hyperstructures",
-      "latestEvent": "Reserving hyperstructures needs attention"
+      "latestEvent": "Reserving hyperstructures started",
+      "startedAt": "2026-05-27T19:48:09.396Z"
     },
     {
       "id": "grant-lootchest-roles",
@@ -10726,5 +10726,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
+  },
+  "activeLease": {
+    "launchRequestId": "26534672572-1",
+    "workflowRunId": 26534672572,
+    "workflowRunAttempt": 1,
+    "stepId": "reserve-blitz-hyperstructures",
+    "acquiredAt": "2026-05-27T19:48:09.396Z",
+    "expiresAt": "2026-05-27T20:33:09.396Z"
   }
 }
