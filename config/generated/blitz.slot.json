@@ -12622,7 +12622,7 @@
         },
         {
           "address": "0x1b2c23c5b669d035c153382bf2f49a8e27c8894588434ebd4729193d2d990c1",
-          "class_hash": "0x35ddf5097172c34ff5c7ff610f87566033ccd2fbc4a76ff32f039e1a599be32",
+          "class_hash": "0x33ec9e78fbc6ec868cf0e94328dca9a948b7760e585a3e8f3690a9d98594304",
           "init_calldata": [],
           "tag": "s1_eternum-troop_management_systems",
           "selector": "0x49b9809fc3839b4eb765c5d1db1d1a835678574e42bf24bf70235cecf2f8437",
