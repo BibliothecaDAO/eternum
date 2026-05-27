@@ -5,7 +5,6 @@ import {
   canTransferMilitaryInventoryBetweenStructures,
   canTransferMilitaryInventoryFromStructure,
   isVillageLikeStructureCategory,
-  resolveArmyToStructureTransferRestriction,
   resolveStructureUiCapabilities,
   type StructureCapabilityTarget,
 } from "./structure-capabilities";
@@ -112,43 +111,6 @@ describe("Blitz military transfer rules", () => {
     expect(canTransferMilitaryInventoryBetweenStructures({ modeId: "blitz", source: camp, destination: bank })).toBe(
       false,
     );
-  });
-
-  it("blocks army to structure troop returns for camps, rifts, and hyperstructures", () => {
-    const realm = createStructure({
-      category: StructureType.Realm,
-      entityId: 24,
-      fieldArmySlots: 2,
-      guardArmySlots: 2,
-    });
-    const camp = createStructure({
-      category: StructureType.Camp,
-      entityId: 25,
-      fieldArmySlots: 1,
-      guardArmySlots: 1,
-    });
-    const fragmentMine = createStructure({
-      category: StructureType.FragmentMine,
-      entityId: 26,
-      guardArmySlots: 1,
-    });
-    const hyperstructure = createStructure({
-      category: StructureType.Hyperstructure,
-      entityId: 27,
-      guardArmySlots: 4,
-    });
-
-    expect(resolveArmyToStructureTransferRestriction({ modeId: "blitz", destination: realm })).toBeNull();
-    expect(resolveArmyToStructureTransferRestriction({ modeId: "blitz", destination: camp })).toBe(
-      "cannot transfer army to structure",
-    );
-    expect(resolveArmyToStructureTransferRestriction({ modeId: "blitz", destination: fragmentMine })).toBe(
-      "cannot transfer army to structure",
-    );
-    expect(resolveArmyToStructureTransferRestriction({ modeId: "blitz", destination: hyperstructure })).toBe(
-      "cannot transfer army to structure",
-    );
-    expect(resolveArmyToStructureTransferRestriction({ modeId: "eternum", destination: camp })).toBeNull();
   });
 
   it("blocks explorer to explorer troop transfers across different realms", () => {

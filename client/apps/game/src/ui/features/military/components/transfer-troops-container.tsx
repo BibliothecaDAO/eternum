@@ -1,10 +1,7 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
-import {
-  resolveArmyToArmyTransferRestriction,
-  resolveArmyToStructureTransferRestriction,
-} from "@/ui/lib/structure-capabilities";
+import { resolveArmyToArmyTransferRestriction } from "@/ui/lib/structure-capabilities";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { formatNumber } from "@/ui/utils/utils";
 
@@ -183,13 +180,6 @@ export const TransferTroopsContainer = ({
     ],
   );
   const transferRestriction = useMemo(() => {
-    if (transferDirection === TransferDirection.ExplorerToStructure) {
-      return resolveArmyToStructureTransferRestriction({
-        modeId: mode.id,
-        destination: targetStructure,
-      });
-    }
-
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
       return resolveArmyToArmyTransferRestriction({
         modeId: mode.id,
@@ -203,7 +193,6 @@ export const TransferTroopsContainer = ({
     mode.id,
     selectedExplorerConnectedStructure,
     targetExplorerConnectedStructure,
-    targetStructure,
     transferDirection,
   ]);
   const isTransferBlocked = transferRestriction !== null;
