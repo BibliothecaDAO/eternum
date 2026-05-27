@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-05-27T00:05:31.928Z",
+  "updatedAt": "2026-05-27T00:05:40.443Z",
   "entries": {
     "etrn-banana": {
       "kind": "game",
@@ -91,12 +91,13 @@
       "path": "runs/slot/eternum/etrn-dusk-363.json",
       "inputPath": "inputs/slot/eternum/etrn-dusk-363/26482318574-1.json",
       "status": "running",
-      "updatedAt": "2026-05-27T00:05:31.928Z",
+      "updatedAt": "2026-05-27T00:05:40.443Z",
       "workflowRef": "next",
       "currentStepId": "grant-lootchest-role",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-27T00:50:40.443Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "grant-lootchest-role",
+      "recoverablePendingStepId": "grant-village-pass-role",
       "startTime": 1779843600,
       "durationSeconds": 0,
       "artifacts": {}
