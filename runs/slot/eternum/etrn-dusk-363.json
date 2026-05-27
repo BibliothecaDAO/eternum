@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-dusk-363/26482318574-1.json",
   "latestLaunchRequestId": "26482318574-1",
-  "currentStepId": "grant-lootchest-role",
+  "currentStepId": "grant-village-pass-role",
   "createdAt": "2026-05-27T00:04:04.941Z",
-  "updatedAt": "2026-05-27T00:05:40.443Z",
+  "updatedAt": "2026-05-27T00:06:02.925Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -54,10 +54,11 @@
     {
       "id": "grant-lootchest-role",
       "title": "Setting up loot chests",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests started",
-      "startedAt": "2026-05-27T00:05:40.443Z"
+      "latestEvent": "Setting up loot chests succeeded",
+      "startedAt": "2026-05-27T00:05:40.443Z",
+      "finishedAt": "2026-05-27T00:06:02.925Z"
     },
     {
       "id": "grant-village-pass-role",
@@ -88,14 +89,7 @@
     "worldAddress": "0x05a89bd271f6ce4b148b06482566bbf21e6e02d677f024e34e397d2d86ff1d0d",
     "createGameTxHash": "0x2653b158ffadb0ace8289702aa425329c43fdf4c5591b05948deb2cdbc0eeb4",
     "configureTxHash": "0xfbdfcff92a7b6d05f631cee1cda316e695144d0e21d07c4bfdad5a0a5b5ba0",
-    "worldConfigTxHash": "0xfbdfcff92a7b6d05f631cee1cda316e695144d0e21d07c4bfdad5a0a5b5ba0"
-  },
-  "activeLease": {
-    "launchRequestId": "26482318574-1",
-    "workflowRunId": 26482318574,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "acquiredAt": "2026-05-27T00:05:40.443Z",
-    "expiresAt": "2026-05-27T00:50:40.443Z"
+    "worldConfigTxHash": "0xfbdfcff92a7b6d05f631cee1cda316e695144d0e21d07c4bfdad5a0a5b5ba0",
+    "lootChestRoleTxHash": "0x34be5e5070318d4cab19f5307693ca7a51018d2b7d8bd6390f5f916eb33a876"
   }
 }
