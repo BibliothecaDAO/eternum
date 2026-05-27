@@ -47,7 +47,6 @@ describe("army manager delta pipeline wiring", () => {
     const source = readArmyManagerSource();
 
     expect(source).toMatch(/syncArmyAuxiliaryPresentation\(/);
-    expect(source).toMatch(/syncArmyIndicatorPresentation\(/);
     expect(source).toMatch(/syncArmyLabelPresentation\(/);
     expect(source).toMatch(/syncArmyPointPresentation\(/);
   });
@@ -76,11 +75,12 @@ describe("army manager delta pipeline wiring", () => {
     expect(source).toMatch(/clearArmyPointHoverState\(/);
   });
 
-  it("routes indicator refresh through shared helpers", () => {
+  it("does not route deprecated ownership dot refresh through army presentation", () => {
     const source = readArmyManagerSource();
 
-    expect(source).toMatch(/syncArmyIndicatorPresentationState\(/);
-    expect(source).toMatch(/syncMovingArmyIndicatorPresentationState\(/);
+    expect(source).not.toMatch(/syncArmyIndicatorPresentation/);
+    expect(source).not.toMatch(/syncMovingArmyIndicatorPresentation/);
+    expect(source).not.toMatch(/PlayerIndicatorManager/);
   });
 
   it("routes label positioning through a shared helper", () => {

@@ -1,6 +1,6 @@
 import { MusicRouterProvider } from "@/audio";
 import { cleanupTracing } from "@/tracing/cleanup";
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { env } from "../env";
@@ -9,19 +9,7 @@ import { StarknetProvider } from "./hooks/context/starknet-provider";
 import { useUIStore } from "./hooks/store/use-ui-store";
 import { normalizeLegacyPlayLocation } from "./play/navigation/play-route";
 import { normalizePlayBootLocation } from "./play/navigation/play-route-boot-normalization";
-import { getActiveWorld } from "./runtime/world";
-import {
-  AmmView,
-  LandingEntryRoute,
-  LandingFactoryRoute,
-  LandingLayout,
-  LandingLearnRoute,
-  LandingNewsRoute,
-  LandingPlayRoute,
-  LeaderboardView,
-  MarketsView,
-  ProfileView,
-} from "./ui/features/landing";
+import { getActiveWorld } from "./runtime/world/store";
 import { resolveLegacyLandingHref } from "./ui/features/landing/navigation/landing-route-redirects";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { ConstructionGate } from "./ui/modules/construction-gate";
@@ -30,6 +18,38 @@ import { getRandomBackgroundImage } from "./ui/utils/utils";
 
 const LazyGameRoute = lazy(preloadGameRouteModule);
 
+const LandingLayout = lazy(() =>
+  import("./ui/features/landing/landing-layout").then((module) => ({ default: module.LandingLayout })),
+);
+const LandingPlayRoute = lazy(() =>
+  import("./ui/features/landing/views/landing-play-route").then((module) => ({ default: module.LandingPlayRoute })),
+);
+const LandingEntryRoute = lazy(() =>
+  import("./ui/features/landing/views/landing-entry-route").then((module) => ({ default: module.LandingEntryRoute })),
+);
+const LandingLearnRoute = lazy(() =>
+  import("./ui/features/landing/views/landing-learn-route").then((module) => ({ default: module.LandingLearnRoute })),
+);
+const LandingNewsRoute = lazy(() =>
+  import("./ui/features/landing/views/landing-news-route").then((module) => ({ default: module.LandingNewsRoute })),
+);
+const LandingFactoryRoute = lazy(() =>
+  import("./ui/features/landing/views/landing-factory-route").then((module) => ({
+    default: module.LandingFactoryRoute,
+  })),
+);
+const ProfileView = lazy(() =>
+  import("./ui/features/landing/views/profile-view").then((module) => ({ default: module.ProfileView })),
+);
+const MarketsView = lazy(() =>
+  import("./ui/features/landing/views/markets-view").then((module) => ({ default: module.MarketsView })),
+);
+const AmmView = lazy(() =>
+  import("./ui/features/landing/views/amm-view").then((module) => ({ default: module.AmmView })),
+);
+const LeaderboardView = lazy(() =>
+  import("./ui/features/landing/views/leaderboard-view").then((module) => ({ default: module.LeaderboardView })),
+);
 const FactoryPage = lazy(() => import("./ui/features/admin").then((module) => ({ default: module.FactoryPage })));
 const FactoryV2Page = lazy(() =>
   import("./ui/features/factory-v2").then((module) => ({ default: module.FactoryV2Page })),
@@ -53,16 +73,16 @@ const GameClientRoutes = ({ backgroundImage }: { backgroundImage: string }) => (
   <StarknetProvider>
     <MusicRouterProvider>
       <Routes>
-        <Route path="/" element={<LandingLayout />}>
-          <Route index element={<LandingHomeRoute />} />
-          <Route path="enter/:chain/:world" element={<LandingEntryRoute />} />
-          <Route path="learn" element={<LandingLearnRoute />} />
-          <Route path="news" element={<LandingNewsRoute />} />
-          <Route path="factory" element={<LandingFactoryRoute />} />
-          <Route path="profile" element={<ProfileView />} />
-          <Route path="markets" element={<MarketsView />} />
-          <Route path="amm" element={<AmmView />} />
-          <Route path="leaderboard" element={<LeaderboardView />} />
+        <Route path="/" element={renderLoadingRoute(<LandingLayout />)}>
+          <Route index element={renderLoadingRoute(<LandingHomeRoute />)} />
+          <Route path="enter/:chain/:world" element={renderLoadingRoute(<LandingEntryRoute />)} />
+          <Route path="learn" element={renderLoadingRoute(<LandingLearnRoute />)} />
+          <Route path="news" element={renderLoadingRoute(<LandingNewsRoute />)} />
+          <Route path="factory" element={renderLoadingRoute(<LandingFactoryRoute />)} />
+          <Route path="profile" element={renderLoadingRoute(<ProfileView />)} />
+          <Route path="markets" element={renderLoadingRoute(<MarketsView />)} />
+          <Route path="amm" element={renderLoadingRoute(<AmmView />)} />
+          <Route path="leaderboard" element={renderLoadingRoute(<LeaderboardView />)} />
         </Route>
 
         <Route path="/play/:chain/:world/:scene" element={<GameRouteShell backgroundImage={backgroundImage} />} />
@@ -91,6 +111,8 @@ const GameClientRoutes = ({ backgroundImage }: { backgroundImage: string }) => (
     </MusicRouterProvider>
   </StarknetProvider>
 );
+
+const renderLoadingRoute = (element: ReactNode) => <Suspense fallback={<LoadingScreen />}>{element}</Suspense>;
 
 const LandingHomeRoute = () => {
   const location = useLocation();

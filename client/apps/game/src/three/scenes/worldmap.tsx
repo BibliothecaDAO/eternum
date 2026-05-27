@@ -96,6 +96,8 @@ import {
   ResourcesIds,
   Structure,
   StructureType,
+  TroopTier,
+  TroopType,
 } from "@bibliothecadao/types";
 import { getComponentEntities, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -117,7 +119,7 @@ import { MapControls } from "three/examples/jsm/controls/MapControls.js";
 import { env } from "../../../env";
 import { playerCosmeticsStore, preloadAllCosmeticAssets } from "../cosmetics";
 import { FXManager } from "../managers/fx-manager";
-import { HoverLabelManager } from "../managers/hover-label-manager";
+import { HoverLabelManager, type HoverLabelReconcileResult } from "../managers/hover-label-manager";
 import { resolveWorldmapHoverLabelEntity } from "./worldmap-hover-label-entities";
 import { resolveWorldmapHoverLabelTargets } from "./worldmap-hover-label-targets";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
@@ -155,6 +157,8 @@ import {
   createWorldmapHydratedRefreshQueueState,
   flushWorldmapHydratedChunkRefreshQueue,
   queueWorldmapHydratedChunkRefresh,
+  trackWorldmapHydratedRefreshQueueFlush,
+  waitForWorldmapHydratedRefreshQueueIdle,
 } from "./worldmap-hydrated-refresh-runtime";
 import {
   createWorldmapChunkRefreshRuntimeState,
@@ -218,6 +222,7 @@ import {
   resolveArrivalGhostVisualStyle,
   shouldCreatePredictiveArrivalGhost,
   shouldHideSourceArmyOnTileRemoval,
+  type ArrivalGhostClearReason,
 } from "../managers/arrival-ghost-policy";
 import {
   resolveExploreCompletionPendingClearPlan,
@@ -588,6 +593,7 @@ const WORLDMAP_CHUNK_TRANSITION_HARD_TIMEOUT_MS = Math.max(WORLDMAP_CHUNK_PHASE_
 const WORLDMAP_STREAMING_ROLLOUT = {
   stagedPathEnabled: env.VITE_PUBLIC_WORLDMAP_STREAMING_STAGED !== false,
 };
+const HOVER_LABEL_RECOVERY_FRAME_BUDGET = 12;
 const WORLDMAP_ZOOM_HARDENING = createWorldmapZoomHardeningConfig({
   enabled: env.VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING === true,
   telemetry: env.VITE_PUBLIC_WORLDMAP_ZOOM_HARDENING_TELEMETRY === true,
@@ -599,6 +605,23 @@ type DirectionalPrefetchAnchor = {
   movementSign: -1 | 1;
 };
 type WorldmapCameraTransitionStatus = "idle" | "transitioning";
+interface WorldmapUrlLocationMoveOptions {
+  requestRefresh?: boolean;
+}
+type HoverLabelRecoveryReason =
+  | "hover"
+  | "initial_refresh"
+  | "manager_catch_up"
+  | "critical_manager_catch_up"
+  | "non_critical_manager_catch_up"
+  | "scene_ready"
+  | "frame_retry";
+
+interface PendingHoverLabelRecovery {
+  hex: HexPosition;
+  reason: HoverLabelRecoveryReason;
+  remainingFrameRetries: number;
+}
 
 let worldmapInteractionDebugInstanceCounter = 0;
 
@@ -703,6 +726,7 @@ export default class WorldmapScene extends WarpTravel {
   private readonly chunkRowsBehind = WORLDMAP_CHUNK_POLICY.pin.rowsBehind;
   private readonly chunkColsEachSide = WORLDMAP_CHUNK_POLICY.pin.colsEachSide;
   private hydratedRefreshQueueState = createWorldmapHydratedRefreshQueueState();
+  private skipNextUrlRefreshAfterInitialConvergence = false;
   private hydratedRefreshSuppressionAreaKeys: Set<string> = new Set();
   private cameraPositionScratch: Vector3 = new Vector3();
   private cameraDirectionScratch: Vector3 = new Vector3();
@@ -898,7 +922,7 @@ export default class WorldmapScene extends WarpTravel {
   private pendingWorldmapFxStopHandler = (event: Event) => {
     const detail = (event as CustomEvent<PendingWorldmapFxStopPayload>).detail;
     if (!detail?.key) return;
-    this.clearPendingActionFx(detail.key);
+    this.clearPendingActionFx(detail.key, "tx_failed");
   };
   private handleWorldmapControlsChange = () => {
     if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
@@ -983,13 +1007,21 @@ export default class WorldmapScene extends WarpTravel {
   private travelEffects: Map<string, () => void> = new Map();
   private travelEffectsByEntity: Map<ID, { key: string; cleanup: () => void; effectType: TravelEffectType }> =
     new Map();
-  private pendingActionEffectsByKey: Map<string, () => void> = new Map();
+  private pendingActionEffectsByKey: Map<string, (reason: ArrivalGhostClearReason) => void> = new Map();
   private pendingActionEffectTimeoutsByKey: Map<string, ReturnType<typeof setTimeout>> = new Map();
   private pendingCreateArmyEffectsByKey: Map<
     string,
-    { structureId: ID; direction: Direction; targetHex: HexPosition; troopResourceId: number }
+    {
+      direction: Direction;
+      ghostEntityId: ID;
+      structureId: ID;
+      targetHex: HexPosition;
+      troopTier: TroopTier;
+      troopType: TroopType;
+    }
   > = new Map();
   private pendingAttackEffectsByKey: Map<string, { attackerId: ID; defenderId?: ID }> = new Map();
+  private nextPendingCreateArmyGhostId = -1;
   private cancelHexGridComputation?: () => void;
 
   // Global chunk switching coordination
@@ -1062,6 +1094,7 @@ export default class WorldmapScene extends WarpTravel {
   private toriiBoundsLogInterval: ReturnType<typeof setInterval> | null = null;
   private readonly hoverLabelRaycaster: Raycaster;
   private currentHoverLabelHex: HexPosition | null = null;
+  private pendingHoverLabelRecovery: PendingHoverLabelRecovery | null = null;
 
   constructor(
     dojoContext: SetupResult,
@@ -1487,7 +1520,7 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         this.updateArmyHexes(update);
-        this.resolvePendingCreateArmyFxOnArmyUpdate(update);
+        this.resolvePendingCreateArmyGhostOnArmyUpdate(update);
 
         if (update.battleData?.latestAttackerId) {
           this.addCombatRelationship(update.battleData.latestAttackerId, update.entityId);
@@ -2104,16 +2137,43 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  public moveCameraToURLLocation() {
+  public moveCameraToURLLocation(options: WorldmapUrlLocationMoveOptions = {}): void {
+    const shouldRequestRefresh = this.resolveURLLocationRefreshRequest(options);
     const routeWorldPosition = resolvePlayRouteWorldPosition(window.location);
     if (routeWorldPosition) {
-      const { col, row } = routeWorldPosition;
-      this.moveCameraToColRow(col, row, 0);
-      this.requestChunkRefresh(true, "default");
+      this.moveCameraToRouteWorldPosition(routeWorldPosition);
+      this.requestURLLocationRefreshIfNeeded(shouldRequestRefresh);
     }
     if (!this.hasInitialized) {
       this.alignInitialWorldmapCameraView();
     }
+  }
+
+  private moveCameraToRouteWorldPosition(routeWorldPosition: HexPosition): void {
+    const { col, row } = routeWorldPosition;
+    this.moveCameraToColRow(col, row, 0);
+  }
+
+  private requestURLLocationRefreshIfNeeded(shouldRequestRefresh: boolean): void {
+    if (!shouldRequestRefresh) {
+      return;
+    }
+
+    this.requestChunkRefresh(true, "default");
+  }
+
+  private resolveURLLocationRefreshRequest(options: WorldmapUrlLocationMoveOptions): boolean {
+    if (options.requestRefresh === false) {
+      return false;
+    }
+
+    return !this.consumeInitialConvergenceUrlRefreshSkip();
+  }
+
+  private consumeInitialConvergenceUrlRefreshSkip(): boolean {
+    const shouldSkipRefresh = this.skipNextUrlRefreshAfterInitialConvergence;
+    this.skipNextUrlRefreshAfterInitialConvergence = false;
+    return shouldSkipRefresh;
   }
 
   private alignInitialWorldmapCameraView(): void {
@@ -2388,6 +2448,7 @@ export default class WorldmapScene extends WarpTravel {
 
       // Handle label collapse on hex leave
       this.currentHoverLabelHex = null;
+      this.clearPendingHoverLabelRecovery("hex_leave");
       this.hoverLabelManager.onHexLeave();
       return;
     }
@@ -2402,7 +2463,7 @@ export default class WorldmapScene extends WarpTravel {
 
     // Handle label expansion on hover
     this.currentHoverLabelHex = hexCoords;
-    this.reconcileHoverLabels();
+    this.reconcileHoverLabels("hover");
 
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     // Entity IDs can be valid falsy values (for example 0), so nullish checks
@@ -2570,12 +2631,121 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  private reconcileHoverLabels(): void {
+  private reconcileHoverLabels(reason: HoverLabelRecoveryReason = "hover"): HoverLabelReconcileResult | null {
     if (!this.currentHoverLabelHex) {
+      this.clearPendingHoverLabelRecovery("no_hover");
+      return null;
+    }
+
+    const result = this.hoverLabelManager.reconcileHexHover(this.currentHoverLabelHex);
+    this.applyHoverLabelRecoveryResult(result, reason);
+    this.traceHoverLabelRecovery("reconcile", {
+      reason,
+      hex: this.currentHoverLabelHex,
+      result,
+      pending: this.pendingHoverLabelRecovery,
+    });
+
+    return result;
+  }
+
+  private applyHoverLabelRecoveryResult(result: HoverLabelReconcileResult, reason: HoverLabelRecoveryReason): void {
+    if (!this.currentHoverLabelHex || this.isSwitchedOff) {
+      this.clearPendingHoverLabelRecovery("inactive");
       return;
     }
 
-    this.hoverLabelManager.reconcileHexHover(this.currentHoverLabelHex);
+    if (!result.resolvedAnyEntity) {
+      this.clearPendingHoverLabelRecovery("no_entity");
+      return;
+    }
+
+    if (result.shownAnyLabel && result.missingTypes.length === 0) {
+      this.clearPendingHoverLabelRecovery("resolved");
+      return;
+    }
+
+    const pendingHex = { ...this.currentHoverLabelHex };
+    if (reason === "frame_retry") {
+      if (!this.pendingHoverLabelRecovery || !this.isPendingHoverRecoveryForHex(pendingHex)) {
+        return;
+      }
+      this.pendingHoverLabelRecovery = {
+        ...this.pendingHoverLabelRecovery,
+        reason,
+      };
+      return;
+    }
+
+    this.pendingHoverLabelRecovery = {
+      hex: pendingHex,
+      reason,
+      remainingFrameRetries: HOVER_LABEL_RECOVERY_FRAME_BUDGET,
+    };
+  }
+
+  private retryPendingHoverLabelRecovery(reason: HoverLabelRecoveryReason): void {
+    if (!this.pendingHoverLabelRecovery && !this.currentHoverLabelHex) {
+      return;
+    }
+
+    if (this.isSwitchedOff || !this.currentHoverLabelHex) {
+      this.clearPendingHoverLabelRecovery("inactive_retry");
+      return;
+    }
+
+    this.reconcileHoverLabels(reason);
+  }
+
+  private runPendingHoverLabelRecoveryFrame(): void {
+    if (!this.pendingHoverLabelRecovery) {
+      return;
+    }
+
+    if (
+      this.isSwitchedOff ||
+      !this.currentHoverLabelHex ||
+      !this.isPendingHoverRecoveryForHex(this.currentHoverLabelHex)
+    ) {
+      this.clearPendingHoverLabelRecovery("frame_inactive");
+      return;
+    }
+
+    if (this.pendingHoverLabelRecovery.remainingFrameRetries <= 0) {
+      this.clearPendingHoverLabelRecovery("frame_budget_exhausted");
+      return;
+    }
+
+    this.pendingHoverLabelRecovery.remainingFrameRetries -= 1;
+    this.reconcileHoverLabels("frame_retry");
+  }
+
+  private isPendingHoverRecoveryForHex(hexCoords: HexPosition): boolean {
+    return (
+      this.pendingHoverLabelRecovery !== null &&
+      this.pendingHoverLabelRecovery.hex.col === hexCoords.col &&
+      this.pendingHoverLabelRecovery.hex.row === hexCoords.row
+    );
+  }
+
+  private clearPendingHoverLabelRecovery(reason: string): void {
+    if (!this.pendingHoverLabelRecovery) {
+      return;
+    }
+
+    this.traceHoverLabelRecovery("clear", {
+      reason,
+      pending: this.pendingHoverLabelRecovery,
+    });
+    this.pendingHoverLabelRecovery = null;
+  }
+
+  private traceHoverLabelRecovery(event: string, details: Record<string, unknown>): void {
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
+    console.debug(`[WorldmapHoverLabels] ${event}`, details);
   }
 
   protected tryArmyRaycastFallback(raycaster: Raycaster): HexPosition | null {
@@ -2765,7 +2935,7 @@ export default class WorldmapScene extends WarpTravel {
     if (actionPath.length > 0 && this.isArmyMovementInputLocked(selectedEntityId)) {
       toast.info("Army movement is still resolving");
       this.state.updateEntityActionHoveredHex(null);
-      this.clearSelection();
+      this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       return;
     }
 
@@ -2893,7 +3063,7 @@ export default class WorldmapScene extends WarpTravel {
       const shouldTrackArrivalGhost = shouldCreatePredictiveArrivalGhost({
         hasTargetHex: true,
         isLocalArmy: selectedArmy?.isMine ?? false,
-        isTravelAction,
+        movementType: actionType === ActionType.Explore ? "explore" : "travel",
       });
 
       if (shouldTrackArrivalGhost) {
@@ -3324,6 +3494,7 @@ export default class WorldmapScene extends WarpTravel {
     this.pendingArmyMovements.add(entityId);
     this.pendingArmyMovementStartedAt.set(entityId, Date.now());
     this.pendingArmyMovementTargetKeys.set(entityId, targetKey);
+    this.clearMovementActionOptionsForSelectedArmy(entityId);
     this.schedulePendingArmyMovementFallback(entityId);
   }
 
@@ -3357,39 +3528,10 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private startPendingActionFx(payload: PendingWorldmapFxStartPayload): void {
-    this.clearPendingActionFx(payload.key);
+    this.clearPendingActionFx(payload.key, "superseded");
 
     if (payload.kind === "create-army") {
-      const structureHex = this.structuresPositions.get(payload.structureId);
-      const targetHex = resolveCreateArmyEffectTargetHex(structureHex, payload.direction);
-      if (!targetHex) {
-        return;
-      }
-
-      const fxType = `create-army-resource-${payload.troopResourceId}`;
-      const textureUrl = `/images/resources/${payload.troopResourceId}.png`;
-      this.fxManager.ensureInfiniteIconFx(fxType, textureUrl, { renderMode: "ground" });
-
-      const createCleanup = this.playPendingFxAtHex({
-        type: fxType,
-        hex: targetHex,
-        size: 1.2,
-        yOffset: 0.45,
-      });
-      this.pendingActionEffectsByKey.set(payload.key, createCleanup);
-      this.pendingCreateArmyEffectsByKey.set(payload.key, {
-        structureId: payload.structureId,
-        direction: payload.direction,
-        targetHex,
-        troopResourceId: payload.troopResourceId,
-      });
-
-      const timeout = setTimeout(
-        () => this.clearPendingActionFx(payload.key),
-        Math.max(5_000, payload.timeoutMs ?? 45_000),
-      );
-      this.pendingActionEffectTimeoutsByKey.set(payload.key, timeout);
-      this.clearPendingCreateArmyFxForOccupiedTiles();
+      this.startPendingCreateArmyGhost(payload);
       return;
     }
 
@@ -3418,10 +3560,87 @@ export default class WorldmapScene extends WarpTravel {
     });
 
     const timeout = setTimeout(
-      () => this.clearPendingActionFx(payload.key),
+      () => this.clearPendingActionFx(payload.key, "stale_timeout"),
       Math.max(5_000, payload.timeoutMs ?? 45_000),
     );
     this.pendingActionEffectTimeoutsByKey.set(payload.key, timeout);
+  }
+
+  private startPendingCreateArmyGhost(payload: Extract<PendingWorldmapFxStartPayload, { kind: "create-army" }>): void {
+    const structureHex = this.structuresPositions.get(payload.structureId);
+    const targetHex = resolveCreateArmyEffectTargetHex(structureHex, payload.direction);
+    if (!targetHex) {
+      return;
+    }
+
+    const ghostEntityId = this.allocatePendingCreateArmyGhostId();
+    this.pendingActionEffectsByKey.set(payload.key, (reason) => {
+      this.arrivalGhostManager.clearArrivalGhost(ghostEntityId, reason);
+    });
+    this.pendingCreateArmyEffectsByKey.set(payload.key, {
+      structureId: payload.structureId,
+      direction: payload.direction,
+      targetHex,
+      troopType: payload.troopType,
+      troopTier: payload.troopTier,
+      ghostEntityId,
+    });
+
+    const timeout = setTimeout(
+      () => this.clearPendingActionFx(payload.key, "stale_timeout"),
+      Math.max(5_000, payload.timeoutMs ?? 45_000),
+    );
+    this.pendingActionEffectTimeoutsByKey.set(payload.key, timeout);
+    void this.renderPendingCreateArmyGhost({
+      key: payload.key,
+      ghostEntityId,
+      targetHex,
+      troopType: payload.troopType,
+      troopTier: payload.troopTier,
+    }).catch((error) => this.handlePendingCreateArmyGhostError(payload.key, error));
+    this.clearPendingCreateArmyGhostsForOccupiedTiles();
+  }
+
+  private allocatePendingCreateArmyGhostId(): ID {
+    const ghostEntityId = this.nextPendingCreateArmyGhostId;
+    this.nextPendingCreateArmyGhostId -= 1;
+    return ghostEntityId;
+  }
+
+  private async renderPendingCreateArmyGhost(input: {
+    ghostEntityId: ID;
+    key: string;
+    targetHex: HexPosition;
+    troopTier: TroopTier;
+    troopType: TroopType;
+  }): Promise<void> {
+    const ghostSource = await this.armyManager.resolvePendingCreationGhostSource({
+      entityId: input.ghostEntityId,
+      hexCoords: input.targetHex,
+      troopType: input.troopType,
+      troopTier: input.troopTier,
+    });
+    const pending = this.pendingCreateArmyEffectsByKey.get(input.key);
+    if (!pending || pending.ghostEntityId !== input.ghostEntityId) {
+      return;
+    }
+
+    this.arrivalGhostManager.upsertLocalArrivalGhost({
+      entityId: input.ghostEntityId,
+      hexCoords: input.targetHex,
+      sourceScene: ghostSource.sourceScene,
+      visualStyle: resolveArrivalGhostVisualStyle({
+        armyColor: ghostSource.armyColor,
+      }),
+    });
+  }
+
+  private handlePendingCreateArmyGhostError(key: string, error: unknown): void {
+    if (!this.pendingCreateArmyEffectsByKey.has(key)) {
+      return;
+    }
+
+    console.warn("[WorldMap] Failed to show pending create-army ghost", error);
   }
 
   private playPendingFxAtHex(input: {
@@ -3450,10 +3669,10 @@ export default class WorldmapScene extends WarpTravel {
     };
   }
 
-  private clearPendingActionFx(key: string): void {
+  private clearPendingActionFx(key: string, reason: ArrivalGhostClearReason): void {
     const cleanup = this.pendingActionEffectsByKey.get(key);
     if (cleanup) {
-      cleanup();
+      cleanup(reason);
       this.pendingActionEffectsByKey.delete(key);
     }
 
@@ -3468,12 +3687,13 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private clearAllPendingActionFx(): void {
-    for (const key of Array.from(this.pendingActionEffectsByKey.keys())) {
-      this.clearPendingActionFx(key);
+    const keys = new Set([...this.pendingActionEffectsByKey.keys(), ...this.pendingCreateArmyEffectsByKey.keys()]);
+    for (const key of keys) {
+      this.clearPendingActionFx(key, "scene_destroyed");
     }
   }
 
-  private resolvePendingCreateArmyFxOnArmyUpdate(update: { hexCoords: HexPosition; removed?: boolean }): void {
+  private resolvePendingCreateArmyGhostOnArmyUpdate(update: { hexCoords: HexPosition; removed?: boolean }): void {
     const normalized = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
     const updateHex = { col: normalized.x, row: normalized.y };
     const keysToClear: string[] = [];
@@ -3491,13 +3711,13 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     for (const key of keysToClear) {
-      this.clearPendingActionFx(key);
+      this.clearPendingActionFx(key, "arrived");
     }
 
-    this.clearPendingCreateArmyFxForOccupiedTiles();
+    this.clearPendingCreateArmyGhostsForOccupiedTiles();
   }
 
-  private clearPendingCreateArmyFxForOccupiedTiles(): void {
+  private clearPendingCreateArmyGhostsForOccupiedTiles(): void {
     const keysToClear: string[] = [];
 
     for (const [key, pending] of this.pendingCreateArmyEffectsByKey.entries()) {
@@ -3507,7 +3727,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     for (const key of keysToClear) {
-      this.clearPendingActionFx(key);
+      this.clearPendingActionFx(key, "arrived");
     }
   }
 
@@ -3525,7 +3745,7 @@ export default class WorldmapScene extends WarpTravel {
         battleDefenderId,
       });
       if (shouldClear) {
-        this.clearPendingActionFx(key);
+        this.clearPendingActionFx(key, "arrived");
       }
     }
   }
@@ -3613,11 +3833,26 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private isArmyMovementInputLocked(entityId: ID): boolean {
+    return this.isArmyMovementActionUnavailable(entityId);
+  }
+
+  private isArmyMovementActionUnavailable(entityId: ID): boolean {
     return (
       this.pendingArmyMovements.has(entityId) ||
       this.pendingArmyMovementAuthoritativeResolutions.has(entityId) ||
+      this.hasPendingMovementTransactionForArmy(entityId) ||
       this.armyManager.hasUnresolvedOptimisticMovement(entityId)
     );
+  }
+
+  private hasPendingMovementTransactionForArmy(entityId: ID): boolean {
+    for (const pendingEntityId of this.pendingArmyMovementTxMap.values()) {
+      if (pendingEntityId === entityId) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private hasEligibleArmyForTabCycle(): boolean {
@@ -3728,10 +3963,6 @@ export default class WorldmapScene extends WarpTravel {
       this.requestChunkRefresh(true);
     }
 
-    if (selectionPlan.shouldBlockSelection) {
-      return false;
-    }
-
     // Check if army is currently being rendered or is in chunk transition
     if (this.isChunkTransitioning) {
       if (deferDuringChunkTransition) {
@@ -3791,6 +4022,12 @@ export default class WorldmapScene extends WarpTravel {
     this.state.updateEntityActionSelectedEntityId(selectedEntityId);
     playUnitCommandSound("select");
 
+    if (selectionPlan.shouldBlockSelection || this.isArmyMovementActionUnavailable(selectedEntityId)) {
+      this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
+      this.showSelectedArmyPulse(selectedEntityId);
+      return true;
+    }
+
     const armyActionManager = new ArmyActionManager(this.dojo.components, this.dojo.systemCalls, selectedEntityId);
 
     const { currentDefaultTick, currentArmiesTick } = getBlockTimestamp();
@@ -3828,10 +4065,38 @@ export default class WorldmapScene extends WarpTravel {
     this.updateEntityActionPaths(paths);
     this.highlightHexManager.highlightHexes(highlightedHexes);
 
-    // Show selection pulse for the selected army
+    this.showSelectedArmyPulse(selectedEntityId);
+
+    const extraHexes: HexPosition[] = [];
+    if (armyPosition) {
+      extraHexes.push(armyPosition);
+    }
+
     const selectedArmyData = this.armyManager
       .getArmies()
       .find((army) => Number(army.entityId) === Number(selectedEntityId));
+    const owningStructureId =
+      selectedArmyData?.owningStructureId ?? this.armyStructureOwners.get(selectedEntityId) ?? null;
+
+    this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes, extraHexes);
+    this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
+    return true;
+  }
+
+  private clearMovementActionOptionsForSelectedArmy(entityId: ID): void {
+    const { selectedEntityId } = getLiveWorldmapEntityActions();
+    if (selectedEntityId !== entityId) {
+      return;
+    }
+
+    this.updateEntityActionPaths(new Map());
+    this.highlightHexManager.highlightHexes([]);
+    this.state.updateEntityActionHoveredHex(null);
+    this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
+  }
+
+  private showSelectedArmyPulse(selectedEntityId: ID): void {
+    const armyPosition = this.armiesPositions.get(selectedEntityId);
     if (armyPosition) {
       const worldPos = getWorldPositionForHex(armyPosition);
       this.selectionPulseManager.showSelection(worldPos.x, worldPos.z, selectedEntityId);
@@ -3841,18 +4106,6 @@ export default class WorldmapScene extends WarpTravel {
         console.warn(`[DEBUG] No army position found for ${selectedEntityId} in armiesPositions map`);
       }
     }
-
-    const extraHexes: HexPosition[] = [];
-    if (armyPosition) {
-      extraHexes.push(armyPosition);
-    }
-
-    const owningStructureId =
-      selectedArmyData?.owningStructureId ?? this.armyStructureOwners.get(selectedEntityId) ?? null;
-
-    this.updateStructureOwnershipPulses(owningStructureId ?? undefined, extraHexes, extraHexes);
-    this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
-    return true;
   }
 
   private queueArmySelectionRecovery(selectedEntityId: ID, playerAddress: ContractAddress): void {
@@ -4087,7 +4340,7 @@ export default class WorldmapScene extends WarpTravel {
     return {
       onSetupStart: () => this.configureWarpTravelSetupStart(),
       onInitialSetupStart: () => this.prepareWarpTravelInitialSetup(),
-      moveCameraToSceneLocation: () => this.moveCameraToURLLocation(),
+      moveCameraToSceneLocation: () => this.moveCameraToURLLocation({ requestRefresh: false }),
       attachLabelGroupsToScene: () => this.attachWorldmapLabelGroupsToScene(),
       attachManagerLabels: () => this.attachWorldmapManagerLabels(),
       registerStoreSubscriptions: () => this.registerStoreSubscriptions(),
@@ -4108,6 +4361,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private announceWorldmapSceneReady(): void {
     usePlayRouteReadinessStore.getState().markWorldmapReady(getCurrentPlayRouteBootToken());
+    this.retryPendingHoverLabelRecovery("scene_ready");
 
     if (typeof window === "undefined") {
       return;
@@ -4137,6 +4391,7 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private detachWorldmapManagerLabels(): void {
+    this.clearPendingHoverLabelRecovery("detach");
     this.hoverLabelManager.onHexLeave();
     this.armyManager.removeLabelsFromScene();
     this.structureManager.removeLabelsFromScene();
@@ -4144,10 +4399,43 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private async refreshWarpTravelScene(): Promise<void> {
+    const isInitialSetup = !this.hasInitialized;
     const didRefresh = await this.updateVisibleChunks(true);
     if (!didRefresh) {
       throw new Error("World map did not finish its initial interactive refresh.");
     }
+
+    if (isInitialSetup) {
+      await this.awaitInitialTerrainConvergence();
+      this.skipNextUrlRefreshAfterInitialConvergence = true;
+    }
+
+    this.reconcileHoverLabels("initial_refresh");
+  }
+
+  private async awaitInitialTerrainConvergence(): Promise<void> {
+    await waitForWorldmapHydratedRefreshQueueIdle({
+      isSwitchedOff: () => this.isSwitchedOff,
+      setTimeoutFn: (callback, delayMs) => window.setTimeout(callback, delayMs),
+      state: this.hydratedRefreshQueueState,
+    });
+
+    await this.waitForPendingChunkRefreshConvergence();
+  }
+
+  private async waitForPendingChunkRefreshConvergence(): Promise<void> {
+    const requestToken = this.chunkRefreshRequestToken;
+    if (!this.hasPendingChunkRefresh(requestToken)) {
+      return;
+    }
+
+    await this.waitForRequestedChunkRefresh(requestToken);
+  }
+
+  private hasPendingChunkRefresh(requestToken: number): boolean {
+    return (
+      this.chunkRefreshAppliedToken < requestToken || this.chunkRefreshRunning || this.chunkRefreshTimeout !== null
+    );
   }
 
   private commitCurrentChunkAuthority(chunkKey: string): void {
@@ -4313,6 +4601,8 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private resetWorldmapInteractionForSwitchOff(nextSceneName?: SceneName): void {
+    this.currentHoverLabelHex = null;
+    this.clearPendingHoverLabelRecovery("switch_off");
     this.resetInteractionSelectionForSwitchOff(nextSceneName);
     this.releaseInteractionOwnership("switch_off");
     this.clearAllPendingActionFx();
@@ -4902,6 +5192,7 @@ export default class WorldmapScene extends WarpTravel {
     for (const entityId of pendingExploreEntities) {
       this.clearPendingArmyMovement(entityId);
       this.disposePendingMovementVisualLifecycle(entityId);
+      this.arrivalGhostManager.clearArrivalGhost(entityId, "arrived");
     }
 
     const endCompass = this.travelEffects.get(key);
@@ -6319,39 +6610,53 @@ export default class WorldmapScene extends WarpTravel {
   private scheduleHydratedChunkRefresh(chunkKey: string) {
     queueWorldmapHydratedChunkRefresh({
       chunkKey,
-      scheduleFlush: () => {
-        Promise.resolve().then(() => this.flushHydratedChunkRefreshes());
-      },
+      scheduleFlush: () => this.scheduleHydratedRefreshFlush(),
       state: this.hydratedRefreshQueueState,
     });
   }
 
-  private async flushHydratedChunkRefreshes() {
-    await flushWorldmapHydratedChunkRefreshQueue({
-      awaitActiveChunkSwitch: this.globalChunkSwitchPromise
-        ? async () => {
-            await this.globalChunkSwitchPromise;
-          }
-        : undefined,
-      currentChunk: this.currentChunk,
-      isChunkTransitioning: this.isChunkTransitioning,
-      onAfterRefresh: () => {
-        this.retryDeferredChunkRemovals();
-      },
-      queueFlush: () => {
-        Promise.resolve().then(() => this.flushHydratedChunkRefreshes());
-      },
-      refreshCurrentChunk: async () => {
-        const refreshToken = this.requestChunkRefresh(true, "hydrated_chunk");
-        await this.waitForRequestedChunkRefresh(refreshToken);
-      },
-      reportRefreshError: (currentChunk, error) => {
-        console.error(`[CHUNK SYNC] Hydrated chunk refresh failed for ${currentChunk}`, error);
-      },
-      state: this.hydratedRefreshQueueState,
-      warn: (message, error) => {
-        console.warn(message, error);
-      },
+  private scheduleHydratedRefreshFlush(): void {
+    Promise.resolve().then(() => {
+      const activeFlush = this.hydratedRefreshQueueState.activeFlushPromise;
+      if (activeFlush) {
+        void activeFlush
+          .catch(() => undefined)
+          .finally(() => {
+            void this.flushHydratedChunkRefreshes();
+          });
+        return;
+      }
+
+      void this.flushHydratedChunkRefreshes();
+    });
+  }
+
+  private flushHydratedChunkRefreshes(): Promise<void> {
+    return trackWorldmapHydratedRefreshQueueFlush(this.hydratedRefreshQueueState, async () => {
+      await flushWorldmapHydratedChunkRefreshQueue({
+        awaitActiveChunkSwitch: this.globalChunkSwitchPromise
+          ? async () => {
+              await this.globalChunkSwitchPromise;
+            }
+          : undefined,
+        currentChunk: this.currentChunk,
+        isChunkTransitioning: this.isChunkTransitioning,
+        onAfterRefresh: () => {
+          this.retryDeferredChunkRemovals();
+        },
+        queueFlush: () => this.scheduleHydratedRefreshFlush(),
+        refreshCurrentChunk: async () => {
+          const refreshToken = this.requestChunkRefresh(true, "hydrated_chunk");
+          await this.waitForRequestedChunkRefresh(refreshToken);
+        },
+        reportRefreshError: (currentChunk, error) => {
+          console.error(`[CHUNK SYNC] Hydrated chunk refresh failed for ${currentChunk}`, error);
+        },
+        state: this.hydratedRefreshQueueState,
+        warn: (message, error) => {
+          console.warn(message, error);
+        },
+      });
     });
   }
 
@@ -9061,20 +9366,39 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private scheduleLegacyChunkRefresh(requestedDelayMs: number): void {
+    const scheduledToken = this.chunkRefreshRequestToken;
     scheduleWorldmapChunkRefreshTimer({
       clearTimeoutFn: (timeoutId) => window.clearTimeout(timeoutId),
       nowMs: performance.now(),
       onTimer: () => {
-        const shouldForce = this.pendingChunkRefreshForce;
-        const refreshReason = this.pendingChunkRefreshUiReason;
-        this.pendingChunkRefreshForce = false;
-        this.pendingChunkRefreshUiReason = "default";
-        void this.updateVisibleChunks(shouldForce, { reason: refreshReason }).catch((error) => {
-          console.error("[WorldMap] Legacy chunk refresh failed:", error);
-        });
+        void this.flushLegacyChunkRefresh(scheduledToken);
       },
       requestedDelayMs,
       setTimeoutFn: (callback, delayMs) => window.setTimeout(callback, delayMs),
+      state: this.chunkRefreshRuntimeState,
+    });
+  }
+
+  private async flushLegacyChunkRefresh(scheduledToken: number): Promise<void> {
+    const shouldForce = this.pendingChunkRefreshForce;
+    const refreshReason = this.pendingChunkRefreshUiReason;
+    this.pendingChunkRefreshForce = false;
+    this.pendingChunkRefreshUiReason = "default";
+
+    await runWorldmapChunkRefreshExecution({
+      executeRefresh: async () => {
+        await this.updateVisibleChunks(shouldForce, { reason: refreshReason });
+      },
+      onError: (error) => {
+        console.error("[WorldMap] Legacy chunk refresh failed:", error);
+      },
+      onExecutionComplete: () => {},
+      onRescheduleWhileRunning: () => {},
+      onSuperseded: () => {},
+      scheduledToken,
+      scheduleRerun: () => {
+        this.scheduleLegacyChunkRefresh(0);
+      },
       state: this.chunkRefreshRuntimeState,
     });
   }
@@ -9669,7 +9993,7 @@ export default class WorldmapScene extends WarpTravel {
       setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
-      this.reconcileHoverLabels();
+      this.reconcileHoverLabels("manager_catch_up");
     }
 
     if (import.meta.env.DEV) {
@@ -9780,7 +10104,7 @@ export default class WorldmapScene extends WarpTravel {
       setWorldmapRenderGauge("visibleStructures", this.structureManager.getVisibleCount());
       setWorldmapRenderGauge("activePaths", this.armyManager.getActivePathCount());
       setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
-      this.reconcileHoverLabels();
+      this.retryPendingHoverLabelRecovery("critical_manager_catch_up");
     }
 
     handleWorldmapCriticalManagerCatchUpFailures({
@@ -9843,6 +10167,7 @@ export default class WorldmapScene extends WarpTravel {
       });
       recordWorldmapRenderDuration("chunkManagerCatchUpMs", durationMs);
       recordWorldmapRenderDuration("updateManagersForChunk", durationMs);
+      this.retryPendingHoverLabelRecovery("non_critical_manager_catch_up");
     }
   }
 
@@ -9865,6 +10190,7 @@ export default class WorldmapScene extends WarpTravel {
     this.chestManager.update(deltaTime);
     this.updateCameraTargetHexThrottled?.();
     setWorldmapRenderGauge("activeLabels", this.hoverLabelManager.getActiveLabelCount());
+    this.runPendingHoverLabelRecoveryFrame();
     if (WORLDMAP_ZOOM_HARDENING.terrainSelfHeal) {
       this.monitorTerrainVisibilityHealth();
     } else {
@@ -10750,7 +11076,7 @@ export default class WorldmapScene extends WarpTravel {
             return;
           }
 
-          this.moveCameraToURLLocation();
+          this.moveCameraToURLLocation({ requestRefresh: false });
           this.refreshRouteOwnedChunkState();
         },
       ),

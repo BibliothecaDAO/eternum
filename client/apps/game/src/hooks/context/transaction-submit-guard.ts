@@ -1,7 +1,7 @@
 import type { ControllerConnector } from "@cartridge/connector";
 import type { TransactionSubmitGuardContext } from "@bibliothecadao/provider";
 import type { AccountInterface } from "starknet";
-import { waitForSessionPolicyRefresh } from "./session-policy-refresh";
+import { waitForSessionPolicyRefresh } from "./session-policy-refresh-state";
 
 type ControllerProvider = {
   account?: { address?: string };

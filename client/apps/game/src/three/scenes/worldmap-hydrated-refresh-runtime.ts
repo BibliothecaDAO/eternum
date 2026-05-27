@@ -1,6 +1,7 @@
 import { resolveHydratedChunkRefreshFlushPlan } from "./worldmap-chunk-transition";
 
 export interface WorldmapHydratedRefreshQueueState {
+  activeFlushPromise: Promise<void> | null;
   isScheduled: boolean;
   queuedChunkKeys: Set<string>;
 }
@@ -23,8 +24,15 @@ interface FlushWorldmapHydratedChunkRefreshQueueInput {
   warn?: (message: string, error: unknown) => void;
 }
 
+interface WaitForWorldmapHydratedRefreshQueueIdleInput {
+  isSwitchedOff: () => boolean;
+  setTimeoutFn: (callback: () => void, delayMs: number) => number;
+  state: WorldmapHydratedRefreshQueueState;
+}
+
 export function createWorldmapHydratedRefreshQueueState(): WorldmapHydratedRefreshQueueState {
   return {
+    activeFlushPromise: null,
     isScheduled: false,
     queuedChunkKeys: new Set<string>(),
   };
@@ -81,4 +89,42 @@ export async function flushWorldmapHydratedChunkRefreshQueue(
   }
 
   return input.state;
+}
+
+export function trackWorldmapHydratedRefreshQueueFlush(
+  state: WorldmapHydratedRefreshQueueState,
+  flush: () => Promise<void>,
+): Promise<void> {
+  if (state.activeFlushPromise) {
+    return state.activeFlushPromise;
+  }
+
+  const flushPromise = Promise.resolve()
+    .then(flush)
+    .finally(() => {
+      if (state.activeFlushPromise === flushPromise) {
+        state.activeFlushPromise = null;
+      }
+    });
+  state.activeFlushPromise = flushPromise;
+  return flushPromise;
+}
+
+export async function waitForWorldmapHydratedRefreshQueueIdle(
+  input: WaitForWorldmapHydratedRefreshQueueIdleInput,
+): Promise<void> {
+  while (!input.isSwitchedOff()) {
+    if (input.state.activeFlushPromise) {
+      await input.state.activeFlushPromise.catch(() => undefined);
+      continue;
+    }
+
+    if (!input.state.isScheduled && input.state.queuedChunkKeys.size === 0) {
+      return;
+    }
+
+    await new Promise<void>((resolve) => {
+      input.setTimeoutFn(resolve, 0);
+    });
+  }
 }

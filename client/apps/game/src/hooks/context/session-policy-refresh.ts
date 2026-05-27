@@ -18,14 +18,13 @@
  */
 import { dojoConfig } from "../../../dojo-config";
 import { buildPolicies } from "./policies";
+import { resolveSessionPolicyRefreshWaiters, setSessionPolicyRefreshInProgress } from "./session-policy-refresh-state";
 
 /**
  * Policy fingerprint. Starts empty since the connector is created
  * without policies (session deferred until game selection).
  */
 let _lastPolicyHash = "";
-let _isRefreshingPolicies = false;
-const refreshWaiters = new Set<() => void>();
 
 function hashPolicies(manifest: unknown): string {
   try {
@@ -40,25 +39,6 @@ function hashPolicies(manifest: unknown): string {
  */
 const hasPoliciesChanged = (): boolean => {
   return hashPolicies(dojoConfig.manifest) !== _lastPolicyHash;
-};
-
-export const isSessionPolicyRefreshInProgress = (): boolean => _isRefreshingPolicies;
-
-const resolveSessionPolicyRefreshWaiters = (): void => {
-  for (const resolve of refreshWaiters) {
-    resolve();
-  }
-  refreshWaiters.clear();
-};
-
-export const waitForSessionPolicyRefresh = async (): Promise<void> => {
-  if (!_isRefreshingPolicies) {
-    return;
-  }
-
-  await new Promise<void>((resolve) => {
-    refreshWaiters.add(resolve);
-  });
 };
 
 /**
@@ -83,7 +63,7 @@ export const refreshSessionPolicies = async (
   if (!provider.options) {
     return false;
   }
-  _isRefreshingPolicies = true;
+  setSessionPolicyRefreshInProgress(true);
   try {
     provider.options.policies = newPolicies;
 
@@ -146,7 +126,7 @@ export const refreshSessionPolicies = async (
 
     return true;
   } finally {
-    _isRefreshingPolicies = false;
+    setSessionPolicyRefreshInProgress(false);
     resolveSessionPolicyRefreshWaiters();
   }
 };

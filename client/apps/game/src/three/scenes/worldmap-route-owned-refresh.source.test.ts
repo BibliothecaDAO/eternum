@@ -16,7 +16,7 @@ describe("Worldmap route-owned refresh", () => {
     expect(source).toContain("(state) => state.showBlankOverlay");
     expect(source).toContain("const playRoute = parsePlayRoute(window.location);");
     expect(source).toContain('if (playRoute?.scene !== "map" || playRoute.col === null || playRoute.row === null) {');
-    expect(source).toContain("this.moveCameraToURLLocation();");
+    expect(source).toContain("this.moveCameraToURLLocation({ requestRefresh: false });");
     expect(source).toContain("this.refreshRouteOwnedChunkState();");
     expect(source).toContain('void this.updateVisibleChunks(true, { reason: "default" }).catch((error) => {');
     expect(source).toContain('console.error("[WorldMap] Route-owned refresh failed:", error);');

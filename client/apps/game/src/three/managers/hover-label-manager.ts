@@ -24,7 +24,7 @@ type HoverLabelControllers = {
   chest?: HoverLabelController;
 };
 
-type HoverLabelType = keyof HoverLabelControllers;
+export type HoverLabelType = keyof HoverLabelControllers;
 
 type HexagonEntities = {
   army?: HoverLabelEntity;
@@ -40,6 +40,21 @@ interface ReconcileHoveredHexLabelsOptions {
 interface ShowAndTrackLabelResult {
   renderChanged: boolean;
   shown: boolean;
+}
+
+export interface HoverLabelReconcileResult {
+  resolvedAnyEntity: boolean;
+  shownAnyLabel: boolean;
+  missingTypes: HoverLabelType[];
+  activeLabelCount: number;
+  labelsNeedRender: boolean;
+}
+
+interface ToggleLabelResult {
+  labelsNeedRender: boolean;
+  resolvedEntity: boolean;
+  shown: boolean;
+  missingType?: HoverLabelType;
 }
 
 /**
@@ -70,30 +85,29 @@ export class HoverLabelManager {
    * Handle mouse hover over a hex. Creates labels for entities present on the tile and
    * tears down labels from the previously hovered tile.
    */
-  onHexHover(hexCoords: HexPosition): void {
+  onHexHover(hexCoords: HexPosition): HoverLabelReconcileResult {
     if (this.isCurrentHoveredHex(hexCoords) && this.hasActiveLabels()) {
-      return;
+      return this.refreshCurrentHover();
     }
 
     this.currentHoveredHex = hexCoords;
-    this.reconcileHoveredHexLabels(hexCoords);
+    return this.reconcileHoveredHexLabels(hexCoords);
   }
 
-  public reconcileHexHover(hexCoords: HexPosition): void {
+  public reconcileHexHover(hexCoords: HexPosition): HoverLabelReconcileResult {
     if (!this.isCurrentHoveredHex(hexCoords)) {
-      this.onHexHover(hexCoords);
-      return;
+      return this.onHexHover(hexCoords);
     }
 
-    this.refreshCurrentHover();
+    return this.refreshCurrentHover();
   }
 
-  public refreshCurrentHover(): void {
+  public refreshCurrentHover(): HoverLabelReconcileResult {
     if (!this.currentHoveredHex) {
-      return;
+      return this.buildReconcileResult([], false);
     }
 
-    this.reconcileHoveredHexLabels(this.currentHoveredHex, { retryActiveLabels: true });
+    return this.reconcileHoveredHexLabels(this.currentHoveredHex, { retryActiveLabels: true });
   }
 
   /**
@@ -145,22 +159,36 @@ export class HoverLabelManager {
     );
   }
 
-  private reconcileHoveredHexLabels(hexCoords: HexPosition, options?: ReconcileHoveredHexLabelsOptions): void {
+  private reconcileHoveredHexLabels(
+    hexCoords: HexPosition,
+    options?: ReconcileHoveredHexLabelsOptions,
+  ): HoverLabelReconcileResult {
     const { army, structure, quest, chest } = this.getHexagonEntity(hexCoords);
-    const labelsNeedRender = [
+    const results = [
       this.toggleLabel("army", army?.id, options),
       this.toggleLabel("structure", structure?.id, options),
       this.toggleLabel("quest", quest?.id, options),
       this.toggleLabel("chest", chest?.id, options),
-    ].some(Boolean);
+    ];
+    const labelsNeedRender = results.some((result) => result.labelsNeedRender);
 
     this.markDirtyIfLabelsNeedRender(labelsNeedRender);
+    return this.buildReconcileResult(results, labelsNeedRender);
   }
 
-  private toggleLabel(type: HoverLabelType, entityId?: ID, options?: ReconcileHoveredHexLabelsOptions): boolean {
+  private toggleLabel(
+    type: HoverLabelType,
+    entityId?: ID,
+    options?: ReconcileHoveredHexLabelsOptions,
+  ): ToggleLabelResult {
     const controller = this.controllers[type];
     if (!controller) {
-      return false;
+      return {
+        labelsNeedRender: false,
+        resolvedEntity: entityId !== undefined && entityId !== null,
+        shown: false,
+        missingType: entityId !== undefined && entityId !== null ? type : undefined,
+      };
     }
 
     const currentId = this.activeLabels[type];
@@ -173,7 +201,11 @@ export class HoverLabelManager {
     }
 
     if (entityId === undefined || entityId === null) {
-      return labelChanged;
+      return {
+        labelsNeedRender: labelChanged,
+        resolvedEntity: false,
+        shown: false,
+      };
     }
 
     if (currentId === entityId) {
@@ -181,17 +213,36 @@ export class HoverLabelManager {
         // Re-issue show because lifecycle transitions can detach the CSS2D object while hover state stays active.
         const result = this.showAndTrackLabel(controller, type, entityId);
         if (result.shown) {
-          return result.renderChanged;
+          return {
+            labelsNeedRender: result.renderChanged,
+            resolvedEntity: true,
+            shown: true,
+          };
         }
 
+        controller.hide(currentId);
         delete this.activeLabels[type];
-        return true;
+        return {
+          labelsNeedRender: true,
+          resolvedEntity: true,
+          shown: false,
+          missingType: type,
+        };
       }
-      return labelChanged;
+      return {
+        labelsNeedRender: labelChanged,
+        resolvedEntity: true,
+        shown: true,
+      };
     }
 
     const result = this.showAndTrackLabel(controller, type, entityId);
-    return result.renderChanged || labelChanged;
+    return {
+      labelsNeedRender: result.renderChanged || labelChanged,
+      resolvedEntity: true,
+      shown: result.shown,
+      missingType: result.shown ? undefined : type,
+    };
   }
 
   private showAndTrackLabel(
@@ -220,5 +271,15 @@ export class HoverLabelManager {
     if (labelsNeedRender) {
       this.markLabelsDirty();
     }
+  }
+
+  private buildReconcileResult(results: ToggleLabelResult[], labelsNeedRender: boolean): HoverLabelReconcileResult {
+    return {
+      activeLabelCount: this.getActiveLabelCount(),
+      labelsNeedRender,
+      missingTypes: results.flatMap((result) => (result.missingType ? [result.missingType] : [])),
+      resolvedAnyEntity: results.some((result) => result.resolvedEntity),
+      shownAnyLabel: results.some((result) => result.shown),
+    };
   }
 }

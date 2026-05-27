@@ -641,6 +641,16 @@ export class ArmyModel {
     }
   }
 
+  public async getModelSourceScene(modelType: ModelType): Promise<Object3D> {
+    const modelData = await this.ensureModel(modelType);
+    return modelData.sourceScene;
+  }
+
+  public async getCosmeticModelSourceScene(skin: ResolvedCosmeticSkin): Promise<Object3D> {
+    const modelData = await this.ensureCosmeticModel(skin);
+    return modelData.sourceScene;
+  }
+
   public assignModelToEntity(entityId: number, modelType: ModelType): void {
     const oldModelType = this.entityModelMap.get(entityId);
     if (oldModelType === modelType) return;
