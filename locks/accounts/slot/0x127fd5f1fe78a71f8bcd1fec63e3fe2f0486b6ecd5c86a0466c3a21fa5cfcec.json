@@ -3,17 +3,16 @@
   "chain": "slot",
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
-    "environment": "slot.blitz",
-    "gameName": "bltz-kick-418",
-    "launchRequestId": "26481243166-1",
+    "environment": "slot.eternum",
+    "gameName": "etrn-dusk-363",
+    "launchRequestId": "26482318574-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26481243166,
+    "workflowRunId": 26482318574,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "bfc75326-d751-41b1-981e-200ee1a534c5"
+    "stepId": "create-world",
+    "leaseId": "dc92486d-9ae7-4165-af23-a9ae8ad987a2"
   },
-  "acquiredAt": "2026-05-26T23:35:28.700Z",
-  "heartbeatAt": "2026-05-26T23:35:42.905Z",
-  "expiresAt": "2026-05-26T23:35:42.905Z",
-  "releasedAt": "2026-05-26T23:35:42.905Z"
+  "acquiredAt": "2026-05-27T00:04:14.586Z",
+  "heartbeatAt": "2026-05-27T00:04:14.586Z",
+  "expiresAt": "2026-05-27T00:14:14.586Z"
 }
