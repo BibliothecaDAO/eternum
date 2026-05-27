@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-27T06:36:23.360Z",
+  "updatedAt": "2026-05-27T06:36:29.103Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1163,11 +1163,10 @@
       "path": "runs/mainnet/blitz/bltz-blink-913.json",
       "inputPath": "inputs/mainnet/blitz/bltz-blink-913/26494970372-1.json",
       "status": "running",
-      "updatedAt": "2026-05-27T06:36:23.360Z",
+      "updatedAt": "2026-05-27T06:36:29.103Z",
       "workflowRef": "next",
-      "currentStepId": "wait-for-factory-index",
-      "activeLeaseExpiresAt": "2026-05-27T07:21:23.360Z",
-      "hasRunningStep": true,
+      "currentStepId": "configure-world",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "configure-world",
       "startTime": 1779882300,
