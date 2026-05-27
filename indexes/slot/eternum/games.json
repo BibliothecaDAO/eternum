@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-05-27T00:07:18.008Z",
+  "updatedAt": "2026-05-27T00:13:08.628Z",
   "entries": {
     "etrn-banana": {
       "kind": "game",
@@ -89,9 +89,9 @@
       "environment": "slot.eternum",
       "gameName": "etrn-dusk-363",
       "path": "runs/slot/eternum/etrn-dusk-363.json",
-      "inputPath": "inputs/slot/eternum/etrn-dusk-363/26482318574-1.json",
+      "inputPath": "inputs/slot/eternum/etrn-dusk-363/26482627981-1.json",
       "status": "attention",
-      "updatedAt": "2026-05-27T00:07:18.008Z",
+      "updatedAt": "2026-05-27T00:13:08.628Z",
       "workflowRef": "next",
       "currentStepId": "create-indexer",
       "hasRunningStep": false,
