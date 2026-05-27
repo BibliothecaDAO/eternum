@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-dusk-363",
-  "status": "attention",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/eternum/etrn-dusk-363/26482627981-1.json",
   "latestLaunchRequestId": "26482627981-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-05-27T00:04:04.941Z",
-  "updatedAt": "2026-05-27T00:13:08.628Z",
+  "updatedAt": "2026-05-27T00:13:13.591Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -81,12 +81,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup failed: \u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"etrn-dusk-363\" on slot.eternum\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=0, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for slot.eternum\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"etrn-dusk-363\"\n\u001b[2m[+105ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"etrn-dusk-363\" in 91ms (0x05a89bd2...ff1d0d)\n\u001b[2m[+115ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x05a89bd2...ff1d0d\n\u001b[2m[+299ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 184ms: Unable to verify whether Torii deployment \"etrn-dusk-363\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\nError: Unable to verify whether Torii deployment \"etrn-dusk-363\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:372:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1058:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1056:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1251:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1289:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1304:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:150:25)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-05-27T00:07:11.809Z",
-      "finishedAt": "2026-05-27T00:07:18.008Z",
-      "errorMessage": "\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"etrn-dusk-363\" on slot.eternum\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=0, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+13ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for slot.eternum\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"etrn-dusk-363\"\n\u001b[2m[+105ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"etrn-dusk-363\" in 91ms (0x05a89bd2...ff1d0d)\n\u001b[2m[+115ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x05a89bd2...ff1d0d\n\u001b[2m[+299ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 184ms: Unable to verify whether Torii deployment \"etrn-dusk-363\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\nError: Unable to verify whether Torii deployment \"etrn-dusk-363\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:372:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1058:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1056:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1251:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1289:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1304:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:150:25)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-05-27T00:13:13.591Z",
+      "finishedAt": "2026-05-27T00:07:18.008Z"
     }
   ],
   "artifacts": {
@@ -100,5 +99,13 @@
     "lootChestRoleTxHash": "0x34be5e5070318d4cab19f5307693ca7a51018d2b7d8bd6390f5f916eb33a876",
     "villagePassRoleTxHash": "0xb8c6ae130250dbe901aeebddc54914b1a4bdc5e8d75632f91cab6fa2abccbf",
     "createBanksTxHash": "0x499c5ac693f7bf9b582341054944e330db2e2033f05886cef923eb9b5916d3b"
+  },
+  "activeLease": {
+    "launchRequestId": "26482627981-1",
+    "workflowRunId": 26482627981,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexer",
+    "acquiredAt": "2026-05-27T00:13:13.591Z",
+    "expiresAt": "2026-05-27T00:58:13.591Z"
   }
 }
