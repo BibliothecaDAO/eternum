@@ -4203,6 +4203,8 @@ export class EternumProvider extends EnhancedDojoProvider {
         biome_climate_config.moisture_scale_bps,
         biome_climate_config.elevation_bias_bps,
         biome_climate_config.moisture_bias_bps,
+        biome_climate_config.elevation_seed,
+        biome_climate_config.moisture_seed,
       ],
     });
   }

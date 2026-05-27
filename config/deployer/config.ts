@@ -50,6 +50,7 @@ import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliotheca
 import { byteArray, type Account } from "starknet";
 import type { NetworkType } from "utils/environment";
 import type { Chain } from "utils/utils";
+import { applyBiomeClimateDefaults } from "./biome-climate-defaults";
 import { buildBankCoordsForMapCenterOffset, deriveMapCenterOffsetFromWorldConfigTx } from "./clean/eternum/banks";
 import { addCommas, hourMinutesSeconds, inGameAmount, shortHexAddress } from "../utils/formatting";
 
@@ -384,12 +385,18 @@ const setBiomeClimateConfig = async (config: Config) => {
   );
 };
 
-const buildBiomeClimateConfig = (config: EternumConfig) => ({
-  elevation_scale_bps: config.biomeClimate.elevationScaleBps,
-  moisture_scale_bps: config.biomeClimate.moistureScaleBps,
-  elevation_bias_bps: config.biomeClimate.elevationBiasBps,
-  moisture_bias_bps: config.biomeClimate.moistureBiasBps,
-});
+const buildBiomeClimateConfig = (config: EternumConfig) => {
+  const biomeClimate = applyBiomeClimateDefaults(config).biomeClimate;
+
+  return {
+    elevation_scale_bps: biomeClimate.elevationScaleBps,
+    moisture_scale_bps: biomeClimate.moistureScaleBps,
+    elevation_bias_bps: biomeClimate.elevationBiasBps,
+    moisture_bias_bps: biomeClimate.moistureBiasBps,
+    elevation_seed: biomeClimate.elevationSeed,
+    moisture_seed: biomeClimate.moistureSeed,
+  };
+};
 
 function requireWorldConfigTxHash(worldConfigTxHash: string | undefined): string {
   if (worldConfigTxHash) {
@@ -2153,7 +2160,7 @@ export const nodeReadConfig = async (chain: Chain, gameType: string) => {
       ? pathModule.resolve(import.meta.dir, `../generated/${gameType}.${chain}.json`)
       : `./generated/${gameType}.${chain}.json`;
     const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-    return config.configuration as any; // as any to avoid type errors
+    return applyBiomeClimateDefaults(config.configuration as EternumConfig);
   } catch (error) {
     throw new Error(`Failed to load configuration for ${gameType} on chain ${chain}: ${error}`);
   }

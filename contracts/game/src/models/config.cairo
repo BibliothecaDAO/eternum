@@ -76,6 +76,8 @@ pub struct BiomeClimateConfig {
     pub moisture_scale_bps: u16,
     pub elevation_bias_bps: u16,
     pub moisture_bias_bps: u16,
+    pub elevation_seed: u32,
+    pub moisture_seed: u32,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]

@@ -105,6 +105,8 @@ export function buildCommonBaseConfig(): ConfigPatch {
       moistureScaleBps: NEUTRAL_BIOME_CLIMATE_BPS,
       elevationBiasBps: NEUTRAL_BIOME_CLIMATE_BPS,
       moistureBiasBps: NEUTRAL_BIOME_CLIMATE_BPS,
+      elevationSeed: 0,
+      moistureSeed: 0,
     },
     season: {
       startSettlingAfterSeconds: SEASON_SETTLING_AFTER_SECONDS,

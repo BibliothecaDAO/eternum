@@ -57,6 +57,7 @@ import {
   ResourceIdToMiningType,
   ResourceManager,
   TileManager,
+  configManager,
   divideByPrecision,
   getBalance,
   getBuildingCosts,

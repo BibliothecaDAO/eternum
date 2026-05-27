@@ -38,4 +38,34 @@ describe("Biome climate", () => {
       }),
     ).toBe(BiomeType.Beach);
   });
+
+  it("uses biome seeds to produce a different deterministic map", () => {
+    const sampleCoordinates = [
+      [0, 0],
+      [4, 2],
+      [8, 8],
+      [12, 5],
+      [18, 21],
+    ] as const;
+
+    const neutralBiomes = sampleCoordinates.map(([col, row]) => Biome.getBiome(col, row, NEUTRAL_BIOME_CLIMATE));
+    const seededBiomes = sampleCoordinates.map(([col, row]) =>
+      Biome.getBiome(col, row, {
+        ...NEUTRAL_BIOME_CLIMATE,
+        elevation_seed: 137,
+        moisture_seed: 991,
+      }),
+    );
+
+    expect(seededBiomes).not.toEqual(neutralBiomes);
+    expect(seededBiomes).toEqual(
+      sampleCoordinates.map(([col, row]) =>
+        Biome.getBiome(col, row, {
+          ...NEUTRAL_BIOME_CLIMATE,
+          elevation_seed: 137,
+          moisture_seed: 991,
+        }),
+      ),
+    );
+  });
 });

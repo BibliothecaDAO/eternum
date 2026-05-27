@@ -3,6 +3,7 @@ import type {
   FactoryBlitzRegistrationOverrides,
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
+import { applyBiomeClimateDefaults } from "../../biome-climate-defaults";
 import { applyBlitzBalanceProfile, resolveBlitzBalanceProfileIdFromDurationSeconds } from "../../../source/blitz";
 import { resolveDeploymentEnvironment } from "../environment";
 import { loadRepoJsonFile } from "../shared/repo";
@@ -113,7 +114,7 @@ function requireConfigurationObject(configPath: string, parsed: StoredConfigurat
     throw new Error(`No configuration object found in ${configPath}`);
   }
 
-  return parsed.configuration;
+  return applyBiomeClimateDefaults(parsed.configuration);
 }
 
 function requiresSeasonDurationOverride(baseConfig: EternumConfig): boolean {

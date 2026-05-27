@@ -194,6 +194,8 @@ fn neutral_biome_climate() -> BiomeClimateConfig {
         moisture_scale_bps: CLIMATE_BPS_DENOMINATOR(),
         elevation_bias_bps: CLIMATE_BPS_DENOMINATOR(),
         moisture_bias_bps: CLIMATE_BPS_DENOMINATOR(),
+        elevation_seed: 0,
+        moisture_seed: 0,
     }
 }
 
@@ -235,6 +237,10 @@ fn clamp_climate_value(value: Fixed) -> Fixed {
     }
 }
 
+fn seeded_coord(value: u128, seed: u32) -> Fixed {
+    FixedTrait::new_unscaled(value + seed.into(), false)
+}
+
 pub fn get_biome(alt: bool, col: u128, row: u128) -> Biome {
     get_biome_with_climate(alt, col, row, neutral_biome_climate())
 }
@@ -248,13 +254,15 @@ pub fn get_biome_with_climate(alt: bool, col: u128, row: u128, climate: BiomeCli
     if alt {
         return Biome::Underground;
     }
-    let col_fixed = FixedTrait::new_unscaled(col, false);
-    let row_fixed = FixedTrait::new_unscaled(row, false);
     let elevation = apply_climate_adjustment(
-        _elevation(col_fixed, row_fixed), climate.elevation_scale_bps, climate.elevation_bias_bps,
+        _elevation(seeded_coord(col, climate.elevation_seed), seeded_coord(row, climate.elevation_seed)),
+        climate.elevation_scale_bps,
+        climate.elevation_bias_bps,
     );
     let moisture = apply_climate_adjustment(
-        _moisture(col_fixed, row_fixed), climate.moisture_scale_bps, climate.moisture_bias_bps,
+        _moisture(seeded_coord(col, climate.moisture_seed), seeded_coord(row, climate.moisture_seed)),
+        climate.moisture_scale_bps,
+        climate.moisture_bias_bps,
     );
     _environment(elevation, moisture)
 }
@@ -386,7 +394,12 @@ mod tests {
     #[test]
     fn test_neutral_climate_matches_default_biome_generation() {
         let climate = BiomeClimateConfig {
-            elevation_scale_bps: 10000, moisture_scale_bps: 10000, elevation_bias_bps: 10000, moisture_bias_bps: 10000,
+            elevation_scale_bps: 10000,
+            moisture_scale_bps: 10000,
+            elevation_bias_bps: 10000,
+            moisture_bias_bps: 10000,
+            elevation_seed: 0,
+            moisture_seed: 0,
         };
 
         let default_biome = get_biome(false, 0, 0);
@@ -399,10 +412,20 @@ mod tests {
     #[test]
     fn test_climate_adjusts_biome_generation() {
         let snowy_climate = BiomeClimateConfig {
-            elevation_scale_bps: 10000, moisture_scale_bps: 10000, elevation_bias_bps: 20000, moisture_bias_bps: 20000,
+            elevation_scale_bps: 10000,
+            moisture_scale_bps: 10000,
+            elevation_bias_bps: 20000,
+            moisture_bias_bps: 20000,
+            elevation_seed: 0,
+            moisture_seed: 0,
         };
         let deep_ocean_climate = BiomeClimateConfig {
-            elevation_scale_bps: 10000, moisture_scale_bps: 10000, elevation_bias_bps: 1, moisture_bias_bps: 1,
+            elevation_scale_bps: 10000,
+            moisture_scale_bps: 10000,
+            elevation_bias_bps: 1,
+            moisture_bias_bps: 1,
+            elevation_seed: 0,
+            moisture_seed: 0,
         };
 
         assert!(get_biome_with_climate(false, 0, 0, snowy_climate) == Biome::Snow, "wet high climate should snow");
@@ -415,9 +438,28 @@ mod tests {
     #[test]
     fn test_zero_climate_values_are_neutral() {
         let climate = BiomeClimateConfig {
-            elevation_scale_bps: 0, moisture_scale_bps: 0, elevation_bias_bps: 0, moisture_bias_bps: 0,
+            elevation_scale_bps: 0,
+            moisture_scale_bps: 0,
+            elevation_bias_bps: 0,
+            moisture_bias_bps: 0,
+            elevation_seed: 0,
+            moisture_seed: 0,
         };
 
         assert!(get_biome_with_climate(false, 0, 0, climate) == Biome::Beach, "zero climate should be neutral");
+    }
+
+    #[test]
+    fn test_seeded_climate_adjusts_biome_generation() {
+        let climate = BiomeClimateConfig {
+            elevation_scale_bps: 10000,
+            moisture_scale_bps: 10000,
+            elevation_bias_bps: 10000,
+            moisture_bias_bps: 10000,
+            elevation_seed: 137,
+            moisture_seed: 991,
+        };
+
+        assert!(get_biome_with_climate(false, 0, 0, climate) == Biome::Tundra, "seeded climate should shift biome");
     }
 }

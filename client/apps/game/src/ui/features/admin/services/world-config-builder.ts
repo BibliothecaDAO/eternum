@@ -48,6 +48,8 @@ interface FactoryWorldConfigOverrides {
   biomeMoistureScaleBps?: string;
   biomeElevationBiasBps?: string;
   biomeMoistureBiasBps?: string;
+  biomeElevationSeed?: string;
+  biomeMoistureSeed?: string;
 }
 
 interface BuildWorldConfigForFactoryInput {
@@ -101,6 +103,8 @@ interface FactoryConfigLike {
     moistureScaleBps?: number;
     elevationBiasBps?: number;
     moistureBiasBps?: number;
+    elevationSeed?: number;
+    moistureSeed?: number;
   };
   mmr?: {
     enabled?: boolean;
@@ -118,6 +122,15 @@ type FactoryAgentConfig = NonNullable<FactoryConfigLike["agent"]>;
 type FactoryBiomeClimateConfig = NonNullable<FactoryConfigLike["biomeClimate"]>;
 
 const BIOME_CLIMATE_BPS_MAX = 65_535;
+const BIOME_CLIMATE_SEED_MAX = 4_294_967_295;
+const NEUTRAL_BIOME_CLIMATE: FactoryBiomeClimateConfig = {
+  elevationScaleBps: 10_000,
+  moistureScaleBps: 10_000,
+  elevationBiasBps: 10_000,
+  moistureBiasBps: 10_000,
+  elevationSeed: 0,
+  moistureSeed: 0,
+};
 
 const hasValue = (value?: string): boolean => value !== undefined && value.trim() !== "";
 
@@ -173,6 +186,18 @@ const resolveBiomeClimateBpsOverride = (
   const parsed = resolveNonNegativeIntegerOverride(value, label, fallback);
   if (parsed !== undefined && parsed > BIOME_CLIMATE_BPS_MAX) {
     throw new Error(`${label} must be at most ${BIOME_CLIMATE_BPS_MAX}`);
+  }
+  return parsed;
+};
+
+const resolveBiomeClimateSeedOverride = (
+  value: string | undefined,
+  label: string,
+  fallback: number | undefined,
+): number | undefined => {
+  const parsed = resolveNonNegativeIntegerOverride(value, label, fallback);
+  if (parsed !== undefined && parsed > BIOME_CLIMATE_SEED_MAX) {
+    throw new Error(`${label} must be at most ${BIOME_CLIMATE_SEED_MAX}`);
   }
   return parsed;
 };
@@ -364,29 +389,46 @@ const resolveAgentConfig = (
 const resolveBiomeClimateConfig = (
   baseConfig: FactoryConfigLike,
   overrides: FactoryWorldConfigOverrides,
-): FactoryBiomeClimateConfig => ({
-  ...(baseConfig.biomeClimate || {}),
-  elevationScaleBps: resolveBiomeClimateBpsOverride(
-    overrides.biomeElevationScaleBps,
-    "Biome elevation scale bps",
-    baseConfig.biomeClimate?.elevationScaleBps,
-  ),
-  moistureScaleBps: resolveBiomeClimateBpsOverride(
-    overrides.biomeMoistureScaleBps,
-    "Biome moisture scale bps",
-    baseConfig.biomeClimate?.moistureScaleBps,
-  ),
-  elevationBiasBps: resolveBiomeClimateBpsOverride(
-    overrides.biomeElevationBiasBps,
-    "Biome elevation bias bps",
-    baseConfig.biomeClimate?.elevationBiasBps,
-  ),
-  moistureBiasBps: resolveBiomeClimateBpsOverride(
-    overrides.biomeMoistureBiasBps,
-    "Biome moisture bias bps",
-    baseConfig.biomeClimate?.moistureBiasBps,
-  ),
-});
+): FactoryBiomeClimateConfig => {
+  const baseClimate = {
+    ...NEUTRAL_BIOME_CLIMATE,
+    ...(baseConfig.biomeClimate || {}),
+  };
+
+  return {
+    ...baseClimate,
+    elevationScaleBps: resolveBiomeClimateBpsOverride(
+      overrides.biomeElevationScaleBps,
+      "Biome elevation scale bps",
+      baseClimate.elevationScaleBps,
+    ),
+    moistureScaleBps: resolveBiomeClimateBpsOverride(
+      overrides.biomeMoistureScaleBps,
+      "Biome moisture scale bps",
+      baseClimate.moistureScaleBps,
+    ),
+    elevationBiasBps: resolveBiomeClimateBpsOverride(
+      overrides.biomeElevationBiasBps,
+      "Biome elevation bias bps",
+      baseClimate.elevationBiasBps,
+    ),
+    moistureBiasBps: resolveBiomeClimateBpsOverride(
+      overrides.biomeMoistureBiasBps,
+      "Biome moisture bias bps",
+      baseClimate.moistureBiasBps,
+    ),
+    elevationSeed: resolveBiomeClimateSeedOverride(
+      overrides.biomeElevationSeed,
+      "Biome elevation seed",
+      baseClimate.elevationSeed,
+    ),
+    moistureSeed: resolveBiomeClimateSeedOverride(
+      overrides.biomeMoistureSeed,
+      "Biome moisture seed",
+      baseClimate.moistureSeed,
+    ),
+  };
+};
 
 export const buildWorldConfigForFactory = ({
   baseConfig,

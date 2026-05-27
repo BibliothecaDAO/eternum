@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-27",
+    title: "Biome Preview Viewer",
+    description:
+      "Added a factory biome preview with seed controls so creators can inspect generated terrain before applying world configuration.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-27",
     title: "Biome Climate Controls",
     description:
       "Added factory setup controls for biome climate tuning so new worlds can adjust elevation and moisture generation during configuration.",

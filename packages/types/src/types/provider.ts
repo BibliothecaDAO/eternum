@@ -630,6 +630,8 @@ export interface BiomeClimateConfigProps {
   moisture_scale_bps: BigNumberish;
   elevation_bias_bps: BigNumberish;
   moisture_bias_bps: BigNumberish;
+  elevation_seed: BigNumberish;
+  moisture_seed: BigNumberish;
 }
 
 export interface SetBiomeClimateConfigProps extends SystemSigner {

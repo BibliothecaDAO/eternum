@@ -219,6 +219,8 @@ function buildBiomeClimateConfig(config: NativeConfig) {
     moisture_scale_bps: config.biomeClimate.moistureScaleBps,
     elevation_bias_bps: config.biomeClimate.elevationBiasBps,
     moisture_bias_bps: config.biomeClimate.moistureBiasBps,
+    elevation_seed: config.biomeClimate.elevationSeed,
+    moisture_seed: config.biomeClimate.moistureSeed,
   };
 }
 

@@ -588,6 +588,8 @@ export interface Config {
     moistureScaleBps: number;
     elevationBiasBps: number;
     moistureBiasBps: number;
+    elevationSeed: number;
+    moistureSeed: number;
   };
   season: {
     // we expect one or the other. The
