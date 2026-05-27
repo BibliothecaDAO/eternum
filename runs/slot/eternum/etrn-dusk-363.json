@@ -9,17 +9,17 @@
   "status": "complete",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
-  "inputPath": "inputs/slot/eternum/etrn-dusk-363/26482627981-1.json",
-  "latestLaunchRequestId": "26482627981-1",
+  "inputPath": "inputs/slot/eternum/etrn-dusk-363/26482662807-1.json",
+  "latestLaunchRequestId": "26482662807-1",
   "currentStepId": null,
   "createdAt": "2026-05-27T00:04:04.941Z",
-  "updatedAt": "2026-05-27T00:13:33.807Z",
+  "updatedAt": "2026-05-27T00:14:22.873Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 26482627981,
+    "workflowRunId": 26482662807,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/26482627981",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/26482662807",
     "ref": "next",
     "sha": "1d16b37e8d5b46dfbdab60f1be3e37e61a8b5f2a"
   },
@@ -106,5 +106,5 @@
     "indexerBranch": "main",
     "lastIndexerDescribeAt": "2026-05-27T00:13:32.471Z"
   },
-  "completedAt": "2026-05-27T00:13:33.807Z"
+  "completedAt": "2026-05-27T00:14:22.873Z"
 }
