@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-dusk-363",
-  "status": "running",
+  "status": "complete",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/eternum/etrn-dusk-363/26482627981-1.json",
   "latestLaunchRequestId": "26482627981-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-05-27T00:04:04.941Z",
-  "updatedAt": "2026-05-27T00:13:13.591Z",
+  "updatedAt": "2026-05-27T00:13:33.807Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -81,11 +81,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
+      "latestEvent": "Finishing setup succeeded",
       "startedAt": "2026-05-27T00:13:13.591Z",
-      "finishedAt": "2026-05-27T00:07:18.008Z"
+      "finishedAt": "2026-05-27T00:13:33.807Z"
     }
   ],
   "artifacts": {
@@ -98,14 +98,13 @@
     "worldConfigTxHash": "0xfbdfcff92a7b6d05f631cee1cda316e695144d0e21d07c4bfdad5a0a5b5ba0",
     "lootChestRoleTxHash": "0x34be5e5070318d4cab19f5307693ca7a51018d2b7d8bd6390f5f916eb33a876",
     "villagePassRoleTxHash": "0xb8c6ae130250dbe901aeebddc54914b1a4bdc5e8d75632f91cab6fa2abccbf",
-    "createBanksTxHash": "0x499c5ac693f7bf9b582341054944e330db2e2033f05886cef923eb9b5916d3b"
+    "createBanksTxHash": "0x499c5ac693f7bf9b582341054944e330db2e2033f05886cef923eb9b5916d3b",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/etrn-dusk-363/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-27T00:13:32.471Z"
   },
-  "activeLease": {
-    "launchRequestId": "26482627981-1",
-    "workflowRunId": 26482627981,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-27T00:13:13.591Z",
-    "expiresAt": "2026-05-27T00:58:13.591Z"
-  }
+  "completedAt": "2026-05-27T00:13:33.807Z"
 }
