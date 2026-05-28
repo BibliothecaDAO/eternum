@@ -195,6 +195,17 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
 
   const params = configManager.getCombatConfig();
   const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
+  const isStructureTarget = target?.targetType === TargetType.Structure;
+  const rangedClaimBlocked = isStructureTarget && !targetArmyData && targetDistance > 1;
+
+  const combatSimulationContext = useMemo(
+    () => ({
+      attackDistance: targetDistance,
+      attackerIsStructureGuard: attackerType === AttackerType.Structure,
+      defenderIsStructureGuard: isStructureTarget,
+    }),
+    [attackerType, isStructureTarget, targetDistance],
+  );
 
   // Simulate battle outcome
   const battleSimulation = useMemo(() => {
@@ -219,7 +230,15 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
     };
 
     const now = Math.floor(Date.now() / 1000);
-    const result = combatSimulator.simulateBattleWithParams(now, attackerArmy, defenderArmy, biome, [], []);
+    const result = combatSimulator.simulateBattleWithParams(
+      now,
+      attackerArmy,
+      defenderArmy,
+      biome,
+      [],
+      [],
+      combatSimulationContext,
+    );
 
     const attackerTroopsLost = result.defenderDamage;
     const defenderTroopsLost = result.attackerDamage;
@@ -241,7 +260,16 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
       attackerDamage: result.attackerDamage,
       defenderDamage: result.defenderDamage,
     };
-  }, [attackerEntityId, target, attackerStamina, attackerArmyData, targetArmyData, biome, combatSimulator]);
+  }, [
+    attackerEntityId,
+    target,
+    attackerStamina,
+    attackerArmyData,
+    targetArmyData,
+    biome,
+    combatSimulator,
+    combatSimulationContext,
+  ]);
 
   const remainingCapacity = useMemo(() => {
     const resource = getComponentValue(components.Resource, getEntityIdFromKeys([BigInt(attackerEntityId)]));
@@ -380,6 +408,12 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
     console.log("selectedGuardSlot:", selectedGuardSlot);
     console.log("target:", target);
 
+    if (rangedClaimBlocked) {
+      console.error("Attack failed: Ranged structure claims require adjacency");
+      alert("Move adjacent to claim this structure.");
+      return;
+    }
+
     if (!selectedHex) {
       console.error("Attack failed: No selected hex");
       alert("Attack failed: No selected hex. Please select your attacking unit first.");
@@ -482,6 +516,7 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
 
   const buttonMessage = useMemo(() => {
     if (isVillageWithoutTroops) return "Villages cannot be claimed";
+    if (rangedClaimBlocked) return "Move Adjacent to Claim";
     if (attackerType === AttackerType.Structure && eligibleStructureGuards.length === 0) return "No Eligible Guard";
     if (isAttackerOnCooldown) return "On Battle Cooldown";
     if (attackerStamina < combatConfig.stamina_attack_req)
@@ -496,16 +531,25 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
     attackerStamina,
     attackerArmyData,
     combatConfig,
+    rangedClaimBlocked,
   ]);
 
   const canAttack = useMemo(() => {
     return (
       !isVillageWithoutTroops &&
+      !rangedClaimBlocked &&
       !isAttackerOnCooldown &&
       attackerStamina >= combatConfig.stamina_attack_req &&
       attackerArmyData
     );
-  }, [isVillageWithoutTroops, isAttackerOnCooldown, attackerStamina, attackerArmyData, combatConfig]);
+  }, [
+    isVillageWithoutTroops,
+    rangedClaimBlocked,
+    isAttackerOnCooldown,
+    attackerStamina,
+    attackerArmyData,
+    combatConfig,
+  ]);
 
   if (isTargetLoading) {
     return (

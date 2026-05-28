@@ -271,6 +271,17 @@ export const CombatContainer = ({
 
   const params = configManager.getCombatConfig();
   const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
+  const isStructureTarget = target?.targetType === TargetType.Structure;
+  const rangedClaimBlocked = isStructureTarget && !targetArmyData && targetDistance > 1;
+
+  const combatSimulationContext = useMemo(
+    () => ({
+      attackDistance: targetDistance,
+      attackerIsStructureGuard: attackerType === AttackerType.Structure,
+      defenderIsStructureGuard: isStructureTarget,
+    }),
+    [attackerType, isStructureTarget, targetDistance],
+  );
 
   // Simulate battle outcome
   const battleSimulation = useMemo(() => {
@@ -306,16 +317,33 @@ export const CombatContainer = ({
       biome,
       attackerRelicResourceIds,
       targetRelicResourceIds,
+      combatSimulationContext,
     );
 
     const attackerBaselineResult =
       attackerRelicResourceIds.length > 0
-        ? combatSimulator.simulateBattleWithParams(now, attackerArmy, defenderArmy, biome, [], targetRelicResourceIds)
+        ? combatSimulator.simulateBattleWithParams(
+            now,
+            attackerArmy,
+            defenderArmy,
+            biome,
+            [],
+            targetRelicResourceIds,
+            combatSimulationContext,
+          )
         : null;
 
     const defenderBaselineResult =
       targetRelicResourceIds.length > 0
-        ? combatSimulator.simulateBattleWithParams(now, attackerArmy, defenderArmy, biome, attackerRelicResourceIds, [])
+        ? combatSimulator.simulateBattleWithParams(
+            now,
+            attackerArmy,
+            defenderArmy,
+            biome,
+            attackerRelicResourceIds,
+            [],
+            combatSimulationContext,
+          )
         : null;
 
     const attackerTroopsLost = result.defenderDamage;
@@ -399,6 +427,7 @@ export const CombatContainer = ({
     combatSimulator,
     attackerRelicResourceIds,
     targetRelicResourceIds,
+    combatSimulationContext,
   ]);
 
   const remainingTroops = battleSimulation?.getRemainingTroops();
@@ -426,7 +455,7 @@ export const CombatContainer = ({
   }, [attackerArmyData, target, accountName, account.address, targetArmyData, components]);
 
   const onAttack = async () => {
-    if (!selectedHex || isAttackerOnCooldown || attackStaminaState.isBlocked) return;
+    if (!selectedHex || rangedClaimBlocked || isAttackerOnCooldown || attackStaminaState.isBlocked) return;
 
     let pendingFxKey: string | null = null;
     try {
@@ -618,12 +647,20 @@ export const CombatContainer = ({
   );
 
   const buttonMessage = useMemo(() => {
+    if (rangedClaimBlocked) return "Move Adjacent to Claim";
     if (attackerType === AttackerType.Structure && eligibleStructureGuards.length === 0) return "No Eligible Guard";
     if (isAttackerOnCooldown) return "On Battle Cooldown";
     if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
     if (!attackerArmyData) return "No Troops Present";
     return attackStaminaState.actionLabel;
-  }, [attackStaminaState, attackerArmyData, attackerType, eligibleStructureGuards.length, isAttackerOnCooldown]);
+  }, [
+    attackStaminaState,
+    attackerArmyData,
+    attackerType,
+    eligibleStructureGuards.length,
+    isAttackerOnCooldown,
+    rangedClaimBlocked,
+  ]);
 
   const trueAttackDamage = useMemo(() => {
     if (!battleSimulation || !targetArmyData) return 0;
@@ -792,7 +829,11 @@ export const CombatContainer = ({
             <div className="text-lg sm:text-xl font-bold text-green-400 mb-2" role="status">
               No Defending Troops Present!
             </div>
-            <p className="text-gold/80 mb-4">This realm can be claimed without a battle.</p>
+            <p className="text-gold/80 mb-4">
+              {rangedClaimBlocked
+                ? "Move adjacent to claim this realm. Ranged attacks can clear guards, but cannot claim structures."
+                : "This realm can be claimed without a battle."}
+            </p>
           </div>
         </div>
       )}
@@ -808,7 +849,7 @@ export const CombatContainer = ({
           variant="primary"
           className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-base sm:text-lg transition-colors w-full sm:w-auto min-w-[200px]"
           isLoading={loading}
-          disabled={attackStaminaState.isBlocked || !attackerArmyData || isAttackerOnCooldown}
+          disabled={rangedClaimBlocked || attackStaminaState.isBlocked || !attackerArmyData || isAttackerOnCooldown}
           onClick={onAttack}
           aria-label={`Attack button: ${buttonMessage}`}
           aria-describedby={attackStaminaState.isBlocked ? "stamina-warning" : undefined}

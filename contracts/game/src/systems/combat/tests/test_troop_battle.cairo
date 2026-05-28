@@ -11,7 +11,8 @@ mod tests {
     use crate::constants::RESOURCE_PRECISION;
     use crate::models::position::{Coord, CoordTrait, Direction};
     use crate::models::structure::{
-        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureTroopExplorerStoreImpl,
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureOwnerStoreImpl,
+        StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
     use crate::models::troop::{ExplorerTroops, GuardSlot, TroopLimitTrait, TroopTier, TroopType, Troops};
     use crate::systems::combat::contracts::troop_battle::{
@@ -330,6 +331,49 @@ mod tests {
         world.write_model_test(@explorer_troops);
 
         attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id);
+    }
+
+    #[test]
+    #[should_panic(expected: "structure claim requires adjacency")]
+    fn test_crossbowman_explorer_cannot_claim_empty_structure_at_radius_two() {
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
+            TroopType::Knight, TroopTier::T1, TroopType::Crossbowman, TroopTier::T2,
+        );
+
+        let mut guard_troops = StructureTroopGuardStoreImpl::retrieve(ref world, realm.entity_id);
+        guard_troops.delta.count = 0;
+        StructureTroopGuardStoreImpl::store(ref guard_troops, ref world, realm.entity_id);
+
+        let mut structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm.entity_id);
+        structure_base.troop_guard_count = 0;
+        StructureBaseStoreImpl::store(ref structure_base, ref world, realm.entity_id);
+
+        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
+        explorer_troops.coord = structure_base.coord().neighbor(Direction::East).neighbor(Direction::NorthEast);
+        world.write_model_test(@explorer_troops);
+
+        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id);
+    }
+
+    #[test]
+    fn test_crossbowman_explorer_does_not_claim_after_killing_final_guard_at_radius_two() {
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
+            TroopType::Knight, TroopTier::T1, TroopType::Crossbowman, TroopTier::T2,
+        );
+
+        let mut guard_troops = StructureTroopGuardStoreImpl::retrieve(ref world, realm.entity_id);
+        guard_troops.delta.count = 1 * RESOURCE_PRECISION;
+        StructureTroopGuardStoreImpl::store(ref guard_troops, ref world, realm.entity_id);
+
+        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm.entity_id);
+        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
+        explorer_troops.coord = structure_base.coord().neighbor(Direction::East).neighbor(Direction::NorthEast);
+        world.write_model_test(@explorer_troops);
+
+        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id);
+
+        let structure_owner = StructureOwnerStoreImpl::retrieve(ref world, realm.entity_id);
+        assert!(structure_owner == realm.owner, "Ranged final-guard kill should not claim structure");
     }
 
     // ========================================================================

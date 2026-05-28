@@ -534,9 +534,10 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
 
   "troop_battle_systems::attack_explorer_vs_guard": {
     description:
-      "Attack a structure's guard with your explorer to capture the structure. Costs 30 stamina. " +
+      "Attack a structure's guard with your explorer. Costs 30 stamina. " +
       "Crossbowman attackers can target structures within 2 hexes; Knight and Paladin attackers target adjacent structures. " +
-      "If your explorer wins, the guard is destroyed and you take control of the structure. " +
+      "If your explorer wins, the guard is destroyed; ranged Crossbowman attacks can clear guards, " +
+      "but only adjacent explorer attacks can claim the structure. " +
       "Use simulate_battle first to predict the outcome.",
     paramOverrides: {
       explorer_id: { description: "Your explorer entity ID" },

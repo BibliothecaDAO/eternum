@@ -1,6 +1,5 @@
 use crate::models::config::{TroopDamageConfig, TroopStaminaConfig};
-use crate::models::troop::Troops;
-use crate::utils::map::biomes::Biome;
+use crate::models::troop::{CombatContext, Troops};
 
 #[starknet::interface]
 pub trait ICombatLibrary<T> {
@@ -8,7 +7,7 @@ pub trait ICombatLibrary<T> {
         self: @T,
         attacker: Troops,
         defender: Troops,
-        biome: Biome,
+        context: CombatContext,
         troop_stamina_config: TroopStaminaConfig,
         troop_damage_config: TroopDamageConfig,
         current_tick: u64,
@@ -20,8 +19,7 @@ pub trait ICombatLibrary<T> {
 mod combat_library {
     use dojo::world::{WorldStorage, WorldStorageTrait};
     use crate::models::config::{TroopDamageConfig, TroopStaminaConfig};
-    use crate::models::troop::{Troops, TroopsTrait};
-    use crate::utils::map::biomes::Biome;
+    use crate::models::troop::{CombatContext, Troops, TroopsTrait};
 
     #[abi(embed_v0)]
     pub impl CombatLibraryImpl of super::ICombatLibrary<ContractState> {
@@ -29,7 +27,7 @@ mod combat_library {
             self: @ContractState,
             attacker: Troops,
             defender: Troops,
-            biome: Biome,
+            context: CombatContext,
             troop_stamina_config: TroopStaminaConfig,
             troop_damage_config: TroopDamageConfig,
             current_tick: u64,
@@ -38,9 +36,9 @@ mod combat_library {
             let mut attacker_mut = attacker;
             let mut defender_mut = defender;
             attacker_mut
-                .attack(
+                .attack_with_context(
                     ref defender_mut,
-                    biome,
+                    context,
                     troop_stamina_config,
                     troop_damage_config,
                     current_tick,

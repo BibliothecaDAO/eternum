@@ -138,7 +138,9 @@ export const Combat = () => {
           </p>
           <h5>Biome Combat Effects</h5>
           <p className="leading-relaxed">
-            Biome of the defending army affects combat. Armies can gain +30% damage, -30% damage, or no effect.
+            Biome of the defending army affects most combat. Armies can gain +30% damage, -30% damage, or no effect.
+            Crossbowman attacks from two hexes away use ranged damage instead of the attacker's tile biome bonus; the
+            defender still uses the target tile's biome.
           </p>
           <ul className="list-disc pl-6">
             <li>
@@ -154,6 +156,17 @@ export const Combat = () => {
               <strong>Scorched Biome:</strong> +30% damage to ALL troop types.
             </li>
           </ul>
+          <h5>Ranged Crossbowman Attacks</h5>
+          <p className="leading-relaxed">
+            Crossbowmen can attack from two hexes away. Ranged attacks deal reduced damage in field battles and much
+            lower damage against structure guards, but defenders still retaliate at full strength. A ranged attack can
+            clear guards, but structures can only be claimed from an adjacent hex.
+          </p>
+          <h5>Knight Structure Combat</h5>
+          <p className="leading-relaxed">
+            Knights are stronger when assaulting structure guards from an adjacent hex, and Knight guards take reduced
+            incoming damage while defending a structure.
+          </p>
         </div>
       </section>
 

@@ -23,8 +23,9 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-28",
-    title: "Ranged Archer Attacks",
-    description: "Crossbowman armies and guards can now attack enemies up to two hexes away on the world map.",
+    title: "Combat v3 Ranged Attacks",
+    description:
+      "Crossbowmen can attack from two hexes with reduced ranged damage, Knights are stronger around structure guards, and structures must still be claimed from an adjacent hex.",
     type: "balance",
     gameSlug: "world",
   },

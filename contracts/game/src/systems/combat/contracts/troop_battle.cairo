@@ -31,7 +31,7 @@ pub mod troop_battle_systems {
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
-    use crate::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl};
+    use crate::models::troop::{CombatContext, ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl};
     use crate::models::weight::Weight;
     use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
     use crate::system_libraries::combat_library::{ICombatLibraryDispatcherTrait, combat_library};
@@ -70,6 +70,32 @@ pub mod troop_battle_systems {
         let tile_distance = attacker_coord.tile_distance(defender_coord);
         let max_tile_distance: u128 = (attack_range * attacker_coord.step_distance()).into();
         tile_distance > 0 && tile_distance <= max_tile_distance
+    }
+
+    fn combat_distance(attacker_coord: Coord, defender_coord: Coord) -> u32 {
+        if attacker_coord.alt != defender_coord.alt {
+            return 1;
+        }
+
+        let step_distance: u128 = attacker_coord.step_distance().into();
+        let tile_distance = attacker_coord.tile_distance(defender_coord);
+        (tile_distance / step_distance).try_into().unwrap()
+    }
+
+    fn combat_context(
+        attacker_coord: Coord,
+        defender_coord: Coord,
+        defender_biome: Biome,
+        attacker_is_structure_guard: bool,
+        defender_is_structure_guard: bool,
+    ) -> CombatContext {
+        CombatContext {
+            attacker_biome: defender_biome,
+            defender_biome,
+            attack_distance: combat_distance(attacker_coord, defender_coord),
+            attacker_is_structure_guard,
+            defender_is_structure_guard,
+        }
     }
 
     /// Check if two explorers are in valid battle position.
@@ -170,7 +196,7 @@ pub mod troop_battle_systems {
                 .troops_attack(
                     explorer_aggressor_troops,
                     explorer_defender_troops,
-                    defender_biome,
+                    combat_context(explorer_aggressor.coord, explorer_defender.coord, defender_biome, false, false),
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
@@ -438,6 +464,10 @@ pub mod troop_battle_systems {
 
             // claim structure if there are no guard troops. it is tried again after the attack
             if guard_slot.is_none() {
+                assert!(
+                    explorer_aggressor.coord.is_adjacent(guarded_structure.coord()),
+                    "structure claim requires adjacency",
+                );
                 explorer_aggressor
                     .troops
                     .stamina
@@ -483,7 +513,7 @@ pub mod troop_battle_systems {
                 .troops_attack(
                     explorer_aggressor_troops,
                     guard_troops,
-                    defender_biome,
+                    combat_context(explorer_aggressor.coord, guarded_structure.coord(), defender_biome, false, true),
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
@@ -550,7 +580,7 @@ pub mod troop_battle_systems {
                 if explorer_aggressor.troops.count.is_non_zero() {
                     let guard_slot: Option<GuardSlot> = guard_defender
                         .next_attack_slot(guarded_structure.troop_max_guard_count.into());
-                    if guard_slot.is_none() {
+                    if guard_slot.is_none() && explorer_aggressor.coord.is_adjacent(guarded_structure.coord()) {
                         // claim structure
                         structure_claimed_after_battle = true;
                         iStructureImpl::battle_claim(
@@ -744,7 +774,9 @@ pub mod troop_battle_systems {
                 .troops_attack(
                     structure_guard_aggressor_troops,
                     explorer_defender_troops,
-                    defender_biome,
+                    combat_context(
+                        structure_aggressor_base.coord(), explorer_defender.coord, defender_biome, true, false,
+                    ),
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),

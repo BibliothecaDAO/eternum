@@ -3,6 +3,10 @@ import { TroopType } from "../types/common";
 export const MIN_TROOPS_BATTLE = 100_000;
 export const DEFAULT_TROOP_ATTACK_RANGE = 1;
 export const RANGED_TROOP_ATTACK_RANGE = 2;
+export const CROSSBOWMAN_RANGED_FIELD_DAMAGE_MULTIPLIER = 0.8;
+export const CROSSBOWMAN_RANGED_STRUCTURE_DAMAGE_MULTIPLIER = 0.3;
+export const KNIGHT_STRUCTURE_ASSAULT_DAMAGE_MULTIPLIER = 1.2;
+export const KNIGHT_STRUCTURE_GUARD_INCOMING_DAMAGE_MULTIPLIER = 0.85;
 
 type TroopCategory = TroopType | number | string | null | undefined;
 
