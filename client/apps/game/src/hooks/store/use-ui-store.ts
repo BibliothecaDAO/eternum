@@ -433,7 +433,3 @@ export const useUIStore = create(
     },
   })),
 );
-
-if (import.meta.env.DEV && typeof window !== "undefined") {
-  (window as unknown as { __UI_STORE__?: typeof useUIStore }).__UI_STORE__ = useUIStore;
-}
