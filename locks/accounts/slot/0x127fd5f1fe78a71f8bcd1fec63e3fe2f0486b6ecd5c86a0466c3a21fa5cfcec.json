@@ -3,17 +3,16 @@
   "chain": "slot",
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
-    "environment": "slot.eternum",
-    "gameName": "etrn-dusk-363",
-    "launchRequestId": "26482318574-1",
+    "environment": "slot.blitz",
+    "gameName": "bltz-flux-195",
+    "launchRequestId": "26565307097-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26482318574,
+    "workflowRunId": 26565307097,
     "workflowRunAttempt": 1,
-    "stepId": "create-banks",
-    "leaseId": "fa8e5917-5078-4758-8031-bd7d8b0a4a84"
+    "stepId": "create-world",
+    "leaseId": "bf00b6bc-d87f-40b4-9757-6afbe1fdaaaa"
   },
-  "acquiredAt": "2026-05-27T00:06:47.226Z",
-  "heartbeatAt": "2026-05-27T00:07:00.019Z",
-  "expiresAt": "2026-05-27T00:07:00.019Z",
-  "releasedAt": "2026-05-27T00:07:00.019Z"
+  "acquiredAt": "2026-05-28T09:04:16.786Z",
+  "heartbeatAt": "2026-05-28T09:04:16.786Z",
+  "expiresAt": "2026-05-28T09:14:16.786Z"
 }
