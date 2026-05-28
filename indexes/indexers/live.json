@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-28T07:32:26.684Z",
+  "updatedAt": "2026-05-28T14:12:41.978Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2845,6 +2845,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-27-05-26-1900 not found"
       },
       "updatedAt": "2026-05-28T07:32:26.684Z"
+    },
+    "bltz-flux-195": {
+      "gameName": "bltz-flux-195",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-flux-195/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-28T14:12:41.978Z"
+      },
+      "updatedAt": "2026-05-28T14:12:41.978Z"
     }
   }
 }
