@@ -10,30 +10,30 @@
   "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "grant-lootchest-roles",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26584875276-1.json",
-  "latestLaunchRequestId": "26584875276-1",
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26586003534-1.json",
+  "latestLaunchRequestId": "26586003534-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-28T15:55:39.294Z",
+  "updatedAt": "2026-05-28T15:56:52.711Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 26584875276,
+    "workflowRunId": 26586003534,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/26584875276",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/26586003534",
     "ref": "next",
     "sha": "3103a8b1533890e82d614e1e895d296914bc6990"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-05-28T16:10:39.294Z",
+    "nextRetryAt": "2026-05-28T16:11:52.711Z",
     "lastRetryAt": "2026-05-28T15:55:39.294Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-05-28T15:52:47.611Z",
-    "lastEvaluatedAt": "2026-05-28T15:37:47.611Z"
+    "nextEvaluationAt": "2026-05-28T16:11:52.711Z",
+    "lastEvaluatedAt": "2026-05-28T15:56:52.711Z"
   },
   "steps": [
     {
@@ -76,24 +76,21 @@
       "title": "Setting up loot chests",
       "status": "pending",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-05-28T15:37:06.026Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
       "status": "pending",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-05-28T15:37:29.194Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
       "status": "pending",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Waiting to run",
-      "startedAt": "2026-05-28T15:37:40.949Z"
+      "latestEvent": "Waiting to run"
     }
   ],
   "summary": {
