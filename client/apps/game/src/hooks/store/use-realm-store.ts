@@ -121,6 +121,18 @@ export const createRealmStoreSlice = (
         isSpectating: shouldSpectate,
       };
 
+      if (import.meta.env.DEV && state.isSpectating !== shouldSpectate) {
+        console.log("[isSpectating]", {
+          from: state.isSpectating,
+          to: shouldSpectate,
+          structureEntityId: normalizedId,
+          optionsSpectator: options?.spectator,
+          ownsStructure,
+          playerStructuresCount: state.playerStructures.length,
+          stack: new Error().stack?.split("\n").slice(1, 6).join("\n"),
+        });
+      }
+
       if (options?.worldMapPosition) {
         updates.worldMapReturnPosition = normalizeWorldMapRoutePosition(options.worldMapPosition);
       }
@@ -190,6 +202,12 @@ export const createRealmStoreSlice = (
         updates.lastControlledStructureEntityId = nextControlled;
         updates.structureEntityId = nextControlled;
         updates.isSpectating = false;
+        if (import.meta.env.DEV) {
+          console.log("[isSpectating] forced false via setPlayerStructures recovery", {
+            playerStructuresCount: playerStructures.length,
+            nextControlled,
+          });
+        }
         return updates;
       }
 
