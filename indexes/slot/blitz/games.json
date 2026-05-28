@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-28T09:07:49.409Z",
+  "updatedAt": "2026-05-28T09:08:08.797Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1367,17 +1367,20 @@
       "gameName": "bltz-flux-195",
       "path": "runs/slot/blitz/bltz-flux-195.json",
       "inputPath": "inputs/slot/blitz/bltz-flux-195/26565307097-1.json",
-      "status": "running",
-      "updatedAt": "2026-05-28T09:07:49.409Z",
+      "status": "complete",
+      "updatedAt": "2026-05-28T09:08:08.797Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexer",
-      "activeLeaseExpiresAt": "2026-05-28T09:52:49.409Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "startTime": 1779959700,
       "durationSeconds": 432000,
-      "artifacts": {}
+      "artifacts": {
+        "indexerCreated": true,
+        "indexerTier": "basic",
+        "lastIndexerDescribeAt": "2026-05-28T09:08:07.463Z"
+      }
     }
   }
 }
