@@ -165,10 +165,11 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
         />
       )}
 
-      {/* Connection health indicator - only visible when unhealthy */}
-      <div className="self-center">
-        <NetworkStatusPill onRetry={triggerConnectionForceReconnect} />
-      </div>
+      {/* Connection health indicator - only visible when unhealthy. The
+          component returns null when the network is healthy; render it
+          directly without a wrapper so it doesn't claim a gap-2 slot when
+          empty. */}
+      <NetworkStatusPill onRetry={triggerConnectionForceReconnect} />
 
       {/* Transactions — always visible, sits immediately to the left of Settings.
           Status dot indicator overlays when there's an active signal. */}
