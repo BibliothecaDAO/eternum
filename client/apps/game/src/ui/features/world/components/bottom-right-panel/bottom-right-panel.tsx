@@ -28,11 +28,10 @@ import {
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
   Position as PositionInterface,
-  tileOptToTile,
+  getTileAt,
   DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { useComponentValue } from "@dojoengine/react";
 import {
   BUILDINGS_CENTER,
   BuildingType,
@@ -164,13 +163,14 @@ const MapTilePanel = () => {
   } = useDojo();
   const { syncEntity, isSyncing } = useEntityResync();
 
-  const tileEntity = useMemo(() => {
-    if (!selectedHex) return undefined;
-    const contract = new PositionInterface({ x: selectedHex.col, y: selectedHex.row }).getContract();
-    return getEntityIdFromKeys([BigInt(DEFAULT_COORD_ALT ? 1 : 0), BigInt(contract.x), BigInt(contract.y)]);
-  }, [selectedHex]);
-  const tileOpt = useComponentValue(setup.components.TileOpt, tileEntity);
-  const tile = useMemo(() => (tileOpt ? tileOptToTile(tileOpt) : null), [tileOpt]);
+  const tile = useMemo(() => {
+    if (!selectedHex) return null;
+    const selectedHexContract = new PositionInterface({
+      x: selectedHex.col,
+      y: selectedHex.row,
+    }).getContract();
+    return getTileAt(setup.components, DEFAULT_COORD_ALT, selectedHexContract.x, selectedHexContract.y);
+  }, [selectedHex, setup.components]);
 
   const hasOccupier = useMemo(() => {
     if (!tile) return false;
