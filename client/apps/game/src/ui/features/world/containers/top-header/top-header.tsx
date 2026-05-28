@@ -12,6 +12,7 @@ import { GameEndTimer } from "./game-end-timer";
 import { GameStartCountdown } from "./game-start-countdown";
 import { SuggestionsPill } from "./pills/suggestions-pill";
 import { TickProgress } from "./tick-progress";
+import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
 import {
   MIN_REFRESH_INTERVAL_MS,
   useLandingLeaderboardStore,
@@ -23,17 +24,6 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-// Shared visual base for each top-zone pill. h-9 (36px) fixed height + same
-// padding + same surface so every pill in the bar reads as one strip instead
-// of a row of mismatched chips.
-const TOP_PILL =
-  `pointer-events-auto inline-flex h-9 items-center gap-2 rounded-full px-3.5 ${OVERLAY_SURFACE_BASE}`;
-
-// Unified body text on every pill — same size, weight, tracking. Numbers use
-// tabular-nums so digit-width stays constant across timers/percentages/rank.
-export const TOP_PILL_TEXT =
-  "text-[11px] font-semibold uppercase tracking-[0.16em] text-gold tabular-nums";
-
 export const TopHeader = memo(() => {
   const {
     setup,

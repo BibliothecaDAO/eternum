@@ -9,17 +9,13 @@ import { NetworkStatusPill } from "@/ui/features/world/components/network-status
 import { triggerConnectionForceReconnect } from "@/ui/features/world/components/network-status-retry";
 import { latestFeatures, leaderboard, rewards, settings, transactions } from "@/ui/features/world";
 import { Controller } from "@/ui/modules/controller/controller";
-import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { TOP_PILL, TOP_PILL_TEXT } from "@/ui/features/world/containers/top-header/top-pill";
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
 import Trophy from "lucide-react/dist/esm/icons/trophy";
 
 import { useCallback, useMemo } from "react";
-
-// Matches the unified TOP_PILL height (h-9) in top-header so the rank reads
-// as the same strip as every other pill.
-const PILL_SURFACE = `pointer-events-auto inline-flex h-9 items-center rounded-full ${OVERLAY_SURFACE_BASE}`;
 
 const formatPoints = (points: number | null | undefined): string => {
   if (points === null || points === undefined) return "0";
@@ -109,8 +105,9 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
       type="button"
       onClick={handleOpenLeaderboard}
       className={cn(
-        PILL_SURFACE,
-        "gap-2 px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] tabular-nums text-gold transition hover:bg-gold/15",
+        TOP_PILL,
+        TOP_PILL_TEXT,
+        "transition hover:bg-gold/15",
         isPopupOpen(leaderboard) && "border-gold/60 bg-gold/15",
       )}
       aria-label="Open leaderboard"
@@ -129,7 +126,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
       image={BuildingThumbs.guild}
       label={leaderboard}
       active={isPopupOpen(leaderboard)}
-      size="md"
+      size="topbar"
       onClick={handleOpenLeaderboard}
     />
   );
@@ -144,7 +141,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
           image={BuildingThumbs.rewards}
           label={rewards}
           active={isPopupOpen(rewards)}
-          size="md"
+          size="topbar"
           className="border-none"
           onClick={() => togglePopup(rewards)}
         />
@@ -159,7 +156,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
           active={isPopupOpen(latestFeatures)}
           image={BuildingThumbs.latestUpdates}
           label={"Latest Features"}
-          size="md"
+          size="topbar"
           onClick={() => togglePopup(latestFeatures)}
           primaryNotification={{
             value: unseenFeaturesCount,
@@ -184,7 +181,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
           active={isPopupOpen(transactions)}
           image="/image-icons/network.png"
           label={"Transactions"}
-          size="md"
+          size="topbar"
           onClick={() => togglePopup(transactions)}
           primaryNotification={
             txStatus.pendingCount > 0
@@ -215,7 +212,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
         active={isPopupOpen(settings)}
         image={BuildingThumbs.settings}
         label={"Settings"}
-        size="md"
+        size="topbar"
         onClick={() => togglePopup(settings)}
       />
 

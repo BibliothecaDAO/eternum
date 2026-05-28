@@ -1,6 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
-import { OVERLAY_SURFACE_ACTIVE, OVERLAY_SURFACE_BASE, OVERLAY_SURFACE_HOVER } from "@/ui/design-system/atoms/overlay-surface";
+import { OVERLAY_SURFACE_ACTIVE, OVERLAY_SURFACE_HOVER } from "@/ui/design-system/atoms/overlay-surface";
+import { TOP_PILL, TOP_PILL_TEXT } from "@/ui/features/world/containers/top-header/top-pill";
 import { SuggestionChip } from "@/ui/features/world/containers/left-facets/suggestion-chip";
 import { useEmpireSuggestions } from "@/ui/features/world/containers/left-facets/use-empire-suggestions";
 import { useSuggestionActions } from "@/ui/features/world/containers/left-facets/use-suggestion-actions";
@@ -10,15 +11,6 @@ import { createPortal } from "react-dom";
 
 const DEFAULT_VISIBLE_SUGGESTIONS = 6;
 const POPOVER_WIDTH = 360;
-
-// Mirrors the TOP_PILL token in top-header.tsx so this pill matches the other
-// top-zone pills exactly (h-9, identical padding, identical surface). Using
-// the token directly avoids the Pill molecule's smaller py-1 size, which
-// produced the visible mismatch in the top bar, and bakes in
-// pointer-events-auto so clicks register inside the layout container that
-// otherwise passes pointer-events through.
-const TOP_PILL_BASE = `pointer-events-auto inline-flex h-9 items-center gap-2 rounded-full px-3.5 ${OVERLAY_SURFACE_BASE} ${OVERLAY_SURFACE_HOVER}`;
-const TOP_PILL_TEXT = "text-[11px] font-semibold uppercase tracking-[0.16em] text-gold tabular-nums";
 
 /**
  * SuggestionsPill — top-header surface that exposes the empire's Suggested
@@ -97,7 +89,8 @@ export const SuggestionsPill = memo(() => {
         title={`Suggested actions (${count})`}
         aria-label="Suggested actions"
         className={cn(
-          TOP_PILL_BASE,
+          TOP_PILL,
+          OVERLAY_SURFACE_HOVER,
           TOP_PILL_TEXT,
           isOpen && OVERLAY_SURFACE_ACTIVE,
           hasPrimary && !isOpen && "ring-1 ring-gold/40 shadow-[0_0_12px_rgba(223,170,84,0.25)]",
