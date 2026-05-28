@@ -87,7 +87,7 @@ export const NetworkStatusPill = ({ onRetry }: NetworkStatusPillProps) => {
       disabled={reconnecting}
       aria-label={`Network ${label}. Click to retry.`}
       className={cn(
-        "relative inline-flex h-9 items-center gap-2 rounded-full border px-3.5 text-[11px] font-semibold uppercase tracking-[0.16em] tabular-nums",
+        "relative inline-flex h-9 md:h-10 items-center gap-2 rounded-full border px-3.5 md:px-4 text-[11px] md:text-xs font-semibold uppercase tracking-[0.16em] tabular-nums",
         "transition-colors focus:outline-none focus-visible:ring-2",
         tone.container,
         tone.text,

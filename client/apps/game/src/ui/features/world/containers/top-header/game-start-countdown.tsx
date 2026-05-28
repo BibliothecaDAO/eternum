@@ -70,12 +70,12 @@ export const GameStartCountdown = memo(() => {
   }
 
   return (
-    <div className="pointer-events-auto inline-flex h-9 items-center gap-2 rounded-full border border-cyan-300/35 bg-cyan-400/10 px-3.5 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.18)] backdrop-blur-sm">
+    <div className="pointer-events-auto inline-flex h-9 md:h-10 items-center gap-2 rounded-full border border-cyan-300/35 bg-cyan-400/10 px-3.5 md:px-4 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.18)] backdrop-blur-sm">
       <Clock className="h-3.5 w-3.5" />
-      <span className="whitespace-nowrap text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100/75 tabular-nums">
+      <span className="whitespace-nowrap text-[11px] md:text-xs font-semibold uppercase tracking-[0.16em] text-cyan-100/75 tabular-nums">
         Game starts in
       </span>
-      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-50 tabular-nums">
+      <span className="text-[11px] md:text-xs font-semibold uppercase tracking-[0.16em] text-cyan-50 tabular-nums">
         {countdownLabel}
       </span>
     </div>
