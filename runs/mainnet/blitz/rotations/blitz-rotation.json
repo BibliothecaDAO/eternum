@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "26582597437-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-28T15:12:20.356Z",
+  "updatedAt": "2026-05-28T15:15:39.253Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,8 +27,8 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-05-28T15:12:28.835Z",
-    "lastRetryAt": "2026-05-28T14:55:40.996Z"
+    "nextRetryAt": "2026-05-28T15:30:39.253Z",
+    "lastRetryAt": "2026-05-28T15:15:39.253Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
