@@ -18,14 +18,6 @@ interface CenteredModalShellProps {
    */
   size?: "default" | "wide" | "xl";
   /**
-   * Backdrop intensity. "soft" (default) is a thin black wash that keeps the
-   * map texture visible — matches the right-click-deploy feel where the modal
-   * never feels disconnected from the world. "full" returns to the heavier
-   * focus-blur for surfaces that truly need isolation. "none" omits the dim
-   * entirely (chest reveal style).
-   */
-  dim?: "soft" | "full" | "none";
-  /**
    * Optional override of the outer modal wrapper class. Body content can opt
    * out of the default vertical scroll if it manages its own layout (e.g.
    * production grid).
@@ -50,7 +42,6 @@ export const CenteredModalShell = ({
   icon: Icon,
   onClose,
   size = "default",
-  dim = "soft",
   bodyClassName,
   children,
 }: CenteredModalShellProps) => {
@@ -69,11 +60,9 @@ export const CenteredModalShell = ({
         ? "w-[920px] max-w-[92vw] h-[700px] max-h-[calc(100vh-64px)]"
         : "w-[840px] max-w-[92vw] h-[680px] max-h-[calc(100vh-64px)]";
 
-  const dimClass = dim === "full" ? "bg-black/60 backdrop-blur-sm" : dim === "soft" ? "bg-black/40" : "";
-
   return (
     <div
-      className={cn("fixed inset-0 z-[100] flex items-center justify-center pointer-events-auto", dimClass)}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 pointer-events-auto"
       onClick={onClose}
     >
       <div
