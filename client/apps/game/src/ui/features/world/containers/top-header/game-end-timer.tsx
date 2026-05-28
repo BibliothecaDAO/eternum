@@ -217,7 +217,7 @@ export const GameEndTimer = memo(() => {
   return (
     <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className="pointer-events-auto">
       <div
-        className={`relative flex h-9 md:h-10 items-center gap-2 rounded-full px-3.5 md:px-4 transition-all duration-300 ${
+        className={`relative flex h-9 items-center gap-2 rounded-full px-3.5 transition-all duration-300 ${
           isDefaultTone ? OVERLAY_SURFACE_BASE : `border backdrop-blur-sm ${containerToneClass}`
         }`}
         style={dynamicStyle}
@@ -254,7 +254,7 @@ export const GameEndTimer = memo(() => {
           <Clock className="h-3.5 w-3.5" />
         </div>
         <span
-          className={`text-[11px] md:text-xs font-semibold uppercase tracking-[0.16em] tabular-nums ${
+          className={`text-[11px] font-semibold uppercase tracking-[0.16em] tabular-nums ${
             isDefaultTone ? "text-gold" : ""
           }`}
         >

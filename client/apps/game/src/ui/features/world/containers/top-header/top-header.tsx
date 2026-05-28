@@ -5,6 +5,7 @@ import { getBlockTimestamp, Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
@@ -145,7 +146,7 @@ export const TopHeader = memo(() => {
           cluster carries ancillary status icons (network / tx / features). */}
       <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-center gap-2 px-3 py-2 pointer-events-none">
         {isSpectating && (
-          <div className={cn(TOP_PILL, TOP_PILL_TEXT)}>
+          <div className={cn(TOP_PILL, HUD_LABEL_BRIGHT)}>
             <EyeIcon className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
             <span>Spectating</span>
           </div>
@@ -236,7 +237,7 @@ export const TopHeader = memo(() => {
           <button
             type="button"
             className={cn(
-              "pointer-events-auto inline-flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-full transition-all duration-300",
+              "pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300",
               OVERLAY_SURFACE_BASE,
               followArmyCombats
                 ? "border-gold ring-1 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.35)] animate-pulse"

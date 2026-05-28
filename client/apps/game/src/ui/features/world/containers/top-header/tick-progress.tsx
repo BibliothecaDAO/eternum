@@ -153,7 +153,7 @@ export const TickProgress = memo(() => {
           <ResourceIcon withTooltip={false} resource="Timeglass" size="xs" className="self-center" />
         </div>
       </div>
-      <span className="text-[11px] md:text-xs font-semibold uppercase tracking-[0.16em] text-gold tabular-nums">
+      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold tabular-nums">
         {phaseData.phaseProgress.toFixed(0)}%
       </span>
     </div>
