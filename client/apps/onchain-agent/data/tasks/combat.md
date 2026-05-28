@@ -39,6 +39,7 @@ autoload: false
 | `raid_explorer_vs_guard`      | Steal resources without destroying guard        | 30                       |
 
 - Combat resolution is instant (onchain)
+- Crossbowman attacks can target enemies within 2 hexes; Knight and Paladin attacks remain adjacent-only
 - Higher total strength wins — use `simulate_battle` or `simulate_raid` to predict outcomes
 - `attack_explorer_vs_explorer`: winner can steal specified resources from the defeated explorer
 - `attack_explorer_vs_guard`: victory destroys the guard and captures the structure

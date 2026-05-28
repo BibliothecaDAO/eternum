@@ -230,37 +230,32 @@ describe("transaction payload mapping", () => {
     await tx.attackExplorer(signer, {
       aggressorId: 1,
       defenderId: 2,
-      defenderDirection: 3,
       stealResources: [{ resourceId: 4, amount: 5 }],
     });
     expect(provider.attack_explorer_vs_explorer).toHaveBeenCalledWith({
       signer,
       aggressor_id: 1,
       defender_id: 2,
-      defender_direction: 3,
       steal_resources: [{ resourceId: 4, amount: 5 }],
     });
 
-    await tx.attackGuard(signer, { explorerId: 6, structureId: 7, structureDirection: 8 });
+    await tx.attackGuard(signer, { explorerId: 6, structureId: 7 });
     expect(provider.attack_explorer_vs_guard).toHaveBeenCalledWith({
       signer,
       explorer_id: 6,
       structure_id: 7,
-      structure_direction: 8,
     });
 
     await tx.guardAttackExplorer(signer, {
       structureId: 9,
       structureGuardSlot: 1,
       explorerId: 10,
-      explorerDirection: 2,
     });
     expect(provider.attack_guard_vs_explorer).toHaveBeenCalledWith({
       signer,
       structure_id: 9,
       structure_guard_slot: 1,
       explorer_id: 10,
-      explorer_direction: 2,
     });
 
     await tx.raid(signer, {

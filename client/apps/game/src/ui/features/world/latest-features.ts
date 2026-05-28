@@ -22,6 +22,13 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-28",
+    title: "Ranged Archer Attacks",
+    description: "Crossbowman armies and guards can now attack enemies up to two hexes away on the world map.",
+    type: "balance",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-26",
     title: "Faster Dashboard Loading",
     description:

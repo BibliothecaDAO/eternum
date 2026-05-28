@@ -519,12 +519,12 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   "troop_battle_systems::attack_explorer_vs_explorer": {
     description:
       "Attack another player's explorer with your explorer. Costs 50 stamina (attacker) and 40 stamina (defender). " +
+      "Crossbowman attackers can target enemies within 2 hexes; Knight and Paladin attackers target adjacent enemies. " +
       "Outcome is strength-based — stronger army wins. On victory you can steal resources from the defeated explorer. " +
       "Use simulate_battle first to predict the outcome.",
     paramOverrides: {
       aggressor_id: { description: "Your explorer entity ID" },
       defender_id: { description: "Target explorer entity ID" },
-      defender_direction: { description: `Hex direction from attacker to defender (${DIR})` },
       steal_resources: {
         description: `Array of {resourceId, amount} to steal on victory. ${RESOURCE_IDS}`,
         transform: stealResourceTuples,
@@ -535,25 +535,25 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   "troop_battle_systems::attack_explorer_vs_guard": {
     description:
       "Attack a structure's guard with your explorer to capture the structure. Costs 30 stamina. " +
+      "Crossbowman attackers can target structures within 2 hexes; Knight and Paladin attackers target adjacent structures. " +
       "If your explorer wins, the guard is destroyed and you take control of the structure. " +
       "Use simulate_battle first to predict the outcome.",
     paramOverrides: {
       explorer_id: { description: "Your explorer entity ID" },
       structure_id: { description: "Target structure entity ID" },
-      structure_direction: { description: `Hex direction from explorer to structure (${DIR})` },
     },
   },
 
   "troop_battle_systems::attack_guard_vs_explorer": {
     description:
       "Use your structure's guard to attack a nearby explorer. Costs 30 stamina. " +
+      "Crossbowman guards can target explorers within 2 hexes; Knight and Paladin guards target adjacent explorers. " +
       "Useful for defending your structure against approaching enemies. " +
       "Use simulate_battle first to predict the outcome.",
     paramOverrides: {
       structure_id: { description: "Your structure entity ID" },
       structure_guard_slot: { description: "Guard slot index (0-3)" },
       explorer_id: { description: "Target explorer entity ID" },
-      explorer_direction: { description: `Hex direction from structure to explorer (${DIR})` },
     },
   },
 

@@ -12,7 +12,6 @@ import {
   getArmy,
   getBlockTimestamp,
   getEntityIdFromKeys,
-  FELT_CENTER,
   getGuardsByStructure,
   getRemainingCapacityInKg,
   StaminaManager,
@@ -23,7 +22,8 @@ import { useDojo } from "@bibliothecadao/react";
 import {
   CapacityConfig,
   ContractAddress,
-  getDirectionBetweenAdjacentHexes,
+  getHexDistance,
+  getTroopAttackRange,
   ID,
   RESOURCE_PRECISION,
   resources,
@@ -104,34 +104,44 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
     return structure ? getGuardsByStructure(structure) : [];
   }, [attackerType, attackerEntityId, Structure]);
 
+  const targetDistance = useMemo(() => {
+    if (!selectedHex) return Infinity;
+    return getHexDistance(selectedHex, { col: targetHex.x, row: targetHex.y });
+  }, [selectedHex, targetHex.x, targetHex.y]);
+
+  const eligibleStructureGuards = useMemo(() => {
+    return structureGuards.filter((guard) => getTroopAttackRange(guard.troops.category) >= targetDistance);
+  }, [structureGuards, targetDistance]);
+
+  const selectedGuard = useMemo(() => {
+    if (attackerType !== AttackerType.Structure || selectedGuardSlot === null) return null;
+    return eligibleStructureGuards.find((guard) => guard.slot === selectedGuardSlot) ?? null;
+  }, [attackerType, eligibleStructureGuards, selectedGuardSlot]);
+
+  useEffect(() => {
+    if (attackerType !== AttackerType.Structure) return;
+    if (selectedGuard) return;
+
+    setSelectedGuardSlot(eligibleStructureGuards[0]?.slot ?? null);
+  }, [attackerType, eligibleStructureGuards, selectedGuard]);
+
   const attackerStamina = useMemo(() => {
     const { currentArmiesTick } = getBlockTimestamp();
 
     if (attackerType === AttackerType.Structure) {
-      if (selectedGuardSlot === null && structureGuards.length > 0) {
-        setSelectedGuardSlot(structureGuards[0].slot);
-        const guard = structureGuards[0];
-        if (!guard.troops.stamina) return 0n;
-        return StaminaManager.getStamina(guard.troops, currentArmiesTick).amount;
-      } else if (selectedGuardSlot !== null) {
-        const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
-        if (selectedGuard && selectedGuard.troops.stamina) {
-          return StaminaManager.getStamina(selectedGuard.troops, currentArmiesTick).amount;
-        }
+      if (selectedGuard?.troops.stamina) {
+        return StaminaManager.getStamina(selectedGuard.troops, currentArmiesTick).amount;
       }
       return 0n;
     }
 
     const army = getArmy(attackerEntityId, ContractAddress(account.address), components);
     return army ? StaminaManager.getStamina(army.troops, currentArmiesTick).amount : 0n;
-  }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards, account.address]);
+  }, [attackerEntityId, attackerType, components, selectedGuard, account.address]);
 
   // Get the current army states for display
   const attackerArmyData = useMemo(() => {
     if (attackerType === AttackerType.Structure) {
-      if (selectedGuardSlot === null) return null;
-
-      const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
       if (!selectedGuard) return null;
 
       return {
@@ -156,7 +166,7 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
         },
       };
     }
-  }, [attackerEntityId, attackerType, selectedGuardSlot, structureGuards]);
+  }, [attackerEntityId, attackerType, ExplorerTroops, selectedGuard]);
 
   const targetArmyData = useMemo(() => {
     if (!target?.info[0]) return null;
@@ -412,43 +422,15 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
     console.log("selectedHex:", selectedHex);
     console.log("targetHex:", targetHex);
 
-    const feltCenter = FELT_CENTER();
-    // Convert selectedHex to match coordinate system of targetHex
-    const normalizedSelectedHex = {
-      col: selectedHex.col + feltCenter,
-      row: selectedHex.row + feltCenter,
-    };
-    const normalizedTargetHex = {
-      col: targetHex.x,
-      row: targetHex.y,
-    };
-
-    console.log("normalizedSelectedHex:", normalizedSelectedHex);
-    console.log("normalizedTargetHex:", normalizedTargetHex);
-
-    const direction = getDirectionBetweenAdjacentHexes(normalizedSelectedHex, normalizedTargetHex);
-    console.log("Explorer vs Guard direction:", direction);
-    if (direction === null) {
-      console.error("Explorer vs Guard: Invalid direction - hexes are not adjacent");
-      console.error(
-        "Distance between hexes:",
-        Math.abs(normalizedSelectedHex.col - normalizedTargetHex.col) +
-          Math.abs(normalizedSelectedHex.row - normalizedTargetHex.row),
-      );
-      return;
-    }
-
     console.log("Explorer vs Guard attack params:", {
       explorer_id: attackerEntityId,
       structure_id: target?.id || 0,
-      structure_direction: direction,
     });
 
     await attack_explorer_vs_guard({
       signer: account,
       explorer_id: attackerEntityId,
       structure_id: target?.id || 0,
-      structure_direction: direction,
     });
   };
 
@@ -458,28 +440,9 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
       return;
     }
 
-    const feltCenter = FELT_CENTER();
-    // Convert selectedHex to match coordinate system of targetHex
-    const normalizedSelectedHex = {
-      col: selectedHex.col + feltCenter,
-      row: selectedHex.row + feltCenter,
-    };
-    const normalizedTargetHex = {
-      col: targetHex.x,
-      row: targetHex.y,
-    };
-
-    const direction = getDirectionBetweenAdjacentHexes(normalizedSelectedHex, normalizedTargetHex);
-    console.log("Explorer vs Explorer direction:", direction);
-    if (direction === null) {
-      console.error("Explorer vs Explorer: Invalid direction");
-      return;
-    }
-
     console.log("Explorer vs Explorer attack params:", {
       aggressor_id: attackerEntityId,
       defender_id: target?.id || 0,
-      defender_direction: direction,
       steal_resources: targetResources,
     });
 
@@ -487,48 +450,27 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
       signer: account,
       aggressor_id: attackerEntityId,
       defender_id: target?.id || 0,
-      defender_direction: direction,
       steal_resources: targetResources,
     });
   };
 
   const onGuardVsExplorerAttack = async () => {
-    if (!selectedHex || selectedGuardSlot === null) {
+    if (!selectedHex || !selectedGuard) {
       console.error("Guard vs Explorer: Missing selectedHex or selectedGuardSlot");
-      return;
-    }
-
-    const feltCenter = FELT_CENTER();
-    // Convert selectedHex to match coordinate system of targetHex
-    const normalizedSelectedHex = {
-      col: selectedHex.col + feltCenter,
-      row: selectedHex.row + feltCenter,
-    };
-    const normalizedTargetHex = {
-      col: targetHex.x,
-      row: targetHex.y,
-    };
-
-    const direction = getDirectionBetweenAdjacentHexes(normalizedSelectedHex, normalizedTargetHex);
-    console.log("Guard vs Explorer direction:", direction);
-    if (direction === null) {
-      console.error("Guard vs Explorer: Invalid direction");
       return;
     }
 
     console.log("Guard vs Explorer attack params:", {
       structure_id: attackerEntityId,
-      structure_guard_slot: selectedGuardSlot,
+      structure_guard_slot: selectedGuard.slot,
       explorer_id: target?.id || 0,
-      explorer_direction: direction,
     });
 
     await attack_guard_vs_explorer({
       signer: account,
       structure_id: attackerEntityId,
-      structure_guard_slot: selectedGuardSlot,
+      structure_guard_slot: selectedGuard.slot,
       explorer_id: target?.id || 0,
-      explorer_direction: direction,
     });
   };
 
@@ -540,12 +482,21 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
 
   const buttonMessage = useMemo(() => {
     if (isVillageWithoutTroops) return "Villages cannot be claimed";
+    if (attackerType === AttackerType.Structure && eligibleStructureGuards.length === 0) return "No Eligible Guard";
     if (isAttackerOnCooldown) return "On Battle Cooldown";
     if (attackerStamina < combatConfig.stamina_attack_req)
       return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
     if (!attackerArmyData) return "No Troops Present";
     return "Attack!";
-  }, [isVillageWithoutTroops, isAttackerOnCooldown, attackerStamina, attackerArmyData, combatConfig]);
+  }, [
+    isVillageWithoutTroops,
+    attackerType,
+    eligibleStructureGuards.length,
+    isAttackerOnCooldown,
+    attackerStamina,
+    attackerArmyData,
+    combatConfig,
+  ]);
 
   const canAttack = useMemo(() => {
     return (
@@ -575,25 +526,30 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-2">
-              {structureGuards.map((guard) => (
-                <button
-                  key={guard.slot}
-                  onClick={() => setSelectedGuardSlot(guard.slot)}
-                  className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${
-                    selectedGuardSlot === guard.slot
-                      ? "border-primary bg-primary/10"
-                      : "border-muted hover:border-muted-foreground"
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <ResourceIcon resourceId={Number(TroopType[guard.troops.category as TroopType])} size={20} />
-                    <span className="font-medium">
-                      {TroopType[guard.troops.category as TroopType]} T{guard.troops.tier} (Slot {guard.slot})
-                    </span>
-                  </div>
-                  <Badge variant="secondary">{divideByPrecision(Number(guard.troops.count || 0))}</Badge>
-                </button>
-              ))}
+              {structureGuards.map((guard) => {
+                const isInRange = getTroopAttackRange(guard.troops.category) >= targetDistance;
+
+                return (
+                  <button
+                    key={guard.slot}
+                    onClick={() => setSelectedGuardSlot(guard.slot)}
+                    disabled={!isInRange}
+                    className={`flex items-center justify-between p-3 border rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                      selectedGuardSlot === guard.slot
+                        ? "border-primary bg-primary/10"
+                        : "border-muted hover:border-muted-foreground"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <ResourceIcon resourceId={Number(TroopType[guard.troops.category as TroopType])} size={20} />
+                      <span className="font-medium">
+                        {TroopType[guard.troops.category as TroopType]} T{guard.troops.tier} (Slot {guard.slot})
+                      </span>
+                    </div>
+                    <Badge variant="secondary">{divideByPrecision(Number(guard.troops.count || 0))}</Badge>
+                  </button>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

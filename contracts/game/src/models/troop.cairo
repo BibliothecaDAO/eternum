@@ -268,6 +268,14 @@ pub struct ExplorerTroops {
 
 #[generate_trait]
 pub impl TroopsImpl of TroopsTrait {
+    fn attack_range(ref self: Troops) -> u32 {
+        match self.category {
+            TroopType::Crossbowman => 2,
+            TroopType::Knight => 1,
+            TroopType::Paladin => 1,
+        }
+    }
+
     fn _tier_bonus(ref self: Troops, troop_damage_config: TroopDamageConfig) -> Fixed {
         let T1_DAMAGE_VALUE: Fixed = FixedTrait::new(troop_damage_config.t1_damage_value.into(), false);
         match self.tier {
@@ -933,4 +941,3 @@ mod tests {
         assert!(bravo.count >= 0, "Bravo count should be non-negative");
     }
 }
-

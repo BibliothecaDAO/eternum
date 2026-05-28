@@ -1,4 +1,18 @@
+import { TroopType } from "../types/common";
+
 export const MIN_TROOPS_BATTLE = 100_000;
+export const DEFAULT_TROOP_ATTACK_RANGE = 1;
+export const RANGED_TROOP_ATTACK_RANGE = 2;
+
+type TroopCategory = TroopType | number | string | null | undefined;
+
+export const getTroopAttackRange = (troopType: TroopCategory): number => {
+  if (troopType === TroopType.Crossbowman || troopType === 2 || troopType === "2") {
+    return RANGED_TROOP_ATTACK_RANGE;
+  }
+
+  return DEFAULT_TROOP_ATTACK_RANGE;
+};
 
 const encodeAsciiFelt = (value: string): string => {
   let hex = "";

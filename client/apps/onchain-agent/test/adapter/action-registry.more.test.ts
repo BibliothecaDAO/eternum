@@ -16,7 +16,7 @@ describe("action-registry additional routes", () => {
   it("routes attack_explorer_vs_guard to the ABI entrypoint", async () => {
     const result = await executeAction(client as any, mockSigner, {
       type: "attack_explorer_vs_guard",
-      params: { explorer_id: 1, structure_id: 2, structure_direction: 3 },
+      params: { explorer_id: 1, structure_id: 2 },
     });
 
     expect(result.success).toBe(true);

@@ -70,6 +70,7 @@ import {
   ExplorerRewardSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
+  getGuardsByStructure,
   getStructureInfoFromTileOccupier,
   getTileAt,
   isTileOccupierReservedHyperstructure,
@@ -90,6 +91,7 @@ import {
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   findResourceById,
   getDirectionBetweenAdjacentHexes,
+  getTroopAttackRange,
   HexEntityInfo,
   HexPosition,
   ID,
@@ -3300,6 +3302,18 @@ export default class WorldmapScene extends WarpTravel {
     if (!hexCoords) return;
 
     const structure = new StructureActionManager();
+    const structureData = getComponentValue(
+      this.dojo.components.Structure,
+      getEntityIdFromKeys([BigInt(selectedEntityId)]),
+    );
+    const attackRange = structureData
+      ? Math.max(
+          0,
+          ...getGuardsByStructure(structureData)
+            .filter((guard) => Number(guard.troops.count) > 0)
+            .map((guard) => getTroopAttackRange(guard.troops.category)),
+        )
+      : 0;
 
     const playerAddress = useAccountStore.getState().account?.address;
 
@@ -3310,6 +3324,7 @@ export default class WorldmapScene extends WarpTravel {
       this.armyHexes,
       this.exploredTiles,
       ContractAddress(playerAddress),
+      attackRange,
     );
 
     this.updateEntityActionPaths(actionPaths.getPaths());

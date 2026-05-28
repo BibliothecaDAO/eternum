@@ -968,16 +968,12 @@ pub fn move_explorer(
 
 /// Attacks another explorer with proper caller mocking
 pub fn attack_explorer_vs_explorer(
-    ref world: WorldStorage,
-    systems: CombatSystemAddresses,
-    attacker: ExplorerTestContext,
-    defender_id: ID,
-    direction: Direction,
+    ref world: WorldStorage, systems: CombatSystemAddresses, attacker: ExplorerTestContext, defender_id: ID,
 ) {
     let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
 
     start_cheat_caller_address(systems.troop_battle, attacker.owner);
-    dispatcher.attack_explorer_vs_explorer(attacker.explorer_id, defender_id, direction, array![].span());
+    dispatcher.attack_explorer_vs_explorer(attacker.explorer_id, defender_id, array![].span());
     stop_cheat_caller_address(systems.troop_battle);
 }
 
@@ -1082,32 +1078,23 @@ pub fn add_guard(
 
 /// Attacks a structure's guard with an explorer
 pub fn attack_explorer_vs_guard(
-    ref world: WorldStorage,
-    systems: CombatSystemAddresses,
-    explorer: ExplorerTestContext,
-    structure_id: ID,
-    direction: Direction,
+    ref world: WorldStorage, systems: CombatSystemAddresses, explorer: ExplorerTestContext, structure_id: ID,
 ) {
     let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
 
     start_cheat_caller_address(systems.troop_battle, explorer.owner);
-    dispatcher.attack_explorer_vs_guard(explorer.explorer_id, structure_id, direction);
+    dispatcher.attack_explorer_vs_guard(explorer.explorer_id, structure_id);
     stop_cheat_caller_address(systems.troop_battle);
 }
 
 /// Attacks an explorer with a structure's guard
 pub fn attack_guard_vs_explorer(
-    ref world: WorldStorage,
-    systems: CombatSystemAddresses,
-    realm: RealmTestContext,
-    slot: GuardSlot,
-    explorer_id: ID,
-    direction: Direction,
+    ref world: WorldStorage, systems: CombatSystemAddresses, realm: RealmTestContext, slot: GuardSlot, explorer_id: ID,
 ) {
     let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
 
     start_cheat_caller_address(systems.troop_battle, realm.owner);
-    dispatcher.attack_guard_vs_explorer(realm.entity_id, slot, explorer_id, direction);
+    dispatcher.attack_guard_vs_explorer(realm.entity_id, slot, explorer_id);
     stop_cheat_caller_address(systems.troop_battle);
 }
 

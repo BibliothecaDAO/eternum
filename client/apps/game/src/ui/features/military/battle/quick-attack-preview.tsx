@@ -30,7 +30,8 @@ import { useAttackTargetData } from "./hooks/use-attack-target";
 import { TargetType } from "./types";
 
 import {
-  getDirectionBetweenAdjacentHexes,
+  getHexDistance,
+  getTroopAttackRange,
   RESOURCE_PRECISION,
   TickIds,
   type ActorType,
@@ -146,15 +147,25 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       : [];
   }, [attackerType, attacker.id, Structure]);
 
+  const targetDistance = useMemo(() => {
+    if (!selectedHex) return Infinity;
+    return getHexDistance(selectedHex, { col: target.hex.x, row: target.hex.y });
+  }, [selectedHex, target.hex.x, target.hex.y]);
+
+  const eligibleStructureGuards = useMemo(() => {
+    return structureGuards.filter((guard) => getTroopAttackRange(guard.troops.category) >= targetDistance);
+  }, [structureGuards, targetDistance]);
+
+  const activeGuard = attackerType === AttackerType.Structure ? eligibleStructureGuards[0] : undefined;
+
   const attackerStamina = useMemo(() => {
     if (attackerType === AttackerType.Structure) {
-      const activeGuard = structureGuards[0];
       if (!activeGuard || !activeGuard.troops.stamina) return 0n;
       return StaminaManager.getStamina(activeGuard.troops, currentArmiesTick).amount;
     }
 
     return new StaminaManager(components, attacker.id).getStamina(currentArmiesTick).amount;
-  }, [attackerType, structureGuards, components, attacker.id, currentArmiesTick]);
+  }, [attackerType, activeGuard, components, attacker.id, currentArmiesTick]);
 
   const attackerStaminaValue = Number(attackerStamina);
   const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
@@ -182,10 +193,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
     if (attackerType === AttackerType.Structure) {
-      const guard = structureGuards[0];
-      if (!guard) return null;
+      if (!activeGuard) return null;
       return {
-        troops: buildProjectedTroopSnapshot(guard.troops, {
+        troops: buildProjectedTroopSnapshot(activeGuard.troops, {
           amount: attackerStamina,
           updated_tick: BigInt(currentArmiesTick),
         }),
@@ -201,7 +211,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           }),
         }
       : null;
-  }, [ExplorerTroops, attacker.id, attackerStamina, attackerType, currentArmiesTick, structureGuards]);
+  }, [ExplorerTroops, activeGuard, attacker.id, attackerStamina, attackerType, currentArmiesTick]);
 
   const targetTroopSnapshots = useMemo(() => {
     if (!targetData?.info) return [];
@@ -304,6 +314,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const isLowStamina = attackStaminaState.isBlocked;
 
   const attackButtonLabel = (() => {
+    if (attackerType === AttackerType.Structure && !activeGuard) return "No guard in range";
     if (!attackerArmyData) return "No troops selected";
     if (cooldownBlocksAttack) return "On cooldown";
     if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
@@ -355,9 +366,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       });
 
       if (attackerType === AttackerType.Structure) {
-        const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-        const guardSlot = structureGuards[0]?.slot;
-        if (direction === null || guardSlot === undefined) return;
+        const guardSlot = activeGuard?.slot;
+        if (guardSlot === undefined) return;
 
         playUnitCommandSound("attack");
         await attack_guard_vs_explorer({
@@ -365,30 +375,21 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           structure_id: attacker.id,
           structure_guard_slot: guardSlot,
           explorer_id: targetData.id,
-          explorer_direction: direction,
         });
       } else if (targetData.targetType === TargetType.Army) {
-        const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-        if (direction === null) return;
-
         playUnitCommandSound("attack");
         await attack_explorer_vs_explorer({
           signer: account,
           aggressor_id: attacker.id,
           defender_id: targetData.id,
-          defender_direction: direction,
           steal_resources: targetResources,
         });
       } else {
-        const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-        if (direction === null) return;
-
         playUnitCommandSound("attack");
         await attack_explorer_vs_guard({
           signer: account,
           explorer_id: attacker.id,
           structure_id: targetData.id,
-          structure_direction: direction,
         });
       }
 

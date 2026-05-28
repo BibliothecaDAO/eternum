@@ -10,7 +10,9 @@ mod tests {
     use snforge_std::{start_cheat_caller_address, stop_cheat_caller_address};
     use crate::constants::RESOURCE_PRECISION;
     use crate::models::position::{Coord, CoordTrait, Direction};
-    use crate::models::structure::{StructureBase, StructureBaseStoreImpl, StructureTroopExplorerStoreImpl};
+    use crate::models::structure::{
+        StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureTroopExplorerStoreImpl,
+    };
     use crate::models::troop::{ExplorerTroops, GuardSlot, TroopLimitTrait, TroopTier, TroopType, Troops};
     use crate::systems::combat::contracts::troop_battle::{
         ITroopBattleSystemsDispatcher, ITroopBattleSystemsDispatcherTrait,
@@ -92,7 +94,7 @@ mod tests {
         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
         // Attack
-        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West);
+        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id);
 
         // Verify battle results
         let first = get_explorer(ref world, first_explorer.explorer_id);
@@ -124,7 +126,7 @@ mod tests {
         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
         // Attack
-        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West);
+        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id);
 
         // Verify both survived with damage
         let first = get_explorer(ref world, first_explorer.explorer_id);
@@ -134,6 +136,27 @@ mod tests {
         assert!(second.troops.count < troop_amount, "Second explorer should have taken damage");
         assert!(first.troops.count > 0, "First explorer should survive");
         assert!(second.troops.count > 0, "Second explorer should survive");
+    }
+
+    #[test]
+    fn test_crossbowman_explorer_attacks_explorer_at_radius_two() {
+        let (mut world, systems, first_explorer, second_explorer) = setup_explorer_battle(
+            TroopType::Knight, TroopTier::T1, TroopType::Crossbowman, TroopTier::T2,
+        );
+
+        let first: ExplorerTroops = world.read_model(first_explorer.explorer_id);
+        let mut second: ExplorerTroops = world.read_model(second_explorer.explorer_id);
+        let first_troop_count_before_attack = first.troops.count;
+        second.coord = first.coord.neighbor(Direction::East).neighbor(Direction::NorthEast);
+        world.write_model_test(@second);
+
+        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id);
+
+        let first = get_explorer(ref world, first_explorer.explorer_id);
+        let second = get_explorer(ref world, second_explorer.explorer_id);
+
+        assert!(first.troops.count < first_troop_count_before_attack, "First explorer should have taken damage");
+        assert!(second.troops.count > 0, "Ranged attacker should survive");
     }
 
     // ========================================================================
@@ -153,15 +176,13 @@ mod tests {
 
         start_cheat_caller_address(systems.troop_battle, unknown_address);
         dispatcher
-            .attack_explorer_vs_explorer(
-                second_explorer.explorer_id, first_explorer.explorer_id, Direction::West, array![].span(),
-            );
+            .attack_explorer_vs_explorer(second_explorer.explorer_id, first_explorer.explorer_id, array![].span());
         stop_cheat_caller_address(systems.troop_battle);
     }
 
     #[test]
-    #[should_panic(expected: "explorers are not adjacent")]
-    fn test_explorer_vs_explorer__fails_not_adjacent() {
+    #[should_panic(expected: "explorers are out of range")]
+    fn test_explorer_vs_explorer__fails_out_of_range() {
         let (mut world, systems, first_explorer, second_explorer) = setup_explorer_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
@@ -175,10 +196,23 @@ mod tests {
 
         start_cheat_caller_address(systems.troop_battle, second_explorer.owner);
         dispatcher
-            .attack_explorer_vs_explorer(
-                second_explorer.explorer_id, first_explorer.explorer_id, Direction::West, array![].span(),
-            );
+            .attack_explorer_vs_explorer(second_explorer.explorer_id, first_explorer.explorer_id, array![].span());
         stop_cheat_caller_address(systems.troop_battle);
+    }
+
+    #[test]
+    #[should_panic(expected: "explorers are out of range")]
+    fn test_non_ranged_explorer_vs_explorer__fails_at_radius_two() {
+        let (mut world, systems, first_explorer, second_explorer) = setup_explorer_battle(
+            TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
+        );
+
+        let first: ExplorerTroops = world.read_model(first_explorer.explorer_id);
+        let mut second: ExplorerTroops = world.read_model(second_explorer.explorer_id);
+        second.coord = first.coord.neighbor(Direction::East).neighbor(Direction::NorthEast);
+        world.write_model_test(@second);
+
+        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id);
     }
 
     #[test]
@@ -194,7 +228,7 @@ mod tests {
         world.write_model_test(@attacker);
 
         // Try to attack with dead explorer
-        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West);
+        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id);
     }
 
     #[test]
@@ -210,7 +244,7 @@ mod tests {
         world.write_model_test(@defender);
 
         // Try to attack dead defender
-        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id, Direction::West);
+        attack_explorer_vs_explorer(ref world, systems, second_explorer, first_explorer.explorer_id);
     }
 
     // ========================================================================
@@ -227,7 +261,7 @@ mod tests {
         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
         // Attack
-        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id, Direction::West);
+        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id);
 
         // Verify battle results
         let explorer_after = get_explorer(ref world, explorer.explorer_id);
@@ -247,7 +281,7 @@ mod tests {
         let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
 
         start_cheat_caller_address(systems.troop_battle, unknown_address);
-        dispatcher.attack_explorer_vs_guard(explorer.explorer_id, realm.entity_id, Direction::West);
+        dispatcher.attack_explorer_vs_guard(explorer.explorer_id, realm.entity_id);
         stop_cheat_caller_address(systems.troop_battle);
     }
 
@@ -264,12 +298,12 @@ mod tests {
         world.write_model_test(@attacker);
 
         // Try to attack with dead explorer
-        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id, Direction::West);
+        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id);
     }
 
     #[test]
-    #[should_panic(expected: "explorer is not adjacent to structure")]
-    fn test_explorer_vs_guard__fails_not_adjacent() {
+    #[should_panic(expected: "structure is out of range")]
+    fn test_explorer_vs_guard__fails_out_of_range() {
         let (mut world, systems, realm, explorer) = setup_guard_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
@@ -281,7 +315,21 @@ mod tests {
         explorer_troops.coord = explorer_troops.coord.neighbor_after_distance(Direction::NorthEast, 5);
         world.write_model_test(@explorer_troops);
 
-        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id, Direction::West);
+        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id);
+    }
+
+    #[test]
+    fn test_crossbowman_explorer_attacks_guard_at_radius_two() {
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
+            TroopType::Knight, TroopTier::T1, TroopType::Crossbowman, TroopTier::T2,
+        );
+
+        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
+        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm.entity_id);
+        explorer_troops.coord = structure_base.coord().neighbor(Direction::East).neighbor(Direction::NorthEast);
+        world.write_model_test(@explorer_troops);
+
+        attack_explorer_vs_guard(ref world, systems, explorer, realm.entity_id);
     }
 
     // ========================================================================
@@ -298,7 +346,7 @@ mod tests {
         let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
         // Attack
-        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id, Direction::East);
+        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id);
 
         // Verify battle results
         let explorer_after = get_explorer(ref world, explorer.explorer_id);
@@ -317,7 +365,7 @@ mod tests {
         let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
 
         start_cheat_caller_address(systems.troop_battle, unknown_address);
-        dispatcher.attack_guard_vs_explorer(realm.entity_id, GuardSlot::Delta, explorer.explorer_id, Direction::East);
+        dispatcher.attack_guard_vs_explorer(realm.entity_id, GuardSlot::Delta, explorer.explorer_id);
         stop_cheat_caller_address(systems.troop_battle);
     }
 
@@ -329,7 +377,7 @@ mod tests {
         );
 
         // Try to attack with an empty guard slot (Alpha instead of Delta)
-        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Alpha, explorer.explorer_id, Direction::East);
+        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Alpha, explorer.explorer_id);
     }
 
     #[test]
@@ -345,12 +393,12 @@ mod tests {
         world.write_model_test(@defender);
 
         // Try to attack dead defender
-        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id, Direction::East);
+        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id);
     }
 
     #[test]
-    #[should_panic(expected: "structure is not adjacent to explorer")]
-    fn test_guard_vs_explorer__fails_not_adjacent() {
+    #[should_panic(expected: "explorer is out of range")]
+    fn test_guard_vs_explorer__fails_out_of_range() {
         let (mut world, systems, realm, explorer) = setup_guard_battle(
             TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
         );
@@ -362,6 +410,35 @@ mod tests {
         explorer_troops.coord = explorer_troops.coord.neighbor_after_distance(Direction::NorthEast, 5);
         world.write_model_test(@explorer_troops);
 
-        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id, Direction::East);
+        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id);
+    }
+
+    #[test]
+    fn test_crossbowman_guard_attacks_explorer_at_radius_two() {
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
+            TroopType::Crossbowman, TroopTier::T2, TroopType::Knight, TroopTier::T1,
+        );
+
+        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm.entity_id);
+        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
+        explorer_troops.coord = structure_base.coord().neighbor(Direction::East).neighbor(Direction::NorthEast);
+        world.write_model_test(@explorer_troops);
+
+        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id);
+    }
+
+    #[test]
+    #[should_panic(expected: "explorer is out of range")]
+    fn test_non_ranged_guard_vs_explorer__fails_at_radius_two() {
+        let (mut world, systems, realm, explorer) = setup_guard_battle(
+            TroopType::Knight, TroopTier::T1, TroopType::Knight, TroopTier::T1,
+        );
+
+        let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm.entity_id);
+        let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
+        explorer_troops.coord = structure_base.coord().neighbor(Direction::East).neighbor(Direction::NorthEast);
+        world.write_model_test(@explorer_troops);
+
+        attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id);
     }
 }

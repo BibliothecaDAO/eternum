@@ -179,7 +179,8 @@ vi.mock("@bibliothecadao/types", () => ({
     Explorer: "explorer",
     Structure: "structure",
   },
-  getDirectionBetweenAdjacentHexes: () => 0,
+  getHexDistance: () => 1,
+  getTroopAttackRange: () => 1,
   RESOURCE_PRECISION: 1,
   TickIds: {
     Armies: "armies",

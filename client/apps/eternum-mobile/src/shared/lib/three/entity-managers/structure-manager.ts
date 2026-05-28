@@ -1,6 +1,14 @@
-import { ActionPaths, Position, StructureActionManager, StructureTileSystemUpdate } from "@bibliothecadao/eternum";
+import {
+  ActionPaths,
+  getGuardsByStructure,
+  Position,
+  StructureActionManager,
+  StructureTileSystemUpdate,
+} from "@bibliothecadao/eternum";
 import { DojoResult } from "@bibliothecadao/react";
-import { HexEntityInfo, ID, StructureType } from "@bibliothecadao/types";
+import { getTroopAttackRange, HexEntityInfo, ID, StructureType } from "@bibliothecadao/types";
+import { getComponentValue } from "@dojoengine/recs";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import * as THREE from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { BuildingTileRenderer } from "../tiles/building-tile-renderer";
@@ -446,6 +454,18 @@ export class StructureManager extends EntityManager<StructureObject> {
     this.selectObject(structureId);
 
     const structureActionManager = new StructureActionManager();
+    const structure = getComponentValue(
+      this.dojo.setup.components.Structure,
+      getEntityIdFromKeys([BigInt(structureId)]),
+    );
+    const attackRange = structure
+      ? Math.max(
+          0,
+          ...getGuardsByStructure(structure)
+            .filter((guard) => Number(guard.troops.count) > 0)
+            .map((guard) => getTroopAttackRange(guard.troops.category)),
+        )
+      : 0;
     const playerAddress = loggedInAccount();
 
     const actionPaths = structureActionManager.findActionPaths(
@@ -453,6 +473,7 @@ export class StructureManager extends EntityManager<StructureObject> {
       armyHexes,
       this.exploredTiles,
       playerAddress,
+      attackRange,
     );
     return actionPaths;
   }
