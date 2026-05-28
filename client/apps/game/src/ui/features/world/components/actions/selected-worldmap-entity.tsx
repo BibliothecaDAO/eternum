@@ -26,10 +26,12 @@ import {
   isTileOccupierQuest,
   isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
-  getTileAt,
+  tileOptToTile,
   DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
+import { useComponentValue } from "@dojoengine/react";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 
@@ -86,10 +88,17 @@ const SelectedWorldmapEntityContent = ({
   const gridTemplateColumns = "var(--selected-worldmap-entity-grid-cols, 1fr)";
   const gridTemplateRows = "var(--selected-worldmap-entity-grid-rows, auto)";
 
-  const tile = useMemo(() => {
-    if (!selectedHex) return undefined;
-    return getTileAt(setup.components, DEFAULT_COORD_ALT, selectedHex.col, selectedHex.row);
-  }, [selectedHex, setup.components]);
+  // Reactive TileOpt subscription — using useComponentValue (vs getTileAt's
+  // one-shot read inside useMemo) so the right panel re-renders when TileOpt
+  // arrives or refreshes. Spectators hit chunks whose TileOpt wasn't primed
+  // at boot and would otherwise see the biome-only fallback until the next
+  // unrelated re-render.
+  const tileEntity = useMemo(
+    () => getEntityIdFromKeys([BigInt(DEFAULT_COORD_ALT ? 1 : 0), BigInt(selectedHex.col), BigInt(selectedHex.row)]),
+    [selectedHex.col, selectedHex.row],
+  );
+  const tileOpt = useComponentValue(setup.components.TileOpt, tileEntity);
+  const tile = useMemo(() => (tileOpt ? tileOptToTile(tileOpt) : undefined), [tileOpt]);
 
   const biome = useMemo(() => {
     return Biome.getBiome(selectedHex.col || 0, selectedHex.row || 0);
