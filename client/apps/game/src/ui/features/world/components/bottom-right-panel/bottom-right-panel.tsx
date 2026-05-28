@@ -1120,8 +1120,9 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
+  const isSpectating = useUIStore((state) => state.isSpectating);
   const mode = useGameModeConfig();
-  const showTradeAction = mode.ui.showTradeMenu;
+  const showTradeAction = mode.ui.showTradeMenu && !isSpectating;
   const handleOpenLogistics = useCallback(() => {
     // If anything is in flight or ready, land the user on Arrivals so the
     // badge they just clicked actually points at the relevant tab.
@@ -1140,53 +1141,57 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
 
   return (
     <div className="pointer-events-auto fixed left-3 z-[25] flex gap-2" style={style} aria-label="Quick actions">
-      <CircleButton
-        variant="hud"
-        size="md"
-        tooltipLocation="top"
-        image={BuildingThumbs.construction}
-        label="Build"
-        active={view === LeftView.ConstructionView}
-        onClick={toggleView(LeftView.ConstructionView)}
-      />
-      <CircleButton
-        variant="hud"
-        size="md"
-        tooltipLocation="top"
-        image={BuildingThumbs.production}
-        label="Production"
-        onClick={handleOpenProduction}
-        disabled={!structureEntityId}
-      />
-      <CircleButton
-        variant="hud"
-        size="md"
-        tooltipLocation="top"
-        image={BuildingThumbs.military}
-        label="Military"
-        active={view === LeftView.MilitaryView}
-        onClick={toggleView(LeftView.MilitaryView)}
-        disabled={!structureEntityId}
-      />
-      <CircleButton
-        variant="hud"
-        size="md"
-        tooltipLocation="top"
-        image={BuildingThumbs.transfer}
-        label="Transfer"
-        active={view === LeftView.ResourceArrivals}
-        onClick={handleOpenLogistics}
-        primaryNotification={
-          arrivedArrivalsNumber > 0
-            ? { value: arrivedArrivalsNumber, color: "green", location: "topright" }
-            : undefined
-        }
-        secondaryNotification={
-          pendingArrivalsNumber > 0
-            ? { value: pendingArrivalsNumber, color: "yellow", location: "bottomright" }
-            : undefined
-        }
-      />
+      {!isSpectating && (
+        <>
+          <CircleButton
+            variant="hud"
+            size="md"
+            tooltipLocation="top"
+            image={BuildingThumbs.construction}
+            label="Build"
+            active={view === LeftView.ConstructionView}
+            onClick={toggleView(LeftView.ConstructionView)}
+          />
+          <CircleButton
+            variant="hud"
+            size="md"
+            tooltipLocation="top"
+            image={BuildingThumbs.production}
+            label="Production"
+            onClick={handleOpenProduction}
+            disabled={!structureEntityId}
+          />
+          <CircleButton
+            variant="hud"
+            size="md"
+            tooltipLocation="top"
+            image={BuildingThumbs.military}
+            label="Military"
+            active={view === LeftView.MilitaryView}
+            onClick={toggleView(LeftView.MilitaryView)}
+            disabled={!structureEntityId}
+          />
+          <CircleButton
+            variant="hud"
+            size="md"
+            tooltipLocation="top"
+            image={BuildingThumbs.transfer}
+            label="Transfer"
+            active={view === LeftView.ResourceArrivals}
+            onClick={handleOpenLogistics}
+            primaryNotification={
+              arrivedArrivalsNumber > 0
+                ? { value: arrivedArrivalsNumber, color: "green", location: "topright" }
+                : undefined
+            }
+            secondaryNotification={
+              pendingArrivalsNumber > 0
+                ? { value: pendingArrivalsNumber, color: "yellow", location: "bottomright" }
+                : undefined
+            }
+          />
+        </>
+      )}
       <CircleButton
         variant="hud"
         size="md"

@@ -136,6 +136,7 @@ export const LeftCommandSidebar = memo(() => {
   const pendingRenameStructureEntityId = useUIStore((state) => state.pendingRenameStructureEntityId);
   const setPendingRenameStructureEntityId = useUIStore((state) => state.setPendingRenameStructureEntityId);
   const bumpStructureNameVersion = useUIStore((state) => state.bumpStructureNameVersion);
+  const isSpectating = useUIStore((state) => state.isSpectating);
 
   const handleNameChange = useCallback(
     (entityId: ID, newName: string) => {
@@ -193,7 +194,7 @@ export const LeftCommandSidebar = memo(() => {
           structures. The active card expands to show Suggested Actions only.
           Heavier views (Production, Military) live in centered modals
           triggered from the LeftActionsRow above the minimap. */}
-      {ConnectedAccount && (
+      {ConnectedAccount && !isSpectating && (
         <div className="fixed left-3 top-3 z-20 pointer-events-auto flex w-[280px] max-h-[calc(100vh-380px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           <StructureListColumn />
           <EmpireCockpit />
