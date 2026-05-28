@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-flux-195",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-flux-195/26565307097-1.json",
   "latestLaunchRequestId": "26565307097-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-05-28T09:04:05.944Z",
-  "updatedAt": "2026-05-28T09:07:49.409Z",
+  "updatedAt": "2026-05-28T09:08:08.797Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-28T09:07:49.409Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-05-28T09:07:49.409Z",
+      "finishedAt": "2026-05-28T09:08:08.797Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x6a3d4ddf2380eeff271e68f94f056d208d445a79565e96598435731a821aa3"
     ],
-    "lootChestRoleTxHash": "0x48b0e9817790ba38bbc08278f9dfd832eee8a482d43b19abf217c81c7fb502d"
+    "lootChestRoleTxHash": "0x48b0e9817790ba38bbc08278f9dfd832eee8a482d43b19abf217c81c7fb502d",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-flux-195/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-28T09:08:07.463Z"
   },
-  "activeLease": {
-    "launchRequestId": "26565307097-1",
-    "workflowRunId": 26565307097,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-28T09:07:49.409Z",
-    "expiresAt": "2026-05-28T09:52:49.409Z"
-  }
+  "completedAt": "2026-05-28T09:08:08.797Z"
 }
