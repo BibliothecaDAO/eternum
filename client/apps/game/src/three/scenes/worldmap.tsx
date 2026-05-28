@@ -1,7 +1,7 @@
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { toast } from "sonner";
 
-import { ensureStructureSynced, getTilesForPositionsFromTorii } from "@/dojo/queries";
+import { ensureStructureSynced } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
 import { GLOBAL_SPATIAL_MAP_MODELS } from "@/dojo/torii-spatial-models";
 import { useConnectionStore } from "@/hooks/store/use-connection-store";
@@ -960,24 +960,6 @@ export default class WorldmapScene extends WarpTravel {
   private perfSimulation: WorldmapPerfSimulation | null = null;
   // Performance simulation: Show all biomes as explored (bypasses fog of war)
   private simulateAllExplored: boolean = false;
-  private async refreshTileOptForHex(hexCoords: HexPosition) {
-    const toriiClient = this.dojo.network?.toriiClient;
-    const contractComponents = this.dojo.network?.contractComponents as unknown as
-      | Parameters<typeof getTilesForPositionsFromTorii>[1]
-      | undefined;
-    if (!toriiClient || !contractComponents) {
-      return;
-    }
-    const contract = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
-    try {
-      await getTilesForPositionsFromTorii(toriiClient, contractComponents, [
-        { col: contract.x, row: contract.y },
-      ]);
-    } catch (error) {
-      console.error("[WorldmapScene] Failed to refresh TileOpt for clicked hex", error);
-    }
-  }
-
   private async ensureStructureQueriedMethod(structureId: ID, hexCoords: HexPosition) {
     const contractCoords = new Position({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
@@ -2800,13 +2782,6 @@ export default class WorldmapScene extends WarpTravel {
 
     if (structure) {
       console.log("[Worldmap] Structure entity id clicked:", structure.id);
-      // TileOpt is fetched in spatial chunks at boot/navigation and is not
-      // covered by ensureStructureSynced. When the player clicks a hex whose
-      // structure exists in the live Structure subscription but whose TileOpt
-      // is stale (occupier_type === 0), the right-side tile-details panel
-      // falls through to the biome-only view. Refresh TileOpt for this hex so
-      // the panel sees the current occupier.
-      void this.refreshTileOptForHex(hexCoords);
     }
 
     this.handleHexSelection(hexCoords, clickPlan.isMine);
