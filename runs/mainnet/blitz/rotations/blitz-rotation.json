@@ -12,9 +12,9 @@
   "requestedLaunchStep": "grant-lootchest-roles",
   "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26554162194-1.json",
   "latestLaunchRequestId": "26554162194-1",
-  "currentStepId": "reserve-blitz-hyperstructures",
+  "currentStepId": "create-indexers",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-28T04:11:57.307Z",
+  "updatedAt": "2026-05-28T04:12:06.489Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,7 +27,6 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-05-28T04:26:57.307Z",
     "lastRetryAt": "2026-05-28T04:10:39.534Z"
   },
   "evaluation": {
@@ -82,9 +81,10 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-05-28T04:12:06.489Z"
     },
     {
       "id": "sync-paymaster",
@@ -10655,5 +10655,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
+  },
+  "activeLease": {
+    "launchRequestId": "26554162194-1",
+    "workflowRunId": 26554162194,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexers",
+    "acquiredAt": "2026-05-28T04:12:06.489Z",
+    "expiresAt": "2026-05-28T04:57:06.489Z"
   }
 }
