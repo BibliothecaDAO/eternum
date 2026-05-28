@@ -121,7 +121,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
   ) : (
     <CircleButton
       variant="hud"
-      className="social-selector border-none"
+      className="social-selector"
       tooltipLocation="bottom"
       image={BuildingThumbs.guild}
       label={leaderboard}
@@ -142,7 +142,6 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
           label={rewards}
           active={isPopupOpen(rewards)}
           size="topbar"
-          className="border-none"
           onClick={() => togglePopup(rewards)}
         />
       )}
@@ -151,7 +150,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
       {unseenFeaturesCount > 0 && (
         <CircleButton
           variant="hud"
-          className="latest-features-selector border-none"
+          className="latest-features-selector"
           tooltipLocation="bottom"
           active={isPopupOpen(latestFeatures)}
           image={BuildingThumbs.latestUpdates}
@@ -176,7 +175,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
       <div className="relative">
         <CircleButton
           variant="hud"
-          className="transactions-selector border-none"
+          className="transactions-selector"
           tooltipLocation="bottom"
           active={isPopupOpen(transactions)}
           image="/image-icons/network.png"
@@ -207,7 +206,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
       {/* Settings — now hosts the Controller (wallet) panel too. Always last. */}
       <CircleButton
         variant="hud"
-        className="settings-selector border-none"
+        className="settings-selector"
         tooltipLocation="bottom"
         active={isPopupOpen(settings)}
         image={BuildingThumbs.settings}
