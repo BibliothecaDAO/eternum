@@ -96,6 +96,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
             attention={attention}
             title="Your structures"
             statsVariant="military"
+            enableCategoryFilter
           />
         </div>
         <div className="col-span-9 flex min-h-0 flex-col">

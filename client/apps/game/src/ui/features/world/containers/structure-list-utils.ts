@@ -6,6 +6,7 @@ import Crown from "lucide-react/dist/esm/icons/crown";
 import type { LucideIcon } from "lucide-react";
 import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Tent from "lucide-react/dist/esm/icons/tent";
 
 /**
  * Returns structures matching `filter`. `"all"` keeps everything (only used
@@ -78,6 +79,7 @@ export const CATEGORY_FILTER_OPTIONS: Array<{
 }> = [
   { value: StructureType.Realm, label: "Realms", icon: Crown },
   { value: StructureType.Village, label: "Villages", icon: Castle },
+  { value: StructureType.Camp, label: "Camps", icon: Tent },
   { value: StructureType.FragmentMine, label: "Mines", icon: Pickaxe },
   { value: StructureType.Hyperstructure, label: "Hyperstructures", icon: Sparkles },
 ];

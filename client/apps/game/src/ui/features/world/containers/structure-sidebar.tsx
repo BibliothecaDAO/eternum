@@ -1,9 +1,12 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
 import { StructureStatusRow } from "@/ui/features/world/components/structure-status-row/structure-status-row";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
+import {
+  FilterChipsRow,
+  useStructureCategoryFilter,
+} from "@/ui/features/world/containers/left-facets/structure-category-filter";
 import { sortStructures } from "@/ui/features/world/containers/structure-list-utils";
 import { useDojo } from "@bibliothecadao/react";
 import { type ID, StructureType } from "@bibliothecadao/types";
@@ -30,6 +33,13 @@ interface StructureSidebarProps {
    * guard armies + explorer armies, which is what the Military modal wants.
    */
   statsVariant?: "default" | "military";
+  /**
+   * Show a category-filter chip row (Realm / Camp / …) and let the player switch
+   * categories — shares the rail's filter. `filter` then acts as the universe of
+   * selectable categories. Default false: the modal shows the `filter` set as
+   * one flat list with no chips.
+   */
+  enableCategoryFilter?: boolean;
 }
 
 /**
@@ -46,6 +56,7 @@ export const StructureSidebar = memo(
     filter,
     title = "Your realms",
     statsVariant,
+    enableCategoryFilter = false,
   }: StructureSidebarProps) => {
     const {
       setup: { components },
@@ -61,11 +72,19 @@ export const StructureSidebar = memo(
       nameUpdateVersion: structureNameVersion,
     });
 
+    // Shared with the left rail; when enabled, `filter` is the selectable
+    // universe and the player picks one category via the chips.
+    const { availableCategories, effectiveFilter, setFilter } = useStructureCategoryFilter(allMetadata, filter);
+
     const filtered = useMemo(() => {
+      if (enableCategoryFilter) {
+        if (effectiveFilter === "all") return allMetadata;
+        return allMetadata.filter((structure) => structure.category === effectiveFilter);
+      }
       if (!filter || filter.length === 0) return allMetadata;
       const set = new Set(filter);
       return allMetadata.filter((structure) => set.has(structure.category as StructureType));
-    }, [allMetadata, filter]);
+    }, [allMetadata, filter, enableCategoryFilter, effectiveFilter]);
 
     const favoriteOrder = useMemo(
       () => new Map(favorites.map((id, index) => [id, index] as const)),
@@ -88,7 +107,16 @@ export const StructureSidebar = memo(
 
     return (
       <div className="flex h-full min-h-0 flex-col gap-2 px-2 py-3">
-        <span className={cn(HUD_LABEL, "px-1")}>{title}</span>
+        <div className="flex items-center justify-between gap-2 px-1">
+          <span className={HUD_LABEL}>{title}</span>
+          {enableCategoryFilter && availableCategories.length > 1 && (
+            <FilterChipsRow
+              availableCategories={availableCategories}
+              filterValue={effectiveFilter}
+              onFilterChange={setFilter}
+            />
+          )}
+        </div>
         <div className="flex flex-1 min-h-0 flex-col gap-1.5 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           {ordered.map((structure) => (
             <StructureStatusRow
