@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26613352408-1",
   "currentStepId": null,
   "createdAt": "2026-05-29T01:57:30.783Z",
-  "updatedAt": "2026-05-29T16:01:07.555Z",
+  "updatedAt": "2026-05-29T16:02:48.246Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x3d9308c3724d8bdb8c975319c640ac97a6dc904087bbe9d17797890efb4ea2"
     ],
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-blink-39/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-05-29T11:17:54.915Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-05-29T16:01:04.776Z"
+    "lastIndexerDescribeAt": "2026-05-29T16:02:48.246Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-05-29T02:01:37.489Z"
 }
