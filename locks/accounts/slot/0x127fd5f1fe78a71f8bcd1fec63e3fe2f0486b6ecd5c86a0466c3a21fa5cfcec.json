@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-froth-357",
-    "launchRequestId": "26628917814-1",
+    "gameName": "bltz-dash-416",
+    "launchRequestId": "26630125998-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26628917814,
+    "workflowRunId": 26630125998,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "22712d1d-5e4a-4b8a-8f07-76194ecd1022"
+    "stepId": "create-world",
+    "leaseId": "8ac933d7-c7b4-4445-b2d9-8688073182fe"
   },
-  "acquiredAt": "2026-05-29T09:19:33.577Z",
-  "heartbeatAt": "2026-05-29T09:19:48.755Z",
-  "expiresAt": "2026-05-29T09:19:48.755Z",
-  "releasedAt": "2026-05-29T09:19:48.755Z"
+  "acquiredAt": "2026-05-29T09:43:26.004Z",
+  "heartbeatAt": "2026-05-29T09:43:26.004Z",
+  "expiresAt": "2026-05-29T09:53:26.004Z"
 }
