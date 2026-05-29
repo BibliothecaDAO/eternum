@@ -1,0 +1,151 @@
+{
+  "version": 1,
+  "kind": "rotation",
+  "runId": "mainnet.blitz:rotation:blitz-rotation",
+  "launchRequestId": "26616991320-1",
+  "environment": "mainnet.blitz",
+  "chain": "mainnet",
+  "gameType": "blitz",
+  "rotationName": "blitz-rotation",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "grant-lootchest-roles",
+  "createdAt": "2026-05-29T03:56:55.091Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 26616991320,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/26616991320",
+    "ref": "next",
+    "sha": "3103a8b1533890e82d614e1e895d296914bc6990"
+  },
+  "request": {
+    "launchKind": "rotation",
+    "environmentId": "mainnet.blitz",
+    "rotationName": "blitz-rotation",
+    "firstGameStartTime": 1776646800,
+    "gameIntervalMinutes": 0,
+    "maxGames": 5200,
+    "advanceWindowGames": 5,
+    "weeklyCadence": [
+      {
+        "gameNamePrefix": "na-gladiator",
+        "weekday": "monday",
+        "utcTime": "01:00",
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        }
+      },
+      {
+        "gameNamePrefix": "apac-gladiator",
+        "weekday": "tuesday",
+        "utcTime": "11:00",
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        }
+      },
+      {
+        "gameNamePrefix": "na-gladiator",
+        "weekday": "wednesday",
+        "utcTime": "02:00",
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        }
+      },
+      {
+        "gameNamePrefix": "eu-gladiator",
+        "weekday": "wednesday",
+        "utcTime": "19:00",
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        }
+      },
+      {
+        "gameNamePrefix": "apac-gladiator",
+        "weekday": "thursday",
+        "utcTime": "10:00",
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        }
+      },
+      {
+        "gameNamePrefix": "na-gladiator",
+        "weekday": "friday",
+        "utcTime": "01:00",
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        }
+      },
+      {
+        "gameNamePrefix": "eu-gladiator",
+        "weekday": "friday",
+        "utcTime": "18:00",
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        }
+      },
+      {
+        "gameNamePrefix": "apac-gladiator",
+        "weekday": "saturday",
+        "utcTime": "12:00",
+        "blitzRegistrationOverrides": {
+          "fee_amount": "1000000000000000000000"
+        }
+      },
+      {
+        "gameNamePrefix": "eu-gladiator",
+        "weekday": "saturday",
+        "utcTime": "20:00",
+        "blitzRegistrationOverrides": {
+          "fee_amount": "1000000000000000000000"
+        }
+      },
+      {
+        "gameNamePrefix": "na-gladiator",
+        "weekday": "sunday",
+        "utcTime": "03:00",
+        "blitzRegistrationOverrides": {
+          "fee_amount": "1000000000000000000000"
+        }
+      },
+      {
+        "gameNamePrefix": "apac-gladiator",
+        "weekday": "sunday",
+        "utcTime": "11:00",
+        "blitzRegistrationOverrides": {
+          "fee_amount": "1000000000000000000000"
+        }
+      },
+      {
+        "gameNamePrefix": "eu-gladiator",
+        "weekday": "sunday",
+        "utcTime": "19:00",
+        "blitzRegistrationOverrides": {
+          "fee_amount": "1000000000000000000000"
+        }
+      }
+    ],
+    "evaluationIntervalMinutes": 15,
+    "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+    "factoryAddress": "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da",
+    "devModeOn": false,
+    "singleRealmMode": false,
+    "twoPlayerMode": false,
+    "durationSeconds": 3600,
+    "cartridgeApiBase": "https://api.cartridge.gg",
+    "toriiNamespaces": "s1_eternum",
+    "vrfProviderAddress": "0x0",
+    "executionMode": "batched",
+    "verboseConfigLogs": false,
+    "version": "180",
+    "waitForFactoryIndexTimeoutMs": 300000,
+    "waitForFactoryIndexPollMs": 5000,
+    "skipIndexer": false,
+    "skipLootChestRoleGrant": false,
+    "skipBanks": false,
+    "dryRun": false,
+    "maxActions": 50,
+    "autoRetryEnabled": true,
+    "autoRetryIntervalMinutes": 15
+  }
+}
