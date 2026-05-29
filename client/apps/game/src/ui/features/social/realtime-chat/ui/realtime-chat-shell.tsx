@@ -169,7 +169,11 @@ export function RealtimeChatShell({
     <div className={cn("relative w-full", className)}>
       <div
         className={cn(
-          "flex flex-col overflow-hidden transition-all duration-300 rounded-2xl bg-black/70",
+          "flex flex-col overflow-hidden transition-all duration-300",
+          // Embedded inside the bronze CenteredModalShell — stay transparent and
+          // square so the shell's warm gradient + frame show through (the flat
+          // black box read as a different surface from the rest of the HUD).
+          isEmbedded ? "rounded-none bg-transparent" : "rounded-2xl bg-black/70",
           isExpanded
             ? isHeightExpanded
               ? isEmbedded
@@ -185,7 +189,7 @@ export function RealtimeChatShell({
               : "h-0 min-h-0 pointer-events-none",
           isEmbedded ? "w-full" : "w-[800px] max-w-[45vw]",
           !isExpanded && !showInlineToggle && "w-0 max-w-0",
-          isExpanded ? "bg-black/80" : "bg-transparent",
+          isExpanded && !isEmbedded ? "bg-black/80" : "bg-transparent",
         )}
       >
         {/* Header - Only shown when not expanded */}

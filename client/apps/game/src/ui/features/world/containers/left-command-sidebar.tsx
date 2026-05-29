@@ -25,7 +25,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
 import PackageIcon from "lucide-react/dist/esm/icons/package";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
-import { lazy, memo, Suspense, useCallback, useEffect, useMemo } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 
 // ----------------------------------------------------------------------------
 // Realtime chat config hook
@@ -166,10 +166,16 @@ export const LeftCommandSidebar = memo(() => {
     }
   }, [chatActions, view]);
 
+  // Only mirror a *transition* to closed back onto the nav view. Without the
+  // prevChatOpen guard this fires on the very first render after opening — when
+  // setShellOpen(true) hasn't propagated yet, isChatOpen is still false — and
+  // instantly slams the modal shut. (Regression from the actions-row refactor.)
+  const prevChatOpen = useRef(isChatOpen);
   useEffect(() => {
-    if (!isChatOpen && view === LeftView.ChatView) {
+    if (prevChatOpen.current && !isChatOpen && view === LeftView.ChatView) {
       setView(LeftView.None);
     }
+    prevChatOpen.current = isChatOpen;
   }, [isChatOpen, setView, view]);
 
   const isPanelOpen = view !== LeftView.None;
@@ -195,7 +201,7 @@ export const LeftCommandSidebar = memo(() => {
           Heavier views (Production, Military) live in centered modals
           triggered from the LeftActionsRow above the minimap. */}
       {ConnectedAccount && !isSpectating && (
-        <div className="fixed left-3 top-3 z-20 pointer-events-auto flex w-[280px] max-h-[calc(100vh-400px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pb-2 pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+        <div className="fixed left-3 top-3 z-20 pointer-events-auto flex w-[280px] 2xl:w-[340px] max-h-[calc(100vh-400px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pb-2 pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
           <StructureListColumn />
           <EmpireCockpit />
         </div>

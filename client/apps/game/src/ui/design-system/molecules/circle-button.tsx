@@ -156,10 +156,11 @@ const CircleButton = ({
           "flex cursor-pointer items-center justify-center fill-current text-gold group",
           variant === "action"
             ? clsx(
-                // Golden fill + brown border — themed and high-contrast against
-                // the dark tray / map so the quick-action bubbles pop.
-                "border-2 border-[#3a2713] bg-gradient-to-b from-gold to-amber-500 text-[#241a0c] shadow-[0_2px_10px_rgba(0,0,0,0.55)] transition-all duration-150",
-                !disabled && "hover:from-amber-300 hover:to-gold",
+                // Golden top fading to brown bottom + dark-brown border — matches
+                // the HUD's brown/gold palette (#dfaa54 gold) rather than the
+                // saturated amber/orange that read as off-theme.
+                "border border-[#4a3115] bg-gradient-to-b from-[#e6c074] to-[#9a6c30] text-[#241708] shadow-[0_1px_6px_rgba(0,0,0,0.45)] transition-all duration-150",
+                !disabled && "hover:from-[#f0d089] hover:to-[#ab7a39]",
               )
             : variant === "hud"
               ? clsx(
@@ -176,7 +177,7 @@ const CircleButton = ({
           !disabled && "hover:scale-110 active:scale-95",
           active && !disabled && variant === "default" && "scale-110 ring-2 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.45)]",
           active && !disabled && variant === "hud" && "scale-110",
-          active && !disabled && variant === "action" && "scale-105 ring-2 ring-[#3a2713] brightness-110",
+          active && !disabled && variant === "action" && "ring-2 ring-gold/70 brightness-110",
           className,
           sizes[size],
           { "cursor-not-allowed": disabled },
@@ -187,7 +188,18 @@ const CircleButton = ({
         {children}
         {image && (
           <div className="w-full h-full">
-            <img className="p-1.5 w-full h-full object-contain" src={image} alt="icon" />
+            <img
+              className={clsx(
+                "p-1.5 w-full h-full object-contain",
+                // Action buttons sit on a bright gold fill where the gold raster
+                // art washes out. Knock it to a silhouette and let ~20% of the
+                // warm gold bleed through (opacity-80) so it reads as very dark
+                // brown rather than stark black — matching the chat icon + theme.
+                variant === "action" && "brightness-0 opacity-80",
+              )}
+              src={image}
+              alt="icon"
+            />
           </div>
         )}
         {disabled && <div className="absolute inset-0 bg-brown opacity-50 rounded-full"></div>}

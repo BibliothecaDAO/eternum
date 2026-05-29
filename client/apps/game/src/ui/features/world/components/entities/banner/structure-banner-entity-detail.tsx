@@ -16,11 +16,12 @@ import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
 import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
-import { ID, StructureType } from "@bibliothecadao/types";
+import { ID, RelicRecipientType, StructureType } from "@bibliothecadao/types";
 import { formatTime, toHexString } from "@bibliothecadao/eternum";
 import { getAvatarUrl, usePlayerAvatar } from "@/hooks/use-player-avatar";
 
 import { ActiveRelicEffects } from "../active-relic-effects";
+import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { EntityDetailLayoutVariant } from "../layout";
 import { useStructureProductionSummary } from "../structure-production-summary";
@@ -168,11 +169,15 @@ const StructureBannerEntityDetailContent = memo(
         structureCategory as StructureType,
       ) &&
       typeof structure.entity_id !== "undefined";
+    // Transfer affordance is hidden in the right panel for now (both the owner
+    // bubble header and the Resources bubble cue). Flip to re-enable.
+    const showTransferButton = false;
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
     const showHyperstructureVP = isHyperstructure && hyperstructureRealmCount !== undefined;
     const occupiedGuardSlots = guards.filter((guard) => Number(guard.troops?.count ?? 0) > 0).length;
     const guardCue = guardSlotsMax !== undefined ? `${occupiedGuardSlots}/${guardSlotsMax}` : `${occupiedGuardSlots}`;
+    const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 
     return (
       <div className={cn("flex min-w-0 flex-col gap-2", className)}>
@@ -204,7 +209,7 @@ const StructureBannerEntityDetailContent = memo(
                 <span className={cn("block truncate", HUD_BODY)}>{structureName}</span>
               </div>
             </div>
-            {canOpenTransferPopup && (
+            {showTransferButton && canOpenTransferPopup && (
               <Button
                 size="xs"
                 variant="outline"
@@ -276,7 +281,7 @@ const StructureBannerEntityDetailContent = memo(
           title="Resources"
           icon={Factory}
           cue={
-            isMine ? (
+            showTransferButton && isMine ? (
               <button
                 type="button"
                 onClick={handleOpenTransferPopup}
@@ -290,12 +295,27 @@ const StructureBannerEntityDetailContent = memo(
           }
         >
           {resources ? (
-            <MergedResourcePanel
-              structureEntityId={structureEntityId}
-              resources={resources}
-              productionSummary={productionSummary}
-              canBuild={false}
-            />
+            <>
+              <MergedResourcePanel
+                structureEntityId={structureEntityId}
+                resources={resources}
+                productionSummary={productionSummary}
+                canBuild={false}
+              />
+              {/* Relics — held relics + activation, kept after the production/
+                  balance merge. Renders nothing when the structure holds none. */}
+              <CompactEntityInventory
+                resources={resources}
+                activeRelicIds={activeRelicIds}
+                recipientType={RelicRecipientType.Structure}
+                entityId={structureEntityId}
+                allowRelicActivation={isMine}
+                variant="tight"
+                filter="relics"
+                emptyMessage=""
+                className="mt-2"
+              />
+            </>
           ) : (
             <p className={HUD_BODY_MUTED}>No resources stored.</p>
           )}

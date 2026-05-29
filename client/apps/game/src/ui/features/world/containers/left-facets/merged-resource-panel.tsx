@@ -219,7 +219,7 @@ export const MergedResourcePanel = memo(({ structureEntityId, resources, product
             tooltipText={tooltipParts.join(" • ")}
             isProducing={Boolean(item?.isProducing)}
             timeRemainingSeconds={effectiveRemaining}
-            size="md"
+            size="xs"
             showTooltip
             cornerTopLeft={count}
             cornerTopRight={balanceLabel}
@@ -276,7 +276,13 @@ export const MergedResourcePanel = memo(({ structureEntityId, resources, product
     return <p className="text-xxs italic text-gold/60">No resources yet.</p>;
   }
 
-  return <div className="flex flex-wrap items-center gap-3">{tokens}</div>;
+  // Fixed-width grid columns (one per 2.25rem token) instead of flex-wrap: the
+  // 1s timer tick changes corner digit widths, and with flex-wrap that reflows
+  // tokens between rows, oscillating the panel height and flickering the rail's
+  // scrollbar every second. A grid keeps the row count — and height — stable.
+  return (
+    <div className="grid auto-rows-min grid-cols-[repeat(auto-fill,2.25rem)] justify-start gap-2.5">{tokens}</div>
+  );
 });
 
 MergedResourcePanel.displayName = "MergedResourcePanel";

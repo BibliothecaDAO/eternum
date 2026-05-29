@@ -44,7 +44,7 @@ AutomationCue.displayName = "AutomationCue";
 export const EmpireCockpit = memo(() => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const { structure, resources, isMine, isLoadingStructure } = useStructureEntityDetail({ structureEntityId });
+  const { structure, resources, isMine, isLoadingStructure, typeLabel } = useStructureEntityDetail({ structureEntityId });
   const productionSummary = useStructureProductionSummary(structure, resources);
 
   // Hide cockpit when there's nothing meaningful to show — keeps the rail
@@ -53,7 +53,9 @@ export const EmpireCockpit = memo(() => {
   if (!structure || !isMine) return null;
 
   return (
-    <InfoBubble title="Empire" icon={Factory} cue={<AutomationCue structureEntityId={structureEntityId} />} collapsible>
+    // Title is the structure's own type (Realm / Village / Camp / …) rather than
+    // a generic "Empire" — it names exactly what the token panel is showing.
+    <InfoBubble title={typeLabel ?? "Structure"} icon={Factory} cue={<AutomationCue structureEntityId={structureEntityId} />} collapsible>
       <MergedResourcePanel
         structureEntityId={structureEntityId}
         resources={resources}

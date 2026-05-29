@@ -13,7 +13,6 @@ import { TOP_PILL, TOP_PILL_TEXT } from "@/ui/features/world/containers/top-head
 import { useDojo } from "@bibliothecadao/react";
 import { useEntityQuery } from "@dojoengine/react";
 import { Has } from "@dojoengine/recs";
-import Trophy from "lucide-react/dist/esm/icons/trophy";
 
 import { useCallback, useMemo } from "react";
 
@@ -95,7 +94,7 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
     // when the player is meaningfully ranked.
     if (!Number.isFinite(rank)) return null;
     if (rank > 500 && points <= 0) return null;
-    return { rank, points };
+    return { rank, points, name: entry.displayName ?? null };
   }, [account?.address, leaderboardEntries, playerEntries]);
 
   const handleOpenLeaderboard = useCallback(() => togglePopup(leaderboard), [togglePopup]);
@@ -107,13 +106,21 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
       className={cn(
         TOP_PILL,
         TOP_PILL_TEXT,
-        "transition hover:bg-gold/15",
+        "whitespace-nowrap transition hover:bg-gold/15",
         isPopupOpen(leaderboard) && "border-gold/60 bg-gold/15",
       )}
       aria-label="Open leaderboard"
       title="Open leaderboard"
     >
-      <Trophy className="h-3.5 w-3.5 text-gold/80" aria-hidden="true" />
+      {/* Guild artwork (same icon as the leaderboard button), then
+          name · #rank · VP with middle-dot separators. */}
+      <img src={BuildingThumbs.guild} alt="" aria-hidden="true" className="h-4 w-4 object-contain" />
+      {rankPill.name && (
+        <>
+          <span className="max-w-[120px] truncate">{rankPill.name}</span>
+          <span className="text-gold/50">·</span>
+        </>
+      )}
       <span>#{rankPill.rank}</span>
       <span className="text-gold/50">·</span>
       <span>{formatPoints(rankPill.points)} VP</span>

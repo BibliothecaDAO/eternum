@@ -40,10 +40,10 @@ export const TopHeader = memo(() => {
   const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
   const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
   const isSpectating = useUIStore((state) => state.isSpectating);
-  // Gate the follow-army-combats toggle: there's nothing to follow until the player actually owns
-  // an army. We keep it visible while it's already toggled on so a player can always turn it back off.
-  const hasOwnedArmies = useUIStore((state) => state.selectableArmies.length > 0);
-  const showFollowArmyToggle = hasOwnedArmies || followArmyCombats || isSpectating;
+  // The follow-army-combats toggle is a spectator-only affordance: it's for
+  // watching other players' battles. Active players manage their own armies, so
+  // it's hidden for them entirely.
+  const showFollowArmyToggle = isSpectating;
   const mode = useGameModeConfig();
 
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);

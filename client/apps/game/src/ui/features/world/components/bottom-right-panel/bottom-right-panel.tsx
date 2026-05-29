@@ -1149,7 +1149,7 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
         <>
           <CircleButton
             variant="action"
-            size="lg"
+            size="md"
             tooltipLocation="top"
             image={BuildingThumbs.construction}
             label="Build"
@@ -1158,7 +1158,7 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
           />
           <CircleButton
             variant="action"
-            size="lg"
+            size="md"
             tooltipLocation="top"
             image={BuildingThumbs.production}
             label="Production"
@@ -1167,7 +1167,7 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
           />
           <CircleButton
             variant="action"
-            size="lg"
+            size="md"
             tooltipLocation="top"
             image={BuildingThumbs.military}
             label="Military"
@@ -1177,7 +1177,7 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
           />
           <CircleButton
             variant="action"
-            size="lg"
+            size="md"
             tooltipLocation="top"
             image={BuildingThumbs.transfer}
             label="Transfer"
@@ -1198,18 +1198,18 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
       )}
       <CircleButton
         variant="action"
-        size="lg"
+        size="md"
         tooltipLocation="top"
         label="Chat"
         active={view === LeftView.ChatView}
         onClick={toggleView(LeftView.ChatView)}
       >
-        <MessageCircle className="h-4 w-4 md:h-5 md:w-5 text-[#241a0c]" />
+        <MessageCircle className="h-5 w-5 md:h-6 md:w-6 text-[#2a1c0c]" strokeWidth={2.25} />
       </CircleButton>
       {showTradeAction && (
         <CircleButton
           variant="action"
-          size="lg"
+          size="md"
           tooltipLocation="top"
           image={BuildingThumbs.scale}
           label="Trade"
@@ -1218,7 +1218,7 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
       )}
       <CircleButton
         variant="action"
-        size="lg"
+        size="md"
         tooltipLocation="top"
         image={BuildingThumbs.predictionMarket}
         label="Prediction Market"

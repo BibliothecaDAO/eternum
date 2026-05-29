@@ -41,7 +41,11 @@ export const useStructureCategoryFilter = (structures: StructureWithMetadata[], 
 
   // Fall back to the first owned category when the saved filter has nothing
   // here (e.g. saved "Realm" but this surface only shows Camps).
-  const effectiveFilter: LeftListFilter = useMemo(() => {
+  // Generic is explicit: availableCategories[0] is a non-nullable StructureType,
+  // so `?? "all"` would otherwise collapse the inferred type to StructureType and
+  // the shorthand return would drop "all" — making `=== "all"` look impossible
+  // at every call site. Forcing <LeftListFilter> keeps the union intact.
+  const effectiveFilter = useMemo<LeftListFilter>(() => {
     if (leftListFilter !== "all" && availableCategories.includes(leftListFilter as StructureType)) {
       return leftListFilter;
     }
