@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26622769431-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-05-29T06:51:12.826Z",
-  "updatedAt": "2026-05-29T06:52:33.413Z",
+  "updatedAt": "2026-05-29T06:52:37.450Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-29T06:52:37.450Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -77,5 +78,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-crisp-877.json",
     "worldAddress": "0x06b7f3d1c1f990e510464e107e8cce41844168ed3a23005caa313701593be810",
     "createGameTxHash": "0x4972fd440504c99e0e8ab98bee376ddbd843c75b678c608041e61b14daa179b"
+  },
+  "activeLease": {
+    "launchRequestId": "26622769431-1",
+    "workflowRunId": 26622769431,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-05-29T06:52:37.450Z",
+    "expiresAt": "2026-05-29T07:37:37.450Z"
   }
 }
