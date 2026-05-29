@@ -844,7 +844,7 @@ pub mod troop_battle_systems {
                 if explorer_defender.troops.count.is_non_zero() {
                     let guard_slot: Option<GuardSlot> = structure_guards_aggressor
                         .next_attack_slot(structure_aggressor_base.troop_max_guard_count.into());
-                    if guard_slot.is_none() {
+                    if guard_slot.is_none() && explorer_defender.coord.is_adjacent(structure_aggressor_base.coord()) {
                         // claim structure
                         structure_claimed_after_battle = true;
                         iStructureImpl::battle_claim(

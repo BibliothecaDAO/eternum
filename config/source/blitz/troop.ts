@@ -25,8 +25,8 @@ const TROOP_STAMINA_MAX = {
 };
 
 // Combat stamina requirements
-const TROOP_STAMINA_ATTACK_REQ = 50;
-const TROOP_STAMINA_DEFENSE_REQ = 40;
+const TROOP_STAMINA_ATTACK_REQ = 40;
+const TROOP_STAMINA_DEFENSE_REQ = 20;
 // Troop travel
 const TROOP_TRAVEL_WHEAT_COST = 0.03;
 const TROOP_TRAVEL_FISH_COST = 0;

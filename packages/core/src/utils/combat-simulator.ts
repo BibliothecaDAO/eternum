@@ -138,12 +138,16 @@ export class CombatSimulator {
     return attacker.troopType === TroopType.Crossbowman && (context.attackDistance ?? 1) > 1;
   }
 
+  private isRangedAttack(context: CombatSimulationContext): boolean {
+    return (context.attackDistance ?? 1) > 1;
+  }
+
   private calculateAttackerBiomeModifier(
     attacker: Army,
     battleBiome: BiomeType,
     context: CombatSimulationContext,
   ): number {
-    if (this.isRangedCrossbowAttack(attacker, context)) {
+    if (this.isRangedAttack(context)) {
       return 1;
     }
 
@@ -194,22 +198,53 @@ export class CombatSimulator {
     return baseStaminaCost - Math.ceil(baseStaminaCost * refundMultiplier);
   }
 
-  public calculateNewStaminaAttacker(currentStamina: number, refundMultiplier: number): number {
-    const staminaCost = this.calculateStaminaCost(this.staminaAttackThreshold, refundMultiplier);
+  public calculateNewStaminaAttacker(
+    currentStamina: number,
+    refundMultiplier: number,
+    context: CombatSimulationContext = {},
+  ): number {
+    const staminaCost = this.calculateStaminaCost(
+      this.staminaAttackThreshold,
+      this.isRangedAttack(context) ? 0 : refundMultiplier,
+    );
     return currentStamina - staminaCost;
   }
 
-  public calculateNewStaminaDefender(currentStamina: number, refundMultiplier: number): number {
+  public calculateNewStaminaDefender(
+    currentStamina: number,
+    refundMultiplier: number,
+    context: CombatSimulationContext = {},
+  ): number {
+    if (this.isRangedAttack(context)) return currentStamina;
+
     const staminaCost = this.calculateStaminaCost(this.staminaDefenseThreshold, refundMultiplier);
     return currentStamina - staminaCost;
   }
 
-  public calculateNewCooldownEndAttacker(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
-    return this.calculateNextBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
+  public calculateNewCooldownEndAttacker(
+    currentCooldownEnd: number,
+    now: number,
+    refundMultiplier: number,
+    context: CombatSimulationContext = {},
+  ): number {
+    return this.calculateNextBattleCooldownEnd(
+      currentCooldownEnd,
+      now,
+      this.isRangedAttack(context) ? 0.5 : refundMultiplier,
+    );
   }
 
-  public calculateNewCooldownEndDefender(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
-    return this.calculateNextBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
+  public calculateNewCooldownEndDefender(
+    currentCooldownEnd: number,
+    now: number,
+    refundMultiplier: number,
+    context: CombatSimulationContext = {},
+  ): number {
+    return this.calculateNextBattleCooldownEnd(
+      currentCooldownEnd,
+      now,
+      this.isRangedAttack(context) ? 0.5 : refundMultiplier,
+    );
   }
 
   /**
@@ -307,22 +342,27 @@ export class CombatSimulator {
       Math.pow(totalTroops, betaEff);
 
     // Calculate base damage for defender
-    const baseDefenderDamage =
-      (this.baseDamageFactor *
-        defender.troopCount *
-        (this.getTierValue(defender.tier) / this.getTierValue(attacker.tier)) *
-        this.calculateStaminaModifier(defender.stamina, false) *
-        this.calculateBattleTimerDamageModifier(defender.battle_cooldown_end, now, false) *
-        this.calculateDefenderBiomeModifier(defender, biome, context) *
-        this.calculateIncomingDamageMultiplier(attacker, context.attackerIsStructureGuard)) /
-      Math.pow(totalTroops, betaEff);
+    const baseDefenderDamage = this.isRangedAttack(context)
+      ? 0
+      : (this.baseDamageFactor *
+          defender.troopCount *
+          (this.getTierValue(defender.tier) / this.getTierValue(attacker.tier)) *
+          this.calculateStaminaModifier(defender.stamina, false) *
+          this.calculateBattleTimerDamageModifier(defender.battle_cooldown_end, now, false) *
+          this.calculateDefenderBiomeModifier(defender, biome, context) *
+          this.calculateIncomingDamageMultiplier(attacker, context.attackerIsStructureGuard)) /
+        Math.pow(totalTroops, betaEff);
 
     // Apply relic modifiers
     const attackerDamage = baseAttackerDamage * attackerDamageMultiplierRelics * defenderReductionMultiplierRelics;
     const defenderDamage = baseDefenderDamage * defenderDamageMultiplierRelics * attackerReductionMultiplierRelics;
 
-    const attackerRefundMultiplier = this.calculateRefundMultiplier(attackerDamage, defenderDamage);
-    const defenderRefundMultiplier = this.calculateRefundMultiplier(defenderDamage, attackerDamage);
+    const attackerRefundMultiplier = this.isRangedAttack(context)
+      ? 0
+      : this.calculateRefundMultiplier(attackerDamage, defenderDamage);
+    const defenderRefundMultiplier = this.isRangedAttack(context)
+      ? 0
+      : this.calculateRefundMultiplier(defenderDamage, attackerDamage);
 
     return {
       attackerDamage,
@@ -342,10 +382,10 @@ export class CombatSimulator {
       damage_c0: 100_000n * CombatSimulator.MAX_U64, // 100_000
       damage_delta: 50_000n * CombatSimulator.MAX_U64, // 50_000
       t1_damage_value: 1844674407370955161600n, // 100
-      t2_damage_multiplier: 46116860184273879040n, // 2.5
-      t3_damage_multiplier: 129127208515966861312n, // 7
-      stamina_attack_req: 50,
-      stamina_defense_req: 40,
+      t2_damage_multiplier: 55340232221128654848n, // 3
+      t3_damage_multiplier: 166020696663385964544n, // 9
+      stamina_attack_req: 40,
+      stamina_defense_req: 20,
       tick_interval_seconds: 60,
     };
   }

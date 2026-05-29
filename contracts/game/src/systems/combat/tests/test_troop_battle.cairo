@@ -458,17 +458,26 @@ mod tests {
     }
 
     #[test]
-    fn test_crossbowman_guard_attacks_explorer_at_radius_two() {
+    fn test_crossbowman_guard_attacks_explorer_at_radius_two_without_counter_damage_or_remote_claim() {
         let (mut world, systems, realm, explorer) = setup_guard_battle(
-            TroopType::Crossbowman, TroopTier::T2, TroopType::Knight, TroopTier::T1,
+            TroopType::Crossbowman, TroopTier::T1, TroopType::Knight, TroopTier::T3,
         );
 
         let structure_base: StructureBase = StructureBaseStoreImpl::retrieve(ref world, realm.entity_id);
+        let mut guard_troops = StructureTroopGuardStoreImpl::retrieve(ref world, realm.entity_id);
+        guard_troops.delta.count = 1 * RESOURCE_PRECISION;
+        StructureTroopGuardStoreImpl::store(ref guard_troops, ref world, realm.entity_id);
+
         let mut explorer_troops: ExplorerTroops = world.read_model(explorer.explorer_id);
         explorer_troops.coord = structure_base.coord().neighbor(Direction::East).neighbor(Direction::NorthEast);
         world.write_model_test(@explorer_troops);
 
         attack_guard_vs_explorer(ref world, systems, realm, GuardSlot::Delta, explorer.explorer_id);
+
+        let structure_owner = StructureOwnerStoreImpl::retrieve(ref world, realm.entity_id);
+        let guard_troops_after = StructureTroopGuardStoreImpl::retrieve(ref world, realm.entity_id);
+        assert!(structure_owner == realm.owner, "Ranged guard attack should not remotely hand over structure");
+        assert!(guard_troops_after.delta.count == 1 * RESOURCE_PRECISION, "Ranged defender should not counter-damage guard");
     }
 
     #[test]

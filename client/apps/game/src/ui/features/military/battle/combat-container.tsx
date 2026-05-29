@@ -363,21 +363,25 @@ export const CombatContainer = ({
     const newAttackerStamina = combatSimulator.calculateNewStaminaAttacker(
       Number(attackerStamina),
       result.attackerRefundMultiplier,
+      combatSimulationContext,
     );
     const newDefenderStamina = combatSimulator.calculateNewStaminaDefender(
       Number(targetArmyData.troops.stamina.amount),
       result.defenderRefundMultiplier,
+      combatSimulationContext,
     );
     // Calculate what the cooldown will be AFTER the battle
-    const attackerAfterBattleCooldownEnd = combatSimulator.calculateNextBattleCooldownEnd(
+    const attackerAfterBattleCooldownEnd = combatSimulator.calculateNewCooldownEndAttacker(
       attackerArmyData.troops.battle_cooldown_end,
       now,
       result.attackerRefundMultiplier,
+      combatSimulationContext,
     );
-    const defenderAfterBattleCooldownEnd = combatSimulator.calculateNextBattleCooldownEnd(
+    const defenderAfterBattleCooldownEnd = combatSimulator.calculateNewCooldownEndDefender(
       targetArmyData.troops.battle_cooldown_end,
       now,
       result.defenderRefundMultiplier,
+      combatSimulationContext,
     );
 
     const attackerDamageBonusAbsolute = attackerBaselineResult

@@ -640,14 +640,18 @@ pub impl TroopsImpl of TroopsTrait {
         return FixedTrait::new(numerator.into(), false) / FixedTrait::new(100, false);
     }
 
+    fn _is_ranged_attack_context(context: CombatContext) -> bool {
+        context.attack_distance > 1
+    }
+
     fn _is_ranged_crossbow_attack(ref self: Troops, context: CombatContext) -> bool {
-        self.category == TroopType::Crossbowman && context.attack_distance > 1
+        self.category == TroopType::Crossbowman && Self::_is_ranged_attack_context(context)
     }
 
     fn _attacker_biome_damage_bonus(
         ref self: Troops, context: CombatContext, troop_damage_config: TroopDamageConfig,
     ) -> Fixed {
-        if self._is_ranged_crossbow_attack(context) {
+        if Self::_is_ranged_attack_context(context) {
             return 1_u8.into();
         }
 
@@ -663,7 +667,7 @@ pub impl TroopsImpl of TroopsTrait {
             return Self::_combat_percent_multiplier(30);
         }
 
-        Self::_combat_percent_multiplier(80)
+        Self::_combat_percent_multiplier(70)
     }
 
     fn _knight_structure_assault_multiplier(ref self: Troops, context: CombatContext) -> Fixed {
@@ -671,7 +675,7 @@ pub impl TroopsImpl of TroopsTrait {
             && !context.attacker_is_structure_guard
             && context.defender_is_structure_guard
             && context.attack_distance == 1 {
-            return Self::_combat_percent_multiplier(120);
+            return Self::_combat_percent_multiplier(115);
         }
 
         1_u8.into()
@@ -753,12 +757,16 @@ pub impl TroopsImpl of TroopsTrait {
         let ALPHA_STAMINA_BONUS_DAMAGE_MULTIPLIER: Fixed = 1_u8.into();
         let ALPHA_BATTLE_TIMER_DAMAGE_MULTIPLIER: Fixed = 1_u8.into();
 
+        let is_ranged_attack = Self::_is_ranged_attack_context(context);
+
         // calculate bravo's stamina based damage penalty
         let mut BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER: Fixed = 1_u8.into();
         let mut BRAVO_STAMINA_LOSS: u128 = core::cmp::min(
             bravo.stamina.amount.into(), troop_stamina_config.stamina_defense_req.into(),
         );
-        if BRAVO_STAMINA_LOSS < troop_stamina_config.stamina_defense_req.into() {
+        if is_ranged_attack {
+            BRAVO_STAMINA_LOSS = 0;
+        } else if BRAVO_STAMINA_LOSS < troop_stamina_config.stamina_defense_req.into() {
             BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER = FixedTrait::new(7, false) / FixedTrait::new(10, false); // 0.7
         }
 
@@ -802,6 +810,9 @@ pub impl TroopsImpl of TroopsTrait {
         ALPHA_DAMAGE_DEALT *= alpha._outgoing_damage_multiplier(context);
         ALPHA_DAMAGE_DEALT *= bravo._incoming_damage_multiplier(context.defender_is_structure_guard);
         BRAVO_DAMAGE_DEALT *= alpha._incoming_damage_multiplier(context.attacker_is_structure_guard);
+        if is_ranged_attack {
+            BRAVO_DAMAGE_DEALT = FixedTrait::ZERO();
+        }
 
         /////////////////////////////////////////////////
         /// APPLY BATTLE DAMAGE BOOST/REDUCTION EFFECTS
@@ -836,6 +847,20 @@ pub impl TroopsImpl of TroopsTrait {
         ALPHA_DAMAGE_DEALT -= ALPHA_DAMAGE_DEALT
             * bravo.boosts.decr_damage_gotten_percent_num.into()
             / PercentageValueImpl::_100().into();
+
+        if is_ranged_attack {
+            let half_battle_timer_length: u32 = (current_tick_interval / 2).try_into().unwrap();
+            alpha.battle_cooldown_end += half_battle_timer_length;
+            bravo.battle_cooldown_end += half_battle_timer_length;
+            self = alpha;
+
+            return (
+                ALPHA_DAMAGE_DEALT.round().try_into().unwrap() * RESOURCE_PRECISION,
+                0,
+                ALPHA_STAMINA_LOSS.try_into().unwrap(),
+                0,
+            );
+        }
 
         ////////////////////////////////////
         /// STAMINA REFUND
@@ -978,8 +1003,8 @@ mod tests {
             stamina_knight_max: KNIGHT_MAX_STAMINA,
             stamina_paladin_max: PALADIN_MAX_STAMINA,
             stamina_crossbowman_max: CROSSBOWMAN_MAX_STAMINA,
-            stamina_attack_req: 50,
-            stamina_defense_req: 60,
+            stamina_attack_req: 40,
+            stamina_defense_req: 20,
             stamina_explore_wheat_cost: 780,
             stamina_explore_fish_cost: 440,
             stamina_explore_stamina_cost: 30, // 30 stamina per hex
@@ -1101,6 +1126,8 @@ mod tests {
             );
 
         assert!(ranged_bravo.count > adjacent_bravo.count, "Ranged field attack should deal reduced damage");
+        assert!(ranged_alpha.count == 1_000 * RESOURCE_PRECISION, "Ranged defender should not counter-damage attacker");
+        assert!(ranged_bravo.stamina.amount == 100, "Ranged defender should not spend defensive stamina");
     }
 
     #[test]
