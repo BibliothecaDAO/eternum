@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-froth-357",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-froth-357/26628917814-1.json",
   "latestLaunchRequestId": "26628917814-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-05-29T09:17:00.690Z",
-  "updatedAt": "2026-05-29T09:20:00.610Z",
+  "updatedAt": "2026-05-29T09:20:06.425Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,12 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-29T09:20:00.610Z"
+      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-froth-357\" on slot.blitz\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-froth-357\"\n\u001b[2m[+115ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-froth-357\" in 102ms (0x060ae00d...5e2673)\n\u001b[2m[+122ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x060ae00d...5e2673\n\u001b[2m[+124ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 2ms: Unable to verify whether Torii deployment \"bltz-froth-357\" already exists. Refusing to create a duplicate while state is indeterminate.\nError: Unable to verify whether Torii deployment \"bltz-froth-357\" already exists. Refusing to create a duplicate while state is indeterminate.\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:372:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1058:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1056:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1251:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1289:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1304:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:150:25)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-05-29T09:20:00.610Z",
+      "finishedAt": "2026-05-29T09:20:06.425Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-froth-357\" on slot.blitz\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+11ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 29 config steps for slot.blitz\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-froth-357\"\n\u001b[2m[+115ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-froth-357\" in 102ms (0x060ae00d...5e2673)\n\u001b[2m[+122ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x060ae00d...5e2673\n\u001b[2m[+124ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 2ms: Unable to verify whether Torii deployment \"bltz-froth-357\" already exists. Refusing to create a duplicate while state is indeterminate.\nError: Unable to verify whether Torii deployment \"bltz-froth-357\" already exists. Refusing to create a duplicate while state is indeterminate.\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:372:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1058:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1056:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1251:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1289:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1304:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:150:25)\n    at processTicksAndRejections (native:7:39)"
     }
   ],
   "artifacts": {
@@ -91,13 +93,5 @@
       "0x4057f2dfdb54b283cbf50c11ea5b69bab6d5c0663858067745f716fbdbe2dfd"
     ],
     "lootChestRoleTxHash": "0x3e3888b29d75d9de0900d2e2fcc531676055e2521018ba607004fc72bd3ac6"
-  },
-  "activeLease": {
-    "launchRequestId": "26628917814-1",
-    "workflowRunId": 26628917814,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-29T09:20:00.610Z",
-    "expiresAt": "2026-05-29T10:05:00.610Z"
   }
 }
