@@ -624,7 +624,7 @@ pub fn namespace_def_combat() -> NamespaceDef {
             TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_17")),
+            TestResource::Library(("structure_creation_library", "0_1_18")),
             TestResource::Library(("biome_library", "0_1_13")), TestResource::Library(("rng_library", "0_1_15")),
             TestResource::Library(
                 ("combat_library", "0_1_12"),
@@ -1195,7 +1195,7 @@ pub fn namespace_def_troop_management() -> NamespaceDef {
             TestResource::Contract("troop_movement_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_17")),
+            TestResource::Library(("structure_creation_library", "0_1_18")),
             TestResource::Library(("biome_library", "0_1_13")), TestResource::Library(("rng_library", "0_1_15")),
             TestResource::Library(("combat_library", "0_1_12")),
         ]
