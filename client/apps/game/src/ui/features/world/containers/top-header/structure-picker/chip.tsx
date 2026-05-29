@@ -21,7 +21,7 @@ import Hexagon from "lucide-react/dist/esm/icons/hexagon";
 import Info from "lucide-react/dist/esm/icons/info";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
-import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 import Star from "lucide-react/dist/esm/icons/star";
 import Users from "lucide-react/dist/esm/icons/users";
 import type { LucideIcon } from "lucide-react";
@@ -199,7 +199,7 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
   // Bootstrap mode: first-ever upgrade also provisions the realm in one tx.
   // Triggered while the chain still allows provisioning (main phase, not yet
   // provisioned). Falls back to plain upgrade once canProvision flips false.
-  const isBootstrapMode = Boolean(provisionInfo?.canProvision);
+  const isBootstrapMode = Boolean(provisionInfo?.needsBootstrap);
   const isBootstrapDisabled =
     !bootstrapInfo.canUpgradeAndProvision || bootstrapInfo.isPending || upgradeInfo.isUpgradeLoading;
   const shouldGlowBootstrap = bootstrapInfo.canUpgradeAndProvision && !isBootstrapDisabled;
@@ -231,7 +231,7 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
           aria-label="Bootstrap realm"
           title="Bootstrap realm"
         >
-          {isBootstrapLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+          {isBootstrapLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pickaxe className="h-3.5 w-3.5" />}
         </button>
       ) : (
         <button

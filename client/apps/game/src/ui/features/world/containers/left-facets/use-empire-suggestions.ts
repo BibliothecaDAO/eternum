@@ -119,7 +119,7 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
           realmName,
           action: "upgrade-and-provision",
           label: "Bootstrap realm",
-          icon: Sparkles,
+          icon: Pickaxe,
           reason: "Level up + provision.",
           emphasis: "primary",
         });

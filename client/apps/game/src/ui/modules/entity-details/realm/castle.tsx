@@ -19,6 +19,7 @@ import ChevronDownIcon from "lucide-react/dist/esm/icons/chevron-down";
 import CrownIcon from "lucide-react/dist/esm/icons/crown";
 import PlusIcon from "lucide-react/dist/esm/icons/plus";
 import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
+import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 
 const WONDER_BONUS_DISTANCE = 12;
 
@@ -139,7 +140,7 @@ export const Castle = () => {
 
   const provisionInfo = useBlitzRealmProvision(structureEntityId ?? null);
   const bootstrapInfo = useRealmUpgradeAndProvision(structureEntityId ?? null);
-  const isBootstrapMode = Boolean(provisionInfo?.canProvision);
+  const isBootstrapMode = Boolean(provisionInfo?.needsBootstrap);
 
   const bootstrapRealm = async () => {
     try {
@@ -214,7 +215,7 @@ export const Castle = () => {
                       : `Upgrade to ${RealmLevels[getNextRealmLevel]}`
                     : "Need Resources"}
                   {isBootstrapMode ? (
-                    <SparklesIcon className="w-4 h-4 ml-2" />
+                    <Pickaxe className="w-4 h-4 ml-2" />
                   ) : (
                     <ArrowUpRightIcon className="w-4 h-4 ml-2" />
                   )}
