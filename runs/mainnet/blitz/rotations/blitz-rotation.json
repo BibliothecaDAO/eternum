@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "26651479433-1",
   "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-05-29T17:23:02.937Z",
+  "updatedAt": "2026-05-29T17:31:01.640Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -10188,7 +10188,7 @@
         },
         "seriesGameNumber": 54,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x023003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n      \"calldata\": [\n        \"0x1\",\n        \"0x57a36c41ab13a5faece4a37e64e95ae659c1b2ff756db4d05dc42ee8f8adb8a\",\n        \"0x36e1263d186750e7b52343ee3d95277a12c82a25e4423d0ebf7efe6a05cd7de\",\n        \"0x1\",\n        \"0x13\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x455\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0x3b9aca00\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x100000000000000000000000000000003\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Contract address= 0x23003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532, Class hash= 0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f, Selector= 0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad, Nested error: (0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), 0x0 (''), \\\"Eternum: Not a blitz game\\\", 0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED'))\"}",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "failed",
         "configSteps": [
           {
@@ -10360,7 +10360,9 @@
           "createGameTxHash": "0x7180b794e932dd46323be1957e362504e103bd5c34bd2112eef92bef0af7d85",
           "entryTokenAddress": "0x4d1df5d6fc3317c32c34d6307f05ebe595759aa09e6e99d510ed005d9820178",
           "configureTxHash": "0x694f19561dffd9116b7fd7ca20dd76ba3d7679f9d8b73f21965df8678d54e76",
-          "worldConfigTxHash": "0x694f19561dffd9116b7fd7ca20dd76ba3d7679f9d8b73f21965df8678d54e76"
+          "worldConfigTxHash": "0x694f19561dffd9116b7fd7ca20dd76ba3d7679f9d8b73f21965df8678d54e76",
+          "pendingIndexerTierTarget": "legendary",
+          "pendingIndexerTierRequestedAt": "2026-05-29T17:30:58.833Z"
         }
       },
       {
