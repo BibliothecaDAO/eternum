@@ -111,24 +111,14 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
       const occupiedGuards = Number(base?.troop_guard_count ?? 0);
       const maxGuards = Number(base?.troop_max_guard_count ?? 0);
 
-      // Highest-value action: first-ever upgrade also provisions the realm in one tx.
-      if (structure.canUpgrade && structure.canProvision) {
-        out.push({
-          id: `${realmId}-upgrade-and-provision`,
-          realmId,
-          realmName,
-          action: "upgrade-and-provision",
-          label: "Bootstrap realm",
-          icon: Pickaxe,
-          reason: "Provision + level up.",
-          emphasis: "primary",
-        });
-        continue;
-      }
-
-      // Provision-only: a freshly settled realm has no economy until provisioned,
-      // so it can't yet afford the level-up. Surface provision on its own — the
-      // upgrade suggestion returns once provisioning seeds the realm's resources.
+      // Provision is the single first-step for a freshly settled realm. It has
+      // no economy until provisioned, and provisioning alone never grants enough
+      // to also afford the first level-up (e.g. it grants Wheat but no Essence),
+      // so bundling level_up here would revert the whole tx. Suggest provision on
+      // its own; the "Level up realm" suggestion returns once the realm is
+      // provisioned and its production covers the upgrade cost. `canUpgrade` here
+      // is a level-only metadata signal (not affordability-aware), so it cannot
+      // gate the bundle safely.
       if (structure.canProvision) {
         out.push({
           id: `${realmId}-provision`,
@@ -223,6 +213,9 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
         }
       }
 
+      // Only reached for an already-provisioned realm (the unprovisioned case
+      // continues above). `canUpgrade` is a level-only signal, so the on-chain
+      // level_up still enforces the resource cost.
       if (structure.canUpgrade) {
         out.push({
           id: `${realmId}-upgrade`,
@@ -232,19 +225,6 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
           label: "Level up realm",
           icon: ArrowUpCircle,
           reason: "Requirements met.",
-          emphasis: "primary",
-        });
-      }
-
-      if (structure.canProvision) {
-        out.push({
-          id: `${realmId}-provision`,
-          realmId,
-          realmName,
-          action: "provision",
-          label: "Provision realm",
-          icon: Pickaxe,
-          reason: "Claim provision bonus.",
           emphasis: "primary",
         });
       }

@@ -31,9 +31,18 @@ describe("blitz bootstrap fires provision before level_up", () => {
   it("useRealmUpgradeAndProvision gates the action on provisioning, not on the upgrade", () => {
     const src = readSource("src/ui/modules/entity-details/hooks/use-realm-upgrade-and-provision.ts");
     // Provision is the floor — clicking must not require canUpgrade.
-    expect(src).toContain("if (!structureEntityId || !canProvision) return;");
-    // The level-up is opt-in inside the handler.
-    expect(src).toContain("if (canUpgrade) {");
+    expect(src).toContain("!canProvision");
+    // Provision-only delegates to the standalone provision flow (which locks
+    // through torii sync); the bundled upgrade is the affordable-only branch.
+    expect(src).toContain("if (!canUpgrade)");
+    expect(src).toContain("provision.handleProvision()");
+  });
+
+  it("empire suggestions never bundle level_up on an unprovisioned realm (it would revert)", () => {
+    const src = readSource("src/ui/features/world/containers/left-facets/use-empire-suggestions.ts");
+    // A fresh realm can't afford the first upgrade; suggest provision alone.
+    expect(src).not.toContain('action: "upgrade-and-provision"');
+    expect(src).toContain('action: "provision"');
   });
 
   it("chip + castle enable the bootstrap pickaxe on canProvision, not canUpgradeAndProvision", () => {
