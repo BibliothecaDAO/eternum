@@ -1140,12 +1140,16 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
   );
 
   return (
-    <div className="pointer-events-auto fixed left-3 z-[25] flex gap-2" style={style} aria-label="Quick actions">
+    <div
+      className="pointer-events-auto fixed left-3 z-[25] flex items-center gap-2 rounded-full border border-gold/30 bg-black/60 px-2.5 py-1.5 shadow-[0_4px_18px_rgba(0,0,0,0.6)] backdrop-blur-sm"
+      style={style}
+      aria-label="Quick actions"
+    >
       {!isSpectating && (
         <>
           <CircleButton
-            variant="hud"
-            size="md"
+            variant="action"
+            size="lg"
             tooltipLocation="top"
             image={BuildingThumbs.construction}
             label="Build"
@@ -1153,8 +1157,8 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
             onClick={toggleView(LeftView.ConstructionView)}
           />
           <CircleButton
-            variant="hud"
-            size="md"
+            variant="action"
+            size="lg"
             tooltipLocation="top"
             image={BuildingThumbs.production}
             label="Production"
@@ -1162,8 +1166,8 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
             disabled={!structureEntityId}
           />
           <CircleButton
-            variant="hud"
-            size="md"
+            variant="action"
+            size="lg"
             tooltipLocation="top"
             image={BuildingThumbs.military}
             label="Military"
@@ -1172,8 +1176,8 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
             disabled={!structureEntityId}
           />
           <CircleButton
-            variant="hud"
-            size="md"
+            variant="action"
+            size="lg"
             tooltipLocation="top"
             image={BuildingThumbs.transfer}
             label="Transfer"
@@ -1193,19 +1197,19 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
         </>
       )}
       <CircleButton
-        variant="hud"
-        size="md"
+        variant="action"
+        size="lg"
         tooltipLocation="top"
         label="Chat"
         active={view === LeftView.ChatView}
         onClick={toggleView(LeftView.ChatView)}
       >
-        <MessageCircle className="h-4 w-4 md:h-5 md:w-5 text-gold" />
+        <MessageCircle className="h-4 w-4 md:h-5 md:w-5 text-[#241a0c]" />
       </CircleButton>
       {showTradeAction && (
         <CircleButton
-          variant="hud"
-          size="md"
+          variant="action"
+          size="lg"
           tooltipLocation="top"
           image={BuildingThumbs.scale}
           label="Trade"
@@ -1213,8 +1217,8 @@ const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
         />
       )}
       <CircleButton
-        variant="hud"
-        size="md"
+        variant="action"
+        size="lg"
         tooltipLocation="top"
         image={BuildingThumbs.predictionMarket}
         label="Prediction Market"

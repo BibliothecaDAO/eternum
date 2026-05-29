@@ -107,8 +107,15 @@ export const DefenseSlotSelection = ({
                 </div>
                 {hasGuard ? (
                   <div className="flex flex-col gap-0.5">
-                    <div className={clsx("text-xs font-bold", isSelected ? "text-gold" : "text-gold/90")}>
-                      {guardCountLabel}
+                    <div className="flex items-center gap-1.5">
+                      {guardTier && (
+                        <span className="flex-shrink-0 rounded-sm border border-gold/30 bg-black/30 px-1 text-[10px] font-bold leading-tight text-gold/80">
+                          {guardTier}
+                        </span>
+                      )}
+                      <span className={clsx("text-xs font-bold", isSelected ? "text-gold" : "text-gold/90")}>
+                        {guardCountLabel}
+                      </span>
                     </div>
                     <GuardStaminaBar current={guardStaminaCurrent} max={guardStaminaMax} />
                   </div>

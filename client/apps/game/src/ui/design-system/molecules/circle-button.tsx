@@ -18,7 +18,7 @@ type CircleButtonProps = {
    * "hud" applies the shared Etched Bronze HUD surface so view-switcher
    * + alert-cluster icons feel like part of the same family as pills.
    */
-  variant?: "default" | "hud";
+  variant?: "default" | "hud" | "action";
   tooltipLocation?: "top" | "bottom" | "left" | "right";
   primaryNotification?: {
     value: number;
@@ -154,17 +154,29 @@ const CircleButton = ({
         onClick={handleClick}
         className={clsx(
           "flex cursor-pointer items-center justify-center fill-current text-gold group",
-          variant === "hud"
-            ? clsx(OVERLAY_SURFACE_BASE, !disabled && "hover:border-gold/55", active && !disabled && OVERLAY_SURFACE_ACTIVE)
-            : clsx(
-                "transition-all duration-150 hover:border-gold shadow-2xl bg-hex-bg hover:bg-gold border border-gold/40 button-wood",
-                active ? "bg-gold !border-gold sepia-0" : "bg-dark-wood",
-              ),
+          variant === "action"
+            ? clsx(
+                // Golden fill + brown border — themed and high-contrast against
+                // the dark tray / map so the quick-action bubbles pop.
+                "border-2 border-[#3a2713] bg-gradient-to-b from-gold to-amber-500 text-[#241a0c] shadow-[0_2px_10px_rgba(0,0,0,0.55)] transition-all duration-150",
+                !disabled && "hover:from-amber-300 hover:to-gold",
+              )
+            : variant === "hud"
+              ? clsx(
+                  OVERLAY_SURFACE_BASE,
+                  !disabled && "hover:border-gold/55",
+                  active && !disabled && OVERLAY_SURFACE_ACTIVE,
+                )
+              : clsx(
+                  "transition-all duration-150 hover:border-gold shadow-2xl bg-hex-bg hover:bg-gold border border-gold/40 button-wood",
+                  active ? "bg-gold !border-gold sepia-0" : "bg-dark-wood",
+                ),
           // Hover/active grow — makes the icons feel tactile and emphasizes the
           // current selection without changing layout. Disabled icons stay flat.
           !disabled && "hover:scale-110 active:scale-95",
-          active && !disabled && variant !== "hud" && "scale-110 ring-2 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.45)]",
+          active && !disabled && variant === "default" && "scale-110 ring-2 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.45)]",
           active && !disabled && variant === "hud" && "scale-110",
+          active && !disabled && variant === "action" && "scale-105 ring-2 ring-[#3a2713] brightness-110",
           className,
           sizes[size],
           { "cursor-not-allowed": disabled },
