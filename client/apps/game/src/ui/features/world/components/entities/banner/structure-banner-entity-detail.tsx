@@ -174,10 +174,6 @@ const StructureBannerEntityDetailContent = memo(
     const occupiedGuardSlots = guards.filter((guard) => Number(guard.troops?.count ?? 0) > 0).length;
     const guardCue = guardSlotsMax !== undefined ? `${occupiedGuardSlots}/${guardSlotsMax}` : `${occupiedGuardSlots}`;
 
-    // Unused now that we no longer render a Tabs.List with cues, but kept in
-    // case a future inline indicator wants to surface the same signal.
-    void relicCue;
-
     return (
       <div className={cn("flex min-w-0 flex-col gap-2", className)}>
         {/* Owner bubble — visible on the right-side tile inspector. Hidden on
