@@ -6,10 +6,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   toggleModal: vi.fn(),
-  headOnClose: null as null | (() => void),
-  bodyHeight: null as null | string,
-  bodyWidth: null as null | string,
-  bodyClassName: null as null | string,
+  shellTitle: null as ReactNode,
+  shellSize: null as string | null,
+  shellOnClose: null as null | (() => void),
 }));
 
 vi.mock("@/hooks/store/use-ui-store", () => ({
@@ -17,83 +16,57 @@ vi.mock("@/hooks/store/use-ui-store", () => ({
     selector({ toggleModal: mocks.toggleModal }),
 }));
 
-vi.mock("@/ui/design-system/molecules/secondary-popup", () => {
-  const SecondaryPopup = ({
+// Production renders through the shared CenteredModalShell (draggable, no
+// backdrop, xl size). Mock the shell so this stays a focused adapter test.
+vi.mock("@/ui/features/world/containers/centered-modal-shell", () => ({
+  CenteredModalShell: ({
+    title,
+    size,
+    onClose,
     children,
-    width,
-    name,
-    className,
-    containerClassName,
   }: {
+    title: ReactNode;
+    size?: string;
+    onClose?: () => void;
     children: ReactNode;
-    width?: string;
-    name?: string;
-    className?: string;
-    containerClassName?: string;
-  }) => (
-    <section
-      data-width={width}
-      data-name={name}
-      data-class-name={className}
-      data-container-class-name={containerClassName}
-    >
-      {children}
-    </section>
-  );
-
-  SecondaryPopup.Head = ({ children, onClose }: { children: ReactNode; onClose?: () => void }) => {
-    mocks.headOnClose = onClose ?? null;
-    return <button onClick={onClose}>{children}</button>;
-  };
-
-  SecondaryPopup.Body = ({
-    children,
-    height,
-    width,
-    className,
-  }: {
-    children: ReactNode;
-    height?: string;
-    width?: string;
-    className?: string;
   }) => {
-    mocks.bodyHeight = height ?? null;
-    mocks.bodyWidth = width ?? null;
-    mocks.bodyClassName = className ?? null;
-    return <div>{children}</div>;
-  };
-
-  return { SecondaryPopup };
-});
+    mocks.shellTitle = title;
+    mocks.shellSize = size ?? null;
+    mocks.shellOnClose = onClose ?? null;
+    return (
+      <section data-size={size}>
+        <span>{title}</span>
+        {children}
+      </section>
+    );
+  },
+}));
 
 import { ProductionPopupShell } from "./production-popup-shell";
 
 describe("ProductionPopupShell", () => {
   afterEach(() => {
     mocks.toggleModal.mockReset();
-    mocks.headOnClose = null;
-    mocks.bodyHeight = null;
-    mocks.bodyWidth = null;
-    mocks.bodyClassName = null;
+    mocks.shellTitle = null;
+    mocks.shellSize = null;
+    mocks.shellOnClose = null;
     vi.clearAllMocks();
   });
 
-  it("renders the production header and children", () => {
+  it("renders Production through the shared shell at xl size", () => {
     const html = renderToStaticMarkup(
       <ProductionPopupShell onClose={vi.fn()}>
         <div>Production body content</div>
       </ProductionPopupShell>,
     );
 
-    expect(html).toContain('data-width="min(1320px, calc(100vw - 48px))"');
+    expect(html).toContain('data-size="xl"');
     expect(html).toContain("Production");
     expect(html).toContain("Production body content");
-    expect(mocks.bodyWidth).toBe("100%");
-    expect(mocks.bodyHeight).toBe("calc(100vh - 48px)");
-    expect(mocks.bodyClassName).toBe("p-4");
+    expect(mocks.shellSize).toBe("xl");
   });
 
-  it("invokes onClose from the header close button", () => {
+  it("invokes the provided onClose from the shell", () => {
     const onClose = vi.fn();
 
     renderToStaticMarkup(
@@ -102,9 +75,22 @@ describe("ProductionPopupShell", () => {
       </ProductionPopupShell>,
     );
 
-    expect(mocks.headOnClose).not.toBeNull();
-    mocks.headOnClose?.();
+    expect(mocks.shellOnClose).not.toBeNull();
+    mocks.shellOnClose?.();
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to toggleModal(null) when no onClose is provided", () => {
+    renderToStaticMarkup(
+      <ProductionPopupShell>
+        <div>Closable content</div>
+      </ProductionPopupShell>,
+    );
+
+    expect(mocks.shellOnClose).not.toBeNull();
+    mocks.shellOnClose?.();
+
+    expect(mocks.toggleModal).toHaveBeenCalledWith(null);
   });
 });

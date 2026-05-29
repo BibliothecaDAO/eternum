@@ -201,11 +201,11 @@ export const LeftCommandSidebar = memo(() => {
         </div>
       )}
 
-      {/* Centered modals — each one renders its own CenteredModalShell so the
-          chrome (backdrop, bronze frame, header strip, close button) is the
+      {/* Bubble modals — each renders its own CenteredModalShell so the chrome
+          (bronze frame, header strip, close button) and window size are the
           same everywhere. We just dispatch by view. */}
       {isPanelOpen && view === LeftView.PredictionMarket && (
-        <CenteredModalShell title="Prediction Market" icon={Sparkles} onClose={closeView}>
+        <CenteredModalShell title="Prediction Market" icon={Sparkles} onClose={closeView} size="xl">
           <Suspense fallback={<div className="flex h-full items-center justify-center p-8">Loading…</div>}>
             <div className="prediction-market-selector flex h-full min-h-0 flex-col overflow-y-auto">
               <InGameMarket />
@@ -214,7 +214,7 @@ export const LeftCommandSidebar = memo(() => {
         </CenteredModalShell>
       )}
       {isPanelOpen && view === LeftView.ChatView && (
-        <CenteredModalShell title="Chat" icon={MessageCircle} onClose={closeView}>
+        <CenteredModalShell title="Chat" icon={MessageCircle} onClose={closeView} size="xl">
           <div className="h-full">
             <ChatModalContent
               initializer={realtimeInitializer}
@@ -228,7 +228,7 @@ export const LeftCommandSidebar = memo(() => {
         <ConstructionModal structureEntityId={structureEntityId} />
       )}
       {isPanelOpen && view === LeftView.ResourceArrivals && (
-        <CenteredModalShell title="Logistics" icon={PackageIcon} onClose={closeView}>
+        <CenteredModalShell title="Logistics" icon={PackageIcon} onClose={closeView} size="xl">
           <div className="h-full min-h-0 overflow-hidden">
             <LogisticsView hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
           </div>

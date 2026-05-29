@@ -87,7 +87,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
   }, []);
 
   return (
-    <CenteredModalShell title="Military" icon={Swords} onClose={close} size="wide">
+    <CenteredModalShell title="Military" icon={Swords} onClose={close} size="xl">
       <div className="grid h-full grid-cols-12 min-h-0">
         <div className="col-span-3 border-r border-gold/15 min-h-0">
           <StructureSidebar

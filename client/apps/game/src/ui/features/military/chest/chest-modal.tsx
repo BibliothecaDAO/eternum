@@ -25,7 +25,7 @@ export const ChestModal = ({
       title="Open Relic Crate"
       icon={Sparkles}
       onClose={close}
-      size="wide"
+      size="xl"
       bodyClassName="overflow-y-auto overflow-x-hidden"
     >
       <Suspense fallback={<LoadingAnimation />}>
