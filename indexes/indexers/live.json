@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-29T04:17:45.357Z",
+  "updatedAt": "2026-05-29T04:22:30.784Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2888,7 +2888,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-29-05-26-0100 not found"
       },
-      "updatedAt": "2026-05-29T04:02:22.306Z"
+      "updatedAt": "2026-05-29T04:22:30.784Z"
     },
     "bltz-zip-997": {
       "gameName": "bltz-zip-997",
