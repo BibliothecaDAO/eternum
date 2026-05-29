@@ -113,7 +113,7 @@ export const TroopSelectionGrid = ({
                     onClick={() => canSelect && onSelect(option.type, tierOption.tier)}
                   >
                     {/* Top Row: Badge + Icon + Count */}
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center justify-between gap-1.5 min-w-0">
                       {/* Tier Badge */}
                       <div
                         className={clsx(
@@ -130,11 +130,16 @@ export const TroopSelectionGrid = ({
                         <ResourceIcon resource={tierOption.resourceTrait} size="sm" withTooltip={false} />
                       </div>
 
-                      {/* Count */}
+                      {/* Count — min-w-0 + truncate so a large value can never
+                          overflow the narrow card; abbreviate >= 1000 ("3.5k")
+                          so 4-digit counts stay readable in 3 columns. */}
                       <div
-                        className={clsx("text-sm font-bold flex-shrink-0", isSelected ? "text-gold" : "text-gold/90")}
+                        className={clsx(
+                          "min-w-0 flex-1 truncate text-right text-sm font-bold tabular-nums",
+                          isSelected ? "text-gold" : "text-gold/90",
+                        )}
                       >
-                        {tierOption.available >= 10000
+                        {tierOption.available >= 1000
                           ? `${(tierOption.available / 1000).toFixed(1)}k`
                           : tierOption.available.toLocaleString()}
                       </div>

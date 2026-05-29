@@ -45,42 +45,47 @@ export const TroopCountSelector = ({
       }
     >
       <div className="space-y-1.5">
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1.5 flex-1">
-            <Button
-              variant="outline"
-              onClick={() => handleIncrement(100)}
-              disabled={troopCount >= maxAffordable}
-              className="px-3 py-1.5 text-xs font-bold hover:bg-gold/10"
-            >
-              +100
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => handleIncrement(500)}
-              disabled={troopCount >= maxAffordable}
-              className="px-3 py-1.5 text-xs font-bold hover:bg-gold/10"
-            >
-              +500
-            </Button>
-            <Button
-              variant="gold"
-              onClick={() => onChange(maxAffordable)}
-              disabled={troopCount >= maxAffordable}
-              className="px-4 py-1.5 text-xs font-extrabold"
-            >
-              MAX
-            </Button>
-          </div>
-          <NumberInput
-            max={maxAffordable}
-            min={0}
-            step={100}
-            value={troopCount}
-            onChange={onChange}
-            className="w-24 h-7 text-sm"
-          />
+        {/*
+          Two rows: quick-add buttons on top, the editable count input on its
+          own full-width row below. In the narrow embedded panel a single row
+          (buttons + a fixed-width input) squeezed the NumberInput down to just
+          its arrows, so the typed count was invisible/unusable. Giving the
+          input its own row lets its native full-width layout render the value.
+        */}
+        <div className="flex gap-1.5">
+          <Button
+            variant="outline"
+            onClick={() => handleIncrement(100)}
+            disabled={troopCount >= maxAffordable}
+            className="flex-1 px-2 py-1.5 text-xs font-bold hover:bg-gold/10"
+          >
+            +100
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleIncrement(500)}
+            disabled={troopCount >= maxAffordable}
+            className="flex-1 px-2 py-1.5 text-xs font-bold hover:bg-gold/10"
+          >
+            +500
+          </Button>
+          <Button
+            variant="gold"
+            onClick={() => onChange(maxAffordable)}
+            disabled={troopCount >= maxAffordable}
+            className="flex-1 px-2 py-1.5 text-xs font-extrabold"
+          >
+            MAX
+          </Button>
         </div>
+        <NumberInput
+          max={maxAffordable}
+          min={0}
+          step={100}
+          value={troopCount}
+          onChange={onChange}
+          className="h-9 text-sm"
+        />
 
         {!embedded && (
           <div className="flex justify-between items-center text-xs">
