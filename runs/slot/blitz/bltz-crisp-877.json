@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-crisp-877",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-crisp-877/26622769431-1.json",
   "latestLaunchRequestId": "26622769431-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-05-29T06:51:12.826Z",
-  "updatedAt": "2026-05-29T06:54:09.329Z",
+  "updatedAt": "2026-05-29T06:54:27.115Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-05-29T06:54:09.329Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-05-29T06:54:09.329Z",
+      "finishedAt": "2026-05-29T06:54:27.115Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x679774554cf91b7607a80efb96135e719aea5f9bba8f89660190f263cf97208"
     ],
-    "lootChestRoleTxHash": "0x37ce29ee1b1da5688a9d40dffdd2997a0c897b275f9695f94f08a7334d30412"
+    "lootChestRoleTxHash": "0x37ce29ee1b1da5688a9d40dffdd2997a0c897b275f9695f94f08a7334d30412",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-crisp-877/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-05-29T06:54:25.822Z"
   },
-  "activeLease": {
-    "launchRequestId": "26622769431-1",
-    "workflowRunId": 26622769431,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-05-29T06:54:09.329Z",
-    "expiresAt": "2026-05-29T07:39:09.329Z"
-  }
+  "completedAt": "2026-05-29T06:54:27.115Z"
 }
