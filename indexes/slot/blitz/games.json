@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-29T09:41:03.611Z",
+  "updatedAt": "2026-05-29T09:42:32.927Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1410,7 +1410,7 @@
       "path": "runs/slot/blitz/bltz-crisp-877.json",
       "inputPath": "inputs/slot/blitz/bltz-crisp-877/26622769431-1.json",
       "status": "complete",
-      "updatedAt": "2026-05-29T09:41:03.611Z",
+      "updatedAt": "2026-05-29T09:42:32.927Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -1420,10 +1420,8 @@
       "durationSeconds": 7200,
       "artifacts": {
         "indexerCreated": true,
-        "indexerTier": "legendary",
-        "lastIndexerDescribeAt": "2026-05-29T07:57:56.793Z",
-        "pendingIndexerTierTarget": "pro",
-        "pendingIndexerTierRequestedAt": "2026-05-29T09:41:01.674Z"
+        "indexerTier": "pro",
+        "lastIndexerDescribeAt": "2026-05-29T09:42:32.927Z"
       }
     },
     "bltz-froth-357": {
