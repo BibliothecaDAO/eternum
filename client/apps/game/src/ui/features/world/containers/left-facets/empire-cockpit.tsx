@@ -1,70 +1,51 @@
+import { useAutomationStore } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { LeftView } from "@/types";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HUD_BODY_MUTED } from "@/ui/design-system/atoms/hud-typography";
 import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
-import { CompactEntityInventory } from "@/ui/features/world/components/entities/compact-entity-inventory";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
-import { StructureProductionPanelView } from "@/ui/features/world/components/entities/structure-production-panel";
 import { useStructureProductionSummary } from "@/ui/features/world/components/entities/structure-production-summary";
-import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
-import { ProductionModal } from "@/ui/features/settlement";
-import { RelicRecipientType } from "@bibliothecadao/types";
+import { MergedResourcePanel } from "@/ui/features/world/containers/left-facets/merged-resource-panel";
+import { formatTimeRemaining } from "@/ui/features/economy/resources/entity-resource-table/utils";
+import { type ID } from "@bibliothecadao/types";
 import Factory from "lucide-react/dist/esm/icons/factory";
-import Pencil from "lucide-react/dist/esm/icons/pencil";
-import Wallet from "lucide-react/dist/esm/icons/wallet";
-import { memo, useCallback, useMemo } from "react";
+import { memo, useEffect, useState } from "react";
 
-const MAX_BALANCE_ITEMS = 8;
+const AUTOMATION_LABELS: Record<string, string> = { smart: "Smart", idle: "Idle", custom: "Custom" };
 
-// Always-on data column for the active owned structure (production + balance),
-// rendered below StructureListColumn in the left rail.
+/**
+ * Header cue: this structure's automation mode (Smart / Idle / Custom), then
+ * the countdown to the next automation run. Ticks on its own 1s interval so the
+ * whole cockpit + resource panel don't re-render every second.
+ */
+const AutomationCue = memo(({ structureEntityId }: { structureEntityId: ID }) => {
+  const presetId = useAutomationStore((state) => state.realms[String(structureEntityId)]?.presetId);
+  const nextRunTimestamp = useAutomationStore((state) => state.nextRunTimestamp);
+  const [nowMs, setNowMs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const label = AUTOMATION_LABELS[presetId ?? "idle"] ?? "Idle";
+  const secondsUntilRun = nextRunTimestamp ? Math.max(0, Math.ceil((nextRunTimestamp - nowMs) / 1000)) : null;
+
+  return (
+    <span className="flex items-center gap-1.5">
+      <span>{label}</span>
+      {secondsUntilRun !== null && <span className="font-normal text-gold/55">· {formatTimeRemaining(secondsUntilRun)}</span>}
+    </span>
+  );
+});
+AutomationCue.displayName = "AutomationCue";
+
+// Always-on data column for the active owned structure: one merged "Empire"
+// panel of resource tokens (production + balance + build), rendered below
+// StructureListColumn in the left rail.
 export const EmpireCockpit = memo(() => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
-  const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
-  const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
-  const openPopup = useUIStore((state) => state.openPopup);
-  const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
-  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const { structure, resources, isMine, isLoadingStructure } = useStructureEntityDetail({ structureEntityId });
   const productionSummary = useStructureProductionSummary(structure, resources);
-
-  const handleOpenProduction = useCallback(() => {
-    if (!structureEntityId) return;
-    const id = Number(structureEntityId);
-    if (!Number.isFinite(id)) return;
-    toggleModal(<ProductionModal preSelectedRealmId={id} />);
-  }, [structureEntityId, toggleModal]);
-
-  const handleOpenTransfer = useCallback(() => {
-    if (!structureEntityId) return;
-    const id = Number(structureEntityId);
-    if (!Number.isFinite(id)) return;
-    setTransferPanelSourceId(id);
-    setLogisticsActiveTab("transfer");
-    if (!isTransferPopupOpen) {
-      openPopup(TRANSFER_POPUP_NAME);
-    }
-    setLeftNavigationView(LeftView.ResourceArrivals);
-  }, [
-    isTransferPopupOpen,
-    openPopup,
-    setLeftNavigationView,
-    setLogisticsActiveTab,
-    setTransferPanelSourceId,
-    structureEntityId,
-  ]);
-
-  const hasProduction = productionSummary.items.length > 0;
-  const productionCue = useMemo(
-    () =>
-      hasProduction
-        ? `${productionSummary.activeProductionBuildings}/${productionSummary.totalProductionBuildings}`
-        : null,
-    [hasProduction, productionSummary.activeProductionBuildings, productionSummary.totalProductionBuildings],
-  );
 
   // Hide cockpit when there's nothing meaningful to show — keeps the rail
   // clean during loads and on non-owned selections.
@@ -72,66 +53,14 @@ export const EmpireCockpit = memo(() => {
   if (!structure || !isMine) return null;
 
   return (
-    <div className="flex flex-col gap-2">
-      <InfoBubble
-        title="Production"
-        icon={Factory}
-        cue={
-          <span className="flex items-center gap-2">
-            {productionCue && <span>{productionCue}</span>}
-            <button
-              type="button"
-              onClick={handleOpenProduction}
-              className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-gold/25 bg-black/30 text-gold/75 transition hover:border-gold hover:text-gold"
-              title="Open production panel"
-              aria-label="Open production panel"
-            >
-              <Pencil className="h-3 w-3" />
-            </button>
-          </span>
-        }
-      >
-        {hasProduction ? (
-          <StructureProductionPanelView
-            compact
-            smallTextClass="text-xxs"
-            showTooltip
-            showProductionSummary={false}
-            badgeVariant="detailed"
-            productionSummary={productionSummary}
-          />
-        ) : (
-          <p className={cn(HUD_BODY_MUTED, "italic")}>No production buildings yet.</p>
-        )}
-      </InfoBubble>
-
-      <InfoBubble
-        title="Balance"
-        icon={Wallet}
-        cue={
-          <button
-            type="button"
-            onClick={handleOpenTransfer}
-            className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-gold/25 bg-black/30 text-gold/75 transition hover:border-gold hover:text-gold"
-            title="Open transfer"
-            aria-label="Open transfer"
-          >
-            <Pencil className="h-3 w-3" />
-          </button>
-        }
-      >
-        <CompactEntityInventory
-          resources={resources}
-          recipientType={RelicRecipientType.Structure}
-          entityId={structureEntityId ? Number(structureEntityId) : undefined}
-          variant="tight"
-          showLabels={false}
-          maxItems={MAX_BALANCE_ITEMS}
-          showHiddenCount
-          emptyMessage="No resources in this realm yet."
-        />
-      </InfoBubble>
-    </div>
+    <InfoBubble title="Empire" icon={Factory} cue={<AutomationCue structureEntityId={structureEntityId} />} collapsible>
+      <MergedResourcePanel
+        structureEntityId={structureEntityId}
+        resources={resources}
+        productionSummary={productionSummary}
+        canBuild={false}
+      />
+    </InfoBubble>
   );
 });
 

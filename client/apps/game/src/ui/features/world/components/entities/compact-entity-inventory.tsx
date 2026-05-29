@@ -61,15 +61,21 @@ const compactInventoryFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
 
+// Above 100K the decimal is just noise (345.2K → 345K).
+const compactInventoryFormatterWhole = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 0,
+});
+
 const formatFullInventoryAmount = (value: number): string => Math.floor(value).toLocaleString();
 
-const formatInventoryAmount = (value: number, options?: { compact?: boolean }): string => {
+export const formatInventoryAmount = (value: number, options?: { compact?: boolean }): string => {
   const flooredValue = Math.floor(value);
   if (options?.compact === false) {
     return formatFullInventoryAmount(flooredValue);
   }
   if (flooredValue >= 1000) {
-    return compactInventoryFormatter.format(flooredValue);
+    return (flooredValue >= 100_000 ? compactInventoryFormatterWhole : compactInventoryFormatter).format(flooredValue);
   }
   return formatFullInventoryAmount(flooredValue);
 };
