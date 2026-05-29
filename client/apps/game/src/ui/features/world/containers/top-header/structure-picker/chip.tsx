@@ -196,13 +196,16 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
     });
   };
 
-  // Bootstrap mode: first-ever upgrade also provisions the realm in one tx.
-  // Triggered while the chain still allows provisioning (main phase, not yet
-  // provisioned). Falls back to plain upgrade once canProvision flips false.
+  // Bootstrap mode: the pickaxe provisions the realm (and bundles the first
+  // level-up when already affordable) in one tx. Enabled as soon as provisioning
+  // is possible — provision grants the economy a fresh realm needs before it can
+  // ever afford an upgrade, so gating on canProvision (not canUpgrade) is what
+  // lets players actually start. Falls back to the plain Level Up button once
+  // provisioned (needsBootstrap flips false).
   const isBootstrapMode = Boolean(provisionInfo?.needsBootstrap);
   const isBootstrapDisabled =
-    !bootstrapInfo.canUpgradeAndProvision || bootstrapInfo.isPending || upgradeInfo.isUpgradeLoading;
-  const shouldGlowBootstrap = bootstrapInfo.canUpgradeAndProvision && !isBootstrapDisabled;
+    !bootstrapInfo.canProvision || bootstrapInfo.isPending || upgradeInfo.isUpgradeLoading;
+  const shouldGlowBootstrap = bootstrapInfo.canProvision && !isBootstrapDisabled;
   const isBootstrapLoading =
     bootstrapInfo.isPending || upgradeInfo.isUpgradeLoading || Boolean(provisionInfo?.isProvisionLoading);
 
@@ -228,8 +231,8 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
               ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.55)] animate-pulse"
               : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
           )}
-          aria-label="Bootstrap realm"
-          title="Bootstrap realm"
+          aria-label="Provision realm"
+          title="Provision realm"
         >
           {isBootstrapLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Pickaxe className="h-3.5 w-3.5" />}
         </button>

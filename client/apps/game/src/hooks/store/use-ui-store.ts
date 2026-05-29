@@ -122,6 +122,11 @@ interface UIStore {
   setGameEndAt: (seasonEndAt: number | null) => void;
   gameStartMainAt: number | null;
   setGameStartMainAt: (seasonStartMainAt: number | null) => void;
+  // season_config.dev_mode_on — when set, the chain bypasses settling/main-phase
+  // and season-end time gates (see SeasonConfigImpl). Mirror it client-side so
+  // sandbox worlds let players settle/provision/upgrade at any time.
+  devModeOn: boolean;
+  setDevModeOn: (devModeOn: boolean) => void;
   theme: string;
   setTheme: (theme: string) => void;
   showBlurOverlay: boolean;
@@ -271,6 +276,8 @@ export const useUIStore = create(
     setGameEndAt: (seasonEndAt: number | null) => set({ gameEndAt: seasonEndAt }),
     gameStartMainAt: null,
     setGameStartMainAt: (seasonStartMainAt: number | null) => set({ gameStartMainAt: seasonStartMainAt }),
+    devModeOn: false,
+    setDevModeOn: (devModeOn: boolean) => set({ devModeOn }),
     theme: "light",
     setTheme: (theme) => set({ theme }),
     showBlurOverlay: false,

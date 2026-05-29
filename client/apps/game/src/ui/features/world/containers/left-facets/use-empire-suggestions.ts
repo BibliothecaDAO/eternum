@@ -120,7 +120,24 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
           action: "upgrade-and-provision",
           label: "Bootstrap realm",
           icon: Pickaxe,
-          reason: "Level up + provision.",
+          reason: "Provision + level up.",
+          emphasis: "primary",
+        });
+        continue;
+      }
+
+      // Provision-only: a freshly settled realm has no economy until provisioned,
+      // so it can't yet afford the level-up. Surface provision on its own — the
+      // upgrade suggestion returns once provisioning seeds the realm's resources.
+      if (structure.canProvision) {
+        out.push({
+          id: `${realmId}-provision`,
+          realmId,
+          realmName,
+          action: "provision",
+          label: "Provision realm",
+          icon: Pickaxe,
+          reason: "Provision to start your economy.",
           emphasis: "primary",
         });
         continue;

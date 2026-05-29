@@ -112,7 +112,11 @@ export const useRealmActions = () => {
         toast.error("Unable to resolve realm system contracts.");
         return;
       }
-      await execute(realmId, [upgradeCall, provisionCall], "realm_systems.upgrade_and_provision");
+      // Provision FIRST: provision_realm grants the realm's starting resources
+      // (and turns on its economy). level_up then spends them in the same tx.
+      // Running level_up first would revert — a freshly settled realm has no
+      // resources until it is provisioned.
+      await execute(realmId, [provisionCall, upgradeCall], "realm_systems.provision_and_upgrade");
     },
     [buildUpgradeCall, buildProvisionCall, execute],
   );

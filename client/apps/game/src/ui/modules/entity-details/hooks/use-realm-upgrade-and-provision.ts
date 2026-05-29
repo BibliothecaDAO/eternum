@@ -21,16 +21,21 @@ interface RealmUpgradeAndProvisionResult {
 }
 
 /**
- * Bundles `structure_systems.level_up` + `blitz_realm_systems.provision_realm`
- * into a single account.execute multicall. Without this, players who can do
- * both have to click + sign twice. With it: one chip, one signature, one tx.
+ * Drives the "bootstrap" pickaxe. provision_realm is the floor — it grants the
+ * realm's starting resources and turns on its economy — so a freshly settled
+ * realm can always provision even when it cannot yet afford a level-up. When
+ * the realm CAN already afford the upgrade, `structure_systems.level_up` is
+ * bundled into the same `account.execute` multicall so it's one signature.
  *
- * The hook composes the two existing per-action hooks so we keep their state
- * machines (loading, sync polling, optimistic resource overrides) intact for
- * the standalone buttons. The merged path bypasses the underlying queue and
- * fires both Calls in one shot — the chain still applies upgrade then
- * provision atomically, and both hooks' reactive `useComponentValue`
- * subscriptions pick up the result.
+ * Order matters: provision_realm runs FIRST, then level_up. level_up spends the
+ * resources that provision_realm grants, so the reverse order would revert on a
+ * fresh realm. When the realm can't be upgraded yet, this provisions alone and
+ * the plain Level Up button takes over once provisioning seeds the economy.
+ *
+ * The hook composes the two existing per-action hooks so we keep their derived
+ * gates (`canUpgrade`, `canProvision`) and reactive `useComponentValue`
+ * subscriptions; the merged path fires the Calls in one shot and the chain
+ * applies provision then upgrade atomically.
  */
 export const useRealmUpgradeAndProvision = (
   structureEntityId: number | null,
@@ -55,18 +60,15 @@ export const useRealmUpgradeAndProvision = (
   }, []);
 
   const handleUpgradeAndProvision = useCallback(async () => {
-    if (!structureEntityId || !canUpgradeAndProvision) return;
-    if (!structureSystemsAddress || !blitzRealmSystemsAddress) {
+    // Provision is the floor; the level-up is opt-in (only when affordable).
+    if (!structureEntityId || !canProvision) return;
+    if (!blitzRealmSystemsAddress) {
       toast.error("Unable to resolve realm system contracts.");
       return;
     }
 
+    // provision_realm FIRST — it grants the starting resources level_up spends.
     const calls: Call[] = [
-      {
-        contractAddress: structureSystemsAddress,
-        entrypoint: "level_up",
-        calldata: CallData.compile([structureEntityId]),
-      },
       {
         contractAddress: blitzRealmSystemsAddress,
         entrypoint: "provision_realm",
@@ -74,17 +76,32 @@ export const useRealmUpgradeAndProvision = (
       },
     ];
 
+    // Bundle the upgrade only when the realm can already afford it. A freshly
+    // settled realm has no economy until provisioned, so it provisions alone
+    // and the plain Level Up button takes over once resources land.
+    if (canUpgrade) {
+      if (!structureSystemsAddress) {
+        toast.error("Unable to resolve realm system contracts.");
+        return;
+      }
+      calls.push({
+        contractAddress: structureSystemsAddress,
+        entrypoint: "level_up",
+        calldata: CallData.compile([structureEntityId]),
+      });
+    }
+
     setIsPending(true);
     try {
       await executeObservedClientTransaction({
         account: account.account,
         calls,
         surface: "settlement",
-        operation: "realm_systems.upgrade_and_provision",
+        operation: calls.length > 1 ? "realm_systems.provision_and_upgrade" : "blitz_realm_systems.provision_realm",
       });
     } catch (error) {
-      console.error("[realm-upgrade-and-provision] Failed to submit multicall", error);
-      toast.error(error instanceof Error ? error.message : "Failed to submit the combined upgrade.");
+      console.error("[realm-upgrade-and-provision] Failed to submit provision multicall", error);
+      toast.error(error instanceof Error ? error.message : "Failed to submit the provision.");
       throw error;
     } finally {
       setIsPending(false);
@@ -92,7 +109,8 @@ export const useRealmUpgradeAndProvision = (
   }, [
     account.account,
     blitzRealmSystemsAddress,
-    canUpgradeAndProvision,
+    canProvision,
+    canUpgrade,
     structureEntityId,
     structureSystemsAddress,
   ]);

@@ -608,6 +608,7 @@ const SeasonTimerStoreManager = () => {
   } = useDojo();
   const setGameEndAt = useUIStore((state) => state.setGameEndAt);
   const setSeasonStartMainAt = useUIStore((state) => state.setGameStartMainAt);
+  const setDevModeOn = useUIStore((state) => state.setDevModeOn);
 
   useEffect(() => {
     // Try to get season_config.end_at from WorldConfig
@@ -617,7 +618,11 @@ const SeasonTimerStoreManager = () => {
 
     const seasonStartMainAt = resolveSeasonStartTimestamp(worldConfig?.season_config?.start_main_at);
     setSeasonStartMainAt(seasonStartMainAt);
-  }, [components, setGameEndAt, setSeasonStartMainAt]);
+
+    // Sandbox / dev worlds bypass the chain's settling/main-phase/season-end
+    // time gates, so mirror dev_mode_on to keep the client gates in sync.
+    setDevModeOn(Boolean(worldConfig?.season_config?.dev_mode_on));
+  }, [components, setGameEndAt, setSeasonStartMainAt, setDevModeOn]);
   return null;
 };
 

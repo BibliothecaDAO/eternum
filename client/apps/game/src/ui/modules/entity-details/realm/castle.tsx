@@ -203,17 +203,17 @@ export const Castle = () => {
 
               {getNextRealmLevel && isOwner && (
                 <Button
-                  variant={checkBalance ? "gold" : "outline"}
-                  disabled={!checkBalance || (isBootstrapMode && !bootstrapInfo.canUpgradeAndProvision)}
+                  variant={(isBootstrapMode ? bootstrapInfo.canProvision : checkBalance) ? "gold" : "outline"}
+                  disabled={isBootstrapMode ? !bootstrapInfo.canProvision : !checkBalance}
                   isLoading={isBootstrapMode ? bootstrapInfo.isPending : isLevelUpLoading}
                   onClick={isBootstrapMode ? bootstrapRealm : levelUpRealm}
                   className="w-full"
                 >
-                  {checkBalance
-                    ? isBootstrapMode
-                      ? "Bootstrap Realm"
-                      : `Upgrade to ${RealmLevels[getNextRealmLevel]}`
-                    : "Need Resources"}
+                  {isBootstrapMode
+                    ? "Bootstrap Realm"
+                    : checkBalance
+                      ? `Upgrade to ${RealmLevels[getNextRealmLevel]}`
+                      : "Need Resources"}
                   {isBootstrapMode ? (
                     <Pickaxe className="w-4 h-4 ml-2" />
                   ) : (
