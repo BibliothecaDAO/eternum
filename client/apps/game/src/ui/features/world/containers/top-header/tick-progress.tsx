@@ -3,6 +3,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { resolveDebuggableCycleProgress } from "@/utils/cycle-progress";
 import { configManager, formatTime } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
@@ -20,6 +21,7 @@ export const TickProgress = memo(() => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const setCycleProgress = useUIStore((state) => state.setCycleProgress);
   const setCycleTime = useUIStore((state) => state.setCycleTime);
+  const debugCycleProgressOverride = useUIStore((state) => state.debugCycleProgressOverride);
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const mode = useGameModeConfig();
   const cycleTime = configManager.getTick(TickIds.Armies);
@@ -55,9 +57,9 @@ export const TickProgress = memo(() => {
   }, [hasValidCycle, currentBlockTimestamp, cycleTime]);
 
   useEffect(() => {
-    setCycleProgress(Math.min(Math.max(phaseData.dayProgress, 0), 100));
+    setCycleProgress(resolveDebuggableCycleProgress(phaseData.dayProgress, debugCycleProgressOverride));
     setCycleTime(cycleTime);
-  }, [phaseData.dayProgress, cycleTime, setCycleProgress, setCycleTime]);
+  }, [debugCycleProgressOverride, phaseData.dayProgress, cycleTime, setCycleProgress, setCycleTime]);
 
   useEffect(() => {
     if (lastProgressRef.current > phaseData.phaseProgress) {

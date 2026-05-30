@@ -10,7 +10,7 @@ function readFastTravelSource(): string {
 }
 
 describe("FastTravelScene visual isolation", () => {
-  it("opts out of shared storm and day-night background mutation", () => {
+  it("opts out of shared storm and atmosphere background mutation", () => {
     const source = readFastTravelSource();
 
     expect(source).toMatch(/shouldEnableStormEffects\(\): boolean/);
