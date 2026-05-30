@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-30T11:07:24.823Z",
+  "updatedAt": "2026-05-30T11:17:43.151Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2963,6 +2963,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-29-05-26-1800 not found"
       },
       "updatedAt": "2026-05-30T11:07:24.823Z"
+    },
+    "bltz-skid-900": {
+      "gameName": "bltz-skid-900",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-skid-900/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-05-30T11:17:43.151Z"
+      },
+      "updatedAt": "2026-05-30T11:17:43.151Z"
     }
   }
 }
