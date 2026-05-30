@@ -1,7 +1,7 @@
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { sqlApi } from "@/services/api";
 import { CAMERA_CONFIG, FOG_CONFIG, HEX_SIZE, biomeModelPaths } from "@/three/constants";
-import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
+import { DayNightCycleManager } from "@/three/effects/day-night-cycle";
 import { type WeatherState } from "@/three/managers/weather-manager";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
 import { InputManager } from "@/three/managers/input-manager";
@@ -23,7 +23,6 @@ import { type SetupResult } from "@bibliothecadao/dojo";
 import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { BiomeType, type HexPosition } from "@bibliothecadao/types";
 import gsap from "gsap";
-import type GUI from "lil-gui";
 import throttle from "lodash/throttle";
 import {
   AmbientLight,
@@ -82,7 +81,7 @@ export abstract class HexagonScene {
   protected frustumManager!: FrustumManager;
   protected visibilityManager!: CentralizedVisibilityManager;
   protected thunderBoltManager!: ThunderBoltManager;
-  protected worldAtmosphereController!: WorldAtmosphereController;
+  protected dayNightCycleManager!: DayNightCycleManager;
   protected GUIFolder!: any;
   protected biomeModels = new Map<BiomeType, InstancedBiome>();
   protected modelLoadPromises: Array<Promise<void>> = [];
@@ -91,22 +90,18 @@ export abstract class HexagonScene {
 
   protected mainDirectionalLight!: DirectionalLight;
   protected hemisphereLight!: HemisphereLight;
-  protected lightHelper?: DirectionalLightHelper;
+  protected lightHelper!: DirectionalLightHelper;
   protected stormLight!: PointLight;
   protected ambientPurpleLight!: AmbientLight;
   protected lightningSystem!: LightningEffectSystem;
 
   private stormAmbientBaseIntensity?: number;
   private stormHemisphereBaseIntensity?: number;
-  private weatherAtmosphereState?: Pick<
-    WeatherState,
-    "ambientBoost" | "intensity" | "stormIntensity" | "fogDensity" | "skyDarkness"
-  >;
+  private weatherAtmosphereState?: Pick<WeatherState, "intensity" | "stormIntensity" | "fogDensity" | "skyDarkness">;
 
   private groundMesh!: Mesh;
   private groundMeshTexture: Texture | null = null;
   private uiStateUnsubscribe?: () => void;
-  private readonly lightHelperDebugState = { showLightHelper: false };
   private cameraViewListeners: Set<(view: CameraView) => void> = new Set();
   private cameraTransitionListeners: Set<(status: CameraTransitionStatus) => void> = new Set();
 
@@ -218,14 +213,12 @@ export abstract class HexagonScene {
         leftNavigationView: state.leftNavigationView,
         structureEntityId: state.structureEntityId,
         cycleProgress: state.cycleProgress,
-        debugCycleProgressOverride: state.debugCycleProgressOverride,
         cycleTime: state.cycleTime,
       }),
-      ({ leftNavigationView, structureEntityId, cycleProgress, debugCycleProgressOverride, cycleTime }) => {
+      ({ leftNavigationView, structureEntityId, cycleProgress, cycleTime }) => {
         this.state.leftNavigationView = leftNavigationView;
         this.state.structureEntityId = structureEntityId;
         this.state.cycleProgress = cycleProgress;
-        this.state.debugCycleProgressOverride = debugCycleProgressOverride;
         this.state.cycleTime = cycleTime;
       },
     );
@@ -250,7 +243,7 @@ export abstract class HexagonScene {
     this.setupDirectionalLight();
     this.setupStormLighting();
     this.setupLightHelper();
-    this.setupWorldAtmosphere();
+    this.setupDayNightCycle();
   }
 
   private setupHemisphereLight(): void {
@@ -292,15 +285,12 @@ export abstract class HexagonScene {
   }
 
   private setupLightHelper(): void {
-    if (env.VITE_PUBLIC_GRAPHICS_DEV !== true) {
-      return;
-    }
-
     this.lightHelper = new DirectionalLightHelper(this.mainDirectionalLight, 1);
+    if (env.VITE_PUBLIC_GRAPHICS_DEV == true) this.scene.add(this.lightHelper);
   }
 
-  private setupWorldAtmosphere(): void {
-    this.worldAtmosphereController = new WorldAtmosphereController(
+  private setupDayNightCycle(): void {
+    this.dayNightCycleManager = new DayNightCycleManager(
       this.scene,
       this.mainDirectionalLight,
       this.hemisphereLight,
@@ -412,7 +402,7 @@ export abstract class HexagonScene {
     this.setupFogGUI();
     this.setupPerformanceGUI();
     this.thunderBoltManager.setupGUI(this.GUIFolder);
-    this.worldAtmosphereController.addGUIControls(this.GUIFolder);
+    this.dayNightCycleManager.addGUIControls(this.GUIFolder);
   }
 
   private setupSceneGUI(): void {
@@ -434,40 +424,12 @@ export abstract class HexagonScene {
     directionalLightFolder.add(this.mainDirectionalLight.position, "x", -20, 20, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.position, "y", -20, 20, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.position, "z", -20, 20, 0.1);
-    directionalLightFolder.add(this.mainDirectionalLight, "intensity", 0, 5, 0.1);
+    directionalLightFolder.add(this.mainDirectionalLight, "intensity", 0, 3, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "x", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "y", 0, 10, 0.1);
     directionalLightFolder.add(this.mainDirectionalLight.target.position, "z", 0, 10, 0.1);
     directionalLightFolder.add(this.scene, "environmentIntensity", 0, 2, 0.01);
-    this.addLightHelperGUI(directionalLightFolder);
     directionalLightFolder.close();
-  }
-
-  private addLightHelperGUI(directionalLightFolder: GUI): void {
-    if (!this.lightHelper) {
-      return;
-    }
-
-    directionalLightFolder
-      .add(this.lightHelperDebugState, "showLightHelper")
-      .name("Show Light Helper")
-      .onChange((visible: boolean) => {
-        this.setLightHelperVisible(visible);
-      });
-  }
-
-  private setLightHelperVisible(visible: boolean): void {
-    if (!this.lightHelper) {
-      return;
-    }
-
-    if (visible) {
-      this.scene.add(this.lightHelper);
-      this.lightHelper.update();
-      return;
-    }
-
-    this.scene.remove(this.lightHelper);
   }
 
   private setupShadowGUI(): void {
@@ -1008,7 +970,7 @@ export abstract class HexagonScene {
 
     const geometry = new PlaneGeometry(2668, 1390.35);
     const material = new MeshStandardMaterial({
-      color: new Color(0x35445d),
+      color: new Color(0x261838),
       metalness: metalness,
       roughness: roughness,
       side: DoubleSide,
@@ -1091,7 +1053,7 @@ export abstract class HexagonScene {
   }
 
   public setWeatherAtmosphereState(
-    state?: Pick<WeatherState, "ambientBoost" | "intensity" | "stormIntensity" | "fogDensity" | "skyDarkness">,
+    state?: Pick<WeatherState, "intensity" | "stormIntensity" | "fogDensity" | "skyDarkness">,
   ): void {
     this.weatherAtmosphereState = state ? { ...state } : undefined;
   }
@@ -1129,8 +1091,8 @@ export abstract class HexagonScene {
   }
 
   private updateLights = throttle(() => {
-    // Only manually update lights if the atmosphere controller is not managing them
-    if (this.mainDirectionalLight && !this.worldAtmosphereController?.params?.enabled) {
+    // Only manually update lights if day/night cycle is not managing them
+    if (this.mainDirectionalLight && !this.dayNightCycleManager?.params?.enabled) {
       const { x, y, z } = this.controls.target;
       this.mainDirectionalLight.position.set(x - 15, y + 13, z + 8);
       this.mainDirectionalLight.target.position.set(x, y, z - 5.2);
@@ -1151,11 +1113,9 @@ export abstract class HexagonScene {
 
     const cycleProgress = this.state.cycleProgress || 0;
 
-    // Update world atmosphere with camera target for proper light positioning
+    // Update day/night cycle with camera target for proper light positioning
     const cameraTarget = this.controls.target;
-    this.worldAtmosphereController.update(cycleProgress, cameraTarget, {
-      snap: this.state.debugCycleProgressOverride !== null,
-    });
+    this.dayNightCycleManager.update(cycleProgress, cameraTarget);
 
     const weatherState = this.weatherAtmosphereState;
     const cycleStormDepth = cycleProgress < 20 ? 1 - Math.abs(cycleProgress - 10) / 10 : 0;
@@ -1173,12 +1133,7 @@ export abstract class HexagonScene {
         : stormDepth * 0.7;
 
     if (stormDepth > 0.001) {
-      this.worldAtmosphereController.applyWeatherModulation(
-        skyDarkness,
-        fogDensity,
-        sunOcclusion,
-        weatherState?.ambientBoost ?? 0,
-      );
+      this.dayNightCycleManager.applyWeatherModulation(skyDarkness, fogDensity, sunOcclusion);
     }
 
     // Delegate lightning checks, storm light positioning, and intensity to the lightning system
@@ -1192,18 +1147,18 @@ export abstract class HexagonScene {
     });
 
     // Keep fill lights restrained for readability; apply subtle flicker relative to the current base.
-    // When atmosphere control is enabled, read the pre-flicker baseline from the manager to avoid
+    // When day-night is enabled, read the pre-flicker baseline from the manager to avoid
     // compounding drift (the live light value already includes previous flicker).
-    const atmosphereEnabled = this.worldAtmosphereController?.params?.enabled === true;
+    const dayNightEnabled = this.dayNightCycleManager?.params?.enabled === true;
 
-    const ambientBase = atmosphereEnabled
-      ? this.worldAtmosphereController!.getLastAmbientIntensity()
+    const ambientBase = dayNightEnabled
+      ? this.dayNightCycleManager!.getLastAmbientIntensity()
       : (this.stormAmbientBaseIntensity ??= this.ambientPurpleLight.intensity);
-    const hemisphereBase = atmosphereEnabled
-      ? this.worldAtmosphereController!.getLastHemisphereIntensity()
+    const hemisphereBase = dayNightEnabled
+      ? this.dayNightCycleManager!.getLastHemisphereIntensity()
       : (this.stormHemisphereBaseIntensity ??= this.hemisphereLight.intensity);
 
-    if (!atmosphereEnabled) {
+    if (!dayNightEnabled) {
       this.stormAmbientBaseIntensity ??= ambientBase;
       this.stormHemisphereBaseIntensity ??= hemisphereBase;
     }
@@ -1271,8 +1226,8 @@ export abstract class HexagonScene {
     if (this.thunderBoltManager) {
       this.thunderBoltManager.destroy();
     }
-    if (this.worldAtmosphereController) {
-      this.worldAtmosphereController.dispose();
+    if (this.dayNightCycleManager) {
+      this.dayNightCycleManager.dispose();
     }
     if (this.inputManager) {
       this.inputManager.destroy();

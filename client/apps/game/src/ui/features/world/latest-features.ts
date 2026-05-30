@@ -11,18 +11,9 @@ interface LatestFeature {
 
 const MAX_LATEST_FEATURES = 10;
 
-const latestFeatureTypePriority: Record<FeatureType, number> = {
-  fix: 0,
-  feature: 1,
-  improvement: 2,
-  balance: 3,
-};
-
 const compareLatestFeatureDatesDescending = (left: LatestFeature, right: LatestFeature) => {
   const timestampDifference = new Date(right.date).getTime() - new Date(left.date).getTime();
   if (timestampDifference !== 0) return timestampDifference;
-  const typePriorityDifference = latestFeatureTypePriority[left.type] - latestFeatureTypePriority[right.type];
-  if (typePriorityDifference !== 0) return typePriorityDifference;
   return left.title.localeCompare(right.title);
 };
 
@@ -128,22 +119,6 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-05-22",
-    title: "Evening Map Readability",
-    description:
-      "Softened afternoon lighting and reduced heavy edge darkening so evening time previews stay readable across the full map.",
-    type: "fix",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-05-22",
-    title: "Clearer Day Cycle",
-    description:
-      "Improved world-map daylight and debug time previews so each day phase is easier to inspect while nights stay readable.",
-    type: "improvement",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-05-22",
     title: "Hover Label Recovery",
     description:
       "Fixed detailed world-map hover labels so loading and scene transitions clear stale hover state before labels are rebuilt.",
@@ -180,22 +155,6 @@ const allLatestFeatures: LatestFeature[] = [
     description:
       "Fixed world-map unit hover labels so they recover after loading and chunk transitions without needing to move the cursor away and back.",
     type: "fix",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-05-21",
-    title: "Debug Time Scrubber",
-    description:
-      "Added a debug HUD control for previewing world lighting at any point in the day cycle without waiting for live time.",
-    type: "improvement",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-05-21",
-    title: "Readable World Atmosphere",
-    description:
-      "Improved world lighting so nights and storms stay readable with brighter blue night tones, stronger fill light, and capped weather darkness.",
-    type: "improvement",
     gameSlug: "world",
   },
   {
