@@ -1,5 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY, HUD_BODY_MUTED, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import { memo } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
 
@@ -22,7 +23,7 @@ interface SuggestionChipProps {
 }
 
 export const SuggestionChip = memo(({ suggestion, onClick, isPending }: SuggestionChipProps) => {
-  const Icon = suggestion.icon;
+  const Icon = isPending ? Loader2 : suggestion.icon;
   const isPrimary = suggestion.emphasis === "primary";
   const trimmedName = trimRealmName(suggestion.realmName, suggestion.label);
 
@@ -40,7 +41,9 @@ export const SuggestionChip = memo(({ suggestion, onClick, isPending }: Suggesti
         isPending && "cursor-not-allowed opacity-60 hover:bg-transparent",
       )}
     >
-      <Icon className={cn("h-4 w-4 flex-shrink-0", isPrimary ? "text-gold" : "text-gold/70")} />
+      <Icon
+        className={cn("h-4 w-4 flex-shrink-0", isPrimary ? "text-gold" : "text-gold/70", isPending && "animate-spin")}
+      />
       <span className="min-w-0 flex-1">
         <span className={cn("block truncate leading-tight", isPrimary ? HUD_VALUE : HUD_BODY)}>
           <span className="text-gold/55">{trimmedName}</span>

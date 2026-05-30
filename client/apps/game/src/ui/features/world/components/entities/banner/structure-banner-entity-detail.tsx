@@ -167,8 +167,8 @@ const StructureBannerEntityDetailContent = memo(
         structureCategory as StructureType,
       ) &&
       typeof structure.entity_id !== "undefined";
-    // Transfer affordance is hidden in the right panel for now (both the owner
-    // bubble header and the Resources bubble cue). Flip to re-enable.
+    // The owner-bubble header transfer shortcut stays hidden to avoid
+    // duplicating the Resources bubble cue (which is the primary affordance).
     const showTransferButton = false;
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const isHyperstructureOwned = structure.owner !== undefined && structure.owner !== null && structure.owner !== 0n;
@@ -281,13 +281,13 @@ const StructureBannerEntityDetailContent = memo(
           title="Resources"
           icon={Factory}
           cue={
-            showTransferButton && isMine ? (
+            canOpenTransferPanel ? (
               <button
                 type="button"
                 onClick={handleOpenTransferPanel}
                 className="inline-flex items-center justify-center rounded-md border border-gold/40 bg-gold/10 p-1 text-gold transition hover:border-gold hover:bg-gold/20"
-                title="Open transfer panel"
-                aria-label="Open transfer panel"
+                title="Transfer resources from this structure"
+                aria-label="Transfer resources from this structure"
               >
                 <ArrowLeftRight className="h-3.5 w-3.5" />
               </button>

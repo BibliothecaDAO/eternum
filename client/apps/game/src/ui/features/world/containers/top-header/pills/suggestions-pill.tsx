@@ -19,7 +19,7 @@ const POPOVER_WIDTH = 360;
  */
 export const SuggestionsPill = memo(() => {
   const suggestions = useEmpireSuggestions();
-  const { handleSuggestionClick, pendingRealmId } = useSuggestionActions();
+  const { handleSuggestionClick, pendingRealmId, pendingSuggestionIds } = useSuggestionActions();
 
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
@@ -73,8 +73,7 @@ export const SuggestionsPill = memo(() => {
 
   const onSelectSuggestion = useCallback(
     (suggestion: Parameters<typeof handleSuggestionClick>[0]) => {
-      handleSuggestionClick(suggestion);
-      setIsOpen(false);
+      void handleSuggestionClick(suggestion);
     },
     [handleSuggestionClick],
   );
@@ -131,7 +130,7 @@ export const SuggestionsPill = memo(() => {
                     key={suggestion.id}
                     suggestion={suggestion}
                     onClick={onSelectSuggestion}
-                    isPending={pendingRealmId === suggestion.realmId}
+                    isPending={pendingSuggestionIds.includes(suggestion.id) || pendingRealmId === suggestion.realmId}
                   />
                 ))}
                 {hiddenCount > 0 && (

@@ -4,9 +4,24 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
 import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
-import { configManager, divideByPrecision, getBalance, getBlockTimestamp, getRealmInfo } from "@bibliothecadao/eternum";
+import {
+  Biome,
+  configManager,
+  divideByPrecision,
+  getBalance,
+  getBlockTimestamp,
+  getRealmInfo,
+} from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { BuildingType, type ClientComponents, type ID, StructureType } from "@bibliothecadao/types";
+import {
+  type BiomeType,
+  BuildingType,
+  type ClientComponents,
+  type ID,
+  ResourcesIds,
+  StructureType,
+  TroopType,
+} from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { LucideIcon } from "lucide-react";
 import ArrowUpCircle from "lucide-react/dist/esm/icons/arrow-up-circle";
@@ -21,6 +36,7 @@ import {
   buildBlitzRealmSuggestions,
   type BlitzBuildKey,
   type BlitzBuildingCounts,
+  type BlitzMilitaryTarget,
   type BlitzRealmSuggestionInput,
   type BlitzSuggestionDraft,
   type EmpireSuggestionAction,
@@ -57,6 +73,7 @@ const ACTION_ICONS: Record<EmpireSuggestionAction, LucideIcon> = {
   "build-copper": Building2,
   "build-coal": Building2,
   "build-first": Building2,
+  "build-military": Shield,
   "build-market": Building2,
   "build-wheat": Wheat,
   "build-wood": Building2,
@@ -67,14 +84,39 @@ const ACTION_ICONS: Record<EmpireSuggestionAction, LucideIcon> = {
   upgrade: ArrowUpCircle,
 };
 
-const BLITZ_BUILDING_TYPES: Record<BlitzBuildKey, BuildingType> = {
+type StaticBlitzBuildKey = Exclude<BlitzBuildKey, "military">;
+
+const BLITZ_BUILDING_TYPES: Record<StaticBlitzBuildKey, BuildingType> = {
   copper: BuildingType.ResourceCopper,
   coal: BuildingType.ResourceCoal,
-  market: BuildingType.ResourceDonkey,
   wheat: BuildingType.ResourceWheat,
   wood: BuildingType.ResourceWood,
   workerHut: BuildingType.WorkersHut,
 };
+
+const T1_MILITARY_OPTIONS = [
+  {
+    troopType: TroopType.Crossbowman,
+    buildingType: BuildingType.ResourceCrossbowmanT1,
+    resource: ResourcesIds.Crossbowman,
+    label: "Crossbowman T1",
+    countKey: "crossbowmanT1",
+  },
+  {
+    troopType: TroopType.Paladin,
+    buildingType: BuildingType.ResourcePaladinT1,
+    resource: ResourcesIds.Paladin,
+    label: "Paladin T1",
+    countKey: "paladinT1",
+  },
+  {
+    troopType: TroopType.Knight,
+    buildingType: BuildingType.ResourceKnightT1,
+    resource: ResourcesIds.Knight,
+    label: "Knight T1",
+    countKey: "knightT1",
+  },
+] as const;
 
 const compareSuggestionDrafts = (left: BlitzSuggestionDraft, right: BlitzSuggestionDraft) => {
   if (left.emphasis !== right.emphasis) return left.emphasis === "primary" ? -1 : 1;
@@ -120,16 +162,18 @@ const canAffordRealmUpgrade = (
 const resolveBlitzBuildingCounts = (buildingCounts: BlitzBuildingCounts): BlitzBuildingCounts => ({
   copper: buildingCounts.copper,
   coal: buildingCounts.coal,
-  market: buildingCounts.market,
+  crossbowmanT1: buildingCounts.crossbowmanT1,
+  knightT1: buildingCounts.knightT1,
+  paladinT1: buildingCounts.paladinT1,
   wheat: buildingCounts.wheat,
   wood: buildingCounts.wood,
   workerHut: buildingCounts.workerHut,
 });
 
-const resolveBuildability = (context: BuildabilityContext, key: BlitzBuildKey) => {
+const resolveBuildabilityForBuilding = (context: BuildabilityContext, buildingType: BuildingType) => {
   const result = resolveConstructionBuildability({
     entityId: context.entityId,
-    buildingType: BLITZ_BUILDING_TYPES[key],
+    buildingType,
     useSimpleCost: context.useSimpleCost,
     components: context.components,
     realm: context.realm,
@@ -143,14 +187,48 @@ const resolveBuildability = (context: BuildabilityContext, key: BlitzBuildKey) =
   };
 };
 
-const resolveBlitzBuildability = (context: BuildabilityContext): BlitzRealmSuggestionInput["buildability"] => ({
-  copper: resolveBuildability(context, "copper"),
-  coal: resolveBuildability(context, "coal"),
-  market: resolveBuildability(context, "market"),
-  wheat: resolveBuildability(context, "wheat"),
-  wood: resolveBuildability(context, "wood"),
-  workerHut: resolveBuildability(context, "workerHut"),
+const resolveStaticBuildability = (context: BuildabilityContext, key: StaticBlitzBuildKey) =>
+  resolveBuildabilityForBuilding(context, BLITZ_BUILDING_TYPES[key]);
+
+const resolveBlitzBuildability = (
+  context: BuildabilityContext,
+  militaryTarget: BlitzMilitaryTarget | null,
+): BlitzRealmSuggestionInput["buildability"] => ({
+  copper: resolveStaticBuildability(context, "copper"),
+  coal: resolveStaticBuildability(context, "coal"),
+  military: militaryTarget
+    ? resolveBuildabilityForBuilding(context, militaryTarget.buildingType)
+    : { canBuild: false, reason: "No biome military target." },
+  wheat: resolveStaticBuildability(context, "wheat"),
+  wood: resolveStaticBuildability(context, "wood"),
+  workerHut: resolveStaticBuildability(context, "workerHut"),
 });
+
+const resolveRecommendedMilitaryTarget = (
+  realm: ReturnType<typeof getRealmInfo> | null | undefined,
+  buildingCounts: BlitzBuildingCounts,
+): BlitzMilitaryTarget | null => {
+  if (!realm?.position) return null;
+
+  const realmBiome = Biome.getBiome(Number(realm.position.x), Number(realm.position.y)) as BiomeType;
+  const best = T1_MILITARY_OPTIONS.map((option) => ({
+    ...option,
+    bonus: configManager.getBiomeCombatBonus(option.troopType, realmBiome),
+  })).reduce<((typeof T1_MILITARY_OPTIONS)[number] & { bonus: number }) | null>((bestOption, option) => {
+    if (!bestOption || option.bonus > bestOption.bonus) return option;
+    return bestOption;
+  }, null);
+
+  if (!best || best.bonus <= 1) return null;
+
+  return {
+    buildingType: best.buildingType,
+    count: buildingCounts[best.countKey],
+    label: best.label,
+    resource: best.resource,
+    bonusPercent: Math.round((best.bonus - 1) * 100),
+  };
+};
 
 const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestion => {
   const { priority, ...suggestion } = draft;
@@ -219,11 +297,14 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
           useSimpleCost,
           hasAvailableBuildingTile,
         };
+        const buildingCounts = resolveBlitzBuildingCounts(structure.buildingCounts);
+        const militaryTarget = resolveRecommendedMilitaryTarget(realm, buildingCounts);
         const base = structure.structure?.base;
 
         return buildBlitzRealmSuggestions({
           realmId: structure.entityId,
           realmName: structure.displayName,
+          realmLevel: structure.realmLevel,
           isBlitzActive,
           canProvision: structure.canProvision,
           canAffordUpgrade: canAffordRealmUpgrade(
@@ -234,12 +315,13 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
           ),
           hasAvailableBuildingTile,
           buildingTilesOccupied: structure.buildingTilesOccupied,
-          buildingCounts: resolveBlitzBuildingCounts(structure.buildingCounts),
+          buildingCounts,
           population: structure.population,
           populationCapacity: structure.populationCapacity,
           occupiedGuards: Number(base?.troop_guard_count ?? 0),
           maxGuards: Number(base?.troop_max_guard_count ?? 0),
-          buildability: resolveBlitzBuildability(buildabilityContext),
+          militaryTarget,
+          buildability: resolveBlitzBuildability(buildabilityContext, militaryTarget),
         });
       })
       .toSorted(compareSuggestionDrafts)

@@ -56,7 +56,10 @@ export type StructureWithMetadata = Structure & {
     wood: number;
     coal: number;
     copper: number;
+    crossbowmanT1: number;
+    knightT1: number;
     market: number;
+    paladinT1: number;
     workerHut: number;
   };
 };

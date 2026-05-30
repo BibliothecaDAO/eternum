@@ -13,7 +13,7 @@ import { getRealmInfo, Position } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
 
 /**
@@ -27,6 +27,8 @@ export const useSuggestionActions = () => {
   const { isMapView } = useQuery();
   const goToStructure = useGoToStructure(setup);
   const mode = useGameModeConfig();
+  const pendingSuggestionIdsRef = useRef(new Set<string>());
+  const [pendingSuggestionIds, setPendingSuggestionIds] = useState<string[]>([]);
 
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
@@ -107,13 +109,13 @@ export const useSuggestionActions = () => {
 
       switch (suggestion.action) {
         case "upgrade-and-provision":
-          void fireUpgradeAndProvision(suggestion.realmId);
+          await fireUpgradeAndProvision(suggestion.realmId);
           return;
         case "upgrade":
-          void fireUpgrade(suggestion.realmId);
+          await fireUpgrade(suggestion.realmId);
           return;
         case "provision":
-          void fireProvision(suggestion.realmId);
+          await fireProvision(suggestion.realmId);
           return;
         case "garrison":
           setLeftNavigationView(LeftView.MilitaryView);
@@ -122,6 +124,7 @@ export const useSuggestionActions = () => {
         case "build-wood":
         case "build-coal":
         case "build-copper":
+        case "build-military":
         case "build-market":
         case "build-worker-hut":
           await runAutoBuildSuggestion(suggestion);
@@ -145,14 +148,39 @@ export const useSuggestionActions = () => {
     ],
   );
 
+  const beginPendingSuggestion = useCallback((suggestionId: string) => {
+    if (pendingSuggestionIdsRef.current.has(suggestionId)) return false;
+
+    const next = new Set(pendingSuggestionIdsRef.current);
+    next.add(suggestionId);
+    pendingSuggestionIdsRef.current = next;
+    setPendingSuggestionIds(Array.from(next));
+    return true;
+  }, []);
+
+  const completePendingSuggestion = useCallback((suggestionId: string) => {
+    if (!pendingSuggestionIdsRef.current.has(suggestionId)) return;
+
+    const next = new Set(pendingSuggestionIdsRef.current);
+    next.delete(suggestionId);
+    pendingSuggestionIdsRef.current = next;
+    setPendingSuggestionIds(Array.from(next));
+  }, []);
+
   const handleSuggestionClick = useCallback(
-    (suggestion: EmpireSuggestion) => {
-      void runSuggestionClick(suggestion);
+    async (suggestion: EmpireSuggestion) => {
+      if (!beginPendingSuggestion(suggestion.id)) return;
+
+      try {
+        await runSuggestionClick(suggestion);
+      } finally {
+        completePendingSuggestion(suggestion.id);
+      }
     },
-    [runSuggestionClick],
+    [beginPendingSuggestion, completePendingSuggestion, runSuggestionClick],
   );
 
-  return { handleSuggestionClick, pendingRealmId };
+  return { handleSuggestionClick, pendingRealmId, pendingSuggestionIds };
 };
 
 const resolveAutoBuildTarget = (

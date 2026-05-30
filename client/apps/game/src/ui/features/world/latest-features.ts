@@ -25,7 +25,7 @@ const allLatestFeatures: LatestFeature[] = [
     date: "2026-05-30",
     title: "Smarter Blitz Suggestions",
     description:
-      "Improved Suggested Actions in Blitz so build recommendations follow the early economy path and autobuild directly when selected.",
+      "Improved Suggested Actions in Blitz so fresh realms start with provision plus level-up, resource hints keep wood, coal, and copper balanced, and build hints autobuild directly when selected.",
     type: "improvement",
     gameSlug: "world",
   },

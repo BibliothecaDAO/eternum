@@ -148,6 +148,9 @@ export const useStructuresWithMetadata = ({
         copper: getBuildingCount(BuildingType.ResourceCopper, packedCounts),
         market: getBuildingCount(BuildingType.ResourceDonkey, packedCounts),
         workerHut: getBuildingCount(BuildingType.WorkersHut, packedCounts),
+        crossbowmanT1: getBuildingCount(BuildingType.ResourceCrossbowmanT1, packedCounts),
+        knightT1: getBuildingCount(BuildingType.ResourceKnightT1, packedCounts),
+        paladinT1: getBuildingCount(BuildingType.ResourcePaladinT1, packedCounts),
       };
 
       // canProvision mirrors useBlitzRealmProvision but reads only RECS-cached
