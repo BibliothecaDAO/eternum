@@ -10,6 +10,11 @@ import {
   dispatchPendingWorldmapFxStop,
 } from "@/utils/pending-worldmap-fx";
 import Button from "@/ui/design-system/atoms/button";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_CUE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { getTierStyle } from "@/ui/utils/tier-styles";
 import {
   Biome,
   CombatSimulator,
@@ -18,6 +23,7 @@ import {
   formatTime,
   getEntityIdFromKeys,
   getGuardsByStructure,
+  getTroopResourceId,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
@@ -32,6 +38,7 @@ import { TargetType } from "./types";
 import {
   getDirectionBetweenAdjacentHexes,
   RESOURCE_PRECISION,
+  resources,
   TickIds,
   type ActorType,
   type ID,
@@ -283,6 +290,19 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const attackerRemaining = Math.max(attackerTroopsTotal - attackerLosses, 0);
   const defenderRemaining = Math.max(defenderTroopsTotal - defenderLosses, 0);
 
+  // Per-slot defender view: the active guard (slot 0) shows its projected
+  // post-fight remainder, queued guards show their untouched troop counts.
+  const defenderSlots = useMemo(() => {
+    if (!isStructureTarget) return [];
+    return targetTroopSnapshots.map((snapshot, index) => {
+      const isActive = index === 0;
+      const remaining = isActive ? defenderRemaining : Number(snapshot.count) / RESOURCE_PRECISION;
+      const resourceId = getTroopResourceId(snapshot.category as TroopType, snapshot.tier as TroopTier);
+      const trait = resources.find((resource) => resource.id === resourceId)?.trait ?? "";
+      return { tier: snapshot.tier as TroopTier, trait, remaining, isActive, eliminated: remaining <= 0 };
+    });
+  }, [isStructureTarget, targetTroopSnapshots, defenderRemaining]);
+
   const attackerCooldownEnd = Number(attackerArmyData?.troops.battle_cooldown_end ?? 0);
   const attackerCooldownRemaining = Math.max(0, attackerCooldownEnd - currentTime);
   const attackerOnCooldown = attackerCooldownRemaining > 0;
@@ -418,50 +438,32 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   };
 
   const casualtyLine = (label: string, losses: number, remaining: number, isEliminated: boolean) => (
-    <div className="rounded-lg border border-gold/25 bg-dark-brown/80 px-3 py-2 text-xs text-gold/80">
-      <div className="flex items-center justify-between text-[11px] uppercase tracking-wide">
-        <span>{label}</span>
-        <span className={isEliminated ? "text-red-300" : "text-emerald-300"}>
+    <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
+      <div className="flex items-center justify-between">
+        <span className={HUD_LABEL}>{label}</span>
+        <span className={cn(HUD_CUE, isEliminated ? "text-red-300" : "text-emerald-300")}>
           {isEliminated ? "Eliminated" : "Survives"}
         </span>
       </div>
-      <div className="mt-1 flex items-center justify-between gap-3 text-[11px]">
+      <div className="mt-1 flex items-center justify-between gap-3">
         <span className="flex items-center gap-1">
-          <span>Losses</span>
-          <span className="font-semibold text-gold">{formatTroopValue(losses)}</span>
+          <span className={HUD_CUE}>Losses</span>
+          <span className={HUD_VALUE}>{formatTroopValue(losses)}</span>
         </span>
         <span className="flex items-center gap-1">
-          <span>Remaining</span>
-          <span className="font-semibold text-gold">{formatTroopValue(remaining)}</span>
+          <span className={HUD_CUE}>Remaining</span>
+          <span className={HUD_VALUE}>{formatTroopValue(remaining)}</span>
         </span>
       </div>
     </div>
   );
 
-  const guardStatusMessage = (() => {
-    if (!isStructureTarget || !hasQueuedGuards) return "";
-    if (!battleSimulation || !targetArmyData) {
-      return "Multiple guards are protecting this structure. You'll fight them one after another.";
-    }
-
-    if (defenderRemaining <= 0) {
-      const remaining = queuedTargetGuards.length;
-      return remaining === 1
-        ? "One more guard will replace this one before you can claim the structure."
-        : `${remaining} guards will replace this one before you can claim the structure.`;
-    }
-
-    return queuedTargetGuards.length === 1
-      ? "Defeat this guard and the final defender will take the field."
-      : `Defeat this guard to face ${queuedTargetGuards.length} more guards before you can claim the structure.`;
-  })();
-
   return (
-    <div className="w-[280px] max-w-[85vw] rounded-lg border border-gold/30 bg-dark-wood px-3 py-2.5 text-gold shadow-lg">
-      <div className="mb-1.5 flex items-center justify-between text-[11px] uppercase tracking-wide text-gold/60">
-        <span>{accountName || "Your army"}</span>
+    <div className={cn("w-[280px] max-w-[85vw] rounded-xl px-3 py-2.5 text-gold", OVERLAY_SURFACE_BASE)}>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <span className={cn("truncate", HUD_LABEL)}>{accountName || "Your army"}</span>
         <div className="flex items-center gap-2">
-          <span>{outcomeLabel}</span>
+          <span className={cn("shrink-0", HUD_CUE)}>{outcomeLabel}</span>
           <button
             type="button"
             aria-label="Close attack preview"
@@ -495,13 +497,39 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
             </div>
           )}
 
-          {isStructureTarget && totalGuardCount > 1 && (
-            <div className="rounded-lg border border-gold/20 bg-dark-brown/70 px-3 py-2 text-xs text-gold/80">
-              <div className="flex items-center justify-between text-[11px] uppercase tracking-wide text-gold/60">
-                <span>More defenders ahead</span>
-                <span>{queuedTargetGuards.length} remaining</span>
+          {isStructureTarget && totalGuardCount >= 1 && (
+            <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
+              <div className="flex items-center justify-between">
+                <span className={HUD_LABEL}>Defenders</span>
+                <span className={HUD_CUE}>Post Fight</span>
               </div>
-              <p className="mt-1 text-[11px] text-gold/70">{guardStatusMessage}</p>
+              <ul className="mt-1.5 space-y-1">
+                {defenderSlots.map((slot, index) => (
+                  <li key={index} className="flex items-center gap-2">
+                    <span
+                      className={cn(
+                        "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold border leading-none",
+                        getTierStyle(slot.tier),
+                      )}
+                    >
+                      {slot.tier}
+                    </span>
+                    {slot.trait && (
+                      <ResourceIcon withTooltip={false} resource={slot.trait} size="sm" className="shrink-0" />
+                    )}
+                    <span
+                      className={cn(
+                        "tabular-nums",
+                        HUD_VALUE,
+                        slot.eliminated && "text-red-300 line-through decoration-red-300/60",
+                      )}
+                    >
+                      {formatTroopValue(slot.remaining)}
+                    </span>
+                    {slot.isActive && <span className={cn("ml-auto", HUD_CUE)}>Active</span>}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
 

@@ -11,7 +11,6 @@ describe("construction buildability resolver wiring", () => {
     const entrypointPaths = [
       "src/ui/features/settlement/construction/select-preview-building.tsx",
       "src/ui/features/settlement/construction/realm-build-actions.ts",
-      "src/ui/modules/entity-details/realm/realm-info-panel.tsx",
       "src/three/scenes/context-menu/structure-construction-menu.tsx",
       "src/three/scenes/hexception.tsx",
     ];

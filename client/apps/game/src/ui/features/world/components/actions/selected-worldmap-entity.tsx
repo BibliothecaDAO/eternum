@@ -2,6 +2,9 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import {
   BiomeSummaryCard,
   UnoccupiedTileQuadrants,
@@ -9,11 +12,12 @@ import {
 import { FaithDevotionActionPanel } from "@/ui/features/world/components/actions/faith-devotion-action-panel";
 import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/banner/army-banner-entity-detail";
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
+import { useArmyEntityDetail } from "@/ui/features/world/components/entities/hooks/use-army-entity-detail";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
-import { battleSimulation } from "@/ui/features/world/components/config";
-import { HexPosition, ID, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { BattleLab } from "@/ui/features/military/battle/battle-lab";
+import { HexPosition, ID, StructureType, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
   Biome,
   Position,
@@ -29,34 +33,49 @@ import { useDojo, useQuery } from "@bibliothecadao/react";
 import { type ReactNode, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 
-const occupiedEntityLayoutClass =
-  "grid h-full min-h-0 min-w-0 grid-cols-1 grid-rows-[minmax(0,1fr)_auto] gap-2 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)] lg:grid-rows-1";
-const entityInfoScrollPaneClass =
-  "h-full min-h-0 min-w-0 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent";
-const scrollableEntityDetailClass = "h-auto min-h-full min-w-0 overflow-visible";
-const scrollableEntitySectionClass = "flex h-auto min-h-full min-w-0";
-const supportingEntitySectionClass = "flex min-h-0 min-w-0";
+// Layout: vertical column of bubbles. The outer parent (TileDetails atom in
+// bottom-right-panel) already provides positioning + scroll, so this layout
+// just stacks each section with a small gap and lets each child render its
+// own rounded bubble.
+const occupiedEntityLayoutClass = "flex h-full min-h-0 min-w-0 flex-col gap-2 pointer-events-auto";
+const entityInfoScrollPaneClass = "min-w-0";
+const scrollableEntityDetailClass = "h-auto min-w-0 overflow-visible";
+const scrollableEntitySectionClass = "flex min-w-0";
 
 const EntityInfoScrollPane = ({ children }: { children: ReactNode }) => (
   <div className={entityInfoScrollPaneClass}>{children}</div>
 );
 
-export const SelectedWorldmapEntity = () => {
+export const SelectedWorldmapEntity = ({
+  coordsLabel,
+  headerAction,
+}: {
+  coordsLabel?: string;
+  headerAction?: ReactNode;
+} = {}) => {
   const selectedHex = useUIStore((state) => state.selectedHex);
 
   if (!selectedHex) {
     return null;
   }
 
-  return <SelectedWorldmapEntityContent selectedHex={selectedHex} />;
+  return (
+    <SelectedWorldmapEntityContent selectedHex={selectedHex} coordsLabel={coordsLabel} headerAction={headerAction} />
+  );
 };
 
-const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
+const SelectedWorldmapEntityContent = ({
+  selectedHex,
+  coordsLabel,
+  headerAction,
+}: {
+  selectedHex: HexPosition;
+  coordsLabel?: string;
+  headerAction?: ReactNode;
+}) => {
   const { setup } = useDojo();
   const { handleUrlChange } = useQuery();
-  const openPopup = useUIStore((state) => state.openPopup);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const setCombatSimulationBiome = useUIStore((state) => state.setCombatSimulationBiome);
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const gridTemplateColumns = "var(--selected-worldmap-entity-grid-cols, 1fr)";
   const gridTemplateRows = "var(--selected-worldmap-entity-grid-rows, auto)";
@@ -70,11 +89,8 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
     return Biome.getBiome(selectedHex.col || 0, selectedHex.row || 0);
   }, [selectedHex.col, selectedHex.row]);
   const handleSimulateBattle = useCallback(() => {
-    setCombatSimulationBiome(biome);
-    if (!isPopupOpen(battleSimulation)) {
-      openPopup(battleSimulation);
-    }
-  }, [biome, isPopupOpen, openPopup, setCombatSimulationBiome]);
+    toggleModal(<BattleLab mode="sim" initialBiome={biome} />);
+  }, [biome, toggleModal]);
 
   const hasOccupier = !!tile && hasTileOccupier(tile.occupier_type);
   const occupierType = tile?.occupier_type ?? 0;
@@ -91,26 +107,31 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
     handleUrlChange(`/play/travel?col=${normalizedSelectedHex.x}&row=${normalizedSelectedHex.y}`);
   }, [handleUrlChange, normalizedSelectedHex.x, normalizedSelectedHex.y]);
 
-  const renderUnexploredMessage = () => (
-    <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-center">
-      <p className="text-xs font-medium text-gold/60 italic text-center">
-        Unexplored Territory.
-        <br />
-        Send an explorer to discover what lies here.
-      </p>
+  if (!tile || !isExplored) {
+    return null;
+  }
+
+  // Small fallback "STRUCTURE TILE · (x, y)" + re-sync chip for non-structure
+  // tiles. Structure tiles merge the same info into the owner bubble itself.
+  const coordChip = coordsLabel ? (
+    <div
+      className={cn(
+        "pointer-events-auto mb-2 flex items-center justify-between gap-2 rounded-xl px-3 py-2",
+        OVERLAY_SURFACE_BASE,
+      )}
+    >
+      <span className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{coordsLabel}</span>
+      {headerAction}
     </div>
-  );
-
-  if (!tile) {
-    return renderUnexploredMessage();
-  }
-
-  if (!isExplored) {
-    return renderUnexploredMessage();
-  }
+  ) : null;
 
   if (!hasOccupier) {
-    return <UnoccupiedTileQuadrants biome={biome} />;
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        {coordChip}
+        <UnoccupiedTileQuadrants biome={biome} />
+      </div>
+    );
   }
 
   const gridAutoRows = "var(--selected-worldmap-entity-grid-auto-rows, minmax(0, auto))";
@@ -126,6 +147,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
       className="grid h-full min-h-0 grid-cols-1 gap-2"
       style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
     >
+      {isStructure || (!isSpire && !isReservedHyperstructure && !isChest && !isQuest && hasOccupier) ? null : coordChip}
       {isSpire ? (
         <div className={occupiedEntityLayoutClass}>
           <EntityInfoScrollPane>
@@ -133,9 +155,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
               <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
             </EntityDetailSection>
           </EntityInfoScrollPane>
-          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
-            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-          </EntityDetailSection>
+          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       ) : isReservedHyperstructure ? (
         <div className={occupiedEntityLayoutClass}>
@@ -144,9 +164,7 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
               <ReservedHyperstructurePanel selectedHex={selectedHex} />
             </EntityDetailSection>
           </EntityInfoScrollPane>
-          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
-            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-          </EntityDetailSection>
+          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       ) : isStructure ? (
         <div className={occupiedEntityLayoutClass}>
@@ -156,16 +174,16 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
               maxInventory={14}
               showButtons={false}
               className={scrollableEntityDetailClass}
+              coordsLabel={coordsLabel}
+              headerAction={headerAction}
               {...sharedDetailProps}
             />
           </EntityInfoScrollPane>
-          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
-            <SelectedStructureActionPanel
-              structureEntityId={occupierEntityId}
-              biome={biome}
-              onSimulateBattle={handleSimulateBattle}
-            />
-          </EntityDetailSection>
+          <SelectedStructureActionPanel
+            structureEntityId={occupierEntityId}
+            biome={biome}
+            onSimulateBattle={handleSimulateBattle}
+          />
         </div>
       ) : isChest ? (
         <div className={occupiedEntityLayoutClass}>
@@ -174,29 +192,63 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
               <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
             </EntityDetailSection>
           </EntityInfoScrollPane>
-          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
-            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-          </EntityDetailSection>
+          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       ) : isQuest ? (
         <EntityInfoScrollPane>
           <QuestEntityDetail questEntityId={occupierEntityId} className="min-h-full" {...sharedDetailProps} />
         </EntityInfoScrollPane>
       ) : (
-        <div className={occupiedEntityLayoutClass}>
-          <EntityInfoScrollPane>
-            <ArmyBannerEntityDetail
-              armyEntityId={occupierEntityId}
-              showButtons={false}
-              className={scrollableEntityDetailClass}
-              {...sharedDetailProps}
-            />
-          </EntityInfoScrollPane>
-          <EntityDetailSection compact tone="highlight" className={supportingEntitySectionClass}>
-            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-          </EntityDetailSection>
-        </div>
+        <SelectedArmyTilePanel
+          armyEntityId={occupierEntityId}
+          biome={biome}
+          coordsLabel={coordsLabel}
+          headerAction={headerAction}
+          onSimulateBattle={handleSimulateBattle}
+        />
       )}
+    </div>
+  );
+};
+
+// Army tile panel — reads the army to figure out which troop type belongs to
+// the selected explorer so the biome card can highlight the matching bonus row.
+const SelectedArmyTilePanel = ({
+  armyEntityId,
+  biome,
+  coordsLabel,
+  headerAction,
+  onSimulateBattle,
+}: {
+  armyEntityId: ID;
+  biome: ReturnType<typeof Biome.getBiome>;
+  coordsLabel?: string;
+  headerAction?: ReactNode;
+  onSimulateBattle: () => void;
+}) => {
+  const { explorer } = useArmyEntityDetail({ armyEntityId });
+  const highlightTroopType =
+    explorer?.troops?.category !== undefined ? (Number(explorer.troops.category) as unknown as TroopType) : undefined;
+
+  return (
+    <div className={occupiedEntityLayoutClass}>
+      <EntityInfoScrollPane>
+        <ArmyBannerEntityDetail
+          armyEntityId={armyEntityId}
+          showButtons={false}
+          className={scrollableEntityDetailClass}
+          coordsLabel={coordsLabel}
+          headerAction={headerAction}
+          compact
+          layoutVariant="banner"
+        />
+      </EntityInfoScrollPane>
+      <BiomeSummaryCard
+        biome={biome}
+        showSimulateAction
+        onSimulateBattle={onSimulateBattle}
+        highlightTroopType={highlightTroopType}
+      />
     </div>
   );
 };

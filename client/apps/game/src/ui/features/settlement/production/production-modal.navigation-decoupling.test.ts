@@ -24,11 +24,8 @@ describe("Production modal navigation decoupling", () => {
     const entityTableSource = readSource(
       "src/ui/features/economy/resources/entity-resource-table/entity-resource-table-new.tsx",
     );
-    const realmInfoPanelSource = readSource("src/ui/modules/entity-details/realm/realm-info-panel.tsx");
 
     expect(resourceChipSource).toContain("preSelectedRealmId={resourceManager.entityId}");
     expect(entityTableSource).toContain("preSelectedRealmId={structureId}");
-    expect(realmInfoPanelSource).toContain("preSelectedRealmId={realmId}");
-    expect(realmInfoPanelSource).not.toContain("void goToStructure(realmId");
   });
 });

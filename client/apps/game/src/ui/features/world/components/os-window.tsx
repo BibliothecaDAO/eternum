@@ -11,6 +11,7 @@ export const OSWindow = ({
   width = "400px",
   hintSection,
   className,
+  maxHeightCap,
 }: OSInterface) => {
   return (
     <>
@@ -20,7 +21,7 @@ export const OSWindow = ({
             <SecondaryPopup.Head onClose={() => onClick()} hintSection={hintSection}>
               {title}
             </SecondaryPopup.Head>
-            <SecondaryPopup.Body height={height} width={width}>
+            <SecondaryPopup.Body height={height} width={width} maxHeightCap={maxHeightCap}>
               {children}
             </SecondaryPopup.Body>
           </SecondaryPopup>

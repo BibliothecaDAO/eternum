@@ -10,12 +10,13 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { Select, Tabs } from "@/ui/design-system/atoms";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { LoadingAnimation, ResourceIcon } from "@/ui/design-system/molecules";
-import { ModalContainer } from "@/ui/shared";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { useMarket, useResourceManager } from "@bibliothecadao/react";
 import { ID, ResourcesIds } from "@bibliothecadao/types";
+import Store from "lucide-react/dist/esm/icons/store";
 import { lazy, Suspense, useMemo, useState } from "react";
 
 const UnifiedTradePanel = lazy(() =>
@@ -60,8 +61,19 @@ const TradeSummaryBar = lazy(() =>
 
 export const MarketModal = () => {
   const { isSyncing } = useSyncMarket();
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
-  return <ModalContainer>{isSyncing ? <LoadingAnimation /> : <MarketContent />}</ModalContainer>;
+  return (
+    <CenteredModalShell
+      title="Market"
+      icon={Store}
+      onClose={() => toggleModal(null)}
+      size="xl"
+      bodyClassName="overflow-hidden"
+    >
+      {isSyncing ? <LoadingAnimation /> : <MarketContent />}
+    </CenteredModalShell>
+  );
 };
 
 const MarketContent = () => {

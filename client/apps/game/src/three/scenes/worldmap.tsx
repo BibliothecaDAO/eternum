@@ -1815,7 +1815,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const shouldCycleStructuresForTab = () => Boolean(useUIStore.getState().armyCreationPopup);
+    const shouldCycleStructuresForTab = () => useUIStore.getState().leftNavigationView === LeftView.MilitaryView;
     const getRealmStructuresForTab = () =>
       this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
 

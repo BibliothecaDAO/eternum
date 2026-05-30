@@ -22,6 +22,46 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-30",
+    title: "Smarter Blitz Suggestions",
+    description:
+      "Improved Suggested Actions in Blitz so fresh realms start with provision plus level-up, resource hints keep wood, coal, and copper balanced, and build hints autobuild directly when selected.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-30",
+    title: "Market Automation Default",
+    description:
+      "Added a 5% Smart automation allocation for Market production so realms start generating transport capacity without manual slider changes.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-30",
+    title: "Stable Left Panel",
+    description:
+      "Fixed structure resource panels so automation countdown updates no longer shift the left grid or push resource tokens outside side panels.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-30",
+    title: "Transfer Strength Panel",
+    description:
+      "Moved transfer deployment and strength details beside the troop controls and kept scrolling at the modal level, making transfer review easier to scan.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-29",
+    title: "Unified Game Dialogs",
+    description:
+      "Improved in-game dialogs so combat, transfers, market confirmations, and military creation use consistent window controls and shared modal styling.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-26",
     title: "Faster Dashboard Loading",
     description:

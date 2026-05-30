@@ -1,7 +1,9 @@
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { ModalContainer } from "@/ui/shared";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { ActorType, ID } from "@bibliothecadao/types";
-import { Suspense } from "react";
+import Sparkles from "lucide-react/dist/esm/icons/sparkles";
+import { Suspense, useCallback } from "react";
 import { ChestContainer } from "./chest-container";
 
 export const ChestModal = ({
@@ -15,23 +17,20 @@ export const ChestModal = ({
   };
   chestHex: { x: number; y: number };
 }) => {
-  return (
-    <ModalContainer size="large">
-      <div className="production-modal-selector container mx-auto h-full rounded-2xl relative flex flex-col">
-        {/* Header */}
-        <div className="flex justify-center border-b border-gold/30">
-          <div className="px-6 py-3 text-lg font-semibold text-gold bg-gradient-to-r from-gold/80 via-gold to-gold/80 bg-clip-text text-transparent">
-            ✨ Open Relic Crate ✨
-          </div>
-        </div>
+  const toggleModal = useUIStore((state) => state.toggleModal);
+  const close = useCallback(() => toggleModal(null), [toggleModal]);
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden max-h-[calc(100vh-200px)]">
-          <Suspense fallback={<LoadingAnimation />}>
-            <ChestContainer explorerEntityId={selected.id} chestHex={chestHex} />
-          </Suspense>
-        </div>
-      </div>
-    </ModalContainer>
+  return (
+    <CenteredModalShell
+      title="Open Relic Crate"
+      icon={Sparkles}
+      onClose={close}
+      size="xl"
+      bodyClassName="overflow-y-auto overflow-x-hidden"
+    >
+      <Suspense fallback={<LoadingAnimation />}>
+        <ChestContainer explorerEntityId={selected.id} chestHex={chestHex} />
+      </Suspense>
+    </CenteredModalShell>
   );
 };

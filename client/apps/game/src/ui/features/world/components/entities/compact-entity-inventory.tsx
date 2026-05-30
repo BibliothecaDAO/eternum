@@ -4,6 +4,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import type { RelicHolderPreview } from "@/ui/features/relics/components/player-relic-tray";
 import { RelicActivationSelector } from "@/ui/features/relics/components/relic-activation-selector";
@@ -60,15 +61,21 @@ const compactInventoryFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 1,
 });
 
+// Above 100K the decimal is just noise (345.2K → 345K).
+const compactInventoryFormatterWhole = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 0,
+});
+
 const formatFullInventoryAmount = (value: number): string => Math.floor(value).toLocaleString();
 
-const formatInventoryAmount = (value: number, options?: { compact?: boolean }): string => {
+export const formatInventoryAmount = (value: number, options?: { compact?: boolean }): string => {
   const flooredValue = Math.floor(value);
   if (options?.compact === false) {
     return formatFullInventoryAmount(flooredValue);
   }
   if (flooredValue >= 1000) {
-    return compactInventoryFormatter.format(flooredValue);
+    return (flooredValue >= 100_000 ? compactInventoryFormatterWhole : compactInventoryFormatter).format(flooredValue);
   }
   return formatFullInventoryAmount(flooredValue);
 };
@@ -254,8 +261,13 @@ export const CompactEntityInventory = memo(
       return <p className="text-xxs text-gold/60 italic">{emptyMessage}</p>;
     }
 
+    // Tight tiles are a fixed width in a wrapping row so they stay the same size
+    // regardless of how wide the host panel is (a stretching grid made the same
+    // relic look bigger in the wide left panel than in the narrow right one).
     const baseGrid =
-      variant === "tight" ? "grid grid-cols-4 gap-1.5" : "grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-1.5";
+      variant === "tight"
+        ? "flex flex-wrap justify-start gap-1.5"
+        : "grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-1.5";
 
     const compactItemClass = variant === "tight" ? "px-1.5 py-1.5" : "px-1.5 py-1";
     const iconSize = variant === "tight" ? "xs" : "sm";
@@ -274,15 +286,19 @@ export const CompactEntityInventory = memo(
 
       const heroPadding = "px-2.5 py-2";
       const heroIconSize = "sm";
-      const heroAmountClass = "text-base font-bold";
+      const heroAmountClass = HUD_VALUE;
       const itemVariant = options.hero ? "hero" : "default";
 
+      // Tight (non-hero) tiles get a fixed width; grid/hero tiles fill their cell.
+      const widthClass = variant === "tight" && !options.hero ? "w-14" : "w-full";
+
       const itemClasses = cn(
-        "flex h-full w-full appearance-none flex-col items-center justify-center rounded-xl border text-center normal-case [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
+        "flex h-full appearance-none flex-col items-center justify-center rounded-xl border text-center normal-case [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
+        widthClass,
         options.hero ? heroPadding : compactItemClass,
         getInventoryItemClass(item, itemVariant),
         isClickableRelic &&
-          "cursor-pointer transition-[background-color,border-color,box-shadow] duration-150 hover:border-gold hover:bg-gold/15 hover:shadow-[inset_0_1px_0_rgba(255,214,102,0.28),0_0_18px_rgba(223,170,84,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
+          "animate-relic-ready cursor-pointer transition-[background-color,border-color,box-shadow] duration-150 hover:border-gold hover:bg-gold/15 hover:shadow-[inset_0_1px_0_rgba(255,214,102,0.28),0_0_18px_rgba(223,170,84,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
       );
 
       const itemContent = (

@@ -1,4 +1,5 @@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
+import { DROPDOWN_CONTENT } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { CombatSimulator, configManager } from "@bibliothecadao/eternum";
 import { BiomeType, resources, ResourcesIds, TroopType } from "@bibliothecadao/types";
@@ -9,6 +10,8 @@ interface SelectBiomeProps {
   onSelect: (biome: BiomeType | null) => void;
   className?: string;
   defaultValue?: BiomeType;
+  /** Show the per-troop bonus chips inside the trigger (default true). */
+  showTriggerBonuses?: boolean;
 }
 
 const TROOP_RESOURCES = [
@@ -22,6 +25,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
   onSelect,
   className,
   defaultValue = BiomeType.Grassland,
+  showTriggerBonuses = true,
 }) => {
   const [selectedBiome, setSelectedBiome] = useState<string>(defaultValue?.toString() || "");
 
@@ -64,8 +68,8 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
         <SelectValue placeholder="Select biome">
           {selectedBiome && (
             <div className="flex items-center justify-start w-full">
-              <span className="font-medium w-[200px] flex justify-start">{formatBiomeName(selectedBiome)}</span>
-              <div className="flex gap-8">
+              <span className="font-medium flex justify-start">{formatBiomeName(selectedBiome)}</span>
+              <div className={showTriggerBonuses ? "flex gap-8 ml-auto" : "hidden"}>
                 {TROOP_RESOURCES.map(({ type, resourceId }) => {
                   const bonus = configManager.getBiomeCombatBonus(type, selectedBiome as BiomeType);
                   return (
@@ -90,7 +94,7 @@ export const SelectBiome: React.FC<SelectBiomeProps> = ({
           )}
         </SelectValue>
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className={DROPDOWN_CONTENT}>
         {Object.values(BiomeType).map((biome) => (
           <SelectItem key={biome} value={biome} className="py-3">
             <div className="flex items-center justify-between w-full">

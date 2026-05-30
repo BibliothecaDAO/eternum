@@ -1,6 +1,7 @@
 export * from "./army-capacity";
 export * from "./base-three-tooltip";
 export * from "./circle-button";
+export * from "./dialog-shell";
 export * from "./headline";
 export * from "./hint-modal-button";
 export * from "./dropdown-list";
@@ -9,7 +10,6 @@ export * from "./loading-animation";
 export * from "./resource-cost";
 export * from "./resource-icon";
 export * from "./secondary-popup";
-export * from "./select-address";
 export * from "./select-biome";
 export * from "./select-resource";
 export * from "./select-tier";

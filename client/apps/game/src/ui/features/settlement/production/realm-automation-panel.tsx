@@ -591,7 +591,7 @@ export const RealmAutomationPanel = ({
         {usageDisplayList.length === 0 ? (
           <p className="text-xs text-gold/60">No resources allocated yet.</p>
         ) : (
-          <ul className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {usageDisplayList.map(({ resourceId, percent, perCycle }) => {
               const label = resolveResourceLabel(resourceId);
               const isOverBudget = percent > MAX_RESOURCE_ALLOCATION_PERCENT;

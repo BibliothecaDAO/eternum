@@ -195,6 +195,7 @@ describe("useBlitzRealmProvision", () => {
     useUIStore.setState({
       gameStartMainAt: 100,
       gameEndAt: 1_000,
+      devModeOn: false,
     });
 
     vi.useFakeTimers();
@@ -216,6 +217,7 @@ describe("useBlitzRealmProvision", () => {
     useUIStore.setState({
       gameStartMainAt: null,
       gameEndAt: null,
+      devModeOn: false,
     });
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = false;
   });
@@ -232,6 +234,15 @@ describe("useBlitzRealmProvision", () => {
     await renderProbe();
 
     expect(readProbeValue("canProvision")).toBe("false");
+  });
+
+  it("allows provisioning before main start when dev mode is on (sandbox)", async () => {
+    // currentBlockTimestamp (200) < gameStartMainAt (500), so the main phase has
+    // not started — but dev_mode worlds bypass the chain's time gate.
+    useUIStore.setState({ gameStartMainAt: 500, devModeOn: true });
+    await renderProbe();
+
+    expect(readProbeValue("canProvision")).toBe("true");
   });
 
   it("uses StructureBuildings as the primary provisioned signal", async () => {

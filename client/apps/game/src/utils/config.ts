@@ -11,8 +11,6 @@ import {
   resolveUnavailableToriiFallbackSetting,
 } from "./torii-setting";
 
-export { DEFAULT_TORII_SETTING } from "./torii-setting";
-
 type ConfigResolutionOptions = {
   chain?: Chain;
   gameType?: GameType;
