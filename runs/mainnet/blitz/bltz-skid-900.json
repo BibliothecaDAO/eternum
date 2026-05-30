@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26674064864-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-05-30T04:08:14.718Z",
-  "updatedAt": "2026-05-30T04:10:19.725Z",
+  "updatedAt": "2026-05-30T04:10:23.129Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-05-30T04:10:23.129Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -84,5 +85,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-skid-900.json",
     "worldAddress": "0x058a9516b407b23d360c7ec62f9da08316bf332565dbf2cfdd5541ad0705b45b",
     "createGameTxHash": "0x544b567ed29a07698a4b996db83454b4b23bedc1eeefbeb46a237249621aa4a"
+  },
+  "activeLease": {
+    "launchRequestId": "26674064864-1",
+    "workflowRunId": 26674064864,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-05-30T04:10:23.129Z",
+    "expiresAt": "2026-05-30T04:55:23.129Z"
   }
 }
