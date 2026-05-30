@@ -179,9 +179,9 @@ const allLatestFeatures: LatestFeature[] = [
   },
   {
     date: "2026-03-24",
-    title: "Live Agora Dashboard",
+    title: "Live Agora AMM Dashboard",
     description:
-      "The Agora trading dashboard now lives in the main shell with live pools, charts, and trade history, resource icons across the flow, and real swap and liquidity transactions against the Agora contracts.",
+      "The Agora AMM trading dashboard now lives in the main shell with live pools, charts, and trade history, resource icons across the flow, and real swap and liquidity transactions against the Agora contracts.",
     type: "feature",
   },
   {
