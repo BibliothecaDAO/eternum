@@ -195,6 +195,7 @@ const getTxDescription = (type: TransactionType): string => {
     [TransactionType.CREATE_ORDER]: "Creating trade order",
     [TransactionType.TRAVEL_HEX]: "Traveling to destination",
     [TransactionType.UPGRADE_LEVEL]: "Upgrading building",
+    [TransactionType.ATTACK_EXPLORER_VS_GUARD_AND_GARRISON]: "Claiming and garrisoning structure",
   };
   return descriptions[type] ?? "Transaction in progress";
 };

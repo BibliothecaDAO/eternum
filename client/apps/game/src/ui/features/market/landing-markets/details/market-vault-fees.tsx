@@ -189,7 +189,7 @@ export function MarketVaultFees({
 
   if (!hasVaultShares && value === 0n) {
     return (
-      <div className="w-full rounded-lg border border-dashed border-gold/15 bg-dark-wood px-4 py-5 text-sm text-gold/80">
+      <div className="w-full rounded-lg border border-dashed border-gold/15 bg-black/40 px-4 py-5 text-sm text-gold/80">
         <p className="text-lightest">Vault fees</p>
         <p className="mt-1 text-xs text-gold/60">You don't have any vault fee shares for this market.</p>
       </div>

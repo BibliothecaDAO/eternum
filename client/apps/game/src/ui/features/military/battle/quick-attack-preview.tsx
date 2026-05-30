@@ -10,10 +10,12 @@ import {
   dispatchPendingWorldmapFxStop,
 } from "@/utils/pending-worldmap-fx";
 import Button from "@/ui/design-system/atoms/button";
+import { Checkbox } from "@/ui/design-system/atoms/checkbox";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_CUE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { useDraggablePosition } from "@/ui/shared/lib/draggable-position";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import {
   Biome,
@@ -30,10 +32,12 @@ import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 
 import X from "lucide-react/dist/esm/icons/x";
+import Draggable from "react-draggable";
 import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
+import { getStructureDefenseSlotLimit, getUnlockedGuardSlots } from "../utils/defense-slot-utils";
 import { CombatModal } from "./combat-modal";
 import { useAttackTargetData } from "./hooks/use-attack-target";
-import { TargetType } from "./types";
+import { AttackTarget, TargetType } from "./types";
 
 import {
   getDirectionBetweenAdjacentHexes,
@@ -99,7 +103,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const {
     account: { account },
     setup: {
-      systemCalls: { attack_explorer_vs_explorer, attack_explorer_vs_guard, attack_guard_vs_explorer },
+      systemCalls: {
+        attack_explorer_vs_explorer,
+        attack_explorer_vs_guard,
+        attack_explorer_vs_guard_and_garrison,
+        attack_guard_vs_explorer,
+      },
       components,
       components: { Structure, ExplorerTroops },
     },
@@ -110,7 +119,11 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const toggleModal = useUIStore((state) => state.toggleModal);
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
 
+  const { nodeRef, position, onDrag, onStop } = useDraggablePosition("quick-attack-preview");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Opt-in toggle: when on, the Claim action also garrisons the surviving troops. Off by default.
+  const [garrisonEnabled, setGarrisonEnabled] = useState(false);
 
   const [currentTime, setCurrentTime] = useState(() => Math.floor(Date.now() / 1000));
   const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
@@ -303,6 +316,50 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     });
   }, [isStructureTarget, targetTroopSnapshots, defenderRemaining]);
 
+  const attackerIsArmy = attackerType === AttackerType.Army;
+
+  // The attack captures the structure when it clears every remaining defender and the attacker survives.
+  const clearsAllDefenders =
+    isStructureTarget && (!targetArmyData || (defenderRemaining <= 0 && queuedTargetGuards.length === 0));
+  const attackerSurvivesCapture = !targetArmyData || attackerRemaining > 0;
+  const willCaptureStructure = attackerIsArmy && clearsAllDefenders && attackerSurvivesCapture;
+
+  // First open guard slot the captured structure exposes (defeated guards leave their slot empty,
+  // so a swap into it inherits the explorer's category/tier).
+  const garrisonGuardSlot = useMemo(() => {
+    if (!willCaptureStructure || !targetData) return null;
+    const slotLimit =
+      targetData.guardSlotLimit ??
+      getStructureDefenseSlotLimit(targetData.structureCategory ?? undefined, targetData.structureLevel ?? null);
+    const [firstSlot] = getUnlockedGuardSlots(slotLimit);
+    return firstSlot ?? null;
+  }, [willCaptureStructure, targetData]);
+
+  // Troops to garrison: a 1% buffer below the simulated survivor count so a tick-boundary divergence
+  // between this preview and the on-chain combat result can't revert the atomic attack+swap multicall
+  // (the guard swap asserts count <= live troops; the buffer also leaves >=1 troop on the explorer),
+  // then capped to the structure's max guard army size so the swap never overfills the slot.
+  const garrisonTroopCount = useMemo(() => {
+    if (!willCaptureStructure || !attackerArmyData) return 0;
+    const survivors = targetArmyData ? attackerRemaining : attackerTroopsTotal;
+    const buffered = Math.floor(survivors * 0.99);
+    const maxArmySize = configManager.getMaxArmySize(
+      Number(targetData?.structureLevel ?? 0),
+      attackerArmyData.troops.tier as TroopTier,
+    );
+    return Math.max(0, Math.min(buffered, maxArmySize));
+  }, [willCaptureStructure, attackerArmyData, targetArmyData, attackerRemaining, attackerTroopsTotal, targetData]);
+
+  const canGarrison = willCaptureStructure && garrisonGuardSlot !== null && garrisonTroopCount >= 1;
+
+  // Reset the opt-in toggle when the target stops being garrison-able so a stale "on" state can't
+  // carry over to a different target.
+  useEffect(() => {
+    if (!canGarrison) {
+      setGarrisonEnabled(false);
+    }
+  }, [canGarrison]);
+
   const attackerCooldownEnd = Number(attackerArmyData?.troops.battle_cooldown_end ?? 0);
   const attackerCooldownRemaining = Math.max(0, attackerCooldownEnd - currentTime);
   const attackerOnCooldown = attackerCooldownRemaining > 0;
@@ -357,8 +414,15 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return `${baseLabel} • Guard 1/${totalGuardCount}`;
   })();
 
-  const handleAttack = async () => {
+  // Shared submit pipeline: guards, pending worldmap FX, sound, and teardown are identical across
+  // every attack variant — only the system call differs, so callers just provide that call.
+  const runWorldmapAttack = async (
+    performCall: (ctx: { direction: number; resolvedTarget: AttackTarget }) => Promise<void>,
+  ) => {
     if (!selectedHex || !targetData || attackDisabled) return;
+    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
+    if (direction === null) return;
+    const resolvedTarget = targetData;
 
     let pendingFxKey: string | null = null;
     try {
@@ -369,48 +433,13 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         key: pendingFxKey,
         kind: "attack",
         attackerId: attacker.id,
-        defenderId: targetData.id,
+        defenderId: resolvedTarget.id,
         attackerHex: { col: selectedHex.col, row: selectedHex.row },
         targetHex: { col: target.hex.x, row: target.hex.y },
       });
 
-      if (attackerType === AttackerType.Structure) {
-        const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-        const guardSlot = structureGuards[0]?.slot;
-        if (direction === null || guardSlot === undefined) return;
-
-        playUnitCommandSound("attack");
-        await attack_guard_vs_explorer({
-          signer: account,
-          structure_id: attacker.id,
-          structure_guard_slot: guardSlot,
-          explorer_id: targetData.id,
-          explorer_direction: direction,
-        });
-      } else if (targetData.targetType === TargetType.Army) {
-        const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-        if (direction === null) return;
-
-        playUnitCommandSound("attack");
-        await attack_explorer_vs_explorer({
-          signer: account,
-          aggressor_id: attacker.id,
-          defender_id: targetData.id,
-          defender_direction: direction,
-          steal_resources: targetResources,
-        });
-      } else {
-        const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-        if (direction === null) return;
-
-        playUnitCommandSound("attack");
-        await attack_explorer_vs_guard({
-          signer: account,
-          explorer_id: attacker.id,
-          structure_id: targetData.id,
-          structure_direction: direction,
-        });
-      }
+      playUnitCommandSound("attack");
+      await performCall({ direction, resolvedTarget });
 
       updateSelectedEntityId(null);
       toggleModal(null);
@@ -424,6 +453,56 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     }
   };
 
+  const handleAttack = () =>
+    runWorldmapAttack(async ({ direction, resolvedTarget }) => {
+      if (attackerType === AttackerType.Structure) {
+        const guardSlot = structureGuards[0]?.slot;
+        if (guardSlot === undefined) return;
+
+        await attack_guard_vs_explorer({
+          signer: account,
+          structure_id: attacker.id,
+          structure_guard_slot: guardSlot,
+          explorer_id: resolvedTarget.id,
+          explorer_direction: direction,
+        });
+      } else if (resolvedTarget.targetType === TargetType.Army) {
+        await attack_explorer_vs_explorer({
+          signer: account,
+          aggressor_id: attacker.id,
+          defender_id: resolvedTarget.id,
+          defender_direction: direction,
+          steal_resources: targetResources,
+        });
+      } else {
+        await attack_explorer_vs_guard({
+          signer: account,
+          explorer_id: attacker.id,
+          structure_id: resolvedTarget.id,
+          structure_direction: direction,
+        });
+      }
+    });
+
+  // Capture the structure and, in the same atomic multicall, garrison the surviving troops into its
+  // first open guard slot.
+  const handleClaimAndGarrison = () =>
+    runWorldmapAttack(async ({ direction, resolvedTarget }) => {
+      if (garrisonGuardSlot === null || garrisonTroopCount < 1) return;
+
+      await attack_explorer_vs_guard_and_garrison({
+        signer: account,
+        explorer_id: attacker.id,
+        structure_id: resolvedTarget.id,
+        structure_direction: direction,
+        to_guard_slot: garrisonGuardSlot,
+        count: garrisonTroopCount * RESOURCE_PRECISION,
+      });
+    });
+
+  // The Claim button garrisons the survivors only when the opt-in toggle is enabled.
+  const handlePrimaryAction = () => (canGarrison && garrisonEnabled ? handleClaimAndGarrison() : handleAttack());
+
   const handleShowDetails = () => {
     toggleModal(
       <CombatModal
@@ -436,6 +515,18 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const formatTroopValue = (value: number) => {
     return Math.round(value).toLocaleString();
   };
+
+  const renderDetailsButton = (extraClassName?: string) => (
+    <Button
+      variant="outline"
+      size="md"
+      onClick={handleShowDetails}
+      forceUppercase={false}
+      className={cn("px-3 py-1 text-xs tracking-wide", extraClassName)}
+    >
+      Details
+    </Button>
+  );
 
   const casualtyLine = (label: string, losses: number, remaining: number, isEliminated: boolean) => (
     <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
@@ -459,121 +550,137 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   );
 
   return (
-    <div className={cn("w-[280px] max-w-[85vw] rounded-xl px-3 py-2.5 text-gold", OVERLAY_SURFACE_BASE)}>
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className={cn("truncate", HUD_LABEL)}>{accountName || "Your army"}</span>
-        <div className="flex items-center gap-2">
-          <span className={cn("shrink-0", HUD_CUE)}>{outcomeLabel}</span>
-          <button
-            type="button"
-            aria-label="Close attack preview"
-            className="rounded-full border border-gold/30 bg-transparent p-1 text-gold transition hover:bg-gold/10"
-            onClick={() => toggleModal(null)}
-          >
-            <X className="h-3 w-3" />
-          </button>
+    <Draggable
+      handle=".qap-drag-handle"
+      cancel=".modal-no-drag"
+      bounds="parent"
+      nodeRef={nodeRef}
+      position={position}
+      onDrag={onDrag}
+      onStop={onStop}
+    >
+      <div
+        ref={nodeRef}
+        className={cn("w-[280px] max-w-[85vw] rounded-xl px-3 py-2.5 text-gold", OVERLAY_SURFACE_BASE)}
+      >
+        <div className="qap-drag-handle mb-1.5 flex cursor-move items-center justify-between gap-2">
+          <span className={cn("truncate", HUD_LABEL)}>{accountName || "Your army"}</span>
+          <div className="flex items-center gap-2">
+            <span className={cn("shrink-0", HUD_CUE)}>{outcomeLabel}</span>
+            <button
+              type="button"
+              aria-label="Close attack preview"
+              className="modal-no-drag rounded-full border border-gold/30 bg-transparent p-1 text-gold transition hover:bg-gold/10"
+              onClick={() => toggleModal(null)}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
         </div>
-      </div>
 
-      {isLoading ? (
-        <div className="py-6 text-center text-sm text-gold/70">Loading enemy intel...</div>
-      ) : !targetData ? (
-        <div className="py-6 text-center text-sm text-gold/70">No target detected.</div>
-      ) : (
-        <div className="space-y-1.5">
-          {targetArmyData ? (
-            <>
-              {casualtyLine("Your forces", attackerLosses, attackerRemaining, attackerRemaining <= 0)}
-              {casualtyLine(
-                isStructureTarget ? "Active guard" : "Enemy army",
-                defenderLosses,
-                defenderRemaining,
-                defenderRemaining <= 0,
-              )}
-            </>
-          ) : (
-            <div className="rounded-md border border-emerald-500/40 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
-              No defending troops. You can claim without resistance.
-            </div>
-          )}
-
-          {isStructureTarget && totalGuardCount >= 1 && (
-            <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
-              <div className="flex items-center justify-between">
-                <span className={HUD_LABEL}>Defenders</span>
-                <span className={HUD_CUE}>Post Fight</span>
+        {isLoading ? (
+          <div className="py-6 text-center text-sm text-gold/70">Loading enemy intel...</div>
+        ) : !targetData ? (
+          <div className="py-6 text-center text-sm text-gold/70">No target detected.</div>
+        ) : (
+          <div className="space-y-1.5">
+            {targetArmyData ? (
+              <>
+                {casualtyLine("Your forces", attackerLosses, attackerRemaining, attackerRemaining <= 0)}
+                {casualtyLine(
+                  isStructureTarget ? "Active guard" : "Enemy army",
+                  defenderLosses,
+                  defenderRemaining,
+                  defenderRemaining <= 0,
+                )}
+              </>
+            ) : (
+              <div className="rounded-md border border-emerald-500/40 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
+                No defending troops. You can claim without resistance.
               </div>
-              <ul className="mt-1.5 space-y-1">
-                {defenderSlots.map((slot, index) => (
-                  <li key={index} className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold border leading-none",
-                        getTierStyle(slot.tier),
-                      )}
-                    >
-                      {slot.tier}
-                    </span>
-                    {slot.trait && (
-                      <ResourceIcon withTooltip={false} resource={slot.trait} size="sm" className="shrink-0" />
-                    )}
-                    <span
-                      className={cn(
-                        "tabular-nums",
-                        HUD_VALUE,
-                        slot.eliminated && "text-red-300 line-through decoration-red-300/60",
-                      )}
-                    >
-                      {formatTroopValue(slot.remaining)}
-                    </span>
-                    {slot.isActive && <span className={cn("ml-auto", HUD_CUE)}>Active</span>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+            )}
 
-          {attackDisabled && (
-            <div className="rounded-md border border-red-400/30 bg-red-900/20 px-3 py-2 text-xs text-red-200">
-              <span>{attackButtonLabel}</span>
-              {cooldownBlocksAttack && attackerCooldownRemaining > 0 && (
-                <div className="mt-1 text-[11px] text-gold/70">{formatTime(attackerCooldownRemaining)} remaining</div>
-              )}
-              {isLowStamina && (
-                <div className="mt-1 text-[11px] text-gold/70">
-                  <div>
-                    Current: {attackerStaminaValue} / Required: {requiredAttackStamina}
-                  </div>
-                  {staminaWaitSeconds !== null && <div>Ready in: {formatTime(staminaWaitSeconds)}</div>}
+            {isStructureTarget && totalGuardCount >= 1 && (
+              <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <span className={HUD_LABEL}>Defenders</span>
+                  <span className={HUD_CUE}>Post Fight</span>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+                <ul className="mt-1.5 space-y-1">
+                  {defenderSlots.map((slot, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold border leading-none",
+                          getTierStyle(slot.tier),
+                        )}
+                      >
+                        {slot.tier}
+                      </span>
+                      {slot.trait && (
+                        <ResourceIcon withTooltip={false} resource={slot.trait} size="sm" className="shrink-0" />
+                      )}
+                      <span
+                        className={cn(
+                          "tabular-nums",
+                          HUD_VALUE,
+                          slot.eliminated && "text-red-300 line-through decoration-red-300/60",
+                        )}
+                      >
+                        {formatTroopValue(slot.remaining)}
+                      </span>
+                      {slot.isActive && <span className={cn("ml-auto", HUD_CUE)}>Active</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-      <div className="mt-2 flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          size="md"
-          disabled={attackDisabled || !targetData || isLoading}
-          isLoading={isSubmitting}
-          onClick={handleAttack}
-          forceUppercase={false}
-          className="px-3 py-1 text-xs tracking-wide"
-        >
-          {hasDefenders ? "Attack" : "Claim"}
-        </Button>
-        <Button
-          variant="outline"
-          size="md"
-          onClick={handleShowDetails}
-          forceUppercase={false}
-          className="px-3 py-1 text-xs tracking-wide"
-        >
-          Details
-        </Button>
+            {attackDisabled && (
+              <div className="rounded-md border border-red-400/30 bg-red-900/20 px-3 py-2 text-xs text-red-200">
+                <span>{attackButtonLabel}</span>
+                {cooldownBlocksAttack && attackerCooldownRemaining > 0 && (
+                  <div className="mt-1 text-[11px] text-gold/70">{formatTime(attackerCooldownRemaining)} remaining</div>
+                )}
+                {isLowStamina && (
+                  <div className="mt-1 text-[11px] text-gold/70">
+                    <div>
+                      Current: {attackerStaminaValue} / Required: {requiredAttackStamina}
+                    </div>
+                    {staminaWaitSeconds !== null && <div>Ready in: {formatTime(staminaWaitSeconds)}</div>}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {canGarrison && (
+          <div className="modal-no-drag mt-1.5 flex items-center justify-between rounded-md border border-gold/20 bg-black/25 px-3 py-2">
+            <Checkbox
+              enabled={garrisonEnabled}
+              onClick={() => setGarrisonEnabled((enabled) => !enabled)}
+              text="Garrison survivors"
+            />
+            <span className={cn("tabular-nums", HUD_VALUE)}>{formatTroopValue(garrisonTroopCount)}</span>
+          </div>
+        )}
+
+        <div className="modal-no-drag mt-2 flex items-center justify-end gap-2">
+          <Button
+            variant="outline"
+            size="md"
+            disabled={attackDisabled || !targetData || isLoading}
+            isLoading={isSubmitting}
+            onClick={handlePrimaryAction}
+            forceUppercase={false}
+            className="px-3 py-1 text-xs tracking-wide"
+          >
+            {willCaptureStructure ? "Claim" : "Attack"}
+          </Button>
+          {renderDetailsButton()}
+        </div>
       </div>
-    </div>
+    </Draggable>
   );
 };

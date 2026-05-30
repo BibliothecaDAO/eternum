@@ -239,7 +239,7 @@ export const Tooltip = ({ className }: TooltipProps) => {
             transform: isVisible ? "translate3d(0, 0, 0)" : hiddenTransform,
           }}
           className={clsx(
-            "fixed z-[250] pointer-events-none select-none panel-wood inline-flex border text-xs px-4 py-2 bg-dark-wood flex-col justify-start items-center text-gold transition-all duration-150 ease-out",
+            "fixed z-[250] pointer-events-none select-none inline-flex border border-gold/30 text-xs px-4 py-2 bg-[#15100a] flex-col justify-start items-center text-gold transition-all duration-150 ease-out",
             className,
           )}
         >

@@ -1,9 +1,10 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
+import { useDraggablePosition } from "@/ui/shared/lib/draggable-position";
 import type { LucideIcon } from "lucide-react";
 import X from "lucide-react/dist/esm/icons/x";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect } from "react";
 import Draggable from "react-draggable";
 
 interface CenteredModalShellProps {
@@ -23,6 +24,17 @@ interface CenteredModalShellProps {
    * production grid).
    */
   bodyClassName?: string;
+  /**
+   * Optional override merged after the size preset (via cn = clsx +
+   * tailwind-merge), so e.g. `w-[360px] h-auto` cleanly overrides the preset
+   * width/height for the narrow legacy windows.
+   */
+  panelClassName?: string;
+  /**
+   * localStorage key for drag-position persistence. When set, the window
+   * re-opens at its last-dragged position; otherwise it opens centered.
+   */
+  persistKey?: string;
   children: ReactNode;
 }
 
@@ -44,9 +56,11 @@ export const CenteredModalShell = ({
   onClose,
   size = "default",
   bodyClassName,
+  panelClassName,
+  persistKey,
   children,
 }: CenteredModalShellProps) => {
-  const nodeRef = useRef<HTMLDivElement>(null);
+  const { nodeRef, position, onDrag, onStop } = useDraggablePosition(persistKey);
 
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
@@ -88,12 +102,21 @@ export const CenteredModalShell = ({
     // pointer-events-none lets clicks fall through to the world; only the panel
     // re-enables them. flex centering gives the draggable its starting origin.
     <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
-      <Draggable handle=".modal-drag-handle" cancel=".modal-no-drag" bounds="parent" nodeRef={nodeRef}>
+      <Draggable
+        handle=".modal-drag-handle"
+        cancel=".modal-no-drag"
+        bounds="parent"
+        nodeRef={nodeRef}
+        position={position}
+        onDrag={onDrag}
+        onStop={onStop}
+      >
         <div
           ref={nodeRef}
           className={cn(
             "pointer-events-auto flex flex-col overflow-hidden rounded-xl",
             sizeClass,
+            panelClassName,
             OVERLAY_SURFACE_BASE,
           )}
         >

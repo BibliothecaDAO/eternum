@@ -32,7 +32,7 @@ export const CreateGuildButton = ({
         placeholder="Tribe Name . . ."
         onChange={setGuildName}
         maxLength={MAX_NAME_LENGTH}
-        className="w-full button-wood"
+        className="w-full btn-bronze"
       />
       <div className="flex items-center gap-2 sm:shrink-0">
         <button

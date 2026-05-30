@@ -13,10 +13,13 @@ import { GameStartCountdown } from "./game-start-countdown";
 import { SuggestionsPill } from "./pills/suggestions-pill";
 import { TickProgress } from "./tick-progress";
 import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
-import {
-  MIN_REFRESH_INTERVAL_MS,
-  useLandingLeaderboardStore,
-} from "@/services/leaderboard/use-landing-leaderboard-store";
+import { useLandingLeaderboardStore } from "@/services/leaderboard/use-landing-leaderboard-store";
+
+// Single shared leaderboard cache: poll the full board every 60s from here (the
+// always-mounted top bar). The rank pill and the Leaderboard panel both read the
+// same `entries`, so they stay aligned. Manual refresh in the panel still forces.
+const LEADERBOARD_FETCH_LIMIT = 1000;
+const LEADERBOARD_POLL_INTERVAL_MS = 60_000;
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
@@ -96,9 +99,18 @@ export const TopHeader = memo(() => {
   const fetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
 
   useEffect(() => {
-    void fetchLeaderboardEntries({ limit: 50 });
+    void fetchLeaderboardEntries({ limit: LEADERBOARD_FETCH_LIMIT });
+
+    const intervalId = window.setInterval(() => {
+      void fetchLeaderboardEntries({ limit: LEADERBOARD_FETCH_LIMIT });
+    }, LEADERBOARD_POLL_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
   }, [fetchLeaderboardEntries]);
 
+  // Per-player lookup on the same 60s cadence. The full list above doesn't rank
+  // every player (e.g. Blitz), so the pill uses this as a rank fallback — and it
+  // guarantees the pill has data on load even before the list resolves.
   useEffect(() => {
     if (!account.address) return undefined;
 
@@ -107,7 +119,7 @@ export const TopHeader = memo(() => {
     };
 
     refreshPlayer();
-    const intervalId = window.setInterval(refreshPlayer, MIN_REFRESH_INTERVAL_MS);
+    const intervalId = window.setInterval(refreshPlayer, LEADERBOARD_POLL_INTERVAL_MS);
     return () => window.clearInterval(intervalId);
   }, [account.address, fetchPlayerEntry]);
 
@@ -155,7 +167,11 @@ export const TopHeader = memo(() => {
         {/* 1. Player rank */}
         <SecondaryMenuItems variant="rank" />
 
-        {/* 2. Local / World toggle (+ conditional Ethereal layer chip) */}
+        {/* 2. Empire-wide suggested actions — sits right after the rank pill and
+            is hidden while spectating (a spectator has no empire to act on). */}
+        {!isSpectating && <SuggestionsPill />}
+
+        {/* 3. Local / World toggle (+ conditional Ethereal layer chip) */}
         <div className={cn(TOP_PILL, "whitespace-nowrap")}>
           <span
             onClick={() => {
@@ -220,17 +236,14 @@ export const TopHeader = memo(() => {
           )}
         </div>
 
-        {/* 3. Day-tick progress */}
+        {/* 4. Day-tick progress */}
         <div className={TOP_PILL}>
           <TickProgress />
         </div>
 
-        {/* 4. Game start / end timers — each self-styled, only render when active. */}
+        {/* 5. Game start / end timers — each self-styled, only render when active. */}
         <GameStartCountdown />
         <GameEndTimer />
-
-        {/* 5. Empire-wide suggested actions */}
-        <SuggestionsPill />
 
         {/* 6. Army combat follow toggle */}
         {showFollowArmyToggle && (
@@ -262,7 +275,7 @@ export const TopHeader = memo(() => {
       {/* Camera-following status toast — extracted from the old wrapper so it floats independently. */}
       {isFollowingArmy && (
         <div className="fixed top-16 left-1/2 z-50 -translate-x-1/2 pointer-events-auto">
-          <div className="flex items-center gap-2 rounded-lg border-2 border-gold bg-dark-wood px-4 py-2 text-gold shadow-lg animate-bounce">
+          <div className="flex items-center gap-2 rounded-lg border-2 border-gold bg-black/40 px-4 py-2 text-gold shadow-lg animate-bounce">
             {followingArmyMessage?.toLowerCase().includes("combat") ? (
               <Swords className="w-4 h-4 animate-pulse text-gold" />
             ) : (

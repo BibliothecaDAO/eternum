@@ -182,7 +182,7 @@ const MarketContent = () => {
   const tabLabels = useUnifiedTrade ? unifiedTabLabels : legacyTabLabels;
 
   return (
-    <div className="market-modal-selector container border mx-auto grid grid-cols-12  border-gold/30 h-full row-span-12 rounded-2xl relative panel-wood">
+    <div className="market-modal-selector container border mx-auto grid grid-cols-12  border-gold/30 h-full row-span-12 rounded-2xl relative bg-black/40">
       <div className="col-span-3 row-span-10 overflow-y-auto border-r border-gold/10">
         <div className="market-realm-selector p-3 border-b border-gold/10">
           <Select
@@ -191,7 +191,7 @@ const MarketContent = () => {
               setStructureEntityId(ID(trait));
             }}
           >
-            <SelectTrigger className="w-full panel-wood-right">
+            <SelectTrigger className="w-full border-r border-gold/25">
               <SelectValue placeholder="Select Structure" />
             </SelectTrigger>
             <SelectContent>

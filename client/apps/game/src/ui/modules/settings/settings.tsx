@@ -10,7 +10,8 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { GraphicsSettings } from "@/ui/config";
 import { Avatar, Button, Checkbox, RangeInput } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
-import { OSWindow, settings, shortcuts } from "@/ui/features/world";
+import { settings, shortcuts } from "@/ui/features/world";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { redirectToLandingWorldSelection } from "@/ui/features/world-selector";
 import { resetBootstrap } from "@/init/bootstrap";
 import { useNavigate } from "react-router-dom";
@@ -84,8 +85,16 @@ export const SettingsWindow = () => {
     toast("Guild whitelist cleared!");
   };
 
+  if (!isOpen) return null;
+
   return (
-    <OSWindow onClick={() => togglePopup(settings)} show={isOpen} title={settings} maxHeightCap={640}>
+    <CenteredModalShell
+      title={settings}
+      onClose={() => togglePopup(settings)}
+      persistKey={settings}
+      panelClassName="w-[420px] h-auto max-h-[640px]"
+      bodyClassName="overflow-auto"
+    >
       <div className="flex flex-col space-y-6 p-6">
         {/* Header — avatar + Cartridge controller button, centered together.
             The controller already surfaces handle, address, and the wallet
@@ -342,7 +351,7 @@ export const SettingsWindow = () => {
           </section>
 
           {/* Footer — credits + outbound links only. The "Done" button is
-              redundant with the OSWindow close (X) and the onboarding shortcut
+              redundant with the window close (X) and the onboarding shortcut
               was only useful at first-run. */}
           <section className="space-y-4">
             <div className="flex space-x-4">
@@ -371,7 +380,7 @@ export const SettingsWindow = () => {
           </section>
         </div>
       </div>
-    </OSWindow>
+    </CenteredModalShell>
   );
 };
 

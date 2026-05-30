@@ -7,7 +7,8 @@ import {
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OSWindow, explorationAutomation } from "@/ui/features/world";
+import { explorationAutomation } from "@/ui/features/world";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { Position } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
@@ -380,16 +381,18 @@ export const ExplorationAutomationWindow = memo(() => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(explorationAutomation));
 
+  if (!isOpen) return null;
+
   return (
-    <OSWindow
-      onClick={() => togglePopup(explorationAutomation)}
-      show={isOpen}
+    <CenteredModalShell
+      onClose={() => togglePopup(explorationAutomation)}
       title="Auto-Explore"
-      width="320px"
-      height="auto"
+      persistKey="Auto-Explore"
+      panelClassName="w-[320px] h-auto max-h-[calc(100vh-64px)]"
+      bodyClassName="overflow-auto"
     >
       <ExplorationAutomationContent compact />
-    </OSWindow>
+    </CenteredModalShell>
   );
 });
 ExplorationAutomationWindow.displayName = "ExplorationAutomationWindow";
