@@ -1,4 +1,5 @@
 import { ResourceIcon } from "@/ui/design-system/molecules";
+import { getTierStyle } from "@/ui/utils/tier-styles";
 import { getTroopResourceId } from "@bibliothecadao/eternum";
 import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier } from "@bibliothecadao/types";
 import clsx from "clsx";
@@ -109,7 +110,12 @@ export const DefenseSlotSelection = ({
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center gap-1.5">
                       {guardTier && (
-                        <span className="flex-shrink-0 rounded-sm border border-gold/30 bg-black/30 px-1 text-[10px] font-bold leading-tight text-gold/80">
+                        <span
+                          className={clsx(
+                            "flex-shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-bold leading-none",
+                            getTierStyle(guardTier),
+                          )}
+                        >
                           {guardTier}
                         </span>
                       )}

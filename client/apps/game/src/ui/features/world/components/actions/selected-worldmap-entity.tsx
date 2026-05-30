@@ -16,7 +16,7 @@ import { useArmyEntityDetail } from "@/ui/features/world/components/entities/hoo
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
-import { battleSimulation } from "@/ui/features/world/components/config";
+import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { HexPosition, ID, StructureType, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
   Biome,
@@ -60,11 +60,7 @@ export const SelectedWorldmapEntity = ({
   }
 
   return (
-    <SelectedWorldmapEntityContent
-      selectedHex={selectedHex}
-      coordsLabel={coordsLabel}
-      headerAction={headerAction}
-    />
+    <SelectedWorldmapEntityContent selectedHex={selectedHex} coordsLabel={coordsLabel} headerAction={headerAction} />
   );
 };
 
@@ -79,9 +75,7 @@ const SelectedWorldmapEntityContent = ({
 }) => {
   const { setup } = useDojo();
   const { handleUrlChange } = useQuery();
-  const openPopup = useUIStore((state) => state.openPopup);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const setCombatSimulationBiome = useUIStore((state) => state.setCombatSimulationBiome);
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const gridTemplateColumns = "var(--selected-worldmap-entity-grid-cols, 1fr)";
   const gridTemplateRows = "var(--selected-worldmap-entity-grid-rows, auto)";
@@ -95,11 +89,8 @@ const SelectedWorldmapEntityContent = ({
     return Biome.getBiome(selectedHex.col || 0, selectedHex.row || 0);
   }, [selectedHex.col, selectedHex.row]);
   const handleSimulateBattle = useCallback(() => {
-    setCombatSimulationBiome(biome);
-    if (!isPopupOpen(battleSimulation)) {
-      openPopup(battleSimulation);
-    }
-  }, [biome, isPopupOpen, openPopup, setCombatSimulationBiome]);
+    toggleModal(<BattleLab mode="sim" initialBiome={biome} />);
+  }, [biome, toggleModal]);
 
   const hasOccupier = !!tile && hasTileOccupier(tile.occupier_type);
   const occupierType = tile?.occupier_type ?? 0;
@@ -237,9 +228,7 @@ const SelectedArmyTilePanel = ({
 }) => {
   const { explorer } = useArmyEntityDetail({ armyEntityId });
   const highlightTroopType =
-    explorer?.troops?.category !== undefined
-      ? (Number(explorer.troops.category) as unknown as TroopType)
-      : undefined;
+    explorer?.troops?.category !== undefined ? (Number(explorer.troops.category) as unknown as TroopType) : undefined;
 
   return (
     <div className={occupiedEntityLayoutClass}>

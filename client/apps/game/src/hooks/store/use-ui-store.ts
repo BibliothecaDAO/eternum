@@ -13,7 +13,7 @@ import { createWorldStoreSlice, WorldStore } from "./use-world-loading";
 
 type TooltipPlacement = "top" | "left" | "right" | "bottom";
 
-export type BottomPanelTabId = "tile" | "minimap";
+type BottomPanelTabId = "tile" | "minimap";
 
 export type LeftListFilter = StructureType | "all";
 export type LeftListSort = "favorites" | "level" | "population" | "name";
@@ -100,16 +100,15 @@ type ArmyCreationPopupConfig = {
   followSelectedStructure?: boolean;
 };
 
-type ArmyCreationPopupState = (ArmyCreationPopupConfig & { openId: number }) | null;
-
 /**
  * Right-click "Create Defense/Attack Army" no longer opens the legacy popup —
  * it primes the merged Military modal with the target realm + intent. The
  * modal consumes and clears this on mount.
  */
-export type PendingMilitaryAction = {
+type PendingMilitaryAction = {
   structureId: number;
   isExplorer: boolean;
+  direction?: Direction;
   initialGuardSlot?: number;
 };
 
@@ -127,8 +126,6 @@ interface UIStore {
   // sandbox worlds let players settle/provision/upgrade at any time.
   devModeOn: boolean;
   setDevModeOn: (devModeOn: boolean) => void;
-  theme: string;
-  setTheme: (theme: string) => void;
   showBlurOverlay: boolean;
   setShowBlurOverlay: (show: boolean) => void;
   showBlankOverlay: boolean;
@@ -159,8 +156,6 @@ interface UIStore {
   modalContent: React.ReactNode;
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
-  combatSimulationBiome: BiomeType | null;
-  setCombatSimulationBiome: (biome: BiomeType | null) => void;
   battleView: BattleViewInfo | null;
   setBattleView: (participants: BattleViewInfo | null) => void;
   leftNavigationView: LeftView;
@@ -199,9 +194,7 @@ interface UIStore {
   // pass this into derivation memos so renames propagate without remounting.
   structureNameVersion: number;
   bumpStructureNameVersion: () => void;
-  armyCreationPopup: ArmyCreationPopupState;
   openArmyCreationPopup: (config: ArmyCreationPopupConfig) => void;
-  closeArmyCreationPopup: () => void;
   pendingMilitaryAction: PendingMilitaryAction | null;
   setPendingMilitaryAction: (action: PendingMilitaryAction | null) => void;
   // Bumped whenever a military mutation lands (create / disband) so the deploy
@@ -278,8 +271,6 @@ export const useUIStore = create(
     setGameStartMainAt: (seasonStartMainAt: number | null) => set({ gameStartMainAt: seasonStartMainAt }),
     devModeOn: false,
     setDevModeOn: (devModeOn: boolean) => set({ devModeOn }),
-    theme: "light",
-    setTheme: (theme) => set({ theme }),
     showBlurOverlay: false,
     setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
     showBlankOverlay: true,
@@ -341,8 +332,6 @@ export const useUIStore = create(
       set({ modalContent: content, showModal: !!content, tooltip: null });
     },
     showModal: false,
-    combatSimulationBiome: null,
-    setCombatSimulationBiome: (biome: BiomeType | null) => set({ combatSimulationBiome: biome }),
     battleView: null,
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
     leftNavigationView: LeftView.EntityView,
@@ -381,25 +370,32 @@ export const useUIStore = create(
     logisticsActiveTab: "arrivals",
     setLogisticsActiveTab: (tab) => set({ logisticsActiveTab: tab }),
     pendingRenameStructureEntityId: null,
-    setPendingRenameStructureEntityId: (entityId: number | null) =>
-      set({ pendingRenameStructureEntityId: entityId }),
+    setPendingRenameStructureEntityId: (entityId: number | null) => set({ pendingRenameStructureEntityId: entityId }),
     structureNameVersion: 0,
     bumpStructureNameVersion: () =>
       set((state: AppStore) => ({ structureNameVersion: state.structureNameVersion + 1 })),
-    armyCreationPopup: null,
     openArmyCreationPopup: (config: ArmyCreationPopupConfig) =>
-      set((state: AppStore) => ({
-        armyCreationPopup: {
-          ...config,
-          openId: (state.armyCreationPopup?.openId ?? 0) + 1,
-        },
-      })),
-    closeArmyCreationPopup: () => set({ armyCreationPopup: null }),
+      set((state: AppStore) => {
+        const structureId = Number(config.structureId ?? state.structureEntityId);
+        if (!Number.isFinite(structureId) || structureId <= 0) {
+          return {};
+        }
+
+        return {
+          leftNavigationView: LeftView.MilitaryView,
+          pendingMilitaryAction: {
+            structureId,
+            isExplorer: config.isExplorer ?? true,
+            direction: config.direction,
+            initialGuardSlot: config.initialGuardSlot,
+          },
+          tooltip: null,
+        };
+      }),
     pendingMilitaryAction: null,
     setPendingMilitaryAction: (action: PendingMilitaryAction | null) => set({ pendingMilitaryAction: action }),
     militaryMapVersion: 0,
-    bumpMilitaryMapVersion: () =>
-      set((state: AppStore) => ({ militaryMapVersion: state.militaryMapVersion + 1 })),
+    bumpMilitaryMapVersion: () => set((state: AppStore) => ({ militaryMapVersion: state.militaryMapVersion + 1 })),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),

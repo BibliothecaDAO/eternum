@@ -7,7 +7,7 @@ import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-
 import Trees from "lucide-react/dist/esm/icons/trees";
 import { formatBiomeBonus } from "@/ui/features/military";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
-import { battleSimulation } from "@/ui/features/world/components/config";
+import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
@@ -138,7 +138,7 @@ export const BiomeSummaryCard = ({
     ) : undefined;
 
   return (
-    <InfoBubble title="Biome" icon={Trees} cue={battleAction}>
+    <InfoBubble title="Biome" icon={Trees} cue={battleAction} className="w-full flex-1 min-w-0">
       <div className="flex flex-col gap-2">
         <span className={`truncate ${HUD_HEADLINE}`} title={biomeLabel}>
           {biomeLabel}
@@ -184,16 +184,11 @@ export const BiomeSummaryCard = ({
 };
 
 export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
-  const openPopup = useUIStore((state) => state.openPopup);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const setCombatSimulationBiome = useUIStore((state) => state.setCombatSimulationBiome);
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const handleSimulateBattle = useCallback(() => {
-    setCombatSimulationBiome(biome);
-    if (!isPopupOpen(battleSimulation)) {
-      openPopup(battleSimulation);
-    }
-  }, [biome, isPopupOpen, openPopup, setCombatSimulationBiome]);
+    toggleModal(<BattleLab mode="sim" initialBiome={biome} />);
+  }, [biome, toggleModal]);
 
   return (
     <div className="h-full min-h-0 w-full">

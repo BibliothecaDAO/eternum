@@ -1,7 +1,8 @@
 import { ReactComponent as Cross } from "@/assets/icons/common/cross.svg";
+import { DROPDOWN_CONTENT, DROPDOWN_TRIGGER } from "@/ui/design-system/atoms/overlay-surface";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { RELICS, RelicInfo, ResourcesIds, resources } from "@bibliothecadao/types";
+import { RELICS, RelicInfo, ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { getRecipientTypeColor, getRelicTypeColor } from "./relic-colors";
@@ -139,7 +140,8 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
             type="button"
             onClick={() => setOpen(!open)}
             className={clsx(
-              "flex h-10 w-full items-center justify-between rounded-md border border-gold/20 bg-dark-brown px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+              "flex w-full items-center justify-between px-3 py-2 text-sm disabled:cursor-not-allowed disabled:opacity-50",
+              DROPDOWN_TRIGGER,
               className,
             )}
           >
@@ -154,7 +156,7 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
           </button>
 
           {open && (
-            <div className="absolute z-50 min-w-[8rem] overflow-hidden rounded-md border border-gold/20 bg-dark-brown text-popover-foreground shadow-md top-full w-full mt-1">
+            <div className={clsx("absolute top-full z-50 mt-1 w-full min-w-[8rem] overflow-hidden", DROPDOWN_CONTENT)}>
               <div className="p-2">
                 <TextInput
                   ref={inputRef}
@@ -177,7 +179,7 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
                     >
                       <div className="flex items-center justify-between w-full gap-2">
                         <div className="flex items-center gap-2">
-                          <ResourceIcon resource={resources.find((r) => r.id === relic.id)?.trait || ""} size="sm" />
+                          <ResourceIcon resource={ResourcesIds[relic.id]} size="sm" />
                           <div className="flex flex-col">
                             <span className="font-medium">{relic.name}</span>
                             <span className={clsx("text-xs", getRelicTypeColor(relic.type))}>{relic.effect}</span>
@@ -209,7 +211,7 @@ export const SelectRelic: React.FC<SelectRelicProps> = ({
               key={relic.id}
               className="flex items-center gap-1 px-2 py-1 bg-gold/10 border border-gold/20 rounded text-sm"
             >
-              <ResourceIcon resource={resources.find((r) => r.id === relic.id)?.trait || ""} size="xs" />
+              <ResourceIcon resource={ResourcesIds[relic.id]} size="xs" />
               <span>{relic.name}</span>
               <span className={clsx("text-xs", getRelicTypeColor(relic.type))}>
                 (

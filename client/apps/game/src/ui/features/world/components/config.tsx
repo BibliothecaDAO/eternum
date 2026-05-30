@@ -9,7 +9,6 @@ type OSWindows =
   | "Assistant"
   | "Quests"
   | "Leaderboard"
-  | "BattleSimulation"
   | "Rewards"
   | "Shortcuts"
   | "LatestFeatures"
@@ -43,7 +42,6 @@ export const trade: OSWindows = "Trade";
 export const construction: OSWindows = "Construction";
 export const leaderboard: OSWindows = "Leaderboard";
 export const rewards: OSWindows = "Rewards";
-export const battleSimulation: OSWindows = "BattleSimulation";
 export const shortcuts: OSWindows = "Shortcuts";
 export const latestFeatures: OSWindows = "LatestFeatures";
 export const transactions: OSWindows = "Transactions";

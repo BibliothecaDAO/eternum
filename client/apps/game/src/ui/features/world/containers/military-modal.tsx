@@ -2,12 +2,15 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_BODY_MUTED, HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
-import { ExistingArmiesPanel, UnifiedArmyCreationBody } from "@/ui/features/military/components/unified-army-creation-modal";
+import {
+  ExistingArmiesPanel,
+  UnifiedArmyCreationBody,
+} from "@/ui/features/military/components/unified-army-creation-modal";
 import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
-import { type ID } from "@bibliothecadao/types";
+import { Direction, type ID } from "@bibliothecadao/types";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useState } from "react";
 
@@ -27,9 +30,7 @@ const MilitaryDeployHeader = ({ focusedRealmId }: { focusedRealmId: ID }) => {
   return (
     <header className="flex items-center gap-2 border-b border-gold/15 px-5 py-3">
       <Swords className="h-4 w-4 text-gold" />
-      <span className={cn(HUD_LABEL_BRIGHT, "text-gold")}>
-        {(detail.structureName ?? "Structure").toUpperCase()}
-      </span>
+      <span className={cn(HUD_LABEL_BRIGHT, "text-gold")}>{(detail.structureName ?? "Structure").toUpperCase()}</span>
       <span className={cn(HUD_LABEL_BRIGHT, "text-gold/55")}>· Level {detail.structure.base?.level ?? 0}</span>
     </header>
   );
@@ -50,12 +51,15 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
 
   const [focusedRealmId, setFocusedRealmId] = useState<ID>(structureEntityId);
   const [initialIsExplorer, setInitialIsExplorer] = useState<boolean>(true);
+  const [initialDirection, setInitialDirection] = useState<Direction | undefined>(undefined);
   const [initialGuardSlot, setInitialGuardSlot] = useState<number | undefined>(undefined);
   const [bodyKey, setBodyKey] = useState(0);
 
   // Follow the global active structure if it changes (chip click outside modal).
   useEffect(() => {
     setFocusedRealmId(structureEntityId);
+    setInitialDirection(undefined);
+    setInitialGuardSlot(undefined);
   }, [structureEntityId]);
 
   // Right-click priming: pull the targeted realm + intent in, then clear.
@@ -65,6 +69,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
     if (!pendingMilitaryAction) return;
     setFocusedRealmId(pendingMilitaryAction.structureId as ID);
     setInitialIsExplorer(pendingMilitaryAction.isExplorer);
+    setInitialDirection(pendingMilitaryAction.direction);
     setInitialGuardSlot(pendingMilitaryAction.initialGuardSlot);
     setBodyKey((current) => current + 1);
     setPendingMilitaryAction(null);
@@ -72,6 +77,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
 
   const handleSelectStructure = useCallback((id: ID) => {
     setFocusedRealmId(id);
+    setInitialDirection(undefined);
     setInitialGuardSlot(undefined);
     // Remount so the body refetches guards + balances + free directions for
     // the newly selected realm and snaps troop count to max for the new state.
@@ -107,6 +113,7 @@ export const MilitaryModal = memo(({ structureEntityId }: MilitaryModalProps) =>
               embedded
               structureId={Number(focusedRealmId)}
               isExplorer={initialIsExplorer}
+              direction={initialDirection}
               initialGuardSlot={initialGuardSlot}
             />
             <div className="px-2 pb-3 pt-1">

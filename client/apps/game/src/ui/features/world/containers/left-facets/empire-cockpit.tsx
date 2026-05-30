@@ -30,9 +30,13 @@ const AutomationCue = memo(({ structureEntityId }: { structureEntityId: ID }) =>
   const secondsUntilRun = nextRunTimestamp ? Math.max(0, Math.ceil((nextRunTimestamp - nowMs) / 1000)) : null;
 
   return (
-    <span className="flex items-center gap-1.5">
+    <span className="flex min-w-[5.75rem] items-center justify-end gap-1.5 whitespace-nowrap tabular-nums">
       <span>{label}</span>
-      {secondsUntilRun !== null && <span className="font-normal text-gold/55">· {formatTimeRemaining(secondsUntilRun)}</span>}
+      {secondsUntilRun !== null && (
+        <span className="inline-block min-w-[2rem] text-right font-normal text-gold/55">
+          · {formatTimeRemaining(secondsUntilRun)}
+        </span>
+      )}
     </span>
   );
 });
@@ -44,8 +48,11 @@ AutomationCue.displayName = "AutomationCue";
 export const EmpireCockpit = memo(() => {
   const structureEntityId = useUIStore((state) => state.structureEntityId);
 
-  const { structure, resources, isMine, isLoadingStructure, typeLabel } = useStructureEntityDetail({ structureEntityId });
+  const { structure, resources, isMine, isLoadingStructure, typeLabel, relicEffects } = useStructureEntityDetail({
+    structureEntityId,
+  });
   const productionSummary = useStructureProductionSummary(structure, resources);
+  const activeRelicIds = relicEffects.map((effect) => Number(effect.id));
 
   // Hide cockpit when there's nothing meaningful to show — keeps the rail
   // clean during loads and on non-owned selections.
@@ -55,12 +62,19 @@ export const EmpireCockpit = memo(() => {
   return (
     // Title is the structure's own type (Realm / Village / Camp / …) rather than
     // a generic "Empire" — it names exactly what the token panel is showing.
-    <InfoBubble title={typeLabel ?? "Structure"} icon={Factory} cue={<AutomationCue structureEntityId={structureEntityId} />} collapsible>
+    <InfoBubble
+      title={typeLabel ?? "Structure"}
+      icon={Factory}
+      cue={<AutomationCue structureEntityId={structureEntityId} />}
+      collapsible
+    >
       <MergedResourcePanel
         structureEntityId={structureEntityId}
         resources={resources}
         productionSummary={productionSummary}
         canBuild={false}
+        isMine={isMine}
+        activeRelicIds={activeRelicIds}
       />
     </InfoBubble>
   );

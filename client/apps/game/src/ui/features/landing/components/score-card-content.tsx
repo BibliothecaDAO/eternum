@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Copy, X, Loader2, Share2 } from "lucide-react";
+import { Copy, Loader2, Share2 } from "lucide-react";
 
-import { useAccountStore } from "@/hooks/store/use-account-store";
 import { Button } from "@/ui/design-system/atoms";
 import { BlitzHighlightCardWithSelector } from "@/ui/shared/components/blitz-highlight-card";
 import {
@@ -12,17 +11,8 @@ import {
   buildBlitzShareMessage,
 } from "@/ui/shared/lib/blitz-highlight";
 import { copyElementAsPng, openShareOnX } from "@/ui/shared/lib/share-image";
-import {
-  fetchLandingLeaderboardEntryByAddress,
-  type LandingLeaderboardEntry,
-} from "@/services/leaderboard/landing-leaderboard-service";
+import type { LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
 import { displayAddress } from "@/ui/utils/utils";
-
-interface ScoreCardModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  worldName: string;
-}
 
 interface ScoreCardContentProps {
   worldName: string;
@@ -31,8 +21,6 @@ interface ScoreCardContentProps {
   error?: string | null;
   showActions?: boolean;
 }
-
-const buildToriiSqlUrl = (gameName: string) => `https://api.cartridge.gg/x/${gameName}/torii/sql`;
 
 const getDisplayName = (entry: LandingLeaderboardEntry): string => {
   const candidate = entry.displayName?.trim();
@@ -217,70 +205,5 @@ export const ScoreCardContent = ({
         </div>
       )}
     </>
-  );
-};
-
-/**
- * Modal to display player's score card for an ended game
- * Features: BlitzHighlightCard display, copy image, share to X, copy message
- */
-const ScoreCardModal = ({ isOpen, onClose, worldName }: ScoreCardModalProps) => {
-  const [playerEntry, setPlayerEntry] = useState<LandingLeaderboardEntry | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const account = useAccountStore((state) => state.account);
-  const playerAddress = account?.address && account.address !== "0x0" ? account.address : null;
-
-  useEffect(() => {
-    if (!isOpen || !playerAddress) {
-      setPlayerEntry(null);
-      setIsLoading(false);
-      return;
-    }
-
-    const fetchData = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const toriiUrl = buildToriiSqlUrl(worldName);
-        const data = await fetchLandingLeaderboardEntryByAddress(playerAddress, toriiUrl);
-        setPlayerEntry(data);
-      } catch (err) {
-        console.error("Failed to fetch player score:", err);
-        setError("Failed to load score data");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    void fetchData();
-  }, [isOpen, playerAddress, worldName]);
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
-
-      <div className="relative z-10 w-full max-w-[1000px]">
-        <div className="rounded-2xl border border-gold/30 bg-gradient-to-b from-[#0a0a0a] to-[#050505] backdrop-blur-xl overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-gold/20">
-            <h2 className="font-serif text-lg text-gold">Your Score - {worldName}</h2>
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
-              aria-label="Close"
-            >
-              <X className="w-5 h-5 text-white/60" />
-            </button>
-          </div>
-
-          <div className="p-4 sm:p-6">
-            <ScoreCardContent worldName={worldName} playerEntry={playerEntry} isLoading={isLoading} error={error} />
-          </div>
-        </div>
-      </div>
-    </div>
   );
 };

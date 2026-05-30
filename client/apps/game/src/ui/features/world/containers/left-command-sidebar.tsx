@@ -191,8 +191,7 @@ export const LeftCommandSidebar = memo(() => {
     pendingRenameStructureEntityId ? getEntityIdFromKeys([BigInt(pendingRenameStructureEntityId)]) : undefined,
   );
   const pendingRenameMetadata = pendingRenameStructure ? mode.structure.getName(pendingRenameStructure) : null;
-  const editingStructureId =
-    pendingRenameStructureEntityId !== null ? Number(pendingRenameStructureEntityId) : null;
+  const editingStructureId = pendingRenameStructureEntityId !== null ? Number(pendingRenameStructureEntityId) : null;
 
   return (
     <>
@@ -201,7 +200,7 @@ export const LeftCommandSidebar = memo(() => {
           Heavier views (Production, Military) live in centered modals
           triggered from the LeftActionsRow above the minimap. */}
       {ConnectedAccount && !isSpectating && (
-        <div className="fixed left-3 top-3 z-20 pointer-events-auto flex w-[280px] 2xl:w-[340px] max-h-[calc(100vh-400px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pb-2 pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+        <div className="fixed left-3 top-3 z-20 pointer-events-auto flex w-[280px] 2xl:w-[340px] max-h-[calc(100vh-400px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pb-2 pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent [scrollbar-gutter:stable]">
           <StructureListColumn />
           <EmpireCockpit />
         </div>
@@ -230,9 +229,7 @@ export const LeftCommandSidebar = memo(() => {
           </div>
         </CenteredModalShell>
       )}
-      {isPanelOpen && view === LeftView.ConstructionView && (
-        <ConstructionModal structureEntityId={structureEntityId} />
-      )}
+      {isPanelOpen && view === LeftView.ConstructionView && <ConstructionModal structureEntityId={structureEntityId} />}
       {isPanelOpen && view === LeftView.ResourceArrivals && (
         <CenteredModalShell title="Logistics" icon={PackageIcon} onClose={closeView} size="xl">
           <div className="h-full min-h-0 overflow-hidden">
@@ -240,9 +237,7 @@ export const LeftCommandSidebar = memo(() => {
           </div>
         </CenteredModalShell>
       )}
-      {isPanelOpen && view === LeftView.MilitaryView && (
-        <MilitaryModal structureEntityId={structureEntityId} />
-      )}
+      {isPanelOpen && view === LeftView.MilitaryView && <MilitaryModal structureEntityId={structureEntityId} />}
 
       {pendingRenameStructureEntityId !== null && pendingRenameMetadata && editingStructureId !== null && (
         <StructureEditPopup

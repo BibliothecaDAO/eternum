@@ -1,6 +1,4 @@
 import {
-  DEFAULT_RESOURCE_AUTOMATION_PERCENTAGES,
-  DONKEY_DEFAULT_RESOURCE_PERCENT,
   MAX_RESOURCE_ALLOCATION_PERCENT,
   isAutomationResourceBlocked,
   type RealmAutomationConfig,
@@ -13,6 +11,7 @@ import { ResourcesIds } from "@bibliothecadao/types";
 const SMART_T1_RESOURCES: ResourcesIds[] = [ResourcesIds.Wood, ResourcesIds.Copper, ResourcesIds.Coal];
 const SMART_T2_RESOURCES: ResourcesIds[] = [ResourcesIds.Gold, ResourcesIds.ColdIron, ResourcesIds.Ironwood];
 const SMART_T3_RESOURCES: ResourcesIds[] = [ResourcesIds.Adamantine, ResourcesIds.Mithral, ResourcesIds.Dragonhide];
+const SMART_MARKET_DONKEY_RESOURCE_PERCENT = 5;
 
 const SMART_ARMY_T1: ResourcesIds[] = [ResourcesIds.Knight, ResourcesIds.Crossbowman, ResourcesIds.Paladin];
 const SMART_ARMY_T2: ResourcesIds[] = [ResourcesIds.KnightT2, ResourcesIds.CrossbowmanT2, ResourcesIds.PaladinT2];
@@ -61,6 +60,18 @@ const assignTierSplit = (
       resourceToResource: mode === "resource" ? weight : existing.resourceToResource,
       laborToResource: mode === "labor" ? weight : existing.laborToResource,
     });
+  });
+};
+
+const assignMarketDonkeyAllocation = (
+  target: Map<number, { resourceToResource: number; laborToResource: number }>,
+  presentSet: Set<ResourcesIds>,
+) => {
+  if (!presentSet.has(ResourcesIds.Donkey)) return;
+
+  target.set(ResourcesIds.Donkey, {
+    resourceToResource: SMART_MARKET_DONKEY_RESOURCE_PERCENT,
+    laborToResource: 0,
   });
 };
 
@@ -148,6 +159,8 @@ const buildSmartPresetAllocations = (
   } else if (presentArmyT1.length > 0) {
     assignTierSplit(allocations, presentArmyT1, buildSequentialWeights(presentArmyT1.length, [30, 20, 10]), "resource");
   }
+
+  assignMarketDonkeyAllocation(allocations, presentSet);
 
   // Ensure every resource has an entry, defaulting to zero.
   resources.forEach((resourceId) => {

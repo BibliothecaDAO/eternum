@@ -110,6 +110,10 @@ vi.mock("@/ui/design-system/atoms/button", () => ({
   ),
 }));
 
+vi.mock("@/ui/design-system/molecules/resource-icon", () => ({
+  ResourceIcon: ({ resource }: { resource: string }) => <span>{resource}</span>,
+}));
+
 vi.mock("@bibliothecadao/react", () => ({
   useDojo: () => ({
     account: {
@@ -165,6 +169,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
   formatTime: (seconds: number) => `${seconds}s`,
   getEntityIdFromKeys: () => "entity",
   getGuardsByStructure: () => [],
+  getTroopResourceId: () => 1,
   StaminaManager: class StaminaManager {
     constructor(_components: unknown, _entityId: number) {}
 
@@ -181,6 +186,7 @@ vi.mock("@bibliothecadao/types", () => ({
   },
   getDirectionBetweenAdjacentHexes: () => 0,
   RESOURCE_PRECISION: 1,
+  resources: [],
   TickIds: {
     Armies: "armies",
   },

@@ -46,10 +46,7 @@ export const LogisticsView = ({ hasArrivals }: LogisticsViewProps) => {
   const totalArrivals = arrivedArrivalsNumber + pendingArrivalsNumber;
   // Ready-to-claim is more urgent (green) than still-in-flight (gold); pick the
   // tone that better matches what's actually waiting.
-  const badgeTone =
-    arrivedArrivalsNumber > 0
-      ? "bg-progress-bar-good/90 text-dark"
-      : "bg-gold/90 text-dark";
+  const badgeTone = arrivedArrivalsNumber > 0 ? "bg-progress-bar-good/90 text-dark" : "bg-gold/90 text-dark";
 
   return (
     <div className="flex h-full flex-col gap-2 p-2">
@@ -102,9 +99,6 @@ interface AllRealmsBalanceTabProps {
   structures: Array<{ entityId: number; structure?: unknown }>;
 }
 
-// Lifted from transfer-automation-popup.tsx so the merged view can render the
-// same content. Kept here to keep the popup file pure (centered modal) until we
-// drop it entirely.
 const AllRealmsBalanceTab = ({ structures }: AllRealmsBalanceTabProps) => {
   const mode = useGameModeConfig();
   const [selectedId, setSelectedId] = useState<number | null>(structures[0]?.entityId ?? null);

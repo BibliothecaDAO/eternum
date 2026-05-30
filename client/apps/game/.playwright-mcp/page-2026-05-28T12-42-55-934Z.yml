@@ -1,0 +1,26 @@
+- generic [ref=e169]:
+    - img [ref=e171]
+    - generic [ref=e319]:
+        - generic [ref=e320]: Initializing
+        - heading "Charting the World" [level=2] [ref=e321]
+        - paragraph [ref=e322]: Following contour lines while world state comes online.
+        - generic [ref=e323]:
+            - generic [ref=e324]: "["
+            - generic [ref=e334]: "]"
+        - generic [ref=e336]:
+            - generic [ref=e337]:
+                - generic [ref=e338]: debug
+                - generic [ref=e339]: 17.3s elapsed
+            - generic [ref=e340]:
+                - generic [ref=e341]: phase
+                - generic [ref=e342]: Preparing graphics
+                - generic [ref=e343]: last milestone
+                - generic [ref=e344]: renderer-init-started (+97ms, 2.54s total)
+                - generic [ref=e345]: since last
+                - generic [ref=e346]: 14.7s idle
+                - generic [ref=e347]: slowest step
+                - generic [ref=e348]: initial-sync-completed (+1.42s)
+            - group [ref=e349]:
+                - generic "recorded durations (16)" [ref=e350]
+            - group [ref=e351]:
+                - generic "milestones (14)" [ref=e352]

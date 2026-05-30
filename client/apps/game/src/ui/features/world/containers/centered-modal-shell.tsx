@@ -11,11 +11,12 @@ interface CenteredModalShellProps {
   icon?: LucideIcon;
   onClose: () => void;
   /**
-   * "default" → 840×680, "wide" → 920×700, "xl" → 1320×calc(100vh-48px).
+   * "compact" → content-sized small window, "default" → 840×680,
+   * "wide" → 920×700, "xl" → 1320×calc(100vh-48px).
    * Bubble modals (Military, Build, Production, Chat, …) all use "xl" so they
    * share one window size; the smaller presets remain for incidental modals.
    */
-  size?: "default" | "wide" | "xl";
+  size?: "compact" | "default" | "wide" | "xl";
   /**
    * Optional override of the outer modal wrapper class. Body content can opt
    * out of the default vertical scroll if it manages its own layout (e.g.
@@ -34,8 +35,8 @@ interface CenteredModalShellProps {
  *  - Draggable by its header; opens centered, stays within the viewport.
  *  - NO dimming backdrop — the world behind stays fully interactive (the
  *    full-screen wrapper is pointer-events-none; only the panel captures
- *    clicks). Drag the window aside instead of dismissing it.
- *  - Closes via the ✕ button or Escape (no click-outside dismiss).
+ *    clicks). Drag the window aside to keep it open while you work.
+ *  - Closes via the ✕ button, Escape, or a click anywhere outside the panel.
  */
 export const CenteredModalShell = ({
   title,
@@ -51,8 +52,27 @@ export const CenteredModalShell = ({
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
+    // Click-outside dismiss: the wrapper stays pointer-events-none so the world
+    // behind remains interactive, so we listen at the document level and close
+    // whenever a mousedown lands outside the panel.
+    const handlePointerDown = (event: MouseEvent) => {
+      const target = event.target as Element | null;
+      // Dropdowns/selects/tooltips render in a portal at the document root
+      // (outside the panel). Ignore clicks inside them so interacting with a
+      // Select option doesn't dismiss the modal mid-interaction.
+      if (target?.closest?.("[data-radix-popper-content-wrapper],[role='listbox'],[data-radix-portal]")) {
+        return;
+      }
+      if (nodeRef.current && !nodeRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
     window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+      document.removeEventListener("mousedown", handlePointerDown);
+    };
   }, [onClose]);
 
   const sizeClass =
@@ -60,7 +80,9 @@ export const CenteredModalShell = ({
       ? "w-[1320px] max-w-[calc(100vw-48px)] h-[calc(100vh-48px)]"
       : size === "wide"
         ? "w-[920px] max-w-[92vw] h-[700px] max-h-[calc(100vh-64px)]"
-        : "w-[840px] max-w-[92vw] h-[680px] max-h-[calc(100vh-64px)]";
+        : size === "compact"
+          ? "w-[560px] max-w-[92vw] h-auto max-h-[calc(100vh-64px)]"
+          : "w-[840px] max-w-[92vw] h-[680px] max-h-[calc(100vh-64px)]";
 
   return (
     // pointer-events-none lets clicks fall through to the world; only the panel

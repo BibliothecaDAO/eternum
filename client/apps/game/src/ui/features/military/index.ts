@@ -14,4 +14,4 @@ export { HelpModal } from "./components/help-modal";
 export { Military } from "./military";
 
 // Utils - Used by other features
-export { formatBiomeBonus, formatTypeAndBonuses, getStaminaDisplay } from "./battle/combat-utils";
+export { formatBiomeBonus } from "./battle/combat-utils";

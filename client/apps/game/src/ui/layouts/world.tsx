@@ -41,7 +41,6 @@ import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/compo
 import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
 import { TopHeader } from "../features/world/containers/top-header/top-header";
 import { TopNavigation as ModalWindows } from "../features/world/containers/top-navigation";
-import { CombatSimulation } from "../modules/simulation/combat-simulation";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { StoreManagers } from "../store-managers";
@@ -113,7 +112,6 @@ const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
   <>
     <RealmTransferManager zIndex={100} />
     <PlayOverlayManager backgroundImage={backgroundImage} />
-    <CombatSimulation />
   </>
 );
 

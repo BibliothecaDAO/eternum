@@ -47,13 +47,7 @@ interface ArmyBannerEntityDetailContentProps extends Omit<ArmyBannerEntityDetail
 }
 
 const ArmyBannerEntityDetailContent = memo(
-  ({
-    armyEntityId,
-    className,
-    compact = true,
-    coordsLabel,
-    headerAction,
-  }: ArmyBannerEntityDetailContentProps) => {
+  ({ armyEntityId, className, compact = true, coordsLabel, headerAction }: ArmyBannerEntityDetailContentProps) => {
     const {
       explorer,
       explorerResources,
@@ -90,7 +84,9 @@ const ArmyBannerEntityDetailContent = memo(
     const hasWarnings = Boolean(structureResources && explorerResources);
     const inventoryLimit = compact ? 10 : undefined;
     const combatRelicActionLimit = compact ? 4 : undefined;
-    const showUsableRelicsInline = derivedData.isMine && inventoryCounts.usableRelics > 0;
+    // Show every held relic — activatable ones are clickable, the rest render
+    // dimmed/disabled so you can still see what the army carries.
+    const showRelicsInline = derivedData.isMine && inventoryCounts.relics > 0;
     const ownerDisplay = derivedData.addressName ?? `Army Owner`;
     const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
     const ownerInitial = (ownerDisplay || "?").charAt(0).toUpperCase();
@@ -182,7 +178,7 @@ const ArmyBannerEntityDetailContent = memo(
               }
             />
           ) : null}
-          {showUsableRelicsInline && (
+          {showRelicsInline && (
             <CompactEntityInventory
               resources={explorerResources}
               activeRelicIds={activeRelicIds}
@@ -192,7 +188,7 @@ const ArmyBannerEntityDetailContent = memo(
               allowRelicActivation
               variant="tight"
               maxItems={combatRelicActionLimit}
-              filter="usableRelics"
+              filter="relics"
               showHiddenCount={false}
               emptyMessage="No relics ready."
             />

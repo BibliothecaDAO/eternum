@@ -15,13 +15,12 @@ import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes
 import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildVillageTimerSummary } from "@/ui/shared/lib/village-timers";
-import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
-import { ID, RelicRecipientType, StructureType } from "@bibliothecadao/types";
+import { ID, StructureType } from "@bibliothecadao/types";
 import { formatTime, toHexString } from "@bibliothecadao/eternum";
 import { getAvatarUrl, usePlayerAvatar } from "@/hooks/use-player-avatar";
+import { LeftView } from "@/types";
 
 import { ActiveRelicEffects } from "../active-relic-effects";
-import { CompactEntityInventory } from "../compact-entity-inventory";
 import { useStructureEntityDetail } from "../hooks/use-structure-entity-detail";
 import { EntityDetailLayoutVariant } from "../layout";
 import { useStructureProductionSummary } from "../structure-production-summary";
@@ -95,8 +94,8 @@ const StructureBannerEntityDetailContent = memo(
     const resolvedWorldMode = useResolvedWorldGameMode();
     const isEternumMode = resolvedWorldMode === "eternum";
     const currentBlockTimestamp = useCurrentBlockTimestamp();
-    const openPopup = useUIStore((state) => state.openPopup);
-    const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
+    const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
+    const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
     const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
 
     const productionSummary = useStructureProductionSummary(structure, resources);
@@ -113,15 +112,14 @@ const StructureBannerEntityDetailContent = memo(
           : null;
 
     const rawCategory = structure?.base?.category;
-    const handleOpenTransferPopup = useCallback(() => {
+    const handleOpenTransferPanel = useCallback(() => {
       if (!structure?.entity_id) return;
       const entityId = Number(structure.entity_id);
       if (!Number.isFinite(entityId)) return;
       setTransferPanelSourceId(entityId);
-      if (!isTransferPopupOpen) {
-        openPopup(TRANSFER_POPUP_NAME);
-      }
-    }, [isTransferPopupOpen, openPopup, setTransferPanelSourceId, structure?.entity_id]);
+      setLogisticsActiveTab("transfer");
+      setLeftNavigationView(LeftView.ResourceArrivals);
+    }, [setLeftNavigationView, setLogisticsActiveTab, setTransferPanelSourceId, structure?.entity_id]);
 
     if (isLoadingStructure) {
       return (
@@ -162,7 +160,7 @@ const StructureBannerEntityDetailContent = memo(
       isEternumMode &&
       rawCategory !== undefined &&
       [StructureType.Realm, StructureType.Village].includes(Number(rawCategory) as StructureType);
-    const canOpenTransferPopup =
+    const canOpenTransferPanel =
       isMine &&
       structureCategory !== undefined &&
       [StructureType.Realm, StructureType.Village, StructureType.Camp, StructureType.FragmentMine].includes(
@@ -184,54 +182,56 @@ const StructureBannerEntityDetailContent = memo(
         {/* Owner bubble — visible on the right-side tile inspector. Hidden on
             the LeftStructureColumn where the picker already names the
             structure being controlled. */}
-        {!hideOwner && <InfoBubble
-          title={coordsLabel ?? ownerDisplayName ?? "Owner"}
-          cue={coordsLabel ? headerAction : structureName}
-          bodyClassName="pt-0"
-        >
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex min-w-0 items-center gap-2 text-gold">
-              <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
-                {ownerAvatarUrl ? (
-                  <img
-                    className="h-full w-full object-cover"
-                    src={ownerAvatarUrl}
-                    alt={`${ownerDisplayName} avatar`}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-gold/70">
-                    {ownerInitial}
-                  </div>
-                )}
+        {!hideOwner && (
+          <InfoBubble
+            title={coordsLabel ?? ownerDisplayName ?? "Owner"}
+            cue={coordsLabel ? headerAction : structureName}
+            bodyClassName="pt-0"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-2 text-gold">
+                <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
+                  {ownerAvatarUrl ? (
+                    <img
+                      className="h-full w-full object-cover"
+                      src={ownerAvatarUrl}
+                      alt={`${ownerDisplayName} avatar`}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-gold/70">
+                      {ownerInitial}
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className={cn("truncate", HUD_HEADLINE)}>{ownerDisplayName}</p>
+                  <span className={cn("block truncate", HUD_BODY)}>{structureName}</span>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className={cn("truncate", HUD_HEADLINE)}>{ownerDisplayName}</p>
-                <span className={cn("block truncate", HUD_BODY)}>{structureName}</span>
-              </div>
+              {showTransferButton && canOpenTransferPanel && (
+                <Button
+                  size="xs"
+                  variant="outline"
+                  forceUppercase={false}
+                  className="border-gold/30 bg-dark/40 text-gold hover:bg-dark/60 !px-2 !py-1 min-w-0"
+                  onClick={handleOpenTransferPanel}
+                  aria-label="Open transfer panel"
+                >
+                  <ArrowLeftRight className="h-4 w-4" />
+                </Button>
+              )}
             </div>
-            {showTransferButton && canOpenTransferPopup && (
-              <Button
-                size="xs"
-                variant="outline"
-                forceUppercase={false}
-                className="border-gold/30 bg-dark/40 text-gold hover:bg-dark/60 !px-2 !py-1 min-w-0"
-                onClick={handleOpenTransferPopup}
-                aria-label="Open transfer panel"
-              >
-                <ArrowLeftRight className="h-4 w-4" />
-              </Button>
+            {showHyperstructureVP && (
+              <div className="mt-2 border-t border-gold/15 pt-2">
+                <HyperstructureVPDisplay
+                  realmCount={hyperstructureRealmCount}
+                  isOwned={isHyperstructureOwned}
+                  className="w-full"
+                />
+              </div>
             )}
-          </div>
-          {showHyperstructureVP && (
-            <div className="mt-2 border-t border-gold/15 pt-2">
-              <HyperstructureVPDisplay
-                realmCount={hyperstructureRealmCount}
-                isOwned={isHyperstructureOwned}
-                className="w-full"
-              />
-            </div>
-          )}
-        </InfoBubble>}
+          </InfoBubble>
+        )}
 
         {relicEffects.length > 0 && (
           <InfoBubble title="Active Relics" icon={Sparkles}>
@@ -284,7 +284,7 @@ const StructureBannerEntityDetailContent = memo(
             showTransferButton && isMine ? (
               <button
                 type="button"
-                onClick={handleOpenTransferPopup}
+                onClick={handleOpenTransferPanel}
                 className="inline-flex items-center justify-center rounded-md border border-gold/40 bg-gold/10 p-1 text-gold transition hover:border-gold hover:bg-gold/20"
                 title="Open transfer panel"
                 aria-label="Open transfer panel"
@@ -295,27 +295,14 @@ const StructureBannerEntityDetailContent = memo(
           }
         >
           {resources ? (
-            <>
-              <MergedResourcePanel
-                structureEntityId={structureEntityId}
-                resources={resources}
-                productionSummary={productionSummary}
-                canBuild={false}
-              />
-              {/* Relics — held relics + activation, kept after the production/
-                  balance merge. Renders nothing when the structure holds none. */}
-              <CompactEntityInventory
-                resources={resources}
-                activeRelicIds={activeRelicIds}
-                recipientType={RelicRecipientType.Structure}
-                entityId={structureEntityId}
-                allowRelicActivation={isMine}
-                variant="tight"
-                filter="relics"
-                emptyMessage=""
-                className="mt-2"
-              />
-            </>
+            <MergedResourcePanel
+              structureEntityId={structureEntityId}
+              resources={resources}
+              productionSummary={productionSummary}
+              canBuild={false}
+              isMine={isMine}
+              activeRelicIds={activeRelicIds}
+            />
           ) : (
             <p className={HUD_BODY_MUTED}>No resources stored.</p>
           )}
@@ -326,7 +313,6 @@ const StructureBannerEntityDetailContent = memo(
             <FaithDevotionActionPanel structureEntityId={structureEntityId} variant="tab" />
           </InfoBubble>
         )}
-
       </div>
     );
   },

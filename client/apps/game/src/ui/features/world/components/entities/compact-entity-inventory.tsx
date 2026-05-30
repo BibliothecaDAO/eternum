@@ -261,8 +261,13 @@ export const CompactEntityInventory = memo(
       return <p className="text-xxs text-gold/60 italic">{emptyMessage}</p>;
     }
 
+    // Tight tiles are a fixed width in a wrapping row so they stay the same size
+    // regardless of how wide the host panel is (a stretching grid made the same
+    // relic look bigger in the wide left panel than in the narrow right one).
     const baseGrid =
-      variant === "tight" ? "grid grid-cols-4 gap-1.5" : "grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-1.5";
+      variant === "tight"
+        ? "flex flex-wrap justify-start gap-1.5"
+        : "grid grid-cols-[repeat(auto-fit,minmax(72px,1fr))] gap-1.5";
 
     const compactItemClass = variant === "tight" ? "px-1.5 py-1.5" : "px-1.5 py-1";
     const iconSize = variant === "tight" ? "xs" : "sm";
@@ -284,12 +289,16 @@ export const CompactEntityInventory = memo(
       const heroAmountClass = HUD_VALUE;
       const itemVariant = options.hero ? "hero" : "default";
 
+      // Tight (non-hero) tiles get a fixed width; grid/hero tiles fill their cell.
+      const widthClass = variant === "tight" && !options.hero ? "w-14" : "w-full";
+
       const itemClasses = cn(
-        "flex h-full w-full appearance-none flex-col items-center justify-center rounded-xl border text-center normal-case [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
+        "flex h-full appearance-none flex-col items-center justify-center rounded-xl border text-center normal-case [font:inherit] [letter-spacing:inherit] shadow-[inset_0_1px_0_rgba(255,214,102,0.08)]",
+        widthClass,
         options.hero ? heroPadding : compactItemClass,
         getInventoryItemClass(item, itemVariant),
         isClickableRelic &&
-          "cursor-pointer transition-[background-color,border-color,box-shadow] duration-150 hover:border-gold hover:bg-gold/15 hover:shadow-[inset_0_1px_0_rgba(255,214,102,0.28),0_0_18px_rgba(223,170,84,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
+          "animate-relic-ready cursor-pointer transition-[background-color,border-color,box-shadow] duration-150 hover:border-gold hover:bg-gold/15 hover:shadow-[inset_0_1px_0_rgba(255,214,102,0.28),0_0_18px_rgba(223,170,84,0.24)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60",
       );
 
       const itemContent = (
