@@ -1,7 +1,8 @@
 import { useAutomationStore, type RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OSWindow, productionAutomation } from "@/ui/features/world";
+import { productionAutomation } from "@/ui/features/world";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { REALM_PRESETS } from "@/utils/automation-presets";
 import {
   getFailureSeverity,
@@ -223,15 +224,17 @@ export const ProductionAutomationWindow = memo(() => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(productionAutomation));
 
+  if (!isOpen) return null;
+
   return (
-    <OSWindow
-      onClick={() => togglePopup(productionAutomation)}
-      show={isOpen}
+    <CenteredModalShell
+      onClose={() => togglePopup(productionAutomation)}
       title="Production Automation"
-      width="340px"
-      height="auto"
+      persistKey="Production Automation"
+      panelClassName="w-[340px] h-auto max-h-[calc(100vh-64px)]"
+      bodyClassName="overflow-auto"
     >
       <ProductionAutomationContent compact />
-    </OSWindow>
+    </CenteredModalShell>
   );
 });

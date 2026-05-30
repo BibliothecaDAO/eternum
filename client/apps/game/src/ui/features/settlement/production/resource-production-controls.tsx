@@ -244,7 +244,7 @@ export const ResourceProductionControls = ({
   if (rawCurrentInputs.length === 0 && laborCurrentInputs.length === 0) return null;
 
   return (
-    <div className="p-6 rounded-lg panel-wood">
+    <div className="p-6 rounded-lg border border-gold/20 bg-black/30">
       <div className={`grid ${canUseLabor ? "grid-cols-2" : "grid-cols-1"} gap-4`}>
         <div className="grid grid-cols-1 gap-4">
           <div className="mb-4">

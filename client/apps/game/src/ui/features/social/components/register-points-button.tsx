@@ -1,6 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LEADERBOARD_UPDATE_INTERVAL } from "@/ui/constants";
 import Button from "@/ui/design-system/atoms/button";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import {
   clearUncertainClaimSharePointsSubmission,
@@ -13,16 +14,23 @@ import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useEntityQuery } from "@dojoengine/react";
 import { getComponentValue, Has } from "@dojoengine/recs";
+import Zap from "lucide-react/dist/esm/icons/zap";
 import { useEffect, useMemo, useState } from "react";
 import { useSocialStore } from "./use-social-store";
 
 interface RegisterPointsButtonProps {
   className?: string;
+  /**
+   * "bar" → the full-width registered|unregistered summary button.
+   * "inline" → a compact button for the player's own leaderboard row; renders
+   * only when there are unregistered points to claim.
+   */
+  variant?: "bar" | "inline";
 }
 
 const POINTS_SUMMARY_DEBUG = true;
 
-export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) => {
+export const RegisterPointsButton = ({ className, variant = "bar" }: RegisterPointsButtonProps) => {
   const {
     account: { account },
     network,
@@ -152,6 +160,52 @@ export const RegisterPointsButton = ({ className }: RegisterPointsButtonProps) =
       setIsSharePointsLoading(false);
     }
   };
+
+  if (variant === "inline") {
+    // Compact square icon button on the player's own row — disabled (but still
+    // legible) when there's nothing to claim, pulsing gold when there is.
+    return (
+      <button
+        type="button"
+        disabled={!hasUnregisteredPoints || isSharePointsLoading}
+        onClick={claimSharePoints}
+        aria-label="Register points"
+        className={cn(
+          "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border transition",
+          hasUnregisteredPoints
+            ? "animate-pulse border-gold/60 bg-gold/20 text-gold hover:bg-gold/30"
+            : "cursor-not-allowed border-gold/20 bg-black/30 text-gold/40",
+          className,
+        )}
+        onMouseOver={() => {
+          setTooltip({
+            position: "top",
+            content: (
+              <div className="flex flex-col whitespace-nowrap pointer-events-none text-center">
+                <span className="font-bold text-gold mb-1">Register Points</span>
+                <span className="flex justify-between gap-4">
+                  <span>Unregistered:</span>
+                  <span className={unregisteredShareholderPoints > 0 ? "text-yellow-400" : ""}>
+                    {unregisteredShareholderPoints.toLocaleString()}
+                  </span>
+                </span>
+                <span className="text-xs mt-1">
+                  {hasUnregisteredPoints ? "Click to register" : "No points to register"}
+                </span>
+              </div>
+            ),
+          });
+        }}
+        onMouseOut={() => setTooltip(null)}
+      >
+        {isSharePointsLoading ? (
+          <span className="h-3 w-3 animate-spin rounded-full border-b border-t border-gold" />
+        ) : (
+          <Zap className="h-3.5 w-3.5" />
+        )}
+      </button>
+    );
+  }
 
   return (
     <Button

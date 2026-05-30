@@ -14,6 +14,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HUD_CUE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { useDraggablePosition } from "@/ui/shared/lib/draggable-position";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import {
   Biome,
@@ -30,6 +31,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { getComponentValue } from "@dojoengine/recs";
 
 import X from "lucide-react/dist/esm/icons/x";
+import Draggable from "react-draggable";
 import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
 import { CombatModal } from "./combat-modal";
 import { useAttackTargetData } from "./hooks/use-attack-target";
@@ -109,6 +111,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const selectedHex = useUIStore((state) => state.selectedHex);
   const toggleModal = useUIStore((state) => state.toggleModal);
   const updateSelectedEntityId = useUIStore((state) => state.updateEntityActionSelectedEntityId);
+
+  const { nodeRef, position, onDrag, onStop } = useDraggablePosition("quick-attack-preview");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -459,121 +463,134 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   );
 
   return (
-    <div className={cn("w-[280px] max-w-[85vw] rounded-xl px-3 py-2.5 text-gold", OVERLAY_SURFACE_BASE)}>
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <span className={cn("truncate", HUD_LABEL)}>{accountName || "Your army"}</span>
-        <div className="flex items-center gap-2">
-          <span className={cn("shrink-0", HUD_CUE)}>{outcomeLabel}</span>
-          <button
-            type="button"
-            aria-label="Close attack preview"
-            className="rounded-full border border-gold/30 bg-transparent p-1 text-gold transition hover:bg-gold/10"
-            onClick={() => toggleModal(null)}
-          >
-            <X className="h-3 w-3" />
-          </button>
+    <Draggable
+      handle=".qap-drag-handle"
+      cancel=".modal-no-drag"
+      bounds="parent"
+      nodeRef={nodeRef}
+      position={position}
+      onDrag={onDrag}
+      onStop={onStop}
+    >
+      <div
+        ref={nodeRef}
+        className={cn("w-[280px] max-w-[85vw] rounded-xl px-3 py-2.5 text-gold", OVERLAY_SURFACE_BASE)}
+      >
+        <div className="qap-drag-handle mb-1.5 flex cursor-move items-center justify-between gap-2">
+          <span className={cn("truncate", HUD_LABEL)}>{accountName || "Your army"}</span>
+          <div className="flex items-center gap-2">
+            <span className={cn("shrink-0", HUD_CUE)}>{outcomeLabel}</span>
+            <button
+              type="button"
+              aria-label="Close attack preview"
+              className="modal-no-drag rounded-full border border-gold/30 bg-transparent p-1 text-gold transition hover:bg-gold/10"
+              onClick={() => toggleModal(null)}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
         </div>
-      </div>
 
-      {isLoading ? (
-        <div className="py-6 text-center text-sm text-gold/70">Loading enemy intel...</div>
-      ) : !targetData ? (
-        <div className="py-6 text-center text-sm text-gold/70">No target detected.</div>
-      ) : (
-        <div className="space-y-1.5">
-          {targetArmyData ? (
-            <>
-              {casualtyLine("Your forces", attackerLosses, attackerRemaining, attackerRemaining <= 0)}
-              {casualtyLine(
-                isStructureTarget ? "Active guard" : "Enemy army",
-                defenderLosses,
-                defenderRemaining,
-                defenderRemaining <= 0,
-              )}
-            </>
-          ) : (
-            <div className="rounded-md border border-emerald-500/40 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
-              No defending troops. You can claim without resistance.
-            </div>
-          )}
-
-          {isStructureTarget && totalGuardCount >= 1 && (
-            <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
-              <div className="flex items-center justify-between">
-                <span className={HUD_LABEL}>Defenders</span>
-                <span className={HUD_CUE}>Post Fight</span>
+        {isLoading ? (
+          <div className="py-6 text-center text-sm text-gold/70">Loading enemy intel...</div>
+        ) : !targetData ? (
+          <div className="py-6 text-center text-sm text-gold/70">No target detected.</div>
+        ) : (
+          <div className="space-y-1.5">
+            {targetArmyData ? (
+              <>
+                {casualtyLine("Your forces", attackerLosses, attackerRemaining, attackerRemaining <= 0)}
+                {casualtyLine(
+                  isStructureTarget ? "Active guard" : "Enemy army",
+                  defenderLosses,
+                  defenderRemaining,
+                  defenderRemaining <= 0,
+                )}
+              </>
+            ) : (
+              <div className="rounded-md border border-emerald-500/40 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
+                No defending troops. You can claim without resistance.
               </div>
-              <ul className="mt-1.5 space-y-1">
-                {defenderSlots.map((slot, index) => (
-                  <li key={index} className="flex items-center gap-2">
-                    <span
-                      className={cn(
-                        "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold border leading-none",
-                        getTierStyle(slot.tier),
-                      )}
-                    >
-                      {slot.tier}
-                    </span>
-                    {slot.trait && (
-                      <ResourceIcon withTooltip={false} resource={slot.trait} size="sm" className="shrink-0" />
-                    )}
-                    <span
-                      className={cn(
-                        "tabular-nums",
-                        HUD_VALUE,
-                        slot.eliminated && "text-red-300 line-through decoration-red-300/60",
-                      )}
-                    >
-                      {formatTroopValue(slot.remaining)}
-                    </span>
-                    {slot.isActive && <span className={cn("ml-auto", HUD_CUE)}>Active</span>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+            )}
 
-          {attackDisabled && (
-            <div className="rounded-md border border-red-400/30 bg-red-900/20 px-3 py-2 text-xs text-red-200">
-              <span>{attackButtonLabel}</span>
-              {cooldownBlocksAttack && attackerCooldownRemaining > 0 && (
-                <div className="mt-1 text-[11px] text-gold/70">{formatTime(attackerCooldownRemaining)} remaining</div>
-              )}
-              {isLowStamina && (
-                <div className="mt-1 text-[11px] text-gold/70">
-                  <div>
-                    Current: {attackerStaminaValue} / Required: {requiredAttackStamina}
-                  </div>
-                  {staminaWaitSeconds !== null && <div>Ready in: {formatTime(staminaWaitSeconds)}</div>}
+            {isStructureTarget && totalGuardCount >= 1 && (
+              <div className="rounded-md border border-gold/20 bg-black/25 px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <span className={HUD_LABEL}>Defenders</span>
+                  <span className={HUD_CUE}>Post Fight</span>
                 </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+                <ul className="mt-1.5 space-y-1">
+                  {defenderSlots.map((slot, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                      <span
+                        className={cn(
+                          "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold border leading-none",
+                          getTierStyle(slot.tier),
+                        )}
+                      >
+                        {slot.tier}
+                      </span>
+                      {slot.trait && (
+                        <ResourceIcon withTooltip={false} resource={slot.trait} size="sm" className="shrink-0" />
+                      )}
+                      <span
+                        className={cn(
+                          "tabular-nums",
+                          HUD_VALUE,
+                          slot.eliminated && "text-red-300 line-through decoration-red-300/60",
+                        )}
+                      >
+                        {formatTroopValue(slot.remaining)}
+                      </span>
+                      {slot.isActive && <span className={cn("ml-auto", HUD_CUE)}>Active</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-      <div className="mt-2 flex items-center justify-end gap-2">
-        <Button
-          variant="outline"
-          size="md"
-          disabled={attackDisabled || !targetData || isLoading}
-          isLoading={isSubmitting}
-          onClick={handleAttack}
-          forceUppercase={false}
-          className="px-3 py-1 text-xs tracking-wide"
-        >
-          {hasDefenders ? "Attack" : "Claim"}
-        </Button>
-        <Button
-          variant="outline"
-          size="md"
-          onClick={handleShowDetails}
-          forceUppercase={false}
-          className="px-3 py-1 text-xs tracking-wide"
-        >
-          Details
-        </Button>
+            {attackDisabled && (
+              <div className="rounded-md border border-red-400/30 bg-red-900/20 px-3 py-2 text-xs text-red-200">
+                <span>{attackButtonLabel}</span>
+                {cooldownBlocksAttack && attackerCooldownRemaining > 0 && (
+                  <div className="mt-1 text-[11px] text-gold/70">{formatTime(attackerCooldownRemaining)} remaining</div>
+                )}
+                {isLowStamina && (
+                  <div className="mt-1 text-[11px] text-gold/70">
+                    <div>
+                      Current: {attackerStaminaValue} / Required: {requiredAttackStamina}
+                    </div>
+                    {staminaWaitSeconds !== null && <div>Ready in: {formatTime(staminaWaitSeconds)}</div>}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="modal-no-drag mt-2 flex items-center justify-end gap-2">
+          <Button
+            variant="outline"
+            size="md"
+            disabled={attackDisabled || !targetData || isLoading}
+            isLoading={isSubmitting}
+            onClick={handleAttack}
+            forceUppercase={false}
+            className="px-3 py-1 text-xs tracking-wide"
+          >
+            {hasDefenders ? "Attack" : "Claim"}
+          </Button>
+          <Button
+            variant="outline"
+            size="md"
+            onClick={handleShowDetails}
+            forceUppercase={false}
+            className="px-3 py-1 text-xs tracking-wide"
+          >
+            Details
+          </Button>
+        </div>
       </div>
-    </div>
+    </Draggable>
   );
 };

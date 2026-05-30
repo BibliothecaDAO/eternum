@@ -169,8 +169,8 @@ const CircleButton = ({
                   active && !disabled && OVERLAY_SURFACE_ACTIVE,
                 )
               : clsx(
-                  "transition-all duration-150 hover:border-gold shadow-2xl bg-hex-bg hover:bg-gold border border-gold/40 button-wood",
-                  active ? "bg-gold !border-gold sepia-0" : "bg-dark-wood",
+                  "transition-all duration-150 hover:border-gold shadow-2xl hover:bg-gold border border-gold/40 btn-bronze",
+                  active ? "bg-gold !border-gold sepia-0" : "bg-black/40",
                 ),
           // Hover/active grow — makes the icons feel tactile and emphasizes the
           // current selection without changing layout. Disabled icons stay flat.

@@ -508,14 +508,14 @@ export const RealmAutomationPanel = ({
 
   if (!automationRows.length) {
     return (
-      <div className="panel-wood p-4 rounded-lg text-sm text-gold/70">
+      <div className="rounded-lg border border-gold/20 bg-black/30 p-4 text-sm text-gold/70">
         This realm has no active production buildings yet. Create production structures to configure automation.
       </div>
     );
   }
 
   return (
-    <div className="panel-wood p-4 rounded-lg space-y-4">
+    <div className="rounded-lg border border-gold/20 bg-black/30 p-4 space-y-4">
       <header className="flex flex-col gap-3">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
@@ -672,7 +672,7 @@ export const RealmAutomationPanel = ({
                   step={sliderStep}
                   value={value}
                   onChange={(event) => onChange(Number(event.target.value))}
-                  className="w-full accent-gold/80 bg-dark-wood"
+                  className="w-full accent-gold/80 bg-black/40"
                 />
                 {impactedResources.length > 0 && (
                   <div className="space-y-1 text-xxs text-gold/60">

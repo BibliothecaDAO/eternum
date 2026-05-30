@@ -110,7 +110,7 @@ const BackgroundSystems = () => (
  */
 const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
   <>
-    <RealmTransferManager zIndex={100} />
+    <RealmTransferManager />
     <PlayOverlayManager backgroundImage={backgroundImage} />
   </>
 );

@@ -23,7 +23,7 @@ export const VARIANTS = {
       active: "bg-yellow-900/20 text-yellow-100",
       inactive: "hover:bg-yellow-900/10",
     },
-    tabList: "flex w-full justify-center p-2 panel-wood border-2 border-yellow-700 rounded-lg",
+    tabList: "flex w-full justify-center p-2 border border-gold/30 bg-black/30 rounded-lg",
   },
   small: {
     tab: {
@@ -31,7 +31,7 @@ export const VARIANTS = {
       active: "bg-yellow-900/20 text-yellow-100",
       inactive: "hover:bg-yellow-900/10 text-gray-200",
     },
-    tabList: "flex p-1 space-x-2 panel-wood border-2 border-yellow-700 rounded-lg",
+    tabList: "flex p-1 space-x-2 border border-gold/30 bg-black/30 rounded-lg",
   },
   inventory: {
     tab: {

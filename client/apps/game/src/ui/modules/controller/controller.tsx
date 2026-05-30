@@ -62,7 +62,7 @@ export const Controller = ({ className = "" }: ControllerProps) => {
   if (isPending) {
     return (
       <Button
-        className={`bg-dark-wood !pb-0 !pt-0 h-9 px-4 min-w-[96px] ${className}`}
+        className={`bg-black/40 !pb-0 !pt-0 h-9 px-4 min-w-[96px] ${className}`}
         variant="default"
         onClick={handleConnect}
       >

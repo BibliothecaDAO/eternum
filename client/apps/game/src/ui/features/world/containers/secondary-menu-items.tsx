@@ -83,18 +83,24 @@ export const SecondaryMenuItems = ({ variant }: SecondaryMenuItemsProps = {}) =>
   const rankPill = useMemo(() => {
     if (!account?.address) return null;
     const normalized = normalizeAddress(account.address);
-    const entry =
-      playerEntries[normalized]?.data ??
-      leaderboardEntries.find((e) => normalizeAddress(e.address) === normalized) ??
-      null;
-    if (!entry || entry.rank === undefined || entry.rank === null) return null;
-    const rank = Number(entry.rank);
-    const points = Number(entry.points ?? 0);
+    // Points come from the shared full list — the exact source the Leaderboard
+    // panel renders — so the pill and the board show the same total. The list
+    // doesn't rank every player (e.g. Blitz), so the rank falls back to the
+    // per-player lookup, which always carries a rank.
+    const listEntry = leaderboardEntries.find((e) => normalizeAddress(e.address) === normalized) ?? null;
+    const selfEntry = playerEntries[normalized]?.data ?? null;
+    const base = listEntry ?? selfEntry;
+    if (!base) return null;
+
+    const rankRaw = listEntry?.rank ?? selfEntry?.rank;
+    if (rankRaw === undefined || rankRaw === null) return null;
+    const rank = Number(rankRaw);
+    const points = Number(base.points ?? selfEntry?.points ?? 0);
     // Match the gating in resolveTopHeaderPlayerStatus: only surface a rank suffix
     // when the player is meaningfully ranked.
     if (!Number.isFinite(rank)) return null;
     if (rank > 500 && points <= 0) return null;
-    return { rank, points, name: entry.displayName ?? null };
+    return { rank, points, name: base.displayName ?? selfEntry?.displayName ?? null };
   }, [account?.address, leaderboardEntries, playerEntries]);
 
   const handleOpenLeaderboard = useCallback(() => togglePopup(leaderboard), [togglePopup]);

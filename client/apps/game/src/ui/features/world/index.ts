@@ -8,7 +8,6 @@ export { SecondaryMenuItems } from "./containers/secondary-menu-items";
 
 // Navigation Config - Exports used externally
 export * from "./components/config";
-export { ExpandableOSWindow, OSWindow } from "./components/os-window";
 
 // Biome System - Exports used externally
 export { BiomeInfoPanel } from "./components/biome-info-panel";

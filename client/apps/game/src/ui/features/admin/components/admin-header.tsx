@@ -21,7 +21,7 @@ export const AdminHeader = ({ network, onBack, onReload }: AdminHeaderProps) => 
 
         <button
           onClick={onReload}
-          className="button-wood inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gold bg-black/40 hover:bg-gold/10 border border-gold/30 rounded-xl transition-all shadow-sm hover:shadow"
+          className="btn-bronze inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gold bg-black/40 hover:bg-gold/10 border border-gold/30 rounded-xl transition-all shadow-sm hover:shadow"
           title="Clear all loading states and refresh data"
         >
           <RefreshCw className="w-4 h-4" />
@@ -33,7 +33,7 @@ export const AdminHeader = ({ network, onBack, onReload }: AdminHeaderProps) => 
         <h1 className="text-5xl md:text-6xl font-cinzel font-bold text-gold tracking-tight leading-tight">
           Charlie&apos;s Chocolate Factory
         </h1>
-        <div className="panel-wood px-4 py-2 w-fit rounded-xl border border-gold/20">
+        <div className="px-4 py-2 w-fit rounded-xl border border-gold/20 bg-black/40">
           <span className="text-xs font-bold text-gold/70 uppercase tracking-wide">Network: {network}</span>
         </div>
       </div>
