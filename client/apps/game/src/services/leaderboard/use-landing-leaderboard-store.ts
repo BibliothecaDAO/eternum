@@ -22,7 +22,7 @@ type FetchPlayerEntryOptions = {
   force?: boolean;
 };
 
-export const MIN_REFRESH_INTERVAL_MS = 10_000;
+const MIN_REFRESH_INTERVAL_MS = 10_000;
 
 type LandingLeaderboardStore = {
   entries: LandingLeaderboardEntry[];

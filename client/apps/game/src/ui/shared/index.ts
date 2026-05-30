@@ -1,4 +1,3 @@
-export { AlertBannerShell } from "./components/alert-banner-shell";
 export { CountUpNumber } from "./components/count-up-number";
 export { EndgameModal } from "./components/endgame-modal";
 export { ProductionStatusBadge } from "./components/production-status-badge";

@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import type { DraggableData, DraggableEvent } from "react-draggable";
 
-export interface DraggablePosition {
+interface DraggablePosition {
   /** Ref for react-draggable's `nodeRef` and the dragged element. */
   nodeRef: React.RefObject<HTMLDivElement>;
   /** Controlled position passed to `<Draggable position>`. */
