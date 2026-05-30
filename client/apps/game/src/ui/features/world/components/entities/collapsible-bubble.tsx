@@ -87,9 +87,3 @@ export const InfoBubble = ({
     </div>
   );
 };
-
-/**
- * Backward-compatible export so consumers that imported `CollapsibleBubble`
- * still work. Drop this alias once nothing references the old name.
- */
-export const CollapsibleBubble = InfoBubble;

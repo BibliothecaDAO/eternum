@@ -135,7 +135,7 @@ export const StructureSidebar = memo(
 StructureSidebar.displayName = "StructureSidebar";
 
 // Default filter for modals that don't pass one. Most flows are realm-only.
-export const REALMS_ONLY_FILTER: StructureType[] = [StructureType.Realm];
+const REALMS_ONLY_FILTER: StructureType[] = [StructureType.Realm];
 
 // Construction includes villages because they can build too.
 export const BUILDABLE_FILTER: StructureType[] = [StructureType.Realm, StructureType.Village];

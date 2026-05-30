@@ -34,7 +34,7 @@ export const OVERLAY_SURFACE_ACTIVE =
  * Convenience composite for clickable pill surfaces — the most common case
  * across the HUD. Combines base + hover transition.
  */
-export const OVERLAY_PILL_CLICKABLE = `${OVERLAY_SURFACE_BASE} ${OVERLAY_SURFACE_HOVER}`;
+const OVERLAY_PILL_CLICKABLE = `${OVERLAY_SURFACE_BASE} ${OVERLAY_SURFACE_HOVER}`;
 
 /**
  * Shared trigger surface for dropdown/select inputs so every dropdown in a

@@ -1,11 +1,18 @@
+import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
+import { buildRealmBuilding } from "@/ui/features/settlement/construction/realm-build-actions";
+import {
+  beginRealmBuildPlacement,
+  completeRealmBuildPlacement,
+} from "@/ui/features/settlement/construction/build-reservation-store";
 import { ProductionModal } from "@/ui/features/settlement";
 import { useRealmActions } from "@/ui/modules/entity-details/hooks/use-realm-actions";
-import { Position } from "@bibliothecadao/eternum";
+import { getRealmInfo, Position } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { type ID } from "@bibliothecadao/types";
+import { type BuildingType, type ID, type ResourcesIds } from "@bibliothecadao/types";
+import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback } from "react";
 import type { EmpireSuggestion } from "./use-empire-suggestions";
 
@@ -16,20 +23,23 @@ import type { EmpireSuggestion } from "./use-empire-suggestions";
  * top-header SuggestionsPill can share one path.
  */
 export const useSuggestionActions = () => {
-  const { setup } = useDojo();
+  const { account, setup } = useDojo();
   const { isMapView } = useQuery();
   const goToStructure = useGoToStructure(setup);
+  const mode = useGameModeConfig();
 
   const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
   const setSelectedHex = useUIStore((state) => state.setSelectedHex);
+  const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const playerStructures = useUIStore((state) => state.playerStructures);
   const setLeftNavigationView = useUIStore((state) => state.setLeftNavigationView);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const useSimpleCost = useUIStore((state) => state.useSimpleCost);
 
   const { fireUpgrade, fireProvision, fireUpgradeAndProvision, pendingRealmId } = useRealmActions();
 
   const focusRealm = useCallback(
-    (realmId: ID) => {
+    async (realmId: ID) => {
       const target = playerStructures.find((structure) => structure.entityId === realmId);
       const coords = target?.structure?.base;
       if (coords && coords.coord_x !== undefined && coords.coord_y !== undefined) {
@@ -38,7 +48,7 @@ export const useSuggestionActions = () => {
         if (Number.isFinite(col) && Number.isFinite(row)) {
           setSelectedHex({ col, row });
         }
-        void goToStructure(realmId, new Position({ x: coords.coord_x, y: coords.coord_y }), isMapView);
+        await goToStructure(realmId, new Position({ x: coords.coord_x, y: coords.coord_y }), isMapView);
       } else {
         setStructureEntityId(realmId);
       }
@@ -46,9 +56,54 @@ export const useSuggestionActions = () => {
     [goToStructure, isMapView, playerStructures, setSelectedHex, setStructureEntityId],
   );
 
-  const handleSuggestionClick = useCallback(
-    (suggestion: EmpireSuggestion) => {
-      focusRealm(suggestion.realmId);
+  const runAutoBuildSuggestion = useCallback(
+    async (suggestion: EmpireSuggestion) => {
+      const target = resolveAutoBuildTarget(suggestion);
+      if (!target) {
+        setLeftNavigationView(LeftView.ConstructionView);
+        return;
+      }
+
+      const entityId = Number(suggestion.realmId);
+      if (!Number.isFinite(entityId)) return;
+
+      const placement = beginRealmBuildPlacement(entityId, target.type);
+      if (!placement.started) return;
+
+      try {
+        const realm = getRealmInfo(getEntityIdFromKeys([BigInt(entityId)]), setup.components);
+        await buildRealmBuilding({
+          entityId,
+          realmPosition: realm?.position,
+          realm,
+          mode,
+          target,
+          useSimpleCost,
+          world: {
+            account: account.account,
+            components: setup.components,
+            systemCalls: setup.systemCalls,
+          },
+          onBuildSuccess: setSelectedBuildingHex,
+        });
+      } finally {
+        completeRealmBuildPlacement(entityId, target.type);
+      }
+    },
+    [
+      account.account,
+      mode,
+      setLeftNavigationView,
+      setSelectedBuildingHex,
+      setup.components,
+      setup.systemCalls,
+      useSimpleCost,
+    ],
+  );
+
+  const runSuggestionClick = useCallback(
+    async (suggestion: EmpireSuggestion) => {
+      await focusRealm(suggestion.realmId);
 
       switch (suggestion.action) {
         case "upgrade-and-provision":
@@ -67,7 +122,10 @@ export const useSuggestionActions = () => {
         case "build-wood":
         case "build-coal":
         case "build-copper":
+        case "build-market":
         case "build-worker-hut":
+          await runAutoBuildSuggestion(suggestion);
+          return;
         case "build-first":
         case "expand-population":
           setLeftNavigationView(LeftView.ConstructionView);
@@ -76,8 +134,34 @@ export const useSuggestionActions = () => {
           toggleModal(<ProductionModal preSelectedRealmId={Number(suggestion.realmId)} />);
       }
     },
-    [fireProvision, fireUpgrade, fireUpgradeAndProvision, focusRealm, setLeftNavigationView, toggleModal],
+    [
+      fireProvision,
+      fireUpgrade,
+      fireUpgradeAndProvision,
+      focusRealm,
+      runAutoBuildSuggestion,
+      setLeftNavigationView,
+      toggleModal,
+    ],
+  );
+
+  const handleSuggestionClick = useCallback(
+    (suggestion: EmpireSuggestion) => {
+      void runSuggestionClick(suggestion);
+    },
+    [runSuggestionClick],
   );
 
   return { handleSuggestionClick, pendingRealmId };
+};
+
+const resolveAutoBuildTarget = (
+  suggestion: EmpireSuggestion,
+): { type: BuildingType; resource?: ResourcesIds } | null => {
+  if (!suggestion.buildingTypeHint) return null;
+
+  return {
+    type: suggestion.buildingTypeHint,
+    resource: suggestion.resourceHint,
+  };
 };

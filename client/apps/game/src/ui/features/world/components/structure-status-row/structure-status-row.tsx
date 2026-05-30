@@ -48,7 +48,7 @@ const CategoryIcon = ({ category, className }: { category: StructureType | numbe
  * red = no defenders, amber = under-staffed, green = all good. Non-realm
  * structures skip the tint.
  */
-export const resolveStatusTone = (
+const resolveStatusTone = (
   structure: StructureWithMetadata,
 ): { tone: "green" | "amber" | "red"; title: string } | null => {
   const capabilities = resolveStructureUiCapabilities(structure.structure);
@@ -67,7 +67,7 @@ export const resolveStatusTone = (
   return { tone: "green", title: "Operating normally." };
 };
 
-export const STATUS_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
+const STATUS_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
   green: "text-emerald-300 drop-shadow-[0_0_4px_rgba(110,231,183,0.55)]",
   amber: "text-amber-300 drop-shadow-[0_0_4px_rgba(252,211,77,0.55)]",
   red: "text-rose-400 drop-shadow-[0_0_4px_rgba(244,114,114,0.7)]",

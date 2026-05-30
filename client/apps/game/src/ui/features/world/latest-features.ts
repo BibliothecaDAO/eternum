@@ -23,6 +23,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-05-30",
+    title: "Smarter Blitz Suggestions",
+    description:
+      "Improved Suggested Actions in Blitz so build recommendations follow the early economy path and autobuild directly when selected.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-30",
     title: "Market Automation Default",
     description:
       "Added a 5% Smart automation allocation for Market production so realms start generating transport capacity without manual slider changes.",

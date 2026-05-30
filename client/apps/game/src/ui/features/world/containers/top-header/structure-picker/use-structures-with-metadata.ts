@@ -146,6 +146,7 @@ export const useStructuresWithMetadata = ({
         wood: getBuildingCount(BuildingType.ResourceWood, packedCounts),
         coal: getBuildingCount(BuildingType.ResourceCoal, packedCounts),
         copper: getBuildingCount(BuildingType.ResourceCopper, packedCounts),
+        market: getBuildingCount(BuildingType.ResourceDonkey, packedCounts),
         workerHut: getBuildingCount(BuildingType.WorkersHut, packedCounts),
       };
 

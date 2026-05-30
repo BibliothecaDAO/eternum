@@ -83,7 +83,7 @@ export const CATEGORY_FILTER_OPTIONS: Array<{
   { value: StructureType.Hyperstructure, label: "Hyperstructures", icon: Sparkles },
 ];
 
-export const SORT_OPTIONS: Array<{ value: LeftListSort; label: string }> = [
+const SORT_OPTIONS: Array<{ value: LeftListSort; label: string }> = [
   { value: "favorites", label: "Favorites" },
   { value: "level", label: "Level" },
   { value: "population", label: "Population" },

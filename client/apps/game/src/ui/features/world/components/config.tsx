@@ -37,9 +37,6 @@ export interface ExpandableOSInterface extends OSInterface {
 
 const hyperstructures: OSWindows = "Hyperstructures";
 export const settings: OSWindows = "Settings";
-export const military: OSWindows = "Military";
-export const trade: OSWindows = "Trade";
-export const construction: OSWindows = "Construction";
 export const leaderboard: OSWindows = "Leaderboard";
 export const rewards: OSWindows = "Rewards";
 export const shortcuts: OSWindows = "Shortcuts";
