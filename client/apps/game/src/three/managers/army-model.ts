@@ -767,15 +767,6 @@ export class ArmyModel {
     }
   }
 
-  public rebindInstanceSlot(entityId: number, newSlot: number): void {
-    const instanceData = this.instanceData.get(entityId);
-    if (instanceData) {
-      instanceData.matrixIndex = newSlot;
-    }
-    this.matrixIndexOwners.set(newSlot, entityId);
-    this.rebindMovementMatrixIndex(entityId, newSlot);
-  }
-
   public moveInstanceSlot(entityId: number, newSlot: number): void {
     const instanceData = this.instanceData.get(entityId);
     const previousSlot = instanceData?.matrixIndex;
@@ -1519,7 +1510,11 @@ export class ArmyModel {
       // the label, keyed by entityId, stayed correct).
       const matrixIndex = instanceData.matrixIndex;
       if (matrixIndex === undefined) {
-        this.stopMovement(entityId);
+        // The slot was reassigned away without removing this movement entry.
+        // Tear the movement down directly — routing through stopMovement() could
+        // spin up a descent tween that can never progress without a live slot,
+        // stranding the entry forever.
+        this.clearMovementState(entityId);
         return;
       }
 

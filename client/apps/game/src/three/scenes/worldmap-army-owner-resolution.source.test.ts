@@ -8,46 +8,58 @@ function readSource(relativePath: string): string {
   return readFileSync(resolve(currentDir, relativePath), "utf8");
 }
 
-// updateArmyHexes maintains the spatial/clickability cache (armiesPositions,
-// armyHexes, worker hex map) — separate from the 3D model. Two silent failures
-// previously let a bogus owner:0n poison that cache (army wrongly treated as
-// unowned/defeated) with no signal. These guards keep those paths observable
-// and prevent caching a known-bad owner. The worldmap scene cannot be
-// instantiated in isolation, so we assert on the source like the sibling
-// ghosting guards (see army-manager.chunk-eviction-ghost.test.ts).
-function updateArmyHexesBody(): string {
+// Wiring guard for the worldmap owner-resolution integration. The decision
+// itself is unit-tested in worldmap-army-owner-resolution.test.ts; here we only
+// assert the scene routes updateArmyHexes through that pure helper and keeps the
+// ECS lookup observable (the original bug was a bare `catch {}` that let a bogus
+// owner:0n silently poison the spatial cache). The worldmap scene cannot be
+// instantiated in isolation, so we guard the source like the sibling
+// *.wiring.test.ts files.
+function ownerResolutionRegion(): string {
   const src = readSource("worldmap.tsx");
   const start = src.indexOf("public updateArmyHexes(");
   expect(start).toBeGreaterThan(-1);
+  // Region spans updateArmyHexes + its extracted private helpers
+  // (findCachedArmyOwner, resolveArmyOwnerFromEcs), up to the next public method.
   const end = src.indexOf("public updateStructureHexes(", start);
   expect(end).toBeGreaterThan(start);
   return src.slice(start, end);
 }
 
-describe("worldmap updateArmyHexes owner resolution", () => {
-  it("no longer swallows the structure-owner ECS lookup failure silently", () => {
-    const body = updateArmyHexesBody();
-
-    // The previous bare `catch {}` swallowed the failure with no signal.
-    expect(body).not.toMatch(/catch\s*\{/);
-    expect(body).toContain("catch (error)");
-    expect(body).toContain("Structure owner ECS lookup failed");
+describe("worldmap updateArmyHexes owner resolution wiring", () => {
+  it("imports the pure decision helper", () => {
+    const src = readSource("worldmap.tsx");
+    expect(src).toContain('import { resolveArmyOwnerCacheAction } from "./worldmap-army-owner-resolution"');
   });
 
-  it("skips the spatial-cache write for a new army whose owner stays unresolved (0n)", () => {
-    const body = updateArmyHexesBody();
+  it("routes the owner decision through resolveArmyOwnerCacheAction and handles every action kind", () => {
+    const region = ownerResolutionRegion();
 
-    // Anchor on the unique guard message (the method also has a separate 0n
-    // branch that evicts an already-cached army — not this one).
-    const skipPos = body.indexOf("Skipping spatial cache write");
+    expect(region).toContain("resolveArmyOwnerCacheAction({");
+    expect(region).toContain('action.kind === "evict"');
+    expect(region).toContain('action.kind === "skip"');
+    expect(region).toContain("action.owner");
+  });
+
+  it("no longer swallows the structure-owner ECS lookup failure silently", () => {
+    const region = ownerResolutionRegion();
+
+    // The original bug was a bare `catch {}` that hid the failure.
+    expect(region).not.toMatch(/catch\s*\{/);
+    expect(region).toContain("catch (error)");
+    expect(region).toContain("Structure owner ECS lookup failed");
+  });
+
+  it("keeps the skip guard ahead of (and short-circuiting) the spatial-cache write", () => {
+    const region = ownerResolutionRegion();
+
+    const skipPos = region.indexOf("Skipping spatial cache write");
     expect(skipPos).toBeGreaterThan(-1);
 
-    // The guard must bail out (return) rather than fall through to the
-    // armyHexData write, which would persist owner: 0n.
-    expect(body.slice(skipPos, skipPos + 220)).toContain("return;");
+    // The skip branch must bail out rather than fall through to the cache write.
+    expect(region.slice(skipPos, skipPos + 260)).toContain("return;");
 
-    // And it must sit before the cache write it is meant to skip.
-    const writePos = body.indexOf("const armyHexData = { id: entityId, owner: actualOwnerAddress }");
+    const writePos = region.indexOf("const armyHexData = { id: entityId, owner: actualOwnerAddress }");
     expect(writePos).toBeGreaterThan(-1);
     expect(skipPos).toBeLessThan(writePos);
   });

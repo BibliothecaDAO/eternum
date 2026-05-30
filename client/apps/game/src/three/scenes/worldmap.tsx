@@ -234,6 +234,7 @@ import {
 import { findSupersededArmyRemoval, isStaleTrackedArmyTileRemoval } from "./worldmap-army-removal";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
+import { resolveArmyOwnerCacheAction } from "./worldmap-army-owner-resolution";
 import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
 import {
   resolveDuplicateTileReconcilePlan,
@@ -4968,80 +4969,62 @@ export default class WorldmapScene extends WarpTravel {
       this.armyStructureOwners.delete(entityId);
     }
 
-    let actualOwnerAddress = ownerAddress;
+    const isAlreadyCached = this.armiesPositions.has(entityId);
+
+    // A 0n owner means "defeated/deleted OR not-yet-synced". Gather the fallback
+    // owners the decision may use: the last known owner from the spatial cache
+    // (for a known army) or an ECS Structure lookup (for a brand-new army).
+    let cachedOwner: bigint | undefined;
+    let ecsResolvedOwner: bigint | undefined;
     if (ownerAddress === 0n) {
       if (import.meta.env.DEV) {
         console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - army defeated/deleted`);
       }
-
-      // Check if we already have this army with a valid owner
-      const existingArmy = this.armiesPositions.has(entityId);
-      if (existingArmy) {
-        // Try to find existing army data in armyHexes to preserve owner
-        for (const rowMap of this.armyHexes.values()) {
-          for (const armyData of rowMap.values()) {
-            if (armyData.id === entityId && armyData.owner !== 0n) {
-              actualOwnerAddress = armyData.owner;
-              break;
-            }
-          }
-          if (actualOwnerAddress !== 0n) break;
-        }
-
-        // If we still have 0n owner, the army was defeated/deleted - clean up the cache
-        if (actualOwnerAddress === 0n) {
-          if (import.meta.env.DEV) {
-            console.warn(`[DEBUG] Removing army ${entityId} from cache (0n owner indicates defeat/deletion)`);
-          }
-          const oldPos = this.armiesPositions.get(entityId);
-          if (oldPos) {
-            this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-            gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
-            this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
-          }
-          this.armiesPositions.delete(entityId);
-          this.armyStructureOwners.delete(entityId);
-          return;
-        }
+      if (isAlreadyCached) {
+        cachedOwner = this.findCachedArmyOwner(entityId);
       } else {
-        // New army with 0n owner - MapDataStore likely hasn't cached it yet.
-        // Resolve owner directly from ECS Structure component using ownerStructureId.
-        const resolvedStructureId = ownerStructureId ?? this.armyStructureOwners.get(entityId);
-        if (resolvedStructureId) {
-          try {
-            const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
-            const structureEntity = getEntityIdFromKeys([BigInt(resolvedStructureId)]);
-            const structureComponent = components.Structure;
-            if (structureComponent) {
-              const structure = getComponentValue(structureComponent, structureEntity);
-              if (structure?.owner) {
-                actualOwnerAddress = BigInt(structure.owner);
-              }
-            }
-          } catch (error) {
-            // Owner stays 0n if the ECS lookup throws. Surface it instead of
-            // silently treating the army as unowned (which would poison the
-            // spatial cache with a bogus owner).
-            if (import.meta.env.DEV) {
-              console.warn(`[Worldmap] Structure owner ECS lookup failed for army ${entityId}`, error);
-            }
-          }
-        }
-
-        // Still unresolved: do NOT write a bogus owner:0n entry into the spatial
-        // cache (it would mis-flag the army as unowned/defeated for clicks and
-        // ownership coloring). Skip and let the next authoritative update — which
-        // carries a real owner — register it.
-        if (actualOwnerAddress === 0n) {
-          if (import.meta.env.DEV) {
-            console.warn(
-              `[Worldmap] Skipping spatial cache write for new army ${entityId}: owner unresolved (0n), awaiting authoritative update`,
-            );
-          }
-          return;
-        }
+        ecsResolvedOwner = this.resolveArmyOwnerFromEcs(entityId, ownerStructureId);
       }
     }
+
+    const action = resolveArmyOwnerCacheAction({
+      ownerAddress,
+      isAlreadyCached,
+      cachedOwner,
+      ecsResolvedOwner,
+    });
+
+    if (action.kind === "evict") {
+      // Already-cached army confirmed defeated/deleted (0n owner, nothing to
+      // preserve) — purge it from the spatial cache.
+      if (import.meta.env.DEV) {
+        console.warn(`[DEBUG] Removing army ${entityId} from cache (0n owner indicates defeat/deletion)`);
+      }
+      const oldPos = this.armiesPositions.get(entityId);
+      if (oldPos) {
+        this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+        gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
+        this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
+      }
+      this.armiesPositions.delete(entityId);
+      this.armyStructureOwners.delete(entityId);
+      return;
+    }
+
+    if (action.kind === "skip") {
+      // New army whose owner stayed unresolved (0n). Do NOT write a bogus
+      // owner:0n entry — it would mis-flag the army as unowned/defeated for
+      // clicks and ownership coloring. Let the next authoritative update, which
+      // carries a real owner, register it.
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[Worldmap] Skipping spatial cache write for new army ${entityId}: owner unresolved (0n), awaiting authoritative update`,
+        );
+      }
+      return;
+    }
+
+    const actualOwnerAddress = action.owner;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
@@ -5071,6 +5054,52 @@ export default class WorldmapScene extends WarpTravel {
     this.armyHexes.get(newPos.col)?.set(newPos.row, armyHexData);
     gameWorkerManager.updateArmyHex(newPos.col, newPos.row, armyHexData);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
+  }
+
+  /**
+   * Search the spatial cache for the army's last known non-zero owner. Used to
+   * preserve ownership when an already-cached army reports a transient 0n owner.
+   */
+  private findCachedArmyOwner(entityId: ID): bigint | undefined {
+    for (const rowMap of this.armyHexes.values()) {
+      for (const armyData of rowMap.values()) {
+        if (armyData.id === entityId && armyData.owner !== 0n) {
+          return armyData.owner;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Resolve an army's owner directly from the ECS Structure component — used for
+   * a brand-new army that MapDataStore has not cached yet. Returns undefined if
+   * there is no structure to resolve against or the lookup throws; the failure
+   * is surfaced (DEV) rather than silently poisoning the cache with a 0n owner.
+   */
+  private resolveArmyOwnerFromEcs(entityId: ID, ownerStructureId?: ID | null): bigint | undefined {
+    const resolvedStructureId = ownerStructureId ?? this.armyStructureOwners.get(entityId);
+    if (!resolvedStructureId) {
+      return undefined;
+    }
+    try {
+      const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
+      const structureEntity = getEntityIdFromKeys([BigInt(resolvedStructureId)]);
+      const structureComponent = components.Structure;
+      if (structureComponent) {
+        const structure = getComponentValue(structureComponent, structureEntity);
+        if (structure?.owner) {
+          return BigInt(structure.owner);
+        }
+      }
+    } catch (error) {
+      // Surface the failure instead of silently treating the army as unowned
+      // (which would poison the spatial cache with a bogus owner).
+      if (import.meta.env.DEV) {
+        console.warn(`[Worldmap] Structure owner ECS lookup failed for army ${entityId}`, error);
+      }
+    }
+    return undefined;
   }
 
   public updateStructureHexes(update: {

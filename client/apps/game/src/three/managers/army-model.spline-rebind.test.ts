@@ -31,7 +31,7 @@ vi.hoisted(() => {
 });
 
 vi.mock("@/ui/config", () => ({
-  FELT_CENTER: 0,
+  FELT_CENTER: () => 0,
   GRAPHICS_SETTING: "HIGH",
   GraphicsSettings: {
     HIGH: "HIGH",
@@ -235,5 +235,97 @@ describe("ArmyModel spline rebind on slot compaction", () => {
 
     expectNonZeroMatrix(mesh, stationarySlot); // moving army present at new slot 0
     expectZeroScaleMatrix(mesh, movingSlot); // no ghost left behind at old slot 1
+  });
+
+  // The original ghost had two halves: a ghost at the OLD slot AND a frozen
+  // model at the NEW slot. The test above proves "no ghost / present at new
+  // slot"; this proves the new slot is actively DRIVEN — its transform advances
+  // along the spline frame-over-frame rather than freezing.
+  it("keeps advancing the new slot's transform along the spline after compaction (not frozen)", () => {
+    const subject = new ArmyModel(new Scene());
+    const { mesh, modelData } = createLoadedModelData();
+    (subject as any).models.set(ModelType.Knight1, modelData);
+
+    const stationaryId = 401;
+    const movingId = 402;
+
+    const stationarySlot = subject.allocateInstanceSlot(stationaryId); // 0
+    const movingSlot = subject.allocateInstanceSlot(movingId); // 1
+
+    subject.assignModelToEntity(stationaryId, ModelType.Knight1);
+    subject.assignModelToEntity(movingId, ModelType.Knight1);
+
+    subject.updateInstance(stationaryId, stationarySlot, new Vector3(0, 0, 0), new Vector3(1, 1, 1));
+    subject.updateInstance(movingId, movingSlot, new Vector3(0, 0, 0), new Vector3(1, 1, 1));
+
+    // Long, straight +x path so the journey does not complete (and settle/freeze)
+    // within the frames we sample.
+    subject.startMovement(
+      movingId,
+      [new Vector3(0, 0, 0), new Vector3(10, 0, 0), new Vector3(20, 0, 0), new Vector3(30, 0, 0)],
+      movingSlot,
+      TroopType.Knight as never,
+      TroopTier.T1 as never,
+    );
+
+    // Compact 1 -> 0 while moving.
+    subject.freeInstanceSlot(stationaryId, stationarySlot);
+    subject.moveInstanceSlot(movingId, stationarySlot);
+    expect((subject as any).instanceData.get(movingId).matrixIndex).toBe(stationarySlot);
+
+    // elements[12] is the matrix's x-translation (the travel axis).
+    const travelX = (slot: number) => getMatrix(mesh, slot).elements[12];
+
+    // Advance past the anticipation phase (0.15s) so the spline actually moves.
+    for (let i = 0; i < 6; i++) subject.updateMovements(0.05);
+    const xAfterStart = travelX(stationarySlot);
+
+    for (let i = 0; i < 4; i++) subject.updateMovements(0.05);
+    const xLater = travelX(stationarySlot);
+
+    // New slot is actively driven along +x; old slot stays empty (no ghost).
+    expect(xLater).toBeGreaterThan(xAfterStart);
+    expectZeroScaleMatrix(mesh, movingSlot);
+  });
+});
+
+describe("ArmyModel lost-slot movement teardown", () => {
+  // Defensive path: if a moving entity's instance slot is reassigned away
+  // (matrixIndex cleared) without its movement entry being removed first,
+  // updateMovements must tear the movement down — NOT route it through
+  // stopMovement, which (when the unit is mid-float) spins up a descent tween
+  // that can never progress without a slot, stranding the entry forever.
+  it("fully tears down a moving entity that has lost its instance slot (no stranded descent)", () => {
+    const subject = new ArmyModel(new Scene());
+    const { modelData } = createLoadedModelData();
+    (subject as any).models.set(ModelType.Knight1, modelData);
+
+    const entityId = 303;
+    const slot = subject.allocateInstanceSlot(entityId);
+    subject.assignModelToEntity(entityId, ModelType.Knight1);
+    subject.updateInstance(entityId, slot, new Vector3(0, 0, 0), new Vector3(1, 1, 1));
+
+    subject.startMovement(
+      entityId,
+      [new Vector3(0, 0, 0), new Vector3(1, 0, 1), new Vector3(2, 0, 2)],
+      slot,
+      TroopType.Knight as never,
+      TroopTier.T1 as never,
+    );
+
+    expect(subject.isEntityMoving(entityId)).toBe(true);
+
+    // Unit is mid-float — the case stopMovement would convert into a descent.
+    (subject as any).movingInstances.get(entityId).floatingHeight = 1;
+
+    // Simulate the lost-slot state: slot cleared without removing the movement
+    // entry first.
+    (subject as any).instanceData.get(entityId).matrixIndex = undefined;
+
+    subject.updateMovements(0.016);
+
+    // Movement is gone, not revived as a non-progressing descent.
+    expect(subject.isEntityMoving(entityId)).toBe(false);
+    expect((subject as any).splineMovingInstances.has(entityId)).toBe(false);
   });
 });
