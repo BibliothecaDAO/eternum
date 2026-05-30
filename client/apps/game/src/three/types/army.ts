@@ -18,7 +18,6 @@ export interface MovementData {
   startPos: Vector3;
   endPos: Vector3;
   progress: number;
-  matrixIndex: number;
   currentPathIndex: number;
   floatingHeight: number;
   currentRotation: number;
@@ -29,7 +28,6 @@ export interface SplineMovementData {
   spline: CatmullRomCurve3;
   totalLength: number;
   journeyProgress: number;
-  matrixIndex: number;
   floatingHeight: number;
   currentRotation: number;
   easingType: EasingType;

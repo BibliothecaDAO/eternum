@@ -767,15 +767,6 @@ export class ArmyModel {
     }
   }
 
-  public rebindInstanceSlot(entityId: number, newSlot: number): void {
-    const instanceData = this.instanceData.get(entityId);
-    if (instanceData) {
-      instanceData.matrixIndex = newSlot;
-    }
-    this.matrixIndexOwners.set(newSlot, entityId);
-    this.rebindMovementMatrixIndex(entityId, newSlot);
-  }
-
   public moveInstanceSlot(entityId: number, newSlot: number): void {
     const instanceData = this.instanceData.get(entityId);
     const previousSlot = instanceData?.matrixIndex;
@@ -1434,7 +1425,6 @@ export class ArmyModel {
         spline,
         totalLength,
         journeyProgress: 0,
-        matrixIndex,
         floatingHeight: 0,
         currentRotation,
         easingType,
@@ -1482,7 +1472,6 @@ export class ArmyModel {
         startPos: new Vector3().copy(currentPos), // Create once per movement
         endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
-        matrixIndex,
         currentPathIndex: 0,
         floatingHeight: 0,
         currentRotation: this.dummyEuler.y,
@@ -1493,7 +1482,6 @@ export class ArmyModel {
         startPos: new Vector3().copy(currentPos), // Create once per movement
         endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
-        matrixIndex,
         currentPathIndex: 0,
         floatingHeight: 0,
         currentRotation: 0,
@@ -1515,19 +1503,34 @@ export class ArmyModel {
         return;
       }
 
+      // Single source of truth for the instance slot. instanceData.matrixIndex is
+      // updated synchronously by every slot reassignment (compaction / re-add), so
+      // reading it each frame keeps the model on the live slot. Reading a cached
+      // copy here is what produced ghosting (model written to a stale slot while
+      // the label, keyed by entityId, stayed correct).
+      const matrixIndex = instanceData.matrixIndex;
+      if (matrixIndex === undefined) {
+        // The slot was reassigned away without removing this movement entry.
+        // Tear the movement down directly — routing through stopMovement() could
+        // spin up a descent tween that can never progress without a live slot,
+        // stranding the entry forever.
+        this.clearMovementState(entityId);
+        return;
+      }
+
       if (movement.currentPathIndex === -1) {
-        this.handleDescent(movement, entityId, instanceData, deltaTime);
+        this.handleDescent(movement, entityId, instanceData, matrixIndex, deltaTime);
         return;
       }
 
       // Use spline movement if available
       const splineData = this.splineMovingInstances.get(entityId);
       if (splineData) {
-        this.updateSplineMovement(splineData, movement, entityId, instanceData, deltaTime);
+        this.updateSplineMovement(splineData, movement, entityId, instanceData, matrixIndex, deltaTime);
         return;
       }
 
-      this.updateMovingInstance(movement, entityId, instanceData, deltaTime);
+      this.updateMovingInstance(movement, entityId, instanceData, matrixIndex, deltaTime);
     });
   }
 
@@ -1535,6 +1538,7 @@ export class ArmyModel {
     movement: MovementData,
     entityId: number,
     instanceData: ArmyInstanceData,
+    matrixIndex: number,
     deltaTime: number,
   ): void {
     const modelType = this.entityModelMap.get(entityId);
@@ -1553,7 +1557,7 @@ export class ArmyModel {
     this.updateRotation(movement, deltaTime);
     this.updateInstance(
       entityId,
-      movement.matrixIndex,
+      matrixIndex,
       this.tempVector1,
       instanceData.scale,
       this.dummyObject.rotation,
@@ -1571,6 +1575,7 @@ export class ArmyModel {
     movement: MovementData,
     entityId: number,
     instanceData: ArmyInstanceData,
+    matrixIndex: number,
     deltaTime: number,
   ): void {
     const modelType = this.entityModelMap.get(entityId);
@@ -1598,7 +1603,7 @@ export class ArmyModel {
 
     this.updateInstance(
       entityId,
-      movement.matrixIndex,
+      matrixIndex,
       this.tempVector2,
       instanceData.scale,
       this.dummyObject.rotation,
@@ -1630,6 +1635,7 @@ export class ArmyModel {
     movement: MovementData,
     entityId: number,
     instanceData: ArmyInstanceData,
+    matrixIndex: number,
     deltaTime: number,
   ): void {
     const modelType = this.entityModelMap.get(entityId);
@@ -1666,7 +1672,7 @@ export class ArmyModel {
       }
       this.updateInstance(
         entityId,
-        splineData.matrixIndex,
+        matrixIndex,
         this.tempVector2,
         instanceData.scale,
         this.dummyObject.rotation,
@@ -1758,7 +1764,7 @@ export class ArmyModel {
       }
       this.updateInstance(
         entityId,
-        splineData.matrixIndex,
+        matrixIndex,
         this.tempVector2,
         instanceData.scale,
         this.dummyObject.rotation,
@@ -1829,7 +1835,7 @@ export class ArmyModel {
 
     this.updateInstance(
       entityId,
-      splineData.matrixIndex,
+      matrixIndex,
       this.tempVector2,
       instanceData.scale,
       this.dummyObject.rotation,
@@ -1962,13 +1968,18 @@ export class ArmyModel {
   }
 
   private clearMovementState(entityId: number): void {
+    const instanceData = this.instanceData.get(entityId);
     const movement = this.movingInstances.get(entityId);
     if (movement) {
-      this.setAnimationState(movement.matrixIndex, false);
+      if (instanceData?.matrixIndex !== undefined) {
+        this.setAnimationState(instanceData.matrixIndex, false);
+      }
       this.movingInstances.delete(entityId);
     }
+    // Tear down spline state too (parity with stopMovement/cancelMovement) so a
+    // freed slot never strands an orphaned spline entry.
+    this.splineMovingInstances.delete(entityId);
 
-    const instanceData = this.instanceData.get(entityId);
     if (instanceData) {
       instanceData.isMoving = false;
       instanceData.path = undefined;
@@ -1982,7 +1993,10 @@ export class ArmyModel {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
 
-    this.setAnimationState(movement.matrixIndex, false);
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData?.matrixIndex !== undefined) {
+      this.setAnimationState(instanceData.matrixIndex, false);
+    }
 
     if (movement.floatingHeight > 0) {
       this.initializeDescentAnimation(entityId, movement);
@@ -1990,7 +2004,6 @@ export class ArmyModel {
       this.movingInstances.delete(entityId);
     }
 
-    const instanceData = this.instanceData.get(entityId);
     if (instanceData) {
       instanceData.isMoving = false;
       instanceData.path = undefined;
@@ -2010,7 +2023,6 @@ export class ArmyModel {
       startPos: new Vector3().copy(instanceData.position), // Create once for descent
       endPos: new Vector3().copy(instanceData.position), // Create once for descent
       progress: 0,
-      matrixIndex: movement.matrixIndex,
       currentPathIndex: -1,
       floatingHeight: movement.floatingHeight,
       currentRotation: movement.currentRotation,
@@ -2100,12 +2112,12 @@ export class ArmyModel {
    */
   public cancelMovement(entityId: number): void {
     this.splineMovingInstances.delete(entityId);
+    const instanceData = this.instanceData.get(entityId);
     const movement = this.movingInstances.get(entityId);
-    if (movement) {
-      this.setAnimationState(movement.matrixIndex, false);
+    if (movement && instanceData?.matrixIndex !== undefined) {
+      this.setAnimationState(instanceData.matrixIndex, false);
     }
     this.movingInstances.delete(entityId);
-    const instanceData = this.instanceData.get(entityId);
     if (instanceData) {
       instanceData.isMoving = false;
       instanceData.path = undefined;
@@ -2113,24 +2125,14 @@ export class ArmyModel {
     this.movementCompleteCallbacks.delete(entityId);
   }
 
+  // Keeps a moving entity's animation flag aligned with its CURRENT instance slot
+  // after a slot reassignment. The slot itself lives in instanceData.matrixIndex
+  // (the single source of truth) and is updated by the caller before this runs;
+  // the caller also clears the previous slot (moveInstanceSlot -> clearInstanceSlot).
+  // This only re-asserts the walking/idle animation flag on the new slot.
   public rebindMovementMatrixIndex(entityId: number, newMatrixIndex: number): void {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
-
-    const previousIndex = movement.matrixIndex;
-    if (previousIndex === newMatrixIndex) {
-      return;
-    }
-
-    // Reset animation state for the old slot so it no longer appears active
-    this.setAnimationState(previousIndex, false);
-
-    movement.matrixIndex = newMatrixIndex;
-
-    const instanceData = this.instanceData.get(entityId);
-    if (instanceData) {
-      instanceData.matrixIndex = newMatrixIndex;
-    }
 
     const isMoving = movement.currentPathIndex !== -1 || movement.floatingHeight > 0;
     this.setAnimationState(newMatrixIndex, isMoving);
