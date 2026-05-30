@@ -164,6 +164,8 @@ vi.mock("@bibliothecadao/eternum", () => ({
     }),
     getRefillPerTick: () => 20,
     getTick: () => 60,
+    getWorldStructureDefenseSlotsConfig: () => ({}),
+    getMaxArmySize: () => 0,
   },
   DEFAULT_COORD_ALT: false,
   formatTime: (seconds: number) => `${seconds}s`,
@@ -184,6 +186,22 @@ vi.mock("@bibliothecadao/types", () => ({
     Explorer: "explorer",
     Structure: "structure",
   },
+  GuardSlot: {
+    Delta: 0,
+    Charlie: 1,
+    Bravo: 2,
+    Alpha: 3,
+  },
+  StructureType: {
+    Realm: 0,
+    Hyperstructure: 1,
+    Bank: 2,
+    FragmentMine: 3,
+    Village: 4,
+    HolySite: 5,
+    Camp: 6,
+    BitcoinMine: 7,
+  },
   getDirectionBetweenAdjacentHexes: () => 0,
   RESOURCE_PRECISION: 1,
   resources: [],
@@ -198,6 +216,14 @@ vi.mock("./hooks/use-attack-target", () => ({
 
 vi.mock("./combat-modal", () => ({
   CombatModal: () => <div data-testid="combat-modal">Combat Modal</div>,
+}));
+
+vi.mock("@/ui/design-system/atoms/checkbox", () => ({
+  Checkbox: ({ enabled, onClick, text }: { enabled: boolean; onClick?: () => void; text?: string }) => (
+    <button type="button" data-testid="garrison-toggle" aria-pressed={enabled} onClick={onClick}>
+      {text}
+    </button>
+  ),
 }));
 
 const waitForAsyncWork = async () => {
