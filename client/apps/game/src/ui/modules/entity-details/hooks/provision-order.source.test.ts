@@ -38,11 +38,14 @@ describe("blitz bootstrap fires provision before level_up", () => {
     expect(src).toContain("provision.handleProvision()");
   });
 
-  it("empire suggestions never bundle level_up on an unprovisioned realm (it would revert)", () => {
-    const src = readSource("src/ui/features/world/containers/left-facets/use-empire-suggestions.ts");
-    // A fresh realm can't afford the first upgrade; suggest provision alone.
-    expect(src).not.toContain('action: "upgrade-and-provision"');
-    expect(src).toContain('action: "provision"');
+  it("a provisionable realm gets the provision-first bundle, never a bare level_up", () => {
+    const src = readSource("src/ui/features/world/containers/left-facets/blitz-suggestions.ts");
+    // canProvision short-circuits to the bundled "upgrade-and-provision" action,
+    // which is safe because the multicall runs provision_realm before level_up
+    // (asserted above). A fresh realm therefore never receives a standalone
+    // level_up that would revert.
+    expect(src).toContain("if (input.canProvision)");
+    expect(src).toContain('"upgrade-and-provision"');
   });
 
   it("chip + castle enable the bootstrap pickaxe on canProvision, not canUpgradeAndProvision", () => {
