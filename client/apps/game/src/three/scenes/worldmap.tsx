@@ -5018,9 +5018,27 @@ export default class WorldmapScene extends WarpTravel {
                 actualOwnerAddress = BigInt(structure.owner);
               }
             }
-          } catch {
-            // Fall through with 0n if ECS lookup fails
+          } catch (error) {
+            // Owner stays 0n if the ECS lookup throws. Surface it instead of
+            // silently treating the army as unowned (which would poison the
+            // spatial cache with a bogus owner).
+            if (import.meta.env.DEV) {
+              console.warn(`[Worldmap] Structure owner ECS lookup failed for army ${entityId}`, error);
+            }
           }
+        }
+
+        // Still unresolved: do NOT write a bogus owner:0n entry into the spatial
+        // cache (it would mis-flag the army as unowned/defeated for clicks and
+        // ownership coloring). Skip and let the next authoritative update — which
+        // carries a real owner — register it.
+        if (actualOwnerAddress === 0n) {
+          if (import.meta.env.DEV) {
+            console.warn(
+              `[Worldmap] Skipping spatial cache write for new army ${entityId}: owner unresolved (0n), awaiting authoritative update`,
+            );
+          }
+          return;
         }
       }
     }
