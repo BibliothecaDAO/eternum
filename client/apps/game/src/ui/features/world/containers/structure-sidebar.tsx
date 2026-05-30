@@ -86,10 +86,7 @@ export const StructureSidebar = memo(
       return allMetadata.filter((structure) => set.has(structure.category as StructureType));
     }, [allMetadata, filter, enableCategoryFilter, effectiveFilter]);
 
-    const favoriteOrder = useMemo(
-      () => new Map(favorites.map((id, index) => [id, index] as const)),
-      [favorites],
-    );
+    const favoriteOrder = useMemo(() => new Map(favorites.map((id, index) => [id, index] as const)), [favorites]);
 
     const ordered = useMemo(
       () => sortStructures(filtered, leftListSort, selectedEntityId, favoriteOrder),

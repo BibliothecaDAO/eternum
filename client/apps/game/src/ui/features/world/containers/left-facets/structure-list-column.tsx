@@ -47,10 +47,7 @@ export const StructureListColumn = memo(() => {
     nameUpdateVersion: structureNameVersion,
   });
 
-  const favoriteOrder = useMemo(
-    () => new Map(favorites.map((id, index) => [id, index] as const)),
-    [favorites],
-  );
+  const favoriteOrder = useMemo(() => new Map(favorites.map((id, index) => [id, index] as const)), [favorites]);
 
   // Shared category-filter (includes Camps); same store value as the modal
   // structure sidebar so the chosen category stays consistent.

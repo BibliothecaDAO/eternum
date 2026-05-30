@@ -244,10 +244,7 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
 
       // Hard-cap fallback: keep the secondary nudge for when the player has
       // already ignored the worker-hut suggestion and hit the wall.
-      if (
-        structure.populationCapacity > 0 &&
-        structure.population >= structure.populationCapacity
-      ) {
+      if (structure.populationCapacity > 0 && structure.population >= structure.populationCapacity) {
         out.push({
           id: `${realmId}-expand-population`,
           realmId,

@@ -182,9 +182,7 @@ export const RealmUpgradeCompact = () => {
               title={`${ResourcesIds[req.resource] ?? `Resource ${req.resource}`} — need ${req.amount.toLocaleString()}`}
             >
               <ResourceIcon withTooltip={false} resource={ResourcesIds[req.resource]} size="xs" />
-              <span className={isMet ? "text-gold" : "text-red-300"}>
-                {Math.floor(req.current).toLocaleString()}
-              </span>
+              <span className={isMet ? "text-gold" : "text-red-300"}>{Math.floor(req.current).toLocaleString()}</span>
               <span className={isMet ? "text-gold/55" : "text-red-300/80"}>/ {req.amount.toLocaleString()}</span>
             </span>
           );

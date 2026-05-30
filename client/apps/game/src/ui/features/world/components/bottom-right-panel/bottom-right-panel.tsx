@@ -284,11 +284,7 @@ const MapTilePanel = () => {
         title={isSyncingCurrentEntity ? "Syncing..." : "Re-sync"}
         className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {isSyncingCurrentEntity ? (
-          <Loader className="h-3 w-3 animate-spin" />
-        ) : (
-          <RefreshCw className="h-3 w-3" />
-        )}
+        {isSyncingCurrentEntity ? <Loader className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
         <span>{isSyncingCurrentEntity ? "Syncing" : "Re-sync"}</span>
       </button>
     ) : null;
@@ -722,12 +718,7 @@ const LocalTilePanel = () => {
     if (buildCost.length === 0) return false;
     if (!hasAvailableTile) return false;
     return buildCost.every((entry) => {
-      const balanceInfo = getBalance(
-        structureEntityId ?? 0,
-        entry.resource,
-        currentDefaultTick,
-        setup.components,
-      );
+      const balanceInfo = getBalance(structureEntityId ?? 0, entry.resource, currentDefaultTick, setup.components);
       return divideByPrecision(balanceInfo.balance) >= entry.amount;
     });
   })();
@@ -780,8 +771,7 @@ const LocalTilePanel = () => {
                         {consumedBy.length > 0 ? (
                           <div className="grid grid-cols-3 gap-2">
                             {consumedBy.map((resourceId) => {
-                              const name =
-                                findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
+                              const name = findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
                               return (
                                 <div
                                   key={resourceId}
@@ -868,45 +858,45 @@ const LocalTilePanel = () => {
             )}
 
             <div className="flex items-center justify-center gap-1.5">
-              {buildingCategory !== null && (() => {
-                const isPreviewing =
-                  previewBuilding?.type === buildingCategory &&
-                  previewBuilding?.resource === producedResource;
-                return (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (isPreviewing) {
-                        // Toggle off — exit build mode and unstick clicks.
-                        setPreviewBuilding(null);
-                        return;
+              {buildingCategory !== null &&
+                (() => {
+                  const isPreviewing =
+                    previewBuilding?.type === buildingCategory && previewBuilding?.resource === producedResource;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isPreviewing) {
+                          // Toggle off — exit build mode and unstick clicks.
+                          setPreviewBuilding(null);
+                          return;
+                        }
+                        if (!canBuildAnother) return;
+                        setPreviewBuilding({ type: buildingCategory, resource: producedResource });
+                      }}
+                      disabled={!isPreviewing && (!canBuildAnother || isActionLoading)}
+                      className={cn(
+                        "inline-flex h-7 w-7 items-center justify-center rounded-md border shadow transition",
+                        isPreviewing
+                          ? "border-emerald-400 bg-emerald-500/30 text-emerald-100 shadow-[0_0_10px_rgba(110,231,183,0.5)] animate-pulse"
+                          : canBuildAnother
+                            ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
+                            : "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed",
+                      )}
+                      title={
+                        isPreviewing
+                          ? "Cancel build — click again to place a new building"
+                          : canBuildAnother
+                            ? "Build another — pick an empty tile to place it"
+                            : buildBlockedReason
                       }
-                      if (!canBuildAnother) return;
-                      setPreviewBuilding({ type: buildingCategory, resource: producedResource });
-                    }}
-                    disabled={!isPreviewing && (!canBuildAnother || isActionLoading)}
-                    className={cn(
-                      "inline-flex h-7 w-7 items-center justify-center rounded-md border shadow transition",
-                      isPreviewing
-                        ? "border-emerald-400 bg-emerald-500/30 text-emerald-100 shadow-[0_0_10px_rgba(110,231,183,0.5)] animate-pulse"
-                        : canBuildAnother
-                          ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
-                          : "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed",
-                    )}
-                    title={
-                      isPreviewing
-                        ? "Cancel build — click again to place a new building"
-                        : canBuildAnother
-                          ? "Build another — pick an empty tile to place it"
-                          : buildBlockedReason
-                    }
-                    aria-label={isPreviewing ? "Cancel build" : "Build another"}
-                    aria-pressed={isPreviewing}
-                  >
-                    <Pickaxe className="h-3.5 w-3.5" />
-                  </button>
-                );
-              })()}
+                      aria-label={isPreviewing ? "Cancel build" : "Build another"}
+                      aria-pressed={isPreviewing}
+                    >
+                      <Pickaxe className="h-3.5 w-3.5" />
+                    </button>
+                  );
+                })()}
               {canAddProduction && (
                 <button
                   type="button"

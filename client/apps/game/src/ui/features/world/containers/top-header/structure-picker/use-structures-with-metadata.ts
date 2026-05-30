@@ -62,14 +62,10 @@ export const useStructuresWithMetadata = ({
   const gameEndAt = useUIStore((state) => state.gameEndAt);
   const devModeOn = useUIStore((state) => state.devModeOn);
   const ownerAddress = useAccountStore((state) => state.account?.address ?? null);
-  const ownerContract = useMemo(
-    () => (ownerAddress ? ContractAddress(ownerAddress) : null),
-    [ownerAddress],
-  );
+  const ownerContract = useMemo(() => (ownerAddress ? ContractAddress(ownerAddress) : null), [ownerAddress]);
   const isBlitzWorld = resolvedWorldGameMode === "blitz";
   // dev_mode (sandbox) bypasses the chain's main-phase + season-end gates.
-  const isMainPhase =
-    devModeOn || (typeof gameStartMainAt === "number" && currentBlockTimestamp >= gameStartMainAt);
+  const isMainPhase = devModeOn || (typeof gameStartMainAt === "number" && currentBlockTimestamp >= gameStartMainAt);
   const isSeasonOver = !devModeOn && typeof gameEndAt === "number" && currentBlockTimestamp > gameEndAt;
 
   const favoritesSet = useMemo(() => new Set(favorites), [favorites]);

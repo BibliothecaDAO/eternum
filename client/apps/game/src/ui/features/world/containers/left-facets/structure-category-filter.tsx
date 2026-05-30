@@ -34,9 +34,7 @@ export const useStructureCategoryFilter = (structures: StructureWithMetadata[], 
     for (const structure of structures) {
       present.add(structure.category as StructureType);
     }
-    return CATEGORY_ORDER.filter(
-      (category) => present.has(category) && (!universe || universe.includes(category)),
-    );
+    return CATEGORY_ORDER.filter((category) => present.has(category) && (!universe || universe.includes(category)));
   }, [structures, universe]);
 
   // Fall back to the first owned category when the saved filter has nothing

@@ -679,7 +679,6 @@ export const RealmInfoPanel = memo(({ className }: { className?: string }) => {
           )}
         </div>
       )}
-
     </div>
   );
 });

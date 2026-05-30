@@ -86,10 +86,7 @@ const buildHexRings = (centerCol: number, centerRow: number, radius: number): He
     seen.add(k);
     let direction: Direction | null = null;
     if (ringIndex === 1) {
-      direction = getDirectionBetweenAdjacentHexes(
-        { col: centerCol, row: centerRow },
-        { col, row },
-      );
+      direction = getDirectionBetweenAdjacentHexes({ col: centerCol, row: centerRow }, { col, row });
     }
     out.push({
       col,
@@ -134,10 +131,7 @@ export const RealmHexDeployMap = ({
   onSelect,
   radius = 3,
 }: RealmHexDeployMapProps) => {
-  const hexes = useMemo(
-    () => buildHexRings(centerCol, centerRow, radius),
-    [centerCol, centerRow, radius],
-  );
+  const hexes = useMemo(() => buildHexRings(centerCol, centerRow, radius), [centerCol, centerRow, radius]);
 
   const [tiles, setTiles] = useState<Map<string, { biome?: number; occupierId?: bigint }>>(new Map());
   const [tilesLoading, setTilesLoading] = useState(false);
@@ -228,13 +222,7 @@ export const RealmHexDeployMap = ({
               const isOccupied = (tile?.occupierId ?? 0n) !== 0n;
               const isUnexplored = !tile || (tile.biome ?? 0) === 0;
               const fill = isCenter ? REALM_FILL : getBiomeFill(tile?.biome);
-              const opacity = isCenter
-                ? 1
-                : isAdjacent
-                  ? isAvailable
-                    ? 1
-                    : 0.55
-                  : 0.85;
+              const opacity = isCenter ? 1 : isAdjacent ? (isAvailable ? 1 : 0.55) : 0.85;
 
               return (
                 <g
@@ -323,8 +311,7 @@ export const RealmHexDeployMap = ({
               occupied
             </span>
             <span className="inline-flex items-center gap-1">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold/30" />?
-              unexplored
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-gold/30" />? unexplored
             </span>
             {tilesLoading && <span className="text-gold/45">refreshing…</span>}
           </div>

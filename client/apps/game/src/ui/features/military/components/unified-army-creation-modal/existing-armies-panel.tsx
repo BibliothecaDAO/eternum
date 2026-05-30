@@ -77,14 +77,10 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
 
   const maxStamina = useMemo(() => {
     if (!army.troops) return 0;
-    return StaminaManager.getMaxStamina(
-      army.troops.category as TroopType,
-      army.troops.tier as TroopTier,
-    );
+    return StaminaManager.getMaxStamina(army.troops.category as TroopType, army.troops.tier as TroopTier);
   }, [army.troops]);
 
-  const staminaPercent =
-    stamina && maxStamina > 0 ? Math.min(100, (Number(stamina.amount) / maxStamina) * 100) : 0;
+  const staminaPercent = stamina && maxStamina > 0 ? Math.min(100, (Number(stamina.amount) / maxStamina) * 100) : 0;
   const staminaTone =
     staminaPercent > 66 ? "bg-emerald-400/80" : staminaPercent > 33 ? "bg-amber-400/80" : "bg-rose-400/80";
 
@@ -118,10 +114,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
   };
 
   return (
-    <li
-      className="flex items-center gap-2 rounded-md border border-gold/20 bg-black/30 px-2 py-1.5"
-      title={army.name}
-    >
+    <li className="flex items-center gap-2 rounded-md border border-gold/20 bg-black/30 px-2 py-1.5" title={army.name}>
       <span
         className={cn(
           "shrink-0 rounded px-1.5 py-0.5 text-[10px] font-bold border leading-none",
@@ -133,9 +126,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
       {troopResourceTrait && (
         <ResourceIcon withTooltip={false} resource={troopResourceTrait} size="sm" className="shrink-0" />
       )}
-      <span className="text-[12px] font-semibold tabular-nums text-gold">
-        {currencyFormat(rawCount, 0)}
-      </span>
+      <span className="text-[12px] font-semibold tabular-nums text-gold">{currencyFormat(rawCount, 0)}</span>
       {maxStamina > 0 && stamina && (
         <div
           className="flex min-w-0 flex-1 items-center gap-1.5"
@@ -150,9 +141,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
         </div>
       )}
       <div className="flex shrink-0 items-center gap-0.5">
-        {!confirming && (
-          <IconButton icon={Compass} title="Navigate to army" onClick={handleJump} tone="gold" />
-        )}
+        {!confirming && <IconButton icon={Compass} title="Navigate to army" onClick={handleJump} tone="gold" />}
         {!confirming ? (
           <IconButton icon={Trash2} title="Disband army" onClick={() => setConfirming(true)} tone="rose" />
         ) : (
@@ -164,13 +153,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
               tone="emerald"
               spinning={deleting}
             />
-            <IconButton
-              icon={X}
-              title="Cancel"
-              onClick={() => setConfirming(false)}
-              tone="rose"
-              disabled={deleting}
-            />
+            <IconButton icon={X} title="Cancel" onClick={() => setConfirming(false)} tone="rose" disabled={deleting} />
           </>
         )}
       </div>

@@ -67,8 +67,7 @@ export const TroopChip = ({
         <ResourceIcon
           withTooltip={false}
           resource={
-            resources.find((r) => r.id === getTroopResourceId(troops.category as TroopType, TroopTier.T1))?.trait ||
-            ""
+            resources.find((r) => r.id === getTroopResourceId(troops.category as TroopType, TroopTier.T1))?.trait || ""
           }
           size={size}
         />

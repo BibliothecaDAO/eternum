@@ -75,7 +75,10 @@ const baseClasses = cn(
  * gate. Renders as a button when `onClick` is set, otherwise as a div.
  */
 export const Pill = forwardRef<HTMLElement, PillProps>(
-  ({ show = true, tone = "default", active, dot, className, title, "aria-label": ariaLabel, children, ...rest }, ref) => {
+  (
+    { show = true, tone = "default", active, dot, className, title, "aria-label": ariaLabel, children, ...rest },
+    ref,
+  ) => {
     if (!show) return null;
 
     const resolvedTone = active && tone === "default" ? "gold" : tone;

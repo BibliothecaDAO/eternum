@@ -39,9 +39,7 @@ export const TroopCountSelector = ({
   return (
     <div
       className={
-        embedded
-          ? "p-1"
-          : "mt-2 p-2 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20"
+        embedded ? "p-1" : "mt-2 p-2 rounded-xl bg-gradient-to-br from-brown/10 to-brown/5 border border-gold/20"
       }
     >
       <div className="space-y-1.5">
@@ -94,7 +92,8 @@ export const TroopCountSelector = ({
             </span>
             {shouldShowCapacityInfo && capacityLimitDisplay !== null && (
               <span className="text-gold/60">
-                Cap remaining: <span className="text-gold/80 font-semibold">{capacityLimitDisplay.toLocaleString()}</span>
+                Cap remaining:{" "}
+                <span className="text-gold/80 font-semibold">{capacityLimitDisplay.toLocaleString()}</span>
               </span>
             )}
           </div>

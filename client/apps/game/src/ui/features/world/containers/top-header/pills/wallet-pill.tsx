@@ -126,18 +126,11 @@ export const WalletPill = memo(() => {
         <span className="flex items-center gap-2">
           {heroItems.map((item) => (
             <span key={item.resourceId} className="flex items-center gap-1">
-              <ResourceIcon
-                resource={ResourcesIds[item.resourceId]}
-                size="xs"
-                withTooltip={false}
-              />
+              <ResourceIcon resource={ResourcesIds[item.resourceId]} size="xs" withTooltip={false} />
               <span className="font-semibold leading-none text-gold/95">{formatHeroAmount(item.amount)}</span>
             </span>
           ))}
-          <ChevronDown
-            className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")}
-            aria-hidden="true"
-          />
+          <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen && "rotate-180")} aria-hidden="true" />
         </span>
       </Pill>
 

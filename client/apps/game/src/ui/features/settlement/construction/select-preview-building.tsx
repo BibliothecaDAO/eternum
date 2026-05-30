@@ -98,11 +98,7 @@ const RESOURCE_TIER_GROUPS: ResourceTierGroup[] = [
   {
     tier: 1,
     label: "T1 · Basic resources",
-    slots: [
-      { resourceId: ResourcesIds.Wood },
-      { resourceId: ResourcesIds.Coal },
-      { resourceId: ResourcesIds.Copper },
-    ],
+    slots: [{ resourceId: ResourcesIds.Wood }, { resourceId: ResourcesIds.Coal }, { resourceId: ResourcesIds.Copper }],
   },
   {
     tier: 2,
@@ -705,9 +701,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                       {slots.map(({ resourceId, troopHint }) => {
                         const resource = findResourceById(resourceId)!;
                         const building = getBuildingFromResource(resourceId);
-                        const productionStatus = productionStatusByResourceRef.current.get(
-                          resourceId as ResourcesIds,
-                        );
+                        const productionStatus = productionStatusByResourceRef.current.get(resourceId as ResourcesIds);
 
                         const buildability = resolveConstructionBuildability({
                           entityId,
@@ -739,10 +733,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                               if (!canBuild) {
                                 return;
                               }
-                              if (
-                                previewBuilding?.type === building &&
-                                previewBuilding?.resource === resourceId
-                              ) {
+                              if (previewBuilding?.type === building && previewBuilding?.resource === resourceId) {
                                 setPreviewBuilding(null);
                               } else {
                                 setPreviewBuilding({ type: building, resource: resourceId });
@@ -776,9 +767,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
                             destroyDisabled={destroyDisabled}
                             destroyLoading={destroyPending}
-                            onPauseResumeAll={() =>
-                              handlePauseResumeAll({ type: building, resource: resourceId })
-                            }
+                            onPauseResumeAll={() => handlePauseResumeAll({ type: building, resource: resourceId })}
                             pauseResumeAllDisabled={count <= 0 || pauseResumePending}
                             pauseResumeAllLoading={pauseResumePending}
                             allPaused={allPausedState ?? false}
@@ -800,17 +789,13 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                 return (
                   <div className="rounded-md border border-gold/15">
                     <div className="border-b border-gold/10 px-3 py-1.5">
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">
-                        Other
-                      </span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold/80">Other</span>
                     </div>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 p-2">
                       {others.map((resourceId) => {
                         const resource = findResourceById(resourceId)!;
                         const building = getBuildingFromResource(resourceId);
-                        const productionStatus = productionStatusByResourceRef.current.get(
-                          resourceId as ResourcesIds,
-                        );
+                        const productionStatus = productionStatusByResourceRef.current.get(resourceId as ResourcesIds);
                         const buildability = resolveConstructionBuildability({
                           entityId,
                           buildingType: building,
@@ -837,10 +822,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             resourceId={resourceId}
                             onClick={() => {
                               if (!canBuild) return;
-                              if (
-                                previewBuilding?.type === building &&
-                                previewBuilding?.resource === resourceId
-                              ) {
+                              if (previewBuilding?.type === building && previewBuilding?.resource === resourceId) {
                                 setPreviewBuilding(null);
                               } else {
                                 setPreviewBuilding({ type: building, resource: resourceId });
@@ -871,9 +853,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
                             onDestroy={() => handleDestroyBuilding({ type: building, resource: resourceId })}
                             destroyDisabled={destroyDisabled}
                             destroyLoading={destroyPending}
-                            onPauseResumeAll={() =>
-                              handlePauseResumeAll({ type: building, resource: resourceId })
-                            }
+                            onPauseResumeAll={() => handlePauseResumeAll({ type: building, resource: resourceId })}
                             pauseResumeAllDisabled={count <= 0 || pauseResumePending}
                             pauseResumeAllLoading={pauseResumePending}
                             allPaused={allPausedState ?? false}

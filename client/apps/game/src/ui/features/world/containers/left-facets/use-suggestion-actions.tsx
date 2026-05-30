@@ -76,14 +76,7 @@ export const useSuggestionActions = () => {
           toggleModal(<ProductionModal preSelectedRealmId={Number(suggestion.realmId)} />);
       }
     },
-    [
-      fireProvision,
-      fireUpgrade,
-      fireUpgradeAndProvision,
-      focusRealm,
-      setLeftNavigationView,
-      toggleModal,
-    ],
+    [fireProvision, fireUpgrade, fireUpgradeAndProvision, focusRealm, setLeftNavigationView, toggleModal],
   );
 
   return { handleSuggestionClick, pendingRealmId };

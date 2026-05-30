@@ -10,7 +10,9 @@ describe("structure-picker provision wiring", () => {
     const chipSource = readSource("src/ui/features/world/containers/top-header/structure-picker/chip.tsx");
 
     expect(chipSource).toContain("useBlitzRealmProvision");
-    expect(chipSource).toContain('<StructureRealmActions structureEntityId={structure.entityId} className="shrink-0" />');
+    expect(chipSource).toContain(
+      '<StructureRealmActions structureEntityId={structure.entityId} className="shrink-0" />',
+    );
     expect(chipSource).toContain('aria-label="Provision realm"');
   });
 });

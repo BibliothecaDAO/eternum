@@ -37,9 +37,7 @@ interface RealmUpgradeAndProvisionResult {
  * subscriptions; the merged path fires the Calls in one shot and the chain
  * applies provision then upgrade atomically.
  */
-export const useRealmUpgradeAndProvision = (
-  structureEntityId: number | null,
-): RealmUpgradeAndProvisionResult => {
+export const useRealmUpgradeAndProvision = (structureEntityId: number | null): RealmUpgradeAndProvisionResult => {
   const { account } = useDojo();
   const upgrade = useStructureUpgrade(structureEntityId);
   const provision = useBlitzRealmProvision(structureEntityId);

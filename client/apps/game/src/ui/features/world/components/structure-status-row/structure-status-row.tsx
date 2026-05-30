@@ -40,13 +40,8 @@ const getCategoryIcon = (category: StructureType | number | undefined): LucideIc
   return CATEGORY_ICONS[category as StructureType] ?? Crown;
 };
 
-const CategoryIcon = ({
-  category,
-  className,
-}: {
-  category: StructureType | number | undefined;
-  className?: string;
-}) => createElement(getCategoryIcon(category), { className });
+const CategoryIcon = ({ category, className }: { category: StructureType | number | undefined; className?: string }) =>
+  createElement(getCategoryIcon(category), { className });
 
 /**
  * Status tone for the favorite star. Same tri-state we ship today:
@@ -78,19 +73,8 @@ export const STATUS_TONE_TEXT: Record<"green" | "amber" | "red", string> = {
   red: "text-rose-400 drop-shadow-[0_0_4px_rgba(244,114,114,0.7)]",
 };
 
-const InlineStat = ({
-  icon: Icon,
-  label,
-  title,
-}: {
-  icon: LucideIcon;
-  label: string;
-  title?: string;
-}) => (
-  <span
-    className="inline-flex items-center gap-0.5 text-[10px] font-semibold tabular-nums text-gold/75"
-    title={title}
-  >
+const InlineStat = ({ icon: Icon, label, title }: { icon: LucideIcon; label: string; title?: string }) => (
+  <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold tabular-nums text-gold/75" title={title}>
     <Icon className="h-3 w-3 text-gold/55" />
     <span>{label}</span>
   </span>
@@ -143,9 +127,10 @@ export const StructureStatusRow = memo(
     const statusTone = resolveStatusTone(structure);
     // Use numeric realm level (1..6) instead of the letter abbreviation —
     // shorter, sortable at a glance, no Settlement-vs-Hamlet mental lookup.
-    const levelBadge = capabilities.hasPopulationDetails && Number.isFinite(structure.realmLevel)
-      ? String(Math.max(1, Math.trunc(structure.realmLevel)))
-      : null;
+    const levelBadge =
+      capabilities.hasPopulationDetails && Number.isFinite(structure.realmLevel)
+        ? String(Math.max(1, Math.trunc(structure.realmLevel)))
+        : null;
     const populationLabel =
       statsVariant === "default" && capabilities.hasPopulationDetails
         ? formatPopulationStatusLabel(structure.population, structure.populationCapacity)
@@ -247,9 +232,7 @@ export const StructureStatusRow = memo(
             category={structure.category}
             className={cn("h-4 w-4 flex-shrink-0", groupConfig ? groupConfig.textClass : "text-gold")}
           />
-          {groupConfig && (
-            <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", groupConfig.dotClass)} />
-          )}
+          {groupConfig && <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", groupConfig.dotClass)} />}
           <span
             className={cn(
               "min-w-0 flex-1 truncate text-sm font-semibold",
@@ -283,21 +266,14 @@ export const StructureStatusRow = memo(
                 {levelBadge}
               </span>
             )}
-            {populationLabel && (
-              <InlineStat icon={Users} label={populationLabel} title="Population used / capacity" />
-            )}
+            {populationLabel && <InlineStat icon={Users} label={populationLabel} title="Population used / capacity" />}
             {buildingTilesLabel && (
               <InlineStat icon={Hexagon} label={buildingTilesLabel} title="Used / total building tiles" />
             )}
-            {explorersLabel && (
-              <InlineStat icon={Crosshair} label={explorersLabel} title="Field armies / max" />
-            )}
-            {guardsLabel && (
-              <InlineStat icon={Shield} label={guardsLabel} title="Guard slots occupied / max" />
-            )}
+            {explorersLabel && <InlineStat icon={Crosshair} label={explorersLabel} title="Field armies / max" />}
+            {guardsLabel && <InlineStat icon={Shield} label={guardsLabel} title="Guard slots occupied / max" />}
           </div>
         )}
-
       </div>
     );
   },

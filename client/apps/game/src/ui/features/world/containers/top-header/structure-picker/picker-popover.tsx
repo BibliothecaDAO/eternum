@@ -143,7 +143,9 @@ export const StructurePickerPopover = memo(
                   )}
                 >
                   <span className="flex items-center gap-1">
-                    <span className={clsx("text-[12px] font-semibold", isActiveTab ? "text-[#f4c24d]" : "text-gold/60")}>
+                    <span
+                      className={clsx("text-[12px] font-semibold", isActiveTab ? "text-[#f4c24d]" : "text-gold/60")}
+                    >
                       {count}
                     </span>
                     <Icon className={clsx("h-4 w-4", isActiveTab ? "text-[#f4c24d]" : "text-gold/60")} />

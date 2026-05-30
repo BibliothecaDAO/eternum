@@ -39,22 +39,15 @@ const getCategoryIcon = (category: StructureType | number | undefined): LucideIc
 // it via createElement. Avoids assigning a "Component" identifier inside
 // render, which the react-hooks/static-components rule (rightly) flags when
 // the value comes from a function call rather than a stable binding.
-const CategoryIcon = ({
-  category,
-  className,
-}: {
-  category: StructureType | number | undefined;
-  className?: string;
-}) => createElement(getCategoryIcon(category), { className });
+const CategoryIcon = ({ category, className }: { category: StructureType | number | undefined; className?: string }) =>
+  createElement(getCategoryIcon(category), { className });
 
 // Resolve the green/amber/red status dot for the active pill. Goal: a glanceable
 // hint that the player should look at this structure (empty defense slot,
 // stalled production, etc.) without claiming any specific facet.
 const resolveStatusDot = (
   structure: StructureWithMetadata,
-):
-  | { tone: "green" | "amber" | "red"; title: string }
-  | null => {
+): { tone: "green" | "amber" | "red"; title: string } | null => {
   const capabilities = resolveStructureUiCapabilities(structure.structure);
   if (!capabilities.hasPopulationDetails) return null;
 
@@ -203,7 +196,12 @@ export const StructurePickerStrip = memo(() => {
                   className={cn("h-4 w-4 flex-shrink-0", groupConfig ? groupConfig.textClass : "text-gold")}
                 />
                 {groupConfig && <span className={cn("h-1.5 w-1.5 flex-shrink-0 rounded-full", groupConfig.dotClass)} />}
-                <span className={cn("max-w-[200px] truncate font-semibold", groupConfig ? groupConfig.textClass : "text-gold")}>
+                <span
+                  className={cn(
+                    "max-w-[200px] truncate font-semibold",
+                    groupConfig ? groupConfig.textClass : "text-gold",
+                  )}
+                >
                   {activeStructure.displayName}
                 </span>
                 {levelLabel && (

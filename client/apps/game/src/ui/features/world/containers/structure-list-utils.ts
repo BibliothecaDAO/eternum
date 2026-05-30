@@ -22,8 +22,7 @@ export const filterStructures = (
   return structures.filter((structure) => structure.category === filter);
 };
 
-const compareNames = (a: StructureWithMetadata, b: StructureWithMetadata) =>
-  a.displayName.localeCompare(b.displayName);
+const compareNames = (a: StructureWithMetadata, b: StructureWithMetadata) => a.displayName.localeCompare(b.displayName);
 
 /**
  * Sorts structures by the requested mode. "favorites" is the default —
