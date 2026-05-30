@@ -3207,6 +3207,12 @@ export default class WorldmapScene extends WarpTravel {
     };
 
     this.state.toggleModal(<QuickAttackPreview attacker={attackerSummary} target={targetSummary} />);
+    // The preview popup is now the confirm step. Clear only the hovered hex so
+    // the "right-click to confirm" action panel (gated on hoveredHex) hides —
+    // this is the same minimal call onArmyMovement makes, so the army stays
+    // selected and the action-path state machine is left intact (unlike
+    // clearEntitySelection, which reset it and broke movement/exploration).
+    this.state.updateEntityActionHoveredHex(null);
   }
 
   private onArmySpireTravel(actionPath: ActionPath[], selectedEntityId: ID) {
@@ -3238,6 +3244,7 @@ export default class WorldmapScene extends WarpTravel {
       };
 
       this.state.toggleModal(<QuickAttackPreview attacker={attackerSummary} target={targetSummary} />);
+      this.state.updateEntityActionHoveredHex(null);
       return;
     }
 
