@@ -124,6 +124,36 @@ function resolveBiomeClimateOverrides(value?: string): FactoryBiomeClimateOverri
   return resolveNumericOverrideObject(value, "biome climate overrides") as FactoryBiomeClimateOverrides | undefined;
 }
 
+function resolveBiomeClimateOverridesByGameNumber(
+  value?: string,
+): Record<number, FactoryBiomeClimateOverrides> | undefined {
+  const overridesByGameNumber = resolveJsonOverrideObject(value, "biome climate overrides by game number");
+
+  if (!overridesByGameNumber) {
+    return undefined;
+  }
+
+  const resolvedOverridesByGameNumber: Record<number, FactoryBiomeClimateOverrides> = {};
+  for (const [gameNumber, rawOverrides] of Object.entries(overridesByGameNumber)) {
+    const parsedGameNumber = Number(gameNumber);
+    if (!Number.isInteger(parsedGameNumber) || parsedGameNumber <= 0) {
+      throw new Error("biome climate overrides by game number keys must be positive game numbers");
+    }
+
+    if (!rawOverrides || typeof rawOverrides !== "object" || Array.isArray(rawOverrides)) {
+      throw new Error(`biome climate overrides by game number entry "${gameNumber}" must be an object`);
+    }
+
+    validateNumericOverrideEntries(
+      rawOverrides as Record<string, unknown>,
+      `biome climate overrides by game number entry "${gameNumber}"`,
+    );
+    resolvedOverridesByGameNumber[parsedGameNumber] = rawOverrides as FactoryBiomeClimateOverrides;
+  }
+
+  return resolvedOverridesByGameNumber;
+}
+
 function resolveBlitzRegistrationOverrides(value?: string): FactoryBlitzRegistrationOverrides | undefined {
   const overrides = resolveJsonOverrideObject(value, "blitz registration overrides");
 
@@ -587,6 +617,12 @@ export function buildLaunchRotationRequest(args: Args): LaunchRotationRequest {
     targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
     evaluationIntervalMinutes: requiredArgs.evaluationIntervalMinutes,
     ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    biomeClimateOverridesByGameNumber: resolveBiomeClimateOverridesByGameNumber(
+      resolveOptionalArg(resolvedArgs, "biome-climate-overrides-by-game-number-json", [
+        "BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON",
+        "GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON",
+      ]),
+    ),
     maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     autoRetryEnabled:
       resolveOptionalBooleanArg(resolvedArgs, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,

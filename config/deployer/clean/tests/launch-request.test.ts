@@ -27,6 +27,17 @@ function writeLaunchConfig(contents: string): string {
 }
 
 describe("launch request helpers", () => {
+  const ORIGINAL_BIOME_CLIMATE_BY_GAME_ENV = process.env.GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON;
+
+  afterEach(() => {
+    if (ORIGINAL_BIOME_CLIMATE_BY_GAME_ENV === undefined) {
+      delete process.env.GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON;
+      return;
+    }
+
+    process.env.GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON = ORIGINAL_BIOME_CLIMATE_BY_GAME_ENV;
+  });
+
   test("builds a launch request from shared CLI args", () => {
     expect(
       buildLaunchGameRequest({
@@ -135,6 +146,37 @@ describe("launch request helpers", () => {
         "target-game-names-json": JSON.stringify(["bltz-knicker-03"]),
       }).targetGameNames,
     ).toEqual(["bltz-knicker-03"]);
+  });
+
+  test("parses rotation biome climate overrides by game number from workflow env", () => {
+    process.env.GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON = JSON.stringify({
+      2: {
+        elevationSeed: 137,
+        moistureSeed: 991,
+      },
+      3: {
+        elevationScaleBps: 12_000,
+      },
+    });
+
+    expect(
+      buildLaunchRotationRequest({
+        environment: "slot.blitz",
+        "rotation-name": "bltz-biome-loop",
+        "first-game-start-time": "2026-03-18T10:00:00Z",
+        "game-interval-minutes": "60",
+        "max-games": "12",
+        "evaluation-interval-minutes": "15",
+      }).biomeClimateOverridesByGameNumber,
+    ).toEqual({
+      2: {
+        elevationSeed: 137,
+        moistureSeed: 991,
+      },
+      3: {
+        elevationScaleBps: 12_000,
+      },
+    });
   });
 
   test("loads weekly series schedules from a YAML config file", () => {
