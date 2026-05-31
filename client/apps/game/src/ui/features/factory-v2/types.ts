@@ -1,4 +1,5 @@
 import type { Chain } from "@contracts";
+import type { FactoryBiomeClimateOverrides } from "@bibliothecadao/types";
 
 export type FactoryGameMode = "eternum" | "blitz";
 export type FactoryLaunchChain = Extract<Chain, "mainnet" | "slot">;
@@ -159,6 +160,7 @@ export interface FactorySeriesGameDraft {
   gameName: string;
   startAt: string;
   seriesGameNumber: number;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
 }
 
 export interface FactoryRotationPreviewGame {
@@ -166,6 +168,7 @@ export interface FactoryRotationPreviewGame {
   gameName: string;
   startAt: string;
   seriesGameNumber: number;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
 }
 
 export interface FactorySeriesChildRun {

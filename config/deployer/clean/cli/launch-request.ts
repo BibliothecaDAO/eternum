@@ -6,7 +6,11 @@ import {
   DEFAULT_VERSION,
 } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
-import type { FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
+import type {
+  FactoryBiomeClimateOverrides,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
 import type {
   ExecutionMode,
   LaunchGameRequest,
@@ -114,6 +118,10 @@ function resolveNumericOverrideObject(value: string | undefined, label: string):
 
 function resolveMapConfigOverrides(value?: string): FactoryMapConfigOverrides | undefined {
   return resolveNumericOverrideObject(value, "map config overrides") as FactoryMapConfigOverrides | undefined;
+}
+
+function resolveBiomeClimateOverrides(value?: string): FactoryBiomeClimateOverrides | undefined {
+  return resolveNumericOverrideObject(value, "biome climate overrides") as FactoryBiomeClimateOverrides | undefined;
 }
 
 function resolveBlitzRegistrationOverrides(value?: string): FactoryBlitzRegistrationOverrides | undefined {
@@ -324,11 +332,13 @@ function normalizeWeeklyCadenceEntry(entry: unknown, index: number): LaunchRotat
     record.blitzRegistrationOverrides,
     index,
   );
+  const biomeClimateOverrides = normalizeWeeklyCadenceBiomeClimateOverrides(record.biomeClimateOverrides, index);
 
   return {
     gameNamePrefix,
     weekday,
     utcTime,
+    ...(biomeClimateOverrides ? { biomeClimateOverrides } : {}),
     ...(blitzRegistrationOverrides ? { blitzRegistrationOverrides } : {}),
   };
 }
@@ -371,6 +381,27 @@ function normalizeWeeklyCadenceRegistrationOverrides(value: unknown, index: numb
 
   validateBlitzRegistrationOverrideEntries(value as Record<string, unknown>);
   return value as LaunchRotationWeeklyCadenceEntry["blitzRegistrationOverrides"];
+}
+
+function normalizeWeeklyCadenceBiomeClimateOverrides(value: unknown, index: number) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`weekly cadence JSON entry ${index + 1} biomeClimateOverrides must be an object`);
+  }
+
+  validateNumericOverrideEntries(value as Record<string, unknown>, `weekly cadence JSON entry ${index + 1}`);
+  return value as LaunchRotationWeeklyCadenceEntry["biomeClimateOverrides"];
+}
+
+function validateNumericOverrideEntries(value: Record<string, unknown>, label: string) {
+  for (const [key, entryValue] of Object.entries(value)) {
+    if (typeof entryValue !== "number" || !Number.isFinite(entryValue)) {
+      throw new Error(`${label} ${key} must be a finite number`);
+    }
+  }
 }
 
 function requireSeriesLaunchArgs(args: Args): {
@@ -462,6 +493,12 @@ function resolveSharedLaunchRequestOptions(args: Args) {
       resolveOptionalArg(args, "map-config-overrides-json", [
         "MAP_CONFIG_OVERRIDES_JSON",
         "GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON",
+      ]),
+    ),
+    biomeClimateOverrides: resolveBiomeClimateOverrides(
+      resolveOptionalArg(args, "biome-climate-overrides-json", [
+        "BIOME_CLIMATE_OVERRIDES_JSON",
+        "GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_JSON",
       ]),
     ),
     blitzRegistrationOverrides: resolveBlitzRegistrationOverrides(

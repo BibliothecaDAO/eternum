@@ -1,5 +1,6 @@
 import type {
   Config as EternumConfig,
+  FactoryBiomeClimateOverrides,
   FactoryBlitzRegistrationOverrides,
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
@@ -172,6 +173,7 @@ export interface LaunchGameRequest {
   twoPlayerMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   cartridgeApiBase?: string;
   toriiNamespaces?: string;
@@ -201,6 +203,7 @@ export interface LaunchSeriesGameRequest {
   gameName: string;
   startTime: string | number;
   seriesGameNumber?: number;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
 }
 
 export interface LaunchSeriesRequest {
@@ -218,6 +221,7 @@ export interface LaunchSeriesRequest {
   twoPlayerMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   cartridgeApiBase?: string;
   toriiNamespaces?: string;
@@ -263,6 +267,8 @@ export interface LaunchRotationRequest {
   twoPlayerMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  biomeClimateOverridesByGameNumber?: Record<number, FactoryBiomeClimateOverrides>;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   cartridgeApiBase?: string;
   toriiNamespaces?: string;
@@ -292,6 +298,7 @@ export interface LaunchRotationWeeklyCadenceEntry {
   gameNamePrefix: string;
   weekday: LaunchRotationWeekday;
   utcTime: string;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
 }
 
@@ -386,6 +393,7 @@ export interface SeriesLaunchGameSummary {
   startTime: number;
   startTimeIso: string;
   durationSeconds?: number;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   seriesGameNumber: number;
   currentStepId: SeriesLaunchStepId | null;

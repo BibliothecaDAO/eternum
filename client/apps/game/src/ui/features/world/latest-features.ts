@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-31",
+    title: "Factory Biome Tuning",
+    description:
+      "Added biome climate tuning to Factory V2 so new games, series, and rotations can preview and adjust terrain seeds before launch.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-30",
     title: "Smarter Blitz Suggestions",
     description:

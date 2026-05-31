@@ -35,6 +35,14 @@ function buildReplayableLaunchOptions(request: LaunchRequest): Record<string, un
     assignOptionalLaunchOption(launchOptions, "weeklyCadence", request.weeklyCadence);
   }
   assignOptionalLaunchOption(launchOptions, "mapConfigOverrides", request.mapConfigOverrides);
+  assignOptionalLaunchOption(launchOptions, "biomeClimateOverrides", request.biomeClimateOverrides);
+  if (request.launchKind === "rotation") {
+    assignOptionalLaunchOption(
+      launchOptions,
+      "biomeClimateOverridesByGameNumber",
+      request.biomeClimateOverridesByGameNumber,
+    );
+  }
   assignOptionalLaunchOption(launchOptions, "blitzRegistrationOverrides", request.blitzRegistrationOverrides);
   assignOptionalLaunchOption(launchOptions, "cartridgeApiBase", request.cartridgeApiBase);
   assignOptionalLaunchOption(launchOptions, "toriiNamespaces", request.toriiNamespaces);

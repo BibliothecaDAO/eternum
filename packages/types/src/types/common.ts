@@ -745,6 +745,8 @@ export type FactoryMapConfigOverrides = Partial<
   >
 >;
 
+export type FactoryBiomeClimateOverrides = Partial<Config["biomeClimate"]>;
+
 export interface FactoryBlitzRegistrationOverrides {
   registration_count_max?: number;
   fee_token?: string;

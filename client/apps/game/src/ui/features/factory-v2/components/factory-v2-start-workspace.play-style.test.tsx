@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createFactoryMoreOptionsDraft } from "../map-options";
+import { createFactoryBiomeClimateDraft } from "../biome-climate-options";
 import { FactoryV2StartWorkspace } from "./factory-v2-start-workspace";
 
 vi.mock("../mode-appearance", () => ({
@@ -102,6 +103,18 @@ const buildProps = (
     prizePrecision: null,
   },
   moreOptionsDisabledReason: null,
+  biomeClimateDraft: createFactoryBiomeClimateDraft("slot", "blitz"),
+  biomeClimateErrors: {
+    elevationScaleBps: null,
+    moistureScaleBps: null,
+    elevationBiasBps: null,
+    moistureBiasBps: null,
+    elevationSeed: null,
+    moistureSeed: null,
+  },
+  biomeClimateTargets: [{ id: "game", label: "bltz-sprint-01" }],
+  selectedBiomeClimateTargetId: "game",
+  biomeClimateDisabledReason: null,
   onSelectLaunchTargetKind: vi.fn(),
   onSelectPreset: vi.fn(),
   onGameNameChange: vi.fn(),
@@ -120,6 +133,11 @@ const buildProps = (
   onSelectSeriesSuggestion: vi.fn(),
   onToggleMapOptions: vi.fn(),
   onMapOptionValueChange: vi.fn(),
+  onSelectBiomeClimateTarget: vi.fn(),
+  onBiomeClimateValueChange: vi.fn(),
+  onRandomizeBiomeClimateSeeds: vi.fn(),
+  onResetBiomeClimate: vi.fn(),
+  onApplyBiomeClimateToAll: vi.fn(),
   onToggleTwoPlayerMode: vi.fn(),
   onToggleSingleRealmMode: vi.fn(),
   onFandomizeGameName: vi.fn(),
@@ -162,6 +180,7 @@ describe("FactoryV2StartWorkspace play style", () => {
     expect(container.textContent).toContain("Launch basics");
     expect(container.textContent).toContain("Blitz setup");
     expect(container.textContent).toContain("Advanced");
+    expect(container.textContent).toContain("Biome tuning");
     expect(container.textContent).toContain("Max players");
   });
 
@@ -299,6 +318,59 @@ describe("FactoryV2StartWorkspace play style", () => {
     });
 
     expect(container.textContent).not.toContain("Max players");
+  });
+
+  it("shows per-game biome controls for series launches and can apply one climate to all games", async () => {
+    const onApplyBiomeClimateToAll = vi.fn();
+
+    await act(async () => {
+      root.render(
+        <FactoryV2StartWorkspace
+          {...buildProps({
+            launchTargetKind: "series",
+            biomeClimateTargets: [
+              { id: "series-1", label: "1. bltz-weekend-cup-01" },
+              { id: "series-2", label: "2. bltz-weekend-cup-02" },
+            ],
+            selectedBiomeClimateTargetId: "series-1",
+            onApplyBiomeClimateToAll,
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    expect(container.textContent).toContain("Biome tuning");
+    expect(container.textContent).toContain("Apply to all");
+
+    const applyButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Apply to all"),
+    );
+
+    await act(async () => {
+      (applyButton as HTMLButtonElement).click();
+      await waitForAsyncWork();
+    });
+
+    expect(onApplyBiomeClimateToAll).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables launch when biome climate values need review", async () => {
+    await act(async () => {
+      root.render(
+        <FactoryV2StartWorkspace
+          {...buildProps({
+            biomeClimateDisabledReason: "Elevation scale BPS must be an integer between 0 and 65535.",
+          })}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const launchButton = container.querySelector<HTMLButtonElement>('[data-testid="factory-launch-button"]');
+
+    expect(container.textContent).toContain("Elevation scale BPS must be an integer between 0 and 65535.");
+    expect(launchButton?.disabled).toBe(true);
   });
 
   it("switches to the two-player play style from the default state", async () => {

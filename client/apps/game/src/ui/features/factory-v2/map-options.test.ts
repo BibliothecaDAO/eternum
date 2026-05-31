@@ -3,6 +3,11 @@ import { buildFactoryCreateRotationRunRequest } from "./create-rotation-run-requ
 import { buildFactoryCreateRunRequest } from "./create-run-request";
 import { buildFactoryCreateSeriesRunRequest } from "./create-series-run-request";
 import {
+  createFactoryBiomeClimateDraft,
+  validateFactoryBiomeClimateDraft,
+  type FactoryBiomeClimateDraft,
+} from "./biome-climate-options";
+import {
   createFactoryMoreOptionsDraft,
   getFactoryMoreOptionField,
   getFactoryMoreOptionSections,
@@ -53,6 +58,49 @@ describe("Factory V2 map options", () => {
 
     expect(result.hasErrors).toBe(false);
     expect(result.mapConfigOverrides).toBeUndefined();
+  });
+
+  it("validates biome climate drafts and omits overrides that match the base climate", () => {
+    const draft = createFactoryBiomeClimateDraft("slot", "blitz");
+    const result = validateFactoryBiomeClimateDraft("slot", "blitz", draft);
+
+    expect(draft).toEqual({
+      elevationScaleBps: "10000",
+      moistureScaleBps: "10000",
+      elevationBiasBps: "10000",
+      moistureBiasBps: "10000",
+      elevationSeed: "0",
+      moistureSeed: "0",
+    });
+    expect(result.hasErrors).toBe(false);
+    expect(result.biomeClimateOverrides).toBeUndefined();
+  });
+
+  it("returns changed biome climate values as launch overrides", () => {
+    const draft: FactoryBiomeClimateDraft = {
+      ...createFactoryBiomeClimateDraft("slot", "blitz"),
+      elevationScaleBps: "12000",
+      moistureSeed: "991",
+    };
+    const result = validateFactoryBiomeClimateDraft("slot", "blitz", draft);
+
+    expect(result.hasErrors).toBe(false);
+    expect(result.biomeClimateOverrides).toEqual({
+      elevationScaleBps: 12_000,
+      moistureSeed: 991,
+    });
+  });
+
+  it("rejects invalid biome climate values", () => {
+    const draft = createFactoryBiomeClimateDraft("slot", "blitz");
+    draft.elevationScaleBps = "65536";
+    draft.moistureSeed = "4.2";
+
+    const result = validateFactoryBiomeClimateDraft("slot", "blitz", draft);
+
+    expect(result.hasErrors).toBe(true);
+    expect(result.errors.elevationScaleBps).toContain("between 0 and 65535");
+    expect(result.errors.moistureSeed).toContain("between 0 and 4294967295");
   });
 
   it("converts edited percentage and integer values into raw map config overrides", () => {
@@ -212,11 +260,19 @@ describe("Factory V2 map options", () => {
         bitcoinMineWinProbability: 1638,
         bitcoinMineFailProbability: 63897,
       },
+      biomeClimateOverrides: {
+        elevationScaleBps: 12_000,
+        moistureSeed: 991,
+      },
     });
 
     expect(request.mapConfigOverrides).toEqual({
       bitcoinMineWinProbability: 1638,
       bitcoinMineFailProbability: 63897,
+    });
+    expect(request.biomeClimateOverrides).toEqual({
+      elevationScaleBps: 12_000,
+      moistureSeed: 991,
     });
   });
 
@@ -282,6 +338,9 @@ describe("Factory V2 map options", () => {
           gameName: "bltz-series-12-1",
           startAt: "2026-03-18T10:00:00Z",
           seriesGameNumber: 1,
+          biomeClimateOverrides: {
+            elevationSeed: 101,
+          },
         },
       ],
       selectedMode: "blitz",
@@ -293,6 +352,8 @@ describe("Factory V2 map options", () => {
       autoRetryIntervalMinutes: 15,
       resolveStartTime: (startAt) => startAt,
     });
+
+    expect(seriesRequest.games[0].biomeClimateOverrides).toEqual({ elevationSeed: 101 });
 
     const rotationRequest = buildFactoryCreateRotationRunRequest({
       environmentId: "slot.blitz",
@@ -310,11 +371,21 @@ describe("Factory V2 map options", () => {
       durationMinutes: 30,
       showsDuration: true,
       autoRetryIntervalMinutes: 15,
+      biomeClimateOverridesByGameNumber: {
+        1: {
+          elevationSeed: 202,
+        },
+      },
       resolveStartTime: (startAt) => startAt,
     });
 
     expect(gameRequest.workflowRef).toBe(workflowRef);
     expect(seriesRequest.workflowRef).toBe(workflowRef);
     expect(rotationRequest.workflowRef).toBe(workflowRef);
+    expect(rotationRequest.biomeClimateOverridesByGameNumber).toEqual({
+      1: {
+        elevationSeed: 202,
+      },
+    });
   });
 });

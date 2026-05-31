@@ -245,6 +245,8 @@ jobs:
             durationSeconds: "GAME_LAUNCH_DURATION_SECONDS",
             weeklyCadence: "GAME_LAUNCH_WEEKLY_CADENCE_JSON",
             mapConfigOverrides: "GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON",
+            biomeClimateOverrides: "GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_JSON",
+            biomeClimateOverridesByGameNumber: "GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON",
             blitzRegistrationOverrides: "GAME_LAUNCH_BLITZ_REGISTRATION_OVERRIDES_JSON",
             cartridgeApiBase: "GAME_LAUNCH_CARTRIDGE_API_BASE",
             toriiNamespaces: "GAME_LAUNCH_TORII_NAMESPACES",

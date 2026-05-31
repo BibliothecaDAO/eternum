@@ -1,5 +1,6 @@
 import type {
   Config as EternumConfig,
+  FactoryBiomeClimateOverrides,
   FactoryBlitzRegistrationOverrides,
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
@@ -21,6 +22,7 @@ interface ConfigOverrides {
   twoPlayerMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
 }
 
@@ -40,6 +42,7 @@ interface ResolvedBlitzRegistrationOverrides {
 type ConfigWithFactoryAddress = EternumConfig & { factory_address?: string };
 
 const U16_MAX = 65_535;
+const U32_MAX = 4_294_967_295;
 const U8_MAX = 255;
 const HYPERSTRUCTURE_PAIR_SUM = 100_000;
 const BLITZ_MAX_PLAYERS_MIN = 1;
@@ -104,6 +107,15 @@ const MAP_CONFIG_OVERRIDE_PAIR_GROUPS = [
     sum: HYPERSTRUCTURE_PAIR_SUM,
   },
 ] as const;
+
+const BIOME_CLIMATE_OVERRIDE_LIMITS = {
+  elevationScaleBps: U16_MAX,
+  moistureScaleBps: U16_MAX,
+  elevationBiasBps: U16_MAX,
+  moistureBiasBps: U16_MAX,
+  elevationSeed: U32_MAX,
+  moistureSeed: U32_MAX,
+} satisfies Record<keyof FactoryBiomeClimateOverrides, number>;
 
 function loadStoredConfiguration(configPath: string): StoredConfiguration {
   return loadRepoJsonFile<StoredConfiguration>(configPath);
@@ -258,6 +270,33 @@ export function applyMapConfigOverrides(config: EternumConfig, overrides?: Facto
   };
 }
 
+function validateBiomeClimateOverrideValue(key: keyof FactoryBiomeClimateOverrides, value: number): void {
+  const limit = BIOME_CLIMATE_OVERRIDE_LIMITS[key];
+
+  if (!Number.isInteger(value) || value < 0 || value > limit) {
+    throw new Error(`biomeClimateOverrides.${key} must be an integer between 0 and ${limit}`);
+  }
+}
+
+export function applyBiomeClimateOverrides(config: EternumConfig, overrides?: FactoryBiomeClimateOverrides): void {
+  if (!overrides) {
+    return;
+  }
+
+  for (const [key, rawValue] of Object.entries(overrides)) {
+    if (!(key in BIOME_CLIMATE_OVERRIDE_LIMITS)) {
+      throw new Error(`Unsupported biome climate override "${key}"`);
+    }
+
+    validateBiomeClimateOverrideValue(key as keyof FactoryBiomeClimateOverrides, rawValue as number);
+  }
+
+  config.biomeClimate = {
+    ...config.biomeClimate,
+    ...overrides,
+  };
+}
+
 function validateBlitzRegistrationOverridesAreAllowed(twoPlayerMode: boolean): void {
   if (twoPlayerMode) {
     throw new Error("blitz registration overrides are not supported when two_player_mode is enabled");
@@ -391,6 +430,7 @@ export function applyDeploymentConfigOverrides(baseConfig: EternumConfig, overri
   applyModeOverrides(configWithInferredBlitzProfile, resolvedOverrides, overrides);
   applyFactoryAddressOverride(configWithInferredBlitzProfile, overrides.factoryAddress);
   applyMapConfigOverrides(configWithInferredBlitzProfile, overrides.mapConfigOverrides);
+  applyBiomeClimateOverrides(configWithInferredBlitzProfile, overrides.biomeClimateOverrides);
   applyBlitzRegistrationOverrides(
     configWithInferredBlitzProfile,
     overrides.blitzRegistrationOverrides,

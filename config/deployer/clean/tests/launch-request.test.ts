@@ -40,6 +40,10 @@ describe("launch request helpers", () => {
           campFindProbability: 16384,
           campFindFailProbability: 49151,
         }),
+        "biome-climate-overrides-json": JSON.stringify({
+          elevationScaleBps: 12000,
+          moistureSeed: 991,
+        }),
         "blitz-registration-overrides-json": JSON.stringify({
           registration_count_max: 12,
           fee_token: "0x1234",
@@ -56,6 +60,10 @@ describe("launch request helpers", () => {
       mapConfigOverrides: {
         campFindProbability: 16384,
         campFindFailProbability: 49151,
+      },
+      biomeClimateOverrides: {
+        elevationScaleBps: 12000,
+        moistureSeed: 991,
       },
       blitzRegistrationOverrides: {
         registration_count_max: 12,
