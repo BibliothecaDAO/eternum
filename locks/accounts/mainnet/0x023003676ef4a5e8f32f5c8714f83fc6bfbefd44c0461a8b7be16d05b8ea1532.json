@@ -3,17 +3,16 @@
   "chain": "mainnet",
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
-    "environment": "mainnet.blitz",
-    "gameName": "bltz-flux-231",
-    "launchRequestId": "26707116972-1",
+    "environment": "mainnet.eternum",
+    "gameName": "etrn-sable-488",
+    "launchRequestId": "26714104653-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26707116972,
+    "workflowRunId": 26714104653,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "5c2b0345-9aa6-4633-8027-8a1b5c1e2806"
+    "stepId": "create-world",
+    "leaseId": "d5e4a72b-3dba-42bf-bad4-998e291bdadc"
   },
-  "acquiredAt": "2026-05-31T08:02:55.136Z",
-  "heartbeatAt": "2026-05-31T08:02:58.862Z",
-  "expiresAt": "2026-05-31T08:02:58.862Z",
-  "releasedAt": "2026-05-31T08:02:58.862Z"
+  "acquiredAt": "2026-05-31T13:37:17.793Z",
+  "heartbeatAt": "2026-05-31T13:37:17.793Z",
+  "expiresAt": "2026-05-31T13:47:17.793Z"
 }
