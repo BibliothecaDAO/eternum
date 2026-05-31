@@ -1098,6 +1098,28 @@ pub fn attack_guard_vs_explorer(
     stop_cheat_caller_address(systems.troop_battle);
 }
 
+/// Maps a (troop type, tier) pair to its resource id so granted resources match the troops actually
+/// created (the previous tier-only mapping granted the wrong type for e.g. a T1 Crossbowman guard).
+fn troop_type_tier_resource(troop_type: TroopType, troop_tier: TroopTier) -> u8 {
+    match troop_type {
+        TroopType::Knight => match troop_tier {
+            TroopTier::T1 => ResourceTypes::KNIGHT_T1,
+            TroopTier::T2 => ResourceTypes::KNIGHT_T2,
+            TroopTier::T3 => ResourceTypes::KNIGHT_T3,
+        },
+        TroopType::Crossbowman => match troop_tier {
+            TroopTier::T1 => ResourceTypes::CROSSBOWMAN_T1,
+            TroopTier::T2 => ResourceTypes::CROSSBOWMAN_T2,
+            TroopTier::T3 => ResourceTypes::CROSSBOWMAN_T3,
+        },
+        TroopType::Paladin => match troop_tier {
+            TroopTier::T1 => ResourceTypes::PALADIN_T1,
+            TroopTier::T2 => ResourceTypes::PALADIN_T2,
+            TroopTier::T3 => ResourceTypes::PALADIN_T3,
+        },
+    }
+}
+
 /// Sets up a guard battle scenario: a realm with guards and an adjacent explorer
 pub fn setup_guard_battle(
     guard_troop_type: TroopType,
@@ -1113,16 +1135,8 @@ pub fn setup_guard_battle(
     // Grant resources based on troop types
     let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
-    let guard_resource = match guard_troop_tier {
-        TroopTier::T1 => ResourceTypes::KNIGHT_T1,
-        TroopTier::T2 => ResourceTypes::CROSSBOWMAN_T2,
-        TroopTier::T3 => ResourceTypes::PALADIN_T3,
-    };
-    let explorer_resource = match explorer_troop_tier {
-        TroopTier::T1 => ResourceTypes::KNIGHT_T1,
-        TroopTier::T2 => ResourceTypes::CROSSBOWMAN_T2,
-        TroopTier::T3 => ResourceTypes::PALADIN_T3,
-    };
+    let guard_resource = troop_type_tier_resource(guard_troop_type, guard_troop_tier);
+    let explorer_resource = troop_type_tier_resource(explorer_troop_type, explorer_troop_tier);
 
     tgrant_resources(ref world, first_realm.entity_id, array![(guard_resource, troop_amount)].span());
     tgrant_resources(ref world, second_realm.entity_id, array![(explorer_resource, troop_amount)].span());
