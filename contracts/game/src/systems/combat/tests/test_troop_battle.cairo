@@ -477,7 +477,9 @@ mod tests {
         let structure_owner = StructureOwnerStoreImpl::retrieve(ref world, realm.entity_id);
         let guard_troops_after = StructureTroopGuardStoreImpl::retrieve(ref world, realm.entity_id);
         assert!(structure_owner == realm.owner, "Ranged guard attack should not remotely hand over structure");
-        assert!(guard_troops_after.delta.count == 1 * RESOURCE_PRECISION, "Ranged defender should not counter-damage guard");
+        assert!(
+            guard_troops_after.delta.count == 1 * RESOURCE_PRECISION, "Ranged defender should not counter-damage guard",
+        );
     }
 
     #[test]
