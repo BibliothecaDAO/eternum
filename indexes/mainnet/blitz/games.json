@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-31T08:01:46.865Z",
+  "updatedAt": "2026-05-31T08:01:50.222Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1268,12 +1268,13 @@
       "path": "runs/mainnet/blitz/bltz-flux-231.json",
       "inputPath": "inputs/mainnet/blitz/bltz-flux-231/26707116972-1.json",
       "status": "running",
-      "updatedAt": "2026-05-31T08:01:46.865Z",
+      "updatedAt": "2026-05-31T08:01:50.222Z",
       "workflowRef": "next",
       "currentStepId": "configure-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-05-31T08:46:50.222Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "configure-world",
+      "recoverablePendingStepId": "reserve-blitz-hyperstructures",
       "startTime": 1780227000,
       "durationSeconds": 3600,
       "artifacts": {}
