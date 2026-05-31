@@ -139,7 +139,8 @@ export const Combat = () => {
           <h5>Biome Combat Effects</h5>
           <p className="leading-relaxed">
             Biome of the defending army affects most combat. Armies can gain +30% damage, -30% damage, or no effect.
-            Crossbowman attacks from two hexes away use ranged damage with no biome damage modifier or counter-damage.
+            Crossbowman attacks from two hexes away use reduced ranged damage and deal no counter-damage, but biome
+            damage modifiers still apply.
           </p>
           <ul className="list-disc pl-6">
             <li>

@@ -347,11 +347,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const attackerIsArmy = attackerType === AttackerType.Army;
 
-  // The attack captures the structure when it clears every remaining defender and the attacker survives.
+  // The attack captures the structure when it clears every remaining defender and the attacker
+  // survives — and only from an adjacent hex, since ranged pokes cannot claim.
   const clearsAllDefenders =
     isStructureTarget && (!targetArmyData || (defenderRemaining <= 0 && queuedTargetGuards.length === 0));
   const attackerSurvivesCapture = !targetArmyData || attackerRemaining > 0;
-  const willCaptureStructure = attackerIsArmy && clearsAllDefenders && attackerSurvivesCapture;
+  const willCaptureStructure = attackerIsArmy && clearsAllDefenders && attackerSurvivesCapture && targetDistance <= 1;
 
   // First open guard slot the captured structure exposes (defeated guards leave their slot empty,
   // so a swap into it inherits the explorer's category/tier).
@@ -711,7 +712,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
             forceUppercase={false}
             className="px-3 py-1 text-xs tracking-wide"
           >
-            {willCaptureStructure ? "Claim" : "Attack"}
+            {rangedClaimBlocked ? "Move adjacent to claim" : willCaptureStructure ? "Claim" : "Attack"}
           </Button>
           {renderDetailsButton()}
         </div>
