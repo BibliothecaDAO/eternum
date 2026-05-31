@@ -2,6 +2,8 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceCost } from "@/ui/design-system/molecules/resource-cost";
 import { ProductionModal } from "@/ui/features/settlement";
+import { useBlitzRealmProvision } from "@/ui/modules/entity-details/hooks/use-blitz-realm-provision";
+import { useRealmUpgradeAndProvision } from "@/ui/modules/entity-details/hooks/use-realm-upgrade-and-provision";
 import { configManager, divideByPrecision, getBalance, getEntityIdFromKeys } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, ID, LEVEL_DESCRIPTIONS, RealmLevels, ResourcesIds } from "@bibliothecadao/types";
@@ -17,6 +19,7 @@ import ChevronDownIcon from "lucide-react/dist/esm/icons/chevron-down";
 import CrownIcon from "lucide-react/dist/esm/icons/crown";
 import PlusIcon from "lucide-react/dist/esm/icons/plus";
 import SparklesIcon from "lucide-react/dist/esm/icons/sparkles";
+import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 
 const WONDER_BONUS_DISTANCE = 12;
 
@@ -135,6 +138,18 @@ export const Castle = () => {
     setIsLevelUpLoading(false);
   };
 
+  const provisionInfo = useBlitzRealmProvision(structureEntityId ?? null);
+  const bootstrapInfo = useRealmUpgradeAndProvision(structureEntityId ?? null);
+  const isBootstrapMode = Boolean(provisionInfo?.needsBootstrap);
+
+  const bootstrapRealm = async () => {
+    try {
+      await bootstrapInfo.handleUpgradeAndProvision();
+    } catch (error) {
+      console.error("Error bootstrapping realm:", error);
+    }
+  };
+
   if (!structure) return null;
   const isOwner = structure.owner === ContractAddress(dojo.account.account.address);
 
@@ -188,14 +203,22 @@ export const Castle = () => {
 
               {getNextRealmLevel && isOwner && (
                 <Button
-                  variant={checkBalance ? "gold" : "outline"}
-                  disabled={!checkBalance}
-                  isLoading={isLevelUpLoading}
-                  onClick={levelUpRealm}
+                  variant={(isBootstrapMode ? bootstrapInfo.canProvision : checkBalance) ? "gold" : "outline"}
+                  disabled={isBootstrapMode ? !bootstrapInfo.canProvision : !checkBalance}
+                  isLoading={isBootstrapMode ? bootstrapInfo.isPending : isLevelUpLoading}
+                  onClick={isBootstrapMode ? bootstrapRealm : levelUpRealm}
                   className="w-full"
                 >
-                  {checkBalance ? `Upgrade to ${RealmLevels[getNextRealmLevel]}` : "Need Resources"}
-                  <ArrowUpRightIcon className="w-4 h-4 ml-2" />
+                  {isBootstrapMode
+                    ? "Bootstrap Realm"
+                    : checkBalance
+                      ? `Upgrade to ${RealmLevels[getNextRealmLevel]}`
+                      : "Need Resources"}
+                  {isBootstrapMode ? (
+                    <Pickaxe className="w-4 h-4 ml-2" />
+                  ) : (
+                    <ArrowUpRightIcon className="w-4 h-4 ml-2" />
+                  )}
                 </Button>
               )}
             </div>

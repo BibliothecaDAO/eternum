@@ -31,20 +31,7 @@ describe("getSameStructureTransferBlockReason", () => {
     ).toBe("Cannot transfer troops: Both explorers must belong to the same structure");
   });
 
-  it("allows explorer-to-structure transfers when the explorer belongs to the target structure", () => {
-    expect(
-      getSameStructureTransferBlockReason({
-        transferDirection: TransferDirection.ExplorerToStructure,
-        selectedEntityId: 1,
-        targetEntityId: 202,
-        selectedExplorerOwner: 202,
-        targetExplorerOwner: 0,
-        guardSlot: 1,
-      }),
-    ).toBeNull();
-  });
-
-  it("blocks explorer-to-structure transfers when the explorer belongs to a different structure", () => {
+  it("allows explorer-to-structure transfers regardless of explorer owner", () => {
     expect(
       getSameStructureTransferBlockReason({
         transferDirection: TransferDirection.ExplorerToStructure,
@@ -54,7 +41,7 @@ describe("getSameStructureTransferBlockReason", () => {
         targetExplorerOwner: 0,
         guardSlot: 1,
       }),
-    ).toBe("Cannot transfer troops: Explorer must belong to the target structure");
+    ).toBeNull();
   });
 
   it("allows structure-to-explorer guard transfers when the explorer belongs to the selected structure", () => {

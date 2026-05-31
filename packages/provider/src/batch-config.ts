@@ -42,6 +42,7 @@ export const TRANSACTION_COST_CATEGORY: Partial<Record<TransactionType, Transact
   // Combat (complex calculations)
   [TransactionType.ATTACK_EXPLORER_VS_EXPLORER]: TransactionCostCategory.HIGH,
   [TransactionType.ATTACK_EXPLORER_VS_GUARD]: TransactionCostCategory.HIGH,
+  [TransactionType.ATTACK_EXPLORER_VS_GUARD_AND_GARRISON]: TransactionCostCategory.HIGH,
   [TransactionType.ATTACK_GUARD_VS_EXPLORER]: TransactionCostCategory.HIGH,
   [TransactionType.RAID_EXPLORER_VS_GUARD]: TransactionCostCategory.HIGH,
   [TransactionType.BATTLE_START]: TransactionCostCategory.HIGH,

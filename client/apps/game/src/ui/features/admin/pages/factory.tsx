@@ -1068,7 +1068,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
         {/* Unified Configuration and Deployment */}
         {parsedManifest && (
           <div className="mb-12">
-            <div className="relative overflow-hidden p-10 panel-wood rounded-3xl shadow-xl shadow-gold/10 border border-gold/20">
+            <div className="relative overflow-hidden p-10 bg-black/40 rounded-3xl shadow-xl shadow-gold/10 border border-gold/20">
               <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-gold/15 to-transparent rounded-full blur-3xl" />
               <div className="relative space-y-8">
                 {/* Header */}
@@ -2689,13 +2689,13 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setShowFullConfig((v) => !v)}
-                        className="button-wood px-6 py-3 text-sm font-semibold text-gold/90 hover:text-gold bg-gold/10 hover:bg-gold/15 border-2 border-gold/20 hover:border-gold/40 rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-emerald-500/20"
+                        className="btn-bronze px-6 py-3 text-sm font-semibold text-gold/90 hover:text-gold bg-gold/10 hover:bg-gold/15 border-2 border-gold/20 hover:border-gold/40 rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-emerald-500/20"
                       >
                         {showFullConfig ? "Hide" : "View"} Full Config
                       </button>
                       <button
                         onClick={() => setShowCairoOutput(!showCairoOutput)}
-                        className="button-wood px-6 py-3 text-sm font-semibold text-gold/90 hover:text-gold bg-gold/10 hover:bg-gold/15 border-2 border-gold/20 hover:border-gold/40 rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-gold/20"
+                        className="btn-bronze px-6 py-3 text-sm font-semibold text-gold/90 hover:text-gold bg-gold/10 hover:bg-gold/15 border-2 border-gold/20 hover:border-gold/40 rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-gold/20"
                       >
                         {showCairoOutput ? "Hide" : "View"} Cairo Code
                       </button>
@@ -2724,7 +2724,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                   </div>
 
                   {showCairoOutput && (
-                    <div className="p-8 panel-wood border-2 border-gold/20 rounded-3xl shadow-2xl">
+                    <div className="p-8 bg-black/40 border-2 border-gold/20 rounded-3xl shadow-2xl">
                       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gold/20">
                         <div className="h-10 w-10 rounded-xl bg-gold/15 flex items-center justify-center">
                           <Download className="w-5 h-5 text-gold" />

@@ -3399,6 +3399,43 @@ export class EternumProvider extends EnhancedDojoProvider {
   }
 
   /**
+   * Attack a guard with an explorer and, in the same atomic multicall, garrison the surviving
+   * troops into the captured structure. The attack runs first so the explorer owns the structure
+   * by the time the guard swap executes.
+   *
+   * @param props - Properties for the attack + garrison multicall
+   * @param props.explorer_id - ID of the attacking explorer
+   * @param props.structure_id - ID of the structure with the defending guard
+   * @param props.structure_direction - Direction from the explorer to the structure
+   * @param props.to_guard_slot - Guard slot to place the surviving troops in
+   * @param props.count - Number of surviving troops to garrison (raw count, divisible by resource precision)
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async attack_explorer_vs_guard_and_garrison(props: SystemProps.AttackExplorerVsGuardAndGarrisonProps) {
+    const { explorer_id, structure_id, structure_direction, to_guard_slot, count, signer } = props;
+
+    const calls: Call[] = [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
+        entrypoint: "attack_explorer_vs_guard",
+        calldata: [explorer_id, structure_id],
+      },
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+        entrypoint: "explorer_guard_swap",
+        calldata: [explorer_id, structure_id, structure_direction, to_guard_slot, count],
+      },
+    ];
+
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls,
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_GUARD_AND_GARRISON,
+    });
+  }
+
+  /**
    * Attack an explorer with a guard
    *
    * @param props - Properties for guard vs explorer attack

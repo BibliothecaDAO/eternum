@@ -174,8 +174,9 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
   behavior unpredictable across quality tiers.
 - Fog depth cues effectively disabled: fog is gated behind a user toggle + quality checks (scenes/hexagon-
   scene.ts:1069), so the world can read “flat” at zoom-out.
-- Fog zoom instability risk: day/night cycle hard-sets fog near/far every update (effects/day-night- cycle.ts:314),
-  fighting the camera-distance fog logic (scenes/hexagon-scene.ts:1069) if you enable it.
+- Fog zoom instability risk: world atmosphere hard-sets fog near/far every update
+  (effects/world-atmosphere-controller.ts), fighting the camera-distance fog logic (scenes/hexagon-scene.ts:1069) if you
+  enable it.
 - Fill lighting likely too strong/constant: storm update overrides hemisphere intensity to ~1.2 continuously
   (scenes/hexagon-scene.ts:757), reducing directional contrast even though base lighting aims for subtle fill
   (scenes/hexagon-scene.ts:215).
@@ -190,9 +191,8 @@ Torii/Dojo ECS → `WorldUpdateListener` → `WorldmapScene` caches (`exploredTi
 - Pick one tone-mapping path: either (A) keep postprocessing tone mapping and set renderer toneMapping to NoToneMapping
   for MID/HIGH, or (B) remove the ToneMappingEffect and rely on renderer tone mapping (game- renderer.ts:250,
   game-renderer.ts:891). This alone usually improves clarity and “intentional” color.
-- Enable subtle fog by default for Medium/Far: make fog opt-out (not opt-in) and keep it very gentle; it’s night manager
-  and use updateFogForDistance as the single source of truth for near/far (effects/day-night- cycle.ts:314,
-  scenes/hexagon-scene.ts:1069).
+- Enable subtle fog by default for Medium/Far: make fog opt-out (not opt-in), keep it very gentle, and use
+  updateFogForDistance as the single source of truth for near/far.
 - Restore Far-view shadow disable in worldmap: align scenes/worldmap.tsx:924 with scenes/hexagon- scene.ts:1026 to avoid
   noisy distant shadows and a big shadow pass.
 - Add cheap “contact shadows” for units/structures: blob/shadow decals (instanced quads with a soft alpha texture) keep

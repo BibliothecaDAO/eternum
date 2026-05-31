@@ -992,6 +992,22 @@ export interface AttackExplorerVsGuardProps extends SystemSigner {
 }
 
 /**
+ * Properties for an explorer vs guard attack that garrisons surviving troops into the captured structure
+ */
+export interface AttackExplorerVsGuardAndGarrisonProps extends SystemSigner {
+  /** ID of the attacking explorer */
+  explorer_id: number;
+  /** ID of the structure with defending guard */
+  structure_id: number;
+  /** Direction to the structure */
+  structure_direction: number;
+  /** Guard slot to place surviving troops in once the structure is captured */
+  to_guard_slot: number;
+  /** Number of surviving troops to garrison (raw count, divisible by resource precision) */
+  count: number;
+}
+
+/**
  * Properties for guard vs explorer attack
  */
 export interface AttackGuardVsExplorerProps extends SystemSigner {

@@ -69,7 +69,7 @@ export const NumberInput = ({
       )}
       <input
         min={min}
-        className="button-wood w-full appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
+        className="btn-bronze w-full appearance-none !outline-none h-full text-center bg-transparent text-gold flex-grow"
         value={displayValue}
         onFocus={onFocus}
         disabled={disabled}

@@ -30,6 +30,11 @@ type StructureBuildingsCounts = {
 
 interface StructureProvisionResult {
   canProvision: boolean;
+  // Same intent as canProvision but without the isMainPhase gate. Drives
+  // bootstrap-mode UI (icon + label) so we surface the Pickaxe/Bootstrap shape
+  // even while the game hasn't started — the action stays disabled, but the
+  // chrome doesn't fall back to the plain Level Up arrow.
+  needsBootstrap: boolean;
   isOwner: boolean;
   isProvisioned: boolean;
   isProvisionLoading: boolean;
@@ -143,6 +148,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const gameStartMainAt = useUIStore((state) => state.gameStartMainAt);
   const gameEndAt = useUIStore((state) => state.gameEndAt);
+  const devModeOn = useUIStore((state) => state.devModeOn);
   const resolvedWorldGameMode = useResolvedWorldGameMode();
   const [provisionActionState, setProvisionActionState] = useState<RealmProvisionActionStatus>("idle");
 
@@ -176,9 +182,12 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
   const ownerAddress = account.account?.address ? ContractAddress(account.account.address) : null;
   const isOwner = Boolean(structureInfo && ownerAddress && structureInfo.owner === ownerAddress);
   const isProvisioned = hasProvisionBuildingCount(liveStructureBuildings) || hasProvisionBuilding(realmBuildings);
-  const isMainPhase = hasMainStarted(currentBlockTimestamp, gameStartMainAt);
-  const isSeasonOver = hasSeasonEnded(currentBlockTimestamp, gameEndAt);
+  // dev_mode worlds (sandbox) bypass the chain's main-phase + season-end gates,
+  // so a freshly settled realm can provision/upgrade immediately. Mirror that.
+  const isMainPhase = devModeOn || hasMainStarted(currentBlockTimestamp, gameStartMainAt);
+  const isSeasonOver = !devModeOn && hasSeasonEnded(currentBlockTimestamp, gameEndAt);
   const canProvision = Boolean(isBlitzWorld && isRealm && isOwner && isMainPhase && !isSeasonOver && !isProvisioned);
+  const needsBootstrap = Boolean(isBlitzWorld && isRealm && isOwner && !isSeasonOver && !isProvisioned);
   const isProvisionLoading = isProvisionLoadingState(provisionActionState);
   const isProvisionLocked = provisionActionState !== "idle";
 
@@ -283,6 +292,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
 
   return {
     canProvision,
+    needsBootstrap,
     isOwner,
     isProvisioned,
     isProvisionLoading,

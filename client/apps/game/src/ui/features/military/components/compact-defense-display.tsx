@@ -37,6 +37,17 @@ interface CompactDefenseDisplayProps {
   structureId?: number;
   canManageDefense?: boolean;
   variant?: EntityDetailLayoutVariant;
+  /**
+   * Embed override — when present, slot clicks call this instead of opening the
+   * legacy popup. Used by the merged MilitaryModal to keep the action surface
+   * inline inside its right pane.
+   */
+  onRequestSlotAction?: (slot: GuardSlot) => void;
+  /**
+   * Hide the slots-used / total-troops summary row. The right-panel header
+   * already shows the slot count, and summing mixed troop tiers is misleading.
+   */
+  hideSlotSummary?: boolean;
 }
 
 export const CompactDefenseDisplay = ({
@@ -47,6 +58,8 @@ export const CompactDefenseDisplay = ({
   structureId,
   canManageDefense = false,
   variant = "default",
+  onRequestSlotAction,
+  hideSlotSummary = false,
 }: CompactDefenseDisplayProps) => {
   const openArmyCreationPopup = useUIStore((state) => state.openArmyCreationPopup);
   const {
@@ -123,6 +136,10 @@ export const CompactDefenseDisplay = ({
 
   const handleSlotOpen = (slot: GuardSlot) => {
     if (!canOpenModal || !structureId) return;
+    if (onRequestSlotAction) {
+      onRequestSlotAction(slot);
+      return;
+    }
     openArmyCreationPopup({
       structureId,
       isExplorer: false,
@@ -249,7 +266,7 @@ export const CompactDefenseDisplay = ({
   if (isBanner) {
     return (
       <div className={cn("flex flex-col", containerGapClass, className)}>
-        {showHeaderRow && (
+        {showHeaderRow && !hideSlotSummary && (
           <div className="flex items-center gap-2 w-full">
             {hasSlotInfo && (
               <div

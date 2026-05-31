@@ -81,9 +81,9 @@ describe("calculatePresetAllocations", () => {
     expect(result.has(ResourcesIds.Wood)).toBe(true);
   });
 
-  it("smart forces Donkey laborToResource to 0", () => {
+  it("smart gives Donkey market a 5% resource allocation and no labor", () => {
     const result = calculatePresetAllocations([ResourcesIds.Wood, ResourcesIds.Donkey], "smart", "realm");
-    expect(result.get(ResourcesIds.Donkey)).toEqual({ resourceToResource: 0, laborToResource: 0 });
+    expect(result.get(ResourcesIds.Donkey)).toEqual({ resourceToResource: 5, laborToResource: 0 });
   });
 
   it("smart includes resources without a tier weighting as zero entries", () => {
@@ -92,6 +92,7 @@ describe("calculatePresetAllocations", () => {
       "smart",
       "realm",
     );
+    expect(result.get(ResourcesIds.Donkey)).toEqual({ resourceToResource: 5, laborToResource: 0 });
     // Fish is not in any tier; must still be present and zeroed.
     expect(result.get(ResourcesIds.Fish)).toEqual({ resourceToResource: 0, laborToResource: 0 });
   });

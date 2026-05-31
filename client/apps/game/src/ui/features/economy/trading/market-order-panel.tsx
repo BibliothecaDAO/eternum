@@ -195,7 +195,7 @@ const MarketOrders = memo(
       <div className="h-full flex flex-col ">
         {/* Market Price */}
         <div
-          className={`text-2xl flex panel-wood    justify-between py-2 px-4 border-gold/10 rounded-xl ${
+          className={`text-2xl flex border bg-black/30 justify-between py-2 px-4 border-gold/10 rounded-xl ${
             !isBuy ? "bg-green/5 text-green" : "bg-red/5 text-red"
           }`}
         >
@@ -215,7 +215,7 @@ const MarketOrders = memo(
         </div>
 
         <div
-          className={`p-1 panel-wood flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-auto h-auto rounded-xl ${
+          className={`p-1 bg-black/30 flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-auto h-auto rounded-xl ${
             isBuy ? "order-buy-selector" : "order-sell-selector"
           }`}
         >
@@ -720,7 +720,7 @@ const OrderCreation = memo(
 
     return (
       <div
-        className={`flex justify-between p-4 text-xl flex-wrap mt-auto border-gold/10 panel-wood ${
+        className={`flex justify-between p-4 text-xl flex-wrap mt-auto border border-gold/10 bg-black/30 ${
           isBuy
             ? "order-create-buy-selector border-l-2 border-l-red"
             : "order-create-sell-selector border-l-2 border-l-green"

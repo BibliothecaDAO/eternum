@@ -10,12 +10,13 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { Select, Tabs } from "@/ui/design-system/atoms";
 import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/ui/design-system/atoms/select";
 import { LoadingAnimation, ResourceIcon } from "@/ui/design-system/molecules";
-import { ModalContainer } from "@/ui/shared";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { currencyFormat } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import { useMarket, useResourceManager } from "@bibliothecadao/react";
 import { ID, ResourcesIds } from "@bibliothecadao/types";
+import Store from "lucide-react/dist/esm/icons/store";
 import { lazy, Suspense, useMemo, useState } from "react";
 
 const UnifiedTradePanel = lazy(() =>
@@ -60,8 +61,19 @@ const TradeSummaryBar = lazy(() =>
 
 export const MarketModal = () => {
   const { isSyncing } = useSyncMarket();
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
-  return <ModalContainer>{isSyncing ? <LoadingAnimation /> : <MarketContent />}</ModalContainer>;
+  return (
+    <CenteredModalShell
+      title="Market"
+      icon={Store}
+      onClose={() => toggleModal(null)}
+      size="xl"
+      bodyClassName="overflow-hidden"
+    >
+      {isSyncing ? <LoadingAnimation /> : <MarketContent />}
+    </CenteredModalShell>
+  );
 };
 
 const MarketContent = () => {
@@ -170,7 +182,7 @@ const MarketContent = () => {
   const tabLabels = useUnifiedTrade ? unifiedTabLabels : legacyTabLabels;
 
   return (
-    <div className="market-modal-selector container border mx-auto grid grid-cols-12  border-gold/30 h-full row-span-12 rounded-2xl relative panel-wood">
+    <div className="market-modal-selector container border mx-auto grid grid-cols-12  border-gold/30 h-full row-span-12 rounded-2xl relative bg-black/40">
       <div className="col-span-3 row-span-10 overflow-y-auto border-r border-gold/10">
         <div className="market-realm-selector p-3 border-b border-gold/10">
           <Select
@@ -179,7 +191,7 @@ const MarketContent = () => {
               setStructureEntityId(ID(trait));
             }}
           >
-            <SelectTrigger className="w-full panel-wood-right">
+            <SelectTrigger className="w-full border-r border-gold/25">
               <SelectValue placeholder="Select Structure" />
             </SelectTrigger>
             <SelectContent>
