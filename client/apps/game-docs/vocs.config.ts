@@ -244,9 +244,9 @@ export default defineConfig({
     {
       text: "Changelog",
       collapsed: true,
-      link: "/changelog/1-may-2026",
+      link: "/changelog/5-june-2026",
       items: [
-        { text: "1 May 2026", link: "/changelog/1-may-2026" },
+        { text: "5 June 2026", link: "/changelog/5-june-2026" },
         { text: "28 March 2026", link: "/changelog/28-march-2026" },
         { text: "18 February 2026", link: "/changelog/18-february-2026" },
         { text: "31 January 2026", link: "/changelog/31-january-2026" },

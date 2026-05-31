@@ -108,11 +108,11 @@ export function BlitzTroopMovementTable() {
           </div>
           <div style={listItemStyle}>
             <span style={listLabelStyle}>Stamina on Deployment</span>
-            <span style={listValueStyle}>30</span>
+            <span style={listValueStyle}>{config.troop.stamina.staminaInitial}</span>
           </div>
           <div style={listItemStyle}>
             <span style={listLabelStyle}>Stamina Gain Per Phase</span>
-            <span style={listValueStyle}>30</span>
+            <span style={listValueStyle}>{config.troop.stamina.staminaGainPerTick}</span>
           </div>
           <div style={listItemStyle}>
             <span style={listLabelStyle}>Travel Stamina Cost</span>
