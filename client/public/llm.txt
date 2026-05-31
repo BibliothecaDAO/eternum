@@ -884,7 +884,7 @@ meta: {
 ### Combat v3
 
 * Crossbowmen now have a distinct ranged role: they can attack from **2 hexes away**, while Knights and Paladins remain adjacent-only.
-* Range-2 Crossbowman attacks are ranged pokes: **70%** damage into field armies, **30%** damage into structure guards, biome damage modifiers still apply, no defender counter-damage, shorter battle timers, and no normal damage-ratio refunds.
+* Range-2 Crossbowman attacks are ranged pokes: **70%** damage into field armies, **30%** damage into structure guards, no biome damage modifier, no defender counter-damage, shorter battle timers, and no normal damage-ratio refunds.
 * Range-2 Crossbowman attacks cost **50 stamina** for the attacker and **20 stamina** for the defender. Range-1 combat remains **50 stamina** for the attacker and **40 stamina** for the defender.
 * Ranged attacks can clear structure guards, but structures still require adjacency to claim.
 * Knights now specialize in structure combat: **+15%** damage when assaulting structure guards from adjacent range, and Knight guards take **15% reduced incoming damage** while defending structures.
@@ -4025,7 +4025,7 @@ receive a **30% damage penalty** during that combat round.
 
 Crossbowmen can also attack targets from 2 hexes away. These ranged attacks still require the attacking army to spend
 **50 stamina**, but the target only spends **20 stamina** and deals no counter-damage. Ranged attacks use shorter battle
-timers, still apply biome damage modifiers, and deal reduced damage: **70%** against field armies and **30%** against
+timers, ignore biome damage modifiers, and deal reduced damage: **70%** against field armies and **30%** against
 structure guards. Adjacent Crossbowman attacks remain normal range-1 combat.
 
 ## Biomes (Combat Effects)

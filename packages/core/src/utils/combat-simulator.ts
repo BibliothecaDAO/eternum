@@ -147,8 +147,11 @@ export class CombatSimulator {
     battleBiome: BiomeType,
     context: CombatSimulationContext,
   ): number {
-    // Biome modifiers are kept for army combat, including ranged crossbow pokes. Mirrors the
-    // contract's _attacker_biome_damage_bonus; the ranged reduction is applied separately.
+    // Range-2 attacks ignore biome damage modifiers; mirrors the contract's _attacker_biome_damage_bonus.
+    if (this.isRangedAttack(context)) {
+      return 1;
+    }
+
     return configManager.getBiomeCombatBonus(attacker.troopType, context.attackerBiome ?? battleBiome);
   }
 
