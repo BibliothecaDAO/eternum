@@ -210,12 +210,18 @@ export class CombatSimulator {
     return currentStamina - staminaCost;
   }
 
+  private getRangedDefenseStaminaCost(): number {
+    return Math.ceil(this.staminaDefenseThreshold / 2);
+  }
+
   public calculateNewStaminaDefender(
     currentStamina: number,
     refundMultiplier: number,
     context: CombatSimulationContext = {},
   ): number {
-    if (this.isRangedAttack(context)) return currentStamina;
+    if (this.isRangedAttack(context)) {
+      return currentStamina - Math.min(currentStamina, this.getRangedDefenseStaminaCost());
+    }
 
     const staminaCost = this.calculateStaminaCost(this.staminaDefenseThreshold, refundMultiplier);
     return currentStamina - staminaCost;
@@ -384,8 +390,8 @@ export class CombatSimulator {
       t1_damage_value: 1844674407370955161600n, // 100
       t2_damage_multiplier: 55340232221128654848n, // 3
       t3_damage_multiplier: 166020696663385964544n, // 9
-      stamina_attack_req: 40,
-      stamina_defense_req: 20,
+      stamina_attack_req: 50,
+      stamina_defense_req: 40,
       tick_interval_seconds: 60,
     };
   }

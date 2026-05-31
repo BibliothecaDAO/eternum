@@ -105,12 +105,12 @@ describe("CombatSimulator Combat v3 context", () => {
     expect(guard.attackerDamage).toBeCloseTo(field.attackerDamage * 0.85);
   });
 
-  it("does not drain defender stamina and halves both battle timers for ranged attacks", () => {
+  it("uses reduced defender stamina and halves both battle timers for ranged attacks", () => {
     const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
     const context = { attackDistance: 2 };
 
-    expect(simulator.calculateNewStaminaAttacker(100, 1, context)).toBe(60);
-    expect(simulator.calculateNewStaminaDefender(100, 1, context)).toBe(100);
+    expect(simulator.calculateNewStaminaAttacker(100, 1, context)).toBe(50);
+    expect(simulator.calculateNewStaminaDefender(100, 1, context)).toBe(80);
     expect(simulator.calculateNewCooldownEndAttacker(0, 1_000, 1, context)).toBe(1_030);
     expect(simulator.calculateNewCooldownEndDefender(0, 1_000, 1, context)).toBe(1_030);
   });
@@ -120,7 +120,7 @@ describe("CombatSimulator Combat v3 context", () => {
 
     expect(Number(params.t2_damage_multiplier) / Number(CombatSimulator.MAX_U64)).toBe(3);
     expect(Number(params.t3_damage_multiplier) / Number(CombatSimulator.MAX_U64)).toBe(9);
-    expect(params.stamina_attack_req).toBe(40);
-    expect(params.stamina_defense_req).toBe(20);
+    expect(params.stamina_attack_req).toBe(50);
+    expect(params.stamina_defense_req).toBe(40);
   });
 });

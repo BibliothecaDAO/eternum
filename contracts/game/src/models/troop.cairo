@@ -761,12 +761,14 @@ pub impl TroopsImpl of TroopsTrait {
 
         // calculate bravo's stamina based damage penalty
         let mut BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER: Fixed = 1_u8.into();
-        let mut BRAVO_STAMINA_LOSS: u128 = core::cmp::min(
-            bravo.stamina.amount.into(), troop_stamina_config.stamina_defense_req.into(),
-        );
-        if is_ranged_attack {
-            BRAVO_STAMINA_LOSS = 0;
-        } else if BRAVO_STAMINA_LOSS < troop_stamina_config.stamina_defense_req.into() {
+        let ranged_defense_stamina_req = troop_stamina_config.stamina_defense_req / 2;
+        let defender_stamina_req = if is_ranged_attack {
+            ranged_defense_stamina_req
+        } else {
+            troop_stamina_config.stamina_defense_req
+        };
+        let mut BRAVO_STAMINA_LOSS: u128 = core::cmp::min(bravo.stamina.amount.into(), defender_stamina_req.into());
+        if !is_ranged_attack && BRAVO_STAMINA_LOSS < defender_stamina_req.into() {
             BRAVO_STAMINA_BONUS_DAMAGE_MULTIPLIER = FixedTrait::new(7, false) / FixedTrait::new(10, false); // 0.7
         }
 
@@ -858,7 +860,7 @@ pub impl TroopsImpl of TroopsTrait {
                 ALPHA_DAMAGE_DEALT.round().try_into().unwrap() * RESOURCE_PRECISION,
                 0,
                 ALPHA_STAMINA_LOSS.try_into().unwrap(),
-                0,
+                BRAVO_STAMINA_LOSS.try_into().unwrap(),
             );
         }
 
@@ -997,14 +999,14 @@ mod tests {
 
     fn TROOP_STAMINA_CONFIG() -> TroopStaminaConfig {
         TroopStaminaConfig {
-            stamina_gain_per_tick: 20,
+            stamina_gain_per_tick: 30,
             stamina_initial: 20,
-            stamina_bonus_value: 20, // stamina biome bonus (defaults to stamina per tick)
+            stamina_bonus_value: 10, // flat bonus stamina from biome advantage
             stamina_knight_max: KNIGHT_MAX_STAMINA,
             stamina_paladin_max: PALADIN_MAX_STAMINA,
             stamina_crossbowman_max: CROSSBOWMAN_MAX_STAMINA,
-            stamina_attack_req: 40,
-            stamina_defense_req: 20,
+            stamina_attack_req: 50,
+            stamina_defense_req: 40,
             stamina_explore_wheat_cost: 780,
             stamina_explore_fish_cost: 440,
             stamina_explore_stamina_cost: 30, // 30 stamina per hex
@@ -1127,7 +1129,7 @@ mod tests {
 
         assert!(ranged_bravo.count > adjacent_bravo.count, "Ranged field attack should deal reduced damage");
         assert!(ranged_alpha.count == 1_000 * RESOURCE_PRECISION, "Ranged defender should not counter-damage attacker");
-        assert!(ranged_bravo.stamina.amount == 100, "Ranged defender should not spend defensive stamina");
+        assert!(ranged_bravo.stamina.amount == 80, "Ranged defender should spend reduced defensive stamina");
     }
 
     #[test]

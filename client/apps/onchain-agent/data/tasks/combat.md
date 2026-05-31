@@ -33,9 +33,9 @@ autoload: false
 
 | Action                        | What It Does                                    | Stamina Cost             |
 | ----------------------------- | ----------------------------------------------- | ------------------------ |
-| `attack_explorer_vs_explorer` | Army vs army — strength-based, steal on victory | 40 attacker, 20 defender |
-| `attack_explorer_vs_guard`    | Army vs structure guard — capture on victory    | 40 attacker, 20 defender |
-| `attack_guard_vs_explorer`    | Guard attacks nearby army — defensive action    | 40 attacker, 20 defender |
+| `attack_explorer_vs_explorer` | Army vs army — strength-based, steal on victory | 50 attacker, 40 defender |
+| `attack_explorer_vs_guard`    | Army vs structure guard — capture on victory    | 50 attacker, 40 defender |
+| `attack_guard_vs_explorer`    | Guard attacks nearby army — defensive action    | 50 attacker, 40 defender |
 | `raid_explorer_vs_guard`      | Steal resources without destroying guard        | 30                       |
 
 - Combat resolution is instant (onchain)
@@ -66,11 +66,11 @@ Guard slot names depend on structure level:
 
 ## Stamina
 
-- Armies have 0-120 stamina, regenerates +20 per phase (every ~1 minute in Blitz)
+- Armies have 0-120 stamina, regenerates +30 per phase (every ~1 minute in Blitz)
 - Travel (explored tiles): ~10 stamina/hex
 - Explore (new tiles): 30 stamina/hex (minimum 10 troops required)
-- Range-1 combat: 40 attacker, 20 defender
-- Range-2 Crossbow attacks: attacker pays 40 stamina; defender pays 0 stamina and deals no counter-damage
+- Range-1 combat: 50 attacker, 40 defender
+- Range-2 Crossbow attacks: attacker pays 50 stamina; defender pays 20 stamina and deals no counter-damage
 
 ## Common Errors
 

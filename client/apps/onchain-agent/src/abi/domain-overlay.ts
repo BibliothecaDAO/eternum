@@ -264,7 +264,7 @@ function preflightExplorerMove(params: Record<string, unknown>, cachedState?: un
   const dirs = numArray(params.directions);
   const staminaNeeded = 30 * Math.max(dirs.length, 1);
   if (explorer?.stamina !== undefined && explorer.stamina < staminaNeeded) {
-    return `Explorer has ${explorer.stamina} stamina, need ${staminaNeeded} to explore. Use explore=false for traveled tiles (10 stamina/hex). Wait for regen (+20/min).`;
+    return `Explorer has ${explorer.stamina} stamina, need ${staminaNeeded} to explore. Use explore=false for traveled tiles (10 stamina/hex). Wait for regen (+30/min).`;
   }
   return null;
 }
