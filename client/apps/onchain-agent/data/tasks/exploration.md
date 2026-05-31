@@ -58,7 +58,7 @@ The tick prompt and `inspect_explorer` tool show neighbor tiles around each army
 - `"one of the tiles in path is not explored"` — the pathfinder handles this automatically with `move_to`
 - `"one of the tiles in path is occupied"` — another army blocking the path, reroute
 - `"explorer can only move one direction when exploring"` — `move_to` handles this (1 explore hex at a time)
-- Insufficient stamina — wait for regeneration (+20 per phase) or use a different explorer
+- Insufficient stamina — wait for regeneration (+30 per phase) or use a different explorer
 
 ## Active Exploration Tasks
 

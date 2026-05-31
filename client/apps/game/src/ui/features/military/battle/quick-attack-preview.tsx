@@ -30,7 +30,8 @@ import { useAttackTargetData } from "./hooks/use-attack-target";
 import { TargetType } from "./types";
 
 import {
-  getDirectionBetweenAdjacentHexes,
+  getHexDistance,
+  getTroopAttackRange,
   RESOURCE_PRECISION,
   TickIds,
   type ActorType,
@@ -146,15 +147,25 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       : [];
   }, [attackerType, attacker.id, Structure]);
 
+  const targetDistance = useMemo(() => {
+    if (!selectedHex) return Infinity;
+    return getHexDistance(selectedHex, { col: target.hex.x, row: target.hex.y });
+  }, [selectedHex, target.hex.x, target.hex.y]);
+
+  const eligibleStructureGuards = useMemo(() => {
+    return structureGuards.filter((guard) => getTroopAttackRange(guard.troops.category) >= targetDistance);
+  }, [structureGuards, targetDistance]);
+
+  const activeGuard = attackerType === AttackerType.Structure ? eligibleStructureGuards[0] : undefined;
+
   const attackerStamina = useMemo(() => {
     if (attackerType === AttackerType.Structure) {
-      const activeGuard = structureGuards[0];
       if (!activeGuard || !activeGuard.troops.stamina) return 0n;
       return StaminaManager.getStamina(activeGuard.troops, currentArmiesTick).amount;
     }
 
     return new StaminaManager(components, attacker.id).getStamina(currentArmiesTick).amount;
-  }, [attackerType, structureGuards, components, attacker.id, currentArmiesTick]);
+  }, [attackerType, activeGuard, components, attacker.id, currentArmiesTick]);
 
   const attackerStaminaValue = Number(attackerStamina);
   const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
@@ -182,10 +193,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
     if (attackerType === AttackerType.Structure) {
-      const guard = structureGuards[0];
-      if (!guard) return null;
+      if (!activeGuard) return null;
       return {
-        troops: buildProjectedTroopSnapshot(guard.troops, {
+        troops: buildProjectedTroopSnapshot(activeGuard.troops, {
           amount: attackerStamina,
           updated_tick: BigInt(currentArmiesTick),
         }),
@@ -201,7 +211,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           }),
         }
       : null;
-  }, [ExplorerTroops, attacker.id, attackerStamina, attackerType, currentArmiesTick, structureGuards]);
+  }, [ExplorerTroops, activeGuard, attacker.id, attackerStamina, attackerType, currentArmiesTick]);
 
   const targetTroopSnapshots = useMemo(() => {
     if (!targetData?.info) return [];
@@ -222,6 +232,16 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
   const hasQueuedGuards = totalGuardCount > 1;
+  const hasDefenders = !!targetArmyData;
+
+  const combatSimulationContext = useMemo(
+    () => ({
+      attackDistance: targetDistance,
+      attackerIsStructureGuard: attackerType === AttackerType.Structure,
+      defenderIsStructureGuard: isStructureTarget,
+    }),
+    [attackerType, isStructureTarget, targetDistance],
+  );
 
   const battleSimulation = useMemo(() => {
     if (!attackerArmyData) return null;
@@ -254,6 +274,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       biome,
       attackerRelicResourceIds,
       targetRelicResourceIds,
+      combatSimulationContext,
     );
   }, [
     attacker,
@@ -264,6 +285,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     combatSimulator,
     attackerRelicResourceIds,
     targetRelicResourceIds,
+    combatSimulationContext,
     attackerStamina,
   ]);
 
@@ -287,7 +309,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const attackerCooldownRemaining = Math.max(0, attackerCooldownEnd - currentTime);
   const attackerOnCooldown = attackerCooldownRemaining > 0;
 
-  const hasDefenders = !!targetArmyData;
   const attackStaminaState = useMemo(
     () =>
       resolveAttackStaminaState({
@@ -299,11 +320,15 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     [attackerArmyData, attackerStamina, hasDefenders, requiredAttackStamina],
   );
   const cooldownBlocksAttack = hasDefenders && attackerOnCooldown;
-  const attackDisabled = cooldownBlocksAttack || attackStaminaState.isBlocked || !attackerArmyData;
+  const rangedClaimBlocked = !hasDefenders && isStructureTarget && targetDistance > 1;
+  const attackDisabled =
+    rangedClaimBlocked || cooldownBlocksAttack || attackStaminaState.isBlocked || !attackerArmyData;
 
   const isLowStamina = attackStaminaState.isBlocked;
 
   const attackButtonLabel = (() => {
+    if (rangedClaimBlocked) return "Move adjacent to claim";
+    if (attackerType === AttackerType.Structure && !activeGuard) return "No guard in range";
     if (!attackerArmyData) return "No troops selected";
     if (cooldownBlocksAttack) return "On cooldown";
     if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
@@ -355,9 +380,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       });
 
       if (attackerType === AttackerType.Structure) {
-        const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-        const guardSlot = structureGuards[0]?.slot;
-        if (direction === null || guardSlot === undefined) return;
+        const guardSlot = activeGuard?.slot;
+        if (guardSlot === undefined) return;
 
         playUnitCommandSound("attack");
         await attack_guard_vs_explorer({
@@ -365,30 +389,21 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           structure_id: attacker.id,
           structure_guard_slot: guardSlot,
           explorer_id: targetData.id,
-          explorer_direction: direction,
         });
       } else if (targetData.targetType === TargetType.Army) {
-        const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-        if (direction === null) return;
-
         playUnitCommandSound("attack");
         await attack_explorer_vs_explorer({
           signer: account,
           aggressor_id: attacker.id,
           defender_id: targetData.id,
-          defender_direction: direction,
           steal_resources: targetResources,
         });
       } else {
-        const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-        if (direction === null) return;
-
         playUnitCommandSound("attack");
         await attack_explorer_vs_guard({
           signer: account,
           explorer_id: attacker.id,
           structure_id: targetData.id,
-          structure_direction: direction,
         });
       }
 
@@ -491,7 +506,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
             </>
           ) : (
             <div className="rounded-md border border-emerald-500/40 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
-              No defending troops. You can claim without resistance.
+              {rangedClaimBlocked
+                ? "No defending troops. Move adjacent to claim this structure."
+                : "No defending troops. You can claim without resistance."}
             </div>
           )}
 
@@ -534,7 +551,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           forceUppercase={false}
           className="px-3 py-1 text-xs tracking-wide"
         >
-          {hasDefenders ? "Attack" : "Claim"}
+          {hasDefenders ? "Attack" : attackButtonLabel}
         </Button>
         <Button
           variant="outline"

@@ -4,7 +4,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import ControllerConnector from "@cartridge/connector/controller";
 import { useAccount } from "@starknet-react/core";
 import { AccountInterface } from "starknet";
-import { isSessionPolicyRefreshInProgress } from "./session-policy-refresh";
+import { isSessionPolicyRefreshInProgress } from "./session-policy-refresh-state";
 
 export const useControllerAccount = () => {
   const { account, connector, isConnected } = useAccount();

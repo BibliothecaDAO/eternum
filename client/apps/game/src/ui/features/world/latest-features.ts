@@ -22,6 +22,22 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-28",
+    title: "Combat v3 Ranged Attacks",
+    description:
+      "Crossbowmen can attack from two hexes with reduced ranged damage, Knights are stronger around structure guards, and structures must still be claimed from an adjacent hex.",
+    type: "balance",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-26",
+    title: "Faster Dashboard Loading",
+    description:
+      "Improved the dashboard startup path so game routes, manifests, generated configs, and large background images load only when the selected view needs them.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-26",
     title: "Unit Creation Ghosts",
     description:

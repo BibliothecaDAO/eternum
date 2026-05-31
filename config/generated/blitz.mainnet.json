@@ -980,7 +980,7 @@
       "damageDelta": "922337203685477580800000"
     },
     "stamina": {
-      "staminaGainPerTick": 20,
+      "staminaGainPerTick": 30,
       "staminaInitial": 20,
       "staminaBonusValue": 10,
       "staminaKnightMax": 120,
@@ -12470,10 +12470,6 @@
                       "type": "core::integer::u32"
                     },
                     {
-                      "name": "defender_direction",
-                      "type": "s1_eternum::models::position::Direction"
-                    },
-                    {
                       "name": "steal_resources",
                       "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                     }
@@ -12492,10 +12488,6 @@
                     {
                       "name": "structure_id",
                       "type": "core::integer::u32"
-                    },
-                    {
-                      "name": "structure_direction",
-                      "type": "s1_eternum::models::position::Direction"
                     }
                   ],
                   "outputs": [],
@@ -12516,10 +12508,6 @@
                     {
                       "name": "explorer_id",
                       "type": "core::integer::u32"
-                    },
-                    {
-                      "name": "explorer_direction",
-                      "type": "s1_eternum::models::position::Direction"
                     }
                   ],
                   "outputs": [],
@@ -12645,7 +12633,7 @@
         },
         {
           "address": "0x5ad4980bc92fdefe1a70af74832d6f5cb801b51ff685192ae5d7b847ca33148",
-          "class_hash": "0x35ddf5097172c34ff5c7ff610f87566033ccd2fbc4a76ff32f039e1a599be32",
+          "class_hash": "0x33ec9e78fbc6ec868cf0e94328dca9a948b7760e585a3e8f3690a9d98594304",
           "init_calldata": [],
           "tag": "s1_eternum-troop_management_systems",
           "selector": "0x49b9809fc3839b4eb765c5d1db1d1a835678574e42bf24bf70235cecf2f8437",
@@ -29502,10 +29490,6 @@
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "defender_direction",
-                  "type": "eternum::models::position::Direction"
-                },
-                {
                   "name": "steal_resources",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
@@ -29524,10 +29508,6 @@
                 {
                   "name": "structure_id",
                   "type": "core::integer::u32"
-                },
-                {
-                  "name": "structure_direction",
-                  "type": "eternum::models::position::Direction"
                 }
               ],
               "outputs": [],
@@ -29548,10 +29528,6 @@
                 {
                   "name": "explorer_id",
                   "type": "core::integer::u32"
-                },
-                {
-                  "name": "explorer_direction",
-                  "type": "eternum::models::position::Direction"
                 }
               ],
               "outputs": [],

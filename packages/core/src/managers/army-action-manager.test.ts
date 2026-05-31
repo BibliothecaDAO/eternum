@@ -1,6 +1,7 @@
 import {
   BiomeType,
   getDirectionBetweenAdjacentHexes,
+  getHexesWithinRadius,
   getNeighborHexes,
   type HexEntityInfo,
   type HexPosition,
@@ -321,6 +322,68 @@ describe("ArmyActionManager.findActionPaths origin precedence", () => {
     );
 
     expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(targetHex)) ?? [])).toBe(ActionType.Attack);
+  });
+
+  it("adds radius-two attack paths for crossbowman armies", () => {
+    const { manager, components, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } =
+      createTestSetup();
+    const adjacentKeys = new Set(
+      getNeighborHexes(oldFeltStart.col, oldFeltStart.row).map((hex) => ActionPaths.posKey(hex)),
+    );
+    const targetHex = getHexesWithinRadius(oldFeltStart.col, oldFeltStart.row, 2).find(
+      (hex) => !adjacentKeys.has(ActionPaths.posKey(hex)),
+    )!;
+
+    components.ExplorerTroops.get(TEST_ENTITY_ID.toString())!.troops.category = TroopType.Crossbowman;
+    setNestedMapValue(armyHexes, targetHex.col - TEST_FELT_CENTER, targetHex.row - TEST_FELT_CENTER, {
+      owner: 0x999n,
+    } as HexEntityInfo);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
+      amount: 5n,
+      updated_tick: 0n,
+    } as any);
+
+    const actionPaths = manager.findActionPaths(
+      structureHexes,
+      armyHexes,
+      exploredHexes,
+      chestHexes,
+      0,
+      0,
+      0x123n as any,
+    );
+
+    expect(ActionPaths.getActionType(actionPaths.get(ActionPaths.posKey(targetHex)) ?? [])).toBe(ActionType.Attack);
+  });
+
+  it("does not add radius-two attack paths for non-ranged armies", () => {
+    const { manager, structureHexes, armyHexes, exploredHexes, chestHexes, oldFeltStart } = createTestSetup();
+    const adjacentKeys = new Set(
+      getNeighborHexes(oldFeltStart.col, oldFeltStart.row).map((hex) => ActionPaths.posKey(hex)),
+    );
+    const targetHex = getHexesWithinRadius(oldFeltStart.col, oldFeltStart.row, 2).find(
+      (hex) => !adjacentKeys.has(ActionPaths.posKey(hex)),
+    )!;
+
+    setNestedMapValue(armyHexes, targetHex.col - TEST_FELT_CENTER, targetHex.row - TEST_FELT_CENTER, {
+      owner: 0x999n,
+    } as HexEntityInfo);
+    vi.mocked(StaminaManager.prototype.getStamina).mockReturnValue({
+      amount: 5n,
+      updated_tick: 0n,
+    } as any);
+
+    const actionPaths = manager.findActionPaths(
+      structureHexes,
+      armyHexes,
+      exploredHexes,
+      chestHexes,
+      0,
+      0,
+      0x123n as any,
+    );
+
+    expect(actionPaths.get(ActionPaths.posKey(targetHex))).toBeUndefined();
   });
 });
 

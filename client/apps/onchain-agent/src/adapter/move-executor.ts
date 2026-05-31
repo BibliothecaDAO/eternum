@@ -104,7 +104,7 @@ export async function moveExplorer(
       pathResult,
       success: false,
       steps: [],
-      summary: `Insufficient stamina: ${explorer.stamina} available, ${pathResult.totalCost} needed. Wait for regeneration (+20/min).`,
+      summary: `Insufficient stamina: ${explorer.stamina} available, ${pathResult.totalCost} needed. Wait for regeneration (+30/min).`,
     };
   }
 

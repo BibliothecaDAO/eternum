@@ -620,7 +620,7 @@ pub mod troop_management_systems {
             );
 
             // ensure troops belong to owner structure
-            assert!(from_explorer.owner == to_structure_id, "explorer must belong to the same structure");
+            // assert!(from_explorer.owner == to_structure_id, "explorer must belong to the same structure");
 
             // if target is a village, ensure explorer belongs to same village or master realm
             // if to_structure_base.category == StructureCategory::Village.into() {

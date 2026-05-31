@@ -1,21 +1,12 @@
 use crate::alias::ID;
-use crate::models::position::Direction;
 use crate::models::troop::GuardSlot;
 
 
 #[starknet::interface]
 pub trait ITroopBattleSystems<T> {
-    fn attack_explorer_vs_explorer(
-        ref self: T,
-        aggressor_id: ID,
-        defender_id: ID,
-        defender_direction: Direction,
-        steal_resources: Span<(u8, u128)>,
-    );
-    fn attack_explorer_vs_guard(ref self: T, explorer_id: ID, structure_id: ID, structure_direction: Direction);
-    fn attack_guard_vs_explorer(
-        ref self: T, structure_id: ID, structure_guard_slot: GuardSlot, explorer_id: ID, explorer_direction: Direction,
-    );
+    fn attack_explorer_vs_explorer(ref self: T, aggressor_id: ID, defender_id: ID, steal_resources: Span<(u8, u128)>);
+    fn attack_explorer_vs_guard(ref self: T, explorer_id: ID, structure_id: ID);
+    fn attack_guard_vs_explorer(ref self: T, structure_id: ID, structure_guard_slot: GuardSlot, explorer_id: ID);
 }
 
 
@@ -33,14 +24,14 @@ pub mod troop_battle_systems {
     };
     use crate::models::events::{BattleStory, BattleStructureType, BattleType, Story, StoryEvent};
     use crate::models::owner::OwnerAddressTrait;
-    use crate::models::position::{Coord, CoordTrait, Direction, TravelTrait};
+    use crate::models::position::{Coord, CoordTrait, TravelTrait};
     use crate::models::resource::resource::{ResourceWeightImpl, SingleResourceStoreImpl, WeightStoreImpl};
     use crate::models::stamina::StaminaImpl;
     use crate::models::structure::{
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
-    use crate::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl};
+    use crate::models::troop::{CombatContext, ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl};
     use crate::models::weight::Weight;
     use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
     use crate::system_libraries::combat_library::{ICombatLibraryDispatcherTrait, combat_library};
@@ -71,13 +62,50 @@ pub mod troop_battle_systems {
         timestamp: u64,
     }
 
+    fn is_target_within_attack_range(attacker_coord: Coord, defender_coord: Coord, attack_range: u32) -> bool {
+        if attacker_coord.alt != defender_coord.alt {
+            return false;
+        }
+
+        let tile_distance = attacker_coord.tile_distance(defender_coord);
+        let max_tile_distance: u128 = (attack_range * attacker_coord.step_distance()).into();
+        tile_distance > 0 && tile_distance <= max_tile_distance
+    }
+
+    fn combat_distance(attacker_coord: Coord, defender_coord: Coord) -> u32 {
+        if attacker_coord.alt != defender_coord.alt {
+            return 1;
+        }
+
+        let step_distance: u128 = attacker_coord.step_distance().into();
+        let tile_distance = attacker_coord.tile_distance(defender_coord);
+        (tile_distance / step_distance).try_into().unwrap()
+    }
+
+    fn combat_context(
+        attacker_coord: Coord,
+        defender_coord: Coord,
+        defender_biome: Biome,
+        attacker_is_structure_guard: bool,
+        defender_is_structure_guard: bool,
+    ) -> CombatContext {
+        CombatContext {
+            attacker_biome: defender_biome,
+            defender_biome,
+            attack_distance: combat_distance(attacker_coord, defender_coord),
+            attacker_is_structure_guard,
+            defender_is_structure_guard,
+        }
+    }
+
     /// Check if two explorers are in valid battle position.
     /// - Same layer: must be adjacent (normal hex adjacency)
     /// - Different layers: must be at same (x,y) coordinate AND aggressor must be adjacent to a spire
-    fn is_explorer_battle_adjacent(ref world: WorldStorage, aggressor: Coord, defender: Coord) -> bool {
+    fn is_explorer_battle_in_range(
+        ref world: WorldStorage, aggressor: Coord, defender: Coord, attack_range: u32,
+    ) -> bool {
         if aggressor.alt == defender.alt {
-            // Same layer - normal adjacency check
-            aggressor.is_adjacent(defender)
+            is_target_within_attack_range(aggressor, defender, attack_range)
         } else {
             // Different layers - must be at same coordinates and aggressor must be adjacent to a spire
             aggressor.x == defender.x
@@ -90,11 +118,7 @@ pub mod troop_battle_systems {
     #[abi(embed_v0)]
     pub impl TroopBattleSystemsImpl of super::ITroopBattleSystems<ContractState> {
         fn attack_explorer_vs_explorer(
-            ref self: ContractState,
-            aggressor_id: ID,
-            defender_id: ID,
-            defender_direction: Direction,
-            steal_resources: Span<(u8, u128)>,
+            ref self: ContractState, aggressor_id: ID, defender_id: ID, steal_resources: Span<(u8, u128)>,
         ) {
             let mut world = self.world(DEFAULT_NS());
 
@@ -143,10 +167,15 @@ pub mod troop_battle_systems {
             let mut explorer_defender: ExplorerTroops = world.read_model(defender_id);
             assert!(explorer_defender.troops.count.is_non_zero(), "defender has no troops");
 
-            // ensure both explorers are adjacent to each other
+            // ensure both explorers are in attack range
             assert!(
-                is_explorer_battle_adjacent(ref world, explorer_aggressor.coord, explorer_defender.coord),
-                "explorers are not adjacent",
+                is_explorer_battle_in_range(
+                    ref world,
+                    explorer_aggressor.coord,
+                    explorer_defender.coord,
+                    explorer_aggressor.troops.attack_range(),
+                ),
+                "explorers are out of range",
             );
 
             // aggressor attacks defender
@@ -167,7 +196,7 @@ pub mod troop_battle_systems {
                 .troops_attack(
                     explorer_aggressor_troops,
                     explorer_defender_troops,
-                    defender_biome,
+                    combat_context(explorer_aggressor.coord, explorer_defender.coord, defender_biome, false, false),
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
@@ -373,9 +402,7 @@ pub mod troop_battle_systems {
         }
 
 
-        fn attack_explorer_vs_guard(
-            ref self: ContractState, explorer_id: ID, structure_id: ID, structure_direction: Direction,
-        ) {
+        fn attack_explorer_vs_guard(ref self: ContractState, explorer_id: ID, structure_id: ID) {
             let mut world = self.world(DEFAULT_NS());
 
             // ensure season is open
@@ -419,9 +446,14 @@ pub mod troop_battle_systems {
             // ensure defender is not cloaked
             guarded_structure.assert_not_cloaked(battle_config, tick, season_config);
 
-            // ensure explorer is adjacent to structure
-            let battle_location = explorer_aggressor.coord.neighbor(structure_direction);
-            assert!(battle_location == guarded_structure.coord(), "explorer is not adjacent to structure");
+            // ensure explorer is in attack range of structure
+            let battle_location = guarded_structure.coord();
+            assert!(
+                is_target_within_attack_range(
+                    explorer_aggressor.coord, battle_location, explorer_aggressor.troops.attack_range(),
+                ),
+                "structure is out of range",
+            );
 
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
 
@@ -432,6 +464,10 @@ pub mod troop_battle_systems {
 
             // claim structure if there are no guard troops. it is tried again after the attack
             if guard_slot.is_none() {
+                assert!(
+                    explorer_aggressor.coord.is_adjacent(guarded_structure.coord()),
+                    "structure claim requires adjacency",
+                );
                 explorer_aggressor
                     .troops
                     .stamina
@@ -477,7 +513,7 @@ pub mod troop_battle_systems {
                 .troops_attack(
                     explorer_aggressor_troops,
                     guard_troops,
-                    defender_biome,
+                    combat_context(explorer_aggressor.coord, guarded_structure.coord(), defender_biome, false, true),
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
@@ -544,7 +580,7 @@ pub mod troop_battle_systems {
                 if explorer_aggressor.troops.count.is_non_zero() {
                     let guard_slot: Option<GuardSlot> = guard_defender
                         .next_attack_slot(guarded_structure.troop_max_guard_count.into());
-                    if guard_slot.is_none() {
+                    if guard_slot.is_none() && explorer_aggressor.coord.is_adjacent(guarded_structure.coord()) {
                         // claim structure
                         structure_claimed_after_battle = true;
                         iStructureImpl::battle_claim(
@@ -655,11 +691,7 @@ pub mod troop_battle_systems {
 
 
         fn attack_guard_vs_explorer(
-            ref self: ContractState,
-            structure_id: ID,
-            structure_guard_slot: GuardSlot,
-            explorer_id: ID,
-            explorer_direction: Direction,
+            ref self: ContractState, structure_id: ID, structure_guard_slot: GuardSlot, explorer_id: ID,
         ) {
             let mut world = self.world(DEFAULT_NS());
             // ensure season is open
@@ -716,9 +748,14 @@ pub mod troop_battle_systems {
                 explorer_defender_structure.assert_not_cloaked(battle_config, tick, season_config);
             }
 
-            // ensure structure is adjacent to explorer
-            let battle_location = structure_aggressor_base.coord().neighbor(explorer_direction);
-            assert!(explorer_defender.coord == battle_location, "structure is not adjacent to explorer");
+            // ensure structure guard is in attack range of explorer
+            let battle_location = explorer_defender.coord;
+            assert!(
+                is_target_within_attack_range(
+                    structure_aggressor_base.coord(), battle_location, structure_guard_aggressor_troops.attack_range(),
+                ),
+                "explorer is out of range",
+            );
 
             // aggressor attacks defender
             let biome_library = biome_library::get_dispatcher(@world);
@@ -737,7 +774,9 @@ pub mod troop_battle_systems {
                 .troops_attack(
                     structure_guard_aggressor_troops,
                     explorer_defender_troops,
-                    defender_biome,
+                    combat_context(
+                        structure_aggressor_base.coord(), explorer_defender.coord, defender_biome, true, false,
+                    ),
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
@@ -805,7 +844,7 @@ pub mod troop_battle_systems {
                 if explorer_defender.troops.count.is_non_zero() {
                     let guard_slot: Option<GuardSlot> = structure_guards_aggressor
                         .next_attack_slot(structure_aggressor_base.troop_max_guard_count.into());
-                    if guard_slot.is_none() {
+                    if guard_slot.is_none() && explorer_defender.coord.is_adjacent(structure_aggressor_base.coord()) {
                         // claim structure
                         structure_claimed_after_battle = true;
                         iStructureImpl::battle_claim(

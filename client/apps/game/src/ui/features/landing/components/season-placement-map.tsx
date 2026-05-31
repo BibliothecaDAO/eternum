@@ -385,7 +385,7 @@ export const SeasonPlacementMap = ({
       )}
       <div className={cn("relative overflow-hidden rounded-lg border", mapHeightClassName, frameClass)}>
         <div
-          className="absolute inset-0 bg-[url('/images/covers/blitz/07.png')] bg-cover bg-center opacity-20"
+          className="absolute inset-0 bg-[url('/images/covers/dashboard/07.webp')] bg-cover bg-center opacity-20"
           aria-hidden
         />
         <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/45 to-black/70" aria-hidden />

@@ -34,7 +34,8 @@ import {
   ClientComponents,
   ContractAddress,
   DISPLAYED_SLOT_NUMBER_MAP,
-  getDirectionBetweenAdjacentHexes,
+  getHexDistance,
+  getTroopAttackRange,
   ID,
   RelicEffectWithEndTick,
   RESOURCE_PRECISION,
@@ -46,7 +47,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import Users from "lucide-react/dist/esm/icons/users";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { GuardStaminaBar } from "../components/guard-stamina-bar";
 import { getGuardStaminaSnapshot } from "../utils/guard-stamina";
@@ -174,6 +175,27 @@ export const CombatContainer = ({
       : [];
   }, [attackerType, attackerEntityId, Structure]);
 
+  const targetDistance = useMemo(() => {
+    if (!selectedHex) return Infinity;
+    return getHexDistance(selectedHex, { col: target.hex.x, row: target.hex.y });
+  }, [selectedHex, target.hex.x, target.hex.y]);
+
+  const eligibleStructureGuards = useMemo(() => {
+    return structureGuards.filter((guard) => getTroopAttackRange(guard.troops.category) >= targetDistance);
+  }, [structureGuards, targetDistance]);
+
+  const selectedGuard = useMemo(() => {
+    if (attackerType !== AttackerType.Structure || selectedGuardSlot === null) return null;
+    return eligibleStructureGuards.find((guard) => guard.slot === selectedGuardSlot) ?? null;
+  }, [attackerType, eligibleStructureGuards, selectedGuardSlot]);
+
+  useEffect(() => {
+    if (attackerType !== AttackerType.Structure) return;
+    if (selectedGuard) return;
+
+    setSelectedGuardSlot(eligibleStructureGuards[0]?.slot ?? null);
+  }, [attackerType, eligibleStructureGuards, selectedGuard]);
+
   // Convert relic effects to resource IDs
   const attackerRelicResourceIds = useMemo(() => {
     return attackerActiveRelicEffects.map((effect) => Number(effect.id)) as ResourcesIds[];
@@ -192,34 +214,18 @@ export const CombatContainer = ({
 
   const attackerStamina = useMemo(() => {
     if (attackerType === AttackerType.Structure) {
-      if (selectedGuardSlot === null && structureGuards.length > 0) {
-        // Auto-select the first guard if none is selected
-        setSelectedGuardSlot(structureGuards[0].slot);
-
-        // For structure guards, we need to calculate stamina differently
-        const guard = structureGuards[0];
-        if (!guard.troops.stamina) return 0n;
-
-        const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentArmiesTick);
-        return BigInt(Math.floor(staminaSnapshot?.current ?? Number(guard.troops.stamina.amount ?? 0n)));
-      } else if (selectedGuardSlot !== null) {
-        const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
-        if (selectedGuard && selectedGuard.troops.stamina) {
-          const staminaSnapshot = getGuardStaminaSnapshot(selectedGuard.troops, currentArmiesTick);
-          return BigInt(Math.floor(staminaSnapshot?.current ?? Number(selectedGuard.troops.stamina.amount ?? 0n)));
-        }
+      if (selectedGuard?.troops.stamina) {
+        const staminaSnapshot = getGuardStaminaSnapshot(selectedGuard.troops, currentArmiesTick);
+        return BigInt(Math.floor(staminaSnapshot?.current ?? Number(selectedGuard.troops.stamina.amount ?? 0n)));
       }
       return 0n;
     }
     return new StaminaManager(components, attackerEntityId).getStamina(currentArmiesTick).amount;
-  }, [attackerEntityId, attackerType, components, selectedGuardSlot, structureGuards, currentArmiesTick]);
+  }, [attackerEntityId, attackerType, components, currentArmiesTick, selectedGuard]);
 
   // Get the current army states for display
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
     if (attackerType === AttackerType.Structure) {
-      if (selectedGuardSlot === null) return null;
-
-      const selectedGuard = structureGuards.find((guard) => guard.slot === selectedGuardSlot);
       if (!selectedGuard) return null;
       const staminaSnapshot = getGuardStaminaSnapshot(selectedGuard.troops, currentArmiesTick);
       const stamina = BigInt(Math.floor(staminaSnapshot?.current ?? Number(selectedGuard.troops.stamina.amount ?? 0n)));
@@ -250,15 +256,7 @@ export const CombatContainer = ({
         }),
       };
     }
-  }, [
-    ExplorerTroops,
-    attackerEntityId,
-    attackerStamina,
-    attackerType,
-    currentArmiesTick,
-    selectedGuardSlot,
-    structureGuards,
-  ]);
+  }, [ExplorerTroops, attackerEntityId, attackerStamina, attackerType, currentArmiesTick, selectedGuard]);
 
   const targetArmyData: { troops: Troops } | null = useMemo(() => {
     if (!target?.info[0]) return null;
@@ -273,6 +271,17 @@ export const CombatContainer = ({
 
   const params = configManager.getCombatConfig();
   const combatSimulator = useMemo(() => new CombatSimulator(params), [params]);
+  const isStructureTarget = target?.targetType === TargetType.Structure;
+  const rangedClaimBlocked = isStructureTarget && !targetArmyData && targetDistance > 1;
+
+  const combatSimulationContext = useMemo(
+    () => ({
+      attackDistance: targetDistance,
+      attackerIsStructureGuard: attackerType === AttackerType.Structure,
+      defenderIsStructureGuard: isStructureTarget,
+    }),
+    [attackerType, isStructureTarget, targetDistance],
+  );
 
   // Simulate battle outcome
   const battleSimulation = useMemo(() => {
@@ -308,16 +317,33 @@ export const CombatContainer = ({
       biome,
       attackerRelicResourceIds,
       targetRelicResourceIds,
+      combatSimulationContext,
     );
 
     const attackerBaselineResult =
       attackerRelicResourceIds.length > 0
-        ? combatSimulator.simulateBattleWithParams(now, attackerArmy, defenderArmy, biome, [], targetRelicResourceIds)
+        ? combatSimulator.simulateBattleWithParams(
+            now,
+            attackerArmy,
+            defenderArmy,
+            biome,
+            [],
+            targetRelicResourceIds,
+            combatSimulationContext,
+          )
         : null;
 
     const defenderBaselineResult =
       targetRelicResourceIds.length > 0
-        ? combatSimulator.simulateBattleWithParams(now, attackerArmy, defenderArmy, biome, attackerRelicResourceIds, [])
+        ? combatSimulator.simulateBattleWithParams(
+            now,
+            attackerArmy,
+            defenderArmy,
+            biome,
+            attackerRelicResourceIds,
+            [],
+            combatSimulationContext,
+          )
         : null;
 
     const attackerTroopsLost = result.defenderDamage;
@@ -337,21 +363,25 @@ export const CombatContainer = ({
     const newAttackerStamina = combatSimulator.calculateNewStaminaAttacker(
       Number(attackerStamina),
       result.attackerRefundMultiplier,
+      combatSimulationContext,
     );
     const newDefenderStamina = combatSimulator.calculateNewStaminaDefender(
       Number(targetArmyData.troops.stamina.amount),
       result.defenderRefundMultiplier,
+      combatSimulationContext,
     );
     // Calculate what the cooldown will be AFTER the battle
-    const attackerAfterBattleCooldownEnd = combatSimulator.calculateNextBattleCooldownEnd(
+    const attackerAfterBattleCooldownEnd = combatSimulator.calculateNewCooldownEndAttacker(
       attackerArmyData.troops.battle_cooldown_end,
       now,
       result.attackerRefundMultiplier,
+      combatSimulationContext,
     );
-    const defenderAfterBattleCooldownEnd = combatSimulator.calculateNextBattleCooldownEnd(
+    const defenderAfterBattleCooldownEnd = combatSimulator.calculateNewCooldownEndDefender(
       targetArmyData.troops.battle_cooldown_end,
       now,
       result.defenderRefundMultiplier,
+      combatSimulationContext,
     );
 
     const attackerDamageBonusAbsolute = attackerBaselineResult
@@ -401,6 +431,7 @@ export const CombatContainer = ({
     combatSimulator,
     attackerRelicResourceIds,
     targetRelicResourceIds,
+    combatSimulationContext,
   ]);
 
   const remainingTroops = battleSimulation?.getRemainingTroops();
@@ -428,7 +459,7 @@ export const CombatContainer = ({
   }, [attackerArmyData, target, accountName, account.address, targetArmyData, components]);
 
   const onAttack = async () => {
-    if (!selectedHex || isAttackerOnCooldown || attackStaminaState.isBlocked) return;
+    if (!selectedHex || rangedClaimBlocked || isAttackerOnCooldown || attackStaminaState.isBlocked) return;
 
     let pendingFxKey: string | null = null;
     try {
@@ -474,14 +505,11 @@ export const CombatContainer = ({
 
   const onExplorerVsGuardAttack = async () => {
     if (!selectedHex) return;
-    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-    if (direction === null) return;
 
     await attack_explorer_vs_guard({
       signer: account,
       explorer_id: attackerEntityId,
       structure_id: target?.id || 0,
-      structure_direction: direction,
     });
   };
 
@@ -533,29 +561,23 @@ export const CombatContainer = ({
 
   const onExplorerVsExplorerAttack = async () => {
     if (!selectedHex) return;
-    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-    if (direction === null) return;
 
     await attack_explorer_vs_explorer({
       signer: account,
       aggressor_id: attackerEntityId,
       defender_id: target?.id || 0,
-      defender_direction: direction,
       steal_resources: targetResources,
     });
   };
 
   const onGuardVsExplorerAttack = async () => {
     if (!selectedHex || selectedGuardSlot === null) return;
-    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-    if (direction === null) return;
 
     await attack_guard_vs_explorer({
       signer: account,
       structure_id: attackerEntityId,
       structure_guard_slot: selectedGuardSlot,
       explorer_id: target?.id || 0,
-      explorer_direction: direction,
     });
   };
 
@@ -573,14 +595,16 @@ export const CombatContainer = ({
               const guardCategory = guard.troops.category as TroopType;
               const guardTier = guard.troops.tier as TroopTier;
               const staminaSnapshot = getGuardStaminaSnapshot(guard.troops, currentArmiesTick);
+              const isInRange = getTroopAttackRange(guard.troops.category) >= targetDistance;
 
               return (
                 <button
                   key={guard.slot}
                   onClick={() => setSelectedGuardSlot(guard.slot)}
+                  disabled={!isInRange}
                   className={`flex items-center bg-brown-900/90 border ${
                     selectedGuardSlot === guard.slot ? "border-gold bg-gold/10" : "border-gold/20"
-                  } rounded-md px-2 sm:px-3 py-1.5 sm:py-2 hover:border-gold/60 transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 min-w-0 flex-1 sm:flex-none`}
+                  } rounded-md px-2 sm:px-3 py-1.5 sm:py-2 hover:border-gold/60 transition-colors focus:outline-none focus:ring-2 focus:ring-gold/50 min-w-0 flex-1 sm:flex-none disabled:opacity-50 disabled:cursor-not-allowed`}
                   aria-pressed={selectedGuardSlot === guard.slot}
                   aria-label={`Select ${TroopType[guard.troops.category as TroopType]} ${guard.troops.tier} troops in slot ${DISPLAYED_SLOT_NUMBER_MAP[guard.slot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]}`}
                 >
@@ -627,11 +651,20 @@ export const CombatContainer = ({
   );
 
   const buttonMessage = useMemo(() => {
+    if (rangedClaimBlocked) return "Move Adjacent to Claim";
+    if (attackerType === AttackerType.Structure && eligibleStructureGuards.length === 0) return "No Eligible Guard";
     if (isAttackerOnCooldown) return "On Battle Cooldown";
     if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
     if (!attackerArmyData) return "No Troops Present";
     return attackStaminaState.actionLabel;
-  }, [attackStaminaState, attackerArmyData, isAttackerOnCooldown]);
+  }, [
+    attackStaminaState,
+    attackerArmyData,
+    attackerType,
+    eligibleStructureGuards.length,
+    isAttackerOnCooldown,
+    rangedClaimBlocked,
+  ]);
 
   const trueAttackDamage = useMemo(() => {
     if (!battleSimulation || !targetArmyData) return 0;
@@ -800,7 +833,11 @@ export const CombatContainer = ({
             <div className="text-lg sm:text-xl font-bold text-green-400 mb-2" role="status">
               No Defending Troops Present!
             </div>
-            <p className="text-gold/80 mb-4">This realm can be claimed without a battle.</p>
+            <p className="text-gold/80 mb-4">
+              {rangedClaimBlocked
+                ? "Move adjacent to claim this realm. Ranged attacks can clear guards, but cannot claim structures."
+                : "This realm can be claimed without a battle."}
+            </p>
           </div>
         </div>
       )}
@@ -816,7 +853,7 @@ export const CombatContainer = ({
           variant="primary"
           className="px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-bold text-base sm:text-lg transition-colors w-full sm:w-auto min-w-[200px]"
           isLoading={loading}
-          disabled={attackStaminaState.isBlocked || !attackerArmyData || isAttackerOnCooldown}
+          disabled={rangedClaimBlocked || attackStaminaState.isBlocked || !attackerArmyData || isAttackerOnCooldown}
           onClick={onAttack}
           aria-label={`Attack button: ${buttonMessage}`}
           aria-describedby={attackStaminaState.isBlocked ? "stamina-warning" : undefined}
