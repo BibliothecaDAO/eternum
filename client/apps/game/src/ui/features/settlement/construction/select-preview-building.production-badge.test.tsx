@@ -145,6 +145,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
   configManager: {
     complexSystemResourceInputs: {},
     complexSystemResourceOutput: {},
+    getBiome: () => 1,
     getBiomeCombatBonus: () => 1,
     getBuildingCategoryConfig: () => ({ population_cost: 0, capacity_grant: 0 }),
     getResourceBuildingProduced: (buildingType: BuildingType) =>

@@ -115,6 +115,9 @@ vi.mock("@bibliothecadao/eternum", () => {
       Biome: {
         getBiome: vi.fn(() => "NONE"),
       },
+      configManager: {
+        getBiome: vi.fn(() => "NONE"),
+      },
       FELT_CENTER: 0,
     } as Record<string, unknown>,
     {
