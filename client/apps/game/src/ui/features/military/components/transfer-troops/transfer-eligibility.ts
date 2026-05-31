@@ -31,9 +31,9 @@ export const getSameStructureTransferBlockReason = ({
   guardSlot,
 }: SameStructureTransferParams): string | null => {
   if (transferDirection === TransferDirection.ExplorerToExplorer) {
-    return idsMatch(selectedExplorerOwner, targetExplorerOwner)
-      ? null
-      : "Cannot transfer troops: Both explorers must belong to the same structure";
+    // Explorers may now be merged across different structures (and owners); the contract only
+    // requires the caller to own the source explorer, so no same-structure block applies here.
+    return null;
   }
 
   if (transferDirection !== TransferDirection.StructureToExplorer) {

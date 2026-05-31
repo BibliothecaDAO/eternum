@@ -458,8 +458,9 @@ pub mod troop_management_systems {
             let mut from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
             let mut to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
 
-            // ensure troops belong to same structure
-            assert!(from_explorer.owner == to_explorer.owner, "both explorers must belong to the same structure");
+            // explorers may belong to different structures (and different owners); the caller only
+            // needs to own the source explorer it is moving troops out of.
+            // assert!(from_explorer.owner == to_explorer.owner, "both explorers must belong to the same structure");
             StructureOwnerStoreImpl::retrieve(ref world, from_explorer.owner).assert_caller_owner();
 
             // ensure explorers are adjacent to one another
