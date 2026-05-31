@@ -59,7 +59,7 @@ export const GettingStarted = () => {
     {
       title: "Travel & Stamina",
       content:
-        "Deployed armies use stamina for movement on the map and for performing actions like attacking or exploring. Stamina regenerates partially each Realms Day (e.g., +20). Different troop types have varying maximum stamina, and movement costs can differ by biome.",
+        "Deployed armies use stamina for movement on the map and for performing actions like attacking or exploring. Stamina regenerates partially each Realms Day (e.g., +30). Different troop types have varying maximum stamina, and movement costs can differ by biome.",
     },
   ];
 
