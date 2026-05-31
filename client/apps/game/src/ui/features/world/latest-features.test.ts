@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 import { latestFeatures } from "./latest-features";
 
 describe("latestFeatures landing feed", () => {
-  it("stays capped to the 10 newest entries", () => {
-    expect(latestFeatures.length).toBeLessThanOrEqual(10);
+  it("stays capped to the 8 newest entries", () => {
+    expect(latestFeatures.length).toBeLessThanOrEqual(8);
 
     const timestamps = latestFeatures.map((feature) => new Date(feature.date).getTime());
     expect(timestamps).toEqual([...timestamps].sort((left, right) => right - left));

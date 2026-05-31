@@ -359,7 +359,7 @@ export const Guilds = ({
           placeholder="Search Tribe . . ."
           value={guildsGuildSearchTerm}
           onChange={(searchTerm) => setGuildsGuildSearchTerm(searchTerm)}
-          className="w-full button-wood"
+          className="w-full btn-bronze"
         />
       </div>
 

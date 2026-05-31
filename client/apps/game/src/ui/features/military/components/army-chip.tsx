@@ -61,7 +61,7 @@ export const NavigateToPositionIcon = ({
   );
 };
 
-export const ArmyChip = ({
+const ArmyChip = ({
   army,
   className,
   showButtons,

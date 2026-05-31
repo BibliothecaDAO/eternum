@@ -26,4 +26,8 @@ yarn.lock
 dev-dist
 .env
 .env.local
+.env.local.*
 *.ts.timestamp-*.mjs
+
+# Local scratch / tooling
+.playwright-mcp/

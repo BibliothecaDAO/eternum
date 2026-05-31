@@ -1,7 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import Button from "@/ui/design-system/atoms/button";
 import { hasFiniteSeasonEnd } from "@/ui/features/world/utils/season-timing";
-import { OSWindow } from "@/ui/features/world";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
@@ -94,21 +94,23 @@ export const EndSeasonButton = ({ className }: EndSeasonButtonProps) => {
         End season
       </Button>
 
-      <OSWindow
-        show={showCongratsPopup}
-        onClick={() => setShowCongratsPopup(false)}
-        title="🔥 Congratulations! 🔥"
-        width="500px"
-        height="h-auto"
-      >
-        <div className="flex flex-col items-center justify-center p-6 text-center space-y-4">
-          <div className="text-6xl">🏆</div>
-          <h2 className="text-2xl font-bold text-gold">You have conquered Eternum Season 1!</h2>
-          <Button variant="primary" onClick={() => setShowCongratsPopup(false)} className="mt-4">
-            Close
-          </Button>
-        </div>
-      </OSWindow>
+      {showCongratsPopup && (
+        <CenteredModalShell
+          onClose={() => setShowCongratsPopup(false)}
+          title="🔥 Congratulations! 🔥"
+          persistKey="🔥 Congratulations! 🔥"
+          panelClassName="w-[500px] h-auto max-h-[calc(100vh-64px)]"
+          bodyClassName="overflow-auto"
+        >
+          <div className="flex flex-col items-center justify-center p-6 text-center space-y-4">
+            <div className="text-6xl">🏆</div>
+            <h2 className="text-2xl font-bold text-gold">You have conquered Eternum Season 1!</h2>
+            <Button variant="primary" onClick={() => setShowCongratsPopup(false)} className="mt-4">
+              Close
+            </Button>
+          </div>
+        </CenteredModalShell>
+      )}
     </>
   );
 };

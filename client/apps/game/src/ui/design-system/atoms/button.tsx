@@ -26,7 +26,7 @@ type ButtonProps = {
 
 const STYLES = {
   baseStyle:
-    "inline-flex whitespace-nowrap transition-all duration-300 items-center justify-center p-2 font-medium text-gold button-wood ",
+    "inline-flex whitespace-nowrap transition-all duration-300 items-center justify-center p-2 font-medium text-gold btn-bronze ",
   primary:
     "px-6 py-2 bg-brown from-yellow-600 to-yellow-700  font-semibold text-lg tracking-wider  shadow-md hover:from-yellow-700 hover:to-yellow-800 focus:outline-none border-2  outline-gold hover:bg-gold hover:text-brown  border-y hover:border-gold ",
   primarySelected:

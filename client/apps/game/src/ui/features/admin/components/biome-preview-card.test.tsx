@@ -103,9 +103,7 @@ describe("BiomePreviewCard", () => {
       await waitForAsyncWork();
     });
 
-    const tileTitles = Array.from(container.querySelectorAll<HTMLElement>("[title]")).map(
-      (element) => element.title,
-    );
+    const tileTitles = Array.from(container.querySelectorAll<HTMLElement>("[title]")).map((element) => element.title);
 
     expect(tileTitles.some((title) => title.includes("(-"))).toBe(false);
   });

@@ -4,7 +4,7 @@ import { env } from "../../env";
 
 const resolveAddressChain = (chain?: Chain): Chain => chain ?? resolveRuntimeChain(env.VITE_PUBLIC_CHAIN as Chain);
 
-export const getResourceAddresses = (chain?: Chain) => {
+const getResourceAddresses = (chain?: Chain) => {
   const addresses = getSeasonAddresses(resolveAddressChain(chain)).resources;
   return addresses;
 };
@@ -17,7 +17,7 @@ const getRealmsAddress = (chain?: Chain) => {
   return getSeasonAddresses(resolveAddressChain(chain)).realms;
 };
 
-export const getLordsAddress = (chain?: Chain) => {
+const getLordsAddress = (chain?: Chain) => {
   const resolvedChain = resolveAddressChain(chain);
   if (resolvedChain == "mainnet") {
     return getSeasonAddresses(resolvedChain).lords;
@@ -25,7 +25,7 @@ export const getLordsAddress = (chain?: Chain) => {
   return getSeasonAddresses(resolvedChain).resources.LORDS[1];
 };
 
-export const getClientFeeRecipient = () => {
+const getClientFeeRecipient = () => {
   return env.VITE_PUBLIC_CLIENT_FEE_RECIPIENT;
 };
 

@@ -36,12 +36,6 @@ export const getSameStructureTransferBlockReason = ({
       : "Cannot transfer troops: Both explorers must belong to the same structure";
   }
 
-  if (transferDirection === TransferDirection.ExplorerToStructure) {
-    return idsMatch(selectedExplorerOwner, targetEntityId)
-      ? null
-      : "Cannot transfer troops: Explorer must belong to the target structure";
-  }
-
   if (transferDirection !== TransferDirection.StructureToExplorer) {
     return null;
   }

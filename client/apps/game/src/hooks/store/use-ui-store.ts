@@ -1,7 +1,8 @@
 import { BattleViewInfo, LeftView } from "@/types";
 import { ContextMenuState } from "@/types/context-menu";
+import { clampCycleProgress, type DebugCycleProgressOverride } from "@/utils/cycle-progress";
 import { SelectableArmy } from "@bibliothecadao/eternum";
-import { BiomeType, ContractAddress, Direction } from "@bibliothecadao/types";
+import { BiomeType, ContractAddress, Direction, StructureType } from "@bibliothecadao/types";
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
@@ -13,7 +14,10 @@ import { createWorldStoreSlice, WorldStore } from "./use-world-loading";
 
 type TooltipPlacement = "top" | "left" | "right" | "bottom";
 
-export type BottomPanelTabId = "tile" | "minimap";
+type BottomPanelTabId = "tile" | "minimap";
+
+export type LeftListFilter = StructureType | "all";
+export type LeftListSort = "favorites" | "level" | "population" | "name";
 
 let lastResolvedAnchor: HTMLElement | null = null;
 
@@ -97,7 +101,17 @@ type ArmyCreationPopupConfig = {
   followSelectedStructure?: boolean;
 };
 
-type ArmyCreationPopupState = (ArmyCreationPopupConfig & { openId: number }) | null;
+/**
+ * Right-click "Create Defense/Attack Army" no longer opens the legacy popup —
+ * it primes the merged Military modal with the target realm + intent. The
+ * modal consumes and clears this on mount.
+ */
+type PendingMilitaryAction = {
+  structureId: number;
+  isExplorer: boolean;
+  direction?: Direction;
+  initialGuardSlot?: number;
+};
 
 interface UIStore {
   disableButtons: boolean;
@@ -108,8 +122,11 @@ interface UIStore {
   setGameEndAt: (seasonEndAt: number | null) => void;
   gameStartMainAt: number | null;
   setGameStartMainAt: (seasonStartMainAt: number | null) => void;
-  theme: string;
-  setTheme: (theme: string) => void;
+  // season_config.dev_mode_on — when set, the chain bypasses settling/main-phase
+  // and season-end time gates (see SeasonConfigImpl). Mirror it client-side so
+  // sandbox worlds let players settle/provision/upgrade at any time.
+  devModeOn: boolean;
+  setDevModeOn: (devModeOn: boolean) => void;
   showBlurOverlay: boolean;
   setShowBlurOverlay: (show: boolean) => void;
   showBlankOverlay: boolean;
@@ -140,12 +157,17 @@ interface UIStore {
   modalContent: React.ReactNode;
   toggleModal: (content: React.ReactNode) => void;
   showModal: boolean;
-  combatSimulationBiome: BiomeType | null;
-  setCombatSimulationBiome: (biome: BiomeType | null) => void;
   battleView: BattleViewInfo | null;
   setBattleView: (participants: BattleViewInfo | null) => void;
   leftNavigationView: LeftView;
   setLeftNavigationView: (view: LeftView) => void;
+  // Left rail: which structure category is shown (or "all"), and how the rows
+  // are ordered. Persisted to localStorage so the player's last view sticks
+  // across sessions.
+  leftListFilter: LeftListFilter;
+  setLeftListFilter: (filter: LeftListFilter) => void;
+  leftListSort: LeftListSort;
+  setLeftListSort: (sort: LeftListSort) => void;
   activeBottomPanelTab: BottomPanelTabId | null;
   setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => void;
   showMinimap: boolean;
@@ -159,9 +181,28 @@ interface UIStore {
   setModal: (content: React.ReactNode | null, show: boolean) => void;
   transferPanelSourceId: number | null;
   setTransferPanelSourceId: (entityId: number | null) => void;
-  armyCreationPopup: ArmyCreationPopupState;
+  // Default tab to open inside the unified Logistics view (Arrivals / Transfer /
+  // Automation / All Balances). WalletPill's swap sets this to "transfer" so the
+  // panel opens straight to the send flow; the sidebar pill defaults to arrivals.
+  logisticsActiveTab: "arrivals" | "transfer" | "automation" | "balances";
+  setLogisticsActiveTab: (tab: "arrivals" | "transfer" | "automation" | "balances") => void;
+  // Cross-component signal: when a non-null id is set, the StructureEditPopup
+  // (mounted inside LeftCommandSidebar) opens for that structure. The picker
+  // popover writes this from the top-zone pills without needing prop-drilling.
+  pendingRenameStructureEntityId: number | null;
+  setPendingRenameStructureEntityId: (entityId: number | null) => void;
+  // Force-refresh counter bumped after a rename writes to localStorage. Consumers
+  // pass this into derivation memos so renames propagate without remounting.
+  structureNameVersion: number;
+  bumpStructureNameVersion: () => void;
   openArmyCreationPopup: (config: ArmyCreationPopupConfig) => void;
-  closeArmyCreationPopup: () => void;
+  pendingMilitaryAction: PendingMilitaryAction | null;
+  setPendingMilitaryAction: (action: PendingMilitaryAction | null) => void;
+  // Bumped whenever a military mutation lands (create / disband) so the deploy
+  // map can re-fetch tile occupancy. Plain RECS-side state isn't enough — the
+  // map reads via sqlApi, which doesn't auto-invalidate.
+  militaryMapVersion: number;
+  bumpMilitaryMapVersion: () => void;
   // labor
   useSimpleCost: boolean;
   setUseSimpleCost: (useSimpleCost: boolean) => void;
@@ -178,6 +219,8 @@ interface UIStore {
   // cycle timing for storm effects
   cycleProgress: number;
   setCycleProgress: (progress: number) => void;
+  debugCycleProgressOverride: DebugCycleProgressOverride;
+  setDebugCycleProgressOverride: (progress: DebugCycleProgressOverride) => void;
   cycleTime: number;
   setCycleTime: (time: number) => void;
   // map zoom controls
@@ -199,6 +242,25 @@ const readLocalInt = (key: string, fallback: number): number => {
   return v === null ? fallback : parseInt(v, 10);
 };
 
+const LEFT_LIST_FILTER_KEY = "leftListFilter";
+const LEFT_LIST_SORT_KEY = "leftListSort";
+
+const readLeftListFilter = (): LeftListFilter => {
+  if (typeof window === "undefined") return StructureType.Realm;
+  const raw = localStorage.getItem(LEFT_LIST_FILTER_KEY);
+  if (raw === null) return StructureType.Realm;
+  if (raw === "all") return "all";
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? (parsed as StructureType) : StructureType.Realm;
+};
+
+const readLeftListSort = (): LeftListSort => {
+  if (typeof window === "undefined") return "favorites";
+  const raw = localStorage.getItem(LEFT_LIST_SORT_KEY);
+  const options: LeftListSort[] = ["favorites", "level", "population", "name"];
+  return options.includes(raw as LeftListSort) ? (raw as LeftListSort) : "favorites";
+};
+
 export const useUIStore = create(
   subscribeWithSelector<AppStore>((set, get) => ({
     disableButtons: false,
@@ -210,8 +272,8 @@ export const useUIStore = create(
     setGameEndAt: (seasonEndAt: number | null) => set({ gameEndAt: seasonEndAt }),
     gameStartMainAt: null,
     setGameStartMainAt: (seasonStartMainAt: number | null) => set({ gameStartMainAt: seasonStartMainAt }),
-    theme: "light",
-    setTheme: (theme) => set({ theme }),
+    devModeOn: false,
+    setDevModeOn: (devModeOn: boolean) => set({ devModeOn }),
     showBlurOverlay: false,
     setShowBlurOverlay: (show) => set({ showBlurOverlay: show }),
     showBlankOverlay: true,
@@ -273,12 +335,24 @@ export const useUIStore = create(
       set({ modalContent: content, showModal: !!content, tooltip: null });
     },
     showModal: false,
-    combatSimulationBiome: null,
-    setCombatSimulationBiome: (biome: BiomeType | null) => set({ combatSimulationBiome: biome }),
     battleView: null,
     setBattleView: (participants: BattleViewInfo | null) => set({ battleView: participants }),
     leftNavigationView: LeftView.EntityView,
     setLeftNavigationView: (view: LeftView) => set({ leftNavigationView: view, tooltip: null }),
+    leftListFilter: readLeftListFilter(),
+    setLeftListFilter: (filter: LeftListFilter) => {
+      set({ leftListFilter: filter });
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LEFT_LIST_FILTER_KEY, filter === "all" ? "all" : String(filter));
+      }
+    },
+    leftListSort: readLeftListSort(),
+    setLeftListSort: (sort: LeftListSort) => {
+      set({ leftListSort: sort });
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LEFT_LIST_SORT_KEY, sort);
+      }
+    },
     activeBottomPanelTab: "tile",
     setActiveBottomPanelTab: (tab: BottomPanelTabId | null) => set({ activeBottomPanelTab: tab }),
     showMinimap: false,
@@ -296,15 +370,35 @@ export const useUIStore = create(
       set({ modalContent: content, showModal: show, tooltip: null }),
     transferPanelSourceId: null,
     setTransferPanelSourceId: (entityId: number | null) => set({ transferPanelSourceId: entityId }),
-    armyCreationPopup: null,
+    logisticsActiveTab: "arrivals",
+    setLogisticsActiveTab: (tab) => set({ logisticsActiveTab: tab }),
+    pendingRenameStructureEntityId: null,
+    setPendingRenameStructureEntityId: (entityId: number | null) => set({ pendingRenameStructureEntityId: entityId }),
+    structureNameVersion: 0,
+    bumpStructureNameVersion: () =>
+      set((state: AppStore) => ({ structureNameVersion: state.structureNameVersion + 1 })),
     openArmyCreationPopup: (config: ArmyCreationPopupConfig) =>
-      set((state: AppStore) => ({
-        armyCreationPopup: {
-          ...config,
-          openId: (state.armyCreationPopup?.openId ?? 0) + 1,
-        },
-      })),
-    closeArmyCreationPopup: () => set({ armyCreationPopup: null }),
+      set((state: AppStore) => {
+        const structureId = Number(config.structureId ?? state.structureEntityId);
+        if (!Number.isFinite(structureId) || structureId <= 0) {
+          return {};
+        }
+
+        return {
+          leftNavigationView: LeftView.MilitaryView,
+          pendingMilitaryAction: {
+            structureId,
+            isExplorer: config.isExplorer ?? true,
+            direction: config.direction,
+            initialGuardSlot: config.initialGuardSlot,
+          },
+          tooltip: null,
+        };
+      }),
+    pendingMilitaryAction: null,
+    setPendingMilitaryAction: (action: PendingMilitaryAction | null) => set({ pendingMilitaryAction: action }),
+    militaryMapVersion: 0,
+    bumpMilitaryMapVersion: () => set((state: AppStore) => ({ militaryMapVersion: state.militaryMapVersion + 1 })),
     ...createPopupsSlice(set, get),
     ...createThreeStoreSlice(set, get),
     ...createBuildModeStoreSlice(set),
@@ -334,7 +428,17 @@ export const useUIStore = create(
     setSelectableArmies: (armies: SelectableArmy[]) => set({ selectableArmies: armies }),
     // cycle timing for storm effects
     cycleProgress: 0,
-    setCycleProgress: (progress: number) => set({ cycleProgress: progress }),
+    setCycleProgress: (progress: number) => set({ cycleProgress: clampCycleProgress(progress) }),
+    debugCycleProgressOverride: null,
+    setDebugCycleProgressOverride: (progress: DebugCycleProgressOverride) => {
+      if (progress === null) {
+        set({ debugCycleProgressOverride: null });
+        return;
+      }
+
+      const clampedProgress = clampCycleProgress(progress);
+      set({ cycleProgress: clampedProgress, debugCycleProgressOverride: clampedProgress });
+    },
     cycleTime: 0,
     setCycleTime: (time: number) => set({ cycleTime: time }),
     // map zoom controls - disabled by default for better UX

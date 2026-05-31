@@ -22,7 +22,7 @@ import { toast } from "sonner";
 
 import { useGameReviewData } from "../hooks/use-game-review-data";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "./game-selector/game-card-grid";
-import { ScoreCardContent } from "./score-card-modal";
+import { ScoreCardContent } from "./score-card-content";
 
 type ReviewStepId =
   | "finished"

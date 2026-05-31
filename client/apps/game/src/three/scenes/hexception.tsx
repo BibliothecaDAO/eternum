@@ -226,7 +226,7 @@ export default class HexceptionScene extends HexagonScene {
 
     // Only register shortcuts if they haven't been registered already
     if (!this.shortcutManager.hasShortcuts()) {
-      const shouldCycleRealmsForTab = () => Boolean(useUIStore.getState().armyCreationPopup);
+      const shouldCycleRealmsForTab = () => useUIStore.getState().leftNavigationView === LeftView.MilitaryView;
       const getRealmStructuresForTab = () =>
         this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
 

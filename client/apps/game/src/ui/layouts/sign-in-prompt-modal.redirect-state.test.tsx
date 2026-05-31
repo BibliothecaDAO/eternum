@@ -24,8 +24,8 @@ vi.mock("@/ui/modules/controller/controller", () => ({
   Controller: () => <div data-testid="controller-button">controller</div>,
 }));
 
-vi.mock("@/ui/shared", () => ({
-  ModalContainer: ({ children }: { children: ReactNode }) => <div data-testid="modal-container">{children}</div>,
+vi.mock("@/ui/design-system/molecules/dialog-shell", () => ({
+  DialogShell: ({ children }: { children: ReactNode }) => <div data-testid="dialog-shell">{children}</div>,
 }));
 
 vi.mock("react-router-dom", async () => {

@@ -24,7 +24,7 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>((props, ref
         (e.target as HTMLFormElement).reset();
       }}
       className={clsx(
-        "w-full transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder-white/25 flex-grow bg-transparent button-wood rounded-lg",
+        "w-full transition-all duration-300 focus:outline-none border-opacity-50 focus:border-opacity-100 placeholder-white/25 flex-grow bg-transparent btn-bronze rounded-lg",
         className,
       )}
     >

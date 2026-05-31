@@ -10,8 +10,5 @@ export { ChestModal } from "./chest/chest-modal";
 // Transfer & Support
 export { HelpModal } from "./components/help-modal";
 
-// Main Military Module - Used across the application
-export { Military } from "./military";
-
 // Utils - Used by other features
-export { formatBiomeBonus, formatTypeAndBonuses, getStaminaDisplay } from "./battle/combat-utils";
+export { formatBiomeBonus } from "./battle/combat-utils";

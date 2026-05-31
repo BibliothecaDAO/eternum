@@ -10,7 +10,6 @@ const actionOrientedFiles = [
   "client/apps/game/src/ui/features/economy/trading/market-order-panel.tsx",
   "client/apps/game/src/ui/features/economy/trading/unified-trade-panel.tsx",
   "client/apps/game/src/ui/features/economy/transfers/transfer-automation-panel.tsx",
-  "client/apps/game/src/ui/features/infrastructure/bridge/bridge.tsx",
   "client/apps/game/src/ui/modules/entity-details/hooks/use-structure-upgrade.ts",
 ];
 

@@ -1,4 +1,5 @@
-import { ModalContainer } from "@/ui/shared";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { DialogShell } from "@/ui/design-system/molecules/dialog-shell";
 import { useState } from "react";
 import { Buildings } from "./buildings";
 import { Combat } from "./combat";
@@ -88,16 +89,19 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
     sections.find((section) => section.name === initialActiveSection) || sections[0],
   );
 
+  const toggleModal = useUIStore((state) => state.toggleModal);
+
   return (
-    <ModalContainer>
-      <div className="flex container mx-auto bg-brown/90 my-10 rounded-xl border border-gold/40 panel-wood">
-        <div className="w-1/4 border-r border-gold/10 p-4 panel-wood-right">
-          <h3 className="text-center mb-4">The Lordpedia</h3>
+    <DialogShell title="The Lordpedia" size="xl" onClose={() => toggleModal(null)} contentClassName="p-0">
+      <div className="flex h-[calc(80vh)]">
+        <div className="w-1/4 overflow-auto border-r border-gold/10 p-4">
           <div className="space-y-1">
             {sections.map((section) => (
               <div
-                className={`p-2 px-4 duration-300 cursor-pointer  ${
-                  activeSection.name === section.name ? " button-gold text-brown" : "panel-wood"
+                className={`cursor-pointer rounded-md p-2 px-4 duration-300 ${
+                  activeSection.name === section.name
+                    ? "button-gold text-brown"
+                    : "border border-gold/20 bg-black/30 hover:border-gold/40"
                 }`}
                 key={section.name}
                 onClick={() => setActiveSection(section)}
@@ -107,8 +111,8 @@ export const HintModal = ({ initialActiveSection }: HintModalProps) => {
             ))}
           </div>
         </div>
-        <div className="p-8 w-3/4  overflow-auto max-h-[calc(80vh)]">{activeSection.content}</div>
+        <div className="w-3/4 overflow-auto p-8">{activeSection.content}</div>
       </div>
-    </ModalContainer>
+    </DialogShell>
   );
 };

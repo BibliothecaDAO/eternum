@@ -111,7 +111,14 @@ export const createRealmStoreSlice = (
       }
 
       const ownsStructure = state.playerStructures.some((structure) => idsMatch(structure.entityId, normalizedId));
-      const shouldSpectate = options?.spectator ?? !ownsStructure;
+      // Owning a structure means you're playing it — never auto-set spectator
+      // mode while the player is looking at one of their own structures, even
+      // if the caller passed spectator: true. worldmap.tsx forwards the stale
+      // isSpectating flag when a hex is clicked, which would otherwise keep
+      // the SPECTATING badge on after the player mid-sessions settles their
+      // first realm.
+      const requestedSpectate = options?.spectator ?? !ownsStructure;
+      const shouldSpectate = ownsStructure ? false : requestedSpectate;
       const currentStructureIsOwned = state.playerStructures.some((structure) =>
         idsMatch(structure.entityId, state.structureEntityId),
       );
@@ -191,6 +198,16 @@ export const createRealmStoreSlice = (
         updates.structureEntityId = nextControlled;
         updates.isSpectating = false;
         return updates;
+      }
+
+      // Mid-session settle: the player started as a spectator and has just
+      // acquired the very structure they were viewing. Drop the stale flag so
+      // the HUD chrome (structure list, action buttons) reappears.
+      if (state.isSpectating && currentStructureIsOwned) {
+        updates.isSpectating = false;
+        if (state.lastControlledStructureEntityId === UNDEFINED_STRUCTURE_ENTITY_ID) {
+          updates.lastControlledStructureEntityId = state.structureEntityId;
+        }
       }
 
       if (!lastControlledExists) {

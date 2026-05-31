@@ -172,7 +172,7 @@ export const BuildingThumbs = {
   predictionMarket: `${prefix}trade.png`,
 };
 
-export enum MenuEnum {
+enum MenuEnum {
   military = "military",
   construction = "construction",
   hyperstructures = "hyperstructures",
