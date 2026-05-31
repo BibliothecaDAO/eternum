@@ -651,10 +651,9 @@ pub impl TroopsImpl of TroopsTrait {
     fn _attacker_biome_damage_bonus(
         ref self: Troops, context: CombatContext, troop_damage_config: TroopDamageConfig,
     ) -> Fixed {
-        if Self::_is_ranged_attack_context(context) {
-            return 1_u8.into();
-        }
-
+        // Biome modifiers are kept for army combat, including ranged crossbow pokes: crossbows still
+        // hit harder in open field and weaker in forest at range 2. The ranged damage reduction is
+        // applied separately via _ranged_crossbow_damage_multiplier.
         self._biome_damage_bonus(context.attacker_biome, troop_damage_config)
     }
 
