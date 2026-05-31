@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-05-31T03:15:51.946Z",
+  "updatedAt": "2026-05-31T03:16:51.150Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -84,24 +84,24 @@
       "environment": "mainnet.blitz",
       "rotationName": "blitz-rotation",
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26701561203-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26701924906-1.json",
       "status": "attention",
-      "updatedAt": "2026-05-31T03:15:51.946Z",
+      "updatedAt": "2026-05-31T03:16:51.150Z",
       "workflowRef": "next",
       "currentStepId": "reserve-blitz-hyperstructures",
       "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "grant-lootchest-roles",
+      "recoverableFailedStepId": "reserve-blitz-hyperstructures",
+      "recoverablePendingStepId": "create-worlds",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15,
-        "nextRetryAt": "2026-05-31T03:30:51.946Z",
+        "nextRetryAt": "2026-05-31T03:31:51.150Z",
         "lastRetryAt": "2026-05-31T03:15:51.946Z"
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-05-31T03:12:27.484Z",
-        "lastEvaluatedAt": "2026-05-31T02:57:27.484Z"
+        "nextEvaluationAt": "2026-05-31T03:31:51.150Z",
+        "lastEvaluatedAt": "2026-05-31T03:16:51.150Z"
       },
       "games": [
         {
@@ -695,6 +695,12 @@
         {
           "gameName": "apac-gladiator-02-06-26-1100",
           "startTime": 1780398000,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "na-gladiator-03-06-26-0200",
+          "startTime": 1780452000,
           "durationSeconds": 3600,
           "artifacts": {}
         }
