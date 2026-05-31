@@ -1690,10 +1690,10 @@ mod tests {
         // Assert - Handled by should_panic
     }
 
-    /// @notice Tests that `explorer_explorer_swap` succeeds across different structures/owners as long
-    /// as the caller owns the source explorer (Combat v3 relaxed the same-structure requirement).
+    /// @notice Tests that `explorer_explorer_swap` reverts if the explorers come from different structures.
     #[test]
-    fn test_explorer_swap_allows_different_structures() {
+    #[should_panic(expected: "both explorers must belong to the same structure")]
+    fn test_explorer_swap_revert_different_structures() {
         // Arrange
         let mut world = setup_troop_management_world();
 
@@ -1729,17 +1729,12 @@ mod tests {
             .explorer_create(realm_id_2, category, tier, create_amount_to, spawn_direction_to);
         stop_cheat_caller_address(system_addr);
 
-        // Act 2: Swap between different structures (caller owns the source explorer)
+        // Act 2: Attempt the swap between different structures (expect panic)
         start_cheat_caller_address(system_addr, realm_owner_1);
         let swap_direction = Direction::SouthEast;
         dispatcher.explorer_explorer_swap(from_explorer_id, to_explorer_id, swap_direction, swap_amount);
         stop_cheat_caller_address(system_addr);
-
-        // Assert: troops moved from the source (realm 1) into the target (realm 2)
-        let final_from_explorer: ExplorerTroops = world.read_model(from_explorer_id);
-        let final_to_explorer: ExplorerTroops = world.read_model(to_explorer_id);
-        assert!(final_from_explorer.troops.count == create_amount_from - swap_amount, "Final From Count");
-        assert!(final_to_explorer.troops.count == create_amount_to + swap_amount, "Final To Count");
+        // Assert - Handled by should_panic
     }
 
     /// @notice Tests that `explorer_explorer_swap` reverts if the explorers are not adjacent.

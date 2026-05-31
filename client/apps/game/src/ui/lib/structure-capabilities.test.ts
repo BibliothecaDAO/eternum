@@ -113,7 +113,7 @@ describe("Blitz military transfer rules", () => {
     );
   });
 
-  it("allows explorer to explorer troop transfers across different realms", () => {
+  it("blocks explorer to explorer troop transfers across different realms", () => {
     const sameRealmCamp = createStructure({
       category: StructureType.Camp,
       entityId: 31,
@@ -148,7 +148,7 @@ describe("Blitz military transfer rules", () => {
         source: sameRealmCamp,
         destination: otherRealmCamp,
       }),
-    ).toBeNull();
+    ).toBe("you can only transfer between armies from the same realm");
     expect(
       resolveArmyToArmyTransferRestriction({
         modeId: "eternum",

@@ -77,6 +77,25 @@ const getStructureCategory = (structure: StructureCapabilityTarget): StructureTy
 const getStructureEntityId = (structure: StructureCapabilityTarget): number | null =>
   normalizeEntityId(structure?.entity_id);
 
+const getStructureRealmId = (structure: StructureCapabilityTarget): number | null => {
+  const explicitRealmId = normalizeEntityId(structure?.metadata?.realm_id);
+  if (explicitRealmId !== null && explicitRealmId > 0) {
+    return explicitRealmId;
+  }
+
+  const villageRealmId = normalizeEntityId(structure?.metadata?.village_realm);
+  if (villageRealmId !== null && villageRealmId > 0) {
+    return villageRealmId;
+  }
+
+  const category = getStructureCategory(structure);
+  if (category === StructureType.Realm) {
+    return getStructureEntityId(structure);
+  }
+
+  return null;
+};
+
 const isInventoryStructureCategory = (category: StructureType | null) =>
   category !== null && INVENTORY_STRUCTURE_CATEGORIES.has(category);
 
@@ -160,13 +179,21 @@ export const resolveArmyToArmyTransferRestriction = ({
   source: StructureCapabilityTarget;
   destination: StructureCapabilityTarget;
 }) => {
-  // Combat v3 allows merging explorers across different structures (and realms/owners) — the
-  // contract only requires the caller to own the source explorer — so no army-to-army realm
-  // restriction is applied anymore.
-  void modeId;
-  void source;
-  void destination;
-  return null;
+  if (modeId !== "blitz") {
+    return null;
+  }
+
+  const sourceRealmId = getStructureRealmId(source);
+  const destinationRealmId = getStructureRealmId(destination);
+  if (sourceRealmId === null || destinationRealmId === null) {
+    return null;
+  }
+
+  if (sourceRealmId === destinationRealmId) {
+    return null;
+  }
+
+  return "you can only transfer between armies from the same realm";
 };
 
 const getStructureByEntityId = (

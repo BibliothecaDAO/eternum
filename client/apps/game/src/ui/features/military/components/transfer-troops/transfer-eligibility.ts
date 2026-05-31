@@ -25,13 +25,14 @@ const idsMatch = (left: ID | bigint | null | undefined, right: ID | bigint | nul
 export const getSameStructureTransferBlockReason = ({
   transferDirection,
   selectedEntityId,
+  selectedExplorerOwner,
   targetExplorerOwner,
   guardSlot,
 }: SameStructureTransferParams): string | null => {
   if (transferDirection === TransferDirection.ExplorerToExplorer) {
-    // Explorers may now be merged across different structures (and owners); the contract only
-    // requires the caller to own the source explorer, so no same-structure block applies here.
-    return null;
+    return idsMatch(selectedExplorerOwner, targetExplorerOwner)
+      ? null
+      : "Cannot transfer troops: Both explorers must belong to the same structure";
   }
 
   if (transferDirection !== TransferDirection.StructureToExplorer) {
