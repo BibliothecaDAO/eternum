@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-05-31T06:12:31.746Z",
+  "updatedAt": "2026-05-31T06:12:37.522Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1469,11 +1469,10 @@
       "path": "runs/slot/blitz/bltz-ping-534.json",
       "inputPath": "inputs/slot/blitz/bltz-ping-534/26705039872-1.json",
       "status": "running",
-      "updatedAt": "2026-05-31T06:12:31.746Z",
+      "updatedAt": "2026-05-31T06:12:37.522Z",
       "workflowRef": "next",
-      "currentStepId": "wait-for-factory-index",
-      "activeLeaseExpiresAt": "2026-05-31T06:57:31.746Z",
-      "hasRunningStep": true,
+      "currentStepId": "configure-world",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "configure-world",
       "startTime": 1780210800,
