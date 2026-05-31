@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-05-31T05:12:32.534Z",
+  "updatedAt": "2026-05-31T05:22:25.947Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3002,7 +3002,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-31-05-26-0300 not found"
       },
-      "updatedAt": "2026-05-31T05:02:22.644Z"
+      "updatedAt": "2026-05-31T05:22:25.947Z"
     }
   }
 }
