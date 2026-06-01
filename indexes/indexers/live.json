@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-01T11:23:06.159Z",
+  "updatedAt": "2026-06-01T11:23:33.478Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3056,6 +3056,45 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-01-06-26-0100 not found"
       },
       "updatedAt": "2026-06-01T11:23:06.159Z"
+    },
+    "bltz-glow-285": {
+      "gameName": "bltz-glow-285",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-glow-285/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-06-01T11:23:33.330Z"
+      },
+      "updatedAt": "2026-06-01T11:23:33.478Z"
+    },
+    "bltz-zoom-993": {
+      "gameName": "bltz-zoom-993",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-zoom-993/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-06-01T11:23:33.405Z"
+      },
+      "updatedAt": "2026-06-01T11:23:33.478Z"
+    },
+    "bltz-burst-624": {
+      "gameName": "bltz-burst-624",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-burst-624/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-06-01T11:23:33.478Z"
+      },
+      "updatedAt": "2026-06-01T11:23:33.478Z"
     }
   }
 }
