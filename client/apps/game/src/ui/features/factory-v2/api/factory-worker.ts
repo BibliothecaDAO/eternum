@@ -1,5 +1,9 @@
 import { env } from "../../../../../env";
-import type { FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
+import type {
+  FactoryBiomeClimateOverrides,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
 
 export type FactoryWorkerEnvironmentId = "slot.eternum" | "mainnet.eternum" | "slot.blitz" | "mainnet.blitz";
 type FactoryWorkerRunKind = "game" | "series" | "rotation";
@@ -310,6 +314,7 @@ export interface CreateFactoryRunRequest {
   singleRealmMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
 }
 
@@ -321,12 +326,14 @@ export interface CreateFactorySeriesRunRequest {
     gameName: string;
     startTime: string;
     seriesGameNumber?: number;
+    biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   }>;
   devModeOn?: boolean;
   twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   autoRetryIntervalMinutes?: number;
 }
@@ -345,6 +352,8 @@ export interface CreateFactoryRotationRunRequest {
   singleRealmMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  biomeClimateOverridesByGameNumber?: Record<number, FactoryBiomeClimateOverrides>;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   autoRetryIntervalMinutes?: number;
 }

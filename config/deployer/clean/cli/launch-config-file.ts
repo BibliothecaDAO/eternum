@@ -206,6 +206,11 @@ function applySharedLaunchArgs(record: LaunchConfigRecord, args: CliArgs): void 
   );
   setOptionalJsonArg(
     args,
+    "biome-climate-overrides-json",
+    resolveValue(record, ["biomeClimateOverrides", "biome_climate_overrides"]),
+  );
+  setOptionalJsonArg(
+    args,
     "blitz-registration-overrides-json",
     resolveValue(record, ["blitzRegistrationOverrides", "blitz_registration_overrides"]),
   );

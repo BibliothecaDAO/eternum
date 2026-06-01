@@ -148,6 +148,7 @@ function buildSeriesLikeGameRequest(
     twoPlayerMode: request.twoPlayerMode,
     durationSeconds: request.durationSeconds,
     mapConfigOverrides: request.mapConfigOverrides,
+    biomeClimateOverrides: game.biomeClimateOverrides ?? request.biomeClimateOverrides,
     blitzRegistrationOverrides: game.blitzRegistrationOverrides ?? request.blitzRegistrationOverrides,
     cartridgeApiBase: request.cartridgeApiBase,
     toriiNamespaces: request.toriiNamespaces,

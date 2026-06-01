@@ -19,6 +19,7 @@ describe("native config steps", () => {
 
     expect(stepIds).toContain("world-admin");
     expect(stepIds).toContain("mercenaries-name");
+    expect(stepIds).toContain("biome-climate");
     expect(stepIds).toContain("bank");
     expect(stepIds).toContain("tick");
     expect(stepIds).toContain("map");
@@ -60,6 +61,7 @@ describe("native config steps", () => {
 
     expect(blitzStepIds).toContain("blitz-registration");
     expect(blitzStepIds).toContain("blitz-exploration");
+    expect(blitzStepIds).toContain("biome-climate");
     expect(blitzStepIds).toContain("mmr");
     expect(blitzStepIds).not.toContain("faith");
     expect(blitzStepIds).not.toContain("trade");
@@ -69,6 +71,7 @@ describe("native config steps", () => {
 
     expect(mainnetBlitzStepIds).toContain("blitz-registration");
     expect(mainnetBlitzStepIds).toContain("blitz-exploration");
+    expect(mainnetBlitzStepIds).toContain("biome-climate");
     expect(mainnetBlitzStepIds).toContain("mmr");
     expect(mainnetBlitzStepIds).not.toContain("faith");
     expect(mainnetBlitzStepIds).not.toContain("trade");
@@ -77,6 +80,7 @@ describe("native config steps", () => {
     expect(mainnetBlitzStepIds).not.toContain("blitz-season");
 
     expect(eternumStepIds).toContain("faith");
+    expect(eternumStepIds).toContain("biome-climate");
     expect(eternumStepIds).toContain("trade");
     expect(eternumStepIds).toContain("bank");
     expect(eternumStepIds).not.toContain("mmr");

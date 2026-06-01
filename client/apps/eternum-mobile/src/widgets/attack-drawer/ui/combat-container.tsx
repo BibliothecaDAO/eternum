@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/shared/ui/card";
 import { ResourceIcon } from "@/shared/ui/resource-icon";
 import { Separator } from "@/shared/ui/separator";
 import {
-  Biome,
   CombatSimulator,
   configManager,
   divideByPrecision,
@@ -88,7 +87,7 @@ export const CombatContainer = ({ attackerEntityId, targetHex }: CombatContainer
   }, []);
 
   const biome = useMemo(() => {
-    return Biome.getBiome(targetHex.x, targetHex.y);
+    return configManager.getBiome(targetHex.x, targetHex.y);
   }, [targetHex]);
 
   // Determine if the attacker is a structure or an explorer

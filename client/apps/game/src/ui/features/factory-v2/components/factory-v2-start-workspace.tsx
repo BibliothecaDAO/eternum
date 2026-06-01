@@ -20,7 +20,14 @@ import {
   type FactoryMoreOptionsDraft,
   type FactoryMoreOptionsErrors,
 } from "../map-options";
+import {
+  listFactoryBiomeClimateFields,
+  type FactoryBiomeClimateDraft,
+  type FactoryBiomeClimateErrors,
+  type FactoryBiomeClimateFieldId,
+} from "../biome-climate-options";
 import { resolveFactoryModeAppearance } from "../mode-appearance";
+import { buildFactoryBiomePreviewModel } from "../../factory/shared/biome-preview";
 import {
   buildFactoryStartAtValue,
   formatFactoryStartDateLabel,
@@ -112,6 +119,11 @@ type FactoryV2StartWorkspaceProps = {
   moreOptionDraft: FactoryMoreOptionsDraft;
   moreOptionErrors: FactoryMoreOptionsErrors;
   moreOptionsDisabledReason: string | null;
+  biomeClimateDraft: FactoryBiomeClimateDraft;
+  biomeClimateErrors: FactoryBiomeClimateErrors;
+  biomeClimateTargets: Array<{ id: string; label: string }>;
+  selectedBiomeClimateTargetId: string;
+  biomeClimateDisabledReason: string | null;
   onSelectLaunchTargetKind: (kind: FactoryLaunchTargetKind) => void;
   onSelectPreset: (presetId: string) => void;
   onGameNameChange: (value: string) => void;
@@ -130,6 +142,11 @@ type FactoryV2StartWorkspaceProps = {
   onSelectSeriesSuggestion: (seriesName: string) => void;
   onToggleMapOptions: () => void;
   onMapOptionValueChange: (fieldId: keyof FactoryMoreOptionsDraft, value: string) => void;
+  onSelectBiomeClimateTarget: (targetId: string) => void;
+  onBiomeClimateValueChange: (fieldId: FactoryBiomeClimateFieldId, value: string) => void;
+  onRandomizeBiomeClimateSeeds: () => void;
+  onResetBiomeClimate: () => void;
+  onApplyBiomeClimateToAll: () => void;
   onToggleTwoPlayerMode: () => void;
   onToggleSingleRealmMode: () => void;
   onFandomizeGameName: () => void;
@@ -208,6 +225,7 @@ function resolveStartWorkspaceState(
     isWatcherBusy,
     launchDisabledReason,
     moreOptionsDisabledReason,
+    biomeClimateDisabledReason,
   }: FactoryV2ResolvedStartWorkspaceProps,
   appearance: ReturnType<typeof resolveFactoryModeAppearance>,
 ): FactoryV2StartWorkspaceState {
@@ -238,7 +256,8 @@ function resolveStartWorkspaceState(
       }) &&
       !isWatcherBusy &&
       !launchDisabledReason &&
-      !moreOptionsDisabledReason,
+      !moreOptionsDisabledReason &&
+      !biomeClimateDisabledReason,
     presetFacts: getPresetFacts(selectedPreset).join(" · "),
     launchLabel: resolveLaunchLabel({
       isSeriesLaunch,
@@ -311,6 +330,11 @@ const FactoryV2ConfiguredStartWorkspace = ({
   moreOptionDraft,
   moreOptionErrors,
   moreOptionsDisabledReason,
+  biomeClimateDraft,
+  biomeClimateErrors,
+  biomeClimateTargets,
+  selectedBiomeClimateTargetId,
+  biomeClimateDisabledReason,
   onSelectLaunchTargetKind,
   onSelectPreset,
   onGameNameChange,
@@ -329,6 +353,11 @@ const FactoryV2ConfiguredStartWorkspace = ({
   onSelectSeriesSuggestion,
   onToggleMapOptions,
   onMapOptionValueChange,
+  onSelectBiomeClimateTarget,
+  onBiomeClimateValueChange,
+  onRandomizeBiomeClimateSeeds,
+  onResetBiomeClimate,
+  onApplyBiomeClimateToAll,
   onToggleTwoPlayerMode,
   onToggleSingleRealmMode,
   onFandomizeGameName,
@@ -455,9 +484,19 @@ const FactoryV2ConfiguredStartWorkspace = ({
             moreOptionDraft={moreOptionDraft}
             moreOptionErrors={moreOptionErrors}
             moreOptionsDisabledReason={moreOptionsDisabledReason}
+            biomeClimateDraft={biomeClimateDraft}
+            biomeClimateErrors={biomeClimateErrors}
+            biomeClimateTargets={biomeClimateTargets}
+            selectedBiomeClimateTargetId={selectedBiomeClimateTargetId}
+            biomeClimateDisabledReason={biomeClimateDisabledReason}
             appearanceClassName={appearance.quietSurfaceClassName}
             onToggleMapOptions={onToggleMapOptions}
             onMapOptionValueChange={onMapOptionValueChange}
+            onSelectBiomeClimateTarget={onSelectBiomeClimateTarget}
+            onBiomeClimateValueChange={onBiomeClimateValueChange}
+            onRandomizeBiomeClimateSeeds={onRandomizeBiomeClimateSeeds}
+            onResetBiomeClimate={onResetBiomeClimate}
+            onApplyBiomeClimateToAll={onApplyBiomeClimateToAll}
           />
 
           <FactoryV2DeployerWalletCard chain={deployerChain} environmentLabel={deployerEnvironmentLabel} />
@@ -880,9 +919,19 @@ const FactoryV2AdvancedSection = ({
   moreOptionDraft,
   moreOptionErrors,
   moreOptionsDisabledReason,
+  biomeClimateDraft,
+  biomeClimateErrors,
+  biomeClimateTargets,
+  selectedBiomeClimateTargetId,
+  biomeClimateDisabledReason,
   appearanceClassName,
   onToggleMapOptions,
   onMapOptionValueChange,
+  onSelectBiomeClimateTarget,
+  onBiomeClimateValueChange,
+  onRandomizeBiomeClimateSeeds,
+  onResetBiomeClimate,
+  onApplyBiomeClimateToAll,
 }: {
   mode: FactoryGameMode;
   moreOptionsOpen: boolean;
@@ -890,27 +939,177 @@ const FactoryV2AdvancedSection = ({
   moreOptionDraft: FactoryMoreOptionsDraft;
   moreOptionErrors: FactoryMoreOptionsErrors;
   moreOptionsDisabledReason: string | null;
+  biomeClimateDraft: FactoryBiomeClimateDraft;
+  biomeClimateErrors: FactoryBiomeClimateErrors;
+  biomeClimateTargets: Array<{ id: string; label: string }>;
+  selectedBiomeClimateTargetId: string;
+  biomeClimateDisabledReason: string | null;
   appearanceClassName: string;
   onToggleMapOptions: () => void;
   onMapOptionValueChange: (fieldId: keyof FactoryMoreOptionsDraft, value: string) => void;
+  onSelectBiomeClimateTarget: (targetId: string) => void;
+  onBiomeClimateValueChange: (fieldId: FactoryBiomeClimateFieldId, value: string) => void;
+  onRandomizeBiomeClimateSeeds: () => void;
+  onResetBiomeClimate: () => void;
+  onApplyBiomeClimateToAll: () => void;
 }) => (
   <FactoryV2StartSectionCard
     title="Advanced"
     description="Optional map tuning for this launch only."
     appearanceClassName={appearanceClassName}
   >
-    <FactoryV2MoreOptions
-      mode={mode}
-      isOpen={moreOptionsOpen}
-      sections={moreOptionSections}
-      draft={moreOptionDraft}
-      errors={moreOptionErrors}
-      invalidReason={moreOptionsDisabledReason}
-      onToggle={onToggleMapOptions}
-      onValueChange={onMapOptionValueChange}
-    />
+    <div className="space-y-3">
+      <FactoryV2BiomeClimateOptions
+        draft={biomeClimateDraft}
+        errors={biomeClimateErrors}
+        targets={biomeClimateTargets}
+        selectedTargetId={selectedBiomeClimateTargetId}
+        invalidReason={biomeClimateDisabledReason}
+        onSelectTarget={onSelectBiomeClimateTarget}
+        onValueChange={onBiomeClimateValueChange}
+        onRandomizeSeeds={onRandomizeBiomeClimateSeeds}
+        onReset={onResetBiomeClimate}
+        onApplyToAll={onApplyBiomeClimateToAll}
+      />
+      <FactoryV2MoreOptions
+        mode={mode}
+        isOpen={moreOptionsOpen}
+        sections={moreOptionSections}
+        draft={moreOptionDraft}
+        errors={moreOptionErrors}
+        invalidReason={moreOptionsDisabledReason}
+        onToggle={onToggleMapOptions}
+        onValueChange={onMapOptionValueChange}
+      />
+    </div>
   </FactoryV2StartSectionCard>
 );
+
+const FactoryV2BiomeClimateOptions = ({
+  draft,
+  errors,
+  targets,
+  selectedTargetId,
+  invalidReason,
+  onSelectTarget,
+  onValueChange,
+  onRandomizeSeeds,
+  onReset,
+  onApplyToAll,
+}: {
+  draft: FactoryBiomeClimateDraft;
+  errors: FactoryBiomeClimateErrors;
+  targets: Array<{ id: string; label: string }>;
+  selectedTargetId: string;
+  invalidReason: string | null;
+  onSelectTarget: (targetId: string) => void;
+  onValueChange: (fieldId: FactoryBiomeClimateFieldId, value: string) => void;
+  onRandomizeSeeds: () => void;
+  onReset: () => void;
+  onApplyToAll: () => void;
+}) => {
+  const preview = buildFactoryBiomePreviewModel({ overrides: draft });
+  const hasMultipleTargets = targets.length > 1;
+
+  return (
+    <div className="space-y-3 rounded-[20px] border border-gold/15 bg-black/20 p-3 text-left">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold text-gold">Biome tuning</div>
+          <p className="mt-1 text-[11px] leading-4 text-gold/42">Preview climate changes before launch.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={onRandomizeSeeds}
+            className="rounded-full border border-gold/15 bg-black/25 px-3 py-1.5 text-[11px] font-semibold text-gold/70 hover:bg-gold/10"
+          >
+            Randomize seeds
+          </button>
+          <button
+            type="button"
+            onClick={onReset}
+            className="rounded-full border border-gold/15 bg-black/25 px-3 py-1.5 text-[11px] font-semibold text-gold/70 hover:bg-gold/10"
+          >
+            Reset
+          </button>
+          {hasMultipleTargets ? (
+            <button
+              type="button"
+              onClick={onApplyToAll}
+              className="rounded-full border border-gold/15 bg-black/25 px-3 py-1.5 text-[11px] font-semibold text-gold/70 hover:bg-gold/10"
+            >
+              Apply to all
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {hasMultipleTargets ? (
+        <label className="block">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gold/42">Game</span>
+          <select
+            value={selectedTargetId}
+            onChange={(event) => onSelectTarget(event.target.value)}
+            className="mt-1 block h-9 w-full rounded-[14px] border border-gold/15 bg-black/25 px-3 text-[12px] text-gold outline-none"
+          >
+            {targets.map((target) => (
+              <option key={target.id} value={target.id}>
+                {target.label}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
+
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px]">
+        <div
+          className="grid aspect-square overflow-hidden rounded-[16px] border border-gold/15 bg-black/35"
+          style={{ gridTemplateColumns: "repeat(21, minmax(0, 1fr))" }}
+        >
+          {preview.tiles.map((tile) => (
+            <div
+              key={tile.key}
+              title={`${tile.biome} (${tile.col}, ${tile.row})`}
+              style={{ backgroundColor: tile.color }}
+            />
+          ))}
+        </div>
+        <div className="space-y-1.5">
+          {preview.distribution.slice(0, 8).map((entry) => (
+            <div key={entry.biome} className="flex items-center justify-between gap-2 text-[11px] text-gold/62">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-sm" style={{ backgroundColor: entry.color }} />
+                <span className="truncate">{entry.biome}</span>
+              </div>
+              <span className="font-mono text-gold/72">{entry.percentage}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        {listFactoryBiomeClimateFields().map((field) => (
+          <label key={field.id} className="block rounded-[16px] border border-gold/10 bg-black/25 px-3 py-2">
+            <span className="block text-[12px] font-medium text-gold/70">{field.label}</span>
+            <input
+              type="number"
+              min={0}
+              max={field.max}
+              step={1}
+              value={draft[field.id]}
+              onChange={(event) => onValueChange(field.id, event.target.value)}
+              className="mt-1 h-8 w-full rounded-[12px] border border-gold/15 bg-black/25 px-2 text-right text-[13px] font-semibold text-gold outline-none"
+            />
+            {errors[field.id] ? <span className="mt-1 block text-[11px] text-rose-400">{errors[field.id]}</span> : null}
+          </label>
+        ))}
+      </div>
+
+      {invalidReason ? <p className="text-[11px] leading-5 text-rose-400">{invalidReason}</p> : null}
+    </div>
+  );
+};
 
 const FactoryV2LaunchTargetButton = ({
   label,
@@ -1838,6 +2037,7 @@ const FactoryV2LaunchActionBar = ({
 
     <button
       type="button"
+      data-testid="factory-launch-button"
       onClick={onLaunch}
       disabled={!canLaunch}
       className={cn(

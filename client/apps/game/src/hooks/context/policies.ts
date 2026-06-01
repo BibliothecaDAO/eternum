@@ -144,6 +144,10 @@ export const buildPolicies = (manifest: any) => {
             entrypoint: "set_mercenaries_name_config",
           },
           {
+            name: "set_biome_climate_config",
+            entrypoint: "set_biome_climate_config",
+          },
+          {
             name: "set_season_config",
             entrypoint: "set_season_config",
           },

@@ -10,17 +10,18 @@ function readSource(filename: string): string {
 
 /**
  * Close the "empty hex for a few seconds" gap between tx submission and the
- * authoritative TileOpt delivery. Biome.getBiome is deterministic and mirrors
- * the Cairo biome_library, so we can render the destination biome immediately
- * once the submitted tx hash starts the optimistic tween.
+ * authoritative TileOpt delivery. configManager.getBiome mirrors the Cairo
+ * biome_library and active world climate config, so we can render the
+ * destination biome immediately once the submitted tx hash starts the
+ * optimistic tween.
  */
 describe("Worldmap optimistic destination biome", () => {
-  it("imports Biome from @bibliothecadao/eternum", () => {
+  it("imports configManager from @bibliothecadao/eternum", () => {
     const source = readSource("worldmap.tsx");
-    expect(source).toMatch(/import\s*\{[^}]*\bBiome\b[^}]*\}\s*from\s*"@bibliothecadao\/eternum"/);
+    expect(source).toMatch(/import\s*\{[^}]*\bconfigManager\b[^}]*\}\s*from\s*"@bibliothecadao\/eternum"/);
   });
 
-  it("the optimistic destination painter writes provisional biome using Biome.getBiome on contract coords", () => {
+  it("the optimistic destination painter writes provisional biome using configured biome on contract coords", () => {
     const source = readSource("worldmap.tsx");
 
     const handlerStart = source.indexOf("private paintOptimisticDestinationBiome(");
@@ -31,14 +32,14 @@ describe("Worldmap optimistic destination biome", () => {
 
     expect(body).toContain("provisionalBiomes.mark");
     expect(body).toContain("exploredTilesGeneration.bump");
-    // Must feed contract (felt-offset) coords to Biome.getBiome so the
-    // provisional value matches what the Cairo biome_library will write —
-    // otherwise the authoritative update will overwrite with a different
-    // biome and the player sees the tile flicker.
-    expect(body).toMatch(/Biome\.getBiome\(\s*[A-Za-z]+Contract\.x,\s*[A-Za-z]+Contract\.y\s*\)/);
+    // Must feed contract (felt-offset) coords to the configured biome helper
+    // so the provisional value matches what the Cairo biome_library will
+    // write; otherwise the authoritative update will overwrite with a
+    // different biome and the player sees the tile flicker.
+    expect(body).toMatch(/configManager\.getBiome\(\s*[A-Za-z]+Contract\.x,\s*[A-Za-z]+Contract\.y\s*\)/);
   });
 
-  it("army TileOpt spawn-biome fallback uses Biome.getBiome on contract coords, not a hardcoded Grassland", () => {
+  it("army TileOpt spawn-biome fallback uses configured biome on contract coords, not a hardcoded Grassland", () => {
     const source = readSource("worldmap.tsx");
 
     // Scope to registerArmyWorldUpdateSubscriptions so we don't collide with
@@ -53,11 +54,11 @@ describe("Worldmap optimistic destination biome", () => {
     expect(spawnCallStart).toBeGreaterThan(-1);
     const spawnCallBlock = scope.slice(spawnCallStart, spawnCallStart + 500);
 
-    // The fallback biome must come from Biome.getBiome on *contract* coords
+    // The fallback biome must come from configManager.getBiome on *contract* coords
     // (update.hexCoords is felt-offset from world-update-listener). Normalized
     // coords produce a different simplex output than the Cairo biome_library,
     // which would make the provisional value disagree with the authoritative.
-    expect(spawnCallBlock).toMatch(/Biome\.getBiome\(\s*update\.hexCoords\.col,\s*update\.hexCoords\.row\s*\)/);
+    expect(spawnCallBlock).toMatch(/configManager\.getBiome\(\s*update\.hexCoords\.col,\s*update\.hexCoords\.row\s*\)/);
 
     // And the subsequent exploredTiles write must use spawnResult.biome, not a
     // hardcoded Grassland — otherwise the fallback upgrade is cosmetic.
