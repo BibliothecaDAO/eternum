@@ -1,0 +1,74 @@
+{
+  "version": 1,
+  "kind": "game",
+  "runId": "slot.blitz:bltz-glow-285",
+  "environment": "slot.blitz",
+  "chain": "slot",
+  "gameType": "blitz",
+  "gameName": "bltz-glow-285",
+  "status": "running",
+  "executionMode": "fast_trial",
+  "requestedLaunchStep": "full",
+  "inputPath": "inputs/slot/blitz/bltz-glow-285/26733814760-1.json",
+  "latestLaunchRequestId": "26733814760-1",
+  "currentStepId": "create-world",
+  "createdAt": "2026-06-01T03:39:17.983Z",
+  "updatedAt": "2026-06-01T03:39:17.983Z",
+  "workflow": {
+    "workflowName": "Game Launch",
+    "workflowJob": "launch",
+    "workflowRunId": 26733814760,
+    "workflowRunAttempt": 1,
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/26733814760",
+    "ref": "next",
+    "sha": "f5f68d22cc1b7243678576fb2a849672488b2d65"
+  },
+  "steps": [
+    {
+      "id": "create-world",
+      "title": "Creating world",
+      "status": "pending",
+      "workflowStepName": "Creating world",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "wait-for-factory-index",
+      "title": "Waiting for game",
+      "status": "pending",
+      "workflowStepName": "Waiting for game",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "configure-world",
+      "title": "Applying settings",
+      "status": "pending",
+      "workflowStepName": "Applying settings",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "reserve-blitz-hyperstructures",
+      "title": "Reserving hyperstructures",
+      "status": "pending",
+      "workflowStepName": "Reserving hyperstructures",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "grant-lootchest-role",
+      "title": "Setting up loot chests",
+      "status": "pending",
+      "workflowStepName": "Setting up loot chests",
+      "latestEvent": "Waiting to run"
+    },
+    {
+      "id": "create-indexer",
+      "title": "Finishing setup",
+      "status": "pending",
+      "workflowStepName": "Finishing setup",
+      "latestEvent": "Waiting to run"
+    }
+  ],
+  "artifacts": {
+    "scheduledStartTime": "2026-06-01T04:00:00.000Z",
+    "durationSeconds": 432000
+  }
+}
