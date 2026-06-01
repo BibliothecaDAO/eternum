@@ -22,7 +22,7 @@ import { EndgameModal, NotLoggedInMessage } from "@/ui/shared";
 import { useDojo } from "@bibliothecadao/react";
 import { Leva } from "leva";
 import { useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { dojoConfig } from "../../../dojo-config";
 import { env } from "../../../env";
 import { useUIStore } from "../../hooks/store/use-ui-store";
@@ -237,7 +237,7 @@ const ConnectionMonitor = () => {
       },
       healthCheckFn: () => probeToriiHealth(toriiBaseUrl),
       onRecovery: (outageMs, attempts) => {
-        toast.success("Back online", {
+        gameToast.success("Back online", {
           description: `Reconnected after ${Math.max(1, Math.round(outageMs / 1000))}s offline.`,
         });
         reportNetworkOutageResolved({ streamType: "both", outageMs, attempts });

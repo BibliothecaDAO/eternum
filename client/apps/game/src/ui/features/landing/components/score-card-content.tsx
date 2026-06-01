@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { Copy, Loader2, Share2 } from "lucide-react";
 
 import { Button } from "@/ui/design-system/atoms";
@@ -80,7 +80,7 @@ export const ScoreCardContent = ({
 
   const handleCopyImage = useCallback(async () => {
     if (!highlightPlayer || !cardRef.current) {
-      toast.error("Your highlight card is still loading.");
+      gameToast.error("Your highlight card is still loading.");
       return;
     }
 
@@ -106,13 +106,13 @@ export const ScoreCardContent = ({
       });
 
       if (result === "copied") {
-        toast.success("Copied highlight image to clipboard!");
+        gameToast.success("Copied highlight image to clipboard!");
       } else {
-        toast.info("Clipboard not available; downloaded image instead.");
+        gameToast.info("Clipboard not available; downloaded image instead.");
       }
     } catch (caughtError) {
       console.error("Failed to copy highlight image", caughtError);
-      toast.error("Copy failed. Please try again.");
+      gameToast.error("Copy failed. Please try again.");
     } finally {
       setIsCopyingImage(false);
     }
@@ -120,13 +120,13 @@ export const ScoreCardContent = ({
 
   const handleShareOnX = useCallback(() => {
     if (!highlightPlayer) {
-      toast.error("Final standings are still loading.");
+      gameToast.error("Final standings are still loading.");
       return;
     }
 
     const didOpen = openShareOnX(shareMessage);
     if (!didOpen) {
-      toast.error("Sharing is not supported in this environment.");
+      gameToast.error("Sharing is not supported in this environment.");
     }
   }, [highlightPlayer, shareMessage]);
 
@@ -135,8 +135,8 @@ export const ScoreCardContent = ({
 
     navigator.clipboard
       .writeText(shareMessage)
-      .then(() => toast.success("Message copied to clipboard!"))
-      .catch(() => toast.error("Failed to copy message"));
+      .then(() => gameToast.success("Message copied to clipboard!"))
+      .catch(() => gameToast.error("Failed to copy message"));
   }, [shareMessage]);
 
   if (isLoading) {

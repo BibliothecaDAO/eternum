@@ -1,6 +1,6 @@
 import Navigation from "lucide-react/dist/esm/icons/navigation";
 import X from "lucide-react/dist/esm/icons/x";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
@@ -54,7 +54,7 @@ export function BattleToast({
               evt.stopPropagation();
               if (!location) return;
               onNavigate(location);
-              toast.dismiss(toastId);
+              gameToast.dismiss(toastId);
             }}
             className={cn(
               "btn-bronze inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors",
@@ -67,7 +67,7 @@ export function BattleToast({
           </button>
           <button
             type="button"
-            onClick={() => toast.dismiss(toastId)}
+            onClick={() => gameToast.dismiss(toastId)}
             className="rounded p-0.5 text-gold/40 hover:text-gold transition-colors"
           >
             <X className="h-3 w-3" />

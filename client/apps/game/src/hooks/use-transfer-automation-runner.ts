@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { toast } from "sonner";
+import { gameToast, type GameToastResourceItem } from "@/ui/shared/game-toast";
 import { useDojo } from "@bibliothecadao/react";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import {
@@ -15,6 +15,14 @@ import { canTransferMilitaryInventoryBetweenStructureIds } from "@/ui/lib/struct
 import { isEntityOwnedByAccount } from "@/utils/entity-ownership";
 import { useTransferAutomationStore } from "./store/use-transfer-automation-store";
 import { assessDonkeyCapacity, buildSendResourcesArgs, planTransferAmounts } from "./transfer-automation-planner";
+
+const buildTransferResourceToastItems = (
+  transferList: Array<{ resourceId: ResourcesIds; humanAmount: number }>,
+): GameToastResourceItem[] =>
+  transferList.map((transfer) => ({
+    resourceId: transfer.resourceId,
+    amount: transfer.humanAmount,
+  }));
 
 export const useTransferAutomationRunner = () => {
   const {
@@ -137,13 +145,13 @@ export const useTransferAutomationRunner = () => {
             }
 
             if (!isEntityOwnedByAccount(components, sourceId, account.address)) {
-              toast.warning("Scheduled transfer skipped: source structure is no longer owned.");
+              gameToast.warning("Scheduled transfer skipped: source structure is no longer owned.");
               scheduleNext(entry.id, nowMs);
               continue;
             }
 
             if (!isEntityOwnedByAccount(components, destId, account.address)) {
-              toast.warning("Scheduled transfer skipped: destination structure is no longer owned.");
+              gameToast.warning("Scheduled transfer skipped: destination structure is no longer owned.");
               scheduleNext(entry.id, nowMs);
               continue;
             }
@@ -158,7 +166,7 @@ export const useTransferAutomationRunner = () => {
                 destinationEntityId: destId,
               });
               if (!validTransfer) {
-                toast.warning(
+                gameToast.warning(
                   mode.id === "blitz"
                     ? "Scheduled transfer skipped: troops can only move between your owned structures in Blitz."
                     : "Scheduled transfer skipped: troops can only move Realm ↔ Realm.",
@@ -184,7 +192,7 @@ export const useTransferAutomationRunner = () => {
 
             const capacity = assessDonkeyCapacity(transferList, donkeyBalHuman);
             if (!capacity.ok) {
-              toast.error("Scheduled transfer blocked: insufficient donkeys at source.");
+              gameToast.error("Scheduled transfer blocked: insufficient donkeys at source.");
               scheduleNext(entry.id, nowMs);
               continue;
             }
@@ -216,14 +224,14 @@ export const useTransferAutomationRunner = () => {
 
             update(entry.id, { lastRunAt: nowMs });
             scheduleNext(entry.id, nowMs);
-            const summary = transferList
-              .map((t) => `${t.humanAmount.toLocaleString()} ${ResourcesIds[t.resourceId]}`)
-              .join(", ");
-            toast.success(`Transfer scheduled: ${summary}`);
+            gameToast.success({
+              title: "Transfer scheduled",
+              resources: buildTransferResourceToastItems(transferList),
+            });
           } catch (err) {
             console.error("Transfer automation: execution failed", err);
             scheduleNext(entry.id, nowMs);
-            toast.error("Scheduled transfer failed. Check console for details.");
+            gameToast.error("Scheduled transfer failed. Check console for details.");
           }
         }
       } finally {

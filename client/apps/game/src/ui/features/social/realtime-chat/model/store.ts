@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 import { AudioManager } from "@/audio/core/AudioManager";
 import { RealtimeClient } from "@bibliothecadao/types";
@@ -568,7 +568,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         const senderName =
           onlinePlayers[normalizedMessage.senderId]?.displayName ?? normalizedMessage.senderId.slice(0, 8);
         const preview = normalizedMessage.content.slice(0, 60);
-        toast(`${senderName}: ${preview}`);
+        gameToast(`${senderName}: ${preview}`);
       }
 
       const updatedAt =

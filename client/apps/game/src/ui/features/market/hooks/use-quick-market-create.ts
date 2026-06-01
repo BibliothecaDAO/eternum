@@ -1,6 +1,6 @@
 import { useCall } from "@starknet-react/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { CairoCustomEnum, Call, CallData, uint256, type Abi, type RawArgsObject, type Uint256 } from "starknet";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -438,7 +438,7 @@ export const useQuickMarketCreate = (
     const checkForExistingMarket = async () => {
       const exists = await checkMarketExists(oracleAddress);
       if (exists) {
-        toast.info("A market was just created for this game!");
+        gameToast.info("A market was just created for this game!");
         onMarketFoundRef.current?.();
       }
     };
@@ -467,7 +467,7 @@ export const useQuickMarketCreate = (
         } else {
           // Add player (if under limit)
           if (current.length >= MAX_SELECTED_PLAYERS) {
-            toast.error(`Maximum ${MAX_SELECTED_PLAYERS} players can be selected`);
+            gameToast.error(`Maximum ${MAX_SELECTED_PLAYERS} players can be selected`);
             return current;
           }
           return [...current, player];
@@ -569,7 +569,7 @@ export const useQuickMarketCreate = (
       if (marketAlreadyExists) {
         const errorMsg = "A market already exists for this game. Refreshing...";
         setCreateError(errorMsg);
-        toast.error(errorMsg);
+        gameToast.error(errorMsg);
         setIsCreating(false);
         // Notify parent to refresh and show existing market
         onMarketFoundRef.current?.();
@@ -604,7 +604,7 @@ export const useQuickMarketCreate = (
     if (!params) {
       const errorMsg = "Failed to build market parameters";
       setCreateError(errorMsg);
-      toast.error(errorMsg);
+      gameToast.error(errorMsg);
       return;
     }
 
@@ -612,7 +612,7 @@ export const useQuickMarketCreate = (
     if (fundingBase == null) {
       const errorMsg = "Invalid funding amount";
       setCreateError(errorMsg);
-      toast.error(errorMsg);
+      gameToast.error(errorMsg);
       return;
     }
 
@@ -644,12 +644,12 @@ export const useQuickMarketCreate = (
         worldName,
       });
 
-      toast.success(`Prediction market created for ${worldName}!`);
+      gameToast.success(`Prediction market created for ${worldName}!`);
     } catch (e) {
       console.error("[useQuickMarketCreate] Error:", e);
       const message = e instanceof Error ? e.message : "Failed to create market";
       setCreateError(message);
-      toast.error(message);
+      gameToast.error(message);
     } finally {
       setIsCreating(false);
     }

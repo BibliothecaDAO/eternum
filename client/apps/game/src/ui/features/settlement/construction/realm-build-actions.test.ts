@@ -36,8 +36,8 @@ const {
   toastError: vi.fn(),
 }));
 
-vi.mock("sonner", () => ({
-  toast: {
+vi.mock("@/ui/shared/game-toast", () => ({
+  gameToast: {
     error: toastError,
   },
 }));

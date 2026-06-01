@@ -44,7 +44,7 @@ import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import Share2 from "lucide-react/dist/esm/icons/share-2";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 import { hash } from "starknet";
 import { env } from "../../../../../env";
@@ -357,32 +357,32 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
 
   const handleGenerateAvatar = useCallback(async () => {
     if (!avatarPrompt.trim()) {
-      toast.error("Please enter a description for your avatar.");
+      gameToast.error("Please enter a description for your avatar.");
       return;
     }
     if (hasReachedDailyLimit) {
-      toast.error("Daily avatar generation limit reached. Try again later.");
+      gameToast.error("Daily avatar generation limit reached. Try again later.");
       return;
     }
 
     try {
       const result = await generateAvatar.mutateAsync({ prompt: avatarPrompt.trim() });
-      toast.success("Avatar generated successfully!");
+      gameToast.success("Avatar generated successfully!");
       setLastGeneratedImages(result.imageUrls ?? []);
       setAvatarPrompt("");
     } catch (error: unknown) {
       console.error("Failed to generate avatar:", error);
-      toast.error(getErrorMessage(error, "Failed to generate avatar. Please try again."));
+      gameToast.error(getErrorMessage(error, "Failed to generate avatar. Please try again."));
     }
   }, [avatarPrompt, generateAvatar, hasReachedDailyLimit]);
 
   const handleDeleteAvatar = useCallback(async () => {
     try {
       await deleteAvatar.mutateAsync();
-      toast.success("Avatar deleted. Using default avatar now.");
+      gameToast.success("Avatar deleted. Using default avatar now.");
     } catch (error) {
       console.error("Failed to delete avatar:", error);
-      toast.error("Failed to delete avatar. Please try again.");
+      gameToast.error("Failed to delete avatar. Please try again.");
     }
   }, [deleteAvatar]);
 
@@ -393,16 +393,16 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
       }
 
       if (!connectedPlayerAddress || !hasOwnDisplayName) {
-        toast.error("Connect with Cartridge to select an avatar.");
+        gameToast.error("Connect with Cartridge to select an avatar.");
         return;
       }
 
       try {
         await selectAvatar.mutateAsync(imageUrl);
-        toast.success("Avatar updated.");
+        gameToast.success("Avatar updated.");
       } catch (error: unknown) {
         console.error("Failed to set avatar:", error);
-        toast.error(getErrorMessage(error, "Failed to set avatar. Please try again."));
+        gameToast.error(getErrorMessage(error, "Failed to set avatar. Please try again."));
       }
     },
     [connectedPlayerAddress, hasOwnDisplayName, myAvatar?.avatarUrl, selectAvatar],
@@ -483,7 +483,7 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
 
   const handleCopyProfilePng = useCallback(async () => {
     if (!profileCardRef.current) {
-      toast.error("Profile card is still loading.");
+      gameToast.error("Profile card is still loading.");
       return;
     }
 
@@ -497,13 +497,13 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
       });
 
       if (result === "copied") {
-        toast.success("Profile image copied to clipboard!");
+        gameToast.success("Profile image copied to clipboard!");
       } else {
-        toast.info("Clipboard not available; downloaded image instead.");
+        gameToast.info("Clipboard not available; downloaded image instead.");
       }
     } catch (error) {
       console.error("Failed to copy profile image", error);
-      toast.error("Copy failed. Please try again.");
+      gameToast.error("Copy failed. Please try again.");
     } finally {
       setIsCopyingProfileCard(false);
     }
@@ -512,7 +512,7 @@ export const LandingPlayer = ({ selectedPlayerAddress, selectedPlayerName, varia
   const handleShareProfileOnX = useCallback(() => {
     const didOpen = openShareOnX(profileShareMessage);
     if (!didOpen) {
-      toast.error("Sharing is not supported in this environment.");
+      gameToast.error("Sharing is not supported in this environment.");
     }
   }, [profileShareMessage]);
 

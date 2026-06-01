@@ -1,16 +1,14 @@
 import { SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE, TransactionType } from "@bibliothecadao/provider";
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect } from "react";
-import { toast } from "sonner";
+import { gameToast, GameToastContent } from "@/ui/shared/game-toast";
 import { AudioManager } from "@/audio/core/AudioManager";
-import { getTxMessage as getBaseMessage, getTxIcon } from "@/ui/components/transaction-center/types";
+import { getTxMessage as getBaseMessage } from "@/ui/components/transaction-center/types";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 
-const getTxMessage = (type: TransactionType): string => {
-  const icon = getTxIcon(type);
-  const message = getBaseMessage(type);
-  return `${icon} ${message}`;
-};
+const getTxMessage = (type: TransactionType): string => getBaseMessage(type);
+
+const buildTransactionDescription = (description: string) => <GameToastContent content={description} />;
 
 type TransactionFailurePayload = {
   message?: string;
@@ -33,7 +31,7 @@ export function TransactionNotification() {
       console.log("Transaction pending:", receipt);
       const description = getTxMessage(receipt.type);
       const txCount = receipt.transactionCount ? ` (${receipt.transactionCount} transactions)` : "";
-      toast("⏳ Transaction pending", { description: description + txCount });
+      gameToast("Transaction pending", { description: buildTransactionDescription(description + txCount) });
       AudioManager.getInstance().play("ui.toast_info");
     };
 
@@ -41,7 +39,7 @@ export function TransactionNotification() {
       console.log("Transaction completed:", receipt);
       const description = getTxMessage(receipt.type);
       const txCount = receipt.transactionCount ? ` (${receipt.transactionCount} transactions)` : "";
-      toast("Completed Action", { description: description + txCount });
+      gameToast("Completed Action", { description: buildTransactionDescription(description + txCount) });
       AudioManager.getInstance().play("ui.tx_success");
     };
 
@@ -52,10 +50,10 @@ export function TransactionNotification() {
       const action = type ? getTxMessage(type) : "Action failed";
       const txCount = transactionCount ? ` (${transactionCount} transactions)` : "";
       const isNoHashTimeout = payload.failureKind === "submission_timeout_no_hash";
-      const title = isNoHashTimeout ? "⚠️ Transaction status uncertain" : "❌ Transaction failed";
+      const title = isNoHashTimeout ? "Transaction status uncertain" : "Transaction failed";
       const description = `${action}${txCount} - ${isNoHashTimeout ? SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE : message}`;
       console.error("Transaction failed:", message);
-      toast(title, { description });
+      gameToast.error(title, { description: buildTransactionDescription(description) });
       AudioManager.getInstance().play("ui.tx_fail");
     };
 

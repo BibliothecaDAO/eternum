@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 import { AudioManager } from "@/audio/core/AudioManager";
 import { MAP_DATA_REFRESH_INTERVAL, MapDataStore, Position } from "@bibliothecadao/eternum";
@@ -66,10 +66,10 @@ export function StoryEventToastBridge() {
 
   // Track which event keys we've already shown as toasts
   const shownIdsRef = useRef(new Set<string>());
-  // Track initial load so we don't toast all existing events on mount
+  // Track initial load so we don't gameToast all existing events on mount
   const initializedRef = useRef(false);
 
-  // Keep navigation helpers in refs so the toast callback always uses the latest values
+  // Keep navigation helpers in refs so the gameToast callback always uses the latest values
   const navRef = useRef({ goToStructure, navigateToMapView, setSelectedHex, isMapView });
   useEffect(() => {
     navRef.current = { goToStructure, navigateToMapView, setSelectedHex, isMapView };
@@ -269,7 +269,7 @@ export function StoryEventToastBridge() {
           event.battle_defender_troops_tier,
         );
 
-      toast.custom(
+      gameToast.custom(
         (id) => (
           <BattleToast
             toastId={id}

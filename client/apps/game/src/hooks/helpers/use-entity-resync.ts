@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 const ENTITY_RESYNC_COOLDOWN_MS = 10_000;
 const ENTITY_RESYNC_TIMEOUT_MS = 20_000;
@@ -40,7 +40,7 @@ export const useEntityResync = ({
 
       if (elapsedMs < cooldownMs) {
         const remainingSeconds = Math.ceil((cooldownMs - elapsedMs) / 1000);
-        toast.info(`Please wait ${remainingSeconds}s before re-syncing this ${normalizedEntityLabel}.`);
+        gameToast.info(`Please wait ${remainingSeconds}s before re-syncing this ${normalizedEntityLabel}.`);
         return false;
       }
 
@@ -56,11 +56,11 @@ export const useEntityResync = ({
 
           void runSync().then(resolve).catch(reject);
         });
-        toast.success(successMessage);
+        gameToast.success(successMessage);
         return true;
       } catch (error) {
         console.error(`[resync] Failed to sync ${normalizedEntityLabel}`, error);
-        toast.error(errorMessage ?? `Could not sync ${normalizedEntityLabel}. Please try again.`);
+        gameToast.error(errorMessage ?? `Could not sync ${normalizedEntityLabel}. Please try again.`);
         return false;
       } finally {
         if (timeoutId !== null) {

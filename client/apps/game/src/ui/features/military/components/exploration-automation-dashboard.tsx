@@ -15,7 +15,7 @@ import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { Bot, MapPin, Pause, Play, RotateCw, Square, Trash2 } from "lucide-react";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { useShallow } from "zustand/react/shallow";
 
 const formatRelativeTime = (timestamp?: number | null): string => {
@@ -248,28 +248,28 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
   const handlePauseAll = useCallback(() => {
     const activeCount = list.filter((e) => e.active).length;
     if (activeCount === 0) {
-      toast.info("No active automations to pause.");
+      gameToast.info("No active automations to pause.");
       return;
     }
     pauseAll();
-    toast.success(`Paused ${activeCount} exploration${activeCount > 1 ? "s" : ""}.`);
+    gameToast.success(`Paused ${activeCount} exploration${activeCount > 1 ? "s" : ""}.`);
   }, [list, pauseAll]);
 
   const handleResumeAll = useCallback(() => {
     const pausedCount = list.filter((e) => !e.active).length;
     if (pausedCount === 0) {
-      toast.info("No paused automations to resume.");
+      gameToast.info("No paused automations to resume.");
       return;
     }
     resumeAll();
-    toast.success(`Resumed ${pausedCount} exploration${pausedCount > 1 ? "s" : ""}.`);
+    gameToast.success(`Resumed ${pausedCount} exploration${pausedCount > 1 ? "s" : ""}.`);
   }, [list, resumeAll]);
 
   const handleGoToExplorer = useCallback(
     (entry: ExplorationAutomationEntry) => {
       const pos = explorerPositions[entry.id];
       if (!pos) {
-        toast.error("Explorer position unknown.");
+        gameToast.error("Explorer position unknown.");
         return;
       }
       onNavigate?.();
@@ -281,7 +281,7 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
   const handleRemove = useCallback(
     (entry: ExplorationAutomationEntry) => {
       remove(entry.id);
-      toast.success("Automation removed.");
+      gameToast.success("Automation removed.");
     },
     [remove],
   );
@@ -289,7 +289,7 @@ const ExplorationAutomationContent = ({ onNavigate, compact = false }: Explorati
   const handleRunNow = useCallback(
     (entry: ExplorationAutomationEntry) => {
       runNow(entry.id);
-      toast.success("Running exploration now.");
+      gameToast.success("Running exploration now.");
     },
     [runNow],
   );

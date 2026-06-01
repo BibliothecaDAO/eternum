@@ -1,6 +1,6 @@
 import { BUILDINGS_CENTER, BuildingType, getNeighborHexes, ResourcesIds } from "@bibliothecadao/types";
 import { TileManager } from "@bibliothecadao/eternum";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import {
   getBuildReservationState,
   releaseOccupiedBuildSpot,
@@ -225,7 +225,7 @@ export const buildRealmBuilding = async ({
   onBuildSuccess,
 }: RealmBuildActionOptions) => {
   if (!realmPosition) {
-    toast.error("Select a realm before building.");
+    gameToast.error("Select a realm before building.");
     return false;
   }
 
@@ -239,7 +239,7 @@ export const buildRealmBuilding = async ({
   });
 
   if (!baseBuildability.canSubmit) {
-    toast.error(baseBuildability.reason ?? "Building cannot be submitted.");
+    gameToast.error(baseBuildability.reason ?? "Building cannot be submitted.");
     return false;
   }
 
@@ -250,7 +250,7 @@ export const buildRealmBuilding = async ({
   const availableSpots = resolveAvailableBuildSpots(tileManager, reservedSpots, candidates);
 
   if (availableSpots.length === 0) {
-    toast.error("No empty building tiles available.");
+    gameToast.error("No empty building tiles available.");
     return false;
   }
 
@@ -306,18 +306,18 @@ export const buildRealmBuilding = async ({
     }
 
     if (occupiedTileFailures > 0) {
-      toast.error("All auto-selected tiles became occupied. Please try again.");
+      gameToast.error("All auto-selected tiles became occupied. Please try again.");
       return false;
     }
 
-    toast.error("No empty building tiles available.");
+    gameToast.error("No empty building tiles available.");
     return false;
   } catch (error) {
     console.error("Failed to auto-build", error);
     if (isOccupiedSpaceError(error)) {
-      toast.error("This tile is occupied. Please try again.");
+      gameToast.error("This tile is occupied. Please try again.");
     } else {
-      toast.error("Building failed. Please try again.");
+      gameToast.error("Building failed. Please try again.");
     }
     return false;
   }

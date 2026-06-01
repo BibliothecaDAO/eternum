@@ -61,7 +61,7 @@ import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 import Play from "lucide-react/dist/esm/icons/play";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, LEFT_ACTIONS_GAP_FROM_MINIMAP, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, normalizeMinimapTile, type MinimapTile } from "./hex-minimap";
@@ -240,7 +240,7 @@ const MapTilePanel = () => {
     if (!syncableEntityType || syncableEntityId === null) return;
 
     if (!toriiClient || !contractComponents) {
-      toast.error("Unable to sync right now.");
+      gameToast.error("Unable to sync right now.");
       return;
     }
 
@@ -522,7 +522,7 @@ const LocalTilePanel = () => {
   const handleResyncStructure = useCallback(() => {
     if (!structureSyncTarget) return;
     if (!toriiClient || !contractComponents) {
-      toast.error("Unable to sync right now.");
+      gameToast.error("Unable to sync right now.");
       return;
     }
 

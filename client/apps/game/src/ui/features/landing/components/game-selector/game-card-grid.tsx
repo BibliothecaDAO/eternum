@@ -35,7 +35,7 @@ import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle2, Eye, Loader2, LogIn, Play, RefreshCw, Sparkles, Trophy, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import {
   createPendingNetworkAction,
   resolvePendingNetworkSwitchOutcome,
@@ -377,7 +377,7 @@ const GameCard = ({
   const runWithNetworkGuard = useCallback(
     (action: () => void, targetChain: Chain = game.chain, context: "game" | "market" = "game") => {
       if (hasConnectedWallet && status === "detecting") {
-        toast.info("Detecting wallet network. Try again in a moment.");
+        gameToast.info("Detecting wallet network. Try again in a moment.");
         return;
       }
 
@@ -411,7 +411,7 @@ const GameCard = ({
   const canEnterRegisteredBlitz = isBlitzMode && showRegistered && (isUpcoming || isOngoing);
   const canPlay = !isUnknownMode && (canEnterRegisteredBlitz || canOpenEternumEntry);
 
-  // Handle settle entry with toast notification.
+  // Handle settle entry with gameToast notification.
   const handleSettle = useCallback(() => {
     runWithNetworkGuard(() => {
       void settle().catch((err) => {
@@ -462,7 +462,7 @@ const GameCard = ({
     [marketSnapshot, runWithNetworkGuard, toggleModal],
   );
 
-  // Show success toast when settlement completes.
+  // Show success gameToast when settlement completes.
   useEffect(() => {
     if (entryStage !== "done") {
       handledSettlementStageRef.current = false;
@@ -472,7 +472,7 @@ const GameCard = ({
     if (handledSettlementStageRef.current) return;
     handledSettlementStageRef.current = true;
 
-    toast.success("Settlement successful!", {
+    gameToast.success("Settlement successful!", {
       description: `You are now settled in ${game.name}.`,
     });
     onRegistrationComplete?.(game.worldKey);

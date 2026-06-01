@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { CallData, type Call } from "starknet";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { getContractByName } from "@dojoengine/core";
 
 import { dojoConfig } from "../../../../../dojo-config";
@@ -73,7 +73,7 @@ export const useRealmUpgradeAndProvision = (structureEntityId: number | null): R
     // Affordable: bundle provision + upgrade in one signature. provision_realm
     // FIRST — it grants the starting resources level_up spends.
     if (!structureSystemsAddress || !blitzRealmSystemsAddress) {
-      toast.error("Unable to resolve realm system contracts.");
+      gameToast.error("Unable to resolve realm system contracts.");
       return;
     }
 
@@ -100,7 +100,7 @@ export const useRealmUpgradeAndProvision = (structureEntityId: number | null): R
       });
     } catch (error) {
       console.error("[realm-upgrade-and-provision] Failed to submit provision multicall", error);
-      toast.error(error instanceof Error ? error.message : "Failed to submit the provision.");
+      gameToast.error(error instanceof Error ? error.message : "Failed to submit the provision.");
       throw error;
     } finally {
       setIsPending(false);

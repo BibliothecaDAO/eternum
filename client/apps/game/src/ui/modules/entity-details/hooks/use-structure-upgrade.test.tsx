@@ -29,8 +29,8 @@ vi.mock("@/ui/utils/transactions", () => ({
   waitForTransactionConfirmation: mocks.waitForTransactionConfirmation,
 }));
 
-vi.mock("sonner", () => ({
-  toast: {
+vi.mock("@/ui/shared/game-toast", () => ({
+  gameToast: {
     error: mocks.toastError,
   },
 }));

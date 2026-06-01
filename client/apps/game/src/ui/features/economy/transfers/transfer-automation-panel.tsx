@@ -38,7 +38,7 @@ import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import Star from "lucide-react/dist/esm/icons/star";
 import Tent from "lucide-react/dist/esm/icons/tent";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 const BLITZ_FRAGMENT_MINE_ALLOWED_RESOURCES = new Set<ResourcesIds>([ResourcesIds.Donkey, ResourcesIds.Essence]);
 const ETERNUM_FRAGMENT_MINE_ALLOWED_RESOURCES = new Set<ResourcesIds>([
@@ -648,22 +648,22 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   const submit = useCallback(async () => {
     if (!components) return;
     if (!account || !account.address || account.address === "0x0") {
-      toast.error("Connect wallet to transfer.");
+      gameToast.error("Connect wallet to transfer.");
       return;
     }
     if (selectedResources.length === 0) {
-      toast.error("Select at least one resource.");
+      gameToast.error("Select at least one resource.");
       return;
     }
     if (!selectedSourceId) {
-      toast.error("Select a source location.");
+      gameToast.error("Select a source location.");
       return;
     }
 
     const resolvedDestinationIds = allowMultiDestination ? destinationIds : destinationIds.slice(0, 1);
 
     if (resolvedDestinationIds.length === 0) {
-      toast.error("Select at least one destination.");
+      gameToast.error("Select at least one destination.");
       return;
     }
 
@@ -672,7 +672,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       .filter((structure): structure is Structure => Boolean(structure));
 
     if (resolvedDestinations.length !== resolvedDestinationIds.length) {
-      toast.error("Selected destination is no longer available.");
+      gameToast.error("Selected destination is no longer available.");
       return;
     }
 
@@ -691,7 +691,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
             }),
         );
       if (invalid) {
-        toast.error(
+        gameToast.error(
           mode.id === "blitz"
             ? "Troops can only be transferred between your owned structures in Blitz."
             : "Troops can only be transferred Realm ↔ Realm.",
@@ -703,25 +703,25 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     const fragmentMineDestinationInvalid =
       !allowFragmentMineDestinationPayload && resolvedDestinations.some((dst) => isFragmentMine(dst));
     if (fragmentMineDestinationInvalid) {
-      toast.error(fragmentMineTransferMessage);
+      gameToast.error(fragmentMineTransferMessage);
       return;
     }
 
     if (!transferPreview) {
-      toast.error("Unable to compute transfer amounts.");
+      gameToast.error("Unable to compute transfer amounts.");
       return;
     }
 
     const perTransferDonkeyNeed = transferPreview.donkeys.need;
     const totalDonkeysNeeded = perTransferDonkeyNeed * resolvedDestinationIds.length;
     if (resolvedDestinationIds.length > 0 && transferPreview.donkeys.have < totalDonkeysNeeded) {
-      toast.error("Insufficient donkeys at source.");
+      gameToast.error("Insufficient donkeys at source.");
       return;
     }
 
     const currentAmounts = transferPreview.perResource;
     if (currentAmounts.length === 0) {
-      toast.error("Nothing to send.");
+      gameToast.error("Nothing to send.");
       return;
     }
 
@@ -748,11 +748,11 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
           signer: account,
           calls,
         });
-        toast.success(resolvedDestinationIds.length > 1 ? "Transfers sent." : "Transfer sent.");
+        gameToast.success(resolvedDestinationIds.length > 1 ? "Transfers sent." : "Transfer sent.");
         setStatusMessage(resolvedDestinationIds.length > 1 ? "Transfers started" : "Transfer started");
       } catch (e) {
         console.error(e);
-        toast.error("Transfer failed.");
+        gameToast.error("Transfer failed.");
         setStatusMessage("Transfer failed");
       } finally {
         setIsSubmitting(false);
@@ -776,19 +776,19 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
           calls,
         });
         immediateRunTimestamp = Date.now();
-        toast.success(
+        gameToast.success(
           resolvedDestinationIds.length > 1 ? "Transfers sent and scheduled." : "Transfer sent and scheduled.",
         );
         setStatusMessage(
           resolvedDestinationIds.length > 1 ? "Transfers started and scheduled" : "Transfer started and scheduled",
         );
       } else {
-        toast.warning("Nothing to send now. Scheduling for later.");
+        gameToast.warning("Nothing to send now. Scheduling for later.");
         setStatusMessage("Scheduled for later");
       }
     } catch (e) {
       console.error(e);
-      toast.error("Immediate run failed. Scheduled for later.");
+      gameToast.error("Immediate run failed. Scheduled for later.");
       setStatusMessage("Scheduled; immediate run failed");
     }
 
@@ -813,7 +813,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
         lastRunAt: immediateRunTimestamp,
       });
     });
-    toast.success(resolvedDestinationIds.length > 1 ? "Scheduled transfers created." : "Scheduled transfer created.");
+    gameToast.success(
+      resolvedDestinationIds.length > 1 ? "Scheduled transfers created." : "Scheduled transfer created.",
+    );
     setIsSubmitting(false);
   }, [
     components,

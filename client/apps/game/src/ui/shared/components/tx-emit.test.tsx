@@ -1,4 +1,5 @@
 import { act } from "react";
+import type { ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { TransactionNotification } from "./tx-emit";
@@ -24,7 +25,12 @@ const provider = vi.hoisted(() => {
   };
 });
 
-const toastMock = vi.hoisted(() => vi.fn());
+const toastMock = vi.hoisted(() => {
+  const base = vi.fn();
+  return Object.assign(base, {
+    error: vi.fn(),
+  });
+});
 const playMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@bibliothecadao/react", () => ({
@@ -37,8 +43,9 @@ vi.mock("@bibliothecadao/react", () => ({
   }),
 }));
 
-vi.mock("sonner", () => ({
-  toast: toastMock,
+vi.mock("@/ui/shared/game-toast", () => ({
+  gameToast: toastMock,
+  GameToastContent: ({ content }: { content: ReactNode }) => <span>{content}</span>,
 }));
 
 vi.mock("@/audio/core/AudioManager", () => ({
@@ -86,11 +93,12 @@ describe("TransactionNotification", () => {
       });
     });
 
-    expect(toastMock).toHaveBeenCalledWith("⚠️ Transaction status uncertain", {
-      description: expect.stringContaining(
-        "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.",
-      ),
+    expect(toastMock.error).toHaveBeenCalledWith("Transaction status uncertain", {
+      description: expect.objectContaining({ type: expect.any(Function) }),
     });
+    expect(toastMock.error.mock.calls[0]?.[1]?.description.props.content).toContain(
+      "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.",
+    );
     expect(playMock).toHaveBeenCalledWith("ui.tx_fail");
   });
 });

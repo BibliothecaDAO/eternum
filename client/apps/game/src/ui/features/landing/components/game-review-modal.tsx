@@ -18,7 +18,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toPng } from "html-to-image";
 import { ArrowLeft, ArrowRight, Copy, Flag, Gift, Loader2, Share2, Shield, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MutableRefObject } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 import { useGameReviewData } from "../hooks/use-game-review-data";
 import { UnifiedGameGrid, type GameData, type WorldSelection } from "./game-selector/game-card-grid";
@@ -813,11 +813,11 @@ export const GameReviewModal = ({
     onSuccess: async (result) => {
       setSubmitTxError(null);
       if (result.mmrError) {
-        toast("Score submission completed with MMR pending.", {
+        gameToast("Score submission completed with MMR pending.", {
           description: `${result.totalPlayers} players processed. Retry MMR independently from this step.`,
         });
       } else {
-        toast.success("Score submission completed.", {
+        gameToast.success("Score submission completed.", {
           description: result.mmrSubmitted
             ? `${result.totalPlayers} players processed. MMR committed.`
             : `${result.totalPlayers} players processed. MMR was optional or unavailable.`,
@@ -839,14 +839,14 @@ export const GameReviewModal = ({
       if (isSubmissionWindowError && reviewData) {
         const description = getScoreSubmissionLockedDescription(reviewData.finalization, nowTs);
         setSubmitTxError(`Score submission is not open yet. ${description}`);
-        toast.error("Score submission is not open yet.", {
+        gameToast.error("Score submission is not open yet.", {
           description,
         });
         return;
       }
 
       setSubmitTxError(errorMessage);
-      toast.error("Failed to submit score or MMR.", { description: errorMessage });
+      gameToast.error("Failed to submit score or MMR.", { description: errorMessage });
     },
   });
 
@@ -884,7 +884,7 @@ export const GameReviewModal = ({
           claimBlockedReason: "Rewards already claimed.",
         };
       });
-      toast.success("Rewards claimed.");
+      gameToast.success("Rewards claimed.");
       await queryClient.invalidateQueries({ queryKey: reviewQueryKey });
       await queryClient.invalidateQueries({ queryKey: reviewClaimSummaryQueryKey });
     },
@@ -892,7 +892,7 @@ export const GameReviewModal = ({
       console.error("Failed to claim rewards", caughtError);
       const errorMessage = getErrorMessage(caughtError, "Unknown error while claiming rewards.");
       setClaimTxError(errorMessage);
-      toast.error("Failed to claim rewards.", { description: errorMessage });
+      gameToast.error("Failed to claim rewards.", { description: errorMessage });
     },
   });
 
@@ -904,14 +904,14 @@ export const GameReviewModal = ({
 
     if (reviewData) {
       if (reviewData.finalization.devModeOn) {
-        toast.error("Score submission is disabled for dev mode games.");
+        gameToast.error("Score submission is disabled for dev mode games.");
         return;
       }
 
       const retryAvailable = canRetryMmrUpdate(reviewData);
       if (reviewData.finalization.rankingFinalized) {
         if (!retryAvailable) {
-          toast.error("MMR retry is unavailable.", {
+          gameToast.error("MMR retry is unavailable.", {
             description: getMmrStatus(reviewData),
           });
           return;
@@ -920,7 +920,7 @@ export const GameReviewModal = ({
         const secondsUntilOpen = getSecondsUntilScoreSubmissionOpen(reviewData.finalization, nowTs);
         if (secondsUntilOpen == null || secondsUntilOpen > 0) {
           const description = getScoreSubmissionLockedDescription(reviewData.finalization, nowTs);
-          toast.error("Score submission is not open yet.", {
+          gameToast.error("Score submission is not open yet.", {
             description,
           });
           return;
@@ -943,12 +943,12 @@ export const GameReviewModal = ({
     if (!isStepShareable || !captureRef.current) return;
 
     if (typeof window === "undefined") {
-      toast.error("Copying images is not supported in this environment.");
+      gameToast.error("Copying images is not supported in this environment.");
       return;
     }
 
     if (!("ClipboardItem" in window) || !navigator.clipboard?.write) {
-      toast.error("Copying images is not supported in this browser.");
+      gameToast.error("Copying images is not supported in this browser.");
       return;
     }
 
@@ -1016,10 +1016,10 @@ export const GameReviewModal = ({
         }, "image/png");
       });
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-      toast.success("Step image copied to clipboard.");
+      gameToast.success("Step image copied to clipboard.");
     } catch (caughtError) {
       console.error("Failed to copy review step image", caughtError);
-      toast.error("Could not copy the image.");
+      gameToast.error("Could not copy the image.");
     } finally {
       setIsCopying(false);
     }
@@ -1045,7 +1045,7 @@ export const GameReviewModal = ({
   const handleNextStep = useCallback(() => {
     if (!canProceedToNextStep) {
       if (nextStepBlockedReason) {
-        toast.error(nextStepBlockedReason);
+        gameToast.error(nextStepBlockedReason);
       }
       return;
     }

@@ -14,7 +14,7 @@ import Info from "lucide-react/dist/esm/icons/info";
 import Trophy from "lucide-react/dist/esm/icons/trophy";
 import Users from "lucide-react/dist/esm/icons/users";
 import { useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { dojoConfig } from "../../../../dojo-config";
 import { env } from "../../../../env";
 import { ClaimBlitzPrizeButton } from "./components/claim-blitz-prize-button";
@@ -340,7 +340,7 @@ export const PrizePanel = () => {
         setSubmission({ phase: "submitting_ranks", message: "Submitting single-player prize claim..." });
         await blitz_prize_claim_no_game({ signer: account, registered_player: onlyRegistered.toString() });
         setSubmission({ phase: "success", message: "Single-player prize claim submitted." });
-        toast("Submitted single-player prize claim", {
+        gameToast("Submitted single-player prize claim", {
           description: `Entry fee returned to ${displayAddress(toHexString(onlyRegistered))}.`,
         });
         return;
@@ -402,7 +402,7 @@ export const PrizePanel = () => {
             phase: "success",
             message: `Rankings and MMR submitted for ${sortedAddresses.length} players.`,
           });
-          toast("Submitted blitz rankings and MMR update", {
+          gameToast("Submitted blitz rankings and MMR update", {
             description: `Ranking finalized and MMR updated for ${sortedAddresses.length} players.`,
           });
         } catch (mmrError: unknown) {
@@ -414,7 +414,7 @@ export const PrizePanel = () => {
             errorStage: "mmr",
             errorMessage,
           });
-          toast("Submitted blitz rankings", {
+          gameToast("Submitted blitz rankings", {
             description: `Ranking finalized. MMR update failed: ${errorMessage}`,
           });
         }
@@ -432,7 +432,7 @@ export const PrizePanel = () => {
           phase: "success",
           message: mmrSkipReason ? `Rankings submitted. ${mmrSkipReason}` : "Rankings submitted.",
         });
-        toast("Submitted blitz rankings", { description: `Ranking reference ${String(trialId)} updated.` });
+        gameToast("Submitted blitz rankings", { description: `Ranking reference ${String(trialId)} updated.` });
       }
     } catch (e: unknown) {
       console.error(e);
@@ -443,7 +443,7 @@ export const PrizePanel = () => {
         errorStage: "ranking",
         errorMessage,
       });
-      toast("❌ Blitz ranking failed", { description: errorMessage });
+      gameToast("❌ Blitz ranking failed", { description: errorMessage });
     }
   };
 
@@ -542,7 +542,7 @@ export const PrizePanel = () => {
         phase: "success",
         message: `MMR updated for ${sortedAddresses.length} players.`,
       });
-      toast("Submitted MMR update", {
+      gameToast("Submitted MMR update", {
         description: `MMR updated for ${sortedAddresses.length} players.`,
       });
     } catch (e: unknown) {
@@ -552,7 +552,7 @@ export const PrizePanel = () => {
         phase: "error",
         message: errorMessage,
       });
-      toast("MMR update failed", { description: errorMessage });
+      gameToast("MMR update failed", { description: errorMessage });
     }
   };
 

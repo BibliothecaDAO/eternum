@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-06-01",
+    title: "Icon-Rich Notifications",
+    description:
+      "Improved game notifications so resources, markets, quests, transfers, and other key actions are easier to scan with compact inline icons.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-30",
     title: "Smarter Blitz Suggestions",
     description:

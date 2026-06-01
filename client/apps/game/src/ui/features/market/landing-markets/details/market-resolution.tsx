@@ -9,7 +9,7 @@ import { getContractByName } from "@dojoengine/core";
 import { HStack, VStack } from "@pm/ui";
 import { useAccount } from "@starknet-react/core";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { Call, uint256 } from "starknet";
 
 import { buildWorldProfile, getFactorySqlBaseUrl, patchManifestWithFactory, useRuntimeChain } from "@/runtime/world";
@@ -92,7 +92,7 @@ const waitForTxConfirmationIfAvailable = async (
   } catch (error) {
     // Keep UX responsive when providers fail to report confirmation despite successful execution.
     // The tx is already submitted at this point.
-    toast.message("Transaction submitted. Confirmation is delayed in wallet RPC; data may update after refresh.");
+    gameToast.message("Transaction submitted. Confirmation is delayed in wallet RPC; data may update after refresh.");
     return false;
   }
 };
@@ -361,13 +361,13 @@ export const useMarketResolutionController = (market: MarketClass, chain?: Chain
       const { suppressErrorToast = false, suppressSuccessToast = false } = options;
       if (serverLookupStatus !== "done") {
         if (!suppressErrorToast) {
-          toast.error("Resolving game name… please wait.");
+          gameToast.error("Resolving game name… please wait.");
         }
         return false;
       }
       if (!account) {
         if (!suppressErrorToast) {
-          toast.error("Connect a wallet to resolve the market.");
+          gameToast.error("Connect a wallet to resolve the market.");
         }
         return false;
       }
@@ -375,7 +375,7 @@ export const useMarketResolutionController = (market: MarketClass, chain?: Chain
       const marketAddress = getContractByName(manifest, "pm", "Markets")?.address;
       if (!marketAddress) {
         if (!suppressErrorToast) {
-          toast.error("Market contract not found in manifest.");
+          gameToast.error("Market contract not found in manifest.");
         }
         return false;
       }
@@ -409,13 +409,13 @@ export const useMarketResolutionController = (market: MarketClass, chain?: Chain
           "Resolve transaction",
         );
         if (!suppressSuccessToast) {
-          toast.success("Market resolved");
+          gameToast.success("Market resolved");
         }
         return true;
       } catch (error) {
         console.error("Failed to resolve market", error);
         if (!suppressErrorToast) {
-          toast.error("Failed to resolve market");
+          gameToast.error("Failed to resolve market");
         }
         return false;
       } finally {
@@ -430,25 +430,25 @@ export const useMarketResolutionController = (market: MarketClass, chain?: Chain
       const { suppressErrorToast = false, suppressSuccessToast = false } = options;
       if (hasFinalRanking) {
         if (!suppressSuccessToast) {
-          toast.success("Scores are already computed (PlayersRankFinal exists).");
+          gameToast.success("Scores are already computed (PlayersRankFinal exists).");
         }
         return "already-computed";
       }
       if (!market.isEnded()) {
         if (!suppressErrorToast) {
-          toast.error("Scores can only be computed after the game ends.");
+          gameToast.error("Scores can only be computed after the game ends.");
         }
         return "skipped";
       }
       if (!account) {
         if (!suppressErrorToast) {
-          toast.error("Connect a wallet to compute scores.");
+          gameToast.error("Connect a wallet to compute scores.");
         }
         return "skipped";
       }
       if (!serverName) {
         if (!suppressErrorToast) {
-          toast.error("Could not determine the game name to load players.");
+          gameToast.error("Could not determine the game name to load players.");
         }
         return "skipped";
       }
@@ -462,7 +462,7 @@ export const useMarketResolutionController = (market: MarketClass, chain?: Chain
         if (playerAddresses.length === 0) {
           setComputeStatus(null);
           if (!suppressErrorToast) {
-            toast.error("No registered players found for this game.");
+            gameToast.error("No registered players found for this game.");
           }
           return "failed";
         }
@@ -479,7 +479,7 @@ export const useMarketResolutionController = (market: MarketClass, chain?: Chain
         if (!prizeContract?.address) {
           setComputeStatus(null);
           if (!suppressErrorToast) {
-            toast.error("Prize distribution contract not found for this world.");
+            gameToast.error("Prize distribution contract not found for this world.");
           }
           return "failed";
         }
@@ -489,7 +489,7 @@ export const useMarketResolutionController = (market: MarketClass, chain?: Chain
           if (!solePlayer) {
             setComputeStatus(null);
             if (!suppressErrorToast) {
-              toast.error("Could not determine the registered player address.");
+              gameToast.error("Could not determine the registered player address.");
             }
             return "failed";
           }
@@ -524,7 +524,7 @@ export const useMarketResolutionController = (market: MarketClass, chain?: Chain
           );
           setComputeStatus("Single-player claim submitted.");
           if (!suppressSuccessToast) {
-            toast.success("Single registered player — prize claim submitted.");
+            gameToast.success("Single registered player — prize claim submitted.");
           }
           return "submitted";
         }
@@ -569,7 +569,7 @@ export const useMarketResolutionController = (market: MarketClass, chain?: Chain
 
         setComputeStatus("Score computation submitted.");
         if (!suppressSuccessToast) {
-          toast.success("Scores computation submitted.");
+          gameToast.success("Scores computation submitted.");
         }
         refetchRanks();
         return "submitted";
@@ -577,7 +577,7 @@ export const useMarketResolutionController = (market: MarketClass, chain?: Chain
         console.error("Failed to compute scores", error);
         setComputeStatus("Failed to compute scores.");
         if (!suppressErrorToast) {
-          toast.error("Failed to compute scores");
+          gameToast.error("Failed to compute scores");
         }
         return "failed";
       } finally {
@@ -607,14 +607,14 @@ export const useMarketResolutionController = (market: MarketClass, chain?: Chain
       });
 
       if (resolved) {
-        toast.success("Market resolved");
+        gameToast.success("Market resolved");
         return true;
       }
 
       if (computeResult === "failed") {
-        toast.error("Failed to compute scores and resolve market.");
+        gameToast.error("Failed to compute scores and resolve market.");
       } else {
-        toast.error("Failed to resolve market");
+        gameToast.error("Failed to resolve market");
       }
       return false;
     } finally {

@@ -69,7 +69,7 @@ import Pause from "lucide-react/dist/esm/icons/pause";
 import Play from "lucide-react/dist/esm/icons/play";
 import Trash from "lucide-react/dist/esm/icons/trash";
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 type ArmyTypeLabel = (typeof MILITARY_BUILDING_GROUP_ORDER)[number];
 type ArmyGroup = {
@@ -308,7 +308,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const handleDestroyBuilding = useCallback(
     async (target: { type: BuildingType; resource?: ResourcesIds }) => {
       if (!realm?.position) {
-        toast.error("Select a realm before destroying.");
+        gameToast.error("Select a realm before destroying.");
         return;
       }
 
@@ -322,7 +322,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
 
       const existing = tileManager.existingBuildings().find((building) => building.category === target.type);
       if (!existing) {
-        toast.error("No building of this type found to destroy.");
+        gameToast.error("No building of this type found to destroy.");
         return;
       }
       setPendingDestroys((prev) => ({ ...prev, [buildingKey]: true }));
@@ -338,7 +338,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         }
       } catch (error) {
         console.error("Failed to destroy building", error);
-        toast.error("Destroy failed. Please try again.");
+        gameToast.error("Destroy failed. Please try again.");
       } finally {
         setPendingDestroys((prev) => {
           const next = { ...prev };
@@ -362,7 +362,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
   const handlePauseResumeAll = useCallback(
     async (target: { type: BuildingType; resource?: ResourcesIds }) => {
       if (!realm?.position) {
-        toast.error("Select a realm before managing production.");
+        gameToast.error("Select a realm before managing production.");
         return;
       }
 
@@ -378,7 +378,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
       const categoryBuildings = currentBuildings.filter((b) => b.category === target.type);
 
       if (categoryBuildings.length === 0) {
-        toast.error("No buildings of this type found.");
+        gameToast.error("No buildings of this type found.");
         return;
       }
 
@@ -401,7 +401,7 @@ export const SelectPreviewBuildingMenu = ({ className, entityId }: { className?:
         );
       } catch (error) {
         console.error(`Failed to ${action} production`, error);
-        toast.error(`Failed to ${action} production. Please try again.`);
+        gameToast.error(`Failed to ${action} production. Please try again.`);
       } finally {
         setPendingPauseResume((prev) => {
           const next = { ...prev };

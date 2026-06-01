@@ -22,7 +22,7 @@ describe("network status wiring", () => {
     expect(source).toContain("NetworkStatusBanner");
     expect(source).toContain("triggerConnectionForceReconnect");
     expect(source).toContain("onRecovery:");
-    expect(source).toContain('toast.success("Back online"');
+    expect(source).toContain('gameToast.success("Back online"');
   });
 
   it("lets the active worldmap clear stuck map loading when stream reconnect fails", () => {

@@ -18,7 +18,7 @@ import { useDojo } from "@bibliothecadao/react";
 import { ContractAddress, getLevelName, ResourcesIds } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { useCallback, useEffect, useMemo } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 const REALM_UPGRADE_SYNC_TIMEOUT_MS = 30_000;
 const REALM_UPGRADE_SYNC_POLL_INTERVAL_MS = 1_000;
@@ -335,7 +335,7 @@ export const useStructureUpgrade = (structureEntityId: number | null): Structure
       }
 
       setUpgradeStatus(structureInfo.entityId, "syncTimeout");
-      toast.error("Realm upgrade confirmed. Waiting for synced realm data before enabling the next upgrade.");
+      gameToast.error("Realm upgrade confirmed. Waiting for synced realm data before enabling the next upgrade.");
     } catch (error) {
       clearUpgrade(structureInfo.entityId);
       throw error;

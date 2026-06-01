@@ -14,7 +14,7 @@ import {
 } from "@/init/bootstrap";
 import { addNetworkBreadcrumb } from "@/observability/network-health-reporting";
 import { markGameEntryMilestone, recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 import { resolveEntryContextCacheKey, type ResolvedEntryContext } from "./context";
 
@@ -304,7 +304,7 @@ export const useGameEntryBootstrapController = ({
           if (forceFresh) {
             markConnectionRecoveredAfterRouteRebootstrap();
             recordRouteRebootstrapSucceeded(reason);
-            toast.success("Game state refreshed", {
+            gameToast.success("Game state refreshed", {
               description: "Reconnected after a prolonged outage.",
             });
           }

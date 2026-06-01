@@ -4,7 +4,7 @@ import {
   DEFAULT_COSMETICS_NETWORK,
 } from "@/ui/features/cosmetics/config/networks";
 import { useCallback, useState } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { useLandingDojo } from "../../providers/landing-dojo-provider";
 
 interface OpenChestParams {
@@ -38,7 +38,7 @@ export function useOpenChest(network: CosmeticsNetwork = DEFAULT_COSMETICS_NETWO
       if (!account) {
         const error = new Error("No account connected");
         onError?.(error);
-        toast.error("Please connect your wallet first");
+        gameToast.error("Please connect your wallet first");
         return;
       }
 
@@ -61,14 +61,14 @@ export function useOpenChest(network: CosmeticsNetwork = DEFAULT_COSMETICS_NETWO
           claim_address: claimAddress,
         });
 
-        toast.success("Transaction sent! Opening chest...");
+        gameToast.success("Transaction sent! Opening chest...");
         onSuccess?.();
       } catch (err) {
         const error = err instanceof Error ? err : new Error("Failed to open chest");
         console.error("Failed to open chest:", error);
         setError(error);
         onError?.(error);
-        toast.error(error.message);
+        gameToast.error(error.message);
       } finally {
         setIsLoading(false);
       }

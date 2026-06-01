@@ -1,6 +1,6 @@
 import type { Chain } from "@contracts";
 import { mainnet, sepolia } from "@starknet-react/chains";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { constants, shortString } from "starknet";
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
@@ -136,7 +136,7 @@ export const switchWalletToChain = async ({
   const targetLabel = getChainLabel(targetChain);
 
   if (!controller?.switchStarknetChain) {
-    toast.error(`Please switch to ${targetLabel} in your wallet, then retry.`);
+    gameToast.error(`Please switch to ${targetLabel} in your wallet, then retry.`);
     controller?.openSettings?.();
     return false;
   }
@@ -144,16 +144,16 @@ export const switchWalletToChain = async ({
   try {
     const switched = await controller.switchStarknetChain(getSwitchChainIdForChain(targetChain));
     if (!switched) {
-      toast.error(`Could not switch to ${targetLabel}. Please switch manually in your wallet.`);
+      gameToast.error(`Could not switch to ${targetLabel}. Please switch manually in your wallet.`);
       controller.openSettings?.();
       return false;
     }
 
-    toast.success(`Switched to ${targetLabel}.`);
+    gameToast.success(`Switched to ${targetLabel}.`);
     return true;
   } catch (error) {
     console.error("Failed to switch network:", error);
-    toast.error(`Could not switch to ${targetLabel}. Please switch manually in your wallet.`);
+    gameToast.error(`Could not switch to ${targetLabel}. Please switch manually in your wallet.`);
     controller.openSettings?.();
     return false;
   }

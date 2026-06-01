@@ -5,7 +5,7 @@ import { buildEntryHref } from "@/play/navigation/play-route";
 import { buildWorldProfile, getFactorySqlBaseUrl, patchManifestWithFactory } from "@/runtime/world";
 import { isToriiAvailable } from "@/runtime/world/factory-resolver";
 import { Chain, getGameManifest } from "@contracts";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 import { decodePaddedFeltAscii } from "./market-utils";
 
@@ -192,7 +192,7 @@ export const useMarketWatch = (chain: Chain) => {
       try {
         const worldName = await checkWatchability(market);
         if (!worldName) {
-          toast.error("This game is offline or unavailable.");
+          gameToast.error("This game is offline or unavailable.");
           return;
         }
 
@@ -206,11 +206,11 @@ export const useMarketWatch = (chain: Chain) => {
         });
         const newTab = window.open(playUrl, "_blank", "noopener,noreferrer");
         if (!newTab) {
-          toast.error("Enable pop-ups to watch this game.");
+          gameToast.error("Enable pop-ups to watch this game.");
         }
       } catch (error) {
         console.error("[market-watch] Failed to open game for market", error);
-        toast.error("Failed to open the game for this market.");
+        gameToast.error("Failed to open the game for this market.");
       } finally {
         setWatchingMarketId((current) => (current === marketId ? null : current));
       }

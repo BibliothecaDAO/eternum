@@ -14,7 +14,7 @@ import { formatUnits } from "@/pm/utils";
 import { getContractByName } from "@dojoengine/core";
 import { useAccount } from "@starknet-react/core";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { addAddressPadding, Call, uint256 } from "starknet";
 
 type MarketDataChain = "slot" | "mainnet";
@@ -217,7 +217,7 @@ export const useMarketRedeem = (
   const redeem = async () => {
     if (!market) return;
     if (!account) {
-      toast.error("Connect a wallet to claim.");
+      gameToast.error("Connect a wallet to claim.");
       return;
     }
 
@@ -226,12 +226,12 @@ export const useMarketRedeem = (
     const vaultPositionsAddress = getContractByName(config.manifest, "pm", "VaultPositions")?.address;
 
     if (!marketContractAddress || !conditionalTokensAddress || !vaultPositionsAddress) {
-      toast.error("Missing contract addresses for redeem.");
+      gameToast.error("Missing contract addresses for redeem.");
       return;
     }
 
     if (!market.isResolved()) {
-      toast.error("Claims unlock once the market is resolved.");
+      gameToast.error("Claims unlock once the market is resolved.");
       return;
     }
 
@@ -323,7 +323,7 @@ export const useMarketRedeem = (
       }
 
       if (calls.length === 0) {
-        toast.error("No claims to process.");
+        gameToast.error("No claims to process.");
         return;
       }
 
@@ -358,12 +358,12 @@ export const useMarketRedeem = (
             },
             txHash,
           );
-          toast.success(confirmed ? "Claim confirmed." : "Claim submitted.");
+          gameToast.success(confirmed ? "Claim confirmed." : "Claim submitted.");
         } catch (confirmError) {
-          toast.success("Claim submitted. Confirmation is delayed; refresh shortly.");
+          gameToast.success("Claim submitted. Confirmation is delayed; refresh shortly.");
         }
       } else {
-        toast.success("Claim submitted.");
+        gameToast.success("Claim submitted.");
       }
 
       // Hide stale claim CTA immediately after a successful claim submit/confirm
@@ -382,7 +382,7 @@ export const useMarketRedeem = (
         setSuppressClaimUi(true);
         setTimeout(() => setSuppressClaimUi(false), 5 * 60_000);
       }
-      toast.error(error instanceof Error ? error.message : "Failed to submit claim transaction.");
+      gameToast.error(error instanceof Error ? error.message : "Failed to submit claim transaction.");
     } finally {
       setIsRedeeming(false);
     }

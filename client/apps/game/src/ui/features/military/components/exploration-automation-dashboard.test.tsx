@@ -106,8 +106,8 @@ vi.mock("lucide-react", () => {
   };
 });
 
-vi.mock("sonner", () => ({
-  toast: mocks.toast,
+vi.mock("@/ui/shared/game-toast", () => ({
+  gameToast: mocks.toast,
 }));
 
 const waitForAsyncWork = async () => {

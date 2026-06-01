@@ -1,5 +1,5 @@
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 import { ensureStructureSynced } from "@/dojo/queries";
 import { initializeSyncSimulator } from "@/dojo/sync-simulator";
@@ -2402,7 +2402,7 @@ export default class WorldmapScene extends WarpTravel {
     const defenderLabel = this.getEntityLabel(defenderId);
     const attackerLabel = typeof attackerId === "number" ? this.getEntityLabel(attackerId) : "Unknown attacker";
 
-    toast(
+    gameToast(
       <div className="flex flex-col gap-2">
         <div className="text-gold font-bold">⚠️ {defenderLabel} under attack</div>
         <div className="text-light-pink">Engaged by {attackerLabel}.</div>
@@ -2505,7 +2505,7 @@ export default class WorldmapScene extends WarpTravel {
 
     const account = useAccountStore.getState().account;
     if (!account) {
-      toast.error("Connect a controller account before creating a Hyperstructure.");
+      gameToast.error("Connect a controller account before creating a Hyperstructure.");
       return;
     }
 
@@ -2519,10 +2519,10 @@ export default class WorldmapScene extends WarpTravel {
         return;
       }
 
-      toast.success("Creating Hyperstructure...");
+      gameToast.success("Creating Hyperstructure...");
     } catch (error) {
       console.error("[Worldmap] Failed to create reserved hyperstructure", error);
-      toast.error("Unable to create this Hyperstructure right now.");
+      gameToast.error("Unable to create this Hyperstructure right now.");
     }
   }
 
@@ -2934,7 +2934,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private onArmyMovement(account: Account | AccountInterface, actionPath: ActionPath[], selectedEntityId: ID) {
     if (actionPath.length > 0 && this.isArmyMovementInputLocked(selectedEntityId)) {
-      toast.info("Army movement is still resolving");
+      gameToast.info("Army movement is still resolving");
       this.state.updateEntityActionHoveredHex(null);
       this.clearMovementActionOptionsForSelectedArmy(selectedEntityId);
       return;
@@ -2955,7 +2955,7 @@ export default class WorldmapScene extends WarpTravel {
         actionPath,
         movementStamina,
       });
-      toast.error("Not enough stamina for this move");
+      gameToast.error("Not enough stamina for this move");
       this.state.updateEntityActionHoveredHex(null);
       this.clearSelection();
       return;

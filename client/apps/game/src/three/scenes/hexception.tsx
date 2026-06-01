@@ -82,7 +82,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import gsap from "gsap";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import {
   AnimationClip,
   AnimationMixer,
@@ -655,14 +655,14 @@ export default class HexceptionScene extends HexagonScene {
       });
 
       if (!buildability.canSubmit) {
-        toast.error(buildability.reason ?? "Building cannot be submitted.");
+        gameToast.error(buildability.reason ?? "Building cannot be submitted.");
         AudioManager.getInstance().play("ui.build_invalid");
         this.updateHexceptionGrid(this.hexceptionRadius);
         return;
       }
 
       if (!this.canAffordPreviewBuilding(structureEntityId, buildingType.type, useSimpleCost)) {
-        toast.error("Insufficient resources to build here.");
+        gameToast.error("Insufficient resources to build here.");
         AudioManager.getInstance().play("ui.build_invalid");
         this.updateHexceptionGrid(this.hexceptionRadius);
         return;

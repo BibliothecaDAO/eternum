@@ -12,7 +12,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { getComponentValue, getEntityString } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import type { Account, AccountInterface } from "starknet";
 
 import { getExplorationStrategy } from "@/automation/exploration";
@@ -370,7 +370,7 @@ export const useExplorationAutomationRunner = () => {
               lastError: message,
               blockedReason: "error",
             });
-            toast.error("Exploration automation failed.");
+            gameToast.error("Exploration automation failed.");
             scheduleNext(entry.id, nowMs);
           }
         }

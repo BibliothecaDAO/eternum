@@ -40,7 +40,7 @@ import { MaybeController } from "@/ui/features/market/landing-markets/maybe-cont
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { hash } from "starknet";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { MarketDetailsModal } from "./market-details-modal";
 
 interface MarketsViewProps {
@@ -606,7 +606,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const handleOpenSwitchNetworkPrompt = useCallback(
     (chain: MarketDataChain) => {
       if (status === "detecting") {
-        toast.info("Detecting wallet network. Try again in a moment.");
+        gameToast.info("Detecting wallet network. Try again in a moment.");
         return;
       }
 

@@ -16,7 +16,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Loader from "lucide-react/dist/esm/icons/loader";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 import { useStructureEntityDetail } from "../entities/hooks/use-structure-entity-detail";
 
@@ -420,7 +420,7 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
     }
 
     if (!account) {
-      toast.error("Connect a wallet before devoting.");
+      gameToast.error("Connect a wallet before devoting.");
       return;
     }
 
@@ -455,10 +455,10 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
         queryClient.invalidateQueries({ queryKey: ["faith-devotion-status", String(structureEntityId)] }),
       ]);
 
-      toast.success("Devotion updated.");
+      gameToast.success("Devotion updated.");
       closeModal();
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to update devotion."));
+      gameToast.error(getErrorMessage(error, "Failed to update devotion."));
     } finally {
       setIsSubmitting(false);
     }

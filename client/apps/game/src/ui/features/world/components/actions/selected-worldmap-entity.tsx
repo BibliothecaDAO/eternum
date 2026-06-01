@@ -31,7 +31,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { type ReactNode, useCallback, useMemo } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 // Layout: vertical column of bubbles. The outer parent (TileDetails atom in
 // bottom-right-panel) already provides positioning + scroll, so this layout
@@ -306,7 +306,7 @@ const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition
       await createHyperstructure();
     } catch (error) {
       console.error("[ReservedHyperstructurePanel] Failed to create reserved hyperstructure", error);
-      toast.error(error instanceof Error ? error.message : "Failed to create the hyperstructure.");
+      gameToast.error(error instanceof Error ? error.message : "Failed to create the hyperstructure.");
     }
   }, [createHyperstructure]);
 

@@ -14,7 +14,7 @@ import { useQuery } from "@tanstack/react-query";
 import ArrowDown from "lucide-react/dist/esm/icons/arrow-down";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import { useMemo, useState } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { addAddressPadding, Call, uint256 } from "starknet";
 import { TokenIcon } from "../token-icon";
 
@@ -130,11 +130,11 @@ export function MarketVaultFees({
   // TODO: multicall with redeem tokens
   const claim = async () => {
     if (!account) {
-      toast.error("Connect a wallet to claim fees.");
+      gameToast.error("Connect a wallet to claim fees.");
       return;
     }
     if (!canClaim) {
-      toast.error("You can only claim after the market is resolved.");
+      gameToast.error("You can only claim after the market is resolved.");
       return;
     }
 
@@ -167,7 +167,7 @@ export function MarketVaultFees({
       }
 
       if (calls.length === 0) {
-        toast.error("No claimable fees found.");
+        gameToast.error("No claimable fees found.");
         return;
       }
 
@@ -178,10 +178,10 @@ export function MarketVaultFees({
         operation: "market_claim_vault_fees",
       });
 
-      toast.success("Vault Fees claimed!");
+      gameToast.success("Vault Fees claimed!");
     } catch (error) {
       console.error(error);
-      toast.error(error instanceof Error ? error.message : "Failed to claim vault fees.");
+      gameToast.error(error instanceof Error ? error.message : "Failed to claim vault fees.");
     } finally {
       setIsSubmitting(false);
     }

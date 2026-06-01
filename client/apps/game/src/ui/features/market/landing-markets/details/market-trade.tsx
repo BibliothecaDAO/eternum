@@ -3,7 +3,7 @@ import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import TrendingUp from "lucide-react/dist/esm/icons/trending-up";
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { BigNumberish, Call, uint256 } from "starknet";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -425,23 +425,23 @@ export function MarketTrade({
 
   const onBuy = async (outcomeIndex: number) => {
     if (!account) {
-      toast.error("Connect a wallet to trade.");
+      gameToast.error("Connect a wallet to trade.");
       return;
     }
     if (!marketContractAddress) {
-      toast.error("Market contract address is not configured.");
+      gameToast.error("Market contract address is not configured.");
       return;
     }
 
     const collateralAddress = market.collateral_token || market.collateralToken?.contract_address;
     if (!collateralAddress) {
-      toast.error("Collateral token address is missing.");
+      gameToast.error("Collateral token address is missing.");
       return;
     }
 
     const baseAmount = parseLordsToBaseUnits(amount, collateralDecimals);
     if (baseAmount == null || baseAmount <= 0n) {
-      toast.error("Enter a valid amount greater than 0.");
+      gameToast.error("Enter a valid amount greater than 0.");
       return;
     }
 
@@ -472,7 +472,7 @@ export function MarketTrade({
         operation: "market_buy",
       });
 
-      toast.success("Trade submitted successfully!");
+      gameToast.success("Trade submitted successfully!");
       if (onTradeSuccess) {
         void Promise.resolve(onTradeSuccess()).catch((callbackError) => {
           console.error("[MarketTrade] post-trade sync callback failed:", callbackError);
@@ -480,7 +480,7 @@ export function MarketTrade({
       }
     } catch (error) {
       console.error(error);
-      toast.error(tryBetterErrorMsg(error));
+      gameToast.error(tryBetterErrorMsg(error));
     } finally {
       setIsSubmitting(false);
     }

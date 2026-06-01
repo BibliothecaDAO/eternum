@@ -19,7 +19,7 @@ import { addressToNumber } from "@/ui/utils/utils";
 import { useGuilds, useScreenOrientation } from "@bibliothecadao/react";
 import { useDojo } from "@bibliothecadao/react";
 import { useState } from "react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { RENDERER_MODE_STORAGE_KEY, usesExperimentalWebGPUThreeBuild } from "@/three/renderer-build-mode";
 import { env as gameEnv } from "../../../../env";
 
@@ -74,7 +74,7 @@ export const SettingsWindow = () => {
     setSelectedGuilds((prev) => {
       const newGuilds = prev.includes(guildId) ? prev.filter((id) => id !== guildId) : [...prev, guildId];
       localStorage.setItem("WHITELIST", newGuilds.join(","));
-      toast(prev.includes(guildId) ? "Guild removed from whitelist!" : "Guild added to whitelist!");
+      gameToast(prev.includes(guildId) ? "Guild removed from whitelist!" : "Guild added to whitelist!");
       return newGuilds;
     });
   };
@@ -82,7 +82,7 @@ export const SettingsWindow = () => {
   const handleClearGuilds = () => {
     setSelectedGuilds([]);
     localStorage.removeItem("WHITELIST");
-    toast("Guild whitelist cleared!");
+    gameToast("Guild whitelist cleared!");
   };
 
   if (!isOpen) return null;
@@ -119,7 +119,7 @@ export const SettingsWindow = () => {
               <Button
                 size="xs"
                 onClick={() => {
-                  toast("Redirecting to the landing page to change games…");
+                  gameToast("Redirecting to the landing page to change games…");
                   try {
                     redirectToLandingWorldSelection();
                   } catch {

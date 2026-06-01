@@ -4,7 +4,7 @@ import Button from "@/ui/design-system/atoms/button";
 import { ClientComponents, ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { DialogShell } from "@/ui/design-system/molecules";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 const formatResourceSummary = (entry: TransferAutomationEntry): string => {
@@ -73,7 +73,7 @@ export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded
           })
           .filter((x): x is { rid: ResourcesIds; amt: number } => Boolean(x));
         if (per.length === 0) {
-          toast.warning("Nothing to send now.");
+          gameToast.warning("Nothing to send now.");
           return;
         }
         const totalKg = getTotalResourceWeightKg(per.map((p) => ({ resourceId: p.rid, amount: p.amt })));
@@ -81,7 +81,7 @@ export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded
         const donkeyBalRaw = rm.balance(ResourcesIds.Donkey);
         const donkeyHuman = Number(donkeyBalRaw) / RESOURCE_PRECISION;
         if (donkeyHuman < need) {
-          toast.error("Insufficient donkeys at source.");
+          gameToast.error("Insufficient donkeys at source.");
           return;
         }
 
@@ -100,10 +100,10 @@ export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded
         });
 
         update(entry.id, { lastRunAt: Date.now() });
-        toast.success("Transfer executed.");
+        gameToast.success("Transfer executed.");
       } catch (e) {
         console.error(e);
-        toast.error("Execution failed.");
+        gameToast.error("Execution failed.");
       }
     },
     [components, systemCalls, account, update],
@@ -138,9 +138,9 @@ export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded
       }
     });
     if (paused > 0) {
-      toast.success(`Paused ${paused} transfers.`);
+      gameToast.success(`Paused ${paused} transfers.`);
     } else {
-      toast.info("No active transfers to pause.");
+      gameToast.info("No active transfers to pause.");
     }
   }, [filtered, toggleActive]);
 
@@ -153,9 +153,9 @@ export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded
       }
     });
     if (resumed > 0) {
-      toast.success(`Resumed ${resumed} transfers.`);
+      gameToast.success(`Resumed ${resumed} transfers.`);
     } else {
-      toast.info("No paused transfers to resume.");
+      gameToast.info("No paused transfers to resume.");
     }
   }, [filtered, toggleActive]);
 
@@ -163,7 +163,7 @@ export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded
     if (isRunningAll) return;
     const activeEntries = filtered.filter((entry) => entry.active);
     if (activeEntries.length === 0) {
-      toast.info("No active transfers to run.");
+      gameToast.info("No active transfers to run.");
       return;
     }
     setIsRunningAll(true);

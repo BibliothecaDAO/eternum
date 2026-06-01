@@ -37,7 +37,7 @@ import {
 } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef } from "react";
-import { toast } from "sonner";
+import { gameToast, type GameToastModel, type GameToastResourceItem } from "@/ui/shared/game-toast";
 import { isVillageLikeStructureCategory } from "@/ui/lib/structure-capabilities";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { scheduleAutomationResourceCleanup } from "./automation-resource-cleanup";
@@ -101,6 +101,17 @@ const buildProductionResourceDebits = (plan: RealmProductionPlan) =>
     resourceId: Number(resourceId) as ResourcesIds,
     amount: -humanAmount,
   }));
+
+const buildProducedResourceToastItems = (outputsByResource: Record<number, number>): GameToastResourceItem[] =>
+  Object.entries(outputsByResource).map(([resourceId, amount]) => ({
+    resourceId: Number(resourceId),
+    amount,
+  }));
+
+const buildProductionSuccessToast = (realmName: string, outputsByResource: Record<number, number>): GameToastModel => ({
+  title: `Automation executed for ${realmName}`,
+  resources: buildProducedResourceToastItems(outputsByResource),
+});
 
 type ProcessRealmsResult = { ran: boolean; anyExecuted: boolean };
 
@@ -522,20 +533,9 @@ export const useAutomation = () => {
           });
           anyExecuted = true;
 
-          const producedResources = Object.entries(plan.outputsByResource);
-          if (producedResources.length > 0) {
-            const detail = producedResources
-              .map(([resId, amount]) => {
-                const label = resolveResourceLabel(Number(resId));
-                return `${Math.round(amount).toLocaleString()} ${label}`;
-              })
-              .join(", ");
-            toast.success(
-              `Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}: ${detail}`,
-            );
-          } else {
-            toast.success(`Automation executed for ${activeRealmConfig.realmName ?? `Realm ${plan.realmId}`}.`);
-          }
+          gameToast.success(
+            buildProductionSuccessToast(activeRealmConfig.realmName ?? `Realm ${plan.realmId}`, plan.outputsByResource),
+          );
         } catch (rawError) {
           removeResourceOverrides();
           const errorMessage = extractReadableErrorMessage(rawError, "Automation transaction failed");
@@ -560,10 +560,10 @@ export const useAutomation = () => {
             skipRemainingRealmsMessage = "Skipped: signer error earlier in pass — next tick will retry";
             if (!signerFaultSurfacedForTick) {
               signerFaultSurfacedForTick = true;
-              toast.error(`Automation paused this tick: signer error — next tick will retry (${errorMessage})`);
+              gameToast.error(`Automation paused this tick: signer error — next tick will retry (${errorMessage})`);
             }
           } else {
-            toast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
+            gameToast.error(`Automation failed for ${realmLabel}: ${errorMessage}`);
           }
         }
       }

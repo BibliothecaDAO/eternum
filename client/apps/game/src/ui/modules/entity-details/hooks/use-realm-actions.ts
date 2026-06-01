@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { CallData, type Call } from "starknet";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 import { getContractByName } from "@dojoengine/core";
 
 import { dojoConfig } from "../../../../../dojo-config";
@@ -57,7 +57,7 @@ export const useRealmActions = () => {
   const execute = useCallback(
     async (realmId: ID, calls: Call[], operation: string) => {
       if (calls.length === 0) {
-        toast.error("Unable to resolve realm system contracts.");
+        gameToast.error("Unable to resolve realm system contracts.");
         return;
       }
 
@@ -71,7 +71,7 @@ export const useRealmActions = () => {
         });
       } catch (error) {
         console.error(`[realm-actions] ${operation} failed`, error);
-        toast.error(error instanceof Error ? error.message : "Failed to submit the transaction.");
+        gameToast.error(error instanceof Error ? error.message : "Failed to submit the transaction.");
         throw error;
       } finally {
         setPendingRealmId((current) => (current === realmId ? null : current));
@@ -84,7 +84,7 @@ export const useRealmActions = () => {
     async (realmId: ID) => {
       const call = buildUpgradeCall(realmId);
       if (!call) {
-        toast.error("Unable to resolve realm system contracts.");
+        gameToast.error("Unable to resolve realm system contracts.");
         return;
       }
       await execute(realmId, [call], "realm_systems.upgrade");
@@ -96,7 +96,7 @@ export const useRealmActions = () => {
     async (realmId: ID) => {
       const call = buildProvisionCall(realmId);
       if (!call) {
-        toast.error("Unable to resolve realm system contracts.");
+        gameToast.error("Unable to resolve realm system contracts.");
         return;
       }
       await execute(realmId, [call], "realm_systems.provision");
@@ -109,7 +109,7 @@ export const useRealmActions = () => {
       const upgradeCall = buildUpgradeCall(realmId);
       const provisionCall = buildProvisionCall(realmId);
       if (!upgradeCall || !provisionCall) {
-        toast.error("Unable to resolve realm system contracts.");
+        gameToast.error("Unable to resolve realm system contracts.");
         return;
       }
       // Provision FIRST: provision_realm grants the realm's starting resources

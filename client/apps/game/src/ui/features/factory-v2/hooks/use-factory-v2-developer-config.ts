@@ -21,7 +21,7 @@ import type {
   FactoryDeveloperConfigDraft,
 } from "../developer/types";
 import type { FactoryGameMode, FactoryLaunchChain } from "../types";
-import { toast } from "sonner";
+import { gameToast } from "@/ui/shared/game-toast";
 
 type FactoryConfigManifestState = {
   status: "loading" | "ready" | "error";
@@ -339,7 +339,7 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
     }
 
     if (hasConnectedWallet && status === "detecting") {
-      toast.info("Detecting wallet network. Try again in a moment.");
+      gameToast.info("Detecting wallet network. Try again in a moment.");
       return;
     }
 
