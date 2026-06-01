@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-01T10:05:28.575Z",
+  "updatedAt": "2026-06-01T10:05:34.656Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1532,12 +1532,13 @@
       "path": "runs/slot/blitz/bltz-burst-624.json",
       "inputPath": "inputs/slot/blitz/bltz-burst-624/26748336213-1.json",
       "status": "running",
-      "updatedAt": "2026-06-01T10:05:28.575Z",
+      "updatedAt": "2026-06-01T10:05:34.656Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-06-01T10:50:34.656Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-06-01T10:30:00.000Z",
       "durationSeconds": 5400,
       "artifacts": {}
