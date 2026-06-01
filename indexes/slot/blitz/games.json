@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-01T05:01:37.684Z",
+  "updatedAt": "2026-06-01T05:02:00.979Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1511,11 +1511,10 @@
       "path": "runs/slot/blitz/bltz-zoom-993.json",
       "inputPath": "inputs/slot/blitz/bltz-zoom-993/26736050786-1.json",
       "status": "running",
-      "updatedAt": "2026-06-01T05:01:37.684Z",
+      "updatedAt": "2026-06-01T05:02:00.979Z",
       "workflowRef": "next",
-      "currentStepId": "reserve-blitz-hyperstructures",
-      "activeLeaseExpiresAt": "2026-06-01T05:46:37.684Z",
-      "hasRunningStep": true,
+      "currentStepId": "grant-lootchest-role",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1780290000,
