@@ -44,6 +44,12 @@ interface FactoryWorldConfigOverrides {
   battleDelaySeconds?: string;
   agentMaxCurrentCount?: string;
   agentMaxLifetimeCount?: string;
+  biomeElevationScaleBps?: string;
+  biomeMoistureScaleBps?: string;
+  biomeElevationBiasBps?: string;
+  biomeMoistureBiasBps?: string;
+  biomeElevationSeed?: string;
+  biomeMoistureSeed?: string;
 }
 
 interface BuildWorldConfigForFactoryInput {
@@ -92,6 +98,14 @@ interface FactoryConfigLike {
     max_current_count?: number;
     max_lifetime_count?: number;
   };
+  biomeClimate?: {
+    elevationScaleBps?: number;
+    moistureScaleBps?: number;
+    elevationBiasBps?: number;
+    moistureBiasBps?: number;
+    elevationSeed?: number;
+    moistureSeed?: number;
+  };
   mmr?: {
     enabled?: boolean;
   };
@@ -105,6 +119,18 @@ type FactorySettlementConfig = NonNullable<FactoryConfigLike["settlement"]>;
 type FactoryTradeConfig = NonNullable<FactoryConfigLike["trade"]>;
 type FactoryBattleConfig = NonNullable<FactoryConfigLike["battle"]>;
 type FactoryAgentConfig = NonNullable<FactoryConfigLike["agent"]>;
+type FactoryBiomeClimateConfig = NonNullable<FactoryConfigLike["biomeClimate"]>;
+
+const BIOME_CLIMATE_BPS_MAX = 65_535;
+const BIOME_CLIMATE_SEED_MAX = 4_294_967_295;
+const NEUTRAL_BIOME_CLIMATE: FactoryBiomeClimateConfig = {
+  elevationScaleBps: 10_000,
+  moistureScaleBps: 10_000,
+  elevationBiasBps: 10_000,
+  moistureBiasBps: 10_000,
+  elevationSeed: 0,
+  moistureSeed: 0,
+};
 
 const hasValue = (value?: string): boolean => value !== undefined && value.trim() !== "";
 
@@ -134,6 +160,46 @@ const resolveNonNegativeNumberOverride = (
   }
 
   return parseNonNegativeNumber(value!, label);
+};
+
+const resolveNonNegativeIntegerOverride = (
+  value: string | undefined,
+  label: string,
+  fallback: number | undefined,
+): number | undefined => {
+  if (!hasValue(value)) {
+    return fallback;
+  }
+
+  const parsed = parseInteger(value!, label);
+  if (parsed < 0) {
+    throw new Error(`${label} must be a non-negative integer`);
+  }
+  return parsed;
+};
+
+const resolveBiomeClimateBpsOverride = (
+  value: string | undefined,
+  label: string,
+  fallback: number | undefined,
+): number | undefined => {
+  const parsed = resolveNonNegativeIntegerOverride(value, label, fallback);
+  if (parsed !== undefined && parsed > BIOME_CLIMATE_BPS_MAX) {
+    throw new Error(`${label} must be at most ${BIOME_CLIMATE_BPS_MAX}`);
+  }
+  return parsed;
+};
+
+const resolveBiomeClimateSeedOverride = (
+  value: string | undefined,
+  label: string,
+  fallback: number | undefined,
+): number | undefined => {
+  const parsed = resolveNonNegativeIntegerOverride(value, label, fallback);
+  if (parsed !== undefined && parsed > BIOME_CLIMATE_SEED_MAX) {
+    throw new Error(`${label} must be at most ${BIOME_CLIMATE_SEED_MAX}`);
+  }
+  return parsed;
 };
 
 const resolveFactoryDurationSeconds = (
@@ -320,6 +386,50 @@ const resolveAgentConfig = (
   ),
 });
 
+const resolveBiomeClimateConfig = (
+  baseConfig: FactoryConfigLike,
+  overrides: FactoryWorldConfigOverrides,
+): FactoryBiomeClimateConfig => {
+  const baseClimate = {
+    ...NEUTRAL_BIOME_CLIMATE,
+    ...(baseConfig.biomeClimate || {}),
+  };
+
+  return {
+    ...baseClimate,
+    elevationScaleBps: resolveBiomeClimateBpsOverride(
+      overrides.biomeElevationScaleBps,
+      "Biome elevation scale bps",
+      baseClimate.elevationScaleBps,
+    ),
+    moistureScaleBps: resolveBiomeClimateBpsOverride(
+      overrides.biomeMoistureScaleBps,
+      "Biome moisture scale bps",
+      baseClimate.moistureScaleBps,
+    ),
+    elevationBiasBps: resolveBiomeClimateBpsOverride(
+      overrides.biomeElevationBiasBps,
+      "Biome elevation bias bps",
+      baseClimate.elevationBiasBps,
+    ),
+    moistureBiasBps: resolveBiomeClimateBpsOverride(
+      overrides.biomeMoistureBiasBps,
+      "Biome moisture bias bps",
+      baseClimate.moistureBiasBps,
+    ),
+    elevationSeed: resolveBiomeClimateSeedOverride(
+      overrides.biomeElevationSeed,
+      "Biome elevation seed",
+      baseClimate.elevationSeed,
+    ),
+    moistureSeed: resolveBiomeClimateSeedOverride(
+      overrides.biomeMoistureSeed,
+      "Biome moisture seed",
+      baseClimate.moistureSeed,
+    ),
+  };
+};
+
 export const buildWorldConfigForFactory = ({
   baseConfig,
   defaults,
@@ -332,6 +442,7 @@ export const buildWorldConfigForFactory = ({
   const tradeConfig = resolveTradeConfig(baseConfig, overrides);
   const battleConfig = resolveBattleConfig(baseConfig, overrides);
   const agentConfig = resolveAgentConfig(baseConfig, overrides);
+  const biomeClimateConfig = resolveBiomeClimateConfig(baseConfig, overrides);
 
   return {
     ...baseConfig,
@@ -358,6 +469,7 @@ export const buildWorldConfigForFactory = ({
     trade: tradeConfig,
     battle: battleConfig,
     agent: agentConfig,
+    biomeClimate: biomeClimateConfig,
     mmr: {
       ...(baseConfig.mmr || {}),
       enabled: overrides.mmrEnabled ?? defaults.mmrEnabledOn,

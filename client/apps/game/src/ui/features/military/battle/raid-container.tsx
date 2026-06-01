@@ -13,7 +13,6 @@ import {
 import { BiomeInfoPanel } from "@/ui/features";
 import { formatStringNumber } from "@/ui/utils/utils";
 import {
-  Biome,
   CombatSimulator,
   configManager,
   divideByPrecision,
@@ -82,7 +81,7 @@ export const RaidContainer = ({
   }, []);
 
   const biome = useMemo(() => {
-    return Biome.getBiome(target.hex.x, target.hex.y);
+    return configManager.getBiome(target.hex.x, target.hex.y);
   }, [target]);
 
   // Get the current army states for display

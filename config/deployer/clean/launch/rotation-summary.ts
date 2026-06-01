@@ -29,6 +29,7 @@ const WEEKDAY_OFFSET_DAYS: Record<LaunchRotationWeeklyCadenceEntry["weekday"], n
 interface PlannedRotationGame {
   startTime: number;
   gameNamePrefix?: string;
+  biomeClimateOverrides?: LaunchRotationWeeklyCadenceEntry["biomeClimateOverrides"];
   blitzRegistrationOverrides?: LaunchRotationWeeklyCadenceEntry["blitzRegistrationOverrides"];
 }
 
@@ -163,6 +164,7 @@ function buildRotationGameSummary(
   stepIds: RotationLaunchStepId[],
   defaultDurationSeconds: number | undefined,
   gameName?: string,
+  biomeClimateOverrides?: LaunchRotationWeeklyCadenceEntry["biomeClimateOverrides"],
   blitzRegistrationOverrides?: LaunchRotationWeeklyCadenceEntry["blitzRegistrationOverrides"],
 ): SeriesLaunchGameSummary {
   return {
@@ -170,6 +172,7 @@ function buildRotationGameSummary(
     startTime,
     startTimeIso: toIsoUtc(startTime),
     durationSeconds: defaultDurationSeconds,
+    ...(biomeClimateOverrides ? { biomeClimateOverrides } : {}),
     ...(blitzRegistrationOverrides ? { blitzRegistrationOverrides } : {}),
     seriesGameNumber,
     currentStepId: null,
@@ -341,6 +344,7 @@ function resolveNextWeeklyCadenceGame(summary: LaunchRotationSummary, afterSecon
         return {
           startTime,
           gameNamePrefix: entry.gameNamePrefix,
+          biomeClimateOverrides: entry.biomeClimateOverrides,
           blitzRegistrationOverrides: entry.blitzRegistrationOverrides,
         };
       }
@@ -358,6 +362,13 @@ function resolveNextRotationGame(summary: LaunchRotationSummary, afterSeconds: n
   return {
     startTime: resolveNextFixedRotationStartTime(summary, afterSeconds),
   };
+}
+
+function resolveFixedRotationGameBiomeClimateOverride(
+  request: LaunchRotationRequest,
+  seriesGameNumber: number,
+): LaunchRotationWeeklyCadenceEntry["biomeClimateOverrides"] {
+  return request.biomeClimateOverridesByGameNumber?.[seriesGameNumber] ?? request.biomeClimateOverrides;
 }
 
 function resolveSortedWeeklyCadence(summary: LaunchRotationSummary) {
@@ -427,6 +438,7 @@ export function reconcileRotationLaunchSummary(
         stepIds,
         request.durationSeconds,
         nextGame.gameNamePrefix ? buildWeeklyCadenceGameName(nextGame.gameNamePrefix, nextGame.startTime) : undefined,
+        nextGame.biomeClimateOverrides ?? resolveFixedRotationGameBiomeClimateOverride(request, nextGameNumber),
         nextGame.blitzRegistrationOverrides,
       ),
     );

@@ -186,7 +186,10 @@ pub mod troop_battle_systems {
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
                 .get_biome(
-                    explorer_defender.coord.alt, explorer_defender.coord.x.into(), explorer_defender.coord.y.into(),
+                    world,
+                    explorer_defender.coord.alt,
+                    explorer_defender.coord.x.into(),
+                    explorer_defender.coord.y.into(),
                 );
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
@@ -500,6 +503,7 @@ pub mod troop_battle_systems {
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
                 .get_biome(
+                    world,
                     guarded_structure.coord().alt,
                     guarded_structure.coord().x.into(),
                     guarded_structure.coord().y.into(),
@@ -761,7 +765,10 @@ pub mod troop_battle_systems {
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
                 .get_biome(
-                    explorer_defender.coord.alt, explorer_defender.coord.x.into(), explorer_defender.coord.y.into(),
+                    world,
+                    explorer_defender.coord.alt,
+                    explorer_defender.coord.x.into(),
+                    explorer_defender.coord.y.into(),
                 );
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);

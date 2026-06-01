@@ -17,9 +17,9 @@ import { useStructureEntityDetail } from "@/ui/features/world/components/entitie
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
-import { HexPosition, ID, StructureType, TileOccupier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, HexPosition, ID, StructureType, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
-  Biome,
+  configManager,
   Position,
   hasTileOccupier,
   isTileOccupierChest,
@@ -86,7 +86,7 @@ const SelectedWorldmapEntityContent = ({
   }, [selectedHex, setup.components]);
 
   const biome = useMemo(() => {
-    return Biome.getBiome(selectedHex.col || 0, selectedHex.row || 0);
+    return configManager.getBiome(selectedHex.col || 0, selectedHex.row || 0);
   }, [selectedHex.col, selectedHex.row]);
   const handleSimulateBattle = useCallback(() => {
     toggleModal(<BattleLab mode="sim" initialBiome={biome} />);
@@ -221,7 +221,7 @@ const SelectedArmyTilePanel = ({
   onSimulateBattle,
 }: {
   armyEntityId: ID;
-  biome: ReturnType<typeof Biome.getBiome>;
+  biome: BiomeType;
   coordsLabel?: string;
   headerAction?: ReactNode;
   onSimulateBattle: () => void;
@@ -259,7 +259,7 @@ const SelectedStructureActionPanel = ({
   onSimulateBattle,
 }: {
   structureEntityId: ID;
-  biome: ReturnType<typeof Biome.getBiome>;
+  biome: BiomeType;
   onSimulateBattle: () => void;
 }) => {
   const { structure, isLoadingStructure } = useStructureEntityDetail({ structureEntityId });

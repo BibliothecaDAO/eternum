@@ -1,4 +1,8 @@
-import type { FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
+import type {
+  FactoryBiomeClimateOverrides,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
 import type { CreateFactorySeriesRunRequest, FactoryWorkerEnvironmentId } from "./api/factory-worker";
 import type {
   FactoryGameMode,
@@ -19,6 +23,7 @@ export const buildFactoryCreateSeriesRunRequest = ({
   durationMinutes,
   showsDuration,
   mapConfigOverrides,
+  biomeClimateOverrides,
   blitzRegistrationOverrides,
   autoRetryIntervalMinutes,
   resolveStartTime,
@@ -34,6 +39,7 @@ export const buildFactoryCreateSeriesRunRequest = ({
   durationMinutes: number | null;
   showsDuration: boolean;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   autoRetryIntervalMinutes: FactorySeriesRetryIntervalMinutes;
   resolveStartTime: (startAt: string) => string;
@@ -45,12 +51,14 @@ export const buildFactoryCreateSeriesRunRequest = ({
     gameName: game.gameName,
     startTime: resolveStartTime(game.startAt),
     seriesGameNumber: game.seriesGameNumber,
+    biomeClimateOverrides: game.biomeClimateOverrides ?? biomeClimateOverrides,
   })),
   devModeOn: selectedPreset?.defaults.devMode ?? false,
   twoPlayerMode: selectedMode === "blitz" ? twoPlayerMode : false,
   singleRealmMode: selectedMode === "blitz" ? singleRealmMode : false,
   durationSeconds: showsDuration && durationMinutes ? durationMinutes * 60 : undefined,
   mapConfigOverrides,
+  biomeClimateOverrides,
   blitzRegistrationOverrides: selectedMode === "blitz" ? blitzRegistrationOverrides : undefined,
   autoRetryIntervalMinutes,
 });

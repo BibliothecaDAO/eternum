@@ -105,6 +105,81 @@ describe("factory worker map config overrides", () => {
     });
   });
 
+  test("forwards biome climate overrides when creating a run", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+
+      if (String(url).includes("/contents/runs/slot/blitz/bltz-biome-9.json")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      if (String(url).includes("/actions/workflows/game-launch.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          gameName: "bltz-biome-9",
+          gameStartTime: "2026-03-18T10:00:00Z",
+          biomeClimateOverrides: {
+            elevationScaleBps: 12_000,
+            moistureSeed: 991,
+          },
+        }),
+      }),
+      buildWorkerEnv(),
+    );
+
+    const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const launchOptions = parseLaunchOptionsInput(dispatchBody);
+
+    expect(response.status).toBe(202);
+    expect(launchOptions.biomeClimateOverrides).toEqual({
+      elevationScaleBps: 12_000,
+      moistureSeed: 991,
+    });
+  });
+
+  test("rejects invalid biome climate overrides before dispatching the workflow", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          gameName: "bltz-biome-9",
+          gameStartTime: "2026-03-18T10:00:00Z",
+          biomeClimateOverrides: {
+            elevationScaleBps: 65_536,
+          },
+        }),
+      }),
+      buildWorkerEnv(),
+    );
+    const payload = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(fetchCalls).toHaveLength(0);
+    expect(payload).toEqual({
+      error: "biomeClimateOverrides.elevationScaleBps must be an integer between 0 and 65535",
+    });
+  });
+
   test("accepts mainnet environments when creating a run", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = async (url, init) => {

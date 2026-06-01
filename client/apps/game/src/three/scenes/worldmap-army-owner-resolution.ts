@@ -4,10 +4,7 @@
  * `armyHexes`, the worker hex map). Pure so it can be unit-tested in isolation —
  * the scene itself cannot be instantiated headless.
  */
-export type ArmyOwnerCacheAction =
-  | { kind: "write"; owner: bigint }
-  | { kind: "evict" }
-  | { kind: "skip" };
+export type ArmyOwnerCacheAction = { kind: "write"; owner: bigint } | { kind: "evict" } | { kind: "skip" };
 
 export interface ArmyOwnerCacheResolutionInput {
   /** Owner address carried by the incoming update. */

@@ -160,6 +160,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
     }
   },
   configManager: {
+    getBiome: () => "forest",
     getCombatConfig: () => ({
       stamina_attack_req: 50,
     }),

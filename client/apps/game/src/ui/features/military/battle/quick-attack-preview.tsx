@@ -18,7 +18,6 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useDraggablePosition } from "@/ui/shared/lib/draggable-position";
 import { getTierStyle } from "@/ui/utils/tier-styles";
 import {
-  Biome,
   CombatSimulator,
   configManager,
   DEFAULT_COORD_ALT,
@@ -147,7 +146,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   } = useAttackTargetData(attacker.id, target.hex, target.alt ?? DEFAULT_COORD_ALT);
 
   const combatConfig = useMemo(() => configManager.getCombatConfig(), []);
-  const biome = useMemo(() => Biome.getBiome(target.hex.x, target.hex.y), [target.hex.x, target.hex.y]);
+  const biome = useMemo(() => configManager.getBiome(target.hex.x, target.hex.y), [target.hex.x, target.hex.y]);
   const combatSimulator = useMemo(() => new CombatSimulator(combatConfig), [combatConfig]);
 
   const attackerRelicResourceIds = useMemo(() => toRelicResourceIds(attackerRelicEffects), [attackerRelicEffects]);

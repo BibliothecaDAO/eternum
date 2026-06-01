@@ -106,6 +106,11 @@ export const FactoryV2Content = () => {
               moreOptionDraft={factory.moreOptions.draft}
               moreOptionErrors={factory.moreOptions.errors}
               moreOptionsDisabledReason={factory.moreOptions.launchDisabledReason}
+              biomeClimateDraft={factory.biomeClimateOptions.draft}
+              biomeClimateErrors={factory.biomeClimateOptions.errors}
+              biomeClimateTargets={factory.biomeClimateOptions.targets}
+              selectedBiomeClimateTargetId={factory.biomeClimateOptions.selectedTargetId}
+              biomeClimateDisabledReason={factory.biomeClimateOptions.launchDisabledReason}
               onSelectLaunchTargetKind={factory.selectLaunchKind}
               onSelectPreset={factory.selectPreset}
               onGameNameChange={factory.setDraftGameName}
@@ -124,6 +129,11 @@ export const FactoryV2Content = () => {
               onSelectSeriesSuggestion={factory.selectSeriesSuggestion}
               onToggleMapOptions={factory.moreOptions.toggleOpen}
               onMapOptionValueChange={factory.moreOptions.setValue}
+              onSelectBiomeClimateTarget={factory.selectBiomeClimateTarget}
+              onBiomeClimateValueChange={factory.setBiomeClimateValue}
+              onRandomizeBiomeClimateSeeds={factory.randomizeSelectedBiomeClimateSeeds}
+              onResetBiomeClimate={factory.resetSelectedBiomeClimate}
+              onApplyBiomeClimateToAll={factory.applySelectedBiomeClimateToAll}
               onToggleTwoPlayerMode={factory.toggleTwoPlayerMode}
               onToggleSingleRealmMode={factory.toggleSingleRealmMode}
               onFandomizeGameName={factory.fandomizeGameName}

@@ -202,6 +202,7 @@ function resolveLaunchConfiguration(
     twoPlayerMode: request.twoPlayerMode,
     durationSeconds: request.durationSeconds,
     mapConfigOverrides: request.mapConfigOverrides,
+    biomeClimateOverrides: request.biomeClimateOverrides,
     blitzRegistrationOverrides: request.blitzRegistrationOverrides,
   });
   const configSteps = resolveFactoryWorldConfigSteps({

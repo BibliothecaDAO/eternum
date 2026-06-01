@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-05-31",
+    title: "Factory Biome Tuning",
+    description:
+      "Added biome climate tuning to Factory V2 so new games, series, and rotations can preview and adjust terrain seeds before launch.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-30",
     title: "Smarter Blitz Suggestions",
     description:
@@ -54,7 +62,23 @@ const allLatestFeatures: LatestFeature[] = [
     title: "Combat v3 Ranged Attacks",
     description:
       "Crossbowmen can attack from two hexes with reduced ranged damage, Knights are stronger around structure guards, and structures must still be claimed from an adjacent hex.",
-    type: "balance",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-27",
+    title: "Biome Preview Viewer",
+    description:
+      "Added a factory biome preview with seed controls so creators can inspect generated terrain before applying world configuration.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-05-27",
+    title: "Biome Climate Controls",
+    description:
+      "Added factory setup controls for biome climate tuning so new worlds can adjust elevation and moisture generation during configuration.",
+    type: "feature",
     gameSlug: "world",
   },
   {
