@@ -1202,7 +1202,10 @@ export class ArmyManager {
       this.runMovementVisualCancelListeners(numericId);
     }
 
-    this.armyModel.freeInstanceSlot(numericId, slot);
+    // Free the army-model's live slot (the single source of truth), falling back
+    // to the mirror only when the model has no live slot. Freeing the cached
+    // mirror slot during a transient desync would strand a ghost at the real slot.
+    this.armyModel.freeInstanceSlot(numericId, this.armyModel.getEntitySlot(numericId) ?? slot);
     return slot;
   }
 
