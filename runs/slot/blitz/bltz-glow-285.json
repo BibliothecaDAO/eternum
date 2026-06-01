@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26733814760-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-06-01T03:39:17.983Z",
-  "updatedAt": "2026-06-01T03:40:36.078Z",
+  "updatedAt": "2026-06-01T03:40:39.317Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-06-01T03:40:39.317Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -77,5 +78,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-glow-285.json",
     "worldAddress": "0x051e2569019f7d0c51d9dbd69732cd152649f7b64fc799738fab1d7cd73d4dc1",
     "createGameTxHash": "0x60b1ff430e862dff3bd75de2a819834c4f655f4d256d7052260d235717986d6"
+  },
+  "activeLease": {
+    "launchRequestId": "26733814760-1",
+    "workflowRunId": 26733814760,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-06-01T03:40:39.317Z",
+    "expiresAt": "2026-06-01T04:25:39.317Z"
   }
 }
