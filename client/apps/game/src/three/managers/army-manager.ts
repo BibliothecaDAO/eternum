@@ -102,6 +102,7 @@ import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
+import { auditArmySlots, type ArmySlotAuditEntry } from "./army-slot-auditor";
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
@@ -1050,14 +1051,20 @@ export class ArmyManager {
 
     plan.reassignments.forEach(({ entityId, toSlot }) => {
       const numericId = this.toNumericId(entityId);
-      this.armyModel.moveInstanceSlot(numericId, toSlot);
-      this.visibleArmyIndices.set(entityId, toSlot);
+      // Mirror EXACTLY the slot the model actually took. If the model declined
+      // the move (no live slot), skip — advancing the mirror to a slot the model
+      // never wrote is what desyncs the SSOT and strands ghosts.
+      const movedSlot = this.armyModel.moveInstanceSlot(numericId, toSlot);
+      if (movedSlot === undefined) {
+        return;
+      }
+      this.visibleArmyIndices.set(entityId, movedSlot);
 
       const army = this.armies.get(entityId);
       if (army) {
         this.armies.set(entityId, {
           ...army,
-          matrixIndex: toSlot,
+          matrixIndex: movedSlot,
         });
       }
     });
@@ -1195,7 +1202,10 @@ export class ArmyManager {
       this.runMovementVisualCancelListeners(numericId);
     }
 
-    this.armyModel.freeInstanceSlot(numericId, slot);
+    // Free the army-model's live slot (the single source of truth), falling back
+    // to the mirror only when the model has no live slot. Freeing the cached
+    // mirror slot during a transient desync would strand a ghost at the real slot.
+    this.armyModel.freeInstanceSlot(numericId, this.armyModel.getEntitySlot(numericId) ?? slot);
     return slot;
   }
 
@@ -1937,7 +1947,10 @@ export class ArmyManager {
       });
     }
 
-    const matrixIndex = armyData.matrixIndex;
+    // Use the army-model's live slot (the single source of truth), not the
+    // cached ArmyData.matrixIndex mirror. Seeding a movement from a stale mirror
+    // animates the wrong slot and strands a frozen ghost at the unit's old slot.
+    const matrixIndex = this.armyModel.getEntitySlot(numericEntityId) ?? armyData.matrixIndex;
     if (matrixIndex === undefined) {
       this.armyPaths.delete(entityId);
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
@@ -2586,6 +2599,11 @@ export class ArmyManager {
     });
   }
 
+  // Dev-only ghost tripwire: throttled audit that the manager's slot mirror
+  // matches the army-model source of truth (see army-slot-auditor).
+  private slotAuditFrameCounter = 0;
+  private readonly loggedSlotViolations = new Set<string>();
+
   update(deltaTime: number, animationContext?: AnimationVisibilityContext) {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
@@ -2623,6 +2641,40 @@ export class ArmyManager {
 
     // Flush batched label pool operations to minimize layout thrashing
     this.labelPool.flushBatch();
+
+    if (import.meta.env?.DEV) {
+      // Throttled (~1.5s at 60fps) so the per-frame cost stays negligible.
+      this.slotAuditFrameCounter = (this.slotAuditFrameCounter + 1) % 90;
+      if (this.slotAuditFrameCounter === 0) {
+        this.auditArmySlotsForGhosts();
+      }
+    }
+  }
+
+  // Reports when the manager's slot mirror (visibleArmyIndices) drifts from the
+  // army-model source of truth, or when two entities share a live slot — the two
+  // states that surface as a frozen ghost. Each unique violation is logged once.
+  private auditArmySlotsForGhosts(): void {
+    const entries: ArmySlotAuditEntry[] = [];
+    this.visibleArmyIndices.forEach((mirrorSlot, entityId) => {
+      entries.push({
+        entityId,
+        mirrorSlot,
+        ssotSlot: this.armyModel.getEntitySlot(this.toNumericId(entityId)),
+      });
+    });
+
+    for (const violation of auditArmySlots(entries)) {
+      const signature =
+        violation.kind === "mirror-mismatch"
+          ? `mirror:${violation.entityId}:${violation.mirrorSlot}:${violation.ssotSlot}`
+          : `shared:${violation.slot}:${violation.entityIds.join(",")}`;
+      if (this.loggedSlotViolations.has(signature)) {
+        continue;
+      }
+      this.loggedSlotViolations.add(signature);
+      console.warn("[ArmyManager] slot-audit ghost risk", violation);
+    }
   }
 
   private updateCompactLabelCamera(): void {

@@ -729,6 +729,13 @@ export class ArmyModel {
     return this.entityModelMap.get(entityId);
   }
 
+  // The single source of truth for an entity's live instance slot. Callers
+  // (e.g. the army-manager move path) must consult this rather than a cached
+  // mirror, so a stale mirror can never relocate the unit onto the wrong slot.
+  public getEntitySlot(entityId: number): number | undefined {
+    return this.instanceData.get(entityId)?.matrixIndex;
+  }
+
   public allocateInstanceSlot(entityId: number): number {
     const existingSlot = this.instanceData.get(entityId)?.matrixIndex;
     if (existingSlot !== undefined) {
@@ -757,21 +764,33 @@ export class ArmyModel {
     this.hiddenSlots.delete(resolvedSlot);
     this.matrixIndexOwners.delete(resolvedSlot);
 
+    // Detach the entity from the freed slot up front. If the slot is already
+    // pooled we early-return below; leaving instanceData.matrixIndex pointing at
+    // a pooled slot lets a later allocateInstanceSlot hand that (reused) slot
+    // back and share it between two entities — a ghost. Only clear when we are
+    // freeing the entity's *current* slot.
+    if (instanceData && instanceData.matrixIndex === resolvedSlot) {
+      instanceData.matrixIndex = undefined;
+    }
+
     if (this.freeSlotSet.has(resolvedSlot)) return;
 
     this.freeSlotSet.add(resolvedSlot);
     this.freeSlots.push(resolvedSlot);
-
-    if (instanceData) {
-      instanceData.matrixIndex = undefined;
-    }
   }
 
-  public moveInstanceSlot(entityId: number, newSlot: number): void {
+  // Returns the entity's resulting live slot so callers can mirror EXACTLY what
+  // the model did: the new slot on a real move, the current slot on a no-op, or
+  // undefined when the entity has no live slot (nothing to mirror). Mirroring a
+  // planned slot the model declined to take is what strands ghosts.
+  public moveInstanceSlot(entityId: number, newSlot: number): number | undefined {
     const instanceData = this.instanceData.get(entityId);
     const previousSlot = instanceData?.matrixIndex;
-    if (!instanceData || previousSlot === undefined || previousSlot === newSlot) {
-      return;
+    if (!instanceData || previousSlot === undefined) {
+      return undefined;
+    }
+    if (previousSlot === newSlot) {
+      return previousSlot;
     }
 
     this.takeFreedSlot(newSlot);
@@ -793,6 +812,7 @@ export class ArmyModel {
     this.matrixIndexOwners.delete(previousSlot);
     instanceData.matrixIndex = newSlot;
     this.rebindMovementMatrixIndex(entityId, newSlot);
+    return newSlot;
   }
 
   private takeFreedSlot(slot: number): void {
@@ -1405,8 +1425,14 @@ export class ArmyModel {
     this.stopMovement(entityId);
     const [currentPos, nextPos] = [path[0], path[1]];
 
-    this.initializeMovement(entityId, currentPos, nextPos, path, matrixIndex, category, tier);
-    this.setAnimationState(matrixIndex, true);
+    // instanceData.matrixIndex is the single source of truth for an entity's
+    // live slot. The caller-supplied slot is only a fallback for an entity that
+    // has no instance yet — trusting it blindly lets a stale army-manager mirror
+    // relocate the unit onto the wrong slot and strand a frozen ghost at the old
+    // one (the reported "duplicate at the old position after a move").
+    const liveSlot = this.instanceData.get(entityId)?.matrixIndex ?? matrixIndex;
+    this.initializeMovement(entityId, currentPos, nextPos, path, liveSlot, category, tier);
+    this.setAnimationState(liveSlot, true);
     this.updateInstanceDirection(entityId, currentPos, nextPos);
 
     // Build spline for smooth whole-path movement
