@@ -128,6 +128,7 @@ import { resolveWorldmapHoverLabelTargets } from "./worldmap-hover-label-targets
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { ArrivalGhostManager } from "../managers/arrival-ghost-manager";
 import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
+import { isCommittedManagerChunk } from "../managers/manager-update-convergence";
 import { SceneName, type ArmyData } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
@@ -6644,6 +6645,25 @@ export default class WorldmapScene extends WarpTravel {
       onTaskError: (_task, error) => {
         console.error("[WorldMap] Deferred manager catch-up failed:", error);
       },
+      onTaskSkipped: (task) => {
+        // The task was dropped because its chunk/token went stale (e.g. a fast
+        // pan or a stall that bumped the transition token). Re-enqueue a fresh
+        // non-critical catch-up for the current committed chunk so the chest
+        // render is never silently lost. Loop-safe: only when the current chunk
+        // actually differs from the skipped one and isn't already queued (a
+        // matching chunk+token would not have been skipped in the first place).
+        const currentChunk = this.currentChunk;
+        if (
+          currentChunk &&
+          currentChunk !== task.chunkKey &&
+          isCommittedManagerChunk(currentChunk) &&
+          !this.postCommitManagerCatchUpRuntimeState.queue.some((queued) => queued.chunkKey === currentChunk)
+        ) {
+          this.deferNonCriticalManagerCatchUpForCommittedChunk(currentChunk, {
+            transitionToken: this.chunkTransitionToken,
+          });
+        }
+      },
       runTask: (task) => this.updateNonCriticalManagersForChunk(task.chunkKey, task.options),
       scheduleDrain: () => {
         this.schedulePostCommitManagerCatchUpDrain();
@@ -8211,6 +8231,16 @@ export default class WorldmapScene extends WarpTravel {
     this.armyManager.recoverChunkUpdateAfterStall(recoveryInput);
     this.structureManager.recoverChunkUpdateAfterStall(recoveryInput);
     this.chestManager.recoverChunkUpdateAfterStall(recoveryInput);
+
+    // Stall recovery commits the chest manager's currentChunk without rendering,
+    // so the next *unforced* same-chunk update would be skipped
+    // (shouldSkipUnforcedChunkRefresh) and the chest models would never appear.
+    // Chest is the only manager on the deferred path, so force a chest catch-up
+    // for the recovered chunk here to break that latch.
+    this.deferNonCriticalManagerCatchUpForChunk(chunkKey, {
+      force: true,
+      transitionToken: this.chunkTransitionToken,
+    });
   }
 
   private handleChunkPresentationTimeout(info: WorldmapChunkPresentationTimeoutInfo): void {

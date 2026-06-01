@@ -298,6 +298,40 @@ describe("ArmyModel activeInstances fallback fix (Stage 0)", () => {
   });
 });
 
+describe("ArmyModel draw-count stays correct on cached model switch (1A)", () => {
+  it("bumps the new model's mesh.count when updateInstance switches an entity to an already-loaded model", () => {
+    const subject = new ArmyModel(new Scene());
+    const entityId = 700;
+    const slot = subject.allocateInstanceSlot(entityId);
+
+    const landModel = createModelData();
+    const boatModel = createModelData();
+    (subject as any).models.set(ModelType.Knight1, landModel);
+    (subject as any).models.set(ModelType.Boat, boatModel);
+
+    // Entity is currently rendered on the land model at `slot`.
+    (subject as any).entityModelMap.set(entityId, ModelType.Knight1);
+    (subject as any).activeBaseModelByEntity.set(entityId, ModelType.Knight1);
+    landModel.activeInstances.add(slot);
+    (subject as any).ensureModelCapacity(landModel, slot + 1);
+    landModel.instancedMeshes[0].count = slot + 1;
+
+    // Boat is loaded but never drawn (count 0) — this is the bug precondition:
+    // a cached model whose draw count was never bumped to include this slot.
+    expect(boatModel.instancedMeshes[0].count).toBe(0);
+
+    // Simulate the mid-move biome switch onto the cached Boat model.
+    (subject as any).entityModelMap.set(entityId, ModelType.Boat);
+    subject.updateInstance(entityId, slot, new Vector3(1, 0, 1), new Vector3(1, 1, 1));
+
+    // The slot moved onto the Boat model...
+    expect(boatModel.activeInstances.has(slot)).toBe(true);
+    // ...and the Boat model's draw count now covers it (regression: stayed 0,
+    // so the model was invisible until the next map-wide setVisibleSlots).
+    expect(boatModel.instancedMeshes[0].count).toBeGreaterThanOrEqual(slot + 1);
+  });
+});
+
 function expectSlotToBeZeroed(mesh: InstancedMesh, slot: number) {
   const resultMatrix = new Matrix4();
   mesh.getMatrixAt(slot, resultMatrix);

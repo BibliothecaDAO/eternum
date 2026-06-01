@@ -2179,6 +2179,20 @@ export class ArmyManager {
     const army = this.armies.get(entityId);
     if (army) {
       this.updateArmyCompactLabel(army, this.getArmyWorldPosition(entityId, army.hexCoords));
+
+      // restoreHiddenSlot only clears the hidden flag; the model matrix was zeroed
+      // by hideInstanceSlot and stays zeroed until something rewrites it. A moving
+      // army self-heals next frame via updateMovements, but a stationary one would
+      // stay invisible (label restored, model dropped) unless a downstream forced
+      // refresh happens to run. Rewrite the matrix directly here so unsuppress is
+      // self-sufficient and no longer depends on that downstream force=true path.
+      const numericId = this.toNumericId(entityId);
+      if (slot !== undefined && !this.armyModel.isEntityMoving(numericId)) {
+        const { x, y } = army.hexCoords.getContract();
+        const biome = Biome.getBiome(x, y);
+        const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
+        this.refreshArmyInstance(army, slot, modelType);
+      }
     }
   }
 

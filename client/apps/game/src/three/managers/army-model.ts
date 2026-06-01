@@ -326,6 +326,30 @@ export class ArmyModel {
     }
   }
 
+  /**
+   * Ensure a model's draw count covers a freshly added instance slot.
+   *
+   * `mesh.count` only draws slots in [0, count). `updateInstance` can move an
+   * entity onto a different (already-loaded) model mid-move — e.g. a biome
+   * switch to Boat over water — by adding its slot to that model's
+   * `activeInstances` without `setVisibleSlots`/`syncModelDrawCount` running.
+   * Without bumping the count here the slot stays >= count and the model is not
+   * drawn (while the entity's label, keyed by entityId, keeps following). This
+   * is an O(1) additive guard; `setVisibleSlots`/`getModelDrawCount` remains the
+   * authoritative recompactor on removal/compaction (which may shrink count).
+   */
+  private extendModelDrawCount(modelData: ModelData, index: number): void {
+    const minCount = index + 1;
+    modelData.instancedMeshes.forEach((mesh) => {
+      if (mesh.count < minCount) {
+        mesh.count = minCount;
+      }
+    });
+    if (modelData.contactShadowMesh && modelData.contactShadowMesh.count < minCount) {
+      modelData.contactShadowMesh.count = minCount;
+    }
+  }
+
   private createModelData(gltf: any): ModelData {
     const group = new Group();
     const sourceScene = this.createRenderableSourceScene(gltf.scene);
@@ -911,6 +935,9 @@ export class ArmyModel {
         this.ensureModelCapacity(modelData, index + 1);
         this.updateInstanceTransform(state.position, targetScale, state.rotation);
         this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
+        // Bump count after capacity is ensured so the just-added slot draws now,
+        // not only after the next setVisibleSlots (see extendModelDrawCount).
+        this.extendModelDrawCount(modelData, index);
       }
     }
 
@@ -922,6 +949,7 @@ export class ArmyModel {
         this.ensureModelCapacity(cosmeticData, index + 1);
         this.updateInstanceTransform(state.position, this.normalScale, state.rotation);
         this.updateInstanceMeshes(cosmeticData, index, entityId, state.position, state.color);
+        this.extendModelDrawCount(cosmeticData, index);
       }
     }
   }
