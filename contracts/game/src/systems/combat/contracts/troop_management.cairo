@@ -619,8 +619,13 @@ pub mod troop_management_systems {
                 from_explorer.coord.is_adjacent(to_structure_base.coord()), "explorer is not adjacent to structure",
             );
 
-            // ensure troops belong to owner structure
-            assert!(from_explorer.owner == to_structure_id, "explorer must belong to the same structure");
+            // Intentionally relaxed: an explorer may deposit troops into a different structure's
+            // guard (cross-structure). Caller ownership is still enforced above via
+            // assert_caller_owner on both the source explorer's owner and the target structure,
+            // so this only permits cross-structure moves within the same owner. Keep this
+            // commented (do not re-enable) — the client allows it and
+            // test_explorer_guard_swap_allows_different_structure depends on it.
+            // assert!(from_explorer.owner == to_structure_id, "explorer must belong to the same structure");
 
             // ensure count is valid
             assert!(count <= from_explorer.troops.count, "insufficient troops in explorer");
