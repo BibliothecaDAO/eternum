@@ -26,6 +26,7 @@ import { getEntityIdFromKeys } from "@dojoengine/utils";
 import type { LucideIcon } from "lucide-react";
 import ArrowUpCircle from "lucide-react/dist/esm/icons/arrow-up-circle";
 import Building2 from "lucide-react/dist/esm/icons/building-2";
+import Compass from "lucide-react/dist/esm/icons/compass";
 import HomeIcon from "lucide-react/dist/esm/icons/home";
 import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
 import Shield from "lucide-react/dist/esm/icons/shield";
@@ -78,6 +79,7 @@ const ACTION_ICONS: Record<EmpireSuggestionAction, LucideIcon> = {
   "build-wheat": Wheat,
   "build-wood": Building2,
   "build-worker-hut": HomeIcon,
+  "deploy-explorer": Compass,
   "expand-population": Sparkles,
   garrison: Shield,
   provision: Pickaxe,
@@ -320,6 +322,8 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
           populationCapacity: structure.populationCapacity,
           occupiedGuards: Number(base?.troop_guard_count ?? 0),
           maxGuards: Number(base?.troop_max_guard_count ?? 0),
+          occupiedExplorers: Number(base?.troop_explorer_count ?? 0),
+          maxExplorers: Number(base?.troop_max_explorer_count ?? 0),
           militaryTarget,
           buildability: resolveBlitzBuildability(buildabilityContext, militaryTarget),
         });

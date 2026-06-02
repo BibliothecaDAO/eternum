@@ -118,6 +118,7 @@ export const useSuggestionActions = () => {
           await fireProvision(suggestion.realmId);
           return;
         case "garrison":
+        case "deploy-explorer":
           setLeftNavigationView(LeftView.MilitaryView);
           return;
         case "build-wheat":
