@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-02T09:03:40.231Z",
+  "updatedAt": "2026-06-02T09:03:45.813Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1306,11 +1306,10 @@
       "path": "runs/mainnet/blitz/bltz-burst-807.json",
       "inputPath": "inputs/mainnet/blitz/bltz-burst-807/26809594458-1.json",
       "status": "running",
-      "updatedAt": "2026-06-02T09:03:40.231Z",
+      "updatedAt": "2026-06-02T09:03:45.813Z",
       "workflowRef": "next",
-      "currentStepId": "wait-for-factory-index",
-      "activeLeaseExpiresAt": "2026-06-02T09:48:40.231Z",
-      "hasRunningStep": true,
+      "currentStepId": "configure-world",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "configure-world",
       "startTime": 1780398000,
