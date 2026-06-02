@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-02T18:05:29.790Z",
+  "updatedAt": "2026-06-02T18:06:42.424Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -84,24 +84,24 @@
       "environment": "mainnet.blitz",
       "rotationName": "blitz-rotation",
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26808829179-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/26838666088-1.json",
       "status": "attention",
-      "updatedAt": "2026-06-02T18:05:29.790Z",
+      "updatedAt": "2026-06-02T18:06:42.424Z",
       "workflowRef": "next",
       "currentStepId": "configure-worlds",
       "hasRunningStep": false,
       "recoverableFailedStepId": "configure-worlds",
-      "recoverablePendingStepId": "grant-lootchest-roles",
+      "recoverablePendingStepId": "create-worlds",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15,
-        "nextRetryAt": "2026-06-02T18:20:29.790Z",
+        "nextRetryAt": "2026-06-02T18:21:42.424Z",
         "lastRetryAt": "2026-06-02T18:05:29.790Z"
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-06-02T09:02:04.117Z",
-        "lastEvaluatedAt": "2026-06-02T08:47:04.117Z"
+        "nextEvaluationAt": "2026-06-02T18:21:42.424Z",
+        "lastEvaluatedAt": "2026-06-02T18:06:42.424Z"
       },
       "games": [
         {
@@ -731,6 +731,12 @@
         {
           "gameName": "na-gladiator-05-06-26-0100",
           "startTime": 1780621200,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "eu-gladiator-05-06-26-1800",
+          "startTime": 1780682400,
           "durationSeconds": 3600,
           "artifacts": {}
         }
