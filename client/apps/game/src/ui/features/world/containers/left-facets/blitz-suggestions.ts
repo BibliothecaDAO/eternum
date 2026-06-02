@@ -9,6 +9,7 @@ export type EmpireSuggestionAction =
   | "build-wheat"
   | "build-wood"
   | "build-worker-hut"
+  | "deploy-explorer"
   | "expand-population"
   | "garrison"
   | "provision"
@@ -56,6 +57,8 @@ export type BlitzRealmSuggestionInput = {
   populationCapacity: number;
   occupiedGuards: number;
   maxGuards: number;
+  occupiedExplorers: number;
+  maxExplorers: number;
   militaryTarget?: BlitzMilitaryTarget | null;
   buildability: Record<BlitzBuildKey, BlitzBuildability>;
 };
@@ -79,6 +82,9 @@ const BLITZ_TARGETS = {
 };
 
 const MIN_AVAILABLE_POPULATION_BEFORE_WORKER_HUT = 3;
+// Always nudge toward keeping at least this many explorer armies on the map.
+// Deploying requires picking a hex, so the suggestion only opens the army modal.
+const EXPLORER_DEPLOYMENT_TARGET = 2;
 const MILITARY_TARGETS_BY_REALM_LEVEL = [0, 1, 3, 5];
 // Wheat farm target by realm level (index = realm level). Levels beyond the
 // last entry clamp to the final value. Scales the food economy with the realm
@@ -303,6 +309,20 @@ const resolveGarrisonSuggestion = (input: BlitzRealmSuggestionInput): BlitzSugge
   return createBaseSuggestion(input, "garrison", "Garrison realm", 100, "No defenders stationed.");
 };
 
+const resolveExplorerDeploymentSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
+  if (input.maxExplorers <= 0) return null;
+  if (input.occupiedExplorers >= EXPLORER_DEPLOYMENT_TARGET) return null;
+
+  // We can't auto-pick a deploy hex, so this only opens the army modal.
+  return createBaseSuggestion(
+    input,
+    "deploy-explorer",
+    "Deploy explorer army",
+    15,
+    `${input.occupiedExplorers}/${EXPLORER_DEPLOYMENT_TARGET} explorers deployed.`,
+  );
+};
+
 export const buildBlitzRealmSuggestions = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft[] => {
   if (!input.isBlitzActive) return [];
 
@@ -322,6 +342,7 @@ export const buildBlitzRealmSuggestions = (input: BlitzRealmSuggestionInput): Bl
     resolveUpgradeSuggestion(input) ??
     resolvePopulationSuggestion(input) ??
     resolveWheatSuggestion(input) ??
+    resolveExplorerDeploymentSuggestion(input) ??
     resolveResourceSuggestion(input) ??
     resolveMilitarySuggestion(input) ??
     resolveGarrisonSuggestion(input);
