@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-blip-55",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-blip-55/26809150763-1.json",
   "latestLaunchRequestId": "26809150763-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-06-02T08:53:02.547Z",
-  "updatedAt": "2026-06-02T08:55:47.213Z",
+  "updatedAt": "2026-06-02T08:56:09.779Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-06-02T08:55:47.213Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-06-02T08:55:47.213Z",
+      "finishedAt": "2026-06-02T08:56:09.779Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x2fbf56bfaefe3ef7e5e31ad1cda4e892df725fc9558a7ed9ba957a665575374"
     ],
-    "lootChestRoleTxHash": "0x5d0b361fcd053349246f715c0b56985d7da13b84772bedcb5e532586187eef"
+    "lootChestRoleTxHash": "0x5d0b361fcd053349246f715c0b56985d7da13b84772bedcb5e532586187eef",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-blip-55/torii",
+    "indexerVersion": "v1.8.15",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-06-02T08:56:08.736Z"
   },
-  "activeLease": {
-    "launchRequestId": "26809150763-1",
-    "workflowRunId": 26809150763,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-06-02T08:55:47.213Z",
-    "expiresAt": "2026-06-02T09:40:47.213Z"
-  }
+  "completedAt": "2026-06-02T08:56:09.779Z"
 }
