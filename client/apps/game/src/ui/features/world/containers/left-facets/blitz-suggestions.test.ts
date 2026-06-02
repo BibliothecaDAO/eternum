@@ -165,7 +165,7 @@ describe("buildBlitzRealmSuggestions", () => {
     ).toEqual([]);
   });
 
-  it("prioritizes wheat before resource buildings until the sprint target is met", () => {
+  it("prioritizes wheat before resource buildings until the realm-level target is met", () => {
     expect(
       actionsFor(
         baseInput({
@@ -176,6 +176,40 @@ describe("buildBlitzRealmSuggestions", () => {
         }),
       ),
     ).toEqual(["build-wheat"]);
+  });
+
+  it("scales the wheat farm target with realm level (2/4/8/12)", () => {
+    const wheatReasonAt = (realmLevel: number, wheat: number) =>
+      buildBlitzRealmSuggestions(baseInput({ realmLevel, buildingCounts: { ...emptyCounts, wheat } }))[0];
+
+    // Target per level: L0=2, L1=4, L2=8, L3+=12.
+    const cases: Array<{ level: number; target: number }> = [
+      { level: 0, target: 2 },
+      { level: 1, target: 4 },
+      { level: 2, target: 8 },
+      { level: 3, target: 12 },
+      { level: 5, target: 12 }, // clamps to the last entry
+    ];
+
+    for (const { level, target } of cases) {
+      // One below target -> still suggests wheat, labelled against the level target.
+      expect(wheatReasonAt(level, target - 1)).toMatchObject({
+        action: "build-wheat",
+        reason: `${target - 1}/${target} farms.`,
+      });
+      // At target -> wheat is satisfied, no longer the top suggestion.
+      expect(wheatReasonAt(level, target)?.action).not.toBe("build-wheat");
+    }
+  });
+
+  it("stops the level-1 wheat target at 4 farms instead of jumping to 8", () => {
+    // Regression: at realm level 1, 4 farms completes wheat (was sprinting to 8).
+    expect(actionsFor(baseInput({ realmLevel: 1, buildingCounts: { ...emptyCounts, wheat: 4 } }))).not.toContain(
+      "build-wheat",
+    );
+    expect(actionsFor(baseInput({ realmLevel: 1, buildingCounts: { ...emptyCounts, wheat: 3 } }))).toEqual([
+      "build-wheat",
+    ]);
   });
 
   it("does not emit build actions when autobuild cannot currently submit them", () => {
