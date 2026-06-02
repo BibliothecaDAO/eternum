@@ -72,6 +72,7 @@ export enum TransactionType {
   // Combat
   ATTACK_EXPLORER_VS_EXPLORER = "attack_explorer_vs_explorer",
   ATTACK_EXPLORER_VS_GUARD = "attack_explorer_vs_guard",
+  ATTACK_EXPLORER_VS_GUARD_AND_GARRISON = "attack_explorer_vs_guard_and_garrison",
   ATTACK_GUARD_VS_EXPLORER = "attack_guard_vs_explorer",
   RAID_EXPLORER_VS_GUARD = "raid_explorer_vs_guard",
   BATTLE_START = "battle_start",
@@ -233,6 +234,7 @@ export enum TransactionType {
   SET_BATTLE_CONFIG = "set_battle_config",
   SET_STRUCTURE_LEVEL_CONFIG = "set_structure_level_config",
   SET_WORLD_CONFIG = "set_world_config",
+  SET_BIOME_CLIMATE_CONFIG = "set_biome_climate_config",
   SET_MERCENARIES_NAME_CONFIG = "set_mercenaries_name_config",
   SET_STRUCTURE_MAX_LEVEL_CONFIG = "set_structure_max_level_config",
   SET_BUILDING_CONFIG = "set_building_config",

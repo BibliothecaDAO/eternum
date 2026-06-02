@@ -25,7 +25,7 @@ export const RangeInput = ({
     <input
       type="range"
       min={min}
-      className="w-full accent-gold border-gold bg-dark-wood"
+      className="w-full accent-gold border-gold bg-black/40"
       value={value}
       step={step}
       max={max}

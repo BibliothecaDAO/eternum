@@ -80,9 +80,13 @@ vi.mock("@/ui/design-system/atoms/button", () => ({
 }));
 
 vi.mock("@/ui/features/world", () => ({
-  OSWindow: ({ children, show }: { children: React.ReactNode; show: boolean }) =>
-    show ? <div data-testid="os-window">{children}</div> : null,
   explorationAutomation: "explorationAutomation",
+}));
+
+vi.mock("@/ui/features/world/containers/centered-modal-shell", () => ({
+  CenteredModalShell: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="centered-modal-shell">{children}</div>
+  ),
 }));
 
 vi.mock("@/ui/design-system/atoms/lib/utils", () => ({

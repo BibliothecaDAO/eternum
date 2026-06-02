@@ -227,7 +227,7 @@ export const BlitzMMRTable = () => {
     <div className="flex flex-col gap-2">
       <div>
         <table className="w-full text-xs">
-          <thead className="sticky top-0 bg-dark/90">
+          <thead className="sticky top-0 bg-[#1a1410]">
             <tr className="text-gold/70 border-b border-gold/10">
               <th className="text-left py-2 px-2">#</th>
               <th className="text-left py-2 px-2">Player</th>

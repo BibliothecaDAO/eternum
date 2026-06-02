@@ -18,8 +18,8 @@ interface PanelProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 const toneClassMap: Record<PanelTone, string> = {
-  wood: "bg-dark-wood panel-wood",
-  overlay: "bg-brown/90 panel-wood",
+  wood: "bg-black/40",
+  overlay: "bg-black/60",
   glass: "bg-black/20",
   neutral: "bg-brown/20",
 };

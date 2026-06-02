@@ -4,7 +4,9 @@ import {
   type ContractAddress,
   type DojoAccount,
   getDirectionBetweenAdjacentHexes,
+  getHexesWithinRadius,
   getNeighborHexes,
+  getTroopAttackRange,
   type HexEntityInfo,
   type HexPosition,
   type ID,
@@ -152,6 +154,40 @@ export class ArmyActionManager {
 
   private getAttackStaminaRequirement(): number {
     return configManager.getCombatConfig().stamina_attack_req;
+  }
+
+  private addAttackActionPaths(
+    actionPaths: ActionPaths,
+    startPos: HexPosition,
+    attackRange: number,
+    armyHexes: Map<number, Map<number, HexEntityInfo>>,
+    structureHexes: Map<number, Map<number, HexEntityInfo>>,
+    exploredHexes: Map<number, Map<number, BiomeType>>,
+    playerAddress: ContractAddress,
+  ) {
+    const attackStaminaCost = this.getAttackStaminaRequirement();
+    const targetHexes = getHexesWithinRadius(startPos.col, startPos.row, attackRange);
+
+    for (const { col, row } of targetHexes) {
+      const army = armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
+      const structure = structureHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
+      const target = army ?? structure;
+      if (!target || target.owner === playerAddress) continue;
+
+      const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
+      actionPaths.set(ActionPaths.posKey({ col, row }), [
+        {
+          hex: { col: startPos.col, row: startPos.row },
+          actionType: ActionType.Move,
+        },
+        {
+          hex: { col, row },
+          actionType: ActionType.Attack,
+          biomeType: biome,
+          staminaCost: attackStaminaCost,
+        },
+      ]);
+    }
   }
 
   public findActionPaths(
@@ -309,6 +345,18 @@ export class ArmyActionManager {
           }
         }
       }
+    }
+
+    if (armyStamina >= this.getAttackStaminaRequirement()) {
+      this.addAttackActionPaths(
+        actionPaths,
+        startPos,
+        getTroopAttackRange(troopType),
+        armyHexes,
+        structureHexes,
+        exploredHexes,
+        playerAddress,
+      );
     }
 
     return actionPaths;

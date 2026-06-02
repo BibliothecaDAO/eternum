@@ -30,8 +30,8 @@ vi.mock("@/ui/features/world/components/entities/layout", () => ({
   EntityDetailSection: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock("@/ui/features/world/components/config", () => ({
-  battleSimulation: "battleSimulation",
+vi.mock("@/ui/features/military/battle/battle-lab", () => ({
+  BattleLab: () => null,
 }));
 
 vi.mock("@/hooks/store/use-ui-store", () => ({

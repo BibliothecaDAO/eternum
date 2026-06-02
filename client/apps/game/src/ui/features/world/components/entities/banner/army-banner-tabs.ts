@@ -1,7 +1,7 @@
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
-export const ARMY_RESOURCE_INVENTORY_TAB_LABEL = "Inventory";
+const ARMY_RESOURCE_INVENTORY_TAB_LABEL = "Inventory";
 
 export const shouldShowArmyResourceInventoryTab = (resolvedWorldMode: ResolvedGameMode, resourceStackCount: number) =>
   resolvedWorldMode === "eternum" || resourceStackCount > 0;

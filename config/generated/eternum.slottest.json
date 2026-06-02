@@ -13453,10 +13453,6 @@
                       "type": "core::integer::u32"
                     },
                     {
-                      "name": "defender_direction",
-                      "type": "s1_eternum::models::position::Direction"
-                    },
-                    {
                       "name": "steal_resources",
                       "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                     }
@@ -13475,10 +13471,6 @@
                     {
                       "name": "structure_id",
                       "type": "core::integer::u32"
-                    },
-                    {
-                      "name": "structure_direction",
-                      "type": "s1_eternum::models::position::Direction"
                     }
                   ],
                   "outputs": [],
@@ -13499,10 +13491,6 @@
                     {
                       "name": "explorer_id",
                       "type": "core::integer::u32"
-                    },
-                    {
-                      "name": "explorer_direction",
-                      "type": "s1_eternum::models::position::Direction"
                     }
                   ],
                   "outputs": [],

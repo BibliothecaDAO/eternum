@@ -3346,15 +3346,14 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props - Properties for explorer vs explorer attack
    * @param props.aggressor_id - ID of the attacking explorer
    * @param props.defender_id - ID of the defending explorer
-   * @param props.defender_direction - Direction to the defender
    * @param props.steal_resources - Resources to steal, as array of [resourceId, amount] tuples
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
   public async attack_explorer_vs_explorer(props: SystemProps.AttackExplorerVsExplorerProps) {
-    const { aggressor_id, defender_id, defender_direction, steal_resources, signer } = props;
+    const { aggressor_id, defender_id, steal_resources, signer } = props;
 
-    const calldata = [aggressor_id, defender_id, defender_direction];
+    const calldata = [aggressor_id, defender_id];
 
     // Add steal_resources array length
     calldata.push(steal_resources.length);
@@ -3382,21 +3381,57 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props - Properties for explorer vs guard attack
    * @param props.explorer_id - ID of the attacking explorer
    * @param props.structure_id - ID of the structure with defending guard
-   * @param props.structure_direction - Direction to the structure
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
   public async attack_explorer_vs_guard(props: SystemProps.AttackExplorerVsGuardProps) {
-    const { explorer_id, structure_id, structure_direction, signer } = props;
+    const { explorer_id, structure_id, signer } = props;
 
     return await this.promiseQueue.enqueue({
       signer,
       calls: {
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
         entrypoint: "attack_explorer_vs_guard",
-        calldata: [explorer_id, structure_id, structure_direction],
+        calldata: [explorer_id, structure_id],
       },
       transactionType: TransactionType.ATTACK_EXPLORER_VS_GUARD,
+    });
+  }
+
+  /**
+   * Attack a guard with an explorer and, in the same atomic multicall, garrison the surviving
+   * troops into the captured structure. The attack runs first so the explorer owns the structure
+   * by the time the guard swap executes.
+   *
+   * @param props - Properties for the attack + garrison multicall
+   * @param props.explorer_id - ID of the attacking explorer
+   * @param props.structure_id - ID of the structure with the defending guard
+   * @param props.structure_direction - Direction from the explorer to the structure
+   * @param props.to_guard_slot - Guard slot to place the surviving troops in
+   * @param props.count - Number of surviving troops to garrison (raw count, divisible by resource precision)
+   * @param props.signer - Account executing the transaction
+   * @returns Transaction receipt
+   */
+  public async attack_explorer_vs_guard_and_garrison(props: SystemProps.AttackExplorerVsGuardAndGarrisonProps) {
+    const { explorer_id, structure_id, structure_direction, to_guard_slot, count, signer } = props;
+
+    const calls: Call[] = [
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
+        entrypoint: "attack_explorer_vs_guard",
+        calldata: [explorer_id, structure_id],
+      },
+      {
+        contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_management_systems`),
+        entrypoint: "explorer_guard_swap",
+        calldata: [explorer_id, structure_id, structure_direction, to_guard_slot, count],
+      },
+    ];
+
+    return await this.promiseQueue.enqueue({
+      signer,
+      calls,
+      transactionType: TransactionType.ATTACK_EXPLORER_VS_GUARD_AND_GARRISON,
     });
   }
 
@@ -3407,19 +3442,18 @@ export class EternumProvider extends EnhancedDojoProvider {
    * @param props.structure_id - ID of the structure with attacking guard
    * @param props.structure_guard_slot - Guard slot of the attacking troops
    * @param props.explorer_id - ID of the defending explorer
-   * @param props.explorer_direction - Direction to the explorer
    * @param props.signer - Account executing the transaction
    * @returns Transaction receipt
    */
   public async attack_guard_vs_explorer(props: SystemProps.AttackGuardVsExplorerProps) {
-    const { structure_id, structure_guard_slot, explorer_id, explorer_direction, signer } = props;
+    const { structure_id, structure_guard_slot, explorer_id, signer } = props;
 
     return await this.promiseQueue.enqueue({
       signer,
       calls: {
         contractAddress: getContractByName(this.manifest, `${NAMESPACE}-troop_battle_systems`),
         entrypoint: "attack_guard_vs_explorer",
-        calldata: [structure_id, structure_guard_slot, explorer_id, explorer_direction],
+        calldata: [structure_id, structure_guard_slot, explorer_id],
       },
       transactionType: TransactionType.ATTACK_GUARD_VS_EXPLORER,
     });
@@ -4191,6 +4225,24 @@ export class EternumProvider extends EnhancedDojoProvider {
       calldata: [admin_address],
     });
   }
+
+  public async set_biome_climate_config(props: SystemProps.SetBiomeClimateConfigProps) {
+    const { biome_climate_config, signer } = props;
+
+    return await this.executeAndCheckTransaction(signer, {
+      contractAddress: getContractByName(this.manifest, `${NAMESPACE}-config_systems`),
+      entrypoint: "set_biome_climate_config",
+      calldata: [
+        biome_climate_config.elevation_scale_bps,
+        biome_climate_config.moisture_scale_bps,
+        biome_climate_config.elevation_bias_bps,
+        biome_climate_config.moisture_bias_bps,
+        biome_climate_config.elevation_seed,
+        biome_climate_config.moisture_seed,
+      ],
+    });
+  }
+
   public async set_mercenaries_name_config(props: SystemProps.SetMercenariesNameConfigProps) {
     const { name, signer } = props;
 

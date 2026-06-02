@@ -18,7 +18,7 @@ pub mod troop_raid_systems {
     use dojo::event::EventStorage;
     use dojo::model::ModelStorage;
     use crate::alias::ID;
-    use crate::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS, RESOURCE_PRECISION};
+    use crate::constants::{DAYDREAMS_AGENT_ID, DEFAULT_NS};
     use crate::models::config::{
         BattleConfig, CombatConfigImpl, SeasonConfig, SeasonConfigImpl, TickImpl, TroopDamageConfig, TroopStaminaConfig,
         WorldConfigUtilImpl,
@@ -33,20 +33,18 @@ pub mod troop_raid_systems {
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl, VillageRaidImmunity,
     };
-    use crate::models::troop::{ExplorerTroops, GuardImpl, GuardTroops, TroopsImpl, TroopsTrait};
+    use crate::models::troop::{ExplorerTroops, GuardTroops};
     use crate::models::weight::Weight;
     use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
+    use crate::system_libraries::raid_library::{IRaidLibraryDispatcherTrait, RaidResolution, raid_library};
     use crate::system_libraries::rng_library::{IRNGlibraryDispatcherTrait, rng_library};
     use crate::systems::utils::resource::iResourceTransferImpl;
-    use crate::systems::utils::structure::iStructureImpl;
-    use crate::systems::utils::troop::{TroopRaidOutcome, iExplorerImpl, iGuardImpl, iTroopImpl};
+    use crate::systems::utils::troop::{TroopRaidOutcome, iExplorerImpl, iTroopImpl};
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
     use crate::utils::cartridge::vrf::Source;
     use crate::utils::map::biomes::Biome;
-    use crate::utils::math::PercentageValueImpl;
     use crate::utils::random::VRFImpl;
     use super::super::super::super::super::models::structure::StructureBaseTrait;
-    use super::super::super::super::super::models::troop::GuardTrait;
 
     #[derive(Copy, Drop, Serde)]
     #[dojo::event(historical: false)]
@@ -131,6 +129,7 @@ pub mod troop_raid_systems {
             let biome_library = biome_library::get_dispatcher(@world);
             let defender_biome: Biome = biome_library
                 .get_biome(
+                    world,
                     guarded_structure.coord().alt,
                     guarded_structure.coord().x.into(),
                     guarded_structure.coord().y.into(),
@@ -139,140 +138,32 @@ pub mod troop_raid_systems {
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let current_tick = tick.current();
             let current_tick_interval = tick.interval();
-
-            let mut sum_damage_to_explorer = 0;
-            let mut sum_damage_to_guards = 0;
-            let mut max_explorer_stamina_loss = 0;
-            let structure_functional_guard_slots = guard_defender
-                .functional_slots(guarded_structure.troop_max_guard_count.into());
-            let mut structure_non_zero_guard_slots = array![];
-            for i in 0..structure_functional_guard_slots.len() {
-                let structure_functional_guard_slot = *structure_functional_guard_slots.at(i);
-                let (mut guard_defender_troops, _) = guard_defender.from_slot(structure_functional_guard_slot);
-                if guard_defender_troops.count.is_non_zero() {
-                    structure_non_zero_guard_slots.append(structure_functional_guard_slot);
-                }
-            }
-
-            if structure_non_zero_guard_slots.len().is_non_zero() {
-                let mut structure_non_zero_guard_slots_damage_dealt = array![];
-                let mut individual_explorer_aggressor_troops = explorer_aggressor_troops;
-                individual_explorer_aggressor_troops.count = explorer_aggressor_troops.count
-                    / structure_non_zero_guard_slots.len().into();
-                individual_explorer_aggressor_troops
-                    .count -= individual_explorer_aggressor_troops
-                    .count % RESOURCE_PRECISION;
-                assert!(
-                    individual_explorer_aggressor_troops.count >= RESOURCE_PRECISION, "not enough troops to pillage",
+            let raid_library = raid_library::get_dispatcher(@world);
+            let raid_resolution: RaidResolution = raid_library
+                .resolve_raid(
+                    guard_defender,
+                    explorer_aggressor_troops,
+                    defender_biome,
+                    guarded_structure.troop_max_guard_count,
+                    troop_stamina_config,
+                    troop_damage_config,
+                    current_tick,
+                    current_tick_interval,
                 );
+            guard_defender = raid_resolution.guard_troops;
+            explorer_aggressor_troops = raid_resolution.explorer_troops;
 
-                for i in 0..structure_non_zero_guard_slots.len() {
-                    let structure_non_zero_guard_slot = *structure_non_zero_guard_slots.at(i);
-                    let (mut guard_defender_troops, guard_defender_troops_destroyed_tick) = guard_defender
-                        .from_slot(structure_non_zero_guard_slot);
-                    let (
-                        damage_dealt_to_guard,
-                        damage_dealt_to_explorer,
-                        explorer_stamina_loss,
-                        _guard_slot_stamina_loss,
-                    ) =
-                        individual_explorer_aggressor_troops
-                        .damage(
-                            ref guard_defender_troops,
-                            defender_biome,
-                            troop_stamina_config,
-                            troop_damage_config,
-                            current_tick,
-                            current_tick_interval,
-                        );
-
-                    if explorer_stamina_loss > max_explorer_stamina_loss {
-                        max_explorer_stamina_loss = explorer_stamina_loss;
-                    }
-
-                    // apply damage to guard slot
-                    let mut guard_damage_applied = troop_damage_config.damage_raid_percent_num.into()
-                        * damage_dealt_to_guard
-                        / PercentageValueImpl::_100().into();
-                    // add one and make sure it is precise
-                    guard_damage_applied += RESOURCE_PRECISION - (guard_damage_applied % RESOURCE_PRECISION);
-                    guard_defender_troops.count -= core::cmp::min(guard_defender_troops.count, guard_damage_applied);
-
-                    // deduct stamina spent
-                    // guard_defender_troops
-                    //     .stamina
-                    //     .spend(
-                    //         ref guard_defender_troops.boosts,
-                    //         guard_defender_troops.category,
-                    //         guard_defender_troops.tier,
-                    //         troop_stamina_config,
-                    //         guard_slot_stamina_loss,
-                    //         current_tick,
-                    //         true,
-                    //     );
-
-                    // update structure guard
-                    if guard_defender_troops.count.is_zero() {
-                        // delete guard
-                        iGuardImpl::delete(
-                            ref world,
-                            structure_id,
-                            ref guarded_structure,
-                            ref guard_defender,
-                            ref guard_defender_troops,
-                            current_tick.try_into().unwrap(),
-                            *structure_non_zero_guard_slots.at(i),
-                            current_tick,
-                        );
-                    } else {
-                        // update structure guard
-                        guard_defender
-                            .to_slot(
-                                *structure_non_zero_guard_slots.at(i),
-                                guard_defender_troops,
-                                guard_defender_troops_destroyed_tick.into(),
-                            );
-                        StructureTroopGuardStoreImpl::store(ref guard_defender, ref world, structure_id);
-                    }
-
-                    sum_damage_to_explorer += damage_dealt_to_explorer;
-                    sum_damage_to_guards += damage_dealt_to_guard;
-
-                    structure_non_zero_guard_slots_damage_dealt.append(damage_dealt_to_explorer);
+            if raid_resolution.had_non_zero_guards {
+                if raid_resolution.explorer_troops_lost.is_non_zero() {
+                    iExplorerImpl::update_capacity(ref world, explorer_id, raid_resolution.explorer_troops_lost, false);
                 }
 
-                // apply damage to explorer troops
-                let mut explorer_damage_received = 0;
-                for damage in structure_non_zero_guard_slots_damage_dealt {
-                    // note: damage received by explorer is limited by number of troops
-                    //       used to enter each battle
-                    explorer_damage_received += core::cmp::min(damage, individual_explorer_aggressor_troops.count);
+                StructureTroopGuardStoreImpl::store(ref guard_defender, ref world, structure_id);
+                if raid_resolution.destroyed_guard_count.is_non_zero() {
+                    guarded_structure.troop_guard_count -= raid_resolution.destroyed_guard_count.into();
+                    StructureBaseStoreImpl::store(ref guarded_structure, ref world, structure_id);
                 }
 
-                let mut explorer_damage_applied = troop_damage_config.damage_raid_percent_num.into()
-                    * explorer_damage_received
-                    / PercentageValueImpl::_100().into();
-                // add one and make sure it is precise
-                explorer_damage_applied += RESOURCE_PRECISION - (explorer_damage_applied % RESOURCE_PRECISION);
-                let explorer_troops_lost = core::cmp::min(explorer_aggressor_troops.count, explorer_damage_applied);
-                explorer_aggressor_troops.count -= explorer_troops_lost;
-                // update explorer capacity
-                iExplorerImpl::update_capacity(ref world, explorer_id, explorer_troops_lost, false);
-
-                // deduct stamina spent by explorer
-                explorer_aggressor_troops
-                    .stamina
-                    .spend(
-                        ref explorer_aggressor_troops.boosts,
-                        explorer_aggressor_troops.category,
-                        explorer_aggressor_troops.tier,
-                        troop_stamina_config,
-                        max_explorer_stamina_loss,
-                        current_tick,
-                        true,
-                    );
-
-                // update explorer
                 explorer_aggressor.troops = explorer_aggressor_troops;
                 if explorer_aggressor_troops.count.is_zero() {
                     if explorer_aggressor.owner == DAYDREAMS_AGENT_ID {
@@ -309,8 +200,10 @@ pub mod troop_raid_systems {
             }
 
             let mut raid_success = true;
-            if structure_non_zero_guard_slots.len().is_non_zero() {
-                let raid_outcome = iTroopImpl::raid_outcome(sum_damage_to_guards, sum_damage_to_explorer);
+            if raid_resolution.had_non_zero_guards {
+                let raid_outcome = iTroopImpl::raid_outcome(
+                    raid_resolution.sum_damage_to_guards, raid_resolution.sum_damage_to_explorer,
+                );
                 match raid_outcome {
                     TroopRaidOutcome::Success => { raid_success = true },
                     TroopRaidOutcome::Failure => { raid_success = false },
@@ -318,7 +211,13 @@ pub mod troop_raid_systems {
                         let rng_library_dispatcher = rng_library::get_dispatcher(@world);
                         let vrf_seed: u256 = rng_library_dispatcher
                             .get_random_number(Source::Nonce(starknet::get_caller_address()), world);
-                        raid_success = iTroopImpl::raid(sum_damage_to_guards, sum_damage_to_explorer, vrf_seed, world);
+                        raid_success =
+                            iTroopImpl::raid(
+                                raid_resolution.sum_damage_to_guards,
+                                raid_resolution.sum_damage_to_explorer,
+                                vrf_seed,
+                                world,
+                            );
                     },
                 }
             }

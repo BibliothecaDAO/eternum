@@ -27,6 +27,14 @@ const DEFAULT_FACTORY_RECENT_RUN_LIST_LIMIT = 50;
 const MAX_FACTORY_RECENT_RUN_LIST_LIMIT = 100;
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
 const FACTORY_ENVIRONMENTS = ["slot.blitz", "slot.eternum", "mainnet.blitz", "mainnet.eternum"];
+const BIOME_CLIMATE_OVERRIDE_LIMITS = {
+  elevationScaleBps: 65_535,
+  moistureScaleBps: 65_535,
+  elevationBiasBps: 65_535,
+  moistureBiasBps: 65_535,
+  elevationSeed: 4_294_967_295,
+  moistureSeed: 4_294_967_295,
+};
 const GAME_PRIZE_FUNDING_STEP_ID = "configure-world";
 const SERIES_LIKE_PRIZE_FUNDING_STEP_ID = "configure-worlds";
 const RECOVERABLE_FACTORY_STEP_IDS = new Set([
@@ -241,6 +249,7 @@ async function handleCreateFactoryRun(request, env) {
     twoPlayerMode: body.twoPlayerMode,
     durationSeconds: body.durationSeconds,
     mapConfigOverrides: body.mapConfigOverrides,
+    biomeClimateOverrides: body.biomeClimateOverrides,
     blitzRegistrationOverrides: body.blitzRegistrationOverrides,
     launchStep: "full",
   });
@@ -290,6 +299,7 @@ async function handleCreateFactorySeriesRun(request, env) {
     twoPlayerMode: body.twoPlayerMode,
     durationSeconds: body.durationSeconds,
     mapConfigOverrides: body.mapConfigOverrides,
+    biomeClimateOverrides: body.biomeClimateOverrides,
     blitzRegistrationOverrides: body.blitzRegistrationOverrides,
     autoRetryEnabled: body.autoRetryEnabled,
     autoRetryIntervalMinutes: body.autoRetryIntervalMinutes,
@@ -348,6 +358,8 @@ async function handleCreateFactoryRotationRun(request, env) {
     twoPlayerMode: body.twoPlayerMode,
     durationSeconds: body.durationSeconds,
     mapConfigOverrides: body.mapConfigOverrides,
+    biomeClimateOverrides: body.biomeClimateOverrides,
+    biomeClimateOverridesByGameNumber: body.biomeClimateOverridesByGameNumber,
     blitzRegistrationOverrides: body.blitzRegistrationOverrides,
     autoRetryEnabled: body.autoRetryEnabled,
     autoRetryIntervalMinutes: body.autoRetryIntervalMinutes,
@@ -1112,6 +1124,7 @@ function validateCreateFactoryRunBody(body) {
   validateGameName(body.gameName);
   validateWorkflowRef(body.workflowRef);
   validateMapConfigOverrides(body.mapConfigOverrides);
+  validateBiomeClimateOverrides(body.biomeClimateOverrides);
   validateBlitzRegistrationOverrides(body.blitzRegistrationOverrides);
 
   if (!body.gameStartTime?.trim()) {
@@ -1124,6 +1137,7 @@ function validateCreateFactorySeriesRunBody(body) {
   validateSeriesName(body.seriesName);
   validateWorkflowRef(body.workflowRef);
   validateMapConfigOverrides(body.mapConfigOverrides);
+  validateBiomeClimateOverrides(body.biomeClimateOverrides);
   validateBlitzRegistrationOverrides(body.blitzRegistrationOverrides);
   validateSeriesGames(body.games);
 
@@ -1137,6 +1151,8 @@ function validateCreateFactoryRotationRunBody(body) {
   validateSeriesName(body.rotationName);
   validateWorkflowRef(body.workflowRef);
   validateMapConfigOverrides(body.mapConfigOverrides);
+  validateBiomeClimateOverrides(body.biomeClimateOverrides);
+  validateBiomeClimateOverridesByGameNumber(body.biomeClimateOverridesByGameNumber);
   validateBlitzRegistrationOverrides(body.blitzRegistrationOverrides);
 
   if (hasWeeklyCadence(body)) {
@@ -1208,6 +1224,7 @@ function validateWeeklyCadenceEntry(entry, index) {
   }
 
   validateBlitzRegistrationOverrides(entry.blitzRegistrationOverrides);
+  validateBiomeClimateOverrides(entry.biomeClimateOverrides);
 }
 
 function validateContinueFactoryRunBody(body) {
@@ -1804,6 +1821,8 @@ function validateSeriesGames(games) {
       }
       requestedGameNumbers.add(game.seriesGameNumber);
     }
+
+    validateBiomeClimateOverrides(game.biomeClimateOverrides);
   }
 }
 
@@ -3122,6 +3141,12 @@ function buildReplayableLaunchOptions(request) {
   assignOptionalLaunchOption(launchOptions, "durationSeconds", request.durationSeconds);
   assignOptionalLaunchOption(launchOptions, "weeklyCadence", request.weeklyCadence);
   assignOptionalLaunchOption(launchOptions, "mapConfigOverrides", request.mapConfigOverrides);
+  assignOptionalLaunchOption(launchOptions, "biomeClimateOverrides", request.biomeClimateOverrides);
+  assignOptionalLaunchOption(
+    launchOptions,
+    "biomeClimateOverridesByGameNumber",
+    request.biomeClimateOverridesByGameNumber,
+  );
   assignOptionalLaunchOption(launchOptions, "blitzRegistrationOverrides", request.blitzRegistrationOverrides);
   assignOptionalLaunchOption(launchOptions, "cartridgeApiBase", request.cartridgeApiBase);
   assignOptionalLaunchOption(launchOptions, "toriiNamespaces", request.toriiNamespaces);
@@ -3217,6 +3242,38 @@ function validateMapConfigOverrides(value) {
   validateNumericOverrideObject(value, "mapConfigOverrides");
 }
 
+function validateBiomeClimateOverrides(value) {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new HttpError(400, "biomeClimateOverrides must be an object");
+  }
+
+  for (const [key, entryValue] of Object.entries(value)) {
+    validateBiomeClimateOverrideEntry(key, entryValue);
+  }
+}
+
+function validateBiomeClimateOverridesByGameNumber(value) {
+  if (value === undefined) {
+    return;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new HttpError(400, "biomeClimateOverridesByGameNumber must be an object");
+  }
+
+  for (const [gameNumber, overrides] of Object.entries(value)) {
+    const parsedGameNumber = Number(gameNumber);
+    if (!Number.isInteger(parsedGameNumber) || parsedGameNumber <= 0) {
+      throw new HttpError(400, "biomeClimateOverridesByGameNumber keys must be positive game numbers");
+    }
+    validateBiomeClimateOverrides(overrides);
+  }
+}
+
 function validateBlitzRegistrationOverrides(value) {
   if (value === undefined) {
     return;
@@ -3232,6 +3289,18 @@ function validateBlitzRegistrationOverrides(value) {
 function validateBlitzRegistrationOverrideObject(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     throw new HttpError(400, "blitzRegistrationOverrides must be an object");
+  }
+}
+
+function validateBiomeClimateOverrideEntry(key, value) {
+  const limit = BIOME_CLIMATE_OVERRIDE_LIMITS[key];
+
+  if (limit === undefined) {
+    throw new HttpError(400, `Unsupported biomeClimateOverrides.${key}`);
+  }
+
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > limit) {
+    throw new HttpError(400, `biomeClimateOverrides.${key} must be an integer between 0 and ${limit}`);
   }
 }
 

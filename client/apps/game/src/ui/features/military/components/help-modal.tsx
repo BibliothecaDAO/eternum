@@ -1,7 +1,8 @@
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
-import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { ActorType, ID } from "@bibliothecadao/types";
+import ArrowLeftRight from "lucide-react/dist/esm/icons/arrow-left-right";
 import { Suspense } from "react";
 import { HelpContainer } from "./help-container";
 
@@ -25,15 +26,18 @@ export const HelpModal = ({
   const toggleModal = useUIStore((state) => state.toggleModal);
 
   return (
-    <SecondaryPopup width="960" name="transfer-modal" containerClassName="absolute left-0 top-0">
-      <SecondaryPopup.Head onClose={() => toggleModal(null)}>Transfer Troops & Relics</SecondaryPopup.Head>
-      <SecondaryPopup.Body width="100%" height="auto">
-        <div className="p-4">
-          <Suspense fallback={<LoadingAnimation />}>
-            <HelpContainer selected={selected} target={target} allowBothDirections={allowBothDirections} />
-          </Suspense>
-        </div>
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
+    <CenteredModalShell
+      title="Transfer Troops & Relics"
+      icon={ArrowLeftRight}
+      onClose={() => toggleModal(null)}
+      size="wide"
+      bodyClassName="overflow-y-auto"
+    >
+      <div className="p-4">
+        <Suspense fallback={<LoadingAnimation />}>
+          <HelpContainer selected={selected} target={target} allowBothDirections={allowBothDirections} />
+        </Suspense>
+      </div>
+    </CenteredModalShell>
   );
 };

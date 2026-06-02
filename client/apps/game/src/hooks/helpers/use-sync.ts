@@ -46,7 +46,7 @@ export const useSyncLeaderboard = ({ auto = true, skip = false }: { auto?: boole
   return { isSyncing, sync };
 };
 
-export const useSyncHyperstructure = () => {
+const useSyncHyperstructure = () => {
   const syncHyperstructure = useCallback(
     async ({ toriiClient, contractComponents }: { toriiClient: ToriiClient; contractComponents: unknown }) => {
       const hyperstructureIds = await sqlApi.fetchHyperstructures();

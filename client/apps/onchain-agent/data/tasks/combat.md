@@ -34,14 +34,16 @@ autoload: false
 | Action                        | What It Does                                    | Stamina Cost             |
 | ----------------------------- | ----------------------------------------------- | ------------------------ |
 | `attack_explorer_vs_explorer` | Army vs army — strength-based, steal on victory | 50 attacker, 40 defender |
-| `attack_explorer_vs_guard`    | Army vs structure guard — capture on victory    | 30                       |
-| `attack_guard_vs_explorer`    | Guard attacks nearby army — defensive action    | 30                       |
+| `attack_explorer_vs_guard`    | Army vs structure guard — capture on victory    | 50 attacker, 40 defender |
+| `attack_guard_vs_explorer`    | Guard attacks nearby army — defensive action    | 50 attacker, 40 defender |
 | `raid_explorer_vs_guard`      | Steal resources without destroying guard        | 30                       |
 
 - Combat resolution is instant (onchain)
+- Crossbowman attacks can target enemies within 2 hexes; Knight and Paladin attacks remain adjacent-only
 - Higher total strength wins — use `simulate_battle` or `simulate_raid` to predict outcomes
 - `attack_explorer_vs_explorer`: winner can steal specified resources from the defeated explorer
-- `attack_explorer_vs_guard`: victory destroys the guard and captures the structure
+- `attack_explorer_vs_guard`: victory destroys the guard; ranged attacks can clear guards, but only adjacent attacks
+  claim structures
 - `raid_explorer_vs_guard`: guard survives, you only steal resources — useful when guard is too strong to defeat
 - `"IN BATTLE"` flag appears during combat, clears after
 
@@ -64,11 +66,11 @@ Guard slot names depend on structure level:
 
 ## Stamina
 
-- Armies have 0-120 stamina, regenerates +20 per phase (every ~1 minute in Blitz)
+- Armies have 0-120 stamina, regenerates +30 per phase (every ~1 minute in Blitz)
 - Travel (explored tiles): ~10 stamina/hex
 - Explore (new tiles): 30 stamina/hex (minimum 10 troops required)
-- `attack_explorer_vs_explorer`: 50 attacker, 40 defender
-- `attack_explorer_vs_guard` / `attack_guard_vs_explorer` / `raid_explorer_vs_guard`: 30 stamina
+- Range-1 combat: 50 attacker, 40 defender
+- Range-2 Crossbow attacks: attacker pays 50 stamina; defender pays 20 stamina and deals no counter-damage
 
 ## Common Errors
 

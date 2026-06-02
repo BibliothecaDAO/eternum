@@ -41,7 +41,6 @@ import { BlitzSetHyperstructureShareholdersTo100 } from "../features/world/compo
 import { LeftCommandSidebar } from "../features/world/containers/left-command-sidebar";
 import { TopHeader } from "../features/world/containers/top-header/top-header";
 import { TopNavigation as ModalWindows } from "../features/world/containers/top-navigation";
-import { CombatSimulation } from "../modules/simulation/combat-simulation";
 import { BlockTimestampPoller } from "../shared/components/block-timestamp-poller";
 import { ChainTimePoller } from "../shared/components/chain-time-poller";
 import { StoreManagers } from "../store-managers";
@@ -111,9 +110,8 @@ const BackgroundSystems = () => (
  */
 const GameSystems = ({ backgroundImage }: { backgroundImage: string }) => (
   <>
-    <RealmTransferManager zIndex={100} />
+    <RealmTransferManager />
     <PlayOverlayManager backgroundImage={backgroundImage} />
-    <CombatSimulation />
   </>
 );
 
@@ -149,17 +147,13 @@ const getNetworkErrorReason = (error: unknown): string => {
  */
 const HUD = () => (
   <>
-    {/* Top-left: Player info and controls */}
-    <div className="absolute top-0 left-0 pointer-events-auto z-20">
-      <TopHeader />
-    </div>
+    {/* Top zone — TopHeader positions its own pills with fixed offsets. */}
+    <TopHeader />
 
-    {/* Left side: Command sidebar */}
-    <div className="absolute z-20 w-auto top-0 h-screen left-0 flex pointer-events-none">
-      <LeftCommandSidebar />
-    </div>
+    {/* Left edge — view switcher + floating active view panel. */}
+    <LeftCommandSidebar />
 
-    {/* Bottom-right: Tile info and minimap */}
+    {/* Bottom-right — minimap + contextual tile inspector. */}
     <BottomRightPanel />
 
     {/* Floating modal windows (settings, social, etc.) - needs high z-index and pointer-events */}

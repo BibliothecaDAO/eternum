@@ -50,7 +50,7 @@ import {
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
 import { playResourceSound } from "@/three/sound/utils";
 import { LeftView } from "@/types";
-import { Biome, configManager, Position } from "@bibliothecadao/eternum";
+import { configManager, Position } from "@bibliothecadao/eternum";
 import { gameWorkerManager } from "../../managers/game-worker-manager";
 
 import { FELT_CENTER, IS_FLAT_MODE } from "@/ui/config";
@@ -70,6 +70,7 @@ import {
   ExplorerRewardSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
+  getGuardsByStructure,
   getStructureInfoFromTileOccupier,
   getTileAt,
   isTileOccupierReservedHyperstructure,
@@ -90,6 +91,7 @@ import {
   DUMMY_HYPERSTRUCTURE_ENTITY_ID,
   findResourceById,
   getDirectionBetweenAdjacentHexes,
+  getTroopAttackRange,
   HexEntityInfo,
   HexPosition,
   ID,
@@ -234,6 +236,7 @@ import {
 import { findSupersededArmyRemoval, isStaleTrackedArmyTileRemoval } from "./worldmap-army-removal";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
+import { resolveArmyOwnerCacheAction } from "./worldmap-army-owner-resolution";
 import { resolveOwnershipPulseHexes } from "./worldmap-ownership-pulse-policy";
 import {
   resolveDuplicateTileReconcilePlan,
@@ -1323,7 +1326,7 @@ export default class WorldmapScene extends WarpTravel {
       this.exploredTiles,
       targetNormalized.x,
       targetNormalized.y,
-      Biome.getBiome(targetContract.x, targetContract.y),
+      configManager.getBiome(targetContract.x, targetContract.y),
     );
 
     if (provisionalSpawn.action !== "write_provisional") return;
@@ -1536,7 +1539,7 @@ export default class WorldmapScene extends WarpTravel {
           // Biome is computed from felt-offset (contract) coords, matching
           // the Cairo biome_library. update.hexCoords arrives in contract
           // format from world-update-listener (TileOpt currentState.col/row).
-          Biome.getBiome(update.hexCoords.col, update.hexCoords.row),
+          configManager.getBiome(update.hexCoords.col, update.hexCoords.row),
         );
         if (spawnResult.action === "write_provisional") {
           if (!this.exploredTiles.has(normalizedPos.x)) {
@@ -1814,7 +1817,7 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const shouldCycleStructuresForTab = () => Boolean(useUIStore.getState().armyCreationPopup);
+    const shouldCycleStructuresForTab = () => useUIStore.getState().leftNavigationView === LeftView.MilitaryView;
     const getRealmStructuresForTab = () =>
       this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
 
@@ -3206,6 +3209,12 @@ export default class WorldmapScene extends WarpTravel {
     };
 
     this.state.toggleModal(<QuickAttackPreview attacker={attackerSummary} target={targetSummary} />);
+    // The preview popup is now the confirm step. Clear only the hovered hex so
+    // the "right-click to confirm" action panel (gated on hoveredHex) hides —
+    // this is the same minimal call onArmyMovement makes, so the army stays
+    // selected and the action-path state machine is left intact (unlike
+    // clearEntitySelection, which reset it and broke movement/exploration).
+    this.state.updateEntityActionHoveredHex(null);
   }
 
   private onArmySpireTravel(actionPath: ActionPath[], selectedEntityId: ID) {
@@ -3237,6 +3246,7 @@ export default class WorldmapScene extends WarpTravel {
       };
 
       this.state.toggleModal(<QuickAttackPreview attacker={attackerSummary} target={targetSummary} />);
+      this.state.updateEntityActionHoveredHex(null);
       return;
     }
 
@@ -3300,6 +3310,18 @@ export default class WorldmapScene extends WarpTravel {
     if (!hexCoords) return;
 
     const structure = new StructureActionManager();
+    const structureData = getComponentValue(
+      this.dojo.components.Structure,
+      getEntityIdFromKeys([BigInt(selectedEntityId)]),
+    );
+    const attackRange = structureData
+      ? Math.max(
+          0,
+          ...getGuardsByStructure(structureData)
+            .filter((guard) => Number(guard.troops.count) > 0)
+            .map((guard) => getTroopAttackRange(guard.troops.category)),
+        )
+      : 0;
 
     const playerAddress = useAccountStore.getState().account?.address;
 
@@ -3310,6 +3332,7 @@ export default class WorldmapScene extends WarpTravel {
       this.armyHexes,
       this.exploredTiles,
       ContractAddress(playerAddress),
+      attackRange,
     );
 
     this.updateEntityActionPaths(actionPaths.getPaths());
@@ -4968,62 +4991,62 @@ export default class WorldmapScene extends WarpTravel {
       this.armyStructureOwners.delete(entityId);
     }
 
-    let actualOwnerAddress = ownerAddress;
+    const isAlreadyCached = this.armiesPositions.has(entityId);
+
+    // A 0n owner means "defeated/deleted OR not-yet-synced". Gather the fallback
+    // owners the decision may use: the last known owner from the spatial cache
+    // (for a known army) or an ECS Structure lookup (for a brand-new army).
+    let cachedOwner: bigint | undefined;
+    let ecsResolvedOwner: bigint | undefined;
     if (ownerAddress === 0n) {
       if (import.meta.env.DEV) {
         console.warn(`[DEBUG] Army ${entityId} has zero owner address (0n) - army defeated/deleted`);
       }
-
-      // Check if we already have this army with a valid owner
-      const existingArmy = this.armiesPositions.has(entityId);
-      if (existingArmy) {
-        // Try to find existing army data in armyHexes to preserve owner
-        for (const rowMap of this.armyHexes.values()) {
-          for (const armyData of rowMap.values()) {
-            if (armyData.id === entityId && armyData.owner !== 0n) {
-              actualOwnerAddress = armyData.owner;
-              break;
-            }
-          }
-          if (actualOwnerAddress !== 0n) break;
-        }
-
-        // If we still have 0n owner, the army was defeated/deleted - clean up the cache
-        if (actualOwnerAddress === 0n) {
-          if (import.meta.env.DEV) {
-            console.warn(`[DEBUG] Removing army ${entityId} from cache (0n owner indicates defeat/deletion)`);
-          }
-          const oldPos = this.armiesPositions.get(entityId);
-          if (oldPos) {
-            this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
-            gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
-            this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
-          }
-          this.armiesPositions.delete(entityId);
-          this.armyStructureOwners.delete(entityId);
-          return;
-        }
+      if (isAlreadyCached) {
+        cachedOwner = this.findCachedArmyOwner(entityId);
       } else {
-        // New army with 0n owner - MapDataStore likely hasn't cached it yet.
-        // Resolve owner directly from ECS Structure component using ownerStructureId.
-        const resolvedStructureId = ownerStructureId ?? this.armyStructureOwners.get(entityId);
-        if (resolvedStructureId) {
-          try {
-            const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
-            const structureEntity = getEntityIdFromKeys([BigInt(resolvedStructureId)]);
-            const structureComponent = components.Structure;
-            if (structureComponent) {
-              const structure = getComponentValue(structureComponent, structureEntity);
-              if (structure?.owner) {
-                actualOwnerAddress = BigInt(structure.owner);
-              }
-            }
-          } catch {
-            // Fall through with 0n if ECS lookup fails
-          }
-        }
+        ecsResolvedOwner = this.resolveArmyOwnerFromEcs(entityId, ownerStructureId);
       }
     }
+
+    const action = resolveArmyOwnerCacheAction({
+      ownerAddress,
+      isAlreadyCached,
+      cachedOwner,
+      ecsResolvedOwner,
+    });
+
+    if (action.kind === "evict") {
+      // Already-cached army confirmed defeated/deleted (0n owner, nothing to
+      // preserve) — purge it from the spatial cache.
+      if (import.meta.env.DEV) {
+        console.warn(`[DEBUG] Removing army ${entityId} from cache (0n owner indicates defeat/deletion)`);
+      }
+      const oldPos = this.armiesPositions.get(entityId);
+      if (oldPos) {
+        this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
+        gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
+        this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
+      }
+      this.armiesPositions.delete(entityId);
+      this.armyStructureOwners.delete(entityId);
+      return;
+    }
+
+    if (action.kind === "skip") {
+      // New army whose owner stayed unresolved (0n). Do NOT write a bogus
+      // owner:0n entry — it would mis-flag the army as unowned/defeated for
+      // clicks and ownership coloring. Let the next authoritative update, which
+      // carries a real owner, register it.
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[Worldmap] Skipping spatial cache write for new army ${entityId}: owner unresolved (0n), awaiting authoritative update`,
+        );
+      }
+      return;
+    }
+
+    const actualOwnerAddress = action.owner;
 
     const normalized = new Position({ x: col, y: row }).getNormalized();
     const newPos = { col: normalized.x, row: normalized.y };
@@ -5053,6 +5076,52 @@ export default class WorldmapScene extends WarpTravel {
     this.armyHexes.get(newPos.col)?.set(newPos.row, armyHexData);
     gameWorkerManager.updateArmyHex(newPos.col, newPos.row, armyHexData);
     this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
+  }
+
+  /**
+   * Search the spatial cache for the army's last known non-zero owner. Used to
+   * preserve ownership when an already-cached army reports a transient 0n owner.
+   */
+  private findCachedArmyOwner(entityId: ID): bigint | undefined {
+    for (const rowMap of this.armyHexes.values()) {
+      for (const armyData of rowMap.values()) {
+        if (armyData.id === entityId && armyData.owner !== 0n) {
+          return armyData.owner;
+        }
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Resolve an army's owner directly from the ECS Structure component — used for
+   * a brand-new army that MapDataStore has not cached yet. Returns undefined if
+   * there is no structure to resolve against or the lookup throws; the failure
+   * is surfaced (DEV) rather than silently poisoning the cache with a 0n owner.
+   */
+  private resolveArmyOwnerFromEcs(entityId: ID, ownerStructureId?: ID | null): bigint | undefined {
+    const resolvedStructureId = ownerStructureId ?? this.armyStructureOwners.get(entityId);
+    if (!resolvedStructureId) {
+      return undefined;
+    }
+    try {
+      const components = this.dojo.components as Parameters<typeof ensureStructureSynced>[0];
+      const structureEntity = getEntityIdFromKeys([BigInt(resolvedStructureId)]);
+      const structureComponent = components.Structure;
+      if (structureComponent) {
+        const structure = getComponentValue(structureComponent, structureEntity);
+        if (structure?.owner) {
+          return BigInt(structure.owner);
+        }
+      }
+    } catch (error) {
+      // Surface the failure instead of silently treating the army as unowned
+      // (which would poison the spatial cache with a bogus owner).
+      if (import.meta.env.DEV) {
+        console.warn(`[Worldmap] Structure owner ECS lookup failed for army ${entityId}`, error);
+      }
+    }
+    return undefined;
   }
 
   public updateStructureHexes(update: {

@@ -47,6 +47,8 @@ export interface WeatherState {
   fogDensity: number;
   /** Sky darkness modifier 0-1 */
   skyDarkness: number;
+  /** Shadow-brightening modifier for readability */
+  ambientBoost: number;
   /** Is weather currently transitioning */
   isTransitioning: boolean;
   /** Progress through current phase 0-1 */
@@ -116,6 +118,7 @@ export class WeatherManager {
   private stormIntensity: number = 0;
   private fogDensity: number = 0;
   private skyDarkness: number = 0;
+  private ambientBoost: number = 0;
 
   // Timing
   private autoChangeTimer: number = 0;
@@ -168,6 +171,7 @@ export class WeatherManager {
     stormIntensity: 0,
     fogDensity: 0,
     skyDarkness: 0,
+    ambientBoost: 0,
     isTransitioning: false,
     phaseProgress: 0,
   };
@@ -343,6 +347,25 @@ export class WeatherManager {
         this.skyDarkness = 0.8 * fadeOut;
         break;
     }
+
+    this.ambientBoost = this.resolveAmbientBoost();
+  }
+
+  private resolveAmbientBoost(): number {
+    const cloudyBoost = this.clamp(this.intensity / 0.3) * 0.1;
+    const rainBoost = this.normalizeRainIntensity() * 0.16;
+    const stormBoost = this.stormIntensity * 0.22;
+
+    return Math.max(cloudyBoost, rainBoost, stormBoost);
+  }
+
+  private normalizeRainIntensity(): number {
+    const peakRainIntensity = Math.max(this.getPhaseWeatherConfig().peakRainIntensity, 0.01);
+    return this.clamp(this.rainIntensity / peakRainIntensity);
+  }
+
+  private clamp(value: number): number {
+    return Math.max(0, Math.min(1, value));
   }
 
   private applyEffects(deltaTime: number, spawnCenter?: Vector3): void {
@@ -429,6 +452,7 @@ export class WeatherManager {
       this.stormIntensity = 0;
       this.fogDensity = 0;
       this.skyDarkness = 0;
+      this.ambientBoost = 0;
     } else {
       this.currentPhase = WeatherPhase.PEAK;
       const config = this.weatherConfigs[weather];
@@ -437,6 +461,7 @@ export class WeatherManager {
       this.stormIntensity = config.stormMultiplier;
       this.fogDensity = 0.7;
       this.skyDarkness = 0.8;
+      this.ambientBoost = this.resolveAmbientBoost();
     }
   }
 
@@ -468,6 +493,7 @@ export class WeatherManager {
     this.cachedState.stormIntensity = this.stormIntensity;
     this.cachedState.fogDensity = this.fogDensity;
     this.cachedState.skyDarkness = this.skyDarkness;
+    this.cachedState.ambientBoost = this.ambientBoost;
     this.cachedState.isTransitioning =
       this.currentPhase !== WeatherPhase.CLEAR && this.currentPhase !== WeatherPhase.PEAK;
     this.cachedState.phaseProgress = this.phaseProgress;

@@ -1,4 +1,14 @@
-import { BiomeType, RELICS, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import {
+  BiomeType,
+  CROSSBOWMAN_RANGED_FIELD_DAMAGE_MULTIPLIER,
+  CROSSBOWMAN_RANGED_STRUCTURE_DAMAGE_MULTIPLIER,
+  KNIGHT_STRUCTURE_ASSAULT_DAMAGE_MULTIPLIER,
+  KNIGHT_STRUCTURE_GUARD_INCOMING_DAMAGE_MULTIPLIER,
+  RELICS,
+  ResourcesIds,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 import { configManager } from "../managers";
 import { divideWithPrecision } from "./utils";
 
@@ -18,6 +28,14 @@ export interface Army {
   troopType: TroopType;
   tier: TroopTier;
   battle_cooldown_end: number;
+}
+
+export interface CombatSimulationContext {
+  attackDistance?: number;
+  attackerBiome?: BiomeType;
+  defenderBiome?: BiomeType;
+  attackerIsStructureGuard?: boolean;
+  defenderIsStructureGuard?: boolean;
 }
 
 export interface CombatParameters {
@@ -116,26 +134,124 @@ export class CombatSimulator {
     return 0.2;
   }
 
+  private isRangedCrossbowAttack(attacker: Army, context: CombatSimulationContext): boolean {
+    return attacker.troopType === TroopType.Crossbowman && (context.attackDistance ?? 1) > 1;
+  }
+
+  private isRangedAttack(context: CombatSimulationContext): boolean {
+    return (context.attackDistance ?? 1) > 1;
+  }
+
+  private calculateAttackerBiomeModifier(
+    attacker: Army,
+    battleBiome: BiomeType,
+    context: CombatSimulationContext,
+  ): number {
+    // Range-2 attacks ignore biome damage modifiers; mirrors the contract's _attacker_biome_damage_bonus.
+    if (this.isRangedAttack(context)) {
+      return 1;
+    }
+
+    return configManager.getBiomeCombatBonus(attacker.troopType, context.attackerBiome ?? battleBiome);
+  }
+
+  private calculateDefenderBiomeModifier(
+    defender: Army,
+    battleBiome: BiomeType,
+    context: CombatSimulationContext,
+  ): number {
+    return configManager.getBiomeCombatBonus(defender.troopType, context.defenderBiome ?? battleBiome);
+  }
+
+  private calculateAttackerRoleDamageMultiplier(attacker: Army, context: CombatSimulationContext): number {
+    return (
+      this.calculateRangedCrossbowDamageMultiplier(attacker, context) *
+      this.calculateKnightStructureAssaultMultiplier(attacker, context)
+    );
+  }
+
+  private calculateRangedCrossbowDamageMultiplier(attacker: Army, context: CombatSimulationContext): number {
+    if (!this.isRangedCrossbowAttack(attacker, context)) {
+      return 1;
+    }
+
+    return context.defenderIsStructureGuard
+      ? CROSSBOWMAN_RANGED_STRUCTURE_DAMAGE_MULTIPLIER
+      : CROSSBOWMAN_RANGED_FIELD_DAMAGE_MULTIPLIER;
+  }
+
+  private calculateKnightStructureAssaultMultiplier(attacker: Army, context: CombatSimulationContext): number {
+    const isAdjacentStructureGuardAssault =
+      !context.attackerIsStructureGuard && context.defenderIsStructureGuard && (context.attackDistance ?? 1) === 1;
+
+    return attacker.troopType === TroopType.Knight && isAdjacentStructureGuardAssault
+      ? KNIGHT_STRUCTURE_ASSAULT_DAMAGE_MULTIPLIER
+      : 1;
+  }
+
+  private calculateIncomingDamageMultiplier(defender: Army, isStructureGuard: boolean | undefined): number {
+    return isStructureGuard && defender.troopType === TroopType.Knight
+      ? KNIGHT_STRUCTURE_GUARD_INCOMING_DAMAGE_MULTIPLIER
+      : 1;
+  }
+
   public calculateStaminaCost(baseStaminaCost: number, refundMultiplier: number): number {
     return baseStaminaCost - Math.ceil(baseStaminaCost * refundMultiplier);
   }
 
-  public calculateNewStaminaAttacker(currentStamina: number, refundMultiplier: number): number {
-    const staminaCost = this.calculateStaminaCost(this.staminaAttackThreshold, refundMultiplier);
+  public calculateNewStaminaAttacker(
+    currentStamina: number,
+    refundMultiplier: number,
+    context: CombatSimulationContext = {},
+  ): number {
+    const staminaCost = this.calculateStaminaCost(
+      this.staminaAttackThreshold,
+      this.isRangedAttack(context) ? 0 : refundMultiplier,
+    );
     return currentStamina - staminaCost;
   }
 
-  public calculateNewStaminaDefender(currentStamina: number, refundMultiplier: number): number {
+  private getRangedDefenseStaminaCost(): number {
+    return Math.ceil(this.staminaDefenseThreshold / 2);
+  }
+
+  public calculateNewStaminaDefender(
+    currentStamina: number,
+    refundMultiplier: number,
+    context: CombatSimulationContext = {},
+  ): number {
+    if (this.isRangedAttack(context)) {
+      return currentStamina - Math.min(currentStamina, this.getRangedDefenseStaminaCost());
+    }
+
     const staminaCost = this.calculateStaminaCost(this.staminaDefenseThreshold, refundMultiplier);
     return currentStamina - staminaCost;
   }
 
-  public calculateNewCooldownEndAttacker(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
-    return this.calculateNextBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
+  public calculateNewCooldownEndAttacker(
+    currentCooldownEnd: number,
+    now: number,
+    refundMultiplier: number,
+    context: CombatSimulationContext = {},
+  ): number {
+    return this.calculateNextBattleCooldownEnd(
+      currentCooldownEnd,
+      now,
+      this.isRangedAttack(context) ? 0.5 : refundMultiplier,
+    );
   }
 
-  public calculateNewCooldownEndDefender(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
-    return this.calculateNextBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
+  public calculateNewCooldownEndDefender(
+    currentCooldownEnd: number,
+    now: number,
+    refundMultiplier: number,
+    context: CombatSimulationContext = {},
+  ): number {
+    return this.calculateNextBattleCooldownEnd(
+      currentCooldownEnd,
+      now,
+      this.isRangedAttack(context) ? 0.5 : refundMultiplier,
+    );
   }
 
   /**
@@ -181,6 +297,7 @@ export class CombatSimulator {
     biome: BiomeType,
     attackerRelics: ResourcesIds[] = [],
     defenderRelics: ResourcesIds[] = [],
+    context: CombatSimulationContext = {},
   ): {
     attackerDamage: number;
     defenderDamage: number;
@@ -226,25 +343,33 @@ export class CombatSimulator {
         (this.getTierValue(attacker.tier) / this.getTierValue(defender.tier)) *
         this.calculateStaminaModifier(attacker.stamina, true) *
         this.calculateBattleTimerDamageModifier(attacker.battle_cooldown_end, now, true) *
-        configManager.getBiomeCombatBonus(attacker.troopType, biome)) /
+        this.calculateAttackerBiomeModifier(attacker, biome, context) *
+        this.calculateAttackerRoleDamageMultiplier(attacker, context) *
+        this.calculateIncomingDamageMultiplier(defender, context.defenderIsStructureGuard)) /
       Math.pow(totalTroops, betaEff);
 
     // Calculate base damage for defender
-    const baseDefenderDamage =
-      (this.baseDamageFactor *
-        defender.troopCount *
-        (this.getTierValue(defender.tier) / this.getTierValue(attacker.tier)) *
-        this.calculateStaminaModifier(defender.stamina, false) *
-        this.calculateBattleTimerDamageModifier(defender.battle_cooldown_end, now, false) *
-        configManager.getBiomeCombatBonus(defender.troopType, biome)) /
-      Math.pow(totalTroops, betaEff);
+    const baseDefenderDamage = this.isRangedAttack(context)
+      ? 0
+      : (this.baseDamageFactor *
+          defender.troopCount *
+          (this.getTierValue(defender.tier) / this.getTierValue(attacker.tier)) *
+          this.calculateStaminaModifier(defender.stamina, false) *
+          this.calculateBattleTimerDamageModifier(defender.battle_cooldown_end, now, false) *
+          this.calculateDefenderBiomeModifier(defender, biome, context) *
+          this.calculateIncomingDamageMultiplier(attacker, context.attackerIsStructureGuard)) /
+        Math.pow(totalTroops, betaEff);
 
     // Apply relic modifiers
     const attackerDamage = baseAttackerDamage * attackerDamageMultiplierRelics * defenderReductionMultiplierRelics;
     const defenderDamage = baseDefenderDamage * defenderDamageMultiplierRelics * attackerReductionMultiplierRelics;
 
-    const attackerRefundMultiplier = this.calculateRefundMultiplier(attackerDamage, defenderDamage);
-    const defenderRefundMultiplier = this.calculateRefundMultiplier(defenderDamage, attackerDamage);
+    const attackerRefundMultiplier = this.isRangedAttack(context)
+      ? 0
+      : this.calculateRefundMultiplier(attackerDamage, defenderDamage);
+    const defenderRefundMultiplier = this.isRangedAttack(context)
+      ? 0
+      : this.calculateRefundMultiplier(defenderDamage, attackerDamage);
 
     return {
       attackerDamage,
@@ -264,8 +389,8 @@ export class CombatSimulator {
       damage_c0: 100_000n * CombatSimulator.MAX_U64, // 100_000
       damage_delta: 50_000n * CombatSimulator.MAX_U64, // 50_000
       t1_damage_value: 1844674407370955161600n, // 100
-      t2_damage_multiplier: 46116860184273879040n, // 2.5
-      t3_damage_multiplier: 129127208515966861312n, // 7
+      t2_damage_multiplier: 55340232221128654848n, // 3
+      t3_damage_multiplier: 166020696663385964544n, // 9
       stamina_attack_req: 50,
       stamina_defense_req: 40,
       tick_interval_seconds: 60,
@@ -280,12 +405,13 @@ export class CombatSimulator {
     biome: BiomeType,
     attackerRelics: ResourcesIds[] = [],
     defenderRelics: ResourcesIds[] = [],
+    context: CombatSimulationContext = {},
   ): {
     attackerDamage: number;
     defenderDamage: number;
     attackerRefundMultiplier: number;
     defenderRefundMultiplier: number;
   } {
-    return this.simulateBattle(now, attacker, defender, biome, attackerRelics, defenderRelics);
+    return this.simulateBattle(now, attacker, defender, biome, attackerRelics, defenderRelics, context);
   }
 }

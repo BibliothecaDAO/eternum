@@ -508,14 +508,14 @@ export const RealmAutomationPanel = ({
 
   if (!automationRows.length) {
     return (
-      <div className="panel-wood p-4 rounded-lg text-sm text-gold/70">
+      <div className="rounded-lg border border-gold/20 bg-black/30 p-4 text-sm text-gold/70">
         This realm has no active production buildings yet. Create production structures to configure automation.
       </div>
     );
   }
 
   return (
-    <div className="panel-wood p-4 rounded-lg space-y-4">
+    <div className="rounded-lg border border-gold/20 bg-black/30 p-4 space-y-4">
       <header className="flex flex-col gap-3">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
@@ -591,7 +591,7 @@ export const RealmAutomationPanel = ({
         {usageDisplayList.length === 0 ? (
           <p className="text-xs text-gold/60">No resources allocated yet.</p>
         ) : (
-          <ul className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {usageDisplayList.map(({ resourceId, percent, perCycle }) => {
               const label = resolveResourceLabel(resourceId);
               const isOverBudget = percent > MAX_RESOURCE_ALLOCATION_PERCENT;
@@ -672,7 +672,7 @@ export const RealmAutomationPanel = ({
                   step={sliderStep}
                   value={value}
                   onChange={(event) => onChange(Number(event.target.value))}
-                  className="w-full accent-gold/80 bg-dark-wood"
+                  className="w-full accent-gold/80 bg-black/40"
                 />
                 {impactedResources.length > 0 && (
                   <div className="space-y-1 text-xxs text-gold/60">

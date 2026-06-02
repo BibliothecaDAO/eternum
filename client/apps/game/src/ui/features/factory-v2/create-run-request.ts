@@ -1,4 +1,8 @@
-import type { FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
+import type {
+  FactoryBiomeClimateOverrides,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
 import type { CreateFactoryRunRequest, FactoryWorkerEnvironmentId } from "./api/factory-worker";
 import type { FactoryGameMode, FactoryLaunchPreset } from "./types";
 
@@ -14,6 +18,7 @@ export const buildFactoryCreateRunRequest = ({
   durationMinutes,
   showsDuration,
   mapConfigOverrides,
+  biomeClimateOverrides,
   blitzRegistrationOverrides,
 }: {
   environmentId: FactoryWorkerEnvironmentId;
@@ -27,6 +32,7 @@ export const buildFactoryCreateRunRequest = ({
   durationMinutes: number | null;
   showsDuration: boolean;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
 }): CreateFactoryRunRequest => ({
   environment: environmentId,
@@ -38,5 +44,6 @@ export const buildFactoryCreateRunRequest = ({
   singleRealmMode: selectedMode === "blitz" ? singleRealmMode : false,
   durationSeconds: showsDuration && durationMinutes ? durationMinutes * 60 : undefined,
   mapConfigOverrides,
+  biomeClimateOverrides,
   blitzRegistrationOverrides: selectedMode === "blitz" ? blitzRegistrationOverrides : undefined,
 });

@@ -1,4 +1,8 @@
-import type { FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
+import type {
+  FactoryBiomeClimateOverrides,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
 import type { CreateFactoryRotationRunRequest, FactoryWorkerEnvironmentId } from "./api/factory-worker";
 import type {
   FactoryGameMode,
@@ -23,6 +27,8 @@ export const buildFactoryCreateRotationRunRequest = ({
   durationMinutes,
   showsDuration,
   mapConfigOverrides,
+  biomeClimateOverrides,
+  biomeClimateOverridesByGameNumber,
   blitzRegistrationOverrides,
   autoRetryIntervalMinutes,
   resolveStartTime,
@@ -42,6 +48,8 @@ export const buildFactoryCreateRotationRunRequest = ({
   durationMinutes: number | null;
   showsDuration: boolean;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  biomeClimateOverridesByGameNumber?: Record<number, FactoryBiomeClimateOverrides>;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   autoRetryIntervalMinutes: FactorySeriesRetryIntervalMinutes;
   resolveStartTime: (startAt: string) => string;
@@ -59,6 +67,8 @@ export const buildFactoryCreateRotationRunRequest = ({
   singleRealmMode: selectedMode === "blitz" ? singleRealmMode : false,
   durationSeconds: showsDuration && durationMinutes ? durationMinutes * 60 : undefined,
   mapConfigOverrides,
+  biomeClimateOverrides,
+  biomeClimateOverridesByGameNumber,
   blitzRegistrationOverrides: selectedMode === "blitz" ? blitzRegistrationOverrides : undefined,
   autoRetryIntervalMinutes,
 });

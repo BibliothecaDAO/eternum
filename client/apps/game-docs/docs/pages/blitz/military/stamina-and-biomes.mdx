@@ -24,15 +24,21 @@ Stamina is granted instantly when a new Phase begins, and no other automatic sta
 
 ### Attacking Army
 
-The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **75
-stamina** (2.5 × stamina regen per phase). If the attacker does not have the full stamina cost, the attack command is
-rejected and no combat occurs.
+The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **50
+stamina**. If the attacker does not have the full stamina cost, the attack command is rejected and no combat occurs.
 
 ### Defending Army
 
-The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **60
-stamina** (2.0 × stamina regen per phase). If the defender's current stamina is below this required threshold, they
-receive a **30% damage penalty** during that combat round.
+The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **40
+stamina**. If the defender's current stamina is below this required threshold, they receive a **30% damage penalty**
+during that combat round.
+
+### Crossbowman Range-2 Attacks
+
+Crossbowmen can also attack targets from 2 hexes away. These ranged attacks still require the attacking army to spend
+**50 stamina**, but the target only spends **20 stamina** and deals no counter-damage. Ranged attacks use shorter battle
+timers, ignore biome damage modifiers, and deal reduced damage: **70%** against field armies and **30%** against
+structure guards. Adjacent Crossbowman attacks remain normal range-1 combat.
 
 ## Biomes (Combat Effects)
 

@@ -624,10 +624,11 @@ pub fn namespace_def_combat() -> NamespaceDef {
             TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_17")),
-            TestResource::Library(("biome_library", "0_1_12")), TestResource::Library(("rng_library", "0_1_15")),
+            TestResource::Library(("structure_creation_library", "0_1_18")),
+            TestResource::Library(("biome_library", "0_1_13")), TestResource::Library(("rng_library", "0_1_16")),
+            TestResource::Library(("combat_library", "0_1_14")),
             TestResource::Library(
-                ("combat_library", "0_1_12"),
+                ("raid_library", "0_1_0"),
             ), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
             TestResource::Event("StoryEvent"), TestResource::Event("ExplorerMoveEvent"),
             TestResource::Event("BattleEvent"), TestResource::Event("TrophyProgression"),
@@ -968,16 +969,12 @@ pub fn move_explorer(
 
 /// Attacks another explorer with proper caller mocking
 pub fn attack_explorer_vs_explorer(
-    ref world: WorldStorage,
-    systems: CombatSystemAddresses,
-    attacker: ExplorerTestContext,
-    defender_id: ID,
-    direction: Direction,
+    ref world: WorldStorage, systems: CombatSystemAddresses, attacker: ExplorerTestContext, defender_id: ID,
 ) {
     let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
 
     start_cheat_caller_address(systems.troop_battle, attacker.owner);
-    dispatcher.attack_explorer_vs_explorer(attacker.explorer_id, defender_id, direction, array![].span());
+    dispatcher.attack_explorer_vs_explorer(attacker.explorer_id, defender_id, array![].span());
     stop_cheat_caller_address(systems.troop_battle);
 }
 
@@ -1082,33 +1079,46 @@ pub fn add_guard(
 
 /// Attacks a structure's guard with an explorer
 pub fn attack_explorer_vs_guard(
-    ref world: WorldStorage,
-    systems: CombatSystemAddresses,
-    explorer: ExplorerTestContext,
-    structure_id: ID,
-    direction: Direction,
+    ref world: WorldStorage, systems: CombatSystemAddresses, explorer: ExplorerTestContext, structure_id: ID,
 ) {
     let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
 
     start_cheat_caller_address(systems.troop_battle, explorer.owner);
-    dispatcher.attack_explorer_vs_guard(explorer.explorer_id, structure_id, direction);
+    dispatcher.attack_explorer_vs_guard(explorer.explorer_id, structure_id);
     stop_cheat_caller_address(systems.troop_battle);
 }
 
 /// Attacks an explorer with a structure's guard
 pub fn attack_guard_vs_explorer(
-    ref world: WorldStorage,
-    systems: CombatSystemAddresses,
-    realm: RealmTestContext,
-    slot: GuardSlot,
-    explorer_id: ID,
-    direction: Direction,
+    ref world: WorldStorage, systems: CombatSystemAddresses, realm: RealmTestContext, slot: GuardSlot, explorer_id: ID,
 ) {
     let dispatcher = ITroopBattleSystemsDispatcher { contract_address: systems.troop_battle };
 
     start_cheat_caller_address(systems.troop_battle, realm.owner);
-    dispatcher.attack_guard_vs_explorer(realm.entity_id, slot, explorer_id, direction);
+    dispatcher.attack_guard_vs_explorer(realm.entity_id, slot, explorer_id);
     stop_cheat_caller_address(systems.troop_battle);
+}
+
+/// Maps a (troop type, tier) pair to its resource id so granted resources match the troops actually
+/// created (the previous tier-only mapping granted the wrong type for e.g. a T1 Crossbowman guard).
+fn troop_type_tier_resource(troop_type: TroopType, troop_tier: TroopTier) -> u8 {
+    match troop_type {
+        TroopType::Knight => match troop_tier {
+            TroopTier::T1 => ResourceTypes::KNIGHT_T1,
+            TroopTier::T2 => ResourceTypes::KNIGHT_T2,
+            TroopTier::T3 => ResourceTypes::KNIGHT_T3,
+        },
+        TroopType::Crossbowman => match troop_tier {
+            TroopTier::T1 => ResourceTypes::CROSSBOWMAN_T1,
+            TroopTier::T2 => ResourceTypes::CROSSBOWMAN_T2,
+            TroopTier::T3 => ResourceTypes::CROSSBOWMAN_T3,
+        },
+        TroopType::Paladin => match troop_tier {
+            TroopTier::T1 => ResourceTypes::PALADIN_T1,
+            TroopTier::T2 => ResourceTypes::PALADIN_T2,
+            TroopTier::T3 => ResourceTypes::PALADIN_T3,
+        },
+    }
 }
 
 /// Sets up a guard battle scenario: a realm with guards and an adjacent explorer
@@ -1126,16 +1136,8 @@ pub fn setup_guard_battle(
     // Grant resources based on troop types
     let troop_amount: u128 = MOCK_TROOP_LIMIT_CONFIG().max_army_size(0, TroopTier::T2).into() * RESOURCE_PRECISION;
 
-    let guard_resource = match guard_troop_tier {
-        TroopTier::T1 => ResourceTypes::KNIGHT_T1,
-        TroopTier::T2 => ResourceTypes::CROSSBOWMAN_T2,
-        TroopTier::T3 => ResourceTypes::PALADIN_T3,
-    };
-    let explorer_resource = match explorer_troop_tier {
-        TroopTier::T1 => ResourceTypes::KNIGHT_T1,
-        TroopTier::T2 => ResourceTypes::CROSSBOWMAN_T2,
-        TroopTier::T3 => ResourceTypes::PALADIN_T3,
-    };
+    let guard_resource = troop_type_tier_resource(guard_troop_type, guard_troop_tier);
+    let explorer_resource = troop_type_tier_resource(explorer_troop_type, explorer_troop_tier);
 
     tgrant_resources(ref world, first_realm.entity_id, array![(guard_resource, troop_amount)].span());
     tgrant_resources(ref world, second_realm.entity_id, array![(explorer_resource, troop_amount)].span());
@@ -1195,9 +1197,9 @@ pub fn namespace_def_troop_management() -> NamespaceDef {
             TestResource::Contract("troop_movement_systems"), TestResource::Contract("village_systems"),
             TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
             // Libraries
-            TestResource::Library(("structure_creation_library", "0_1_17")),
-            TestResource::Library(("biome_library", "0_1_12")), TestResource::Library(("rng_library", "0_1_15")),
-            TestResource::Library(("combat_library", "0_1_12")),
+            TestResource::Library(("structure_creation_library", "0_1_18")),
+            TestResource::Library(("biome_library", "0_1_13")), TestResource::Library(("rng_library", "0_1_16")),
+            TestResource::Library(("combat_library", "0_1_14")),
         ]
             .span(),
     }

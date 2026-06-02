@@ -46,12 +46,13 @@ import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import XCircle from "lucide-react/dist/esm/icons/x-circle";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { shortString } from "starknet";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { env } from "../../../../../env";
 import { AdminHeader } from "../components/admin-header";
+import { BiomePreviewCard, type BiomeClimateOverrideField } from "../components/biome-preview-card";
 import {
   BANK_COUNT,
   CARTRIDGE_API_BASE,
@@ -399,6 +400,12 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
   const [battleDelaySecondsOverrides, setBattleDelaySecondsOverrides] = useState<Record<string, string>>({});
   const [agentMaxCurrentCountOverrides, setAgentMaxCurrentCountOverrides] = useState<Record<string, string>>({});
   const [agentMaxLifetimeCountOverrides, setAgentMaxLifetimeCountOverrides] = useState<Record<string, string>>({});
+  const [biomeElevationScaleBpsOverrides, setBiomeElevationScaleBpsOverrides] = useState<Record<string, string>>({});
+  const [biomeMoistureScaleBpsOverrides, setBiomeMoistureScaleBpsOverrides] = useState<Record<string, string>>({});
+  const [biomeElevationBiasBpsOverrides, setBiomeElevationBiasBpsOverrides] = useState<Record<string, string>>({});
+  const [biomeMoistureBiasBpsOverrides, setBiomeMoistureBiasBpsOverrides] = useState<Record<string, string>>({});
+  const [biomeElevationSeedOverrides, setBiomeElevationSeedOverrides] = useState<Record<string, string>>({});
+  const [biomeMoistureSeedOverrides, setBiomeMoistureSeedOverrides] = useState<Record<string, string>>({});
   const activeGameMode: GameMode = deployProfileMode;
 
   // Shared Eternum config (static values), manifest will be patched per-world at runtime
@@ -419,6 +426,45 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
     },
     [blitzFeeRecipientOverrides, defaultBlitzFeeRecipient],
   );
+
+  const setBiomeClimateOverride = useCallback((worldName: string, field: BiomeClimateOverrideField, value: string) => {
+    const updateOverride = (setOverrides: Dispatch<SetStateAction<Record<string, string>>>) => {
+      setOverrides((previous) => ({
+        ...previous,
+        [worldName]: value,
+      }));
+    };
+
+    if (field === "elevationScaleBps") updateOverride(setBiomeElevationScaleBpsOverrides);
+    if (field === "moistureScaleBps") updateOverride(setBiomeMoistureScaleBpsOverrides);
+    if (field === "elevationBiasBps") updateOverride(setBiomeElevationBiasBpsOverrides);
+    if (field === "moistureBiasBps") updateOverride(setBiomeMoistureBiasBpsOverrides);
+    if (field === "elevationSeed") updateOverride(setBiomeElevationSeedOverrides);
+    if (field === "moistureSeed") updateOverride(setBiomeMoistureSeedOverrides);
+  }, []);
+
+  const resetBiomeClimateOverrides = useCallback((worldName: string) => {
+    const removeOverride = (setOverrides: Dispatch<SetStateAction<Record<string, string>>>) => {
+      setOverrides((previous) => {
+        const next = { ...previous };
+        delete next[worldName];
+        return next;
+      });
+    };
+
+    removeOverride(setBiomeElevationScaleBpsOverrides);
+    removeOverride(setBiomeMoistureScaleBpsOverrides);
+    removeOverride(setBiomeElevationBiasBpsOverrides);
+    removeOverride(setBiomeMoistureBiasBpsOverrides);
+    removeOverride(setBiomeElevationSeedOverrides);
+    removeOverride(setBiomeMoistureSeedOverrides);
+  }, []);
+
+  const randomizeBiomeSeeds = useCallback((worldName: string) => {
+    const randomSeed = () => String(Math.floor(Math.random() * 4_294_967_296));
+    setBiomeElevationSeedOverrides((previous) => ({ ...previous, [worldName]: randomSeed() }));
+    setBiomeMoistureSeedOverrides((previous) => ({ ...previous, [worldName]: randomSeed() }));
+  }, []);
 
   // Check indexer, deployment, and bank status for all stored worlds
   const checkAllWorldStatuses = useCallback(async () => {
@@ -1068,7 +1114,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
         {/* Unified Configuration and Deployment */}
         {parsedManifest && (
           <div className="mb-12">
-            <div className="relative overflow-hidden p-10 panel-wood rounded-3xl shadow-xl shadow-gold/10 border border-gold/20">
+            <div className="relative overflow-hidden p-10 bg-black/40 rounded-3xl shadow-xl shadow-gold/10 border border-gold/20">
               <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-gold/15 to-transparent rounded-full blur-3xl" />
               <div className="relative space-y-8">
                 {/* Header */}
@@ -2341,6 +2387,21 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                           </div>
                                         </div>
 
+                                        <BiomePreviewCard
+                                          baseClimate={(eternumConfig as any)?.biomeClimate}
+                                          overrides={{
+                                            elevationScaleBps: biomeElevationScaleBpsOverrides[name],
+                                            moistureScaleBps: biomeMoistureScaleBpsOverrides[name],
+                                            elevationBiasBps: biomeElevationBiasBpsOverrides[name],
+                                            moistureBiasBps: biomeMoistureBiasBpsOverrides[name],
+                                            elevationSeed: biomeElevationSeedOverrides[name],
+                                            moistureSeed: biomeMoistureSeedOverrides[name],
+                                          }}
+                                          onChange={(field, value) => setBiomeClimateOverride(name, field, value)}
+                                          onRandomizeSeeds={() => randomizeBiomeSeeds(name)}
+                                          onReset={() => resetBiomeClimateOverrides(name)}
+                                        />
+
                                         <div className="flex items-center gap-2">
                                           <button
                                             onClick={async () => {
@@ -2475,6 +2536,12 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                     battleDelaySeconds: battleDelaySecondsOverrides[name],
                                                     agentMaxCurrentCount: agentMaxCurrentCountOverrides[name],
                                                     agentMaxLifetimeCount: agentMaxLifetimeCountOverrides[name],
+                                                    biomeElevationScaleBps: biomeElevationScaleBpsOverrides[name],
+                                                    biomeMoistureScaleBps: biomeMoistureScaleBpsOverrides[name],
+                                                    biomeElevationBiasBps: biomeElevationBiasBpsOverrides[name],
+                                                    biomeMoistureBiasBps: biomeMoistureBiasBpsOverrides[name],
+                                                    biomeElevationSeed: biomeElevationSeedOverrides[name],
+                                                    biomeMoistureSeed: biomeMoistureSeedOverrides[name],
                                                   },
                                                 });
 
@@ -2689,13 +2756,13 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setShowFullConfig((v) => !v)}
-                        className="button-wood px-6 py-3 text-sm font-semibold text-gold/90 hover:text-gold bg-gold/10 hover:bg-gold/15 border-2 border-gold/20 hover:border-gold/40 rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-emerald-500/20"
+                        className="btn-bronze px-6 py-3 text-sm font-semibold text-gold/90 hover:text-gold bg-gold/10 hover:bg-gold/15 border-2 border-gold/20 hover:border-gold/40 rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-emerald-500/20"
                       >
                         {showFullConfig ? "Hide" : "View"} Full Config
                       </button>
                       <button
                         onClick={() => setShowCairoOutput(!showCairoOutput)}
-                        className="button-wood px-6 py-3 text-sm font-semibold text-gold/90 hover:text-gold bg-gold/10 hover:bg-gold/15 border-2 border-gold/20 hover:border-gold/40 rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-gold/20"
+                        className="btn-bronze px-6 py-3 text-sm font-semibold text-gold/90 hover:text-gold bg-gold/10 hover:bg-gold/15 border-2 border-gold/20 hover:border-gold/40 rounded-2xl transition-all duration-200 uppercase tracking-wide shadow-sm hover:shadow-lg hover:shadow-gold/20"
                       >
                         {showCairoOutput ? "Hide" : "View"} Cairo Code
                       </button>
@@ -2724,7 +2791,7 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                   </div>
 
                   {showCairoOutput && (
-                    <div className="p-8 panel-wood border-2 border-gold/20 rounded-3xl shadow-2xl">
+                    <div className="p-8 bg-black/40 border-2 border-gold/20 rounded-3xl shadow-2xl">
                       <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gold/20">
                         <div className="h-10 w-10 rounded-xl bg-gold/15 flex items-center justify-center">
                           <Download className="w-5 h-5 text-gold" />

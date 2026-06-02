@@ -11,7 +11,6 @@ import { formatNumber } from "@/ui/utils/utils";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 
 import {
-  Biome,
   computeExploreFoodCosts,
   computeTravelFoodCosts,
   configManager,
@@ -91,7 +90,7 @@ export const ArmyWarning = ({
     const neighbors = getNeighborHexes(army.coord.x, army.coord.y);
     return neighbors.reduce((min, neighbor) => {
       const staminaCost = configManager.getTravelStaminaCost(
-        Biome.getBiome(neighbor.col, neighbor.row),
+        configManager.getBiome(neighbor.col, neighbor.row),
         army.troops.category as TroopType,
       );
       return min === 0 ? staminaCost : Math.min(min, staminaCost);

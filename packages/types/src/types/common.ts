@@ -583,6 +583,14 @@ export interface Config {
     single_realm_mode: boolean;
     two_player_mode: boolean;
   };
+  biomeClimate: {
+    elevationScaleBps: number;
+    moistureScaleBps: number;
+    elevationBiasBps: number;
+    moistureBiasBps: number;
+    elevationSeed: number;
+    moistureSeed: number;
+  };
   season: {
     // we expect one or the other. The
     // startSettlingAt takes precedence
@@ -736,6 +744,8 @@ export type FactoryMapConfigOverrides = Partial<
     | "relicChestRelicsPerChest"
   >
 >;
+
+export type FactoryBiomeClimateOverrides = Partial<Config["biomeClimate"]>;
 
 export interface FactoryBlitzRegistrationOverrides {
   registration_count_max?: number;
