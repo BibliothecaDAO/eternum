@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-01T05:54:49.734Z",
+  "updatedAt": "2026-06-02T09:01:31.848Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1296,6 +1296,23 @@
       "recoverableFailedStepId": "configure-world",
       "recoverablePendingStepId": "reserve-blitz-hyperstructures",
       "startTime": 1780313400,
+      "durationSeconds": 3600,
+      "artifacts": {}
+    },
+    "bltz-burst-807": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "bltz-burst-807",
+      "path": "runs/mainnet/blitz/bltz-burst-807.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-burst-807/26809594458-1.json",
+      "status": "running",
+      "updatedAt": "2026-06-02T09:01:31.848Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-06-02T11:00:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
     }
