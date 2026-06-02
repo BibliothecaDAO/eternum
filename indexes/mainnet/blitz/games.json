@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-02T09:04:46.669Z",
+  "updatedAt": "2026-06-02T09:04:56.106Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1306,12 +1306,13 @@
       "path": "runs/mainnet/blitz/bltz-burst-807.json",
       "inputPath": "inputs/mainnet/blitz/bltz-burst-807/26809594458-1.json",
       "status": "running",
-      "updatedAt": "2026-06-02T09:04:46.669Z",
+      "updatedAt": "2026-06-02T09:04:56.106Z",
       "workflowRef": "next",
       "currentStepId": "grant-lootchest-role",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-06-02T09:49:56.106Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "grant-lootchest-role",
+      "recoverablePendingStepId": "create-indexer",
       "startTime": 1780398000,
       "durationSeconds": 3600,
       "artifacts": {}
