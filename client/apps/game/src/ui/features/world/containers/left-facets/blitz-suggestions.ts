@@ -75,12 +75,15 @@ export type BlitzSuggestionDraft = {
 
 const BLITZ_TARGETS = {
   foundationWheat: 2,
-  sprintWheat: 8,
   resourcesPerRealmLevel: 2,
 };
 
 const MIN_AVAILABLE_POPULATION_BEFORE_WORKER_HUT = 3;
 const MILITARY_TARGETS_BY_REALM_LEVEL = [0, 1, 3, 5];
+// Wheat farm target by realm level (index = realm level). Levels beyond the
+// last entry clamp to the final value. Scales the food economy with the realm
+// instead of jumping straight from the foundation (2) to a flat sprint target.
+const WHEAT_TARGETS_BY_REALM_LEVEL = [2, 4, 8, 12];
 const RESOURCE_BUILD_ORDER: BlitzResourceBuildKey[] = ["wood", "coal", "copper"];
 const RESOURCE_BUILD_LABELS: Record<BlitzResourceBuildKey, string> = {
   wood: "wood camps",
@@ -171,6 +174,11 @@ const resolveMilitaryTargetCount = ({ realmLevel }: BlitzRealmSuggestionInput) =
   return MILITARY_TARGETS_BY_REALM_LEVEL[clampedLevel] ?? 0;
 };
 
+const resolveWheatTargetCount = ({ realmLevel }: BlitzRealmSuggestionInput) => {
+  const clampedLevel = Math.max(0, Math.min(realmLevel, WHEAT_TARGETS_BY_REALM_LEVEL.length - 1));
+  return WHEAT_TARGETS_BY_REALM_LEVEL[clampedLevel] ?? BLITZ_TARGETS.foundationWheat;
+};
+
 const hasRealmLevelBuildingTargets = (input: BlitzRealmSuggestionInput) => {
   const resourceTarget = resolveRealmResourceTarget(input);
   const militaryTargetCount = resolveMilitaryTargetCount(input);
@@ -254,21 +262,12 @@ const resolvePopulationSuggestion = (input: BlitzRealmSuggestionInput): BlitzSug
 };
 
 const resolveWheatSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
-  const { buildingCounts } = input;
-
-  if (buildingCounts.wheat < BLITZ_TARGETS.foundationWheat) {
-    return resolveBuildSuggestion(
-      input,
-      "wheat",
-      `${buildingCounts.wheat}/${BLITZ_TARGETS.foundationWheat} foundation farms.`,
-    );
+  const wheatTarget = resolveWheatTargetCount(input);
+  if (input.buildingCounts.wheat >= wheatTarget) {
+    return null;
   }
 
-  if (buildingCounts.wheat < BLITZ_TARGETS.sprintWheat) {
-    return resolveBuildSuggestion(input, "wheat", `${buildingCounts.wheat}/${BLITZ_TARGETS.sprintWheat} farms.`);
-  }
-
-  return null;
+  return resolveBuildSuggestion(input, "wheat", `${input.buildingCounts.wheat}/${wheatTarget} farms.`);
 };
 
 const resolveResourceSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null => {
