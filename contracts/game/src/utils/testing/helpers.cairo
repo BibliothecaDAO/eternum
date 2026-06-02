@@ -626,8 +626,9 @@ pub fn namespace_def_combat() -> NamespaceDef {
             // Libraries
             TestResource::Library(("structure_creation_library", "0_1_18")),
             TestResource::Library(("biome_library", "0_1_13")), TestResource::Library(("rng_library", "0_1_16")),
+            TestResource::Library(("combat_library", "0_1_14")),
             TestResource::Library(
-                ("combat_library", "0_1_12"),
+                ("raid_library", "0_1_0"),
             ), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
             TestResource::Event("StoryEvent"), TestResource::Event("ExplorerMoveEvent"),
             TestResource::Event("BattleEvent"), TestResource::Event("TrophyProgression"),
@@ -1198,7 +1199,7 @@ pub fn namespace_def_troop_management() -> NamespaceDef {
             // Libraries
             TestResource::Library(("structure_creation_library", "0_1_18")),
             TestResource::Library(("biome_library", "0_1_13")), TestResource::Library(("rng_library", "0_1_16")),
-            TestResource::Library(("combat_library", "0_1_12")),
+            TestResource::Library(("combat_library", "0_1_14")),
         ]
             .span(),
     }

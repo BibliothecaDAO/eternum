@@ -31,16 +31,14 @@ pub mod troop_battle_systems {
         StructureBase, StructureBaseImpl, StructureBaseStoreImpl, StructureCategory, StructureOwnerStoreImpl,
         StructureTroopExplorerStoreImpl, StructureTroopGuardStoreImpl,
     };
-    use crate::models::troop::{CombatContext, ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl};
+    use crate::models::troop::{ExplorerTroops, GuardImpl, GuardSlot, GuardTroops, Troops, TroopsImpl};
     use crate::models::weight::Weight;
-    use crate::system_libraries::biome_library::{IBiomeLibraryDispatcherTrait, biome_library};
     use crate::system_libraries::combat_library::{ICombatLibraryDispatcherTrait, combat_library};
     use crate::systems::utils::map::IMapImpl;
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::systems::utils::structure::iStructureImpl;
     use crate::systems::utils::troop::{iExplorerImpl, iGuardImpl, iTroopImpl};
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
-    use crate::utils::map::biomes::Biome;
     use crate::utils::random::VRFImpl;
     use super::super::super::super::super::models::troop::GuardTrait;
 
@@ -70,32 +68,6 @@ pub mod troop_battle_systems {
         let tile_distance = attacker_coord.tile_distance(defender_coord);
         let max_tile_distance: u128 = (attack_range * attacker_coord.step_distance()).into();
         tile_distance > 0 && tile_distance <= max_tile_distance
-    }
-
-    fn combat_distance(attacker_coord: Coord, defender_coord: Coord) -> u32 {
-        if attacker_coord.alt != defender_coord.alt {
-            return 1;
-        }
-
-        let step_distance: u128 = attacker_coord.step_distance().into();
-        let tile_distance = attacker_coord.tile_distance(defender_coord);
-        (tile_distance / step_distance).try_into().unwrap()
-    }
-
-    fn combat_context(
-        attacker_coord: Coord,
-        defender_coord: Coord,
-        defender_biome: Biome,
-        attacker_is_structure_guard: bool,
-        defender_is_structure_guard: bool,
-    ) -> CombatContext {
-        CombatContext {
-            attacker_biome: defender_biome,
-            defender_biome,
-            attack_distance: combat_distance(attacker_coord, defender_coord),
-            attacker_is_structure_guard,
-            defender_is_structure_guard,
-        }
     }
 
     /// Check if two explorers are in valid battle position.
@@ -183,23 +155,19 @@ pub mod troop_battle_systems {
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
             let mut explorer_defender_troops: Troops = explorer_defender.troops;
-            let biome_library = biome_library::get_dispatcher(@world);
-            let defender_biome: Biome = biome_library
-                .get_biome(
-                    world,
-                    explorer_defender.coord.alt,
-                    explorer_defender.coord.x.into(),
-                    explorer_defender.coord.y.into(),
-                );
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let explorer_defender_troop_count_before_attack = explorer_defender_troops.count;
 
             let combat_library = combat_library::get_dispatcher(@world);
             let (updated_aggressor, updated_defender) = combat_library
                 .troops_attack(
+                    world,
                     explorer_aggressor_troops,
                     explorer_defender_troops,
-                    combat_context(explorer_aggressor.coord, explorer_defender.coord, defender_biome, false, false),
+                    explorer_aggressor.coord,
+                    explorer_defender.coord,
+                    false,
+                    false,
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
@@ -500,14 +468,6 @@ pub mod troop_battle_systems {
 
             // aggressor attacks defender
             let mut explorer_aggressor_troops: Troops = explorer_aggressor.troops;
-            let biome_library = biome_library::get_dispatcher(@world);
-            let defender_biome: Biome = biome_library
-                .get_biome(
-                    world,
-                    guarded_structure.coord().alt,
-                    guarded_structure.coord().x.into(),
-                    guarded_structure.coord().y.into(),
-                );
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let explorer_aggressor_troop_count_before_attack = explorer_aggressor_troops.count;
             let guard_troop_count_before_attack = guard_troops.count;
@@ -515,9 +475,13 @@ pub mod troop_battle_systems {
             let combat_library = combat_library::get_dispatcher(@world);
             let (updated_aggressor, updated_guard) = combat_library
                 .troops_attack(
+                    world,
                     explorer_aggressor_troops,
                     guard_troops,
-                    combat_context(explorer_aggressor.coord, guarded_structure.coord(), defender_biome, false, true),
+                    explorer_aggressor.coord,
+                    guarded_structure.coord(),
+                    false,
+                    true,
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
@@ -762,14 +726,6 @@ pub mod troop_battle_systems {
             );
 
             // aggressor attacks defender
-            let biome_library = biome_library::get_dispatcher(@world);
-            let defender_biome: Biome = biome_library
-                .get_biome(
-                    world,
-                    explorer_defender.coord.alt,
-                    explorer_defender.coord.x.into(),
-                    explorer_defender.coord.y.into(),
-                );
             let troop_damage_config: TroopDamageConfig = CombatConfigImpl::troop_damage_config(ref world);
             let troop_stamina_config: TroopStaminaConfig = CombatConfigImpl::troop_stamina_config(ref world);
             let mut explorer_defender_troops = explorer_defender.troops;
@@ -779,11 +735,13 @@ pub mod troop_battle_systems {
             let combat_library = combat_library::get_dispatcher(@world);
             let (updated_guard, updated_explorer) = combat_library
                 .troops_attack(
+                    world,
                     structure_guard_aggressor_troops,
                     explorer_defender_troops,
-                    combat_context(
-                        structure_aggressor_base.coord(), explorer_defender.coord, defender_biome, true, false,
-                    ),
+                    structure_aggressor_base.coord(),
+                    explorer_defender.coord,
+                    true,
+                    false,
                     troop_stamina_config,
                     troop_damage_config,
                     tick.current(),
