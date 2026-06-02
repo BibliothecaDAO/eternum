@@ -44,6 +44,7 @@ const mocks = vi.hoisted(() => ({
     amount: 0n,
     updated_tick: 0n,
   },
+  targetDistance: 1,
   quickAttackTargetData: {
     attackerRelicEffects: [],
     targetRelicEffects: [],
@@ -187,6 +188,8 @@ vi.mock("@bibliothecadao/types", () => ({
     Explorer: "explorer",
     Structure: "structure",
   },
+  getHexDistance: () => mocks.targetDistance,
+  getTroopAttackRange: () => 1,
   GuardSlot: {
     Delta: 0,
     Charlie: 1,
@@ -234,7 +237,7 @@ const waitForAsyncWork = async () => {
 
 const findPrimaryActionButton = (container: HTMLElement) => {
   return Array.from(container.querySelectorAll("button")).find((button) =>
-    /(attack|claim|need .* stamina|on cooldown|no troops selected)/i.test(button.textContent ?? ""),
+    /(attack|claim|move adjacent|need .* stamina|on cooldown|no troops selected)/i.test(button.textContent ?? ""),
   ) as HTMLButtonElement | undefined;
 };
 
@@ -252,6 +255,7 @@ describe("QuickAttackPreview", () => {
       amount: 0n,
       updated_tick: 0n,
     };
+    mocks.targetDistance = 1;
     mocks.quickAttackTargetData = {
       attackerRelicEffects: [],
       targetRelicEffects: [],
@@ -338,5 +342,36 @@ describe("QuickAttackPreview", () => {
     });
 
     expect(mocks.attackExplorerVsGuard).toHaveBeenCalledTimes(1);
+  });
+
+  it("blocks unguarded structure claims from range two", async () => {
+    mocks.attackerStamina = {
+      amount: 50n,
+      updated_tick: 1n,
+    };
+    mocks.targetDistance = 2;
+
+    await act(async () => {
+      root.render(
+        <QuickAttackPreview
+          attacker={{ type: "explorer" as never, id: 1 as never, hex: { x: 10, y: 10 } }}
+          target={{ type: "structure" as never, id: 2 as never, hex: { x: 12, y: 10 } }}
+        />,
+      );
+      await waitForAsyncWork();
+    });
+
+    const actionButton = findPrimaryActionButton(container);
+
+    expect(actionButton).toBeDefined();
+    expect(actionButton?.disabled).toBe(true);
+    expect(actionButton?.textContent).toMatch(/move adjacent to claim/i);
+
+    await act(async () => {
+      actionButton?.click();
+      await waitForAsyncWork();
+    });
+
+    expect(mocks.attackExplorerVsGuard).not.toHaveBeenCalled();
   });
 });

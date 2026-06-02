@@ -135,6 +135,17 @@ describe("overlays integrate with generateActions", () => {
     expect(senderParam?.description).toBe("Structure ID of the sender");
   });
 
+  it("documents that ranged structure attacks clear guards without claiming", () => {
+    const attackGuard = definitions.find((d) => d.type === "attack_explorer_vs_guard");
+    const combatTaskGuide = readFileSync(resolve(__dirname, "../../data/tasks/combat.md"), "utf-8");
+
+    expect(attackGuard).toBeDefined();
+    expect(attackGuard!.description).toContain("ranged Crossbowman attacks can clear guards");
+    expect(attackGuard!.description).toContain("only adjacent explorer attacks can claim");
+    expect(combatTaskGuide).toContain("ranged attacks can clear guards");
+    expect(combatTaskGuide).toMatch(/only adjacent attacks\s+claim structures/);
+  });
+
   it("has descriptions for building actions with building guide", () => {
     const createBuilding = definitions.find((d) => d.type === "create_building");
     expect(createBuilding).toBeDefined();

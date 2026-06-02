@@ -988,7 +988,7 @@
       "damageDelta": "922337203685477580800000"
     },
     "stamina": {
-      "staminaGainPerTick": 20,
+      "staminaGainPerTick": 30,
       "staminaInitial": 20,
       "staminaBonusValue": 10,
       "staminaKnightMax": 120,
@@ -10462,7 +10462,7 @@
         },
         {
           "address": "0x62aa0b085d8a74b564423baa4e17cec613afb9e5a0f9a7ecb9bed411c0f7f6b",
-          "class_hash": "0x6f77ae460ad60ae835c7635dcef28f81244db44960edeb03b7d5c3fa70fc448",
+          "class_hash": "0x6c8dfd8204fff6e8bc60f71503b02da341f61a720bab601235d06c1462ead96",
           "init_calldata": [],
           "tag": "s1_eternum-relic_systems",
           "selector": "0x632480e29dba9c95a8b4e4ba0c7ad48bd5abdd3906211ec6f8a5350249b9d0",
@@ -12311,7 +12311,7 @@
         },
         {
           "address": "0x9a132a57e6348cebab64d4649409a50506df403ab36cf4a955e4883b3512b4",
-          "class_hash": "0x17bec440e480d4f3ca91369955e033b29278eeee234a577f0d1fe673c946d29",
+          "class_hash": "0x28971d2f91cf04a78e63376c60115825fdbec2e91effe3189803c3b2eab958a",
           "init_calldata": [],
           "tag": "s1_eternum-troop_battle_systems",
           "selector": "0x473dc1d8bca81e2a2d92011b4171ffe608d47dcde63f7d112f03bb767b57aea",
@@ -12456,10 +12456,6 @@
                       "type": "core::integer::u32"
                     },
                     {
-                      "name": "defender_direction",
-                      "type": "s1_eternum::models::position::Direction"
-                    },
-                    {
                       "name": "steal_resources",
                       "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                     }
@@ -12478,10 +12474,6 @@
                     {
                       "name": "structure_id",
                       "type": "core::integer::u32"
-                    },
-                    {
-                      "name": "structure_direction",
-                      "type": "s1_eternum::models::position::Direction"
                     }
                   ],
                   "outputs": [],
@@ -12502,10 +12494,6 @@
                     {
                       "name": "explorer_id",
                       "type": "core::integer::u32"
-                    },
-                    {
-                      "name": "explorer_direction",
-                      "type": "s1_eternum::models::position::Direction"
                     }
                   ],
                   "outputs": [],
@@ -12631,7 +12619,7 @@
         },
         {
           "address": "0x65c0c9903446d6b22a3c90ddaa1dc9c945f5315afb4557d89e2dadec8fdb46c",
-          "class_hash": "0x14d56eafbab357b0b5379ad43a0b60fe1e30b71a5f1661669e50ed3e40891b9",
+          "class_hash": "0x3186c57c8fda9193647af97422a038dc5c4ab87961805a8eb512f27aa6076dc",
           "init_calldata": [],
           "tag": "s1_eternum-troop_management_systems",
           "selector": "0x49b9809fc3839b4eb765c5d1db1d1a835678574e42bf24bf70235cecf2f8437",
@@ -13886,7 +13874,7 @@
         },
         {
           "address": "0x47ef69f79d4c943d2db7dbabe851e3b5ce7e9d36a8b40b51fd32ea6e9de78a7",
-          "class_hash": "0x7f3e762c6b71b4ad61e4895e62a0b818c2deace1b03c282caa35f0103fc071e",
+          "class_hash": "0x70d2cd5f97a1c05f09b26fdf64d16eb48d2e907870743a0d76af432c71cd9b1",
           "init_calldata": [],
           "tag": "s1_eternum-troop_raid_systems",
           "selector": "0x2cba999742f3b0dad2f036c7ea44826e236555cf5d82930faadcf43260524",
@@ -14389,11 +14377,18 @@
           "version": "0_1_13"
         },
         {
-          "class_hash": "0x60d02b1fe2c8456da0a76d89ce55731a1861913132b301574b647f090b272ce",
-          "tag": "s1_eternum-combat_library_v0_1_12",
+          "class_hash": "0x2972f3e67e53b569ab51b7ad1160c9cf3bcd0d06a846b5fe5f7b082a956cc81",
+          "tag": "s1_eternum-combat_library_v0_1_14",
           "selector": "0x6a352fe85e5966806dfb50f4723a8e11a29bf0c5383a3f6facc68cdbc40850a",
           "systems": [],
-          "version": "0_1_12"
+          "version": "0_1_14"
+        },
+        {
+          "class_hash": "0x3d7eedf57cdb2d979c55bd2ebde875fc88973785546d08ec926e5c4597e830f",
+          "tag": "s1_eternum-raid_library_v0_1_0",
+          "selector": "0x183a54ef1dd43e90c69ee19e74f8e830eae30eaf28114286f72510075dc5be6",
+          "systems": [],
+          "version": "0_1_0"
         },
         {
           "class_hash": "0x3cad06b7e7b9791767e08cd6a95f21f59634d8f5800c50cdd695002ce34f070",
@@ -28421,6 +28416,10 @@
               "name": "troops_attack",
               "inputs": [
                 {
+                  "name": "world",
+                  "type": "dojo::world::storage::WorldStorage"
+                },
+                {
                   "name": "attacker",
                   "type": "eternum::models::troop::Troops"
                 },
@@ -28429,8 +28428,20 @@
                   "type": "eternum::models::troop::Troops"
                 },
                 {
-                  "name": "biome",
-                  "type": "eternum::utils::map::biomes::Biome"
+                  "name": "attacker_coord",
+                  "type": "eternum::models::position::Coord"
+                },
+                {
+                  "name": "defender_coord",
+                  "type": "eternum::models::position::Coord"
+                },
+                {
+                  "name": "attacker_is_structure_guard",
+                  "type": "core::bool"
+                },
+                {
+                  "name": "defender_is_structure_guard",
+                  "type": "core::bool"
                 },
                 {
                   "name": "troop_stamina_config",
@@ -28461,6 +28472,102 @@
         {
           "type": "event",
           "name": "eternum::system_libraries::combat_library::combat_library::Event",
+          "kind": "enum",
+          "variants": [
+            {
+              "name": "WorldProviderEvent",
+              "type": "dojo::contract::components::world_provider::world_provider_cpt::Event",
+              "kind": "flat"
+            }
+          ]
+        },
+        {
+          "type": "interface",
+          "name": "eternum::system_libraries::raid_library::IRaidLibrary",
+          "items": [
+            {
+              "type": "function",
+              "name": "resolve_raid",
+              "inputs": [
+                {
+                  "name": "guard_troops",
+                  "type": "eternum::models::troop::GuardTroops"
+                },
+                {
+                  "name": "explorer_troops",
+                  "type": "eternum::models::troop::Troops"
+                },
+                {
+                  "name": "defender_biome",
+                  "type": "eternum::utils::map::biomes::Biome"
+                },
+                {
+                  "name": "max_guard_count",
+                  "type": "core::integer::u8"
+                },
+                {
+                  "name": "troop_stamina_config",
+                  "type": "eternum::models::config::TroopStaminaConfig"
+                },
+                {
+                  "name": "troop_damage_config",
+                  "type": "eternum::models::config::TroopDamageConfig"
+                },
+                {
+                  "name": "current_tick",
+                  "type": "core::integer::u64"
+                },
+                {
+                  "name": "current_tick_interval",
+                  "type": "core::integer::u64"
+                }
+              ],
+              "outputs": [
+                {
+                  "type": "eternum::system_libraries::raid_library::RaidResolution"
+                }
+              ],
+              "state_mutability": "view"
+            }
+          ]
+        },
+        {
+          "type": "struct",
+          "name": "eternum::system_libraries::raid_library::RaidResolution",
+          "members": [
+            {
+              "name": "explorer_troops",
+              "type": "eternum::models::troop::Troops"
+            },
+            {
+              "name": "guard_troops",
+              "type": "eternum::models::troop::GuardTroops"
+            },
+            {
+              "name": "destroyed_guard_count",
+              "type": "core::integer::u8"
+            },
+            {
+              "name": "explorer_troops_lost",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "sum_damage_to_explorer",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "sum_damage_to_guards",
+              "type": "core::integer::u128"
+            },
+            {
+              "name": "had_non_zero_guards",
+              "type": "core::bool"
+            }
+          ]
+        },
+        {
+          "type": "event",
+          "name": "eternum::system_libraries::raid_library::raid_library::Event",
           "kind": "enum",
           "variants": [
             {
@@ -29535,10 +29642,6 @@
                   "type": "core::integer::u32"
                 },
                 {
-                  "name": "defender_direction",
-                  "type": "eternum::models::position::Direction"
-                },
-                {
                   "name": "steal_resources",
                   "type": "core::array::Span::<(core::integer::u8, core::integer::u128)>"
                 }
@@ -29557,10 +29660,6 @@
                 {
                   "name": "structure_id",
                   "type": "core::integer::u32"
-                },
-                {
-                  "name": "structure_direction",
-                  "type": "eternum::models::position::Direction"
                 }
               ],
               "outputs": [],
@@ -29581,10 +29680,6 @@
                 {
                   "name": "explorer_id",
                   "type": "core::integer::u32"
-                },
-                {
-                  "name": "explorer_direction",
-                  "type": "eternum::models::position::Direction"
                 }
               ],
               "outputs": [],

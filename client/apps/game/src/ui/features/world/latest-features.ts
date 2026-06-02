@@ -58,11 +58,19 @@ const allLatestFeatures: LatestFeature[] = [
     gameSlug: "world",
   },
   {
+    date: "2026-05-28",
+    title: "Combat v3 Ranged Attacks",
+    description:
+      "Crossbowmen can attack from two hexes with reduced ranged damage, Knights are stronger around structure guards, and structures must still be claimed from an adjacent hex.",
+    type: "feature",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-27",
     title: "Biome Preview Viewer",
     description:
       "Added a factory biome preview with seed controls so creators can inspect generated terrain before applying world configuration.",
-    type: "feature",
+    type: "improvement",
     gameSlug: "world",
   },
   {

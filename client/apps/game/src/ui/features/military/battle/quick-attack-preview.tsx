@@ -40,6 +40,8 @@ import { AttackTarget, TargetType } from "./types";
 
 import {
   getDirectionBetweenAdjacentHexes,
+  getHexDistance,
+  getTroopAttackRange,
   RESOURCE_PRECISION,
   resources,
   TickIds,
@@ -165,15 +167,29 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       : [];
   }, [attackerType, attacker.id, Structure]);
 
+  // Hex distance from the attacker to the target. Crossbowmen can poke at range 2; everything else
+  // is adjacency-only, so this drives which guards may fire and whether a structure can be claimed.
+  const targetDistance = useMemo(() => {
+    if (!selectedHex) return Infinity;
+    return getHexDistance(selectedHex, { col: target.hex.x, row: target.hex.y });
+  }, [selectedHex, target.hex.x, target.hex.y]);
+
+  // When a structure is the aggressor, only guards whose attack range reaches the target can fire.
+  const eligibleStructureGuards = useMemo(
+    () => structureGuards.filter((guard) => getTroopAttackRange(guard.troops.category) >= targetDistance),
+    [structureGuards, targetDistance],
+  );
+
+  const activeGuard = attackerType === AttackerType.Structure ? eligibleStructureGuards[0] : undefined;
+
   const attackerStamina = useMemo(() => {
     if (attackerType === AttackerType.Structure) {
-      const activeGuard = structureGuards[0];
       if (!activeGuard || !activeGuard.troops.stamina) return 0n;
       return StaminaManager.getStamina(activeGuard.troops, currentArmiesTick).amount;
     }
 
     return new StaminaManager(components, attacker.id).getStamina(currentArmiesTick).amount;
-  }, [attackerType, structureGuards, components, attacker.id, currentArmiesTick]);
+  }, [attackerType, activeGuard, components, attacker.id, currentArmiesTick]);
 
   const attackerStaminaValue = Number(attackerStamina);
   const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
@@ -201,7 +217,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const attackerArmyData: { troops: Troops } | null = useMemo(() => {
     if (attackerType === AttackerType.Structure) {
-      const guard = structureGuards[0];
+      const guard = activeGuard;
       if (!guard) return null;
       return {
         troops: buildProjectedTroopSnapshot(guard.troops, {
@@ -220,7 +236,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           }),
         }
       : null;
-  }, [ExplorerTroops, attacker.id, attackerStamina, attackerType, currentArmiesTick, structureGuards]);
+  }, [ExplorerTroops, attacker.id, attackerStamina, attackerType, currentArmiesTick, activeGuard]);
 
   const targetTroopSnapshots = useMemo(() => {
     if (!targetData?.info) return [];
@@ -241,6 +257,17 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const totalGuardCount = isStructureTarget ? targetTroopSnapshots.length : 0;
   const hasQueuedGuards = totalGuardCount > 1;
+
+  // Combat v3 context so the preview reflects ranged reductions, no counter-damage, and the
+  // ranged stamina/cooldown model rather than always simulating an adjacent melee.
+  const combatSimulationContext = useMemo(
+    () => ({
+      attackDistance: targetDistance,
+      attackerIsStructureGuard: attackerType === AttackerType.Structure,
+      defenderIsStructureGuard: isStructureTarget,
+    }),
+    [targetDistance, attackerType, isStructureTarget],
+  );
 
   const battleSimulation = useMemo(() => {
     if (!attackerArmyData) return null;
@@ -273,6 +300,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       biome,
       attackerRelicResourceIds,
       targetRelicResourceIds,
+      combatSimulationContext,
     );
   }, [
     attacker,
@@ -284,6 +312,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     attackerRelicResourceIds,
     targetRelicResourceIds,
     attackerStamina,
+    combatSimulationContext,
   ]);
 
   const attackerTroopsTotal = useMemo(() => {
@@ -317,11 +346,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const attackerIsArmy = attackerType === AttackerType.Army;
 
-  // The attack captures the structure when it clears every remaining defender and the attacker survives.
+  // The attack captures the structure when it clears every remaining defender and the attacker
+  // survives — and only from an adjacent hex, since ranged pokes cannot claim.
   const clearsAllDefenders =
     isStructureTarget && (!targetArmyData || (defenderRemaining <= 0 && queuedTargetGuards.length === 0));
   const attackerSurvivesCapture = !targetArmyData || attackerRemaining > 0;
-  const willCaptureStructure = attackerIsArmy && clearsAllDefenders && attackerSurvivesCapture;
+  const willCaptureStructure = attackerIsArmy && clearsAllDefenders && attackerSurvivesCapture && targetDistance <= 1;
 
   // First open guard slot the captured structure exposes (defeated guards leave their slot empty,
   // so a swap into it inherits the explorer's category/tier).
@@ -375,11 +405,16 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     [attackerArmyData, attackerStamina, hasDefenders, requiredAttackStamina],
   );
   const cooldownBlocksAttack = hasDefenders && attackerOnCooldown;
-  const attackDisabled = cooldownBlocksAttack || attackStaminaState.isBlocked || !attackerArmyData;
+  // A ranged poke can clear guards but never claims — the structure must be taken from an adjacent hex.
+  const rangedClaimBlocked = !hasDefenders && isStructureTarget && targetDistance > 1;
+  const attackDisabled =
+    rangedClaimBlocked || cooldownBlocksAttack || attackStaminaState.isBlocked || !attackerArmyData;
 
   const isLowStamina = attackStaminaState.isBlocked;
 
   const attackButtonLabel = (() => {
+    if (rangedClaimBlocked) return "Move adjacent to claim";
+    if (attackerType === AttackerType.Structure && !activeGuard) return "No guard in range";
     if (!attackerArmyData) return "No troops selected";
     if (cooldownBlocksAttack) return "On cooldown";
     if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
@@ -416,11 +451,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // Shared submit pipeline: guards, pending worldmap FX, sound, and teardown are identical across
   // every attack variant — only the system call differs, so callers just provide that call.
   const runWorldmapAttack = async (
-    performCall: (ctx: { direction: number; resolvedTarget: AttackTarget }) => Promise<void>,
+    performCall: (ctx: { direction: number | null; resolvedTarget: AttackTarget }) => Promise<void>,
   ) => {
     if (!selectedHex || !targetData || attackDisabled) return;
+    // Range-2 pokes are not adjacent, so direction is null for them; only the adjacency-only
+    // garrison multicall requires it, and it guards for null itself.
     const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-    if (direction === null) return;
     const resolvedTarget = targetData;
 
     let pendingFxKey: string | null = null;
@@ -453,9 +489,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   };
 
   const handleAttack = () =>
-    runWorldmapAttack(async ({ direction, resolvedTarget }) => {
+    runWorldmapAttack(async ({ resolvedTarget }) => {
+      // Combat v3 derives battle range from coordinates onchain, so no direction is passed.
       if (attackerType === AttackerType.Structure) {
-        const guardSlot = structureGuards[0]?.slot;
+        const guardSlot = activeGuard?.slot;
         if (guardSlot === undefined) return;
 
         await attack_guard_vs_explorer({
@@ -463,14 +500,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           structure_id: attacker.id,
           structure_guard_slot: guardSlot,
           explorer_id: resolvedTarget.id,
-          explorer_direction: direction,
         });
       } else if (resolvedTarget.targetType === TargetType.Army) {
         await attack_explorer_vs_explorer({
           signer: account,
           aggressor_id: attacker.id,
           defender_id: resolvedTarget.id,
-          defender_direction: direction,
           steal_resources: targetResources,
         });
       } else {
@@ -478,16 +513,15 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           signer: account,
           explorer_id: attacker.id,
           structure_id: resolvedTarget.id,
-          structure_direction: direction,
         });
       }
     });
 
   // Capture the structure and, in the same atomic multicall, garrison the surviving troops into its
-  // first open guard slot.
+  // first open guard slot. Claiming requires adjacency, so a direction is always available here.
   const handleClaimAndGarrison = () =>
     runWorldmapAttack(async ({ direction, resolvedTarget }) => {
-      if (garrisonGuardSlot === null || garrisonTroopCount < 1) return;
+      if (direction === null || garrisonGuardSlot === null || garrisonTroopCount < 1) return;
 
       await attack_explorer_vs_guard_and_garrison({
         signer: account,
@@ -595,7 +629,9 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
               </>
             ) : (
               <div className="rounded-md border border-emerald-500/40 bg-emerald-900/20 px-3 py-2 text-sm text-emerald-200">
-                No defending troops. You can claim without resistance.
+                {rangedClaimBlocked
+                  ? "No defending troops. Move adjacent to claim this structure."
+                  : "No defending troops. You can claim without resistance."}
               </div>
             )}
 
@@ -675,7 +711,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
             forceUppercase={false}
             className="px-3 py-1 text-xs tracking-wide"
           >
-            {willCaptureStructure ? "Claim" : "Attack"}
+            {rangedClaimBlocked ? "Move adjacent to claim" : willCaptureStructure ? "Claim" : "Attack"}
           </Button>
           {renderDetailsButton()}
         </div>

@@ -990,8 +990,6 @@ export interface AttackExplorerVsExplorerProps extends SystemSigner {
   aggressor_id: number;
   /** ID of the defending explorer */
   defender_id: number;
-  /** Direction to the defender */
-  defender_direction: number;
   /** Resources to steal */
   steal_resources: Resource[];
 }
@@ -1004,8 +1002,6 @@ export interface AttackExplorerVsGuardProps extends SystemSigner {
   explorer_id: number;
   /** ID of the structure with defending guard */
   structure_id: number;
-  /** Direction to the structure */
-  structure_direction: number;
 }
 
 /**
@@ -1034,8 +1030,6 @@ export interface AttackGuardVsExplorerProps extends SystemSigner {
   structure_guard_slot: number;
   /** ID of the defending explorer */
   explorer_id: number;
-  /** Direction to the explorer */
-  explorer_direction: number;
 }
 
 /**

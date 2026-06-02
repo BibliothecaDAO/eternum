@@ -25,7 +25,6 @@ const idsMatch = (left: ID | bigint | null | undefined, right: ID | bigint | nul
 export const getSameStructureTransferBlockReason = ({
   transferDirection,
   selectedEntityId,
-  targetEntityId,
   selectedExplorerOwner,
   targetExplorerOwner,
   guardSlot,

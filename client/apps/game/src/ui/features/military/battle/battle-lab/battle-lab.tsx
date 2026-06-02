@@ -20,7 +20,7 @@ import {
   getGuildFromPlayerAddress,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
-import { ActorType, BiomeType, ContractAddress, getDirectionBetweenAdjacentHexes, ID } from "@bibliothecadao/types";
+import { ActorType, BiomeType, ContractAddress, getHexDistance, ID } from "@bibliothecadao/types";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { useEffect, useMemo, useState } from "react";
 
@@ -124,6 +124,23 @@ export const BattleLab = ({
   }, [mode, snapshot]);
 
   const combatSimulator = useMemo(() => new CombatSimulator(parameters), [parameters]);
+
+  // Combat v3 context: range is derived from the live hex distance (crossbowmen poke at range 2),
+  // and structure-guard flags drive the ranged structure reduction / Knight modifiers. In sim mode
+  // there is no map distance, so it falls back to adjacent (range 1).
+  const liveAttackDistance = useMemo(() => {
+    if (mode !== "live" || !selectedHex || !target) return 1;
+    return getHexDistance(selectedHex, { col: target.hex.x, row: target.hex.y });
+  }, [mode, selectedHex, target]);
+
+  const combatContext = useMemo(
+    () => ({
+      attackDistance: liveAttackDistance,
+      attackerIsStructureGuard: snapshot?.attackerType === "structure",
+      defenderIsStructureGuard: target?.targetType === TargetType.Structure,
+    }),
+    [liveAttackDistance, snapshot?.attackerType, target?.targetType],
+  );
   // CombatParameters holds bigint fields, so stringify with a bigint-safe replacer.
   const defaultParamsKey = useMemo(() => serializeParams(configManager.getCombatConfig()), []);
   const nonDefaultParams = useMemo(
@@ -155,6 +172,7 @@ export const BattleLab = ({
       state.biome,
       state.attacker.relics,
       state.defender.relics,
+      combatContext,
     );
     const attackerLosses = Math.min(state.attacker.troopCount, result.defenderDamage);
     const defenderLosses = Math.min(state.defender.troopCount, result.attackerDamage);
@@ -169,14 +187,16 @@ export const BattleLab = ({
       newAttackerStamina: combatSimulator.calculateNewStaminaAttacker(
         state.attacker.stamina,
         result.attackerRefundMultiplier,
+        combatContext,
       ),
       newDefenderStamina: combatSimulator.calculateNewStaminaDefender(
         state.defender.stamina,
         result.defenderRefundMultiplier,
+        combatContext,
       ),
       outcome,
     };
-  }, [combatSimulator, state.attacker, state.defender, state.biome, state.hasDefender]);
+  }, [combatSimulator, state.attacker, state.defender, state.biome, state.hasDefender, combatContext]);
 
   // ----- Live action gating -----
   const hasAttacker =
@@ -202,11 +222,22 @@ export const BattleLab = ({
 
   const isAttackerOnCooldown = state.attacker.battle_cooldown_end > Math.floor(Date.now() / 1000);
 
+  // A ranged poke can clear guards but never claims — the structure must be taken from an adjacent hex.
+  const rangedClaimBlocked =
+    mode === "live" && !state.hasDefender && combatContext.defenderIsStructureGuard && liveAttackDistance > 1;
+
   const actionDisabled =
     mode === "live" &&
-    (!hasAttacker || isEdited || nonDefaultParams || isAttackerOnCooldown || attackStaminaState.isBlocked || loading);
+    (!hasAttacker ||
+      isEdited ||
+      nonDefaultParams ||
+      rangedClaimBlocked ||
+      isAttackerOnCooldown ||
+      attackStaminaState.isBlocked ||
+      loading);
 
   const actionLabel = (() => {
+    if (rangedClaimBlocked) return "Move Adjacent to Claim";
     if (isAttackerOnCooldown) return "On Battle Cooldown";
     if (isEdited || nonDefaultParams) return "Reset to act";
     if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
@@ -227,8 +258,6 @@ export const BattleLab = ({
     let pendingFxKey: string | null = null;
     try {
       setLoading(true);
-      const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
-      if (direction === null) return;
 
       pendingFxKey = createPendingWorldmapFxKey("attack");
       dispatchPendingWorldmapFxStart({
@@ -248,14 +277,12 @@ export const BattleLab = ({
           structure_id: attackerEntityId,
           structure_guard_slot: state.selectedGuardSlot,
           explorer_id: target.id || 0,
-          explorer_direction: direction,
         });
       } else if (target.targetType === TargetType.Army) {
         await attack_explorer_vs_explorer({
           signer: account,
           aggressor_id: attackerEntityId,
           defender_id: target.id || 0,
-          defender_direction: direction,
           steal_resources: targetResources,
         });
       } else {
@@ -263,7 +290,6 @@ export const BattleLab = ({
           signer: account,
           explorer_id: attackerEntityId,
           structure_id: target.id || 0,
-          structure_direction: direction,
         });
       }
 
@@ -387,7 +413,9 @@ export const BattleLab = ({
 
           {!state.hasDefender ? (
             <div className="rounded-lg border border-emerald-400/40 bg-emerald-900/20 px-4 py-3 text-center text-sm font-semibold text-emerald-200">
-              No defending troops — this target can be claimed without a battle.
+              {rangedClaimBlocked
+                ? "No defending troops — move adjacent to claim. Ranged attacks clear guards but cannot claim structures."
+                : "No defending troops — this target can be claimed without a battle."}
             </div>
           ) : (
             prediction && <OutcomeBanner outcome={prediction.outcome} />
