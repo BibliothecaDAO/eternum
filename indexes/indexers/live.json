@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-02T18:07:58.142Z",
+  "updatedAt": "2026-06-02T18:08:08.118Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -2851,13 +2851,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-flux-195/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-05-28T14:12:41.978Z"
+        "describedAt": "2026-06-02T18:08:07.822Z"
       },
-      "updatedAt": "2026-05-28T14:12:41.978Z"
+      "updatedAt": "2026-06-02T18:08:08.118Z"
     },
     "bltz-whiz-261": {
       "gameName": "bltz-whiz-261",
@@ -3101,39 +3101,39 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-bolt-899/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-06-02T07:32:23.101Z"
+        "describedAt": "2026-06-02T18:08:07.917Z"
       },
-      "updatedAt": "2026-06-02T07:32:23.101Z"
+      "updatedAt": "2026-06-02T18:08:08.118Z"
     },
     "bltz-whiz-814": {
       "gameName": "bltz-whiz-814",
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-whiz-814/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-06-02T07:42:24.456Z"
+        "describedAt": "2026-06-02T18:08:08.021Z"
       },
-      "updatedAt": "2026-06-02T07:42:24.457Z"
+      "updatedAt": "2026-06-02T18:08:08.118Z"
     },
     "bltz-blip-55": {
       "gameName": "bltz-blip-55",
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-blip-55/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-06-02T09:02:25.271Z"
+        "describedAt": "2026-06-02T18:08:08.118Z"
       },
-      "updatedAt": "2026-06-02T09:02:25.271Z"
+      "updatedAt": "2026-06-02T18:08:08.118Z"
     },
     "bltz-burst-807": {
       "gameName": "bltz-burst-807",
