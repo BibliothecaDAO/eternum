@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26874375212-1",
   "currentStepId": null,
   "createdAt": "2026-06-03T08:57:04.811Z",
-  "updatedAt": "2026-06-03T16:30:50.609Z",
+  "updatedAt": "2026-06-03T16:32:41.061Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x3c6ecf0a792e084de11fccdbd898a9f751b0ab9e75d2b4ebfd410319b138d7"
     ],
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-kick-922/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-06-03T09:01:30.523Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-06-03T16:30:48.782Z"
+    "lastIndexerDescribeAt": "2026-06-03T16:32:41.061Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-06-03T09:01:44.462Z"
 }
