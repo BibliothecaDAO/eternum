@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-blip-55",
-    "launchRequestId": "26809150763-1",
+    "gameName": "bltz-nova-77",
+    "launchRequestId": "26880476598-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26809150763,
+    "workflowRunId": 26880476598,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "7efd7f31-a1cc-485d-a680-20d5cbad6961"
+    "stepId": "create-world",
+    "leaseId": "ec9cebea-66b2-4149-b191-0c1395b1725f"
   },
-  "acquiredAt": "2026-06-02T08:55:19.604Z",
-  "heartbeatAt": "2026-06-02T08:55:35.025Z",
-  "expiresAt": "2026-06-02T08:55:35.025Z",
-  "releasedAt": "2026-06-02T08:55:35.025Z"
+  "acquiredAt": "2026-06-03T11:02:03.413Z",
+  "heartbeatAt": "2026-06-03T11:02:03.413Z",
+  "expiresAt": "2026-06-03T11:12:03.413Z"
 }
