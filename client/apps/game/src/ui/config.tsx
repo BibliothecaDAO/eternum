@@ -9,6 +9,29 @@ export enum GraphicsSettings {
   HIGH = "HIGH",
 }
 
+/**
+ * Numeric rank for each graphics tier, lowest-spec first.
+ *
+ * Use this (via the helpers below) to compare tiers instead of scattering
+ * ad-hoc `=== GraphicsSettings.LOW` / `!== GraphicsSettings.LOW` checks. Those
+ * checks silently break when a tier is added *below* LOW: a lower tier still
+ * satisfies `!== LOW`, so an expensive feature gated on "not low" would wrongly
+ * turn back on for the weakest hardware. Ranking avoids that whole class of bug.
+ */
+export const GRAPHICS_TIER_RANK: Record<GraphicsSettings, number> = {
+  [GraphicsSettings.LOW]: 1,
+  [GraphicsSettings.MID]: 2,
+  [GraphicsSettings.HIGH]: 3,
+};
+
+/** True for LOW and any tier below it (e.g. a future ULTRA_LOW / "potato"). */
+export const isLowOrBelow = (setting: GraphicsSettings): boolean =>
+  GRAPHICS_TIER_RANK[setting] <= GRAPHICS_TIER_RANK[GraphicsSettings.LOW];
+
+/** True when `setting` is at least as high-spec as `floor`. */
+export const isAtOrAbove = (setting: GraphicsSettings, floor: GraphicsSettings): boolean =>
+  GRAPHICS_TIER_RANK[setting] >= GRAPHICS_TIER_RANK[floor];
+
 const getBrowserLocalStorage = (): Storage | null => {
   return typeof globalThis.localStorage === "undefined" ? null : globalThis.localStorage;
 };

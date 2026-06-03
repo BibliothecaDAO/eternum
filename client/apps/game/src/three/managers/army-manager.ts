@@ -3147,11 +3147,15 @@ export class ArmyManager {
 
   private handleCameraViewChange = (view: CameraView) => {
     const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
     const enableRealShadows = view === CameraView.Close && qualityShadowsEnabled;
+    // Contact shadows are the fallback for real shadows; gate them off on LOW/below
+    // so the weakest hardware pays for neither real nor contact shadows.
+    const enableContactShadows = !enableRealShadows && contactShadowsAllowed;
 
     // Keep shadow flags in sync even if view is unchanged (quality can toggle shadows dynamically).
     this.armyModel.setShadowsEnabled(enableRealShadows);
-    this.armyModel.setContactShadowsEnabled(!enableRealShadows);
+    this.armyModel.setContactShadowsEnabled(enableContactShadows);
 
     if (this.currentCameraView === view) {
       return;

@@ -522,8 +522,11 @@ export class StructureManager {
 
   private updateShadowFlags(): void {
     const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
     const enableCasting = this.currentCameraView === CameraView.Close && qualityShadowsEnabled;
-    const enableContactShadows = !enableCasting;
+    // Contact shadows are the fallback for real shadows; gate them off on LOW/below
+    // so the weakest hardware pays for neither casting nor contact shadows.
+    const enableContactShadows = !enableCasting && contactShadowsAllowed;
     const applyToModels = (models: InstancedModel[]) => {
       models.forEach((model) => {
         model.instancedMeshes.forEach((mesh) => {

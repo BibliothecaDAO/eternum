@@ -6,6 +6,7 @@ import { WeatherManager, type WeatherState } from "@/three/managers/weather-mana
 import { SceneManager } from "@/three/scene-manager";
 import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
 import { GUIManager } from "@/three/utils/";
+import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
 import { clampCycleProgress } from "@/utils/cycle-progress";
 import { AmbientLight, HemisphereLight, OrthographicCamera, Scene, Vector3 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
@@ -28,7 +29,10 @@ export default class HUDScene {
   private rainEffect!: RainEffect;
   private weatherManager!: WeatherManager;
   private ambienceManager!: AmbienceManager;
-  private ambientParticles!: AmbientParticleSystem;
+  // Undefined on LOW/below: the ambient particle system (dust + fireflies) is
+  // never constructed there, and its per-frame update loop is skipped entirely
+  // (setEnabled() only toggles .visible and would not stop the JS update cost).
+  private ambientParticles?: AmbientParticleSystem;
   private navigationTargetUnsubscribe: (() => void) | null = null;
   private cycleProgress: number = 0;
   private particleSpawnCenter: Vector3 = new Vector3();
@@ -72,8 +76,12 @@ export default class HUDScene {
     this.ambienceManager.addGUIControls(this.GUIFolder);
     this.addDebugTimeControls();
 
-    // Initialize ambient particle system (dust motes, fireflies)
-    this.ambientParticles = new AmbientParticleSystem(this.scene);
+    // Initialize ambient particle system (dust motes, fireflies).
+    // Skipped on LOW/below to avoid both the point-cloud draws and the
+    // per-frame JS update cost on weak hardware.
+    if (!isLowOrBelow(GRAPHICS_SETTING)) {
+      this.ambientParticles = new AmbientParticleSystem(this.scene);
+    }
 
     // Store subscription reference for cleanup
     this.navigationTargetUnsubscribe = useUIStore.subscribe(
@@ -230,21 +238,25 @@ export default class HUDScene {
       weatherState.stormIntensity,
     );
 
-    // Update ambient particles (dust motes, fireflies)
-    if (cycleProgress !== undefined) {
-      this.ambientParticles.setTimeProgress(cycleProgress);
+    // Update ambient particles (dust motes, fireflies).
+    // Skipped entirely on LOW/below (ambientParticles is undefined there), which
+    // avoids the full per-frame JS update loop, not just the draw.
+    if (this.ambientParticles) {
+      if (cycleProgress !== undefined) {
+        this.ambientParticles.setTimeProgress(cycleProgress);
+      }
+
+      // Pass wind to ambient particles
+      const windState = this.weatherManager.getWindState();
+      this.ambientParticles.setWind(windState.direction, windState.effectiveSpeed);
+
+      // Fade out ambient particles during weather
+      this.ambientParticles.setWeatherIntensity(weatherState.intensity);
+
+      // Update particle positions (follow camera)
+      this.particleSpawnCenter.set(this.camera.position.x, this.camera.position.y - 5, this.camera.position.z);
+      this.ambientParticles.update(deltaTime, this.particleSpawnCenter);
     }
-
-    // Pass wind to ambient particles
-    const windState = this.weatherManager.getWindState();
-    this.ambientParticles.setWind(windState.direction, windState.effectiveSpeed);
-
-    // Fade out ambient particles during weather
-    this.ambientParticles.setWeatherIntensity(weatherState.intensity);
-
-    // Update particle positions (follow camera)
-    this.particleSpawnCenter.set(this.camera.position.x, this.camera.position.y - 5, this.camera.position.z);
-    this.ambientParticles.update(deltaTime, this.particleSpawnCenter);
   }
 
   onWindowResize(width: number, height: number) {
