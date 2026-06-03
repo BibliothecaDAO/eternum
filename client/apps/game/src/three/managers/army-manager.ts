@@ -214,6 +214,7 @@ export class ArmyManager {
   private compactLabelRenderer: CompactEntityLabelRenderer;
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
+  private labelRenderDistance = Infinity;
   private lastLabelVisibilityUpdate = 0;
   private labelVisibilityIntervalMs = 66;
   // Keep moving-army culling bounds fresh without paying a full recompute every frame.
@@ -3003,7 +3004,19 @@ export class ArmyManager {
     this.frustumVisibilityDirty = true;
   }
 
+  public setLabelRenderDistance(distance: number): void {
+    this.labelRenderDistance = distance;
+    // Re-evaluate label visibility on the next update cycle.
+    this.frustumVisibilityDirty = true;
+  }
+
   private isArmyLabelVisible(label: CSS2DObject): boolean {
+    if (this.labelRenderDistance < Infinity) {
+      const camera = this.hexagonScene?.getCamera();
+      if (camera && camera.position.distanceTo(label.position) > this.labelRenderDistance) {
+        return false;
+      }
+    }
     return this.visibilityManager
       ? this.visibilityManager.isPointVisible(label.position)
       : (this.frustumManager?.isPointVisible(label.position) ?? true);
