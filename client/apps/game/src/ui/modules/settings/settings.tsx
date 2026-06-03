@@ -185,6 +185,16 @@ export const SettingsWindow = () => {
             <div className="text-xs text-gray-gold mt-2">Quality</div>
             <div className="flex space-x-2">
               <Button
+                disabled={GRAPHICS_SETTING === GraphicsSettings.ULTRA_LOW}
+                variant={GRAPHICS_SETTING === GraphicsSettings.ULTRA_LOW ? "success" : "outline"}
+                onClick={() => {
+                  localStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.ULTRA_LOW);
+                  window.location.reload();
+                }}
+              >
+                Potato
+              </Button>
+              <Button
                 disabled={GRAPHICS_SETTING === GraphicsSettings.LOW}
                 variant={GRAPHICS_SETTING === GraphicsSettings.LOW ? "success" : "outline"}
                 onClick={() => {

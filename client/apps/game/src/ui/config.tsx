@@ -4,6 +4,7 @@ import { BuildingType, ResourceMiningTypes } from "@bibliothecadao/types";
 export const FELT_CENTER = FELT_CENTER_IMPORT;
 
 export enum GraphicsSettings {
+  ULTRA_LOW = "ULTRA_LOW",
   LOW = "LOW",
   MID = "MID",
   HIGH = "HIGH",
@@ -19,6 +20,7 @@ export enum GraphicsSettings {
  * turn back on for the weakest hardware. Ranking avoids that whole class of bug.
  */
 export const GRAPHICS_TIER_RANK: Record<GraphicsSettings, number> = {
+  [GraphicsSettings.ULTRA_LOW]: 0,
   [GraphicsSettings.LOW]: 1,
   [GraphicsSettings.MID]: 2,
   [GraphicsSettings.HIGH]: 3,

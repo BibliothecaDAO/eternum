@@ -45,6 +45,32 @@ interface QualityPreset extends QualityFeatures {
  * Quality presets for LOW, MID, HIGH settings
  */
 const BASE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
+  [GraphicsSettings.ULTRA_LOW]: {
+    name: "Potato",
+    targetFPS: 20,
+    // Rendering
+    shadows: false,
+    shadowMapSize: 0,
+    pixelRatio: 0.6, // sub-1.0 = internal upscale; the cheapest legible resolution
+    // Post-processing
+    bloom: false,
+    bloomIntensity: 0,
+    vignette: false,
+    chromaticAberration: false,
+    fxaa: false,
+    // Animations
+    morphAnimations: false,
+    animationFPS: 8,
+    // Entity limits
+    maxVisibleArmies: 50,
+    maxVisibleStructures: 30,
+    maxVisibleLabels: 40,
+    // LOD and culling
+    labelRenderDistance: 30,
+    animationCullDistance: 40,
+    // Chunk system
+    chunkLoadRadius: 1,
+  },
   [GraphicsSettings.LOW]: {
     name: "Low",
     targetFPS: 30,
@@ -126,6 +152,17 @@ const BASE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
 };
 
 const MOBILE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
+  [GraphicsSettings.ULTRA_LOW]: {
+    ...BASE_QUALITY_PRESETS[GraphicsSettings.ULTRA_LOW],
+    name: "Potato (Mobile)",
+    pixelRatio: 0.5,
+    animationFPS: 6,
+    maxVisibleArmies: 30,
+    maxVisibleStructures: 20,
+    maxVisibleLabels: 25,
+    labelRenderDistance: 20,
+    animationCullDistance: 30,
+  },
   [GraphicsSettings.LOW]: {
     ...BASE_QUALITY_PRESETS[GraphicsSettings.LOW],
     name: "Low (Mobile)",
@@ -205,6 +242,8 @@ const DEGRADATION_STEPS: DegradationStep[] = [
   { feature: "maxVisibleStructures", value: 100, description: "Reduced max visible structures" },
   { feature: "shadows", value: false, description: "Disabled shadows" },
   { feature: "pixelRatio", value: 1, description: "Reduced pixel ratio to 1" },
+  { feature: "pixelRatio", value: 0.6, description: "Reduced pixel ratio to 0.6 (potato)" },
+  { feature: "animationFPS", value: 8, description: "Reduced animation FPS to 8 (potato)" },
 ];
 
 /**

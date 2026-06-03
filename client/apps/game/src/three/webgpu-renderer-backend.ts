@@ -1,4 +1,4 @@
-import type { GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
+import { isLowOrBelow, type GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
 import {
   ACESFilmicToneMapping,
   CineonToneMapping,
@@ -98,7 +98,7 @@ async function createDefaultWebGPURenderer(input: {
   }) as WebGPURendererSurface;
 
   renderer.autoClear = false;
-  renderer.shadowMap.enabled = input.graphicsSetting !== "LOW";
+  renderer.shadowMap.enabled = !isLowOrBelow(input.graphicsSetting);
   renderer.shadowMap.type = input.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.8;

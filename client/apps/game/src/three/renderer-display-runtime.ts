@@ -36,6 +36,8 @@ export function resolveRendererTargetPixelRatio(
       return Math.min(devicePixelRatio, 2, mobileCap);
     case GraphicsSettings.MID:
       return Math.min(devicePixelRatio, 1.5, mobileCap);
+    case GraphicsSettings.ULTRA_LOW:
+      return Math.min(0.6, mobileCap);
     default:
       return Math.min(1, mobileCap);
   }
@@ -48,6 +50,8 @@ export function resolveRendererTargetFps(input: RendererDisplayPolicyInput): num
         return 45;
       case GraphicsSettings.MID:
         return 30;
+      case GraphicsSettings.ULTRA_LOW:
+        return 20;
       default:
         return 30;
     }
@@ -56,6 +60,8 @@ export function resolveRendererTargetFps(input: RendererDisplayPolicyInput): num
   switch (input.graphicsSetting) {
     case GraphicsSettings.LOW:
       return 30;
+    case GraphicsSettings.ULTRA_LOW:
+      return 20;
     case GraphicsSettings.MID:
       return 45;
     default:

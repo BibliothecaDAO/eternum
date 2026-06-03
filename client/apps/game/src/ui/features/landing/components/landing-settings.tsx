@@ -280,8 +280,13 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
         </LandingSettingsSection>
 
         <LandingSettingsSection icon={Monitor} title="Graphics">
-          <div className="grid grid-cols-3 gap-2">
-            {[GraphicsSettings.LOW, GraphicsSettings.MID, GraphicsSettings.HIGH].map((setting) => {
+          <div className="grid grid-cols-4 gap-2">
+            {[
+              GraphicsSettings.ULTRA_LOW,
+              GraphicsSettings.LOW,
+              GraphicsSettings.MID,
+              GraphicsSettings.HIGH,
+            ].map((setting) => {
               const isActive = graphicsSetting === setting;
               return (
                 <button
@@ -296,7 +301,9 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
                       : "border-gold/14 bg-black/35 text-gold/68 hover:border-gold/26 hover:bg-gold/[0.08] hover:text-gold",
                   )}
                 >
-                  {setting.charAt(0).toUpperCase() + setting.slice(1)}
+                  {setting === GraphicsSettings.ULTRA_LOW
+                    ? "Potato"
+                    : setting.charAt(0).toUpperCase() + setting.slice(1)}
                 </button>
               );
             })}
