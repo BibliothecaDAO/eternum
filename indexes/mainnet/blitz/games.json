@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-03T09:00:55.080Z",
+  "updatedAt": "2026-06-03T09:01:04.841Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1327,12 +1327,13 @@
       "path": "runs/mainnet/blitz/bltz-kick-922.json",
       "inputPath": "inputs/mainnet/blitz/bltz-kick-922/26874375212-1.json",
       "status": "running",
-      "updatedAt": "2026-06-03T09:00:55.080Z",
+      "updatedAt": "2026-06-03T09:01:04.841Z",
       "workflowRef": "next",
       "currentStepId": "create-indexer",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-06-03T09:46:04.841Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-indexer",
+      "recoverablePendingStepId": "sync-paymaster",
       "startTime": 1780486200,
       "durationSeconds": 3600,
       "artifacts": {}
