@@ -18,7 +18,7 @@ import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import { gltfLoader } from "@/three/utils/utils";
 import type { QualityFeatures } from "@/three/utils/quality-controller";
 import { LeftView } from "@/types";
-import { GRAPHICS_SETTING, GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
+import { GRAPHICS_SETTING, IS_FLAT_MODE, isLowOrBelow } from "@/ui/config";
 import { type SetupResult } from "@bibliothecadao/dojo";
 import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import { BiomeType, type HexPosition } from "@bibliothecadao/types";
@@ -204,7 +204,7 @@ export abstract class HexagonScene {
     this.scene.background = new Color(0x2a1a3e);
     this.state = useUIStore.getState();
     this.fog = new Fog(FOG_CONFIG.color, FOG_CONFIG.near, FOG_CONFIG.far);
-    this.fogEnabledByQuality = !IS_FLAT_MODE && GRAPHICS_SETTING !== GraphicsSettings.LOW;
+    this.fogEnabledByQuality = !IS_FLAT_MODE && !isLowOrBelow(GRAPHICS_SETTING);
     this.fogEnabledByUser = true;
     if (this.fogEnabledByQuality && this.fogEnabledByUser) {
       this.scene.fog = this.fog;
@@ -1363,6 +1363,18 @@ export abstract class HexagonScene {
 
   public getShadowsEnabledByQuality(): boolean {
     return this.shadowsEnabledByQuality;
+  }
+
+  /**
+   * Whether contact (fake) shadows are permitted by the current graphics tier.
+   *
+   * Contact shadows are the *fallback* for real shadows, so on LOW/below they
+   * would otherwise always be on (real shadows are off there). The weakest
+   * hardware should pay for neither, so gate them off for LOW and any tier
+   * below it. MID/HIGH are unaffected.
+   */
+  public contactShadowsAllowedByQuality(): boolean {
+    return !isLowOrBelow(GRAPHICS_SETTING);
   }
 
   public addCameraViewListener(listener: (view: CameraView) => void) {

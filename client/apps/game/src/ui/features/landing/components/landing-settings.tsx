@@ -4,6 +4,20 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Maximize2, Minimize2, Monitor, Music, Volume2, VolumeX, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
+const GRAPHICS_OPTIONS: GraphicsSettings[] = [
+  GraphicsSettings.ULTRA_LOW,
+  GraphicsSettings.LOW,
+  GraphicsSettings.MID,
+  GraphicsSettings.HIGH,
+];
+
+const GRAPHICS_OPTION_LABELS: Record<GraphicsSettings, string> = {
+  [GraphicsSettings.ULTRA_LOW]: "Potato",
+  [GraphicsSettings.LOW]: "LOW",
+  [GraphicsSettings.MID]: "MID",
+  [GraphicsSettings.HIGH]: "HIGH",
+};
+
 interface DocumentWithFullscreen extends HTMLDocument {
   mozFullScreenElement?: Element;
   msFullscreenElement?: Element;
@@ -280,8 +294,8 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
         </LandingSettingsSection>
 
         <LandingSettingsSection icon={Monitor} title="Graphics">
-          <div className="grid grid-cols-3 gap-2">
-            {[GraphicsSettings.LOW, GraphicsSettings.MID, GraphicsSettings.HIGH].map((setting) => {
+          <div className="grid grid-cols-4 gap-2">
+            {GRAPHICS_OPTIONS.map((setting) => {
               const isActive = graphicsSetting === setting;
               return (
                 <button
@@ -296,7 +310,7 @@ export const LandingSettings = ({ onClose, className }: LandingSettingsProps) =>
                       : "border-gold/14 bg-black/35 text-gold/68 hover:border-gold/26 hover:bg-gold/[0.08] hover:text-gold",
                   )}
                 >
-                  {setting.charAt(0).toUpperCase() + setting.slice(1)}
+                  {GRAPHICS_OPTION_LABELS[setting]}
                 </button>
               );
             })}

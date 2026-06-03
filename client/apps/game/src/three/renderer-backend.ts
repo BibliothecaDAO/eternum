@@ -10,7 +10,7 @@ import {
   WebGLRenderTarget,
 } from "three";
 import { PMREMGenerator } from "three";
-import { GraphicsSettings, type GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
+import { isLowOrBelow, type GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import {
@@ -126,12 +126,12 @@ class WebGLRendererBackend implements RendererBackend {
     pixelRatio: number,
     dependencies: WebGLRendererBackendDependencies,
   ) {
-    const isLowGraphics = this.graphicsSetting === GraphicsSettings.LOW;
+    const isLowGraphics = isLowOrBelow(this.graphicsSetting);
     this.renderer = dependencies.createRenderer({
       isLowGraphics,
     });
     this.renderer.setPixelRatio(pixelRatio);
-    this.renderer.shadowMap.enabled = this.graphicsSetting !== GraphicsSettings.LOW;
+    this.renderer.shadowMap.enabled = !isLowOrBelow(this.graphicsSetting);
     this.renderer.shadowMap.type = this.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = ACESFilmicToneMapping;

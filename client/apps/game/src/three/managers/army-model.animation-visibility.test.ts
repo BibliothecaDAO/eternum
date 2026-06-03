@@ -28,6 +28,7 @@ vi.mock("@/ui/config", () => ({
     MID: "MID",
   },
   IS_FLAT_MODE: false,
+  isLowOrBelow: (setting: string) => setting === "LOW" || setting === "ULTRA_LOW",
 }));
 
 vi.mock("@/utils/agent", () => ({

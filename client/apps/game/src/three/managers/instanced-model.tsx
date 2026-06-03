@@ -1,5 +1,5 @@
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
-import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import {
   AnimationAction,
@@ -444,7 +444,7 @@ export default class InstancedModel {
     if (!this.shouldAnimate(visibility)) {
       return;
     }
-    if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
+    if (isLowOrBelow(GRAPHICS_SETTING)) {
       return;
     }
 

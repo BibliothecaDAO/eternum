@@ -81,6 +81,7 @@ export const POST_PROCESSING_CONFIG: Record<GraphicsSettings, PostProcessingConf
     bloomIntensity: 0.15,
   },
   [GraphicsSettings.LOW]: null,
+  [GraphicsSettings.ULTRA_LOW]: null,
 };
 
 export const CAMERA_FAR_PLANE = IS_FLAT_MODE ? CAMERA_CONFIG.far.flat : CAMERA_CONFIG.far.default;

@@ -61,6 +61,7 @@ const DEFAULT_ENVIRONMENT_INTENSITY: Record<GraphicsSettings, number> = {
   [GraphicsSettings.HIGH]: 0.55,
   [GraphicsSettings.MID]: 0.45,
   [GraphicsSettings.LOW]: 0.25,
+  [GraphicsSettings.ULTRA_LOW]: 0.2,
 };
 
 const WEATHER_POST_PROCESSING_LIMITS = {
