@@ -19,7 +19,7 @@ export enum GraphicsSettings {
  * satisfies `!== LOW`, so an expensive feature gated on "not low" would wrongly
  * turn back on for the weakest hardware. Ranking avoids that whole class of bug.
  */
-export const GRAPHICS_TIER_RANK: Record<GraphicsSettings, number> = {
+const GRAPHICS_TIER_RANK: Record<GraphicsSettings, number> = {
   [GraphicsSettings.ULTRA_LOW]: 0,
   [GraphicsSettings.LOW]: 1,
   [GraphicsSettings.MID]: 2,
@@ -29,10 +29,6 @@ export const GRAPHICS_TIER_RANK: Record<GraphicsSettings, number> = {
 /** True for LOW and any tier below it (e.g. a future ULTRA_LOW / "potato"). */
 export const isLowOrBelow = (setting: GraphicsSettings): boolean =>
   GRAPHICS_TIER_RANK[setting] <= GRAPHICS_TIER_RANK[GraphicsSettings.LOW];
-
-/** True when `setting` is at least as high-spec as `floor`. */
-export const isAtOrAbove = (setting: GraphicsSettings, floor: GraphicsSettings): boolean =>
-  GRAPHICS_TIER_RANK[setting] >= GRAPHICS_TIER_RANK[floor];
 
 const getBrowserLocalStorage = (): Storage | null => {
   return typeof globalThis.localStorage === "undefined" ? null : globalThis.localStorage;

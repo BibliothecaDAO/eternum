@@ -4,6 +4,7 @@ vi.mock("@/ui/config", () => ({
   GraphicsSettings: {
     LOW: "LOW",
   },
+  isLowOrBelow: (setting: string) => setting === "LOW" || setting === "ULTRA_LOW",
 }));
 
 vi.mock("three", async (importOriginal) => {
