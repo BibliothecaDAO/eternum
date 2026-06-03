@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-03T11:01:54.023Z",
+  "updatedAt": "2026-06-03T11:01:59.572Z",
   "entries": {
     "bltz-vibe-915": {
       "kind": "game",
@@ -1616,12 +1616,13 @@
       "path": "runs/slot/blitz/bltz-nova-77.json",
       "inputPath": "inputs/slot/blitz/bltz-nova-77/26880476598-1.json",
       "status": "running",
-      "updatedAt": "2026-06-03T11:01:54.023Z",
+      "updatedAt": "2026-06-03T11:01:59.572Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-06-03T11:46:59.572Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-06-03T11:35:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
