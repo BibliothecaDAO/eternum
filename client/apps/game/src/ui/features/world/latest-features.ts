@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-06-04",
+    title: "Stable Hex Grid",
+    description:
+      "Fixed local-view hex outlines so the grid stays visible while changing camera angles, making tile positions easier to read.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-31",
     title: "Factory Biome Tuning",
     description:

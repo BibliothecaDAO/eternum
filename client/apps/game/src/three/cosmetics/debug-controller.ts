@@ -1,4 +1,4 @@
-import { GRAPHICS_DEV_GUI_ENABLED, GUIManager } from "../utils/gui-manager";
+import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "../utils/gui-manager";
 import { ensureCosmeticAsset } from "./asset-cache";
 import { findCosmeticById, getCosmeticRegistry } from "./registry";
 import type { CosmeticRegistryEntry, CosmeticResolutionResult } from "./types";
@@ -35,7 +35,7 @@ class CosmeticDebugController {
     structureAttachmentId: null,
   };
 
-  private guiFolder: ReturnType<typeof GUIManager.addFolder> | null = null;
+  private guiFolder: ReturnType<typeof createGuiFolder> | null = null;
   private armyOptions: Record<string, string> = {};
   private armyAttachmentOptions: Record<string, string> = {};
   private structureOptions: Record<string, string> = {};
@@ -44,7 +44,11 @@ class CosmeticDebugController {
   constructor() {
     if (GRAPHICS_DEV_GUI_ENABLED) {
       this.buildOptions();
-      this.setupGUI();
+      try {
+        this.setupGUI();
+      } catch {
+        // Dev GUI failures must not block cosmetics startup.
+      }
       this.exposeConsoleAPI();
     }
   }
@@ -77,7 +81,7 @@ class CosmeticDebugController {
   }
 
   private setupGUI(): void {
-    this.guiFolder = GUIManager.addFolder("Cosmetics Debug");
+    this.guiFolder = createGuiFolder("Cosmetics Debug");
     this.guiFolder.close();
 
     this.guiFolder.add(this.state, "enabled").name("Override Enabled").onChange(this.onStateChange.bind(this));

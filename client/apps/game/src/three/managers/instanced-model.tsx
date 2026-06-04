@@ -660,6 +660,12 @@ export default class InstancedModel {
   private applyWorldBounds(mesh: InstancedMesh) {
     if (this.worldBounds) {
       mesh.frustumCulled = true;
+      // Three frustum checks InstancedMesh bounds before geometry bounds.
+      mesh.boundingSphere = mesh.boundingSphere ?? new Sphere();
+      mesh.boundingSphere.copy(this.worldBounds.sphere);
+      mesh.boundingBox = mesh.boundingBox ?? new Box3();
+      mesh.boundingBox.copy(this.worldBounds.box);
+
       const geometry = mesh.geometry;
       geometry.boundingSphere = geometry.boundingSphere ?? new Sphere();
       geometry.boundingSphere.copy(this.worldBounds.sphere);

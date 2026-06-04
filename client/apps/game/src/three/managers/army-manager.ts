@@ -7,7 +7,7 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { ModelType } from "@/three/types/army";
-import { GRAPHICS_DEV_GUI_ENABLED, GUIManager } from "@/three/utils/";
+import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import {
   incrementWorldmapRenderCounter,
   recordWorldmapRenderDuration,
@@ -424,7 +424,7 @@ export class ArmyManager {
   }
 
   private setupDebugArmyCreationControls(): void {
-    const createArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Create Army"));
+    const createArmyFolder = trackGuiFolder(this.guiFolders, createGuiFolder("Create Army"));
     const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
 
     createArmyFolder.add(createArmyParams, "entityId").name("Entity ID");
@@ -468,7 +468,7 @@ export class ArmyManager {
   }
 
   private setupDebugArmyDeletionControls(): void {
-    const deleteArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Delete Army"));
+    const deleteArmyFolder = trackGuiFolder(this.guiFolders, createGuiFolder("Delete Army"));
     const deleteArmyParams = { entityId: 0 };
 
     deleteArmyFolder.add(deleteArmyParams, "entityId").name("Entity ID");
@@ -489,7 +489,7 @@ export class ArmyManager {
    * Setup debug GUI for spawning multiple armies for performance testing
    */
   private setupDebugArmySpawner(): void {
-    const debugFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Debug Army Spawner"));
+    const debugFolder = trackGuiFolder(this.guiFolders, createGuiFolder("Debug Army Spawner"));
 
     const spawnParams = {
       count: 20,

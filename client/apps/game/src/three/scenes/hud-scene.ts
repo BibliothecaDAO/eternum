@@ -5,7 +5,7 @@ import { Navigator } from "@/three/managers/navigator";
 import { WeatherManager, type WeatherState } from "@/three/managers/weather-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
-import { GRAPHICS_DEV_GUI_ENABLED, GUIManager } from "@/three/utils/";
+import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
 import { clampCycleProgress } from "@/utils/cycle-progress";
 import { AmbientLight, HemisphereLight, OrthographicCamera, Scene, Vector3 } from "three";
@@ -88,9 +88,13 @@ export default class HUDScene {
       return;
     }
 
-    this.GUIFolder = GUIManager.addFolder("HUD");
-    this.setupNavigatorGuiControls();
-    this.GUIFolder.close();
+    try {
+      this.GUIFolder = createGuiFolder("HUD");
+      this.setupNavigatorGuiControls();
+      this.GUIFolder.close();
+    } catch {
+      this.GUIFolder = null;
+    }
   }
 
   private setupNavigatorGuiControls(): void {
@@ -115,10 +119,14 @@ export default class HUDScene {
       return;
     }
 
-    this.rainEffect.addGUIControls(this.GUIFolder);
-    this.weatherManager.addGUIControls(this.GUIFolder);
-    this.ambienceManager.addGUIControls(this.GUIFolder);
-    this.addDebugTimeControls();
+    try {
+      this.rainEffect.addGUIControls(this.GUIFolder);
+      this.weatherManager.addGUIControls(this.GUIFolder);
+      this.ambienceManager.addGUIControls(this.GUIFolder);
+      this.addDebugTimeControls();
+    } catch {
+      // Dev GUI failures must not block HUD startup.
+    }
   }
 
   private createOrthographicCamera(): OrthographicCamera {

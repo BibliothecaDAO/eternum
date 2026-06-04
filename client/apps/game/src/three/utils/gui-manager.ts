@@ -51,3 +51,20 @@ export const GUIManager = GRAPHICS_DEV_GUI_ENABLED
 if (GRAPHICS_DEV_GUI_ENABLED) {
   GUIManager.close();
 }
+
+export function createGuiFolder(name: string): GUI {
+  if (!GUIManager || typeof GUIManager.addFolder !== "function") {
+    return createNoopGui();
+  }
+
+  try {
+    const folder = GUIManager.addFolder(name);
+    if (!folder || typeof folder.addFolder !== "function") {
+      return createNoopGui();
+    }
+
+    return folder;
+  } catch {
+    return createNoopGui();
+  }
+}

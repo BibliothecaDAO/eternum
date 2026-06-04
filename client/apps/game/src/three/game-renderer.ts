@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getGameModeId } from "@/config/game-modes";
-import { GRAPHICS_DEV_GUI_ENABLED, GUIManager } from "@/three/utils/";
+import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { env } from "../../env";
@@ -91,7 +91,7 @@ export default class GameRenderer {
 
     const runtimeAssembly = createGameRendererRuntimeAssembly({
       addWindowListener: (type, listener) => window.addEventListener(type, listener),
-      createFolder: (name) => trackGuiFolder(this.guiFolders, GUIManager.addFolder(name)),
+      createFolder: (name) => trackGuiFolder(this.guiFolders, createGuiFolder(name)),
       fastTravelEnabled: () => this.isFastTravelEnabled(),
       graphicsSetting: this.graphicsSetting,
       isGraphicsDevEnabled: !!GRAPHICS_DEV_ENABLED,

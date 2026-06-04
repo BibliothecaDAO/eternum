@@ -2,7 +2,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { type BootstrapTask, useGameEntryBootstrapController } from "@/game-entry/bootstrap-controller";
 import { getGameModeId } from "@/config/game-modes";
-import { resolveEntryContextFromPlayRoute } from "@/game-entry/context";
+import { resolveEntryContextFromPlayRoute, type ResolvedEntryContext } from "@/game-entry/context";
 import { useControllerAccount } from "@/hooks/context/use-controller-account";
 import { connectWithControllerRetry, pickPrimaryConnector } from "@/hooks/context/controller-connect";
 import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
@@ -23,6 +23,24 @@ const NULL_ACCOUNT = {
   address: "0x0",
   privateKey: "0x0",
 } as const;
+
+const resolveBootstrapContext = ({
+  entryContext,
+  hasControllerAccount,
+}: {
+  entryContext: ResolvedEntryContext | null;
+  hasControllerAccount: boolean;
+}): ResolvedEntryContext | null => {
+  if (!entryContext) {
+    return null;
+  }
+
+  if (entryContext.intent === "spectate") {
+    return entryContext;
+  }
+
+  return hasControllerAccount ? entryContext : null;
+};
 
 export type PlayRouteBootPhase =
   | "normalize_route"
@@ -194,9 +212,14 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const { username: cartridgeUsername } = useCartridgeUsername();
   const entryContext = useMemo(() => resolveEntryContextFromPlayRoute(location), [location.pathname, location.search]);
+  const hasControllerAccount = controllerAccount !== null;
+  const bootstrapContext = useMemo(
+    () => resolveBootstrapContext({ entryContext, hasControllerAccount }),
+    [entryContext, hasControllerAccount],
+  );
   const bootstrap = useGameEntryBootstrapController({
-    context: entryContext,
-    enabled: entryContext !== null,
+    context: bootstrapContext,
+    enabled: bootstrapContext !== null,
   });
   const playRoute = useMemo(() => parsePlayRoute(location), [location.pathname, location.search]);
   const fastTravelEnabled = useMemo(
@@ -321,11 +344,12 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
     });
   }, [connectAsync, connectors, isConnected, isConnecting, resolvedAccount]);
 
+  const isReconnectRequired = shouldTrackReconnectGrace && hasReconnectGraceElapsed;
   const phase = resolveBootPhase({
     bootstrapError: bootstrap.error,
     bootstrapStatus: bootstrap.status,
     hasResolvedAccount: resolvedAccount !== null,
-    isReconnectRequired: shouldTrackReconnectGrace && hasReconnectGraceElapsed,
+    isReconnectRequired,
     isSpectator: resolvedRequest?.entryMode === "spectator",
     readiness,
     resolvedRequest,
@@ -385,7 +409,7 @@ export const usePlayRouteBootController = (): PlayRouteBootControllerState => {
   return {
     ...snapshot,
     connectWallet,
-    isReconnectRequired: shouldTrackReconnectGrace && hasReconnectGraceElapsed,
+    isReconnectRequired,
     retry: bootstrap.retry,
   };
 };

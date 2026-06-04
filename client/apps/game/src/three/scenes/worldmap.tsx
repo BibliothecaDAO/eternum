@@ -1175,18 +1175,20 @@ export default class WorldmapScene extends WarpTravel {
       });
     }
 
-    this.GUIFolder.add(this, "moveCameraToURLLocation");
-    this.perfSimulation = new WorldmapPerfSimulation({
-      guiFolder: this.GUIFolder,
-      getSimulateAllExplored: () => this.simulateAllExplored,
-      setSimulateAllExplored: (value: boolean) => {
-        this.simulateAllExplored = value;
-      },
-      getRenderChunkSize: () => this.renderChunkSize,
-      requestChunkRefresh: (force: boolean) => this.requestChunkRefresh(force),
-      hashCoordinates: (x: number, y: number) => this.hashCoordinates(x, y),
-    });
-    this.perfSimulation.setupPerformanceSimulationGUI();
+    if (this.GUIFolder) {
+      this.GUIFolder.add(this, "moveCameraToURLLocation");
+      this.perfSimulation = new WorldmapPerfSimulation({
+        guiFolder: this.GUIFolder,
+        getSimulateAllExplored: () => this.simulateAllExplored,
+        setSimulateAllExplored: (value: boolean) => {
+          this.simulateAllExplored = value;
+        },
+        getRenderChunkSize: () => this.renderChunkSize,
+        requestChunkRefresh: (force: boolean) => this.requestChunkRefresh(force),
+        hashCoordinates: (x: number, y: number) => this.hashCoordinates(x, y),
+      });
+      this.perfSimulation.setupPerformanceSimulationGUI();
+    }
 
     initializeSyncSimulator(dojoContext);
     this.loadBiomeModels(this.getTerrainCompositeCellCapacity());

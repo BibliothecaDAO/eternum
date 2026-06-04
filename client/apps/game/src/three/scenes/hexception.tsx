@@ -273,12 +273,13 @@ export default class HexceptionScene extends HexagonScene {
       });
     }
 
-    // add gui to change castle level
-    this.GUIFolder.add(this, "structureStage", 0, 3).onFinishChange((value: RealmLevels) => {
-      this.structureStage = value;
-      this.removeCastleFromScene();
-      this.updateHexceptionGrid(this.hexceptionRadius);
-    });
+    if (this.GUIFolder) {
+      this.GUIFolder.add(this, "structureStage", 0, 3).onFinishChange((value: RealmLevels) => {
+        this.structureStage = value;
+        this.removeCastleFromScene();
+        this.updateHexceptionGrid(this.hexceptionRadius);
+      });
+    }
 
     // Store all Zustand subscriptions for cleanup on destroy
     this.storeUnsubscribes.push(

@@ -322,6 +322,12 @@ export default class InstancedModel {
   private applyWorldBounds(mesh: THREE.InstancedMesh) {
     if (this.worldBounds) {
       mesh.frustumCulled = true;
+      // Three frustum checks InstancedMesh bounds before geometry bounds.
+      mesh.boundingSphere = mesh.boundingSphere ?? new THREE.Sphere();
+      mesh.boundingSphere.copy(this.worldBounds.sphere);
+      mesh.boundingBox = mesh.boundingBox ?? new THREE.Box3();
+      mesh.boundingBox.copy(this.worldBounds.box);
+
       const geometry = mesh.geometry;
       geometry.boundingSphere = geometry.boundingSphere ?? new THREE.Sphere();
       geometry.boundingSphere.copy(this.worldBounds.sphere);
