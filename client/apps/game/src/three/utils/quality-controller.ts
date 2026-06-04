@@ -51,7 +51,7 @@ const BASE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
     // Rendering
     shadows: false,
     shadowMapSize: 0,
-    pixelRatio: 0.6, // sub-1.0 = internal upscale; the cheapest legible resolution
+    pixelRatio: 0.55, // sub-1.0 = internal upscale; the cheapest legible resolution
     // Post-processing
     bloom: false,
     bloomIntensity: 0,
@@ -73,11 +73,11 @@ const BASE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
   },
   [GraphicsSettings.LOW]: {
     name: "Low",
-    targetFPS: 30,
+    targetFPS: 24,
     // Rendering
     shadows: false,
     shadowMapSize: 0,
-    pixelRatio: 1,
+    pixelRatio: 0.9,
     // Post-processing
     bloom: false,
     bloomIntensity: 0,
@@ -99,55 +99,55 @@ const BASE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
   },
   [GraphicsSettings.MID]: {
     name: "Medium",
+    targetFPS: 30,
+    // Rendering
+    shadows: false,
+    shadowMapSize: 0,
+    pixelRatio: 1.25,
+    // Post-processing
+    bloom: false,
+    bloomIntensity: 0,
+    vignette: false,
+    chromaticAberration: false,
+    fxaa: false,
+    // Animations
+    morphAnimations: true,
+    animationFPS: 20,
+    // Entity limits
+    maxVisibleArmies: 250,
+    maxVisibleStructures: 120,
+    maxVisibleLabels: 140,
+    // LOD and culling
+    labelRenderDistance: 90,
+    animationCullDistance: 90,
+    // Chunk system
+    chunkLoadRadius: 2,
+  },
+  [GraphicsSettings.HIGH]: {
+    name: "High",
     targetFPS: 45,
     // Rendering
     shadows: true,
     shadowMapSize: 1024,
     pixelRatio: 1.5,
     // Post-processing
-    bloom: true,
-    bloomIntensity: 0.15,
+    bloom: false,
+    bloomIntensity: 0,
     vignette: false,
     chromaticAberration: false,
-    fxaa: true,
+    fxaa: false,
     // Animations
     morphAnimations: true,
-    animationFPS: 20,
+    animationFPS: 24,
     // Entity limits
-    maxVisibleArmies: 300,
-    maxVisibleStructures: 150,
-    maxVisibleLabels: 200,
+    maxVisibleArmies: 600,
+    maxVisibleStructures: 300,
+    maxVisibleLabels: 250,
     // LOD and culling
-    labelRenderDistance: 100,
-    animationCullDistance: 100,
+    labelRenderDistance: 160,
+    animationCullDistance: 120,
     // Chunk system
     chunkLoadRadius: 2,
-  },
-  [GraphicsSettings.HIGH]: {
-    name: "High",
-    targetFPS: 60,
-    // Rendering
-    shadows: true,
-    shadowMapSize: 2048,
-    pixelRatio: 2,
-    // Post-processing
-    bloom: true,
-    bloomIntensity: 0.25,
-    vignette: true,
-    chromaticAberration: true,
-    fxaa: true,
-    // Animations
-    morphAnimations: true,
-    animationFPS: 30,
-    // Entity limits
-    maxVisibleArmies: 1000,
-    maxVisibleStructures: 500,
-    maxVisibleLabels: 500,
-    // LOD and culling
-    labelRenderDistance: 200,
-    animationCullDistance: 140,
-    // Chunk system
-    chunkLoadRadius: 3,
   },
 };
 
@@ -179,7 +179,7 @@ const MOBILE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
     targetFPS: 30,
     shadows: false,
     shadowMapSize: 0,
-    pixelRatio: 1.25,
+    pixelRatio: 1,
     bloom: false,
     bloomIntensity: 0,
     vignette: false,
@@ -198,18 +198,20 @@ const MOBILE_QUALITY_PRESETS: Record<GraphicsSettings, QualityPreset> = {
     ...BASE_QUALITY_PRESETS[GraphicsSettings.HIGH],
     name: "High (Mobile)",
     targetFPS: 45,
-    shadowMapSize: 1024,
-    pixelRatio: 1.5,
-    bloomIntensity: 0.12,
+    shadows: false,
+    shadowMapSize: 0,
+    pixelRatio: 1.25,
+    bloom: false,
+    bloomIntensity: 0,
     vignette: false,
     chromaticAberration: false,
     fxaa: false,
-    animationFPS: 20,
-    maxVisibleArmies: 500,
-    maxVisibleStructures: 250,
-    maxVisibleLabels: 250,
-    labelRenderDistance: 140,
-    animationCullDistance: 120,
+    animationFPS: 18,
+    maxVisibleArmies: 350,
+    maxVisibleStructures: 180,
+    maxVisibleLabels: 160,
+    labelRenderDistance: 120,
+    animationCullDistance: 100,
     chunkLoadRadius: 2,
   },
 };
@@ -231,13 +233,13 @@ interface DegradationStep {
 const DEGRADATION_STEPS: DegradationStep[] = [
   { feature: "vignette", value: false, description: "Disabled vignette effect" },
   { feature: "chromaticAberration", value: false, description: "Disabled chromatic aberration effect" },
-  { feature: "bloomIntensity", value: 0.1, description: "Reduced bloom intensity" },
+  { feature: "bloomIntensity", value: 0, description: "Reduced bloom intensity" },
   { feature: "animationFPS", value: 15, description: "Reduced animation FPS to 15" },
   { feature: "maxVisibleLabels", value: 150, description: "Reduced max visible labels" },
   { feature: "bloom", value: false, description: "Disabled bloom effect" },
   { feature: "morphAnimations", value: false, description: "Disabled morph animations" },
   { feature: "fxaa", value: false, description: "Disabled FXAA anti-aliasing" },
-  { feature: "shadowMapSize", value: 1024, description: "Reduced shadow map size" },
+  { feature: "shadowMapSize", value: 512, description: "Reduced shadow map size" },
   { feature: "maxVisibleArmies", value: 200, description: "Reduced max visible armies" },
   { feature: "maxVisibleStructures", value: 100, description: "Reduced max visible structures" },
   { feature: "shadows", value: false, description: "Disabled shadows" },
@@ -589,19 +591,19 @@ class QualityController {
    * Downgrade quality by one step
    */
   private downgrade(): boolean {
-    if (this.degradationLevel >= DEGRADATION_STEPS.length) {
+    const nextStep = this.findNextEffectiveDowngradeStep();
+    if (!nextStep) {
       if (this.config.enableLogging) {
         console.log("[QualityController] Already at minimum quality, cannot downgrade further");
       }
       return false;
     }
 
-    const step = DEGRADATION_STEPS[this.degradationLevel];
+    const { step } = nextStep;
     const previous = { ...this.currentFeatures };
 
     // Apply the degradation
     (this.currentFeatures as unknown as Record<string, unknown>)[step.feature] = step.value;
-    this.degradationLevel++;
 
     this.emitEvent({
       type: "quality-change",
@@ -619,6 +621,33 @@ class QualityController {
     }
 
     return true;
+  }
+
+  private findNextEffectiveDowngradeStep(): { step: DegradationStep } | null {
+    while (this.degradationLevel < DEGRADATION_STEPS.length) {
+      const step = DEGRADATION_STEPS[this.degradationLevel];
+      this.degradationLevel++;
+
+      if (this.isEffectiveDowngrade(step)) {
+        return { step };
+      }
+    }
+
+    return null;
+  }
+
+  private isEffectiveDowngrade(step: DegradationStep): boolean {
+    const currentValue = this.currentFeatures[step.feature];
+
+    if (typeof currentValue === "boolean" && typeof step.value === "boolean") {
+      return currentValue && !step.value;
+    }
+
+    if (typeof currentValue === "number" && typeof step.value === "number") {
+      return step.value < currentValue;
+    }
+
+    return currentValue !== step.value;
   }
 
   /**

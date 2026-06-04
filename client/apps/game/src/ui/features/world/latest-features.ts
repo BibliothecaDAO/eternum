@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-06-04",
+    title: "Leaner Graphics Presets",
+    description:
+      "Improved graphics presets and map streaming cadence so High, Medium, Low, and Potato use lower rendering costs while browsing the world map.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-06-04",
     title: "Reliable Chest Rendering",
     description:
       "Fixed world-map chests so visible chest markers are rebuilt from authoritative tile data during map refreshes instead of disappearing while still blocking the tile.",
