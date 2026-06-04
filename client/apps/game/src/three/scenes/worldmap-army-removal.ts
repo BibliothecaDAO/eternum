@@ -9,6 +9,12 @@ interface StaleTrackedArmyTileRemovalInput {
   removalPosition?: ArmyHexPosition;
 }
 
+interface PendingArmyRemovalExplorerTroopsRecoveryInput {
+  reason: "tile" | "zero";
+  removalPosition?: ArmyHexPosition;
+  troopsPosition: ArmyHexPosition;
+}
+
 interface PendingArmyRemovalCandidate<TArmyId> {
   entityId: TArmyId;
   scheduledAt: number;
@@ -49,6 +55,22 @@ export function isStaleTrackedArmyTileRemoval(input: StaleTrackedArmyTileRemoval
   }
 
   return !isExactPosition(trackedPosition, removalPosition);
+}
+
+export function shouldRecoverPendingArmyRemovalFromExplorerTroops(
+  input: PendingArmyRemovalExplorerTroopsRecoveryInput,
+): boolean {
+  const { reason, removalPosition, troopsPosition } = input;
+
+  if (reason !== "tile") {
+    return true;
+  }
+
+  if (!removalPosition) {
+    return false;
+  }
+
+  return !isExactPosition(removalPosition, troopsPosition);
 }
 
 /**

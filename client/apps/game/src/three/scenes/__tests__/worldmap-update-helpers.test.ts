@@ -81,4 +81,26 @@ describe("processExplorerTroopsUpdate", () => {
 
     expect(callOrder).toEqual(["hexes", "army", "live-signal", "pending-clear", "recovery"]);
   });
+
+  it("applies live troop updates without recovering pending removals when recovery is rejected", () => {
+    const update = {
+      entityId: 11,
+      troopCount: 18,
+      hexCoords: { col: 2107, row: 2108 },
+    } as any;
+    const recoverPendingArmyRemovalFromExplorerTroops = vi.fn();
+
+    processExplorerTroopsUpdate(update, {
+      cancelPendingArmyRemoval: vi.fn(),
+      scheduleArmyRemoval: vi.fn(),
+      updateArmyHexes: vi.fn(),
+      updateArmyFromExplorerTroopsUpdate: vi.fn(),
+      recordLiveArmyPresenceUpdate: vi.fn(),
+      onAuthoritativePositionApplied: vi.fn(),
+      recoverPendingArmyRemovalFromExplorerTroops,
+      shouldRecoverPendingArmyRemovalFromExplorerTroops: vi.fn(() => false),
+    });
+
+    expect(recoverPendingArmyRemovalFromExplorerTroops).not.toHaveBeenCalled();
+  });
 });
