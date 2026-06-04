@@ -529,6 +529,12 @@ interface WorldmapRenderAreaBounds {
   minRow: number;
 }
 
+type GlobalTileOptHydrationEntry = {
+  normalized: { x: number; y: number };
+  tile: NonNullable<ReturnType<typeof tileOptToTile>>;
+  tileOpt: Parameters<typeof tileOptToTile>[0];
+};
+
 interface WorldmapHydrationFetchPlan {
   fetchKey: string;
   localBounds: WorldmapRenderAreaBounds;
@@ -8747,14 +8753,20 @@ export default class WorldmapScene extends WarpTravel {
     localBounds: WorldmapRenderAreaBounds,
     stages: readonly WorldmapRenderAreaHydrationStage[],
   ): Promise<void> {
-    const hydratedTileCount = this.shouldFetchTileOpt(stages)
-      ? this.hydrateExploredTilesFromGlobalTileOptRecs(fetchKey, localBounds)
+    const shouldHydrateTileOpt = this.shouldFetchTileOpt(stages);
+    const shouldHydrateStructures = stages.includes("structures");
+    const tileOptEntries =
+      shouldHydrateTileOpt || shouldHydrateStructures
+        ? this.collectGlobalTileOptHydrationEntries(localBounds)
+        : [];
+    const hydratedTileCount = shouldHydrateTileOpt
+      ? this.hydrateExploredTilesFromGlobalTileOptRecs(fetchKey, localBounds, tileOptEntries)
       : 0;
-    const hydratedChestCount = this.shouldFetchTileOpt(stages)
-      ? this.hydrateChestsFromGlobalTileOptRecs(fetchKey, localBounds)
+    const hydratedChestCount = shouldHydrateTileOpt
+      ? this.hydrateChestsFromGlobalTileOptRecs(fetchKey, tileOptEntries)
       : 0;
-    const hydratedStructureCount = stages.includes("structures")
-      ? await this.hydrateStructuresFromGlobalTileOptRecs(fetchKey, localBounds)
+    const hydratedStructureCount = shouldHydrateStructures
+      ? await this.hydrateStructuresFromGlobalTileOptRecs(fetchKey, tileOptEntries)
       : 0;
 
     this.traceChunk("global_spatial_recs_hydrated", {
@@ -8762,34 +8774,74 @@ export default class WorldmapScene extends WarpTravel {
       hydratedChestCount,
       hydratedStructureCount,
       hydratedTileCount,
+      tileOptCandidateCount: tileOptEntries.length,
       localBounds,
       stages,
     });
   }
 
-  private async hydrateStructuresFromGlobalTileOptRecs(
-    fetchKey: string,
-    bounds: WorldmapRenderAreaBounds,
-  ): Promise<number> {
+  private collectGlobalTileOptHydrationEntries(bounds: WorldmapRenderAreaBounds): GlobalTileOptHydrationEntry[] {
+    const scanStartedAt = performance.now();
     const tileOptComponent = this.dojo.components.TileOpt;
     if (!tileOptComponent) {
-      return 0;
+      recordWorldmapRenderDuration("globalSpatialTileOptScanMs", performance.now() - scanStartedAt);
+      setWorldmapRenderGauge("globalSpatialTileOptRecs", 0);
+      setWorldmapRenderGauge("globalSpatialHydrationCandidates", 0);
+      return [];
     }
 
-    let hydratedStructureCount = 0;
+    const entries: GlobalTileOptHydrationEntry[] = [];
+    let scannedCount = 0;
+
     for (const entity of getComponentEntities(tileOptComponent)) {
+      scannedCount += 1;
       const tileOpt = getComponentValue(tileOptComponent, entity);
-      if (!this.shouldHydrateStructureFromGlobalTileOpt(tileOpt, bounds)) {
+      const tile = tileOpt ? tileOptToTile(tileOpt) : undefined;
+      if (!tile) {
         continue;
       }
 
-      const structureUpdate = await this.worldUpdateListener.resolveStructureTileUpdateFromTileOpt(tileOpt);
+      const normalized = new Position({ x: tile.col, y: tile.row }).getNormalized();
+      if (!this.isPositionWithinBounds(normalized, bounds)) {
+        continue;
+      }
+
+      entries.push({
+        normalized: { x: normalized.x, y: normalized.y },
+        tile,
+        tileOpt,
+      });
+    }
+
+    recordWorldmapRenderDuration("globalSpatialTileOptScanMs", performance.now() - scanStartedAt);
+    setWorldmapRenderGauge("globalSpatialTileOptRecs", scannedCount);
+    setWorldmapRenderGauge("globalSpatialHydrationCandidates", entries.length);
+
+    return entries;
+  }
+
+  private async hydrateStructuresFromGlobalTileOptRecs(
+    fetchKey: string,
+    entries: readonly GlobalTileOptHydrationEntry[],
+  ): Promise<number> {
+    let hydratedStructureCount = 0;
+    for (const entry of entries) {
+      const structureInfo = getStructureInfoFromTileOccupier(entry.tile.occupier_type);
+      if (!structureInfo || structureInfo.reserved) {
+        continue;
+      }
+
+      const structureUpdate = await this.worldUpdateListener.resolveStructureTileUpdateFromTileOpt(entry.tileOpt);
       if (!structureUpdate) {
         continue;
       }
 
       await this.applyStructureTileUpdate(structureUpdate);
       hydratedStructureCount += 1;
+    }
+
+    if (hydratedStructureCount > 0) {
+      incrementWorldmapRenderCounter("globalSpatialRecsHydratedStructures", hydratedStructureCount);
     }
 
     if (import.meta.env.DEV && hydratedStructureCount > 0) {
@@ -8802,28 +8854,19 @@ export default class WorldmapScene extends WarpTravel {
     return hydratedStructureCount;
   }
 
-  private hydrateChestsFromGlobalTileOptRecs(fetchKey: string, bounds: WorldmapRenderAreaBounds): number {
-    const tileOptComponent = this.dojo.components.TileOpt;
-    if (!tileOptComponent) {
-      return 0;
-    }
-
+  private hydrateChestsFromGlobalTileOptRecs(
+    _fetchKey: string,
+    entries: readonly GlobalTileOptHydrationEntry[],
+  ): number {
     let hydratedChestCount = 0;
-    for (const entity of getComponentEntities(tileOptComponent)) {
-      const tileOpt = getComponentValue(tileOptComponent, entity);
-      const tile = tileOpt ? tileOptToTile(tileOpt) : undefined;
-      if (!tile || !isTileOccupierChest(tile.occupier_type)) {
-        continue;
-      }
-
-      const normalized = new Position({ x: tile.col, y: tile.row }).getNormalized();
-      if (!this.isPositionWithinBounds(normalized, bounds)) {
+    for (const entry of entries) {
+      if (!isTileOccupierChest(entry.tile.occupier_type)) {
         continue;
       }
 
       const update: ChestSystemUpdate = {
-        occupierId: tile.occupier_id,
-        hexCoords: { col: tile.col, row: tile.row },
+        occupierId: entry.tile.occupier_id,
+        hexCoords: { col: entry.tile.col, row: entry.tile.row },
       };
       this.updateChestHexes(update);
       void this.chestManager.onUpdate(update);
@@ -8835,24 +8878,6 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     return hydratedChestCount;
-  }
-
-  private shouldHydrateStructureFromGlobalTileOpt(
-    tileOpt: Parameters<typeof tileOptToTile>[0],
-    bounds: WorldmapRenderAreaBounds,
-  ): boolean {
-    const tile = tileOpt ? tileOptToTile(tileOpt) : undefined;
-    if (!tile) {
-      return false;
-    }
-
-    const structureInfo = getStructureInfoFromTileOccupier(tile.occupier_type);
-    if (!structureInfo || structureInfo.reserved) {
-      return false;
-    }
-
-    const normalized = new Position({ x: tile.col, y: tile.row }).getNormalized();
-    return this.isPositionWithinBounds(normalized, bounds);
   }
 
   private shouldFetchTileOpt(stages: readonly WorldmapRenderAreaHydrationStage[]): boolean {
@@ -8928,32 +8953,20 @@ export default class WorldmapScene extends WarpTravel {
       minCol: number;
       minRow: number;
     },
+    entries: readonly GlobalTileOptHydrationEntry[],
   ): number {
-    const tileOptComponent = this.dojo.components.TileOpt;
-    if (!tileOptComponent) {
-      return 0;
-    }
-
     let hydratedTileCount = 0;
-    for (const entity of getComponentEntities(tileOptComponent)) {
-      const tileOpt = getComponentValue(tileOptComponent, entity);
-      const tile = tileOpt ? tileOptToTile(tileOpt) : undefined;
-      if (!tile) {
+    for (const entry of entries) {
+      const biome = resolveTileBiomeType(entry.tile.biome);
+      const existingBiome = this.exploredTiles.get(entry.normalized.x)?.get(entry.normalized.y);
+      if (
+        existingBiome === biome &&
+        !this.provisionalBiomes.isProvisional(entry.normalized.x, entry.normalized.y)
+      ) {
         continue;
       }
 
-      const normalized = new Position({ x: tile.col, y: tile.row }).getNormalized();
-      if (!this.isPositionWithinBounds(normalized, bounds)) {
-        continue;
-      }
-
-      const biome = resolveTileBiomeType(tile.biome);
-      const existingBiome = this.exploredTiles.get(normalized.x)?.get(normalized.y);
-      if (existingBiome === biome && !this.provisionalBiomes.isProvisional(normalized.x, normalized.y)) {
-        continue;
-      }
-
-      this.writeExploredTileFromGlobalSpatialHydration(normalized.x, normalized.y, biome);
+      this.writeExploredTileFromGlobalSpatialHydration(entry.normalized.x, entry.normalized.y, biome);
       hydratedTileCount += 1;
     }
 

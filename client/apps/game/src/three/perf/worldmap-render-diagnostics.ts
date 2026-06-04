@@ -12,13 +12,20 @@ export type WorldmapRenderDurationMetric =
   | "chunkManagerCatchUpMs"
   | "tileHydrationDrainMs"
   | "structureHydrationDrainMs"
+  | "globalSpatialTileOptScanMs"
   | "structureAssetPrewarmMs"
   | "presentationCommittedMs"
   | "presentationSkewMs"
   | "workerFindPath"
   | "createPath";
 
-export type WorldmapRenderGauge = "activePaths" | "visibleArmies" | "visibleStructures" | "activeLabels";
+export type WorldmapRenderGauge =
+  | "activePaths"
+  | "visibleArmies"
+  | "visibleStructures"
+  | "activeLabels"
+  | "globalSpatialTileOptRecs"
+  | "globalSpatialHydrationCandidates";
 export type WorldmapRenderUploadMetric = "cachedChunkReplay";
 
 export type WorldmapRenderCounter =
@@ -55,6 +62,7 @@ export type WorldmapRenderCounter =
   | "preparedChunkPrewarmMisses"
   | "globalSpatialRecsHydratedTiles"
   | "globalSpatialRecsHydratedChests"
+  | "globalSpatialRecsHydratedStructures"
   | "spatialTileOptRecsApplied"
   | "spatialTileOptReadyTimeouts"
   | "spatialTileOptStreamReceived"
@@ -128,6 +136,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     chunkManagerCatchUpMs: createDurationStats(),
     tileHydrationDrainMs: createDurationStats(),
     structureHydrationDrainMs: createDurationStats(),
+    globalSpatialTileOptScanMs: createDurationStats(),
     structureAssetPrewarmMs: createDurationStats(),
     presentationCommittedMs: createDurationStats(),
     presentationSkewMs: createDurationStats(),
@@ -139,6 +148,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     visibleArmies: 0,
     visibleStructures: 0,
     activeLabels: 0,
+    globalSpatialTileOptRecs: 0,
+    globalSpatialHydrationCandidates: 0,
   },
   uploadBytes: {
     cachedChunkReplay: 0,
@@ -177,6 +188,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     preparedChunkPrewarmMisses: 0,
     globalSpatialRecsHydratedTiles: 0,
     globalSpatialRecsHydratedChests: 0,
+    globalSpatialRecsHydratedStructures: 0,
     spatialTileOptRecsApplied: 0,
     spatialTileOptReadyTimeouts: 0,
     spatialTileOptStreamReceived: 0,

@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-06-04",
+    title: "Smoother Map Hydration",
+    description:
+      "Improved world-map data hydration so visible tiles, chests, and structures reuse the same synced map snapshot while browsing.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-06-04",
     title: "Leaner Graphics Presets",
     description:
       "Improved graphics presets and map streaming cadence so High, Medium, Low, and Potato use lower rendering costs while browsing the world map.",

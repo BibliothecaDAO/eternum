@@ -5,6 +5,7 @@ import {
   incrementWorldmapRenderUploadBytes,
   recordWorldmapRenderDuration,
   resetWorldmapRenderDiagnostics,
+  setWorldmapRenderGauge,
   snapshotWorldmapRenderDiagnostics,
 } from "./worldmap-render-diagnostics";
 
@@ -22,6 +23,7 @@ describe("worldmap render diagnostics wiring", () => {
     recordWorldmapRenderDuration("updateManagersForChunk", 1.5);
     recordWorldmapRenderDuration("executeRenderForChunk", 7.0);
     recordWorldmapRenderDuration("performVisibleStructuresUpdate", 4.0);
+    recordWorldmapRenderDuration("globalSpatialTileOptScanMs", 6.0);
     recordWorldmapRenderDuration("workerFindPath", 6.0);
     recordWorldmapRenderDuration("createPath", 9.0);
 
@@ -36,6 +38,7 @@ describe("worldmap render diagnostics wiring", () => {
     expect(snapshot.durations.updateManagersForChunk.count).toBe(1);
     expect(snapshot.durations.executeRenderForChunk.count).toBe(1);
     expect(snapshot.durations.performVisibleStructuresUpdate.count).toBe(1);
+    expect(snapshot.durations.globalSpatialTileOptScanMs.count).toBe(1);
     expect(snapshot.durations.workerFindPath.count).toBe(1);
     expect(snapshot.durations.createPath.count).toBe(1);
   });
@@ -45,6 +48,7 @@ describe("worldmap render diagnostics wiring", () => {
     incrementWorldmapRenderCounter("updateVisibleChunksCalls", 1);
     incrementWorldmapRenderCounter("preparedChunkPrewarmHits", 5);
     incrementWorldmapRenderCounter("preparedChunkPrewarmMisses", 2);
+    incrementWorldmapRenderCounter("globalSpatialRecsHydratedStructures", 4);
     incrementWorldmapRenderCounter("controlsChangeEvents", 10);
     incrementWorldmapRenderCounter("zoomTransitionsStarted", 1);
 
@@ -54,6 +58,7 @@ describe("worldmap render diagnostics wiring", () => {
     expect(snapshot.counters.updateVisibleChunksCalls).toBe(1);
     expect(snapshot.counters.preparedChunkPrewarmHits).toBe(5);
     expect(snapshot.counters.preparedChunkPrewarmMisses).toBe(2);
+    expect(snapshot.counters.globalSpatialRecsHydratedStructures).toBe(4);
     expect(snapshot.counters.controlsChangeEvents).toBe(10);
     expect(snapshot.counters.zoomTransitionsStarted).toBe(1);
   });
@@ -64,6 +69,16 @@ describe("worldmap render diagnostics wiring", () => {
     const snapshot = snapshotWorldmapRenderDiagnostics();
 
     expect(snapshot.uploadBytes.cachedChunkReplay).toBe(1024);
+  });
+
+  it("records global spatial hydration gauges", () => {
+    setWorldmapRenderGauge("globalSpatialTileOptRecs", 1200);
+    setWorldmapRenderGauge("globalSpatialHydrationCandidates", 84);
+
+    const snapshot = snapshotWorldmapRenderDiagnostics();
+
+    expect(snapshot.gauges.globalSpatialTileOptRecs).toBe(1200);
+    expect(snapshot.gauges.globalSpatialHydrationCandidates).toBe(84);
   });
 
   it("reset clears all recorded state", () => {
