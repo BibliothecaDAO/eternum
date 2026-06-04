@@ -69,6 +69,7 @@ import {
   ChestSystemUpdate,
   DEFAULT_COORD_ALT,
   ExplorerRewardSystemUpdate,
+  ExplorerTroopsSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   getGuardsByStructure,
