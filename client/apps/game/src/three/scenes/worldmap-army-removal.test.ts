@@ -76,14 +76,14 @@ describe("shouldRecoverPendingArmyRemovalFromExplorerTroops", () => {
     ).toBe(false);
   });
 
-  it("allows live troop updates to recover zero-count removals", () => {
+  it("does not recover zero-count removals from later troop updates", () => {
     expect(
       shouldRecoverPendingArmyRemovalFromExplorerTroops({
         reason: "zero",
         removalPosition: { col: 10, row: 10 },
         troopsPosition: { col: 10, row: 10 },
       }),
-    ).toBe(true);
+    ).toBe(false);
   });
 });
 

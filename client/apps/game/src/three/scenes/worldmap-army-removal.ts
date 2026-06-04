@@ -62,8 +62,8 @@ export function shouldRecoverPendingArmyRemovalFromExplorerTroops(
 ): boolean {
   const { reason, removalPosition, troopsPosition } = input;
 
-  if (reason !== "tile") {
-    return true;
+  if (reason === "zero") {
+    return false;
   }
 
   if (!removalPosition) {
