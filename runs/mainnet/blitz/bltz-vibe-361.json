@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "26921451854-1",
   "currentStepId": null,
   "createdAt": "2026-06-04T00:15:48.770Z",
-  "updatedAt": "2026-06-04T02:55:40.794Z",
+  "updatedAt": "2026-06-04T02:57:45.744Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x31ef96b54c8a32ed06649de7ce9de0977369385f497c5c6db14424fccd75e65"
     ],
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "legendary",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-vibe-361/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-06-04T00:19:47.427Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "legendary",
-    "pendingIndexerTierRequestedAt": "2026-06-04T02:55:39.464Z"
+    "lastIndexerDescribeAt": "2026-06-04T02:57:45.744Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-06-04T00:19:59.624Z"
 }
