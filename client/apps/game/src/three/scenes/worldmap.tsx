@@ -8834,13 +8834,6 @@ export default class WorldmapScene extends WarpTravel {
       incrementWorldmapRenderCounter("globalSpatialRecsHydratedChests", hydratedChestCount);
     }
 
-    if (import.meta.env.DEV && hydratedChestCount > 0) {
-      console.debug("[WorldmapScene] Hydrated chests from global TileOpt RECS", {
-        fetchKey,
-        hydratedChestCount,
-      });
-    }
-
     return hydratedChestCount;
   }
 
