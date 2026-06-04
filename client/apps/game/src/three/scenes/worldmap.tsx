@@ -1133,6 +1133,12 @@ export default class WorldmapScene extends WarpTravel {
     this.registerWorldmapShortcuts();
   }
 
+  public override setInputSurface(surface: HTMLElement): void {
+    super.setInputSurface(surface);
+    this.detachWorldmapWheelHandler();
+    this.attachWorldmapWheelHandler();
+  }
+
   private registerWorldmapRecoveryHandle(): void {
     this.unregisterWorldmapRecoveryHandle = registerActiveWorldmapRecoveryHandle({
       refreshAfterReconnect: () => this.refreshAfterReconnect(),

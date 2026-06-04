@@ -16,7 +16,11 @@ import {
   resizeRendererDisplay,
 } from "./renderer-display-runtime";
 import { type RendererBackendFactory, type RendererSurfaceLike } from "./renderer-backend";
-import { initializeRendererBackendRuntime } from "./renderer-backend-runtime";
+import { disposeRendererBackend } from "./renderer-backend-compat";
+import {
+  initializeRendererBackendRuntime,
+  initializeRendererDeviceLossFallbackRuntime,
+} from "./renderer-backend-runtime";
 import { createRendererFoundationRuntime } from "./renderer-foundation-runtime";
 import { runRendererFrame } from "./renderer-frame-runtime";
 import type { RendererInteractionRuntime } from "./renderer-interaction-runtime";
@@ -28,7 +32,7 @@ import { bootstrapRendererStartupRuntime } from "./renderer-startup-runtime";
 import { resolveRendererRouteSceneFromHref } from "./renderer-route-runtime";
 import type { RendererSessionRuntime } from "./renderer-session-runtime";
 import type { RendererSupportRuntimeRegistry } from "./renderer-support-runtime-registry";
-import type { RendererBackendV2 } from "./renderer-backend-v2";
+import type { RendererBackendV2, RendererDeviceLostEvent } from "./renderer-backend-v2";
 import { createGameRendererRuntimeAssembly, type GameRendererRuntimeState } from "./game-renderer-runtime-assembly";
 import type { SceneManager } from "@/three/scene-manager";
 import type HUDScene from "@/three/scenes/hud-scene";
@@ -40,11 +44,18 @@ import type { TransitionManager } from "@/three/managers/transition-manager";
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const GRAPHICS_DEV_ENABLED = env.VITE_PUBLIC_GRAPHICS_DEV;
 
+type RendererBackendRuntime = RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+type ReconnectableRendererControls = NonNullable<RendererInteractionRuntime["controls"]> & {
+  connect?: (surface: HTMLElement) => void;
+  disconnect?: () => void;
+  listenToKeyEvents?: (surface: HTMLElement) => void;
+};
+
 export default class GameRenderer {
   private labelRuntime!: RendererLabelRuntime;
   private readonly sessionRuntime: RendererSessionRuntime<HUDScene>;
   private readonly supportRuntimeRegistry: RendererSupportRuntimeRegistry;
-  private backend!: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+  private backend!: RendererBackendRuntime;
   private renderer!: RendererSurfaceLike;
   private interactionRuntime!: RendererInteractionRuntime;
   private camera!: RendererInteractionRuntime["camera"];
@@ -69,6 +80,9 @@ export default class GameRenderer {
   private guiFolders: TrackableGuiFolder[] = [];
   private readonly isMobileDevice = IS_MOBILE;
   private backendInitializationPromise?: Promise<void>;
+  private hasRecoveredFromDeviceLoss = false;
+  private isRecoveringFromDeviceLoss = false;
+  private isRendererRecoveryPaused = false;
   private readonly handleWindowResize = () => this.onWindowResize();
 
   constructor(dojoContext: SetupResult) {
@@ -136,11 +150,165 @@ export default class GameRenderer {
       envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
       graphicsSetting: this.graphicsSetting,
       isMobileDevice: this.isMobileDevice,
+      onDeviceLost: (event) => this.handleRendererDeviceLost(event),
       pixelRatio: this.getTargetPixelRatio(),
       search: window.location.search,
     });
-    this.backend = backend as RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
+    this.backend = backend as RendererBackendRuntime;
     this.renderer = renderer;
+  }
+
+  private handleRendererDeviceLost(event: RendererDeviceLostEvent): void {
+    void this.recoverFromRendererDeviceLoss(event);
+  }
+
+  private async recoverFromRendererDeviceLoss(_event: RendererDeviceLostEvent): Promise<void> {
+    if (!this.shouldStartDeviceLossFallback()) {
+      return;
+    }
+
+    const previousBackend = this.backend;
+    this.beginDeviceLossFallback();
+
+    try {
+      const fallbackRuntime = await this.initializeDeviceLossFallbackBackend();
+      if (this.isDestroyed) {
+        disposeRendererBackend(fallbackRuntime.backend);
+        return;
+      }
+
+      this.installDeviceLossFallbackBackend({
+        backend: fallbackRuntime.backend,
+        previousBackend,
+        renderer: fallbackRuntime.renderer,
+      });
+      this.resumeRendererAfterDeviceLossFallback();
+    } catch (error) {
+      this.handleDeviceLossFallbackFailure(error);
+    }
+  }
+
+  private shouldStartDeviceLossFallback(): boolean {
+    return !this.isDestroyed && !this.isRecoveringFromDeviceLoss && !this.hasRecoveredFromDeviceLoss;
+  }
+
+  private beginDeviceLossFallback(): void {
+    this.isRecoveringFromDeviceLoss = true;
+    this.isRendererRecoveryPaused = true;
+  }
+
+  private async initializeDeviceLossFallbackBackend(): Promise<{
+    backend: RendererBackendRuntime;
+    renderer: RendererSurfaceLike;
+  }> {
+    return initializeRendererDeviceLossFallbackRuntime({
+      envBuildMode: env.VITE_PUBLIC_RENDERER_BUILD_MODE,
+      graphicsSetting: this.graphicsSetting,
+      isMobileDevice: this.isMobileDevice,
+      pixelRatio: this.getTargetPixelRatio(),
+      search: window.location.search,
+    });
+  }
+
+  private installDeviceLossFallbackBackend(input: {
+    backend: RendererBackendRuntime;
+    previousBackend?: RendererBackendRuntime;
+    renderer: RendererSurfaceLike;
+  }): void {
+    const shouldRestoreMonitoring = Boolean(this.supportRuntimeRegistry.getMonitoring());
+
+    this.backend = input.backend;
+    this.renderer = input.renderer;
+    this.mountRecoveredRendererSurface(input.renderer.domElement);
+    this.reconnectRendererControlsToSurface(input.renderer.domElement);
+    this.reattachSceneInputSurfaces(input.renderer.domElement);
+    this.resetBackendDependentSupportRuntimes(shouldRestoreMonitoring);
+    this.disposePreviousRendererBackend(input.previousBackend);
+    this.onWindowResize();
+  }
+
+  private mountRecoveredRendererSurface(surface: HTMLElement): void {
+    document.body.style.background = "black";
+    surface.id = "main-canvas";
+
+    const currentSurface = document.getElementById("main-canvas");
+    if (currentSurface && currentSurface !== surface) {
+      currentSurface.replaceWith(surface);
+      return;
+    }
+
+    if (!surface.isConnected) {
+      document.body.appendChild(surface);
+    }
+  }
+
+  private reconnectRendererControlsToSurface(surface: HTMLElement): void {
+    const controls = this.controls as ReconnectableRendererControls | undefined;
+    if (!controls) {
+      return;
+    }
+
+    if (!controls.disconnect || !controls.connect) {
+      console.warn("[GameRenderer] Renderer controls cannot reconnect to the replacement canvas");
+      return;
+    }
+
+    controls.disconnect();
+    controls.connect(surface);
+    controls.listenToKeyEvents?.(document.body);
+  }
+
+  private reattachSceneInputSurfaces(surface: HTMLElement): void {
+    this.worldmapScene?.setInputSurface(surface);
+    this.fastTravelScene?.setInputSurface(surface);
+    this.hexceptionScene?.setInputSurface(surface);
+  }
+
+  private resetBackendDependentSupportRuntimes(shouldRestoreMonitoring: boolean): void {
+    this.supportRuntimeRegistry.resetEffectsBridge();
+    if (shouldRestoreMonitoring) {
+      this.supportRuntimeRegistry.resetMonitoring();
+      this.sessionRuntime.initializeMonitoring();
+    }
+
+    if (!this.hasPreparedRendererScenes()) {
+      return;
+    }
+
+    const effectsBridgeRuntime = this.supportRuntimeRegistry.ensureEffectsBridge();
+    effectsBridgeRuntime.applyEnvironment();
+    effectsBridgeRuntime.setupPostProcessingEffects();
+    effectsBridgeRuntime.applyQualityFeatures(qualityController.getFeatures());
+    effectsBridgeRuntime.subscribeToQualityController();
+    effectsBridgeRuntime.updateWeatherPostProcessing();
+  }
+
+  private disposePreviousRendererBackend(previousBackend?: RendererBackendRuntime): void {
+    if (!previousBackend || previousBackend === this.backend) {
+      return;
+    }
+
+    disposeRendererBackend(previousBackend);
+  }
+
+  private resumeRendererAfterDeviceLossFallback(): void {
+    this.hasRecoveredFromDeviceLoss = true;
+    this.isRecoveringFromDeviceLoss = false;
+    this.isRendererRecoveryPaused = false;
+    this.lastTime = 0;
+
+    if (this.hasPreparedRendererScenes()) {
+      this.animate();
+    }
+  }
+
+  private handleDeviceLossFallbackFailure(error: unknown): void {
+    this.isRecoveringFromDeviceLoss = false;
+    console.error("[GameRenderer] Failed to recover from WebGPU device loss", error);
+  }
+
+  private hasPreparedRendererScenes(): boolean {
+    return Boolean(this.sceneManager && this.worldmapScene && this.hexceptionScene && this.hudScene);
   }
 
   initStats() {
@@ -313,10 +481,14 @@ export default class GameRenderer {
     this.lastTime = runRendererAnimationTick({
       getCurrentTime: () => performance.now(),
       getCycleProgress: () => useUIStore.getState().cycleProgress || 0,
-      isDestroyed: this.isDestroyed,
+      isDestroyed: this.shouldStopAnimationLoop(),
       isLabelRuntimeReady: this.labelRuntime?.isReady() ?? false,
       lastTime: this.lastTime,
-      logDestroyed: (message) => console.log(message),
+      logDestroyed: (message) => {
+        if (this.isDestroyed) {
+          console.log(message);
+        }
+      },
       renderFrame: ({ currentTime, cycleProgress, deltaTime }) => {
         const rendered = runRendererFrame({
           backend: this.backend,
@@ -353,6 +525,10 @@ export default class GameRenderer {
   }
 
   private isDestroyed = false;
+
+  private shouldStopAnimationLoop(): boolean {
+    return this.isDestroyed || this.isRendererRecoveryPaused;
+  }
 
   public destroy(): void {
     // Prevent multiple destroy calls
