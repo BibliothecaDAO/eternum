@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { auditArmySlots } from "./army-slot-auditor";
+import { auditArmyRenderIntegrity, auditArmySlots } from "./army-slot-auditor";
 
 // The ghost bug is, at its core, the army-manager's mirror of an entity's slot
 // (visibleArmyIndices / ArmyData.matrixIndex) drifting from the army-model's
@@ -63,5 +63,57 @@ describe("auditArmySlots", () => {
         { entityId: 21, mirrorSlot: undefined, ssotSlot: undefined },
       ]),
     ).toEqual([]);
+  });
+});
+
+// auditArmyRenderIntegrity catches the two user-visible symptoms that the
+// mirror/SSOT auditor above cannot: a model still drawn for a dead army, and a
+// live army whose model never appeared.
+describe("auditArmyRenderIntegrity", () => {
+  it("reports nothing when every drawn slot is owned by a live army and nothing is missing", () => {
+    expect(
+      auditArmyRenderIntegrity({
+        drawnSlotOwners: [
+          { slot: 0, owner: 1 },
+          { slot: 1, owner: 2 },
+        ],
+        liveEntityIds: new Set([1, 2]),
+        visibleUndrawnEntityIds: [],
+      }),
+    ).toEqual([]);
+  });
+
+  it("flags a drawn slot whose owner is no longer a live army (death ghost)", () => {
+    const violations = auditArmyRenderIntegrity({
+      drawnSlotOwners: [
+        { slot: 0, owner: 1 },
+        { slot: 4, owner: 99 }, // 99 already removed from this.armies
+      ],
+      liveEntityIds: new Set([1]),
+      visibleUndrawnEntityIds: [],
+    });
+
+    expect(violations).toContainEqual({ kind: "orphaned-drawn-slot", slot: 4, owner: 99 });
+    expect(violations).not.toContainEqual({ kind: "orphaned-drawn-slot", slot: 0, owner: 1 });
+  });
+
+  it("flags a drawn slot with no recorded owner at all", () => {
+    const violations = auditArmyRenderIntegrity({
+      drawnSlotOwners: [{ slot: 3, owner: undefined }],
+      liveEntityIds: new Set([1, 2]),
+      visibleUndrawnEntityIds: [],
+    });
+
+    expect(violations).toContainEqual({ kind: "orphaned-drawn-slot", slot: 3, owner: undefined });
+  });
+
+  it("flags a live army that should be visible but has no drawn model (missing spawn)", () => {
+    const violations = auditArmyRenderIntegrity({
+      drawnSlotOwners: [{ slot: 0, owner: 1 }],
+      liveEntityIds: new Set([1, 7]),
+      visibleUndrawnEntityIds: [7],
+    });
+
+    expect(violations).toContainEqual({ kind: "visible-not-drawn", entityId: 7 });
   });
 });

@@ -332,6 +332,70 @@ describe("ArmyModel draw-count stays correct on cached model switch (1A)", () =>
   });
 });
 
+describe("ArmyModel render-integrity helpers + leaked-slot purge", () => {
+  it("collectDrawnSlotOwners returns only slots within mesh.count, paired with their owner", () => {
+    const subject = new ArmyModel(new Scene());
+    const drawn = 800;
+    const undrawn = 801;
+    const drawnSlot = subject.allocateInstanceSlot(drawn);
+    const undrawnSlot = subject.allocateInstanceSlot(undrawn);
+
+    const model = createModelData();
+    (subject as any).models.set(ModelType.Knight1, model);
+    model.activeInstances.add(drawnSlot);
+    model.activeInstances.add(undrawnSlot);
+    (subject as any).ensureModelCapacity(model, undrawnSlot + 1);
+    // Only the first slot is within the draw count; the second is active but not drawn.
+    model.instancedMeshes[0].count = drawnSlot + 1;
+
+    const owners = subject.collectDrawnSlotOwners();
+    expect(owners).toContainEqual({ slot: drawnSlot, owner: drawn });
+    expect(owners.some((o) => o.slot === undrawnSlot)).toBe(false);
+  });
+
+  it("isEntityDrawn reflects whether the entity's slot is active and within count", () => {
+    const subject = new ArmyModel(new Scene());
+    const entityId = 810;
+    const slot = subject.allocateInstanceSlot(entityId);
+
+    const model = createModelData();
+    (subject as any).models.set(ModelType.Knight1, model);
+    (subject as any).entityModelMap.set(entityId, ModelType.Knight1);
+    (subject as any).activeBaseModelByEntity.set(entityId, ModelType.Knight1);
+    subject.updateInstance(entityId, slot, new Vector3(1, 0, 1), new Vector3(1, 1, 1));
+
+    expect(subject.isEntityDrawn(entityId)).toBe(true);
+
+    // Shrink the draw count below the slot — no longer drawn.
+    model.instancedMeshes[0].count = slot;
+    expect(subject.isEntityDrawn(entityId)).toBe(false);
+  });
+
+  it("releaseEntity purges a leaked slot when matrixIndex was detached but the slot still draws (death ghost)", () => {
+    const subject = new ArmyModel(new Scene());
+    const entityId = 820;
+    const slot = subject.allocateInstanceSlot(entityId);
+
+    const model = createModelData();
+    (subject as any).models.set(ModelType.Knight1, model);
+    (subject as any).entityModelMap.set(entityId, ModelType.Knight1);
+    (subject as any).activeBaseModelByEntity.set(entityId, ModelType.Knight1);
+    subject.updateInstance(entityId, slot, new Vector3(2, 0, 2), new Vector3(1, 1, 1));
+    expect(model.activeInstances.has(slot)).toBe(true);
+
+    // Simulate the desync: the entity's own matrixIndex was cleared, but the
+    // slot is still owned (matrixIndexOwners) and still drawn. The normal
+    // freeInstanceSlot path keys off matrixIndex and would no-op here.
+    (subject as any).instanceData.get(entityId).matrixIndex = undefined;
+
+    subject.releaseEntity(entityId);
+
+    expect(model.activeInstances.has(slot)).toBe(false);
+    expect((subject as any).matrixIndexOwners.has(slot)).toBe(false);
+    expectSlotToBeZeroed(model.instancedMeshes[0], slot);
+  });
+});
+
 function expectSlotToBeZeroed(mesh: InstancedMesh, slot: number) {
   const resultMatrix = new Matrix4();
   mesh.getMatrixAt(slot, resultMatrix);

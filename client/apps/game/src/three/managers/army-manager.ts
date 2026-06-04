@@ -102,7 +102,11 @@ import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
-import { auditArmySlots, type ArmySlotAuditEntry } from "./army-slot-auditor";
+import {
+  auditArmyRenderIntegrity,
+  auditArmySlots,
+  type ArmySlotAuditEntry,
+} from "./army-slot-auditor";
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
@@ -2657,12 +2661,79 @@ export class ArmyManager {
     // Flush batched label pool operations to minimize layout thrashing
     this.labelPool.flushBatch();
 
-    if (import.meta.env?.DEV) {
-      // Throttled (~1.5s at 60fps) so the per-frame cost stays negligible.
-      this.slotAuditFrameCounter = (this.slotAuditFrameCounter + 1) % 90;
-      if (this.slotAuditFrameCounter === 0) {
+    // Throttled (~1.5s at 60fps) so the per-frame cost stays negligible.
+    this.slotAuditFrameCounter = (this.slotAuditFrameCounter + 1) % 90;
+    if (this.slotAuditFrameCounter === 0) {
+      // All builds: self-heal the two ghosting symptoms (orphaned drawn slot,
+      // visible-but-undrawn army) so a dropped slot can't strand a ghost or a
+      // missing model indefinitely.
+      this.reconcileArmyRenderIntegrity();
+      if (import.meta.env?.DEV) {
+        // DEV-only mirror/SSOT tripwire — narrows where a desync originated.
         this.auditArmySlotsForGhosts();
       }
+    }
+  }
+
+  // Self-healing reconciliation for the two reported ghosting symptoms:
+  //   1. orphaned-drawn-slot — a model still drawn for an army no longer tracked
+  //      (a dead unit's frozen ghost). Purge the slot.
+  //   2. visible-not-drawn — a tracked army that should be visible in the
+  //      committed chunk but has no drawn model (a spawn that never appeared).
+  //      Re-run its render, which is idempotent and self-gating.
+  // The label path is unaffected because labels read instanceData.position, not
+  // the slot — which is exactly why labels keep working while models ghost.
+  private reconcileArmyRenderIntegrity(): void {
+    const liveEntityIds = new Set<number>();
+    this.armies.forEach((_, entityId) => liveEntityIds.add(this.toNumericId(entityId)));
+
+    const visibleUndrawnEntityIds: ID[] = [];
+    // Only trust the "should be visible" predicate when the chunk is settled;
+    // mid-transition, an undrawn army is expected (it is queued for render).
+    if (!this.isArmyChunkTransitioning && isCommittedManagerChunk(this.currentChunkKey)) {
+      this.armies.forEach((army, entityId) => {
+        if (this.suppressedArmies.has(entityId)) return;
+        if (!this.isArmyVisibleInCurrentChunk(army)) return;
+        if (this.armyModel.isEntityDrawn(this.toNumericId(entityId))) return;
+        visibleUndrawnEntityIds.push(entityId);
+      });
+    }
+
+    const violations = auditArmyRenderIntegrity({
+      drawnSlotOwners: this.armyModel.collectDrawnSlotOwners(),
+      liveEntityIds,
+      visibleUndrawnEntityIds,
+    });
+
+    if (violations.length === 0) {
+      return;
+    }
+
+    let purgedAny = false;
+    for (const violation of violations) {
+      if (violation.kind === "orphaned-drawn-slot") {
+        this.armyModel.purgeDrawnSlot(violation.slot);
+        purgedAny = true;
+      } else {
+        void this.renderArmyIntoCurrentChunkIfVisible(violation.entityId);
+      }
+
+      if (import.meta.env?.DEV) {
+        const signature =
+          violation.kind === "orphaned-drawn-slot"
+            ? `orphan:${violation.slot}:${violation.owner}`
+            : `missing:${violation.entityId}`;
+        if (!this.loggedSlotViolations.has(signature)) {
+          this.loggedSlotViolations.add(signature);
+          console.warn("[ArmyManager] render-integrity heal", violation);
+        }
+      }
+    }
+
+    // Purges mutate activeInstances directly; recompact draw counts so the freed
+    // slot stops drawing this frame.
+    if (purgedAny) {
+      this.updateVisibleArmyBuffers();
     }
   }
 

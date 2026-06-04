@@ -31,6 +31,64 @@ export type ArmySlotViolation =
       entityIds: Array<number | string>;
     };
 
+/** A slot that is actually drawn (in a model's activeInstances AND within mesh.count). */
+export interface DrawnSlotOwner {
+  slot: number;
+  /** matrixIndexOwners.get(slot); undefined when the slot has no recorded owner. */
+  owner: number | undefined;
+}
+
+export interface ArmyRenderIntegrityInput {
+  /** Slots the GPU is currently drawing, with their recorded owner entity. */
+  drawnSlotOwners: DrawnSlotOwner[];
+  /** Numeric ids of every army the manager currently tracks (this.armies). */
+  liveEntityIds: Set<number>;
+  /**
+   * Entities that *should* be rendered right now (in-chunk, committed, not
+   * suppressed) but whose model is not drawn — the caller computes this because
+   * it owns the chunk/visibility predicates.
+   */
+  visibleUndrawnEntityIds: Array<number | string>;
+}
+
+export type ArmyRenderViolation =
+  | {
+      // A drawn slot owned by no live army — the frozen "ghost" left after a
+      // unit dies/moves when its slot wasn't fully torn down. The label, keyed
+      // by entityId, is already gone; only the model lingers.
+      kind: "orphaned-drawn-slot";
+      slot: number;
+      owner: number | undefined;
+    }
+  | {
+      // A live army that should be visible but has no drawn model — the
+      // "spawned but never appeared" case. Its label still tracks because the
+      // label reads instanceData.position, not the slot.
+      kind: "visible-not-drawn";
+      entityId: number | string;
+    };
+
+/**
+ * Detect the two user-visible ghosting symptoms directly, rather than only the
+ * mirror/SSOT divergence in {@link auditArmySlots}: a model drawn for a dead
+ * army (orphaned slot) and a live army with no model drawn (missing spawn).
+ */
+export function auditArmyRenderIntegrity(input: ArmyRenderIntegrityInput): ArmyRenderViolation[] {
+  const violations: ArmyRenderViolation[] = [];
+
+  for (const { slot, owner } of input.drawnSlotOwners) {
+    if (owner === undefined || !input.liveEntityIds.has(owner)) {
+      violations.push({ kind: "orphaned-drawn-slot", slot, owner });
+    }
+  }
+
+  for (const entityId of input.visibleUndrawnEntityIds) {
+    violations.push({ kind: "visible-not-drawn", entityId });
+  }
+
+  return violations;
+}
+
 export function auditArmySlots(entries: ArmySlotAuditEntry[]): ArmySlotViolation[] {
   const violations: ArmySlotViolation[] = [];
 
