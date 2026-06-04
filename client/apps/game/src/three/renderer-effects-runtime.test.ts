@@ -144,6 +144,7 @@ describe("renderer effects runtime", () => {
       backend: backend as never,
       createFolder: createFolderFactory(),
       graphicsSetting: GraphicsSettings.HIGH,
+      isGraphicsDevEnabled: false,
       isMobileDevice: false,
       scenes: scenes as never,
     });
@@ -167,6 +168,7 @@ describe("renderer effects runtime", () => {
       backend: backend as never,
       createFolder: createFolderFactory(),
       graphicsSetting: GraphicsSettings.HIGH,
+      isGraphicsDevEnabled: false,
       isMobileDevice: false,
       scenes: scenes as never,
     });
@@ -207,6 +209,7 @@ describe("renderer effects runtime", () => {
       backend: backend as never,
       createFolder: createFolderFactory(),
       graphicsSetting: GraphicsSettings.HIGH,
+      isGraphicsDevEnabled: false,
       isMobileDevice: false,
       scenes: createScenes() as never,
     });
@@ -238,6 +241,7 @@ describe("renderer effects runtime", () => {
       backend: backend as never,
       createFolder: createFolderFactory(),
       graphicsSetting: GraphicsSettings.HIGH,
+      isGraphicsDevEnabled: false,
       isMobileDevice: false,
       scenes: createScenes() as never,
     });
@@ -268,6 +272,7 @@ describe("renderer effects runtime", () => {
       backend: backend as never,
       createFolder: createFolderFactory(),
       graphicsSetting: GraphicsSettings.HIGH,
+      isGraphicsDevEnabled: false,
       isMobileDevice: false,
       scenes: createScenes() as never,
     });
@@ -296,6 +301,7 @@ describe("renderer effects runtime", () => {
       backend: createBackend() as never,
       createFolder: createFolderFactory(),
       graphicsSetting: GraphicsSettings.HIGH,
+      isGraphicsDevEnabled: false,
       isMobileDevice: false,
       scenes: createScenes() as never,
     });

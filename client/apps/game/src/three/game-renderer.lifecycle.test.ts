@@ -469,7 +469,7 @@ describe("initScene destruction guard", () => {
     expect(subject.cleanupIntervals).toEqual([]);
   });
 
-  it("proceeds with normal setup when not destroyed", async () => {
+  it("starts runtime listeners without dev GUI setup when graphics dev is disabled", async () => {
     const subject = Object.create(GameRenderer.prototype) as any;
     const controlBridge = { setupGuiControls: vi.fn() };
     const sessionRuntime = {
@@ -499,7 +499,7 @@ describe("initScene destruction guard", () => {
       // Expected: will fail on MapControls or other deps, but setup fns should have been called
     }
 
-    expect(controlBridge.setupGuiControls).toHaveBeenCalledTimes(1);
+    expect(controlBridge.setupGuiControls).not.toHaveBeenCalled();
     expect(sessionRuntime.startListeners).toHaveBeenCalledTimes(1);
   });
 });

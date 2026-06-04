@@ -1,4 +1,4 @@
-import { GUIManager } from "../utils/gui-manager";
+import { GRAPHICS_DEV_GUI_ENABLED, GUIManager } from "../utils/gui-manager";
 import { ensureCosmeticAsset } from "./asset-cache";
 import { findCosmeticById, getCosmeticRegistry } from "./registry";
 import type { CosmeticRegistryEntry, CosmeticResolutionResult } from "./types";
@@ -42,7 +42,7 @@ class CosmeticDebugController {
   private structureAttachmentOptions: Record<string, string> = {};
 
   constructor() {
-    if (import.meta.env.DEV) {
+    if (GRAPHICS_DEV_GUI_ENABLED) {
       this.buildOptions();
       this.setupGUI();
       this.exposeConsoleAPI();

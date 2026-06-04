@@ -283,14 +283,14 @@ interface QualityControllerConfig {
 }
 
 const DEFAULT_CONFIG: Required<QualityControllerConfig> = {
-  autoAdjustEnabled: false, // Disabled by default, user must opt-in
+  autoAdjustEnabled: true,
   fpsHistorySize: 60,
   downgradeThreshold: 0.7,
   upgradeThreshold: 0.95,
   cooldownMs: 5000,
   downgradeFrameCount: 30,
   upgradeFrameCount: 120,
-  enableLogging: true,
+  enableLogging: false,
 };
 
 /**

@@ -65,7 +65,7 @@ export function resolveRendererTargetFps(input: RendererDisplayPolicyInput): num
     case GraphicsSettings.MID:
       return 45;
     default:
-      return null;
+      return 60;
   }
 }
 

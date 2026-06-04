@@ -24,6 +24,11 @@ interface RendererFrameHudController {
   update(deltaTime: number, cycleProgress: number): void;
 }
 
+type RendererWeatherState = {
+  intensity: number;
+  stormIntensity: number;
+};
+
 interface ResolvedRendererFrame {
   cadenceView: RendererLabelCadenceView;
   labelsActive: boolean;
@@ -41,7 +46,10 @@ interface RunRendererFrameInput {
   currentTime: number;
   cycleProgress: number;
   deltaTime: number;
-  effectsBridgeRuntime?: Pick<{ updateWeatherPostProcessing(): void }, "updateWeatherPostProcessing">;
+  effectsBridgeRuntime?: Pick<
+    { updateWeatherPostProcessing(weatherState?: RendererWeatherState): void },
+    "updateWeatherPostProcessing"
+  >;
   fastTravelScene?: RendererFrameSceneController;
   hexceptionScene: RendererFrameSceneController;
   hudScene: RendererFrameHudController;
@@ -51,13 +59,6 @@ interface RunRendererFrameInput {
 
 export function runRendererFrame(input: RunRendererFrameInput): boolean {
   const weatherState = advanceHudAndResolveWeatherState(input);
-  applyWeatherAtmosphereState({
-    fastTravelScene: input.fastTravelScene,
-    hexceptionScene: input.hexceptionScene,
-    weatherState,
-    worldmapScene: input.worldmapScene,
-  });
-
   const resolvedFrame = resolveRendererFrame({
     camera: input.camera,
     currentScene: input.currentScene,
@@ -70,6 +71,7 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
     return false;
   }
 
+  resolvedFrame.sceneController.setWeatherAtmosphereState(weatherState);
   resolvedFrame.sceneController.update(input.deltaTime);
 
   const shouldRenderLabels = input.labelRuntime.shouldRender({
@@ -86,7 +88,7 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
     resolvedFrame,
     shouldRenderLabels,
   });
-  input.effectsBridgeRuntime?.updateWeatherPostProcessing();
+  input.effectsBridgeRuntime?.updateWeatherPostProcessing(weatherState);
   input.captureStatsSample();
 
   return true;
@@ -94,20 +96,9 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
 
 function advanceHudAndResolveWeatherState(
   input: Pick<RunRendererFrameInput, "cycleProgress" | "deltaTime" | "hudScene">,
-): unknown {
+): RendererWeatherState {
   input.hudScene.update(input.deltaTime, input.cycleProgress);
-  return input.hudScene.getWeatherState();
-}
-
-function applyWeatherAtmosphereState(input: {
-  fastTravelScene?: RendererFrameSceneController;
-  hexceptionScene: RendererFrameSceneController;
-  weatherState: unknown;
-  worldmapScene: RendererFrameSceneController;
-}): void {
-  input.worldmapScene.setWeatherAtmosphereState(input.weatherState);
-  input.fastTravelScene?.setWeatherAtmosphereState(input.weatherState);
-  input.hexceptionScene.setWeatherAtmosphereState(input.weatherState);
+  return input.hudScene.getWeatherState() as RendererWeatherState;
 }
 
 function resolveRendererFrame(input: {

@@ -1,6 +1,6 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getGameModeId } from "@/config/game-modes";
-import { GUIManager } from "@/three/utils/";
+import { GRAPHICS_DEV_GUI_ENABLED, GUIManager } from "@/three/utils/";
 import { GRAPHICS_SETTING, GraphicsSettings, IS_MOBILE } from "@/ui/config";
 import { SetupResult } from "@bibliothecadao/dojo";
 import { env } from "../../env";
@@ -173,7 +173,9 @@ export default class GameRenderer {
     if (this.isDestroyed) {
       return;
     }
-    this.supportRuntimeRegistry.getControlBridge().setupGuiControls();
+    if (GRAPHICS_DEV_GUI_ENABLED) {
+      this.supportRuntimeRegistry.getControlBridge().setupGuiControls();
+    }
     this.sessionRuntime.startListeners();
     const initialSceneName = resolveRendererRouteSceneFromHref({
       fastTravelEnabled: this.isFastTravelEnabled(),
@@ -315,8 +317,8 @@ export default class GameRenderer {
       isLabelRuntimeReady: this.labelRuntime?.isReady() ?? false,
       lastTime: this.lastTime,
       logDestroyed: (message) => console.log(message),
-      renderFrame: ({ currentTime, cycleProgress, deltaTime }) =>
-        runRendererFrame({
+      renderFrame: ({ currentTime, cycleProgress, deltaTime }) => {
+        const rendered = runRendererFrame({
           backend: this.backend,
           camera: this.camera,
           captureStatsSample: () => this.sessionRuntime.captureStatsSample(),
@@ -330,7 +332,14 @@ export default class GameRenderer {
           labelRuntime: this.labelRuntime,
           effectsBridgeRuntime: this.supportRuntimeRegistry.getEffectsBridge(),
           worldmapScene: this.worldmapScene,
-        }),
+        });
+
+        if (rendered) {
+          qualityController.recordFrame(deltaTime * 1000);
+        }
+
+        return rendered;
+      },
       requestNextFrame: () =>
         requestAnimationFrame(() => {
           this.animate();

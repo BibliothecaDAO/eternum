@@ -857,6 +857,8 @@ export default class WorldmapScene extends WarpTravel {
   private handleTransactionFailed?: (...args: any[]) => void;
   private handleTransactionProgress?: (...args: any[]) => void;
   private readonly authoritativePendingArmyMovementMs = 30_000;
+  private readonly cameraTargetHexUpdateIntervalMs = 100;
+  private readonly cameraDistanceUpdateEpsilon = 0.5;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
   private structureManager!: StructureManager;
   private memoryMonitor?: MemoryMonitor;
@@ -895,7 +897,9 @@ export default class WorldmapScene extends WarpTravel {
     const currentHex = state.cameraTargetHex;
     const hexChanged = !currentHex || currentHex.col !== nextHex.col || currentHex.row !== nextHex.row;
     const nextCameraDistance = Math.round(this.controls.object.position.distanceTo(this.controls.target) * 100) / 100;
-    const distanceChanged = state.cameraDistance === null || Math.abs(state.cameraDistance - nextCameraDistance) > 0.01;
+    const distanceChanged =
+      state.cameraDistance === null ||
+      Math.abs(state.cameraDistance - nextCameraDistance) >= this.cameraDistanceUpdateEpsilon;
 
     if (!hexChanged && !distanceChanged) return;
 
@@ -1812,7 +1816,7 @@ export default class WorldmapScene extends WarpTravel {
   private bindWorldmapSceneUiLifecycle(): void {
     // Legacy canvas minimap has been replaced by the React minimap (BottomRightPanel/HexMinimap).
     // We keep only the "minimapCameraMove" event bridge + cameraTargetHex updates for the UI.
-    this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, 33);
+    this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, this.cameraTargetHexUpdateIntervalMs);
     this.refreshVisualTerrainWindowThrottled = throttle(() => {
       void this.refreshVisualTerrainWindowFromCamera();
     }, WORLDMAP_CHUNK_POLICY.visualPresentation.cameraSampleThrottleMs);

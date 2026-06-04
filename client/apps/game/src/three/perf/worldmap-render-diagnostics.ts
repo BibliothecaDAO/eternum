@@ -220,7 +220,12 @@ export function recordWorldmapRenderDuration(metric: WorldmapRenderDurationMetri
 }
 
 export function setWorldmapRenderGauge(gauge: WorldmapRenderGauge, value: number): void {
-  diagnosticsState.gauges[gauge] = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+  const nextValue = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+  if (diagnosticsState.gauges[gauge] === nextValue) {
+    return;
+  }
+
+  diagnosticsState.gauges[gauge] = nextValue;
   diagnosticsState.updatedAtMs = Date.now();
 }
 

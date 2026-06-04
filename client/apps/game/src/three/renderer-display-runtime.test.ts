@@ -58,7 +58,7 @@ describe("renderer display runtime", () => {
         graphicsSetting: importedGraphicsSettings.HIGH,
         isMobileDevice: false,
       }),
-    ).toBeNull();
+    ).toBe(60);
     expect(
       resolveRendererTargetFps({
         graphicsSetting: importedGraphicsSettings.MID,

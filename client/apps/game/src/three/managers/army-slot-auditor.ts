@@ -32,7 +32,7 @@ export type ArmySlotViolation =
     };
 
 /** A slot that is actually drawn (in a model's activeInstances AND within mesh.count). */
-export interface DrawnSlotOwner {
+interface DrawnSlotOwner {
   slot: number;
   /** matrixIndexOwners.get(slot); undefined when the slot has no recorded owner. */
   owner: number | undefined;

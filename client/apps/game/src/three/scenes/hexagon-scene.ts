@@ -11,7 +11,7 @@ import { ThunderBoltManager } from "@/three/managers/thunderbolt-manager";
 import { type SceneManager } from "@/three/scene-manager";
 import { AnimationVisibilityContext } from "@/three/types/animation";
 import { CentralizedVisibilityManager, getVisibilityManager } from "@/three/utils/centralized-visibility-manager";
-import { GUIManager, LocationManager } from "@/three/utils/";
+import { GRAPHICS_DEV_GUI_ENABLED, GUIManager, LocationManager } from "@/three/utils/";
 import { FrustumManager } from "@/three/utils/frustum-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
 import { PerformanceMonitor } from "@/three/utils/performance-monitor";
@@ -49,7 +49,6 @@ import {
   Vector3,
 } from "three";
 import { type MapControls } from "three/examples/jsm/controls/MapControls.js";
-import { env } from "../../../env";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { SceneName } from "../types";
 import { getHexForWorldPosition, getWorldPositionForHex } from "../utils";
@@ -163,7 +162,9 @@ export abstract class HexagonScene {
     this.applyResolvedCameraView(this.currentCameraView);
     this.syncResolvedCameraViewFromDistance(this.controls.object.position.distanceTo(this.controls.target));
     this.setupInputHandlers();
-    this.setupGUI();
+    if (GRAPHICS_DEV_GUI_ENABLED) {
+      this.setupGUI();
+    }
     if (this.shouldCreateGroundMesh()) {
       this.createGroundMesh();
     }
@@ -292,7 +293,7 @@ export abstract class HexagonScene {
   }
 
   private setupLightHelper(): void {
-    if (env.VITE_PUBLIC_GRAPHICS_DEV !== true) {
+    if (!GRAPHICS_DEV_GUI_ENABLED) {
       return;
     }
 

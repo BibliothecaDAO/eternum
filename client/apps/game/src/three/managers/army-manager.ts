@@ -7,7 +7,7 @@ import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { ModelType } from "@/three/types/army";
-import { GUIManager } from "@/three/utils/";
+import { GRAPHICS_DEV_GUI_ENABLED, GUIManager } from "@/three/utils/";
 import {
   incrementWorldmapRenderCounter,
   recordWorldmapRenderDuration,
@@ -102,11 +102,7 @@ import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
-import {
-  auditArmyRenderIntegrity,
-  auditArmySlots,
-  type ArmySlotAuditEntry,
-} from "./army-slot-auditor";
+import { auditArmyRenderIntegrity, auditArmySlots, type ArmySlotAuditEntry } from "./army-slot-auditor";
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
@@ -354,64 +350,7 @@ export class ArmyManager {
     this.pathRenderer.initialize(scene);
     this.pathRenderer.setVisibilityManager(this.visibilityManager);
 
-    const createArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Create Army"));
-    const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
-
-    createArmyFolder.add(createArmyParams, "entityId").name("Entity ID");
-    createArmyFolder.add(createArmyParams, "col").name("Column");
-    createArmyFolder.add(createArmyParams, "row").name("Row");
-    createArmyFolder.add(createArmyParams, "isMine", [true, false]).name("Is Mine");
-    createArmyFolder
-      .add(
-        {
-          addArmy: () => {
-            this.addArmy({
-              entityId: createArmyParams.entityId,
-              hexCoords: new Position({ x: createArmyParams.col, y: createArmyParams.row }),
-              owner: {
-                address: createArmyParams.isMine
-                  ? ContractAddress(useAccountStore.getState().account?.address || "0")
-                  : 0n,
-                // TODO: Add owner name and guild name
-                ownerName: "Neutral",
-                guildName: "None",
-              },
-              category: TroopType.Paladin,
-              tier: TroopTier.T1,
-              isDaydreamsAgent: false,
-              troopCount: 10,
-              currentStamina: 10,
-              onChainStamina: {
-                amount: 100n,
-                updatedTick: getBlockTimestamp().currentArmiesTick,
-              },
-              maxStamina: 100,
-            });
-          },
-        },
-        "addArmy",
-      )
-      .name("Add army");
-    createArmyFolder.close();
-
-    const deleteArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Delete Army"));
-    const deleteArmyParams = { entityId: 0 };
-
-    deleteArmyFolder.add(deleteArmyParams, "entityId").name("Entity ID");
-    deleteArmyFolder
-      .add(
-        {
-          deleteArmy: () => {
-            this.removeArmy(deleteArmyParams.entityId);
-          },
-        },
-        "deleteArmy",
-      )
-      .name("Delete army");
-    deleteArmyFolder.close();
-
-    // Debug Army Spawner - for performance testing
-    this.setupDebugArmySpawner();
+    this.setupDebugArmyControls();
 
     this.unsubscribeAccountStore = useAccountStore.subscribe(() => {
       this.recheckOwnership();
@@ -473,6 +412,78 @@ export class ArmyManager {
   // Debug army spawner state
   private debugArmyEntityIdCounter = 900000; // Start high to avoid collisions with real armies
   private debugSpawnedArmyIds: Set<ID> = new Set();
+
+  private setupDebugArmyControls(): void {
+    if (!GRAPHICS_DEV_GUI_ENABLED) {
+      return;
+    }
+
+    this.setupDebugArmyCreationControls();
+    this.setupDebugArmyDeletionControls();
+    this.setupDebugArmySpawner();
+  }
+
+  private setupDebugArmyCreationControls(): void {
+    const createArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Create Army"));
+    const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
+
+    createArmyFolder.add(createArmyParams, "entityId").name("Entity ID");
+    createArmyFolder.add(createArmyParams, "col").name("Column");
+    createArmyFolder.add(createArmyParams, "row").name("Row");
+    createArmyFolder.add(createArmyParams, "isMine", [true, false]).name("Is Mine");
+    createArmyFolder
+      .add(
+        {
+          addArmy: () => {
+            this.addDebugArmyFromControls(createArmyParams);
+          },
+        },
+        "addArmy",
+      )
+      .name("Add army");
+    createArmyFolder.close();
+  }
+
+  private addDebugArmyFromControls(input: { col: number; entityId: number; isMine: boolean; row: number }): void {
+    this.addArmy({
+      entityId: input.entityId,
+      hexCoords: new Position({ x: input.col, y: input.row }),
+      owner: {
+        address: input.isMine ? ContractAddress(useAccountStore.getState().account?.address || "0") : 0n,
+        // TODO: Add owner name and guild name
+        ownerName: "Neutral",
+        guildName: "None",
+      },
+      category: TroopType.Paladin,
+      tier: TroopTier.T1,
+      isDaydreamsAgent: false,
+      troopCount: 10,
+      currentStamina: 10,
+      onChainStamina: {
+        amount: 100n,
+        updatedTick: getBlockTimestamp().currentArmiesTick,
+      },
+      maxStamina: 100,
+    });
+  }
+
+  private setupDebugArmyDeletionControls(): void {
+    const deleteArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Delete Army"));
+    const deleteArmyParams = { entityId: 0 };
+
+    deleteArmyFolder.add(deleteArmyParams, "entityId").name("Entity ID");
+    deleteArmyFolder
+      .add(
+        {
+          deleteArmy: () => {
+            this.removeArmy(deleteArmyParams.entityId);
+          },
+        },
+        "deleteArmy",
+      )
+      .name("Delete army");
+    deleteArmyFolder.close();
+  }
 
   /**
    * Setup debug GUI for spawning multiple armies for performance testing
@@ -2193,7 +2204,7 @@ export class ArmyManager {
       const numericId = this.toNumericId(entityId);
       if (slot !== undefined && !this.armyModel.isEntityMoving(numericId)) {
         const { x, y } = army.hexCoords.getContract();
-        const biome = Biome.getBiome(x, y);
+        const biome = configManager.getBiome(x, y);
         const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
         this.refreshArmyInstance(army, slot, modelType);
       }
@@ -2715,7 +2726,7 @@ export class ArmyManager {
         this.armyModel.purgeDrawnSlot(violation.slot);
         purgedAny = true;
       } else {
-        void this.renderArmyIntoCurrentChunkIfVisible(violation.entityId);
+        void this.renderArmyIntoCurrentChunkIfVisible(this.toNumericId(violation.entityId));
       }
 
       if (import.meta.env?.DEV) {
@@ -2925,7 +2936,7 @@ export class ArmyManager {
     return this.getArmyWorldPositionInto(this.tempWorldPosition, hexCoords);
   };
 
-  private toNumericId(entityId: ID): number {
+  private toNumericId(entityId: ID | string | null | undefined): number {
     return typeof entityId === "number" ? entityId : Number(entityId ?? 0);
   }
 
