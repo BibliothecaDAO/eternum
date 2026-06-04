@@ -54,6 +54,7 @@ export type WorldmapRenderCounter =
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
   | "globalSpatialRecsHydratedTiles"
+  | "globalSpatialRecsHydratedChests"
   | "spatialTileOptRecsApplied"
   | "spatialTileOptReadyTimeouts"
   | "spatialTileOptStreamReceived"
@@ -175,6 +176,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     preparedChunkPrewarmHits: 0,
     preparedChunkPrewarmMisses: 0,
     globalSpatialRecsHydratedTiles: 0,
+    globalSpatialRecsHydratedChests: 0,
     spatialTileOptRecsApplied: 0,
     spatialTileOptReadyTimeouts: 0,
     spatialTileOptStreamReceived: 0,

@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-06-04",
+    title: "Reliable Chest Rendering",
+    description:
+      "Fixed world-map chests so visible chest markers are rebuilt from authoritative tile data during map refreshes instead of disappearing while still blocking the tile.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-06-04",
     title: "Stable Hex Grid",
     description:
       "Fixed local-view hex outlines so the grid stays visible while changing camera angles, making tile positions easier to read.",

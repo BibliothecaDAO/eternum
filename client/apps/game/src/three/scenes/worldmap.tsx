@@ -74,6 +74,7 @@ import {
   getGuardsByStructure,
   getStructureInfoFromTileOccupier,
   getTileAt,
+  isTileOccupierChest,
   isTileOccupierReservedHyperstructure,
   recordArmyMovementLatencyPhase,
   ReservedHyperstructureTileSystemUpdate,
@@ -8749,12 +8750,16 @@ export default class WorldmapScene extends WarpTravel {
     const hydratedTileCount = this.shouldFetchTileOpt(stages)
       ? this.hydrateExploredTilesFromGlobalTileOptRecs(fetchKey, localBounds)
       : 0;
+    const hydratedChestCount = this.shouldFetchTileOpt(stages)
+      ? this.hydrateChestsFromGlobalTileOptRecs(fetchKey, localBounds)
+      : 0;
     const hydratedStructureCount = stages.includes("structures")
       ? await this.hydrateStructuresFromGlobalTileOptRecs(fetchKey, localBounds)
       : 0;
 
     this.traceChunk("global_spatial_recs_hydrated", {
       fetchKey,
+      hydratedChestCount,
       hydratedStructureCount,
       hydratedTileCount,
       localBounds,
@@ -8795,6 +8800,48 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     return hydratedStructureCount;
+  }
+
+  private hydrateChestsFromGlobalTileOptRecs(fetchKey: string, bounds: WorldmapRenderAreaBounds): number {
+    const tileOptComponent = this.dojo.components.TileOpt;
+    if (!tileOptComponent) {
+      return 0;
+    }
+
+    let hydratedChestCount = 0;
+    for (const entity of getComponentEntities(tileOptComponent)) {
+      const tileOpt = getComponentValue(tileOptComponent, entity);
+      const tile = tileOpt ? tileOptToTile(tileOpt) : undefined;
+      if (!tile || !isTileOccupierChest(tile.occupier_type)) {
+        continue;
+      }
+
+      const normalized = new Position({ x: tile.col, y: tile.row }).getNormalized();
+      if (!this.isPositionWithinBounds(normalized, bounds)) {
+        continue;
+      }
+
+      const update: ChestSystemUpdate = {
+        occupierId: tile.occupier_id,
+        hexCoords: { col: tile.col, row: tile.row },
+      };
+      this.updateChestHexes(update);
+      void this.chestManager.onUpdate(update);
+      hydratedChestCount += 1;
+    }
+
+    if (hydratedChestCount > 0) {
+      incrementWorldmapRenderCounter("globalSpatialRecsHydratedChests", hydratedChestCount);
+    }
+
+    if (import.meta.env.DEV && hydratedChestCount > 0) {
+      console.debug("[WorldmapScene] Hydrated chests from global TileOpt RECS", {
+        fetchKey,
+        hydratedChestCount,
+      });
+    }
+
+    return hydratedChestCount;
   }
 
   private shouldHydrateStructureFromGlobalTileOpt(

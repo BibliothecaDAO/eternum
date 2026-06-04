@@ -21,7 +21,9 @@ describe("worldmap global spatial hydration", () => {
     expect(source).not.toContain("private async runSpatialSqlFetch");
     expect(source).not.toContain("spatial_sql_fetch_timeout");
     expect(methodSource).toContain("hydrateExploredTilesFromGlobalTileOptRecs");
+    expect(methodSource).toContain("hydrateChestsFromGlobalTileOptRecs");
     expect(methodSource).toContain("hydrateStructuresFromGlobalTileOptRecs");
+    expect(methodSource).toContain("chestManager.onUpdate");
     expect(methodSource).toContain("applyStructureTileUpdate");
     expect(methodSource).toContain("global_spatial_recs_hydrated");
   });
