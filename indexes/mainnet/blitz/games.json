@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-04T00:17:59.113Z",
+  "updatedAt": "2026-06-04T00:18:02.933Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1348,12 +1348,13 @@
       "path": "runs/mainnet/blitz/bltz-vibe-361.json",
       "inputPath": "inputs/mainnet/blitz/bltz-vibe-361/26921451854-1.json",
       "status": "running",
-      "updatedAt": "2026-06-04T00:17:59.113Z",
+      "updatedAt": "2026-06-04T00:18:02.933Z",
       "workflowRef": "next",
       "currentStepId": "configure-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-06-04T01:03:02.933Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "configure-world",
+      "recoverablePendingStepId": "reserve-blitz-hyperstructures",
       "startTime": 1780542000,
       "durationSeconds": 3600,
       "artifacts": {}
