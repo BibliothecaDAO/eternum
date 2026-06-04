@@ -1,6 +1,6 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
-import { FELT_CENTER, GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { FELT_CENTER, GRAPHICS_SETTING, GraphicsSettings, isLowOrBelow } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
@@ -1067,7 +1067,7 @@ export class ArmyModel {
 
   // Animation Methods
   public updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext): void {
-    if (GRAPHICS_SETTING === GraphicsSettings.LOW) return;
+    if (isLowOrBelow(GRAPHICS_SETTING)) return;
 
     const now = performance.now();
     const time = now * 0.001;
@@ -1308,7 +1308,7 @@ export class ArmyModel {
   private shouldSkipAnimation(animationState: number): boolean {
     return (
       (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
-      GRAPHICS_SETTING === GraphicsSettings.LOW ||
+      isLowOrBelow(GRAPHICS_SETTING) ||
       (this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE)
     );
   }

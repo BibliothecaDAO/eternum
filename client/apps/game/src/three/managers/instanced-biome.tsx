@@ -1,6 +1,6 @@
 import { PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
 import { LAND_NAME } from "@/three/managers/instanced-model";
-import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { AnimationVisibilityContext } from "../types/animation";
@@ -397,7 +397,7 @@ export default class InstancedModel {
     if (!this.shouldAnimate(visibility)) {
       return;
     }
-    if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
+    if (isLowOrBelow(GRAPHICS_SETTING)) {
       return;
     }
 

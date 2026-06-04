@@ -1,3 +1,4 @@
+import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
 import * as THREE from "three";
 
 // particle constants
@@ -17,11 +18,25 @@ export class Particles {
   private pointsPositions: Float32Array;
   private particleVelocities: Float32Array;
   private particleAngles: Float32Array; // Store fixed angles for each particle
-  private points: THREE.Points;
-  private light: THREE.PointLight;
+  private points?: THREE.Points;
+  private light?: THREE.PointLight;
   private scene: THREE.Scene;
+  // On LOW/below we never allocate the Points geometry or the (always-on,
+  // intensity-10) PointLight, never add anything to the scene, and make every
+  // method a no-op. The selection marker simply does not appear on weak hardware.
+  private readonly disabled: boolean = isLowOrBelow(GRAPHICS_SETTING);
 
   constructor(scene: THREE.Scene) {
+    this.scene = scene;
+
+    this.pointsPositions = new Float32Array(0);
+    this.particleVelocities = new Float32Array(0);
+    this.particleAngles = new Float32Array(0);
+
+    if (this.disabled) {
+      return;
+    }
+
     this.pointsPositions = new Float32Array(PARTICLES_COUNT * 3);
     this.particleVelocities = new Float32Array(PARTICLES_COUNT);
     this.particleAngles = new Float32Array(PARTICLES_COUNT);
@@ -59,32 +74,36 @@ export class Particles {
     this.light = new THREE.PointLight(LIGHT_COLOR, LIGHT_INTENSITY);
     this.light.position.set(0, -1000, 0);
 
-    this.scene = scene;
     this.scene.add(this.points);
     this.scene.add(this.light);
   }
 
   setPosition(x: number, y: number, z: number) {
+    if (!this.points || !this.light) return;
     this.points.position.set(x, y, z);
     this.light.position.set(x, y + 1.5, z);
   }
 
   resetPosition() {
+    if (!this.points || !this.light) return;
     this.points.position.set(0, -1000, 0);
     this.light.position.set(0, -1000, 0);
   }
 
   setParticleSize(size: number) {
+    if (!this.points) return;
     const material = this.points.material as THREE.PointsMaterial;
     material.size = size;
     material.needsUpdate = true;
   }
 
   setLightIntensity(intensity: number) {
+    if (!this.light) return;
     this.light.intensity = intensity;
   }
 
   update(delta: number) {
+    if (this.disabled || !this.points) return;
     const clampedDelta = Math.min(delta, MAX_DELTA);
 
     for (let i = 0; i < PARTICLES_COUNT; i++) {
@@ -116,18 +135,18 @@ export class Particles {
     console.log("🧹 Particles: Starting disposal");
 
     // Remove from scene
-    if (this.points.parent) {
+    if (this.points?.parent) {
       this.points.parent.remove(this.points);
     }
-    if (this.light.parent) {
+    if (this.light?.parent) {
       this.light.parent.remove(this.light);
     }
 
     // Dispose geometry and material
-    if (this.points.geometry) {
+    if (this.points?.geometry) {
       this.points.geometry.dispose();
     }
-    if (this.points.material) {
+    if (this.points?.material) {
       (this.points.material as THREE.PointsMaterial).dispose();
     }
 

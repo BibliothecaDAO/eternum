@@ -50,6 +50,8 @@ const baseInput = (overrides: Partial<BlitzRealmSuggestionInput> = {}): BlitzRea
   populationCapacity: 10,
   occupiedGuards: 0,
   maxGuards: 0,
+  occupiedExplorers: 0,
+  maxExplorers: 0,
   buildability,
   ...overrides,
 });
@@ -278,6 +280,70 @@ describe("buildBlitzRealmSuggestions", () => {
         }),
       ),
     ).toEqual([]);
+  });
+
+  it("suggests deploying explorers (after wheat) until two are on the map", () => {
+    // Wheat target met for level 1 (4), explorer slots available, none deployed.
+    const [first] = buildBlitzRealmSuggestions(
+      baseInput({
+        realmLevel: 1,
+        buildingCounts: { ...emptyCounts, wheat: 4 },
+        maxExplorers: 5,
+        occupiedExplorers: 0,
+      }),
+    );
+    expect(first).toMatchObject({ action: "deploy-explorer", reason: "0/2 explorers deployed." });
+
+    // Explorers take priority over resource buildings once wheat is satisfied.
+    expect(
+      actionsFor(
+        baseInput({
+          realmLevel: 1,
+          buildingCounts: { ...emptyCounts, wheat: 4 },
+          maxExplorers: 5,
+          occupiedExplorers: 1,
+        }),
+      ),
+    ).toEqual(["deploy-explorer"]);
+  });
+
+  it("stops suggesting explorers once two are deployed", () => {
+    expect(
+      actionsFor(
+        baseInput({
+          realmLevel: 1,
+          buildingCounts: { ...emptyCounts, wheat: 4 },
+          maxExplorers: 5,
+          occupiedExplorers: 2,
+        }),
+      ),
+    ).not.toContain("deploy-explorer");
+  });
+
+  it("does not suggest explorers when the realm has no explorer slots", () => {
+    expect(
+      actionsFor(
+        baseInput({
+          realmLevel: 1,
+          buildingCounts: { ...emptyCounts, wheat: 4 },
+          maxExplorers: 0,
+          occupiedExplorers: 0,
+        }),
+      ),
+    ).not.toContain("deploy-explorer");
+  });
+
+  it("keeps wheat ahead of explorer deployment when the wheat target is unmet", () => {
+    expect(
+      actionsFor(
+        baseInput({
+          realmLevel: 1,
+          buildingCounts: { ...emptyCounts, wheat: 2 },
+          maxExplorers: 5,
+          occupiedExplorers: 0,
+        }),
+      ),
+    ).toEqual(["build-wheat"]);
   });
 
   it("gates garrison suggestions behind a foundation economy", () => {

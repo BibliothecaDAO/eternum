@@ -4,10 +4,31 @@ import { BuildingType, ResourceMiningTypes } from "@bibliothecadao/types";
 export const FELT_CENTER = FELT_CENTER_IMPORT;
 
 export enum GraphicsSettings {
+  ULTRA_LOW = "ULTRA_LOW",
   LOW = "LOW",
   MID = "MID",
   HIGH = "HIGH",
 }
+
+/**
+ * Numeric rank for each graphics tier, lowest-spec first.
+ *
+ * Use this (via the helpers below) to compare tiers instead of scattering
+ * ad-hoc `=== GraphicsSettings.LOW` / `!== GraphicsSettings.LOW` checks. Those
+ * checks silently break when a tier is added *below* LOW: a lower tier still
+ * satisfies `!== LOW`, so an expensive feature gated on "not low" would wrongly
+ * turn back on for the weakest hardware. Ranking avoids that whole class of bug.
+ */
+const GRAPHICS_TIER_RANK: Record<GraphicsSettings, number> = {
+  [GraphicsSettings.ULTRA_LOW]: 0,
+  [GraphicsSettings.LOW]: 1,
+  [GraphicsSettings.MID]: 2,
+  [GraphicsSettings.HIGH]: 3,
+};
+
+/** True for LOW and any tier below it (e.g. a future ULTRA_LOW / "potato"). */
+export const isLowOrBelow = (setting: GraphicsSettings): boolean =>
+  GRAPHICS_TIER_RANK[setting] <= GRAPHICS_TIER_RANK[GraphicsSettings.LOW];
 
 const getBrowserLocalStorage = (): Storage | null => {
   return typeof globalThis.localStorage === "undefined" ? null : globalThis.localStorage;
@@ -15,6 +36,101 @@ const getBrowserLocalStorage = (): Storage | null => {
 
 const getBrowserNavigator = (): Navigator | null => {
   return typeof globalThis.navigator === "undefined" ? null : globalThis.navigator;
+};
+
+type DetectedGpuTier = "weak" | "mid" | "strong" | "unknown";
+
+type CapabilityNavigator = Navigator & {
+  deviceMemory?: number;
+  getBattery?: () => Promise<{ charging: boolean }>;
+};
+
+// Software renderers (no real GPU acceleration): cannot run the full experience.
+const SOFTWARE_GPU_PATTERN = /swiftshader|llvmpipe|softpipe|microsoft basic render/;
+// Dedicated GPUs that comfortably handle the high tier.
+const STRONG_GPU_PATTERN = /nvidia|geforce|\brtx\b|\bgtx\b|radeon\s*(?:rx|pro)\b|\barc\b|apple\s*m\d/;
+// Integrated GPUs: capable but not gaming-grade.
+const INTEGRATED_GPU_PATTERN = /intel|iris|hd graphics|uhd graphics|mali|adreno|powervr|radeon|vega/;
+
+/**
+ * Best-effort GPU classification from the WebGL renderer string. Returns "unknown"
+ * when the string is masked (privacy browsers) or unavailable (SSR / no WebGL).
+ */
+const detectGpuTier = (): DetectedGpuTier => {
+  try {
+    if (typeof document === "undefined") {
+      return "unknown";
+    }
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl");
+    if (!gl) {
+      return "unknown";
+    }
+    const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+    const rawRenderer: unknown = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : "";
+    // Release the throwaway context promptly.
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    const name = (typeof rawRenderer === "string" ? rawRenderer : "").toLowerCase();
+    if (!name) {
+      return "unknown";
+    }
+    if (SOFTWARE_GPU_PATTERN.test(name)) {
+      return "weak";
+    }
+    if (STRONG_GPU_PATTERN.test(name)) {
+      return "strong";
+    }
+    if (INTEGRATED_GPU_PATTERN.test(name)) {
+      return "mid";
+    }
+    return "unknown";
+  } catch (error) {
+    console.error("Error detecting GPU tier:", error);
+    return "unknown";
+  }
+};
+
+/**
+ * Recommend an initial graphics tier from device capability. Conservative: only
+ * downgrades on clear evidence, since the user can always change it from settings.
+ */
+const recommendInitialGraphicsSetting = async (): Promise<GraphicsSettings> => {
+  const browserNavigator = getBrowserNavigator() as CapabilityNavigator | null;
+  const reportedCores = browserNavigator?.hardwareConcurrency;
+  const reportedMemory = browserNavigator?.deviceMemory;
+  const cores = typeof reportedCores === "number" ? reportedCores : undefined;
+  const memory = typeof reportedMemory === "number" ? reportedMemory : undefined;
+  const gpuTier = detectGpuTier();
+
+  const veryLowCores = cores !== undefined && cores <= 2;
+  const veryLowMemory = memory !== undefined && memory <= 2;
+  const lowCores = cores !== undefined && cores <= 4;
+  const lowMemory = memory !== undefined && memory <= 4;
+
+  // Software rendering, or two independent strong "weak" signals => potato.
+  if (gpuTier === "weak" || (veryLowCores && veryLowMemory)) {
+    return GraphicsSettings.ULTRA_LOW;
+  }
+
+  // Clearly constrained hardware, or an integrated GPU plus one weak signal => low.
+  if ((lowCores && lowMemory) || (gpuTier === "mid" && (lowCores || lowMemory))) {
+    return GraphicsSettings.LOW;
+  }
+
+  // Final weak tie-breaker: an integrated GPU on battery power (likely a thin
+  // laptop) leans low; otherwise default to high (the user can dial it down).
+  if (gpuTier === "mid" && typeof browserNavigator?.getBattery === "function") {
+    try {
+      const battery = await browserNavigator.getBattery();
+      if (!battery.charging) {
+        return GraphicsSettings.LOW;
+      }
+    } catch (error) {
+      console.error("Error calling getBattery():", error);
+    }
+  }
+
+  return GraphicsSettings.HIGH;
 };
 
 const checkGraphicsSettings = async () => {
@@ -33,28 +149,12 @@ const checkGraphicsSettings = async () => {
     return newSetting;
   }
 
-  // Check if initial laptop check has been done
+  // On first load, pick a sensible default from the device's capability so weak
+  // hardware lands on a low tier instead of always defaulting to HIGH. The choice
+  // is then sticky in localStorage and the user can change it from settings.
   if (!browserLocalStorage.getItem("INITIAL_LAPTOP_CHECK")) {
-    const browserNavigator = getBrowserNavigator() as (Navigator & { getBattery?: () => Promise<any> }) | null;
-    if (typeof browserNavigator?.getBattery === "function") {
-      try {
-        const battery = await browserNavigator.getBattery();
-        if (battery.charging && battery.chargingTime === 0) {
-          // It's likely a desktop
-          browserLocalStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
-        } else {
-          // Default to high even on portable devices; users can dial it down if needed
-          browserLocalStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
-        }
-      } catch (error) {
-        console.error("Error calling getBattery():", error);
-        // Default to high when getBattery() is not supported
-        browserLocalStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
-      }
-    } else {
-      browserLocalStorage.setItem("GRAPHICS_SETTING", GraphicsSettings.HIGH);
-    }
-
+    const recommended = await recommendInitialGraphicsSetting();
+    browserLocalStorage.setItem("GRAPHICS_SETTING", recommended);
     browserLocalStorage.setItem("INITIAL_LAPTOP_CHECK", "true");
   }
 

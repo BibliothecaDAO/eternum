@@ -38,7 +38,7 @@ import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } 
 
 import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
 import type { QualityLevel } from "@/three/systems/hexception-ambience-system";
-import { GRAPHICS_SETTING, IS_FLAT_MODE } from "@/ui/config";
+import { GRAPHICS_SETTING, IS_FLAT_MODE, isLowOrBelow } from "@/ui/config";
 import {
   HEXCEPTION_GRID_READY_EVENT,
   clearRememberedHexceptionGridReady,
@@ -204,7 +204,7 @@ export default class HexceptionScene extends HexagonScene {
     this.pillars.count = 0;
     this.scene.add(this.pillars);
 
-    const quality: QualityLevel = (GRAPHICS_SETTING as QualityLevel) || "HIGH";
+    const quality: QualityLevel = isLowOrBelow(GRAPHICS_SETTING) ? "LOW" : (GRAPHICS_SETTING as QualityLevel) || "HIGH";
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene, quality);
 
     this.loadBuildingModels();

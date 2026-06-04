@@ -43,6 +43,7 @@ import { SceneManager } from "@/three/scene-manager";
 import { CameraView } from "@/three/scenes/camera-view";
 import { CAMERA_CONFIG } from "@/three/constants";
 import { HexagonScene } from "@/three/scenes/hexagon-scene";
+import type { QualityFeatures } from "@/three/utils/quality-controller";
 import {
   processExplorerTroopsUpdate,
   type PendingArmyRemovalCancelSource,
@@ -737,6 +738,7 @@ export default class WorldmapScene extends WarpTravel {
   private interactiveHexWindowKey: string | null = null;
 
   private armyManager!: ArmyManager;
+  private latestQualityFeatures?: QualityFeatures;
   private pendingArmyMovements: Set<ID> = new Set();
   private pendingArmyMovementStartedAt: Map<ID, number> = new Map();
   private pendingArmyMovementFallbackTimeouts: Map<ID, ReturnType<typeof setTimeout>> = new Map();
@@ -1361,6 +1363,19 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
+  override applyQualityFeatures(features: QualityFeatures): void {
+    super.applyQualityFeatures(features);
+    this.latestQualityFeatures = features;
+    this.applyWorldmapQualityLimits(features);
+  }
+
+  private applyWorldmapQualityLimits(features: QualityFeatures): void {
+    this.visibilityManager?.setAnimationMaxDistance(features.animationCullDistance);
+    this.structureManager?.setAnimationCullDistance(features.animationCullDistance);
+    this.armyManager?.setLabelRenderDistance(features.labelRenderDistance);
+    this.structureManager?.setLabelRenderDistance(features.labelRenderDistance);
+  }
+
   private initializeWorldmapManagers(): void {
     this.armyLabelsGroup = new Group();
     this.armyLabelsGroup.name = "ArmyLabelsGroup";
@@ -1409,6 +1424,12 @@ export default class WorldmapScene extends WarpTravel {
     );
     this.reservedHyperstructureManager = new ReservedHyperstructureManager(this.scene);
     this.chestManager = new ChestManager(this.scene, this.renderChunkSize, this.chestLabelsGroup, this, this.chunkSize);
+
+    // Bootstrap applyQualityFeatures may have run before these managers existed; apply the
+    // latest known quality limits now that the managers are available.
+    if (this.latestQualityFeatures) {
+      this.applyWorldmapQualityLimits(this.latestQualityFeatures);
+    }
 
     // NOTE: Chunk integration system disabled for performance.
     // The chunk integration adds overhead via hydration tracking callbacks on every entity update.

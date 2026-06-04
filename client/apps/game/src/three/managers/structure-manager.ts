@@ -183,7 +183,8 @@ export class StructureManager {
   private readonly scratchIconPosition: Vector3 = new Vector3();
   private readonly tempCosmeticRotation: Euler = new Euler();
   private readonly structureAttachmentTransformScratch = new Map<string, AttachmentTransform>();
-  private readonly animationCullDistance = 140;
+  private animationCullDistance = 140;
+  private labelRenderDistance = Infinity;
   private animationCameraPosition: Vector3 = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
   private pointsRenderers?: {
@@ -522,8 +523,11 @@ export class StructureManager {
 
   private updateShadowFlags(): void {
     const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
     const enableCasting = this.currentCameraView === CameraView.Close && qualityShadowsEnabled;
-    const enableContactShadows = !enableCasting;
+    // Contact shadows are the fallback for real shadows; gate them off on LOW/below
+    // so the weakest hardware pays for neither casting nor contact shadows.
+    const enableContactShadows = !enableCasting && contactShadowsAllowed;
     const applyToModels = (models: InstancedModel[]) => {
       models.forEach((model) => {
         model.instancedMeshes.forEach((mesh) => {
@@ -1792,6 +1796,18 @@ export class StructureManager {
     return this.animationVisibilityContext;
   }
 
+  public setAnimationCullDistance(distance: number): void {
+    this.animationCullDistance = distance;
+    // Invalidate the cached animation context so the new distance is rebuilt on next use.
+    this.animationVisibilityContext = undefined;
+  }
+
+  public setLabelRenderDistance(distance: number): void {
+    this.labelRenderDistance = distance;
+    // Re-evaluate label visibility on the next update cycle.
+    this.frustumVisibilityDirty = true;
+  }
+
   private applyFrustumVisibilityToLabels() {
     syncStructureLabelVisibility<ID>({
       labels: this.entityIdLabels.values(),
@@ -1929,6 +1945,12 @@ export class StructureManager {
   }
 
   private isStructureLabelVisible(label: CSS2DObject): boolean {
+    if (this.labelRenderDistance < Infinity) {
+      const camera = this.hexagonScene?.getCamera();
+      if (camera && camera.position.distanceTo(label.position) > this.labelRenderDistance) {
+        return false;
+      }
+    }
     return this.visibilityManager
       ? this.visibilityManager.isPointVisible(label.position)
       : (this.frustumManager?.isPointVisible(label.position) ?? true);
