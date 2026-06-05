@@ -16,6 +16,12 @@ import { useDojo, useQuery } from "@bibliothecadao/react";
 import { type ID } from "@bibliothecadao/types";
 import { memo, useCallback, useMemo } from "react";
 
+const STRUCTURE_LIST_VISIBLE_ROWS = 3;
+const STRUCTURE_ROW_HEIGHT_PX = 60;
+const STRUCTURE_ROW_GAP_PX = 8;
+const STRUCTURE_LIST_MAX_HEIGHT_PX =
+  STRUCTURE_LIST_VISIBLE_ROWS * STRUCTURE_ROW_HEIGHT_PX + (STRUCTURE_LIST_VISIBLE_ROWS - 1) * STRUCTURE_ROW_GAP_PX;
+
 /**
  * The left rail. A flat, filterable list of every owned structure with the
  * Empire-wide Suggested Actions panel pinned below. Default filter is
@@ -109,7 +115,10 @@ export const StructureListColumn = memo(() => {
             <p className={cn(HUD_BODY_MUTED)}>No structures match this filter.</p>
           ) : (
             // Fit three full realm rows; scroll only for larger empires.
-            <div className="flex max-h-[clamp(260px,36vh,340px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+            <div
+              className="flex flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent"
+              style={{ maxHeight: `${STRUCTURE_LIST_MAX_HEIGHT_PX}px` }}
+            >
               {visibleStructures.map((structure) => (
                 <StructureStatusRow
                   key={structure.entityId}

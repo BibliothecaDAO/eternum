@@ -7,6 +7,7 @@ export type WorldmapChunkTraceEvent =
   | "mouse_chunk_leave"
   | "torii_bounds_switch_requested"
   | "torii_bounds_switch_applied"
+  | "torii_bounds_switch_skipped_same_signature"
   | "torii_bounds_switch_failed"
   | "torii_bounds_switch_timeout"
   | "global_spatial_sync_bounds_ready"

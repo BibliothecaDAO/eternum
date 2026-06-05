@@ -132,6 +132,18 @@ function waitForBackoff(delayMs: number): Promise<void> {
   });
 }
 
+export function buildBoundsDescriptorSignature(descriptor: BoundsDescriptor): string {
+  return JSON.stringify({
+    minCol: descriptor.minCol,
+    maxCol: descriptor.maxCol,
+    minRow: descriptor.minRow,
+    maxRow: descriptor.maxRow,
+    padding: descriptor.padding ?? 0,
+    models: descriptor.models,
+    additionalClauses: descriptor.additionalClauses?.length ?? 0,
+  });
+}
+
 function getPaddedBounds(descriptor: BoundsDescriptor): {
   minCol: number;
   maxCol: number;
@@ -325,15 +337,7 @@ export class ToriiStreamManager {
     this.clearReadinessRecoveryTimer();
     this.lastDescriptor = descriptor;
 
-    const signature = JSON.stringify({
-      minCol: descriptor.minCol,
-      maxCol: descriptor.maxCol,
-      minRow: descriptor.minRow,
-      maxRow: descriptor.maxRow,
-      padding: descriptor.padding ?? 0,
-      models: descriptor.models,
-      additionalClauses: descriptor.additionalClauses?.length ?? 0,
-    });
+    const signature = buildBoundsDescriptorSignature(descriptor);
 
     if (signature === this.currentSignature) {
       return { outcome: "skipped_same_signature" };
@@ -587,6 +591,7 @@ export class ToriiStreamManager {
       onReadyEntityReceived: (info) => {
         this.onSpatialReadyEntityReceived?.(this.buildSpatialReadyEntityInfo(info));
       },
+      readyOnSubscriptionsReady: true,
       subscriptionSetupTimeoutMs: this.subscriptionSetupTimeoutMs,
       onSubscriptionSetupTimeout: (info) => {
         if (options.reportSetupTimeouts === false) {

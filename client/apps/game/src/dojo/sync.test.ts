@@ -7,6 +7,13 @@ const { getEntitiesMock, setEntitiesMock } = vi.hoisted(() => ({
   setEntitiesMock: vi.fn(),
 }));
 
+const envMock = vi.hoisted(() => ({
+  env: {
+    VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS: 8_000,
+    VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC: false,
+  },
+}));
+
 vi.mock("@dojoengine/state", () => ({
   getEntities: getEntitiesMock,
   setEntities: setEntitiesMock,
@@ -55,11 +62,7 @@ vi.mock("./queries", () => ({
   getStructuresDataFromTorii: vi.fn(),
 }));
 
-vi.mock("../../env", () => ({
-  env: {
-    VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS: 8_000,
-  },
-}));
+vi.mock("../../env", () => envMock);
 
 vi.mock("./sync-initial-selection", () => ({
   resolveInitialStructureSelection: vi.fn(() => ({ selectedStructure: null, spectator: false })),
@@ -152,6 +155,7 @@ describe("syncEntitiesDebounced", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.clearAllMocks();
+    envMock.env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC = false;
   });
 
   it("resolves ready after the first entity update is written to RECS", async () => {
@@ -470,6 +474,40 @@ describe("initialSync global streams", () => {
       expect.any(Function),
     );
     expect(getEntitiesMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("narrows the global entity stream when bounded spatial sync is enabled", async () => {
+    vi.useFakeTimers();
+    envMock.env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC = true;
+    getEntitiesMock.mockResolvedValue(undefined);
+    const harness = createSyncHarness();
+
+    const syncPromise = initialSync(harness.setup as any, createInitialSyncState() as any, vi.fn(), {
+      logging: false,
+      reportProgress: false,
+    });
+
+    await flushMicrotasks();
+    harness.emitEntityUpdate({
+      hashed_keys: "global-entity-1",
+      models: {
+        "s1_eternum-Guild": { entity_id: 1 },
+      },
+    });
+    await vi.advanceTimersByTimeAsync(200);
+    await syncPromise;
+
+    expect(harness.client.onEntityUpdated).toHaveBeenCalledTimes(1);
+    expect(harness.client.onEntityUpdated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        models: expect.arrayContaining(["s1_eternum-AddressName", "s1_eternum-Guild"]),
+      }),
+      expect.any(Function),
+    );
+    const [entityClause] = harness.client.onEntityUpdated.mock.calls[0];
+    expect(entityClause.models).not.toContain("s1_eternum-TileOpt");
+    expect(entityClause.models).not.toContain("s1_eternum-ExplorerTroops");
+    expect(entityClause.models).not.toContain("s1_eternum-Structure");
   });
 
   it("hydrates render-critical spatial rows without replaying Structure owners", async () => {

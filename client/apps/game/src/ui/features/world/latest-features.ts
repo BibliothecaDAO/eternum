@@ -35,6 +35,38 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-06-05",
+    title: "Reliable Sync Diagnostics",
+    description:
+      "Fixed bounded map sync health checks so quiet map areas no longer appear stale just because no tile update arrived, with clearer diagnostics and less redundant subscription churn during connection testing.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-06-05",
+    title: "Bounded Map Sync",
+    description:
+      "Added an opt-in bounded world-map sync path so active map areas can receive live updates without processing the full spatial stream.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-06-05",
+    title: "Army Ghost Cleanup",
+    description:
+      "Fixed army rendering so stale model bodies are cleared when units switch render state during movement, reducing frozen duplicates on the map.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-06-05",
+    title: "Compact Realm List",
+    description:
+      "Fixed the in-game realm list so it shows three rows before scrolling, keeping the production panel visible on laptop screens.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-06-05",
     title: "Map Rendering & Graphics Polish",
     description:
       "Fixed world-map rendering so unit models, chests, and the local hex grid stay visible through live updates, chunk transitions, and camera changes; made graphics presets render more cheaply with your saved quality choice now persisting between sessions; and improved Blitz realm setup so fresh realms provision reliably with a tidier realm list.",

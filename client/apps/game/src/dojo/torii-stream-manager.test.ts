@@ -419,9 +419,11 @@ describe("ToriiStreamManager", () => {
       const options = args[5] as
         | {
             isReadyEntity?: (entity: { models: Record<string, unknown> }) => boolean;
+            readyOnSubscriptionsReady?: boolean;
           }
         | undefined;
 
+      expect(options?.readyOnSubscriptionsReady).toBe(true);
       expect(options?.isReadyEntity?.({ models: { "s1_eternum-Structure": {} } })).toBe(false);
       expect(
         options?.isReadyEntity?.({

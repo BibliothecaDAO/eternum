@@ -49,6 +49,10 @@ describe("worldmap render diagnostics wiring", () => {
     incrementWorldmapRenderCounter("preparedChunkPrewarmHits", 5);
     incrementWorldmapRenderCounter("preparedChunkPrewarmMisses", 2);
     incrementWorldmapRenderCounter("globalSpatialRecsHydratedStructures", 4);
+    incrementWorldmapRenderCounter("spatialBoundsSwitchRequests", 2);
+    incrementWorldmapRenderCounter("spatialBoundsSwitchApplied", 1);
+    incrementWorldmapRenderCounter("spatialBoundsSwitchSkipped", 3);
+    incrementWorldmapRenderCounter("spatialStreamUpdates", 7);
     incrementWorldmapRenderCounter("controlsChangeEvents", 10);
     incrementWorldmapRenderCounter("zoomTransitionsStarted", 1);
 
@@ -59,6 +63,10 @@ describe("worldmap render diagnostics wiring", () => {
     expect(snapshot.counters.preparedChunkPrewarmHits).toBe(5);
     expect(snapshot.counters.preparedChunkPrewarmMisses).toBe(2);
     expect(snapshot.counters.globalSpatialRecsHydratedStructures).toBe(4);
+    expect(snapshot.counters.spatialBoundsSwitchRequests).toBe(2);
+    expect(snapshot.counters.spatialBoundsSwitchApplied).toBe(1);
+    expect(snapshot.counters.spatialBoundsSwitchSkipped).toBe(3);
+    expect(snapshot.counters.spatialStreamUpdates).toBe(7);
     expect(snapshot.counters.controlsChangeEvents).toBe(10);
     expect(snapshot.counters.zoomTransitionsStarted).toBe(1);
   });
@@ -74,11 +82,21 @@ describe("worldmap render diagnostics wiring", () => {
   it("records global spatial hydration gauges", () => {
     setWorldmapRenderGauge("globalSpatialTileOptRecs", 1200);
     setWorldmapRenderGauge("globalSpatialHydrationCandidates", 84);
+    setWorldmapRenderGauge("spatialSubscriptionMinCol", 100);
+    setWorldmapRenderGauge("spatialSubscriptionMaxCol", 180);
+    setWorldmapRenderGauge("spatialSubscriptionMinRow", 200);
+    setWorldmapRenderGauge("spatialSubscriptionMaxRow", 260);
+    setWorldmapRenderGauge("spatialSubscriptionModelCount", 7);
 
     const snapshot = snapshotWorldmapRenderDiagnostics();
 
     expect(snapshot.gauges.globalSpatialTileOptRecs).toBe(1200);
     expect(snapshot.gauges.globalSpatialHydrationCandidates).toBe(84);
+    expect(snapshot.gauges.spatialSubscriptionMinCol).toBe(100);
+    expect(snapshot.gauges.spatialSubscriptionMaxCol).toBe(180);
+    expect(snapshot.gauges.spatialSubscriptionMinRow).toBe(200);
+    expect(snapshot.gauges.spatialSubscriptionMaxRow).toBe(260);
+    expect(snapshot.gauges.spatialSubscriptionModelCount).toBe(7);
   });
 
   it("reset clears all recorded state", () => {
