@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-05T02:57:30.761Z",
+  "updatedAt": "2026-06-05T03:02:04.138Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3256,7 +3256,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-05-06-26-0100 not found"
       },
-      "updatedAt": "2026-06-05T02:41:55.441Z"
+      "updatedAt": "2026-06-05T03:02:04.138Z"
     },
     "bltz-froth-662": {
       "gameName": "bltz-froth-662",
