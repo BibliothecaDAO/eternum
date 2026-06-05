@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-blink-436/27014440433-1.json",
   "latestLaunchRequestId": "27014440433-1",
-  "currentStepId": "configure-world",
+  "currentStepId": "reserve-blitz-hyperstructures",
   "createdAt": "2026-06-05T12:20:36.328Z",
-  "updatedAt": "2026-06-05T12:22:53.891Z",
+  "updatedAt": "2026-06-05T12:23:18.312Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,10 +45,11 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-06-05T12:22:53.891Z"
+      "latestEvent": "Applying settings succeeded",
+      "startedAt": "2026-06-05T12:22:53.891Z",
+      "finishedAt": "2026-06-05T12:23:18.312Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -84,14 +85,9 @@
     "durationSeconds": 3600,
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-blink-436.json",
     "worldAddress": "0x0676a1275563bba9752c272001996b307f1762ce950b73d49b94955b54d40166",
-    "createGameTxHash": "0x69e1c31043a761e58620340836379ee9d326fd49bac6ff640030ae285dbf670"
-  },
-  "activeLease": {
-    "launchRequestId": "27014440433-1",
-    "workflowRunId": 27014440433,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "acquiredAt": "2026-06-05T12:22:53.891Z",
-    "expiresAt": "2026-06-05T13:07:53.891Z"
+    "createGameTxHash": "0x69e1c31043a761e58620340836379ee9d326fd49bac6ff640030ae285dbf670",
+    "entryTokenAddress": "0x702bacdc3a8754cf5797ffa1f7802d0a30702af1596016f11976254717e10a2",
+    "configureTxHash": "0x410f56e36bf5dae93cfc3db45a83f8778bcfc0b11457cbbd8ebb9b541ac065e",
+    "worldConfigTxHash": "0x410f56e36bf5dae93cfc3db45a83f8778bcfc0b11457cbbd8ebb9b541ac065e"
   }
 }
