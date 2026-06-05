@@ -42,7 +42,7 @@ function createNoopGui(): GUI {
   return gui as unknown as GUI;
 }
 
-export const GUIManager = GRAPHICS_DEV_GUI_ENABLED
+const GUIManager = GRAPHICS_DEV_GUI_ENABLED
   ? new GUI({
       autoPlace: true,
     })

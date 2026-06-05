@@ -50,7 +50,7 @@ describe("runRendererFrame", () => {
     resetRendererDiagnostics();
   });
 
-  it("updates the hud and weather fanout before bailing when no scene is active", () => {
+  it("updates the hud before bailing when no scene is active", () => {
     const hudScene = createHudScene();
     const worldmapScene = createScene("worldmap");
     const fastTravelScene = createScene("travel");
@@ -82,9 +82,10 @@ describe("runRendererFrame", () => {
 
     expect(rendered).toBe(false);
     expect(hudScene.update).toHaveBeenCalledWith(0.016, 0.25);
-    expect(worldmapScene.setWeatherAtmosphereState).toHaveBeenCalledWith({ weather: "rain" });
-    expect(fastTravelScene.setWeatherAtmosphereState).toHaveBeenCalledWith({ weather: "rain" });
-    expect(hexceptionScene.setWeatherAtmosphereState).toHaveBeenCalledWith({ weather: "rain" });
+    expect(worldmapScene.setWeatherAtmosphereState).not.toHaveBeenCalled();
+    expect(fastTravelScene.setWeatherAtmosphereState).not.toHaveBeenCalled();
+    expect(hexceptionScene.setWeatherAtmosphereState).not.toHaveBeenCalled();
+    expect(effectsBridgeRuntime.updateWeatherPostProcessing).not.toHaveBeenCalled();
     expect(backend.renderFrame).not.toHaveBeenCalled();
     expect(labelRuntime.shouldRender).not.toHaveBeenCalled();
   });

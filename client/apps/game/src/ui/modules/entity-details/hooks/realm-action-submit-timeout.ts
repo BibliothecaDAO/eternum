@@ -1,4 +1,4 @@
-export const REALM_ACTION_SUBMIT_TIMEOUT_MS = 30_000;
+const REALM_ACTION_SUBMIT_TIMEOUT_MS = 30_000;
 export const REALM_ACTION_SUBMIT_TIMEOUT_MESSAGE =
   "Transaction submission timed out before a transaction hash was returned. Check your wallet activity, then try again.";
 
