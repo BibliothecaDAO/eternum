@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "27009463302-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-06-05T10:24:37.609Z",
-  "updatedAt": "2026-06-05T10:26:40.072Z",
+  "updatedAt": "2026-06-05T10:26:48.923Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-06-05T10:26:48.923Z"
     },
     {
       "id": "configure-world",
@@ -82,5 +83,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-axe-69.json",
     "worldAddress": "0x05943d354dddabce17bf227b79f0f326e0bc2e0d54f9f2b6154c0017e4749ac8",
     "createGameTxHash": "0x3471b581ee5c9e1f9558c5fe07561ae439e578da570de47d39c43466c087555"
+  },
+  "activeLease": {
+    "launchRequestId": "27009463302-1",
+    "workflowRunId": 27009463302,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-06-05T10:26:48.923Z",
+    "expiresAt": "2026-06-05T11:11:48.923Z"
   }
 }
