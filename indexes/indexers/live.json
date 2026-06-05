@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-05T01:57:15.090Z",
+  "updatedAt": "2026-06-05T01:57:32.895Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3257,6 +3257,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-05-06-26-0100 not found"
       },
       "updatedAt": "2026-06-05T01:57:15.090Z"
+    },
+    "bltz-froth-662": {
+      "gameName": "bltz-froth-662",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-froth-662/torii",
+        "version": "v1.8.15",
+        "branch": "main",
+        "describedAt": "2026-06-05T01:57:32.894Z"
+      },
+      "updatedAt": "2026-06-05T01:57:32.895Z"
     }
   }
 }
