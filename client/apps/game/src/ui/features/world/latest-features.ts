@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-06-04",
+    title: "Stable Army Models",
+    description:
+      "Fixed world-map army recovery so unit models stay visible through live troop updates and chunk transitions instead of disappearing while their map state remains active.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-06-04",
     title: "Smoother Map Hydration",
     description:
       "Improved world-map data hydration so visible tiles, chests, and structures reuse the same synced map snapshot while browsing.",

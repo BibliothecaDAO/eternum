@@ -17,6 +17,7 @@ type ExplorerTroopsUpdateHandlers = {
   onAuthoritativePositionApplied?: (update: ExplorerTroopsSystemUpdate) => void;
   onManagerUpdateApplied?: (update: ExplorerTroopsSystemUpdate) => void;
   recoverPendingArmyRemovalFromExplorerTroops?: (update: ExplorerTroopsSystemUpdate) => void;
+  shouldRecoverPendingArmyRemovalFromExplorerTroops?: (update: ExplorerTroopsSystemUpdate) => boolean;
   shouldSkipStalePositionUpdate?: (entityId: ID, normalized: { x: number; y: number }) => boolean;
 };
 
@@ -49,6 +50,15 @@ export function processExplorerTroopsUpdate(
   if (!shouldSkipPosition) {
     handlers.recordLiveArmyPresenceUpdate?.(update);
     handlers.onAuthoritativePositionApplied?.(update);
-    handlers.recoverPendingArmyRemovalFromExplorerTroops?.(update);
+    if (shouldRecoverPendingArmyRemovalFromExplorerTroops(update, handlers)) {
+      handlers.recoverPendingArmyRemovalFromExplorerTroops?.(update);
+    }
   }
+}
+
+function shouldRecoverPendingArmyRemovalFromExplorerTroops(
+  update: ExplorerTroopsSystemUpdate,
+  handlers: ExplorerTroopsUpdateHandlers,
+): boolean {
+  return handlers.shouldRecoverPendingArmyRemovalFromExplorerTroops?.(update) ?? true;
 }

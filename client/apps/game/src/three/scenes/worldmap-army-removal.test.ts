@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { findSupersededArmyRemoval, isStaleTrackedArmyTileRemoval } from "./worldmap-army-removal";
+import {
+  findSupersededArmyRemoval,
+  isStaleTrackedArmyTileRemoval,
+  shouldRecoverPendingArmyRemovalFromExplorerTroops,
+} from "./worldmap-army-removal";
 
 describe("isStaleTrackedArmyTileRemoval", () => {
   it("treats a tile removal as stale when the tracked army already moved elsewhere", () => {
@@ -36,6 +40,48 @@ describe("isStaleTrackedArmyTileRemoval", () => {
         reason: "tile",
         trackedPosition: undefined,
         removalPosition: { col: 10, row: 10 },
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("shouldRecoverPendingArmyRemovalFromExplorerTroops", () => {
+  it("does not recover tile removals from troop updates still pointing at the removed tile", () => {
+    expect(
+      shouldRecoverPendingArmyRemovalFromExplorerTroops({
+        reason: "tile",
+        removalPosition: { col: 10, row: 10 },
+        troopsPosition: { col: 10, row: 10 },
+      }),
+    ).toBe(false);
+  });
+
+  it("recovers tile removals when troops have moved away from the removed tile", () => {
+    expect(
+      shouldRecoverPendingArmyRemovalFromExplorerTroops({
+        reason: "tile",
+        removalPosition: { col: 10, row: 10 },
+        troopsPosition: { col: 11, row: 10 },
+      }),
+    ).toBe(true);
+  });
+
+  it("requires explicit position evidence for tile removals", () => {
+    expect(
+      shouldRecoverPendingArmyRemovalFromExplorerTroops({
+        reason: "tile",
+        removalPosition: undefined,
+        troopsPosition: { col: 10, row: 10 },
+      }),
+    ).toBe(false);
+  });
+
+  it("does not recover zero-count removals from later troop updates", () => {
+    expect(
+      shouldRecoverPendingArmyRemovalFromExplorerTroops({
+        reason: "zero",
+        removalPosition: { col: 10, row: 10 },
+        troopsPosition: { col: 10, row: 10 },
       }),
     ).toBe(false);
   });
