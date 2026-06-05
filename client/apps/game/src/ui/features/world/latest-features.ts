@@ -35,65 +35,9 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-06-05",
-    title: "Sticky Graphics Setting",
+    title: "Map Rendering & Graphics Polish",
     description:
-      "Fixed graphics setup so a saved quality choice is not overwritten by first-run device detection, keeping your selected preset stable between sessions.",
-    type: "fix",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-06-05",
-    title: "Cleaner Realm List",
-    description:
-      "Improved the in-world realm list so three active realms and the cockpit panel fit without an unnecessary scrollbar on standard game viewports.",
-    type: "fix",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-06-05",
-    title: "Safer Realm Provisioning",
-    description:
-      "Fixed Blitz Suggested Actions so fresh realms provision first when level-up is not yet affordable, avoiding failed bootstrap transactions and clearer error feedback.",
-    type: "fix",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-06-04",
-    title: "Stable Army Models",
-    description:
-      "Fixed world-map army recovery so unit models stay visible through live troop updates and chunk transitions instead of disappearing while their map state remains active.",
-    type: "fix",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-06-04",
-    title: "Smoother Map Hydration",
-    description:
-      "Improved world-map data hydration so visible tiles, chests, and structures reuse the same synced map snapshot while browsing.",
-    type: "improvement",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-06-04",
-    title: "Leaner Graphics Presets",
-    description:
-      "Improved graphics presets and map streaming cadence so High, Medium, Low, and Potato use lower rendering costs while browsing the world map.",
-    type: "improvement",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-06-04",
-    title: "Reliable Chest Rendering",
-    description:
-      "Fixed world-map chests so visible chest markers are rebuilt from authoritative tile data during map refreshes instead of disappearing while still blocking the tile.",
-    type: "fix",
-    gameSlug: "world",
-  },
-  {
-    date: "2026-06-04",
-    title: "Stable Hex Grid",
-    description:
-      "Fixed local-view hex outlines so the grid stays visible while changing camera angles, making tile positions easier to read.",
+      "Fixed world-map rendering so unit models, chests, and the local hex grid stay visible through live updates, chunk transitions, and camera changes; made graphics presets render more cheaply with your saved quality choice now persisting between sessions; and improved Blitz realm setup so fresh realms provision reliably with a tidier realm list.",
     type: "fix",
     gameSlug: "world",
   },
