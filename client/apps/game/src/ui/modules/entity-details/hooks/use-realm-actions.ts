@@ -7,6 +7,8 @@ import { dojoConfig } from "../../../../../dojo-config";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { useDojo } from "@bibliothecadao/react";
 import { type ID } from "@bibliothecadao/types";
+import { extractReadableErrorMessage } from "@/utils/error-message";
+import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
 
 const ETERNUM_NAMESPACE = "s1_eternum";
 
@@ -63,15 +65,18 @@ export const useRealmActions = () => {
 
       setPendingRealmId(realmId);
       try {
-        await executeObservedClientTransaction({
-          account: account.account,
-          calls,
-          surface: "settlement",
-          operation,
-        });
+        await withRealmActionSubmitTimeout(
+          executeObservedClientTransaction({
+            account: account.account,
+            calls,
+            surface: "settlement",
+            operation,
+            waitForConfirmation: false,
+          }),
+        );
       } catch (error) {
         console.error(`[realm-actions] ${operation} failed`, error);
-        toast.error(error instanceof Error ? error.message : "Failed to submit the transaction.");
+        toast.error(extractReadableErrorMessage(error, "Failed to submit the transaction."));
         throw error;
       } finally {
         setPendingRealmId((current) => (current === realmId ? null : current));

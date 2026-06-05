@@ -327,13 +327,15 @@ export const buildBlitzRealmSuggestions = (input: BlitzRealmSuggestionInput): Bl
   if (!input.isBlitzActive) return [];
 
   if (input.canProvision) {
+    const canBundleUpgrade = input.canAffordUpgrade;
+
     return [
       createBaseSuggestion(
         input,
-        "upgrade-and-provision",
-        "Provision + level up realm",
+        canBundleUpgrade ? "upgrade-and-provision" : "provision",
+        canBundleUpgrade ? "Provision + level up realm" : "Provision realm",
         0,
-        "Start your economy and upgrade in one action.",
+        canBundleUpgrade ? "Start your economy and upgrade in one action." : "Start your economy before upgrading.",
       ),
     ];
   }

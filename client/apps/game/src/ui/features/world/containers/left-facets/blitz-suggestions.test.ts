@@ -64,8 +64,24 @@ describe("buildBlitzRealmSuggestions", () => {
     expect(buildBlitzRealmSuggestions(baseInput({ isBlitzActive: false }))).toEqual([]);
   });
 
-  it("uses provision and level-up as the only first step for fresh realms", () => {
-    expect(actionsFor(baseInput({ canProvision: true }))).toEqual(["upgrade-and-provision"]);
+  it("uses provision as the first step when a fresh realm cannot afford level-up", () => {
+    const [first] = buildBlitzRealmSuggestions(baseInput({ canProvision: true, canAffordUpgrade: false }));
+
+    expect(first).toMatchObject({
+      action: "provision",
+      label: "Provision realm",
+      reason: "Start your economy before upgrading.",
+    });
+  });
+
+  it("bundles provision and level-up only when the upgrade is already affordable", () => {
+    const [first] = buildBlitzRealmSuggestions(baseInput({ canProvision: true, canAffordUpgrade: true }));
+
+    expect(first).toMatchObject({
+      action: "upgrade-and-provision",
+      label: "Provision + level up realm",
+      reason: "Start your economy and upgrade in one action.",
+    });
   });
 
   it("only shows the first eligible hint per realm", () => {

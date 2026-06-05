@@ -6,9 +6,11 @@ import { getContractByName } from "@dojoengine/core";
 import { dojoConfig } from "../../../../../dojo-config";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { useDojo } from "@bibliothecadao/react";
+import { extractReadableErrorMessage } from "@/utils/error-message";
 
 import { useStructureUpgrade } from "./use-structure-upgrade";
 import { useBlitzRealmProvision } from "./use-blitz-realm-provision";
+import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
 
 const ETERNUM_NAMESPACE = "s1_eternum";
 
@@ -92,15 +94,18 @@ export const useRealmUpgradeAndProvision = (structureEntityId: number | null): R
 
     setIsPending(true);
     try {
-      await executeObservedClientTransaction({
-        account: account.account,
-        calls,
-        surface: "settlement",
-        operation: "realm_systems.provision_and_upgrade",
-      });
+      await withRealmActionSubmitTimeout(
+        executeObservedClientTransaction({
+          account: account.account,
+          calls,
+          surface: "settlement",
+          operation: "realm_systems.provision_and_upgrade",
+          waitForConfirmation: false,
+        }),
+      );
     } catch (error) {
       console.error("[realm-upgrade-and-provision] Failed to submit provision multicall", error);
-      toast.error(error instanceof Error ? error.message : "Failed to submit the provision.");
+      toast.error(extractReadableErrorMessage(error, "Failed to submit the provision."));
       throw error;
     } finally {
       setIsPending(false);

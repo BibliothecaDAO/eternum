@@ -3,6 +3,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { REALM_ACTION_SUBMIT_TIMEOUT_MESSAGE } from "./realm-action-submit-timeout";
 import { useBlitzRealmProvision } from "./use-blitz-realm-provision";
 
 const mocks = vi.hoisted(() => ({
@@ -128,6 +129,7 @@ const HookProbe = ({ label }: { label: string }) => {
       <div data-testid={`${label}-isProvisioned`}>{String(provisionInfo?.isProvisioned ?? false)}</div>
       <div data-testid={`${label}-status`}>{provisionInfo?.provisionActionState ?? "null"}</div>
       <div data-testid={`${label}-loading`}>{String(provisionInfo?.isProvisionLoading ?? false)}</div>
+      <div data-testid={`${label}-locked`}>{String(provisionInfo?.isProvisionLocked ?? false)}</div>
       <button
         type="button"
         data-testid={`${label}-provision`}
@@ -277,6 +279,7 @@ describe("useBlitzRealmProvision", () => {
       expect.objectContaining({
         surface: "settlement",
         operation: "blitz_realm_systems.provision_realm",
+        waitForConfirmation: false,
         calls: expect.objectContaining({
           contractAddress: "0xblitz",
           entrypoint: "provision_realm",
@@ -290,6 +293,50 @@ describe("useBlitzRealmProvision", () => {
 
     expect(readProbeValue("isProvisioned")).toBe("true");
     expect(readProbeValue("status")).toBe("idle");
+  });
+
+  it("releases the spinner when submission never returns a transaction hash", async () => {
+    mocks.executeObservedClientTransaction.mockReturnValueOnce(new Promise(() => undefined));
+
+    await renderProbe();
+    await clickProvision();
+
+    expect(readProbeValue("status")).toBe("submitting");
+    expect(readProbeValue("loading")).toBe("true");
+    expect(readProbeValue("locked")).toBe("true");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+      await flushAsyncWork();
+    });
+
+    expect(readProbeValue("status")).toBe("idle");
+    expect(readProbeValue("loading")).toBe("false");
+    expect(readProbeValue("locked")).toBe("false");
+    expect(readProbeValue("canProvision")).toBe("true");
+    expect(mocks.toastError).toHaveBeenCalledWith(REALM_ACTION_SUBMIT_TIMEOUT_MESSAGE);
+  });
+
+  it("stops loading and unlocks after sync timeout so provision can be retried", async () => {
+    await renderProbe();
+    await clickProvision();
+
+    expect(readProbeValue("status")).toBe("syncing");
+    expect(readProbeValue("loading")).toBe("true");
+    expect(readProbeValue("locked")).toBe("true");
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(30_000);
+      await flushAsyncWork();
+    });
+
+    expect(readProbeValue("status")).toBe("syncTimeout");
+    expect(readProbeValue("loading")).toBe("false");
+    expect(readProbeValue("locked")).toBe("false");
+    expect(readProbeValue("canProvision")).toBe("true");
+    expect(mocks.toastError).toHaveBeenCalledWith(
+      "Provision confirmed. Waiting for synced realm data before enabling the button again.",
+    );
   });
 
   it("recovers duplicate already-provisioned errors by refreshing synced realm data", async () => {

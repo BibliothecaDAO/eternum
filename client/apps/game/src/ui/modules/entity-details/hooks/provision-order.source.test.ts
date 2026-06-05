@@ -6,11 +6,11 @@ import { resolve } from "node:path";
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
 /**
- * Locks the blitz "bootstrap" invariant: provision_realm must run BEFORE
- * level_up, and clicking the pickaxe must only require provisioning (not an
- * affordable upgrade). provision_realm grants the realm's starting resources;
- * level_up spends them. A freshly settled realm has no economy until provisioned,
- * so the reverse order reverts and gating on canUpgrade blocks players entirely.
+ * Locks the blitz "bootstrap" invariants: provision_realm must run BEFORE
+ * level_up whenever the two calls are bundled, and clicking the pickaxe must
+ * still provision when an immediate upgrade is unaffordable. A freshly settled
+ * realm has no economy until provisioned, so forcing the bundle before the
+ * level-up is affordable reverts the whole transaction.
  */
 describe("blitz bootstrap fires provision before level_up", () => {
   it("useRealmActions multicall lists the provision call first", () => {
@@ -38,13 +38,11 @@ describe("blitz bootstrap fires provision before level_up", () => {
     expect(src).toContain("provision.handleProvision()");
   });
 
-  it("a provisionable realm gets the provision-first bundle, never a bare level_up", () => {
+  it("suggestions bundle level_up only when the upgrade is affordable", () => {
     const src = readSource("src/ui/features/world/containers/left-facets/blitz-suggestions.ts");
-    // canProvision short-circuits to the bundled "upgrade-and-provision" action,
-    // which is safe because the multicall runs provision_realm before level_up
-    // (asserted above). A fresh realm therefore never receives a standalone
-    // level_up that would revert.
     expect(src).toContain("if (input.canProvision)");
+    expect(src).toContain("input.canAffordUpgrade");
+    expect(src).toContain('"provision"');
     expect(src).toContain('"upgrade-and-provision"');
   });
 

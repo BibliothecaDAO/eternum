@@ -23,8 +23,8 @@ import { memo, useCallback, useMemo } from "react";
  * — there's no sort control, so the row stays compact.
  *
  * Active structure always renders at the top regardless of order, so the
- * player's current focus is consistently the first row. The list caps its
- * height to ~3 rows and scrolls for the rest.
+ * player's current focus is consistently the first row. The list fits three
+ * full realm rows before scrolling for larger empires.
  */
 export const StructureListColumn = memo(() => {
   const { setup } = useDojo();
@@ -108,8 +108,8 @@ export const StructureListColumn = memo(() => {
           {visibleStructures.length === 0 ? (
             <p className={cn(HUD_BODY_MUTED)}>No structures match this filter.</p>
           ) : (
-            // Cap at ~3 rows; scroll for the rest.
-            <div className="flex max-h-[clamp(180px,24vh,212px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+            // Fit three full realm rows; scroll only for larger empires.
+            <div className="flex max-h-[clamp(260px,36vh,340px)] flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
               {visibleStructures.map((structure) => (
                 <StructureStatusRow
                   key={structure.entityId}

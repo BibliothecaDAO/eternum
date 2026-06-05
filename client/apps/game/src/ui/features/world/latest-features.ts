@@ -34,6 +34,30 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-06-05",
+    title: "Sticky Graphics Setting",
+    description:
+      "Fixed graphics setup so a saved quality choice is not overwritten by first-run device detection, keeping your selected preset stable between sessions.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-06-05",
+    title: "Cleaner Realm List",
+    description:
+      "Improved the in-world realm list so three active realms and the cockpit panel fit without an unnecessary scrollbar on standard game viewports.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-06-05",
+    title: "Safer Realm Provisioning",
+    description:
+      "Fixed Blitz Suggested Actions so fresh realms provision first when level-up is not yet affordable, avoiding failed bootstrap transactions and clearer error feedback.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-06-04",
     title: "Stable Army Models",
     description:
