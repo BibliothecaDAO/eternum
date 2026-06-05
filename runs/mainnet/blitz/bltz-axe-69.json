@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "27009463302-1",
   "currentStepId": null,
   "createdAt": "2026-06-05T10:24:37.609Z",
-  "updatedAt": "2026-06-05T13:10:29.007Z",
+  "updatedAt": "2026-06-05T13:12:06.522Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x2628370636258a7d30910a3235d71a17bbb2aa740b67cb8d74acff8686cadd6"
     ],
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-axe-69/torii",
     "indexerVersion": "v1.8.15",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-06-05T11:02:49.009Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-06-05T13:10:26.904Z"
+    "lastIndexerDescribeAt": "2026-06-05T13:12:06.522Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-06-05T10:28:59.593Z"
 }
