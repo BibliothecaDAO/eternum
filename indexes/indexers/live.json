@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-05T14:07:40.266Z",
+  "updatedAt": "2026-06-05T14:17:47.308Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3289,13 +3289,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-blink-436/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-06-05T13:07:40.068Z"
+        "describedAt": "2026-06-05T14:17:47.307Z"
       },
-      "updatedAt": "2026-06-05T13:07:41.332Z"
+      "updatedAt": "2026-06-05T14:17:47.308Z"
     }
   }
 }
