@@ -9,7 +9,7 @@ describe("latestFeatures landing feed", () => {
     expect(latestFeatures.length).toBeLessThanOrEqual(8);
 
     const timestamps = latestFeatures.map((feature) => new Date(feature.date).getTime());
-    expect(timestamps).toEqual([...timestamps].sort((left, right) => right - left));
+    expect(timestamps).toEqual(timestamps.toSorted((left, right) => right - left));
   });
 
   it("keeps optional metadata well-typed when present", () => {
@@ -34,12 +34,23 @@ describe("latestFeatures landing feed", () => {
     );
   });
 
-  it("announces unit creation ghosts in the latest feed", () => {
+  it("announces army ghost cleanup in the latest feed", () => {
     expect(latestFeatures).toContainEqual(
       expect.objectContaining({
-        date: "2026-05-26",
-        title: "Unit Creation Ghosts",
-        type: "improvement",
+        date: "2026-06-05",
+        title: "Army Ghost Cleanup",
+        type: "fix",
+        gameSlug: "world",
+      }),
+    );
+  });
+
+  it("announces the compact realm list in the latest feed", () => {
+    expect(latestFeatures).toContainEqual(
+      expect.objectContaining({
+        date: "2026-06-05",
+        title: "Compact Realm List",
+        type: "fix",
         gameSlug: "world",
       }),
     );

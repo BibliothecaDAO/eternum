@@ -39,4 +39,21 @@ describe("worldmap Torii bounds debug overlay wiring", () => {
     expect(body).toContain('lastOutcome: "global_spatial_sync"');
     expect(body).toContain("subscriptionBounds");
   });
+
+  it("switches real Torii spatial bounds when bounded spatial sync is enabled", () => {
+    const source = readWorldmapSource();
+    const methodStart = source.indexOf("private async updateToriiBoundsSubscription");
+    expect(methodStart).toBeGreaterThan(0);
+    const methodEnd = source.indexOf("\n  private addWorldUpdateSubscription", methodStart);
+    const body = source.slice(methodStart, methodEnd);
+
+    expect(source).toContain("VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC");
+    expect(source).toContain("new ToriiStreamManager");
+    expect(source).toContain("buildBoundsDescriptorSignature");
+    expect(body).toContain("this.toriiStreamManager.switchBounds(descriptor)");
+    expect(body).toContain("bounds_switch_skipped_same_signature");
+    expect(body).toContain("spatialBoundsSwitchRequests");
+    expect(body).toContain("torii_bounds_switch_applied");
+    expect(body).toContain("torii_bounds_switch_failed");
+  });
 });

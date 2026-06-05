@@ -140,8 +140,56 @@ const GLOBAL_EVENT_MODELS: string[] = [
 ];
 
 const GLOBAL_EVENT_STREAM_MODELS: GlobalModelStreamConfig[] = GLOBAL_EVENT_MODELS.map((model) => ({ model }));
+const BOUNDED_SYNC_GLOBAL_ENTITY_STREAM_MODELS: GlobalModelStreamConfig[] = [
+  { model: "s1_eternum-WorldConfig", keyCount: 1 },
+  { model: "s1_eternum-HyperstrtConstructConfig", keyCount: 1 },
+  { model: "s1_eternum-HyperstructureGlobals", keyCount: 1 },
+  { model: "s1_eternum-WeightConfig", keyCount: 1 },
+  { model: "s1_eternum-ResourceFactoryConfig", keyCount: 1 },
+  { model: "s1_eternum-BuildingCategoryConfig", keyCount: 1 },
+  { model: "s1_eternum-ResourceBridgeWtlConfig", keyCount: 1 },
+  { model: "s1_eternum-StructureLevelConfig", keyCount: 1 },
+  { model: "s1_eternum-SeasonPrize", keyCount: 1 },
+  { model: "s1_eternum-SeasonEnded", keyCount: 1 },
+  { model: "s1_eternum-QuestLevels", keyCount: 1 },
+  { model: "s1_eternum-AddressName", keyCount: 1 },
+  { model: "s1_eternum-PlayerRegisteredPoints", keyCount: 1 },
+  { model: "s1_eternum-BlitzSettlement", keyCount: 1 },
+  { model: "s1_eternum-BlitzEntryTokenRegister", keyCount: 1 },
+  { model: "s1_eternum-PlayersRankTrial", keyCount: 1 },
+  { model: "s1_eternum-PlayersRankFinal", keyCount: 1 },
+  { model: "s1_eternum-MMRGameMeta", keyCount: 1 },
+  { model: "s1_eternum-Guild", keyCount: 1 },
+  { model: "s1_eternum-GuildMember", keyCount: 1 },
+  { model: "s1_eternum-ResourceList", keyCount: 2 },
+  { model: "s1_eternum-PlayerRank", keyCount: 2 },
+  { model: "s1_eternum-RankPrize", keyCount: 2 },
+  { model: "s1_eternum-GuildWhitelist", keyCount: 2 },
+];
 const GLOBAL_EVENT_STREAM_CLAUSE = buildModelKeysClause(GLOBAL_EVENT_STREAM_MODELS);
+const BOUNDED_SYNC_GLOBAL_ENTITY_STREAM_CLAUSE = buildModelKeysClause(BOUNDED_SYNC_GLOBAL_ENTITY_STREAM_MODELS);
 const GLOBAL_SPATIAL_MAP_BOOTSTRAP_SNAPSHOT_CLAUSE = buildModelKeysClause(GLOBAL_SPATIAL_MAP_BOOTSTRAP_SNAPSHOT_MODELS);
+
+const getInitialGlobalEntityStreamClause = (): Clause | undefined =>
+  env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC ? BOUNDED_SYNC_GLOBAL_ENTITY_STREAM_CLAUSE : undefined;
+
+const stringifyWorldmapSyncABPayload = (payload: Record<string, unknown>): string => {
+  try {
+    return JSON.stringify(payload, (_key, value) => (typeof value === "bigint" ? value.toString() : value));
+  } catch (error) {
+    return JSON.stringify({
+      serializationError: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+const logWorldmapSyncAB = (message: string, payload: Record<string, unknown>): void => {
+  if (env.VITE_PUBLIC_TORII_BOUNDS_DEBUG !== true && env.VITE_PUBLIC_TORII_BOUNDS_DEBUG_OVERLAY !== true) {
+    return;
+  }
+
+  console.info(`[WorldmapSyncAB] ${message} ${stringifyWorldmapSyncABPayload(payload)}`);
+};
 
 type BatchPayload = { upserts: ToriiEntity[]; deletions: string[] };
 type SyncEntityReadinessMatcher = (data: ToriiEntity) => boolean;
@@ -717,11 +765,23 @@ export const initialSync = async (
   isInitialSyncInFlight = true;
   const globalStreamSubscribeStart = performance.now();
   try {
+    const initialGlobalEntityClause = getInitialGlobalEntityStreamClause();
+    logWorldmapSyncAB("Initial sync config", {
+      boundedSpatialSync: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC,
+      boundedSpatialPadding: env.VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING,
+      eventModels: GLOBAL_EVENT_MODELS,
+      globalEntityMode: initialGlobalEntityClause ? "bounded_global_models" : "legacy_all_entities",
+      globalEntityModels: initialGlobalEntityClause
+        ? BOUNDED_SYNC_GLOBAL_ENTITY_STREAM_MODELS.map(({ model }) => model)
+        : "all",
+      spatialBootstrapModels: GLOBAL_SPATIAL_MAP_BOOTSTRAP_MODEL_NAMES,
+      timestamp: new Date().toISOString(),
+    });
     entityStreamSubscription = await syncEntitiesDebounced(
       setup.network.toriiClient,
       setup,
       {
-        entityClause: undefined,
+        entityClause: initialGlobalEntityClause,
         eventClause: GLOBAL_EVENT_STREAM_CLAUSE,
       },
       logging,

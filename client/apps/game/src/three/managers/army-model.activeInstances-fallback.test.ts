@@ -8,7 +8,6 @@ import {
   Matrix4,
   Mesh,
   MeshBasicMaterial,
-  Quaternion,
   Scene,
   Vector3,
 } from "three";
@@ -137,6 +136,15 @@ function createModelData() {
   };
 }
 
+type ArmyModelTestAccess = {
+  models: Map<ModelType, ReturnType<typeof createModelData>>;
+  entityModelMap: Map<number, ModelType>;
+  activeBaseModelByEntity: Map<number, ModelType | null>;
+  ensureModelCapacity: (modelData: ReturnType<typeof createModelData>, requiredCount: number) => void;
+};
+
+const accessArmyModel = (subject: ArmyModel) => subject as unknown as ArmyModelTestAccess;
+
 describe("ArmyModel activeInstances fallback fix (Stage 0)", () => {
   it("clearInstanceSlot removes index from activeInstances when owner is known", () => {
     const subject = new ArmyModel(new Scene());
@@ -184,6 +192,34 @@ describe("ArmyModel activeInstances fallback fix (Stage 0)", () => {
     expect(activeModelData.activeInstances.has(slot)).toBe(false);
     expect(staleModelData.activeInstances.has(slot)).toBe(false);
     expectSlotToBeZeroed(activeModelData.instancedMeshes[0], slot);
+    expectSlotToBeZeroed(staleModelData.instancedMeshes[0], slot);
+  });
+
+  it("updateInstance prunes inactive renderable memberships for the live slot", () => {
+    const subject = new ArmyModel(new Scene());
+    const modelAccess = accessArmyModel(subject);
+    const entityId = 102;
+    const slot = subject.allocateInstanceSlot(entityId);
+
+    const activeModelData = createModelData();
+    const staleModelData = createModelData();
+    modelAccess.models.set(ModelType.Knight1, activeModelData);
+    modelAccess.models.set(ModelType.Crossbowman1, staleModelData);
+    modelAccess.entityModelMap.set(entityId, ModelType.Knight1);
+    modelAccess.activeBaseModelByEntity.set(entityId, ModelType.Knight1);
+
+    activeModelData.activeInstances.add(slot);
+    staleModelData.activeInstances.add(slot);
+    modelAccess.ensureModelCapacity(activeModelData, slot + 1);
+    modelAccess.ensureModelCapacity(staleModelData, slot + 1);
+
+    const stalePosition = new Matrix4().makeTranslation(9, 0, 9);
+    staleModelData.instancedMeshes[0].setMatrixAt(slot, stalePosition);
+
+    subject.updateInstance(entityId, slot, new Vector3(1, 0, 1), new Vector3(1, 1, 1));
+
+    expect(activeModelData.activeInstances.has(slot)).toBe(true);
+    expect(staleModelData.activeInstances.has(slot)).toBe(false);
     expectSlotToBeZeroed(staleModelData.instancedMeshes[0], slot);
   });
 

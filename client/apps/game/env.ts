@@ -253,6 +253,17 @@ const envSchema = z.object({
     .transform((v) => v === "true")
     .optional()
     .default("true"),
+  VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_SYNC: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("false"),
+  VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING: z
+    .string()
+    .optional()
+    .default("0")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_WORLDMAP_BOUNDED_SPATIAL_PADDING"),
   VITE_PUBLIC_WORLDMAP_CHUNK_PHASE_TIMEOUT_MS: z
     .string()
     .optional()

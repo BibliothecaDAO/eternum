@@ -25,7 +25,12 @@ export type WorldmapRenderGauge =
   | "visibleStructures"
   | "activeLabels"
   | "globalSpatialTileOptRecs"
-  | "globalSpatialHydrationCandidates";
+  | "globalSpatialHydrationCandidates"
+  | "spatialSubscriptionMinCol"
+  | "spatialSubscriptionMaxCol"
+  | "spatialSubscriptionMinRow"
+  | "spatialSubscriptionMaxRow"
+  | "spatialSubscriptionModelCount";
 export type WorldmapRenderUploadMetric = "cachedChunkReplay";
 
 export type WorldmapRenderCounter =
@@ -63,6 +68,11 @@ export type WorldmapRenderCounter =
   | "globalSpatialRecsHydratedTiles"
   | "globalSpatialRecsHydratedChests"
   | "globalSpatialRecsHydratedStructures"
+  | "spatialBoundsSwitchRequests"
+  | "spatialBoundsSwitchApplied"
+  | "spatialBoundsSwitchSkipped"
+  | "spatialBoundsSwitchFailures"
+  | "spatialStreamUpdates"
   | "spatialTileOptRecsApplied"
   | "spatialTileOptReadyTimeouts"
   | "spatialTileOptStreamReceived"
@@ -150,6 +160,11 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     activeLabels: 0,
     globalSpatialTileOptRecs: 0,
     globalSpatialHydrationCandidates: 0,
+    spatialSubscriptionMinCol: 0,
+    spatialSubscriptionMaxCol: 0,
+    spatialSubscriptionMinRow: 0,
+    spatialSubscriptionMaxRow: 0,
+    spatialSubscriptionModelCount: 0,
   },
   uploadBytes: {
     cachedChunkReplay: 0,
@@ -189,6 +204,11 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     globalSpatialRecsHydratedTiles: 0,
     globalSpatialRecsHydratedChests: 0,
     globalSpatialRecsHydratedStructures: 0,
+    spatialBoundsSwitchRequests: 0,
+    spatialBoundsSwitchApplied: 0,
+    spatialBoundsSwitchSkipped: 0,
+    spatialBoundsSwitchFailures: 0,
+    spatialStreamUpdates: 0,
     spatialTileOptRecsApplied: 0,
     spatialTileOptReadyTimeouts: 0,
     spatialTileOptStreamReceived: 0,

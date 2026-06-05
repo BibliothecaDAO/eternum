@@ -184,6 +184,7 @@ export const StructureStatusRow = memo(
         onKeyDown={handleKeyDown}
         className={cn(
           "pointer-events-auto cursor-pointer rounded-xl transition",
+          isFull && "h-[60px]",
           isActive
             ? "border border-gold/65 ring-1 ring-gold/30 bg-gradient-to-b from-[#231913]/97 to-[#2c2018]/97 shadow-[0_0_18px_rgba(223,170,84,0.3),inset_0_1px_0_rgba(255,214,102,0.28)] backdrop-blur-sm"
             : cn(OVERLAY_SURFACE_BASE, "hover:border-gold/50"),

@@ -926,6 +926,8 @@ export class ArmyModel {
       this.activeCosmeticByEntity.set(entityId, activeCosmetic);
     }
 
+    this.clearInactiveRenderableSlotMemberships(index, activeBaseModel, activeCosmetic);
+
     if (activeBaseModel) {
       const modelData = this.models.get(activeBaseModel);
       if (modelData) {
@@ -952,6 +954,25 @@ export class ArmyModel {
         this.extendModelDrawCount(cosmeticData, index);
       }
     }
+  }
+
+  private clearInactiveRenderableSlotMemberships(
+    index: number,
+    activeBaseModel: ModelType | null,
+    activeCosmetic: string | null,
+  ): void {
+    this.models.forEach((modelData, modelType) => {
+      if (modelType === activeBaseModel) {
+        return;
+      }
+      this.clearModelSlotIfActive(modelData, index);
+    });
+    this.cosmeticModels.forEach((modelData, cosmeticId) => {
+      if (cosmeticId === activeCosmetic) {
+        return;
+      }
+      this.clearModelSlotIfActive(modelData, index);
+    });
   }
 
   public releaseEntity(entityId: number, freedSlot?: number): void {

@@ -1,4 +1,4 @@
-import type { GlobalModelStreamConfig } from "./torii-stream-manager";
+import type { BoundsModelConfig, GlobalModelStreamConfig } from "./torii-stream-manager";
 
 interface ToriiSpatialMapModelConfig {
   model: string;
@@ -15,6 +15,14 @@ export const GLOBAL_SPATIAL_MAP_MODELS = [
   { model: "s1_eternum-ExplorerRewardEvent", colField: "coord.x", rowField: "coord.y" },
   { model: "s1_eternum-BattleEvent", colField: "coord.x", rowField: "coord.y" },
 ] as const satisfies readonly ToriiSpatialMapModelConfig[];
+
+export const BOUNDED_SPATIAL_MAP_MODELS: BoundsModelConfig[] = GLOBAL_SPATIAL_MAP_MODELS.map(
+  ({ model, colField, rowField }) => ({
+    model,
+    colField: colField ?? "col",
+    rowField: rowField ?? "row",
+  }),
+);
 
 const GLOBAL_SPATIAL_OWNER_MODEL_NAME = "s1_eternum-Structure";
 
