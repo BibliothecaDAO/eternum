@@ -44,6 +44,11 @@ export interface RendererInitDiagnostics {
   requestedMode: RendererBuildMode;
 }
 
+export interface RendererDeviceLostEvent {
+  activeMode: RendererActiveMode;
+  message?: string;
+}
+
 export interface RendererBackendV2 {
   readonly capabilities: RendererBackendCapabilities;
   readonly renderer?: RendererSurfaceLike;

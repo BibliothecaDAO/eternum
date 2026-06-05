@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-06-05",
+    title: "Map Rendering & Graphics Polish",
+    description:
+      "Fixed world-map rendering so unit models, chests, and the local hex grid stay visible through live updates, chunk transitions, and camera changes; made graphics presets render more cheaply with your saved quality choice now persisting between sessions; and improved Blitz realm setup so fresh realms provision reliably with a tidier realm list.",
+    type: "fix",
+    gameSlug: "world",
+  },
+  {
     date: "2026-05-31",
     title: "Factory Biome Tuning",
     description:

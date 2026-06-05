@@ -326,6 +326,30 @@ export class ArmyModel {
     }
   }
 
+  /**
+   * Ensure a model's draw count covers a freshly added instance slot.
+   *
+   * `mesh.count` only draws slots in [0, count). `updateInstance` can move an
+   * entity onto a different (already-loaded) model mid-move — e.g. a biome
+   * switch to Boat over water — by adding its slot to that model's
+   * `activeInstances` without `setVisibleSlots`/`syncModelDrawCount` running.
+   * Without bumping the count here the slot stays >= count and the model is not
+   * drawn (while the entity's label, keyed by entityId, keeps following). This
+   * is an O(1) additive guard; `setVisibleSlots`/`getModelDrawCount` remains the
+   * authoritative recompactor on removal/compaction (which may shrink count).
+   */
+  private extendModelDrawCount(modelData: ModelData, index: number): void {
+    const minCount = index + 1;
+    modelData.instancedMeshes.forEach((mesh) => {
+      if (mesh.count < minCount) {
+        mesh.count = minCount;
+      }
+    });
+    if (modelData.contactShadowMesh && modelData.contactShadowMesh.count < minCount) {
+      modelData.contactShadowMesh.count = minCount;
+    }
+  }
+
   private createModelData(gltf: any): ModelData {
     const group = new Group();
     const sourceScene = this.createRenderableSourceScene(gltf.scene);
@@ -911,6 +935,9 @@ export class ArmyModel {
         this.ensureModelCapacity(modelData, index + 1);
         this.updateInstanceTransform(state.position, targetScale, state.rotation);
         this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
+        // Bump count after capacity is ensured so the just-added slot draws now,
+        // not only after the next setVisibleSlots (see extendModelDrawCount).
+        this.extendModelDrawCount(modelData, index);
       }
     }
 
@@ -922,12 +949,18 @@ export class ArmyModel {
         this.ensureModelCapacity(cosmeticData, index + 1);
         this.updateInstanceTransform(state.position, this.normalScale, state.rotation);
         this.updateInstanceMeshes(cosmeticData, index, entityId, state.position, state.color);
+        this.extendModelDrawCount(cosmeticData, index);
       }
     }
   }
 
   public releaseEntity(entityId: number, freedSlot?: number): void {
     this.freeInstanceSlot(entityId, freedSlot);
+    // Defensive: freeInstanceSlot keys off instanceData.matrixIndex. If that was
+    // already detached (a desync) while a slot still drew this entity, the slot
+    // would render forever as a ghost with no label. Sweep matrixIndexOwners for
+    // any slot still mapped to this entity and hard-clear it.
+    this.purgeOwnedSlotsForEntity(entityId);
     this.instanceData.delete(entityId);
     this.entityModelMap.delete(entityId);
     this.entityCosmeticMap.delete(entityId);
@@ -935,6 +968,86 @@ export class ArmyModel {
     this.activeCosmeticByEntity.delete(entityId);
     this.movementCompleteCallbacks.delete(entityId);
     this.removeLabel(entityId);
+  }
+
+  /** Hard-clear a single slot across every renderable, drop its ownership, and pool it. */
+  public purgeDrawnSlot(slot: number): void {
+    this.clearMovementStateForSlot(slot);
+    this.clearSlotFromEveryRenderable(slot);
+    this.matrixIndexOwners.delete(slot);
+    this.hiddenSlots.delete(slot);
+    this.setAnimationState(slot, false);
+    if (!this.freeSlotSet.has(slot)) {
+      this.freeSlotSet.add(slot);
+      this.freeSlots.push(slot);
+    }
+  }
+
+  private purgeOwnedSlotsForEntity(entityId: number): void {
+    const leaked: number[] = [];
+    this.matrixIndexOwners.forEach((owner, slot) => {
+      if (owner === entityId) {
+        leaked.push(slot);
+      }
+    });
+    for (const slot of leaked) {
+      this.purgeDrawnSlot(slot);
+    }
+  }
+
+  private clearMovementStateForSlot(slot: number): void {
+    const owner = this.matrixIndexOwners.get(slot);
+    if (owner !== undefined) {
+      this.clearMovementState(owner);
+    }
+  }
+
+  /**
+   * Slots the GPU is actually drawing (present in a model's activeInstances AND
+   * within that mesh's draw count), paired with their recorded owner entity.
+   * Used by the render-integrity auditor/heal to spot orphaned ghost slots.
+   */
+  public collectDrawnSlotOwners(): Array<{ slot: number; owner: number | undefined }> {
+    const seen = new Set<number>();
+    const result: Array<{ slot: number; owner: number | undefined }> = [];
+    const collect = (models: Iterable<ModelData>) => {
+      for (const modelData of models) {
+        const count = modelData.instancedMeshes[0]?.count ?? 0;
+        modelData.activeInstances.forEach((slot) => {
+          if (slot < count && !seen.has(slot)) {
+            seen.add(slot);
+            result.push({ slot, owner: this.matrixIndexOwners.get(slot) });
+          }
+        });
+      }
+    };
+    collect(this.models.values());
+    collect(this.cosmeticModels.values());
+    return result;
+  }
+
+  /** True when the entity's slot is present and drawn in its active base or cosmetic model. */
+  public isEntityDrawn(entityId: number): boolean {
+    const slot = this.instanceData.get(entityId)?.matrixIndex;
+    if (slot === undefined) {
+      return false;
+    }
+    const drawnIn = (modelData: ModelData | undefined): boolean => {
+      if (!modelData || !modelData.activeInstances.has(slot)) {
+        return false;
+      }
+      const count = modelData.instancedMeshes[0]?.count ?? 0;
+      return slot < count;
+    };
+    const baseType = this.activeBaseModelByEntity.get(entityId);
+    if (baseType && drawnIn(this.models.get(baseType))) {
+      return true;
+    }
+    const cosmeticId = this.activeCosmeticByEntity.get(entityId);
+    if (cosmeticId && drawnIn(this.cosmeticModels.get(cosmeticId))) {
+      return true;
+    }
+    return false;
   }
 
   private storeInstanceState(

@@ -133,6 +133,11 @@ const recommendInitialGraphicsSetting = async (): Promise<GraphicsSettings> => {
   return GraphicsSettings.HIGH;
 };
 
+export const shouldRecommendInitialGraphicsSetting = (
+  storedGraphicsSetting: string | null,
+  initialLaptopCheck: string | null,
+): boolean => !storedGraphicsSetting && !initialLaptopCheck;
+
 const checkGraphicsSettings = async () => {
   const browserLocalStorage = getBrowserLocalStorage();
   if (!browserLocalStorage) {
@@ -152,9 +157,13 @@ const checkGraphicsSettings = async () => {
   // On first load, pick a sensible default from the device's capability so weak
   // hardware lands on a low tier instead of always defaulting to HIGH. The choice
   // is then sticky in localStorage and the user can change it from settings.
-  if (!browserLocalStorage.getItem("INITIAL_LAPTOP_CHECK")) {
+  const storedGraphicsSetting = browserLocalStorage.getItem("GRAPHICS_SETTING");
+  const initialLaptopCheck = browserLocalStorage.getItem("INITIAL_LAPTOP_CHECK");
+  if (shouldRecommendInitialGraphicsSetting(storedGraphicsSetting, initialLaptopCheck)) {
     const recommended = await recommendInitialGraphicsSetting();
     browserLocalStorage.setItem("GRAPHICS_SETTING", recommended);
+    browserLocalStorage.setItem("INITIAL_LAPTOP_CHECK", "true");
+  } else if (!initialLaptopCheck) {
     browserLocalStorage.setItem("INITIAL_LAPTOP_CHECK", "true");
   }
 

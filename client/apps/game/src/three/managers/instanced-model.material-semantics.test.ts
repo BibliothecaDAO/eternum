@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AnimationClip,
+  Box3,
   BoxGeometry,
   Group,
   Matrix4,
@@ -10,6 +11,8 @@ import {
   NumberKeyframeTrack,
   PlaneGeometry,
   SphereGeometry,
+  Sphere,
+  Vector3,
 } from "three";
 
 vi.mock("../utils/contact-shadow", () => ({
@@ -86,6 +89,24 @@ describe("InstancedModel material semantics", () => {
     expect(resolvedMaterial.depthWrite).toBe(false);
     expect(resolvedMaterial.alphaTest).toBe(0);
     expect(resolvedMaterial.emissiveIntensity).toBe(1.5);
+  });
+
+  it("applies authoritative world bounds to instanced mesh culling bounds", async () => {
+    const { default: InstancedModel } = await import("./instanced-model");
+    const model = new InstancedModel(createInstancedModelTestGltf(new MeshStandardMaterial()), 1, false, "Chest");
+    const bounds = {
+      box: new Box3(new Vector3(-10, -2, -12), new Vector3(10, 8, 12)),
+      sphere: new Sphere(new Vector3(2, 3, 4), 18),
+    };
+
+    model.setWorldBounds(bounds);
+
+    const mesh = model.instancedMeshes[0];
+    expect(mesh.frustumCulled).toBe(true);
+    expect(mesh.boundingSphere?.center.toArray()).toEqual([2, 3, 4]);
+    expect(mesh.boundingSphere?.radius).toBe(18);
+    expect(mesh.boundingBox?.min.toArray()).toEqual([-10, -2, -12]);
+    expect(mesh.boundingBox?.max.toArray()).toEqual([10, 8, 12]);
   });
 
   it("keeps animated morph instances on the WebGPU-safe morph texture path", async () => {

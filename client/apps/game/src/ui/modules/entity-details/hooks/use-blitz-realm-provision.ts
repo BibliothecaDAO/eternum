@@ -13,6 +13,8 @@ import { getBuildingCount, getRealmInfo } from "@bibliothecadao/eternum";
 import { useBuildings, useDojo } from "@bibliothecadao/react";
 import { BuildingType, ContractAddress, StructureType } from "@bibliothecadao/types";
 import { dojoConfig } from "../../../../../dojo-config";
+import { extractReadableErrorMessage } from "@/utils/error-message";
+import { withRealmActionSubmitTimeout } from "./realm-action-submit-timeout";
 
 const REALM_PROVISION_SYNC_TIMEOUT_MS = 30_000;
 const REALM_PROVISION_SYNC_POLL_INTERVAL_MS = 1_000;
@@ -189,7 +191,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
   const canProvision = Boolean(isBlitzWorld && isRealm && isOwner && isMainPhase && !isSeasonOver && !isProvisioned);
   const needsBootstrap = Boolean(isBlitzWorld && isRealm && isOwner && !isSeasonOver && !isProvisioned);
   const isProvisionLoading = isProvisionLoadingState(provisionActionState);
-  const isProvisionLocked = provisionActionState !== "idle";
+  const isProvisionLocked = isProvisionLoading;
 
   useEffect(() => {
     if (isProvisioned && provisionActionState !== "idle") {
@@ -258,16 +260,19 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
 
     try {
       const blitzRealmSystemsAddress = resolveBlitzRealmSystemsAddress();
-      await executeObservedClientTransaction({
-        account: account.account,
-        calls: {
-          contractAddress: blitzRealmSystemsAddress,
-          entrypoint: "provision_realm",
-          calldata: CallData.compile([structureInfo.entityId]),
-        },
-        surface: "settlement",
-        operation: "blitz_realm_systems.provision_realm",
-      });
+      await withRealmActionSubmitTimeout(
+        executeObservedClientTransaction({
+          account: account.account,
+          calls: {
+            contractAddress: blitzRealmSystemsAddress,
+            entrypoint: "provision_realm",
+            calldata: CallData.compile([structureInfo.entityId]),
+          },
+          surface: "settlement",
+          operation: "blitz_realm_systems.provision_realm",
+          waitForConfirmation: false,
+        }),
+      );
 
       setProvisionActionState("syncing");
     } catch (error) {
@@ -282,6 +287,7 @@ export const useBlitzRealmProvision = (structureEntityId: number | null): Struct
       }
 
       setProvisionActionState("idle");
+      toast.error(extractReadableErrorMessage(error, "Failed to submit the provision."));
       throw error;
     }
   }, [account.account, canProvision, network.toriiClient, structureInfo, syncTarget, toriiComponents]);

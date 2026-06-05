@@ -14,14 +14,12 @@ export class Navigator {
   private controls: MapControls;
   private arrowModel: THREE.Object3D | null = null;
   private target: HexPosition | null = null;
-  private guiFolder: GUI;
   private label: THREE.Group | null = null;
   private distanceDiv: HTMLElement | null = null;
 
-  constructor(scene: THREE.Scene, controls: MapControls, guiFolder: GUI) {
+  constructor(scene: THREE.Scene, controls: MapControls, _guiFolder?: GUI) {
     this.scene = scene;
     this.controls = controls;
-    this.guiFolder = guiFolder;
     this.label = new THREE.Group();
     this.scene.add(this.label);
     this.distanceDiv = document.createElement("div");

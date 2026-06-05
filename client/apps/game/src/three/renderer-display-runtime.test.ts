@@ -6,6 +6,7 @@ const mockGraphicsSettings = {
   HIGH: "HIGH",
   LOW: "LOW",
   MID: "MID",
+  ULTRA_LOW: "ULTRA_LOW",
 } as const;
 
 const resizeRendererBackend = vi.fn();
@@ -39,17 +40,41 @@ describe("renderer display runtime", () => {
       resolveRendererTargetPixelRatio({
         devicePixelRatio: 3,
         graphicsSetting: importedGraphicsSettings.HIGH,
-        isMobileDevice: true,
+        isMobileDevice: false,
       }),
     ).toBe(1.5);
 
     expect(
       resolveRendererTargetPixelRatio({
-        devicePixelRatio: 1.2,
+        devicePixelRatio: 3,
         graphicsSetting: importedGraphicsSettings.MID,
         isMobileDevice: false,
       }),
-    ).toBe(1.2);
+    ).toBe(1.25);
+
+    expect(
+      resolveRendererTargetPixelRatio({
+        devicePixelRatio: 3,
+        graphicsSetting: importedGraphicsSettings.LOW,
+        isMobileDevice: false,
+      }),
+    ).toBe(0.9);
+
+    expect(
+      resolveRendererTargetPixelRatio({
+        devicePixelRatio: 3,
+        graphicsSetting: importedGraphicsSettings.ULTRA_LOW,
+        isMobileDevice: false,
+      }),
+    ).toBe(0.55);
+
+    expect(
+      resolveRendererTargetPixelRatio({
+        devicePixelRatio: 3,
+        graphicsSetting: importedGraphicsSettings.HIGH,
+        isMobileDevice: true,
+      }),
+    ).toBe(1.25);
   });
 
   it("resolves frame caps for desktop and mobile graphics settings", () => {
@@ -58,13 +83,13 @@ describe("renderer display runtime", () => {
         graphicsSetting: importedGraphicsSettings.HIGH,
         isMobileDevice: false,
       }),
-    ).toBeNull();
+    ).toBe(45);
     expect(
       resolveRendererTargetFps({
         graphicsSetting: importedGraphicsSettings.MID,
         isMobileDevice: false,
       }),
-    ).toBe(45);
+    ).toBe(30);
     expect(
       resolveRendererTargetFps({
         graphicsSetting: importedGraphicsSettings.HIGH,
@@ -76,7 +101,7 @@ describe("renderer display runtime", () => {
         graphicsSetting: importedGraphicsSettings.LOW,
         isMobileDevice: true,
       }),
-    ).toBe(30);
+    ).toBe(24);
   });
 
   it("exposes the pixel-ratio cap for runtime quality application", () => {
@@ -85,13 +110,13 @@ describe("renderer display runtime", () => {
         graphicsSetting: importedGraphicsSettings.MID,
         isMobileDevice: true,
       }),
-    ).toBe(1.25);
+    ).toBe(1);
     expect(
       resolveRendererPixelRatioCap({
         graphicsSetting: importedGraphicsSettings.LOW,
         isMobileDevice: false,
       }),
-    ).toBe(Number.POSITIVE_INFINITY);
+    ).toBe(1.5);
   });
 
   it("resizes using the renderer container when available", () => {

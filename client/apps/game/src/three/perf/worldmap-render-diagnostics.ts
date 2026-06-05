@@ -12,13 +12,20 @@ export type WorldmapRenderDurationMetric =
   | "chunkManagerCatchUpMs"
   | "tileHydrationDrainMs"
   | "structureHydrationDrainMs"
+  | "globalSpatialTileOptScanMs"
   | "structureAssetPrewarmMs"
   | "presentationCommittedMs"
   | "presentationSkewMs"
   | "workerFindPath"
   | "createPath";
 
-export type WorldmapRenderGauge = "activePaths" | "visibleArmies" | "visibleStructures" | "activeLabels";
+export type WorldmapRenderGauge =
+  | "activePaths"
+  | "visibleArmies"
+  | "visibleStructures"
+  | "activeLabels"
+  | "globalSpatialTileOptRecs"
+  | "globalSpatialHydrationCandidates";
 export type WorldmapRenderUploadMetric = "cachedChunkReplay";
 
 export type WorldmapRenderCounter =
@@ -54,6 +61,8 @@ export type WorldmapRenderCounter =
   | "preparedChunkPrewarmHits"
   | "preparedChunkPrewarmMisses"
   | "globalSpatialRecsHydratedTiles"
+  | "globalSpatialRecsHydratedChests"
+  | "globalSpatialRecsHydratedStructures"
   | "spatialTileOptRecsApplied"
   | "spatialTileOptReadyTimeouts"
   | "spatialTileOptStreamReceived"
@@ -127,6 +136,7 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     chunkManagerCatchUpMs: createDurationStats(),
     tileHydrationDrainMs: createDurationStats(),
     structureHydrationDrainMs: createDurationStats(),
+    globalSpatialTileOptScanMs: createDurationStats(),
     structureAssetPrewarmMs: createDurationStats(),
     presentationCommittedMs: createDurationStats(),
     presentationSkewMs: createDurationStats(),
@@ -138,6 +148,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     visibleArmies: 0,
     visibleStructures: 0,
     activeLabels: 0,
+    globalSpatialTileOptRecs: 0,
+    globalSpatialHydrationCandidates: 0,
   },
   uploadBytes: {
     cachedChunkReplay: 0,
@@ -175,6 +187,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     preparedChunkPrewarmHits: 0,
     preparedChunkPrewarmMisses: 0,
     globalSpatialRecsHydratedTiles: 0,
+    globalSpatialRecsHydratedChests: 0,
+    globalSpatialRecsHydratedStructures: 0,
     spatialTileOptRecsApplied: 0,
     spatialTileOptReadyTimeouts: 0,
     spatialTileOptStreamReceived: 0,
@@ -220,7 +234,12 @@ export function recordWorldmapRenderDuration(metric: WorldmapRenderDurationMetri
 }
 
 export function setWorldmapRenderGauge(gauge: WorldmapRenderGauge, value: number): void {
-  diagnosticsState.gauges[gauge] = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+  const nextValue = Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
+  if (diagnosticsState.gauges[gauge] === nextValue) {
+    return;
+  }
+
+  diagnosticsState.gauges[gauge] = nextValue;
   diagnosticsState.updatedAtMs = Date.now();
 }
 

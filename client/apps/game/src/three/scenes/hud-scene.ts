@@ -5,7 +5,7 @@ import { Navigator } from "@/three/managers/navigator";
 import { WeatherManager, type WeatherState } from "@/three/managers/weather-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
-import { GUIManager } from "@/three/utils/";
+import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
 import { clampCycleProgress } from "@/utils/cycle-progress";
 import { AmbientLight, HemisphereLight, OrthographicCamera, Scene, Vector3 } from "three";
@@ -22,7 +22,7 @@ export default class HUDScene {
   private camera: OrthographicCamera;
   private sceneManager: SceneManager;
   private controls: MapControls;
-  private GUIFolder: any;
+  private GUIFolder: any | null = null;
   private navigator: Navigator;
   private ambientLight!: AmbientLight;
   private hemisphereLight!: HemisphereLight;
@@ -48,33 +48,19 @@ export default class HUDScene {
     this.sceneManager = sceneManager;
     this.controls = controls;
     this.camera = this.createOrthographicCamera();
-    this.GUIFolder = GUIManager.addFolder("HUD");
 
-    this.navigator = new Navigator(this.scene, this.controls, this.GUIFolder);
-    const navigatorParams = { col: 269, row: 143 };
-
-    this.GUIFolder.add(navigatorParams, "col").name("Col");
-    this.GUIFolder.add(navigatorParams, "row").name("Row");
-    this.GUIFolder.add(
-      {
-        setNavigationTarget: () => this.navigator.setNavigationTarget(navigatorParams.col, navigatorParams.row),
-      },
-      "setNavigationTarget",
-    ).name("Navigate to Col Row");
-    this.GUIFolder.close();
+    this.navigator = new Navigator(this.scene, this.controls);
+    this.setupGraphicsDevControls();
 
     this.addAmbientLight();
     this.addHemisphereLight();
     this.rainEffect = new RainEffect(this.scene);
-    this.rainEffect.addGUIControls(this.GUIFolder);
 
     // Initialize weather and ambience systems
     this.weatherManager = new WeatherManager(this.scene, this.rainEffect);
-    this.weatherManager.addGUIControls(this.GUIFolder);
 
     this.ambienceManager = new AmbienceManager();
-    this.ambienceManager.addGUIControls(this.GUIFolder);
-    this.addDebugTimeControls();
+    this.setupGraphicsDevEffectControls();
 
     // Initialize ambient particle system (dust motes, fireflies).
     // Skipped on LOW/below to avoid both the point-cloud draws and the
@@ -95,6 +81,52 @@ export default class HUDScene {
         }
       },
     );
+  }
+
+  private setupGraphicsDevControls(): void {
+    if (!GRAPHICS_DEV_GUI_ENABLED) {
+      return;
+    }
+
+    try {
+      this.GUIFolder = createGuiFolder("HUD");
+      this.setupNavigatorGuiControls();
+      this.GUIFolder.close();
+    } catch {
+      this.GUIFolder = null;
+    }
+  }
+
+  private setupNavigatorGuiControls(): void {
+    if (!this.GUIFolder) {
+      return;
+    }
+
+    const navigatorParams = { col: 269, row: 143 };
+
+    this.GUIFolder.add(navigatorParams, "col").name("Col");
+    this.GUIFolder.add(navigatorParams, "row").name("Row");
+    this.GUIFolder.add(
+      {
+        setNavigationTarget: () => this.navigator.setNavigationTarget(navigatorParams.col, navigatorParams.row),
+      },
+      "setNavigationTarget",
+    ).name("Navigate to Col Row");
+  }
+
+  private setupGraphicsDevEffectControls(): void {
+    if (!this.GUIFolder) {
+      return;
+    }
+
+    try {
+      this.rainEffect.addGUIControls(this.GUIFolder);
+      this.weatherManager.addGUIControls(this.GUIFolder);
+      this.ambienceManager.addGUIControls(this.GUIFolder);
+      this.addDebugTimeControls();
+    } catch {
+      // Dev GUI failures must not block HUD startup.
+    }
   }
 
   private createOrthographicCamera(): OrthographicCamera {
@@ -125,7 +157,7 @@ export default class HUDScene {
     this.ambientLight = new AmbientLight(0xf3c99f, 3.5);
     this.scene.add(this.ambientLight);
 
-    this.GUIFolder.add(this.ambientLight, "intensity", 0, 10).name("Ambient Light Intensity");
+    this.GUIFolder?.add(this.ambientLight, "intensity", 0, 10).name("Ambient Light Intensity");
   }
 
   private addHemisphereLight() {
@@ -133,13 +165,17 @@ export default class HUDScene {
     this.hemisphereLight.position.set(0, 20, 0);
     this.scene.add(this.hemisphereLight);
 
-    this.GUIFolder.add(this.hemisphereLight, "intensity", 0, 5).name("Hemisphere Light Intensity");
-    this.GUIFolder.add(this.hemisphereLight.position, "x", -10, 10).name("Hemisphere Light X");
-    this.GUIFolder.add(this.hemisphereLight.position, "y", -10, 10).name("Hemisphere Light Y");
-    this.GUIFolder.add(this.hemisphereLight.position, "z", -10, 10).name("Hemisphere Light Z");
+    this.GUIFolder?.add(this.hemisphereLight, "intensity", 0, 5).name("Hemisphere Light Intensity");
+    this.GUIFolder?.add(this.hemisphereLight.position, "x", -10, 10).name("Hemisphere Light X");
+    this.GUIFolder?.add(this.hemisphereLight.position, "y", -10, 10).name("Hemisphere Light Y");
+    this.GUIFolder?.add(this.hemisphereLight.position, "z", -10, 10).name("Hemisphere Light Z");
   }
 
   private addDebugTimeControls() {
+    if (!this.GUIFolder) {
+      return;
+    }
+
     const timeFolder = this.GUIFolder.addFolder("Time Scrubber");
 
     this.debugTimeOverrideController = timeFolder

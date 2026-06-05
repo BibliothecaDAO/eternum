@@ -23,12 +23,12 @@ describe("latestFeatures landing feed", () => {
     ).toBe(true);
   });
 
-  it("announces explore arrival previews in the latest feed", () => {
+  it("announces the latest map rendering & graphics polish in the feed", () => {
     expect(latestFeatures).toContainEqual(
       expect.objectContaining({
-        date: "2026-05-25",
-        title: "Explore Arrival Previews",
-        type: "improvement",
+        date: "2026-06-05",
+        title: "Map Rendering & Graphics Polish",
+        type: "fix",
         gameSlug: "world",
       }),
     );

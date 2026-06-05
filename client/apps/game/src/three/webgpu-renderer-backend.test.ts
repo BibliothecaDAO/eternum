@@ -212,6 +212,7 @@ describe("createWebGPURendererBackend", () => {
 
   it("marks the diagnostics as degraded when the gpu device is lost", async () => {
     let resolveLost: ((value: { message: string }) => void) | undefined;
+    const onDeviceLost = vi.fn();
     const renderer = Object.assign(createRendererSurface(), {
       init: vi.fn(async () => {}),
     });
@@ -219,6 +220,7 @@ describe("createWebGPURendererBackend", () => {
       {
         graphicsSetting: "HIGH" as never,
         isMobileDevice: false,
+        onDeviceLost,
         pixelRatio: 1,
         requestedMode: "experimental-webgpu-auto",
       },
@@ -253,6 +255,10 @@ describe("createWebGPURendererBackend", () => {
         deviceLossMessage: "device lost during frame",
         deviceStatus: "lost",
       },
+    });
+    expect(onDeviceLost).toHaveBeenCalledWith({
+      activeMode: "webgpu",
+      message: "device lost during frame",
     });
   });
 

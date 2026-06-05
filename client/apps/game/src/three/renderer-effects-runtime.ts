@@ -52,6 +52,7 @@ interface CreateRendererEffectsRuntimeInput {
   backend: RendererBackendV2 & { renderer: RendererSurfaceLike; dispose?: () => void };
   createFolder: (name: string) => TrackableFolderLike;
   graphicsSetting: GraphicsSettings;
+  isGraphicsDevEnabled: boolean;
   isMobileDevice: boolean;
   resolvePixelRatio?: (pixelRatio: number) => number;
   scenes: RendererEffectsScenes;
@@ -69,6 +70,14 @@ const WEATHER_POST_PROCESSING_LIMITS = {
   saturationReduction: 0.18,
   vignetteIncrease: 0.1,
 } as const;
+const WEATHER_POST_PROCESSING_EPSILON = 0.001;
+
+type WeatherPostProcessingValues = {
+  brightness: number;
+  contrast: number;
+  saturation: number;
+  vignetteDarkness: number;
+};
 
 export interface RendererEffectsRuntime {
   applyEnvironment(): Promise<void>;
@@ -95,6 +104,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
   };
   private weatherBaseValuesInitialized = false;
   private weatherPostProcessingEnabled = true;
+  private lastWeatherPostProcessingValues?: WeatherPostProcessingValues;
 
   constructor(private readonly input: CreateRendererEffectsRuntimeInput) {}
 
@@ -106,8 +116,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
 
     this.postProcessingConfig = effectsConfig;
     this.rebuildPostProcessing(features);
-    this.setupToneMappingGUI(features, effectsConfig);
-    this.setupPostProcessingGUI(features, effectsConfig);
+    this.setupGraphicsDevControls(features, effectsConfig);
   }
 
   public hasPostProcessing(): boolean {
@@ -184,13 +193,11 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
       weatherState.stormIntensity * 0.2,
     );
 
-    this.postProcessController?.setColorGrade({
+    this.applyWeatherPostProcessingValues({
       brightness: this.basePostProcessingValues.brightness - brightnessReduction,
       contrast: this.basePostProcessingValues.contrast + contrastBoost,
       saturation: this.basePostProcessingValues.saturation - saturationReduction,
-    });
-    this.postProcessController?.setVignette({
-      darkness: this.basePostProcessingValues.vignetteDarkness + vignetteIncrease,
+      vignetteDarkness: this.basePostProcessingValues.vignetteDarkness + vignetteIncrease,
     });
   }
 
@@ -224,6 +231,45 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
     }
 
     return effectsConfig;
+  }
+
+  private setupGraphicsDevControls(features: QualityFeatures, effectsConfig: PostProcessingConfig): void {
+    if (!this.input.isGraphicsDevEnabled) {
+      return;
+    }
+
+    this.setupToneMappingGUI(features, effectsConfig);
+    this.setupPostProcessingGUI(features, effectsConfig);
+  }
+
+  private applyWeatherPostProcessingValues(values: WeatherPostProcessingValues): void {
+    if (!this.shouldApplyWeatherPostProcessingValues(values)) {
+      return;
+    }
+
+    this.postProcessController?.setColorGrade({
+      brightness: values.brightness,
+      contrast: values.contrast,
+      saturation: values.saturation,
+    });
+    this.postProcessController?.setVignette({
+      darkness: values.vignetteDarkness,
+    });
+    this.lastWeatherPostProcessingValues = values;
+  }
+
+  private shouldApplyWeatherPostProcessingValues(values: WeatherPostProcessingValues): boolean {
+    const lastValues = this.lastWeatherPostProcessingValues;
+    if (!lastValues) {
+      return true;
+    }
+
+    return (
+      Math.abs(lastValues.brightness - values.brightness) > WEATHER_POST_PROCESSING_EPSILON ||
+      Math.abs(lastValues.contrast - values.contrast) > WEATHER_POST_PROCESSING_EPSILON ||
+      Math.abs(lastValues.saturation - values.saturation) > WEATHER_POST_PROCESSING_EPSILON ||
+      Math.abs(lastValues.vignetteDarkness - values.vignetteDarkness) > WEATHER_POST_PROCESSING_EPSILON
+    );
   }
 
   private setupToneMappingGUI(features: QualityFeatures, config: PostProcessingConfig): void {
@@ -300,6 +346,7 @@ class GameRendererEffectsRuntime implements RendererEffectsRuntime {
     }
 
     this.weatherBaseValuesInitialized = false;
+    this.lastWeatherPostProcessingValues = undefined;
 
     const effectPlan = resolvePostProcessingEffectPlan({
       bloom: features.bloom,

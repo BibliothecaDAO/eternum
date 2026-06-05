@@ -192,6 +192,7 @@ describe("createGameRendererRuntimeAssembly", () => {
       backend: runtimeState.backend,
       createFolder,
       graphicsSetting: GraphicsSettings.HIGH,
+      isGraphicsDevEnabled: true,
       isMobileDevice: false,
       resolvePixelRatio: expect.any(Function),
       scenes: {

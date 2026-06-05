@@ -265,7 +265,6 @@ export const useGameEntryBootstrapController = ({
       }
 
       if (forceFresh) {
-        console.info(`[bootstrap] Route-level rebootstrap requested: ${reason ?? "unknown"}`);
         activeRunIdRef.current += 1;
         inFlightRef.current = null;
         resetBootstrap();

@@ -48,19 +48,23 @@ export function createRendererControlBridgeRuntime(
     },
 
     setupGuiControls() {
-      const { material } = getContactShadowResources();
+      try {
+        const { material } = getContactShadowResources();
 
-      setupRendererDevGui({
-        changeCameraView: input.changeCameraView,
-        contactShadowOpacity: material.opacity,
-        createFolder: input.createFolder,
-        fastTravelEnabled: input.fastTravelEnabled(),
-        moveCameraToColRow: input.moveCameraToColRow,
-        moveCameraToXYZ: input.moveCameraToXYZ,
-        renderer: input.getRenderer(),
-        switchScene: input.switchScene,
-        updateContactShadowOpacity: input.updateContactShadowOpacity,
-      });
+        setupRendererDevGui({
+          changeCameraView: input.changeCameraView,
+          contactShadowOpacity: material.opacity,
+          createFolder: input.createFolder,
+          fastTravelEnabled: input.fastTravelEnabled(),
+          moveCameraToColRow: input.moveCameraToColRow,
+          moveCameraToXYZ: input.moveCameraToXYZ,
+          renderer: input.getRenderer(),
+          switchScene: input.switchScene,
+          updateContactShadowOpacity: input.updateContactShadowOpacity,
+        });
+      } catch {
+        // Dev GUI failures must not block renderer startup.
+      }
     },
   };
 }

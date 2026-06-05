@@ -41,12 +41,12 @@ describe("worldmap army tile-sync recovery", () => {
     expect(listenerBody).not.toContain("this.armyLastTileSyncAt.set(update.entityId");
   });
 
-  it("uses the aggregated live-update helper for scheduled removal cancellation and deferred retry", () => {
+  it("uses tile-sync timestamps for scheduled removal cancellation and deferred retry", () => {
     const src = readSource("worldmap.tsx");
 
     const scheduleStart = src.indexOf("private scheduleArmyRemoval(");
     const retryStart = src.indexOf("private retryDeferredChunkRemovals()");
-    const helperStart = src.indexOf("private resolveLastArmyLiveUpdateAt(");
+    const helperStart = src.indexOf("private resolveLastArmyTileSyncAt(");
     expect(scheduleStart).toBeGreaterThan(-1);
     expect(retryStart).toBeGreaterThan(-1);
     expect(helperStart).toBeGreaterThan(-1);
@@ -55,9 +55,9 @@ describe("worldmap army tile-sync recovery", () => {
     const retryBody = src.slice(retryStart, retryStart + 900);
     const helperBody = src.slice(helperStart, helperStart + 300);
 
-    expect(scheduleBody).toContain("this.resolveLastArmyLiveUpdateAt(entityId)");
-    expect(retryBody).toContain("this.resolveLastArmyLiveUpdateAt(entityId)");
+    expect(scheduleBody).toContain("this.resolveLastArmyTileSyncAt(entityId)");
+    expect(retryBody).toContain("this.resolveLastArmyTileSyncAt(entityId)");
     expect(helperBody).toContain("this.armyLastTileSyncAt.get(entityId)");
-    expect(helperBody).toContain("this.armyLastLiveUpdateAt.get(entityId)");
+    expect(helperBody).not.toContain("this.armyLastLiveUpdateAt.get(entityId)");
   });
 });

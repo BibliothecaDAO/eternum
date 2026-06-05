@@ -19,6 +19,7 @@ import {
   RendererInitTimeoutError,
   type RendererActiveMode,
   type RendererBackendV2,
+  type RendererDeviceLostEvent,
   type RendererFramePipeline,
   type RendererPostProcessController,
   type RendererPostProcessRuntime,
@@ -200,6 +201,7 @@ function resolveWebGpuRendererDevice(renderer: WebGPURendererSurface): WebGPURen
 function attachWebGpuDeviceDiagnostics(input: {
   activeMode: RendererActiveMode;
   device?: WebGPURendererDevice;
+  onDeviceLost?: (event: RendererDeviceLostEvent) => void;
 }): () => void {
   if (input.activeMode !== "webgpu" || !input.device) {
     return () => {};
@@ -221,6 +223,10 @@ function attachWebGpuDeviceDiagnostics(input: {
     }
 
     markRendererDiagnosticDeviceLost(info.message);
+    input.onDeviceLost?.({
+      activeMode: input.activeMode,
+      message: info.message,
+    });
   });
 
   return () => {
@@ -359,6 +365,7 @@ export function createWebGPURendererBackend(
   options: {
     graphicsSetting: GraphicsSettingsType;
     isMobileDevice: boolean;
+    onDeviceLost?: (event: RendererDeviceLostEvent) => void;
     pixelRatio: number;
     requestedMode: ExperimentalRendererBuildMode;
   },
@@ -440,6 +447,7 @@ export function createWebGPURendererBackend(
           releaseDeviceDiagnostics = attachWebGpuDeviceDiagnostics({
             activeMode: createdRenderer.activeMode,
             device: createdRenderer.device,
+            onDeviceLost: options.onDeviceLost,
           });
 
           try {

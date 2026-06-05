@@ -69,11 +69,13 @@ import {
   ChestSystemUpdate,
   DEFAULT_COORD_ALT,
   ExplorerRewardSystemUpdate,
+  ExplorerTroopsSystemUpdate,
   ExplorerTroopsTileSystemUpdate,
   getBlockTimestamp,
   getGuardsByStructure,
   getStructureInfoFromTileOccupier,
   getTileAt,
+  isTileOccupierChest,
   isTileOccupierReservedHyperstructure,
   recordArmyMovementLatencyPhase,
   ReservedHyperstructureTileSystemUpdate,
@@ -128,6 +130,7 @@ import { resolveWorldmapHoverLabelTargets } from "./worldmap-hover-label-targets
 import { ResourceFXManager } from "../managers/resource-fx-manager";
 import { ArrivalGhostManager } from "../managers/arrival-ghost-manager";
 import { resolveHoverVisualPalette, resolveSelectionPulsePalette } from "../managers/worldmap-interaction-palette";
+import { isCommittedManagerChunk } from "../managers/manager-update-convergence";
 import { SceneName, type ArmyData } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
 import {
@@ -207,7 +210,10 @@ import {
   recordWorldmapTerrainReadyDuration,
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
-import { retryDeferredWorldmapArmyRemovals } from "./worldmap-deferred-army-removal-runtime";
+import {
+  retryDeferredWorldmapArmyRemovals,
+  type DeferredWorldmapArmyRemoval,
+} from "./worldmap-deferred-army-removal-runtime";
 import {
   resolveArmyTabSelectionPosition,
   resolvePendingArmyMovementFallbackPlan,
@@ -234,7 +240,11 @@ import {
   type PendingArmyMovementEffectClearReason,
   type TravelEffectType,
 } from "./worldmap-travel-effect-policy";
-import { findSupersededArmyRemoval, isStaleTrackedArmyTileRemoval } from "./worldmap-army-removal";
+import {
+  findSupersededArmyRemoval,
+  isStaleTrackedArmyTileRemoval,
+  shouldRecoverPendingArmyRemovalFromExplorerTroops as shouldRecoverArmyRemovalFromTroopsPosition,
+} from "./worldmap-army-removal";
 import { resolveAttachedArmyOwnerFromStructure } from "./worldmap-attached-army-owner-sync";
 import { resolveArmyActionPathOrigin } from "./worldmap-action-path-origin";
 import { resolveArmyOwnerCacheAction } from "./worldmap-army-owner-resolution";
@@ -526,6 +536,12 @@ interface WorldmapRenderAreaBounds {
   minCol: number;
   minRow: number;
 }
+
+type GlobalTileOptHydrationEntry = {
+  normalized: { x: number; y: number };
+  tile: NonNullable<ReturnType<typeof tileOptToTile>>;
+  tileOpt: Parameters<typeof tileOptToTile>[0];
+};
 
 interface WorldmapHydrationFetchPlan {
   fetchKey: string;
@@ -856,6 +872,8 @@ export default class WorldmapScene extends WarpTravel {
   private handleTransactionFailed?: (...args: any[]) => void;
   private handleTransactionProgress?: (...args: any[]) => void;
   private readonly authoritativePendingArmyMovementMs = 30_000;
+  private readonly cameraTargetHexUpdateIntervalMs = 100;
+  private readonly cameraDistanceUpdateEpsilon = 0.5;
   private armySelectionRecoveryInFlight: Set<ID> = new Set();
   private structureManager!: StructureManager;
   private memoryMonitor?: MemoryMonitor;
@@ -872,7 +890,6 @@ export default class WorldmapScene extends WarpTravel {
   // normalized coordinates
   private armiesPositions: Map<ID, HexPosition> = new Map();
   private armyLastTileSyncAt: Map<ID, number> = new Map();
-  private armyLastLiveUpdateAt: Map<ID, number> = new Map();
   // normalized coordinates
   private structuresPositions: Map<ID, HexPosition> = new Map();
 
@@ -894,7 +911,9 @@ export default class WorldmapScene extends WarpTravel {
     const currentHex = state.cameraTargetHex;
     const hexChanged = !currentHex || currentHex.col !== nextHex.col || currentHex.row !== nextHex.row;
     const nextCameraDistance = Math.round(this.controls.object.position.distanceTo(this.controls.target) * 100) / 100;
-    const distanceChanged = state.cameraDistance === null || Math.abs(state.cameraDistance - nextCameraDistance) > 0.01;
+    const distanceChanged =
+      state.cameraDistance === null ||
+      Math.abs(state.cameraDistance - nextCameraDistance) >= this.cameraDistanceUpdateEpsilon;
 
     if (!hexChanged && !distanceChanged) return;
 
@@ -1069,7 +1088,7 @@ export default class WorldmapScene extends WarpTravel {
       position?: HexPosition;
     }
   > = new Map();
-  private deferredChunkRemovals: Map<ID, { reason: "tile" | "zero"; scheduledAt: number }> = new Map();
+  private deferredChunkRemovals: Map<ID, DeferredWorldmapArmyRemoval> = new Map();
 
   private fxManager!: FXManager;
   private arrivalGhostManager!: ArrivalGhostManager;
@@ -1128,6 +1147,12 @@ export default class WorldmapScene extends WarpTravel {
     this.registerWorldmapShortcuts();
   }
 
+  public override setInputSurface(surface: HTMLElement): void {
+    super.setInputSurface(surface);
+    this.detachWorldmapWheelHandler();
+    this.attachWorldmapWheelHandler();
+  }
+
   private registerWorldmapRecoveryHandle(): void {
     this.unregisterWorldmapRecoveryHandle = registerActiveWorldmapRecoveryHandle({
       refreshAfterReconnect: () => this.refreshAfterReconnect(),
@@ -1164,18 +1189,20 @@ export default class WorldmapScene extends WarpTravel {
       });
     }
 
-    this.GUIFolder.add(this, "moveCameraToURLLocation");
-    this.perfSimulation = new WorldmapPerfSimulation({
-      guiFolder: this.GUIFolder,
-      getSimulateAllExplored: () => this.simulateAllExplored,
-      setSimulateAllExplored: (value: boolean) => {
-        this.simulateAllExplored = value;
-      },
-      getRenderChunkSize: () => this.renderChunkSize,
-      requestChunkRefresh: (force: boolean) => this.requestChunkRefresh(force),
-      hashCoordinates: (x: number, y: number) => this.hashCoordinates(x, y),
-    });
-    this.perfSimulation.setupPerformanceSimulationGUI();
+    if (this.GUIFolder) {
+      this.GUIFolder.add(this, "moveCameraToURLLocation");
+      this.perfSimulation = new WorldmapPerfSimulation({
+        guiFolder: this.GUIFolder,
+        getSimulateAllExplored: () => this.simulateAllExplored,
+        setSimulateAllExplored: (value: boolean) => {
+          this.simulateAllExplored = value;
+        },
+        getRenderChunkSize: () => this.renderChunkSize,
+        requestChunkRefresh: (force: boolean) => this.requestChunkRefresh(force),
+        hashCoordinates: (x: number, y: number) => this.hashCoordinates(x, y),
+      });
+      this.perfSimulation.setupPerformanceSimulationGUI();
+    }
 
     initializeSyncSimulator(dojoContext);
     this.loadBiomeModels(this.getTerrainCompositeCellCapacity());
@@ -1583,7 +1610,6 @@ export default class WorldmapScene extends WarpTravel {
             row: update.hexCoords.row,
           },
         });
-        this.recordAuthoritativeArmyLiveUpdate(update.entityId);
         this.armyLastTileSyncAt.set(update.entityId, Date.now());
         if (recoveredPendingRemoval) {
           void this.armyManager.restoreArmyVisualIfVisible(update.entityId);
@@ -1609,8 +1635,9 @@ export default class WorldmapScene extends WarpTravel {
           updateArmyHexes: (troopsUpdate) => this.updateArmyHexes(troopsUpdate),
           updateArmyFromExplorerTroopsUpdate: (update) => this.armyManager.updateArmyFromExplorerTroopsUpdate(update),
           onManagerUpdateApplied: () => this.reconcileHoverLabels(),
-          recordLiveArmyPresenceUpdate: (update) => this.recordAuthoritativeArmyLiveUpdate(update.entityId),
           onAuthoritativePositionApplied: (update) => this.clearPendingArmyMovementFromAuthoritativePosition(update),
+          shouldRecoverPendingArmyRemovalFromExplorerTroops: (update) =>
+            this.shouldRecoverPendingArmyRemovalFromExplorerTroopsUpdate(update),
           recoverPendingArmyRemovalFromExplorerTroops: (update) =>
             this.recoverPendingArmyRemovalFromExplorerTroops(update),
           shouldSkipStalePositionUpdate: (entityId, normalized) =>
@@ -1811,7 +1838,7 @@ export default class WorldmapScene extends WarpTravel {
   private bindWorldmapSceneUiLifecycle(): void {
     // Legacy canvas minimap has been replaced by the React minimap (BottomRightPanel/HexMinimap).
     // We keep only the "minimapCameraMove" event bridge + cameraTargetHex updates for the UI.
-    this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, 33);
+    this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, this.cameraTargetHexUpdateIntervalMs);
     this.refreshVisualTerrainWindowThrottled = throttle(() => {
       void this.refreshVisualTerrainWindowFromCamera();
     }, WORLDMAP_CHUNK_POLICY.visualPresentation.cameraSampleThrottleMs);
@@ -4677,7 +4704,6 @@ export default class WorldmapScene extends WarpTravel {
       pendingArmyRemovalMeta: this.pendingArmyRemovalMeta,
       deferredChunkRemovals: this.deferredChunkRemovals,
       armyLastTileSyncAt: this.armyLastTileSyncAt,
-      armyLastLiveUpdateAt: this.armyLastLiveUpdateAt,
       pendingArmyMovements: this.pendingArmyMovements,
       pendingArmyMovementStartedAt: this.pendingArmyMovementStartedAt,
       pendingArmyMovementFallbackTimeouts: this.pendingArmyMovementFallbackTimeouts,
@@ -4745,7 +4771,6 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.armiesPositions.delete(entityId);
     this.armyLastTileSyncAt.delete(entityId);
-    this.armyLastLiveUpdateAt.delete(entityId);
     this.pendingArmyRemovalMeta.delete(entityId);
     this.armyStructureOwners.delete(entityId);
     this.clearArmyMovementTxEntriesForEntity(entityId);
@@ -4856,17 +4881,18 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         if (reason === "tile") {
-          const lastUpdate = this.resolveLastArmyLiveUpdateAt(entityId);
+          const lastUpdate = this.resolveLastArmyTileSyncAt(entityId);
           if (lastUpdate > meta.scheduledAt) {
             this.pendingArmyRemovalMeta.delete(entityId);
             this.pendingArmyRemovals.delete(entityId);
             this.armyManager.unsuppressArmy(entityId);
+            void this.armyManager.restoreArmyVisualIfVisible(entityId);
             this.requestChunkRefresh(true, "default");
             return;
           }
 
           if (this.currentChunk !== meta.chunkKey) {
-            this.deferArmyRemovalDuringChunkSwitch(entityId, reason, meta.scheduledAt);
+            this.deferArmyRemovalDuringChunkSwitch(entityId, meta);
             return;
           }
 
@@ -4895,7 +4921,7 @@ export default class WorldmapScene extends WarpTravel {
     schedule(initialDelay);
   }
 
-  private deferArmyRemovalDuringChunkSwitch(entityId: ID, reason: "tile" | "zero", scheduledAt: number) {
+  private deferArmyRemovalDuringChunkSwitch(entityId: ID, removal: DeferredWorldmapArmyRemoval) {
     const timeout = this.pendingArmyRemovals.get(entityId);
     if (timeout) {
       clearTimeout(timeout);
@@ -4903,7 +4929,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     this.pendingArmyRemovalMeta.delete(entityId);
-    this.deferredChunkRemovals.set(entityId, { reason, scheduledAt });
+    this.deferredChunkRemovals.set(entityId, removal);
   }
 
   private retryDeferredChunkRemovals() {
@@ -4913,10 +4939,10 @@ export default class WorldmapScene extends WarpTravel {
         this.armyManager.unsuppressArmy(entityId);
         void this.armyManager.restoreArmyVisualIfVisible(entityId);
       },
-      onRetryRemoval: (entityId, reason) => {
-        this.scheduleArmyRemoval(entityId, reason);
+      onRetryRemoval: (entityId, reason, context) => {
+        this.scheduleArmyRemoval(entityId, reason, context);
       },
-      resolveLastTileSyncAt: (entityId) => this.resolveLastArmyLiveUpdateAt(entityId),
+      resolveLastTileSyncAt: (entityId) => this.resolveLastArmyTileSyncAt(entityId),
     });
   }
 
@@ -4937,6 +4963,23 @@ export default class WorldmapScene extends WarpTravel {
     return true;
   }
 
+  private shouldRecoverPendingArmyRemovalFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate): boolean {
+    const meta = this.resolvePendingArmyRemovalRecoveryMeta(update.entityId);
+    if (!meta) {
+      return false;
+    }
+
+    return shouldRecoverArmyRemovalFromTroopsPosition({
+      reason: meta.reason,
+      removalPosition: meta.position,
+      troopsPosition: this.resolveNormalizedArmyUpdatePosition(update),
+    });
+  }
+
+  private resolvePendingArmyRemovalRecoveryMeta(entityId: ID): DeferredWorldmapArmyRemoval | undefined {
+    return this.pendingArmyRemovalMeta.get(entityId) ?? this.deferredChunkRemovals.get(entityId);
+  }
+
   private recoverPendingArmyRemovalFromExplorerTroops(update: { entityId: ID }): void {
     const recoveredPendingRemoval = this.cancelPendingArmyRemoval(update.entityId, "explorer_troops_live_recovery");
     if (recoveredPendingRemoval) {
@@ -4944,12 +4987,13 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private recordAuthoritativeArmyLiveUpdate(entityId: ID): void {
-    this.armyLastLiveUpdateAt.set(entityId, Date.now());
+  private resolveLastArmyTileSyncAt(entityId: ID): number {
+    return this.armyLastTileSyncAt.get(entityId) ?? 0;
   }
 
-  private resolveLastArmyLiveUpdateAt(entityId: ID): number {
-    return Math.max(this.armyLastTileSyncAt.get(entityId) ?? 0, this.armyLastLiveUpdateAt.get(entityId) ?? 0);
+  private resolveNormalizedArmyUpdatePosition(update: { hexCoords: HexPosition }): HexPosition {
+    const normalizedPos = new Position({ x: update.hexCoords.col, y: update.hexCoords.row }).getNormalized();
+    return { col: normalizedPos.x, row: normalizedPos.y };
   }
 
   private recordPendingArmyRemovalCancelled(source: PendingArmyRemovalCancelSource): void {
@@ -6644,6 +6688,25 @@ export default class WorldmapScene extends WarpTravel {
       onTaskError: (_task, error) => {
         console.error("[WorldMap] Deferred manager catch-up failed:", error);
       },
+      onTaskSkipped: (task) => {
+        // The task was dropped because its chunk/token went stale (e.g. a fast
+        // pan or a stall that bumped the transition token). Re-enqueue a fresh
+        // non-critical catch-up for the current committed chunk so the chest
+        // render is never silently lost. Loop-safe: only when the current chunk
+        // actually differs from the skipped one and isn't already queued (a
+        // matching chunk+token would not have been skipped in the first place).
+        const currentChunk = this.currentChunk;
+        if (
+          currentChunk &&
+          currentChunk !== task.chunkKey &&
+          isCommittedManagerChunk(currentChunk) &&
+          !this.postCommitManagerCatchUpRuntimeState.queue.some((queued) => queued.chunkKey === currentChunk)
+        ) {
+          this.deferNonCriticalManagerCatchUpForCommittedChunk(currentChunk, {
+            transitionToken: this.chunkTransitionToken,
+          });
+        }
+      },
       runTask: (task) => this.updateNonCriticalManagersForChunk(task.chunkKey, task.options),
       scheduleDrain: () => {
         this.schedulePostCommitManagerCatchUpDrain();
@@ -8211,6 +8274,16 @@ export default class WorldmapScene extends WarpTravel {
     this.armyManager.recoverChunkUpdateAfterStall(recoveryInput);
     this.structureManager.recoverChunkUpdateAfterStall(recoveryInput);
     this.chestManager.recoverChunkUpdateAfterStall(recoveryInput);
+
+    // Stall recovery commits the chest manager's currentChunk without rendering,
+    // so the next *unforced* same-chunk update would be skipped
+    // (shouldSkipUnforcedChunkRefresh) and the chest models would never appear.
+    // Chest is the only manager on the deferred path, so force a chest catch-up
+    // for the recovered chunk here to break that latch.
+    this.deferNonCriticalManagerCatchUpForChunk(chunkKey, {
+      force: true,
+      transitionToken: this.chunkTransitionToken,
+    });
   }
 
   private handleChunkPresentationTimeout(info: WorldmapChunkPresentationTimeoutInfo): void {
@@ -8704,45 +8777,93 @@ export default class WorldmapScene extends WarpTravel {
     localBounds: WorldmapRenderAreaBounds,
     stages: readonly WorldmapRenderAreaHydrationStage[],
   ): Promise<void> {
-    const hydratedTileCount = this.shouldFetchTileOpt(stages)
-      ? this.hydrateExploredTilesFromGlobalTileOptRecs(fetchKey, localBounds)
+    const shouldHydrateTileOpt = this.shouldFetchTileOpt(stages);
+    const shouldHydrateStructures = stages.includes("structures");
+    const tileOptEntries =
+      shouldHydrateTileOpt || shouldHydrateStructures ? this.collectGlobalTileOptHydrationEntries(localBounds) : [];
+    const hydratedTileCount = shouldHydrateTileOpt
+      ? this.hydrateExploredTilesFromGlobalTileOptRecs(fetchKey, localBounds, tileOptEntries)
       : 0;
-    const hydratedStructureCount = stages.includes("structures")
-      ? await this.hydrateStructuresFromGlobalTileOptRecs(fetchKey, localBounds)
+    const hydratedChestCount = shouldHydrateTileOpt
+      ? this.hydrateChestsFromGlobalTileOptRecs(fetchKey, tileOptEntries)
+      : 0;
+    const hydratedStructureCount = shouldHydrateStructures
+      ? await this.hydrateStructuresFromGlobalTileOptRecs(fetchKey, tileOptEntries)
       : 0;
 
     this.traceChunk("global_spatial_recs_hydrated", {
       fetchKey,
+      hydratedChestCount,
       hydratedStructureCount,
       hydratedTileCount,
+      tileOptCandidateCount: tileOptEntries.length,
       localBounds,
       stages,
     });
   }
 
-  private async hydrateStructuresFromGlobalTileOptRecs(
-    fetchKey: string,
-    bounds: WorldmapRenderAreaBounds,
-  ): Promise<number> {
+  private collectGlobalTileOptHydrationEntries(bounds: WorldmapRenderAreaBounds): GlobalTileOptHydrationEntry[] {
+    const scanStartedAt = performance.now();
     const tileOptComponent = this.dojo.components.TileOpt;
     if (!tileOptComponent) {
-      return 0;
+      recordWorldmapRenderDuration("globalSpatialTileOptScanMs", performance.now() - scanStartedAt);
+      setWorldmapRenderGauge("globalSpatialTileOptRecs", 0);
+      setWorldmapRenderGauge("globalSpatialHydrationCandidates", 0);
+      return [];
     }
 
-    let hydratedStructureCount = 0;
+    const entries: GlobalTileOptHydrationEntry[] = [];
+    let scannedCount = 0;
+
     for (const entity of getComponentEntities(tileOptComponent)) {
+      scannedCount += 1;
       const tileOpt = getComponentValue(tileOptComponent, entity);
-      if (!this.shouldHydrateStructureFromGlobalTileOpt(tileOpt, bounds)) {
+      const tile = tileOpt ? tileOptToTile(tileOpt) : undefined;
+      if (!tile) {
         continue;
       }
 
-      const structureUpdate = await this.worldUpdateListener.resolveStructureTileUpdateFromTileOpt(tileOpt);
+      const normalized = new Position({ x: tile.col, y: tile.row }).getNormalized();
+      if (!this.isPositionWithinBounds(normalized, bounds)) {
+        continue;
+      }
+
+      entries.push({
+        normalized: { x: normalized.x, y: normalized.y },
+        tile,
+        tileOpt,
+      });
+    }
+
+    recordWorldmapRenderDuration("globalSpatialTileOptScanMs", performance.now() - scanStartedAt);
+    setWorldmapRenderGauge("globalSpatialTileOptRecs", scannedCount);
+    setWorldmapRenderGauge("globalSpatialHydrationCandidates", entries.length);
+
+    return entries;
+  }
+
+  private async hydrateStructuresFromGlobalTileOptRecs(
+    fetchKey: string,
+    entries: readonly GlobalTileOptHydrationEntry[],
+  ): Promise<number> {
+    let hydratedStructureCount = 0;
+    for (const entry of entries) {
+      const structureInfo = getStructureInfoFromTileOccupier(entry.tile.occupier_type);
+      if (!structureInfo || structureInfo.reserved) {
+        continue;
+      }
+
+      const structureUpdate = await this.worldUpdateListener.resolveStructureTileUpdateFromTileOpt(entry.tileOpt);
       if (!structureUpdate) {
         continue;
       }
 
       await this.applyStructureTileUpdate(structureUpdate);
       hydratedStructureCount += 1;
+    }
+
+    if (hydratedStructureCount > 0) {
+      incrementWorldmapRenderCounter("globalSpatialRecsHydratedStructures", hydratedStructureCount);
     }
 
     if (import.meta.env.DEV && hydratedStructureCount > 0) {
@@ -8755,22 +8876,30 @@ export default class WorldmapScene extends WarpTravel {
     return hydratedStructureCount;
   }
 
-  private shouldHydrateStructureFromGlobalTileOpt(
-    tileOpt: Parameters<typeof tileOptToTile>[0],
-    bounds: WorldmapRenderAreaBounds,
-  ): boolean {
-    const tile = tileOpt ? tileOptToTile(tileOpt) : undefined;
-    if (!tile) {
-      return false;
+  private hydrateChestsFromGlobalTileOptRecs(
+    _fetchKey: string,
+    entries: readonly GlobalTileOptHydrationEntry[],
+  ): number {
+    let hydratedChestCount = 0;
+    for (const entry of entries) {
+      if (!isTileOccupierChest(entry.tile.occupier_type)) {
+        continue;
+      }
+
+      const update: ChestSystemUpdate = {
+        occupierId: entry.tile.occupier_id,
+        hexCoords: { col: entry.tile.col, row: entry.tile.row },
+      };
+      this.updateChestHexes(update);
+      void this.chestManager.onUpdate(update);
+      hydratedChestCount += 1;
     }
 
-    const structureInfo = getStructureInfoFromTileOccupier(tile.occupier_type);
-    if (!structureInfo || structureInfo.reserved) {
-      return false;
+    if (hydratedChestCount > 0) {
+      incrementWorldmapRenderCounter("globalSpatialRecsHydratedChests", hydratedChestCount);
     }
 
-    const normalized = new Position({ x: tile.col, y: tile.row }).getNormalized();
-    return this.isPositionWithinBounds(normalized, bounds);
+    return hydratedChestCount;
   }
 
   private shouldFetchTileOpt(stages: readonly WorldmapRenderAreaHydrationStage[]): boolean {
@@ -8846,32 +8975,17 @@ export default class WorldmapScene extends WarpTravel {
       minCol: number;
       minRow: number;
     },
+    entries: readonly GlobalTileOptHydrationEntry[],
   ): number {
-    const tileOptComponent = this.dojo.components.TileOpt;
-    if (!tileOptComponent) {
-      return 0;
-    }
-
     let hydratedTileCount = 0;
-    for (const entity of getComponentEntities(tileOptComponent)) {
-      const tileOpt = getComponentValue(tileOptComponent, entity);
-      const tile = tileOpt ? tileOptToTile(tileOpt) : undefined;
-      if (!tile) {
+    for (const entry of entries) {
+      const biome = resolveTileBiomeType(entry.tile.biome);
+      const existingBiome = this.exploredTiles.get(entry.normalized.x)?.get(entry.normalized.y);
+      if (existingBiome === biome && !this.provisionalBiomes.isProvisional(entry.normalized.x, entry.normalized.y)) {
         continue;
       }
 
-      const normalized = new Position({ x: tile.col, y: tile.row }).getNormalized();
-      if (!this.isPositionWithinBounds(normalized, bounds)) {
-        continue;
-      }
-
-      const biome = resolveTileBiomeType(tile.biome);
-      const existingBiome = this.exploredTiles.get(normalized.x)?.get(normalized.y);
-      if (existingBiome === biome && !this.provisionalBiomes.isProvisional(normalized.x, normalized.y)) {
-        continue;
-      }
-
-      this.writeExploredTileFromGlobalSpatialHydration(normalized.x, normalized.y, biome);
+      this.writeExploredTileFromGlobalSpatialHydration(entry.normalized.x, entry.normalized.y, biome);
       hydratedTileCount += 1;
     }
 
@@ -10763,7 +10877,6 @@ export default class WorldmapScene extends WarpTravel {
     this.pinnedRenderAreas.clear();
     this.clearCache();
     this.armyLastTileSyncAt.clear();
-    this.armyLastLiveUpdateAt.clear();
     // Also clear the interactive hexes when clearing the entire cache
     this.interactiveHexManager.clearHexes();
   }

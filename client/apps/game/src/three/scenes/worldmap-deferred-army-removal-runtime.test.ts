@@ -55,4 +55,23 @@ describe("retryDeferredWorldmapArmyRemovals", () => {
     expect(onRecoveredArmy).not.toHaveBeenCalled();
     expect(onRetryRemoval).toHaveBeenCalledWith(9, "zero");
   });
+
+  it("requeues removals with their original removal position", () => {
+    const onRecoveredArmy = vi.fn();
+    const onRetryRemoval = vi.fn();
+    const deferredChunkRemovals = new Map<
+      number,
+      { reason: "tile" | "zero"; scheduledAt: number; position?: { col: number; row: number } }
+    >([[9, { reason: "tile", scheduledAt: 200, position: { col: 10, row: 11 } }]]);
+
+    retryDeferredWorldmapArmyRemovals({
+      deferredChunkRemovals,
+      onRecoveredArmy,
+      onRetryRemoval,
+      resolveLastTileSyncAt: () => 150,
+    });
+
+    expect(onRecoveredArmy).not.toHaveBeenCalled();
+    expect(onRetryRemoval).toHaveBeenCalledWith(9, "tile", { position: { col: 10, row: 11 } });
+  });
 });

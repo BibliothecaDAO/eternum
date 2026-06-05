@@ -82,6 +82,13 @@ const createIdleBootstrapControllerState = () => ({
 const getRenderPhaseUpdateWarnings = (consoleErrorMock: ReturnType<typeof vi.spyOn>) =>
   consoleErrorMock.mock.calls.filter(([message]) => String(message).includes("Cannot update a component"));
 
+const getLatestBootstrapControllerInput = () => {
+  const calls = useGameEntryBootstrapControllerMock.mock.calls;
+  return calls[calls.length - 1]?.[0] as
+    | { context: { chain: string; intent: string; worldName: string } | null; enabled: boolean }
+    | undefined;
+};
+
 describe("usePlayRouteBootController", () => {
   let container: HTMLDivElement;
   let root: Root;
@@ -131,6 +138,61 @@ describe("usePlayRouteBootController", () => {
     expect(getRenderPhaseUpdateWarnings(consoleErrorMock)).toEqual([]);
     expect(usePlayRouteReadinessStore.getState().bootToken).toBe(1);
     expect(setShowBlankOverlayMock).toHaveBeenCalledWith(true);
+  });
+
+  it("waits for a controller account before bootstrapping player routes", async () => {
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={["/play/mainnet/iron-age/map"]}>
+          <BootControllerHarness />
+        </MemoryRouter>,
+      );
+    });
+
+    expect(getLatestBootstrapControllerInput()).toMatchObject({
+      context: null,
+      enabled: false,
+    });
+  });
+
+  it("bootstraps spectator routes without a controller account", async () => {
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={["/play/mainnet/iron-age/map?spectate=true"]}>
+          <BootControllerHarness />
+        </MemoryRouter>,
+      );
+    });
+
+    expect(getLatestBootstrapControllerInput()).toMatchObject({
+      context: {
+        chain: "mainnet",
+        intent: "spectate",
+        worldName: "iron-age",
+      },
+      enabled: true,
+    });
+  });
+
+  it("bootstraps player routes once the controller account is resolved", async () => {
+    starknetReactState.controllerAccount = { address: "0x123" };
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter initialEntries={["/play/mainnet/iron-age/map"]}>
+          <BootControllerHarness />
+        </MemoryRouter>,
+      );
+    });
+
+    expect(getLatestBootstrapControllerInput()).toMatchObject({
+      context: {
+        chain: "mainnet",
+        intent: "play",
+        worldName: "iron-age",
+      },
+      enabled: true,
+    });
   });
 
   it("retries controller connection when Starknet is connected without a resolved controller account", async () => {

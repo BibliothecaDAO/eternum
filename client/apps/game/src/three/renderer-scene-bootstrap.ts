@@ -26,6 +26,9 @@ type PrewarmableScene = {
 
 type ScheduleInactiveScenePrewarm = (task: () => void) => void;
 
+const INACTIVE_SCENE_PREWARM_FALLBACK_DELAY_MS = 1500;
+const INACTIVE_SCENE_PREWARM_IDLE_TIMEOUT_MS = 3000;
+
 export interface RendererSceneRegistry<
   TTransitionManager,
   TSceneManager,
@@ -310,16 +313,16 @@ function resolveScenePrewarmPlan(input: {
 function scheduleInactiveRendererScenePrewarm(task: () => void): void {
   const requestIdleCallback = (
     globalThis as typeof globalThis & {
-      requestIdleCallback?: (callback: () => void) => number;
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
     }
   ).requestIdleCallback;
 
   if (typeof requestIdleCallback === "function") {
-    requestIdleCallback(task);
+    requestIdleCallback(task, { timeout: INACTIVE_SCENE_PREWARM_IDLE_TIMEOUT_MS });
     return;
   }
 
-  globalThis.setTimeout(task, 0);
+  globalThis.setTimeout(task, INACTIVE_SCENE_PREWARM_FALLBACK_DELAY_MS);
 }
 
 async function prewarmRendererScene(input: {

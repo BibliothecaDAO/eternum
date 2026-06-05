@@ -27,6 +27,11 @@ interface DrainWorldmapPostCommitManagerCatchUpQueueInput<
   onHeadDeferred?: () => void;
   onImmediateTask: (task: TTask) => void;
   onTaskError: (task: TTask, error: unknown) => void;
+  // Invoked when a drained task is skipped because shouldRunTask returned false
+  // (stale transition token or chunk no longer current). The task is already
+  // removed from the queue; the caller can re-enqueue a fresh task for the
+  // current committed chunk so a render is never silently lost.
+  onTaskSkipped?: (task: TTask) => void;
   runTask: (task: TTask) => Promise<void>;
   scheduleDrain: () => void;
   shouldRunTask: (task: TTask) => boolean;
@@ -103,11 +108,14 @@ export async function drainWorldmapPostCommitManagerCatchUpQueue<
     }
 
     try {
-      await deferWarpTravelManagerFanout({
+      const result = await deferWarpTravelManagerFanout({
         shouldRun: () => input.shouldRunTask(task),
         run: () => input.runTask(task),
         schedule: (callback) => callback(),
       });
+      if (result.status === "skipped") {
+        input.onTaskSkipped?.(task);
+      }
     } catch (error) {
       input.onTaskError(task, error);
     }

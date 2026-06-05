@@ -5,7 +5,6 @@ interface WorldmapSwitchOffRuntimeStateInput<TEntityId, TTimeout> {
   pendingArmyRemovalMeta: Map<TEntityId, unknown>;
   deferredChunkRemovals: Map<TEntityId, unknown>;
   armyLastTileSyncAt: Map<TEntityId, number>;
-  armyLastLiveUpdateAt?: Map<TEntityId, number>;
   pendingArmyMovements: Set<TEntityId>;
   pendingArmyMovementStartedAt: Map<TEntityId, number>;
   pendingArmyMovementFallbackTimeouts: Map<TEntityId, TTimeout>;
@@ -58,7 +57,6 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
   pendingArmyRemovalMeta,
   deferredChunkRemovals,
   armyLastTileSyncAt,
-  armyLastLiveUpdateAt,
   pendingArmyMovements,
   pendingArmyMovementStartedAt,
   pendingArmyMovementFallbackTimeouts,
@@ -84,7 +82,6 @@ export const applyWorldmapSwitchOffRuntimeState = <TEntityId, TTimeout>({
   pendingArmyRemovalMeta.clear();
   deferredChunkRemovals.clear();
   armyLastTileSyncAt.clear();
-  armyLastLiveUpdateAt?.clear();
   pendingArmyMovements.forEach((entityId) => clearPendingArmyMovement(entityId));
   pendingArmyMovements.clear();
   pendingArmyMovementStartedAt.clear();

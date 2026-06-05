@@ -110,6 +110,7 @@ function createGameRendererEffectsBridgeRuntime(input: CreateGameRendererRuntime
         backend: runtimeState.backend as RendererBackendRuntime,
         createFolder: input.createFolder,
         graphicsSetting: input.graphicsSetting,
+        isGraphicsDevEnabled: input.isGraphicsDevEnabled,
         isMobileDevice: input.isMobileDevice,
         resolvePixelRatio: input.resolvePixelRatio,
         scenes: {
