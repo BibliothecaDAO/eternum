@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-06T04:22:12.302Z",
+  "updatedAt": "2026-06-06T05:42:20.233Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3062,26 +3062,26 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-glow-285/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-06-01T11:23:33.330Z"
+        "describedAt": "2026-06-06T05:42:20.210Z"
       },
-      "updatedAt": "2026-06-01T11:23:33.478Z"
+      "updatedAt": "2026-06-06T05:42:20.233Z"
     },
     "bltz-zoom-993": {
       "gameName": "bltz-zoom-993",
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-zoom-993/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-06-01T11:23:33.405Z"
+        "describedAt": "2026-06-06T05:42:20.233Z"
       },
-      "updatedAt": "2026-06-01T11:23:33.478Z"
+      "updatedAt": "2026-06-06T05:42:20.233Z"
     },
     "bltz-burst-624": {
       "gameName": "bltz-burst-624",
