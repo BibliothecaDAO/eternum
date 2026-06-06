@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27062136058-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-06-06T12:21:40.832Z",
+  "updatedAt": "2026-06-06T12:30:15.420Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -12306,7 +12306,7 @@
         },
         "seriesGameNumber": 67,
         "currentStepId": null,
-        "latestEvent": "Indexer maintenance failed for apac-gladiator-06-06-26-1200: Torii deployment \"apac-gladiator-06-06-26-1200\" does not exist",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12353,11 +12353,8 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "legendary",
-          "pendingIndexerTierRequestedAt": "2026-06-06T12:11:43.374Z",
-          "indexerCreated": false,
-          "lastIndexerTierDispatchTarget": "legendary",
-          "lastIndexerTierDispatchFailedAt": "2026-06-06T12:11:43.374Z",
-          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-06-06-26-1200\" does not exist"
+          "pendingIndexerTierRequestedAt": "2026-06-06T12:30:14.302Z",
+          "indexerCreated": false
         }
       },
       {
