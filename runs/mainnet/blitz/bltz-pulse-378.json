@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "bltz-pulse-378",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-pulse-378/27058339619-1.json",
   "latestLaunchRequestId": "27058339619-1",
   "currentStepId": "create-world",
   "createdAt": "2026-06-06T09:13:01.466Z",
-  "updatedAt": "2026-06-06T09:13:05.783Z",
+  "updatedAt": "2026-06-06T09:13:20.305Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,12 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-06-06T09:13:05.783Z"
+      "latestEvent": "Creating world failed: \u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-pulse-378\" on mainnet.blitz\n\u001b[2m[+20ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+20ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\n\u001b[2m[+96ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Raw create_game calldata: [\"0x626c747a2d70756c73652d333738\",50,\"140\",\"0x0\",0]\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/15 via 0x525410a4...71b4da\n\u001b[2m[+5.1s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/15) failed after 5.0s: Failed to analyze tip statistics (sequential): Failed to determine starting block number: RPC: starknet_getBlockWithTxs with params {\n  \"block_id\": \"latest\"\n}\n\n      -32000: request timed out: undefined\nLibraryError: Failed to analyze tip statistics (sequential): Failed to determine starting block number: RPC: starknet_getBlockWithTxs with params {\n  \"block_id\": \"latest\"\n}\n\n      -32000: request timed out: undefined\n    at getTipStatsSequential (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.5.2/node_modules/starknet/dist/index.mjs:7576:15)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-06-06T09:13:05.783Z",
+      "finishedAt": "2026-06-06T09:13:20.305Z",
+      "errorMessage": "\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-pulse-378\" on mainnet.blitz\n\u001b[2m[+20ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+20ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\n\u001b[2m[+96ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Raw create_game calldata: [\"0x626c747a2d70756c73652d333738\",50,\"140\",\"0x0\",0]\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Submitting create_game attempt 1/15 via 0x525410a4...71b4da\n\u001b[2m[+5.1s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create_game (1/15) failed after 5.0s: Failed to analyze tip statistics (sequential): Failed to determine starting block number: RPC: starknet_getBlockWithTxs with params {\n  \"block_id\": \"latest\"\n}\n\n      -32000: request timed out: undefined\nLibraryError: Failed to analyze tip statistics (sequential): Failed to determine starting block number: RPC: starknet_getBlockWithTxs with params {\n  \"block_id\": \"latest\"\n}\n\n      -32000: request timed out: undefined\n    at getTipStatsSequential (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.5.2/node_modules/starknet/dist/index.mjs:7576:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "wait-for-factory-index",
@@ -78,13 +80,5 @@
   "artifacts": {
     "scheduledStartTime": "2026-06-06T11:45:00.000Z",
     "durationSeconds": 3600
-  },
-  "activeLease": {
-    "launchRequestId": "27058339619-1",
-    "workflowRunId": 27058339619,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-06-06T09:13:05.783Z",
-    "expiresAt": "2026-06-06T09:58:05.783Z"
   }
 }
