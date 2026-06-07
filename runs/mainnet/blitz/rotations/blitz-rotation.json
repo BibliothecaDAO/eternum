@@ -10,30 +10,30 @@
   "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "configure-worlds",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/27085864214-1.json",
-  "latestLaunchRequestId": "27085864214-1",
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/27091708742-1.json",
+  "latestLaunchRequestId": "27091708742-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-06-07T11:50:17.170Z",
+  "updatedAt": "2026-06-07T11:51:20.238Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 27085864214,
+    "workflowRunId": 27091708742,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/27085864214",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/27091708742",
     "ref": "next",
     "sha": "fddc38d4d75a6823621fa25e0b9baf105d974fc2"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-06-07T12:05:17.170Z",
+    "nextRetryAt": "2026-06-07T12:06:20.238Z",
     "lastRetryAt": "2026-06-07T11:50:17.170Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-06-07T07:31:51.657Z",
-    "lastEvaluatedAt": "2026-06-07T07:16:51.657Z"
+    "nextEvaluationAt": "2026-06-07T12:06:20.238Z",
+    "lastEvaluatedAt": "2026-06-07T11:51:20.238Z"
   },
   "steps": [
     {
@@ -62,10 +62,7 @@
       "title": "Applying settings",
       "status": "failed",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"na-gladiator-05-06-26-0100\" on mainnet.blitz\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\n\u001b[2m[+30ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"na-gladiator-05-06-26-0100\"\n\u001b[2m[+331ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"na-gladiator-05-06-26-0100\" in 301ms (0x05ca919a...ffc0ac)\n\u001b[2m[+337ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Applying 30 config steps in batched mode\n\u001b[2m[+338ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 1/30: Set world admin config\n\u001b[2m[+338ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 1/30 complete in 0ms: world-admin\n\u001b[2m[+338ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 2/30: Set mercenaries name config\n\u001b[2m[+338ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 2/30 complete in 0ms: mercenaries-name\n\u001b[2m[+338ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 3/30: Set biome climate config\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 3/30 complete in 1ms: biome-climate\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 4/30: Set VRF config\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 4/30 complete in 0ms: vrf\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 5/30: Set game mode config\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 5/30 complete in 0ms: game-mode\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 6/30: Set factory address\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 6/30 complete in 0ms: factory-address\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 7/30: Set blitz exploration config\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 7/30 complete in 0ms: blitz-exploration\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 8/30: Set MMR config\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 8/30 complete in 0ms: mmr\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 9/30: Set victory points config\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 9/30 complete in 0ms: victory-points\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 10/30: Set camp starting resources config\n\u001b[2m[+341ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 10/30 complete in 1ms: camp-starting-resources\n\u001b[2m[+341ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 11/30: Set blitz registration config\n\u001b[2m[+341ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 11/30 complete in 0ms: blitz-registration\n\u001b[2m[+341ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 12/30: Set agent config\n\u001b[2m[+342ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 12/30 complete in 1ms: agent\n\u001b[2m[+342ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 13/30: Set season config\n\u001b[2m[+342ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 13/30 complete in 0ms: season\n\u001b[2m[+342ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 14/30: Set resource bridge fees config\n\u001b[2m[+342ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 14/30 complete in 0ms: resource-bridge-fees\n\u001b[2m[+342ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 15/30: Set battle config\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 15/30 complete in 1ms: battle\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 16/30: Set structure max level config\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 16/30 complete in 0ms: structure-max-level\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 17/30: Set tick config\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 17/30 complete in 0ms: tick\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 18/30: Set map config\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 18/30 complete in 0ms: map\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 19/30: Set quest config\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 19/30 complete in 1ms: quest\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 20/30: Set capacity config\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 20/30 complete in 0ms: capacity\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 21/30: Set speed config\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 21/30 complete in 0ms: speed\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 22/30: Set hyperstructure config\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 22/30 complete in 0ms: hyperstructure\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 23/30: Set settlement config\n\u001b[2m[+345ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 23/30 complete in 1ms: settlement\n\u001b[2m[+345ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 24/30: Set starting resources config\n\u001b[2m[+345ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 24/30 complete in 0ms: starting-resources\n\u001b[2m[+345ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 25/30: Set weight config\n\u001b[2m[+346ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 25/30 complete in 1ms: weight\n\u001b[2m[+346ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 26/30: Set realm upgrade config\n\u001b[2m[+346ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 26/30 complete in 0ms: realm-upgrade\n\u001b[2m[+346ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 27/30: Set troop config\n\u001b[2m[+347ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 27/30 complete in 1ms: troop\n\u001b[2m[+347ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 28/30: Set base building config\n\u001b[2m[+347ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 28/30 complete in 0ms: building-base\n\u001b[2m[+347ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 29/30: Set building category config\n\u001b[2m[+348ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 29/30 complete in 1ms: building-categories\n\u001b[2m[+348ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 30/30: Set resource factory config\n\u001b[2m[+348ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 30/30 complete in 0ms: resource-factory\n[2026-06-07T07:16:47.068Z] WARN: Failed to fetch block 10563141:\n{}\n[2026-06-07T07:16:47.140Z] WARN: Failed to fetch block 10563140:\n{}\n[2026-06-07T07:16:47.141Z] ERROR: Insufficient transaction data: found 8 V3 transactions with tips in 1 blocks (block range: 10563140-10563142). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\n[provider] Failed to estimate invoke fee, using default v3 tx details warn: Failed to parse JSON\n      at errorHandler (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.9.2/node_modules/starknet/dist/index.mjs:6424:13)\n      at fetchEndpoint (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.9.2/node_modules/starknet/dist/index.mjs:6443:12)\n\n\u001b[2m[+969ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m configure world failed after 632ms: Failed to analyze tip statistics (sequential): Failed to determine starting block number: Failed to parse JSON\nError: 1 rotation or series game failed during configure-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:497:15)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-06-07T07:16:38.902Z",
-      "finishedAt": "2026-06-07T07:16:51.657Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"na-gladiator-05-06-26-0100\" on mainnet.blitz\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\n\u001b[2m[+30ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"na-gladiator-05-06-26-0100\"\n\u001b[2m[+331ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"na-gladiator-05-06-26-0100\" in 301ms (0x05ca919a...ffc0ac)\n\u001b[2m[+337ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Applying 30 config steps in batched mode\n\u001b[2m[+338ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 1/30: Set world admin config\n\u001b[2m[+338ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 1/30 complete in 0ms: world-admin\n\u001b[2m[+338ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 2/30: Set mercenaries name config\n\u001b[2m[+338ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 2/30 complete in 0ms: mercenaries-name\n\u001b[2m[+338ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 3/30: Set biome climate config\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 3/30 complete in 1ms: biome-climate\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 4/30: Set VRF config\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 4/30 complete in 0ms: vrf\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 5/30: Set game mode config\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 5/30 complete in 0ms: game-mode\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 6/30: Set factory address\n\u001b[2m[+339ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 6/30 complete in 0ms: factory-address\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 7/30: Set blitz exploration config\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 7/30 complete in 0ms: blitz-exploration\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 8/30: Set MMR config\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 8/30 complete in 0ms: mmr\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 9/30: Set victory points config\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 9/30 complete in 0ms: victory-points\n\u001b[2m[+340ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 10/30: Set camp starting resources config\n\u001b[2m[+341ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 10/30 complete in 1ms: camp-starting-resources\n\u001b[2m[+341ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 11/30: Set blitz registration config\n\u001b[2m[+341ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 11/30 complete in 0ms: blitz-registration\n\u001b[2m[+341ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 12/30: Set agent config\n\u001b[2m[+342ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 12/30 complete in 1ms: agent\n\u001b[2m[+342ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 13/30: Set season config\n\u001b[2m[+342ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 13/30 complete in 0ms: season\n\u001b[2m[+342ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 14/30: Set resource bridge fees config\n\u001b[2m[+342ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 14/30 complete in 0ms: resource-bridge-fees\n\u001b[2m[+342ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 15/30: Set battle config\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 15/30 complete in 1ms: battle\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 16/30: Set structure max level config\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 16/30 complete in 0ms: structure-max-level\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 17/30: Set tick config\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 17/30 complete in 0ms: tick\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 18/30: Set map config\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 18/30 complete in 0ms: map\n\u001b[2m[+343ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 19/30: Set quest config\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 19/30 complete in 1ms: quest\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 20/30: Set capacity config\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 20/30 complete in 0ms: capacity\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 21/30: Set speed config\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 21/30 complete in 0ms: speed\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 22/30: Set hyperstructure config\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 22/30 complete in 0ms: hyperstructure\n\u001b[2m[+344ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 23/30: Set settlement config\n\u001b[2m[+345ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 23/30 complete in 1ms: settlement\n\u001b[2m[+345ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 24/30: Set starting resources config\n\u001b[2m[+345ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 24/30 complete in 0ms: starting-resources\n\u001b[2m[+345ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 25/30: Set weight config\n\u001b[2m[+346ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 25/30 complete in 1ms: weight\n\u001b[2m[+346ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 26/30: Set realm upgrade config\n\u001b[2m[+346ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 26/30 complete in 0ms: realm-upgrade\n\u001b[2m[+346ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 27/30: Set troop config\n\u001b[2m[+347ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 27/30 complete in 1ms: troop\n\u001b[2m[+347ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 28/30: Set base building config\n\u001b[2m[+347ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 28/30 complete in 0ms: building-base\n\u001b[2m[+347ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 29/30: Set building category config\n\u001b[2m[+348ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 29/30 complete in 1ms: building-categories\n\u001b[2m[+348ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 30/30: Set resource factory config\n\u001b[2m[+348ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Config step 30/30 complete in 0ms: resource-factory\n[2026-06-07T07:16:47.068Z] WARN: Failed to fetch block 10563141:\n{}\n[2026-06-07T07:16:47.140Z] WARN: Failed to fetch block 10563140:\n{}\n[2026-06-07T07:16:47.141Z] ERROR: Insufficient transaction data: found 8 V3 transactions with tips in 1 blocks (block range: 10563140-10563142). Required: 10 transactions. Consider reducing minTxsNecessary or increasing maxBlocks.\n[provider] Failed to estimate invoke fee, using default v3 tx details warn: Failed to parse JSON\n      at errorHandler (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.9.2/node_modules/starknet/dist/index.mjs:6424:13)\n      at fetchEndpoint (/home/runner/work/eternum/eternum/node_modules/.pnpm/starknet@8.9.2/node_modules/starknet/dist/index.mjs:6443:12)\n\n\u001b[2m[+969ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m configure world failed after 632ms: Failed to analyze tip statistics (sequential): Failed to determine starting block number: Failed to parse JSON\nError: 1 rotation or series game failed during configure-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:497:15)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Applying settings needs attention"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -12842,6 +12839,63 @@
           "fee_amount": "500000000000000000000"
         },
         "seriesGameNumber": 74,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "reserve-blitz-hyperstructures",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "sync-paymaster",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
+      },
+      {
+        "gameName": "eu-gladiator-10-06-26-1900",
+        "startTime": 1781118000,
+        "startTimeIso": "2026-06-10T19:00:00.000Z",
+        "durationSeconds": 3600,
+        "blitzRegistrationOverrides": {
+          "fee_amount": "500000000000000000000"
+        },
+        "seriesGameNumber": 75,
         "currentStepId": null,
         "latestEvent": "Waiting to run",
         "status": "pending",
