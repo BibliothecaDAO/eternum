@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "27147544311-1",
   "currentStepId": "create-world",
   "createdAt": "2026-06-08T15:16:13.430Z",
-  "updatedAt": "2026-06-08T15:16:13.430Z",
+  "updatedAt": "2026-06-08T15:16:19.235Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,9 +27,10 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Creating world",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Creating world started",
+      "startedAt": "2026-06-08T15:16:19.235Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -77,5 +78,13 @@
   "artifacts": {
     "scheduledStartTime": "2026-06-08T16:00:00.000Z",
     "durationSeconds": 3600
+  },
+  "activeLease": {
+    "launchRequestId": "27147544311-1",
+    "workflowRunId": 27147544311,
+    "workflowRunAttempt": 1,
+    "stepId": "create-world",
+    "acquiredAt": "2026-06-08T15:16:19.235Z",
+    "expiresAt": "2026-06-08T16:01:19.235Z"
   }
 }
