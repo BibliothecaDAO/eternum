@@ -19,6 +19,7 @@ const PLAYER_STRUCTURE_MODELS: string[] = [
   "s1_eternum-Resource",
   "s1_eternum-ResourceArrival",
 ];
+const OWNED_STRUCTURE_BACKFILL_DEBOUNCE_MS = 250;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -69,7 +70,8 @@ export const usePlayerStructureSync = () => {
   const ownerStructureSubscriptionRef = useRef<{ cancel: () => void } | null>(null);
   const syncedStructureIds = useRef<Set<number>>(new Set());
   const inFlightStructureIds = useRef<Set<number>>(new Set());
-  const backfillOwnedStructuresRef = useRef<(() => Promise<void>) | null>(null);
+  const requestOwnedStructureBackfillRef = useRef<(() => void) | null>(null);
+  const ownedStructureBackfillTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const structureEntityIds = useMemo(() => playerStructures.map((s) => s.entityId), [playerStructures]);
 
@@ -83,6 +85,7 @@ export const usePlayerStructureSync = () => {
   const toriiComponents = contractComponents as unknown as Parameters<typeof getStructuresDataFromTorii>[1];
   const structureEntityIdsRef = useRef<ReadonlySet<number>>(new Set());
   const isBackfillRunning = useRef(false);
+  const rerunBackfillAfterCurrent = useRef(false);
 
   useEffect(() => {
     structureEntityIdsRef.current = new Set(structureEntityIds);
@@ -99,12 +102,26 @@ export const usePlayerStructureSync = () => {
     if (!accountAddress || !toriiClient || !toriiComponents) return;
     let cancelled = false;
 
+    const clearScheduledBackfill = () => {
+      if (ownedStructureBackfillTimerRef.current === null) {
+        return;
+      }
+
+      clearTimeout(ownedStructureBackfillTimerRef.current);
+      ownedStructureBackfillTimerRef.current = null;
+    };
+
     const backfillOwnedStructures = async () => {
-      if (isBackfillRunning.current) return;
+      if (isBackfillRunning.current) {
+        rerunBackfillAfterCurrent.current = true;
+        return;
+      }
+
       isBackfillRunning.current = true;
 
       let claimedStructureIds: number[] = [];
       try {
+        rerunBackfillAfterCurrent.current = false;
         const ownedStructures = await sqlApi.fetchStructuresByOwner(accountAddress);
         if (cancelled || ownedStructures.length === 0) return;
 
@@ -129,16 +146,39 @@ export const usePlayerStructureSync = () => {
       } finally {
         claimedStructureIds.forEach((entityId) => inFlightStructureIds.current.delete(entityId));
         isBackfillRunning.current = false;
+        if (!cancelled && rerunBackfillAfterCurrent.current) {
+          requestOwnedStructureBackfillRef.current?.();
+        }
       }
     };
 
-    backfillOwnedStructuresRef.current = backfillOwnedStructures;
+    const requestOwnedStructureBackfill = () => {
+      if (cancelled) {
+        return;
+      }
+      if (isBackfillRunning.current) {
+        rerunBackfillAfterCurrent.current = true;
+        return;
+      }
+      if (ownedStructureBackfillTimerRef.current !== null) {
+        return;
+      }
+
+      ownedStructureBackfillTimerRef.current = setTimeout(() => {
+        ownedStructureBackfillTimerRef.current = null;
+        void backfillOwnedStructures();
+      }, OWNED_STRUCTURE_BACKFILL_DEBOUNCE_MS);
+    };
+
+    requestOwnedStructureBackfillRef.current = requestOwnedStructureBackfill;
     void backfillOwnedStructures();
 
     return () => {
       cancelled = true;
-      if (backfillOwnedStructuresRef.current === backfillOwnedStructures) {
-        backfillOwnedStructuresRef.current = null;
+      clearScheduledBackfill();
+      rerunBackfillAfterCurrent.current = false;
+      if (requestOwnedStructureBackfillRef.current === requestOwnedStructureBackfill) {
+        requestOwnedStructureBackfillRef.current = null;
       }
     };
   }, [accountAddress, streamReconnectVersion, toriiClient, toriiComponents]);
@@ -163,7 +203,7 @@ export const usePlayerStructureSync = () => {
         const normalizedUpdateOwner = padHexAddressTo66(owner).toLowerCase();
         if (normalizedUpdateOwner !== normalizedAccountAddress) return;
 
-        void backfillOwnedStructuresRef.current?.();
+        requestOwnedStructureBackfillRef.current?.();
       });
 
       if (cancelled) {
