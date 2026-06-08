@@ -35,6 +35,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 const allLatestFeatures: LatestFeature[] = [
   {
     date: "2026-06-05",
+    title: "Lighter Structure Sync",
+    description:
+      "Improved owned-structure sync so bursts of ownership updates share a single backfill pass, reducing repeated data fetches while keeping new realms live.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
+    date: "2026-06-05",
     title: "Reliable Sync Diagnostics",
     description:
       "Fixed bounded map sync health checks so quiet map areas no longer appear stale just because no tile update arrived, with clearer diagnostics and less redundant subscription churn during connection testing.",

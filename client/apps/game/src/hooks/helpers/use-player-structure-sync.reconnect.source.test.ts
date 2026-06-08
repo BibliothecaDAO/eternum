@@ -15,4 +15,14 @@ describe("usePlayerStructureSync reconnect wiring", () => {
     expect(source).toContain("streamReconnectVersion");
     expect(source).toContain("subscriptionSetupTimeoutMs: env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS");
   });
+
+  it("coalesces owner-triggered SQL backfills instead of firing one query per owner event", () => {
+    const source = readSource("src/hooks/helpers/use-player-structure-sync.ts");
+
+    expect(source).toContain("OWNED_STRUCTURE_BACKFILL_DEBOUNCE_MS");
+    expect(source).toContain("requestOwnedStructureBackfillRef");
+    expect(source).toContain("rerunBackfillAfterCurrent");
+    expect(source).toContain("sqlApi.fetchStructuresByOwner(accountAddress)");
+    expect(source).toContain("requestOwnedStructureBackfillRef.current?.()");
+  });
 });

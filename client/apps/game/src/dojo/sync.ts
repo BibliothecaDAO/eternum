@@ -191,6 +191,17 @@ const logWorldmapSyncAB = (message: string, payload: Record<string, unknown>): v
   console.info(`[WorldmapSyncAB] ${message} ${stringifyWorldmapSyncABPayload(payload)}`);
 };
 
+const warmMapDataStore = (): void => {
+  const mapDataRefreshStart = performance.now();
+  void Promise.resolve(MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh())
+    .then(() => {
+      recordGameEntryDuration("initial-sync-map-data-refresh", performance.now() - mapDataRefreshStart);
+    })
+    .catch((error) => {
+      console.warn("[sync] MapDataStore warmup failed", error);
+    });
+};
+
 type BatchPayload = { upserts: ToriiEntity[]; deletions: string[] };
 type SyncEntityReadinessMatcher = (data: ToriiEntity) => boolean;
 type SyncEntityReadinessInfo = {
@@ -917,9 +928,7 @@ export const initialSync = async (
   ]);
   await Promise.all(parallelTasks);
 
-  const mapDataRefreshStart = performance.now();
-  await MapDataStore.getInstance(MAP_DATA_REFRESH_INTERVAL, sqlApi).refresh();
-  recordGameEntryDuration("initial-sync-map-data-refresh", performance.now() - mapDataRefreshStart);
+  warmMapDataStore();
 
   updateProgress(100);
 };

@@ -2,8 +2,9 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const { getEntitiesMock, setEntitiesMock } = vi.hoisted(() => ({
+const { getEntitiesMock, mapDataRefreshMock, setEntitiesMock } = vi.hoisted(() => ({
   getEntitiesMock: vi.fn(),
+  mapDataRefreshMock: vi.fn(),
   setEntitiesMock: vi.fn(),
 }));
 
@@ -23,7 +24,7 @@ vi.mock("@bibliothecadao/eternum", () => ({
   MAP_DATA_REFRESH_INTERVAL: 1_000,
   MapDataStore: {
     getInstance: vi.fn(() => ({
-      refresh: vi.fn(),
+      refresh: mapDataRefreshMock,
     })),
   },
   recordArmyMovementLatencyPhase: vi.fn(),
@@ -438,6 +439,7 @@ describe("syncEntitiesDebounced", () => {
 describe("initialSync global streams", () => {
   afterEach(() => {
     cancelEntityStreamSubscription();
+    mapDataRefreshMock.mockReset();
   });
 
   it("opens one all-entity global stream with explicitly scoped events before reporting sync complete", async () => {
@@ -559,6 +561,26 @@ describe("initialSync global streams", () => {
 
     expect(syncResolved).toBe(true);
     expect(getEntitiesMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not block initial sync on the global MapDataStore SQL warmup", async () => {
+    getEntitiesMock.mockResolvedValue(undefined);
+    mapDataRefreshMock.mockImplementation(() => new Promise(() => undefined));
+    const harness = createSyncHarness();
+    const syncPromise = initialSync(harness.setup as any, createInitialSyncState() as any, vi.fn(), {
+      logging: false,
+      reportProgress: false,
+      subscriptionSetupTimeoutMs: 25,
+    });
+    let syncResolved = false;
+    syncPromise.then(() => {
+      syncResolved = true;
+    });
+
+    await flushMicrotasks(20);
+
+    expect(syncResolved).toBe(true);
+    expect(mapDataRefreshMock).toHaveBeenCalledTimes(1);
   });
 
   it("fails initial sync when the ownerless global spatial bootstrap snapshot times out", async () => {
