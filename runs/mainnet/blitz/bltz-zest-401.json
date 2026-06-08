@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "bltz-zest-401",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-zest-401/27147544311-1.json",
   "latestLaunchRequestId": "27147544311-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-06-08T15:16:13.430Z",
-  "updatedAt": "2026-06-08T15:20:17.005Z",
+  "updatedAt": "2026-06-08T15:20:44.187Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,12 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-06-08T15:20:17.005Z"
+      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-zest-401\" on mainnet.blitz\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\n\u001b[2m[+18ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-zest-401\"\n\u001b[2m[+39ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-zest-401\" in 21ms (0x017342b7...4f0b9b)\n\u001b[2m[+49ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x017342b7...4f0b9b\n\u001b[2m[+72ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for bltz-zest-401 as missing via slot d describe\n\u001b[2m[+21.5s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 21.5s: Failed to create Torii deployment \"bltz-zest-401\": Error: rpc error: code = Internal desc = deployment is in a crash loop state. deployment logs: \n\nStarting torii with peers: \nError: Provider spec version is not supported. Please use a provider that supports v0.9. Got: 0.10.2. You might need to add a `rpc/v0_9` to the end of the URL.\n\nNOTE: Your deployment has been automatically deleted. Please try again using the `create` command.\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-zest-401/torii ...\nError: Failed to create Torii deployment \"bltz-zest-401\": Error: rpc error: code = Internal desc = deployment is in a crash loop state. deployment logs: \n\nStarting torii with peers: \nError: Provider spec version is not supported. Please use a provider that supports v0.9. Got: 0.10.2. You might need to add a `rpc/v0_9` to the end of the URL.\n\nNOTE: Your deployment has been automatically deleted. Please try again using the `create` command.\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-zest-401/torii ...\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:395:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1059:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1057:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1252:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1290:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1305:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:150:25)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-06-08T15:20:17.005Z",
+      "finishedAt": "2026-06-08T15:20:44.187Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-zest-401\" on mainnet.blitz\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\n\u001b[2m[+18ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-zest-401\"\n\u001b[2m[+39ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-zest-401\" in 21ms (0x017342b7...4f0b9b)\n\u001b[2m[+49ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x017342b7...4f0b9b\n\u001b[2m[+72ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for bltz-zest-401 as missing via slot d describe\n\u001b[2m[+21.5s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 21.5s: Failed to create Torii deployment \"bltz-zest-401\": Error: rpc error: code = Internal desc = deployment is in a crash loop state. deployment logs: \n\nStarting torii with peers: \nError: Provider spec version is not supported. Please use a provider that supports v0.9. Got: 0.10.2. You might need to add a `rpc/v0_9` to the end of the URL.\n\nNOTE: Your deployment has been automatically deleted. Please try again using the `create` command.\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-zest-401/torii ...\nError: Failed to create Torii deployment \"bltz-zest-401\": Error: rpc error: code = Internal desc = deployment is in a crash loop state. deployment logs: \n\nStarting torii with peers: \nError: Provider spec version is not supported. Please use a provider that supports v0.9. Got: 0.10.2. You might need to add a `rpc/v0_9` to the end of the URL.\n\nNOTE: Your deployment has been automatically deleted. Please try again using the `create` command.\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-zest-401/torii ...\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:395:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1059:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1057:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1252:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1290:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1305:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:150:25)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "sync-paymaster",
@@ -97,13 +99,5 @@
     "reserveHyperstructuresTxHashes": [
       "0x59f5b4dbfc12fa7af7fb0479896086c817c4b05baaef65fab15ebfd23939358"
     ]
-  },
-  "activeLease": {
-    "launchRequestId": "27147544311-1",
-    "workflowRunId": 27147544311,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-06-08T15:20:17.005Z",
-    "expiresAt": "2026-06-08T16:05:17.005Z"
   }
 }
