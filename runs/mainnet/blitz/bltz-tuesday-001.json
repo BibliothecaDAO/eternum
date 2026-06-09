@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "27191485075-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-06-09T07:43:23.678Z",
-  "updatedAt": "2026-06-09T07:45:38.291Z",
+  "updatedAt": "2026-06-09T07:45:42.918Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-06-09T07:45:42.918Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -84,5 +85,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-tuesday-001.json",
     "worldAddress": "0x052e893e74e88bd5934c1eb758aee915985836aeb286eccbd2ebf1060df37428",
     "createGameTxHash": "0x74ad0c6a1efa4a132734b112d1252d15d0b7a469106920e113eaa36297b994"
+  },
+  "activeLease": {
+    "launchRequestId": "27191485075-1",
+    "workflowRunId": 27191485075,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-06-09T07:45:42.918Z",
+    "expiresAt": "2026-06-09T08:30:42.918Z"
   }
 }
