@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "bltz-tuesday-001",
-  "status": "attention",
+  "status": "running",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/mainnet/blitz/bltz-tuesday-001/27191897718-1.json",
   "latestLaunchRequestId": "27191897718-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-06-09T07:43:23.678Z",
-  "updatedAt": "2026-06-09T07:52:08.521Z",
+  "updatedAt": "2026-06-09T07:52:13.935Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,12 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-tuesday-001\" on mainnet.blitz\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-tuesday-001\"\n\u001b[2m[+100ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-tuesday-001\" in 83ms (0x052e893e...f37428)\n\u001b[2m[+110ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x052e893e...f37428\n\u001b[2m[+198ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for bltz-tuesday-001 as missing via slot d describe\n\u001b[2m[+21.9s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 21.8s: Failed to create Torii deployment \"bltz-tuesday-001\": Error: rpc error: code = Internal desc = deployment is in a crash loop state. deployment logs: \n\nStarting torii with peers: \nError: Provider spec version is not supported. Please use a provider that supports v0.9. Got: 0.10.2. You might need to add a `rpc/v0_9` to the end of the URL.\n\nNOTE: Your deployment has been automatically deleted. Please try again using the `create` command.\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-tuesday-001/torii ...\nError: Failed to create Torii deployment \"bltz-tuesday-001\": Error: rpc error: code = Internal desc = deployment is in a crash loop state. deployment logs: \n\nStarting torii with peers: \nError: Provider spec version is not supported. Please use a provider that supports v0.9. Got: 0.10.2. You might need to add a `rpc/v0_9` to the end of the URL.\n\nNOTE: Your deployment has been automatically deleted. Please try again using the `create` command.\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-tuesday-001/torii ...\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:395:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1059:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1057:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1252:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1290:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1305:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:150:25)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-06-09T07:47:09.607Z",
-      "finishedAt": "2026-06-09T07:47:37.577Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-tuesday-001\" on mainnet.blitz\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+16ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\n\u001b[2m[+17ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-tuesday-001\"\n\u001b[2m[+100ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-tuesday-001\" in 83ms (0x052e893e...f37428)\n\u001b[2m[+110ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x052e893e...f37428\n\u001b[2m[+198ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved Torii state for bltz-tuesday-001 as missing via slot d describe\n\u001b[2m[+21.9s]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 21.8s: Failed to create Torii deployment \"bltz-tuesday-001\": Error: rpc error: code = Internal desc = deployment is in a crash loop state. deployment logs: \n\nStarting torii with peers: \nError: Provider spec version is not supported. Please use a provider that supports v0.9. Got: 0.10.2. You might need to add a `rpc/v0_9` to the end of the URL.\n\nNOTE: Your deployment has been automatically deleted. Please try again using the `create` command.\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-tuesday-001/torii ...\nError: Failed to create Torii deployment \"bltz-tuesday-001\": Error: rpc error: code = Internal desc = deployment is in a crash loop state. deployment logs: \n\nStarting torii with peers: \nError: Provider spec version is not supported. Please use a provider that supports v0.9. Got: 0.10.2. You might need to add a `rpc/v0_9` to the end of the URL.\n\nNOTE: Your deployment has been automatically deleted. Please try again using the `create` command.\n⚠️  Note: Basic tier is intended for development and testing only.\n   It has limited resources and does not scale storage automatically.\n   Learn about paid tiers at https://docs.cartridge.gg/slot/scale\n\nDeploying https://api.cartridge.gg/x/bltz-tuesday-001/torii ...\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:395:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1059:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1057:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1252:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1290:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1305:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:150:25)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-06-09T07:52:13.935Z",
+      "finishedAt": "2026-06-09T07:47:37.577Z"
     },
     {
       "id": "sync-paymaster",
@@ -99,5 +98,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x12e327d4c73d3f0a2a4a861065fbf97565c685e35a9a03bb1f164af92f8c50d"
     ]
+  },
+  "activeLease": {
+    "launchRequestId": "27191897718-1",
+    "workflowRunId": 27191897718,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexer",
+    "acquiredAt": "2026-06-09T07:52:13.935Z",
+    "expiresAt": "2026-06-09T08:37:13.935Z"
   }
 }
