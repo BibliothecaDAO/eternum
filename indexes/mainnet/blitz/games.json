@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-09T10:50:06.069Z",
+  "updatedAt": "2026-06-09T10:50:14.945Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1555,12 +1555,13 @@
       "path": "runs/mainnet/blitz/bltz-tues-001.json",
       "inputPath": "inputs/mainnet/blitz/bltz-tues-001/27200869423-1.json",
       "status": "running",
-      "updatedAt": "2026-06-09T10:50:06.069Z",
+      "updatedAt": "2026-06-09T10:50:14.945Z",
       "workflowRef": "next",
       "currentStepId": "create-indexer",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-06-09T11:35:14.945Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-indexer",
+      "recoverablePendingStepId": "sync-paymaster",
       "startTime": 1781003700,
       "durationSeconds": 3600,
       "artifacts": {}
