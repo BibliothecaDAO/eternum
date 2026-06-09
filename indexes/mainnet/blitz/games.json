@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-09T19:33:35.087Z",
+  "updatedAt": "2026-06-09T19:33:44.121Z",
   "entries": {
     "bltz-blip-333": {
       "kind": "game",
@@ -1576,12 +1576,13 @@
       "path": "runs/mainnet/blitz/bltz-whiz-585.json",
       "inputPath": "inputs/mainnet/blitz/bltz-whiz-585/27230609455-1.json",
       "status": "running",
-      "updatedAt": "2026-06-09T19:33:35.087Z",
+      "updatedAt": "2026-06-09T19:33:44.121Z",
       "workflowRef": "next",
       "currentStepId": "wait-for-factory-index",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-06-09T20:18:44.121Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "wait-for-factory-index",
+      "recoverablePendingStepId": "configure-world",
       "startTime": 1781051400,
       "durationSeconds": 3600,
       "artifacts": {}
