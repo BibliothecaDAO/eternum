@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "27230609455-1",
   "currentStepId": null,
   "createdAt": "2026-06-09T19:31:36.908Z",
-  "updatedAt": "2026-06-10T10:00:35.057Z",
+  "updatedAt": "2026-06-10T10:02:31.149Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x3e9bc426793674e2d0497565f2cea11f576b22b2ab3e73bca900b1a50fbf7a0"
     ],
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-whiz-585/torii",
     "indexerVersion": "v1.8.16",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-06-09T19:35:38.951Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-06-10T10:00:33.243Z"
+    "lastIndexerDescribeAt": "2026-06-10T10:02:31.148Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-06-09T19:35:50.133Z"
 }
