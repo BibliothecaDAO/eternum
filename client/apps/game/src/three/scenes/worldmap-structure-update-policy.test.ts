@@ -10,7 +10,7 @@ describe("resolveStructureTileUpdateActions", () => {
       }),
     ).toEqual({
       shouldScheduleTileRefresh: true,
-      shouldClearCache: false,
+      shouldInvalidateAffectedChunks: false,
       shouldRefreshVisibleChunks: false,
       shouldUpdateTotalStructures: false,
     });
@@ -24,13 +24,17 @@ describe("resolveStructureTileUpdateActions", () => {
       }),
     ).toEqual({
       shouldScheduleTileRefresh: false,
-      shouldClearCache: false,
+      shouldInvalidateAffectedChunks: false,
       shouldRefreshVisibleChunks: false,
       shouldUpdateTotalStructures: false,
     });
   });
 
-  it("prefers full refresh path when structure count changed", () => {
+  // Phase 1.1: a structure count change must NOT flush the entire terrain matrix
+  // cache + global pools (clearCache). It invalidates only the chunks overlapping
+  // the affected structure hex and refreshes the visible chunks; the cached
+  // terrain for every other chunk (and the pools) is preserved.
+  it("invalidates only the affected chunks (no full cache flush) when structure count changed", () => {
     expect(
       resolveStructureTileUpdateActions({
         hasPositions: true,
@@ -38,7 +42,21 @@ describe("resolveStructureTileUpdateActions", () => {
       }),
     ).toEqual({
       shouldScheduleTileRefresh: false,
-      shouldClearCache: true,
+      shouldInvalidateAffectedChunks: true,
+      shouldRefreshVisibleChunks: true,
+      shouldUpdateTotalStructures: true,
+    });
+  });
+
+  it("still takes the count-change path when positions are missing", () => {
+    expect(
+      resolveStructureTileUpdateActions({
+        hasPositions: false,
+        countChanged: true,
+      }),
+    ).toEqual({
+      shouldScheduleTileRefresh: false,
+      shouldInvalidateAffectedChunks: true,
       shouldRefreshVisibleChunks: true,
       shouldUpdateTotalStructures: true,
     });

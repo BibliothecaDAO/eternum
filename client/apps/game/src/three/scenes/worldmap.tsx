@@ -294,6 +294,7 @@ import {
 } from "./worldmap-zoom/worldmap-zoom-refresh-planner";
 import type { WorldmapCameraSnapshot } from "./worldmap-zoom/worldmap-zoom-types";
 import { resolveStructureTileUpdateActions } from "./worldmap-structure-update-policy";
+import { shouldInvalidateTerrainForArmyTileUpdate } from "./worldmap-army-terrain-invalidation-policy";
 import {
   resolveWorldmapChunkRefreshDebounceMs,
   shouldDelayWorldmapChunkSwitch,
@@ -1441,7 +1442,7 @@ export default class WorldmapScene extends WarpTravel {
     }
     this.exploredTiles.get(targetNormalized.x)!.set(targetNormalized.y, provisionalSpawn.biome);
     this.provisionalBiomes.mark(targetNormalized.x, targetNormalized.y);
-    this.exploredTilesGeneration.bump();
+    this.bumpTerrainGenerationForHex(targetNormalized.x, targetNormalized.y);
     gameWorkerManager.updateExploredTile(targetNormalized.x, targetNormalized.y, provisionalSpawn.biome);
     this.invalidateAllChunkCachesContainingHex(targetNormalized.x, targetNormalized.y);
   }
@@ -1665,13 +1666,14 @@ export default class WorldmapScene extends WarpTravel {
           // format from world-update-listener (TileOpt currentState.col/row).
           configManager.getBiome(update.hexCoords.col, update.hexCoords.row),
         );
-        if (spawnResult.action === "write_provisional") {
+        const wroteProvisionalBiome = spawnResult.action === "write_provisional";
+        if (wroteProvisionalBiome) {
           if (!this.exploredTiles.has(normalizedPos.x)) {
             this.exploredTiles.set(normalizedPos.x, new Map());
           }
           this.exploredTiles.get(normalizedPos.x)!.set(normalizedPos.y, spawnResult.biome);
           this.provisionalBiomes.mark(normalizedPos.x, normalizedPos.y);
-          this.exploredTilesGeneration.bump();
+          this.bumpTerrainGenerationForHex(normalizedPos.x, normalizedPos.y);
         }
 
         await this.armyManager.onTileUpdate(update);
@@ -1691,7 +1693,11 @@ export default class WorldmapScene extends WarpTravel {
           void this.armyManager.restoreArmyVisualIfVisible(update.entityId);
         }
 
-        this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
+        // Phase 1.2: army movement does not change terrain — only invalidate when
+        // this update wrote a provisional biome (revealing an unexplored spawn hex).
+        if (shouldInvalidateTerrainForArmyTileUpdate({ wroteProvisionalBiome })) {
+          this.invalidateAllChunkCachesContainingHex(normalizedPos.x, normalizedPos.y);
+        }
 
         const armyEntityId = update.entityId;
         const prevPosition = this.armiesPositions.get(armyEntityId);
@@ -1854,8 +1860,18 @@ export default class WorldmapScene extends WarpTravel {
       this.totalStructures = newCount;
     }
 
-    if (structureTileActions.shouldClearCache) {
-      this.clearCache();
+    if (structureTileActions.shouldInvalidateAffectedChunks) {
+      // Phase 1.1: invalidate only the chunks overlapping the affected structure
+      // hex instead of flushing the entire terrain matrix cache + global pools +
+      // hydration state. updateStructureHexes already invalidated these hexes; the
+      // calls here are idempotent and also cover the count-changed-without-move
+      // path (e.g. founding/destruction reported via the optimistic removal above).
+      if (positions) {
+        this.invalidateAllChunkCachesContainingHex(positions.newPos.col, positions.newPos.row);
+        if (positions.oldPos) {
+          this.invalidateAllChunkCachesContainingHex(positions.oldPos.col, positions.oldPos.row);
+        }
+      }
     }
 
     if (structureTileActions.shouldRefreshVisibleChunks) {
@@ -5168,7 +5184,6 @@ export default class WorldmapScene extends WarpTravel {
       if (oldPos) {
         this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
         gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
-        this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
       }
       this.armiesPositions.delete(entityId);
       this.armyStructureOwners.delete(entityId);
@@ -5205,7 +5220,6 @@ export default class WorldmapScene extends WarpTravel {
     ) {
       this.armyHexes.get(oldPos.col)?.delete(oldPos.row);
       gameWorkerManager.updateArmyHex(oldPos.col, oldPos.row, null);
-      this.invalidateAllChunkCachesContainingHex(oldPos.col, oldPos.row);
     }
 
     // Add to new position
@@ -5217,7 +5231,8 @@ export default class WorldmapScene extends WarpTravel {
 
     this.armyHexes.get(newPos.col)?.set(newPos.row, armyHexData);
     gameWorkerManager.updateArmyHex(newPos.col, newPos.row, armyHexData);
-    this.invalidateAllChunkCachesContainingHex(newPos.col, newPos.row);
+    // Phase 1.2: army position changes do not affect cached terrain (biome tiles +
+    // structures only), so tracking army hexes no longer invalidates chunk caches.
   }
 
   /**
@@ -5365,7 +5380,7 @@ export default class WorldmapScene extends WarpTravel {
           this.exploredTiles.set(col, new Map());
         }
         this.exploredTiles.get(col)!.set(row, biome);
-        this.exploredTilesGeneration.bump();
+        this.bumpTerrainGenerationForHex(col, row);
         gameWorkerManager.updateExploredTile(col, row, biome);
         incrementWorldmapRenderCounter("duplicateTileAuthoritativeUpdates");
       }
@@ -5413,7 +5428,7 @@ export default class WorldmapScene extends WarpTravel {
 
     if (removeExplored) {
       this.exploredTiles.get(col)?.delete(row);
-      this.exploredTilesGeneration.bump();
+      this.bumpTerrainGenerationForHex(col, row);
 
       const [chunkRow, chunkCol] = this.currentChunk.split(",").map(Number);
       if (Number.isFinite(chunkRow) && Number.isFinite(chunkCol)) {
@@ -5430,7 +5445,7 @@ export default class WorldmapScene extends WarpTravel {
       this.exploredTiles.set(col, new Map());
     }
     this.exploredTiles.get(col)!.set(row, biome);
-    this.exploredTilesGeneration.bump();
+    this.bumpTerrainGenerationForHex(col, row);
     gameWorkerManager.updateExploredTile(col, row, biome);
 
     const pos = getWorldPositionForHex({ row, col });
@@ -5743,6 +5758,25 @@ export default class WorldmapScene extends WarpTravel {
       this.chunkSize,
       WORLDMAP_CHUNK_POLICY.toriiSubscription.superAreaStrides,
     );
+  }
+
+  /**
+   * Phase 1.3: bump the per-chunk terrain generation for every chunk whose render
+   * window contains the mutated hex. Cached chunks store the generation they were
+   * built at; on read, a chunk is rejected only when ITS generation advanced — a
+   * tile change in one chunk no longer invalidates unrelated cached chunks. Uses
+   * the same analytical resolution as invalidateAllChunkCachesContainingHex (here
+   * unfiltered by cache state, so a chunk cached later still observes the bump).
+   */
+  private bumpTerrainGenerationForHex(col: number, row: number) {
+    const containingChunkKeys = getChunkKeysContainingHexInRenderBoundsAnalytically({
+      col,
+      row,
+      renderSize: this.renderChunkSize,
+      chunkSize: this.chunkSize,
+      hasChunkKey: () => true,
+    });
+    this.exploredTilesGeneration.bump(containingChunkKeys);
   }
 
   private invalidateAllChunkCachesContainingHex(col: number, row: number) {
@@ -6832,6 +6866,7 @@ export default class WorldmapScene extends WarpTravel {
     this.cachedMatrixOrder = [];
     this.tileHydrationFetches.clear();
     this.structureHydrationFetches.clear();
+    this.exploredTilesGeneration.clear();
     MatrixPool.getInstance().clear();
     InstancedMatrixAttributePool.getInstance().clear();
     this.pinnedChunkKeys.clear();
@@ -7241,7 +7276,7 @@ export default class WorldmapScene extends WarpTravel {
     }
 
     const cachedMetadata = cachedMatrices.get("__meta__");
-    if (isTerrainCacheStale(cachedMetadata?.generation, this.exploredTilesGeneration.current())) {
+    if (isTerrainCacheStale(cachedMetadata?.generation, this.exploredTilesGeneration.current(chunkKey))) {
       this.removeCachedMatricesForChunk(startRow, startCol);
       return null;
     }
@@ -7898,7 +7933,7 @@ export default class WorldmapScene extends WarpTravel {
       terrainFingerprint: preparedTerrain.terrainFingerprint,
       visibleTerrainOwnership: preparedTerrain.visibleTerrainOwnership,
       terrainCells: preparedTerrain.terrainCells,
-      generation: this.exploredTilesGeneration.current(),
+      generation: this.exploredTilesGeneration.current(chunkKey),
     });
 
     this.cachedMatrices.set(chunkKey, cachedChunk);
@@ -9353,7 +9388,7 @@ export default class WorldmapScene extends WarpTravel {
 
     this.exploredTiles.get(col)!.set(row, biome);
     this.provisionalBiomes.clear(col, row);
-    this.exploredTilesGeneration.bump();
+    this.bumpTerrainGenerationForHex(col, row);
     gameWorkerManager.updateExploredTile(col, row, biome);
     this.invalidateAllChunkCachesContainingHex(col, row);
   }
@@ -9585,7 +9620,7 @@ export default class WorldmapScene extends WarpTravel {
       terrainFingerprint,
       visibleTerrainOwnership,
       terrainCells,
-      generation: this.exploredTilesGeneration.current(),
+      generation: this.exploredTilesGeneration.current(chunkKey),
     });
 
     this.touchMatrixCache(chunkKey);
