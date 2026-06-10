@@ -69,6 +69,7 @@ import {
   recordVisibleCosmeticStructureModelInstance,
   recordVisibleStructureModelInstance,
 } from "./structure-visible-instance-binding";
+import { findStructureAtHex } from "./structure-hex-lookup";
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
 import { finalizeVisibleStructureModelPass } from "./structure-visible-pass-finalizer";
 import { applyVisibleStructurePresentation } from "./structure-visible-presentation";
@@ -176,6 +177,8 @@ export class StructureManager {
   private structureAttachmentSignatures: Map<number, string> = new Map();
   private activeStructureAttachmentEntities: Set<number> = new Set();
   private chunkToStructures: Map<string, Set<ID>> = new Map();
+  // Phase 3.4: stable resolver so the spatial-index hover lookup allocates no closure.
+  private readonly getStructureByEntityIdBound = (id: ID) => this.structures.getStructureByEntityId(id);
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   // Scratch vectors for performVisibleStructuresUpdate to avoid allocations
   private readonly scratchPosition: Vector3 = new Vector3();
@@ -1107,17 +1110,14 @@ export class StructureManager {
   }
 
   getStructureByHexCoords(hexCoords: { col: number; row: number }) {
-    const allStructures = this.structures.getStructures();
-
-    for (const structures of allStructures.values()) {
-      const structure = Array.from(structures.values()).find(
-        (structure) => structure.hexCoords.col === hexCoords.col && structure.hexCoords.row === hexCoords.row,
-      );
-      if (structure) {
-        return structure;
-      }
-    }
-    return undefined;
+    // Phase 3.4: resolve via the spatial index (the same chunkToStructures bucket the
+    // visible-structure pass trusts) instead of scanning every structure with an
+    // Array.from+find per group on each pointermove.
+    return findStructureAtHex(
+      hexCoords,
+      this.chunkToStructures.get(this.getSpatialKey(hexCoords.col, hexCoords.row)),
+      this.getStructureByEntityIdBound,
+    );
   }
 
   public getVisibleCount(): number {

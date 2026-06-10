@@ -234,4 +234,23 @@ describe("renderer-diagnostics", () => {
     expect(after).not.toBe(before);
     expect(after.degradations).toEqual([{ feature: "bloom", reason: "disabled-by-quality" }]);
   });
+
+  // Phase 3.6: setRendererDiagnosticSceneName runs every rendered frame, but the
+  // scene name almost never changes. Skip the deep window snapshot when it is
+  // unchanged instead of re-mirroring ~1000 times/second.
+  it("does not re-mirror the window diagnostics when the scene name is unchanged", () => {
+    setRendererDiagnosticSceneName("worldmap");
+    const firstMirror = (window as { __rendererDiagnostics?: unknown }).__rendererDiagnostics;
+    setRendererDiagnosticSceneName("worldmap");
+    expect((window as { __rendererDiagnostics?: unknown }).__rendererDiagnostics).toBe(firstMirror);
+  });
+
+  it("re-mirrors the window diagnostics when the scene name changes", () => {
+    setRendererDiagnosticSceneName("worldmap");
+    const firstMirror = (window as { __rendererDiagnostics?: unknown }).__rendererDiagnostics;
+    setRendererDiagnosticSceneName("hexception");
+    const secondMirror = (window as { __rendererDiagnostics?: { sceneName?: string } }).__rendererDiagnostics;
+    expect(secondMirror).not.toBe(firstMirror);
+    expect(secondMirror?.sceneName).toBe("hexception");
+  });
 });

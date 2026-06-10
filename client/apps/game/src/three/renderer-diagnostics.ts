@@ -170,6 +170,11 @@ export function setRendererDiagnosticPostprocessPolicy(policy: WebgpuPostprocess
 }
 
 export function setRendererDiagnosticSceneName(sceneName: string): void {
+  // Phase 3.6: called every rendered frame; skip the deep window snapshot unless the
+  // scene name actually changed (other diagnostics re-mirror via their own setters).
+  if (rendererDiagnosticsState.sceneName === sceneName) {
+    return;
+  }
   rendererDiagnosticsState.sceneName = sceneName;
   syncRendererDiagnosticsWindow();
 }

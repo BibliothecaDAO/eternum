@@ -22,6 +22,7 @@ import {
 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { resizeInstancedMorphTexture } from "./morph-texture-resize";
+import { BoundedHexCache } from "../utils/bounded-hex-cache";
 import { env } from "../../../env";
 import {
   ANIMATION_STATE_IDLE,
@@ -141,6 +142,13 @@ export class ArmyModel {
   // Spline-based movement
   private readonly USE_SPLINE_MOVEMENT = true;
   private readonly splineMovingInstances: Map<number, SplineMovementData> = new Map();
+
+  // Phase 3.1: biome is immutable per hex but the resolution (BigInt/simplex noise)
+  // ran twice per frame per moving army. Memoize it by hex; the resolver is a stable
+  // instance field so the per-frame lookups allocate no closures.
+  private readonly biomeHexCache = new BoundedHexCache<BiomeType>();
+  private readonly resolveBiomeForHex = (col: number, row: number): BiomeType =>
+    configManager.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
 
   // agent
   private isAgent: boolean = false;
@@ -1850,7 +1858,7 @@ export class ArmyModel {
 
     // Terrain speed variation — sample biome and lerp multiplier
     const { col, row } = getHexForWorldPosition(instanceData.position);
-    const biome = configManager.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
+    const biome = this.biomeHexCache.get(col, row, this.resolveBiomeForHex);
     const targetMultiplier = resolveTerrainSpeedMultiplier(biome);
     splineData.currentSpeedMultiplier +=
       (targetMultiplier - splineData.currentSpeedMultiplier) *
@@ -2078,7 +2086,7 @@ export class ArmyModel {
 
   private updateModelTypeForPosition(entityId: number, position: Vector3, category: TroopType, tier: TroopTier): void {
     const { col, row } = getHexForWorldPosition(position);
-    const biome = configManager.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
+    const biome = this.biomeHexCache.get(col, row, this.resolveBiomeForHex);
 
     const modelType = this.getModelTypeForEntity(entityId, category, tier, biome);
     if (shouldSwitchModelForPosition({ currentModel: this.entityModelMap.get(entityId), resolvedModel: modelType })) {

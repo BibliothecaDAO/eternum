@@ -295,16 +295,29 @@ export class CentralizedVisibilityManager {
     }
 
     const visible = this.frustum.intersectsBox(box);
-    this.boxVisibilityCache.set(box, {
-      visibilityVersion: this.currentVisibilityVersion,
-      visible,
-      minX: box.min.x,
-      minY: box.min.y,
-      minZ: box.min.z,
-      maxX: box.max.x,
-      maxY: box.max.y,
-      maxZ: box.max.z,
-    });
+    // Phase 3.6: the key (a reused Box3) usually already has a record from a prior
+    // frame; mutate it in place instead of allocating a fresh record on every miss.
+    if (cached) {
+      cached.visibilityVersion = this.currentVisibilityVersion;
+      cached.visible = visible;
+      cached.minX = box.min.x;
+      cached.minY = box.min.y;
+      cached.minZ = box.min.z;
+      cached.maxX = box.max.x;
+      cached.maxY = box.max.y;
+      cached.maxZ = box.max.z;
+    } else {
+      this.boxVisibilityCache.set(box, {
+        visibilityVersion: this.currentVisibilityVersion,
+        visible,
+        minX: box.min.x,
+        minY: box.min.y,
+        minZ: box.min.z,
+        maxX: box.max.x,
+        maxY: box.max.y,
+        maxZ: box.max.z,
+      });
+    }
     this.cachedBoxChecks++;
     return visible;
   }
@@ -327,14 +340,24 @@ export class CentralizedVisibilityManager {
     }
 
     const visible = this.frustum.intersectsSphere(sphere);
-    this.sphereVisibilityCache.set(sphere, {
-      visibilityVersion: this.currentVisibilityVersion,
-      visible,
-      centerX: sphere.center.x,
-      centerY: sphere.center.y,
-      centerZ: sphere.center.z,
-      radius: sphere.radius,
-    });
+    // Phase 3.6: mutate the existing record in place instead of allocating on miss.
+    if (cached) {
+      cached.visibilityVersion = this.currentVisibilityVersion;
+      cached.visible = visible;
+      cached.centerX = sphere.center.x;
+      cached.centerY = sphere.center.y;
+      cached.centerZ = sphere.center.z;
+      cached.radius = sphere.radius;
+    } else {
+      this.sphereVisibilityCache.set(sphere, {
+        visibilityVersion: this.currentVisibilityVersion,
+        visible,
+        centerX: sphere.center.x,
+        centerY: sphere.center.y,
+        centerZ: sphere.center.z,
+        radius: sphere.radius,
+      });
+    }
     this.cachedSphereChecks++;
     return visible;
   }
@@ -355,13 +378,22 @@ export class CentralizedVisibilityManager {
     }
 
     const visible = this.frustum.containsPoint(point);
-    this.pointVisibilityCache.set(point, {
-      visibilityVersion: this.currentVisibilityVersion,
-      visible,
-      x: point.x,
-      y: point.y,
-      z: point.z,
-    });
+    // Phase 3.6: mutate the existing record in place instead of allocating on miss.
+    if (cached) {
+      cached.visibilityVersion = this.currentVisibilityVersion;
+      cached.visible = visible;
+      cached.x = point.x;
+      cached.y = point.y;
+      cached.z = point.z;
+    } else {
+      this.pointVisibilityCache.set(point, {
+        visibilityVersion: this.currentVisibilityVersion,
+        visible,
+        x: point.x,
+        y: point.y,
+        z: point.z,
+      });
+    }
     this.cachedPointChecks++;
     return visible;
   }

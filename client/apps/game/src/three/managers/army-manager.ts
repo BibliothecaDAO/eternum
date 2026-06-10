@@ -374,11 +374,14 @@ export class ArmyManager {
           currentTick: currentArmiesTick,
           previousTick: this.lastKnownArmiesTick,
         });
+        // Phase 3.6: stamina is derived from the armies tick, so only recompute it
+        // over all armies when the tick actually advanced (honouring the existing
+        // tick-gate policy) instead of every second. Battle timers keep the 1s
+        // cadence — they already early-out on armies without a battle cooldown.
         if (tickRefresh.shouldRecompute) {
           this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
+          this.recomputeStaminaForAllArmies();
         }
-        // Update stamina and battle timers every second
-        this.recomputeStaminaForAllArmies();
         this.recomputeBattleTimersForAllArmies();
       } catch {
         // Swallow errors to keep the tick loop alive
@@ -1291,6 +1294,10 @@ export class ArmyManager {
 
     this.visibleArmies.forEach((army) => {
       const entityId = this.toNumericId(army.entityId);
+      // Phase 3.2: skip non-attachment armies before building the input object.
+      if (!this.activeArmyAttachmentEntities.has(entityId)) {
+        return;
+      }
       const instanceData = this.armyModel.getInstanceData(entityId);
       syncArmyAttachmentTransformState({
         entityId,
@@ -2874,8 +2881,11 @@ export class ArmyManager {
         this.updateArmyCompactLabel(army, instanceData.position);
       }
 
-      // 2. Update attachment transforms
-      if (hasActiveAttachments) {
+      // 2. Update attachment transforms. Phase 3.2: only attachment-bearing armies
+      // need the sync (the callee early-returns for non-members), so hoist the
+      // membership check here to avoid allocating the input object + delegate
+      // closures for every visible army each frame.
+      if (hasActiveAttachments && this.activeArmyAttachmentEntities.has(numericEntityId)) {
         syncArmyAttachmentTransformState({
           entityId: numericEntityId,
           army,

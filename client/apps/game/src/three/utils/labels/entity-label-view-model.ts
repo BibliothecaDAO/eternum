@@ -178,12 +178,14 @@ function buildGuardDetailRows(guards: StructureLabelSource["guardArmies"]): Enti
   return rows;
 }
 
-function resolveArmyTitle(army: Pick<ArmyData, "entityId" | "owner">): string {
+export function resolveArmyTitle(army: Pick<ArmyData, "entityId" | "owner">): string {
   const ownerName = resolveOwnerName(army.owner.ownerName);
   return ownerName || `Army #${army.entityId}`;
 }
 
-function resolveStructureTitle(structure: Pick<StructureInfo, "entityId" | "structureName" | "structureType">): string {
+export function resolveStructureTitle(
+  structure: Pick<StructureInfo, "entityId" | "structureName" | "structureType">,
+): string {
   const structureName = structure.structureName.trim();
   if (structureName.length > 0) {
     return structureName;
