@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-whiz-585",
-    "launchRequestId": "27230609455-1",
+    "gameName": "bltz-riff-795",
+    "launchRequestId": "27263354994-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 27230609455,
+    "workflowRunId": 27263354994,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "b37f9e43-8e55-4232-95a5-49c34b8ae1ed"
+    "stepId": "create-world",
+    "leaseId": "346d39fb-0fe2-42a0-8002-face56b91076"
   },
-  "acquiredAt": "2026-06-09T19:35:05.975Z",
-  "heartbeatAt": "2026-06-09T19:35:10.115Z",
-  "expiresAt": "2026-06-09T19:35:10.115Z",
-  "releasedAt": "2026-06-09T19:35:10.115Z"
+  "acquiredAt": "2026-06-10T08:26:59.382Z",
+  "heartbeatAt": "2026-06-10T08:26:59.382Z",
+  "expiresAt": "2026-06-10T08:36:59.382Z"
 }
