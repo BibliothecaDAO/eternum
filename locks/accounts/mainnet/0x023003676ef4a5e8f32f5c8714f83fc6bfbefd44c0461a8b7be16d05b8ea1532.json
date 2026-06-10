@@ -5,15 +5,14 @@
   "owner": {
     "environment": "mainnet.blitz",
     "gameName": "bltz-riff-795",
-    "launchRequestId": "27263354994-1",
+    "launchRequestId": "27263587932-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 27263354994,
+    "workflowRunId": 27263587932,
     "workflowRunAttempt": 1,
     "stepId": "configure-world",
-    "leaseId": "d934346f-76c7-43e1-b1c7-f188de0e605a"
+    "leaseId": "7b26c53e-0b4b-49c2-8c5b-04fcf8fedb0d"
   },
-  "acquiredAt": "2026-06-10T08:29:18.218Z",
-  "heartbeatAt": "2026-06-10T08:29:25.080Z",
-  "expiresAt": "2026-06-10T08:29:25.080Z",
-  "releasedAt": "2026-06-10T08:29:25.080Z"
+  "acquiredAt": "2026-06-10T08:31:09.839Z",
+  "heartbeatAt": "2026-06-10T08:31:09.839Z",
+  "expiresAt": "2026-06-10T08:41:09.839Z"
 }
