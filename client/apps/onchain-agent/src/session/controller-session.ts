@@ -40,6 +40,11 @@ interface BuildSessionPolicyOptions {
 
 const VRF_PROVIDER_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
 
+const COLLECTION_APPROVAL_METHOD: PolicyMethod = {
+  name: "set_approval_for_all",
+  entrypoint: "set_approval_for_all",
+};
+
 function normalizeTag(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
@@ -89,6 +94,21 @@ function buildMessageSigningPolicy(chain: string): Array<Record<string, unknown>
       },
     },
   ];
+}
+
+function addCollectionApprovalPolicy(
+  contracts: Record<string, { methods: PolicyMethod[] }>,
+  collectionAddress: string | undefined,
+) {
+  if (!collectionAddress) return;
+  const existingMethods = contracts[collectionAddress]?.methods ?? [];
+  if (existingMethods.some((method) => method.entrypoint === COLLECTION_APPROVAL_METHOD.entrypoint)) {
+    return;
+  }
+
+  contracts[collectionAddress] = {
+    methods: [...existingMethods, COLLECTION_APPROVAL_METHOD],
+  };
 }
 
 /**
@@ -147,45 +167,19 @@ export function buildSessionPoliciesFromManifest(
     );
   }
 
-  // Ensure blitz_realm_systems has entrypoints that may be missing from manifest ABI
-  // (assign_realm_positions, settle_realms are used by the settle_blitz_realm composite)
-  for (const contract of entries) {
-    const item = contract as Record<string, unknown>;
-    const tag = normalizeTag(item.tag);
-    const address = normalizeAddress(item.address);
-    if (!tag || !address) continue;
-    if (!tag.includes("blitz_realm_systems")) continue;
-    const existing = contracts[address];
-    if (!existing) continue;
-    const mergedByEntrypoint = new Map<string, PolicyMethod>();
-    for (const m of existing.methods) mergedByEntrypoint.set(m.entrypoint, m);
-    for (const ep of ["assign_realm_positions", "settle_realms"]) {
-      if (!mergedByEntrypoint.has(ep)) {
-        mergedByEntrypoint.set(ep, { name: ep, entrypoint: ep });
-      }
-    }
-    contracts[address] = { methods: Array.from(mergedByEntrypoint.values()) };
-  }
-
   // Add VRF provider policy
   contracts[VRF_PROVIDER_ADDRESS] = {
     methods: [{ name: "VRF", entrypoint: "request_random" }],
   };
 
-  // Add token policies from WorldProfile
-  if (profile?.entryTokenAddress && profile.entryTokenAddress !== "0x0") {
-    contracts[profile.entryTokenAddress] = {
-      methods: [
-        { name: "token_lock", entrypoint: "token_lock" },
-        { name: "approve", entrypoint: "approve" },
-      ],
-    };
-  }
+  // Add fee-token approval policy from WorldProfile.
   if (profile?.feeTokenAddress) {
     contracts[profile.feeTokenAddress] = {
       methods: [{ name: "approve", entrypoint: "approve" }],
     };
   }
+
+  addCollectionApprovalPolicy(contracts, profile?.entryTokenAddress);
 
   const chain = profile?.chain ?? "slot";
   return { contracts, messages: buildMessageSigningPolicy(chain) } as SessionPolicies;
@@ -220,20 +214,14 @@ export function buildSessionPoliciesFromRoutes(
     methods: [{ name: "VRF", entrypoint: "request_random" }],
   };
 
-  // Add token policies from WorldProfile
-  if (profile?.entryTokenAddress && profile.entryTokenAddress !== "0x0") {
-    contracts[profile.entryTokenAddress] = {
-      methods: [
-        { name: "token_lock", entrypoint: "token_lock" },
-        { name: "approve", entrypoint: "approve" },
-      ],
-    };
-  }
+  // Add fee-token approval policy from WorldProfile.
   if (profile?.feeTokenAddress) {
     contracts[profile.feeTokenAddress] = {
       methods: [{ name: "approve", entrypoint: "approve" }],
     };
   }
+
+  addCollectionApprovalPolicy(contracts, profile?.entryTokenAddress);
 
   const chain = profile?.chain ?? options.chain ?? "slot";
   return { contracts, messages: buildMessageSigningPolicy(chain) } as SessionPolicies;

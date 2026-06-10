@@ -26,7 +26,7 @@ interface Breadcrumb {
   type: "navigation" | "click" | "api" | "state" | "custom";
   category: string;
   message: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 class ErrorReporter {

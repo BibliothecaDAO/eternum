@@ -138,11 +138,12 @@ describe("ABI-driven session policies", () => {
     expect(allEntrypoints.has("contribute")).toBe(true);
     expect(allEntrypoints.has("initialize")).toBe(true);
     // Blitz
-    expect(allEntrypoints.has("obtain_entry_token")).toBe(true);
-    expect(allEntrypoints.has("register")).toBe(true);
+    expect(allEntrypoints.has("settle")).toBe(true);
+    expect(allEntrypoints.has("reserve_hyperstructures")).toBe(true);
+    expect(allEntrypoints.has("create_hyperstructure")).toBe(true);
   });
 
-  it("ensures blitz settlement entrypoints exist for composite action support", () => {
+  it("keeps blitz policies aligned with the single-step settlement flow", () => {
     const policies = buildSessionPoliciesFromManifest(manifest);
     const blitzContract = manifest.contracts.find((c: any) => String(c?.tag ?? "").includes("blitz_realm_systems"));
     expect(blitzContract).toBeDefined();
@@ -155,8 +156,9 @@ describe("ABI-driven session policies", () => {
         (m) => m.entrypoint,
       ),
     );
-    expect(methods.has("assign_realm_positions")).toBe(true);
-    expect(methods.has("settle_realms")).toBe(true);
+    expect(methods.has("settle")).toBe(true);
+    expect(methods.has("assign_realm_positions")).toBe(false);
+    expect(methods.has("settle_realms")).toBe(false);
   });
 });
 
@@ -188,27 +190,34 @@ describe("special policies", () => {
     ).toBe(true);
   });
 
-  it("includes token policies when worldProfile provides addresses", () => {
+  it("includes token approval policies when worldProfile provides addresses", () => {
     const policies = buildSessionPoliciesFromManifest(manifest, { worldProfile: profile });
-
-    expect((policies.contracts as any)?.[profile.entryTokenAddress]).toBeDefined();
-    expect(
-      (policies.contracts as any)?.[profile.entryTokenAddress]?.methods?.some(
-        (m: any) => m.entrypoint === "token_lock",
-      ),
-    ).toBe(true);
 
     expect((policies.contracts as any)?.[profile.feeTokenAddress]).toBeDefined();
     expect(
       (policies.contracts as any)?.[profile.feeTokenAddress]?.methods?.some((m: any) => m.entrypoint === "approve"),
     ).toBe(true);
+    expect((policies.contracts as any)?.[profile.entryTokenAddress]).toBeDefined();
+    expect(
+      (policies.contracts as any)?.[profile.entryTokenAddress]?.methods?.some(
+        (m: any) => m.entrypoint === "set_approval_for_all",
+      ),
+    ).toBe(true);
   });
 
-  it("skips entry token policy when address is 0x0", () => {
-    const policies = buildSessionPoliciesFromManifest(manifest, {
-      worldProfile: { ...profile, entryTokenAddress: "0x0" },
+  it("includes entry-token approval when building route-based session policies", () => {
+    const { routes } = generateActions(manifest, {
+      overlays: { ...ETERNUM_OVERLAYS, ...createHiddenOverlays(manifest) },
+      gameName: "eternum",
     });
-    expect((policies.contracts as any)?.["0x0"]).toBeUndefined();
+    const policies = buildSessionPoliciesFromRoutes(routes, { worldProfile: profile });
+
+    expect((policies.contracts as any)?.[profile.entryTokenAddress]).toBeDefined();
+    expect(
+      (policies.contracts as any)?.[profile.entryTokenAddress]?.methods?.some(
+        (m: any) => m.entrypoint === "set_approval_for_all",
+      ),
+    ).toBe(true);
   });
 
   it("includes message signing policy", () => {

@@ -18,6 +18,8 @@ export interface RendererSupportRuntimeRegistry {
   getEffectsBridge(): RendererEffectsBridgeRuntime | undefined;
   getMonitoring(): RendererMonitoringRuntime | undefined;
   getRoute(): RendererRouteRuntime | undefined;
+  resetEffectsBridge(): void;
+  resetMonitoring(): void;
 }
 
 export function createRendererSupportRuntimeRegistry(
@@ -74,5 +76,15 @@ class GameRendererSupportRuntimeRegistry implements RendererSupportRuntimeRegist
     }
 
     return this.effectsBridgeRuntime;
+  }
+
+  public resetEffectsBridge(): void {
+    this.effectsBridgeRuntime?.dispose();
+    this.effectsBridgeRuntime = undefined;
+  }
+
+  public resetMonitoring(): void {
+    this.monitoringRuntime?.dispose();
+    this.monitoringRuntime = undefined;
   }
 }

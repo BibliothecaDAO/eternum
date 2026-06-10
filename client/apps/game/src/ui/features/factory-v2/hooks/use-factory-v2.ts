@@ -57,8 +57,16 @@ import {
 import { buildFactoryCreateRotationRunRequest } from "../create-rotation-run-request";
 import { buildFactoryCreateRunRequest } from "../create-run-request";
 import { buildFactoryCreateSeriesRunRequest } from "../create-series-run-request";
+import {
+  createFactoryBiomeClimateDraft,
+  randomizeFactoryBiomeSeeds,
+  validateFactoryBiomeClimateDraft,
+  type FactoryBiomeClimateDraft,
+  type FactoryBiomeClimateFieldId,
+} from "../biome-climate-options";
 import { buildBlitzDurationOptions, supportsFactoryDuration } from "../duration";
 import { buildFandomizedGameName } from "../funny-names";
+import { requestGameListRefreshForCompletedRun } from "../game-list-refresh-event";
 import { toggleSingleRealmLaunchMode, toggleTwoPlayerLaunchMode } from "../launch-modes";
 import {
   readFactoryPendingLaunches,
@@ -85,6 +93,7 @@ import {
 import type {
   FactoryActionFeedback,
   FactoryGameMode,
+  FactoryLaunchChain,
   FactoryLaunchPreset,
   FactoryLaunchTargetKind,
   FactoryPollingState,
@@ -96,6 +105,7 @@ import type {
   FactoryWatcherState,
 } from "../types";
 import { useFactoryV2MoreOptions } from "./use-factory-v2-map-options";
+import { resolveFactoryV2WorkflowRef } from "../workflow-ref-storage";
 
 const RUN_LOOKUP_ATTEMPTS = 8;
 const RUN_LOOKUP_DELAY_MS = 1_500;
@@ -149,6 +159,7 @@ export const useFactoryV2 = () => {
   const initialPresetId = getDefaultPresetIdForModeSelection(initialMode);
   const initialPreset = getFactoryPresetById(initialPresetId);
   const initialStartAt = initialPreset ? getPresetStartAtValue(initialPreset) : "";
+  const initialChain = resolveFactoryChainFromEnvironmentId(initialSelection.environmentId);
   const initialSuggestedGameName = buildSuggestedGameName(initialMode, []);
   const initialSuggestedSeriesName = buildSuggestedSeriesName(initialMode, []);
   const initialSuggestedRotationName = buildSuggestedRotationName(initialMode, []);
@@ -191,6 +202,16 @@ export const useFactoryV2 = () => {
       startingGameNumber: 1,
     }),
   );
+  const [draftGameBiomeClimate, setDraftGameBiomeClimate] = useState(() =>
+    createFactoryBiomeClimateDraft(initialChain, initialMode, initialPreset?.defaults.durationMinutes ?? null),
+  );
+  const [draftSeriesBiomeClimateByGameId, setDraftSeriesBiomeClimateByGameId] = useState<
+    Record<string, FactoryBiomeClimateDraft>
+  >({});
+  const [draftRotationBiomeClimateByGameNumber, setDraftRotationBiomeClimateByGameNumber] = useState<
+    Record<number, FactoryBiomeClimateDraft>
+  >({});
+  const [selectedBiomeClimateTargetId, setSelectedBiomeClimateTargetId] = useState("game");
   const [twoPlayerMode, setTwoPlayerMode] = useState(initialPreset?.defaults.twoPlayerMode ?? false);
   const [singleRealmMode, setSingleRealmMode] = useState(initialPreset?.defaults.singleRealmMode ?? false);
   const [watcher, setWatcher] = useState<FactoryWatcherState | null>(null);
@@ -277,10 +298,98 @@ export const useFactoryV2 = () => {
     twoPlayerMode,
     durationMinutes: draftDurationMinutes,
   });
+  const biomeClimateOptions = buildFactoryBiomeClimateOptions({
+    mode: selectedMode,
+    chain: selectedEnvironment?.chain ?? "slot",
+    launchKind: selectedLaunchKind,
+    durationMinutes: draftDurationMinutes,
+    gameName: draftGameName,
+    seriesGames: draftSeriesGames,
+    rotationMaxGames: draftRotationMaxGames,
+    draftGameBiomeClimate,
+    draftSeriesBiomeClimateByGameId,
+    draftRotationBiomeClimateByGameNumber,
+    selectedTargetId: selectedBiomeClimateTargetId,
+  });
+  const workflowRefOverride = resolveFactoryV2WorkflowRef();
 
   useEffect(() => {
     runsByEnvironmentRef.current = runsByEnvironment;
   }, [runsByEnvironment]);
+
+  useEffect(() => {
+    const nextDefaultDraft = createFactoryBiomeClimateDraft(
+      selectedEnvironment?.chain ?? "slot",
+      selectedMode,
+      draftDurationMinutes,
+    );
+
+    setDraftGameBiomeClimate(nextDefaultDraft);
+    setDraftSeriesBiomeClimateByGameId({});
+    setDraftRotationBiomeClimateByGameNumber({});
+    setSelectedBiomeClimateTargetId("game");
+  }, [draftDurationMinutes, selectedEnvironment?.chain, selectedMode, selectedPresetId]);
+
+  useEffect(() => {
+    const defaultDraft = createFactoryBiomeClimateDraft(
+      selectedEnvironment?.chain ?? "slot",
+      selectedMode,
+      draftDurationMinutes,
+    );
+    const nextGameIds = new Set(draftSeriesGames.map((game) => game.id));
+
+    setDraftSeriesBiomeClimateByGameId((currentDrafts) => {
+      const nextDrafts: Record<string, FactoryBiomeClimateDraft> = {};
+      for (const game of draftSeriesGames) {
+        nextDrafts[game.id] = currentDrafts[game.id] ?? defaultDraft;
+      }
+      return nextDrafts;
+    });
+
+    setSelectedBiomeClimateTargetId((currentTargetId) =>
+      selectedLaunchKind === "series" && !nextGameIds.has(currentTargetId)
+        ? (draftSeriesGames[0]?.id ?? "game")
+        : currentTargetId,
+    );
+  }, [draftDurationMinutes, draftSeriesGames, selectedEnvironment?.chain, selectedLaunchKind, selectedMode]);
+
+  useEffect(() => {
+    const defaultDraft = createFactoryBiomeClimateDraft(
+      selectedEnvironment?.chain ?? "slot",
+      selectedMode,
+      draftDurationMinutes,
+    );
+    const nextGameNumbers = Array.from({ length: draftRotationMaxGames }, (_, index) => index + 1);
+    const nextGameNumberSet = new Set(nextGameNumbers.map(String));
+
+    setDraftRotationBiomeClimateByGameNumber((currentDrafts) => {
+      const nextDrafts: Record<number, FactoryBiomeClimateDraft> = {};
+      for (const gameNumber of nextGameNumbers) {
+        nextDrafts[gameNumber] = currentDrafts[gameNumber] ?? defaultDraft;
+      }
+      return nextDrafts;
+    });
+
+    setSelectedBiomeClimateTargetId((currentTargetId) =>
+      selectedLaunchKind === "rotation" && !nextGameNumberSet.has(currentTargetId) ? "1" : currentTargetId,
+    );
+  }, [draftDurationMinutes, draftRotationMaxGames, selectedEnvironment?.chain, selectedLaunchKind, selectedMode]);
+
+  useEffect(() => {
+    setSelectedBiomeClimateTargetId((currentTargetId) => {
+      if (selectedLaunchKind === "game") {
+        return "game";
+      }
+
+      if (selectedLaunchKind === "series") {
+        return draftSeriesGames.some((game) => game.id === currentTargetId)
+          ? currentTargetId
+          : (draftSeriesGames[0]?.id ?? "game");
+      }
+
+      return Number(currentTargetId) >= 1 && Number(currentTargetId) <= draftRotationMaxGames ? currentTargetId : "1";
+    });
+  }, [draftRotationMaxGames, draftSeriesGames, selectedLaunchKind]);
 
   useEffect(() => {
     pendingLaunchesRef.current = pendingLaunches;
@@ -708,6 +817,50 @@ export const useFactoryV2 = () => {
 
   const fandomizeGameName = () => {
     setDraftGameName(buildSuggestedGameName(selectedMode, modeRuns));
+  };
+
+  const selectBiomeClimateTarget = (targetId: string) => {
+    setSelectedBiomeClimateTargetId(targetId);
+  };
+
+  const setBiomeClimateValue = (fieldId: FactoryBiomeClimateFieldId, value: string) => {
+    updateSelectedBiomeClimateDraft((currentDraft) => ({
+      ...currentDraft,
+      [fieldId]: value,
+    }));
+  };
+
+  const randomizeSelectedBiomeClimateSeeds = () => {
+    updateSelectedBiomeClimateDraft(randomizeFactoryBiomeSeeds);
+  };
+
+  const resetSelectedBiomeClimate = () => {
+    const defaultDraft = createFactoryBiomeClimateDraft(
+      selectedEnvironment?.chain ?? "slot",
+      selectedMode,
+      draftDurationMinutes,
+    );
+    updateSelectedBiomeClimateDraft(() => defaultDraft);
+  };
+
+  const applySelectedBiomeClimateToAll = () => {
+    const selectedDraft = biomeClimateOptions.draft;
+
+    if (selectedLaunchKind === "series") {
+      setDraftSeriesBiomeClimateByGameId(Object.fromEntries(draftSeriesGames.map((game) => [game.id, selectedDraft])));
+      return;
+    }
+
+    if (selectedLaunchKind === "rotation") {
+      setDraftRotationBiomeClimateByGameNumber(
+        Object.fromEntries(
+          Array.from({ length: draftRotationMaxGames }, (_, index) => [index + 1, selectedDraft]),
+        ) as Record<number, FactoryBiomeClimateDraft>,
+      );
+      return;
+    }
+
+    setDraftGameBiomeClimate(selectedDraft);
   };
 
   const launchSelectedPreset = async () => {
@@ -1474,6 +1627,7 @@ export const useFactoryV2 = () => {
     notice,
     environmentUnavailableReason,
     moreOptions,
+    biomeClimateOptions,
     selectMode,
     selectEnvironment,
     selectLaunchKind,
@@ -1499,6 +1653,11 @@ export const useFactoryV2 = () => {
     toggleTwoPlayerMode,
     toggleSingleRealmMode,
     fandomizeGameName,
+    selectBiomeClimateTarget,
+    setBiomeClimateValue,
+    randomizeSelectedBiomeClimateSeeds,
+    resetSelectedBiomeClimate,
+    applySelectedBiomeClimateToAll,
     launchSelectedPreset,
     continueSelectedRun,
     nudgeSelectedRun,
@@ -1526,6 +1685,30 @@ export const useFactoryV2 = () => {
   function applyLaunchModes(nextModes: { twoPlayerMode: boolean; singleRealmMode: boolean }) {
     setTwoPlayerMode(nextModes.twoPlayerMode);
     setSingleRealmMode(nextModes.singleRealmMode);
+  }
+
+  function updateSelectedBiomeClimateDraft(
+    updateDraft: (currentDraft: FactoryBiomeClimateDraft) => FactoryBiomeClimateDraft,
+  ) {
+    if (selectedLaunchKind === "series") {
+      const targetId = biomeClimateOptions.selectedTargetId;
+      setDraftSeriesBiomeClimateByGameId((currentDrafts) => ({
+        ...currentDrafts,
+        [targetId]: updateDraft(currentDrafts[targetId] ?? biomeClimateOptions.draft),
+      }));
+      return;
+    }
+
+    if (selectedLaunchKind === "rotation") {
+      const targetNumber = Number(biomeClimateOptions.selectedTargetId);
+      setDraftRotationBiomeClimateByGameNumber((currentDrafts) => ({
+        ...currentDrafts,
+        [targetNumber]: updateDraft(currentDrafts[targetNumber] ?? biomeClimateOptions.draft),
+      }));
+      return;
+    }
+
+    setDraftGameBiomeClimate((currentDraft) => updateDraft(currentDraft));
   }
 
   function clearTransientState() {
@@ -1566,6 +1749,7 @@ export const useFactoryV2 = () => {
     setSelectedRunId(nextRun.id);
     forgetPendingLaunch(environmentId, nextRun.kind, nextRun.name);
     setNotice(null);
+    requestGameListRefreshForCompletedRun(nextRun);
 
     if (nextRun.status === "complete") {
       clearGuidedRecoveryState(nextRun.id);
@@ -1946,6 +2130,7 @@ export const useFactoryV2 = () => {
       environmentId,
       gameName,
       gameStartTime: resolveStartTimeValue(draftStartAt),
+      workflowRef: workflowRefOverride,
       selectedMode,
       selectedPreset,
       twoPlayerMode,
@@ -1953,6 +2138,7 @@ export const useFactoryV2 = () => {
       durationMinutes: draftDurationMinutes,
       showsDuration,
       mapConfigOverrides: moreOptions.mapConfigOverrides,
+      biomeClimateOverrides: biomeClimateOptions.gameOverrides,
       blitzRegistrationOverrides: moreOptions.blitzRegistrationOverrides,
     });
   }
@@ -1961,7 +2147,8 @@ export const useFactoryV2 = () => {
     return buildFactoryCreateSeriesRunRequest({
       environmentId,
       seriesName,
-      games: draftSeriesGames,
+      workflowRef: workflowRefOverride,
+      games: biomeClimateOptions.seriesGamesWithOverrides,
       selectedMode,
       selectedPreset,
       twoPlayerMode,
@@ -1969,6 +2156,7 @@ export const useFactoryV2 = () => {
       durationMinutes: draftDurationMinutes,
       showsDuration,
       mapConfigOverrides: moreOptions.mapConfigOverrides,
+      biomeClimateOverrides: biomeClimateOptions.gameOverrides,
       blitzRegistrationOverrides: moreOptions.blitzRegistrationOverrides,
       autoRetryIntervalMinutes: draftAutoRetryIntervalMinutes,
       resolveStartTime: resolveStartTimeValue,
@@ -1979,6 +2167,7 @@ export const useFactoryV2 = () => {
     return buildFactoryCreateRotationRunRequest({
       environmentId,
       rotationName,
+      workflowRef: workflowRefOverride,
       firstGameStartTime: draftStartAt,
       gameIntervalMinutes: draftRotationGameIntervalMinutes,
       maxGames: draftRotationMaxGames,
@@ -1991,6 +2180,8 @@ export const useFactoryV2 = () => {
       durationMinutes: draftDurationMinutes,
       showsDuration,
       mapConfigOverrides: moreOptions.mapConfigOverrides,
+      biomeClimateOverrides: biomeClimateOptions.gameOverrides,
+      biomeClimateOverridesByGameNumber: biomeClimateOptions.rotationOverridesByGameNumber,
       blitzRegistrationOverrides: moreOptions.blitzRegistrationOverrides,
       autoRetryIntervalMinutes: draftAutoRetryIntervalMinutes,
       resolveStartTime: resolveStartTimeValue,
@@ -2103,6 +2294,184 @@ function resolveInitialFactorySelection(): InitialFactorySelection {
       ? buildPendingRunId(latestPendingLaunch.environmentId, latestPendingLaunch.kind, latestPendingLaunch.name)
       : null,
     pendingLaunches,
+  };
+}
+
+function resolveFactoryChainFromEnvironmentId(environmentId: string): FactoryLaunchChain {
+  return environmentId.startsWith("mainnet") ? "mainnet" : "slot";
+}
+
+function buildFactoryBiomeClimateOptions({
+  mode,
+  chain,
+  launchKind,
+  durationMinutes,
+  gameName,
+  seriesGames,
+  rotationMaxGames,
+  draftGameBiomeClimate,
+  draftSeriesBiomeClimateByGameId,
+  draftRotationBiomeClimateByGameNumber,
+  selectedTargetId,
+}: {
+  mode: FactoryGameMode;
+  chain: FactoryLaunchChain;
+  launchKind: FactoryLaunchTargetKind;
+  durationMinutes: number | null;
+  gameName: string;
+  seriesGames: FactorySeriesGameDraft[];
+  rotationMaxGames: number;
+  draftGameBiomeClimate: FactoryBiomeClimateDraft;
+  draftSeriesBiomeClimateByGameId: Record<string, FactoryBiomeClimateDraft>;
+  draftRotationBiomeClimateByGameNumber: Record<number, FactoryBiomeClimateDraft>;
+  selectedTargetId: string;
+}) {
+  const defaultDraft = createFactoryBiomeClimateDraft(chain, mode, durationMinutes);
+
+  if (launchKind === "series") {
+    return buildSeriesBiomeClimateOptions({
+      chain,
+      mode,
+      durationMinutes,
+      seriesGames,
+      draftsByGameId: draftSeriesBiomeClimateByGameId,
+      selectedTargetId,
+      defaultDraft,
+    });
+  }
+
+  if (launchKind === "rotation") {
+    return buildRotationBiomeClimateOptions({
+      chain,
+      mode,
+      durationMinutes,
+      rotationMaxGames,
+      draftsByGameNumber: draftRotationBiomeClimateByGameNumber,
+      selectedTargetId,
+      defaultDraft,
+    });
+  }
+
+  const validation = validateFactoryBiomeClimateDraft(chain, mode, draftGameBiomeClimate, durationMinutes);
+
+  return {
+    draft: draftGameBiomeClimate,
+    errors: validation.errors,
+    targets: [{ id: "game", label: gameName.trim() || "Game" }],
+    selectedTargetId: "game",
+    launchDisabledReason: validation.firstError,
+    gameOverrides: validation.biomeClimateOverrides,
+    seriesGamesWithOverrides: seriesGames,
+    rotationOverridesByGameNumber: undefined,
+  };
+}
+
+function buildSeriesBiomeClimateOptions({
+  chain,
+  mode,
+  durationMinutes,
+  seriesGames,
+  draftsByGameId,
+  selectedTargetId,
+  defaultDraft,
+}: {
+  chain: FactoryLaunchChain;
+  mode: FactoryGameMode;
+  durationMinutes: number | null;
+  seriesGames: FactorySeriesGameDraft[];
+  draftsByGameId: Record<string, FactoryBiomeClimateDraft>;
+  selectedTargetId: string;
+  defaultDraft: FactoryBiomeClimateDraft;
+}) {
+  const selectedGame = seriesGames.find((game) => game.id === selectedTargetId) ?? seriesGames[0];
+  const selectedDraft = selectedGame ? (draftsByGameId[selectedGame.id] ?? defaultDraft) : defaultDraft;
+  let firstError: string | null = null;
+  const seriesGamesWithOverrides = seriesGames.map((game) => {
+    const validation = validateFactoryBiomeClimateDraft(
+      chain,
+      mode,
+      draftsByGameId[game.id] ?? defaultDraft,
+      durationMinutes,
+    );
+    firstError ??= validation.firstError;
+
+    return {
+      ...game,
+      biomeClimateOverrides: validation.biomeClimateOverrides,
+    };
+  });
+  const selectedValidation = validateFactoryBiomeClimateDraft(chain, mode, selectedDraft, durationMinutes);
+
+  return {
+    draft: selectedDraft,
+    errors: selectedValidation.errors,
+    targets: seriesGames.map((game) => ({
+      id: game.id,
+      label: `${game.seriesGameNumber}. ${game.gameName || "Untitled game"}`,
+    })),
+    selectedTargetId: selectedGame?.id ?? "game",
+    launchDisabledReason: firstError,
+    gameOverrides: undefined,
+    seriesGamesWithOverrides,
+    rotationOverridesByGameNumber: undefined,
+  };
+}
+
+function buildRotationBiomeClimateOptions({
+  chain,
+  mode,
+  durationMinutes,
+  rotationMaxGames,
+  draftsByGameNumber,
+  selectedTargetId,
+  defaultDraft,
+}: {
+  chain: FactoryLaunchChain;
+  mode: FactoryGameMode;
+  durationMinutes: number | null;
+  rotationMaxGames: number;
+  draftsByGameNumber: Record<number, FactoryBiomeClimateDraft>;
+  selectedTargetId: string;
+  defaultDraft: FactoryBiomeClimateDraft;
+}) {
+  const gameNumbers = Array.from({ length: rotationMaxGames }, (_, index) => index + 1);
+  const selectedGameNumber = gameNumbers.includes(Number(selectedTargetId)) ? Number(selectedTargetId) : 1;
+  const selectedDraft = draftsByGameNumber[selectedGameNumber] ?? defaultDraft;
+  const rotationOverridesByGameNumber: Record<
+    number,
+    NonNullable<ReturnType<typeof validateFactoryBiomeClimateDraft>["biomeClimateOverrides"]>
+  > = {};
+  let firstError: string | null = null;
+
+  for (const gameNumber of gameNumbers) {
+    const validation = validateFactoryBiomeClimateDraft(
+      chain,
+      mode,
+      draftsByGameNumber[gameNumber] ?? defaultDraft,
+      durationMinutes,
+    );
+    firstError ??= validation.firstError;
+
+    if (validation.biomeClimateOverrides) {
+      rotationOverridesByGameNumber[gameNumber] = validation.biomeClimateOverrides;
+    }
+  }
+
+  const selectedValidation = validateFactoryBiomeClimateDraft(chain, mode, selectedDraft, durationMinutes);
+
+  return {
+    draft: selectedDraft,
+    errors: selectedValidation.errors,
+    targets: gameNumbers.map((gameNumber) => ({
+      id: String(gameNumber),
+      label: `Game ${gameNumber}`,
+    })),
+    selectedTargetId: String(selectedGameNumber),
+    launchDisabledReason: firstError,
+    gameOverrides: undefined,
+    seriesGamesWithOverrides: [],
+    rotationOverridesByGameNumber:
+      Object.keys(rotationOverridesByGameNumber).length > 0 ? rotationOverridesByGameNumber : undefined,
   };
 }
 

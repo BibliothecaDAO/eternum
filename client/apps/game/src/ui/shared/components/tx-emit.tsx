@@ -1,4 +1,4 @@
-import { TransactionType } from "@bibliothecadao/provider";
+import { SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE, TransactionType } from "@bibliothecadao/provider";
 import { useDojo } from "@bibliothecadao/react";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -15,8 +15,10 @@ const getTxMessage = (type: TransactionType): string => {
 type TransactionFailurePayload = {
   message?: string;
   type?: (typeof TransactionType)[keyof typeof TransactionType];
+  stage?: string;
   transactionCount?: number;
   transactionHash?: string;
+  failureKind?: string;
 };
 
 export function TransactionNotification() {
@@ -43,21 +45,17 @@ export function TransactionNotification() {
       AudioManager.getInstance().play("ui.tx_success");
     };
 
-    const handleTransactionFailed = (error: string | TransactionFailurePayload, meta?: TransactionFailurePayload) => {
-      const message = extractReadableErrorMessage(error, extractReadableErrorMessage(meta, "Transaction failed."));
-      const type =
-        typeof error === "object" && error?.type ? error.type : typeof meta?.type !== "undefined" ? meta.type : null;
-      const transactionCount =
-        typeof error === "object" && typeof error?.transactionCount === "number"
-          ? error.transactionCount
-          : typeof meta?.transactionCount === "number"
-            ? meta.transactionCount
-            : null;
+    const handleTransactionFailed = (payload: TransactionFailurePayload) => {
+      const message = extractReadableErrorMessage(payload.message, "Transaction failed.");
+      const type = typeof payload?.type !== "undefined" ? payload.type : null;
+      const transactionCount = typeof payload?.transactionCount === "number" ? payload.transactionCount : null;
       const action = type ? getTxMessage(type) : "Action failed";
       const txCount = transactionCount ? ` (${transactionCount} transactions)` : "";
-      const description = `${action}${txCount} - ${message}`;
+      const isNoHashTimeout = payload.failureKind === "submission_timeout_no_hash";
+      const title = isNoHashTimeout ? "⚠️ Transaction status uncertain" : "❌ Transaction failed";
+      const description = `${action}${txCount} - ${isNoHashTimeout ? SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE : message}`;
       console.error("Transaction failed:", message);
-      toast("❌ Transaction failed", { description });
+      toast(title, { description });
       AudioManager.getInstance().play("ui.tx_fail");
     };
 

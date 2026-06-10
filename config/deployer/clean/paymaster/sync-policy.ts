@@ -35,6 +35,7 @@ export interface SyncPaymasterPolicyOptions {
   autoConfirm?: boolean;
   cartridgeApiBase?: string;
   vrfProviderAddress?: string;
+  extraActions?: PaymasterAction[];
   applyPolicy?: (paymasterName: string, filePath: string, autoConfirm?: boolean) => void;
 }
 
@@ -167,6 +168,19 @@ function buildPaymasterActions(manifest: PaymasterManifestLike, vrfProviderAddre
   return Array.from(actionsByKey.values());
 }
 
+function mergePaymasterActions(
+  baseActions: PaymasterAction[],
+  extraActions: PaymasterAction[] = [],
+): PaymasterAction[] {
+  const actionsByKey = new Map<string, PaymasterAction>();
+
+  for (const action of [...baseActions, ...extraActions]) {
+    addPaymasterAction(actionsByKey, action.contractAddress, action.entrypoint);
+  }
+
+  return Array.from(actionsByKey.values());
+}
+
 function formatPaymasterOutputFilename(chain: Chain, gameName: string): string {
   const safeGameName = gameName
     .toLowerCase()
@@ -249,7 +263,10 @@ export async function syncPaymasterPolicy(options: SyncPaymasterPolicyOptions): 
   const dryRun = options.dryRun === true;
   const autoConfirm = resolvePaymasterAutoConfirm(options);
   const manifest = await loadPatchedPaymasterManifest(options, chain);
-  const actions = buildPaymasterActions(manifest, resolvePaymasterVrfProviderAddress(options, chain));
+  const actions = mergePaymasterActions(
+    buildPaymasterActions(manifest, resolvePaymasterVrfProviderAddress(options, chain)),
+    options.extraActions,
+  );
 
   if (!actions.length) {
     throw new Error("No paymaster actions were generated");

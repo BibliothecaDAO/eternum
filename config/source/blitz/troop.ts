@@ -15,8 +15,8 @@ const TROOP_DAMAGE_DELTA = 50_000n * BigInt(2) ** BigInt(64);
 
 // Stamina config
 const TROOP_STAMINA_INITIAL = 20;
-const TROOP_STAMINA_GAIN_PER_TICK = 20;
-const TROOP_STAMINA_BIOME_BONUS_VALUE = 10; // give 1 tick worth of stamina
+const TROOP_STAMINA_GAIN_PER_TICK = 30;
+const TROOP_STAMINA_BIOME_BONUS_VALUE = 10; // flat bonus stamina from biome advantage
 
 const TROOP_STAMINA_MAX = {
   [ResourcesIds.Knight]: 120,

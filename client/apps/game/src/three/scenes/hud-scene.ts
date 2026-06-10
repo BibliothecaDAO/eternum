@@ -5,61 +5,69 @@ import { Navigator } from "@/three/managers/navigator";
 import { WeatherManager, type WeatherState } from "@/three/managers/weather-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
-import { GUIManager } from "@/three/utils/";
+import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
+import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
+import { clampCycleProgress } from "@/utils/cycle-progress";
 import { AmbientLight, HemisphereLight, OrthographicCamera, Scene, Vector3 } from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls.js";
+
+type GUIController = {
+  updateDisplay?: () => void;
+};
+
+const DEBUG_TIME_DISPLAY_SYNC_EPSILON = 0.05;
 
 export default class HUDScene {
   private scene: Scene;
   private camera: OrthographicCamera;
   private sceneManager: SceneManager;
   private controls: MapControls;
-  private GUIFolder: any;
+  private GUIFolder: any | null = null;
   private navigator: Navigator;
   private ambientLight!: AmbientLight;
   private hemisphereLight!: HemisphereLight;
   private rainEffect!: RainEffect;
   private weatherManager!: WeatherManager;
   private ambienceManager!: AmbienceManager;
-  private ambientParticles!: AmbientParticleSystem;
+  // Undefined on LOW/below: the ambient particle system (dust + fireflies) is
+  // never constructed there, and its per-frame update loop is skipped entirely
+  // (setEnabled() only toggles .visible and would not stop the JS update cost).
+  private ambientParticles?: AmbientParticleSystem;
   private navigationTargetUnsubscribe: (() => void) | null = null;
   private cycleProgress: number = 0;
   private particleSpawnCenter: Vector3 = new Vector3();
+  private readonly debugTimeControls = {
+    overrideTime: false,
+    dayProgress: 0,
+  };
+  private debugTimeOverrideController: GUIController | null = null;
+  private debugTimeProgressController: GUIController | null = null;
 
   constructor(sceneManager: SceneManager, controls: MapControls) {
     this.scene = new Scene();
     this.sceneManager = sceneManager;
     this.controls = controls;
     this.camera = this.createOrthographicCamera();
-    this.GUIFolder = GUIManager.addFolder("HUD");
 
-    this.navigator = new Navigator(this.scene, this.controls, this.GUIFolder);
-    const navigatorParams = { col: 269, row: 143 };
-
-    this.GUIFolder.add(navigatorParams, "col").name("Col");
-    this.GUIFolder.add(navigatorParams, "row").name("Row");
-    this.GUIFolder.add(
-      {
-        setNavigationTarget: () => this.navigator.setNavigationTarget(navigatorParams.col, navigatorParams.row),
-      },
-      "setNavigationTarget",
-    ).name("Navigate to Col Row");
-    this.GUIFolder.close();
+    this.navigator = new Navigator(this.scene, this.controls);
+    this.setupGraphicsDevControls();
 
     this.addAmbientLight();
     this.addHemisphereLight();
     this.rainEffect = new RainEffect(this.scene);
-    this.rainEffect.addGUIControls(this.GUIFolder);
 
     // Initialize weather and ambience systems
     this.weatherManager = new WeatherManager(this.scene, this.rainEffect);
-    this.weatherManager.addGUIControls(this.GUIFolder);
 
     this.ambienceManager = new AmbienceManager();
-    this.ambienceManager.addGUIControls(this.GUIFolder);
+    this.setupGraphicsDevEffectControls();
 
-    // Initialize ambient particle system (dust motes, fireflies)
-    this.ambientParticles = new AmbientParticleSystem(this.scene);
+    // Initialize ambient particle system (dust motes, fireflies).
+    // Skipped on LOW/below to avoid both the point-cloud draws and the
+    // per-frame JS update cost on weak hardware.
+    if (!isLowOrBelow(GRAPHICS_SETTING)) {
+      this.ambientParticles = new AmbientParticleSystem(this.scene);
+    }
 
     // Store subscription reference for cleanup
     this.navigationTargetUnsubscribe = useUIStore.subscribe(
@@ -73,6 +81,52 @@ export default class HUDScene {
         }
       },
     );
+  }
+
+  private setupGraphicsDevControls(): void {
+    if (!GRAPHICS_DEV_GUI_ENABLED) {
+      return;
+    }
+
+    try {
+      this.GUIFolder = createGuiFolder("HUD");
+      this.setupNavigatorGuiControls();
+      this.GUIFolder.close();
+    } catch {
+      this.GUIFolder = null;
+    }
+  }
+
+  private setupNavigatorGuiControls(): void {
+    if (!this.GUIFolder) {
+      return;
+    }
+
+    const navigatorParams = { col: 269, row: 143 };
+
+    this.GUIFolder.add(navigatorParams, "col").name("Col");
+    this.GUIFolder.add(navigatorParams, "row").name("Row");
+    this.GUIFolder.add(
+      {
+        setNavigationTarget: () => this.navigator.setNavigationTarget(navigatorParams.col, navigatorParams.row),
+      },
+      "setNavigationTarget",
+    ).name("Navigate to Col Row");
+  }
+
+  private setupGraphicsDevEffectControls(): void {
+    if (!this.GUIFolder) {
+      return;
+    }
+
+    try {
+      this.rainEffect.addGUIControls(this.GUIFolder);
+      this.weatherManager.addGUIControls(this.GUIFolder);
+      this.ambienceManager.addGUIControls(this.GUIFolder);
+      this.addDebugTimeControls();
+    } catch {
+      // Dev GUI failures must not block HUD startup.
+    }
   }
 
   private createOrthographicCamera(): OrthographicCamera {
@@ -103,7 +157,7 @@ export default class HUDScene {
     this.ambientLight = new AmbientLight(0xf3c99f, 3.5);
     this.scene.add(this.ambientLight);
 
-    this.GUIFolder.add(this.ambientLight, "intensity", 0, 10).name("Ambient Light Intensity");
+    this.GUIFolder?.add(this.ambientLight, "intensity", 0, 10).name("Ambient Light Intensity");
   }
 
   private addHemisphereLight() {
@@ -111,10 +165,68 @@ export default class HUDScene {
     this.hemisphereLight.position.set(0, 20, 0);
     this.scene.add(this.hemisphereLight);
 
-    this.GUIFolder.add(this.hemisphereLight, "intensity", 0, 5).name("Hemisphere Light Intensity");
-    this.GUIFolder.add(this.hemisphereLight.position, "x", -10, 10).name("Hemisphere Light X");
-    this.GUIFolder.add(this.hemisphereLight.position, "y", -10, 10).name("Hemisphere Light Y");
-    this.GUIFolder.add(this.hemisphereLight.position, "z", -10, 10).name("Hemisphere Light Z");
+    this.GUIFolder?.add(this.hemisphereLight, "intensity", 0, 5).name("Hemisphere Light Intensity");
+    this.GUIFolder?.add(this.hemisphereLight.position, "x", -10, 10).name("Hemisphere Light X");
+    this.GUIFolder?.add(this.hemisphereLight.position, "y", -10, 10).name("Hemisphere Light Y");
+    this.GUIFolder?.add(this.hemisphereLight.position, "z", -10, 10).name("Hemisphere Light Z");
+  }
+
+  private addDebugTimeControls() {
+    if (!this.GUIFolder) {
+      return;
+    }
+
+    const timeFolder = this.GUIFolder.addFolder("Time Scrubber");
+
+    this.debugTimeOverrideController = timeFolder
+      .add(this.debugTimeControls, "overrideTime")
+      .name("Override Time")
+      .onChange((enabled: boolean) => this.setDebugTimeOverride(enabled));
+
+    this.debugTimeProgressController = timeFolder
+      .add(this.debugTimeControls, "dayProgress", 0, 100, 0.1)
+      .name("Day Progress")
+      .onChange((value: number) => this.previewDebugTime(value));
+
+    timeFolder.close();
+  }
+
+  private setDebugTimeOverride(enabled: boolean) {
+    this.debugTimeControls.overrideTime = enabled;
+
+    if (enabled) {
+      this.applyDebugCycleProgress(this.debugTimeControls.dayProgress);
+      return;
+    }
+
+    useUIStore.getState().setDebugCycleProgressOverride(null);
+  }
+
+  private previewDebugTime(value: number) {
+    const progress = clampCycleProgress(value);
+    this.debugTimeControls.dayProgress = progress;
+    this.debugTimeControls.overrideTime = true;
+    this.debugTimeOverrideController?.updateDisplay?.();
+    this.applyDebugCycleProgress(progress);
+  }
+
+  private applyDebugCycleProgress(progress: number) {
+    this.cycleProgress = progress;
+    useUIStore.getState().setDebugCycleProgressOverride(progress);
+  }
+
+  private syncDebugTimeControls(cycleProgress: number) {
+    if (this.debugTimeControls.overrideTime) {
+      return;
+    }
+
+    const progress = clampCycleProgress(cycleProgress);
+    if (Math.abs(this.debugTimeControls.dayProgress - progress) < DEBUG_TIME_DISPLAY_SYNC_EPSILON) {
+      return;
+    }
+
+    this.debugTimeControls.dayProgress = progress;
+    this.debugTimeProgressController?.updateDisplay?.();
   }
 
   getScene(): Scene {
@@ -146,6 +258,7 @@ export default class HUDScene {
     // Track cycle progress for ambience
     if (cycleProgress !== undefined) {
       this.cycleProgress = cycleProgress;
+      this.syncDebugTimeControls(cycleProgress);
     }
 
     // Get current weather state
@@ -161,21 +274,25 @@ export default class HUDScene {
       weatherState.stormIntensity,
     );
 
-    // Update ambient particles (dust motes, fireflies)
-    if (cycleProgress !== undefined) {
-      this.ambientParticles.setTimeProgress(cycleProgress);
+    // Update ambient particles (dust motes, fireflies).
+    // Skipped entirely on LOW/below (ambientParticles is undefined there), which
+    // avoids the full per-frame JS update loop, not just the draw.
+    if (this.ambientParticles) {
+      if (cycleProgress !== undefined) {
+        this.ambientParticles.setTimeProgress(cycleProgress);
+      }
+
+      // Pass wind to ambient particles
+      const windState = this.weatherManager.getWindState();
+      this.ambientParticles.setWind(windState.direction, windState.effectiveSpeed);
+
+      // Fade out ambient particles during weather
+      this.ambientParticles.setWeatherIntensity(weatherState.intensity);
+
+      // Update particle positions (follow camera)
+      this.particleSpawnCenter.set(this.camera.position.x, this.camera.position.y - 5, this.camera.position.z);
+      this.ambientParticles.update(deltaTime, this.particleSpawnCenter);
     }
-
-    // Pass wind to ambient particles
-    const windState = this.weatherManager.getWindState();
-    this.ambientParticles.setWind(windState.direction, windState.effectiveSpeed);
-
-    // Fade out ambient particles during weather
-    this.ambientParticles.setWeatherIntensity(weatherState.intensity);
-
-    // Update particle positions (follow camera)
-    this.particleSpawnCenter.set(this.camera.position.x, this.camera.position.y - 5, this.camera.position.z);
-    this.ambientParticles.update(deltaTime, this.particleSpawnCenter);
   }
 
   onWindowResize(width: number, height: number) {
@@ -204,6 +321,8 @@ export default class HUDScene {
     if (this.navigator && "destroy" in this.navigator && typeof (this.navigator as any).destroy === "function") {
       (this.navigator as any).destroy();
     }
+
+    useUIStore.getState().setDebugCycleProgressOverride(null);
 
     // Clean up rain effect resources
     if (this.rainEffect) {

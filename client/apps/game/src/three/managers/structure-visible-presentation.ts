@@ -34,6 +34,7 @@ interface ApplyVisibleStructurePresentationInput<
   getWorldPositionForHexCoordsInto: (col: number, row: number, target: Vector3) => void;
   getLabel: (entityId: TEntityId) => TLabel | undefined;
   updateLabel: (structure: TStructure, label: TLabel) => void;
+  syncCompactLabel?: (structure: TStructure, position: Vector3) => void;
   getRendererForStructure: (structure: TStructure) => TRenderer | null;
   resolveAttachments: (structure: TStructure) => TAttachmentTemplate[];
   getAttachmentSignature: (templates: TAttachmentTemplate[]) => string;
@@ -102,6 +103,10 @@ export function applyVisibleStructurePresentation<
       position: input.scratchIconPosition,
     });
   }
+
+  input.scratchIconPosition.copy(input.scratchPosition);
+  input.scratchIconPosition.y += 2.72;
+  input.syncCompactLabel?.(input.structure, input.scratchIconPosition);
 
   const entityNumericId = Number(input.structure.entityId);
   const templates = input.resolveAttachments(input.structure);

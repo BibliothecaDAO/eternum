@@ -13,7 +13,7 @@ interface ShouldProcessPrefetchQueueItemInput {
   item: PrefetchQueueItem;
   isSwitchedOff: boolean;
   desiredFetchKeys: Set<string>;
-  fetchedFetchKeys: Set<string>;
+  fetchedFetchKeys: PrefetchFetchKeyLookup;
   pendingFetchKeys: PrefetchFetchKeyLookup;
   pinnedAreaKeys: Set<string>;
 }

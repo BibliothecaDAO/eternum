@@ -45,6 +45,13 @@ interface PrewarmWorldmapChunkPresentationInput<TPreparedTerrain> {
   isPresentationHot: (chunkKey: string) => boolean;
   preparePresentation: () => Promise<PreparedWorldmapChunkPresentation<TPreparedTerrain>>;
   cachePreparedTerrain: (preparedTerrain: TPreparedTerrain) => void;
+  /**
+   * Phase 2.2: release the pooled attributes held by a prepared presentation that
+   * is dropped (stale token, or the chunk became hot during preparation) instead
+   * of cached. The caller discards the return value, so without this the pooled
+   * InstancedBufferAttributes leak.
+   */
+  disposePreparedTerrain?: (preparedTerrain: TPreparedTerrain) => void;
 }
 
 interface PrewarmedWorldmapChunkPresentation<TPreparedTerrain> {
@@ -94,54 +101,52 @@ export async function prepareWorldmapChunkPresentation<TPreparedTerrain>(
     });
   };
 
-  const [tileFetchResult, tileHydrationResult, boundsReadyResult, structureReadyResult, assetPrewarmResult] =
-    await Promise.all([
-      settleWorldmapAsyncStage({
-        label: "tile_fetch" as const,
-        promise: input.tileFetchPromise,
-        timeoutMs: input.phaseTimeoutMs,
-        onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("tile_fetch", timeoutMs),
-      }),
-      settleWorldmapAsyncStage({
-        label: "tile_hydration" as const,
-        promise: input.tileHydrationReadyPromise,
-        timeoutMs: input.phaseTimeoutMs,
-        onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("tile_hydration", timeoutMs),
-      }),
-      settleWorldmapAsyncStage({
-        label: "bounds_ready" as const,
-        promise: input.boundsReadyPromise,
-        timeoutMs: input.phaseTimeoutMs,
-        onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("bounds_ready", timeoutMs),
-      }),
-      settleWorldmapAsyncStage({
-        label: "structure_hydration" as const,
-        promise: input.structureReadyPromise,
-        timeoutMs: input.phaseTimeoutMs,
-        onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("structure_hydration", timeoutMs),
-      }),
-      settleWorldmapAsyncStage({
-        label: "asset_prewarm" as const,
-        promise: input.assetPrewarmPromise,
-        timeoutMs: input.phaseTimeoutMs,
-        onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("asset_prewarm", timeoutMs),
-      }),
-    ]);
+  void settleWorldmapAsyncStage({
+    label: "structure_hydration" as const,
+    promise: input.structureReadyPromise,
+    timeoutMs: input.phaseTimeoutMs,
+    onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("structure_hydration", timeoutMs),
+  });
+  void settleWorldmapAsyncStage({
+    label: "asset_prewarm" as const,
+    promise: input.assetPrewarmPromise,
+    timeoutMs: input.phaseTimeoutMs,
+    onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("asset_prewarm", timeoutMs),
+  });
 
-  const timedOutPhase =
-    (tileFetchResult.status === "timed_out" && "tile_fetch") ||
-    (tileHydrationResult.status === "timed_out" && "tile_hydration") ||
-    (boundsReadyResult.status === "timed_out" && "bounds_ready") ||
-    (structureReadyResult.status === "timed_out" && "structure_hydration") ||
-    (assetPrewarmResult.status === "timed_out" && "asset_prewarm") ||
+  const [tileFetchResult, tileHydrationResult, boundsReadyResult] = await Promise.all([
+    settleWorldmapAsyncStage({
+      label: "tile_fetch" as const,
+      promise: input.tileFetchPromise,
+      timeoutMs: input.phaseTimeoutMs,
+      onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("tile_fetch", timeoutMs),
+    }),
+    settleWorldmapAsyncStage({
+      label: "tile_hydration" as const,
+      promise: input.tileHydrationReadyPromise,
+      timeoutMs: input.phaseTimeoutMs,
+      onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("tile_hydration", timeoutMs),
+    }),
+    settleWorldmapAsyncStage({
+      label: "bounds_ready" as const,
+      promise: input.boundsReadyPromise,
+      timeoutMs: input.phaseTimeoutMs,
+      onTimeout: ({ timeoutMs }) => resolvePhaseTimeout("bounds_ready", timeoutMs),
+    }),
+  ]);
+
+  const failedPhase =
+    (tileFetchResult.status !== "resolved" && "tile_fetch") ||
+    (tileHydrationResult.status !== "resolved" && "tile_hydration") ||
+    (boundsReadyResult.status !== "resolved" && "bounds_ready") ||
     undefined;
 
-  if (timedOutPhase) {
+  if (failedPhase) {
     input.onChunkReady?.(input.chunkKey);
     return {
       tileFetchSucceeded: false,
       preparedTerrain: null,
-      timedOutPhase,
+      timedOutPhase: failedPhase,
     };
   }
 
@@ -196,6 +201,7 @@ export async function prewarmWorldmapChunkPresentation<TPreparedTerrain>(
   }
 
   if (!input.isLatestToken(input.prewarmToken)) {
+    input.disposePreparedTerrain?.(preparedPresentation.preparedTerrain);
     return {
       status: "stale_dropped",
       preparedTerrain: null,
@@ -203,6 +209,7 @@ export async function prewarmWorldmapChunkPresentation<TPreparedTerrain>(
   }
 
   if (input.isPresentationHot(input.chunkKey)) {
+    input.disposePreparedTerrain?.(preparedPresentation.preparedTerrain);
     return {
       status: "skipped_hot",
       preparedTerrain: null,

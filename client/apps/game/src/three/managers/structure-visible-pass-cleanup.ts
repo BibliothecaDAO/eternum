@@ -6,6 +6,7 @@ interface CleanupVisibleStructurePassInput<TEntityId extends string | number | b
   trackedLabelEntityIds: Iterable<TEntityId>;
   visibleStructureIds: Set<TEntityId>;
   removeEntityIdLabel: (entityId: TEntityId) => void;
+  removeStructureCompactLabel: (entityId: TEntityId) => void;
   previousVisibleIds: Set<TEntityId>;
   getStructureByEntityId: (entityId: TEntityId) => TStructure | undefined;
   removeStructurePoint: (entityId: TEntityId, structure: TStructure) => void;
@@ -39,6 +40,8 @@ export function cleanupVisibleStructurePass<TEntityId extends string | number | 
     if (input.visibleStructureIds.has(entityId)) {
       continue;
     }
+
+    input.removeStructureCompactLabel(entityId);
 
     const structure = input.getStructureByEntityId(entityId);
     if (structure) {

@@ -74,6 +74,7 @@ describe("applyWorldSelection", () => {
 
     expect(mocks.markGameEntryMilestone).toHaveBeenCalledWith("world-profile-build-started");
     expect(mocks.markGameEntryMilestone).toHaveBeenCalledWith("world-profile-build-completed");
+    expect(mocks.markGameEntryMilestone).toHaveBeenCalledWith("world-profile-resolved");
     expect(mocks.markGameEntryMilestone).toHaveBeenCalledWith("world-selection-state-persisted");
     expect(mocks.recordGameEntryDuration).toHaveBeenCalledWith("world-profile-build", 15);
     expect(mocks.recordGameEntryDuration).toHaveBeenCalledWith("world-selection-state-persist", 20);

@@ -5,28 +5,28 @@ import { getBlockTimestamp, Position } from "@bibliothecadao/eternum";
 
 import { useUISound } from "@/audio/hooks/useUISound";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_LABEL_BRIGHT } from "@/ui/design-system/atoms/hud-typography";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { SecondaryMenuItems } from "@/ui/features/world";
 import { GameEndTimer } from "./game-end-timer";
+import { GameStartCountdown } from "./game-start-countdown";
+import { SuggestionsPill } from "./pills/suggestions-pill";
 import { TickProgress } from "./tick-progress";
-import {
-  MIN_REFRESH_INTERVAL_MS,
-  useLandingLeaderboardStore,
-} from "@/services/leaderboard/use-landing-leaderboard-store";
-import { useAccountStore } from "@/hooks/store/use-account-store";
+import { TOP_PILL, TOP_PILL_TEXT } from "./top-pill";
+import { useLandingLeaderboardStore } from "@/services/leaderboard/use-landing-leaderboard-store";
+
+// Single shared leaderboard cache: poll the full board every 60s from here (the
+// always-mounted top bar). The rank pill and the Leaderboard panel both read the
+// same `entries`, so they stay aligned. Manual refresh in the panel still forces.
+const LEADERBOARD_FETCH_LIMIT = 1000;
+const LEADERBOARD_POLL_INTERVAL_MS = 60_000;
 import { useDojo, useQuery } from "@bibliothecadao/react";
 import { ContractAddress } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import { motion } from "framer-motion";
 import EyeIcon from "lucide-react/dist/esm/icons/eye";
 import Swords from "lucide-react/dist/esm/icons/swords";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
-
-const slideDown = {
-  hidden: { y: "-100%" },
-  visible: { y: "0%", transition: { duration: 0.3 } },
-};
-
 export const TopHeader = memo(() => {
   const {
     setup,
@@ -43,8 +43,10 @@ export const TopHeader = memo(() => {
   const setFollowArmyCombats = useUIStore((state) => state.setFollowArmyCombats);
   const lastControlledStructureEntityId = useUIStore((state) => state.lastControlledStructureEntityId);
   const isSpectating = useUIStore((state) => state.isSpectating);
-  const playerStructures = useUIStore((state) => state.playerStructures);
-  const accountName = useAccountStore((state) => state.accountName);
+  // The follow-army-combats toggle is a spectator-only affordance: it's for
+  // watching other players' battles. Active players manage their own armies, so
+  // it's hidden for them entirely.
+  const showFollowArmyToggle = isSpectating;
   const mode = useGameModeConfig();
 
   const isFollowingArmy = useUIStore((state) => state.isFollowingArmy);
@@ -90,17 +92,25 @@ export const TopHeader = memo(() => {
     };
   }, []);
 
-  const normalizeAddress = useCallback((value: string) => value.trim().toLowerCase(), []);
-
-  const leaderboardEntries = useLandingLeaderboardStore((state) => state.entries);
-  const playerEntries = useLandingLeaderboardStore((state) => state.playerEntries);
+  // Keep the leaderboard cache warm for the rank pill in SecondaryMenuItems. The
+  // pill reads the cached entries from the store; we drive the fetch from here
+  // so a single mount handles polling.
   const fetchLeaderboardEntries = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
   const fetchPlayerEntry = useLandingLeaderboardStore((state) => state.fetchPlayerEntry);
 
   useEffect(() => {
-    void fetchLeaderboardEntries({ limit: 50 });
+    void fetchLeaderboardEntries({ limit: LEADERBOARD_FETCH_LIMIT });
+
+    const intervalId = window.setInterval(() => {
+      void fetchLeaderboardEntries({ limit: LEADERBOARD_FETCH_LIMIT });
+    }, LEADERBOARD_POLL_INTERVAL_MS);
+
+    return () => window.clearInterval(intervalId);
   }, [fetchLeaderboardEntries]);
 
+  // Per-player lookup on the same 60s cadence. The full list above doesn't rank
+  // every player (e.g. Blitz), so the pill uses this as a rank fallback — and it
+  // guarantees the pill has data on load even before the list resolves.
   useEffect(() => {
     if (!account.address) return undefined;
 
@@ -109,26 +119,9 @@ export const TopHeader = memo(() => {
     };
 
     refreshPlayer();
-    const intervalId = window.setInterval(refreshPlayer, MIN_REFRESH_INTERVAL_MS);
+    const intervalId = window.setInterval(refreshPlayer, LEADERBOARD_POLL_INTERVAL_MS);
     return () => window.clearInterval(intervalId);
   }, [account.address, fetchPlayerEntry]);
-
-  const formatPoints = useCallback((points: number | null | undefined) => {
-    if (points === null || points === undefined) {
-      return "0";
-    }
-    const rounded = Math.round(points);
-    return Number.isFinite(rounded) ? rounded.toLocaleString() : "0";
-  }, []);
-
-  const playerEntry = useMemo(() => {
-    const normalizedAccount = normalizeAddress(account.address);
-    return (
-      playerEntries[normalizedAccount]?.data ??
-      leaderboardEntries.find((entry) => normalizeAddress(entry.address) === normalizedAccount) ??
-      null
-    );
-  }, [account.address, leaderboardEntries, normalizeAddress, playerEntries]);
 
   const navigateToFastTravelLayer = useCallback(() => {
     playClick();
@@ -157,149 +150,142 @@ export const TopHeader = memo(() => {
   ]);
 
   return (
-    <div className="pointer-events-auto w-screen flex justify-between">
-      <motion.div
-        className="top-header-bar flex flex-nowrap items-center gap-3 bg-dark-wood panel-wood panel-wood-corners w-full px-3 py-2"
-        variants={slideDown}
-        initial="hidden"
-        animate="visible"
-      >
-        <div className="flex flex-1 min-w-0 items-center gap-3 overflow-hidden">
-          <div className="flex flex-1 min-w-0 flex-nowrap items-center gap-3">
-            <div className="flex max-w-[420px] flex-shrink-0 flex-wrap items-center gap-2 truncate text-gold font-[Cinzel]">
-              {isSpectating ? (
-                <EyeIcon className="h-4 w-4 text-gold" aria-hidden="true" />
-              ) : (
-                <Swords className="h-4 w-4 text-gold" aria-hidden="true" />
-              )}
-              <span className="truncate text-base font-semibold">
-                {accountName ?? playerEntry?.displayName ?? "Player"}
-              </span>
-              {isSpectating && playerStructures.length === 0 ? (
-                <span className="text-xs text-gold/70 font-[Cinzel]">· Spectating</span>
-              ) : playerEntry?.rank ? (
-                <span className="text-xs text-gold/70 font-[Cinzel]">
-                  · Rank #{playerEntry.rank} · {formatPoints(playerEntry.points)} pts
-                </span>
-              ) : (
-                <span className="text-xs text-gold/70 font-[Cinzel]">· Spectating</span>
-              )}
-            </div>
-
-            <div className="flex flex-shrink-0 flex-nowrap items-center gap-3 text-xs md:text-base">
-              <div className="cycle-selector flex justify-center md:justify-start gap-2 whitespace-nowrap">
-                <TickProgress />
-                <GameEndTimer />
-              </div>
-              <div className="map-button-selector flex items-center justify-center md:justify-start gap-2 px-3 whitespace-nowrap">
-                <span
-                  onClick={() => {
-                    playClick();
-                    goToStructure(
-                      structureEntityId,
-                      new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                      false,
-                    );
-                  }}
-                  onMouseEnter={() => playHover()}
-                  className={cn("text-xs", isLocalView && "text-gold font-bold")}
-                >
-                  Local
-                </span>
-                <label className="relative inline-flex items-center cursor-pointer" onMouseEnter={() => playHover()}>
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={isWorldView}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      playClick();
-                      goToStructure(
-                        // if there's a controlled structure, needs to go back there
-                        lastControlledStructureEntityId || structureEntityId,
-                        new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                        checked,
-                      );
-                    }}
-                  />
-                  <div className="w-9 h-5 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
-                </label>
-                <span
-                  onClick={() => {
-                    playClick();
-                    goToStructure(
-                      structureEntityId,
-                      new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
-                      true,
-                    );
-                  }}
-                  onMouseEnter={() => playHover()}
-                  className={cn("text-xs", isWorldView && "text-gold font-bold")}
-                >
-                  World
-                </span>
-                {showFastTravelLayerToggle && (
-                  <button
-                    type="button"
-                    onClick={navigateToFastTravelLayer}
-                    onMouseEnter={() => playHover()}
-                    className={cn(
-                      "rounded-md border px-2 py-0.5 text-[11px] transition-all duration-200",
-                      isFastTravelView
-                        ? "border-cyan-300 bg-cyan-400/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.35)]"
-                        : "border-gold/25 bg-gold/10 text-gold/75 hover:border-gold/40 hover:text-gold",
-                    )}
-                    title={isFastTravelView ? "Return to World Layer" : "Go to Ethereal Layer"}
-                  >
-                    Ethereal
-                  </button>
-                )}
-                <div className="relative flex gap-2">
-                  <button
-                    type="button"
-                    className={cn(
-                      "rounded-full p-2 transition-all duration-300 border-2",
-                      followArmyCombats
-                        ? "bg-gold/30 hover:bg-gold/40 border-gold shadow-lg shadow-gold/20 animate-pulse"
-                        : "bg-gold/10 hover:bg-gold/20 border-gold/30",
-                    )}
-                    onClick={() => {
-                      setFollowArmyCombats(!followArmyCombats);
-                      playClick();
-                    }}
-                    onMouseEnter={() => playHover()}
-                    aria-pressed={followArmyCombats}
-                    title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
-                  >
-                    <Swords className={cn("w-4 h-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex-shrink-0 ml-auto">
-          <SecondaryMenuItems />
-        </div>
-
-        {/* Camera Following Status Indicator */}
-        {isFollowingArmy && (
-          <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-5 z-50">
-            <div className="bg-dark-wood text-gold px-4 py-2 rounded-lg shadow-lg border-2 border-gold animate-bounce">
-              <div className="flex items-center gap-2">
-                {followingArmyMessage?.toLowerCase().includes("combat") ? (
-                  <Swords className="w-4 h-4 animate-pulse text-gold" />
-                ) : (
-                  <EyeIcon className="w-4 h-4 animate-pulse text-gold" />
-                )}
-                <span className="text-sm font-semibold text-gold">{followingArmyMessage ?? "Following Army"}</span>
-              </div>
-            </div>
+    <>
+      {/* Layout container — pointer-events pass through the gaps between pills so the
+          map remains clickable. Each pill flips pointer-events back on. The
+          center cluster carries the six headline pieces in canonical order
+          (rank · view · day · timer · army toggle · settings); the right
+          cluster carries ancillary status icons (network / tx / features). */}
+      <div className="fixed top-0 left-0 right-0 z-20 flex items-center justify-center gap-2 px-3 py-2 pointer-events-none">
+        {isSpectating && (
+          <div className={cn(TOP_PILL, HUD_LABEL_BRIGHT)}>
+            <EyeIcon className="h-3.5 w-3.5 text-gold" aria-hidden="true" />
+            <span>Spectating</span>
           </div>
         )}
-      </motion.div>
-    </div>
+
+        {/* 1. Player rank */}
+        <SecondaryMenuItems variant="rank" />
+
+        {/* 2. Empire-wide suggested actions — sits right after the rank pill and
+            is hidden while spectating (a spectator has no empire to act on). */}
+        {!isSpectating && <SuggestionsPill />}
+
+        {/* 3. Local / World toggle (+ conditional Ethereal layer chip) */}
+        <div className={cn(TOP_PILL, "whitespace-nowrap")}>
+          <span
+            onClick={() => {
+              playClick();
+              goToStructure(
+                structureEntityId,
+                new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+                false,
+              );
+            }}
+            onMouseEnter={() => playHover()}
+            className={cn("cursor-pointer", TOP_PILL_TEXT, !isLocalView && "text-gold/55")}
+          >
+            Local
+          </span>
+          <label className="relative inline-flex items-center cursor-pointer" onMouseEnter={() => playHover()}>
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isWorldView}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                playClick();
+                goToStructure(
+                  lastControlledStructureEntityId || structureEntityId,
+                  new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+                  checked,
+                );
+              }}
+            />
+            <div className="w-10 h-5 rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gold after:rounded-full after:h-4 after:w-4 after:transition-all bg-gold/30"></div>
+          </label>
+          <span
+            onClick={() => {
+              playClick();
+              goToStructure(
+                structureEntityId,
+                new Position({ x: selectedStructurePosition.x, y: selectedStructurePosition.y }),
+                true,
+              );
+            }}
+            onMouseEnter={() => playHover()}
+            className={cn("cursor-pointer", TOP_PILL_TEXT, !isWorldView && "text-gold/55")}
+          >
+            World
+          </span>
+          {showFastTravelLayerToggle && (
+            <button
+              type="button"
+              onClick={navigateToFastTravelLayer}
+              onMouseEnter={() => playHover()}
+              className={cn(
+                "rounded-md border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] transition-all duration-200",
+                isFastTravelView
+                  ? "border-cyan-300 bg-cyan-400/20 text-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.35)]"
+                  : "border-gold/25 bg-gold/10 text-gold/75 hover:border-gold/40 hover:text-gold",
+              )}
+              title={isFastTravelView ? "Return to World Layer" : "Go to Ethereal Layer"}
+            >
+              Ethereal
+            </button>
+          )}
+        </div>
+
+        {/* 4. Day-tick progress */}
+        <div className={TOP_PILL}>
+          <TickProgress />
+        </div>
+
+        {/* 5. Game start / end timers — each self-styled, only render when active. */}
+        <GameStartCountdown />
+        <GameEndTimer />
+
+        {/* 6. Army combat follow toggle */}
+        {showFollowArmyToggle && (
+          <button
+            type="button"
+            className={cn(
+              "pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300",
+              OVERLAY_SURFACE_BASE,
+              followArmyCombats
+                ? "border-gold ring-1 ring-gold/40 shadow-[0_0_18px_rgba(223,170,84,0.35)] animate-pulse"
+                : "hover:border-gold/50",
+            )}
+            onClick={() => {
+              setFollowArmyCombats(!followArmyCombats);
+              playClick();
+            }}
+            onMouseEnter={() => playHover()}
+            aria-pressed={followArmyCombats}
+            title={followArmyCombats ? "Stop following army combat" : "Follow army combat"}
+          >
+            <Swords className={cn("h-4 w-4", followArmyCombats ? "text-gold animate-pulse" : "text-gold/60")} />
+          </button>
+        )}
+
+        {/* 7. Settings + ancillary status icons (network, tx, latest features…) */}
+        <SecondaryMenuItems variant="rest" />
+      </div>
+
+      {/* Camera-following status toast — extracted from the old wrapper so it floats independently. */}
+      {isFollowingArmy && (
+        <div className="fixed top-16 left-1/2 z-50 -translate-x-1/2 pointer-events-auto">
+          <div className="flex items-center gap-2 rounded-lg border-2 border-gold bg-black/40 px-4 py-2 text-gold shadow-lg animate-bounce">
+            {followingArmyMessage?.toLowerCase().includes("combat") ? (
+              <Swords className="w-4 h-4 animate-pulse text-gold" />
+            ) : (
+              <EyeIcon className="w-4 h-4 animate-pulse text-gold" />
+            )}
+            <span className="text-sm font-semibold text-gold">{followingArmyMessage ?? "Following Army"}</span>
+          </div>
+        </div>
+      )}
+    </>
   );
 });
 

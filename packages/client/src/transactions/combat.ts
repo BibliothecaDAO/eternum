@@ -8,7 +8,6 @@ export class CombatTransactions {
     props: {
       aggressorId: number;
       defenderId: number;
-      defenderDirection: number;
       stealResources: { resourceId: number; amount: number }[];
     },
   ) {
@@ -16,7 +15,6 @@ export class CombatTransactions {
       signer,
       aggressor_id: props.aggressorId,
       defender_id: props.defenderId,
-      defender_direction: props.defenderDirection,
       steal_resources: props.stealResources.map((r) => ({
         resourceId: r.resourceId,
         amount: r.amount,
@@ -29,14 +27,12 @@ export class CombatTransactions {
     props: {
       explorerId: number;
       structureId: number;
-      structureDirection: number;
     },
   ) {
     return this.provider.attack_explorer_vs_guard({
       signer,
       explorer_id: props.explorerId,
       structure_id: props.structureId,
-      structure_direction: props.structureDirection,
     });
   }
 
@@ -46,7 +42,6 @@ export class CombatTransactions {
       structureId: number;
       structureGuardSlot: number;
       explorerId: number;
-      explorerDirection: number;
     },
   ) {
     return this.provider.attack_guard_vs_explorer({
@@ -54,7 +49,6 @@ export class CombatTransactions {
       structure_id: props.structureId,
       structure_guard_slot: props.structureGuardSlot,
       explorer_id: props.explorerId,
-      explorer_direction: props.explorerDirection,
     });
   }
 

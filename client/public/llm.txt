@@ -805,7 +805,7 @@ The number of Hyperstructures in the game, and their positioning on the world ma
 
 Essence Rifts are striking fissures in the earth where valuable Essence has swelled from beneath the surface. These
 locations provide a steady source of the valuable dust to the owning player, reducing the need to explore new hexes for
-continued Realm expansion and troop production. Essence Rifts produce Essence at a rate of 2 units per second from the
+continued Realm expansion and troop production. Essence Rifts produce Essence at a rate of 20 units per second from the
 moment they're discovered. Lords have a 1/40 chance of finding one of these structures when exploring a hex.
 
 ## Camps
@@ -869,6 +869,52 @@ When a camp is claimed, it spawns with an initial stockpile of materials.
     </table>
   </div>
 </div>
+
+
+
+---
+
+file: docs/pages/changelog/5-june-2026.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 5th June 2026
+
+### Combat v3
+
+* Crossbowmen now have a distinct ranged role: they can attack from **2 hexes away**, while Knights and Paladins remain adjacent-only.
+* Range-2 Crossbowman attacks are ranged pokes: **70%** damage into field armies, **30%** damage into structure guards, no biome damage modifier, no defender counter-damage, shorter battle timers, and no normal damage-ratio refunds.
+* Range-2 Crossbowman attacks cost **50 stamina** for the attacker and **20 stamina** for the defender. Range-1 combat remains **50 stamina** for the attacker and **40 stamina** for the defender.
+* Ranged attacks can clear structure guards, but structures still require adjacency to claim.
+* Knights now specialize in structure combat: **+15%** damage when assaulting structure guards from adjacent range, and Knight guards take **15% reduced incoming damage** while defending structures.
+* Paladins are unchanged mechanically and remain high-mobility cavalry.
+* T2 and T3 troop strength multipliers are standardized at **3×** and **9×**.
+
+### Blitz Stamina & Relic Consistency
+
+* [Blitz/Stamina & Biomes](/blitz/military/stamina-and-biomes): Clarified Blitz stamina regeneration as **30 stamina per phase** and **180 stamina per Eternum Day**.
+* Confirmed combat stamina thresholds are config-driven values, not dynamically derived at runtime from regeneration.
+
+### Relic Duration Standardisation
+
+* [Blitz/Relics](/blitz/materials/relics): Standardised all timed relic effects to **3 Eternum Days (18 minutes)**.
+* Updated relic reference table and explanatory text to remove older mixed-duration values.
+
+### Troop Production Relic Rebalance
+
+* [Blitz/Relics](/blitz/materials/relics): Updated Troop Production Relics to:
+  * **Relic I**: +15% troop production for 3 Eternum Days.
+  * **Relic II**: +30% troop production for 3 Eternum Days.
+* Updated shared relic metadata and descriptive resource text to match the new values.
+
+### Release Note
+
+* Updated docs, generated config artifacts, shared TypeScript constants, and Cairo defaults covered by this release pass.
+
+***
+
+*This changelog replaces the unshipped 1 May 2026 entry and covers the combined Combat v3, stamina, and relic release pass.*
 
 
 
@@ -1090,7 +1136,7 @@ The first official Blitz series has launched with significant balance changes ac
 **Essence Rifts**
 
 * [Essence Rift](/blitz/world-structures#essence-rifts) discovery chance increased from 1/50 to **1/40**.
-* Essence Rift production increased from 1/sec to **2/sec**.
+* Essence Rift production doubled from 10/sec to **20/sec**.
 
 **Stamina**
 
@@ -1789,13 +1835,11 @@ pnpm run build:packages
 
 * `pnpm dev` - Start game development server
 * `pnpm dev:docs` - Start documentation development server
-* `pnpm dev:landing` - Start landing page development server
 
 ### Building
 
 * `pnpm build` - Build game client
 * `pnpm build:docs` - Build documentation
-* `pnpm build:landing` - Build landing page
 * `pnpm build:packages` - Build shared packages
 
 ### Testing & Linting
@@ -1904,9 +1948,7 @@ This file is subject to change, please keep an eye on the repository for potenti
 * [Client](https://github.com/BibliothecaDAO/eternum/tree/main/client) - React apps built with Vite
   * [Game](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/game) - Main game client with Three.js
     interface
-  * [Landing](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/landing) - Landing page
   * [Game Docs](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/game-docs) - Game documentation
-  * [Balancing](https://github.com/BibliothecaDAO/eternum/tree/main/client/apps/balancing) - Game balancing tools
 * [Contracts](https://github.com/BibliothecaDAO/eternum/tree/main/contracts) - Cairo/Dojo smart contracts
   * Game contracts
   * Season Pass contracts
@@ -3336,7 +3378,7 @@ Relics are powerful consumables that can be discovered in Blitz from
 by an army or a Realm in exchange for a time-limited bonus, such as a damage or production boost. When utilized at the
 right time, these items can provide a strategic edge over your opponents.
 
-Timed relic effects last **5 Eternum Days (30 minutes)**.
+Timed relic effects last **3 Eternum Days (18 minutes)**.
 
 There are currently nine relic types, each with two levels. A level 2 relic is simply a more powerful version of the
 level 1 counterpart. Every relic type has a distinct effect, which determines whether it can be activated by a Realm or
@@ -3969,15 +4011,22 @@ Stamina is granted instantly when a new Phase begins, and no other automatic sta
 
 ### Attacking Army
 
-The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **75
-stamina** (2.5 × stamina regen per phase). If the attacker does not have the full stamina cost, the attack command is
+The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **50
+stamina**. If the attacker does not have the full stamina cost, the attack command is
 rejected and no combat occurs.
 
 ### Defending Army
 
-The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **60
-stamina** (2.0 × stamina regen per phase). If the defender's current stamina is below this required threshold, they
+The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **40
+stamina**. If the defender's current stamina is below this required threshold, they
 receive a **30% damage penalty** during that combat round.
+
+### Crossbowman Range-2 Attacks
+
+Crossbowmen can also attack targets from 2 hexes away. These ranged attacks still require the attacking army to spend
+**50 stamina**, but the target only spends **20 stamina** and deals no counter-damage. Ranged attacks use shorter battle
+timers, ignore biome damage modifiers, and deal reduced damage: **70%** against field armies and **30%** against
+structure guards. Adjacent Crossbowman attacks remain normal range-1 combat.
 
 ## Biomes (Combat Effects)
 
@@ -7343,4 +7392,3 @@ Lords who prove themselves in Elite bracket games.
     Chest rewards. This section will be updated as more information is made available to the community.
   </p>
 </div>
-

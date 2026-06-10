@@ -33,9 +33,6 @@ export const ALWAYS_SHOW_RESOURCES = [
 // Resources that don't show time remaining (because they can be produced indefinitely)
 export const HIDE_TIME_REMAINING_FOR = [ResourcesIds.Labor];
 
-// Food resources (unlimited production - no output_amount_left constraint)
-const FOOD_RESOURCES = [ResourcesIds.Wheat, ResourcesIds.Fish];
-
 // ==================== FORMATTERS ====================
 
 export const formatProductionPerHour = (perSecond: number): string =>
@@ -46,15 +43,9 @@ export const formatResourceAmount = (amount: number): string => currencyFormat(a
 export const formatTimeRemaining = (seconds: number): string => {
   if (seconds <= 0) return "0s";
 
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  } else if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  } else {
-    return `${secs}s`;
-  }
+  // Single largest unit — past a minute the finer precision is just noise.
+  if (seconds >= 86_400) return `${Math.floor(seconds / 86_400)}d`;
+  if (seconds >= 3_600) return `${Math.floor(seconds / 3_600)}h`;
+  if (seconds >= 60) return `${Math.floor(seconds / 60)}m`;
+  return `${Math.floor(seconds)}s`;
 };

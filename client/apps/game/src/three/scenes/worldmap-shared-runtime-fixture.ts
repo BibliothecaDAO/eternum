@@ -35,9 +35,7 @@ export function createWorldmapSharedRuntimeFixture(options: CreateWorldmapShared
   };
 
   const attachManagerLabels = () => {
-    attachLifecycle.push("army:addLabelsToScene");
-    attachLifecycle.push("structure:showLabels");
-    attachLifecycle.push("chest:addLabelsToScene");
+    attachLifecycle.push("hover:reconcileLabels");
   };
 
   const detachLabelGroupsFromScene = () => {

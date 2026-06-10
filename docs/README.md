@@ -20,6 +20,8 @@ This page is a **map of the documentation inside this repository**.
 ### Repo docs (this folder)
 
 - Architecture
+  - AI-first harness architecture:
+    [`docs/architecture/ai-first-harness-architecture.md`](./architecture/ai-first-harness-architecture.md)
   - Runtime world profiles: [`docs/architecture/runtime-world-profiles.md`](./architecture/runtime-world-profiles.md)
   - Torii selective subscriptions:
     [`docs/architecture/torii-selective-subscriptions.md`](./architecture/torii-selective-subscriptions.md)

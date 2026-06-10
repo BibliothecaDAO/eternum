@@ -4,6 +4,8 @@ import {
   createWorldmapHydratedRefreshQueueState,
   flushWorldmapHydratedChunkRefreshQueue,
   queueWorldmapHydratedChunkRefresh,
+  trackWorldmapHydratedRefreshQueueFlush,
+  waitForWorldmapHydratedRefreshQueueIdle,
 } from "./worldmap-hydrated-refresh-runtime";
 
 describe("queueWorldmapHydratedChunkRefresh", () => {
@@ -120,5 +122,99 @@ describe("flushWorldmapHydratedChunkRefreshQueue", () => {
       expect.any(Error),
     );
     expect(refreshCurrentChunk).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("waitForWorldmapHydratedRefreshQueueIdle", () => {
+  it("waits for a queued hydrated refresh flush before resolving startup readiness", async () => {
+    const state = createWorldmapHydratedRefreshQueueState();
+    const scheduledFlushes: Array<() => void> = [];
+    const scheduledPolls: Array<() => void> = [];
+
+    queueWorldmapHydratedChunkRefresh({
+      chunkKey: "3,4",
+      scheduleFlush: () => {
+        scheduledFlushes.push(() => {
+          void trackWorldmapHydratedRefreshQueueFlush(state, async () => {
+            state.queuedChunkKeys.clear();
+            state.isScheduled = false;
+          });
+        });
+      },
+      state,
+    });
+
+    let didResolve = false;
+    const waitPromise = waitForWorldmapHydratedRefreshQueueIdle({
+      isSwitchedOff: () => false,
+      setTimeoutFn: (callback) => {
+        scheduledPolls.push(callback);
+        return scheduledPolls.length;
+      },
+      state,
+    }).then(() => {
+      didResolve = true;
+    });
+
+    await Promise.resolve();
+    expect(didResolve).toBe(false);
+    expect(scheduledFlushes).toHaveLength(1);
+    expect(scheduledPolls).toHaveLength(1);
+
+    scheduledFlushes[0]?.();
+    await Promise.resolve();
+    await Promise.resolve();
+    scheduledPolls[0]?.();
+    await waitPromise;
+
+    expect(didResolve).toBe(true);
+    expect(state.activeFlushPromise).toBeNull();
+    expect(state.queuedChunkKeys.size).toBe(0);
+  });
+
+  it("waits for an active hydrated refresh flush before resolving startup readiness", async () => {
+    const state = createWorldmapHydratedRefreshQueueState();
+    const scheduledCallbacks: Array<() => void> = [];
+    let releaseFlush: () => void = () => {
+      throw new Error("Flush release was not registered.");
+    };
+
+    queueWorldmapHydratedChunkRefresh({
+      chunkKey: "3,4",
+      scheduleFlush: vi.fn(),
+      state,
+    });
+
+    const flushPromise = trackWorldmapHydratedRefreshQueueFlush(state, async () => {
+      await new Promise<void>((resolve) => {
+        releaseFlush = resolve;
+      });
+      state.queuedChunkKeys.clear();
+      state.isScheduled = false;
+    });
+
+    let didResolve = false;
+    const waitPromise = waitForWorldmapHydratedRefreshQueueIdle({
+      isSwitchedOff: () => false,
+      setTimeoutFn: (callback) => {
+        scheduledCallbacks.push(callback);
+        return scheduledCallbacks.length;
+      },
+      state,
+    }).then(() => {
+      didResolve = true;
+    });
+
+    await Promise.resolve();
+    expect(didResolve).toBe(false);
+    expect(state.activeFlushPromise).toBe(flushPromise);
+
+    releaseFlush();
+    await flushPromise;
+    await waitPromise;
+
+    expect(didResolve).toBe(true);
+    expect(state.activeFlushPromise).toBeNull();
+    expect(scheduledCallbacks).toEqual([]);
   });
 });

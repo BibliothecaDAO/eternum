@@ -13,8 +13,9 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       preparedTerrain: { chunkKey: "24,24" },
       recordChunkDiagnosticsEvent: vi.fn(),
       refreshDecision: { shouldCommit: false, shouldDropAsStale: false },
-      runImmediateManagerCatchUp: vi.fn(async () => undefined),
-      scheduleDeferredManagerCatchUp: vi.fn(),
+      runImmediateFullManagerCatchUp: vi.fn(async () => undefined),
+      runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
+      scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: true,
       tileFetchSucceeded: false,
       transitionToken: 7,
@@ -34,8 +35,9 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       preparedTerrain: { chunkKey: "24,24" },
       recordChunkDiagnosticsEvent,
       refreshDecision: { shouldCommit: false, shouldDropAsStale: true },
-      runImmediateManagerCatchUp: vi.fn(async () => undefined),
-      scheduleDeferredManagerCatchUp: vi.fn(),
+      runImmediateFullManagerCatchUp: vi.fn(async () => undefined),
+      runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
+      scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: true,
       tileFetchSucceeded: true,
       transitionToken: 9,
@@ -45,9 +47,88 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
     expect(recordChunkDiagnosticsEvent).toHaveBeenCalledWith({ id: "diagnostics" }, "stale_terrain_refresh_dropped");
   });
 
-  it("commits terrain and schedules deferred manager catch-up when staged rollout is enabled", async () => {
+  // Phase 2.2: prepared terrain dropped without commit (stale, or shouldCommit
+  // false) holds pooled attributes that must be released, not leaked.
+  it("disposes prepared terrain on a stale drop", async () => {
+    const disposePreparedTerrain = vi.fn();
+    const preparedTerrain = { chunkKey: "24,24" };
+    const result = await handleWorldmapRefreshCommitRuntime({
+      chunkKey: "24,24",
+      commitPreparedTerrain: vi.fn(),
+      disposePreparedTerrain,
+      diagnostics: { id: "diagnostics" } as never,
+      force: true,
+      onStaleDrop: vi.fn(),
+      preparedTerrain,
+      recordChunkDiagnosticsEvent: vi.fn(),
+      refreshDecision: { shouldCommit: false, shouldDropAsStale: true },
+      runImmediateFullManagerCatchUp: vi.fn(async () => undefined),
+      runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
+      scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
+      stagedPathEnabled: true,
+      tileFetchSucceeded: true,
+      transitionToken: 9,
+    });
+
+    expect(result).toBe("stale_dropped");
+    expect(disposePreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
+  });
+
+  it("disposes prepared terrain when the refresh is not committed but terrain was prepared", async () => {
     const commitPreparedTerrain = vi.fn();
-    const scheduleDeferredManagerCatchUp = vi.fn();
+    const disposePreparedTerrain = vi.fn();
+    const preparedTerrain = { chunkKey: "24,24" };
+    const result = await handleWorldmapRefreshCommitRuntime({
+      chunkKey: "24,24",
+      commitPreparedTerrain,
+      disposePreparedTerrain,
+      diagnostics: { id: "diagnostics" } as never,
+      force: true,
+      onStaleDrop: vi.fn(),
+      preparedTerrain,
+      recordChunkDiagnosticsEvent: vi.fn(),
+      refreshDecision: { shouldCommit: false, shouldDropAsStale: false },
+      runImmediateFullManagerCatchUp: vi.fn(async () => undefined),
+      runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
+      scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
+      stagedPathEnabled: true,
+      tileFetchSucceeded: true,
+      transitionToken: 10,
+    });
+
+    expect(result).toBe("skipped");
+    expect(commitPreparedTerrain).not.toHaveBeenCalled();
+    expect(disposePreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
+  });
+
+  it("does not dispose prepared terrain on a committed refresh", async () => {
+    const disposePreparedTerrain = vi.fn();
+    const result = await handleWorldmapRefreshCommitRuntime({
+      chunkKey: "48,48",
+      commitPreparedTerrain: vi.fn(),
+      disposePreparedTerrain,
+      diagnostics: { id: "diagnostics" } as never,
+      force: true,
+      onStaleDrop: vi.fn(),
+      preparedTerrain: { chunkKey: "48,48" },
+      recordChunkDiagnosticsEvent: vi.fn(),
+      refreshDecision: { shouldCommit: true, shouldDropAsStale: false },
+      runImmediateFullManagerCatchUp: vi.fn(async () => undefined),
+      runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
+      scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
+      stagedPathEnabled: true,
+      tileFetchSucceeded: true,
+      transitionToken: 11,
+    });
+
+    expect(result).toBe("committed");
+    expect(disposePreparedTerrain).not.toHaveBeenCalled();
+  });
+
+  it("commits terrain, runs immediate critical catch-up, and defers non-critical catch-up when staged rollout is enabled", async () => {
+    const commitPreparedTerrain = vi.fn();
+    const runImmediateCriticalManagerCatchUp = vi.fn(async () => undefined);
+    const scheduleDeferredNonCriticalManagerCatchUp = vi.fn();
 
     const result = await handleWorldmapRefreshCommitRuntime({
       chunkKey: "48,48",
@@ -58,8 +139,9 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       preparedTerrain: { chunkKey: "48,48" },
       recordChunkDiagnosticsEvent: vi.fn(),
       refreshDecision: { shouldCommit: true, shouldDropAsStale: false },
-      runImmediateManagerCatchUp: vi.fn(async () => undefined),
-      scheduleDeferredManagerCatchUp,
+      runImmediateFullManagerCatchUp: vi.fn(async () => undefined),
+      runImmediateCriticalManagerCatchUp,
+      scheduleDeferredNonCriticalManagerCatchUp,
       stagedPathEnabled: true,
       tileFetchSucceeded: true,
       transitionToken: 11,
@@ -67,11 +149,15 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
 
     expect(result).toBe("committed");
     expect(commitPreparedTerrain).toHaveBeenCalledWith({ chunkKey: "48,48" });
-    expect(scheduleDeferredManagerCatchUp).toHaveBeenCalledWith("48,48", { force: true, transitionToken: 11 });
+    expect(runImmediateCriticalManagerCatchUp).toHaveBeenCalledWith("48,48", { force: true, transitionToken: 11 });
+    expect(scheduleDeferredNonCriticalManagerCatchUp).toHaveBeenCalledWith("48,48", {
+      force: true,
+      transitionToken: 11,
+    });
   });
 
   it("commits terrain and runs immediate manager catch-up when staged rollout is disabled", async () => {
-    const runImmediateManagerCatchUp = vi.fn(async () => undefined);
+    const runImmediateFullManagerCatchUp = vi.fn(async () => undefined);
 
     const result = await handleWorldmapRefreshCommitRuntime({
       chunkKey: "72,72",
@@ -82,14 +168,15 @@ describe("handleWorldmapRefreshCommitRuntime", () => {
       preparedTerrain: { chunkKey: "72,72" },
       recordChunkDiagnosticsEvent: vi.fn(),
       refreshDecision: { shouldCommit: true, shouldDropAsStale: false },
-      runImmediateManagerCatchUp,
-      scheduleDeferredManagerCatchUp: vi.fn(),
+      runImmediateFullManagerCatchUp,
+      runImmediateCriticalManagerCatchUp: vi.fn(async () => undefined),
+      scheduleDeferredNonCriticalManagerCatchUp: vi.fn(),
       stagedPathEnabled: false,
       tileFetchSucceeded: true,
       transitionToken: 13,
     });
 
     expect(result).toBe("committed");
-    expect(runImmediateManagerCatchUp).toHaveBeenCalledWith("72,72", { force: true, transitionToken: 13 });
+    expect(runImmediateFullManagerCatchUp).toHaveBeenCalledWith("72,72", { force: true, transitionToken: 13 });
   });
 });

@@ -74,7 +74,7 @@ export const RealtimeChatToggleButton = ({ className, variant = "inline" }: Real
       type="button"
       onClick={handleToggle}
       className={cn(
-        "flex items-center gap-2 px-3 py-1.5 mr-20 mb-3 transition text-gold/70 hover:text-gold border border-gold/30 hover:border-gold panel-wood bg-dark/70 hover:bg-dark/60 rounded text-xs shadow-inner shadow-black/30",
+        "flex items-center gap-2 px-3 py-1.5 mr-20 mb-3 transition text-gold/70 hover:text-gold border border-gold/30 hover:border-gold bg-dark/70 hover:bg-dark/60 rounded text-xs shadow-inner shadow-black/30",
         className,
       )}
     >

@@ -625,6 +625,19 @@ export interface SetWorldConfigProps extends SystemSigner {
   admin_address: BigNumberish;
 }
 
+export interface BiomeClimateConfigProps {
+  elevation_scale_bps: BigNumberish;
+  moisture_scale_bps: BigNumberish;
+  elevation_bias_bps: BigNumberish;
+  moisture_bias_bps: BigNumberish;
+  elevation_seed: BigNumberish;
+  moisture_seed: BigNumberish;
+}
+
+export interface SetBiomeClimateConfigProps extends SystemSigner {
+  biome_climate_config: BiomeClimateConfigProps;
+}
+
 export interface SetMercenariesNameConfigProps extends SystemSigner {
   name: BigNumberish;
 }
@@ -977,8 +990,6 @@ export interface AttackExplorerVsExplorerProps extends SystemSigner {
   aggressor_id: number;
   /** ID of the defending explorer */
   defender_id: number;
-  /** Direction to the defender */
-  defender_direction: number;
   /** Resources to steal */
   steal_resources: Resource[];
 }
@@ -991,8 +1002,22 @@ export interface AttackExplorerVsGuardProps extends SystemSigner {
   explorer_id: number;
   /** ID of the structure with defending guard */
   structure_id: number;
+}
+
+/**
+ * Properties for an explorer vs guard attack that garrisons surviving troops into the captured structure
+ */
+export interface AttackExplorerVsGuardAndGarrisonProps extends SystemSigner {
+  /** ID of the attacking explorer */
+  explorer_id: number;
+  /** ID of the structure with defending guard */
+  structure_id: number;
   /** Direction to the structure */
   structure_direction: number;
+  /** Guard slot to place surviving troops in once the structure is captured */
+  to_guard_slot: number;
+  /** Number of surviving troops to garrison (raw count, divisible by resource precision) */
+  count: number;
 }
 
 /**
@@ -1005,8 +1030,6 @@ export interface AttackGuardVsExplorerProps extends SystemSigner {
   structure_guard_slot: number;
   /** ID of the defending explorer */
   explorer_id: number;
-  /** Direction to the explorer */
-  explorer_direction: number;
 }
 
 /**

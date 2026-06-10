@@ -1,4 +1,4 @@
-import { getContractByName, NAMESPACE, type EternumProvider } from "@bibliothecadao/provider";
+import { type EternumProvider } from "@bibliothecadao/provider";
 import {
   CapacityConfig,
   MERCENARIES_NAME_FELT,
@@ -7,6 +7,7 @@ import {
   scaleResourceOutputs,
 } from "@bibliothecadao/types";
 import { byteArray } from "starknet";
+import { buildBlitzEntryTokenDeployCalldata } from "../blitz/entry-token";
 import type { CleanConfigContext, ConfigStepResult } from "../types";
 
 type NativeConfigProvider = Pick<
@@ -14,6 +15,7 @@ type NativeConfigProvider = Pick<
   | "manifest"
   | "set_starting_resources_config"
   | "set_world_config"
+  | "set_biome_climate_config"
   | "set_mercenaries_name_config"
   | "set_resource_factory_config"
   | "set_building_config"
@@ -167,32 +169,6 @@ function getBlitzRegistrationWindow(config: NativeConfig): BlitzRegistrationWind
   return internalConfig[BLITZ_REGISTRATION_WINDOW]!;
 }
 
-function buildBlitzEntryTokenDeployCalldata(provider: NativeConfigProvider): string[] {
-  // This mirrors the existing collectible deployment payload. Keeping it isolated
-  // makes the dependency obvious until the factory path has a typed constructor helper.
-  return [
-    "0x0",
-    "0x5265616c6d733a204c6f6f74204368657374",
-    "0x12",
-    "0x0",
-    "0x524c43",
-    "0x3",
-    "0x0",
-    "0x0",
-    "0x0",
-    "0x0",
-    "0x4c6f6f7420436865737420666f72205265616c6d73",
-    "0x15",
-    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-    getContractByName(provider.manifest, `${NAMESPACE}-blitz_realm_systems`),
-    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-    getContractByName(provider.manifest, `${NAMESPACE}-config_systems`),
-    getContractByName(provider.manifest, `${NAMESPACE}-config_systems`),
-    "0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153",
-    "0x1f4",
-  ];
-}
-
 export const setStartingResourcesConfig: NativeStep = async ({ account, provider, config }) => {
   const precision = config.resources.resourcePrecision;
   const realmStartingResources = Object.values(config.startingResources).map((resource) => ({
@@ -237,9 +213,29 @@ export const setMercenariesNameConfig: NativeStep = async ({ account, provider }
   );
 };
 
+function buildBiomeClimateConfig(config: NativeConfig) {
+  return {
+    elevation_scale_bps: config.biomeClimate.elevationScaleBps,
+    moisture_scale_bps: config.biomeClimate.moistureScaleBps,
+    elevation_bias_bps: config.biomeClimate.elevationBiasBps,
+    moisture_bias_bps: config.biomeClimate.moistureBiasBps,
+    elevation_seed: config.biomeClimate.elevationSeed,
+    moisture_seed: config.biomeClimate.moistureSeed,
+  };
+}
+
+export const setBiomeClimateConfig: NativeStep = async ({ account, provider, config }) => {
+  await provider.set_biome_climate_config(
+    withSigner(account, {
+      biome_climate_config: buildBiomeClimateConfig(config),
+    }),
+  );
+};
+
 export const setWorldConfig: NativeStep = async (context) => {
   await setWorldAdminConfig(context);
   await setMercenariesNameConfig(context);
+  await setBiomeClimateConfig(context);
 };
 
 function buildResourceFactoryCalls(config: NativeConfig) {
@@ -816,7 +812,7 @@ function buildBlitzRegistrationConfigPayload(provider: NativeConfigProvider, con
     registration_start_at: registrationStartAt,
     entry_token_class_hash: config.blitz.registration.entry_token_class_hash,
     entry_token_ipfs_cid: byteArray.byteArrayFromString(config.blitz.registration.entry_token_ipfs_cid),
-    entry_token_deploy_calldata: buildBlitzEntryTokenDeployCalldata(provider),
+    entry_token_deploy_calldata: buildBlitzEntryTokenDeployCalldata(provider.manifest),
     collectibles_cosmetics_max: config.blitz.registration.collectible_cosmetics_max_items,
     collectibles_cosmetics_address: config.blitz.registration.collectible_cosmetics_address,
     collectibles_timelock_address: config.blitz.registration.collectible_timelock_address,
@@ -831,7 +827,10 @@ export const setBlitzRegistrationParametersConfig: NativeStep = async ({ account
     return;
   }
 
-  await provider.set_blitz_registration_config(withSigner(account, payload));
+  const receipt = await provider.set_blitz_registration_config(withSigner(account, payload));
+  return {
+    transactionHash: resolveTransactionHash(receipt),
+  };
 };
 
 export const setBlitzSeasonConfig: NativeStep = async ({ account, provider, config }) => {
@@ -851,6 +850,7 @@ export const NATIVE_FACTORY_WORLD_CONFIG_IMPLEMENTATIONS = {
   setStartingResourcesConfig,
   setWorldAdminConfig,
   setMercenariesNameConfig,
+  setBiomeClimateConfig,
   setWorldConfig,
   setResourceFactoryConfig,
   setBaseBuildingConfig,

@@ -38,6 +38,7 @@ import avatarRoutes from "./http/routes/avatars";
 import cacheRoutes from "./http/routes/cache";
 import availabilityRoutes from "./http/routes/availability";
 import worldDeploymentRoutes from "./http/routes/world-deployments";
+import worldsRoutes from "./http/routes/worlds";
 import { availabilityService } from "./services/torii-availability";
 import { createZoneRegistry } from "./ws/zone-registry";
 
@@ -541,6 +542,7 @@ app.route("/api/avatars", avatarRoutes);
 app.route("/api/cache", cacheRoutes);
 app.route("/api/availability", availabilityRoutes);
 app.route("/api/world-deployments", worldDeploymentRoutes);
+app.route("/api/worlds", worldsRoutes);
 
 type ClientMessage =
   | { type: "join:zone"; zoneId: string }

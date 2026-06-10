@@ -1,4 +1,4 @@
-import { CameraView } from "../../scenes/hexagon-scene";
+import { CameraView } from "../../scenes/camera-view";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { resolveCameraView } from "./label-view";
 

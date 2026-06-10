@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useTransferAutomationStore } from "@/hooks/store/use-transfer-automation-store";
 import { useTransferPanelDraftStore } from "@/hooks/store/use-transfer-panel-draft-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -9,6 +9,7 @@ import {
 } from "@/ui/lib/structure-capabilities";
 import Button from "@/ui/design-system/atoms/button";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { CATEGORY_FILTER_OPTIONS } from "@/ui/features/world/containers/structure-list-utils";
 import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
 import {
   calculateDonkeysNeeded,
@@ -74,13 +75,58 @@ const getStructureIcon = (category: StructureType, villageIconKey: VillageIconKe
   }
 };
 
+// Multi-select structure-category filter. Reuses the shared CATEGORY_FILTER_OPTIONS
+// icon/label mapping and the FilterChipsRow chip styling, but toggles a Set so a
+// player can narrow the source/destination lists to just the categories they want
+// (empty Set = show everything). Hidden when there is only one category to pick.
+const CategoryFilterChips = ({
+  categories,
+  selected,
+  onToggle,
+}: {
+  categories: StructureType[];
+  selected: Set<StructureType>;
+  onToggle: (category: StructureType) => void;
+}) => {
+  const options = useMemo(
+    () => CATEGORY_FILTER_OPTIONS.filter((option) => categories.includes(option.value)),
+    [categories],
+  );
+  if (options.length < 1) return null;
+  return (
+    <div className="flex items-center gap-1">
+      {options.map((option) => {
+        const isActive = selected.has(option.value);
+        const Icon = option.icon;
+        return (
+          <button
+            key={String(option.value)}
+            type="button"
+            onClick={() => onToggle(option.value)}
+            className={`inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md border transition ${
+              isActive
+                ? "border-gold/60 bg-gold/15 text-gold shadow-[0_0_6px_rgba(223,170,84,0.22)]"
+                : "border-gold/15 bg-black/20 text-gold/65 hover:border-gold/40 hover:text-gold"
+            }`}
+            aria-pressed={isActive}
+            aria-label={option.label}
+            title={option.label}
+          >
+            <Icon className="h-3.5 w-3.5" />
+          </button>
+        );
+      })}
+    </div>
+  );
+};
+
 interface TransferAutomationPanelProps {
   initialSourceId?: number | null;
 }
 
 export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationPanelProps) => {
   const playerStructures = useUIStore((s) => s.playerStructures);
-  const { currentDefaultTick } = useBlockTimestamp();
+  const currentDefaultTick = useCurrentDefaultTick();
   const mode = useGameModeConfig();
   const { favorites } = useFavoriteStructures();
   const favoriteDestinationIds = useMemo(() => new Set(favorites), [favorites]);
@@ -101,7 +147,8 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
   const [resourceFilter, setResourceFilter] = useState<"all" | "production" | "military">("all");
   const [selectedSourceId, setSelectedSourceId] = useState<number | null>(null);
   const [ownedDestOnly, setOwnedDestOnly] = useState(true);
-  const [sourceSearch, setSourceSearch] = useState("");
+  const [sourceCategoryFilter, setSourceCategoryFilter] = useState<Set<StructureType>>(() => new Set());
+  const [destCategoryFilter, setDestCategoryFilter] = useState<Set<StructureType>>(() => new Set());
   const [destinationIds, setDestinationIds] = useState<number[]>([]);
   const [repeat, setRepeat] = useState(false);
   const [interval, setIntervalMinutes] = useState(5);
@@ -312,35 +359,17 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     return map;
   }, [ownedDestinations]);
 
-  const [destSearch, setDestSearch] = useState("");
   const allowFragmentMineDestinationPayload = useMemo(
     () => hasMilitarySelection || selectedResources.every((rid) => fragmentMineAllowedResources.has(rid)),
     [hasMilitarySelection, selectedResources, fragmentMineAllowedResources],
   );
 
   const destinations = useMemo(() => {
-    const baseList = ownedDestOnly ? filteredOwnedDestinations : filteredOwnedDestinations; // placeholder for future public list
-    const q = destSearch.trim();
-    const isNumeric = /^\d+$/.test(q);
-    const norm = (s: string) =>
-      s
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9 ]/g, "");
-    const filtered = baseList
+    const filtered = filteredOwnedDestinations
       .filter((ps) => Number(ps.entityId) !== Number(selectedSourceId))
-      .filter((ps) => (allowFragmentMineDestinationPayload ? true : !isFragmentMine(ps)));
-    const searched = !q
-      ? filtered
-      : filtered.filter((ps) => {
-          const name = mode.structure.getName(ps.structure).name;
-          if (isNumeric) {
-            return String(ps.entityId).includes(q);
-          }
-          return norm(name).includes(norm(q));
-        });
-    return searched.toSorted((a, b) => {
+      .filter((ps) => (allowFragmentMineDestinationPayload ? true : !isFragmentMine(ps)))
+      .filter((ps) => destCategoryFilter.size === 0 || destCategoryFilter.has(ps.category as StructureType));
+    return filtered.toSorted((a, b) => {
       const aFav = favoriteDestinationIds.has(Number(a.entityId));
       const bFav = favoriteDestinationIds.has(Number(b.entityId));
       if (aFav && !bFav) return -1;
@@ -348,14 +377,46 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       return 0;
     });
   }, [
-    ownedDestOnly,
     filteredOwnedDestinations,
-    destSearch,
     selectedSourceId,
     allowFragmentMineDestinationPayload,
+    destCategoryFilter,
     favoriteDestinationIds,
-    mode.structure,
   ]);
+
+  // Categories present among the eligible source/destination structures, used to
+  // render the category-filter chips (and hide them when there's nothing to pick).
+  const sourceCategories = useMemo(() => {
+    const present = new Set<StructureType>();
+    eligibleSources.forEach((ps) => present.add(ps.category as StructureType));
+    return Array.from(present);
+  }, [eligibleSources]);
+
+  const destinationCategories = useMemo(() => {
+    const present = new Set<StructureType>();
+    filteredOwnedDestinations
+      .filter((ps) => Number(ps.entityId) !== Number(selectedSourceId))
+      .forEach((ps) => present.add(ps.category as StructureType));
+    return Array.from(present);
+  }, [filteredOwnedDestinations, selectedSourceId]);
+
+  const toggleSourceCategory = useCallback((category: StructureType) => {
+    setSourceCategoryFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
+  }, []);
+
+  const toggleDestCategory = useCallback((category: StructureType) => {
+    setDestCategoryFilter((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
+  }, []);
 
   // Force single destination selection when multiple resources are selected
   useEffect(() => {
@@ -780,9 +841,9 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
     setResourceFilter("all");
     setSelectedSourceId(null);
     setOwnedDestOnly(true);
-    setSourceSearch("");
+    setSourceCategoryFilter(new Set());
+    setDestCategoryFilter(new Set());
     setDestinationIds([]);
-    setDestSearch("");
     setRepeat(false);
     setIntervalMinutes(30);
     setStatusMessage(null);
@@ -820,7 +881,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
           </Button>
         </div>
         {restrictToFragmentMinePayload && <p className="text-xxs text-gold/60">{fragmentMineTransferMessage}</p>}
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
           {visibleResourceIds.map((rid) => {
             const resourceId = rid as ResourcesIds;
             const sel = selectedResources.includes(resourceId);
@@ -834,12 +895,12 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                     prev.includes(resourceId) ? prev.filter((r) => r !== resourceId) : [...prev, resourceId],
                   )
                 }
-                className={`px-2 py-1 rounded border text-xs flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                className={`min-w-0 px-2 py-1 rounded border text-xs flex items-center gap-1 ${sel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
                 title={ResourcesIds[resourceId] as string}
               >
                 <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" />
-                {ResourcesIds[resourceId]}{" "}
-                <span className="text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
+                <span className="truncate">{ResourcesIds[resourceId]}</span>
+                <span className="ml-auto shrink-0 text-[10px] text-gold/60">({totalHuman.toLocaleString()})</span>
               </button>
             );
           })}
@@ -847,28 +908,14 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       </section>
 
       <section className="space-y-2">
-        <input
-          type="text"
-          value={sourceSearch}
-          onChange={(e) => setSourceSearch(e.target.value)}
-          placeholder="Filter by name or ID"
-          className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
+        <CategoryFilterChips
+          categories={sourceCategories}
+          selected={sourceCategoryFilter}
+          onToggle={toggleSourceCategory}
         />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
           {eligibleSources
-            .filter((ps) => {
-              const q = sourceSearch.trim();
-              if (!q) return true;
-              const isNumeric = /^\d+$/.test(q);
-              const name = mode.structure.getName(ps.structure).name;
-              if (isNumeric) return String(ps.entityId).includes(q);
-              const norm = (s: string) =>
-                s
-                  .toLowerCase()
-                  .normalize("NFD")
-                  .replace(/[\u0300-\u036f]/g, "");
-              return norm(name).includes(norm(q));
-            })
+            .filter((ps) => sourceCategoryFilter.size === 0 || sourceCategoryFilter.has(ps.category as StructureType))
             .map((ps) => {
               const name = mode.structure.getName(ps.structure).name;
               const entityId = Number(ps.entityId);
@@ -878,12 +925,12 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                 <button
                   key={ps.entityId}
                   type="button"
-                  className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                  className={`min-w-0 text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
                   onClick={() => setSelectedSourceId(isSel ? null : entityId)}
                 >
-                  <div className="flex items-center gap-2">
-                    <Icon className="h-4 w-4 text-gold" aria-hidden />
-                    <div className="text-sm font-semibold">{name}</div>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <Icon className="h-4 w-4 shrink-0 text-gold" aria-hidden />
+                    <div className="truncate text-sm font-semibold">{name}</div>
                   </div>
                 </button>
               );
@@ -894,24 +941,22 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-xs text-gold/70">
-              {allowMultiDestination && actualDestinationCount > 0 ? `${actualDestinationCount} selected` : ""}
-            </div>
             <div className="flex flex-wrap items-center gap-3 text-xxs text-gold/60">
+              <CategoryFilterChips
+                categories={destinationCategories}
+                selected={destCategoryFilter}
+                onToggle={toggleDestCategory}
+              />
               <label className="flex items-center gap-2">
                 <input type="checkbox" checked={ownedDestOnly} onChange={(e) => setOwnedDestOnly(e.target.checked)} />
                 Owned only
               </label>
             </div>
+            <div className="text-xs text-gold/70">
+              {allowMultiDestination && actualDestinationCount > 0 ? `${actualDestinationCount} selected` : ""}
+            </div>
           </div>
-          <input
-            type="text"
-            value={destSearch}
-            onChange={(e) => setDestSearch(e.target.value)}
-            placeholder="Filter by name or ID"
-            className="w-full px-2 py-1 text-xs rounded border border-gold/30 bg-black/30 text-gold/80 placeholder:text-gold/40 focus:border-gold/60 outline-none mb-2"
-          />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 md:grid-cols-5 gap-2">
             {destinations.map((ps) => {
               const name = mode.structure.getName(ps.structure).name;
               const entityId = Number(ps.entityId);
@@ -922,13 +967,13 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
                 <button
                   key={`dst-${ps.entityId}`}
                   type="button"
-                  className={`text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
+                  className={`min-w-0 text-left px-2 py-2 rounded border ${isSel ? "border-gold text-gold bg-gold/10" : "border-gold/30 text-gold/70 hover:border-gold/60 hover:text-gold"}`}
                   onClick={() => toggleDestinationSelection(entityId)}
                 >
-                  <div className="flex items-center gap-2">
-                    {isFavorite && <Star className="h-4 w-4 fill-current text-gold" aria-hidden />}
-                    <Icon className="h-4 w-4 text-gold" aria-hidden />
-                    <div className="text-sm font-semibold">{name}</div>
+                  <div className="flex min-w-0 items-center gap-2">
+                    {isFavorite && <Star className="h-4 w-4 shrink-0 fill-current text-gold" aria-hidden />}
+                    <Icon className="h-4 w-4 shrink-0 text-gold" aria-hidden />
+                    <div className="truncate text-sm font-semibold">{name}</div>
                   </div>
                 </button>
               );
@@ -939,7 +984,7 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
 
       {selectedResources.length > 0 && selectedSourceId && (
         <section className="space-y-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
             {selectedResources.map((rid) => {
               const cfg = resourceConfigs[rid] ?? { amount: 0 };
               let available = sourceBalances.get(rid) ?? 0;
@@ -960,12 +1005,14 @@ export const TransferAutomationPanel = ({ initialSourceId }: TransferAutomationP
               const selectedAmount = Math.max(0, Math.min(maxAmount, Math.floor(cfg.amount ?? 0)));
               return (
                 <div key={`cfg-${rid}`} className="rounded border border-gold/20 bg-black/20 p-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2 text-xs text-gold/80">
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex min-w-0 items-center gap-2 text-xs text-gold/80">
                       <ResourceIcon resource={ResourcesIds[rid]} size="xs" />
-                      <div className="font-semibold">{ResourcesIds[rid]}</div>
+                      <div className="truncate font-semibold" title={ResourcesIds[rid] as string}>
+                        {ResourcesIds[rid]}
+                      </div>
                     </div>
-                    <div className="text-xxs text-gold/60">Avail: {available.toLocaleString()}</div>
+                    <div className="shrink-0 text-xxs text-gold/60">Avail: {available.toLocaleString()}</div>
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1 text-xxs text-gold/60">

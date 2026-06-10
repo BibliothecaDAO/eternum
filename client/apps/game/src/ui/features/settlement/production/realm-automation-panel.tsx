@@ -6,9 +6,10 @@ import {
   isAutomationResourceBlocked,
   useAutomationStore,
 } from "@/hooks/store/use-automation-store";
+import { PROCESS_INTERVAL_MS } from "@/ui/features/infrastructure/automation/model/automation-processor";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import Button from "@/ui/design-system/atoms/button";
-import { configManager } from "@bibliothecadao/eternum";
+import { aggregateConsumptionPerSecond, configManager } from "@bibliothecadao/eternum";
 import { ResourcesIds } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
@@ -295,26 +296,24 @@ export const RealmAutomationPanel = ({
   }, [aggregatedUsageMap]);
 
   const aggregatedConsumptionMap = useMemo(() => {
-    const totals = new Map<number, number>();
-
-    automationRows.forEach(({ percentages, complexInputs, simpleInputs }) => {
-      const resourceRatio = Math.min(1, Math.max(0, percentages.resourceToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
-      const laborRatio = Math.min(1, Math.max(0, percentages.laborToResource / MAX_RESOURCE_ALLOCATION_PERCENT));
-
-      if (resourceRatio > 0) {
-        complexInputs.forEach((input) => {
-          totals.set(input.resource, (totals.get(input.resource) ?? 0) + resourceRatio * input.amount);
-        });
-      }
-
-      if (laborRatio > 0) {
-        simpleInputs.forEach((input) => {
-          totals.set(input.resource, (totals.get(input.resource) ?? 0) + laborRatio * input.amount);
-        });
-      }
+    const percentagesByResource: Record<number, ResourceAutomationPercentages> = {};
+    automationRows.forEach(({ resourceId, percentages }) => {
+      percentagesByResource[resourceId] = percentages;
     });
-
-    return totals;
+    const cycleSeconds = PROCESS_INTERVAL_MS / 1000;
+    const perSecond = aggregateConsumptionPerSecond(
+      automationRows.map((row) => row.resourceId),
+      percentagesByResource,
+      {
+        maxAllocationPercent: MAX_RESOURCE_ALLOCATION_PERCENT,
+        cycleSeconds,
+      },
+    );
+    const perCycle = new Map<number, number>();
+    perSecond.forEach((value, key) => {
+      perCycle.set(key, value * cycleSeconds);
+    });
+    return perCycle;
   }, [automationRows]);
 
   const aggregatedProductionMap = useMemo(() => {
@@ -509,14 +508,14 @@ export const RealmAutomationPanel = ({
 
   if (!automationRows.length) {
     return (
-      <div className="panel-wood p-4 rounded-lg text-sm text-gold/70">
+      <div className="rounded-lg border border-gold/20 bg-black/30 p-4 text-sm text-gold/70">
         This realm has no active production buildings yet. Create production structures to configure automation.
       </div>
     );
   }
 
   return (
-    <div className="panel-wood p-4 rounded-lg space-y-4">
+    <div className="rounded-lg border border-gold/20 bg-black/30 p-4 space-y-4">
       <header className="flex flex-col gap-3">
         <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
           <div>
@@ -592,7 +591,7 @@ export const RealmAutomationPanel = ({
         {usageDisplayList.length === 0 ? (
           <p className="text-xs text-gold/60">No resources allocated yet.</p>
         ) : (
-          <ul className="grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))]">
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {usageDisplayList.map(({ resourceId, percent, perCycle }) => {
               const label = resolveResourceLabel(resourceId);
               const isOverBudget = percent > MAX_RESOURCE_ALLOCATION_PERCENT;
@@ -673,7 +672,7 @@ export const RealmAutomationPanel = ({
                   step={sliderStep}
                   value={value}
                   onChange={(event) => onChange(Number(event.target.value))}
-                  className="w-full accent-gold/80 bg-dark-wood"
+                  className="w-full accent-gold/80 bg-black/40"
                 />
                 {impactedResources.length > 0 && (
                   <div className="space-y-1 text-xxs text-gold/60">

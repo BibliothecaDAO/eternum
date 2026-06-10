@@ -2,42 +2,193 @@ name: client
 
 on:
   pull_request:
-    paths-ignore:
-      - "contracts/**"
-      - "**/manifest.json"
-      - ".github/**"
+    paths:
+      - ".github/workflows/test-client.yml"
+      - "client/apps/game/**"
+      - "client/apps/onchain-agent/test/ci/test-client-workflow.test.ts"
+      - "package.json"
+      - "client/package.json"
       - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "packages/**"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  detect-scope:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      has_client_runtime_changes: ${{ steps.scope.outputs.has_client_runtime_changes }}
+      has_workflow_contract_changes: ${{ steps.scope.outputs.has_workflow_contract_changes }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect client workflow scope
+        id: scope
+        run: |
+          set -euo pipefail
+
+          has_client_runtime_changes=false
+          has_workflow_contract_changes=false
+
+          while IFS= read -r file; do
+            [ -z "$file" ] && continue
+
+            case "$file" in
+              .github/workflows/test-client.yml|client/apps/onchain-agent/test/ci/test-client-workflow.test.ts)
+                has_workflow_contract_changes=true
+                ;;
+            esac
+
+            case "$file" in
+              client/apps/game/*|client/apps/game/**|packages/*|packages/**|package.json|client/package.json|pnpm-lock.yaml|pnpm-workspace.yaml)
+                has_client_runtime_changes=true
+                ;;
+            esac
+          done < <(git diff --name-only --diff-filter=ACMR "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}")
+
+          echo "has_client_runtime_changes=$has_client_runtime_changes" >> "$GITHUB_OUTPUT"
+          echo "has_workflow_contract_changes=$has_workflow_contract_changes" >> "$GITHUB_OUTPUT"
+
+  workflow-contract:
+    runs-on: ubuntu-latest
+    needs: detect-scope
+    if: needs.detect-scope.outputs.has_workflow_contract_changes == 'true'
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify test-client workflow contract
+        run: pnpm --dir ./client/apps/onchain-agent exec vitest run test/ci/test-client-workflow.test.ts
+
   test-client:
     runs-on: ubuntu-latest
+    needs: detect-scope
+    if: needs.detect-scope.outputs.has_client_runtime_changes == 'true'
+    permissions:
+      contents: read
     env:
       VITE_PUBLIC_MASTER_ADDRESS: "0x0"
       VITE_PUBLIC_MASTER_PRIVATE_KEY: "0x0"
       VITE_PUBLIC_ACCOUNT_CLASS_HASH: "0x0"
-
-    strategy:
-      matrix:
-        node-version: [21.x]
+      VITE_PUBLIC_FEE_TOKEN_ADDRESS: "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7"
+      VITE_PUBLIC_CLIENT_FEE_RECIPIENT: "0x009d838f2dB23aFD64e4A2A116EdA44a00Cda1b1C8Cb2CE9C11eB534E8Bc50E0"
+      VITE_PUBLIC_SLOT: "eternum-blitz-slot-4"
+      VITE_PUBLIC_CHAIN: "slot"
+      GAME_CLIENT_PREVIEW_URL: "http://127.0.0.1:4173"
+      ETERNUM_DISABLE_MKCERT: "true"
 
     steps:
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          node-version: ${{ matrix.node-version }}
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9.7.0
+          fetch-depth: 0
 
-      - uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
       - name: Install dependencies
-        run: pnpm i
+        run: pnpm install --frozen-lockfile
+
       - name: Build packages
         run: pnpm run build:packages
-      - name: Execute Unit tests
-        if: false # Temporarily disabled
-        run: pnpm run test
+
+      - name: Typecheck game client
+        run: pnpm --dir ./client/apps/game typecheck
+
+      - name: Run game client tests
+        run: pnpm --dir ./client/apps/game test
+
+      - name: Build game client
+        run: pnpm --dir ./client/apps/game build
+
+      - name: Start game client preview server
+        run: |
+          pnpm --dir ./client/apps/game preview --host 127.0.0.1 --port 4173 > /tmp/eternum-game-preview.log 2>&1 &
+          echo $! > /tmp/eternum-game-preview.pid
+
+      - name: Wait for game client preview server
+        run: |
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error "$GAME_CLIENT_PREVIEW_URL" >/dev/null; then
+              exit 0
+            fi
+
+            sleep 2
+          done
+
+          echo "Game client preview server did not become ready" >&2
+          cat /tmp/eternum-game-preview.log >&2 || true
+          exit 1
+
+      - name: Run renderer scene smoke
+        run: |
+          node ./client/apps/game/scripts/run-renderer-scene-smoke.mjs \
+            --base-url "$GAME_CLIENT_PREVIEW_URL" \
+            --scenes map,hex \
+            --artifact-dir /tmp/renderer-scene-smoke-artifacts
+
+      - name: Upload renderer scene smoke artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: renderer-scene-smoke-artifacts
+          path: /tmp/renderer-scene-smoke-artifacts
+          if-no-files-found: ignore
+
+      - name: Run renderer debug smoke
+        run: |
+          node ./client/apps/game/scripts/run-renderer-debug-smoke.mjs \
+            --base-url "$GAME_CLIENT_PREVIEW_URL" \
+            --scenarios baseline,stress \
+            --output /tmp/renderer-debug-smoke.json
+
+      - name: Upload renderer debug smoke result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: renderer-debug-smoke-result
+          path: /tmp/renderer-debug-smoke.json
+
+      - name: Upload game client preview server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-client-preview-server-log
+          path: /tmp/eternum-game-preview.log
+
+      - name: Stop game client preview server
+        if: always()
+        run: |
+          if [ -f /tmp/eternum-game-preview.pid ]; then
+            kill "$(cat /tmp/eternum-game-preview.pid)" || true
+          fi

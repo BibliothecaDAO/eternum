@@ -189,7 +189,7 @@ export function MarketsList({
   if (sortedMarkets.length === 0 && !isFetching) {
     if (emptyState) {
       return (
-        <div className="rounded-2xl border border-gold/20 bg-dark-wood p-6 text-center">
+        <div className="rounded-2xl border border-gold/20 bg-black/40 p-6 text-center">
           <p className="font-cinzel text-lg text-gold">{emptyState.title}</p>
           {emptyState.description ? <p className="mt-2 text-sm text-gold/70">{emptyState.description}</p> : null}
           {emptyState.actionLabel && emptyState.onAction ? (

@@ -5,8 +5,8 @@ import { DamageCalculation } from "@/components/DamageCalculation";
 ## Damage Overview
 
 Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
-is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on a
-damage formula that considers troop numbers, troop tier, biome effects, stamina penalties, and battle timer penalties.
+is initiated (i.e. one army attacks another), damage is calculated from troop numbers, troop tier, biome effects,
+stamina penalties, battle timer penalties, and Combat v3 role modifiers.
 
 ## Combat Process
 
@@ -19,6 +19,19 @@ When an army attacks another from an adjacent tile, the following sequence occur
 4. **Battle Timers**: Each combatant receives a battle timer, which prevents them from initiating new attacks while
    active.
 5. **Refunds**: Damage-ratio refunds are calculated and applied to battle timers and stamina
+
+## Combat v3 Role Modifiers
+
+- **Crossbowmen** can attack from 2 hexes away. Range-2 attacks deal **70%** damage to field armies, deal **30%** damage
+  to structure guards, ignore biome damage modifiers, and receive no counter-damage.
+- **Knights** specialize in structure combat. Adjacent Knight assaults deal **+15%** damage to structure guards, and
+  Knight guards take **15% reduced incoming damage** while defending structures.
+- **Paladins** keep their high-mobility cavalry role; their main balance pressure comes from biome movement and damage
+  affinities.
+
+Range-2 Crossbowman attacks are ranged pokes rather than full battles: they apply shorter battle timers and bypass the
+normal damage-ratio refund calculation. Ranged attacks can clear structure guards, but structures still require
+adjacency to claim.
 
 ## Damage Calculation
 

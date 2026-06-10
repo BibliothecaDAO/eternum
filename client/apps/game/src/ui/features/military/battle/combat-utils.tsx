@@ -2,23 +2,6 @@ import { TroopTier, TroopType } from "@bibliothecadao/types";
 import Map from "lucide-react/dist/esm/icons/map";
 import Zap from "lucide-react/dist/esm/icons/zap";
 
-export const getStaminaDisplay = (currentStamina: number, newStamina: number, staminaBonus: number) => {
-  return (
-    <div className="text-gold/80">
-      <div className="text-sm font-medium mb-1">Stamina</div>
-      <div className="text-xl font-bold flex items-baseline">
-        {currentStamina}
-        <span className="mx-2 text-gold/50">→</span>
-        {Math.max(0, newStamina)}
-        <span className="text-xs ml-2 text-green-400">
-          ({staminaBonus > 0 ? "+" : ""}
-          {staminaBonus})
-        </span>
-      </div>
-    </div>
-  );
-};
-
 const formatStaminaModifier = (modifier: number, isAttacker: boolean) => {
   const percentage = ((modifier - 1) * 100).toFixed(0);
   if (percentage === "0") return isAttacker ? "No Bonus" : "No Penalty";

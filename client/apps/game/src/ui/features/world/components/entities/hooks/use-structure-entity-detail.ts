@@ -153,7 +153,11 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   } = useQuery({
     queryKey: ["structureDetails", String(structureEntityId), String(userAddress)],
     queryFn: async () => {
-      if (!toriiClient || !structureEntityId || !components || !userAddress) return null;
+      // userAddress is intentionally omitted from the bail: spectators (no
+      // wallet connected, userAddress === 0n) still need to inspect remote
+      // structures. Downstream isMine/isAlly degrade to false naturally when
+      // userAddress is 0n, which is correct for a guest viewer.
+      if (!toriiClient || !structureEntityId || !components) return null;
 
       const { structure, resources, productionBoostBonus } = await getStructureFromToriiClient(
         toriiClient,

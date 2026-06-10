@@ -8,7 +8,9 @@ import { useDojo, usePlayerStructures } from "@bibliothecadao/react";
 import { MemberClause } from "@dojoengine/sdk";
 import type { PatternMatching } from "@dojoengine/torii-client";
 import type { Clause } from "@dojoengine/torii-wasm/types";
+import { env } from "../../../env";
 import { useAccountStore } from "../store/use-account-store";
+import { useConnectionStore } from "../store/use-connection-store";
 import { selectUnsyncedOwnedStructureTargets } from "./player-structure-sync-utils";
 
 // Models synced per-player via a scoped subscription (see usePlayerStructureSync)
@@ -17,6 +19,7 @@ const PLAYER_STRUCTURE_MODELS: string[] = [
   "s1_eternum-Resource",
   "s1_eternum-ResourceArrival",
 ];
+const OWNED_STRUCTURE_BACKFILL_DEBOUNCE_MS = 250;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -67,7 +70,8 @@ export const usePlayerStructureSync = () => {
   const ownerStructureSubscriptionRef = useRef<{ cancel: () => void } | null>(null);
   const syncedStructureIds = useRef<Set<number>>(new Set());
   const inFlightStructureIds = useRef<Set<number>>(new Set());
-  const backfillOwnedStructuresRef = useRef<(() => Promise<void>) | null>(null);
+  const requestOwnedStructureBackfillRef = useRef<(() => void) | null>(null);
+  const ownedStructureBackfillTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const structureEntityIds = useMemo(() => playerStructures.map((s) => s.entityId), [playerStructures]);
 
@@ -77,9 +81,11 @@ export const usePlayerStructureSync = () => {
   );
 
   const accountAddress = useAccountStore().account?.address;
+  const streamReconnectVersion = useConnectionStore((state) => state.streamReconnectVersion);
   const toriiComponents = contractComponents as unknown as Parameters<typeof getStructuresDataFromTorii>[1];
   const structureEntityIdsRef = useRef<ReadonlySet<number>>(new Set());
   const isBackfillRunning = useRef(false);
+  const rerunBackfillAfterCurrent = useRef(false);
 
   useEffect(() => {
     structureEntityIdsRef.current = new Set(structureEntityIds);
@@ -96,12 +102,26 @@ export const usePlayerStructureSync = () => {
     if (!accountAddress || !toriiClient || !toriiComponents) return;
     let cancelled = false;
 
+    const clearScheduledBackfill = () => {
+      if (ownedStructureBackfillTimerRef.current === null) {
+        return;
+      }
+
+      clearTimeout(ownedStructureBackfillTimerRef.current);
+      ownedStructureBackfillTimerRef.current = null;
+    };
+
     const backfillOwnedStructures = async () => {
-      if (isBackfillRunning.current) return;
+      if (isBackfillRunning.current) {
+        rerunBackfillAfterCurrent.current = true;
+        return;
+      }
+
       isBackfillRunning.current = true;
 
       let claimedStructureIds: number[] = [];
       try {
+        rerunBackfillAfterCurrent.current = false;
         const ownedStructures = await sqlApi.fetchStructuresByOwner(accountAddress);
         if (cancelled || ownedStructures.length === 0) return;
 
@@ -126,19 +146,42 @@ export const usePlayerStructureSync = () => {
       } finally {
         claimedStructureIds.forEach((entityId) => inFlightStructureIds.current.delete(entityId));
         isBackfillRunning.current = false;
+        if (!cancelled && rerunBackfillAfterCurrent.current) {
+          requestOwnedStructureBackfillRef.current?.();
+        }
       }
     };
 
-    backfillOwnedStructuresRef.current = backfillOwnedStructures;
+    const requestOwnedStructureBackfill = () => {
+      if (cancelled) {
+        return;
+      }
+      if (isBackfillRunning.current) {
+        rerunBackfillAfterCurrent.current = true;
+        return;
+      }
+      if (ownedStructureBackfillTimerRef.current !== null) {
+        return;
+      }
+
+      ownedStructureBackfillTimerRef.current = setTimeout(() => {
+        ownedStructureBackfillTimerRef.current = null;
+        void backfillOwnedStructures();
+      }, OWNED_STRUCTURE_BACKFILL_DEBOUNCE_MS);
+    };
+
+    requestOwnedStructureBackfillRef.current = requestOwnedStructureBackfill;
     void backfillOwnedStructures();
 
     return () => {
       cancelled = true;
-      if (backfillOwnedStructuresRef.current === backfillOwnedStructures) {
-        backfillOwnedStructuresRef.current = null;
+      clearScheduledBackfill();
+      rerunBackfillAfterCurrent.current = false;
+      if (requestOwnedStructureBackfillRef.current === requestOwnedStructureBackfill) {
+        requestOwnedStructureBackfillRef.current = null;
       }
     };
-  }, [accountAddress, toriiClient, toriiComponents]);
+  }, [accountAddress, streamReconnectVersion, toriiClient, toriiComponents]);
 
   useEffect(() => {
     if (!accountAddress || !toriiClient) return;
@@ -160,7 +203,7 @@ export const usePlayerStructureSync = () => {
         const normalizedUpdateOwner = padHexAddressTo66(owner).toLowerCase();
         if (normalizedUpdateOwner !== normalizedAccountAddress) return;
 
-        void backfillOwnedStructuresRef.current?.();
+        requestOwnedStructureBackfillRef.current?.();
       });
 
       if (cancelled) {
@@ -171,7 +214,9 @@ export const usePlayerStructureSync = () => {
       ownerStructureSubscriptionRef.current = ownerSubscription;
     };
 
-    void subscribeToOwnedStructureUpdates();
+    void subscribeToOwnedStructureUpdates().catch((error) => {
+      console.error("[usePlayerStructureSync] Failed to subscribe to owned structure updates", error);
+    });
 
     return () => {
       cancelled = true;
@@ -180,7 +225,7 @@ export const usePlayerStructureSync = () => {
         ownerStructureSubscriptionRef.current = null;
       }
     };
-  }, [accountAddress, toriiClient]);
+  }, [accountAddress, streamReconnectVersion, toriiClient]);
 
   // Sync newly-seen structures into RECS (e.g. first settlement).
   useEffect(() => {
@@ -220,6 +265,8 @@ export const usePlayerStructureSync = () => {
   }, [playerStructures, toriiClient, toriiComponents]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const subscribe = async () => {
       // Cancel previous subscription
       if (subscriptionRef.current) {
@@ -257,16 +304,29 @@ export const usePlayerStructureSync = () => {
         },
       };
 
-      subscriptionRef.current = await syncEntitiesDebounced(toriiClient, setup, clause, false);
+      const subscription = await syncEntitiesDebounced(toriiClient, setup, clause, false, undefined, {
+        streamType: "player",
+        subscriptionSetupTimeoutMs: env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS,
+      });
+
+      if (cancelled) {
+        subscription.cancel();
+        return;
+      }
+
+      subscriptionRef.current = subscription;
     };
 
-    subscribe();
+    void subscribe().catch((error) => {
+      console.error("[usePlayerStructureSync] Failed to subscribe to player structure updates", error);
+    });
 
     return () => {
+      cancelled = true;
       if (subscriptionRef.current) {
         subscriptionRef.current.cancel();
         subscriptionRef.current = null;
       }
     };
-  }, [structureEntityIds, structurePositions, accountAddress, toriiClient, setup]);
+  }, [structureEntityIds, structurePositions, accountAddress, streamReconnectVersion, toriiClient, setup]);
 };

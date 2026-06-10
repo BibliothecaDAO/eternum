@@ -20,10 +20,10 @@ export const FactoryV2WorkflowSwitch = ({
   return (
     <section className="animate-fade-in-up" style={{ animationDelay: "120ms" }}>
       <div className="space-y-2 text-center">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-black/42">What you want to do</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.28em] text-gold/42">What you want to do</div>
         <div
           data-testid="factory-workflow-switch"
-          className="mx-auto grid w-full grid-cols-3 gap-1.5 rounded-[22px] border border-black/8 bg-white/45 p-1.5 shadow-[0_10px_24px_rgba(34,24,14,0.05)] md:max-w-[30rem]"
+          className="mx-auto grid w-full grid-cols-3 gap-1.5 rounded-[22px] border border-gold/10 bg-black/20 p-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.10)] md:max-w-[30rem]"
         >
           <button
             type="button"

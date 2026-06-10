@@ -65,7 +65,7 @@ export const GuildListHeader = ({
   return (
     <SortPanel
       className={clsx(
-        "grid gap-x-4 items-center pb-3 panel-wood-bottom sticky top-0 z-10 bg-brown/80 backdrop-blur-sm px-4",
+        "grid gap-x-4 items-center pb-3 border-b border-gold/25 sticky top-0 z-10 bg-brown/80 backdrop-blur-sm px-4",
         GUILD_GRID_TEMPLATE,
       )}
     >

@@ -1,4 +1,9 @@
-import { createRendererInitDiagnostics, type RendererBackendV2 } from "./renderer-backend-v2";
+import {
+  createRendererInitDiagnostics,
+  isRendererInitTimeoutError,
+  type RendererBackendV2,
+  type RendererFallbackReason,
+} from "./renderer-backend-v2";
 import {
   incrementRendererDiagnosticError,
   setRendererDiagnosticCapabilities,
@@ -10,6 +15,7 @@ import {
   resolveRendererBuildModeFromSearch,
   type RendererBuildMode,
 } from "./renderer-build-mode";
+import { recordRendererStartupTiming } from "./perf/renderer-startup-telemetry";
 
 interface InitializedRendererBackend {
   backend: RendererBackendV2;
@@ -36,7 +42,7 @@ export async function initializeSelectedRendererBackend(input: {
   });
 
   if (requestedMode === "legacy-webgl") {
-    const legacy = await input.legacyFactory();
+    const legacy = await runTimedBackendFactory("legacy-backend-total", input.legacyFactory);
     syncRendererBackendDiagnostics(legacy.diagnostics);
     setRendererDiagnosticCapabilities(legacy.backend.capabilities);
     setRendererDiagnosticDegradations([]);
@@ -44,9 +50,11 @@ export async function initializeSelectedRendererBackend(input: {
   }
 
   try {
-    const experimental = await input.experimentalFactory({
-      requestedMode,
-    });
+    const experimental = await runTimedBackendFactory("experimental-backend-total", () =>
+      input.experimentalFactory({
+        requestedMode,
+      }),
+    );
     syncRendererBackendDiagnostics(experimental.diagnostics);
     setRendererDiagnosticCapabilities(experimental.backend.capabilities);
     setRendererDiagnosticDegradations([]);
@@ -56,11 +64,12 @@ export async function initializeSelectedRendererBackend(input: {
     const legacyStart = performance.now();
     const legacy = await input.legacyFactory();
     const legacyInitTimeMs = performance.now() - legacyStart;
+    recordRendererStartupTiming("legacy-fallback-total", legacyInitTimeMs);
     incrementRendererDiagnosticError("fallbacks");
     const diagnostics = createRendererInitDiagnostics({
       activeMode: "legacy-webgl",
       buildMode: input.options.envBuildMode,
-      fallbackReason: "experimental-init-error",
+      fallbackReason: resolveExperimentalFallbackReason(error),
       initTimeMs: legacyInitTimeMs,
       requestedMode,
     });
@@ -74,4 +83,20 @@ export async function initializeSelectedRendererBackend(input: {
       fallbackError: error instanceof Error ? error : new Error(String(error)),
     };
   }
+}
+
+async function runTimedBackendFactory<T>(
+  timingName: "experimental-backend-total" | "legacy-backend-total",
+  factory: () => Promise<T>,
+): Promise<T> {
+  const startedAt = performance.now();
+  try {
+    return await factory();
+  } finally {
+    recordRendererStartupTiming(timingName, performance.now() - startedAt);
+  }
+}
+
+function resolveExperimentalFallbackReason(error: unknown): Exclude<RendererFallbackReason, null> {
+  return isRendererInitTimeoutError(error) ? "experimental-init-timeout" : "experimental-init-error";
 }

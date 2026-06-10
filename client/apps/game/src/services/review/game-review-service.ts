@@ -1,14 +1,26 @@
 import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
 import {
   fetchLandingLeaderboard,
   fetchLandingLeaderboardEntryByAddress,
   type LandingLeaderboardEntry,
 } from "@/services/leaderboard/landing-leaderboard-service";
+import { buildSettledBlitzPlayersQuery } from "@/services/blitz/blitz-settlement-sql";
 import { commitAndClaimMMR } from "@/ui/features/prize/utils/mmr-utils";
 import { getMMRTierFromRaw, toMmrIntegerFromRaw } from "@/ui/utils/mmr-tiers";
-import { SqlApi, buildApiUrl, fetchWithErrorHandling } from "@bibliothecadao/torii";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { SqlApi } from "@bibliothecadao/torii";
+import {
+  normalizeNonZeroAddress,
+  parseAddress,
+  parseBigIntValue,
+  parseBoolean,
+  parseInteger,
+  parseNumeric,
+  parseScaledAmount,
+  parseTroopTier,
+  queryToriiSql,
+} from "./sql-parse-utils";
 import type { Chain } from "@contracts";
 import { getGameManifest } from "@contracts";
 import { getContractByName } from "@dojoengine/core";
@@ -21,14 +33,12 @@ import {
   fetchGameReviewMilestoneTimings,
   type GameReviewValueMetric,
 } from "./game-review-stats-utils";
+import { estimateClaimableChests } from "./chest-reward-estimate";
 
 const RANKING_BATCH_SIZE = 200;
 const LEADERBOARD_FETCH_LIMIT = 1000;
 const MAX_MAP_SNAPSHOT_TILES = 4200;
-const RESOURCE_PRECISION_BIGINT = BigInt(RESOURCE_PRECISION);
 const LORDS_TOKEN_DECIMALS = 18;
-const VICTORY_POINTS_MULTIPLIER = 1_000_000n;
-const GAME_REWARD_CHEST_POINTS_THRESHOLD = 500n * VICTORY_POINTS_MULTIPLIER;
 const CLAIM_ALL_REWARDS_BATCH_SIZE = 200;
 const MMR_UPDATED_SELECTOR = hash.getSelectorFromName("MMRUpdated").toLowerCase();
 const EVENT_KEY0_EXPR = "ltrim(substr(lower(keys), 1, instr(lower(keys), '/') - 1), '0x')";
@@ -50,11 +60,7 @@ const REVIEW_BATTLE_AND_CREATION_QUERY = `
   WHERE story IN ('BattleStory', 'ExplorerCreateStory');
 `;
 
-const REVIEW_REGISTERED_PLAYERS_QUERY = `
-  SELECT player
-  FROM "s1_eternum-BlitzRealmPlayerRegister"
-  WHERE once_registered = TRUE OR registered = TRUE;
-`;
+const REVIEW_REGISTERED_PLAYERS_QUERY = buildSettledBlitzPlayersQuery();
 
 const REVIEW_PLAYERS_RANK_FINAL_QUERY = `
   SELECT trial_id
@@ -85,7 +91,8 @@ const REVIEW_SEASON_TIMING_QUERY = `
     "season_config.dev_mode_on" AS dev_mode_on,
     "season_config.end_at" AS season_end_at,
     "season_config.registration_grace_seconds" AS registration_grace_seconds,
-    "blitz_registration_config.registration_count" AS registration_count
+    "blitz_registration_config.registration_count" AS registration_count,
+    "blitz_registration_config.collectibles_lootchest_address" AS loot_chest_address
   FROM "s1_eternum-WorldConfig"
   LIMIT 1;
 `;
@@ -173,112 +180,6 @@ const buildReviewUnclaimedPlayersQuery = (trialId: bigint) => `
 
 const buildToriiSqlUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii/sql`;
 
-const parseNumeric = (value: unknown): number => {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  if (typeof value === "bigint") {
-    const asNumber = Number(value);
-    return Number.isFinite(asNumber) ? asNumber : 0;
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (!trimmed) return 0;
-
-    try {
-      const parsed = trimmed.startsWith("0x") || trimmed.startsWith("0X") ? Number(BigInt(trimmed)) : Number(trimmed);
-      return Number.isFinite(parsed) ? parsed : 0;
-    } catch {
-      return 0;
-    }
-  }
-
-  return 0;
-};
-
-const parseBoolean = (value: unknown): boolean => {
-  if (typeof value === "boolean") {
-    return value;
-  }
-
-  if (typeof value === "number") {
-    return Number.isFinite(value) && value !== 0;
-  }
-
-  if (typeof value === "bigint") {
-    return value !== 0n;
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim().toLowerCase();
-    if (!trimmed) return false;
-    if (trimmed === "true") return true;
-    if (trimmed === "false") return false;
-    return parseNumeric(trimmed) !== 0;
-  }
-
-  return false;
-};
-
-const parseBigIntValue = (value: unknown): bigint | null => {
-  if (typeof value === "bigint") {
-    return value;
-  }
-
-  if (typeof value === "number") {
-    if (!Number.isFinite(value)) return null;
-    return BigInt(Math.trunc(value));
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-
-    try {
-      if (trimmed.startsWith("0x") || trimmed.startsWith("0X")) {
-        return BigInt(trimmed);
-      }
-
-      if (/^[+-]?\d+$/.test(trimmed)) {
-        return BigInt(trimmed);
-      }
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-};
-
-const parseInteger = (value: unknown): number | null => {
-  const bigintValue = parseBigIntValue(value);
-  if (bigintValue == null) {
-    return null;
-  }
-
-  const asNumber = Number(bigintValue);
-  return Number.isFinite(asNumber) ? asNumber : null;
-};
-
-const parseScaledAmount = (value: unknown): number => {
-  const bigintValue = parseBigIntValue(value);
-  if (bigintValue != null) {
-    const whole = bigintValue / RESOURCE_PRECISION_BIGINT;
-    const remainder = bigintValue % RESOURCE_PRECISION_BIGINT;
-    const wholeAsNumber = Number(whole);
-    const remainderAsNumber = Number(remainder) / RESOURCE_PRECISION;
-
-    const combined = wholeAsNumber + remainderAsNumber;
-    if (Number.isFinite(combined)) {
-      return combined;
-    }
-  }
-
-  return parseNumeric(value) / RESOURCE_PRECISION;
-};
-
 const formatTokenAmount = (amount: bigint, decimals: number): string => {
   const s = amount.toString();
   const pad = decimals - s.length;
@@ -287,88 +188,6 @@ const formatTokenAmount = (amount: bigint, decimals: number): string => {
   const wholeFmt = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   const frac = fracRaw.replace(/0+$/, "");
   return frac.length > 0 ? `${wholeFmt}.${frac}` : wholeFmt;
-};
-
-const parseTroopTier = (value: unknown, usesZeroBasedEncoding: boolean): 1 | 2 | 3 | null => {
-  if (value == null) return null;
-
-  if (typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (entries.length === 1) {
-      return parseTroopTier(entries[0][0], usesZeroBasedEncoding);
-    }
-  }
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-
-    const normalized = trimmed.toUpperCase();
-    if (normalized === "T1") return 1;
-    if (normalized === "T2") return 2;
-    if (normalized === "T3") return 3;
-
-    if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-      try {
-        return parseTroopTier(JSON.parse(trimmed), usesZeroBasedEncoding);
-      } catch {
-        return null;
-      }
-    }
-  }
-
-  const numericTier = parseInteger(value);
-  if (numericTier == null) {
-    return null;
-  }
-
-  if (usesZeroBasedEncoding) {
-    if (numericTier === 0) return 1;
-    if (numericTier === 1) return 2;
-    if (numericTier === 2) return 3;
-    return null;
-  }
-
-  if (numericTier === 1 || numericTier === 2 || numericTier === 3) {
-    return numericTier;
-  }
-
-  return null;
-};
-
-const parseAddress = (value: unknown): string | null => {
-  if (value == null) return null;
-
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (!trimmed) return null;
-
-    try {
-      const asHex = trimmed.startsWith("0x") || trimmed.startsWith("0X") ? trimmed : `0x${trimmed}`;
-      return `0x${BigInt(asHex).toString(16)}`.toLowerCase();
-    } catch {
-      return null;
-    }
-  }
-
-  if (typeof value === "number" || typeof value === "bigint") {
-    try {
-      return `0x${BigInt(value).toString(16)}`.toLowerCase();
-    } catch {
-      return null;
-    }
-  }
-
-  return null;
-};
-
-const queryToriiSql = async <TRow extends object>(
-  toriiSqlBaseUrl: string,
-  query: string,
-  errorMessage: string,
-): Promise<TRow[]> => {
-  const url = buildApiUrl(toriiSqlBaseUrl, query);
-  return fetchWithErrorHandling<TRow>(url, errorMessage);
 };
 
 const uniqueAddresses = (addresses: Array<string | null | undefined>): string[] => {
@@ -568,6 +387,7 @@ interface SeasonTimingRow {
   season_end_at?: unknown;
   registration_grace_seconds?: unknown;
   registration_count?: unknown;
+  loot_chest_address?: unknown;
 }
 
 interface RankPrizeRow {
@@ -613,6 +433,7 @@ interface LatestMmrRow {
 interface ReviewFinalizationMeta {
   registeredPlayers: string[];
   registrationCount: number;
+  lootChestAddress: string | null;
   finalTrialId: bigint | null;
   rankingFinalized: boolean;
   devModeOn: boolean;
@@ -774,10 +595,12 @@ const fetchReviewFinalizationMeta = async (toriiSqlBaseUrl: string): Promise<Rev
   const seasonEndAt = seasonEndAtRaw > 0 ? seasonEndAtRaw : null;
   const registrationGraceSeconds = Math.max(0, parseNumeric(seasonTimingRows[0]?.registration_grace_seconds));
   const scoreSubmissionOpensAt = seasonEndAt != null ? seasonEndAt + registrationGraceSeconds : null;
+  const lootChestAddress = normalizeNonZeroAddress(seasonTimingRows[0]?.loot_chest_address);
 
   return {
     registeredPlayers,
     registrationCount,
+    lootChestAddress,
     finalTrialId,
     rankingFinalized,
     devModeOn,
@@ -1073,6 +896,8 @@ const buildEliteTicketReason = ({
   return `Not eligible: elite ticket cutoff is rank #${cutoff} (you are #${playerRank}).`;
 };
 
+const parseChestCount = (value: unknown): number => Math.max(0, Math.trunc(parseNumeric(value)));
+
 const fetchReviewRewards = async ({
   toriiSqlBaseUrl,
   playerAddress,
@@ -1100,15 +925,18 @@ const fetchReviewRewards = async ({
 
   const playerRegisteredPoints = parseBigIntValue(playerPointsRows[0]?.registered_points) ?? 0n;
   const playerPrizeClaimed = parseBoolean(playerPointsRows[0]?.prize_claimed);
-  const allocatedChests = Math.max(0, parseNumeric(chestRows[0]?.allocated_chests));
+  const allocatedChests = parseChestCount(chestRows[0]?.allocated_chests);
+  const distributedChests = parseChestCount(chestRows[0]?.distributed_chests);
   const totalRegisteredPoints = parseBigIntValue(seasonRows[0]?.total_registered_points) ?? 0n;
-  const guaranteedChestBonus = playerRegisteredPoints >= GAME_REWARD_CHEST_POINTS_THRESHOLD ? 1 : 0;
-  const proportionalChestShare =
-    allocatedChests > 0 && totalRegisteredPoints > 0n
-      ? Number((BigInt(allocatedChests) * playerRegisteredPoints) / totalRegisteredPoints)
-      : 0;
-  const chestsClaimedEstimate = Math.max(0, guaranteedChestBonus + proportionalChestShare);
-  const chestsClaimedReason = "";
+  const chestEstimate = estimateClaimableChests({
+    lootChestAddress: finalization.lootChestAddress,
+    allocatedChests,
+    distributedChests,
+    playerRegisteredPoints,
+    totalRegisteredPoints,
+  });
+  const chestsClaimedEstimate = chestEstimate.count;
+  const chestsClaimedReason = chestEstimate.reason;
 
   if (!finalization.rankingFinalized || finalization.finalTrialId == null) {
     return {
@@ -1463,7 +1291,16 @@ export const finalizeGameRankingAndMMR = async ({
         entrypoint: "blitz_prize_claim_no_game",
         calldata: [onlyPlayer],
       };
-      await signer.execute([claimNoGameCall]);
+      await executeObservedClientTransaction({
+        account: signer,
+        calls: [claimNoGameCall],
+        surface: "game_review",
+        operation: "blitz_prize_claim_no_game",
+        chain,
+        worldName,
+        worldAddress: profile.worldAddress,
+        waitForConfirmation: false,
+      });
     } else {
       const totalPlayers = playersForSubmission.length;
       const playerBatches = chunk(playersForSubmission, RANKING_BATCH_SIZE);
@@ -1475,7 +1312,16 @@ export const finalizeGameRankingAndMMR = async ({
           entrypoint: "blitz_prize_player_rank",
           calldata: [randomTrialId(), index === 0 ? totalPlayers : 0, batch.length, ...batch],
         };
-        await signer.execute([playerRankCall]);
+        await executeObservedClientTransaction({
+          account: signer,
+          calls: [playerRankCall],
+          surface: "game_review",
+          operation: "blitz_prize_player_rank",
+          chain,
+          worldName,
+          worldAddress: profile.worldAddress,
+          waitForConfirmation: false,
+        });
       }
     }
 
@@ -1511,7 +1357,16 @@ export const finalizeGameRankingAndMMR = async ({
             },
           ];
 
-          return signer.execute(calls);
+          return await executeObservedClientTransaction({
+            account: signer,
+            calls,
+            surface: "game_review",
+            operation: "commit_and_claim_game_mmr",
+            chain,
+            worldName,
+            worldAddress: profile.worldAddress,
+            waitForConfirmation: false,
+          });
         },
       });
 
@@ -1609,7 +1464,16 @@ const claimGameReviewRewardsForPlayers = async ({
     }
     calls.push(claimCall);
 
-    await signer.execute(calls);
+    await executeObservedClientTransaction({
+      account: signer,
+      calls,
+      surface: "game_review",
+      operation: "blitz_prize_claim",
+      chain,
+      worldName,
+      worldAddress: profile.worldAddress,
+      waitForConfirmation: false,
+    });
   }
 
   return {

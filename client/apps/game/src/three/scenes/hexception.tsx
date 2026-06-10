@@ -1,7 +1,9 @@
 import { AudioManager } from "@/audio/core/AudioManager";
+import { getCurrentPlayRouteBootToken, usePlayRouteReadinessStore } from "@/game-entry/play-route-readiness-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isVillageLikeStructureCategory } from "@/lib/structure-type-utils";
+import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import { getGameModeConfig } from "@/config/game-modes";
 import type { GameModeConfig } from "@/config/game-modes";
 import {
@@ -36,18 +38,31 @@ import { BuildingSystemUpdate, Position, StructureProgress, getBlockTimestamp } 
 
 import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
 import type { QualityLevel } from "@/three/systems/hexception-ambience-system";
-import { GRAPHICS_SETTING, IS_FLAT_MODE } from "@/ui/config";
-import { HEXCEPTION_GRID_READY_EVENT } from "@/ui/layouts/game-loading-overlay.utils";
+import { GRAPHICS_SETTING, IS_FLAT_MODE, isLowOrBelow } from "@/ui/config";
+import {
+  HEXCEPTION_GRID_READY_EVENT,
+  clearRememberedHexceptionGridReady,
+  rememberHexceptionGridReady,
+} from "@/ui/layouts/game-loading-overlay.utils";
 
 import { ProductionModal } from "@/ui/features/settlement";
+import {
+  releaseOccupiedBuildSpot,
+  reserveOccupiedBuildSpot,
+} from "@/ui/features/settlement/construction/build-reservation-store";
+import { resolveConstructionBuildability } from "@/ui/features/settlement/construction/construction-buildability";
 import { SetupResult } from "@bibliothecadao/dojo";
 import {
   ActionType,
-  Biome,
   ResourceIdToMiningType,
   ResourceManager,
   TileManager,
+  configManager,
+  divideByPrecision,
+  getBalance,
+  getBuildingCosts,
   getEntityIdFromKeys,
+  getRealmInfo,
   getStructureStage,
 } from "@bibliothecadao/eternum";
 import {
@@ -67,6 +82,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import gsap from "gsap";
+import { toast } from "sonner";
 import {
   AnimationClip,
   AnimationMixer,
@@ -188,7 +204,7 @@ export default class HexceptionScene extends HexagonScene {
     this.pillars.count = 0;
     this.scene.add(this.pillars);
 
-    const quality: QualityLevel = (GRAPHICS_SETTING as QualityLevel) || "HIGH";
+    const quality: QualityLevel = isLowOrBelow(GRAPHICS_SETTING) ? "LOW" : (GRAPHICS_SETTING as QualityLevel) || "HIGH";
     this.ambienceSystem = new HexceptionAmbienceSystem(this.scene, quality);
 
     this.loadBuildingModels();
@@ -210,7 +226,7 @@ export default class HexceptionScene extends HexagonScene {
 
     // Only register shortcuts if they haven't been registered already
     if (!this.shortcutManager.hasShortcuts()) {
-      const shouldCycleRealmsForTab = () => Boolean(useUIStore.getState().armyCreationPopup);
+      const shouldCycleRealmsForTab = () => useUIStore.getState().leftNavigationView === LeftView.MilitaryView;
       const getRealmStructuresForTab = () =>
         this.playerStructures.filter((structure) => structure.category === StructureType.Realm);
 
@@ -257,12 +273,13 @@ export default class HexceptionScene extends HexagonScene {
       });
     }
 
-    // add gui to change castle level
-    this.GUIFolder.add(this, "structureStage", 0, 3).onFinishChange((value: RealmLevels) => {
-      this.structureStage = value;
-      this.removeCastleFromScene();
-      this.updateHexceptionGrid(this.hexceptionRadius);
-    });
+    if (this.GUIFolder) {
+      this.GUIFolder.add(this, "structureStage", 0, 3).onFinishChange((value: RealmLevels) => {
+        this.structureStage = value;
+        this.removeCastleFromScene();
+        this.updateHexceptionGrid(this.hexceptionRadius);
+      });
+    }
 
     // Store all Zustand subscriptions for cleanup on destroy
     this.storeUnsubscribes.push(
@@ -418,10 +435,16 @@ export default class HexceptionScene extends HexagonScene {
 
   setup() {
     this.bootstrapSceneOwnership();
-    const col = this.locationManager.getCol();
-    const row = this.locationManager.getRow();
-    const contractPosition = new Position({ x: col, y: row }).getContract();
-    const realmKey = `${contractPosition.x},${contractPosition.y}`;
+    const routeTarget = resolvePlayRouteTarget(window.location, { fastTravelEnabled: true });
+    const routeWorldPosition = routeTarget.routeWorldPosition;
+    const contractPosition = routeTarget.hexRealmPosition;
+
+    if (routeWorldPosition == null || contractPosition == null) {
+      return;
+    }
+
+    const { col, row } = routeWorldPosition;
+    const realmKey = `${contractPosition.col},${contractPosition.row}`;
     const realmChanged = !this.isInitialized || this.lastRealmKey !== realmKey;
 
     if (realmChanged) {
@@ -438,7 +461,7 @@ export default class HexceptionScene extends HexagonScene {
     }
 
     if (realmChanged) {
-      this.centerColRow = [contractPosition.x, contractPosition.y];
+      this.centerColRow = [contractPosition.col, contractPosition.row];
       this.tileManager.setTile({ col, row });
 
       // remove all previous building instances
@@ -521,6 +544,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   destroy() {
+    clearRememberedHexceptionGridReady();
     this.clearHoverLabel();
     this.hoverLabelManager.dispose();
 
@@ -617,36 +641,62 @@ export default class HexceptionScene extends HexagonScene {
     // Check if account exists before allowing actions
     const account = useAccountStore.getState().account;
     if (buildingType) {
-      // if building mode
-      if (!this.tileManager.isHexOccupied(normalizedCoords)) {
-        this.clearBuildingMode();
-        const useSimpleCost = this.state.useSimpleCost;
-        try {
-          console.log("Placing building at:", {
-            dojo: account!,
-            entityId: useUIStore.getState().structureEntityId,
-            col: normalizedCoords.col,
-            row: normalizedCoords.row,
-            buildingId: buildingType.type,
-          });
+      const useSimpleCost = this.state.useSimpleCost;
+      const structureEntityId = useUIStore.getState().structureEntityId;
+      const realm = getRealmInfo(getEntityIdFromKeys([BigInt(structureEntityId)]), this.dojo.components);
+      const buildability = resolveConstructionBuildability({
+        entityId: structureEntityId,
+        buildingType: buildingType.type,
+        useSimpleCost,
+        components: this.dojo.components,
+        realm,
+        mode: this.mode,
+        targetSpot: normalizedCoords,
+        tileManager: this.tileManager,
+      });
 
-          await this.tileManager.placeBuilding(
-            account!,
-            useUIStore.getState().structureEntityId,
-            buildingType.type,
-            normalizedCoords,
-            useSimpleCost,
-          );
-          AudioManager.getInstance().play("ui.build_place");
-        } catch (error) {
-          console.log("catched error so removing building", error);
-          this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
-        }
-        this.updateHexceptionGrid(this.hexceptionRadius);
-      } else {
-        // Hex is occupied — invalid placement
+      if (!buildability.canSubmit) {
+        toast.error(buildability.reason ?? "Building cannot be submitted.");
         AudioManager.getInstance().play("ui.build_invalid");
+        this.updateHexceptionGrid(this.hexceptionRadius);
+        return;
       }
+
+      if (!this.canAffordPreviewBuilding(structureEntityId, buildingType.type, useSimpleCost)) {
+        toast.error("Insufficient resources to build here.");
+        AudioManager.getInstance().play("ui.build_invalid");
+        this.updateHexceptionGrid(this.hexceptionRadius);
+        return;
+      }
+
+      this.clearBuildingMode();
+      reserveOccupiedBuildSpot(structureEntityId, normalizedCoords);
+      try {
+        console.log("Placing building at:", {
+          dojo: account!,
+          entityId: structureEntityId,
+          col: normalizedCoords.col,
+          row: normalizedCoords.row,
+          buildingId: buildingType.type,
+        });
+
+        await this.tileManager.placeBuilding(
+          account!,
+          structureEntityId,
+          buildingType.type,
+          normalizedCoords,
+          useSimpleCost,
+        );
+        AudioManager.getInstance().play("ui.build_place");
+      } catch (error) {
+        console.log("catched error so removing building", error);
+        const message = error instanceof Error ? error.message : String(error);
+        if (!message.toLowerCase().includes("space is occupied")) {
+          releaseOccupiedBuildSpot(structureEntityId, normalizedCoords);
+        }
+        this.removeBuilding(normalizedCoords.col, normalizedCoords.row);
+      }
+      this.updateHexceptionGrid(this.hexceptionRadius);
     } else {
       // if not building mode
       const { col: outerCol, row: outerRow } = this.tileManager.getHexCoords();
@@ -694,6 +744,32 @@ export default class HexceptionScene extends HexagonScene {
       }
     }
   }
+
+  private canAffordPreviewBuilding(
+    structureEntityId: number,
+    buildingType: BuildingType,
+    useSimpleCost: boolean,
+  ): boolean {
+    const buildingCosts = getBuildingCosts(structureEntityId, this.dojo.components, buildingType, useSimpleCost);
+    if (!buildingCosts?.length) {
+      return false;
+    }
+
+    const { currentDefaultTick } = getBlockTimestamp();
+    return buildingCosts.every((resourceCost) =>
+      this.hasEnoughResourceForPreviewCost(structureEntityId, resourceCost, currentDefaultTick),
+    );
+  }
+
+  private hasEnoughResourceForPreviewCost(
+    structureEntityId: number,
+    resourceCost: { resource: ResourcesIds; amount: number },
+    currentDefaultTick: number,
+  ): boolean {
+    const balance = getBalance(structureEntityId, resourceCost.resource, currentDefaultTick, this.dojo.components);
+    return divideByPrecision(balance.balance) >= resourceCost.amount;
+  }
+
   protected onHexagonMouseMove(hex: { position: Vector3; hexCoords: HexPosition } | null): void {
     // Always clear the tooltip first to prevent it from persisting when other elements overlap
     this.state.setTooltip(null);
@@ -854,7 +930,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   public moveCameraToURLLocation() {
-    this.moveCameraToColRow(10, 10, 0);
+    this.moveCameraToColRow(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1], 0);
   }
 
   updateCastleLevel() {
@@ -910,8 +986,6 @@ export default class HexceptionScene extends HexagonScene {
         [7, -5], //1, -1
       ];
       const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
-      const label = new Group();
-      this.scene.add(label);
       this.highlights = [];
 
       // compute matrices to update biome models for each of the large hexes
@@ -1120,6 +1194,11 @@ export default class HexceptionScene extends HexagonScene {
       console.log(`🧹 Released ${totalMatricesReleased} matrices back to pool`);
 
       if (typeof window !== "undefined") {
+        usePlayRouteReadinessStore.getState().markHexReady(getCurrentPlayRouteBootToken(), {
+          col: this.centerColRow[0],
+          row: this.centerColRow[1],
+        });
+        rememberHexceptionGridReady({ col: this.centerColRow[0], row: this.centerColRow[1] });
         window.dispatchEvent(
           new CustomEvent(HEXCEPTION_GRID_READY_EVENT, {
             detail: { col: this.centerColRow[0], row: this.centerColRow[1] },
@@ -1187,7 +1266,7 @@ export default class HexceptionScene extends HexagonScene {
     existingBuildings: any[],
     biomeHexes: Record<BiomeType | "Empty" | string, Matrix4[]>,
   ) => {
-    const biome = Biome.getBiome(targetHex.col, targetHex.row);
+    const biome = configManager.getBiome(targetHex.col, targetHex.row);
     const biomeVariant = getBiomeVariant(biome, targetHex.col, targetHex.row);
     const buildableAreaBiome = "Empty";
     const isFlat = biome === "Ocean" || biome === "DeepOcean" || isMainHex;

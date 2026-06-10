@@ -9,12 +9,15 @@ describe("bootstrap session", () => {
     const session = createBootstrapSession<string>();
     const execute = vi.fn(async () => "ready");
 
-    const pending = session.run({ chain: "slot", worldName: "alpha" }, execute);
+    const pending = session.run({ cacheKey: "slot:alpha", chain: "slot", worldName: "alpha" }, execute);
 
     expect(session.getCachedResult()).toBeNull();
-    expect(session.getTrackedSelection()).toEqual({ chain: "slot", worldName: "alpha" });
-    expect(session.getResetReason({ chain: "slot", worldName: "beta" })).toBe("world-changed");
-    expect(session.getResetReason({ chain: "mainnet", worldName: "alpha" })).toBe("chain-changed");
+    expect(session.getTrackedSelection()).toEqual({ cacheKey: "slot:alpha", chain: "slot", worldName: "alpha" });
+    expect(session.getResetReason({ cacheKey: "slot:beta", chain: "slot", worldName: "beta" })).toBe("world-changed");
+    expect(session.getResetReason({ cacheKey: "mainnet:alpha", chain: "mainnet", worldName: "alpha" })).toBe(
+      "chain-changed",
+    );
+    expect(session.getResetReason({ cacheKey: "slot:alpha", chain: "slot", worldName: "alpha" })).toBeNull();
 
     await expect(pending).resolves.toBe("ready");
     expect(session.getCachedResult()).toBe("ready");
@@ -34,7 +37,7 @@ describe("bootstrap session", () => {
     session.reset();
 
     expect(secondCleanup).toHaveBeenCalledTimes(1);
-    expect(session.getTrackedSelection()).toEqual({ chain: null, worldName: null });
+    expect(session.getTrackedSelection()).toEqual({ cacheKey: null, chain: null, worldName: null });
     expect(session.getCachedResult()).toBeNull();
   });
 });

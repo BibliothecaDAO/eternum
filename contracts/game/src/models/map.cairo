@@ -125,6 +125,7 @@ pub enum TileOccupier {
     HolySite,
     Camp,
     BitcoinMine,
+    ReservedHyperstructure,
 }
 
 pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
@@ -177,6 +178,7 @@ pub impl TileOccupierIntoU8 of Into<TileOccupier, u8> {
             TileOccupier::HolySite => 36,
             TileOccupier::Camp => 37,
             TileOccupier::BitcoinMine => 38,
+            TileOccupier::ReservedHyperstructure => 39,
         }
     }
 }

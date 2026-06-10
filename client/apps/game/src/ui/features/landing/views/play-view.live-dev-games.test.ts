@@ -4,36 +4,32 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 describe("PlayView live games dev visibility", () => {
-  it("wires forge callback in the live ongoing grid", () => {
+  it("aliases active-game spectate to the play flow", () => {
     const source = readFileSync(resolve(process.cwd(), "src/ui/features/landing/views/play-view.tsx"), "utf8");
-    const liveStart = source.indexOf("{/* Live Games Column */}");
-    const upcomingStart = source.indexOf("{/* Upcoming Games Column */}");
-    const ongoingBlock = source.slice(liveStart, upcomingStart);
+    const activeGamesStart = source.indexOf("const RegisteredActiveGamesBar = ({");
+    const playTabStart = source.indexOf("/**\n * Play tab content layered as:");
+    const activeGamesBlock = source.slice(activeGamesStart, playTabStart);
 
-    expect(liveStart).toBeGreaterThan(-1);
-    expect(upcomingStart).toBeGreaterThan(liveStart);
-    expect(ongoingBlock).toContain("onForgeHyperstructures={onForgeHyperstructures}");
+    expect(activeGamesStart).toBeGreaterThan(-1);
+    expect(playTabStart).toBeGreaterThan(activeGamesStart);
+    expect(activeGamesBlock).toContain("onSpectate={onPlayGame}");
   });
 
-  it("wires forge callback in learn tab practice games", () => {
+  it("does not hard-filter the open games grid to production only", () => {
     const source = readFileSync(resolve(process.cwd(), "src/ui/features/landing/views/play-view.tsx"), "utf8");
-    const practiceStart = source.indexOf("{/* Row 2: Practice Games (full width) */}");
-    const footerCommentStart = source.indexOf("/**\n * Get icon and color for feature type");
-    const practiceBlock = source.slice(practiceStart, footerCommentStart);
+    const openStart = source.indexOf("{/* Open Games Column */}");
+    const playedStart = source.indexOf("{/* Played Column (ended games) */}");
+    const openBlock = source.slice(openStart, playedStart);
 
-    expect(practiceStart).toBeGreaterThan(-1);
-    expect(footerCommentStart).toBeGreaterThan(practiceStart);
-    expect(practiceBlock).toContain("onForgeHyperstructures={onForgeHyperstructures}");
+    expect(openStart).toBeGreaterThan(-1);
+    expect(playedStart).toBeGreaterThan(openStart);
+    expect(openBlock).not.toContain("devModeFilter={false}");
   });
 
-  it("does not hard-filter the live ongoing grid to production only", () => {
+  it("refreshes the landing summary query for open games", () => {
     const source = readFileSync(resolve(process.cwd(), "src/ui/features/landing/views/play-view.tsx"), "utf8");
-    const liveStart = source.indexOf("{/* Live Games Column */}");
-    const upcomingStart = source.indexOf("{/* Upcoming Games Column */}");
-    const ongoingBlock = source.slice(liveStart, upcomingStart);
 
-    expect(liveStart).toBeGreaterThan(-1);
-    expect(upcomingStart).toBeGreaterThan(liveStart);
-    expect(ongoingBlock).not.toContain("devModeFilter={false}");
+    expect(source).toContain("await invalidateWorldListQueries(queryClient)");
+    expect(source).not.toContain('invalidateQueries({ queryKey: ["worldAvailability"] })');
   });
 });

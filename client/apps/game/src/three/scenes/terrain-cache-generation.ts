@@ -1,21 +1,33 @@
 /**
- * Generation counter for detecting stale terrain caches.
+ * Per-chunk generation counters for detecting stale terrain caches.
  *
- * Bumped on every exploredTiles mutation so that caches created
- * at an earlier generation can be rejected on read.
+ * Each cached chunk records the generation it was built at. A tile mutation
+ * bumps the generation of only the chunk keys whose render window contains the
+ * mutated hex, so an unrelated chunk's cached terrain is not invalidated. (The
+ * previous single global counter advanced on every tile change anywhere, which
+ * made every cached chunk read as stale during exploration.)
  */
 
 interface TerrainCacheGeneration {
-  current(): number;
-  bump(): void;
+  /** Current generation for a chunk key (0 if never bumped). */
+  current(chunkKey: string): number;
+  /** Increment the generation of each provided chunk key. */
+  bump(chunkKeys: Iterable<string>): void;
+  /** Reset all chunk generations (used on a full cache flush). */
+  clear(): void;
 }
 
 export function createTerrainCacheGeneration(): TerrainCacheGeneration {
-  let generation = 0;
+  const generations = new Map<string, number>();
   return {
-    current: () => generation,
-    bump: () => {
-      generation += 1;
+    current: (chunkKey: string) => generations.get(chunkKey) ?? 0,
+    bump: (chunkKeys: Iterable<string>) => {
+      for (const chunkKey of chunkKeys) {
+        generations.set(chunkKey, (generations.get(chunkKey) ?? 0) + 1);
+      }
+    },
+    clear: () => {
+      generations.clear();
     },
   };
 }

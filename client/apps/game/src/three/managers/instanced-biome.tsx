@@ -1,10 +1,11 @@
 import { PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
 import { LAND_NAME } from "@/three/managers/instanced-model";
-import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
 import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { AnimationVisibilityContext } from "../types/animation";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
+import { resolveBiomeMeshRenderOrder } from "./instanced-biome-render-order";
 
 const zeroScaledMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
 
@@ -66,8 +67,13 @@ export default class InstancedModel {
     for (let i = 0; i < count; i++) {
       this.animationBuckets[i] = Math.floor(Math.random() * this.ANIMATION_BUCKETS);
     }
+    // Phase 5.1 follow-up: the gltf is shared across scenes (biome-gltf-cache), but the
+    // AnimationMixer writes morphTargetInfluences on the meshes it animates. Clone the
+    // object graph for animated biomes so each InstancedBiome drives its own influence
+    // arrays; geometry/materials/textures stay shared by reference through the clone.
+    const animationScene: THREE.Group = gltf.animations.length > 0 ? gltf.scene.clone() : gltf.scene;
     let renderOrder = 0;
-    gltf.scene.traverse((child: any) => {
+    animationScene.traverse((child: any) => {
       if (child instanceof THREE.Mesh) {
         const isAlt = name.toLowerCase().includes("alt");
         if (name.toLowerCase().includes("deepocean") && child.material) {
@@ -78,13 +84,15 @@ export default class InstancedModel {
           child.material.roughness = 1;
           child.material.normalMap = null;
         }
-        if (!child.material.depthWrite) {
+        // Phase 5.1: derive the draw order idempotently so a biome material shared
+        // across scenes resolves the same renderOrder on every pass (the first pass
+        // flips depthWrite, which would otherwise change later passes' result).
+        const biomeRenderOrder = resolveBiomeMeshRenderOrder(child.material);
+        if (biomeRenderOrder.applyTransparentDepthWrite) {
           child.material.depthWrite = true;
           child.material.alphaTest = 0.075;
-          renderOrder = 3;
-        } else {
-          renderOrder = 2;
         }
+        renderOrder = biomeRenderOrder.renderOrder;
         if (child?.material?.emissiveIntensity > 1 && !isAlt) {
           child.material.emissiveIntensity = 3;
         }
@@ -127,7 +135,7 @@ export default class InstancedModel {
           tmp.raycast = () => {};
         }
 
-        this.mixer = new AnimationMixer(gltf.scene);
+        this.mixer = new AnimationMixer(animationScene);
         this.animation = gltf.animations[0];
 
         tmp.count = 0;
@@ -322,6 +330,12 @@ export default class InstancedModel {
   private applyWorldBounds(mesh: THREE.InstancedMesh) {
     if (this.worldBounds) {
       mesh.frustumCulled = true;
+      // Three frustum checks InstancedMesh bounds before geometry bounds.
+      mesh.boundingSphere = mesh.boundingSphere ?? new THREE.Sphere();
+      mesh.boundingSphere.copy(this.worldBounds.sphere);
+      mesh.boundingBox = mesh.boundingBox ?? new THREE.Box3();
+      mesh.boundingBox.copy(this.worldBounds.box);
+
       const geometry = mesh.geometry;
       geometry.boundingSphere = geometry.boundingSphere ?? new THREE.Sphere();
       geometry.boundingSphere.copy(this.worldBounds.sphere);
@@ -397,7 +411,7 @@ export default class InstancedModel {
     if (!this.shouldAnimate(visibility)) {
       return;
     }
-    if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
+    if (isLowOrBelow(GRAPHICS_SETTING)) {
       return;
     }
 

@@ -9,18 +9,17 @@ const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(),
 
 describe("AMM feature wiring", () => {
   it("nests the AMM route inside the landing dashboard instead of mounting a standalone shell", () => {
-    const appSource = readSource("src/app.tsx");
-    const landingSource = readSource("src/ui/features/landing/index.ts");
+    const appSource = readSource("src/game-client-app.tsx");
     const layoutSource = readSource("src/ui/features/landing/landing-layout.tsx");
+    const ammViewSource = readSource("src/ui/features/landing/views/amm-view.tsx");
 
-    expect(appSource).toContain(
-      "import { LandingLayout, PlayView, ProfileView, MarketsView, LeaderboardView, AmmView }",
-    );
-    expect(appSource).toContain('<Route path="amm" element={<AmmView />} />');
+    expect(appSource).toContain('import("./ui/features/landing/landing-layout")');
+    expect(appSource).toContain('import("./ui/features/landing/views/amm-view")');
+    expect(appSource).toContain('<Route path="amm" element={renderLoadingRoute(<AmmView />)} />');
     expect(appSource).not.toContain('const LazyAmmDashboard = lazy(() => import("./ui/features/amm/amm-dashboard"))');
     expect(appSource).not.toContain('path="/amm"');
-    expect(landingSource).toContain('export { AmmView } from "./views/amm-view"');
-    expect(layoutSource).toContain('"/amm": "04"');
+    expect(layoutSource).toContain('"/amm":');
+    expect(ammViewSource).toContain("<AmmDashboard");
   });
 
   it("gives the standalone AMM route non-empty defaults in env.ts", () => {

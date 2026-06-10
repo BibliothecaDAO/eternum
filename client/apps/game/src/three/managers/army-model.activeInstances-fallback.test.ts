@@ -8,7 +8,6 @@ import {
   Matrix4,
   Mesh,
   MeshBasicMaterial,
-  Quaternion,
   Scene,
   Vector3,
 } from "three";
@@ -137,6 +136,15 @@ function createModelData() {
   };
 }
 
+type ArmyModelTestAccess = {
+  models: Map<ModelType, ReturnType<typeof createModelData>>;
+  entityModelMap: Map<number, ModelType>;
+  activeBaseModelByEntity: Map<number, ModelType | null>;
+  ensureModelCapacity: (modelData: ReturnType<typeof createModelData>, requiredCount: number) => void;
+};
+
+const accessArmyModel = (subject: ArmyModel) => subject as unknown as ArmyModelTestAccess;
+
 describe("ArmyModel activeInstances fallback fix (Stage 0)", () => {
   it("clearInstanceSlot removes index from activeInstances when owner is known", () => {
     const subject = new ArmyModel(new Scene());
@@ -156,6 +164,63 @@ describe("ArmyModel activeInstances fallback fix (Stage 0)", () => {
 
     expect(modelData.activeInstances.size).toBe(0);
     expect(modelData.activeInstances.has(slot)).toBe(false);
+  });
+
+  it("clearInstanceSlot removes stale model memberships when owner is known", () => {
+    const subject = new ArmyModel(new Scene());
+    const entityId = 101;
+    const slot = subject.allocateInstanceSlot(entityId);
+
+    const activeModelData = createModelData();
+    const staleModelData = createModelData();
+    (subject as any).models.set(ModelType.Knight1, activeModelData);
+    (subject as any).models.set(ModelType.Crossbowman1, staleModelData);
+    (subject as any).entityModelMap.set(entityId, ModelType.Knight1);
+    (subject as any).activeBaseModelByEntity.set(entityId, ModelType.Knight1);
+
+    activeModelData.activeInstances.add(slot);
+    staleModelData.activeInstances.add(slot);
+    (subject as any).ensureModelCapacity(activeModelData, slot + 1);
+    (subject as any).ensureModelCapacity(staleModelData, slot + 1);
+
+    const oldPosition = new Matrix4().makeTranslation(5, 0, 5);
+    activeModelData.instancedMeshes[0].setMatrixAt(slot, oldPosition);
+    staleModelData.instancedMeshes[0].setMatrixAt(slot, oldPosition);
+
+    (subject as any).clearInstanceSlot(slot);
+
+    expect(activeModelData.activeInstances.has(slot)).toBe(false);
+    expect(staleModelData.activeInstances.has(slot)).toBe(false);
+    expectSlotToBeZeroed(activeModelData.instancedMeshes[0], slot);
+    expectSlotToBeZeroed(staleModelData.instancedMeshes[0], slot);
+  });
+
+  it("updateInstance prunes inactive renderable memberships for the live slot", () => {
+    const subject = new ArmyModel(new Scene());
+    const modelAccess = accessArmyModel(subject);
+    const entityId = 102;
+    const slot = subject.allocateInstanceSlot(entityId);
+
+    const activeModelData = createModelData();
+    const staleModelData = createModelData();
+    modelAccess.models.set(ModelType.Knight1, activeModelData);
+    modelAccess.models.set(ModelType.Crossbowman1, staleModelData);
+    modelAccess.entityModelMap.set(entityId, ModelType.Knight1);
+    modelAccess.activeBaseModelByEntity.set(entityId, ModelType.Knight1);
+
+    activeModelData.activeInstances.add(slot);
+    staleModelData.activeInstances.add(slot);
+    modelAccess.ensureModelCapacity(activeModelData, slot + 1);
+    modelAccess.ensureModelCapacity(staleModelData, slot + 1);
+
+    const stalePosition = new Matrix4().makeTranslation(9, 0, 9);
+    staleModelData.instancedMeshes[0].setMatrixAt(slot, stalePosition);
+
+    subject.updateInstance(entityId, slot, new Vector3(1, 0, 1), new Vector3(1, 1, 1));
+
+    expect(activeModelData.activeInstances.has(slot)).toBe(true);
+    expect(staleModelData.activeInstances.has(slot)).toBe(false);
+    expectSlotToBeZeroed(staleModelData.instancedMeshes[0], slot);
   });
 
   it("clearInstanceSlot removes index from activeInstances in fallback path", () => {
@@ -268,3 +333,110 @@ describe("ArmyModel activeInstances fallback fix (Stage 0)", () => {
     expect(modelData.instancedMeshes[0].count).toBe(0);
   });
 });
+
+describe("ArmyModel draw-count stays correct on cached model switch (1A)", () => {
+  it("bumps the new model's mesh.count when updateInstance switches an entity to an already-loaded model", () => {
+    const subject = new ArmyModel(new Scene());
+    const entityId = 700;
+    const slot = subject.allocateInstanceSlot(entityId);
+
+    const landModel = createModelData();
+    const boatModel = createModelData();
+    (subject as any).models.set(ModelType.Knight1, landModel);
+    (subject as any).models.set(ModelType.Boat, boatModel);
+
+    // Entity is currently rendered on the land model at `slot`.
+    (subject as any).entityModelMap.set(entityId, ModelType.Knight1);
+    (subject as any).activeBaseModelByEntity.set(entityId, ModelType.Knight1);
+    landModel.activeInstances.add(slot);
+    (subject as any).ensureModelCapacity(landModel, slot + 1);
+    landModel.instancedMeshes[0].count = slot + 1;
+
+    // Boat is loaded but never drawn (count 0) — this is the bug precondition:
+    // a cached model whose draw count was never bumped to include this slot.
+    expect(boatModel.instancedMeshes[0].count).toBe(0);
+
+    // Simulate the mid-move biome switch onto the cached Boat model.
+    (subject as any).entityModelMap.set(entityId, ModelType.Boat);
+    subject.updateInstance(entityId, slot, new Vector3(1, 0, 1), new Vector3(1, 1, 1));
+
+    // The slot moved onto the Boat model...
+    expect(boatModel.activeInstances.has(slot)).toBe(true);
+    // ...and the Boat model's draw count now covers it (regression: stayed 0,
+    // so the model was invisible until the next map-wide setVisibleSlots).
+    expect(boatModel.instancedMeshes[0].count).toBeGreaterThanOrEqual(slot + 1);
+  });
+});
+
+describe("ArmyModel render-integrity helpers + leaked-slot purge", () => {
+  it("collectDrawnSlotOwners returns only slots within mesh.count, paired with their owner", () => {
+    const subject = new ArmyModel(new Scene());
+    const drawn = 800;
+    const undrawn = 801;
+    const drawnSlot = subject.allocateInstanceSlot(drawn);
+    const undrawnSlot = subject.allocateInstanceSlot(undrawn);
+
+    const model = createModelData();
+    (subject as any).models.set(ModelType.Knight1, model);
+    model.activeInstances.add(drawnSlot);
+    model.activeInstances.add(undrawnSlot);
+    (subject as any).ensureModelCapacity(model, undrawnSlot + 1);
+    // Only the first slot is within the draw count; the second is active but not drawn.
+    model.instancedMeshes[0].count = drawnSlot + 1;
+
+    const owners = subject.collectDrawnSlotOwners();
+    expect(owners).toContainEqual({ slot: drawnSlot, owner: drawn });
+    expect(owners.some((o) => o.slot === undrawnSlot)).toBe(false);
+  });
+
+  it("isEntityDrawn reflects whether the entity's slot is active and within count", () => {
+    const subject = new ArmyModel(new Scene());
+    const entityId = 810;
+    const slot = subject.allocateInstanceSlot(entityId);
+
+    const model = createModelData();
+    (subject as any).models.set(ModelType.Knight1, model);
+    (subject as any).entityModelMap.set(entityId, ModelType.Knight1);
+    (subject as any).activeBaseModelByEntity.set(entityId, ModelType.Knight1);
+    subject.updateInstance(entityId, slot, new Vector3(1, 0, 1), new Vector3(1, 1, 1));
+
+    expect(subject.isEntityDrawn(entityId)).toBe(true);
+
+    // Shrink the draw count below the slot — no longer drawn.
+    model.instancedMeshes[0].count = slot;
+    expect(subject.isEntityDrawn(entityId)).toBe(false);
+  });
+
+  it("releaseEntity purges a leaked slot when matrixIndex was detached but the slot still draws (death ghost)", () => {
+    const subject = new ArmyModel(new Scene());
+    const entityId = 820;
+    const slot = subject.allocateInstanceSlot(entityId);
+
+    const model = createModelData();
+    (subject as any).models.set(ModelType.Knight1, model);
+    (subject as any).entityModelMap.set(entityId, ModelType.Knight1);
+    (subject as any).activeBaseModelByEntity.set(entityId, ModelType.Knight1);
+    subject.updateInstance(entityId, slot, new Vector3(2, 0, 2), new Vector3(1, 1, 1));
+    expect(model.activeInstances.has(slot)).toBe(true);
+
+    // Simulate the desync: the entity's own matrixIndex was cleared, but the
+    // slot is still owned (matrixIndexOwners) and still drawn. The normal
+    // freeInstanceSlot path keys off matrixIndex and would no-op here.
+    (subject as any).instanceData.get(entityId).matrixIndex = undefined;
+
+    subject.releaseEntity(entityId);
+
+    expect(model.activeInstances.has(slot)).toBe(false);
+    expect((subject as any).matrixIndexOwners.has(slot)).toBe(false);
+    expectSlotToBeZeroed(model.instancedMeshes[0], slot);
+  });
+});
+
+function expectSlotToBeZeroed(mesh: InstancedMesh, slot: number) {
+  const resultMatrix = new Matrix4();
+  mesh.getMatrixAt(slot, resultMatrix);
+  const elements = resultMatrix.elements;
+  expect(elements[0]).toBe(0);
+  expect(elements[5]).toBe(0);
+  expect(elements[10]).toBe(0);
+}

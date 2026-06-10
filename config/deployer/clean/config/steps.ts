@@ -5,6 +5,7 @@ import {
   setBattleConfig,
   setBankConfig,
   setBaseBuildingConfig,
+  setBiomeClimateConfig,
   setBlitzExplorationConfig,
   setBlitzRegistrationParametersConfig,
   setBuildingCategoryConfig,
@@ -115,6 +116,7 @@ function toExecutableStep(step: ConfigStepDefinition<NativeConfigProvider>): Con
 export const FACTORY_WORLD_CONFIG_STEP_DEFINITIONS: ConfigStepDefinition<NativeConfigProvider>[] = [
   defineStep("world-admin", "Set world admin config", setWorldAdminConfig),
   defineStep("mercenaries-name", "Set mercenaries name config", setMercenariesNameConfig),
+  defineStep("biome-climate", "Set biome climate config", setBiomeClimateConfig),
   defineStep("vrf", "Set VRF config", setVRFConfig, {
     shouldRun: ({ config }) => hasSupportedVrfConfig(config),
   }),

@@ -12,6 +12,7 @@ describe("cleanupVisibleStructurePass", () => {
     ]);
     const removeAttachments = vi.fn();
     const removeEntityIdLabel = vi.fn();
+    const removeStructureCompactLabel = vi.fn();
     const removeStructurePoint = vi.fn();
     const visibleStructureIds = new Set([1, 4]);
     const previousVisibleIds = new Set([2, 4, 5]);
@@ -24,6 +25,7 @@ describe("cleanupVisibleStructurePass", () => {
       trackedLabelEntityIds: [1, 2, 6],
       visibleStructureIds,
       removeEntityIdLabel,
+      removeStructureCompactLabel,
       previousVisibleIds,
       getStructureByEntityId: (entityId) => (entityId === 2 ? { entityId } : entityId === 5 ? undefined : { entityId }),
       removeStructurePoint,
@@ -39,6 +41,9 @@ describe("cleanupVisibleStructurePass", () => {
     expect(removeEntityIdLabel).toHaveBeenCalledWith(6);
     expect(removeStructurePoint).toHaveBeenCalledTimes(1);
     expect(removeStructurePoint).toHaveBeenCalledWith(2, { entityId: 2 });
+    expect(removeStructureCompactLabel).toHaveBeenCalledTimes(2);
+    expect(removeStructureCompactLabel).toHaveBeenCalledWith(2);
+    expect(removeStructureCompactLabel).toHaveBeenCalledWith(5);
     expect(nextVisibleIds).toBe(visibleStructureIds);
   });
 
@@ -47,6 +52,7 @@ describe("cleanupVisibleStructurePass", () => {
     const attachmentSignatures = new Map([[1, "one"]]);
     const removeAttachments = vi.fn();
     const removeEntityIdLabel = vi.fn();
+    const removeStructureCompactLabel = vi.fn();
     const removeStructurePoint = vi.fn();
     const visibleStructureIds = new Set([1, 2]);
 
@@ -58,6 +64,7 @@ describe("cleanupVisibleStructurePass", () => {
       trackedLabelEntityIds: [1, 2],
       visibleStructureIds,
       removeEntityIdLabel,
+      removeStructureCompactLabel,
       previousVisibleIds: new Set([1, 2]),
       getStructureByEntityId: (entityId) => ({ entityId }),
       removeStructurePoint,
@@ -65,6 +72,7 @@ describe("cleanupVisibleStructurePass", () => {
 
     expect(removeAttachments).not.toHaveBeenCalled();
     expect(removeEntityIdLabel).not.toHaveBeenCalled();
+    expect(removeStructureCompactLabel).not.toHaveBeenCalled();
     expect(removeStructurePoint).not.toHaveBeenCalled();
     expect(nextVisibleIds).toBe(visibleStructureIds);
   });

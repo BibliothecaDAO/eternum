@@ -1,19 +1,26 @@
+// @vitest-environment node
+
 import { describe, expect, it, vi } from "vitest";
+import { configManager } from "@bibliothecadao/eternum";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import type { RealmStore } from "./use-realm-store";
 
-vi.mock("@bibliothecadao/types", () => ({
-  StructureType: {
-    Realm: 1,
-    Village: 2,
-    Bank: 3,
-    FragmentMine: 4,
-  },
-  RelicRecipientType: {
-    Structure: "Structure",
-    Army: "Army",
-  },
-}));
+vi.mock("@bibliothecadao/types", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@bibliothecadao/types")>();
+  return {
+    ...actual,
+    StructureType: {
+      Realm: 1,
+      Village: 2,
+      Bank: 3,
+      FragmentMine: 4,
+    },
+    RelicRecipientType: {
+      Structure: "Structure",
+      Army: "Army",
+    },
+  };
+});
 
 const StructureType = {
   Realm: 1,
@@ -23,6 +30,8 @@ const StructureType = {
 } as const;
 
 const { createRealmStoreSlice } = await import("./use-realm-store");
+
+configManager.mapCenter = 2010831280;
 
 type RealmStoreState = RealmStore;
 type PlayerStructure = RealmStoreState["playerStructures"][number];
@@ -76,6 +85,23 @@ describe("use-realm-store spectator lifecycle", () => {
     expect(next.isSpectating).toBe(true);
     expect(next.lastControlledStructureEntityId).toBe(101);
     expect(next.worldMapReturnPosition).toEqual({ col: 12, row: 34 });
+  });
+
+  it("normalizes contract-space world map positions before storing route resume state", () => {
+    const harness = createRealmStoreTestHarness();
+    harness.setState({
+      structureEntityId: 101,
+      isSpectating: false,
+      playerStructures: [makeStructure(101), makeStructure(202)],
+    });
+
+    harness.getState().setStructureEntityId(303, {
+      spectator: true,
+      worldMapPosition: { col: 2010831286, row: 2010831278 },
+    });
+
+    const next = harness.getState();
+    expect(next.worldMapReturnPosition).toEqual({ col: 6, row: -2 });
   });
 
   it("recovers from startup spectator state when player structures become available", () => {

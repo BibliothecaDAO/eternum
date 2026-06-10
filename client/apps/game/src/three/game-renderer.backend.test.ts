@@ -98,6 +98,28 @@ vi.stubGlobal("GPUShaderStage", {
 const { default: GameRenderer } = await import("./game-renderer");
 
 function createFakeBackend() {
+  const renderer = {
+    autoClear: false,
+    clear: vi.fn(),
+    clearDepth: vi.fn(),
+    dispose: vi.fn(),
+    domElement: document.createElement("canvas"),
+    info: {
+      render: { calls: 0, triangles: 0 },
+      memory: { geometries: 0, textures: 0 },
+      reset: vi.fn(),
+    },
+    render: vi.fn(),
+    setPixelRatio: vi.fn(),
+    setSize: vi.fn(),
+    shadowMap: {
+      enabled: true,
+      type: 1,
+    },
+    toneMapping: 1,
+    toneMappingExposure: 0.8,
+  };
+
   return {
     capabilities: createRendererBackendCapabilities({
       supportsBloom: true,
@@ -107,13 +129,7 @@ function createFakeBackend() {
       supportsToneMappingControl: true,
       supportsVignette: true,
     }),
-    renderer: {
-      info: {
-        render: { calls: 0, triangles: 0 },
-        memory: { geometries: 0, textures: 0 },
-        reset: vi.fn(),
-      },
-    },
+    renderer,
     initialize: vi.fn(async () => ({
       activeMode: "legacy-webgl",
       buildMode: "legacy-webgl",
@@ -278,5 +294,87 @@ describe("GameRenderer backend seam", () => {
       sceneName: "map",
     });
     expect(requestAnimationFrameSpy).toHaveBeenCalled();
+  });
+
+  it("falls back to a legacy backend and reconnects the live renderer surface after webgpu device loss", async () => {
+    const previousBackend = createFakeBackend();
+    const fallbackBackend = createFakeBackend();
+    previousBackend.renderer.domElement.id = "main-canvas";
+    document.body.appendChild(previousBackend.renderer.domElement);
+
+    const controls = {
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      listenToKeyEvents: vi.fn(),
+    };
+    const effectsBridge = {
+      applyEnvironment: vi.fn(),
+      applyQualityFeatures: vi.fn(),
+      dispose: vi.fn(),
+      setupPostProcessingEffects: vi.fn(),
+      subscribeToQualityController: vi.fn(),
+      updateWeatherPostProcessing: vi.fn(),
+    };
+    const monitoringRuntime = { dispose: vi.fn(), initialize: vi.fn() };
+    const subject = Object.create(GameRenderer.prototype) as any;
+
+    subject.backend = previousBackend;
+    subject.renderer = previousBackend.renderer;
+    subject.controls = controls;
+    subject.graphicsSetting = "HIGH";
+    subject.isMobileDevice = false;
+    subject.isDestroyed = false;
+    subject.getTargetPixelRatio = vi.fn(() => 1);
+    subject.initializeDeviceLossFallbackBackend = vi.fn(async () => ({
+      backend: fallbackBackend,
+      renderer: fallbackBackend.renderer,
+    }));
+    subject.animate = vi.fn();
+    subject.camera = { aspect: 0, updateProjectionMatrix: vi.fn() };
+    subject.labelRuntime = { markDirty: vi.fn(), resize: vi.fn() };
+    subject.hudScene = {
+      getWeatherManager: vi.fn(() => ({ getState: vi.fn(() => ({ intensity: 0.2, stormIntensity: 0 })) })),
+      onWindowResize: vi.fn(),
+    };
+    subject.sceneManager = {};
+    subject.worldmapScene = { setInputSurface: vi.fn(), applyQualityFeatures: vi.fn() };
+    subject.fastTravelScene = { setInputSurface: vi.fn(), applyQualityFeatures: vi.fn() };
+    subject.hexceptionScene = { setInputSurface: vi.fn(), applyQualityFeatures: vi.fn() };
+    subject.sessionRuntime = {
+      initializeMonitoring: vi.fn(),
+    };
+    subject.supportRuntimeRegistry = {
+      ensureEffectsBridge: vi.fn(() => effectsBridge),
+      getControlBridge: vi.fn(() => ({ markLabelsDirty: vi.fn() })),
+      getMonitoring: vi.fn(() => monitoringRuntime),
+      resetEffectsBridge: vi.fn(),
+      resetMonitoring: vi.fn(),
+    };
+
+    await subject.recoverFromRendererDeviceLoss({
+      activeMode: "webgpu",
+      message: "device lost during frame",
+    });
+
+    expect(subject.backend).toBe(fallbackBackend);
+    expect(subject.renderer).toBe(fallbackBackend.renderer);
+    expect(document.getElementById("main-canvas")).toBe(fallbackBackend.renderer.domElement);
+    expect(controls.disconnect).toHaveBeenCalledTimes(1);
+    expect(controls.connect).toHaveBeenCalledWith(fallbackBackend.renderer.domElement);
+    expect(controls.listenToKeyEvents).toHaveBeenCalledWith(document.body);
+    expect(subject.worldmapScene.setInputSurface).toHaveBeenCalledWith(fallbackBackend.renderer.domElement);
+    expect(subject.fastTravelScene.setInputSurface).toHaveBeenCalledWith(fallbackBackend.renderer.domElement);
+    expect(subject.hexceptionScene.setInputSurface).toHaveBeenCalledWith(fallbackBackend.renderer.domElement);
+    expect(subject.supportRuntimeRegistry.resetEffectsBridge).toHaveBeenCalledTimes(1);
+    expect(subject.supportRuntimeRegistry.resetMonitoring).toHaveBeenCalledTimes(1);
+    expect(subject.sessionRuntime.initializeMonitoring).toHaveBeenCalledTimes(1);
+    expect(effectsBridge.applyEnvironment).toHaveBeenCalledTimes(1);
+    expect(effectsBridge.setupPostProcessingEffects).toHaveBeenCalledTimes(1);
+    expect(effectsBridge.applyQualityFeatures).toHaveBeenCalledTimes(1);
+    expect(effectsBridge.subscribeToQualityController).toHaveBeenCalledTimes(1);
+    expect(effectsBridge.updateWeatherPostProcessing).toHaveBeenCalledTimes(1);
+    expect(previousBackend.dispose).toHaveBeenCalledTimes(1);
+    expect(fallbackBackend.resize).toHaveBeenCalledTimes(1);
+    expect(subject.animate).toHaveBeenCalledTimes(1);
   });
 });

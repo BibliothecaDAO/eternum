@@ -1,9 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import { createRendererBackendCapabilities, createRendererInitDiagnostics } from "./renderer-backend-v2";
+import {
+  RendererInitTimeoutError,
+  createRendererBackendCapabilities,
+  createRendererInitDiagnostics,
+} from "./renderer-backend-v2";
 import { initializeSelectedRendererBackend } from "./renderer-backend-loader";
 
 describe("initializeSelectedRendererBackend", () => {
   it("uses the legacy backend directly for the shipping lane", async () => {
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(() => null),
+    });
     const legacyBackend = {
       capabilities: createRendererBackendCapabilities(),
       initialize: vi.fn(),
@@ -33,9 +40,13 @@ describe("initializeSelectedRendererBackend", () => {
     expect(legacyFactory).toHaveBeenCalledTimes(1);
     expect(experimentalFactory).not.toHaveBeenCalled();
     expect(result.diagnostics.activeMode).toBe("legacy-webgl");
+    vi.unstubAllGlobals();
   });
 
   it("falls back to the legacy backend when experimental init fails", async () => {
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(() => null),
+    });
     const error = new Error("webgpu init failed");
     const legacyFactory = vi.fn(async () => ({
       backend: {
@@ -74,5 +85,49 @@ describe("initializeSelectedRendererBackend", () => {
       requestedMode: "experimental-webgpu-auto",
     });
     expect(result.fallbackError).toBe(error);
+    vi.unstubAllGlobals();
+  });
+
+  it("records an explicit timeout fallback reason when experimental startup is bounded", async () => {
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(() => null),
+    });
+    const error = new RendererInitTimeoutError("Experimental renderer startup timed out after 5000ms");
+    const legacyFactory = vi.fn(async () => ({
+      backend: {
+        capabilities: createRendererBackendCapabilities(),
+        initialize: vi.fn(),
+      },
+      diagnostics: createRendererInitDiagnostics({
+        activeMode: "legacy-webgl",
+        buildMode: "legacy-webgl",
+        requestedMode: "legacy-webgl",
+      }),
+    }));
+    const experimentalFactory = vi.fn(async () => {
+      throw error;
+    });
+
+    const result = await initializeSelectedRendererBackend({
+      experimentalFactory,
+      legacyFactory,
+      options: {
+        envBuildMode: "experimental-webgpu-auto",
+        graphicsSetting: "HIGH" as never,
+        isMobileDevice: false,
+        pixelRatio: 1,
+        search: "?rendererMode=experimental-webgpu-auto",
+      },
+    });
+
+    expect(result.diagnostics).toEqual({
+      activeMode: "legacy-webgl",
+      buildMode: "experimental-webgpu-auto",
+      fallbackReason: "experimental-init-timeout",
+      initTimeMs: expect.any(Number),
+      requestedMode: "experimental-webgpu-auto",
+    });
+    expect(result.fallbackError).toBe(error);
+    vi.unstubAllGlobals();
   });
 });

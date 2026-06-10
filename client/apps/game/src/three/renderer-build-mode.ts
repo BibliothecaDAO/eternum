@@ -2,7 +2,7 @@ const RENDERER_BUILD_MODES = ["legacy-webgl", "experimental-webgpu-auto", "exper
 
 export type RendererBuildMode = (typeof RENDERER_BUILD_MODES)[number];
 
-export const DEFAULT_RENDERER_BUILD_MODE: RendererBuildMode = "legacy-webgl";
+export const DEFAULT_RENDERER_BUILD_MODE: RendererBuildMode = "experimental-webgpu-auto";
 
 const RENDERER_MODE_QUERY_PARAM = "rendererMode";
 

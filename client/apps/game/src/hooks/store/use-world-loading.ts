@@ -10,6 +10,7 @@ export enum LoadingStateKey {
   MarketHistory = "marketHistory",
   Leaderboard = "leaderboard",
   Quest = "quest",
+  ChunkTransition = "chunkTransition",
 }
 
 type LoadingState = {
@@ -21,7 +22,9 @@ export interface WorldStore {
   setLoading: (key: LoadingStateKey, value: boolean) => void;
 }
 
-export const createWorldStoreSlice = (set: any) => ({
+export const createWorldStoreSlice = (
+  set: (partial: Partial<WorldStore> | ((state: WorldStore) => Partial<WorldStore>)) => void,
+) => ({
   loadingStates: {
     [LoadingStateKey.Market]: false,
     [LoadingStateKey.AllPlayerStructures]: false,
@@ -30,6 +33,7 @@ export const createWorldStoreSlice = (set: any) => ({
     [LoadingStateKey.Leaderboard]: false,
     [LoadingStateKey.MarketHistory]: false,
     [LoadingStateKey.Quest]: false,
+    [LoadingStateKey.ChunkTransition]: false,
   },
 
   setLoading: (key: LoadingStateKey, value: boolean) =>

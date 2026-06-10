@@ -12,7 +12,10 @@ describe("Game card mode isolation", () => {
 
     expect(source).toContain('const isBlitzMode = game.config?.mode === "blitz";');
     expect(source).toContain('const isUnknownMode = game.config?.mode === "unknown" || !game.config?.mode;');
-    expect(source).toContain("const canPlay = !isUnknownMode && (canPlayBlitz || canOpenEternumEntry);");
+    expect(source).toContain(
+      "const canEnterRegisteredBlitz = isBlitzMode && showRegistered && (isUpcoming || isOngoing);",
+    );
+    expect(source).toContain("const canPlay = !isUnknownMode && (canEnterRegisteredBlitz || canOpenEternumEntry);");
     expect(source).toContain("Detecting mode...");
   });
 });

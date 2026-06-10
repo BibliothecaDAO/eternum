@@ -53,7 +53,7 @@ export function MarketResolved({
 
   return (
     <div
-      className={`w-full rounded-lg border border-gold/15 bg-dark-wood p-4 shadow-inner ${className ?? ""}`}
+      className={`w-full rounded-lg border border-gold/15 bg-black/40 p-4 shadow-inner ${className ?? ""}`}
       {...props}
     >
       <VStack className="w-full gap-4">

@@ -67,6 +67,7 @@ function buildSeriesGameSummary(
     startTime: parsedStartTime,
     startTimeIso: toIsoUtc(parsedStartTime),
     durationSeconds: defaultDurationSeconds,
+    ...(game.biomeClimateOverrides ? { biomeClimateOverrides: game.biomeClimateOverrides } : {}),
     seriesGameNumber: 0,
     currentStepId: null,
     latestEvent: "Waiting to run",

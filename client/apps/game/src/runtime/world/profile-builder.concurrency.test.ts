@@ -21,7 +21,9 @@ const flushMicrotasks = async (turns: number) => {
 const mocks = vi.hoisted(() => ({
   fetchWorldAddress: vi.fn(),
   fetch: vi.fn(),
+  buildSharedSlotRpcUrl: vi.fn(),
   getFactorySqlBaseUrl: vi.fn(),
+  isSlotWorldChain: vi.fn(),
   isRpcUrlCompatibleForChain: vi.fn(),
   normalizeRpcUrl: vi.fn(),
   recordGameEntryDuration: vi.fn(),
@@ -55,7 +57,9 @@ vi.mock("./factory-resolver", () => ({
 }));
 
 vi.mock("./normalize", () => ({
+  buildSharedSlotRpcUrl: mocks.buildSharedSlotRpcUrl,
   isRpcUrlCompatibleForChain: mocks.isRpcUrlCompatibleForChain,
+  isSlotWorldChain: mocks.isSlotWorldChain,
   normalizeRpcUrl: mocks.normalizeRpcUrl,
 }));
 
@@ -73,7 +77,9 @@ describe("buildWorldProfile concurrency", () => {
   beforeEach(() => {
     mocks.fetchWorldAddress.mockReset();
     mocks.fetch.mockReset();
+    mocks.buildSharedSlotRpcUrl.mockReset();
     mocks.getFactorySqlBaseUrl.mockReset();
+    mocks.isSlotWorldChain.mockReset();
     mocks.isRpcUrlCompatibleForChain.mockReset();
     mocks.normalizeRpcUrl.mockReset();
     mocks.recordGameEntryDuration.mockReset();
@@ -81,7 +87,9 @@ describe("buildWorldProfile concurrency", () => {
     mocks.resolveWorldDeploymentFromFactory.mockReset();
     mocks.saveWorldProfile.mockReset();
     mocks.SqlApi.mockClear();
+    mocks.buildSharedSlotRpcUrl.mockReturnValue("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9");
     mocks.getFactorySqlBaseUrl.mockReturnValue("https://factory.example/sql");
+    mocks.isSlotWorldChain.mockImplementation((chain: string) => chain === "slot" || chain === "slottest");
     mocks.isRpcUrlCompatibleForChain.mockReturnValue(true);
     mocks.normalizeRpcUrl.mockImplementation((value: string) => value);
     vi.stubGlobal("fetch", mocks.fetch);
@@ -143,5 +151,71 @@ describe("buildWorldProfile concurrency", () => {
       feeTokenAddress: "0x3",
       worldAddress: "0x1",
     });
+  });
+
+  it("falls back to the shared slot rpc when deployment metadata is unavailable", async () => {
+    // Slot games share one Katana deployment. The selected world name should
+    // only choose Torii/world data, never the transaction RPC.
+    mocks.resolveWorldContracts.mockResolvedValue({ spawn: "0xabc" });
+    mocks.resolveWorldDeploymentFromFactory.mockResolvedValue(null);
+    mocks.fetchWorldAddress.mockResolvedValue("0x1");
+    mocks.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => [{ entry_token_address: "0x2", fee_token: "0x3" }],
+    });
+
+    await buildWorldProfile("slot", "s0-game-5");
+
+    expect(mocks.normalizeRpcUrl).toHaveBeenCalledWith(
+      "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+    );
+    expect(mocks.saveWorldProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "s0-game-5",
+        rpcUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+      }),
+    );
+  });
+
+  it("ignores slot deployment rpc metadata and pins the build slot rpc", async () => {
+    mocks.resolveWorldContracts.mockResolvedValue({ spawn: "0xabc" });
+    mocks.resolveWorldDeploymentFromFactory.mockResolvedValue({
+      worldAddress: "0xdef",
+      rpcUrl: "https://api.cartridge.gg/x/s0-game-5/katana/rpc/v0_9",
+    });
+    mocks.fetchWorldAddress.mockResolvedValue("0x1");
+    mocks.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => [{ entry_token_address: "0x2", fee_token: "0x3" }],
+    });
+
+    await buildWorldProfile("slot", "s0-game-5");
+
+    expect(mocks.normalizeRpcUrl).toHaveBeenCalledWith(
+      "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+    );
+    expect(mocks.saveWorldProfile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "s0-game-5",
+        rpcUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+      }),
+    );
+  });
+
+  it("rejects unavailable slot worlds before saving a dead rpc profile", async () => {
+    mocks.resolveWorldContracts.mockResolvedValue({ spawn: "0xabc" });
+    mocks.resolveWorldDeploymentFromFactory.mockResolvedValue(null);
+    mocks.fetchWorldAddress.mockResolvedValue(null);
+    mocks.fetch.mockResolvedValue({
+      ok: false,
+      json: async () => [],
+    });
+
+    await expect(buildWorldProfile("slot", "bltz-riff-363")).rejects.toThrow(
+      "Slot world deployment is not available: bltz-riff-363",
+    );
+
+    expect(mocks.normalizeRpcUrl).not.toHaveBeenCalledWith("https://api.cartridge.gg/x/bltz-riff-363/katana");
+    expect(mocks.saveWorldProfile).not.toHaveBeenCalled();
   });
 });

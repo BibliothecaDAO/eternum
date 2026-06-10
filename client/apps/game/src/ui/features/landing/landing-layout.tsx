@@ -13,13 +13,17 @@ import { LandingSettings } from "./components/landing-settings";
 import { LandingSidebar } from "./components/landing-sidebar";
 import { MobileBottomNav } from "./components/mobile-bottom-nav";
 import { LandingProvider, useLandingContext } from "./context/landing-context";
+import { resolveLandingSurfacePath, type LandingEntryRouteState } from "./lib/landing-entry-state";
 
 // Route to background mapping
 const ROUTE_BACKGROUNDS: Record<string, string> = {
-  "/": "01",
-  "/profile": "05",
-  "/markets": "04",
-  "/amm": "04",
+  "/": "02",
+  "/learn": "02",
+  "/news": "02",
+  "/factory": "02",
+  "/profile": "02",
+  "/markets": "02",
+  "/amm": "02",
   "/leaderboard": "07",
 };
 
@@ -33,9 +37,13 @@ const ROUTE_BACKGROUNDS: Record<string, string> = {
  */
 export const LandingLayout = () => {
   const location = useLocation();
+  const surfacePath = resolveLandingSurfacePath({
+    pathname: location.pathname,
+    state: location.state as LandingEntryRouteState | null,
+  });
 
   // Get default background for current route
-  const routeBackground = ROUTE_BACKGROUNDS[location.pathname] ?? "01";
+  const routeBackground = ROUTE_BACKGROUNDS[surfacePath] ?? "02";
 
   return (
     <LandingProvider defaultBackground={routeBackground}>
@@ -51,13 +59,17 @@ const LandingLayoutContent = () => {
   useBootDocumentState("app-ready");
 
   const location = useLocation();
+  const surfacePath = resolveLandingSurfacePath({
+    pathname: location.pathname,
+    state: location.state as LandingEntryRouteState | null,
+  });
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { backgroundId, resetBackground } = useLandingContext();
 
   // Reset background when route changes
   useEffect(() => {
     resetBackground();
-  }, [location.pathname, resetBackground]);
+  }, [resetBackground, surfacePath]);
 
   const handleSettingsClick = useCallback(() => {
     setSettingsOpen(true);
@@ -75,10 +87,11 @@ const LandingLayoutContent = () => {
       {/* Left sidebar (desktop only) */}
       <LandingSidebar onSettingsClick={handleSettingsClick} />
 
-      {/* Top header with wallet */}
+      {/* Top header with landing controls */}
       <LandingHeader
-        walletButton={
+        headerControls={
           <>
+            <LandingMusicPlayer className="hidden lg:flex" presentation="header" />
             <DashboardNetworkSwitch className="hidden md:flex" />
             <Controller />
           </>
@@ -106,7 +119,6 @@ const LandingLayoutContent = () => {
       </main>
 
       {/* Bottom navigation (mobile only) */}
-      <LandingMusicPlayer />
       <MobileBottomNav />
 
       {/* Settings modal */}

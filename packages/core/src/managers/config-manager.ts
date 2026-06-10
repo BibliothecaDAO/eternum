@@ -16,6 +16,7 @@ import {
 } from "@bibliothecadao/types";
 import { getComponentValue, Has, runQuery } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
+import { Biome, BiomeClimateConfig, NEUTRAL_BIOME_CLIMATE } from "../utils/biome";
 import { getTotalResourceWeightKg, gramToKg } from "../utils";
 
 const MAP_CENTER = 2147483646;
@@ -1249,6 +1250,17 @@ export class ClientConfigManager {
 
   getMapCenter() {
     return this.mapCenter;
+  }
+
+  getBiomeClimateConfig(): BiomeClimateConfig | undefined {
+    return this.getValueOrDefault(() => {
+      const worldConfig = getComponentValue(this.components.WorldConfig, getEntityIdFromKeys([WORLD_CONFIG_ID]));
+      return worldConfig?.biome_climate_config as BiomeClimateConfig | undefined;
+    }, undefined);
+  }
+
+  getBiome(col: number, row: number): BiomeType {
+    return Biome.getBiome(col, row, this.getBiomeClimateConfig() ?? NEUTRAL_BIOME_CLIMATE);
   }
 }
 

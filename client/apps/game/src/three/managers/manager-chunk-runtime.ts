@@ -10,6 +10,11 @@ export interface ManagerChunkRuntimeState {
   transitionChunkByToken: Map<number, string>;
 }
 
+export interface RecoverManagerChunkRuntimeAfterStallInput {
+  chunkKey: string;
+  transitionToken: number;
+}
+
 interface BindManagerChunkRuntimeStateInput {
   getCurrentChunk: () => string | null;
   setCurrentChunk: (chunkKey: string | null) => void;
@@ -132,6 +137,30 @@ export async function runManagerChunkUpdateRuntime(input: RunManagerChunkUpdateR
   }
 }
 
+export interface RecoverManagerChunkRuntimeAfterStallResult {
+  state: ManagerChunkRuntimeState;
+  didApply: boolean;
+}
+
+export function recoverManagerChunkRuntimeAfterStall(
+  state: ManagerChunkRuntimeState,
+  input: RecoverManagerChunkRuntimeAfterStallInput,
+): RecoverManagerChunkRuntimeAfterStallResult {
+  const isStaleRecovery = input.transitionToken < state.latestTransitionToken;
+  if (!isStaleRecovery) {
+    state.inFlightPromise = null;
+    state.latestTransitionToken = Math.max(state.latestTransitionToken, input.transitionToken);
+
+    if (isRecoverableChunkKey(input.chunkKey)) {
+      state.currentChunk = input.chunkKey;
+      state.transitionChunkByToken.set(input.transitionToken, input.chunkKey);
+    }
+  }
+
+  pruneTransitionChunkHistory(state);
+  return { state, didApply: !isStaleRecovery };
+}
+
 function registerChunkTransitionRequest(
   state: ManagerChunkRuntimeState,
   chunkKey: string,
@@ -169,6 +198,15 @@ function pruneTransitionChunkHistory(state: ManagerChunkRuntimeState): void {
       state.transitionChunkByToken.delete(token);
     }
   });
+}
+
+function isRecoverableChunkKey(chunkKey: string): boolean {
+  const [startRow, startCol, extra] = chunkKey.split(",");
+  if (extra !== undefined || !startRow || !startCol) {
+    return false;
+  }
+
+  return Number.isFinite(Number(startRow)) && Number.isFinite(Number(startCol));
 }
 
 function shouldSkipUnforcedChunkRefresh(

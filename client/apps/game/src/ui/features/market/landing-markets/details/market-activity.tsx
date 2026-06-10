@@ -72,7 +72,7 @@ export const MarketActivity = ({ market, refreshKey = 0 }: { market: MarketClass
   // Empty state
   if (marketBuys.length === 0) {
     return (
-      <div className="w-full rounded-lg border border-dashed border-gold/15 bg-dark-wood px-4 py-5 text-sm text-gold/70">
+      <div className="w-full rounded-lg border border-dashed border-gold/15 bg-black/40 px-4 py-5 text-sm text-gold/70">
         <p className="text-lightest">Market activity</p>
         <p className="mt-1 text-xs text-gold/60">Trades will appear here once the market starts moving.</p>
       </div>

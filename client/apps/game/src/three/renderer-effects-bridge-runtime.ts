@@ -21,7 +21,7 @@ export interface RendererEffectsBridgeRuntime {
   dispose(): void;
   setupPostProcessingEffects(): void;
   subscribeToQualityController(): void;
-  updateWeatherPostProcessing(): void;
+  updateWeatherPostProcessing(weatherState?: RendererWeatherPostProcessingState): void;
 }
 
 export function createRendererEffectsBridgeRuntime(
@@ -58,8 +58,7 @@ class GameRendererEffectsBridgeRuntime implements RendererEffectsBridgeRuntime {
     });
   }
 
-  public updateWeatherPostProcessing(): void {
-    const weatherState = this.input.resolveWeatherState();
+  public updateWeatherPostProcessing(weatherState = this.input.resolveWeatherState()): void {
     if (!weatherState || !this.effectsRuntime) {
       return;
     }

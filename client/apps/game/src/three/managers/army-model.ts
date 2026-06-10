@@ -1,8 +1,8 @@
 import { CameraView } from "@/three/scenes/hexagon-scene";
 import { gltfLoader } from "@/three/utils/utils";
-import { FELT_CENTER, GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { FELT_CENTER, GRAPHICS_SETTING, GraphicsSettings, isLowOrBelow } from "@/ui/config";
 import { getCharacterModel } from "@/utils/agent";
-import { Biome } from "@bibliothecadao/eternum";
+import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopTier, TroopType } from "@bibliothecadao/types";
 import {
   AnimationAction,
@@ -21,12 +21,13 @@ import {
   Vector3,
 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { resizeInstancedMorphTexture } from "./morph-texture-resize";
 import { env } from "../../../env";
 import {
   ANIMATION_STATE_IDLE,
   ANIMATION_STATE_MOVING,
+  buildArmyModelAssetPath,
   MAX_INSTANCES,
-  MODEL_TYPE_TO_FILE,
   TROOP_TO_MODEL,
 } from "../constants";
 import {
@@ -66,6 +67,7 @@ import {
 } from "../utils/spline-path";
 import { installArmyModelDebugHooks } from "./army-model-debug-hooks";
 import { resolveRenderableBaseModel } from "./army-model-render-policy";
+import { findAnimationByName } from "./animation-clip-matcher";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 const CONTACT_SHADOW_Y_OFFSET = 0.02;
@@ -201,14 +203,11 @@ export class ArmyModel {
       return pending;
     }
 
-    const fileName = MODEL_TYPE_TO_FILE[modelType];
-    if (!fileName) {
-      throw new Error(`Missing model file for ${modelType}`);
-    }
+    const assetPath = buildArmyModelAssetPath(modelType);
 
     pending = new Promise<ModelData>((resolve, reject) => {
       gltfLoader.load(
-        `models/${fileName}`,
+        assetPath,
         (gltf) => {
           try {
             const modelData = this.createModelData(gltf);
@@ -328,8 +327,33 @@ export class ArmyModel {
     }
   }
 
+  /**
+   * Ensure a model's draw count covers a freshly added instance slot.
+   *
+   * `mesh.count` only draws slots in [0, count). `updateInstance` can move an
+   * entity onto a different (already-loaded) model mid-move — e.g. a biome
+   * switch to Boat over water — by adding its slot to that model's
+   * `activeInstances` without `setVisibleSlots`/`syncModelDrawCount` running.
+   * Without bumping the count here the slot stays >= count and the model is not
+   * drawn (while the entity's label, keyed by entityId, keeps following). This
+   * is an O(1) additive guard; `setVisibleSlots`/`getModelDrawCount` remains the
+   * authoritative recompactor on removal/compaction (which may shrink count).
+   */
+  private extendModelDrawCount(modelData: ModelData, index: number): void {
+    const minCount = index + 1;
+    modelData.instancedMeshes.forEach((mesh) => {
+      if (mesh.count < minCount) {
+        mesh.count = minCount;
+      }
+    });
+    if (modelData.contactShadowMesh && modelData.contactShadowMesh.count < minCount) {
+      modelData.contactShadowMesh.count = minCount;
+    }
+  }
+
   private createModelData(gltf: any): ModelData {
     const group = new Group();
+    const sourceScene = this.createRenderableSourceScene(gltf.scene);
     const instancedMeshes: AnimatedInstancedMesh[] = [];
     const baseMeshes: Mesh[] = [];
 
@@ -351,8 +375,16 @@ export class ArmyModel {
 
     const mixer = new AnimationMixer(gltf.scene);
 
+    // Name-based animation lookup with fallbacks
+    const idleClip = findAnimationByName(gltf.animations, ["idle", "stand", "rest"]) ?? gltf.animations[0];
+    const runClip =
+      findAnimationByName(gltf.animations, ["run", "walk", "moving"]) ?? gltf.animations[1] ?? idleClip?.clone();
+    const attackClip = findAnimationByName(gltf.animations, ["attack", "strike", "combat"]);
+    const deathClip = findAnimationByName(gltf.animations, ["death", "die", "dead", "defeat"]);
+
     return {
       group,
+      sourceScene,
       instancedMeshes,
       contactShadowMesh,
       contactShadowScale,
@@ -369,6 +401,26 @@ export class ArmyModel {
       lastAnimationUpdate: 0,
       animationUpdateInterval: this.MODEL_ANIMATION_UPDATE_INTERVAL,
     };
+  }
+
+  private createRenderableSourceScene(scene: Object3D): Object3D {
+    const template = new Group();
+    scene.updateMatrixWorld(true);
+    this.dummyMatrix.copy(scene.matrixWorld).invert();
+
+    scene.traverse((child: Object3D) => {
+      if (!(child instanceof Mesh)) {
+        return;
+      }
+
+      const clone = child.clone();
+      clone.raycast = () => {};
+      this.contactShadowMatrix.copy(this.dummyMatrix).multiply(child.matrixWorld);
+      this.contactShadowMatrix.decompose(clone.position, clone.quaternion, clone.scale);
+      template.add(clone);
+    });
+
+    return template;
   }
 
   private computeContactShadowScale(gltf: any): number {
@@ -457,6 +509,11 @@ export class ArmyModel {
         mesh.instanceColor.needsUpdate = true;
       }
 
+      // Phase 2.3: the morph texture was sized for the initial capacity (64). Grow
+      // it before writing rows past that capacity, or setMorphAt indexes out of the
+      // fixed Float32Array and throws on the frame path.
+      resizeInstancedMorphTexture(mesh, newCapacity);
+
       const baseMesh = modelData.baseMeshes[meshIndex];
       for (let i = capacity; i < newCapacity; i++) {
         mesh.setMatrixAt(i, this.zeroInstanceMatrix);
@@ -506,43 +563,80 @@ export class ArmyModel {
   }
 
   private clearInstanceSlot(matrixIndex: number): void {
-    // O(1) slot clearing: only clear the specific model(s) that own this slot
     const entityId = this.matrixIndexOwners.get(matrixIndex);
 
     if (entityId !== undefined) {
-      // Clear from the active base model (if any)
-      const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
-      if (activeBaseModel) {
-        const modelData = this.models.get(activeBaseModel);
-        if (modelData) {
-          modelData.activeInstances.delete(matrixIndex);
-          this.clearModelSlot(modelData, matrixIndex);
-        }
-      }
-
-      // Clear from the active cosmetic model (if any)
-      const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
-      if (activeCosmetic) {
-        const cosmeticData = this.cosmeticModels.get(activeCosmetic);
-        if (cosmeticData) {
-          cosmeticData.activeInstances.delete(matrixIndex);
-          this.clearModelSlot(cosmeticData, matrixIndex);
-        }
-      }
+      this.clearKnownOwnerSlot(entityId, matrixIndex);
     } else {
-      // Fallback: if we don't know the owner, clear all models (legacy behavior)
-      // This should rarely happen in practice
-      this.models.forEach((modelData) => {
-        modelData.activeInstances.delete(matrixIndex);
-        this.clearModelSlot(modelData, matrixIndex);
-      });
-      this.cosmeticModels.forEach((modelData) => {
-        modelData.activeInstances.delete(matrixIndex);
-        this.clearModelSlot(modelData, matrixIndex);
-      });
+      this.clearSlotFromEveryRenderable(matrixIndex);
     }
 
     this.setAnimationState(matrixIndex, false);
+  }
+
+  private clearKnownOwnerSlot(entityId: number, matrixIndex: number): void {
+    this.clearActiveBaseModelSlot(entityId, matrixIndex);
+    this.clearActiveCosmeticModelSlot(entityId, matrixIndex);
+    this.clearStaleRenderableSlotMemberships(matrixIndex);
+  }
+
+  private clearActiveBaseModelSlot(entityId: number, matrixIndex: number): void {
+    const activeBaseModel = this.activeBaseModelByEntity.get(entityId);
+    if (!activeBaseModel) {
+      return;
+    }
+
+    const modelData = this.models.get(activeBaseModel);
+    if (!modelData) {
+      return;
+    }
+
+    modelData.activeInstances.delete(matrixIndex);
+    this.clearModelSlot(modelData, matrixIndex);
+  }
+
+  private clearActiveCosmeticModelSlot(entityId: number, matrixIndex: number): void {
+    const activeCosmetic = this.activeCosmeticByEntity.get(entityId);
+    if (!activeCosmetic) {
+      return;
+    }
+
+    const cosmeticData = this.cosmeticModels.get(activeCosmetic);
+    if (!cosmeticData) {
+      return;
+    }
+
+    cosmeticData.activeInstances.delete(matrixIndex);
+    this.clearModelSlot(cosmeticData, matrixIndex);
+  }
+
+  private clearStaleRenderableSlotMemberships(matrixIndex: number): void {
+    this.models.forEach((modelData) => {
+      this.clearModelSlotIfActive(modelData, matrixIndex);
+    });
+    this.cosmeticModels.forEach((modelData) => {
+      this.clearModelSlotIfActive(modelData, matrixIndex);
+    });
+  }
+
+  private clearSlotFromEveryRenderable(matrixIndex: number): void {
+    this.models.forEach((modelData) => {
+      modelData.activeInstances.delete(matrixIndex);
+      this.clearModelSlot(modelData, matrixIndex);
+    });
+    this.cosmeticModels.forEach((modelData) => {
+      modelData.activeInstances.delete(matrixIndex);
+      this.clearModelSlot(modelData, matrixIndex);
+    });
+  }
+
+  private clearModelSlotIfActive(modelData: ModelData, matrixIndex: number): void {
+    if (!modelData.activeInstances.has(matrixIndex)) {
+      return;
+    }
+
+    modelData.activeInstances.delete(matrixIndex);
+    this.clearModelSlot(modelData, matrixIndex);
   }
 
   /**
@@ -575,6 +669,16 @@ export class ArmyModel {
     } catch (error) {
       console.error("Failed to preload army models", error);
     }
+  }
+
+  public async getModelSourceScene(modelType: ModelType): Promise<Object3D> {
+    const modelData = await this.ensureModel(modelType);
+    return modelData.sourceScene;
+  }
+
+  public async getCosmeticModelSourceScene(skin: ResolvedCosmeticSkin): Promise<Object3D> {
+    const modelData = await this.ensureCosmeticModel(skin);
+    return modelData.sourceScene;
   }
 
   public assignModelToEntity(entityId: number, modelType: ModelType): void {
@@ -655,6 +759,13 @@ export class ArmyModel {
     return this.entityModelMap.get(entityId);
   }
 
+  // The single source of truth for an entity's live instance slot. Callers
+  // (e.g. the army-manager move path) must consult this rather than a cached
+  // mirror, so a stale mirror can never relocate the unit onto the wrong slot.
+  public getEntitySlot(entityId: number): number | undefined {
+    return this.instanceData.get(entityId)?.matrixIndex;
+  }
+
   public allocateInstanceSlot(entityId: number): number {
     const existingSlot = this.instanceData.get(entityId)?.matrixIndex;
     if (existingSlot !== undefined) {
@@ -683,30 +794,33 @@ export class ArmyModel {
     this.hiddenSlots.delete(resolvedSlot);
     this.matrixIndexOwners.delete(resolvedSlot);
 
+    // Detach the entity from the freed slot up front. If the slot is already
+    // pooled we early-return below; leaving instanceData.matrixIndex pointing at
+    // a pooled slot lets a later allocateInstanceSlot hand that (reused) slot
+    // back and share it between two entities — a ghost. Only clear when we are
+    // freeing the entity's *current* slot.
+    if (instanceData && instanceData.matrixIndex === resolvedSlot) {
+      instanceData.matrixIndex = undefined;
+    }
+
     if (this.freeSlotSet.has(resolvedSlot)) return;
 
     this.freeSlotSet.add(resolvedSlot);
     this.freeSlots.push(resolvedSlot);
-
-    if (instanceData) {
-      instanceData.matrixIndex = undefined;
-    }
   }
 
-  public rebindInstanceSlot(entityId: number, newSlot: number): void {
-    const instanceData = this.instanceData.get(entityId);
-    if (instanceData) {
-      instanceData.matrixIndex = newSlot;
-    }
-    this.matrixIndexOwners.set(newSlot, entityId);
-    this.rebindMovementMatrixIndex(entityId, newSlot);
-  }
-
-  public moveInstanceSlot(entityId: number, newSlot: number): void {
+  // Returns the entity's resulting live slot so callers can mirror EXACTLY what
+  // the model did: the new slot on a real move, the current slot on a no-op, or
+  // undefined when the entity has no live slot (nothing to mirror). Mirroring a
+  // planned slot the model declined to take is what strands ghosts.
+  public moveInstanceSlot(entityId: number, newSlot: number): number | undefined {
     const instanceData = this.instanceData.get(entityId);
     const previousSlot = instanceData?.matrixIndex;
-    if (!instanceData || previousSlot === undefined || previousSlot === newSlot) {
-      return;
+    if (!instanceData || previousSlot === undefined) {
+      return undefined;
+    }
+    if (previousSlot === newSlot) {
+      return previousSlot;
     }
 
     this.takeFreedSlot(newSlot);
@@ -728,6 +842,7 @@ export class ArmyModel {
     this.matrixIndexOwners.delete(previousSlot);
     instanceData.matrixIndex = newSlot;
     this.rebindMovementMatrixIndex(entityId, newSlot);
+    return newSlot;
   }
 
   private takeFreedSlot(slot: number): void {
@@ -817,6 +932,8 @@ export class ArmyModel {
       this.activeCosmeticByEntity.set(entityId, activeCosmetic);
     }
 
+    this.clearInactiveRenderableSlotMemberships(index, activeBaseModel, activeCosmetic);
+
     if (activeBaseModel) {
       const modelData = this.models.get(activeBaseModel);
       if (modelData) {
@@ -826,6 +943,9 @@ export class ArmyModel {
         this.ensureModelCapacity(modelData, index + 1);
         this.updateInstanceTransform(state.position, targetScale, state.rotation);
         this.updateInstanceMeshes(modelData, index, entityId, state.position, state.color);
+        // Bump count after capacity is ensured so the just-added slot draws now,
+        // not only after the next setVisibleSlots (see extendModelDrawCount).
+        this.extendModelDrawCount(modelData, index);
       }
     }
 
@@ -837,12 +957,37 @@ export class ArmyModel {
         this.ensureModelCapacity(cosmeticData, index + 1);
         this.updateInstanceTransform(state.position, this.normalScale, state.rotation);
         this.updateInstanceMeshes(cosmeticData, index, entityId, state.position, state.color);
+        this.extendModelDrawCount(cosmeticData, index);
       }
     }
   }
 
+  private clearInactiveRenderableSlotMemberships(
+    index: number,
+    activeBaseModel: ModelType | null,
+    activeCosmetic: string | null,
+  ): void {
+    this.models.forEach((modelData, modelType) => {
+      if (modelType === activeBaseModel) {
+        return;
+      }
+      this.clearModelSlotIfActive(modelData, index);
+    });
+    this.cosmeticModels.forEach((modelData, cosmeticId) => {
+      if (cosmeticId === activeCosmetic) {
+        return;
+      }
+      this.clearModelSlotIfActive(modelData, index);
+    });
+  }
+
   public releaseEntity(entityId: number, freedSlot?: number): void {
     this.freeInstanceSlot(entityId, freedSlot);
+    // Defensive: freeInstanceSlot keys off instanceData.matrixIndex. If that was
+    // already detached (a desync) while a slot still drew this entity, the slot
+    // would render forever as a ghost with no label. Sweep matrixIndexOwners for
+    // any slot still mapped to this entity and hard-clear it.
+    this.purgeOwnedSlotsForEntity(entityId);
     this.instanceData.delete(entityId);
     this.entityModelMap.delete(entityId);
     this.entityCosmeticMap.delete(entityId);
@@ -850,6 +995,86 @@ export class ArmyModel {
     this.activeCosmeticByEntity.delete(entityId);
     this.movementCompleteCallbacks.delete(entityId);
     this.removeLabel(entityId);
+  }
+
+  /** Hard-clear a single slot across every renderable, drop its ownership, and pool it. */
+  public purgeDrawnSlot(slot: number): void {
+    this.clearMovementStateForSlot(slot);
+    this.clearSlotFromEveryRenderable(slot);
+    this.matrixIndexOwners.delete(slot);
+    this.hiddenSlots.delete(slot);
+    this.setAnimationState(slot, false);
+    if (!this.freeSlotSet.has(slot)) {
+      this.freeSlotSet.add(slot);
+      this.freeSlots.push(slot);
+    }
+  }
+
+  private purgeOwnedSlotsForEntity(entityId: number): void {
+    const leaked: number[] = [];
+    this.matrixIndexOwners.forEach((owner, slot) => {
+      if (owner === entityId) {
+        leaked.push(slot);
+      }
+    });
+    for (const slot of leaked) {
+      this.purgeDrawnSlot(slot);
+    }
+  }
+
+  private clearMovementStateForSlot(slot: number): void {
+    const owner = this.matrixIndexOwners.get(slot);
+    if (owner !== undefined) {
+      this.clearMovementState(owner);
+    }
+  }
+
+  /**
+   * Slots the GPU is actually drawing (present in a model's activeInstances AND
+   * within that mesh's draw count), paired with their recorded owner entity.
+   * Used by the render-integrity auditor/heal to spot orphaned ghost slots.
+   */
+  public collectDrawnSlotOwners(): Array<{ slot: number; owner: number | undefined }> {
+    const seen = new Set<number>();
+    const result: Array<{ slot: number; owner: number | undefined }> = [];
+    const collect = (models: Iterable<ModelData>) => {
+      for (const modelData of models) {
+        const count = modelData.instancedMeshes[0]?.count ?? 0;
+        modelData.activeInstances.forEach((slot) => {
+          if (slot < count && !seen.has(slot)) {
+            seen.add(slot);
+            result.push({ slot, owner: this.matrixIndexOwners.get(slot) });
+          }
+        });
+      }
+    };
+    collect(this.models.values());
+    collect(this.cosmeticModels.values());
+    return result;
+  }
+
+  /** True when the entity's slot is present and drawn in its active base or cosmetic model. */
+  public isEntityDrawn(entityId: number): boolean {
+    const slot = this.instanceData.get(entityId)?.matrixIndex;
+    if (slot === undefined) {
+      return false;
+    }
+    const drawnIn = (modelData: ModelData | undefined): boolean => {
+      if (!modelData || !modelData.activeInstances.has(slot)) {
+        return false;
+      }
+      const count = modelData.instancedMeshes[0]?.count ?? 0;
+      return slot < count;
+    };
+    const baseType = this.activeBaseModelByEntity.get(entityId);
+    if (baseType && drawnIn(this.models.get(baseType))) {
+      return true;
+    }
+    const cosmeticId = this.activeCosmeticByEntity.get(entityId);
+    if (cosmeticId && drawnIn(this.cosmeticModels.get(cosmeticId))) {
+      return true;
+    }
+    return false;
   }
 
   private storeInstanceState(
@@ -982,7 +1207,7 @@ export class ArmyModel {
 
   // Animation Methods
   public updateAnimations(_deltaTime: number, visibility?: AnimationVisibilityContext): void {
-    if (GRAPHICS_SETTING === GraphicsSettings.LOW) return;
+    if (isLowOrBelow(GRAPHICS_SETTING)) return;
 
     const now = performance.now();
     const time = now * 0.001;
@@ -1223,7 +1448,7 @@ export class ArmyModel {
   private shouldSkipAnimation(animationState: number): boolean {
     return (
       (GRAPHICS_SETTING === GraphicsSettings.MID && animationState === ANIMATION_STATE_IDLE) ||
-      GRAPHICS_SETTING === GraphicsSettings.LOW ||
+      isLowOrBelow(GRAPHICS_SETTING) ||
       (this.currentCameraView === CameraView.Far && animationState === ANIMATION_STATE_IDLE)
     );
   }
@@ -1340,8 +1565,14 @@ export class ArmyModel {
     this.stopMovement(entityId);
     const [currentPos, nextPos] = [path[0], path[1]];
 
-    this.initializeMovement(entityId, currentPos, nextPos, path, matrixIndex, category, tier);
-    this.setAnimationState(matrixIndex, true);
+    // instanceData.matrixIndex is the single source of truth for an entity's
+    // live slot. The caller-supplied slot is only a fallback for an entity that
+    // has no instance yet — trusting it blindly lets a stale army-manager mirror
+    // relocate the unit onto the wrong slot and strand a frozen ghost at the old
+    // one (the reported "duplicate at the old position after a move").
+    const liveSlot = this.instanceData.get(entityId)?.matrixIndex ?? matrixIndex;
+    this.initializeMovement(entityId, currentPos, nextPos, path, liveSlot, category, tier);
+    this.setAnimationState(liveSlot, true);
     this.updateInstanceDirection(entityId, currentPos, nextPos);
 
     // Build spline for smooth whole-path movement
@@ -1360,7 +1591,6 @@ export class ArmyModel {
         spline,
         totalLength,
         journeyProgress: 0,
-        matrixIndex,
         floatingHeight: 0,
         currentRotation,
         easingType,
@@ -1373,6 +1603,7 @@ export class ArmyModel {
         elapsedTime: 0,
         arrivalSlamTimer: 0,
         isArrivalSlamming: false,
+        endpointCache: new Vector3(),
       });
     }
   }
@@ -1407,7 +1638,6 @@ export class ArmyModel {
         startPos: new Vector3().copy(currentPos), // Create once per movement
         endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
-        matrixIndex,
         currentPathIndex: 0,
         floatingHeight: 0,
         currentRotation: this.dummyEuler.y,
@@ -1418,7 +1648,6 @@ export class ArmyModel {
         startPos: new Vector3().copy(currentPos), // Create once per movement
         endPos: new Vector3().copy(nextPos), // Create once per movement
         progress: 0,
-        matrixIndex,
         currentPathIndex: 0,
         floatingHeight: 0,
         currentRotation: 0,
@@ -1440,19 +1669,34 @@ export class ArmyModel {
         return;
       }
 
+      // Single source of truth for the instance slot. instanceData.matrixIndex is
+      // updated synchronously by every slot reassignment (compaction / re-add), so
+      // reading it each frame keeps the model on the live slot. Reading a cached
+      // copy here is what produced ghosting (model written to a stale slot while
+      // the label, keyed by entityId, stayed correct).
+      const matrixIndex = instanceData.matrixIndex;
+      if (matrixIndex === undefined) {
+        // The slot was reassigned away without removing this movement entry.
+        // Tear the movement down directly — routing through stopMovement() could
+        // spin up a descent tween that can never progress without a live slot,
+        // stranding the entry forever.
+        this.clearMovementState(entityId);
+        return;
+      }
+
       if (movement.currentPathIndex === -1) {
-        this.handleDescent(movement, entityId, instanceData, deltaTime);
+        this.handleDescent(movement, entityId, instanceData, matrixIndex, deltaTime);
         return;
       }
 
       // Use spline movement if available
       const splineData = this.splineMovingInstances.get(entityId);
       if (splineData) {
-        this.updateSplineMovement(splineData, movement, entityId, instanceData, deltaTime);
+        this.updateSplineMovement(splineData, movement, entityId, instanceData, matrixIndex, deltaTime);
         return;
       }
 
-      this.updateMovingInstance(movement, entityId, instanceData, deltaTime);
+      this.updateMovingInstance(movement, entityId, instanceData, matrixIndex, deltaTime);
     });
   }
 
@@ -1460,6 +1704,7 @@ export class ArmyModel {
     movement: MovementData,
     entityId: number,
     instanceData: ArmyInstanceData,
+    matrixIndex: number,
     deltaTime: number,
   ): void {
     const modelType = this.entityModelMap.get(entityId);
@@ -1478,7 +1723,7 @@ export class ArmyModel {
     this.updateRotation(movement, deltaTime);
     this.updateInstance(
       entityId,
-      movement.matrixIndex,
+      matrixIndex,
       this.tempVector1,
       instanceData.scale,
       this.dummyObject.rotation,
@@ -1496,6 +1741,7 @@ export class ArmyModel {
     movement: MovementData,
     entityId: number,
     instanceData: ArmyInstanceData,
+    matrixIndex: number,
     deltaTime: number,
   ): void {
     const modelType = this.entityModelMap.get(entityId);
@@ -1523,7 +1769,7 @@ export class ArmyModel {
 
     this.updateInstance(
       entityId,
-      movement.matrixIndex,
+      matrixIndex,
       this.tempVector2,
       instanceData.scale,
       this.dummyObject.rotation,
@@ -1549,13 +1795,13 @@ export class ArmyModel {
   // Pre-allocated vectors for spline sampling (avoid GC pressure)
   private readonly splinePositionTarget: Vector3 = new Vector3();
   private readonly splineTangentTarget: Vector3 = new Vector3();
-  private readonly splineEndpointCache: Vector3 = new Vector3();
 
   private updateSplineMovement(
     splineData: SplineMovementData,
     movement: MovementData,
     entityId: number,
     instanceData: ArmyInstanceData,
+    matrixIndex: number,
     deltaTime: number,
   ): void {
     const modelType = this.entityModelMap.get(entityId);
@@ -1592,7 +1838,7 @@ export class ArmyModel {
       }
       this.updateInstance(
         entityId,
-        splineData.matrixIndex,
+        matrixIndex,
         this.tempVector2,
         instanceData.scale,
         this.dummyObject.rotation,
@@ -1604,7 +1850,7 @@ export class ArmyModel {
 
     // Terrain speed variation — sample biome and lerp multiplier
     const { col, row } = getHexForWorldPosition(instanceData.position);
-    const biome = Biome.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
+    const biome = configManager.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
     const targetMultiplier = resolveTerrainSpeedMultiplier(biome);
     splineData.currentSpeedMultiplier +=
       (targetMultiplier - splineData.currentSpeedMultiplier) *
@@ -1637,8 +1883,8 @@ export class ArmyModel {
           .clone()
           .normalize();
         // Cache endpoint once for the entire settlement phase
-        resolveSplinePosition(splineData.spline, 1, EasingType.Linear, this.splineEndpointCache);
-        instanceData.position.copy(this.splineEndpointCache);
+        resolveSplinePosition(splineData.spline, 1, EasingType.Linear, splineData.endpointCache);
+        instanceData.position.copy(splineData.endpointCache);
       }
     }
 
@@ -1664,13 +1910,13 @@ export class ArmyModel {
           ArmyModel.OVERSHOOT_DISTANCE,
         );
         // Use cached endpoint — no recomputation
-        instanceData.position.copy(this.splineEndpointCache);
+        instanceData.position.copy(splineData.endpointCache);
         instanceData.position.x += splineData.finalTangent.x * offset;
         instanceData.position.z += splineData.finalTangent.z * offset;
       }
 
       if (splineData.settlementTimer >= ArmyModel.SETTLEMENT_DURATION) {
-        instanceData.position.copy(this.splineEndpointCache);
+        instanceData.position.copy(splineData.endpointCache);
         instanceData.scale.copy(this.normalScale);
         this.splineMovingInstances.delete(entityId);
         this.stopMovement(entityId);
@@ -1684,7 +1930,7 @@ export class ArmyModel {
       }
       this.updateInstance(
         entityId,
-        splineData.matrixIndex,
+        matrixIndex,
         this.tempVector2,
         instanceData.scale,
         this.dummyObject.rotation,
@@ -1755,7 +2001,7 @@ export class ArmyModel {
 
     this.updateInstance(
       entityId,
-      splineData.matrixIndex,
+      matrixIndex,
       this.tempVector2,
       instanceData.scale,
       this.dummyObject.rotation,
@@ -1832,7 +2078,7 @@ export class ArmyModel {
 
   private updateModelTypeForPosition(entityId: number, position: Vector3, category: TroopType, tier: TroopTier): void {
     const { col, row } = getHexForWorldPosition(position);
-    const biome = Biome.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
+    const biome = configManager.getBiome(col + FELT_CENTER(), row + FELT_CENTER());
 
     const modelType = this.getModelTypeForEntity(entityId, category, tier, biome);
     if (shouldSwitchModelForPosition({ currentModel: this.entityModelMap.get(entityId), resolvedModel: modelType })) {
@@ -1888,13 +2134,18 @@ export class ArmyModel {
   }
 
   private clearMovementState(entityId: number): void {
+    const instanceData = this.instanceData.get(entityId);
     const movement = this.movingInstances.get(entityId);
     if (movement) {
-      this.setAnimationState(movement.matrixIndex, false);
+      if (instanceData?.matrixIndex !== undefined) {
+        this.setAnimationState(instanceData.matrixIndex, false);
+      }
       this.movingInstances.delete(entityId);
     }
+    // Tear down spline state too (parity with stopMovement/cancelMovement) so a
+    // freed slot never strands an orphaned spline entry.
+    this.splineMovingInstances.delete(entityId);
 
-    const instanceData = this.instanceData.get(entityId);
     if (instanceData) {
       instanceData.isMoving = false;
       instanceData.path = undefined;
@@ -1908,7 +2159,10 @@ export class ArmyModel {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
 
-    this.setAnimationState(movement.matrixIndex, false);
+    const instanceData = this.instanceData.get(entityId);
+    if (instanceData?.matrixIndex !== undefined) {
+      this.setAnimationState(instanceData.matrixIndex, false);
+    }
 
     if (movement.floatingHeight > 0) {
       this.initializeDescentAnimation(entityId, movement);
@@ -1916,7 +2170,6 @@ export class ArmyModel {
       this.movingInstances.delete(entityId);
     }
 
-    const instanceData = this.instanceData.get(entityId);
     if (instanceData) {
       instanceData.isMoving = false;
       instanceData.path = undefined;
@@ -1936,7 +2189,6 @@ export class ArmyModel {
       startPos: new Vector3().copy(instanceData.position), // Create once for descent
       endPos: new Vector3().copy(instanceData.position), // Create once for descent
       progress: 0,
-      matrixIndex: movement.matrixIndex,
       currentPathIndex: -1,
       floatingHeight: movement.floatingHeight,
       currentRotation: movement.currentRotation,
@@ -2019,24 +2271,34 @@ export class ArmyModel {
     this.movementCompleteCallbacks.set(entityId, callback);
   }
 
+  /**
+   * Cancel an in-flight tween WITHOUT invoking the complete callback. Used by
+   * optimistic rewinds where the tween should be torn down silently — the
+   * caller owns the visual restore (snap back to source position).
+   */
+  public cancelMovement(entityId: number): void {
+    this.splineMovingInstances.delete(entityId);
+    const instanceData = this.instanceData.get(entityId);
+    const movement = this.movingInstances.get(entityId);
+    if (movement && instanceData?.matrixIndex !== undefined) {
+      this.setAnimationState(instanceData.matrixIndex, false);
+    }
+    this.movingInstances.delete(entityId);
+    if (instanceData) {
+      instanceData.isMoving = false;
+      instanceData.path = undefined;
+    }
+    this.movementCompleteCallbacks.delete(entityId);
+  }
+
+  // Keeps a moving entity's animation flag aligned with its CURRENT instance slot
+  // after a slot reassignment. The slot itself lives in instanceData.matrixIndex
+  // (the single source of truth) and is updated by the caller before this runs;
+  // the caller also clears the previous slot (moveInstanceSlot -> clearInstanceSlot).
+  // This only re-asserts the walking/idle animation flag on the new slot.
   public rebindMovementMatrixIndex(entityId: number, newMatrixIndex: number): void {
     const movement = this.movingInstances.get(entityId);
     if (!movement) return;
-
-    const previousIndex = movement.matrixIndex;
-    if (previousIndex === newMatrixIndex) {
-      return;
-    }
-
-    // Reset animation state for the old slot so it no longer appears active
-    this.setAnimationState(previousIndex, false);
-
-    movement.matrixIndex = newMatrixIndex;
-
-    const instanceData = this.instanceData.get(entityId);
-    if (instanceData) {
-      instanceData.matrixIndex = newMatrixIndex;
-    }
 
     const isMoving = movement.currentPathIndex !== -1 || movement.floatingHeight > 0;
     this.setAnimationState(newMatrixIndex, isMoving);
@@ -2441,9 +2703,22 @@ export class ArmyModel {
         // Dispose geometry
         mesh.geometry.dispose();
 
+        // Phase 2.5: free the instanceMatrix/instanceColor GPU buffers (via the
+        // renderer 'dispose' event) and the morph DataTexture. InstancedMesh.dispose
+        // does not touch geometry/material, which are handled above (material is a
+        // pooled, refcounted resource released via releasePooledInstancedMaterial).
+        mesh.dispose();
+
         // Remove from scene
         this.scene.remove(mesh);
       });
+
+      // Phase 2.5: free the contact-shadow instance buffers. Its geometry/material
+      // are shared via getContactShadowResources, so dispose only the mesh.
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.dispose();
+        this.scene.remove(modelData.contactShadowMesh);
+      }
 
       // Dispose animations
       modelData.mixer.stopAllAction();
@@ -2457,8 +2732,13 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         releasePooledInstancedMaterial(mesh.material);
         mesh.geometry.dispose();
+        mesh.dispose();
         this.scene.remove(mesh);
       });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.dispose();
+        this.scene.remove(modelData.contactShadowMesh);
+      }
       modelData.mixer.stopAllAction();
       this.scene.remove(modelData.group);
     });

@@ -72,6 +72,11 @@ interface ProductionStatusBadgeProps {
   cornerTopLeft?: string;
   cornerTopRight?: string;
   cornerBottomRight?: string;
+  /**
+   * Optional class name applied to the top-right corner badge. Lets callers recolor it
+   * (e.g. green/red for positive/negative net production rates).
+   */
+  cornerTopRightClassName?: string;
 }
 
 export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
@@ -89,6 +94,7 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
   cornerTopLeft,
   cornerTopRight,
   cornerBottomRight,
+  cornerTopRightClassName,
 }) => {
   const effectiveRemaining = timeRemainingSeconds === null ? null : Math.max(timeRemainingSeconds, 0);
   const progressPercent = !isProducing
@@ -237,7 +243,12 @@ export const ProductionStatusBadge: FC<ProductionStatusBadgeProps> = ({
         </span>
       )}
       {cornerTopRight && (
-        <span className="absolute -top-1 -right-1 z-10 flex min-w-[18px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold text-gold/90 shadow-md border border-gold/40">
+        <span
+          className={clsx(
+            "absolute -top-1 -right-1 z-10 flex min-w-[18px] items-center justify-center rounded-full bg-black/80 px-1 text-[8px] font-semibold shadow-md border border-gold/40",
+            cornerTopRightClassName ?? "text-gold/90",
+          )}
+        >
           {cornerTopRight}
         </span>
       )}

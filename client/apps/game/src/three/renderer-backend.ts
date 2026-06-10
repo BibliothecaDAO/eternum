@@ -10,7 +10,7 @@ import {
   WebGLRenderTarget,
 } from "three";
 import { PMREMGenerator } from "three";
-import { GraphicsSettings, type GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
+import { isLowOrBelow, type GraphicsSettings as GraphicsSettingsType } from "@/ui/config";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
 import {
@@ -22,7 +22,7 @@ import {
   type RendererPostProcessPlan,
   type RendererPostProcessRuntime,
 } from "./renderer-backend-v2";
-import { syncRenderPassScene } from "./renderer-pass-scene";
+import { renderRendererOverlayPasses } from "./renderer-overlay-passes";
 import { createWebGLPostProcessRuntime } from "./webgl-postprocess-runtime";
 
 export interface RendererInfoLike {
@@ -116,7 +116,7 @@ const WEBGL_RENDERER_BACKEND_CAPABILITIES = createRendererBackendCapabilities({
 class WebGLRendererBackend implements RendererBackend {
   public readonly renderer: WebGLRenderer;
   public readonly capabilities = WEBGL_RENDERER_BACKEND_CAPABILITIES;
-  private readonly postProcessRuntime: RendererPostProcessRuntime;
+  private postProcessRuntime?: RendererPostProcessRuntime;
   private environmentTarget?: WebGLRenderTarget;
   private isDisposed = false;
 
@@ -124,25 +124,20 @@ class WebGLRendererBackend implements RendererBackend {
     private readonly graphicsSetting: GraphicsSettingsType,
     private readonly isMobileDevice: boolean,
     pixelRatio: number,
-    dependencies: WebGLRendererBackendDependencies,
+    private readonly dependencies: WebGLRendererBackendDependencies,
   ) {
-    const isLowGraphics = this.graphicsSetting === GraphicsSettings.LOW;
-    this.renderer = dependencies.createRenderer({
+    const isLowGraphics = isLowOrBelow(this.graphicsSetting);
+    this.renderer = this.dependencies.createRenderer({
       isLowGraphics,
     });
     this.renderer.setPixelRatio(pixelRatio);
-    this.renderer.shadowMap.enabled = this.graphicsSetting !== GraphicsSettings.LOW;
+    this.renderer.shadowMap.enabled = !isLowOrBelow(this.graphicsSetting);
     this.renderer.shadowMap.type = this.isMobileDevice ? PCFShadowMap : PCFSoftShadowMap;
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.toneMapping = ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 0.8;
     this.renderer.autoClear = false;
     this.renderer.info.autoReset = false;
-    this.postProcessRuntime = dependencies.createPostProcessRuntime({
-      isMobileDevice: this.isMobileDevice,
-      renderer: this.renderer,
-    });
-    this.postProcessRuntime.setSize(window.innerWidth, window.innerHeight);
   }
 
   async initialize() {
@@ -155,21 +150,26 @@ class WebGLRendererBackend implements RendererBackend {
 
   resize(width: number, height: number): void {
     this.renderer.setSize(width, height);
-    this.postProcessRuntime.setSize(width, height);
+    this.postProcessRuntime?.setSize(width, height);
   }
 
   applyQuality(input: { pixelRatio: number; shadows: boolean; width: number; height: number }): void {
     this.renderer.setPixelRatio(input.pixelRatio);
     this.renderer.shadowMap.enabled = input.shadows;
-    this.postProcessRuntime.setSize(input.width, input.height);
+    this.postProcessRuntime?.setSize(input.width, input.height);
   }
 
   applyPostProcessPlan(plan: RendererPostProcessPlan): RendererPostProcessController {
-    return this.postProcessRuntime.setPlan(plan);
+    return this.ensurePostProcessRuntime().setPlan(plan);
   }
 
   renderFrame(pipeline: RendererFramePipeline): void {
-    this.postProcessRuntime.renderFrame(pipeline);
+    if (this.postProcessRuntime) {
+      this.postProcessRuntime.renderFrame(pipeline);
+      return;
+    }
+
+    renderDirectWebGLFrame(this.renderer, pipeline);
   }
 
   async applyEnvironment(targets: RendererEnvironmentTargets): Promise<void> {
@@ -214,8 +214,21 @@ class WebGLRendererBackend implements RendererBackend {
     }
     this.environmentTarget = undefined;
 
-    this.postProcessRuntime.dispose();
+    this.postProcessRuntime?.dispose();
+    this.postProcessRuntime = undefined;
     this.renderer.dispose();
+  }
+
+  private ensurePostProcessRuntime(): RendererPostProcessRuntime {
+    if (!this.postProcessRuntime) {
+      this.postProcessRuntime = this.dependencies.createPostProcessRuntime({
+        isMobileDevice: this.isMobileDevice,
+        renderer: this.renderer,
+      });
+      this.postProcessRuntime.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    return this.postProcessRuntime;
   }
 
   private setEnvironmentFromTarget(renderTarget: WebGLRenderTarget, targets: RendererEnvironmentTargets): void {
@@ -265,6 +278,13 @@ class WebGLRendererBackend implements RendererBackend {
 
     return cachedHDRPromise;
   }
+}
+
+function renderDirectWebGLFrame(renderer: RendererSurfaceLike, pipeline: RendererFramePipeline): void {
+  renderer.info.reset();
+  renderer.clear();
+  renderer.render(pipeline.mainScene, pipeline.mainCamera);
+  renderRendererOverlayPasses(renderer, pipeline);
 }
 
 const defaultDependencies: WebGLRendererBackendDependencies = {

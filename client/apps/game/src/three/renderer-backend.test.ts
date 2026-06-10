@@ -4,6 +4,7 @@ vi.mock("@/ui/config", () => ({
   GraphicsSettings: {
     LOW: "LOW",
   },
+  isLowOrBelow: (setting: string) => setting === "LOW" || setting === "ULTRA_LOW",
 }));
 
 vi.mock("three", async (importOriginal) => {
@@ -88,7 +89,7 @@ describe("createWebGLRendererBackend", () => {
     });
   });
 
-  it("owns a backend-specific postprocess runtime for plan, size, frame, and disposal", () => {
+  it("creates the postprocess runtime lazily for plan, size, frame, and disposal", () => {
     const renderer = createRendererSurface();
     const controller: RendererPostProcessController = {
       setColorGrade: vi.fn(),
@@ -100,6 +101,7 @@ describe("createWebGLRendererBackend", () => {
       setPlan: vi.fn(() => controller),
       setSize: vi.fn(),
     };
+    const createPostProcessRuntime = vi.fn(() => runtime);
 
     const backend = createWebGLRendererBackend(
       {
@@ -108,10 +110,12 @@ describe("createWebGLRendererBackend", () => {
         pixelRatio: 1.5,
       },
       {
-        createPostProcessRuntime: vi.fn(() => runtime),
+        createPostProcessRuntime,
         createRenderer: vi.fn(() => renderer as never),
       },
     );
+
+    expect(createPostProcessRuntime).not.toHaveBeenCalled();
 
     const plan = createPlan();
     const result = backend.applyPostProcessPlan(plan);
@@ -130,6 +134,7 @@ describe("createWebGLRendererBackend", () => {
     backend.dispose();
 
     expect(result).toBe(controller);
+    expect(createPostProcessRuntime).toHaveBeenCalledTimes(1);
     expect(runtime.setPlan).toHaveBeenCalledWith(plan);
     expect(renderer.setPixelRatio).toHaveBeenNthCalledWith(1, 1.5);
     expect(renderer.setPixelRatio).toHaveBeenNthCalledWith(2, 2);
@@ -142,6 +147,52 @@ describe("createWebGLRendererBackend", () => {
       mainScene: { id: "main-scene" },
     });
     expect(runtime.dispose).toHaveBeenCalledTimes(1);
+    expect(renderer.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders directly until a postprocess plan is applied", () => {
+    const renderer = createRendererSurface();
+    const runtime = {
+      dispose: vi.fn(),
+      renderFrame: vi.fn(),
+      setPlan: vi.fn(),
+      setSize: vi.fn(),
+    };
+    const createPostProcessRuntime = vi.fn(() => runtime);
+    const mainCamera = { id: "main-camera" } as never;
+    const mainScene = { id: "main-scene" } as never;
+
+    const backend = createWebGLRendererBackend(
+      {
+        graphicsSetting: "LOW" as never,
+        isMobileDevice: false,
+        pixelRatio: 1,
+      },
+      {
+        createPostProcessRuntime,
+        createRenderer: vi.fn(() => renderer as never),
+      },
+    );
+
+    backend.applyQuality({
+      height: 360,
+      pixelRatio: 1,
+      shadows: false,
+      width: 640,
+    });
+    backend.resize(800, 450);
+    backend.renderFrame({
+      mainCamera,
+      mainScene,
+    });
+    backend.dispose();
+
+    expect(createPostProcessRuntime).not.toHaveBeenCalled();
+    expect(renderer.info.reset).toHaveBeenCalledTimes(1);
+    expect(renderer.clear).toHaveBeenCalledTimes(1);
+    expect(renderer.render).toHaveBeenCalledWith(mainScene, mainCamera);
+    expect(runtime.renderFrame).not.toHaveBeenCalled();
+    expect(runtime.dispose).not.toHaveBeenCalled();
     expect(renderer.dispose).toHaveBeenCalledTimes(1);
   });
 });

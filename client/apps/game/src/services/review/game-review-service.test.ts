@@ -7,11 +7,18 @@ import type { LandingLeaderboardEntry } from "@/services/leaderboard/landing-lea
 const TEST_PLAYER_ADDRESS = "0x062ba685f1d600ac7bda27e556b787548da32c7c0aa3ff5f58dddc07b9116f33";
 const TEST_TRIAL_ID_HEX = "0x00000000000000000000000000001c6b";
 const TEST_LORDS_SHARE_HEX = "0x1bc16d674ec80000"; // 2 LORDS with 18 decimals
+const TEST_LOOT_CHEST_ADDRESS = "0x123";
+const TEST_PLAYER_REGISTERED_POINTS_HEX = "0x77359400"; // 2,000 VP with 1e6 precision
+const TEST_TOTAL_REGISTERED_POINTS_HEX = "0xEE6B2800"; // 4,000 VP with 1e6 precision
 
 const fetchLandingLeaderboardMock = vi.fn<(...args: unknown[]) => Promise<LandingLeaderboardEntry[]>>();
 const fetchLandingLeaderboardEntryByAddressMock =
   vi.fn<(...args: unknown[]) => Promise<LandingLeaderboardEntry | null>>();
 const fetchWithErrorHandlingMock = vi.fn<(...args: unknown[]) => Promise<unknown[]>>();
+
+let lootChestAddress = TEST_LOOT_CHEST_ADDRESS;
+let allocatedChests = 2;
+let distributedChests = 0;
 
 vi.mock("@/services/leaderboard/landing-leaderboard-service", () => ({
   fetchLandingLeaderboard: (...args: unknown[]) => fetchLandingLeaderboardMock(...args),
@@ -78,6 +85,9 @@ const decodeQueryFromUrl = (url: string): string => {
 describe("game-review-service reward query formatting", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    lootChestAddress = TEST_LOOT_CHEST_ADDRESS;
+    allocatedChests = 2;
+    distributedChests = 0;
 
     fetchLandingLeaderboardMock.mockResolvedValue([
       {
@@ -97,7 +107,7 @@ describe("game-review-service reward query formatting", () => {
       const query = decodeQueryFromUrl(url);
       const normalizedQuery = query.toLowerCase();
 
-      if (normalizedQuery.includes('from "s1_eternum-blitzrealmplayerregister"')) {
+      if (normalizedQuery.includes('from "s1_eternum-blitzsettlement"')) {
         return [{ player: TEST_PLAYER_ADDRESS }];
       }
 
@@ -117,7 +127,14 @@ describe("game-review-service reward query formatting", () => {
       }
 
       if (normalizedQuery.includes('from "s1_eternum-worldconfig"') && normalizedQuery.includes("season_end_at")) {
-        return [{ season_end_at: 100, registration_grace_seconds: 0, registration_count: 4 }];
+        return [
+          {
+            season_end_at: 100,
+            registration_grace_seconds: 0,
+            registration_count: 4,
+            loot_chest_address: lootChestAddress,
+          },
+        ];
       }
 
       if (normalizedQuery.includes('from "s1_eternum-storyevent"') && normalizedQuery.includes("explorercreatestory")) {
@@ -132,15 +149,15 @@ describe("game-review-service reward query formatting", () => {
         normalizedQuery.includes('from "s1_eternum-playerregisteredpoints"') &&
         normalizedQuery.includes("prize_claimed")
       ) {
-        return [{ registered_points: "0x77359400", prize_claimed: 0 }];
+        return [{ registered_points: TEST_PLAYER_REGISTERED_POINTS_HEX, prize_claimed: 0 }];
       }
 
       if (normalizedQuery.includes('from "s1_eternum-gamechestreward"')) {
-        return [{ allocated_chests: 2, distributed_chests: 0 }];
+        return [{ allocated_chests: allocatedChests, distributed_chests: distributedChests }];
       }
 
       if (normalizedQuery.includes('from "s1_eternum-seasonprize"')) {
-        return [{ total_registered_points: "0xEE6B2800" }];
+        return [{ total_registered_points: TEST_TOTAL_REGISTERED_POINTS_HEX }];
       }
 
       if (normalizedQuery.includes('from "s1_eternum-playerrank" pr')) {
@@ -180,5 +197,32 @@ describe("game-review-service reward query formatting", () => {
     expect(data.rewards?.isRanked).toBe(true);
     expect(data.rewards?.lordsWonRaw).toBe(2_000_000_000_000_000_000n);
     expect(data.rewards?.lordsWonFormatted).toBe("2");
+  });
+
+  it("does not estimate loot chests when the game has no loot chest collectible configured", async () => {
+    lootChestAddress = "0x0";
+    const { fetchGameReviewClaimSummary } = await import("./game-review-service");
+
+    const summary = await fetchGameReviewClaimSummary({
+      worldName: "adam-14",
+      chain: "sepolia",
+      playerAddress: TEST_PLAYER_ADDRESS,
+    });
+
+    expect(summary.canClaimNow).toBe(true);
+    expect(summary.chestsClaimedEstimate).toBe(0);
+  });
+
+  it("caps proportional loot chests by the remaining allocated chest pool", async () => {
+    distributedChests = allocatedChests;
+    const { fetchGameReviewClaimSummary } = await import("./game-review-service");
+
+    const summary = await fetchGameReviewClaimSummary({
+      worldName: "adam-14",
+      chain: "sepolia",
+      playerAddress: TEST_PLAYER_ADDRESS,
+    });
+
+    expect(summary.chestsClaimedEstimate).toBe(1);
   });
 });

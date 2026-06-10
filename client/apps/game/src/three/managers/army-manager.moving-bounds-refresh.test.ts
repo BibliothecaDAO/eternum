@@ -9,7 +9,7 @@ function readSource(relativePath: string): string {
 }
 
 describe("ArmyManager moving-bounds refresh", () => {
-  it("update calls refreshMovingArmyBoundsIfNeeded after batched visible-army updates", () => {
+  it("update calls syncArmyBoundsForMovementState after batched visible-army updates", () => {
     const source = readSource("./army-manager.ts");
 
     const methodStart = source.indexOf("update(deltaTime: number, animationContext?: AnimationVisibilityContext)");
@@ -17,14 +17,14 @@ describe("ArmyManager moving-bounds refresh", () => {
 
     const methodBody = source.slice(methodStart, methodStart + 1200);
     const batchedUpdatePos = methodBody.indexOf("this.updateVisibleArmiesBatched()");
-    const refreshPos = methodBody.indexOf("this.refreshMovingArmyBoundsIfNeeded()");
+    const refreshPos = methodBody.indexOf("this.syncArmyBoundsForMovementState()");
 
     expect(batchedUpdatePos).toBeGreaterThan(-1);
     expect(refreshPos).toBeGreaterThan(-1);
     expect(batchedUpdatePos).toBeLessThan(refreshPos);
   });
 
-  it("refreshMovingArmyBoundsIfNeeded recomputes army and indicator bounds", () => {
+  it("refreshMovingArmyBoundsIfNeeded recomputes army bounds", () => {
     const source = readSource("./army-manager.ts");
 
     const methodStart = source.indexOf("private refreshMovingArmyBoundsIfNeeded()");
@@ -33,6 +33,32 @@ describe("ArmyManager moving-bounds refresh", () => {
     const methodBody = source.slice(methodStart, methodStart + 800);
     expect(methodBody).toContain("this.armyModel.requestBoundsUpdate()");
     expect(methodBody).toContain("this.armyModel.applyPendingBounds()");
-    expect(methodBody).toContain("this.playerIndicatorManager.computeBoundingSphere()");
+    expect(methodBody).not.toContain("playerIndicatorManager");
+  });
+
+  it("syncArmyBoundsForMovementState performs one final bounds refresh when movement settles", () => {
+    const source = readSource("./army-manager.ts");
+
+    const methodStart = source.indexOf("private syncArmyBoundsForMovementState()");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodBody = source.slice(methodStart, methodStart + 900);
+    expect(methodBody).toContain("const hasMovingArmies = this.hasMovingArmies()");
+    expect(methodBody).toContain("this.refreshMovingArmyBoundsIfNeeded()");
+    expect(methodBody).toContain("if (this.hadMovingArmiesLastFrame)");
+    expect(methodBody).toContain("this.refreshSettledArmyBounds()");
+  });
+
+  it("refreshSettledArmyBounds resets moving-bounds cadence and recomputes army bounds", () => {
+    const source = readSource("./army-manager.ts");
+
+    const methodStart = source.indexOf("private refreshSettledArmyBounds()");
+    expect(methodStart).toBeGreaterThan(-1);
+
+    const methodBody = source.slice(methodStart, methodStart + 500);
+    expect(methodBody).toContain("this.lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY");
+    expect(methodBody).toContain("this.armyModel.requestBoundsUpdate()");
+    expect(methodBody).toContain("this.armyModel.applyPendingBounds()");
+    expect(methodBody).not.toContain("playerIndicatorManager");
   });
 });

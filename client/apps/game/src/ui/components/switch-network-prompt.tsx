@@ -1,4 +1,5 @@
 import { createPortal } from "react-dom";
+import { DialogShell } from "@/ui/design-system/molecules";
 
 interface SwitchNetworkPromptProps {
   open: boolean;
@@ -6,6 +7,7 @@ interface SwitchNetworkPromptProps {
   description: string;
   hint: string;
   switchLabel: string;
+  busy?: boolean;
   onClose: () => void;
   onSwitch: () => void | Promise<void>;
 }
@@ -16,6 +18,7 @@ export const SwitchNetworkPrompt = ({
   description,
   hint,
   switchLabel,
+  busy = false,
   onClose,
   onSwitch,
 }: SwitchNetworkPromptProps) => {
@@ -23,30 +26,39 @@ export const SwitchNetworkPrompt = ({
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[1600] grid place-items-center bg-black/85 backdrop-blur-[1px] px-4">
-      <div className="w-full max-w-md rounded-2xl border border-gold/30 bg-black/95 p-6 shadow-2xl">
-        <h3 className="text-lg font-semibold text-gold">{title}</h3>
-        <p className="mt-2 text-sm text-gold/75">{description}</p>
-        <p className="mt-1 text-xs text-gold/55">{hint}</p>
+    <DialogShell
+      title={title}
+      onClose={onClose}
+      size="md"
+      closeOnBackdrop={false}
+      showCloseButton={false}
+      zIndexClassName="z-[1600]"
+      backdropClassName="bg-black/85 backdrop-blur-[1px]"
+      panelClassName="bg-black/95"
+      contentClassName="space-y-1"
+    >
+      <p className="text-sm text-gold/75">{description}</p>
+      <p className="text-xs text-gold/55">{hint}</p>
 
-        <div className="mt-5 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-lg border border-gold/25 px-3 py-1.5 text-xs text-gold/80 hover:bg-gold/10"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={() => void onSwitch()}
-            className="rounded-lg border border-gold/50 bg-gold/20 px-3 py-1.5 text-xs font-medium text-gold hover:bg-gold/30"
-          >
-            {switchLabel}
-          </button>
-        </div>
+      <div className="flex justify-end gap-2 pt-4">
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={busy}
+          className="rounded-lg border border-gold/25 px-3 py-1.5 text-xs text-gold/80 hover:bg-gold/10"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={() => void onSwitch()}
+          disabled={busy}
+          className="rounded-lg border border-gold/50 bg-gold/20 px-3 py-1.5 text-xs font-medium text-gold hover:bg-gold/30"
+        >
+          {switchLabel}
+        </button>
       </div>
-    </div>,
+    </DialogShell>,
     document.body,
   );
 };

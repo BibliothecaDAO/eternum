@@ -39,6 +39,9 @@ async function activateWarpTravelLifecycle(
     await adapter.refreshScene();
   } catch (error) {
     adapter.reportSetupError?.(error, phase);
+    if (phase === "initial") {
+      throw error;
+    }
   }
 
   if (phase === "initial") {

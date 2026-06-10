@@ -364,6 +364,7 @@ function mapFactoryRotationState(record: FactoryWorkerRotationRunRecord): Factor
     createdGameCount: record.summary.games.length,
     queuedGameCount: record.summary.games.filter((game) => game.startTime * 1000 > Date.now()).length,
     gameIntervalMinutes: record.summary.gameIntervalMinutes,
+    ...(record.summary.weeklyCadence?.length ? { weeklyCadence: record.summary.weeklyCadence } : {}),
     firstGameStartTimeIso: record.summary.firstGameStartTimeIso,
   };
 }

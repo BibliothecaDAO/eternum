@@ -35,3 +35,12 @@ describe("incoming troop label helpers", () => {
     expect(source).toMatch(/contentContainer\.insertBefore\(container, productionsDisplay\)/);
   });
 });
+
+describe("stamina label helpers", () => {
+  it("uses the shared projected stamina display helper", () => {
+    const source = readLabelComponentsSource();
+
+    expect(source).toMatch(/resolveStaminaDisplay\(\{/);
+    expect(source).toMatch(/percent\.textContent = formatStaminaPercent\(displayedCurrent, maxStamina\)/);
+  });
+});

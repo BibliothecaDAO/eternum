@@ -64,7 +64,7 @@ export const updateIndexerTier = async ({
 
 export const getWorldDeployedAddress = async (chain: Chain, worldName: string): Promise<string | null> => {
   const base = getFactorySqlBaseUrl(chain);
-  return resolveWorldAddressFromFactory(base, worldName);
+  return resolveWorldAddressFromFactory(base, chain, worldName);
 };
 
 /**

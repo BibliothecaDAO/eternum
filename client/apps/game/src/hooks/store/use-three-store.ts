@@ -21,6 +21,8 @@ export interface ThreeStore {
   setHoveredBattle: (hex: Position | null) => void;
   selectedBuilding: BuildingType;
   setSelectedBuilding: (building: BuildingType) => void;
+  selectedBuildingEntityId: ID | null;
+  setSelectedBuildingEntityId: (selectedBuildingEntityId: ID | null) => void;
   selectedBuildingHex: {
     outerCol: number;
     outerRow: number;
@@ -41,35 +43,125 @@ interface EntityActions {
   selectedEntityId: ID | null;
 }
 
-export const createThreeStoreSlice = (set: any, _get: any) => ({
+const CAMERA_DISTANCE_EPSILON = 0.5;
+
+const areHexesEqual = (left: HexPosition | null, right: HexPosition | null): boolean => {
+  if (left === right) {
+    return true;
+  }
+
+  if (!left || !right) {
+    return false;
+  }
+
+  return left.col === right.col && left.row === right.row;
+};
+
+const arePositionsEqual = (left: Position | null, right: Position | null): boolean => {
+  if (left === right) {
+    return true;
+  }
+
+  if (!left || !right) {
+    return false;
+  }
+
+  return left.x === right.x && left.y === right.y;
+};
+
+const areBuildingHexesEqual = (
+  left: ThreeStore["selectedBuildingHex"],
+  right: ThreeStore["selectedBuildingHex"],
+): boolean =>
+  left.outerCol === right.outerCol &&
+  left.outerRow === right.outerRow &&
+  left.innerCol === right.innerCol &&
+  left.innerRow === right.innerRow;
+
+const areCameraDistancesEqual = (left: number | null, right: number | null): boolean => {
+  if (left === right) {
+    return true;
+  }
+
+  if (left === null || right === null) {
+    return false;
+  }
+
+  return Math.abs(left - right) < CAMERA_DISTANCE_EPSILON;
+};
+
+export const createThreeStoreSlice = (
+  set: (partial: Partial<ThreeStore> | ((state: ThreeStore) => Partial<ThreeStore>)) => void,
+  get: () => ThreeStore,
+) => ({
   navigationTarget: null,
-  setNavigationTarget: (hex: HexPosition | null) => set({ navigationTarget: hex }),
+  setNavigationTarget: (hex: HexPosition | null) => {
+    if (areHexesEqual(get().navigationTarget, hex)) return;
+    set({ navigationTarget: hex });
+  },
   cameraTargetHex: null,
-  setCameraTargetHex: (hex: HexPosition | null) => set({ cameraTargetHex: hex }),
+  setCameraTargetHex: (hex: HexPosition | null) => {
+    if (areHexesEqual(get().cameraTargetHex, hex)) return;
+    set({ cameraTargetHex: hex });
+  },
   cameraDistance: null,
-  setCameraDistance: (distance: number | null) => set({ cameraDistance: distance }),
+  setCameraDistance: (distance: number | null) => {
+    if (areCameraDistancesEqual(get().cameraDistance, distance)) return;
+    set({ cameraDistance: distance });
+  },
   hoveredHex: null,
-  setHoveredHex: (hoveredHex: HexPosition | null) => set({ hoveredHex }),
+  setHoveredHex: (hoveredHex: HexPosition | null) => {
+    if (areHexesEqual(get().hoveredHex, hoveredHex)) return;
+    set({ hoveredHex });
+  },
   entityActions: {
     hoveredHex: null,
     actionPaths: new Map(),
     selectedEntityId: null,
   },
-  setEntityActions: (entityActions: EntityActions) => set({ entityActions }),
-  updateEntityActionHoveredHex: (hoveredHex: HexPosition | null) =>
-    set((state: any) => ({ entityActions: { ...state.entityActions, hoveredHex } })),
-  updateEntityActionActionPaths: (actionPaths: Map<string, ActionPath[]>) =>
-    set((state: any) => ({ entityActions: { ...state.entityActions, actionPaths } })),
-  updateEntityActionSelectedEntityId: (selectedEntityId: ID | null) =>
-    set((state: any) => ({ entityActions: { ...state.entityActions, selectedEntityId } })),
+  setEntityActions: (entityActions: EntityActions) => {
+    const currentActions = get().entityActions;
+    if (
+      areHexesEqual(currentActions.hoveredHex, entityActions.hoveredHex) &&
+      currentActions.actionPaths === entityActions.actionPaths &&
+      currentActions.selectedEntityId === entityActions.selectedEntityId
+    ) {
+      return;
+    }
+    set({ entityActions });
+  },
+  updateEntityActionHoveredHex: (hoveredHex: HexPosition | null) => {
+    if (areHexesEqual(get().entityActions.hoveredHex, hoveredHex)) return;
+    set((state) => ({ entityActions: { ...state.entityActions, hoveredHex } }));
+  },
+  updateEntityActionActionPaths: (actionPaths: Map<string, ActionPath[]>) => {
+    if (get().entityActions.actionPaths === actionPaths) return;
+    set((state) => ({ entityActions: { ...state.entityActions, actionPaths } }));
+  },
+  updateEntityActionSelectedEntityId: (selectedEntityId: ID | null) => {
+    if (get().entityActions.selectedEntityId === selectedEntityId) return;
+    set((state) => ({ entityActions: { ...state.entityActions, selectedEntityId } }));
+  },
   selectedHex: { col: 0, row: 0 },
-  setSelectedHex: (hex: HexPosition | null) => set({ selectedHex: hex }),
+  setSelectedHex: (hex: HexPosition | null) => {
+    if (areHexesEqual(get().selectedHex, hex)) return;
+    set({ selectedHex: hex });
+  },
   hoveredBattle: null,
-  setHoveredBattle: (hex: Position | null) => set({ hoveredBattle: hex }),
+  setHoveredBattle: (hex: Position | null) => {
+    if (arePositionsEqual(get().hoveredBattle, hex)) return;
+    set({ hoveredBattle: hex });
+  },
   selectedBuilding: BuildingType.ResourceWheat,
-  setSelectedBuilding: (building: BuildingType) => set({ selectedBuilding: building }),
+  setSelectedBuilding: (building: BuildingType) => {
+    if (get().selectedBuilding === building) return;
+    set({ selectedBuilding: building });
+  },
   selectedBuildingEntityId: null,
-  setSelectedBuildingEntityId: (selectedBuildingEntityId: ID | null) => set({ selectedBuildingEntityId }),
+  setSelectedBuildingEntityId: (selectedBuildingEntityId: ID | null) => {
+    if (get().selectedBuildingEntityId === selectedBuildingEntityId) return;
+    set({ selectedBuildingEntityId });
+  },
   selectedBuildingHex: { outerCol: 0, outerRow: 0, innerCol: 0, innerRow: 0 },
   setSelectedBuildingHex: ({
     outerCol,
@@ -81,5 +173,9 @@ export const createThreeStoreSlice = (set: any, _get: any) => ({
     outerRow: number;
     innerCol: number;
     innerRow: number;
-  }) => set({ selectedBuildingHex: { outerCol, outerRow, innerCol, innerRow } }),
+  }) => {
+    const selectedBuildingHex = { outerCol, outerRow, innerCol, innerRow };
+    if (areBuildingHexesEqual(get().selectedBuildingHex, selectedBuildingHex)) return;
+    set({ selectedBuildingHex });
+  },
 });

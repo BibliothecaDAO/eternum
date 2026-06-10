@@ -63,7 +63,7 @@ describe("WorldmapInteractionAdapter", () => {
 
     expect(selectedHexManager.setPosition).toHaveBeenCalledWith(10, 20);
     expect(setSelectedHex).toHaveBeenCalledWith({ col: 4, row: 9 });
-    expect(playAudioMock).toHaveBeenCalledWith("ui.click");
+    expect(playAudioMock).toHaveBeenCalledWith("ui.hex_select");
   });
 
   it("routes owned-structure context menus through the adapter boundary", () => {

@@ -3,6 +3,12 @@ import type { WorldmapChunkDiagnostics } from "./worldmap-chunk-diagnostics";
 interface HandleWorldmapRefreshCommitRuntimeInput {
   chunkKey: string;
   commitPreparedTerrain: (preparedTerrain: unknown) => void;
+  /**
+   * Phase 2.2: release pooled attributes held by prepared terrain that is dropped
+   * (stale, or not committed) instead of committed. Optional so existing callers
+   * and tests stay valid; the worldmap caller wires it to disposePreparedTerrainChunk.
+   */
+  disposePreparedTerrain?: (preparedTerrain: unknown) => void;
   diagnostics: WorldmapChunkDiagnostics;
   force: boolean;
   onStaleDrop?: () => void;
@@ -12,8 +18,18 @@ interface HandleWorldmapRefreshCommitRuntimeInput {
     shouldCommit: boolean;
     shouldDropAsStale: boolean;
   };
-  runImmediateManagerCatchUp: (chunkKey: string, options: { force: boolean; transitionToken: number }) => Promise<void>;
-  scheduleDeferredManagerCatchUp: (chunkKey: string, options: { force: boolean; transitionToken: number }) => void;
+  runImmediateFullManagerCatchUp: (
+    chunkKey: string,
+    options: { force: boolean; transitionToken: number },
+  ) => Promise<void>;
+  runImmediateCriticalManagerCatchUp: (
+    chunkKey: string,
+    options: { force: boolean; transitionToken: number },
+  ) => Promise<void>;
+  scheduleDeferredNonCriticalManagerCatchUp: (
+    chunkKey: string,
+    options: { force: boolean; transitionToken: number },
+  ) => void;
   stagedPathEnabled: boolean;
   tileFetchSucceeded: boolean;
   transitionToken: number;
@@ -26,24 +42,37 @@ export async function handleWorldmapRefreshCommitRuntime(
     return "skipped";
   }
 
+  const hasPreparedTerrain = input.preparedTerrain !== null && input.preparedTerrain !== undefined;
+
   if (input.refreshDecision.shouldDropAsStale) {
     input.recordChunkDiagnosticsEvent(input.diagnostics, "stale_terrain_refresh_dropped");
+    if (hasPreparedTerrain) {
+      input.disposePreparedTerrain?.(input.preparedTerrain);
+    }
     input.onStaleDrop?.();
     return "stale_dropped";
   }
 
-  if (!input.refreshDecision.shouldCommit || input.preparedTerrain === null || input.preparedTerrain === undefined) {
+  if (!input.refreshDecision.shouldCommit || !hasPreparedTerrain) {
+    // Not committing: if terrain was prepared, release its pooled attributes.
+    if (hasPreparedTerrain) {
+      input.disposePreparedTerrain?.(input.preparedTerrain);
+    }
     return "skipped";
   }
 
   input.commitPreparedTerrain(input.preparedTerrain);
   if (input.stagedPathEnabled) {
-    input.scheduleDeferredManagerCatchUp(input.chunkKey, {
+    await input.runImmediateCriticalManagerCatchUp(input.chunkKey, {
+      force: input.force,
+      transitionToken: input.transitionToken,
+    });
+    input.scheduleDeferredNonCriticalManagerCatchUp(input.chunkKey, {
       force: input.force,
       transitionToken: input.transitionToken,
     });
   } else {
-    await input.runImmediateManagerCatchUp(input.chunkKey, {
+    await input.runImmediateFullManagerCatchUp(input.chunkKey, {
       force: input.force,
       transitionToken: input.transitionToken,
     });

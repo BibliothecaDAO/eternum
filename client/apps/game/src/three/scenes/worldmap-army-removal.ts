@@ -3,6 +3,18 @@ interface ArmyHexPosition {
   row: number;
 }
 
+interface StaleTrackedArmyTileRemovalInput {
+  reason: "tile" | "zero";
+  trackedPosition?: ArmyHexPosition;
+  removalPosition?: ArmyHexPosition;
+}
+
+interface PendingArmyRemovalExplorerTroopsRecoveryInput {
+  reason: "tile" | "zero";
+  removalPosition?: ArmyHexPosition;
+  troopsPosition: ArmyHexPosition;
+}
+
 interface PendingArmyRemovalCandidate<TArmyId> {
   entityId: TArmyId;
   scheduledAt: number;
@@ -33,6 +45,32 @@ function hasUsableStructureId(structureId: unknown): boolean {
 
 function isExactPosition(a: ArmyHexPosition, b: ArmyHexPosition): boolean {
   return a.col === b.col && a.row === b.row;
+}
+
+export function isStaleTrackedArmyTileRemoval(input: StaleTrackedArmyTileRemovalInput): boolean {
+  const { reason, trackedPosition, removalPosition } = input;
+
+  if (reason !== "tile" || !trackedPosition || !removalPosition) {
+    return false;
+  }
+
+  return !isExactPosition(trackedPosition, removalPosition);
+}
+
+export function shouldRecoverPendingArmyRemovalFromExplorerTroops(
+  input: PendingArmyRemovalExplorerTroopsRecoveryInput,
+): boolean {
+  const { reason, removalPosition, troopsPosition } = input;
+
+  if (reason === "zero") {
+    return false;
+  }
+
+  if (!removalPosition) {
+    return false;
+  }
+
+  return !isExactPosition(removalPosition, troopsPosition);
 }
 
 /**

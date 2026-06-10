@@ -1,10 +1,3 @@
-export {
-  useRealtimeChatActions,
-  useRealtimeChatInitializer,
-  useRealtimeChatSelector,
-  useRealtimeConnection,
-  useRealtimeTotals,
-} from "./hooks/use-realtime-chat";
-export { useRealtimeChatStore } from "./model/store";
+export { useRealtimeChatActions, useRealtimeChatInitializer, useRealtimeChatSelector } from "./hooks/use-realtime-chat";
 export type { InitializeRealtimeClientParams } from "./model/types";
 export { RealtimeChatShell } from "./ui/realtime-chat-shell";

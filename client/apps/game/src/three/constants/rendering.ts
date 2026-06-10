@@ -1,5 +1,5 @@
 import { GraphicsSettings, IS_FLAT_MODE } from "@/ui/config";
-import { ToneMappingMode } from "postprocessing";
+import type { ToneMappingMode } from "postprocessing";
 
 export interface PostProcessingConfig {
   brightness: number;
@@ -48,39 +48,10 @@ export const FOG_CONFIG = {
 };
 
 export const POST_PROCESSING_CONFIG: Record<GraphicsSettings, PostProcessingConfig | null> = {
-  [GraphicsSettings.HIGH]: {
-    brightness: 0,
-    contrast: 0,
-    hue: 0,
-    saturation: 0.1,
-    toneMapping: {
-      mode: ToneMappingMode.OPTIMIZED_CINEON,
-      exposure: 0.7,
-      whitePoint: 1.2,
-    },
-    vignette: {
-      darkness: 0.9,
-      offset: 0.35,
-    },
-    bloomIntensity: 0.25,
-  },
-  [GraphicsSettings.MID]: {
-    brightness: 0,
-    contrast: 0,
-    hue: 0,
-    saturation: 0.1,
-    toneMapping: {
-      mode: ToneMappingMode.OPTIMIZED_CINEON,
-      exposure: 0.6,
-      whitePoint: 1.1,
-    },
-    vignette: {
-      darkness: 0.65,
-      offset: 0.25,
-    },
-    bloomIntensity: 0.15,
-  },
+  [GraphicsSettings.HIGH]: null,
+  [GraphicsSettings.MID]: null,
   [GraphicsSettings.LOW]: null,
+  [GraphicsSettings.ULTRA_LOW]: null,
 };
 
 export const CAMERA_FAR_PLANE = IS_FLAT_MODE ? CAMERA_CONFIG.far.flat : CAMERA_CONFIG.far.default;

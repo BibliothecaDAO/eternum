@@ -1,6 +1,11 @@
 import { BatchedTransactionDetail, TransactionType } from "@bibliothecadao/provider";
 import { create } from "zustand";
 
+import {
+  computeStaleTransactionTelemetry,
+  type StaleTransactionTelemetry,
+} from "./compute-stale-transaction-telemetry";
+
 export type TransactionStatus = "pending" | "success" | "reverted";
 
 export interface Transaction {
@@ -40,6 +45,7 @@ interface TransactionStoreState {
   getRevertedTransactions: () => Transaction[];
   getStuckTransactions: () => Transaction[];
   getOverallStatus: () => "idle" | "pending" | "stuck" | "error";
+  getStaleTransactionTelemetry: () => StaleTransactionTelemetry;
 }
 
 export const useTransactionStore = create<TransactionStoreState>((set, get) => ({
@@ -147,6 +153,11 @@ export const useTransactionStore = create<TransactionStoreState>((set, get) => (
 
     return "idle";
   },
+
+  getStaleTransactionTelemetry: () => {
+    const { transactions, stuckThresholdMs } = get();
+    return computeStaleTransactionTelemetry(transactions, Date.now(), stuckThresholdMs);
+  },
 }));
 
 // Debug utilities for mocking transactions in development
@@ -184,6 +195,7 @@ const getTxDescription = (type: TransactionType): string => {
     [TransactionType.CREATE_ORDER]: "Creating trade order",
     [TransactionType.TRAVEL_HEX]: "Traveling to destination",
     [TransactionType.UPGRADE_LEVEL]: "Upgrading building",
+    [TransactionType.ATTACK_EXPLORER_VS_GUARD_AND_GARRISON]: "Claiming and garrisoning structure",
   };
   return descriptions[type] ?? "Transaction in progress";
 };

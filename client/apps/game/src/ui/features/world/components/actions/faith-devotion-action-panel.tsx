@@ -8,7 +8,7 @@ import {
 import { WonderFaithDetailModal, WonderFaithDetailPanel } from "@/ui/features/social/faith/wonder-faith-detail-panel";
 import Button from "@/ui/design-system/atoms/button";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { displayAddress } from "@/ui/utils/utils";
 import { useDojo } from "@bibliothecadao/react";
 import { ID, StructureType } from "@bibliothecadao/types";
@@ -465,103 +465,106 @@ const FaithDevotionModal = ({ structureEntityId, structureLabel }: FaithDevotion
   }, [account, closeModal, devotionStatus, faithSystemCalls, queryClient, selectedWonderId, structureEntityId]);
 
   return (
-    <SecondaryPopup width="860" name="faith-devotion-modal" containerClassName="absolute left-0 top-0">
-      <SecondaryPopup.Head onClose={closeModal}>Devote to a Wonder</SecondaryPopup.Head>
-      <SecondaryPopup.Body width="100%" height="auto">
-        <div className="flex flex-col gap-3 p-4">
-          <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-xxs text-gold/75">
-            <p>
-              Structure: <span className="font-semibold text-gold">{structureLabel}</span>
-            </p>
-            <p className="mt-1">
-              Current devotion:{" "}
-              <span className="font-semibold text-gold">
-                {devotionStatus ? `Wonder #${devotionStatus.wonderId.toString()}` : "None"}
-              </span>
-            </p>
+    <CenteredModalShell
+      title="Devote to a Wonder"
+      onClose={closeModal}
+      persistKey="faith-devotion-modal"
+      panelClassName="w-[860px] h-auto max-h-[calc(100vh-64px)]"
+      bodyClassName="overflow-auto"
+    >
+      <div className="flex flex-col gap-3 p-4">
+        <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-xxs text-gold/75">
+          <p>
+            Structure: <span className="font-semibold text-gold">{structureLabel}</span>
+          </p>
+          <p className="mt-1">
+            Current devotion:{" "}
+            <span className="font-semibold text-gold">
+              {devotionStatus ? `Wonder #${devotionStatus.wonderId.toString()}` : "None"}
+            </span>
+          </p>
+        </div>
+
+        {isLoadingWonders ? (
+          <div className="flex items-center justify-center py-8 text-xs text-gold/70">
+            <Loader className="mr-2 h-4 w-4 animate-spin" />
+            Loading wonders...
           </div>
+        ) : wondersError ? (
+          <div className="rounded-md border border-red-400/30 bg-red-950/25 p-3 text-xs text-red-200/90">
+            {getErrorMessage(wondersError, "Failed to load wonders.")}
+          </div>
+        ) : wonderEntries.length === 0 ? (
+          <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-xs text-gold/75">
+            No wonders available in this world yet.
+          </div>
+        ) : (
+          <div className="max-h-[clamp(280px,40vh,560px)] overflow-auto rounded-md border border-gold/20 bg-black/25">
+            <div className="sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-gold/20 bg-[#1d160e] px-3 py-2 text-xxs uppercase tracking-[0.2em] text-gold/70">
+              <span>Wonder</span>
+              <span className="text-right">FP/sec</span>
+              <span className="text-right">Followers</span>
+            </div>
+            <div className="flex flex-col">
+              {wonderEntries.map((entry) => {
+                const isSelected = selectedWonderId === entry.wonderId;
 
-          {isLoadingWonders ? (
-            <div className="flex items-center justify-center py-8 text-xs text-gold/70">
-              <Loader className="mr-2 h-4 w-4 animate-spin" />
-              Loading wonders...
+                return (
+                  <button
+                    key={entry.wonderId.toString()}
+                    type="button"
+                    className={cn(
+                      "grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-gold/10 px-3 py-2 text-left transition",
+                      isSelected ? "bg-gold/12" : "bg-transparent hover:bg-gold/6",
+                    )}
+                    onClick={() => setSelectedWonderId(entry.wonderId)}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs font-semibold text-gold">{entry.wonderName}</span>
+                      <span className="block truncate text-xxs text-gold/65">{buildWonderOwnerLabel(entry)}</span>
+                    </span>
+                    <span className="text-right font-mono text-xs text-gold/85">
+                      {entry.faithPointsPerSecond.toLocaleString()}
+                    </span>
+                    <span className="text-right font-mono text-xs text-gold/85">
+                      {entry.followerCount.toLocaleString()}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          ) : wondersError ? (
-            <div className="rounded-md border border-red-400/30 bg-red-950/25 p-3 text-xs text-red-200/90">
-              {getErrorMessage(wondersError, "Failed to load wonders.")}
-            </div>
-          ) : wonderEntries.length === 0 ? (
-            <div className="rounded-md border border-gold/20 bg-black/25 p-3 text-xs text-gold/75">
-              No wonders available in this world yet.
-            </div>
-          ) : (
-            <div className="max-h-[340px] overflow-auto rounded-md border border-gold/20 bg-black/25">
-              <div className="sticky top-0 z-10 grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-gold/20 bg-[#1d160e] px-3 py-2 text-xxs uppercase tracking-[0.2em] text-gold/70">
-                <span>Wonder</span>
-                <span className="text-right">FP/sec</span>
-                <span className="text-right">Followers</span>
-              </div>
-              <div className="flex flex-col">
-                {wonderEntries.map((entry) => {
-                  const isSelected = selectedWonderId === entry.wonderId;
+          </div>
+        )}
 
-                  return (
-                    <button
-                      key={entry.wonderId.toString()}
-                      type="button"
-                      className={cn(
-                        "grid grid-cols-[minmax(0,1fr)_110px_90px] gap-2 border-b border-gold/10 px-3 py-2 text-left transition",
-                        isSelected ? "bg-gold/12" : "bg-transparent hover:bg-gold/6",
-                      )}
-                      onClick={() => setSelectedWonderId(entry.wonderId)}
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-xs font-semibold text-gold">{entry.wonderName}</span>
-                        <span className="block truncate text-xxs text-gold/65">{buildWonderOwnerLabel(entry)}</span>
-                      </span>
-                      <span className="text-right font-mono text-xs text-gold/85">
-                        {entry.faithPointsPerSecond.toLocaleString()}
-                      </span>
-                      <span className="text-right font-mono text-xs text-gold/85">
-                        {entry.followerCount.toLocaleString()}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 text-xxs text-gold/65">
-              {selectedWonder ? (
-                <span className="truncate">
-                  Selected: <span className="font-semibold text-gold">{selectedWonder.wonderName}</span>
-                </span>
-              ) : (
-                "Select a wonder to continue."
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="xs" variant="outline" forceUppercase={false} onClick={closeModal} disabled={isSubmitting}>
-                Cancel
-              </Button>
-              <Button
-                size="xs"
-                variant="gold"
-                forceUppercase={false}
-                isLoading={isSubmitting}
-                disabled={!selectedWonderId || alreadyDevotedToSelection}
-                onClick={() => {
-                  void confirmDevotion();
-                }}
-              >
-                {alreadyDevotedToSelection ? "Already Devoted" : "Confirm Devotion"}
-              </Button>
-            </div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 text-xxs text-gold/65">
+            {selectedWonder ? (
+              <span className="truncate">
+                Selected: <span className="font-semibold text-gold">{selectedWonder.wonderName}</span>
+              </span>
+            ) : (
+              "Select a wonder to continue."
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button size="xs" variant="outline" forceUppercase={false} onClick={closeModal} disabled={isSubmitting}>
+              Cancel
+            </Button>
+            <Button
+              size="xs"
+              variant="gold"
+              forceUppercase={false}
+              isLoading={isSubmitting}
+              disabled={!selectedWonderId || alreadyDevotedToSelection}
+              onClick={() => {
+                void confirmDevotion();
+              }}
+            >
+              {alreadyDevotedToSelection ? "Already Devoted" : "Confirm Devotion"}
+            </Button>
           </div>
         </div>
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
+      </div>
+    </CenteredModalShell>
   );
 };

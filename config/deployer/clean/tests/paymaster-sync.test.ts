@@ -131,6 +131,48 @@ describe("syncPaymasterPolicy", () => {
     ]);
   });
 
+  test("merges explicit extra actions into the paymaster policy file", async () => {
+    globalThis.fetch = async (url) => {
+      const decodedUrl = decodeURIComponent(String(url));
+
+      if (decodedUrl.includes("[wf-WorldContract]")) {
+        return Response.json([
+          {
+            contract_address: "0x123",
+            contract_selector: "0x1",
+          },
+        ]);
+      }
+
+      if (decodedUrl.includes("[wf-WorldDeployed]")) {
+        return Response.json([
+          {
+            world_address: "0xworld",
+          },
+        ]);
+      }
+
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    await syncPaymasterPolicy({
+      chain: "mainnet",
+      gameName: "alpha",
+      dryRun: true,
+      extraActions: [{ contractAddress: "0xentry", entrypoint: "set_approval_for_all" }],
+    });
+
+    const actions = JSON.parse(fs.readFileSync(outputPath, "utf8")) as Array<{
+      contractAddress: string;
+      entrypoint: string;
+    }>;
+
+    expect(actions).toContainEqual({
+      contractAddress: "0xentry",
+      entrypoint: "set_approval_for_all",
+    });
+  });
+
   test("captures slot CLI output instead of inheriting workflow stdio", async () => {
     const stdoutWrites: string[] = [];
     const stderrWrites: string[] = [];

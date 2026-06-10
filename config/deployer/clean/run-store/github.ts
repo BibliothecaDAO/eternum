@@ -30,6 +30,10 @@ interface GitHubWriteBranchFileRequest {
   message: string;
 }
 
+const BRANCH_FILE_WRITE_RETRY_ATTEMPTS = 8;
+const BRANCH_FILE_WRITE_RETRY_DELAY_MS = 250;
+const BRANCH_FILE_WRITE_RETRY_MAX_DELAY_MS = 2_000;
+
 export interface ResolveGitHubBranchStoreConfigOptions extends ResolveGitHubRepositoryContextOptions {
   branch?: string;
 }
@@ -139,6 +143,23 @@ async function tryWriteBranchFile(
   throw new Error(`Failed to write run-store file "${request.path}": ${response.status} ${body}`);
 }
 
+function resolveBranchFileWriteRetryDelayMs(attempt: number): number {
+  const configuredDelay = Number(process.env.FACTORY_RUN_STORE_WRITE_RETRY_DELAY_MS);
+  const baseDelay = Number.isFinite(configuredDelay) ? configuredDelay : BRANCH_FILE_WRITE_RETRY_DELAY_MS;
+  return Math.min(BRANCH_FILE_WRITE_RETRY_MAX_DELAY_MS, Math.max(0, baseDelay) * (attempt + 1));
+}
+
+function waitForBranchFileWriteRetry(attempt: number): Promise<void> {
+  const delayMs = resolveBranchFileWriteRetryDelayMs(attempt);
+  if (delayMs <= 0) {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    setTimeout(resolve, delayMs);
+  });
+}
+
 export async function updateGitHubBranchJsonFile<T>(
   config: GitHubBranchStoreConfig,
   path: string,
@@ -147,7 +168,7 @@ export async function updateGitHubBranchJsonFile<T>(
 ): Promise<T> {
   await ensureGitHubBranchExists(config);
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < BRANCH_FILE_WRITE_RETRY_ATTEMPTS; attempt += 1) {
     const current = await readGitHubBranchJsonFile<T>(config, path);
     const nextValue = buildValue(current.value);
     const didWrite = await tryWriteBranchFile(
@@ -163,9 +184,13 @@ export async function updateGitHubBranchJsonFile<T>(
     if (didWrite) {
       return nextValue;
     }
+
+    if (attempt < BRANCH_FILE_WRITE_RETRY_ATTEMPTS - 1) {
+      await waitForBranchFileWriteRetry(attempt);
+    }
   }
 
-  throw new Error(`Failed to update run-store file "${path}" after 3 attempts`);
+  throw new Error(`Failed to update run-store file "${path}" after ${BRANCH_FILE_WRITE_RETRY_ATTEMPTS} attempts`);
 }
 
 export function requireGitHubBranchStoreConfig(

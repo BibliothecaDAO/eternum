@@ -18,7 +18,9 @@ import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 import { resolveChestPointLabelSize } from "./chest-point-label-policy";
 import {
   bindManagerChunkRuntimeState,
+  recoverManagerChunkRuntimeAfterStall,
   type ManagerChunkUpdateOptions,
+  type RecoverManagerChunkRuntimeAfterStallInput,
   runManagerChunkUpdateRuntime,
 } from "./manager-chunk-runtime";
 import { PointsLabelRenderer } from "./points-label-renderer";
@@ -30,6 +32,7 @@ import {
   waitForVisualSettle,
 } from "./manager-update-convergence";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
+import type { HoverLabelShowResult } from "./hover-label-show-result";
 
 const MAX_INSTANCES = 1000;
 
@@ -58,6 +61,7 @@ export class ChestManager {
   private transitionChunkByToken: Map<number, string> = new Map();
   private pointsRenderer?: PointsLabelRenderer; // Points-based icon renderer
   private chunkToChests: Map<string, Set<ID>> = new Map();
+  private isDestroyed = false;
 
   constructor(
     scene: THREE.Scene,
@@ -92,7 +96,9 @@ export class ChestManager {
 
   private handleCameraViewChange = (view: CameraView) => {
     const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
-    const enableContactShadows = !(view === CameraView.Close && qualityShadowsEnabled);
+    const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
+    // Contact shadows are the fallback for real shadows; gate them off on LOW/below.
+    const enableContactShadows = !(view === CameraView.Close && qualityShadowsEnabled) && contactShadowsAllowed;
 
     // Cheap grounding in zoomed-out views (and as a fallback if shadows are disabled).
     if (this.chestModel) {
@@ -155,6 +161,9 @@ export class ChestManager {
   }
 
   public destroy() {
+    // Guard the async loadModel completion from re-adding resources after teardown.
+    this.isDestroyed = true;
+
     // Clean up camera view listener
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
@@ -168,6 +177,24 @@ export class ChestManager {
     if (this.pointsRenderer) {
       this.pointsRenderer.dispose();
     }
+
+    // Phase 2.5: dispose the chest InstancedModel (MAX_INSTANCES geometry/materials/
+    // morph textures + instance buffers) and remove its group from the scene
+    // (InstancedModel.dispose removes the group from its parent).
+    this.chestModel?.dispose();
+
+    // Remove and clear entity labels from the label group.
+    this.entityIdLabels.forEach((label) => this.labelsGroup.remove(label));
+    this.entityIdLabels.clear();
+
+    // Drop spatial/index maps so despawned chests are not retained.
+    this.chunkToChests.clear();
+    this.chestHexCoords.clear();
+    this.entityIdMap.clear();
+    this.chestInstanceIndices.clear();
+    this.chestInstanceOrder = [];
+    this.visibleChests = [];
+    this.transitionChunkByToken.clear();
   }
 
   private async loadModel(): Promise<void> {
@@ -191,11 +218,20 @@ export class ChestManager {
 
     await loadPromise
       .then(({ model, clips }) => {
+        // Phase 2.5: the manager was torn down while the model was loading — dispose
+        // the freshly-parsed model instead of adding it to a dead scene.
+        if (this.isDestroyed) {
+          model.dispose();
+          return;
+        }
         this.chestModel = model;
         this.animationClips = clips;
         this.scene.add(model.group);
         const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
-        const enableContactShadows = !(this.currentCameraView === CameraView.Close && qualityShadowsEnabled);
+        const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
+        // Contact shadows are the fallback for real shadows; gate them off on LOW/below.
+        const enableContactShadows =
+          !(this.currentCameraView === CameraView.Close && qualityShadowsEnabled) && contactShadowsAllowed;
         this.chestModel.setContactShadowsEnabled(enableContactShadows);
       })
       .catch((error) => {
@@ -251,6 +287,10 @@ export class ChestManager {
       state: this.resolveChunkUpdateRuntimeState(),
       waitForSettle: waitForVisualSettle,
     });
+  }
+
+  recoverChunkUpdateAfterStall(input: RecoverManagerChunkRuntimeAfterStallInput): void {
+    recoverManagerChunkRuntimeAfterStall(this.resolveChunkUpdateRuntimeState(), input);
   }
 
   private resolveChunkUpdateRuntimeState() {
@@ -482,10 +522,10 @@ export class ChestManager {
     this.entityIdLabels.set(chest.entityId, label);
   }
 
-  public showLabel(entityId: ID): void {
+  public showLabel(entityId: ID): HoverLabelShowResult {
     const chest = this.chests.getChest(entityId);
     if (!chest) {
-      return;
+      return { status: "missing" };
     }
 
     const position = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
@@ -493,14 +533,21 @@ export class ChestManager {
 
     const existingLabel = this.entityIdLabels.get(entityId);
     if (existingLabel) {
+      const wasDetached = existingLabel.parent !== this.labelsGroup;
+      const wasHidden = existingLabel.visible !== true || existingLabel.element.style.display === "none";
       const updatedPosition = this.getChestWorldPosition(chest.entityId, chest.hexCoords);
       updatedPosition.y += 1.5;
       existingLabel.position.copy(updatedPosition);
+      if (wasDetached) {
+        this.labelsGroup.add(existingLabel);
+      }
+      existingLabel.visible = true;
+      existingLabel.element.style.display = "";
       // Highlight point icon on hover
       if (this.pointsRenderer) {
         this.pointsRenderer.setHover(entityId);
       }
-      return;
+      return wasDetached || wasHidden ? { status: "reattached" } : { status: "unchanged" };
     }
 
     this.addEntityIdLabel(chest, position);
@@ -509,6 +556,7 @@ export class ChestManager {
     if (this.pointsRenderer) {
       this.pointsRenderer.setHover(entityId);
     }
+    return { status: "shown" };
   }
 
   public hideLabel(entityId: ID): void {

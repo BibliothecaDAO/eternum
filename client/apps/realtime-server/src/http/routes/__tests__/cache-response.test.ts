@@ -1,4 +1,4 @@
-import { brotliDecompressSync } from "zlib";
+import * as nodeZlib from "node:zlib";
 import { describe, expect, it } from "vitest";
 
 import { createCachedJsonResponse, createJsonPayload } from "../cache-response";
@@ -21,7 +21,7 @@ describe("createCachedJsonResponse", () => {
     expect(response.headers.get("Vary")).toBe("Accept-Encoding");
 
     const compressedBody = new Uint8Array(await response.arrayBuffer());
-    const decompressedBody = brotliDecompressSync(compressedBody).toString();
+    const decompressedBody = nodeZlib.brotliDecompressSync(compressedBody).toString();
 
     expect(decompressedBody).toContain("message");
   });

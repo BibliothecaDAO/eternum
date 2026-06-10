@@ -1,11 +1,33 @@
 import { spawnSync } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_BASE_URL = "https://127.0.0.1:4173";
+const DEFAULT_CHAIN = "slot";
 const DEFAULT_SCENES = ["map", "hex"];
+const DEFAULT_WORLD_NAME = "eternum-blitz-slot-4";
 const REQUIRED_RENDERER_PARITY_FEATURES = new Set(["environmentIbl", "toneMappingControl", "bloom"]);
 const VALID_SCENES = new Set(["map", "hex", "travel"]);
-const DEFAULT_WAIT_MS = 2500;
+const DEFAULT_WAIT_MS = 20000;
+const AGENT_BROWSER_RETRY_DELAY_MS = 2000;
+const AGENT_BROWSER_RETRY_ATTEMPTS = 2;
+const DEFAULT_CARTRIDGE_API_BASE = "https://api.cartridge.gg";
+const RETRYABLE_AGENT_BROWSER_FAILURE_PATTERNS = [
+  "CDP command timed out: Runtime.evaluate",
+  "Failed to read: Resource temporarily unavailable",
+  "daemon may be busy or unresponsive",
+];
+const FACTORY_SQL_BASE_URLS = {
+  local: [],
+  mainnet: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-mainnet/torii/sql`],
+  sepolia: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-sepolia/torii/sql`],
+  slot: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-slot-d/torii/sql`],
+  slottest: [`${DEFAULT_CARTRIDGE_API_BASE}/x/eternum-factory-slot-d/torii/sql`],
+};
+const WORLD_DISCOVERY_LIMIT = 200;
+const WORLD_DISCOVERY_TIMEOUT_MS = 2500;
 
 export const GLOW_REPRO_SCENES = ["map", "travel"];
 export const GLOW_REPRO_TARGETS = [
@@ -33,19 +55,116 @@ export function normalizeSceneList(value) {
   return scenes;
 }
 
-export function buildSceneSmokeUrl({ baseUrl, rendererMode, scene }) {
+export function buildSceneSmokeUrl({
+  baseUrl,
+  chain = DEFAULT_CHAIN,
+  rendererMode,
+  scene,
+  worldName = DEFAULT_WORLD_NAME,
+}) {
   const url = new URL(baseUrl);
-  url.pathname = `/play/${scene}`;
+  url.pathname = `/play/${chain}/${encodeURIComponent(worldName)}/${scene}`;
   url.searchParams.set("col", "0");
   url.searchParams.set("row", "0");
-
-  if (scene !== "hex") {
-    url.searchParams.set("spectate", "true");
-  }
-
+  url.searchParams.set("spectate", "true");
   url.searchParams.set("rendererMode", rendererMode);
 
   return url.toString();
+}
+
+export function decodePaddedWorldName(hex) {
+  if (!hex || typeof hex !== "string") {
+    return "";
+  }
+
+  const normalized = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
+  let index = 0;
+  while (index + 1 < normalized.length && normalized.slice(index, index + 2) === "00") {
+    index += 2;
+  }
+
+  let output = "";
+  for (; index + 1 < normalized.length; index += 2) {
+    const byte = Number.parseInt(normalized.slice(index, index + 2), 16);
+    if (!Number.isFinite(byte) || byte === 0) {
+      continue;
+    }
+    output += String.fromCharCode(byte);
+  }
+
+  return output;
+}
+
+function buildFactoryWorldQueryUrl(factorySqlBaseUrl) {
+  const url = new URL(factorySqlBaseUrl);
+  url.searchParams.set(
+    "query",
+    `SELECT name FROM [wf-WorldDeployed] ORDER BY internal_created_at DESC LIMIT ${WORLD_DISCOVERY_LIMIT};`,
+  );
+  return url;
+}
+
+async function fetchCandidateWorldNames(factorySqlBaseUrl) {
+  const response = await fetch(buildFactoryWorldQueryUrl(factorySqlBaseUrl), {
+    signal: AbortSignal.timeout(WORLD_DISCOVERY_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Factory world discovery failed: ${response.status} ${response.statusText}`);
+  }
+
+  const rows = await response.json();
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+
+  const seenNames = new Set();
+  const worldNames = [];
+  for (const row of rows) {
+    const decodedName = decodePaddedWorldName(row?.name);
+    if (!decodedName || seenNames.has(decodedName)) {
+      continue;
+    }
+
+    seenNames.add(decodedName);
+    worldNames.push(decodedName);
+  }
+
+  return worldNames;
+}
+
+async function isWorldSceneSmokeCandidateAlive(worldName) {
+  const probeUrl = new URL(`${DEFAULT_CARTRIDGE_API_BASE}/x/${encodeURIComponent(worldName)}/torii/sql`);
+  probeUrl.searchParams.set("query", "SELECT 1 AS ok LIMIT 1;");
+
+  try {
+    const response = await fetch(probeUrl, {
+      method: "HEAD",
+      signal: AbortSignal.timeout(WORLD_DISCOVERY_TIMEOUT_MS),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+export async function resolveSceneSmokeWorldName({ chain, requestedWorldName }) {
+  if (requestedWorldName) {
+    return requestedWorldName;
+  }
+
+  const factorySqlBaseUrls = FACTORY_SQL_BASE_URLS[chain] ?? [];
+  for (const factorySqlBaseUrl of factorySqlBaseUrls) {
+    const candidateWorldNames = await fetchCandidateWorldNames(factorySqlBaseUrl);
+
+    for (const worldName of candidateWorldNames) {
+      if (await isWorldSceneSmokeCandidateAlive(worldName)) {
+        return worldName;
+      }
+    }
+  }
+
+  return DEFAULT_WORLD_NAME;
 }
 
 export function evaluateSceneSmokeResult({ canvasExists, errors, expectedPathname, openedUrl, unableToStartCount }) {
@@ -87,6 +206,7 @@ export function normalizeRendererDiagnosticsSnapshot(snapshot) {
     postprocessPolicy: snapshot?.postprocessPolicy ?? null,
     requestedMode: snapshot?.requestedMode ?? null,
     sceneName: snapshot?.sceneName ?? null,
+    startupTimings: snapshot?.startupTimings ?? {},
   };
 }
 
@@ -119,22 +239,100 @@ function readOption(args, name, fallback) {
   return args[index + 1] ?? fallback;
 }
 
-function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
+export function resolveAgentBrowserWorkingDirectory(env = process.env) {
+  return env.RUNNER_TEMP || env.TMPDIR || tmpdir();
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function invokeAgentBrowser(session, commandArgs, { headed = false } = {}) {
   const baseArgs = ["-y", "agent-browser", "--session", session];
   if (headed) {
     baseArgs.push("--headed");
   }
 
-  const result = spawnSync("npx", [...baseArgs, ...commandArgs], {
+  return spawnSync("npx", [...baseArgs, ...commandArgs], {
+    cwd: resolveAgentBrowserWorkingDirectory(),
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
   });
+}
+
+function runAgentBrowser(session, commandArgs, { headed = false } = {}) {
+  const result = invokeAgentBrowser(session, commandArgs, { headed });
 
   if (result.status !== 0) {
     throw new Error(result.stderr.trim() || result.stdout.trim() || `agent-browser failed for session ${session}`);
   }
 
   return result.stdout.trim();
+}
+
+export function isRetryableAgentBrowserFailure({ commandArgs, stderr = "", stdout = "" }) {
+  if (!isRetryableAgentBrowserCommand(commandArgs)) {
+    return false;
+  }
+
+  return isRetryableAgentBrowserOutput(`${stderr}\n${stdout}`);
+}
+
+function isRetryableAgentBrowserCommand(commandArgs) {
+  if (commandArgs[0] === "eval" || commandArgs[0] === "errors") {
+    return true;
+  }
+
+  return commandArgs[0] === "get" && ["count", "url"].includes(commandArgs[1]);
+}
+
+function isRetryableAgentBrowserOutput(output) {
+  return RETRYABLE_AGENT_BROWSER_FAILURE_PATTERNS.some((pattern) => output.includes(pattern));
+}
+
+async function runAgentBrowserWithRetries(
+  session,
+  commandArgs,
+  { headed = false, retryAttempts = AGENT_BROWSER_RETRY_ATTEMPTS, retryDelayMs = AGENT_BROWSER_RETRY_DELAY_MS } = {},
+) {
+  let lastOutput = "";
+
+  for (let attempt = 0; attempt <= retryAttempts; attempt += 1) {
+    const result = invokeAgentBrowser(session, commandArgs, { headed });
+    if (result.status === 0) {
+      return (result.stdout ?? "").trim();
+    }
+
+    const stdout = (result.stdout ?? "").trim();
+    const stderr = (result.stderr ?? "").trim();
+    lastOutput = stderr || stdout || `agent-browser failed for session ${session}`;
+
+    if (
+      attempt === retryAttempts ||
+      !isRetryableAgentBrowserFailure({
+        commandArgs,
+        stderr,
+        stdout,
+      })
+    ) {
+      throw new Error(lastOutput);
+    }
+
+    await sleep(retryDelayMs * (attempt + 1));
+  }
+
+  throw new Error(lastOutput);
+}
+
+function tryRunAgentBrowser(session, commandArgs, { headed = false } = {}) {
+  const result = invokeAgentBrowser(session, commandArgs, { headed });
+  return {
+    ok: result.status === 0,
+    stdout: (result.stdout ?? "").trim(),
+    stderr: (result.stderr ?? "").trim(),
+  };
 }
 
 function parseErrorLines(raw) {
@@ -144,29 +342,101 @@ function parseErrorLines(raw) {
     .filter(Boolean);
 }
 
-function runSceneSmoke({ baseUrl, headed, rendererMode, scene, waitMs }) {
-  const session = `renderer-smoke-${scene}-${rendererMode.replace(/[^a-z0-9-]/gi, "-")}`;
-  const url = buildSceneSmokeUrl({ baseUrl, rendererMode, scene });
+function truncateForLog(value, limit = 4000) {
+  if (!value) {
+    return "";
+  }
+  if (value.length <= limit) {
+    return value;
+  }
+  return `${value.slice(0, limit)}\n…[truncated ${value.length - limit} chars]`;
+}
+
+function ensureArtifactDir(artifactDir) {
+  if (!artifactDir) {
+    return null;
+  }
+  mkdirSync(artifactDir, { recursive: true });
+  return artifactDir;
+}
+
+function dumpSceneSmokeFailureDiagnostics({ artifactDir, headed, rendererMode, scene, session }) {
+  const slug = `${scene}-${rendererMode.replace(/[^a-z0-9-]/gi, "-")}`;
+  const consoleLog = tryRunAgentBrowser(session, ["console"], { headed });
+  const errorsLog = tryRunAgentBrowser(session, ["errors"], { headed });
+  const htmlDump = tryRunAgentBrowser(session, ["get", "html"], { headed });
+  const screenshotPath = artifactDir ? join(artifactDir, `${slug}.png`) : null;
+  const screenshotResult = screenshotPath
+    ? tryRunAgentBrowser(session, ["screenshot", screenshotPath], { headed })
+    : { ok: false, stdout: "", stderr: "skipped (no --artifact-dir)" };
+
+  process.stderr.write(`\n=== scene-smoke failure diagnostics: ${slug} ===\n`);
+  process.stderr.write(`--- console ---\n${truncateForLog(consoleLog.stdout || consoleLog.stderr)}\n`);
+  process.stderr.write(`--- errors ---\n${truncateForLog(errorsLog.stdout || errorsLog.stderr)}\n`);
+  process.stderr.write(`--- html ---\n${truncateForLog(htmlDump.stdout)}\n`);
+  if (screenshotPath) {
+    process.stderr.write(
+      `--- screenshot ---\n${screenshotResult.ok ? screenshotPath : screenshotResult.stderr || "failed"}\n`,
+    );
+  }
+
+  if (artifactDir) {
+    try {
+      writeFileSync(join(artifactDir, `${slug}.console.log`), consoleLog.stdout || consoleLog.stderr || "");
+      writeFileSync(join(artifactDir, `${slug}.errors.log`), errorsLog.stdout || errorsLog.stderr || "");
+      writeFileSync(join(artifactDir, `${slug}.html`), htmlDump.stdout || "");
+    } catch (writeError) {
+      process.stderr.write(`[scene-smoke] failed to persist diagnostics: ${writeError?.message ?? writeError}\n`);
+    }
+  }
+}
+
+async function runSceneSmoke({
+  artifactDir,
+  baseUrl,
+  chain,
+  headed,
+  rendererMode,
+  scene,
+  sessionToken,
+  waitMs,
+  worldName,
+}) {
+  const session = `renderer-smoke-${scene}-${rendererMode.replace(/[^a-z0-9-]/gi, "-")}-${sessionToken}`;
+  const url = buildSceneSmokeUrl({ baseUrl, chain, rendererMode, scene, worldName });
 
   runAgentBrowser(session, ["open", url, "--ignore-https-errors"], { headed });
-  runAgentBrowser(session, ["wait", String(waitMs)]);
+  await sleep(waitMs);
 
-  const openedUrl = runAgentBrowser(session, ["get", "url"]);
-  const canvasExists = runAgentBrowser(session, ["eval", "Boolean(document.getElementById('main-canvas'))"]) === "true";
+  const openedUrl = await runAgentBrowserWithRetries(session, ["get", "url"], { headed });
+  const canvasExists =
+    (await runAgentBrowserWithRetries(session, ["eval", "Boolean(document.getElementById('main-canvas'))"], {
+      headed,
+    })) === "true";
   const diagnostics = normalizeRendererDiagnosticsSnapshot(
-    JSON.parse(runAgentBrowser(session, ["eval", "JSON.stringify(window.__rendererDiagnostics ?? null)"]) || "null"),
+    JSON.parse(
+      (await runAgentBrowserWithRetries(session, ["eval", "JSON.stringify(window.__rendererDiagnostics ?? null)"], {
+        headed,
+      })) || "null",
+    ),
   );
-  const unableToStartCount = Number(runAgentBrowser(session, ["get", "count", "text=Unable to Start"]) || "0");
-  const errors = parseErrorLines(runAgentBrowser(session, ["errors"]));
+  const unableToStartCount = Number(
+    (await runAgentBrowserWithRetries(session, ["get", "count", "text=Unable to Start"], { headed })) || "0",
+  );
+  const errors = parseErrorLines(await runAgentBrowserWithRetries(session, ["errors"], { headed }));
   const parity = evaluateRendererParitySummary(diagnostics);
 
   const evaluation = evaluateSceneSmokeResult({
     canvasExists,
     errors,
-    expectedPathname: `/play/${scene}`,
+    expectedPathname: `/play/${chain}/${encodeURIComponent(worldName)}/${scene}`,
     openedUrl,
     unableToStartCount,
   });
+
+  if (!evaluation.ok) {
+    dumpSceneSmokeFailureDiagnostics({ artifactDir, headed, rendererMode, scene, session });
+  }
 
   return {
     ...evaluation,
@@ -183,22 +453,34 @@ function runSceneSmoke({ baseUrl, headed, rendererMode, scene, waitMs }) {
   };
 }
 
-function main(argv) {
+async function main(argv) {
   const baseUrl = readOption(argv, "--base-url", DEFAULT_BASE_URL);
+  const chain = readOption(argv, "--chain", DEFAULT_CHAIN);
   const rendererMode = readOption(argv, "--renderer-mode", "experimental-webgpu-auto");
   const scenes = normalizeSceneList(readOption(argv, "--scenes", ""));
   const waitMs = Number(readOption(argv, "--wait-ms", String(DEFAULT_WAIT_MS)));
+  const requestedWorldName = readOption(argv, "--world", "");
   const headed = readFlag(argv, "--headed");
+  const artifactDir = ensureArtifactDir(readOption(argv, "--artifact-dir", ""));
+  const worldName = await resolveSceneSmokeWorldName({ chain, requestedWorldName });
+  const sessionToken = Date.now().toString(36);
 
-  const results = scenes.map((scene) =>
-    runSceneSmoke({
-      baseUrl,
-      headed,
-      rendererMode,
-      scene,
-      waitMs,
-    }),
-  );
+  const results = [];
+  for (const scene of scenes) {
+    results.push(
+      await runSceneSmoke({
+        artifactDir,
+        baseUrl,
+        chain,
+        headed,
+        rendererMode,
+        scene,
+        sessionToken,
+        waitMs,
+        worldName,
+      }),
+    );
+  }
 
   const failed = results.filter((result) => !result.ok);
   console.log(JSON.stringify({ ok: failed.length === 0, results }, null, 2));
@@ -211,5 +493,5 @@ function main(argv) {
 const isMainModule = process.argv[1] === fileURLToPath(import.meta.url);
 
 if (isMainModule) {
-  main(process.argv.slice(2));
+  await main(process.argv.slice(2));
 }

@@ -9,12 +9,14 @@ function readSceneSource(relativePath: string): string {
 }
 
 describe("worldmap committed chunk manager catch-up wiring", () => {
-  it("prioritizes structure catch-up before deferring the staged fanout", () => {
+  it("prioritizes critical catch-up before deferring the staged fanout", () => {
     const worldmapSource = readSceneSource("./worldmap.tsx");
 
     expect(worldmapSource).toMatch(/catchUpCommittedWorldmapChunkManagers\(\{/);
-    expect(worldmapSource).toMatch(/runImmediateStructureCatchUp: \(\) => this\.updateStructureManagerForChunk/);
-    expect(worldmapSource).toMatch(/scheduleDeferredRemainingManagerCatchUp: \(\) =>/);
-    expect(worldmapSource).toMatch(/this\.deferRemainingManagerCatchUpForChunk\(targetChunkKey, managerOptions\)/);
+    expect(worldmapSource).toMatch(/runImmediateCriticalManagerCatchUp: \(\) => this\.updateCriticalManagersForChunk/);
+    expect(worldmapSource).toMatch(/scheduleDeferredNonCriticalManagerCatchUp: \(\) =>/);
+    expect(worldmapSource).toMatch(
+      /this\.deferNonCriticalManagerCatchUpForCommittedChunk\(targetChunkKey, managerOptions\)/,
+    );
   });
 });

@@ -1,18 +1,30 @@
 import Loader from "lucide-react/dist/esm/icons/loader";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
-import { memo, useMemo } from "react";
+import { memo, type ReactNode, useMemo } from "react";
 
 import { ReactComponent as Lightning } from "@/assets/icons/common/lightning.svg";
+import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
+import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { usePlayerAvatarByUsername } from "@/hooks/use-player-avatar";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
+import {
+  isStaminaRecharging,
+  STAMINA_RECHARGING_FILL_CLASS,
+  STAMINA_RECHARGING_TEXT_CLASS,
+  STAMINA_RECHARGING_TRACK_CLASS,
+} from "@/ui/shared/lib/stamina-visuals";
+import { resolveStaminaDisplay } from "@/ui/shared/lib/stamina-display";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, EntityType, ID, RelicRecipientType, TroopType } from "@bibliothecadao/types";
 import { ActiveRelicEffects } from "../active-relic-effects";
 import { ArmyWarning } from "../../armies/army-warning";
-import { CompactEntityInventory } from "../compact-entity-inventory";
+import { buildDisplayItems, CompactEntityInventory, countDisplayItems } from "../compact-entity-inventory";
 import { useArmyEntityDetail } from "../hooks/use-army-entity-detail";
-import { EntityDetailLayoutVariant, EntityDetailSection } from "../layout";
+import { EntityDetailLayoutVariant } from "../layout";
+import { shouldShowArmyResourceInventoryTab } from "./army-banner-tabs";
 
 interface ArmyBannerEntityDetailProps {
   armyEntityId: ID;
@@ -20,6 +32,14 @@ interface ArmyBannerEntityDetailProps {
   compact?: boolean;
   showButtons?: boolean;
   layoutVariant?: EntityDetailLayoutVariant;
+  /**
+   * Optional "ARMY TILE · (col, row)" band rendered above the avatar row, mirrors
+   * the StructureBannerEntityDetail merge so the right-side inspector only has
+   * one panel per tile.
+   */
+  coordsLabel?: string;
+  /** Action rendered to the right of {@link coordsLabel} (typically Re-sync). */
+  headerAction?: ReactNode;
 }
 
 interface ArmyBannerEntityDetailContentProps extends Omit<ArmyBannerEntityDetailProps, "layoutVariant"> {
@@ -27,7 +47,7 @@ interface ArmyBannerEntityDetailContentProps extends Omit<ArmyBannerEntityDetail
 }
 
 const ArmyBannerEntityDetailContent = memo(
-  ({ armyEntityId, className, compact = true }: ArmyBannerEntityDetailContentProps) => {
+  ({ armyEntityId, className, compact = true, coordsLabel, headerAction }: ArmyBannerEntityDetailContentProps) => {
     const {
       explorer,
       explorerResources,
@@ -40,6 +60,13 @@ const ArmyBannerEntityDetailContent = memo(
       isLoadingDelete,
     } = useArmyEntityDetail({ armyEntityId });
     const activeRelicIds = useMemo(() => relicEffects.map((effect) => Number(effect.id)), [relicEffects]);
+    const currentDefaultTick = useCurrentDefaultTick();
+    const inventoryItems = useMemo(
+      () => buildDisplayItems(explorerResources, currentDefaultTick, activeRelicIds, RelicRecipientType.Explorer),
+      [activeRelicIds, currentDefaultTick, explorerResources],
+    );
+    const inventoryCounts = useMemo(() => countDisplayItems(inventoryItems), [inventoryItems]);
+    const resolvedWorldMode = useResolvedWorldGameMode();
     const ownerUsername = derivedData?.addressName ?? null;
     const { data: ownerProfileByUsername } = usePlayerAvatarByUsername(ownerUsername);
     const ownerAvatarUrl = ownerProfileByUsername?.avatarUrl ?? null;
@@ -55,9 +82,11 @@ const ArmyBannerEntityDetailContent = memo(
     if (!explorer || !derivedData) return null;
 
     const hasWarnings = Boolean(structureResources && explorerResources);
-    const visibleRelicEffects = compact ? relicEffects.slice(0, 2) : relicEffects;
-    const hiddenRelicEffects = Math.max(relicEffects.length - visibleRelicEffects.length, 0);
     const inventoryLimit = compact ? 10 : undefined;
+    const combatRelicActionLimit = compact ? 4 : undefined;
+    // Show every held relic — activatable ones are clickable, the rest render
+    // dimmed/disabled so you can still see what the army carries.
+    const showRelicsInline = derivedData.isMine && inventoryCounts.relics > 0;
     const ownerDisplay = derivedData.addressName ?? `Army Owner`;
     const stationedDisplay = derivedData.structureOwnerName ?? "Field deployment";
     const ownerInitial = (ownerDisplay || "?").charAt(0).toUpperCase();
@@ -67,13 +96,28 @@ const ArmyBannerEntityDetailContent = memo(
     const statusClass = derivedData.isMine
       ? "border-emerald-400/40 bg-emerald-400/15 text-emerald-200"
       : "border-red-400/40 bg-red-400/15 text-red-200";
+    const currentStamina = derivedData.staminaDisplay?.displayCurrent ?? Number(derivedData.stamina.amount);
+    const maxStamina = derivedData.maxStamina;
+    const showResourceInventoryInline = shouldShowArmyResourceInventoryTab(
+      resolvedWorldMode,
+      inventoryCounts.resources,
+    );
 
     return (
-      <EntityDetailSection
-        compact={compact}
-        tone={hasWarnings ? "highlight" : "default"}
-        className={cn("flex h-full min-h-0 flex-col gap-2 overflow-hidden", className)}
+      <div
+        className={cn(
+          "pointer-events-auto flex h-full min-h-0 flex-col gap-2 overflow-hidden rounded-xl px-3 py-3",
+          OVERLAY_SURFACE_BASE,
+          hasWarnings && "ring-1 ring-gold/30",
+          className,
+        )}
       >
+        {coordsLabel && (
+          <div className="flex items-center justify-between gap-2 border-b border-gold/15 pb-2">
+            <span className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{coordsLabel}</span>
+            {headerAction}
+          </div>
+        )}
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2">
             <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full border border-gold/30 bg-black/40">
@@ -119,50 +163,74 @@ const ArmyBannerEntityDetailContent = memo(
         <div className="flex flex-col gap-2">
           <TroopChip troops={explorer.troops} size="sm" className="w-full" />
           {derivedData.stamina && derivedData.maxStamina ? (
-            <InlineStaminaBar stamina={derivedData.stamina} maxStamina={derivedData.maxStamina} />
+            <InlineStaminaBar
+              currentStamina={currentStamina}
+              maxStamina={maxStamina}
+              isRecharging={derivedData.staminaDisplay?.isRecharging}
+              rightAccessory={
+                hasWarnings && explorerResources && structureResources ? (
+                  <ArmyWarning
+                    army={explorer}
+                    explorerResources={explorerResources}
+                    structureResources={structureResources}
+                  />
+                ) : null
+              }
+            />
           ) : null}
-        </div>
-
-        {hasWarnings && explorerResources && structureResources ? (
-          <ArmyWarning army={explorer} explorerResources={explorerResources} structureResources={structureResources} />
-        ) : null}
-
-        {visibleRelicEffects.length > 0 && (
-          <ActiveRelicEffects relicEffects={visibleRelicEffects} entityId={armyEntityId} compact />
-        )}
-        {hiddenRelicEffects > 0 && (
-          <p className="text-xxs text-gold/60 italic">+{hiddenRelicEffects} more relic effect(s) active</p>
-        )}
-
-        <div className="flex flex-col gap-2">
-          <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Relics</span>
-          {explorerResources ? (
+          {showRelicsInline && (
             <CompactEntityInventory
               resources={explorerResources}
               activeRelicIds={activeRelicIds}
               recipientType={RelicRecipientType.Explorer}
               entityId={armyEntityId}
               entityType={EntityType.ARMY}
-              allowRelicActivation={derivedData.isMine}
+              allowRelicActivation
+              variant="tight"
+              maxItems={combatRelicActionLimit}
+              filter="relics"
+              showHiddenCount={false}
+              emptyMessage="No relics ready."
+            />
+          )}
+          {relicEffects.length > 0 && (
+            <ActiveRelicEffects relicEffects={relicEffects} entityId={armyEntityId} compact />
+          )}
+          {showResourceInventoryInline && (
+            <CompactEntityInventory
+              resources={explorerResources}
+              activeRelicIds={activeRelicIds}
+              recipientType={RelicRecipientType.Explorer}
+              entityId={armyEntityId}
+              entityType={EntityType.ARMY}
               variant="tight"
               maxItems={inventoryLimit}
+              filter="resources"
+              emptyMessage="No resources carried."
+              showHiddenCount={false}
             />
-          ) : (
-            <p className="text-xxs text-gold/60 italic">No relics attached.</p>
           )}
         </div>
 
         {/* {derivedData.isMine ? (
           <ExplorationAutomationCompact explorerId={explorer.explorer_id ?? armyEntityId} compact={compact} />
         ) : null} */}
-      </EntityDetailSection>
+      </div>
     );
   },
 );
 ArmyBannerEntityDetailContent.displayName = "ArmyBannerEntityDetailContent";
 
 export const ArmyBannerEntityDetail = memo(
-  ({ armyEntityId, className, compact = true, showButtons = false, layoutVariant }: ArmyBannerEntityDetailProps) => {
+  ({
+    armyEntityId,
+    className,
+    compact = true,
+    showButtons = false,
+    layoutVariant,
+    coordsLabel,
+    headerAction,
+  }: ArmyBannerEntityDetailProps) => {
     const resolvedVariant: EntityDetailLayoutVariant = layoutVariant ?? (compact ? "default" : "banner");
 
     return (
@@ -172,6 +240,8 @@ export const ArmyBannerEntityDetail = memo(
         compact={compact}
         showButtons={showButtons}
         variant={resolvedVariant}
+        coordsLabel={coordsLabel}
+        headerAction={headerAction}
       />
     );
   },
@@ -180,33 +250,60 @@ export const ArmyBannerEntityDetail = memo(
 ArmyBannerEntityDetail.displayName = "ArmyBannerEntityDetail";
 
 const InlineStaminaBar = ({
-  stamina,
+  currentStamina,
   maxStamina,
+  isRecharging,
+  rightAccessory,
 }: {
-  stamina: { amount: bigint; updated_tick: bigint };
+  currentStamina: number;
   maxStamina: number;
+  isRecharging?: boolean | null;
+  rightAccessory?: ReactNode;
 }) => {
-  if (!stamina || maxStamina === 0) return null;
-  const staminaValue = Number(stamina.amount);
-  const percentage = (staminaValue / maxStamina) * 100;
+  if (maxStamina === 0) return null;
+  const { committedPercentage, displayPercentage, displayedCurrent } = resolveStaminaDisplay({
+    current: currentStamina,
+    max: maxStamina,
+  });
   const minTravelCost = configManager.getTravelStaminaCost(BiomeType.Ocean, TroopType.Crossbowman);
+  const recharging = isRecharging ?? isStaminaRecharging(displayedCurrent, maxStamina);
 
   let fillClass = "bg-progress-bar-danger";
-  if (staminaValue >= minTravelCost) {
+  if (displayedCurrent >= minTravelCost) {
     fillClass =
-      percentage > 66 ? "bg-progress-bar-good" : percentage > 33 ? "bg-progress-bar-medium" : "bg-progress-bar-danger";
+      displayPercentage > 66
+        ? "bg-progress-bar-good"
+        : displayPercentage > 33
+          ? "bg-progress-bar-medium"
+          : "bg-progress-bar-danger";
   }
 
   return (
     <div className="flex items-center gap-2 text-xxs text-gold/80">
-      <Lightning className="h-3 w-3 fill-order-power" />
-      <div className="flex-1 h-2 rounded-full border border-gray-600 overflow-hidden">
+      <Lightning className={cn("h-3 w-3 fill-order-power", recharging && STAMINA_RECHARGING_TEXT_CLASS)} />
+      <div
+        className={cn(
+          "flex-1 h-2 rounded-full border border-gray-600 overflow-hidden",
+          recharging && STAMINA_RECHARGING_TRACK_CLASS,
+        )}
+      >
         <div
-          className={`${fillClass} h-full rounded-full transition-all duration-300`}
-          style={{ width: `${Math.min(100, Math.max(0, percentage))}%` }}
+          className={cn(fillClass, "h-full rounded-full opacity-45 transition-all duration-300")}
+          style={{ width: `${committedPercentage}%` }}
+        />
+        <div
+          className={cn(
+            fillClass,
+            "h-full rounded-full transition-all duration-1000 -mt-2",
+            recharging && STAMINA_RECHARGING_FILL_CLASS,
+          )}
+          style={{ width: `${displayPercentage}%` }}
         />
       </div>
-      <span className="whitespace-nowrap">{`${staminaValue}/${maxStamina}`}</span>
+      <span className={cn("whitespace-nowrap", recharging && STAMINA_RECHARGING_TEXT_CLASS)}>
+        {`${displayedCurrent}/${maxStamina}`}
+      </span>
+      {rightAccessory ? <div className="flex shrink-0 items-center">{rightAccessory}</div> : null}
     </div>
   );
 };

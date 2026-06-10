@@ -5,7 +5,8 @@ import { ClientComponents, ResourcesIds, RESOURCE_PRECISION } from "@bibliotheca
 import { ResourceManager, getTotalResourceWeightKg, calculateDonkeysNeeded } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
 import { toast } from "sonner";
-import { ModalContainer } from "@/ui/shared";
+import { DialogShell } from "@/ui/design-system/molecules";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 const formatResourceSummary = (entry: TransferAutomationEntry): string => {
   if (Array.isArray(entry.resourceConfigs) && entry.resourceConfigs.length > 0) {
     return entry.resourceConfigs
@@ -31,6 +32,7 @@ const formatLastRun = (timestamp: number) => {
 };
 
 export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded?: boolean }) => {
+  const toggleModal = useUIStore((state) => state.toggleModal);
   const entries = useTransferAutomationStore((s) => s.entries);
   const toggleActive = useTransferAutomationStore((s) => s.toggleActive);
   const remove = useTransferAutomationStore((s) => s.remove);
@@ -244,8 +246,8 @@ export const TransferAutomationAdvancedModal = ({ embedded = false }: { embedded
   }
 
   return (
-    <ModalContainer size="full" title="Scheduled Transfers">
+    <DialogShell title="Scheduled Transfers" onClose={() => toggleModal(null)} size="xl">
       {content}
-    </ModalContainer>
+    </DialogShell>
   );
 };

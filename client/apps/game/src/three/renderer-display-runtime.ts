@@ -25,19 +25,25 @@ interface ResizeRendererDisplayInput {
   windowWidth: number;
 }
 
+const MAX_RENDERER_PIXEL_RATIO = 1.5;
+
 export function resolveRendererTargetPixelRatio(
   input: RendererDisplayPolicyInput & { devicePixelRatio: number },
 ): number {
   const devicePixelRatio = Math.max(input.devicePixelRatio || 1, 1);
-  const mobileCap = resolveRendererPixelRatioCap(input);
+  const pixelRatioCap = resolveRendererPixelRatioCap(input);
 
   switch (input.graphicsSetting) {
     case GraphicsSettings.HIGH:
-      return Math.min(devicePixelRatio, 2, mobileCap);
+      return Math.min(devicePixelRatio, 1.5, pixelRatioCap);
     case GraphicsSettings.MID:
-      return Math.min(devicePixelRatio, 1.5, mobileCap);
+      return Math.min(devicePixelRatio, 1.25, pixelRatioCap);
+    case GraphicsSettings.ULTRA_LOW:
+      return Math.min(0.55, pixelRatioCap);
+    case GraphicsSettings.LOW:
+      return Math.min(0.9, pixelRatioCap);
     default:
-      return Math.min(1, mobileCap);
+      return Math.min(1, pixelRatioCap);
   }
 }
 
@@ -48,6 +54,10 @@ export function resolveRendererTargetFps(input: RendererDisplayPolicyInput): num
         return 45;
       case GraphicsSettings.MID:
         return 30;
+      case GraphicsSettings.ULTRA_LOW:
+        return 20;
+      case GraphicsSettings.LOW:
+        return 24;
       default:
         return 30;
     }
@@ -55,24 +65,26 @@ export function resolveRendererTargetFps(input: RendererDisplayPolicyInput): num
 
   switch (input.graphicsSetting) {
     case GraphicsSettings.LOW:
-      return 30;
+      return 24;
+    case GraphicsSettings.ULTRA_LOW:
+      return 20;
     case GraphicsSettings.MID:
-      return 45;
+      return 30;
     default:
-      return null;
+      return 45;
   }
 }
 
 export function resolveRendererPixelRatioCap(input: RendererDisplayPolicyInput): number {
   if (!input.isMobileDevice) {
-    return Number.POSITIVE_INFINITY;
+    return MAX_RENDERER_PIXEL_RATIO;
   }
 
   switch (input.graphicsSetting) {
     case GraphicsSettings.HIGH:
-      return 1.5;
-    case GraphicsSettings.MID:
       return 1.25;
+    case GraphicsSettings.MID:
+      return 1;
     default:
       return 1;
   }

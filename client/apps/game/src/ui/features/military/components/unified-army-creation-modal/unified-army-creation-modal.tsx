@@ -1,13 +1,12 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useOwnedMilitaryStructureInfos } from "@/hooks/helpers/use-owned-structure-info";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentArmiesTick } from "@/hooks/helpers/use-block-timestamp";
 import {
   createPendingWorldmapFxKey,
   dispatchPendingWorldmapFxStart,
   dispatchPendingWorldmapFxStop,
 } from "@/utils/pending-worldmap-fx";
 import { sqlApi } from "@/services/api";
-import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 import {
@@ -45,22 +44,34 @@ import {
 import { getGuardStaminaSnapshot } from "../../utils/guard-stamina";
 import { ActionFooter } from "./action-footer";
 import { ArmyTypeToggle } from "./army-type-toggle";
-import { DeploymentStrengthSummary } from "../deployment-strength-summary";
 import { DefenseSlotSelection } from "./defense-slot-selection";
-import { DirectionSelection } from "./direction-selection";
+import { RealmHexDeployMap } from "./realm-hex-deploy-map";
 import { TroopCountSelector } from "./troop-count-selector";
 import { TroopSelectionGrid } from "./troop-selection-grid";
 import type { GuardSummary, SelectedTroopCombo, TroopSelectionOption } from "./types";
 
-interface UnifiedArmyCreationModalProps {
+interface UnifiedArmyCreationProps {
   structureId?: number;
   maxDefenseSlots?: number;
   isExplorer?: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
-  onClose?: () => void;
   followSelectedStructure?: boolean;
 }
+
+type UnifiedArmyCreationBodyProps = UnifiedArmyCreationProps & {
+  /**
+   * Kept for call-site compatibility. The legacy popup chrome has been removed;
+   * the parent Military modal provides the window shell.
+   */
+  embedded?: boolean;
+  /**
+   * When true, the troop count snaps to the current maxAffordable whenever
+   * the troop combo, slot, or army type changes. Used by the Military modal
+   * so the player can submit in one extra click (slot → ADD).
+   */
+  autoMaxOnContextChange?: boolean;
+};
 
 const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
 const TROOP_TIERS: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
@@ -71,15 +82,16 @@ const DEFAULT_TROOP_COMBO: SelectedTroopCombo = {
 
 const formatTroopTypeLabel = (type: TroopType) => (type === TroopType.Crossbowman ? "CROSSBOW" : type);
 
-export const UnifiedArmyCreationModal = ({
+export const UnifiedArmyCreationBody = ({
   structureId,
   maxDefenseSlots = 4,
   isExplorer = true,
   direction,
   initialGuardSlot,
-  onClose,
   followSelectedStructure,
-}: UnifiedArmyCreationModalProps) => {
+  embedded = true,
+  autoMaxOnContextChange = false,
+}: UnifiedArmyCreationBodyProps) => {
   const {
     setup: { components, systemCalls },
     account: { account },
@@ -111,7 +123,7 @@ export const UnifiedArmyCreationModal = ({
   const [troopCount, setTroopCount] = useState(0);
   const [guardSlot, setGuardSlot] = useState(initialGuardSlot ?? 0);
   const [armyType, setArmyType] = useState(isExplorer);
-  const { currentArmiesTick } = useBlockTimestamp();
+  const currentArmiesTick = useCurrentArmiesTick();
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const previousStructureIdRef = useRef<number | null>(null);
 
@@ -187,12 +199,6 @@ export const UnifiedArmyCreationModal = ({
   );
 
   const structureBase = activeStructureInfo?.structure.base ?? structureComponent?.base;
-  const structureName = activeStructureInfo
-    ? mode.structure.getName(activeStructureInfo.structure).name
-    : structureComponent
-      ? mode.structure.getName(structureComponent).name
-      : undefined;
-
   const structureCategory = structureBase?.category as StructureType | undefined;
   const structureLevel = structureBase?.level ?? null;
   const troopCapacityLimit =
@@ -293,7 +299,6 @@ export const UnifiedArmyCreationModal = ({
         ? troopCapacityLimit
         : Math.max(troopCapacityLimit - selectedGuardCount, 0)
       : null;
-  const projectedTroopCountForSummary = armyType ? troopCount : selectedGuardCount + troopCount;
 
   const selectedGuardCategory = selectedGuard?.troops?.category as TroopType | undefined;
   const selectedGuardTier = selectedGuard?.troops?.tier as TroopTier | undefined;
@@ -396,7 +401,7 @@ export const UnifiedArmyCreationModal = ({
 
   const armyManager = useMemo(() => {
     if (!activeStructureId) return null;
-    return new ArmyManager(systemCalls, activeStructureId as ID);
+    return new ArmyManager(systemCalls, activeStructureId as ID, components);
   }, [activeStructureId, components, systemCalls]);
 
   useEffect(() => {
@@ -530,7 +535,8 @@ export const UnifiedArmyCreationModal = ({
           kind: "create-army",
           structureId: activeStructureId,
           direction: selectedDirection,
-          troopResourceId: getTroopResourceId(selectedTroopCombo.type, selectedTroopCombo.tier),
+          troopType: selectedTroopCombo.type,
+          troopTier: selectedTroopCombo.tier,
         });
         await armyManager.createExplorerArmy(
           account,
@@ -539,6 +545,8 @@ export const UnifiedArmyCreationModal = ({
           troopCount,
           selectedDirection,
         );
+        // Tile occupancy changed — kick the deploy map to re-fetch.
+        useUIStore.getState().bumpMilitaryMapVersion();
       } else {
         if (!isDefenseSlotCompatible) {
           throw new Error("Selected defense slot requires matching troop type and tier");
@@ -628,6 +636,14 @@ export const UnifiedArmyCreationModal = ({
     setTroopCount((current) => Math.max(0, Math.min(current, maxAffordable)));
   }, [maxAffordable]);
 
+  // Smart-default mode: snap troopCount to maxAffordable whenever the player
+  // changes the action context (slot, army type, troop pick). One click to
+  // open the action, one click to submit — no manual MAX press needed.
+  useEffect(() => {
+    if (!autoMaxOnContextChange) return;
+    setTroopCount(maxAffordable);
+  }, [autoMaxOnContextChange, maxAffordable, armyType, guardSlot, selectedTroopCombo.type, selectedTroopCombo.tier]);
+
   const selectedGuardLabel =
     selectedGuardTier && selectedGuardCategory ? `${selectedGuardTier} ${selectedGuardCategory}` : null;
   const selectedGuardLabelUpper = selectedGuardLabel?.toUpperCase() ?? null;
@@ -671,105 +687,96 @@ export const UnifiedArmyCreationModal = ({
   };
   const handleTroopCountChange = (value: number) => setTroopCount(Math.max(0, Math.min(value, maxAffordable)));
 
-  const modalBaseTitle = armyType ? "Create Field Army" : "Create Defense Army";
-  const modalTitle = structureName ? `${structureName} - ${modalBaseTitle}` : modalBaseTitle;
-  const toggleModal = useUIStore((state) => state.toggleModal);
-  const handleClose = useCallback(() => {
-    if (onClose) {
-      onClose();
-      return;
-    }
-    toggleModal(null);
-  }, [onClose, toggleModal]);
+  const leftColumnClass = "flex flex-1 min-w-0 flex-col";
+  const rightColumnClass = "flex flex-1 min-w-0 flex-col";
 
   return (
-    <SecondaryPopup
-      width="800"
-      name="unified-army-creation-modal"
-      containerClassName="absolute left-0 top-0"
-      onOutsideClick={handleClose}
-    >
-      <SecondaryPopup.Head onClose={handleClose}>{modalTitle}</SecondaryPopup.Head>
-      <SecondaryPopup.Body width="100%" height="auto">
-        <div className="p-3">
-          <div className="flex gap-2">
-            <div className="flex flex-col w-[420px]">
-              <TroopSelectionGrid
-                options={troopOptions}
-                selected={selectedTroopCombo}
-                isDefenseTroopLocked={isDefenseTroopLocked}
-                selectedGuardCategory={selectedGuardCategory}
-                selectedGuardTier={selectedGuardTier}
-                onSelect={handleTroopSelect}
-              />
-              <TroopCountSelector
-                troopCount={troopCount}
-                maxAffordable={maxAffordable}
-                onChange={handleTroopCountChange}
-                capacityRemaining={capacityRemainingForSelector}
-                troopMaxSize={troopCapacityLimit ?? undefined}
-              />
-              <DeploymentStrengthSummary
-                className="mt-2"
-                structureLevel={structureLevel}
-                troopTier={selectedTroopCombo.tier}
-                troopCount={projectedTroopCountForSummary}
-                maxTroopSize={troopCapacityLimit}
-                capacityRemaining={capacityRemainingForSelector}
-                collapsible
-                defaultExpanded={false}
-              />
-            </div>
-
-            <div className="flex flex-col space-y-1.5 w-[340px]">
-              <ArmyTypeToggle
-                armyType={armyType}
-                canCreateAttackArmy={canCreateAttackArmy}
-                canCreateDefenseArmy={canCreateDefenseArmy}
-                canInteractWithDefense={canInteractWithDefense}
-                currentExplorersCount={currentExplorersCount}
-                maxExplorers={maxExplorers}
-                currentGuardsCount={currentGuardsCount}
-                maxGuards={resolvedMaxDefenseSlots}
-                onSelect={handleArmyTypeSelect}
-              />
-
-              <div className="flex-1 min-h-[140px]">
-                {!armyType && (
-                  <DefenseSlotSelection
-                    guardSlot={guardSlot}
-                    maxDefenseSlots={resolvedMaxDefenseSlots}
-                    guardsBySlot={guardsBySlot}
-                    availableSlots={availableGuardSlots}
-                    selectedTroopCombo={selectedTroopCombo}
-                    canCreateDefenseArmy={canCreateDefenseArmy}
-                    defenseSlotInfoMessage={defenseSlotInfoMessage}
-                    defenseSlotErrorMessage={defenseSlotErrorMessage}
-                    onSelect={handleGuardSlotSelect}
-                  />
-                )}
-
-                {armyType && (
-                  <DirectionSelection
-                    availableDirections={freeDirections}
-                    selectedDirection={selectedDirection}
-                    isLoading={isLoadingDirections}
-                    onSelect={handleDirectionSelect}
-                  />
-                )}
-              </div>
-
-              <ActionFooter
-                armyType={armyType}
-                label={actionLabel}
-                isLoading={isLoading}
-                isDisabled={isActionDisabled}
-                onSubmit={handleCreate}
-              />
-            </div>
+    <div className="p-3">
+      <div className="flex items-stretch gap-3">
+        <div className={leftColumnClass}>
+          <div className="flex flex-1 flex-col rounded-xl border border-gold/25 bg-black/25 p-2 gap-2">
+            <TroopSelectionGrid
+              options={troopOptions}
+              selected={selectedTroopCombo}
+              isDefenseTroopLocked={isDefenseTroopLocked}
+              selectedGuardCategory={selectedGuardCategory}
+              selectedGuardTier={selectedGuardTier}
+              onSelect={handleTroopSelect}
+              bare
+            />
+            <div className="border-t border-gold/15" />
+            <TroopCountSelector
+              troopCount={troopCount}
+              maxAffordable={maxAffordable}
+              onChange={handleTroopCountChange}
+              capacityRemaining={capacityRemainingForSelector}
+              troopMaxSize={troopCapacityLimit ?? undefined}
+              embedded
+            />
+            {troopCapacityLimit !== null && troopCapacityLimit !== undefined && (
+              <>
+                <div className="border-t border-gold/15" />
+                <div className="flex items-center justify-between px-1 py-0.5 text-[11px]">
+                  <span className="uppercase tracking-wider text-gold/55">Max troops</span>
+                  <span className="font-semibold tabular-nums text-gold">{troopCapacityLimit.toLocaleString()}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
+
+        <div className={rightColumnClass}>
+          <div className="flex flex-1 flex-col rounded-xl border border-gold/25 bg-black/25 p-2 gap-2">
+            <ArmyTypeToggle
+              armyType={armyType}
+              canCreateAttackArmy={canCreateAttackArmy}
+              canCreateDefenseArmy={canCreateDefenseArmy}
+              canInteractWithDefense={canInteractWithDefense}
+              currentExplorersCount={currentExplorersCount}
+              maxExplorers={maxExplorers}
+              currentGuardsCount={currentGuardsCount}
+              maxGuards={resolvedMaxDefenseSlots}
+              onSelect={handleArmyTypeSelect}
+            />
+            <div className="border-t border-gold/15" />
+            <div className="flex-1 min-h-[140px] flex flex-col">
+              {!armyType && (
+                <DefenseSlotSelection
+                  guardSlot={guardSlot}
+                  maxDefenseSlots={resolvedMaxDefenseSlots}
+                  guardsBySlot={guardsBySlot}
+                  availableSlots={availableGuardSlots}
+                  selectedTroopCombo={selectedTroopCombo}
+                  canCreateDefenseArmy={canCreateDefenseArmy}
+                  defenseSlotInfoMessage={defenseSlotInfoMessage}
+                  defenseSlotErrorMessage={defenseSlotErrorMessage}
+                  onSelect={handleGuardSlotSelect}
+                />
+              )}
+              {armyType && structureCoordX !== undefined && structureCoordY !== undefined && (
+                <RealmHexDeployMap
+                  centerCol={Number(structureCoordX)}
+                  centerRow={Number(structureCoordY)}
+                  availableDirections={freeDirections}
+                  selectedDirection={selectedDirection}
+                  isLoading={isLoadingDirections}
+                  onSelect={handleDirectionSelect}
+                />
+              )}
+            </div>
+          </div>
+          <div className="mt-2">
+            <ActionFooter
+              armyType={armyType}
+              label={actionLabel}
+              isLoading={isLoading}
+              isDisabled={isActionDisabled}
+              onSubmit={handleCreate}
+              embedded
+            />
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };

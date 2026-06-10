@@ -2,7 +2,7 @@ import { KeyboardShortcut } from "@/hooks/store/use-shortcut-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { Divider, KbdKey } from "@/ui/design-system/atoms";
 import { Headline } from "@/ui/design-system/molecules";
-import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { shortcuts } from "@/ui/features/world";
 import { useShortcutManager } from "@/utils/shortcuts";
 import { useMemo } from "react";
@@ -72,28 +72,29 @@ export const ShortcutsWindow = () => {
   if (!isOpen) return null;
 
   return (
-    <SecondaryPopup name="shortcuts" className="pointer-events-auto">
-      <SecondaryPopup.Head onClose={() => togglePopup(shortcuts)}>Keyboard Shortcuts</SecondaryPopup.Head>
-      <SecondaryPopup.Body height="h-96" width="500px">
-        <div className="flex flex-col space-y-4 p-6 overflow-y-auto h-full">
-          <Headline>Active Shortcuts ({registeredShortcuts.length})</Headline>
+    <CenteredModalShell
+      title="Keyboard Shortcuts"
+      onClose={() => togglePopup(shortcuts)}
+      persistKey="shortcuts"
+      panelClassName="w-[500px] h-auto max-h-[calc(100vh-64px)]"
+      bodyClassName="overflow-auto"
+    >
+      <div className="flex flex-col space-y-4 p-6 overflow-y-auto h-full">
+        <Headline>Active Shortcuts ({registeredShortcuts.length})</Headline>
 
-          {registeredShortcuts.length === 0 ? (
-            <div className="text-gold/60 text-center py-8">No shortcuts are currently registered.</div>
-          ) : (
-            <div className="space-y-6">
-              {renderShortcutSection("Global", categorizedShortcuts.global)}
-              {renderShortcutSection("World View", categorizedShortcuts.world)}
-              {renderShortcutSection("Local View", categorizedShortcuts.local)}
-            </div>
-          )}
+        {registeredShortcuts.length === 0 ? (
+          <div className="text-gold/60 text-center py-8">No shortcuts are currently registered.</div>
+        ) : (
+          <div className="space-y-6">
+            {renderShortcutSection("Global", categorizedShortcuts.global)}
+            {renderShortcutSection("World View", categorizedShortcuts.world)}
+            {renderShortcutSection("Local View", categorizedShortcuts.local)}
+          </div>
+        )}
 
-          <Divider spacing="sm" className="mt-4" />
-          <p className="text-gold/60 text-xxs">
-            Shortcuts are automatically registered by active components and scenes.
-          </p>
-        </div>
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
+        <Divider spacing="sm" className="mt-4" />
+        <p className="text-gold/60 text-xxs">Shortcuts are automatically registered by active components and scenes.</p>
+      </div>
+    </CenteredModalShell>
   );
 };

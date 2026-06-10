@@ -10,6 +10,7 @@
     "build:standalone": "bun run build.ts --compile",
     "package:release": "tsx src/release/package-release.ts",
     "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
     "test": "vitest --run",
     "test:watch": "vitest"
   },

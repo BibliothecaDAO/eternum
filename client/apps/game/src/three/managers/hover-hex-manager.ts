@@ -251,18 +251,34 @@ export class HoverHexManager {
     }
 
     if (this.hoverHalo) {
-      if (!this.hoverHalo.parent) {
-        this.scene.add(this.hoverHalo);
+      if (this.visualMode === "fill") {
+        if (!this.hoverHalo.parent) {
+          this.scene.add(this.hoverHalo);
+        }
+
+        this.hoverHalo.visible = true;
+      } else {
+        if (this.hoverHalo.parent) {
+          this.scene.remove(this.hoverHalo);
+        }
+
+        this.hoverHalo.visible = false;
+      }
+    }
+
+    if (this.visualMode === "fill") {
+      if (!this.hoverHex.parent) {
+        this.scene.add(this.hoverHex);
       }
 
-      this.hoverHalo.visible = true;
-    }
+      this.hoverHex.visible = true;
+    } else {
+      if (this.hoverHex.parent) {
+        this.scene.remove(this.hoverHex);
+      }
 
-    if (!this.hoverHex.parent) {
-      this.scene.add(this.hoverHex);
+      this.hoverHex.visible = false;
     }
-
-    this.hoverHex.visible = true;
 
     if (this.hoverOutline) {
       if (!this.hoverOutline.parent) {

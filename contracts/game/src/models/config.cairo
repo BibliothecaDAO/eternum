@@ -26,6 +26,7 @@ pub struct WorldConfig {
     pub admin_address: ContractAddress,
     pub vrf_provider_address: ContractAddress,
     pub map_center_offset: u32,
+    pub biome_climate_config: BiomeClimateConfig,
     pub season_addresses_config: SeasonAddressesConfig,
     pub hyperstructure_config: HyperstructureConfig,
     pub hyperstructure_cost_config: HyperstructureCostConfig,
@@ -67,6 +68,16 @@ pub struct WorldConfig {
     pub faith_config: FaithConfig,
     pub artificer_config: ArtificerConfig,
     pub bitcoin_mine_config: BitcoinMineConfig,
+}
+
+#[derive(Introspect, Copy, Drop, Serde, DojoStore)]
+pub struct BiomeClimateConfig {
+    pub elevation_scale_bps: u16,
+    pub moisture_scale_bps: u16,
+    pub elevation_bias_bps: u16,
+    pub moisture_bias_bps: u16,
+    pub elevation_seed: u32,
+    pub moisture_seed: u32,
 }
 
 #[derive(Introspect, Copy, Drop, Serde, DojoStore)]
@@ -502,6 +513,7 @@ pub struct BlitzSettlementConfig {
     pub side: u32,
     pub step: u32,
     pub point: u32,
+    pub open_settlement_count: u16,
     pub single_realm_mode: bool,
     pub two_player_mode: bool,
 }
@@ -571,7 +583,9 @@ pub impl BlitzSettlementConfigImpl of BlitzSettlementConfigTrait {
             !(single_realm_mode && two_player_mode),
             "Eternum: single_realm_mode and two_player_mode cannot both be set",
         );
-        BlitzSettlementConfig { base_distance, single_realm_mode, two_player_mode, side: 0, step: 1, point: 1 }
+        BlitzSettlementConfig {
+            base_distance, single_realm_mode, two_player_mode, side: 0, step: 1, point: 1, open_settlement_count: 0,
+        }
     }
 
     fn next(ref self: BlitzSettlementConfig) {
@@ -730,6 +744,15 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
     fn new() -> BlitzHypersSettlementConfig {
         BlitzHypersSettlementConfig { max_ring_count: 0, current_ring_count: 0, side: 5, point: 1 }
     }
+
+    fn max_ring_count_for_registration_count(registration_count: u128, two_player_mode: bool) -> u8 {
+        if two_player_mode {
+            Blitz2PlayerHypersSettlementConfigImpl::max_ring_count_for_registration_count(registration_count)
+        } else {
+            BlitzMultiplePlayerHypersSettlementConfigImpl::max_ring_count_for_registration_count(registration_count)
+        }
+    }
+
     fn is_valid_ring(self: BlitzHypersSettlementConfig, two_player_mode: bool) -> bool {
         if two_player_mode {
             Blitz2PlayerHypersSettlementConfigImpl::is_valid_ring(self)
@@ -769,6 +792,18 @@ pub impl BlitzHypersSettlementConfigImpl of BlitzHypersSettlementConfigTrait {
 
 #[generate_trait]
 pub impl BlitzMultiplePlayerHypersSettlementConfigImpl of BlitzMultiplePlayerHypersSettlementConfigTrait {
+    fn max_ring_count_for_registration_count(registration_count: u128) -> u8 {
+        let mut max_ring_count: u8 = 0;
+        loop {
+            let ring_threshold = 6_u128 * max_ring_count.into() * max_ring_count.into() + 1;
+            if registration_count < ring_threshold {
+                break;
+            }
+            max_ring_count += 1;
+        }
+        max_ring_count
+    }
+
     fn is_valid_ring(config: BlitzHypersSettlementConfig) -> bool {
         if config.current_ring_count > config.max_ring_count {
             return false;
@@ -835,6 +870,10 @@ pub impl BlitzMultiplePlayerHypersSettlementConfigImpl of BlitzMultiplePlayerHyp
 
 #[generate_trait]
 pub impl Blitz2PlayerHypersSettlementConfigImpl of Blitz2PlayerHypersSettlementConfigTrait {
+    fn max_ring_count_for_registration_count(registration_count: u128) -> u8 {
+        2
+    }
+
     fn is_valid_ring(config: BlitzHypersSettlementConfig) -> bool {
         if config.current_ring_count > config.max_ring_count {
             return false;
@@ -892,7 +931,6 @@ pub struct BlitzRegistrationConfig {
     pub registration_count: u16,
     pub registration_count_max: u16,
     pub registration_start_at: u32,
-    pub assigned_positions_count: u16,
 }
 
 #[generate_trait]
@@ -1278,37 +1316,18 @@ pub struct StructureLevelConfig {
 
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
-pub struct BlitzRealmPositionRegister {
+pub struct BlitzSettlementPosition {
     #[key]
-    pub spot_number: u16,
+    pub settlement_number: u16,
     pub coords: Span<Coord>,
 }
 
 #[derive(Copy, Drop, Serde, Introspect)]
 #[dojo::model]
-pub struct BlitzRealmSettleFinish {
+pub struct BlitzSettlement {
     #[key]
     pub player: ContractAddress,
-    pub coords: Span<Coord>,
     pub structure_ids: Span<ID>,
-    pub labor_prod_started: bool,
-}
-
-#[derive(Copy, Drop, Serde, Introspect)]
-#[dojo::model]
-pub struct BlitzRealmPlayerRegister {
-    #[key]
-    pub player: ContractAddress,
-    pub once_registered: bool,
-    pub registered: bool,
-}
-
-#[derive(Copy, Drop, Serde, Introspect)]
-#[dojo::model]
-pub struct BlitzPlayerRegisterList {
-    #[key]
-    pub count: u16,
-    pub player: ContractAddress,
 }
 
 #[derive(Copy, Drop, Serde, Introspect)]

@@ -167,7 +167,7 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
   // Empty state
   if (chartData.length === 0) {
     return (
-      <div className="w-full rounded-lg border border-dashed border-gold/15 bg-dark-wood px-4 py-5 text-sm text-gold/70 shadow-inner">
+      <div className="w-full rounded-lg border border-dashed border-gold/15 bg-black/40 px-4 py-5 text-sm text-gold/70 shadow-inner">
         <p className="text-lightest">Market history</p>
         <p className="mt-1 text-xs text-gold/60">Price history will appear once trading begins.</p>
       </div>
@@ -216,7 +216,7 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
       .toSorted((a, b) => Number(b.value ?? 0) - Number(a.value ?? 0));
 
     return (
-      <div className="min-w-[200px] rounded-lg border border-gold/15 bg-dark-wood px-3 py-2 shadow-xl backdrop-blur">
+      <div className="min-w-[200px] rounded-lg border border-gold/15 bg-black/40 px-3 py-2 shadow-xl backdrop-blur">
         {formattedDate && (
           <div className="mb-2 border-b border-gold/10 pb-1.5 text-[10px] uppercase tracking-[0.08em] text-gold/55">
             {formattedDate}
@@ -251,7 +251,7 @@ export const MarketHistory = ({ market, refreshKey = 0 }: { market: MarketClass;
   };
 
   return (
-    <div className="w-full rounded-lg border border-gold/15 bg-dark-wood p-4 shadow-inner">
+    <div className="w-full rounded-lg border border-gold/15 bg-black/40 p-4 shadow-inner">
       {/* Header with stats and time range pills */}
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <HeaderStats

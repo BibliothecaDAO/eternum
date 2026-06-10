@@ -181,6 +181,7 @@ export class HexGrid {
 
 export const isTileOccupierStructure = (tileOccupier: TileOccupier) => {
   return (
+    tileOccupier === TileOccupier.ReservedHyperstructure ||
     tileOccupier === TileOccupier.RealmRegularLevel1 ||
     tileOccupier === TileOccupier.RealmWonderLevel1 ||
     tileOccupier === TileOccupier.HyperstructureLevel1 ||
@@ -207,4 +208,12 @@ export const isTileOccupierQuest = (tileOccupier: TileOccupier) => {
 
 export const isTileOccupierChest = (tileOccupier: TileOccupier) => {
   return tileOccupier === TileOccupier.Chest;
+};
+
+export const isTileOccupierReservedHyperstructure = (tileOccupier: TileOccupier) => {
+  return tileOccupier === TileOccupier.ReservedHyperstructure;
+};
+
+export const hasTileOccupier = (tileOccupier: number | null | undefined) => {
+  return Number(tileOccupier ?? TileOccupier.None) !== TileOccupier.None;
 };

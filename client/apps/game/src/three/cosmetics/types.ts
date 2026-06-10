@@ -134,12 +134,4 @@ export interface CosmeticResolutionResult {
   skin: ResolvedCosmeticSkin;
   attachments: CosmeticAttachmentTemplate[];
   metadata?: Record<string, unknown>;
-  /** @deprecated Phase 4 migrates consumers to `skin`. */
-  cosmeticId?: string;
-  /** @deprecated Phase 4 migrates consumers to `skin`. */
-  modelKey?: string;
-  /** @deprecated Phase 4 migrates consumers to `skin`. */
-  modelType?: ModelType;
-  /** @deprecated Phase 4 migrates consumers to `skin.registryEntry`. */
-  registryEntry?: CosmeticRegistryEntry;
 }

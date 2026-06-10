@@ -1,12 +1,18 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { BottomPanelTabId, useUIStore } from "@/hooks/store/use-ui-store";
+import { useUIStore } from "@/hooks/store/use-ui-store";
 import { debouncedGetEntitiesFromTorii } from "@/dojo/debounced-queries";
 import { getStructuresDataFromTorii } from "@/dojo/queries";
 import { useEntityResync } from "@/hooks/helpers/use-entity-resync";
 import { isVillageLikeStructureCategory, normalizeStructureCategory } from "@/lib/structure-type-utils";
-import { FELT_CENTER } from "@/ui/config";
+import { BuildingThumbs, FELT_CENTER } from "@/ui/config";
+import { LeftView } from "@/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_BODY, HUD_BODY_MUTED, HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import Button from "@/ui/design-system/atoms/button";
+import CircleButton from "@/ui/design-system/molecules/circle-button";
+import { MarketModal } from "@/ui/features/economy/trading";
 import { sqlApi } from "@/services/api";
 import {
   configManager,
@@ -16,8 +22,10 @@ import {
   getBuildingCosts,
   getBalance,
   getBlockTimestamp,
+  hasTileOccupier,
   isTileOccupierChest,
   isTileOccupierQuest,
+  isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
   Position as PositionInterface,
   getTileAt,
@@ -40,17 +48,22 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-details";
 import { ProductionModal } from "@/ui/features/settlement";
+import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
 import { TileManager } from "@bibliothecadao/eternum";
-import { type LucideIcon } from "lucide-react";
-import CircleHelp from "lucide-react/dist/esm/icons/circle-help";
+import Bot from "lucide-react/dist/esm/icons/bot";
+import Factory from "lucide-react/dist/esm/icons/factory";
+import Hammer from "lucide-react/dist/esm/icons/hammer";
 import Info from "lucide-react/dist/esm/icons/info";
 import Loader from "lucide-react/dist/esm/icons/loader";
-import MapIcon from "lucide-react/dist/esm/icons/map";
+import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
+import PauseIcon from "lucide-react/dist/esm/icons/pause";
+import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
+import Play from "lucide-react/dist/esm/icons/play";
 import RefreshCw from "lucide-react/dist/esm/icons/refresh-cw";
 import Trash2 from "lucide-react/dist/esm/icons/trash-2";
 import { toast } from "sonner";
 
-import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN } from "./constants";
+import { BOTTOM_PANEL_HEIGHT, BOTTOM_PANEL_MARGIN, LEFT_ACTIONS_GAP_FROM_MINIMAP, MINIMAP_SIZE } from "./constants";
 import { HexMinimap, normalizeMinimapTile, type MinimapTile } from "./hex-minimap";
 
 const compactResourceFormatter = new Intl.NumberFormat("en-US", {
@@ -83,7 +96,12 @@ interface PanelFrameProps {
   children: ReactNode;
   headerAction?: ReactNode;
   className?: string;
-  attached?: boolean;
+  /**
+   * Optional pixel height. Defaults to BOTTOM_PANEL_HEIGHT (used by the tile
+   * details panel); minimap renders at a smaller height since it's a constant
+   * reference widget rather than a content panel.
+   */
+  height?: number;
 }
 
 interface ResourceAmountEntry {
@@ -118,14 +136,14 @@ const normalizeResourceEntries = (value: unknown): ResourceAmountEntry[] => {
     .filter((entry): entry is ResourceAmountEntry => Boolean(entry));
 };
 
-const PanelFrame = ({ title, children, headerAction, className, attached = false }: PanelFrameProps) => (
+const PanelFrame = ({ title, children, headerAction, className, height }: PanelFrameProps) => (
   <section
     className={cn(
-      "pointer-events-auto panel-wood panel-wood-corners border border-gold/20 bg-black/60 shadow-2xl flex h-full flex-col overflow-hidden",
-      attached && "rounded-t-none border-t-0",
+      "pointer-events-auto flex h-full flex-col overflow-hidden rounded-xl",
+      OVERLAY_SURFACE_BASE,
       className,
     )}
-    style={{ height: BOTTOM_PANEL_HEIGHT }}
+    style={{ height: height ?? BOTTOM_PANEL_HEIGHT }}
   >
     <header className="flex items-center justify-between gap-2 border-b border-gold/20 px-2 py-1 lg:px-3 lg:py-1.5">
       <p className="min-w-0 flex-1 truncate text-[11px] font-semibold uppercase tracking-[0.35em] text-gold/70">
@@ -135,52 +153,6 @@ const PanelFrame = ({ title, children, headerAction, className, attached = false
     </header>
     <div className="flex-1 min-h-0 overflow-hidden px-1.5 py-1 lg:px-2.5 lg:py-2">{children}</div>
   </section>
-);
-
-type TabDefinition = {
-  id: BottomPanelTabId;
-  label: string;
-  icon: LucideIcon;
-};
-
-const BOTTOM_PANEL_TABS: TabDefinition[] = [
-  { id: "tile", label: "Selected tile", icon: CircleHelp },
-  { id: "minimap", label: "Minimap", icon: MapIcon },
-];
-
-const PanelTabs = ({
-  tabs,
-  activeTab,
-  onSelect,
-  className,
-}: {
-  tabs: TabDefinition[];
-  activeTab: BottomPanelTabId | null;
-  onSelect: (tab: BottomPanelTabId) => void;
-  className?: string;
-}) => (
-  <div className={cn("pointer-events-auto flex gap-2", className)}>
-    {tabs.map(({ id, label, icon: Icon }) => {
-      const isActive = activeTab === id;
-      return (
-        <button
-          key={id}
-          type="button"
-          onClick={() => onSelect(id)}
-          aria-pressed={isActive}
-          className={cn(
-            "flex h-11 w-11 items-center justify-center rounded-md border transition",
-            isActive
-              ? "border-gold/80 bg-black/80 text-gold shadow-[0_6px_18px_rgba(255,209,128,0.25)] ring-1 ring-gold/40"
-              : "border-gold/30 bg-black/70 text-gold/70 hover:border-gold/60 hover:text-gold",
-          )}
-          title={label}
-        >
-          <Icon className="h-4 w-4" />
-        </button>
-      );
-    })}
-  </div>
 );
 
 const MapTilePanel = () => {
@@ -202,7 +174,7 @@ const MapTilePanel = () => {
 
   const hasOccupier = useMemo(() => {
     if (!tile) return false;
-    return tile.occupier_id !== 0;
+    return hasTileOccupier(tile.occupier_type);
   }, [tile]);
 
   const occupierType = useMemo(() => tile?.occupier_type ?? 0, [tile]);
@@ -214,6 +186,10 @@ const MapTilePanel = () => {
   const isStructure = useMemo(() => {
     return Boolean(tile?.occupier_is_structure) || isTileOccupierStructure(occupierType);
   }, [occupierType, tile?.occupier_is_structure]);
+
+  const isReservedHyperstructure = useMemo(() => {
+    return isTileOccupierReservedHyperstructure(occupierType);
+  }, [occupierType]);
 
   const isChest = useMemo(() => {
     return isTileOccupierChest(occupierType);
@@ -227,20 +203,21 @@ const MapTilePanel = () => {
     if (!tile) return "Hex Tile";
     if (!hasOccupier) return "Biome Tile";
     if (isSpire) return "Spire Tile";
+    if (isReservedHyperstructure) return "Unconstructed Hyperstructure";
     if (isStructure) return "Structure Tile";
     if (isChest) return "Relic Tile";
     if (isQuest) return "Quest Tile";
     return "Army Tile";
-  }, [tile, hasOccupier, isSpire, isStructure, isChest, isQuest]);
+  }, [tile, hasOccupier, isSpire, isReservedHyperstructure, isStructure, isChest, isQuest]);
 
   const panelTitle = selectedHex
     ? `${tileTypeLabel} · (${selectedHex.col - FELT_CENTER()}, ${selectedHex.row - FELT_CENTER()})`
     : "No Tile Selected";
 
   const syncableEntityType = useMemo<SyncableEntityType | null>(() => {
-    if (!tile || !hasOccupier || isSpire || isChest || isQuest) return null;
+    if (!tile || !hasOccupier || isSpire || isChest || isQuest || isReservedHyperstructure) return null;
     return isStructure ? "structure" : "explorer";
-  }, [hasOccupier, isChest, isQuest, isSpire, isStructure, tile]);
+  }, [hasOccupier, isChest, isQuest, isReservedHyperstructure, isSpire, isStructure, tile]);
 
   const syncableEntityId = useMemo<ID | null>(() => {
     if (!tile || !syncableEntityType) return null;
@@ -299,37 +276,29 @@ const MapTilePanel = () => {
 
   const headerAction =
     syncableEntityType && syncableEntityId !== null ? (
-      <Button
-        variant="outline"
-        size="xs"
-        className="gap-1.5 rounded-full border-gold/60 px-3 py-1 text-[11px]"
-        forceUppercase={false}
+      <button
+        type="button"
         onClick={handleResyncCurrentEntity}
-        withoutSound
         disabled={isSyncingCurrentEntity}
         aria-label={`Re-sync ${syncableEntityType} ${String(syncableEntityId)}`}
+        title={isSyncingCurrentEntity ? "Syncing..." : "Re-sync"}
+        className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {isSyncingCurrentEntity ? (
-          <Loader className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <RefreshCw className="h-3.5 w-3.5" />
-        )}
-        <span>{isSyncingCurrentEntity ? "Syncing..." : "Re-sync"}</span>
-      </Button>
+        {isSyncingCurrentEntity ? <Loader className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+        <span>{isSyncingCurrentEntity ? "Syncing" : "Re-sync"}</span>
+      </button>
     ) : null;
 
   return (
-    <PanelFrame title={panelTitle} headerAction={headerAction} attached>
+    <>
       {selectedHex ? (
-        <div className="h-full min-h-0 overflow-hidden">
-          <SelectedWorldmapEntity />
-        </div>
+        <SelectedWorldmapEntity coordsLabel={panelTitle} headerAction={headerAction} />
       ) : (
-        <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
-          <p className="text-xs text-gold/70">Tap any tile on the world map to view its occupants and resources.</p>
+        <div className={cn("pointer-events-auto rounded-xl px-4 py-6 text-center", OVERLAY_SURFACE_BASE)}>
+          <p className={HUD_BODY}>Tap any tile on the world map to view its occupants and resources.</p>
         </div>
       )}
-    </PanelFrame>
+    </>
   );
 };
 
@@ -348,6 +317,8 @@ const LocalTilePanel = () => {
   const useSimpleCost = useUIStore((state) => state.useSimpleCost);
   const setTooltip = useUIStore((state) => state.setTooltip);
   const toggleModal = useUIStore((state) => state.toggleModal);
+  const setPreviewBuilding = useUIStore((state) => state.setPreviewBuilding);
+  const previewBuilding = useUIStore((state) => state.previewBuilding);
   const currentDefaultTick = getBlockTimestamp().currentDefaultTick;
   const mode = useGameModeConfig();
 
@@ -521,6 +492,23 @@ const LocalTilePanel = () => {
     return playerStructures.some((structure) => structure.entityId === ownerId);
   }, [building, playerStructures]);
 
+  // Cancel any active "build another" preview when the player picks a
+  // different tile. Otherwise the preview from one building leaks into the
+  // next click and ghost-places a new building on an occupied tile, which
+  // the player reads as the panel being broken.
+  useEffect(() => {
+    setPreviewBuilding(null);
+    // We intentionally only run on tile changes — the preview is local to a
+    // building selection, and resetting on every render would block the
+    // pickaxe toggle below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    selectedBuildingHex?.outerCol,
+    selectedBuildingHex?.outerRow,
+    selectedBuildingHex?.innerCol,
+    selectedBuildingHex?.innerRow,
+  ]);
+
   const canAddProduction =
     producedResource !== undefined &&
     buildingCategory !== BuildingType.ResourceFish &&
@@ -567,19 +555,17 @@ const LocalTilePanel = () => {
   }, [contractComponents, structureSyncTarget, syncEntity, toriiClient]);
 
   const headerAction = structureSyncTarget ? (
-    <Button
-      variant="outline"
-      size="xs"
-      className="gap-1.5 rounded-full border-gold/60 px-3 py-1 text-[11px]"
-      forceUppercase={false}
+    <button
+      type="button"
       onClick={handleResyncStructure}
-      withoutSound
       disabled={isSyncingStructure}
       aria-label={`Re-sync structure ${String(structureSyncTarget.entityId)}`}
+      title={isSyncingStructure ? "Syncing..." : "Re-sync"}
+      className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-50"
     >
-      {isSyncingStructure ? <Loader className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-      <span>{isSyncingStructure ? "Syncing..." : "Re-sync"}</span>
-    </Button>
+      {isSyncingStructure ? <Loader className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+      <span>{isSyncingStructure ? "Syncing" : "Re-sync"}</span>
+    </button>
   ) : null;
 
   const handleToggleProduction = async () => {
@@ -641,263 +627,324 @@ const LocalTilePanel = () => {
     }
   };
 
+  // ---- Local-tile render ---------------------------------------------------
+  // Two bubbles max for buildings: a header strip and a single "Building"
+  // bubble that groups production / consumes / population / build cost /
+  // actions into compact rows separated by hairlines. The previous version
+  // had five separate bubbles and felt over-atomized.
+  if (!selectedBuildingHex) {
+    return (
+      <div
+        className={cn(
+          "pointer-events-auto flex flex-col items-center justify-center rounded-xl px-4 py-6 text-center",
+          OVERLAY_SURFACE_BASE,
+        )}
+      >
+        <p className={HUD_BODY}>Tap a building tile to view its details.</p>
+      </div>
+    );
+  }
+
+  // Castle tile — the realm rail already prints level / population / guards
+  // so we don't repeat them here. Just the header strip (coords + Re-sync)
+  // and the upgrade card, which carries its own production + missing-
+  // resource breakdown.
+  if (isCastleTile) {
+    return (
+      <InfoBubble title={panelTitle} cue={headerAction} bodyClassName="pt-0">
+        <RealmUpgradeCompact />
+      </InfoBubble>
+    );
+  }
+
+  if (!hasBuilding) {
+    return (
+      <InfoBubble title={panelTitle} cue={headerAction}>
+        <p className={HUD_BODY_MUTED}>Empty tile. Pick a building from the menu to start construction here.</p>
+      </InfoBubble>
+    );
+  }
+
+  const populationChips: Array<{ key: string; label: string }> = [];
+  if (populationCost !== 0) populationChips.push({ key: "cost", label: `Cost +${populationCost}` });
+  if (populationCapacity !== 0) populationChips.push({ key: "cap", label: `Capacity +${populationCapacity}` });
+
+  // Compact row helper used inside the consolidated building bubble.
+  const SectionRow = ({ label, children }: { label: string; children: ReactNode }) => (
+    <div className="space-y-1">
+      <span className={HUD_LABEL}>{label}</span>
+      <div className="flex flex-wrap items-center gap-1.5">{children}</div>
+    </div>
+  );
+
+  // One chip style for every section (produces / consumes / population /
+  // build cost). The variant just colors the value text — the wrapper is
+  // always the same etched-bronze chip so the rows read as one design.
+  const chipBase =
+    "flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1 text-[11px] font-semibold tabular-nums";
+  const valueClassFor = (variant: "neutral" | "good" | "bad" | "warn") => {
+    switch (variant) {
+      case "good":
+        return "text-emerald-300";
+      case "bad":
+        return "text-red-300";
+      case "warn":
+        return "text-amber-200";
+      default:
+        return "text-gold";
+    }
+  };
+
+  // "Build another" affordance — gated by owner + sufficient resources for
+  // every cost entry + at least one open building tile inside the realm
+  // radius. Computed inline (no hook) so it stays below the early returns
+  // without breaking hook order rules. resolveRealmHasAvailableBuildingTile
+  // is the same helper the Build modal uses; it reads from RECS so it's
+  // cheap to call once per render.
+  const hasAvailableTile = (() => {
+    if (!structureEntityId || !selectedStructure) return false;
+    return resolveRealmHasAvailableBuildingTile({
+      entityId: structureEntityId,
+      realmPosition: { x: selectedStructure.outerCol, y: selectedStructure.outerRow },
+      world: {
+        components: setup.components,
+        systemCalls: setup.systemCalls,
+      },
+    });
+  })();
+
+  const canBuildAnother = (() => {
+    if (!isOwnedByPlayer) return false;
+    if (buildCost.length === 0) return false;
+    if (!hasAvailableTile) return false;
+    return buildCost.every((entry) => {
+      const balanceInfo = getBalance(structureEntityId ?? 0, entry.resource, currentDefaultTick, setup.components);
+      return divideByPrecision(balanceInfo.balance) >= entry.amount;
+    });
+  })();
+
+  const buildBlockedReason = !isOwnedByPlayer
+    ? "Not your structure"
+    : !hasAvailableTile
+      ? "No empty tiles available — destroy a building to free a slot"
+      : !canBuildAnother
+        ? "Not enough resources to build another"
+        : "";
+
   return (
-    <PanelFrame title={panelTitle} headerAction={headerAction} attached>
-      {selectedBuildingHex ? (
-        isCastleTile ? (
-          <div className="h-full min-h-0 overflow-auto">
-            <RealmUpgradeCompact />
-          </div>
-        ) : hasBuilding ? (
-          <div className="h-full min-h-0 overflow-hidden">
-            <div className="grid h-full min-h-0 auto-rows-min grid-cols-2 gap-2 text-[11px] text-gold">
-              {isPaused && (
-                <div className="col-span-2 flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red/900/25 px-2 py-1.5">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
-                    ⚠️ Production Paused
-                  </span>
-                  {isOwnedByPlayer && (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="xs"
-                        variant="outline"
-                        disabled={isActionLoading}
-                        onClick={handleToggleProduction}
-                        className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
-                      >
-                        ▶ Resume
-                      </Button>
-                      <Button
-                        size="xs"
-                        variant="danger"
-                        disabled={isActionLoading}
-                        onClick={handleDestroy}
-                        className="h-7 px-2 text-xxs"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
+    <>
+      {/* Building bubble — merges the tile header with the type's stats. The
+          name + coords + Re-sync live in the bubble's title/cue. */}
+      <InfoBubble title={panelTitle} cue={headerAction} icon={Factory}>
+        <div className="flex flex-col gap-2.5 divide-y divide-gold/10 [&>*:not(:first-child)]:pt-2.5">
+          {isPaused && isOwnedByPlayer && (
+            <div className="flex items-center justify-between gap-2 rounded border border-red-400/40 bg-red-900/25 px-2 py-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-red-200">
+                ⚠️ Production paused
+              </span>
+              <Button
+                size="xs"
+                variant="outline"
+                disabled={isActionLoading}
+                onClick={handleToggleProduction}
+                className="h-7 border-green/50 bg-green/20 px-2 text-xxs hover:bg-green/40"
+              >
+                ▶ Resume
+              </Button>
+            </div>
+          )}
 
-              <div className="col-span-2 rounded border border-gold/15 bg-black/30 px-2 py-1.5">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Produces per sec</p>
-                    {producedResource && producedResourceName ? (
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-sm font-semibold text-green-300">+{producedPerTick}</span>
-                        <ResourceIcon withTooltip={false} resource={producedResourceName} size="sm" />
-                        <button
-                          type="button"
-                          className="text-xxs uppercase tracking-[0.2em] text-gold/60"
-                          onMouseEnter={() =>
-                            setTooltip({
-                              position: "right",
-                              content: (
-                                <div className="space-y-2">
-                                  <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed By</p>
-                                  {consumedBy.length > 0 ? (
-                                    <div className="grid grid-cols-3 gap-2">
-                                      {consumedBy.map((resourceId) => {
-                                        const name =
-                                          findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
-                                        return (
-                                          <div
-                                            key={resourceId}
-                                            className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
-                                          >
-                                            <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                                            <span className="text-xxs text-gold/80">{name}</span>
-                                          </div>
-                                        );
-                                      })}
-                                    </div>
-                                  ) : (
-                                    <p className="text-xxs text-gold/60">Not consumed by other buildings.</p>
-                                  )}
-                                </div>
-                              ),
-                            })
-                          }
-                          onMouseLeave={() => setTooltip(null)}
-                          aria-label="Show consumers"
-                        >
-                          <Info className="h-4 w-4 text-gold/70" />
-                        </button>
-                      </div>
-                    ) : (
-                      <p className="text-xxs text-gold/60">No production</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <p className="text-xxs uppercase tracking-[0.2em] text-gold/60">Population</p>
-                    <div className="flex flex-wrap items-center gap-1">
-                      {populationCost !== 0 && (
-                        <span className="rounded bg-black/40 px-1.5 py-1 text-xxs font-semibold text-gold">
-                          Cost +{populationCost}
-                        </span>
-                      )}
-                      {populationCapacity !== 0 && (
-                        <span className="rounded bg-black/40 px-1.5 py-1 text-xxs font-semibold text-gold">
-                          Capacity +{populationCapacity}
-                        </span>
-                      )}
-                      {populationCost === 0 && populationCapacity === 0 && (
-                        <span className="text-xxs text-gold/60">No population impact</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded border border-gold/15 bg-black/30 px-2 py-1.5">
-                <p className="mb-1 text-xxs uppercase tracking-[0.2em] text-gold/60">Consumes per sec</p>
-                {ongoingCost.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {ongoingCost.map((entry, index) => {
-                      const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
-                      return (
-                        <div
-                          key={`${entry.resource}-${index}`}
-                          className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-1.5 py-1"
-                        >
-                          <span className="text-xxs font-semibold text-red-200">-{entry.amount}</span>
-                          <button
-                            type="button"
-                            className="flex h-5 w-5 items-center justify-center rounded"
-                            onMouseEnter={() =>
-                              setTooltip({
-                                position: "top",
-                                content: (
-                                  <div className="flex items-center gap-2 text-xxs text-gold">
-                                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                                    <span className="font-semibold">{name}</span>
-                                  </div>
-                                ),
-                              })
-                            }
-                            onMouseLeave={() => setTooltip(null)}
-                            aria-label={`Consumes ${entry.amount} ${name} per second`}
-                          >
-                            <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-xxs text-gold/60">No ongoing inputs</p>
-                )}
-              </div>
-
-              <div className="rounded border border-gold/15 bg-black/30 px-2 py-1.5">
-                <p className="mb-1 text-xxs uppercase tracking-[0.2em] text-gold/60">Build Cost</p>
-                {buildCost.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {buildCost.map((entry, index) => {
-                      const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
-                      const balanceInfo = getBalance(
-                        structureEntityId ?? 0,
-                        entry.resource,
-                        currentDefaultTick,
-                        setup.components,
-                      );
-                      const balance = divideByPrecision(balanceInfo.balance);
-                      const hasEnough = balance >= entry.amount;
-                      return (
-                        <button
-                          type="button"
-                          key={`build-cost-${entry.resource}-${index}`}
-                          className={cn(
-                            "relative flex items-center gap-1 rounded px-1.5 py-1 text-[10px] shadow-inner",
-                            hasEnough
-                              ? "bg-gold/5 border border-gold/10 text-gold/80"
-                              : "bg-red-900/15 border border-red-500/30 text-red-100",
-                          )}
-                          onMouseEnter={() =>
-                            setTooltip({
-                              position: "top",
-                              content: (
-                                <div className="flex items-center gap-2 text-xxs text-gold">
+          {producedResource && producedResourceName && (
+            <SectionRow label="Produces / sec">
+              <span className={chipBase} title={producedResourceName}>
+                <span className={valueClassFor("good")}>+{producedPerTick}</span>
+                <ResourceIcon withTooltip={false} resource={producedResourceName} size="xs" />
+              </span>
+              <button
+                type="button"
+                onMouseEnter={() =>
+                  setTooltip({
+                    position: "right",
+                    content: (
+                      <div className="space-y-2">
+                        <p className="text-xxs uppercase tracking-[0.25em] text-gold/60">Consumed by</p>
+                        {consumedBy.length > 0 ? (
+                          <div className="grid grid-cols-3 gap-2">
+                            {consumedBy.map((resourceId) => {
+                              const name = findResourceById(Number(resourceId))?.trait ?? `Resource ${resourceId}`;
+                              return (
+                                <div
+                                  key={resourceId}
+                                  className="flex items-center gap-1 rounded border border-gold/20 bg-black/40 px-2 py-1"
+                                >
                                   <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                                  <span className="font-semibold">{name}</span>
+                                  <span className="text-xxs text-gold/80">{name}</span>
                                 </div>
-                              ),
-                            })
-                          }
-                          onMouseLeave={() => setTooltip(null)}
-                          aria-label={`${name} build cost`}
-                        >
-                          <ResourceIcon withTooltip={false} resource={name} size="xs" />
-                          <span className={cn("text-[10px]", hasEnough ? "font-semibold text-gold" : "text-red-200")}>
-                            {formatResourceAmount(balance)}
-                          </span>
-                          <span className={cn("text-[10px]", hasEnough ? "text-gold/70" : "text-red-200")}>
-                            / {entry.amount}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-xxs text-gold/60">No build cost data</p>
-                )}
-              </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <p className="text-xxs text-gold/60">Not consumed by other buildings.</p>
+                        )}
+                      </div>
+                    ),
+                  })
+                }
+                onMouseLeave={() => setTooltip(null)}
+                aria-label="Show consumers"
+                className="inline-flex h-7 w-7 items-center justify-center rounded border border-gold/20 bg-black/40 text-gold/70 hover:text-gold"
+              >
+                <Info className="h-3.5 w-3.5" />
+              </button>
+            </SectionRow>
+          )}
 
-              {isOwnedByPlayer && (
-                <div className="col-span-2 flex flex-wrap gap-1.5 pt-0.5">
-                  {canAddProduction && (
-                    <Button
-                      size="xs"
-                      variant="gold"
-                      disabled={isActionLoading}
-                      onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
-                      className="h-8 px-2 text-xxs"
+          {ongoingCost.length > 0 && (
+            <SectionRow label="Consumes / sec">
+              {ongoingCost.map((entry, index) => {
+                const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                return (
+                  <span key={`${entry.resource}-${index}`} className={chipBase} title={name}>
+                    <span className={valueClassFor("bad")}>-{entry.amount}</span>
+                    <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                  </span>
+                );
+              })}
+            </SectionRow>
+          )}
+
+          {populationChips.length > 0 && (
+            <SectionRow label="Population">
+              {populationChips.map((chip) => (
+                <span key={chip.key} className={chipBase} title={chip.label}>
+                  <span className={valueClassFor("neutral")}>{chip.label}</span>
+                </span>
+              ))}
+            </SectionRow>
+          )}
+        </div>
+      </InfoBubble>
+
+      {/* Actions bubble — build cost + the live action buttons. Pickaxe
+          is always rendered (greyed out when constraints don't allow), so
+          the player knows it's a real affordance and gets a tooltip with
+          why it's disabled. */}
+      {isOwnedByPlayer && (
+        <InfoBubble title="Actions" icon={Hammer}>
+          <div className="flex flex-col gap-2.5">
+            {buildCost.length > 0 && (
+              <SectionRow label="Build cost">
+                {buildCost.map((entry, index) => {
+                  const name = findResourceById(Number(entry.resource))?.trait ?? `Resource ${entry.resource}`;
+                  const balanceInfo = getBalance(
+                    structureEntityId ?? 0,
+                    entry.resource,
+                    currentDefaultTick,
+                    setup.components,
+                  );
+                  const balance = divideByPrecision(balanceInfo.balance);
+                  const hasEnough = balance >= entry.amount;
+                  return (
+                    <span key={`build-cost-${entry.resource}-${index}`} className={chipBase} title={name}>
+                      <ResourceIcon withTooltip={false} resource={name} size="xs" />
+                      <span className={valueClassFor(hasEnough ? "neutral" : "bad")}>
+                        {formatResourceAmount(balance)}
+                      </span>
+                      <span className={hasEnough ? "text-gold/55" : "text-red-300/80"}>/ {entry.amount}</span>
+                    </span>
+                  );
+                })}
+              </SectionRow>
+            )}
+
+            <div className="flex items-center justify-center gap-1.5">
+              {buildingCategory !== null &&
+                (() => {
+                  const isPreviewing =
+                    previewBuilding?.type === buildingCategory && previewBuilding?.resource === producedResource;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isPreviewing) {
+                          // Toggle off — exit build mode and unstick clicks.
+                          setPreviewBuilding(null);
+                          return;
+                        }
+                        if (!canBuildAnother) return;
+                        setPreviewBuilding({ type: buildingCategory, resource: producedResource });
+                      }}
+                      disabled={!isPreviewing && (!canBuildAnother || isActionLoading)}
+                      className={cn(
+                        "inline-flex h-7 w-7 items-center justify-center rounded-md border shadow transition",
+                        isPreviewing
+                          ? "border-emerald-400 bg-emerald-500/30 text-emerald-100 shadow-[0_0_10px_rgba(110,231,183,0.5)] animate-pulse"
+                          : canBuildAnother
+                            ? "border-amber-500/80 bg-amber-400/90 text-black hover:bg-amber-300"
+                            : "border-gold/20 bg-black/40 text-gold/40 cursor-not-allowed",
+                      )}
+                      title={
+                        isPreviewing
+                          ? "Cancel build — click again to place a new building"
+                          : canBuildAnother
+                            ? "Build another — pick an empty tile to place it"
+                            : buildBlockedReason
+                      }
+                      aria-label={isPreviewing ? "Cancel build" : "Build another"}
+                      aria-pressed={isPreviewing}
                     >
-                      + Production
-                    </Button>
-                  )}
-                  {buildingCategory !== BuildingType.WorkersHut && (
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      disabled={isActionLoading}
-                      onClick={handleToggleProduction}
-                      className="h-8 px-2 text-xxs"
-                    >
-                      {isPaused ? "▶ Resume" : "⏸ Pause"}
-                    </Button>
-                  )}
-                  <Button
-                    size="xs"
-                    variant="danger"
-                    disabled={isActionLoading}
-                    onClick={handleDestroy}
-                    className="flex h-8 items-center gap-1.5 px-2 text-xxs"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                    {showDestroyConfirm ? "Confirm" : "Delete"}
-                  </Button>
-                </div>
+                      <Pickaxe className="h-3.5 w-3.5" />
+                    </button>
+                  );
+                })()}
+              {canAddProduction && (
+                <button
+                  type="button"
+                  onClick={() => toggleModal(<ProductionModal preSelectedResource={producedResource} />)}
+                  disabled={isActionLoading}
+                  className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-gold/40 bg-gold/10 text-gold shadow transition hover:border-gold hover:bg-gold/20 disabled:cursor-not-allowed disabled:opacity-60"
+                  title="Automate production"
+                  aria-label="Automate production"
+                >
+                  <Bot className="h-3.5 w-3.5" />
+                </button>
               )}
+              {buildingCategory !== BuildingType.WorkersHut && (
+                <button
+                  type="button"
+                  onClick={handleToggleProduction}
+                  disabled={isActionLoading}
+                  className={cn(
+                    "inline-flex h-7 w-7 items-center justify-center rounded-md border text-white shadow transition disabled:cursor-not-allowed disabled:opacity-60",
+                    isPaused
+                      ? "border-green-700/80 bg-green-900/90 hover:bg-green-800"
+                      : "border-amber-700/80 bg-amber-900/90 hover:bg-amber-800",
+                  )}
+                  title={isPaused ? "Resume" : "Pause"}
+                  aria-label={isPaused ? "Resume" : "Pause"}
+                >
+                  {isPaused ? <Play className="h-3.5 w-3.5" /> : <PauseIcon className="h-3.5 w-3.5" />}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={handleDestroy}
+                disabled={isActionLoading}
+                className={cn(
+                  "inline-flex h-7 items-center gap-1 rounded-md border border-red-700/80 bg-red-900/90 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-white shadow transition hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-60",
+                  !showDestroyConfirm && "w-7 justify-center px-0",
+                )}
+                title={showDestroyConfirm ? "Confirm delete" : "Delete"}
+                aria-label={showDestroyConfirm ? "Confirm delete" : "Delete"}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                {showDestroyConfirm && <span>OK</span>}
+              </button>
             </div>
           </div>
-        ) : (
-          <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
-            <p className="text-xs text-gold/70">
-              Empty tile. Pick a building from the menu to start construction here.
-            </p>
-          </div>
-        )
-      ) : (
-        <div className="flex min-h-[140px] flex-col items-center justify-center text-center">
-          <p className="text-xs text-gold/70">Tap a building tile to view its details.</p>
-        </div>
+        </InfoBubble>
       )}
-    </PanelFrame>
+    </>
   );
 };
 
@@ -905,13 +952,29 @@ const MinimapPanel = () => {
   const [tiles, setTiles] = useState<MinimapTile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const activeTab = useUIStore((state) => state.activeBottomPanelTab);
+  const { isMapView } = useQuery();
   const selectedHex = useUIStore((state) => state.selectedHex);
   const navigationTarget = useUIStore((state) => state.navigationTarget);
   const cameraTargetHex = useUIStore((state) => state.cameraTargetHex);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const playerStructures = useUIStore((state) => state.playerStructures);
+
+  // Local mode: lock the minimap to the active realm's coords so the player
+  // keeps a stable reference while they're zoomed into one keep. World mode
+  // uses the camera/selected hex priority HexMinimap already implements.
+  const activeRealmHex = useMemo(() => {
+    if (isMapView) return null;
+    const active = playerStructures.find((entry) => entry.entityId === structureEntityId);
+    const base = active?.structure?.base;
+    if (!base || base.coord_x === undefined || base.coord_y === undefined) return null;
+    return { col: Number(base.coord_x), row: Number(base.coord_y) };
+  }, [isMapView, playerStructures, structureEntityId]);
+
+  const focusHex = activeRealmHex ?? cameraTargetHex;
+  const focusSelectedHex = activeRealmHex ?? selectedHex;
 
   useEffect(() => {
-    if (activeTab !== "minimap") return;
+    // MinimapPanel only mounts in map view (parent gating), so fetch unconditionally.
     let cancelled = false;
     const loadTiles = async () => {
       setIsLoading(true);
@@ -949,17 +1012,17 @@ const MinimapPanel = () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [activeTab]);
+  }, []);
 
   return (
-    <PanelFrame title="Minimap" attached>
+    <PanelFrame title="Minimap" height={MINIMAP_SIZE}>
       <div className="relative flex h-full min-h-0 flex-col">
         <div className="relative flex-1 min-h-[220px] overflow-hidden rounded-b-xl rounded-t-none border border-gold/15 bg-gradient-to-br from-black/70 via-black/60 to-amber-900/20">
           <HexMinimap
             tiles={tiles}
-            selectedHex={selectedHex}
+            selectedHex={focusSelectedHex}
             navigationTarget={navigationTarget}
-            cameraTargetHex={cameraTargetHex}
+            cameraTargetHex={focusHex}
           />
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/30">
@@ -975,56 +1038,183 @@ const MinimapPanel = () => {
   );
 };
 
+/**
+ * BottomRightPanel — atomized into two independent floating widgets:
+ *   - TileDetailsAtom: bottom-right, only when a tile/building is selected.
+ *   - MinimapAtom: bottom-left, persistent in map view.
+ * They no longer share a frame or tab strip.
+ */
 export const BottomRightPanel = memo(() => {
   const { isMapView } = useQuery();
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
-  const activeTab = useUIStore((state) => state.activeBottomPanelTab);
-  const setActiveTab = useUIStore((state) => state.setActiveBottomPanelTab);
-  const shouldShow = !showBlankOverlay;
-  const isPanelOpen = shouldShow && activeTab !== null;
+  const selectedHex = useUIStore((state) => state.selectedHex);
+  const selectedBuildingHex = useUIStore((state) => state.selectedBuildingHex);
 
-  const availableTabs = useMemo(
-    () => (isMapView ? BOTTOM_PANEL_TABS : BOTTOM_PANEL_TABS.filter((tab) => tab.id === "tile")),
-    [isMapView],
-  );
+  if (showBlankOverlay) return null;
 
-  useEffect(() => {
-    if (!isMapView && activeTab === "minimap") {
-      setActiveTab("tile");
-    }
-  }, [activeTab, isMapView, setActiveTab]);
-
-  const handleTabToggle = (tab: BottomPanelTabId) => {
-    setActiveTab(activeTab === tab ? null : tab);
-  };
+  // Tile details visibility: in map view follow the selected hex; in local
+  // (hex) view follow the selected building hex. Either source produces the
+  // same panel chrome but different content.
+  const showTileDetails = isMapView ? selectedHex !== null : selectedBuildingHex !== null;
+  // Minimap + action row stay persistent in both map and local views — the
+  // player wants to keep an eye on activity near their realm even while they
+  // manage tiles up close.
+  const showMinimap = true;
 
   return (
-    <div
-      className={cn(
-        "pointer-events-none fixed inset-x-0 z-[35] flex flex-col gap-4 px-0 transition-all duration-300 md:flex-row md:items-end md:justify-end",
-        shouldShow ? "opacity-100 translate-y-0" : "pointer-events-none opacity-0 translate-y-6",
-      )}
-      aria-hidden={!shouldShow}
-      style={{ bottom: BOTTOM_PANEL_MARGIN }}
-    >
-      <div className="relative w-full min-h-[44px] md:ml-auto md:w-[55%] lg:w-[44%] xl:w-[36%] 2xl:w-[32%]">
-        <PanelTabs
-          tabs={availableTabs}
-          activeTab={activeTab}
-          onSelect={handleTabToggle}
-          className="absolute right-2 bottom-full pb-2"
-        />
-        <div className="pointer-events-auto">
-          <div className={cn(activeTab === "tile" && isPanelOpen ? "block" : "hidden")}>
-            {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
-          </div>
-          <div className={cn(activeTab === "minimap" && isPanelOpen ? "block" : "hidden")}>
+    <>
+      {showMinimap && (
+        <>
+          <LeftActionsRow
+            style={{ bottom: `calc(${BOTTOM_PANEL_MARGIN} + ${MINIMAP_SIZE}px + ${LEFT_ACTIONS_GAP_FROM_MINIMAP}px)` }}
+          />
+          <div
+            className="pointer-events-auto fixed left-3 z-[25]"
+            style={{ bottom: BOTTOM_PANEL_MARGIN, width: MINIMAP_SIZE }}
+            aria-label="Minimap"
+          >
             <MinimapPanel />
           </div>
+        </>
+      )}
+      {showTileDetails && (
+        <div
+          className="pointer-events-auto fixed right-3 top-1/2 z-30 flex w-[280px] max-h-[calc(100vh-32px)] -translate-y-1/2 flex-col gap-2 overflow-y-auto overflow-x-hidden pr-1 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent"
+          aria-label="Tile details"
+        >
+          {isMapView ? <MapTilePanel /> : <LocalTilePanel />}
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 });
 
 BottomRightPanel.displayName = "BottomRightPanel";
+
+// ---------------------------------------------------------------------------
+// LeftActionsRow — small horizontal row of CircleButtons floating above the
+// minimap. Each button opens its corresponding modal/popup:
+//   Build           → ConstructionView modal (SelectPreviewBuildingMenu)
+//   Transfer        → LogisticsView modal (with Transfer tab pre-selected)
+//   Chat            → Chat modal
+//   Trade           → MarketModal (toggleModal)
+//   Prediction      → PredictionMarket modal
+// Replaces the old vertical view-switcher pill strip on the left edge.
+// ---------------------------------------------------------------------------
+
+const LeftActionsRow = ({ style }: { style?: React.CSSProperties }) => {
+  const view = useUIStore((state) => state.leftNavigationView);
+  const setView = useUIStore((state) => state.setLeftNavigationView);
+  const toggleModalAction = useUIStore((state) => state.toggleModal);
+  const setLogisticsActiveTab = useUIStore((state) => state.setLogisticsActiveTab);
+  const structureEntityId = useUIStore((state) => state.structureEntityId);
+  const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
+  const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
+  const isSpectating = useUIStore((state) => state.isSpectating);
+  const mode = useGameModeConfig();
+  const showTradeAction = mode.ui.showTradeMenu && !isSpectating;
+  const handleOpenLogistics = useCallback(() => {
+    // If anything is in flight or ready, land the user on Arrivals so the
+    // badge they just clicked actually points at the relevant tab.
+    const hasArrivals = arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0;
+    setLogisticsActiveTab(hasArrivals ? "arrivals" : "transfer");
+    setView(view === LeftView.ResourceArrivals ? LeftView.None : LeftView.ResourceArrivals);
+  }, [arrivedArrivalsNumber, pendingArrivalsNumber, setLogisticsActiveTab, setView, view]);
+  const handleOpenProduction = useCallback(() => {
+    if (!structureEntityId) return;
+    toggleModalAction(<ProductionModal preSelectedRealmId={Number(structureEntityId)} />);
+  }, [structureEntityId, toggleModalAction]);
+  const toggleView = useCallback(
+    (target: LeftView) => () => setView(view === target ? LeftView.None : target),
+    [setView, view],
+  );
+
+  return (
+    <div
+      className="pointer-events-auto fixed left-3 z-[25] flex items-center gap-2 rounded-full border border-gold/30 bg-black/60 px-2.5 py-1.5 shadow-[0_4px_18px_rgba(0,0,0,0.6)] backdrop-blur-sm"
+      style={style}
+      aria-label="Quick actions"
+    >
+      {!isSpectating && (
+        <>
+          <CircleButton
+            variant="action"
+            size="md"
+            tooltipLocation="top"
+            image={BuildingThumbs.construction}
+            label="Build"
+            active={view === LeftView.ConstructionView}
+            onClick={toggleView(LeftView.ConstructionView)}
+          />
+          <CircleButton
+            variant="action"
+            size="md"
+            tooltipLocation="top"
+            image={BuildingThumbs.production}
+            label="Production"
+            onClick={handleOpenProduction}
+            disabled={!structureEntityId}
+          />
+          <CircleButton
+            variant="action"
+            size="md"
+            tooltipLocation="top"
+            image={BuildingThumbs.military}
+            label="Military"
+            active={view === LeftView.MilitaryView}
+            onClick={toggleView(LeftView.MilitaryView)}
+            disabled={!structureEntityId}
+          />
+          <CircleButton
+            variant="action"
+            size="md"
+            tooltipLocation="top"
+            image={BuildingThumbs.transfer}
+            label="Transfer"
+            active={view === LeftView.ResourceArrivals}
+            onClick={handleOpenLogistics}
+            primaryNotification={
+              arrivedArrivalsNumber > 0
+                ? { value: arrivedArrivalsNumber, color: "green", location: "topright" }
+                : undefined
+            }
+            secondaryNotification={
+              pendingArrivalsNumber > 0
+                ? { value: pendingArrivalsNumber, color: "yellow", location: "bottomright" }
+                : undefined
+            }
+          />
+        </>
+      )}
+      <CircleButton
+        variant="action"
+        size="md"
+        tooltipLocation="top"
+        label="Chat"
+        active={view === LeftView.ChatView}
+        onClick={toggleView(LeftView.ChatView)}
+      >
+        <MessageCircle className="h-5 w-5 md:h-6 md:w-6 text-[#2a1c0c]" strokeWidth={2.25} />
+      </CircleButton>
+      {showTradeAction && (
+        <CircleButton
+          variant="action"
+          size="md"
+          tooltipLocation="top"
+          image={BuildingThumbs.scale}
+          label="Trade"
+          onClick={() => toggleModalAction(<MarketModal />)}
+        />
+      )}
+      <CircleButton
+        variant="action"
+        size="md"
+        tooltipLocation="top"
+        image={BuildingThumbs.predictionMarket}
+        label="Prediction Market"
+        active={view === LeftView.PredictionMarket}
+        onClick={toggleView(LeftView.PredictionMarket)}
+      />
+    </div>
+  );
+};

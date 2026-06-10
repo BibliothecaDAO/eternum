@@ -36,7 +36,7 @@ export function BattleToast({
   const Icon = theme.icon;
 
   return (
-    <div className="panel-wood pointer-events-auto overflow-hidden rounded-lg px-3 py-3 text-[11px] leading-tight text-gold shadow-md w-[var(--width)]">
+    <div className="pointer-events-auto overflow-hidden rounded-lg border border-gold/20 bg-black/60 px-3 py-3 text-[11px] leading-tight text-gold shadow-md w-[var(--width)]">
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 flex-col">
           <div className="flex items-center gap-1 text-[11px] font-semibold text-gold">
@@ -57,7 +57,7 @@ export function BattleToast({
               toast.dismiss(toastId);
             }}
             className={cn(
-              "button-wood inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors",
+              "btn-bronze inline-flex items-center gap-1.5 rounded border px-2 py-1 text-[10px] font-semibold uppercase tracking-wide transition-colors",
               "border-gold/25 bg-brown/50 text-gold hover:border-gold/45 hover:bg-brown/70",
               !location && "cursor-not-allowed opacity-40 hover:border-gold/25 hover:bg-brown/50",
             )}

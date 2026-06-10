@@ -92,6 +92,30 @@ describe("drainWorldmapPostCommitManagerCatchUpQueue", () => {
     expect(state.queue).toEqual([{ chunkKey: "24,24", estimatedUploadBytes: 200 }]);
     expect(scheduleDrain).toHaveBeenCalledTimes(1);
   });
+
+  it("invokes onTaskSkipped (and skips runTask) when shouldRunTask is false", async () => {
+    const state = createWorldmapPostCommitManagerCatchUpState();
+    const skippedTask = { chunkKey: "0,0", estimatedUploadBytes: 200 };
+    state.queue = [skippedTask];
+    const runTask = vi.fn(async () => undefined);
+    const onTaskSkipped = vi.fn();
+
+    await drainWorldmapPostCommitManagerCatchUpQueue({
+      budgetBytes: 1024,
+      onImmediateTask: vi.fn(),
+      onTaskError: vi.fn(),
+      onTaskSkipped,
+      runTask,
+      scheduleDrain: vi.fn(),
+      // Simulate a stale transition token / chunk no longer current.
+      shouldRunTask: vi.fn(() => false),
+      state,
+    });
+
+    expect(runTask).not.toHaveBeenCalled();
+    expect(onTaskSkipped).toHaveBeenCalledTimes(1);
+    expect(onTaskSkipped).toHaveBeenCalledWith(skippedTask);
+  });
 });
 
 describe("clearWorldmapPostCommitManagerCatchUpState", () => {

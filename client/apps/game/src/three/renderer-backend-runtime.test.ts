@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createRendererBackendCapabilities, createRendererInitDiagnostics } from "./renderer-backend-v2";
 
 const initializeSelectedRendererBackend = vi.fn();
+const incrementRendererDiagnosticError = vi.fn();
 const syncRendererBackendDiagnostics = vi.fn();
 const setRendererDiagnosticCapabilities = vi.fn();
 const setRendererDiagnosticDegradations = vi.fn();
@@ -19,6 +20,7 @@ vi.mock("./renderer-backend-loader", () => ({
 }));
 
 vi.mock("./renderer-diagnostics", () => ({
+  incrementRendererDiagnosticError,
   syncRendererBackendDiagnostics,
   setRendererDiagnosticCapabilities,
   setRendererDiagnosticDegradations,
@@ -36,7 +38,8 @@ vi.mock("@/ui/config", () => ({
   GraphicsSettings: mockGraphicsSettings,
 }));
 
-const { initializeRendererBackendRuntime } = await import("./renderer-backend-runtime");
+const { initializeRendererBackendRuntime, initializeRendererDeviceLossFallbackRuntime } =
+  await import("./renderer-backend-runtime");
 const { GraphicsSettings } = await import("@/ui/config");
 
 function createFakeBackend() {
@@ -126,6 +129,7 @@ describe("initializeRendererBackendRuntime", () => {
       expect(createWebGPURendererBackend).toHaveBeenCalledWith({
         graphicsSetting: GraphicsSettings.HIGH,
         isMobileDevice: true,
+        onDeviceLost: undefined,
         pixelRatio: 1.5,
         requestedMode: "experimental-webgpu-auto",
       });
@@ -173,6 +177,40 @@ describe("initializeRendererBackendRuntime", () => {
     expect(result).toEqual({
       backend: webgpuBackend,
       renderer: webgpuBackend.renderer,
+    });
+  });
+
+  it("initializes a legacy fallback backend after runtime webgpu device loss", async () => {
+    const backend = createFakeBackend();
+    createWebGLRendererBackend.mockReturnValue(backend);
+
+    const result = await initializeRendererDeviceLossFallbackRuntime({
+      envBuildMode: "experimental-webgpu-auto",
+      graphicsSetting: GraphicsSettings.HIGH,
+      isMobileDevice: false,
+      pixelRatio: 1,
+      search: "?rendererMode=experimental-webgpu-auto",
+    });
+
+    expect(createWebGLRendererBackend).toHaveBeenCalledWith({
+      graphicsSetting: GraphicsSettings.HIGH,
+      isMobileDevice: false,
+      pixelRatio: 1,
+    });
+    expect(incrementRendererDiagnosticError).toHaveBeenCalledWith("fallbacks");
+    expect(syncRendererBackendDiagnostics).toHaveBeenCalledWith(
+      expect.objectContaining({
+        activeMode: "legacy-webgl",
+        buildMode: "experimental-webgpu-auto",
+        fallbackReason: "webgpu-device-lost",
+        requestedMode: "experimental-webgpu-auto",
+      }),
+    );
+    expect(setRendererDiagnosticCapabilities).toHaveBeenCalledWith(backend.capabilities);
+    expect(setRendererDiagnosticDegradations).toHaveBeenCalledWith([]);
+    expect(result).toEqual({
+      backend,
+      renderer: backend.renderer,
     });
   });
 });

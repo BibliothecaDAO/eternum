@@ -1,5 +1,4 @@
-import { resolveNavigationSceneTarget } from "./scene-navigation-boundary";
-import { resolveSceneNameFromRouteSegment } from "./scene-route-policy";
+import { resolvePlayRouteTarget } from "@/play/navigation/play-route-target";
 import { SceneName } from "./types";
 
 export interface RendererRouteRuntime {
@@ -22,6 +21,20 @@ export function createRendererRouteRuntime(input: CreateRendererRouteRuntimeInpu
   return new GameRendererRouteRuntime(input);
 }
 
+export function resolveRendererRouteSceneFromHref(input: { fastTravelEnabled: boolean; href: string }): SceneName {
+  const url = new URL(input.href);
+
+  return resolvePlayRouteTarget(
+    {
+      pathname: url.pathname,
+      search: url.search,
+    },
+    {
+      fastTravelEnabled: input.fastTravelEnabled,
+    },
+  ).scene as SceneName;
+}
+
 class GameRendererRouteRuntime implements RendererRouteRuntime {
   private isListening = false;
   private readonly handleRouteEvent = () => {
@@ -41,13 +54,9 @@ class GameRendererRouteRuntime implements RendererRouteRuntime {
   }
 
   public syncFromLocation(href: string = window.location.href): void {
-    const url = new URL(href);
-    const pathSegments = url.pathname.split("/").filter(Boolean);
-    const sceneSlug = pathSegments.pop();
-    const targetScene = resolveNavigationSceneTarget({
-      currentPath: url.pathname,
+    const targetScene = resolveRendererRouteSceneFromHref({
       fastTravelEnabled: this.input.fastTravelEnabled(),
-      requestedScene: resolveSceneNameFromRouteSegment(sceneSlug),
+      href,
     });
 
     if (this.shouldMoveCameraForActiveRoute(targetScene)) {

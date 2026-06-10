@@ -1,4 +1,4 @@
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUISound } from "@/audio";
 import Button from "@/ui/design-system/atoms/button";
 import { NumberInput } from "@/ui/design-system/atoms/number-input";
@@ -12,6 +12,7 @@ import {
   getTotalResourceWeightKg,
   isMilitaryResource,
   multiplyByPrecision,
+  ResourceManager,
 } from "@bibliothecadao/eternum";
 import { useDojo, useResourceManager } from "@bibliothecadao/react";
 import { findResourceById, ResourcesIds, StructureType, type ID, type MarketInterface } from "@bibliothecadao/types";
@@ -39,7 +40,7 @@ const MarketResource = memo(
     bidPrice: number;
     ammPrice: number;
   }) => {
-    const { currentDefaultTick } = useBlockTimestamp();
+    const currentDefaultTick = useCurrentDefaultTick();
     const resourceManager = useResourceManager(entityId);
 
     const balance = useMemo(() => {
@@ -194,7 +195,7 @@ const MarketOrders = memo(
       <div className="h-full flex flex-col ">
         {/* Market Price */}
         <div
-          className={`text-2xl flex panel-wood    justify-between py-2 px-4 border-gold/10 rounded-xl ${
+          className={`text-2xl flex border bg-black/30 justify-between py-2 px-4 border-gold/10 rounded-xl ${
             !isBuy ? "bg-green/5 text-green" : "bg-red/5 text-red"
           }`}
         >
@@ -214,7 +215,7 @@ const MarketOrders = memo(
         </div>
 
         <div
-          className={`p-1 panel-wood flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-auto h-auto rounded-xl ${
+          className={`p-1 bg-black/30 flex-col flex gap-1  flex-grow border-gold/10 border overflow-y-auto h-auto rounded-xl ${
             isBuy ? "order-buy-selector" : "order-sell-selector"
           }`}
         >
@@ -280,7 +281,7 @@ const OrderRow = memo(
 
     const playTradeExecuteSound = useUISound("ui.trade_execute");
 
-    const { currentDefaultTick } = useBlockTimestamp();
+    const currentDefaultTick = useCurrentDefaultTick();
 
     const resourceManager = useResourceManager(entityId);
 
@@ -373,12 +374,22 @@ const OrderRow = memo(
         setConfirmOrderModal(false);
 
         const v = !isBuy ? calculatedResourceAmount : calculatedLords;
-        await dojo.setup.systemCalls.accept_order({
-          signer: dojo.account.account,
-          taker_id: entityId,
-          trade_id: offer.tradeId,
-          taker_buys_count: Math.ceil(v / offer.makerGivesMinResourceAmount),
-        });
+        const takerBuysCount = Math.ceil(v / offer.makerGivesMinResourceAmount);
+        const removeResourceOverride = new ResourceManager(dojo.setup.components, entityId).optimisticResourceUpdate(
+          offer.makerGets[0].resourceId,
+          -divideByPrecision(offer.takerPaysMinResourceAmount * takerBuysCount),
+        );
+
+        try {
+          await dojo.setup.systemCalls.accept_order({
+            signer: dojo.account.account,
+            taker_id: entityId,
+            trade_id: offer.tradeId,
+            taker_buys_count: takerBuysCount,
+          });
+        } finally {
+          removeResourceOverride();
+        }
       } catch (error) {
         console.error("Failed to accept order", error);
       } finally {
@@ -535,7 +546,7 @@ const OrderCreation = memo(
     const [lords, setLords] = useState(100);
     const [bid, setBid] = useState(String(lords / resource));
     const [showConfirmation, setShowConfirmation] = useState(false);
-    const { currentBlockTimestamp } = useBlockTimestamp();
+    const currentBlockTimestamp = useCurrentBlockTimestamp();
 
     const playTradePlaceSound = useUISound("ui.trade_place");
 
@@ -619,6 +630,10 @@ const OrderCreation = memo(
         taker_pays_min_resource_amount: createOrderParams.takerPaysMinResourceAmount,
         expires_at: currentBlockTimestamp + ONE_MONTH,
       };
+      const removeResourceOverride = new ResourceManager(components, entityId).optimisticResourceUpdate(
+        makerGives[0] as ResourcesIds,
+        -divideByPrecision(makerGives[1]),
+      );
 
       try {
         await create_order(calldata);
@@ -626,6 +641,7 @@ const OrderCreation = memo(
       } catch (error) {
         console.error("Failed to create order:", error);
       } finally {
+        removeResourceOverride();
         setLoading(false);
         setShowConfirmation(false);
       }
@@ -645,7 +661,7 @@ const OrderCreation = memo(
       return calculateDonkeysNeeded(orderWeightKg);
     }, [orderWeightKg]);
 
-    const { currentDefaultTick } = useBlockTimestamp();
+    const currentDefaultTick = useCurrentDefaultTick();
 
     const resourceManager = useResourceManager(entityId);
 
@@ -704,7 +720,7 @@ const OrderCreation = memo(
 
     return (
       <div
-        className={`flex justify-between p-4 text-xl flex-wrap mt-auto border-gold/10 panel-wood ${
+        className={`flex justify-between p-4 text-xl flex-wrap mt-auto border border-gold/10 bg-black/30 ${
           isBuy
             ? "order-create-buy-selector border-l-2 border-l-red"
             : "order-create-sell-selector border-l-2 border-l-green"

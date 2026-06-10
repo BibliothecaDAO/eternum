@@ -1,12 +1,10 @@
-import { ResourceIcon } from "@/ui/design-system/molecules";
-import { currencyIntlFormat } from "@/ui/utils/utils";
-import { getTroopResourceId } from "@bibliothecadao/eternum";
-import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, resources, TroopTier, TroopType } from "@bibliothecadao/types";
+import { DISPLAYED_SLOT_NUMBER_MAP, GUARD_SLOT_NAMES, TroopTier, TroopType } from "@bibliothecadao/types";
 import clsx from "clsx";
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import Timer from "lucide-react/dist/esm/icons/timer";
 import { GuardStaminaBar } from "../guard-stamina-bar";
 import { TransferDirection } from "./transfer-direction";
+import { TroopBadge } from "./transfer-troop-badge";
 
 interface SlotTroopInfo {
   slot: number;
@@ -70,38 +68,24 @@ export const TransferSlotSelection = ({
   }) => {
     if (!troop) {
       return (
-        <div className="flex items-center gap-2">
-          <div className="flex flex-col items-center justify-center min-w-[44px] rounded-md bg-brown/20 px-2 py-1">
-            <span className="text-[10px] font-bold uppercase text-gold/50">T-</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-bold text-gold/70">Empty</div>
-            <div className="text-xxs uppercase tracking-wide text-gold/50">No troops</div>
-          </div>
+        <div className="flex flex-col gap-1">
+          <div className="text-sm font-bold text-gold/70 leading-none">Empty</div>
+          <div className="text-xxs uppercase tracking-wide text-gold/50">No troops</div>
         </div>
       );
     }
 
-    const tierText = typeof troop.tier === "string" ? troop.tier.toUpperCase() : `T${Number(troop.tier)}`;
-    const typeLabel = String(troop.category).toUpperCase();
     const rawCount = Number(troop.count);
-    const countLabel = rawCount >= 10000 ? currencyIntlFormat(rawCount, 1) : rawCount.toLocaleString();
-    const troopResourceTrait =
-      resources.find((resource) => resource.id === getTroopResourceId(troop.category, troop.tier))?.trait ?? null;
+    const countLabel = rawCount.toLocaleString();
 
     return (
-      <div className="flex items-center gap-2">
-        <div className="flex flex-col items-center justify-center min-w-[44px] rounded-md bg-brown/20 px-2 py-1">
-          <span className="text-[10px] font-bold uppercase text-gold">{tierText}</span>
-          {troopResourceTrait && (
-            <ResourceIcon resource={troopResourceTrait} size="xs" withTooltip={false} className="mt-1" />
-          )}
+      <div className="flex flex-col gap-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <TroopBadge category={troop.category} tier={troop.tier} emphasize />
+          <span className="text-sm font-bold text-gold leading-none">{countLabel}</span>
         </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-bold text-gold">{countLabel}</div>
-          <div className="text-xxs uppercase tracking-wide text-gold/70">{typeLabel}</div>
-          <GuardStaminaBar current={troop.staminaCurrent} max={troop.staminaMax} className="mt-1" />
-        </div>
+        <div className="text-xxs uppercase tracking-wide text-gold/70">{String(troop.category)}</div>
+        <GuardStaminaBar current={troop.staminaCurrent} max={troop.staminaMax} className="mt-1" />
       </div>
     );
   };

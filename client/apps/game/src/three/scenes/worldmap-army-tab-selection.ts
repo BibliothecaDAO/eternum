@@ -24,10 +24,12 @@ interface ShouldClearPendingArmyMovementInput {
 
 interface ResolvePendingArmyMovementSelectionPlanInput extends ShouldClearPendingArmyMovementInput {
   hasPendingMovement: boolean;
+  isOptimisticMovementActive?: boolean;
 }
 
 interface ResolvePendingArmyMovementFallbackPlanInput extends ShouldClearPendingArmyMovementInput {
   hasPendingMovement: boolean;
+  hasPendingMovementResolution?: boolean;
 }
 
 interface PendingArmyMovementSelectionPlan {
@@ -46,6 +48,7 @@ interface ResolvePendingArmyMovementTxFailurePlanInput {
   txHash: string;
   txEntityMap: Map<string, number>;
   pendingEntities: Set<number>;
+  optimisticEntities?: Set<number>;
 }
 
 interface PendingArmyMovementTxFailurePlan {
@@ -104,10 +107,22 @@ export function shouldClearPendingArmyMovement(input: ShouldClearPendingArmyMove
 
 /**
  * Decide stale-clear behavior when an army selection is attempted.
+ *
+ * When optimistic movement is unresolved, selection stays blocked. The tx is
+ * still valid, just visually running ahead of the indexer, and accepting a new
+ * command here would create a hidden follow-up intent rather than a real tx.
  */
 export function resolvePendingArmyMovementSelectionPlan(
   input: ResolvePendingArmyMovementSelectionPlanInput,
 ): PendingArmyMovementSelectionPlan {
+  if (input.isOptimisticMovementActive) {
+    return {
+      shouldClearPendingMovement: false,
+      shouldRequestChunkRefresh: false,
+      shouldBlockSelection: true,
+    };
+  }
+
   if (!input.hasPendingMovement) {
     return {
       shouldClearPendingMovement: false,
@@ -131,7 +146,9 @@ export function resolvePendingArmyMovementSelectionPlan(
 export function resolvePendingArmyMovementFallbackPlan(
   input: ResolvePendingArmyMovementFallbackPlanInput,
 ): PendingArmyMovementFallbackPlan {
-  if (!input.hasPendingMovement) {
+  const hasMovementToResolve = input.hasPendingMovement || input.hasPendingMovementResolution === true;
+
+  if (!hasMovementToResolve) {
     return {
       shouldDeleteFallbackTimeout: true,
       shouldClearPendingMovement: false,
@@ -161,7 +178,10 @@ export function resolvePendingArmyMovementTxFailurePlan(
     return { shouldClearPendingMovement: false, entityId: undefined };
   }
 
-  if (!input.pendingEntities.has(entityId)) {
+  const hasPendingMovement = input.pendingEntities.has(entityId);
+  const hasOptimisticMovement = input.optimisticEntities?.has(entityId) ?? false;
+
+  if (!hasPendingMovement && !hasOptimisticMovement) {
     return { shouldClearPendingMovement: false, entityId };
   }
 

@@ -336,4 +336,22 @@ describe("mapFactoryWorkerRun", () => {
       firstGameStartTimeIso: "2026-03-18T12:00:00.000Z",
     });
   });
+
+  it("maps weekly cadence metadata for rotation runs", () => {
+    const baseRecord = buildRotationRunRecord();
+    const run = mapFactoryWorkerRun(
+      buildRotationRunRecord({
+        summary: {
+          ...baseRecord.summary,
+          gameIntervalMinutes: 0,
+          weeklyCadence: [{ gameNamePrefix: "na-gladiator", weekday: "monday", utcTime: "01:00" }],
+        },
+      }),
+    );
+
+    expect(run.rotation).toMatchObject({
+      gameIntervalMinutes: 0,
+      weeklyCadence: [{ gameNamePrefix: "na-gladiator", weekday: "monday", utcTime: "01:00" }],
+    });
+  });
 });

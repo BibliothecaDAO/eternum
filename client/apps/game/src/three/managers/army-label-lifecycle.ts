@@ -9,6 +9,8 @@ interface LabelWithPosition<TEntityId, TPosition, TArmy> {
   userData: {
     entityId?: TEntityId;
     lastDataKey?: string | null;
+    lastLayoutDataKey?: string | null;
+    lastStaminaDataKey?: string | null;
     baseRenderOrder?: number;
   };
 }
@@ -22,6 +24,8 @@ export function initializeArmyLabelState<TEntityId, TPosition, TArmy>(input: {
   input.label.position.y += 2.1;
   input.label.userData.entityId = input.entityId;
   input.label.userData.lastDataKey = null;
+  input.label.userData.lastLayoutDataKey = null;
+  input.label.userData.lastStaminaDataKey = null;
 }
 
 export function configureArmyLabelHoverPriority<TEntityId, TPosition, TArmy>(

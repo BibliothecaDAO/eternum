@@ -1,8 +1,12 @@
-import { ID } from "@bibliothecadao/types";
+import type { ID } from "@bibliothecadao/types";
 
 export type TravelEffectType = "travel" | "compass";
+export type PendingArmyMovementEffectClearReason =
+  | "movement_started"
+  | "cleanup_requested"
+  | "authoritative_reconciled";
 
-interface TrackedTravelEffect {
+export interface TrackedTravelEffect {
   key: string;
   effectType: TravelEffectType;
 }
@@ -11,6 +15,17 @@ interface ResolveExploreCompletionPendingClearPlanInput {
   exploredHexKey: string;
   trackedEffectsByEntity: ReadonlyMap<ID, TrackedTravelEffect>;
   pendingArmyMovements: ReadonlySet<ID>;
+}
+
+interface ResolvePendingMovementAuthoritativeResolutionPlanInput {
+  pendingTargetKey?: string;
+  authoritativePositionKey: string;
+  isMovementInFlight: boolean;
+}
+
+interface PendingMovementAuthoritativeResolutionPlan {
+  shouldClearPendingMovement: boolean;
+  shouldClearAfterVisualCompletion: boolean;
 }
 
 /**
@@ -37,4 +52,55 @@ export function resolveExploreCompletionPendingClearPlan(input: ResolveExploreCo
   }
 
   return pendingEntityIdsToClear;
+}
+
+export function shouldCleanupTrackedTravelEffectOnPendingClear(input: {
+  trackedEffect?: TrackedTravelEffect;
+  reason: PendingArmyMovementEffectClearReason;
+}): boolean {
+  if (!input.trackedEffect) {
+    return false;
+  }
+
+  if (input.reason === "movement_started") {
+    return input.trackedEffect.effectType !== "travel";
+  }
+
+  return true;
+}
+
+export function resolvePendingMovementAuthoritativeResolutionPlan(
+  input: ResolvePendingMovementAuthoritativeResolutionPlanInput,
+): PendingMovementAuthoritativeResolutionPlan {
+  if (!input.pendingTargetKey) {
+    return {
+      shouldClearPendingMovement: false,
+      shouldClearAfterVisualCompletion: false,
+    };
+  }
+
+  if (input.pendingTargetKey !== input.authoritativePositionKey) {
+    return {
+      shouldClearPendingMovement: false,
+      shouldClearAfterVisualCompletion: false,
+    };
+  }
+
+  if (input.isMovementInFlight) {
+    return {
+      shouldClearPendingMovement: false,
+      shouldClearAfterVisualCompletion: true,
+    };
+  }
+
+  return {
+    shouldClearPendingMovement: true,
+    shouldClearAfterVisualCompletion: false,
+  };
+}
+
+export function shouldClearPendingMovementOnAuthoritativePosition(
+  input: ResolvePendingMovementAuthoritativeResolutionPlanInput,
+): boolean {
+  return resolvePendingMovementAuthoritativeResolutionPlan(input).shouldClearPendingMovement;
 }

@@ -6,15 +6,15 @@ import {
   useAvatarProfiles,
   useAvatarProfilesByUsernames,
 } from "@/hooks/use-player-avatar";
-import { useFactoryWorlds } from "@/hooks/use-factory-worlds";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useWorldsAvailability } from "@/hooks/use-world-availability";
+import { useWorldsSummary } from "@/hooks/use-worlds-summary";
 import type { MarketClass } from "@/pm/class";
 import { useOptionalControllers } from "@/pm/hooks/controllers/use-controllers";
-import { getPredictionMarketChain } from "@/pm/prediction-market-config";
 import { SwitchNetworkPrompt } from "@/ui/components/switch-network-prompt";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
+import { useLandingNetworkState } from "../hooks/use-landing-network-state";
+import { canInteractWithLandingChain } from "../lib/landing-network-state";
 import { MarketsProviders } from "@/ui/features/market/markets-providers";
 import {
   PM_CONTENT_PANEL_CLASS,
@@ -26,20 +26,13 @@ import { MarketImage } from "@/ui/features/market/landing-markets/market-image";
 import { MarketStatusBadge } from "@/ui/features/market/landing-markets/market-status-badge";
 import { MMRTierBadge } from "@/ui/shared/components/mmr-tier-badge";
 import { getMMRTierFromRaw, toMmrIntegerFromRaw, type MMRTier } from "@/ui/utils/mmr-tiers";
-import {
-  getChainLabel,
-  resolveConnectedTxChainFromRuntime,
-  switchWalletToChain,
-  type WalletChainControllerLike,
-} from "@/ui/utils/network-switch";
-import { useAccount } from "@starknet-react/core";
+import { getChainLabel } from "@/ui/utils/network-switch";
 import { useQuery } from "@tanstack/react-query";
 import {
   marketChainLabels,
   useMultiChainMarketCounts,
   useMultiChainMarkets,
   type EnrichedMarket,
-  type MarketChainFilter,
   type MarketSortKey,
   type MarketStatusKey,
 } from "@/ui/features/market/landing-markets/use-multi-chain-markets";
@@ -47,6 +40,7 @@ import { MaybeController } from "@/ui/features/market/landing-markets/maybe-cont
 import { useCallback, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { hash } from "starknet";
+import { toast } from "sonner";
 import { MarketDetailsModal } from "./market-details-modal";
 
 interface MarketsViewProps {
@@ -182,12 +176,6 @@ const STATUS_OPTIONS: Array<{
   { key: "all", label: "All" },
 ];
 
-const CHAIN_OPTIONS: Array<{ key: MarketChainFilter; label: string }> = [
-  { key: "all", label: "All Chains" },
-  { key: "slot", label: "Slot" },
-  { key: "mainnet", label: "Mainnet" },
-];
-
 const SORT_OPTIONS: Array<{ key: MarketSortKey; label: string }> = [
   { key: "creation-date", label: "Creation Date" },
   { key: "end-time", label: "End Time" },
@@ -201,11 +189,6 @@ const getStatusFromParam = (value: string | null): MarketStatusKey => {
   }
 
   return "live";
-};
-
-const getChainFromParam = (value: string | null): MarketChainFilter => {
-  if (value === "slot" || value === "mainnet") return value;
-  return "all";
 };
 
 const getSortFromParam = (value: string | null): MarketSortKey => {
@@ -563,39 +546,38 @@ const MarketTerminalSkeletonCard = () => (
 const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const toggleModal = useUIStore((state) => state.toggleModal);
-  const { chainId, connector } = useAccount();
-  const runtimeChain = getPredictionMarketChain();
-  const controller = (connector as { controller?: WalletChainControllerLike } | undefined)?.controller;
-  const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller });
-  const activeTradingChain: MarketDataChain =
-    connectedTxChain === "mainnet" || connectedTxChain === "slot" ? connectedTxChain : runtimeChain;
+  const landingNetworkState = useLandingNetworkState();
+  const { status, switchToPreferredChain } = landingNetworkState;
   const [switchTargetChain, setSwitchTargetChain] = useState<MarketDataChain | null>(null);
   const [isExplainerOpen, setIsExplainerOpen] = useState(true);
+  const canTradeOnChain = useCallback(
+    (chain: MarketDataChain) => canInteractWithLandingChain(landingNetworkState, chain),
+    [landingNetworkState],
+  );
 
   const selectedStatus = getStatusFromParam(searchParams.get("status"));
-  const selectedChain = getChainFromParam(searchParams.get("chain"));
+  const selectedChain = landingNetworkState.preferredChain;
   const selectedSort = getSortFromParam(searchParams.get("sort"));
   const filterKey = `${selectedStatus}|${selectedChain}|${selectedSort}`;
 
   const [pagesByFilter, setPagesByFilter] = useState<Record<string, number>>({});
   const currentPage = pagesByFilter[filterKey] ?? 1;
   const offset = (currentPage - 1) * PAGE_SIZE;
-  const { worlds: factoryWorlds } = useFactoryWorlds(["mainnet", "slot"]);
-  const { results: worldAvailabilityByKey } = useWorldsAvailability(factoryWorlds, factoryWorlds.length > 0);
+  const { data: worldsSummary } = useWorldsSummary();
   const blockedDevModeOracleAddresses = useMemo(() => {
     const blockedAddresses = new Set<string>();
 
-    worldAvailabilityByKey.forEach((availability) => {
-      if (!availability.meta?.devModeOn) return;
+    for (const summary of worldsSummary ?? []) {
+      if (!summary.devModeOn || summary.chain !== selectedChain) continue;
 
-      const prizeDistributionAddress = normalizeHexAddress(availability.meta.prizeDistributionAddress ?? "");
+      const prizeDistributionAddress = normalizeHexAddress(summary.prizeDistributionAddress ?? "");
       if (prizeDistributionAddress) {
         blockedAddresses.add(prizeDistributionAddress);
       }
-    });
+    }
 
     return Array.from(blockedAddresses);
-  }, [worldAvailabilityByKey]);
+  }, [selectedChain, worldsSummary]);
 
   const { counts, isLoading: isCountsLoading, isFetching: isCountsFetching } = useMultiChainMarketCounts(selectedChain);
   const hasLiveMarkets = counts.live > 0;
@@ -611,26 +593,35 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
 
   const handleCardClick = useCallback(
     (market: MarketClass, chain: MarketDataChain) => {
-      if (chain !== activeTradingChain) return;
+      if (!canTradeOnChain(chain)) {
+        setSwitchTargetChain(chain);
+        return;
+      }
+
       toggleModal(<MarketDetailsModal market={market} chain={chain} onClose={() => toggleModal(null)} />);
     },
-    [activeTradingChain, toggleModal],
+    [canTradeOnChain, toggleModal],
   );
 
-  const handleOpenSwitchNetworkPrompt = useCallback((chain: MarketDataChain) => {
-    setSwitchTargetChain(chain);
-  }, []);
+  const handleOpenSwitchNetworkPrompt = useCallback(
+    (chain: MarketDataChain) => {
+      if (status === "detecting") {
+        toast.info("Detecting wallet network. Try again in a moment.");
+        return;
+      }
+
+      setSwitchTargetChain(chain);
+    },
+    [status],
+  );
 
   const handleSwitchNetwork = useCallback(async () => {
     if (!switchTargetChain) return;
-    const switched = await switchWalletToChain({
-      controller,
-      targetChain: switchTargetChain,
-    });
+    const switched = await switchToPreferredChain(switchTargetChain);
     if (switched) {
       setSwitchTargetChain(null);
     }
-  }, [controller, switchTargetChain]);
+  }, [switchTargetChain, switchToPreferredChain]);
 
   const handleStatusChange = useCallback(
     (nextStatus: MarketStatusKey) => {
@@ -643,19 +634,6 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
       setPagesByFilter((previous) => ({ ...previous, [`${nextStatus}|${selectedChain}|${selectedSort}`]: 1 }));
     },
     [selectedChain, selectedSort, setSearchParams],
-  );
-
-  const handleChainChange = useCallback(
-    (nextChain: MarketChainFilter) => {
-      setSearchParams((previous) => {
-        const next = new URLSearchParams(previous);
-        if (nextChain === "all") next.delete("chain");
-        else next.set("chain", nextChain);
-        return next;
-      });
-      setPagesByFilter((previous) => ({ ...previous, [`${selectedStatus}|${nextChain}|${selectedSort}`]: 1 }));
-    },
-    [selectedSort, selectedStatus, setSearchParams],
   );
 
   const handleSortChange = useCallback(
@@ -677,8 +655,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   const isInitialLoad = (isLoading || isFetching) && markets.length === 0;
 
   const sourceWarnings = useMemo(() => {
-    const selected = selectedChain === "all" ? (["slot", "mainnet"] as MarketDataChain[]) : [selectedChain];
-    return selected
+    return [selectedChain]
       .filter((chain) => !sourceStatus[chain]?.ok)
       .map((chain) => {
         const message = sourceStatus[chain]?.error ?? "Unavailable";
@@ -724,7 +701,9 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
     <div className={cn("flex h-full flex-col gap-5", className)}>
       <div className="space-y-3">
         <h2 className="font-cinzel text-xl font-semibold text-gold md:text-2xl">Prediction Markets</h2>
-        <p className="text-sm text-gold/70">Track live odds, liquidity, and market activity across Slot and Mainnet.</p>
+        <p className="text-sm text-gold/70">
+          Track live odds, liquidity, and market activity on {getChainLabel(selectedChain)}.
+        </p>
       </div>
 
       <div className={cn(PM_SURFACE_CLASS, "border-gold/15 bg-black/30 p-4")}>
@@ -797,25 +776,8 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
           })}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {CHAIN_OPTIONS.map((option) => {
-            const isActive = selectedChain === option.key;
-            return (
-              <button
-                key={option.key}
-                type="button"
-                onClick={() => handleChainChange(option.key)}
-                className={cn(
-                  "rounded-full border px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] transition-colors",
-                  isActive
-                    ? "border-gold/70 bg-gold/15 text-gold"
-                    : "border-gold/25 bg-black/40 text-gold/75 hover:border-gold/45 hover:bg-gold/10",
-                )}
-              >
-                {option.label}
-              </button>
-            );
-          })}
+        <div className="rounded-full border border-gold/70 bg-gold/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.12em] text-gold">
+          {getChainLabel(selectedChain)}
         </div>
       </div>
 
@@ -904,7 +866,7 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
                 item={item}
                 onOpen={handleCardClick}
                 onSwitchNetwork={handleOpenSwitchNetworkPrompt}
-                canTrade={item.chain === activeTradingChain}
+                canTrade={canTradeOnChain(item.chain)}
               />
             ))}
           </div>
@@ -962,8 +924,12 @@ const MarketsViewContent = ({ className }: MarketsViewProps) => {
   );
 };
 
-export const MarketsView = ({ className }: MarketsViewProps) => (
-  <MarketsProviders>
-    <MarketsViewContent className={className} />
-  </MarketsProviders>
-);
+export const MarketsView = ({ className }: MarketsViewProps) => {
+  const { preferredChain } = useLandingNetworkState();
+
+  return (
+    <MarketsProviders chain={preferredChain}>
+      <MarketsViewContent className={className} />
+    </MarketsProviders>
+  );
+};

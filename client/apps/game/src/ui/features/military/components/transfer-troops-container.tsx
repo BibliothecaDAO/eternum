@@ -1,10 +1,7 @@
 import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
-import {
-  resolveArmyToArmyTransferRestriction,
-  resolveArmyToStructureTransferRestriction,
-} from "@/ui/lib/structure-capabilities";
+import { resolveArmyToArmyTransferRestriction } from "@/ui/lib/structure-capabilities";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { formatNumber } from "@/ui/utils/utils";
 
@@ -183,13 +180,6 @@ export const TransferTroopsContainer = ({
     ],
   );
   const transferRestriction = useMemo(() => {
-    if (transferDirection === TransferDirection.ExplorerToStructure) {
-      return resolveArmyToStructureTransferRestriction({
-        modeId: mode.id,
-        destination: targetStructure,
-      });
-    }
-
     if (transferDirection === TransferDirection.ExplorerToExplorer) {
       return resolveArmyToArmyTransferRestriction({
         modeId: mode.id,
@@ -199,13 +189,7 @@ export const TransferTroopsContainer = ({
     }
 
     return null;
-  }, [
-    mode.id,
-    selectedExplorerConnectedStructure,
-    targetExplorerConnectedStructure,
-    targetStructure,
-    transferDirection,
-  ]);
+  }, [mode.id, selectedExplorerConnectedStructure, targetExplorerConnectedStructure, transferDirection]);
   const isTransferBlocked = transferRestriction !== null;
 
   const troopCapacityLimit = useMemo(() => {
@@ -586,7 +570,6 @@ export const TransferTroopsContainer = ({
     }
 
     const limitText = troopCapacityLimit.toLocaleString();
-    const remainingBefore = capacityRemainingDisplay;
     const remainingAfter =
       capacityRemainingAfterTransfer !== null ? capacityRemainingAfterTransfer : capacityRemainingDisplay;
 
@@ -600,7 +583,7 @@ export const TransferTroopsContainer = ({
 
       return {
         tone: "muted" as const,
-        message: `Deployment cap remaining after transfer: ${remainingAfter.toLocaleString()} (current remaining: ${remainingBefore.toLocaleString()}, max troops: ${limitText})`,
+        message: `Max troops: ${limitText}`,
       };
     }
 
@@ -617,7 +600,7 @@ export const TransferTroopsContainer = ({
 
       return {
         tone: "muted" as const,
-        message: `${guardName} cap remaining after transfer: ${remainingAfter.toLocaleString()} (current remaining: ${remainingBefore.toLocaleString()}, max troops: ${limitText})`,
+        message: `Max troops: ${limitText}`,
       };
     }
 
@@ -631,7 +614,7 @@ export const TransferTroopsContainer = ({
 
       return {
         tone: "muted" as const,
-        message: `Deployment cap remaining after transfer: ${remainingAfter.toLocaleString()} (current remaining: ${remainingBefore.toLocaleString()}, max troops: ${limitText})`,
+        message: `Max troops: ${limitText}`,
       };
     }
 
@@ -1288,6 +1271,21 @@ export const TransferTroopsContainer = ({
     return { tier: troop.tier as TroopTier, category: troop.category as TroopType, count };
   }, [targetExplorerTroops?.troops]);
 
+  const deploymentStrengthSummary =
+    targetTierForSummary !== undefined &&
+    (transferDirection !== TransferDirection.ExplorerToStructure || typeof guardSlot === "number") ? (
+      <DeploymentStrengthSummary
+        structureLevel={targetStructureLevel}
+        troopTier={targetTierForSummary}
+        troopCount={projectedTargetTroopCount}
+        maxTroopSize={troopCapacityLimit}
+        capacityRemaining={capacityRemainingAfterTransfer ?? capacityRemainingTarget}
+        className="bg-dark-brown/60"
+        collapsible
+        defaultExpanded={false}
+      />
+    ) : null;
+
   return (
     <div className="flex flex-col space-y-4">
       {isTargetLoading || isSelectedLoading ? (
@@ -1296,110 +1294,105 @@ export const TransferTroopsContainer = ({
         <>
           <div className="space-y-4">
             <div className="flex items-start justify-center gap-4">
-              <div className="space-y-4 rounded-md border border-gold/30 bg-dark-brown/60 p-4 max-w-3xl">
-                {guardSelectionRequired && (
-                  <div className="space-y-3">
-                    <TransferSlotSelection
-                      transferDirection={transferDirection}
-                      slots={visualGuardSlots}
-                      orderedSlots={orderedGuardSlots}
-                      guards={
-                        transferDirection === TransferDirection.StructureToExplorer ? selectedGuards : targetGuards
-                      }
-                      selectedSlot={guardSlot}
-                      onSelect={(slot) => {
-                        if (slot === BALANCE_SLOT || typeof slot === "number") {
-                          setGuardSlot(slot as GuardSelection);
+              <div className="flex-1 min-w-0 space-y-4">
+                <div className="space-y-4 rounded-md border border-gold/30 bg-dark-brown/60 p-4">
+                  {guardSelectionRequired && (
+                    <div className="space-y-3">
+                      <TransferSlotSelection
+                        transferDirection={transferDirection}
+                        slots={visualGuardSlots}
+                        orderedSlots={orderedGuardSlots}
+                        guards={
+                          transferDirection === TransferDirection.StructureToExplorer ? selectedGuards : targetGuards
                         }
-                      }}
-                      balanceOption={{
-                        key: BALANCE_SLOT,
-                        visible: canShowStructureBalanceOption && !!structureBalanceTroopInfo,
-                        troop: structureBalanceTroopInfo,
-                        disabled: balanceOptionDisabled,
-                        disabledReason: balanceOptionDisabledReason,
-                      }}
-                      selectedTroop={
-                        transferDirection === TransferDirection.ExplorerToStructure ? selectedTroopForSlots : undefined
-                      }
-                      targetTroop={
-                        transferDirection === TransferDirection.StructureToExplorer ? targetTroopForSlots : undefined
-                      }
-                      frontlineSlot={frontlineSlot}
-                      lastGuardSlot={lastGuardSlot}
-                      currentBlockTimestamp={currentBlockTimestamp}
-                    />
-                  </div>
-                )}
-
-                <div className="flex flex-col space-y-2">
-                  <div className="flex items-center gap-3">
-                    <input
-                      id="troopAmountInput"
-                      type="range"
-                      min="0"
-                      max={maxTroops}
-                      value={troopAmount}
-                      onChange={handleTroopAmountChange}
-                      className="w-full accent-gold"
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      max={maxTroops}
-                      value={troopAmount}
-                      onChange={handleTroopAmountChange}
-                      className="w-24 rounded-md border border-gold/30 bg-dark-brown px-3 py-1 text-gold"
-                    />
-                  </div>
-                  {capacityNotice && (
-                    <div
-                      className={`rounded-md border px-3 py-2 text-xs ${
-                        capacityNotice.tone === "danger"
-                          ? "border-danger/40 bg-danger/10 text-danger"
-                          : "border-gold/30 text-gold/60"
-                      }`}
-                    >
-                      {capacityNotice.message}
-                    </div>
-                  )}
-                  {targetTierForSummary !== undefined &&
-                    (transferDirection !== TransferDirection.ExplorerToStructure || typeof guardSlot === "number") && (
-                      <DeploymentStrengthSummary
-                        structureLevel={targetStructureLevel}
-                        troopTier={targetTierForSummary}
-                        troopCount={projectedTargetTroopCount}
-                        maxTroopSize={troopCapacityLimit}
-                        capacityRemaining={capacityRemainingAfterTransfer ?? capacityRemainingTarget}
+                        selectedSlot={guardSlot}
+                        onSelect={(slot) => {
+                          if (slot === BALANCE_SLOT || typeof slot === "number") {
+                            setGuardSlot(slot as GuardSelection);
+                          }
+                        }}
+                        balanceOption={{
+                          key: BALANCE_SLOT,
+                          visible: canShowStructureBalanceOption && !!structureBalanceTroopInfo,
+                          troop: structureBalanceTroopInfo,
+                          disabled: balanceOptionDisabled,
+                          disabledReason: balanceOptionDisabledReason,
+                        }}
+                        selectedTroop={
+                          transferDirection === TransferDirection.ExplorerToStructure
+                            ? selectedTroopForSlots
+                            : undefined
+                        }
+                        targetTroop={
+                          transferDirection === TransferDirection.StructureToExplorer ? targetTroopForSlots : undefined
+                        }
+                        frontlineSlot={frontlineSlot}
+                        lastGuardSlot={lastGuardSlot}
+                        currentBlockTimestamp={currentBlockTimestamp}
                       />
-                    )}
-                  {quickAmountOptions.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs text-gold/60">Quick set:</span>
-                      {quickAmountOptions.map((option) => {
-                        const isActive = troopAmount === option.value;
-                        return (
-                          <button
-                            key={option.label}
-                            type="button"
-                            onClick={() => handleQuickAmountSelect(option.value)}
-                            className={`rounded-md border px-3 py-1 text-xs font-medium transition-colors ${
-                              isActive
-                                ? "border-gold bg-gold/20 text-gold"
-                                : "border-gold/30 bg-dark-brown text-gold/70 hover:bg-gold/10"
-                            }`}
-                            aria-pressed={isActive}
-                          >
-                            {option.label}
-                          </button>
-                        );
-                      })}
                     </div>
                   )}
+
+                  <div className="flex flex-col space-y-2">
+                    <div className="flex items-center gap-3">
+                      <input
+                        id="troopAmountInput"
+                        type="range"
+                        min="0"
+                        max={maxTroops}
+                        value={troopAmount}
+                        onChange={handleTroopAmountChange}
+                        className="w-full accent-gold"
+                      />
+                      <input
+                        type="number"
+                        min="0"
+                        max={maxTroops}
+                        value={troopAmount}
+                        onChange={handleTroopAmountChange}
+                        className="w-24 rounded-md border border-gold/30 bg-dark-brown px-3 py-1 text-gold"
+                      />
+                    </div>
+                    {capacityNotice && (
+                      <div
+                        className={`rounded-md border px-3 py-2 text-xs ${
+                          capacityNotice.tone === "danger"
+                            ? "border-danger/40 bg-danger/10 text-danger"
+                            : "border-gold/30 text-gold/60"
+                        }`}
+                      >
+                        {capacityNotice.message}
+                      </div>
+                    )}
+                    {quickAmountOptions.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-xs text-gold/60">Quick set:</span>
+                        {quickAmountOptions.map((option) => {
+                          const isActive = troopAmount === option.value;
+                          return (
+                            <button
+                              key={option.label}
+                              type="button"
+                              onClick={() => handleQuickAmountSelect(option.value)}
+                              className={`rounded-md border px-3 py-1 text-xs font-medium transition-colors ${
+                                isActive
+                                  ? "border-gold bg-gold/20 text-gold"
+                                  : "border-gold/30 bg-dark-brown text-gold/70 hover:bg-gold/10"
+                              }`}
+                              aria-pressed={isActive}
+                            >
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
                 </div>
+                {deploymentStrengthSummary}
               </div>
 
-              <div className="space-y-4 rounded-md border border-gold/30 bg-dark-brown/60 p-4 w-full max-w-md">
+              <div className="flex-1 min-w-0 space-y-4 rounded-md border border-gold/30 bg-dark-brown/60 p-4">
                 <div className="rounded-md border border-gold/40 bg-dark-brown/50 p-3">
                   <div className="text-[10px] uppercase tracking-wide text-gold/60">Transfer direction</div>
                   <div className="mt-2 flex items-center justify-between gap-3">
@@ -1428,7 +1421,7 @@ export const TransferTroopsContainer = ({
                   </div>
                 )}
 
-                {!transferReady && disabledMessage && (
+                {!transferReady && disabledMessage && !troopMismatchMessage && (
                   <div className="flex items-start gap-2 rounded-md border border-danger/40 bg-danger/10 p-3 text-sm text-danger/80">
                     <AlertTriangle className="mt-[2px] h-4 w-4 flex-shrink-0" />
                     <span>{disabledMessage}</span>

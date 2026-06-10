@@ -15,17 +15,27 @@ afterEach(() => {
 
 describe("ToriiAvailabilityService", () => {
   describe("probeWorld", () => {
-    it("returns true when the torii endpoint responds with 200", async () => {
-      mockFetch.mockResolvedValueOnce(new Response(null, { status: 200 }));
+    it("returns true when the torii endpoint responds with 200 and fires the summary fetch", async () => {
+      mockFetch
+        .mockResolvedValueOnce(new Response(null, { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify([]), { status: 200 }));
 
       const service = new ToriiAvailabilityService({ factoryChains: [] });
       const alive = await service.probeWorld("my-world");
 
       expect(alive).toBe(true);
-      expect(mockFetch).toHaveBeenCalledOnce();
-      const [url, opts] = mockFetch.mock.calls[0]!;
-      expect(url).toBe("https://api.cartridge.gg/x/my-world/torii/sql");
-      expect((opts as RequestInit).method).toBe("HEAD");
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      const [headUrl, headOpts] = mockFetch.mock.calls[0]!;
+      expect(headUrl).toBe("https://api.cartridge.gg/x/my-world/torii/sql");
+      expect((headOpts as RequestInit).method).toBe("HEAD");
+      const [summaryUrl] = mockFetch.mock.calls[1]!;
+      const summaryUrlStr =
+        typeof summaryUrl === "string"
+          ? summaryUrl
+          : summaryUrl instanceof URL
+            ? summaryUrl.toString()
+            : (summaryUrl as Request).url;
+      expect(summaryUrlStr).toMatch(/^https:\/\/api\.cartridge\.gg\/x\/my-world\/torii\/sql\?query=/);
     });
 
     it("returns false when the torii endpoint responds with 404", async () => {
@@ -171,6 +181,204 @@ describe("ToriiAvailabilityService", () => {
     });
   });
 
+  describe("summary folding", () => {
+    const blitzSummaryRow = {
+      blitz_mode_on: 1,
+      start_settling_at: "0x65b0fde0",
+      start_main_at: "0x65b1ffe0",
+      end_at: "0x65b2ffe0",
+      dev_mode_on: 0,
+      mmr_enabled: 1,
+      registration_count: 3,
+      registration_count_max: 10,
+      entry_token_address: null,
+      fee_token: "0xabcd",
+      fee_amount: "0xff",
+      registration_start_at: "0x65b0fde0",
+      max_ring_count: 1,
+      single_realm_mode: 0,
+      two_player_mode: 1,
+      season_pass_address: null,
+      village_pass_token_address: null,
+      settled_players_count: null,
+      settled_realms_count: null,
+      settled_villages_count: null,
+      hyperstructure_created_count: 0,
+    };
+
+    it("fetches summary for alive worlds and exposes getSummaries()", async () => {
+      const factoryResponse = [{ name: "0x616c706861", address: "0xabc" }]; // "alpha"
+
+      mockFetch.mockImplementation(async (url, opts) => {
+        const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+        if (urlStr.includes("eternum-factory")) {
+          return new Response(JSON.stringify(factoryResponse), { status: 200 });
+        }
+        const method = (opts as RequestInit)?.method;
+        if (method === "HEAD" && urlStr.includes("/x/alpha/torii/sql")) {
+          return new Response(null, { status: 200 });
+        }
+        if (urlStr.includes("/x/alpha/torii/sql?query=")) {
+          return new Response(JSON.stringify([blitzSummaryRow]), { status: 200 });
+        }
+        return new Response(null, { status: 500 });
+      });
+
+      const service = new ToriiAvailabilityService({ factoryChains: ["mainnet"] });
+      await service.pollOnce();
+
+      const summaries = service.getSummaries();
+      expect(summaries).toHaveLength(1);
+      expect(summaries[0]).toMatchObject({
+        name: "alpha",
+        chain: "mainnet",
+        alive: true,
+        worldAddress: "0xabc",
+        mode: "blitz",
+        registrationCount: 3,
+        startMainAt: 0x65b1ffe0,
+      });
+    });
+
+    it("preserves the last good summary when a later summary fetch fails", async () => {
+      mockFetch
+        .mockResolvedValueOnce(new Response(null, { status: 200 }))
+        .mockResolvedValueOnce(new Response(JSON.stringify([blitzSummaryRow]), { status: 200 }))
+        .mockResolvedValueOnce(new Response(null, { status: 200 }))
+        .mockResolvedValueOnce(new Response(null, { status: 500 }));
+
+      const service = new ToriiAvailabilityService({ factoryChains: [] });
+      await service.probeWorld("alpha", "mainnet", "0xprize", "0xabc");
+      await service.probeWorld("alpha", "mainnet", "0xprize", "0xabc");
+
+      const [summary] = service.getSummaries();
+      expect(summary).toMatchObject({
+        name: "alpha",
+        alive: true,
+        mode: "blitz",
+        startMainAt: 0x65b1ffe0,
+        prizeDistributionAddress: "0xprize",
+        worldAddress: "0xabc",
+      });
+    });
+
+    it("does not fetch summary for dead worlds", async () => {
+      const factoryResponse = [{ name: "0x6465616432", address: "0xabc" }]; // "dead2"
+
+      let summaryCallCount = 0;
+      mockFetch.mockImplementation(async (url, opts) => {
+        const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+        if (urlStr.includes("eternum-factory")) {
+          return new Response(JSON.stringify(factoryResponse), { status: 200 });
+        }
+        const method = (opts as RequestInit)?.method;
+        if (method === "HEAD") {
+          return new Response(null, { status: 503 });
+        }
+        if (urlStr.includes("?query=")) {
+          summaryCallCount++;
+        }
+        return new Response(null, { status: 500 });
+      });
+
+      const service = new ToriiAvailabilityService({ factoryChains: ["mainnet"] });
+      await service.pollOnce();
+
+      expect(summaryCallCount).toBe(0);
+      const summaries = service.getSummaries();
+      expect(summaries).toHaveLength(1);
+      expect(summaries[0]).toMatchObject({
+        name: "dead2",
+        chain: "mainnet",
+        alive: false,
+        mode: null,
+      });
+    });
+
+    it("tolerates summary-fetch failure while keeping world alive", async () => {
+      const factoryResponse = [{ name: "0x616c706861", address: "0xabc" }];
+
+      mockFetch.mockImplementation(async (url, opts) => {
+        const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+        if (urlStr.includes("eternum-factory")) {
+          return new Response(JSON.stringify(factoryResponse), { status: 200 });
+        }
+        const method = (opts as RequestInit)?.method;
+        if (method === "HEAD") {
+          return new Response(null, { status: 200 });
+        }
+        if (urlStr.includes("?query=")) {
+          return new Response(null, { status: 500 });
+        }
+        return new Response(null, { status: 500 });
+      });
+
+      const service = new ToriiAvailabilityService({ factoryChains: ["mainnet"] });
+      await service.pollOnce();
+
+      const summaries = service.getSummaries();
+      expect(summaries[0]).toMatchObject({
+        name: "alpha",
+        alive: true,
+        mode: null,
+        startMainAt: null,
+      });
+    });
+
+    it("preserves getAvailability() backcompat (name → boolean map)", async () => {
+      const factoryResponse = [
+        { name: "0x616c706861", address: "0xabc" }, // alpha
+        { name: "0x62657461", address: "0xdef" }, // beta
+      ];
+
+      mockFetch.mockImplementation(async (url, opts) => {
+        const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+        if (urlStr.includes("eternum-factory")) {
+          return new Response(JSON.stringify(factoryResponse), { status: 200 });
+        }
+        const method = (opts as RequestInit)?.method;
+        if (method === "HEAD" && urlStr.includes("/x/alpha/torii")) {
+          return new Response(null, { status: 200 });
+        }
+        if (urlStr.includes("/x/alpha/torii/sql?query=")) {
+          return new Response(JSON.stringify([blitzSummaryRow]), { status: 200 });
+        }
+        if (method === "HEAD" && urlStr.includes("/x/beta/torii")) {
+          return new Response(null, { status: 404 });
+        }
+        return new Response(null, { status: 500 });
+      });
+
+      const service = new ToriiAvailabilityService({ factoryChains: ["mainnet"] });
+      await service.pollOnce();
+
+      const availability = service.getAvailability();
+      expect(availability["alpha"]).toBe(true);
+      expect(availability["beta"]).toBe(false);
+    });
+
+    it("records chain of the first factory that yielded the world name", async () => {
+      const factoryResponse = [{ name: "0x616c706861", address: "0xabc" }];
+
+      mockFetch.mockImplementation(async (url, opts) => {
+        const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
+        if (urlStr.includes("eternum-factory")) {
+          return new Response(JSON.stringify(factoryResponse), { status: 200 });
+        }
+        const method = (opts as RequestInit)?.method;
+        if (method === "HEAD") return new Response(null, { status: 200 });
+        if (urlStr.includes("?query=")) return new Response(JSON.stringify([blitzSummaryRow]), { status: 200 });
+        return new Response(null, { status: 500 });
+      });
+
+      const service = new ToriiAvailabilityService({ factoryChains: ["slot", "mainnet"] });
+      await service.pollOnce();
+
+      const summaries = service.getSummaries();
+      expect(summaries[0]!.chain).toBe("slot");
+    });
+  });
+
   describe("start / stop", () => {
     it("starts polling and can be stopped", async () => {
       vi.useFakeTimers();
@@ -192,12 +400,13 @@ describe("ToriiAvailabilityService", () => {
 
       service.stop();
 
-      // Calls: initial poll (1 factory fetch) + interval poll (1 factory fetch)
+      // Each poll cycle makes 2 factory fetches per chain (worlds + prize addresses).
+      // 1 chain × 2 fetches × 2 poll cycles = 4.
       const factoryCalls = mockFetch.mock.calls.filter(([url]) => {
         const urlStr = typeof url === "string" ? url : url instanceof URL ? url.toString() : (url as Request).url;
         return urlStr.includes("eternum-factory");
       });
-      expect(factoryCalls.length).toBe(2);
+      expect(factoryCalls.length).toBe(4);
 
       vi.useRealTimers();
     });
@@ -221,10 +430,12 @@ describe("ToriiAvailabilityService", () => {
 
       service.start();
       await vi.advanceTimersByTimeAsync(0);
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+      // Poll fires 2 parallel factory fetches (worlds + prize addresses) then awaits both.
+      expect(mockFetch).toHaveBeenCalledTimes(2);
 
       await vi.advanceTimersByTimeAsync(3000);
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+      // No new cycle should have started while the first is still in-flight.
+      expect(mockFetch).toHaveBeenCalledTimes(2);
 
       const resolvePendingFactoryFetch = factoryFetchControl.resolve;
       if (!resolvePendingFactoryFetch) {

@@ -129,9 +129,7 @@ export class CentralizedVisibilityManager {
     this.frameState = this.createEmptyFrameState();
   }
 
-  // ===========================================================================
   // Initialization
-  // ===========================================================================
 
   /**
    * Initialize with camera and controls.
@@ -166,9 +164,7 @@ export class CentralizedVisibilityManager {
     }
   }
 
-  // ===========================================================================
   // Frame Management
-  // ===========================================================================
 
   /**
    * Begin a new frame. Call this at the start of each render loop.
@@ -212,9 +208,7 @@ export class CentralizedVisibilityManager {
     this.isDirty = true;
   }
 
-  // ===========================================================================
   // Chunk Registration
-  // ===========================================================================
 
   /**
    * Register a chunk's bounds for visibility tracking.
@@ -264,9 +258,7 @@ export class CentralizedVisibilityManager {
     return Array.from(this.chunkBounds.keys());
   }
 
-  // ===========================================================================
   // Visibility Queries
-  // ===========================================================================
 
   /**
    * Check if a chunk is visible in the current frame.
@@ -374,9 +366,7 @@ export class CentralizedVisibilityManager {
     return visible;
   }
 
-  // ===========================================================================
   // Animation Visibility
-  // ===========================================================================
 
   /**
    * Check if an object should animate based on frustum and distance.
@@ -429,9 +419,7 @@ export class CentralizedVisibilityManager {
     this.config.animationMaxDistance = distance;
   }
 
-  // ===========================================================================
   // Change Listeners
-  // ===========================================================================
 
   /**
    * Subscribe to visibility updates.
@@ -444,9 +432,7 @@ export class CentralizedVisibilityManager {
     };
   }
 
-  // ===========================================================================
   // Statistics
-  // ===========================================================================
 
   /**
    * Get visibility statistics for debugging/monitoring.
@@ -471,9 +457,7 @@ export class CentralizedVisibilityManager {
     };
   }
 
-  // ===========================================================================
   // Cleanup
-  // ===========================================================================
 
   /**
    * Dispose of the visibility manager.
@@ -496,9 +480,7 @@ export class CentralizedVisibilityManager {
     }
   }
 
-  // ===========================================================================
   // Private Methods
-  // ===========================================================================
 
   private createEmptyFrameState(): FrameVisibilityState {
     return {
@@ -567,9 +549,7 @@ export class CentralizedVisibilityManager {
   }
 }
 
-// ===========================================================================
 // Singleton Instance
-// ===========================================================================
 
 let visibilityManagerInstance: CentralizedVisibilityManager | null = null;
 

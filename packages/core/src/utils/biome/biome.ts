@@ -21,11 +21,76 @@ const LEVEL = {
   MOUNTAIN: FixedTrait.fromRatio(56n, 100n), // 0.56
 };
 
+export interface BiomeClimateConfig {
+  elevation_scale_bps: number;
+  moisture_scale_bps: number;
+  elevation_bias_bps: number;
+  moisture_bias_bps: number;
+  elevation_seed?: number;
+  moisture_seed?: number;
+}
+
+export const NEUTRAL_BIOME_CLIMATE: BiomeClimateConfig = {
+  elevation_scale_bps: 10_000,
+  moisture_scale_bps: 10_000,
+  elevation_bias_bps: 10_000,
+  moisture_bias_bps: 10_000,
+  elevation_seed: 0,
+  moisture_seed: 0,
+};
+
+const CLIMATE_BPS_DENOMINATOR = 10_000n;
+
 export class Biome {
-  static getBiome(col: number, row: number): BiomeType {
-    const elevation = Biome.calculateElevation(col, row, MAP_AMPLITUDE, ELEVATION_OCTAVES, ELEVATION_OCTAVES_SUM);
-    const moisture = Biome.calculateMoisture(col, row, MAP_AMPLITUDE, MOISTURE_OCTAVE);
+  static getBiome(col: number, row: number, climate: BiomeClimateConfig = NEUTRAL_BIOME_CLIMATE): BiomeType {
+    const elevation = Biome.applyClimateAdjustment(
+      Biome.calculateElevation(
+        col,
+        row,
+        MAP_AMPLITUDE,
+        ELEVATION_OCTAVES,
+        ELEVATION_OCTAVES_SUM,
+        Biome.resolveClimateSeed(climate.elevation_seed),
+      ),
+      climate.elevation_scale_bps,
+      climate.elevation_bias_bps,
+    );
+    const moisture = Biome.applyClimateAdjustment(
+      Biome.calculateMoisture(
+        col,
+        row,
+        MAP_AMPLITUDE,
+        MOISTURE_OCTAVE,
+        Biome.resolveClimateSeed(climate.moisture_seed),
+      ),
+      climate.moisture_scale_bps,
+      climate.moisture_bias_bps,
+    );
     return Biome.determineBiome(elevation, moisture, LEVEL);
+  }
+
+  private static applyClimateAdjustment(value: Fixed, scaleBps: number, biasBps: number): Fixed {
+    const scale = Biome.resolveClimateBps(scaleBps);
+    const bias = Biome.resolveClimateBps(biasBps);
+    const adjustedValue = value
+      .mul(FixedTrait.fromRatio(BigInt(scale), CLIMATE_BPS_DENOMINATOR))
+      .add(FixedTrait.fromRatio(BigInt(bias) - CLIMATE_BPS_DENOMINATOR, CLIMATE_BPS_DENOMINATOR));
+
+    return Biome.clampClimateValue(adjustedValue);
+  }
+
+  private static resolveClimateBps(value: number): number {
+    return Number.isFinite(value) && value > 0 ? Math.trunc(value) : Number(CLIMATE_BPS_DENOMINATOR);
+  }
+
+  private static resolveClimateSeed(value: number | undefined): number {
+    return Number.isFinite(value) && value! > 0 ? Math.trunc(value!) : 0;
+  }
+
+  private static clampClimateValue(value: Fixed): Fixed {
+    if (value.value < FixedTrait.ZERO.value) return FixedTrait.ZERO;
+    if (value.value > FixedTrait.ONE.value) return FixedTrait.ONE;
+    return value;
   }
 
   private static calculateElevation(
@@ -34,13 +99,18 @@ export class Biome {
     mapAmplitude: Fixed,
     octaves: Fixed[],
     octavesSum: Fixed,
+    seed: number,
   ): Fixed {
     let elevation = FixedTrait.ZERO;
     let _100 = FixedTrait.fromInt(100n);
     let _2 = FixedTrait.fromInt(2n);
     for (const octave of octaves) {
-      let x = FixedTrait.fromInt(BigInt(col)).div(octave).div(mapAmplitude);
-      let z = FixedTrait.fromInt(BigInt(row)).div(octave).div(mapAmplitude);
+      let x = FixedTrait.fromInt(BigInt(col + seed))
+        .div(octave)
+        .div(mapAmplitude);
+      let z = FixedTrait.fromInt(BigInt(row + seed))
+        .div(octave)
+        .div(mapAmplitude);
 
       let sn = snoise(Vec3.new(x, FixedTrait.ZERO, z));
       const noise = sn.add(FixedTrait.ONE).mul(_100).div(_2);
@@ -50,9 +120,15 @@ export class Biome {
     return elevation.div(octavesSum).div(FixedTrait.fromInt(100n));
   }
 
-  private static calculateMoisture(col: number, row: number, mapAmplitude: Fixed, moistureOctave: Fixed): Fixed {
-    const moistureX = moistureOctave.mul(FixedTrait.fromInt(BigInt(col))).div(mapAmplitude);
-    const moistureZ = moistureOctave.mul(FixedTrait.fromInt(BigInt(row))).div(mapAmplitude);
+  private static calculateMoisture(
+    col: number,
+    row: number,
+    mapAmplitude: Fixed,
+    moistureOctave: Fixed,
+    seed: number,
+  ): Fixed {
+    const moistureX = moistureOctave.mul(FixedTrait.fromInt(BigInt(col + seed))).div(mapAmplitude);
+    const moistureZ = moistureOctave.mul(FixedTrait.fromInt(BigInt(row + seed))).div(mapAmplitude);
     const noise = snoise(Vec3.new(moistureX, FixedTrait.ZERO, moistureZ))
       .add(FixedTrait.ONE)
       .mul(FixedTrait.fromInt(100n))

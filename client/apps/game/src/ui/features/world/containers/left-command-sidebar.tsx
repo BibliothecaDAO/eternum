@@ -1,163 +1,35 @@
-import type { VillageIconKey } from "@/config/game-modes";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
-import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { BuildingThumbs, MenuEnum } from "@/ui/config";
-import { Tabs } from "@/ui/design-system/atoms";
-import CircleButton from "@/ui/design-system/molecules/circle-button";
-import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { ResourceArrivals as AllResourceArrivals, MarketModal } from "@/ui/features/economy/trading";
-import { TRANSFER_POPUP_NAME } from "@/ui/features/economy/transfers/transfer-automation-popup";
-import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
+import { ConstructionModal } from "@/ui/features/world/containers/construction-modal";
+import { LogisticsView } from "@/ui/features/world/containers/logistics-view";
+import { MilitaryModal } from "@/ui/features/world/containers/military-modal";
+import { EmpireCockpit } from "@/ui/features/world/containers/left-facets/empire-cockpit";
+import { StructureListColumn } from "@/ui/features/world/containers/left-facets/structure-list-column";
 import {
   RealtimeChatShell,
   useRealtimeChatActions,
   useRealtimeChatInitializer,
   useRealtimeChatSelector,
-  useRealtimeConnection,
-  useRealtimeTotals,
   type InitializeRealtimeClientParams,
 } from "@/ui/features/social";
-import { StoryEventsChronicles } from "@/ui/features/story-events";
-import { construction, military, trade } from "@/ui/features/world";
 import { StructureEditPopup } from "@/ui/features/world/components/structure-edit-popup";
-import { useFavoriteStructures } from "@/ui/features/world/containers/top-header/favorites";
-import {
-  STRUCTURE_GROUP_CONFIG,
-  StructureGroupColor,
-  StructureGroupsMap,
-  useStructureGroups,
-} from "@/ui/features/world/containers/top-header/structure-groups";
-import { useStructureUpgrade } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
-import { BaseContainer } from "@/ui/shared/containers/base-container";
-import type { getEntityInfo } from "@bibliothecadao/eternum";
-import {
-  configManager,
-  getStructureArmyRelicEffects,
-  getStructureRelicEffects,
-  Position,
-  setEntityNameLocalStorage,
-} from "@bibliothecadao/eternum";
-import { useDojo, useQuery } from "@bibliothecadao/react";
-import {
-  ClientComponents,
-  ContractAddress,
-  getLevelName,
-  ID,
-  RealmLevels,
-  ResourcesIds,
-  Structure,
-  StructureType,
-} from "@bibliothecadao/types";
+import { useStructureGroups } from "@/ui/features/world/containers/top-header/structure-groups";
+import { setEntityNameLocalStorage } from "@bibliothecadao/eternum";
+import { useDojo } from "@bibliothecadao/react";
+import { type ID } from "@bibliothecadao/types";
 import { useComponentValue } from "@dojoengine/react";
-import { ComponentValue, getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
-import clsx from "clsx";
-import type { LucideIcon } from "lucide-react";
-import Castle from "lucide-react/dist/esm/icons/castle";
-import ChevronUp from "lucide-react/dist/esm/icons/chevron-up";
-import ChevronsUp from "lucide-react/dist/esm/icons/chevrons-up";
-import Crown from "lucide-react/dist/esm/icons/crown";
-import Info from "lucide-react/dist/esm/icons/info";
-import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import MessageCircle from "lucide-react/dist/esm/icons/message-circle";
-import Pencil from "lucide-react/dist/esm/icons/pencil";
-import Pickaxe from "lucide-react/dist/esm/icons/pickaxe";
-import ShieldCheck from "lucide-react/dist/esm/icons/shield-check";
+import PackageIcon from "lucide-react/dist/esm/icons/package";
 import Sparkles from "lucide-react/dist/esm/icons/sparkles";
-import Star from "lucide-react/dist/esm/icons/star";
-import Tent from "lucide-react/dist/esm/icons/tent";
-import type { ComponentProps, KeyboardEvent, MouseEvent, ReactNode } from "react";
-import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef } from "react";
 
-type CircleButtonProps = ComponentProps<typeof CircleButton>;
-
-type NavigationItem = {
-  id: MenuEnum;
-  children?: ReactNode;
-} & Pick<
-  CircleButtonProps,
-  | "active"
-  | "className"
-  | "disabled"
-  | "image"
-  | "label"
-  | "onClick"
-  | "primaryNotification"
-  | "secondaryNotification"
-  | "size"
-  | "tooltipLocation"
->;
-
-type StructureWithMetadata = Structure & {
-  displayName: string;
-  originalName: string;
-  realmLevel: number;
-  realmLevelLabel: string | null;
-  population: number;
-  populationCapacity: number;
-  groupColor: StructureGroupColor | null;
-  isFavorite: boolean;
-  canUpgrade: boolean;
-};
-
-type RealmNavigationContext = {
-  view: LeftView;
-  setView: (view: LeftView) => void;
-  disableButtons: boolean;
-  canOpenConstruction: boolean;
-  arrivedArrivalsNumber: number;
-  pendingArrivalsNumber: number;
-  toggleModal: (content: ReactNode | null) => void;
-  isTradeOpen: boolean;
-  showTradeMenu: boolean;
-};
-
-type EconomyNavigationContext = {
-  view: LeftView;
-  setLeftView: (view: LeftView) => void;
-  disableButtons: boolean;
-  showBridgeMenu: boolean;
-  onOpenTransfer: () => void;
-  isTransferOpen: boolean;
-};
-
-type LeftPanelHeaderProps = {
-  structureEntityId: ID;
-  structures: Structure[];
-  structureInfo: ReturnType<typeof getEntityInfo> | null;
-  onSelectStructure: (entityId: ID) => void;
-  components: ClientComponents;
-  structureGroups: StructureGroupsMap;
-  onRequestNameChange: (structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => void;
-  nameUpdateVersion: number;
-  favorites: number[];
-  onToggleFavorite: (entityId: number) => void;
-};
-
-const connectionTone = {
-  connected: "bg-emerald-400 animate-pulse",
-  error: "bg-red-400",
-  default: "bg-neutral-500",
-} as const;
-
-const VILLAGE_ICON_BY_KEY: Record<VillageIconKey, LucideIcon> = {
-  castle: Castle,
-  tent: Tent,
-};
-
-const getConnectionToneClass = (status: string | undefined) => {
-  if (status === "connected") {
-    return connectionTone.connected;
-  }
-  if (status === "error") {
-    return connectionTone.error;
-  }
-  return connectionTone.default;
-};
+// ----------------------------------------------------------------------------
+// Realtime chat config hook
+// ----------------------------------------------------------------------------
 
 const useRealtimeChatConfig = () => {
   const ConnectedAccount = useAccountStore((state) => state.account);
@@ -178,15 +50,8 @@ const useRealtimeChatConfig = () => {
 
     return {
       baseUrl: realtimeBaseUrl,
-      identity: {
-        playerId,
-        walletAddress,
-        displayName,
-      },
-      queryParams: {
-        walletAddress,
-        playerName: displayName,
-      },
+      identity: { playerId, walletAddress, displayName },
+      queryParams: { walletAddress, playerName: displayName },
       joinZones: zoneIds,
     };
   }, [ConnectedAccount?.address, accountName, realtimeBaseUrl, zoneIds]);
@@ -194,794 +59,19 @@ const useRealtimeChatConfig = () => {
   return { initializer, defaultZoneId, zoneIds };
 };
 
-const DEFAULT_BUTTON_SIZE: CircleButtonProps["size"] = "lg";
+// ----------------------------------------------------------------------------
+// Chat shell wrapper — kept here because it shares the realtime config hook
+// ----------------------------------------------------------------------------
 
-const getResponsiveButtonSize = (itemCount: number): CircleButtonProps["size"] => {
-  // Panel width is 420px, padding is 24px (px-3 on each side), available ~396px
-  // lg buttons: 48px + 8px gap = fits ~7 buttons
-  // md buttons: 40px + 8px gap = fits ~8 buttons
-  // sm buttons: 32px + 8px gap = fits ~10 buttons
-  if (itemCount <= 7) return "lg";
-  if (itemCount <= 8) return "md";
-  return "sm";
-};
-
-const HEADER_HEIGHT = 64;
-const PANEL_WIDTH = 420;
-const HANDLE_WIDTH = 14;
-
-const LeftPanelHeader = memo(
-  ({
-    structureEntityId,
-    structures,
-    structureInfo,
-    onSelectStructure,
-    components,
-    structureGroups,
-    onRequestNameChange,
-    nameUpdateVersion,
-    favorites,
-    onToggleFavorite,
-  }: LeftPanelHeaderProps) => {
-    const [activeTab, setActiveTab] = useState(0);
-    const mode = useGameModeConfig();
-
-    const favoritesSet = useMemo(() => new Set(favorites), [favorites]);
-
-    const structureEntityKey = useMemo(() => {
-      try {
-        return getEntityIdFromKeys([BigInt(structureEntityId)]);
-      } catch {
-        return null;
-      }
-    }, [structureEntityId]);
-
-    const liveStructure = useComponentValue(components.Structure, structureEntityKey as any);
-    const liveStructureBuildings = useComponentValue(components.StructureBuildings, structureEntityKey as any);
-
-    const structureTabs = useMemo<Array<{ key: string; label: string; categories: StructureType[]; icon: LucideIcon }>>(
-      () => [
-        { key: "realms", label: mode.labels.realms, categories: [StructureType.Realm], icon: Crown },
-        {
-          key: "villages",
-          label: mode.labels.villages,
-          categories: [StructureType.Village, StructureType.Camp],
-          icon: VILLAGE_ICON_BY_KEY[mode.ui.villageIconKey],
-        },
-        {
-          key: "rifts",
-          label: mode.labels.fragmentMines,
-          categories: [StructureType.FragmentMine],
-          icon: Pickaxe,
-        },
-        {
-          key: "hyperstructures",
-          label: "Hyperstructures",
-          categories: [StructureType.Hyperstructure],
-          icon: Sparkles,
-        },
-      ],
-      [mode],
-    );
-
-    const structuresWithMetadata = useMemo<StructureWithMetadata[]>(() => {
-      // Force recomputation when a local rename occurs.
-      void nameUpdateVersion;
-      const basePopulationCapacityValue = configManager.getBasePopulationCapacity();
-      const maxRealmLevel = configManager.getMaxLevel(StructureType.Realm);
-      return structures.map((structure) => {
-        const { name, originalName } = mode.structure.getName(structure.structure);
-        const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
-        const baseLevel = structure.structure.base?.level;
-        const normalizedLevel =
-          typeof baseLevel === "number" ? baseLevel : typeof baseLevel === "bigint" ? Number(baseLevel) : 0;
-        const realmLevelLabel = structureCapabilities.hasPopulationDetails
-          ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
-          : null;
-        const structureEntity = getEntityIdFromKeys([BigInt(structure.entityId)]);
-        const structureBuildings = components.StructureBuildings
-          ? getComponentValue(components.StructureBuildings, structureEntity)
-          : null;
-        const population = Number(structureBuildings?.population.current ?? 0);
-        const normalizedBasePopulationCapacity = structureCapabilities.hasPopulationDetails
-          ? Math.max(Number(basePopulationCapacityValue ?? 0), 6)
-          : 0;
-        const populationCapacity = Number(structureBuildings?.population.max ?? 0) + normalizedBasePopulationCapacity;
-        const groupColor = structureGroups[structure.entityId] ?? null;
-
-        const isFavorite = favoritesSet.has(structure.entityId);
-
-        return {
-          ...structure,
-          displayName: name,
-          originalName,
-          realmLevel: normalizedLevel,
-          realmLevelLabel,
-          population,
-          populationCapacity,
-          groupColor,
-          isFavorite,
-          canUpgrade: structure.category === StructureType.Realm && normalizedLevel < maxRealmLevel,
-        };
-      });
-    }, [structures, components.StructureBuildings, structureGroups, nameUpdateVersion, favoritesSet, mode]);
-
-    const orderedStructures = useMemo(() => {
-      const currentTab = structureTabs[activeTab] ?? structureTabs[0];
-      const filtered =
-        currentTab?.categories?.length === 0
-          ? structuresWithMetadata
-          : structuresWithMetadata.filter((structure) => currentTab.categories.includes(structure.category));
-      return filtered.toSorted((a, b) => Number(b.isFavorite) - Number(a.isFavorite));
-    }, [activeTab, structureTabs, structuresWithMetadata]);
-
-    const categoryCounts = useMemo(() => {
-      const counts: Partial<Record<StructureType, number>> = {};
-      for (const structure of structuresWithMetadata) {
-        counts[structure.category] = (counts[structure.category] ?? 0) + 1;
-      }
-      return counts;
-    }, [structuresWithMetadata]);
-
-    const tabCounts = useMemo(
-      () =>
-        structureTabs.map((tab) =>
-          tab.categories.reduce((total, category) => total + (categoryCounts[category] ?? 0), 0),
-        ),
-      [structureTabs, categoryCounts],
-    );
-
-    const selectedStructureMetadata = useMemo(
-      () => structuresWithMetadata.find((structure) => structure.entityId === structureEntityId),
-      [structuresWithMetadata, structureEntityId],
-    );
-    const selectedGroupColor = selectedStructureMetadata?.groupColor ?? null;
-    const selectedGroupConfig = selectedGroupColor ? STRUCTURE_GROUP_CONFIG[selectedGroupColor] : null;
-    const normalizedLevelRaw =
-      liveStructure?.base?.level ??
-      selectedStructureMetadata?.realmLevel ??
-      selectedStructureMetadata?.structure.base?.level ??
-      0;
-    const normalizedLevel =
-      typeof normalizedLevelRaw === "bigint" ? Number(normalizedLevelRaw) : Number(normalizedLevelRaw ?? 0);
-    const selectedStructureCapabilities = resolveStructureUiCapabilities(selectedStructureMetadata?.structure);
-    const levelLabel = selectedStructureCapabilities.hasPopulationDetails
-      ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
-      : selectedStructureMetadata
-        ? `Level ${normalizedLevel}`
-        : "Level —";
-    const basePopulationCapacity = selectedStructureCapabilities.hasPopulationDetails
-      ? configManager.getBasePopulationCapacity()
-      : 0;
-    const normalizedBasePopulationCapacity = selectedStructureCapabilities.hasPopulationDetails
-      ? Math.max(Number(basePopulationCapacity ?? 0), 6)
-      : 0;
-    const livePopulation = Number(
-      liveStructureBuildings?.population.current ?? selectedStructureMetadata?.population ?? 0,
-    );
-    const livePopulationCapacity =
-      Number(liveStructureBuildings?.population.max ?? selectedStructureMetadata?.populationCapacity ?? 0) +
-      normalizedBasePopulationCapacity;
-    const populationCapacityLabel = selectedStructureMetadata ? `${livePopulation}/${livePopulationCapacity}` : null;
-    const showDetailedStats = Boolean(selectedStructureMetadata && selectedStructureCapabilities.hasPopulationDetails);
-    const headerTitle =
-      selectedStructureMetadata?.displayName ??
-      structureInfo?.name?.name ??
-      (structuresWithMetadata.length > 0 ? "Select a structure" : "No structures");
-    const ActiveStructureIcon = useMemo<LucideIcon | null>(() => {
-      if (!selectedStructureMetadata) {
-        return null;
-      }
-      for (const tab of structureTabs) {
-        if (tab.categories.includes(selectedStructureMetadata.category)) {
-          return tab.icon;
-        }
-      }
-      return null;
-    }, [selectedStructureMetadata, structureTabs]);
-
-    return (
-      <div className="border-b border-gold/20 bg-black/60 px-4 py-4 space-y-4">
-        <div className="border-b border-gold/20 pb-3">
-          <div className="flex items-center gap-2 text-sm text-gold min-w-0">
-            {ActiveStructureIcon && (
-              <span className={selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"}>
-                <ActiveStructureIcon className="h-5 w-5" />
-              </span>
-            )}
-            {selectedGroupColor && <span className={`h-2 w-2 rounded-full ${selectedGroupConfig?.dotClass ?? ""}`} />}
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              <p
-                className={`truncate min-w-0 font-[Cinzel] text-xl sm:text-2xl font-semibold ${
-                  selectedGroupConfig ? selectedGroupConfig.textClass : "text-gold"
-                }`}
-                title={headerTitle}
-              >
-                {headerTitle}
-              </p>
-              {showDetailedStats && populationCapacityLabel && (
-                <div className="flex items-center gap-2 flex-shrink-0 text-xs text-gold/70">
-                  <span className="text-gold/40">•</span>
-                  <span>{levelLabel}</span>
-                  <span className="text-gold/40">•</span>
-                  <span>{populationCapacityLabel}</span>
-                </div>
-              )}
-            </div>
-            {selectedStructureMetadata && (
-              <button
-                type="button"
-                onClick={() => onRequestNameChange(selectedStructureMetadata.structure)}
-                className="flex-shrink-0 rounded border border-gold/30 p-1 text-gold/70 hover:bg-gold/10"
-                title="Rename structure"
-              >
-                <Pencil className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <Tabs
-            selectedIndex={activeTab}
-            onChange={setActiveTab}
-            variant="selection"
-            size="small"
-            className="text-xs text-gold"
-          >
-            <Tabs.List>
-              {structureTabs.map((tab, index) => {
-                const Icon = tab.icon;
-                const count = tabCounts[index] ?? 0;
-                const isActiveTab = activeTab === index;
-                const isDisabledTab = count === 0 && tab.key !== "realms";
-                return (
-                  <Tabs.Tab
-                    key={tab.key}
-                    aria-label={tab.label}
-                    title={tab.label}
-                    disabled={isDisabledTab}
-                    className={clsx(
-                      "!mx-0 border",
-                      isActiveTab
-                        ? "border-gold/60 bg-black/40 text-[#f4c24d]"
-                        : "border-gold/25 bg-black/20 text-gold/70 hover:border-gold/40 hover:text-gold/90",
-                      isDisabledTab && "opacity-60 hover:border-gold/25 hover:text-gold/60",
-                    )}
-                  >
-                    <span className="flex items-center gap-1">
-                      <span
-                        className={clsx(
-                          "text-[12px] font-semibold transition-none",
-                          isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
-                          isDisabledTab && "text-gold/40",
-                        )}
-                      >
-                        {count}
-                      </span>
-                      <Icon
-                        className={clsx(
-                          "h-4 w-4",
-                          isActiveTab ? "text-[#f4c24d]" : "text-gold/60",
-                          isDisabledTab && "text-gold/40",
-                        )}
-                      />
-                    </span>
-                    <span className="sr-only">{tab.label}</span>
-                  </Tabs.Tab>
-                );
-              })}
-            </Tabs.List>
-          </Tabs>
-
-          {orderedStructures.length > 0 ? (
-            <div className="max-h-[9.5rem] space-y-2 overflow-y-auto pr-1">
-              {orderedStructures.map((structure) => (
-                <StructureListItem
-                  key={structure.entityId}
-                  structure={structure}
-                  isSelected={structure.entityId === structureEntityId}
-                  onSelectStructure={onSelectStructure}
-                  onToggleFavorite={onToggleFavorite}
-                  components={components}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="rounded border border-gold/20 bg-black/30 px-3 py-2 text-xs text-gold/70">
-              No structures available for this category.
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  },
-);
-
-LeftPanelHeader.displayName = "LeftPanelHeader";
-
-type StructureListItemProps = {
-  structure: StructureWithMetadata;
-  isSelected: boolean;
-  onSelectStructure: (entityId: ID) => void;
-  onToggleFavorite: (entityId: ID) => void;
-  components: ClientComponents;
-};
-
-const StructureListItem = memo(
-  ({ structure, isSelected, onSelectStructure, onToggleFavorite, components }: StructureListItemProps) => {
-    const entityKey = useMemo(() => {
-      try {
-        return getEntityIdFromKeys([BigInt(structure.entityId)]);
-      } catch {
-        return null;
-      }
-    }, [structure.entityId]);
-
-    const liveStructure = useComponentValue(components.Structure, entityKey as any);
-    const liveStructureBuildings = useComponentValue(components.StructureBuildings, entityKey as any);
-    const productionBoostBonus = useComponentValue(components.ProductionBoostBonus, entityKey as any);
-    const { currentArmiesTick } = useBlockTimestamp();
-
-    const activeRelicEffects = useMemo(() => {
-      const structureRelics = productionBoostBonus
-        ? getStructureRelicEffects(productionBoostBonus, currentArmiesTick)
-        : [];
-      const armyRelics = liveStructure ? getStructureArmyRelicEffects(liveStructure, currentArmiesTick) : [];
-      return [...structureRelics, ...armyRelics];
-    }, [productionBoostBonus, liveStructure, currentArmiesTick]);
-
-    const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
-    const rawLevel = liveStructure?.base?.level ?? structure.structure.base?.level ?? 0;
-    const normalizedLevel = typeof rawLevel === "bigint" ? Number(rawLevel) : Number(rawLevel ?? 0);
-    const levelLabel = structureCapabilities.hasPopulationDetails
-      ? getLevelName(Math.min(Math.max(normalizedLevel, RealmLevels.Settlement), RealmLevels.Empire) as RealmLevels)
-      : null;
-
-    const basePopulationCapacity = structureCapabilities.hasPopulationDetails
-      ? configManager.getBasePopulationCapacity()
-      : 0;
-    const normalizedBasePopulationCapacity = structureCapabilities.hasPopulationDetails
-      ? Math.max(Number(basePopulationCapacity ?? 0), 6)
-      : 0;
-
-    const population = Number(liveStructureBuildings?.population.current ?? structure.population ?? 0);
-    const populationCapacity =
-      Number(liveStructureBuildings?.population.max ?? structure.populationCapacity ?? 0) +
-      normalizedBasePopulationCapacity;
-
-    const showInfoLine = structureCapabilities.hasPopulationDetails;
-    const capacityDisplay = `${population}/${populationCapacity}`;
-    const infoLineLabel = levelLabel ?? `Level ${normalizedLevel}`;
-
-    const handleSelectStructure = useCallback(
-      () => onSelectStructure(structure.entityId),
-      [onSelectStructure, structure.entityId],
-    );
-
-    const handleKeyDown = useCallback(
-      (event: KeyboardEvent<HTMLDivElement>) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          handleSelectStructure();
-        }
-      },
-      [handleSelectStructure],
-    );
-
-    return (
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={handleSelectStructure}
-        onKeyDown={handleKeyDown}
-        className={`w-full rounded-lg border px-3 py-2 text-left transition ${
-          isSelected ? "border-gold bg-black/60" : "border-gold/20 bg-black/20 hover:border-gold/40 hover:bg-black/30"
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleFavorite(structure.entityId);
-            }}
-            className="rounded border border-transparent p-1 text-gold/60 hover:text-gold"
-            title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
-          >
-            <Star className={`h-4 w-4 ${structure.isFavorite ? "fill-current text-gold" : "text-gold/60"}`} />
-          </button>
-          <div className="flex flex-1 min-w-0 items-center gap-2">
-            {structure.groupColor && (
-              <span
-                className={`h-2 w-2 shrink-0 rounded-full ${STRUCTURE_GROUP_CONFIG[structure.groupColor]?.dotClass ?? ""}`}
-              />
-            )}
-            <span
-              className={`truncate text-sm font-semibold ${
-                structure.groupColor
-                  ? (STRUCTURE_GROUP_CONFIG[structure.groupColor]?.textClass ?? "text-gold")
-                  : "text-gold"
-              }`}
-            >
-              {structure.displayName}
-            </span>
-            {showInfoLine && (
-              <span className="shrink-0 whitespace-nowrap text-xxs text-gold/70">
-                {infoLineLabel} • {capacityDisplay}
-              </span>
-            )}
-          </div>
-          {activeRelicEffects.length > 0 && (
-            <div className="flex items-center gap-0.5 shrink-0">
-              {activeRelicEffects.map((effect) => {
-                const resourceId = Number(effect.id);
-                return (
-                  <div key={resourceId} className="rounded border border-relic2/30 bg-relic/10 p-0.5">
-                    <ResourceIcon resource={ResourcesIds[resourceId]} size="xs" withTooltip />
-                  </div>
-                );
-              })}
-            </div>
-          )}
-          {structure.category === StructureType.Realm && (
-            <StructureLevelUpButton structureEntityId={structure.entityId} className="ml-auto shrink-0" />
-          )}
-        </div>
-      </div>
-    );
-  },
-);
-
-StructureListItem.displayName = "StructureListItem";
-
-const ORDERED_MENU_IDS: MenuEnum[] = [
-  MenuEnum.entityDetails, // Realm Info
-  MenuEnum.construction, // Buildings
-  MenuEnum.military, // Army
-  MenuEnum.resourceArrivals, // Donkey arrivals
-  MenuEnum.trade, // Trade
-  MenuEnum.transfer, // Transfers
-  MenuEnum.bridge, // Bridge
-  MenuEnum.chat, // Chat
-  MenuEnum.storyEvents, // Chronicles
-  MenuEnum.predictionMarket, // Prediction Market
-];
-
-type StructureLevelUpButtonProps = {
-  structureEntityId: ID | null;
-  className?: string;
-};
-
-const StructureLevelUpButton = ({ structureEntityId, className }: StructureLevelUpButtonProps) => {
-  const upgradeInfo = useStructureUpgrade(typeof structureEntityId === "number" ? structureEntityId : null);
-  const setTooltip = useUIStore((state) => state.setTooltip);
-
-  if (!upgradeInfo) {
-    return null;
-  }
-
-  const currentLevel = upgradeInfo.currentLevel ?? 0;
-  const maxLevel = configManager.getMaxLevel(StructureType.Realm);
-  const isAtMaxLevel = upgradeInfo.isMaxLevel || currentLevel >= maxLevel;
-  const meetsRequirements = (upgradeInfo.missingRequirements?.length ?? 0) === 0;
-  const canUpgrade = upgradeInfo.isOwner && !isAtMaxLevel && meetsRequirements;
-  const isDisabled = !canUpgrade || upgradeInfo.isUpgradeLocked || isAtMaxLevel;
-  const shouldGlow = canUpgrade && !isDisabled;
-  const nextLevel = upgradeInfo.nextLevel ?? 0;
-
-  const requirementsContent = useMemo(() => {
-    if (!upgradeInfo) return null;
-    if (upgradeInfo.isMaxLevel) {
-      return <div className="text-xs text-gold/80">Castle fully upgraded.</div>;
-    }
-    if (!upgradeInfo.requirements?.length) {
-      return <div className="text-xs text-gold/80">No upgrade requirements found.</div>;
-    }
-
-    return (
-      <div className="min-w-[220px] space-y-2 text-gold">
-        <div className="flex items-center justify-between">
-          <span className="text-xxs uppercase tracking-[0.25em] text-gold/60">Upgrade</span>
-          {upgradeInfo.nextLevelName && <span className="text-xxs text-gold/80">to {upgradeInfo.nextLevelName}</span>}
-        </div>
-        <div className="space-y-1">
-          {upgradeInfo.requirements.map((req) => {
-            const isMet = req.current >= req.amount;
-            return (
-              <div
-                key={`${req.resource}-${req.amount}`}
-                className={clsx(
-                  "flex items-center gap-2 rounded border px-2 py-1",
-                  isMet ? "border-gold/20 bg-gold/5" : "border-red-400/40 bg-red-500/5",
-                )}
-              >
-                <ResourceIcon resource={ResourcesIds[req.resource]} size="xs" withTooltip={false} />
-                <span className="flex-1 text-xs text-gold/80">{ResourcesIds[req.resource]}</span>
-                <span className={clsx("text-xs font-semibold", isMet ? "text-gold" : "text-red-300")}>
-                  {Math.floor(req.current).toLocaleString()} / {req.amount.toLocaleString()}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }, [upgradeInfo]);
-
-  const showRequirementsTooltip = (event: MouseEvent<HTMLButtonElement>) => {
-    if (!requirementsContent) return;
-    setTooltip({
-      anchorElement: event.currentTarget,
-      position: "bottom",
-      content: requirementsContent,
-    });
-  };
-
-  const hideRequirementsTooltip = () => setTooltip(null);
-
-  const renderIcon = () => {
-    if (isAtMaxLevel) {
-      return <ShieldCheck className="h-3.5 w-3.5" />;
-    }
-    if (nextLevel >= 3) {
-      return (
-        <span className="relative flex h-4 w-4 items-center justify-center">
-          <ChevronUp className="absolute h-3 w-3 -translate-y-[6px]" />
-          <ChevronUp className="absolute h-3 w-3" />
-          <ChevronUp className="absolute h-3 w-3 translate-y-[6px]" />
-        </span>
-      );
-    }
-    if (nextLevel === 2) {
-      return <ChevronsUp className="h-3.5 w-3.5" />;
-    }
-    return <ChevronUp className="h-3.5 w-3.5" />;
-  };
-
-  const handleUpgrade = (event: MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    if (isDisabled) return;
-
-    void upgradeInfo.handleUpgrade().catch((error) => {
-      console.error("Failed to upgrade structure", error);
-    });
-  };
-
-  return (
-    <div className={clsx("flex items-center gap-2", className)}>
-      <button
-        type="button"
-        onClick={handleUpgrade}
-        disabled={isDisabled}
-        className={clsx(
-          "inline-flex items-center justify-center rounded-md border px-2 py-1 text-xxs font-semibold uppercase tracking-wide transition",
-          shouldGlow
-            ? "border-gold/60 bg-gold/10 text-gold hover:bg-gold/25 shadow-[0_0_12px_rgba(255,204,102,0.55)] animate-pulse"
-            : "border-gold/20 bg-black/30 text-gold/50 cursor-not-allowed",
-        )}
-        aria-label="Level up realm"
-      >
-        {upgradeInfo.isUpgradeLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : renderIcon()}
-      </button>
-      <button
-        type="button"
-        onMouseEnter={showRequirementsTooltip}
-        onMouseLeave={hideRequirementsTooltip}
-        onFocus={showRequirementsTooltip as never}
-        onBlur={hideRequirementsTooltip}
-        onClick={(event) => event.stopPropagation()}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-gold/30 bg-black/40 text-gold/70 hover:text-gold focus:outline-none focus:ring-1 focus:ring-gold/40"
-        aria-label="View upgrade requirements"
-      >
-        <Info className="h-3.5 w-3.5" />
-      </button>
-    </div>
-  );
-};
-
-const buildRealmNavigationItems = ({
-  view,
-  setView,
-  disableButtons,
-  canOpenConstruction,
-  arrivedArrivalsNumber,
-  pendingArrivalsNumber,
-  toggleModal,
-  isTradeOpen,
-  showTradeMenu,
-}: RealmNavigationContext): NavigationItem[] => {
-  const toggleView = (targetView: LeftView) => () => {
-    setView(view === targetView ? LeftView.None : targetView);
-  };
-
-  const items: NavigationItem[] = [
-    {
-      id: MenuEnum.entityDetails,
-      className: "entity-details-selector",
-      image: BuildingThumbs.house,
-      tooltipLocation: "top",
-      label: "Realm Info",
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
-      active: view === LeftView.EntityView || view === LeftView.None,
-      onClick: toggleView(LeftView.EntityView),
-    },
-    {
-      id: MenuEnum.construction,
-      className: "construction-selector",
-      image: BuildingThumbs.construction,
-      tooltipLocation: "top",
-      label: construction,
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons || !canOpenConstruction,
-      active: view === LeftView.ConstructionView,
-      onClick: toggleView(LeftView.ConstructionView),
-    },
-    {
-      id: MenuEnum.military,
-      className: "military-selector",
-      image: BuildingThumbs.military,
-      tooltipLocation: "top",
-      label: military,
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
-      active: view === LeftView.MilitaryView,
-      onClick: toggleView(LeftView.MilitaryView),
-    },
-    {
-      id: MenuEnum.resourceArrivals,
-      image: BuildingThumbs.trade,
-      tooltipLocation: "top",
-      label: "Resource Arrivals",
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
-      active: view === LeftView.ResourceArrivals,
-      onClick: toggleView(LeftView.ResourceArrivals),
-
-      primaryNotification:
-        arrivedArrivalsNumber > 0
-          ? { value: arrivedArrivalsNumber, color: "green", location: "topright" as const }
-          : undefined,
-      secondaryNotification:
-        pendingArrivalsNumber > 0
-          ? { value: pendingArrivalsNumber, color: "orange", location: "bottomright" as const }
-          : undefined,
-    },
-    // {
-    //   id: MenuEnum.hyperstructures,
-    //   image: BuildingThumbs.hyperstructures,
-    //   tooltipLocation: "top",
-    //   label: hyperstructures,
-    //   size: DEFAULT_BUTTON_SIZE,
-    //   disabled: disableButtons,
-    //   active: view === LeftView.HyperstructuresView,
-    //   onClick: toggleView(LeftView.HyperstructuresView),
-    // },
-    {
-      id: MenuEnum.trade,
-      className: "trade-selector",
-      image: BuildingThumbs.scale,
-      tooltipLocation: "top",
-      label: trade,
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
-      active: isTradeOpen,
-      onClick: () => toggleModal(isTradeOpen ? null : <MarketModal />),
-    },
-    // {
-    //   id: MenuEnum.relics,
-    //   image: BuildingThumbs.relics,
-    //   tooltipLocation: "top",
-    //   label: "Relics",
-    //   size: DEFAULT_BUTTON_SIZE,
-    //   disabled: disableButtons,
-    //   active: view === LeftView.RelicsView,
-    //   onClick: toggleView(LeftView.RelicsView),
-    //   primaryNotification:
-    //     availableRelicsNumber > 0
-    //       ? { value: availableRelicsNumber, color: "gold", location: "topright" as const }
-    //       : undefined,
-    // },
-  ];
-
-  const allowedMenus: MenuEnum[] = [
-    MenuEnum.entityDetails,
-    MenuEnum.military,
-    MenuEnum.construction,
-    MenuEnum.hyperstructures,
-    MenuEnum.resourceArrivals,
-    MenuEnum.relics,
-    ...(showTradeMenu ? [MenuEnum.trade] : []),
-  ];
-
-  return items.filter((item) => allowedMenus.includes(item.id));
-};
-
-const buildEconomyNavigationItems = ({
-  view,
-  setLeftView,
-  disableButtons,
-  showBridgeMenu,
-  onOpenTransfer,
-  isTransferOpen,
-}: EconomyNavigationContext): NavigationItem[] => {
-  const items: NavigationItem[] = [
-    {
-      id: MenuEnum.transfer,
-      className: "transfer-selector",
-      image: BuildingThumbs.transfer,
-      tooltipLocation: "top",
-      label: "Transfers",
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: disableButtons,
-      active: isTransferOpen,
-      onClick: () => {
-        onOpenTransfer();
-      },
-    },
-    ...(showBridgeMenu
-      ? ([
-          {
-            id: MenuEnum.bridge,
-            className: "bridge-selector",
-            image: BuildingThumbs.bridge,
-            tooltipLocation: "top",
-            label: "Bridge",
-            size: DEFAULT_BUTTON_SIZE,
-            disabled: disableButtons,
-            active: view === LeftView.BridgeView,
-            onClick: () => {
-              setLeftView(view === LeftView.BridgeView ? LeftView.None : LeftView.BridgeView);
-            },
-          },
-        ] satisfies NavigationItem[])
-      : []),
-    {
-      id: MenuEnum.storyEvents,
-      className: "story-events-selector",
-      image: BuildingThumbs.storyEvents,
-      tooltipLocation: "top",
-      label: "Activity Chronicles",
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: false,
-      active: view === LeftView.StoryEvents,
-      onClick: () => {
-        setLeftView(view === LeftView.StoryEvents ? LeftView.None : LeftView.StoryEvents);
-      },
-    },
-    {
-      id: MenuEnum.predictionMarket,
-      className: "prediction-market-selector",
-      image: BuildingThumbs.predictionMarket,
-      tooltipLocation: "top",
-      label: "Prediction Market",
-      size: DEFAULT_BUTTON_SIZE,
-      disabled: false,
-      active: view === LeftView.PredictionMarket,
-      onClick: () => {
-        setLeftView(view === LeftView.PredictionMarket ? LeftView.None : LeftView.PredictionMarket);
-      },
-    },
-  ];
-
-  const allowedMenus: MenuEnum[] = [
-    MenuEnum.transfer,
-    ...(showBridgeMenu ? [MenuEnum.bridge] : []),
-    MenuEnum.storyEvents,
-    MenuEnum.predictionMarket,
-  ];
-
-  return items.filter((item) => allowedMenus.includes(item.id));
-};
-
-type LeftPanelChatProps = {
+const ChatModalContent = ({
+  initializer,
+  zoneIds,
+  defaultZoneId,
+}: {
   initializer: InitializeRealtimeClientParams | null;
   zoneIds: string[];
   defaultZoneId: string;
-};
-
-const LeftPanelChat = ({ initializer, zoneIds, defaultZoneId }: LeftPanelChatProps) => {
+}) => {
   if (!initializer) {
     return (
       <div className="flex h-full items-center justify-center p-4 text-sm text-gold/70">
@@ -1005,98 +95,57 @@ const LeftPanelChat = ({ initializer, zoneIds, defaultZoneId }: LeftPanelChatPro
   );
 };
 
-const EntityDetails = lazy(() =>
-  import("@/ui/modules/entity-details/entity-details").then((module) => ({ default: module.EntityDetails })),
-);
-const Military = lazy(() => import("@/ui/features/military").then((module) => ({ default: module.Military })));
-const SelectPreviewBuildingMenu = lazy(() =>
-  import("@/ui/features/settlement").then((module) => ({
-    default: module.SelectPreviewBuildingMenu,
-  })),
-);
-const Bridge = lazy(() =>
-  import("@/ui/features/infrastructure/bridge/bridge").then((module) => ({
-    default: module.Bridge,
-  })),
-);
-const BlitzHyperstructuresMenu = lazy(() =>
-  import("@/ui/features/world").then((module) => ({
-    default: module.BlitzHyperstructuresMenu,
-  })),
-);
-const EternumHyperstructuresMenu = lazy(() =>
-  import("@/ui/features/world").then((module) => ({
-    default: module.EternumHyperstructuresMenu,
-  })),
-);
+// ----------------------------------------------------------------------------
+// Lazy view components used inside the centered action modal
+// ----------------------------------------------------------------------------
+
 const InGameMarket = lazy(() =>
   import("@/ui/features/market").then((module) => ({
     default: module.InGameMarket,
   })),
 );
-const HYPERSTRUCTURES_MENU_BY_VARIANT = {
-  blitz: BlitzHyperstructuresMenu,
-  eternum: EternumHyperstructuresMenu,
-} as const;
-// const RelicsModule = lazy(() =>
-//   import("@/ui/features/relics").then((module) => ({
-//     default: module.RelicsModule,
-//   })),
-// );
+
+// ----------------------------------------------------------------------------
+// LeftCommandSidebar
+//
+// After the round-3 redesign this component now owns three things:
+//   - the always-on LeftStructureColumn (top-anchored bubbles showing the
+//     player's active structure — mirrors the right-side tile-details column)
+//   - the centered action modal (Build / Transfer / Chat / Prediction Market)
+//     opened by the LeftActionsRow rendered inside BottomRightPanel
+//   - the StructureEditPopup mount (rename / group color)
+//
+// The previous vertical view-switcher pill strip is gone. Action buttons live
+// above the minimap and trigger the same `leftNavigationView` state, but the
+// destination is now a true centered modal rather than a side panel.
+// ----------------------------------------------------------------------------
+
 export const LeftCommandSidebar = memo(() => {
-  const {
-    account: { account },
-    setup,
-  } = useDojo();
+  const { setup } = useDojo();
   const components = setup.components;
-  const { isMapView } = useQuery();
 
   const arrivedArrivalsNumber = useUIStore((state) => state.arrivedArrivalsNumber);
   const pendingArrivalsNumber = useUIStore((state) => state.pendingArrivalsNumber);
   const view = useUIStore((state) => state.leftNavigationView);
   const setView = useUIStore((state) => state.setLeftNavigationView);
-  const disableButtons = useUIStore((state) => state.disableButtons);
-  const isTradeOpen = useUIStore((state) => state.openedPopups.includes(trade));
-  const togglePopup = useUIStore((state) => state.togglePopup);
-  const isTransferPopupOpen = useUIStore((state) => state.isPopupOpen(TRANSFER_POPUP_NAME));
-  const setTransferPanelSourceId = useUIStore((state) => state.setTransferPanelSourceId);
 
   const structureEntityId = useUIStore((state) => state.structureEntityId);
-  const setStructureEntityId = useUIStore((state) => state.setStructureEntityId);
-  const setSelectedHex = useUIStore((state) => state.setSelectedHex);
-  const structures = useUIStore((state) => state.playerStructures);
-  const toggleModal = useUIStore((state) => state.toggleModal);
   const { structureGroups, updateStructureGroup } = useStructureGroups();
-  const { favorites, toggleFavorite } = useFavoriteStructures();
-  const goToStructure = useGoToStructure(setup);
   const mode = useGameModeConfig();
 
-  const [structureNameChange, setStructureNameChange] = useState<ComponentValue<
-    ClientComponents["Structure"]["schema"]
-  > | null>(null);
-  const [structureNameVersion, setStructureNameVersion] = useState(0);
-
-  const bumpStructureNameVersion = useCallback(() => {
-    setStructureNameVersion((version) => version + 1);
-  }, []);
+  const pendingRenameStructureEntityId = useUIStore((state) => state.pendingRenameStructureEntityId);
+  const setPendingRenameStructureEntityId = useUIStore((state) => state.setPendingRenameStructureEntityId);
+  const bumpStructureNameVersion = useUIStore((state) => state.bumpStructureNameVersion);
+  const isSpectating = useUIStore((state) => state.isSpectating);
 
   const handleNameChange = useCallback(
     (entityId: ID, newName: string) => {
       setEntityNameLocalStorage(entityId, newName);
-      setStructureNameChange(null);
+      setPendingRenameStructureEntityId(null);
       bumpStructureNameVersion();
     },
-    [bumpStructureNameVersion],
+    [bumpStructureNameVersion, setPendingRenameStructureEntityId],
   );
-
-  const handleRequestNameChange = useCallback((structure: ComponentValue<ClientComponents["Structure"]["schema"]>) => {
-    setStructureNameChange(structure);
-  }, []);
-
-  const handleOpenTransferPopup = useCallback(() => {
-    setTransferPanelSourceId(null);
-    togglePopup(TRANSFER_POPUP_NAME);
-  }, [setTransferPanelSourceId, togglePopup]);
 
   const {
     initializer: realtimeInitializer,
@@ -1105,13 +154,10 @@ export const LeftCommandSidebar = memo(() => {
   } = useRealtimeChatConfig();
   useRealtimeChatInitializer(realtimeInitializer);
   const chatActions = useRealtimeChatActions();
-  const { connectionStatus } = useRealtimeConnection();
-  const { unreadDirectTotal, unreadWorldTotal } = useRealtimeTotals();
-  const unreadChatTotal = unreadDirectTotal + unreadWorldTotal;
   const isChatOpen = useRealtimeChatSelector((state) => state.isShellOpen);
 
-  const navHeight = `calc(100vh - ${HEADER_HEIGHT}px)`;
-
+  // Track chat shell open/close against the leftNavigationView so the
+  // RealtimeChatShell internal state stays in sync with the modal lifecycle.
   useEffect(() => {
     if (view === LeftView.ChatView) {
       chatActions.setShellOpen(true);
@@ -1120,6 +166,10 @@ export const LeftCommandSidebar = memo(() => {
     }
   }, [chatActions, view]);
 
+  // Only mirror a *transition* to closed back onto the nav view. Without the
+  // prevChatOpen guard this fires on the very first render after opening — when
+  // setShellOpen(true) hasn't propagated yet, isChatOpen is still false — and
+  // instantly slams the modal shut. (Regression from the actions-row refactor.)
   const prevChatOpen = useRef(isChatOpen);
   useEffect(() => {
     if (prevChatOpen.current && !isChatOpen && view === LeftView.ChatView) {
@@ -1128,252 +178,74 @@ export const LeftCommandSidebar = memo(() => {
     prevChatOpen.current = isChatOpen;
   }, [isChatOpen, setView, view]);
 
-  // listen to structure updates
-  const structure = useComponentValue(components.Structure, getEntityIdFromKeys([BigInt(structureEntityId)]));
+  const isPanelOpen = view !== LeftView.None;
+  const closeView = useCallback(() => setView(LeftView.None), [setView]);
 
-  const structureInfo = useMemo(() => {
-    // Include structureNameVersion to refresh cached info when renames happen locally.
-    void structureNameVersion;
-    return mode.structure.getEntityInfo(structureEntityId, ContractAddress(account.address), components);
-  }, [structureEntityId, structure, account.address, components, structureNameVersion, mode]);
-
-  const canOpenConstruction = useMemo(
-    () => resolveStructureUiCapabilities({ category: structureInfo?.structureCategory }).canOpenConstruction,
-    [structureInfo],
-  );
-
-  const realmNavigationItems = useMemo(
-    () =>
-      buildRealmNavigationItems({
-        view,
-        setView,
-        disableButtons,
-        canOpenConstruction,
-        arrivedArrivalsNumber,
-        pendingArrivalsNumber,
-        toggleModal,
-        isTradeOpen,
-        showTradeMenu: mode.ui.showTradeMenu,
-      }),
-    [
-      view,
-      setView,
-      disableButtons,
-      canOpenConstruction,
-      arrivedArrivalsNumber,
-      pendingArrivalsNumber,
-      toggleModal,
-      isTradeOpen,
-      mode,
-    ],
-  );
-
-  const economyNavigationItems = useMemo(
-    () =>
-      buildEconomyNavigationItems({
-        view,
-        setLeftView: setView,
-        disableButtons,
-        showBridgeMenu: mode.ui.showBridgeMenu,
-        onOpenTransfer: handleOpenTransferPopup,
-        isTransferOpen: isTransferPopupOpen,
-      }),
-    [view, setView, disableButtons, handleOpenTransferPopup, isTransferPopupOpen, mode],
-  );
-
-  const chatNavigationItem = useMemo<NavigationItem>(() => {
-    const isActive = view === LeftView.ChatView;
-    return {
-      id: MenuEnum.chat,
-      className: "chat-selector",
-      label: "Chat",
-      size: DEFAULT_BUTTON_SIZE,
-      tooltipLocation: "top",
-      disabled: !realtimeInitializer,
-      active: isActive,
-      onClick: () => {
-        setView(isActive ? LeftView.None : LeftView.ChatView);
-      },
-      primaryNotification:
-        unreadChatTotal > 0
-          ? {
-              value: unreadChatTotal,
-              color: "red",
-              location: "topright" as const,
-            }
-          : undefined,
-      children: (
-        <div className="relative flex h-full w-full items-center justify-center">
-          <MessageCircle className="h-4 w-4 md:h-5 md:w-5" style={{ color: "#996929" }} />
-          <span
-            className={clsx("absolute bottom-1 right-1 h-2 w-2 rounded-full", getConnectionToneClass(connectionStatus))}
-          />
-        </div>
-      ),
-    };
-  }, [connectionStatus, realtimeInitializer, setView, unreadChatTotal, view]);
+  // Esc handling lives inside each modal's CenteredModalShell now, so we don't
+  // double-bind it here.
 
   const ConnectedAccount = useAccountStore((state) => state.account);
 
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const computedWidth = isCollapsed ? HANDLE_WIDTH : PANEL_WIDTH + HANDLE_WIDTH;
-  const panelHeightStyle = useMemo(() => ({ height: navHeight, maxHeight: navHeight }), [navHeight]);
-  const outerPanelStyle = useMemo(() => ({ ...panelHeightStyle, marginTop: `${HEADER_HEIGHT}px` }), [panelHeightStyle]);
-  const containerPanelStyle = useMemo(() => ({ ...panelHeightStyle, width: `${PANEL_WIDTH}px` }), [panelHeightStyle]);
-  const showEmptyState = false;
-  const contentScrollClass = view === LeftView.ChatView ? "overflow-hidden" : "overflow-y-auto";
-
-  const combinedNavigationItems = useMemo(() => {
-    const navigationItems = [...realmNavigationItems, chatNavigationItem, ...economyNavigationItems];
-    return ORDERED_MENU_IDS.map((id) => navigationItems.find((item) => item.id === id)).filter(
-      (item): item is NavigationItem => Boolean(item),
-    );
-  }, [realmNavigationItems, chatNavigationItem, economyNavigationItems]);
-
-  const responsiveButtonSize = useMemo(
-    () => getResponsiveButtonSize(combinedNavigationItems.length),
-    [combinedNavigationItems.length],
+  const pendingRenameStructure = useComponentValue(
+    components.Structure,
+    pendingRenameStructureEntityId ? getEntityIdFromKeys([BigInt(pendingRenameStructureEntityId)]) : undefined,
   );
-
-  const structureNameMetadata = structureNameChange ? mode.structure.getName(structureNameChange) : null;
-  const editingStructureId = structureNameChange?.entity_id ? Number(structureNameChange.entity_id) : null;
-
-  const handleSelectStructure = useCallback(
-    (entityId: ID) => {
-      const target = structures.find((structure) => structure.entityId === entityId);
-      const coords = target?.structure?.base;
-
-      if (coords && coords.coord_x !== undefined && coords.coord_y !== undefined) {
-        const col = Number(coords.coord_x);
-        const row = Number(coords.coord_y);
-
-        if (Number.isFinite(col) && Number.isFinite(row)) {
-          setSelectedHex({ col, row });
-        }
-
-        void goToStructure(entityId, new Position({ x: coords.coord_x, y: coords.coord_y }), isMapView);
-        return;
-      }
-
-      setStructureEntityId(entityId);
-    },
-    [structures, goToStructure, isMapView, setStructureEntityId, setSelectedHex],
-  );
+  const pendingRenameMetadata = pendingRenameStructure ? mode.structure.getName(pendingRenameStructure) : null;
+  const editingStructureId = pendingRenameStructureEntityId !== null ? Number(pendingRenameStructureEntityId) : null;
 
   return (
     <>
-      <div className="pointer-events-none h-full" style={outerPanelStyle}>
-        <div className="flex h-full pointer-events-auto" style={{ width: `${computedWidth}px` }}>
-          {!isCollapsed && (
-            <BaseContainer
-              className="pointer-events-auto flex h-full w-full flex-col panel-wood panel-wood-corners overflow-hidden shadow-2xl"
-              style={containerPanelStyle}
-            >
-              <LeftPanelHeader
-                structureEntityId={structureEntityId}
-                structures={structures}
-                structureInfo={structureInfo}
-                onSelectStructure={handleSelectStructure}
-                components={components}
-                structureGroups={structureGroups}
-                onRequestNameChange={handleRequestNameChange}
-                nameUpdateVersion={structureNameVersion}
-                favorites={favorites}
-                onToggleFavorite={toggleFavorite}
-              />
-              <div className="flex-1 overflow-hidden">
-                <div className={clsx("h-full pr-1", contentScrollClass)}>
-                  <Suspense fallback={<div className="p-8">Loading...</div>}>
-                    {view === LeftView.StoryEvents && (
-                      <div className="story-events-selector flex h-full flex-col flex-1 overflow-y-auto">
-                        <StoryEventsChronicles />
-                      </div>
-                    )}
-                    {view === LeftView.PredictionMarket && (
-                      <div className="prediction-market-selector flex h-full flex-col flex-1 overflow-y-auto">
-                        <InGameMarket />
-                      </div>
-                    )}
-                    {view === LeftView.ChatView && (
-                      <div className="h-full">
-                        <LeftPanelChat
-                          initializer={realtimeInitializer}
-                          zoneIds={chatZoneIds}
-                          defaultZoneId={chatDefaultZoneId}
-                        />
-                      </div>
-                    )}
-                    {view !== LeftView.StoryEvents &&
-                      view !== LeftView.PredictionMarket &&
-                      (view === LeftView.EntityView || view === LeftView.None) && <EntityDetails />}
-                    {view !== LeftView.StoryEvents &&
-                      view !== LeftView.PredictionMarket &&
-                      view === LeftView.MilitaryView && <Military entityId={structureEntityId} />}
-                    {view !== LeftView.StoryEvents &&
-                      view !== LeftView.PredictionMarket &&
-                      view === LeftView.ConstructionView && <SelectPreviewBuildingMenu entityId={structureEntityId} />}
-                    {view !== LeftView.StoryEvents &&
-                      view !== LeftView.PredictionMarket &&
-                      view === LeftView.HyperstructuresView &&
-                      (() => {
-                        const HyperstructuresMenu = HYPERSTRUCTURES_MENU_BY_VARIANT[mode.ui.hyperstructuresMenuVariant];
-                        return <HyperstructuresMenu />;
-                      })()}
-                    {view !== LeftView.StoryEvents &&
-                      view !== LeftView.PredictionMarket &&
-                      view === LeftView.ResourceArrivals && (
-                        <AllResourceArrivals hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
-                      )}
-                    {view !== LeftView.StoryEvents &&
-                      view !== LeftView.PredictionMarket &&
-                      view === LeftView.BridgeView && (
-                        <div className="bridge-selector p-2 flex flex-col space-y-1 flex-1 overflow-y-auto">
-                          <Bridge structures={structures} />
-                        </div>
-                      )}
-                    {showEmptyState && (
-                      <div className="flex h-full items-center justify-center p-8 text-center text-sm text-gold/70">
-                        Select a module to view details.
-                      </div>
-                    )}
-                    {/* {view === LeftView.RelicsView && <RelicsModule />} */}
-                  </Suspense>
-                </div>
-              </div>
-              {ConnectedAccount && combinedNavigationItems.length > 0 && (
-                <div className="border-t border-gold/20 bg-black/40 px-3 py-3 overflow-x-auto">
-                  <div className="flex gap-2">
-                    {combinedNavigationItems.map((item) => (
-                      <CircleButton key={item.id} {...item} size={responsiveButtonSize} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </BaseContainer>
-          )}
-          <button
-            type="button"
-            onClick={() => setIsCollapsed((prev) => !prev)}
-            className="relative flex h-full w-[14px] items-center justify-center bg-black/20 text-gold/60 transition pointer-events-auto hover:bg-gold/20"
-            aria-label={isCollapsed ? "Open navigation panel" : "Collapse navigation panel"}
-            style={{ width: `${HANDLE_WIDTH}px` }}
-          >
-            <span className="sr-only">Toggle navigation panel</span>
-            <div className="pointer-events-none flex flex-col items-center gap-1">
-              <span className="h-12 w-px bg-gold/40" />
-              <span className="text-[10px] leading-none">{isCollapsed ? "⟩" : "⟨"}</span>
-            </div>
-          </button>
+      {/* Left control column — always-visible vertical list of all the player's
+          structures. The active card expands to show Suggested Actions only.
+          Heavier views (Production, Military) live in centered modals
+          triggered from the LeftActionsRow above the minimap. */}
+      {ConnectedAccount && !isSpectating && (
+        <div className="fixed left-3 top-3 z-20 pointer-events-auto flex w-[280px] 2xl:w-[340px] max-h-[calc(100vh-24px)] flex-col gap-2 overflow-visible">
+          <StructureListColumn />
+          <EmpireCockpit />
         </div>
-      </div>
-      {structureNameChange && structureNameMetadata && editingStructureId && (
+      )}
+
+      {/* Bubble modals — each renders its own CenteredModalShell so the chrome
+          (bronze frame, header strip, close button) and window size are the
+          same everywhere. We just dispatch by view. */}
+      {isPanelOpen && view === LeftView.PredictionMarket && (
+        <CenteredModalShell title="Prediction Market" icon={Sparkles} onClose={closeView} size="xl">
+          <Suspense fallback={<div className="flex h-full items-center justify-center p-8">Loading…</div>}>
+            <div className="prediction-market-selector flex h-full min-h-0 flex-col overflow-y-auto">
+              <InGameMarket />
+            </div>
+          </Suspense>
+        </CenteredModalShell>
+      )}
+      {isPanelOpen && view === LeftView.ChatView && (
+        <CenteredModalShell title="Chat" icon={MessageCircle} onClose={closeView} size="xl">
+          <div className="h-full">
+            <ChatModalContent
+              initializer={realtimeInitializer}
+              zoneIds={chatZoneIds}
+              defaultZoneId={chatDefaultZoneId}
+            />
+          </div>
+        </CenteredModalShell>
+      )}
+      {isPanelOpen && view === LeftView.ConstructionView && <ConstructionModal structureEntityId={structureEntityId} />}
+      {isPanelOpen && view === LeftView.ResourceArrivals && (
+        <CenteredModalShell title="Logistics" icon={PackageIcon} onClose={closeView} size="xl">
+          <div className="h-full min-h-0 overflow-hidden">
+            <LogisticsView hasArrivals={arrivedArrivalsNumber > 0 || pendingArrivalsNumber > 0} />
+          </div>
+        </CenteredModalShell>
+      )}
+      {isPanelOpen && view === LeftView.MilitaryView && <MilitaryModal structureEntityId={structureEntityId} />}
+
+      {pendingRenameStructureEntityId !== null && pendingRenameMetadata && editingStructureId !== null && (
         <StructureEditPopup
-          currentName={structureNameMetadata.name}
-          originalName={structureNameMetadata.originalName ?? structureNameMetadata.name}
+          currentName={pendingRenameMetadata.name}
+          originalName={pendingRenameMetadata.originalName ?? pendingRenameMetadata.name}
           groupColor={structureGroups[editingStructureId] ?? null}
           onConfirm={(newName) => handleNameChange(editingStructureId, newName)}
-          onCancel={() => setStructureNameChange(null)}
+          onCancel={() => setPendingRenameStructureEntityId(null)}
           onUpdateColor={(color) => updateStructureGroup(editingStructureId, color)}
         />
       )}

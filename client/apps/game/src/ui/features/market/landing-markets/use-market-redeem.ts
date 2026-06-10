@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 
 import { GLOBAL_TORII_BY_CHAIN } from "@/config/global-chain";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { MarketClass } from "@/pm/class";
 import { useDojoSdk } from "@/pm/hooks/dojo/use-dojo-sdk";
 import { useTokens } from "@/pm/hooks/dojo/use-tokens";
@@ -326,7 +327,17 @@ export const useMarketRedeem = (
         return;
       }
 
-      const tx = await withTimeout(account.execute(calls), "Claim transaction submission", CLAIM_TX_TIMEOUT_MS);
+      const tx = await executeObservedClientTransaction({
+        account,
+        calls,
+        surface: "prediction_market",
+        operation: "market_claim",
+        chain,
+        waitForConfirmation: false,
+        confirm: false,
+        submit: async (callArray) =>
+          await withTimeout(account.execute(callArray), "Claim transaction submission", CLAIM_TX_TIMEOUT_MS),
+      });
       const txHash =
         typeof tx === "object" &&
         tx !== null &&

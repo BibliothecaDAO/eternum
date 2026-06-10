@@ -30,8 +30,8 @@ vi.mock("@/ui/features/world/components/entities/layout", () => ({
   EntityDetailSection: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
 }));
 
-vi.mock("@/ui/features/world/components/config", () => ({
-  battleSimulation: "battleSimulation",
+vi.mock("@/ui/features/military/battle/battle-lab", () => ({
+  BattleLab: () => null,
 }));
 
 vi.mock("@/hooks/store/use-ui-store", () => ({
@@ -91,7 +91,11 @@ describe("BiomeSummaryCard", () => {
     });
 
     const bonusGrid = container.querySelector('[aria-label="Army bonuses"]');
+    const summaryCard = container.firstElementChild;
 
+    expect(summaryCard?.className).toContain("w-full");
+    expect(summaryCard?.className).toContain("flex-1");
+    expect(summaryCard?.className).toContain("min-w-0");
     expect(bonusGrid?.className).toContain("w-full");
     expect(bonusGrid?.className).toContain("flex");
     expect(bonusGrid?.className).toContain("flex-col");
@@ -100,6 +104,8 @@ describe("BiomeSummaryCard", () => {
     const bonusCards = container.querySelectorAll('[data-bonus-card="true"]');
     expect(bonusCards).toHaveLength(3);
     expect(Array.from(bonusCards).every((card) => card.className.includes("w-full"))).toBe(true);
+    expect(Array.from(bonusCards).every((card) => card.className.includes("p-1"))).toBe(true);
+    expect(Array.from(bonusCards).every((card) => !card.className.includes("min-h-["))).toBe(true);
 
     expect(container.textContent).toContain("Penalty");
     expect(container.textContent).toContain("Neutral");

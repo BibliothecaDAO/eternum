@@ -2,17 +2,46 @@ import { describe, expect, it } from "vitest";
 import { createTerrainCacheGeneration, isTerrainCacheStale } from "./terrain-cache-generation";
 
 describe("createTerrainCacheGeneration", () => {
-  it("starts at generation 0", () => {
+  it("starts every chunk at generation 0", () => {
     const gen = createTerrainCacheGeneration();
-    expect(gen.current()).toBe(0);
+    expect(gen.current("0,0")).toBe(0);
+    expect(gen.current("24,48")).toBe(0);
   });
 
-  it("increments generation on bump", () => {
+  it("increments only the bumped chunk keys", () => {
     const gen = createTerrainCacheGeneration();
-    gen.bump();
-    expect(gen.current()).toBe(1);
-    gen.bump();
-    expect(gen.current()).toBe(2);
+    gen.bump(["0,0"]);
+    expect(gen.current("0,0")).toBe(1);
+    gen.bump(["0,0"]);
+    expect(gen.current("0,0")).toBe(2);
+  });
+
+  // Phase 1.3: this is the whole point — a tile mutation inside one chunk must
+  // NOT invalidate cached terrain for unrelated chunks. The previous single
+  // global counter advanced for every tile change anywhere, so every cached
+  // chunk read as stale during exploration.
+  it("does not advance other chunks when one chunk is bumped", () => {
+    const gen = createTerrainCacheGeneration();
+    gen.bump(["0,0"]);
+    expect(gen.current("0,0")).toBe(1);
+    expect(gen.current("24,0")).toBe(0);
+    expect(gen.current("0,24")).toBe(0);
+  });
+
+  it("bumps every key passed in a single call", () => {
+    const gen = createTerrainCacheGeneration();
+    gen.bump(["0,0", "24,0", "0,24"]);
+    expect(gen.current("0,0")).toBe(1);
+    expect(gen.current("24,0")).toBe(1);
+    expect(gen.current("0,24")).toBe(1);
+  });
+
+  it("resets all chunk generations on clear", () => {
+    const gen = createTerrainCacheGeneration();
+    gen.bump(["0,0", "24,0"]);
+    gen.clear();
+    expect(gen.current("0,0")).toBe(0);
+    expect(gen.current("24,0")).toBe(0);
   });
 });
 

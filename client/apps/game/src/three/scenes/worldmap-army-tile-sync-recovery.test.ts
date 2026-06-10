@@ -46,13 +46,18 @@ describe("worldmap army tile-sync recovery", () => {
 
     const scheduleStart = src.indexOf("private scheduleArmyRemoval(");
     const retryStart = src.indexOf("private retryDeferredChunkRemovals()");
+    const helperStart = src.indexOf("private resolveLastArmyTileSyncAt(");
     expect(scheduleStart).toBeGreaterThan(-1);
     expect(retryStart).toBeGreaterThan(-1);
+    expect(helperStart).toBeGreaterThan(-1);
 
-    const scheduleBody = src.slice(scheduleStart, scheduleStart + 2600);
+    const scheduleBody = src.slice(scheduleStart, scheduleStart + 3200);
     const retryBody = src.slice(retryStart, retryStart + 900);
+    const helperBody = src.slice(helperStart, helperStart + 300);
 
-    expect(scheduleBody).toContain("this.armyLastTileSyncAt.get(entityId)");
-    expect(retryBody).toContain("this.armyLastTileSyncAt.get(entityId)");
+    expect(scheduleBody).toContain("this.resolveLastArmyTileSyncAt(entityId)");
+    expect(retryBody).toContain("this.resolveLastArmyTileSyncAt(entityId)");
+    expect(helperBody).toContain("this.armyLastTileSyncAt.get(entityId)");
+    expect(helperBody).not.toContain("this.armyLastLiveUpdateAt.get(entityId)");
   });
 });

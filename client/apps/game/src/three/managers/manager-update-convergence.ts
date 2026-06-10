@@ -2,6 +2,26 @@ import { shouldRunManagerUpdate } from "../scenes/worldmap-chunk-transition";
 
 export const MANAGER_UNCOMMITTED_CHUNK = "null";
 
+export type AsyncPassSnapshot = {
+  version: number;
+};
+
+export function createAsyncPassFence(): {
+  capture: () => AsyncPassSnapshot;
+  invalidate: () => void;
+  isCurrent: (snapshot: AsyncPassSnapshot) => boolean;
+} {
+  let version = 0;
+
+  return {
+    capture: () => ({ version }),
+    invalidate: () => {
+      version += 1;
+    },
+    isCurrent: (snapshot) => snapshot.version === version,
+  };
+}
+
 export function isCommittedManagerChunk(chunkKey: string | null | undefined): chunkKey is string {
   if (!chunkKey || chunkKey === MANAGER_UNCOMMITTED_CHUNK) {
     return false;

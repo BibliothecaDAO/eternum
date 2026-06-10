@@ -1,10 +1,13 @@
 import { useCallback, useMemo } from "react";
 
-import Button from "@/ui/design-system/atoms/button";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_CUE, HUD_HEADLINE, HUD_LABEL, HUD_VALUE } from "@/ui/design-system/atoms/hud-typography";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { InfoBubble } from "@/ui/features/world/components/entities/collapsible-bubble";
+import Trees from "lucide-react/dist/esm/icons/trees";
 import { formatBiomeBonus } from "@/ui/features/military";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
-import { battleSimulation } from "@/ui/features/world/components/config";
+import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { BiomeType, TroopType } from "@bibliothecadao/types";
@@ -95,77 +98,100 @@ interface BiomeSummaryCardProps {
   biome: BiomeType;
   onSimulateBattle?: () => void;
   showSimulateAction?: boolean;
+  /**
+   * When provided, the matching troop row is sorted to the top and rendered
+   * with a "Your army" highlight, while the other troop rows render in a
+   * compact secondary form. Used by army tiles so the player immediately sees
+   * how this biome affects *their* army.
+   */
+  highlightTroopType?: TroopType;
 }
 
-export const BiomeSummaryCard = ({ biome, onSimulateBattle, showSimulateAction = false }: BiomeSummaryCardProps) => {
+export const BiomeSummaryCard = ({
+  biome,
+  onSimulateBattle,
+  showSimulateAction = false,
+  highlightTroopType,
+}: BiomeSummaryCardProps) => {
   const troopBonuses = useMemo(() => buildBiomeTroopBonusCards(biome), [biome]);
+  const biomeLabel = formatQuadrantBiomeLabel(biome);
+
+  const orderedBonuses = useMemo(() => {
+    if (highlightTroopType === undefined) return troopBonuses;
+    const highlighted = troopBonuses.find((row) => row.troopType === highlightTroopType);
+    if (!highlighted) return troopBonuses;
+    return [highlighted, ...troopBonuses.filter((row) => row.troopType !== highlightTroopType)];
+  }, [highlightTroopType, troopBonuses]);
+
+  const battleAction =
+    showSimulateAction && onSimulateBattle ? (
+      <button
+        type="button"
+        onClick={onSimulateBattle}
+        className="inline-flex items-center gap-1 rounded-md border border-gold/40 bg-gold/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-gold transition hover:border-gold hover:bg-gold/20"
+        title="Simulate a battle in this biome"
+        aria-label="Simulate battle"
+      >
+        <CrosshairIcon className="h-3 w-3" />
+        Battle
+      </button>
+    ) : undefined;
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-2">
-      <div className="flex flex-col gap-0.5">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xxs uppercase tracking-[0.3em] text-gold/60">Biome</span>
-          {showSimulateAction && onSimulateBattle ? (
-            <Button
-              variant="outline"
-              size="xs"
-              className="h-11 min-w-[90px] gap-2 rounded-full border-gold/60 px-3 text-[11px]"
-              forceUppercase={false}
-              onClick={onSimulateBattle}
-              withoutSound
-            >
-              <CrosshairIcon className="h-3.5 w-3.5" />
-              Battle
-            </Button>
-          ) : null}
-        </div>
-        <span className="truncate text-xs font-semibold text-gold" title={formatQuadrantBiomeLabel(biome)}>
-          {formatQuadrantBiomeLabel(biome)}
+    <InfoBubble title="Biome" icon={Trees} cue={battleAction} className="w-full flex-1 min-w-0">
+      <div className="flex flex-col gap-2">
+        <span className={`truncate ${HUD_HEADLINE}`} title={biomeLabel}>
+          {biomeLabel}
         </span>
+        <div aria-label="Army bonuses" className="flex w-full flex-col gap-1.5" role="list">
+          {orderedBonuses.map(({ troopType, config, tone, displayBonus }) => {
+            const isHighlighted = highlightTroopType !== undefined && troopType === highlightTroopType;
+            return (
+              <div
+                key={troopType}
+                data-bonus-card="true"
+                role="listitem"
+                className={cn(
+                  "flex w-full min-w-0 items-center gap-1.5 rounded-lg border p-1 text-left",
+                  tone.cardClassName,
+                  isHighlighted && "ring-1 ring-gold/70 shadow-[0_0_10px_rgba(223,170,84,0.35)]",
+                )}
+              >
+                <div
+                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md border ${tone.iconWrapClassName}`}
+                >
+                  <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
+                </div>
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className={cn("flex items-center gap-1 break-words leading-[1.05]", HUD_LABEL)}>
+                    {config.label}
+                    {isHighlighted && (
+                      <span className="rounded-sm border border-gold/50 bg-gold/15 px-1 text-[8px] uppercase tracking-[0.18em] text-gold">
+                        Your army
+                      </span>
+                    )}
+                  </span>
+                  <span className={`leading-none ${HUD_CUE} ${tone.stateTextClassName}`}>{tone.stateLabel}</span>
+                </div>
+                <span className={`shrink-0 leading-none ${HUD_VALUE} ${tone.valueClassName}`}>{displayBonus}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <div aria-label="Army bonuses" className="mt-1 flex w-full flex-col gap-1.5" role="list">
-        {troopBonuses.map(({ troopType, config, tone, displayBonus }) => (
-          <div
-            key={troopType}
-            data-bonus-card="true"
-            role="listitem"
-            className={`flex min-h-[74px] w-full min-w-0 items-center gap-2 rounded-xl border px-2 py-2 text-left ${tone.cardClassName}`}
-          >
-            <div
-              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${tone.iconWrapClassName}`}
-            >
-              <ResourceIcon resource={config.resourceName} size="sm" withTooltip={false} />
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col gap-1">
-              <span className="break-words text-[9px] font-semibold uppercase leading-[1.05] tracking-[0.12em] text-gold/72">
-                {config.label}
-              </span>
-              <span className={`text-[10px] font-semibold uppercase leading-none ${tone.stateTextClassName}`}>
-                {tone.stateLabel}
-              </span>
-            </div>
-            <span className={`shrink-0 text-xl font-bold leading-none ${tone.valueClassName}`}>{displayBonus}</span>
-          </div>
-        ))}
-      </div>
-    </div>
+    </InfoBubble>
   );
 };
 
 export const UnoccupiedTileQuadrants = ({ biome }: { biome: BiomeType }) => {
-  const openPopup = useUIStore((state) => state.openPopup);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const setCombatSimulationBiome = useUIStore((state) => state.setCombatSimulationBiome);
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const handleSimulateBattle = useCallback(() => {
-    setCombatSimulationBiome(biome);
-    if (!isPopupOpen(battleSimulation)) {
-      openPopup(battleSimulation);
-    }
-  }, [biome, isPopupOpen, openPopup, setCombatSimulationBiome]);
+    toggleModal(<BattleLab mode="sim" initialBiome={biome} />);
+  }, [biome, toggleModal]);
 
   return (
-    <div className="h-full min-h-0">
+    <div className="h-full min-h-0 w-full">
       <EntityDetailSection compact className="flex h-full flex-col overflow-hidden" tone="highlight">
         <BiomeSummaryCard biome={biome} onSimulateBattle={handleSimulateBattle} showSimulateAction />
       </EntityDetailSection>

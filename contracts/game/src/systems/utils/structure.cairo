@@ -99,7 +99,7 @@ pub impl iStructureImpl of IStructureTrait {
         // explore the tile if biome is not set
         if tile.biome == Biome::None.into() {
             let biome_library = biome_library::get_dispatcher(@world);
-            let biome: Biome = biome_library.get_biome(coord.alt, coord.x.into(), coord.y.into());
+            let biome: Biome = biome_library.get_biome(world, coord.alt, coord.x.into(), coord.y.into());
             IMapImpl::explore(ref world, ref tile, biome);
         }
 
@@ -123,7 +123,7 @@ pub impl iStructureImpl of IStructureTrait {
                 if !neighbor_tile.discovered() {
                     let biome_library = biome_library::get_dispatcher(@world);
                     let biome: Biome = biome_library
-                        .get_biome(neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into());
+                        .get_biome(world, neighbor_coord.alt, neighbor_coord.x.into(), neighbor_coord.y.into());
                     IMapImpl::explore(ref world, ref neighbor_tile, biome);
                 }
 
@@ -139,7 +139,7 @@ pub impl iStructureImpl of IStructureTrait {
                     if !village_tile.discovered() {
                         let biome_library = biome_library::get_dispatcher(@world);
                         let village_biome: Biome = biome_library
-                            .get_biome(village_coord.alt, village_coord.x.into(), village_coord.y.into());
+                            .get_biome(world, village_coord.alt, village_coord.x.into(), village_coord.y.into());
                         IMapImpl::explore(ref world, ref village_tile, village_biome);
                     }
 

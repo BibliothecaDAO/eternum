@@ -6,13 +6,18 @@ import {
   DEFAULT_VERSION,
 } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
-import type { FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
+import type {
+  FactoryBiomeClimateOverrides,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
 import type {
   ExecutionMode,
   LaunchGameRequest,
   LaunchGameStepId,
   LaunchRotationRequest,
   LaunchRotationStepId,
+  LaunchRotationWeeklyCadenceEntry,
   LaunchSeriesRequest,
   LaunchSeriesStepId,
   LaunchTargetKind,
@@ -26,6 +31,7 @@ import type {
   SeriesLaunchWorkflowScope,
 } from "../run-store";
 import { parseArgs, resolveOptionalArg, type CliArgs as Args } from "./args";
+import { resolveLaunchRequestArgs } from "./launch-config-file";
 
 export { parseArgs };
 
@@ -114,6 +120,40 @@ function resolveMapConfigOverrides(value?: string): FactoryMapConfigOverrides | 
   return resolveNumericOverrideObject(value, "map config overrides") as FactoryMapConfigOverrides | undefined;
 }
 
+function resolveBiomeClimateOverrides(value?: string): FactoryBiomeClimateOverrides | undefined {
+  return resolveNumericOverrideObject(value, "biome climate overrides") as FactoryBiomeClimateOverrides | undefined;
+}
+
+function resolveBiomeClimateOverridesByGameNumber(
+  value?: string,
+): Record<number, FactoryBiomeClimateOverrides> | undefined {
+  const overridesByGameNumber = resolveJsonOverrideObject(value, "biome climate overrides by game number");
+
+  if (!overridesByGameNumber) {
+    return undefined;
+  }
+
+  const resolvedOverridesByGameNumber: Record<number, FactoryBiomeClimateOverrides> = {};
+  for (const [gameNumber, rawOverrides] of Object.entries(overridesByGameNumber)) {
+    const parsedGameNumber = Number(gameNumber);
+    if (!Number.isInteger(parsedGameNumber) || parsedGameNumber <= 0) {
+      throw new Error("biome climate overrides by game number keys must be positive game numbers");
+    }
+
+    if (!rawOverrides || typeof rawOverrides !== "object" || Array.isArray(rawOverrides)) {
+      throw new Error(`biome climate overrides by game number entry "${gameNumber}" must be an object`);
+    }
+
+    validateNumericOverrideEntries(
+      rawOverrides as Record<string, unknown>,
+      `biome climate overrides by game number entry "${gameNumber}"`,
+    );
+    resolvedOverridesByGameNumber[parsedGameNumber] = rawOverrides as FactoryBiomeClimateOverrides;
+  }
+
+  return resolvedOverridesByGameNumber;
+}
+
 function resolveBlitzRegistrationOverrides(value?: string): FactoryBlitzRegistrationOverrides | undefined {
   const overrides = resolveJsonOverrideObject(value, "blitz registration overrides");
 
@@ -159,7 +199,8 @@ function validateBlitzRegistrationStringOverride(key: string, value: unknown): v
 }
 
 export function resolveLaunchKind(args: Args): LaunchTargetKind {
-  const rawLaunchKind = args["launch-kind"] || process.env.GAME_LAUNCH_KIND || "game";
+  const resolvedArgs = resolveLaunchRequestArgs(args);
+  const rawLaunchKind = resolvedArgs["launch-kind"] || process.env.GAME_LAUNCH_KIND || "game";
 
   if (rawLaunchKind === "game" || rawLaunchKind === "series" || rawLaunchKind === "rotation") {
     return rawLaunchKind;
@@ -276,6 +317,123 @@ function resolveTargetGameNamesJson(args: Args): string[] | undefined {
   return normalizedGameNames;
 }
 
+const WEEKLY_CADENCE_WEEKDAYS = new Set<LaunchRotationWeeklyCadenceEntry["weekday"]>([
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+  "sunday",
+]);
+
+function resolveWeeklyCadenceJson(args: Args): LaunchRotationWeeklyCadenceEntry[] | undefined {
+  const rawValue = resolveOptionalArg(args, "weekly-cadence-json", ["GAME_LAUNCH_WEEKLY_CADENCE_JSON"]);
+
+  if (!rawValue) {
+    return undefined;
+  }
+
+  let parsedValue: unknown;
+
+  try {
+    parsedValue = JSON.parse(rawValue);
+  } catch {
+    throw new Error("weekly cadence JSON must be valid JSON");
+  }
+
+  if (!Array.isArray(parsedValue) || parsedValue.length === 0) {
+    throw new Error("weekly cadence JSON must be a non-empty array");
+  }
+
+  return parsedValue.map((entry, index) => normalizeWeeklyCadenceEntry(entry, index));
+}
+
+function normalizeWeeklyCadenceEntry(entry: unknown, index: number): LaunchRotationWeeklyCadenceEntry {
+  if (!entry || typeof entry !== "object" || Array.isArray(entry)) {
+    throw new Error(`weekly cadence JSON entry ${index + 1} must be an object`);
+  }
+
+  const record = entry as Record<string, unknown>;
+  const gameNamePrefix = normalizeWeeklyCadenceString(record.gameNamePrefix, "gameNamePrefix", index);
+  const weekday = normalizeWeeklyCadenceWeekday(record.weekday, index);
+  const utcTime = normalizeWeeklyCadenceTime(record.utcTime, index);
+  const blitzRegistrationOverrides = normalizeWeeklyCadenceRegistrationOverrides(
+    record.blitzRegistrationOverrides,
+    index,
+  );
+  const biomeClimateOverrides = normalizeWeeklyCadenceBiomeClimateOverrides(record.biomeClimateOverrides, index);
+
+  return {
+    gameNamePrefix,
+    weekday,
+    utcTime,
+    ...(biomeClimateOverrides ? { biomeClimateOverrides } : {}),
+    ...(blitzRegistrationOverrides ? { blitzRegistrationOverrides } : {}),
+  };
+}
+
+function normalizeWeeklyCadenceString(value: unknown, label: string, index: number): string {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(`weekly cadence JSON entry ${index + 1} requires a non-empty ${label}`);
+  }
+
+  return value.trim();
+}
+
+function normalizeWeeklyCadenceWeekday(value: unknown, index: number): LaunchRotationWeeklyCadenceEntry["weekday"] {
+  const weekday = normalizeWeeklyCadenceString(value, "weekday", index).toLowerCase();
+  if (!WEEKLY_CADENCE_WEEKDAYS.has(weekday as LaunchRotationWeeklyCadenceEntry["weekday"])) {
+    throw new Error(`weekly cadence JSON entry ${index + 1} has an unsupported weekday`);
+  }
+
+  return weekday as LaunchRotationWeeklyCadenceEntry["weekday"];
+}
+
+function normalizeWeeklyCadenceTime(value: unknown, index: number): string {
+  const utcTime = normalizeWeeklyCadenceString(value, "utcTime", index);
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(utcTime);
+  if (!match) {
+    throw new Error(`weekly cadence JSON entry ${index + 1} utcTime must be HH:MM in UTC`);
+  }
+
+  return utcTime;
+}
+
+function normalizeWeeklyCadenceRegistrationOverrides(value: unknown, index: number) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`weekly cadence JSON entry ${index + 1} blitzRegistrationOverrides must be an object`);
+  }
+
+  validateBlitzRegistrationOverrideEntries(value as Record<string, unknown>);
+  return value as LaunchRotationWeeklyCadenceEntry["blitzRegistrationOverrides"];
+}
+
+function normalizeWeeklyCadenceBiomeClimateOverrides(value: unknown, index: number) {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`weekly cadence JSON entry ${index + 1} biomeClimateOverrides must be an object`);
+  }
+
+  validateNumericOverrideEntries(value as Record<string, unknown>, `weekly cadence JSON entry ${index + 1}`);
+  return value as LaunchRotationWeeklyCadenceEntry["biomeClimateOverrides"];
+}
+
+function validateNumericOverrideEntries(value: Record<string, unknown>, label: string) {
+  for (const [key, entryValue] of Object.entries(value)) {
+    if (typeof entryValue !== "number" || !Number.isFinite(entryValue)) {
+      throw new Error(`${label} ${key} must be a finite number`);
+    }
+  }
+}
+
 function requireSeriesLaunchArgs(args: Args): {
   environmentId: LaunchSeriesRequest["environmentId"];
   seriesName: string;
@@ -303,6 +461,7 @@ function requireRotationLaunchArgs(args: Args): {
   maxGames: number;
   advanceWindowGames?: number;
   evaluationIntervalMinutes: number;
+  weeklyCadence?: LaunchRotationWeeklyCadenceEntry[];
 } {
   const environmentId = args.environment;
   const rotationName = resolveOptionalArg(args, "rotation-name", ["GAME_LAUNCH_ROTATION_NAME"]);
@@ -320,17 +479,18 @@ function requireRotationLaunchArgs(args: Args): {
     resolveOptionalArg(args, "evaluation-interval-minutes", ["GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES"]),
     "evaluation interval minutes",
   );
+  const weeklyCadence = resolveWeeklyCadenceJson(args);
 
   if (
     !environmentId ||
     !rotationName ||
     !firstGameStartTime ||
-    gameIntervalMinutes === undefined ||
+    (gameIntervalMinutes === undefined && !weeklyCadence) ||
     maxGames === undefined ||
     evaluationIntervalMinutes === undefined
   ) {
     throw new Error(
-      "--environment, --rotation-name, --first-game-start-time, --game-interval-minutes, --max-games, and --evaluation-interval-minutes are required for rotation launches",
+      "--environment, --rotation-name, --first-game-start-time, --max-games, and --evaluation-interval-minutes are required for rotation launches, plus either --game-interval-minutes or --weekly-cadence-json",
     );
   }
 
@@ -338,10 +498,11 @@ function requireRotationLaunchArgs(args: Args): {
     environmentId: environmentId as LaunchRotationRequest["environmentId"],
     rotationName,
     firstGameStartTime,
-    gameIntervalMinutes,
+    gameIntervalMinutes: gameIntervalMinutes ?? 0,
     maxGames,
     advanceWindowGames,
     evaluationIntervalMinutes,
+    weeklyCadence,
   };
 }
 
@@ -362,6 +523,12 @@ function resolveSharedLaunchRequestOptions(args: Args) {
       resolveOptionalArg(args, "map-config-overrides-json", [
         "MAP_CONFIG_OVERRIDES_JSON",
         "GAME_LAUNCH_MAP_CONFIG_OVERRIDES_JSON",
+      ]),
+    ),
+    biomeClimateOverrides: resolveBiomeClimateOverrides(
+      resolveOptionalArg(args, "biome-climate-overrides-json", [
+        "BIOME_CLIMATE_OVERRIDES_JSON",
+        "GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_JSON",
       ]),
     ),
     blitzRegistrationOverrides: resolveBlitzRegistrationOverrides(
@@ -394,7 +561,8 @@ function resolveSharedLaunchRequestOptions(args: Args) {
 }
 
 export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
-  const requiredArgs = requireGameLaunchArgs(args);
+  const resolvedArgs = resolveLaunchRequestArgs(args);
+  const requiredArgs = requireGameLaunchArgs(resolvedArgs);
   const environment = resolveDeploymentEnvironment(requiredArgs.environmentId);
 
   return {
@@ -402,15 +570,16 @@ export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
     environmentId: requiredArgs.environmentId,
     gameName: requiredArgs.gameName,
     startTime: requiredArgs.startTime,
-    ...resolveSharedLaunchRequestOptions(args),
-    maxActions: resolveOptionalNumber(args["max-actions"], "max actions") ?? environment.createGame.maxActions,
-    seriesName: args["series-name"],
-    seriesGameNumber: resolveOptionalNumber(args["series-game-number"], "series game number"),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
+    seriesName: resolvedArgs["series-name"],
+    seriesGameNumber: resolveOptionalNumber(resolvedArgs["series-game-number"], "series game number"),
   };
 }
 
 export function buildLaunchSeriesRequest(args: Args): LaunchSeriesRequest {
-  const requiredArgs = requireSeriesLaunchArgs(args);
+  const resolvedArgs = resolveLaunchRequestArgs(args);
+  const requiredArgs = requireSeriesLaunchArgs(resolvedArgs);
   const environment = resolveDeploymentEnvironment(requiredArgs.environmentId);
 
   return {
@@ -418,20 +587,22 @@ export function buildLaunchSeriesRequest(args: Args): LaunchSeriesRequest {
     environmentId: requiredArgs.environmentId,
     seriesName: requiredArgs.seriesName,
     games: requiredArgs.games,
-    targetGameNames: resolveTargetGameNamesJson(args),
-    ...resolveSharedLaunchRequestOptions(args),
-    maxActions: resolveOptionalNumber(args["max-actions"], "max actions") ?? environment.createGame.maxActions,
-    autoRetryEnabled: resolveOptionalBooleanArg(args, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
+    targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
+    autoRetryEnabled:
+      resolveOptionalBooleanArg(resolvedArgs, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
     autoRetryIntervalMinutes:
       resolveOptionalNumber(
-        args["auto-retry-interval-minutes"] || process.env.GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES,
+        resolvedArgs["auto-retry-interval-minutes"] || process.env.GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES,
         "auto retry interval minutes",
       ) ?? undefined,
   };
 }
 
 export function buildLaunchRotationRequest(args: Args): LaunchRotationRequest {
-  const requiredArgs = requireRotationLaunchArgs(args);
+  const resolvedArgs = resolveLaunchRequestArgs(args);
+  const requiredArgs = requireRotationLaunchArgs(resolvedArgs);
   const environment = resolveDeploymentEnvironment(requiredArgs.environmentId);
 
   return {
@@ -442,14 +613,22 @@ export function buildLaunchRotationRequest(args: Args): LaunchRotationRequest {
     gameIntervalMinutes: requiredArgs.gameIntervalMinutes,
     maxGames: requiredArgs.maxGames,
     advanceWindowGames: requiredArgs.advanceWindowGames,
-    targetGameNames: resolveTargetGameNamesJson(args),
+    weeklyCadence: requiredArgs.weeklyCadence,
+    targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
     evaluationIntervalMinutes: requiredArgs.evaluationIntervalMinutes,
-    ...resolveSharedLaunchRequestOptions(args),
-    maxActions: resolveOptionalNumber(args["max-actions"], "max actions") ?? environment.createGame.maxActions,
-    autoRetryEnabled: resolveOptionalBooleanArg(args, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
+    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    biomeClimateOverridesByGameNumber: resolveBiomeClimateOverridesByGameNumber(
+      resolveOptionalArg(resolvedArgs, "biome-climate-overrides-by-game-number-json", [
+        "BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON",
+        "GAME_LAUNCH_BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON",
+      ]),
+    ),
+    maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
+    autoRetryEnabled:
+      resolveOptionalBooleanArg(resolvedArgs, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
     autoRetryIntervalMinutes:
       resolveOptionalNumber(
-        args["auto-retry-interval-minutes"] || process.env.GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES,
+        resolvedArgs["auto-retry-interval-minutes"] || process.env.GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES,
         "auto retry interval minutes",
       ) ?? undefined,
   };
@@ -514,6 +693,7 @@ export function resolveLaunchGameStepId(value?: string): LaunchGameStepId {
     case "create-world":
     case "wait-for-factory-index":
     case "configure-world":
+    case "reserve-blitz-hyperstructures":
     case "grant-lootchest-role":
     case "grant-village-pass-role":
     case "create-banks":
@@ -522,7 +702,7 @@ export function resolveLaunchGameStepId(value?: string): LaunchGameStepId {
       return value;
     default:
       throw new Error(
-        `Unsupported launch step "${value}". Expected one of: create-world, wait-for-factory-index, configure-world, grant-lootchest-role, grant-village-pass-role, create-banks, create-indexer, sync-paymaster`,
+        `Unsupported launch step "${value}". Expected one of: create-world, wait-for-factory-index, configure-world, reserve-blitz-hyperstructures, grant-lootchest-role, grant-village-pass-role, create-banks, create-indexer, sync-paymaster`,
       );
   }
 }
@@ -533,6 +713,7 @@ export function resolveLaunchSeriesStepId(value?: string): LaunchSeriesStepId {
     case "create-worlds":
     case "wait-for-factory-indexes":
     case "configure-worlds":
+    case "reserve-blitz-hyperstructures":
     case "grant-lootchest-roles":
     case "grant-village-pass-roles":
     case "create-banks":
@@ -541,7 +722,7 @@ export function resolveLaunchSeriesStepId(value?: string): LaunchSeriesStepId {
       return value;
     default:
       throw new Error(
-        `Unsupported series launch step "${value}". Expected one of: create-series, create-worlds, wait-for-factory-indexes, configure-worlds, grant-lootchest-roles, grant-village-pass-roles, create-banks, create-indexers, sync-paymaster`,
+        `Unsupported series launch step "${value}". Expected one of: create-series, create-worlds, wait-for-factory-indexes, configure-worlds, reserve-blitz-hyperstructures, grant-lootchest-roles, grant-village-pass-roles, create-banks, create-indexers, sync-paymaster`,
       );
   }
 }

@@ -1,7 +1,8 @@
-import { useAutomationStore } from "@/hooks/store/use-automation-store";
+import { useAutomationStore, type RealmAutomationConfig } from "@/hooks/store/use-automation-store";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { OSWindow, productionAutomation } from "@/ui/features/world";
+import { productionAutomation } from "@/ui/features/world";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { REALM_PRESETS } from "@/utils/automation-presets";
 import {
   getFailureSeverity,
@@ -45,6 +46,9 @@ const getStatusDotBg = (statusStr?: string): string => {
       return "bg-gold/50";
   }
 };
+
+const getVisibleSkipMessages = (realm: RealmAutomationConfig): string[] =>
+  realm.lastStatus?.status === "skipped" && realm.lastStatus.message ? [realm.lastStatus.message] : [];
 
 interface ProductionAutomationContentProps {
   compact?: boolean;
@@ -138,6 +142,7 @@ const ProductionAutomationContent = ({ compact = false }: ProductionAutomationCo
           {list.map((realm) => {
             const severity = getFailureSeverity(realm.lastStatus);
             const isCritical = severity === "critical";
+            const skipMessages = getVisibleSkipMessages(realm);
 
             return (
               <div
@@ -200,6 +205,12 @@ const ProductionAutomationContent = ({ compact = false }: ProductionAutomationCo
                     </span>
                   </div>
                 )}
+
+                {realm.lastStatus?.status === "skipped" && skipMessages.length > 0 && (
+                  <div className="mt-1.5 rounded border border-amber-500/30 bg-amber-500/5 px-2 py-1">
+                    <span className="text-[10px] text-amber-300">{skipMessages.join("; ")}</span>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -213,15 +224,17 @@ export const ProductionAutomationWindow = memo(() => {
   const togglePopup = useUIStore((state) => state.togglePopup);
   const isOpen = useUIStore((state) => state.isPopupOpen(productionAutomation));
 
+  if (!isOpen) return null;
+
   return (
-    <OSWindow
-      onClick={() => togglePopup(productionAutomation)}
-      show={isOpen}
+    <CenteredModalShell
+      onClose={() => togglePopup(productionAutomation)}
       title="Production Automation"
-      width="340px"
-      height="auto"
+      persistKey="Production Automation"
+      panelClassName="w-[340px] h-auto max-h-[calc(100vh-64px)]"
+      bodyClassName="overflow-auto"
     >
       <ProductionAutomationContent compact />
-    </OSWindow>
+    </CenteredModalShell>
   );
 });

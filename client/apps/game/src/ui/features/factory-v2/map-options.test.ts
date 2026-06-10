@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { buildFactoryCreateRotationRunRequest } from "./create-rotation-run-request";
 import { buildFactoryCreateRunRequest } from "./create-run-request";
+import { buildFactoryCreateSeriesRunRequest } from "./create-series-run-request";
+import {
+  createFactoryBiomeClimateDraft,
+  validateFactoryBiomeClimateDraft,
+  type FactoryBiomeClimateDraft,
+} from "./biome-climate-options";
 import {
   createFactoryMoreOptionsDraft,
   getFactoryMoreOptionField,
@@ -32,7 +39,7 @@ describe("Factory V2 map options", () => {
       "Relic discovery interval",
     );
     expect(blitzSections.flatMap((section) => section.fields.map((field) => field.label))).toContain(
-      "Prize token address",
+      "Entry ticket payment token address",
     );
     expect(blitzSections.find((section) => section.id === "explorationRewards")?.previewRows).toHaveLength(9);
   });
@@ -51,6 +58,49 @@ describe("Factory V2 map options", () => {
 
     expect(result.hasErrors).toBe(false);
     expect(result.mapConfigOverrides).toBeUndefined();
+  });
+
+  it("validates biome climate drafts and omits overrides that match the base climate", () => {
+    const draft = createFactoryBiomeClimateDraft("slot", "blitz");
+    const result = validateFactoryBiomeClimateDraft("slot", "blitz", draft);
+
+    expect(draft).toEqual({
+      elevationScaleBps: "10000",
+      moistureScaleBps: "10000",
+      elevationBiasBps: "10000",
+      moistureBiasBps: "10000",
+      elevationSeed: "0",
+      moistureSeed: "0",
+    });
+    expect(result.hasErrors).toBe(false);
+    expect(result.biomeClimateOverrides).toBeUndefined();
+  });
+
+  it("returns changed biome climate values as launch overrides", () => {
+    const draft: FactoryBiomeClimateDraft = {
+      ...createFactoryBiomeClimateDraft("slot", "blitz"),
+      elevationScaleBps: "12000",
+      moistureSeed: "991",
+    };
+    const result = validateFactoryBiomeClimateDraft("slot", "blitz", draft);
+
+    expect(result.hasErrors).toBe(false);
+    expect(result.biomeClimateOverrides).toEqual({
+      elevationScaleBps: 12_000,
+      moistureSeed: 991,
+    });
+  });
+
+  it("rejects invalid biome climate values", () => {
+    const draft = createFactoryBiomeClimateDraft("slot", "blitz");
+    draft.elevationScaleBps = "65536";
+    draft.moistureSeed = "4.2";
+
+    const result = validateFactoryBiomeClimateDraft("slot", "blitz", draft);
+
+    expect(result.hasErrors).toBe(true);
+    expect(result.errors.elevationScaleBps).toContain("between 0 and 65535");
+    expect(result.errors.moistureSeed).toContain("between 0 and 4294967295");
   });
 
   it("converts edited percentage and integer values into raw map config overrides", () => {
@@ -210,11 +260,19 @@ describe("Factory V2 map options", () => {
         bitcoinMineWinProbability: 1638,
         bitcoinMineFailProbability: 63897,
       },
+      biomeClimateOverrides: {
+        elevationScaleBps: 12_000,
+        moistureSeed: 991,
+      },
     });
 
     expect(request.mapConfigOverrides).toEqual({
       bitcoinMineWinProbability: 1638,
       bitcoinMineFailProbability: 63897,
+    });
+    expect(request.biomeClimateOverrides).toEqual({
+      elevationScaleBps: 12_000,
+      moistureSeed: 991,
     });
   });
 
@@ -251,6 +309,83 @@ describe("Factory V2 map options", () => {
       registration_count_max: 12,
       fee_token: "0x1234",
       fee_amount: "40000",
+    });
+  });
+
+  it("passes workflow ref overrides through game, series, and rotation launches", () => {
+    const workflowRef = "credence0x/blitz-hex-map";
+
+    const gameRequest = buildFactoryCreateRunRequest({
+      environmentId: "slot.blitz",
+      gameName: "bltz-test-12",
+      gameStartTime: "2026-03-18T10:00:00Z",
+      workflowRef,
+      selectedMode: "blitz",
+      selectedPreset: null,
+      twoPlayerMode: false,
+      singleRealmMode: false,
+      durationMinutes: 30,
+      showsDuration: true,
+    });
+
+    const seriesRequest = buildFactoryCreateSeriesRunRequest({
+      environmentId: "slot.blitz",
+      seriesName: "bltz-series-12",
+      workflowRef,
+      games: [
+        {
+          id: "game-1",
+          gameName: "bltz-series-12-1",
+          startAt: "2026-03-18T10:00:00Z",
+          seriesGameNumber: 1,
+          biomeClimateOverrides: {
+            elevationSeed: 101,
+          },
+        },
+      ],
+      selectedMode: "blitz",
+      selectedPreset: null,
+      twoPlayerMode: false,
+      singleRealmMode: false,
+      durationMinutes: 30,
+      showsDuration: true,
+      autoRetryIntervalMinutes: 15,
+      resolveStartTime: (startAt) => startAt,
+    });
+
+    expect(seriesRequest.games[0].biomeClimateOverrides).toEqual({ elevationSeed: 101 });
+
+    const rotationRequest = buildFactoryCreateRotationRunRequest({
+      environmentId: "slot.blitz",
+      rotationName: "bltz-rotation-12",
+      workflowRef,
+      firstGameStartTime: "2026-03-18T10:00:00Z",
+      gameIntervalMinutes: 60,
+      maxGames: 10,
+      advanceWindowGames: 3,
+      evaluationIntervalMinutes: 15,
+      selectedMode: "blitz",
+      selectedPreset: null,
+      twoPlayerMode: false,
+      singleRealmMode: false,
+      durationMinutes: 30,
+      showsDuration: true,
+      autoRetryIntervalMinutes: 15,
+      biomeClimateOverridesByGameNumber: {
+        1: {
+          elevationSeed: 202,
+        },
+      },
+      resolveStartTime: (startAt) => startAt,
+    });
+
+    expect(gameRequest.workflowRef).toBe(workflowRef);
+    expect(seriesRequest.workflowRef).toBe(workflowRef);
+    expect(rotationRequest.workflowRef).toBe(workflowRef);
+    expect(rotationRequest.biomeClimateOverridesByGameNumber).toEqual({
+      1: {
+        elevationSeed: 202,
+      },
     });
   });
 });

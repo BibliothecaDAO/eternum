@@ -24,6 +24,11 @@ type PrewarmableScene = {
   getScene(): Object3D<Object3DEventMap>;
 };
 
+type ScheduleInactiveScenePrewarm = (task: () => void) => void;
+
+const INACTIVE_SCENE_PREWARM_FALLBACK_DELAY_MS = 1500;
+const INACTIVE_SCENE_PREWARM_IDLE_TIMEOUT_MS = 3000;
+
 export interface RendererSceneRegistry<
   TTransitionManager,
   TSceneManager,
@@ -69,6 +74,7 @@ interface CreateRendererSceneRegistryInput<
   createWorldmapScene: (input: {
     controls: TControls;
     dojo: TDojo;
+    markLabelsDirty: () => void;
     mouse: TMouse;
     raycaster: TRaycaster;
     sceneManager: TSceneManager;
@@ -76,6 +82,7 @@ interface CreateRendererSceneRegistryInput<
   dojo: TDojo;
   fastTravelEnabled: boolean;
   inputSurface: HTMLElement;
+  markLabelsDirty?: () => void;
   mouse: TMouse;
   raycaster: TRaycaster;
 }
@@ -96,8 +103,10 @@ interface BootstrapRendererSceneRuntimeInput<
   effectsBridgeRuntime: TEffectsBridgeRuntime;
   fastTravelScene?: TFastTravelScene;
   hexceptionScene: THexceptionScene;
+  initialSceneName: SceneName;
   qualityFeatures: TQualityFeatures;
   renderer?: RendererSurfaceLike;
+  scheduleInactiveScenePrewarm?: ScheduleInactiveScenePrewarm;
   sceneManager: TSceneManager;
   warn?: (message: string, error: unknown) => void;
   worldmapScene: TWorldmapScene;
@@ -138,6 +147,7 @@ export function createRendererSceneRegistry<
   const worldmapScene = input.createWorldmapScene({
     controls: input.controls,
     dojo: input.dojo,
+    markLabelsDirty: input.markLabelsDirty ?? (() => {}),
     mouse: input.mouse,
     raycaster: input.raycaster,
     sceneManager,
@@ -175,6 +185,7 @@ export function createGameRendererSceneRegistry(input: {
   dojo: SetupResult;
   fastTravelEnabled: boolean;
   inputSurface: HTMLElement;
+  markLabelsDirty?: () => void;
   mouse: Vector2;
   raycaster: Raycaster;
 }): RendererSceneRegistry<TransitionManager, SceneManager, HexceptionScene, WorldmapScene, FastTravelScene> {
@@ -186,11 +197,12 @@ export function createGameRendererSceneRegistry(input: {
       new HexceptionScene(controls, dojo, mouse, raycaster, sceneManager),
     createSceneManager: (transitionManager) => new SceneManager(transitionManager),
     createTransitionManager: () => new TransitionManager(),
-    createWorldmapScene: ({ controls, dojo, mouse, raycaster, sceneManager }) =>
-      new WorldmapScene(dojo, raycaster, controls, mouse, sceneManager),
+    createWorldmapScene: ({ controls, dojo, markLabelsDirty, mouse, raycaster, sceneManager }) =>
+      new WorldmapScene(dojo, raycaster, controls, mouse, sceneManager, markLabelsDirty),
     dojo: input.dojo,
     fastTravelEnabled: input.fastTravelEnabled,
     inputSurface: input.inputSurface,
+    markLabelsDirty: input.markLabelsDirty,
     mouse: input.mouse,
     raycaster: input.raycaster,
   });
@@ -221,7 +233,9 @@ export function bootstrapRendererSceneRuntime<
   prewarmRendererBootstrapScenes({
     fastTravelScene: input.fastTravelScene,
     hexceptionScene: input.hexceptionScene,
+    initialSceneName: input.initialSceneName,
     renderer: input.renderer,
+    scheduleInactiveScenePrewarm: input.scheduleInactiveScenePrewarm,
     warn: input.warn,
     worldmapScene: input.worldmapScene,
   });
@@ -239,25 +253,76 @@ function attachRendererSceneToSurface(scene: SceneInputSurfaceOwner, inputSurfac
 function prewarmRendererBootstrapScenes(input: {
   fastTravelScene?: PrewarmableScene;
   hexceptionScene: PrewarmableScene;
+  initialSceneName: SceneName;
   renderer?: RendererSurfaceLike;
+  scheduleInactiveScenePrewarm?: ScheduleInactiveScenePrewarm;
   warn?: (message: string, error: unknown) => void;
   worldmapScene: PrewarmableScene;
 }): void {
+  const scenePrewarmPlan = resolveScenePrewarmPlan(input);
   void prewarmRendererScene({
     renderer: input.renderer,
-    scene: input.worldmapScene,
+    scene: scenePrewarmPlan.initialScene,
     warn: input.warn,
   });
-  void prewarmRendererScene({
-    renderer: input.renderer,
-    scene: input.hexceptionScene,
-    warn: input.warn,
+
+  if (scenePrewarmPlan.inactiveScenes.length === 0) {
+    return;
+  }
+
+  const scheduleInactiveScenePrewarm = input.scheduleInactiveScenePrewarm ?? scheduleInactiveRendererScenePrewarm;
+  scheduleInactiveScenePrewarm(() => {
+    scenePrewarmPlan.inactiveScenes.forEach((scene) => {
+      void prewarmRendererScene({
+        renderer: input.renderer,
+        scene,
+        warn: input.warn,
+      });
+    });
   });
-  void prewarmRendererScene({
-    renderer: input.renderer,
-    scene: input.fastTravelScene,
-    warn: input.warn,
-  });
+}
+
+function resolveScenePrewarmPlan(input: {
+  fastTravelScene?: PrewarmableScene;
+  hexceptionScene: PrewarmableScene;
+  initialSceneName: SceneName;
+  worldmapScene: PrewarmableScene;
+}): {
+  inactiveScenes: PrewarmableScene[];
+  initialScene: PrewarmableScene;
+} {
+  const prewarmEntries = [
+    { scene: input.worldmapScene, sceneName: SceneName.WorldMap },
+    { scene: input.hexceptionScene, sceneName: SceneName.Hexception },
+    { scene: input.fastTravelScene, sceneName: SceneName.FastTravel },
+  ];
+  const initialEntry = prewarmEntries.find(
+    (entry): entry is { scene: PrewarmableScene; sceneName: SceneName } =>
+      entry.sceneName === input.initialSceneName && Boolean(entry.scene),
+  );
+
+  return {
+    inactiveScenes: prewarmEntries
+      .filter((entry) => entry !== initialEntry)
+      .map((entry) => entry.scene)
+      .filter((scene): scene is PrewarmableScene => Boolean(scene)),
+    initialScene: initialEntry?.scene ?? input.worldmapScene,
+  };
+}
+
+function scheduleInactiveRendererScenePrewarm(task: () => void): void {
+  const requestIdleCallback = (
+    globalThis as typeof globalThis & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
+    }
+  ).requestIdleCallback;
+
+  if (typeof requestIdleCallback === "function") {
+    requestIdleCallback(task, { timeout: INACTIVE_SCENE_PREWARM_IDLE_TIMEOUT_MS });
+    return;
+  }
+
+  globalThis.setTimeout(task, INACTIVE_SCENE_PREWARM_FALLBACK_DELAY_MS);
 }
 
 async function prewarmRendererScene(input: {

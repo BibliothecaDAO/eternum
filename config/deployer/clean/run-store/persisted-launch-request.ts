@@ -73,6 +73,7 @@ function resolveEffectiveLaunchDurationSeconds(
     | "twoPlayerMode"
     | "durationSeconds"
     | "mapConfigOverrides"
+    | "biomeClimateOverrides"
     | "blitzRegistrationOverrides"
   >,
 ): number | undefined {
@@ -86,6 +87,7 @@ function resolveEffectiveLaunchDurationSeconds(
     twoPlayerMode: request.twoPlayerMode,
     durationSeconds: request.durationSeconds,
     mapConfigOverrides: request.mapConfigOverrides,
+    biomeClimateOverrides: request.biomeClimateOverrides,
     blitzRegistrationOverrides: request.blitzRegistrationOverrides,
   });
 
@@ -109,6 +111,7 @@ function buildPersistedSharedLaunchRequest(
       twoPlayerMode: request.twoPlayerMode,
       durationSeconds: request.durationSeconds,
       mapConfigOverrides: request.mapConfigOverrides,
+      biomeClimateOverrides: request.biomeClimateOverrides,
       blitzRegistrationOverrides: request.blitzRegistrationOverrides,
     });
 
@@ -166,6 +169,7 @@ export function buildPersistedSeriesLaunchRequest(
       gameName: game.gameName,
       startTime: game.startTime,
       seriesGameNumber: game.seriesGameNumber,
+      biomeClimateOverrides: game.biomeClimateOverrides,
     })),
     targetGameNames: undefined,
     resumeSummary: undefined,
@@ -190,6 +194,8 @@ export function buildPersistedRotationLaunchRequest(
     gameIntervalMinutes: summary.gameIntervalMinutes,
     maxGames: summary.maxGames,
     advanceWindowGames: summary.advanceWindowGames,
+    weeklyCadence: summary.weeklyCadence,
+    biomeClimateOverridesByGameNumber: request.biomeClimateOverridesByGameNumber,
     targetGameNames: undefined,
     evaluationIntervalMinutes: summary.evaluationIntervalMinutes,
     autoRetryEnabled: summary.autoRetryEnabled,

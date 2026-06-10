@@ -3,10 +3,9 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
-import { SortButton, SortInterface } from "@/ui/design-system/atoms/sort-button";
-import { SortPanel } from "@/ui/design-system/molecules/sort-panel";
 import { type LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
-import { currencyIntlFormat, sortItems } from "@/ui/utils/utils";
+import { currencyIntlFormat } from "@/ui/utils/utils";
+import { RegisterPointsButton } from "../components/register-points-button";
 import { ContractAddress, GuildInfo, PlayerInfo } from "@bibliothecadao/types";
 import clsx from "clsx";
 import gsap from "gsap";
@@ -73,10 +72,6 @@ const formatActivityValue = (count?: number | null, points?: number | null): str
 };
 
 export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading }: PlayerListProps) => {
-  const [activeSort, setActiveSort] = useState<SortInterface>({
-    sortKey: "leaderboardRank",
-    sort: "asc",
-  });
   const [selectedPlayerAddress, setSelectedPlayerAddress] = useState<string | null>(null);
   const mode = useGameModeConfig();
   const showTribeDetails = mode.ui.showGuildsTab;
@@ -101,12 +96,6 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
         : "grid-cols-[68px_minmax(0,_1.7fr)_minmax(0,_0.9fr)_minmax(0,_0.9fr)_minmax(0,_0.95fr)_minmax(0,_0.95fr)_minmax(0,_1.05fr)_minmax(0,_1.1fr)]",
     [showTribeDetails],
   );
-
-  useEffect(() => {
-    if (!showTribeDetails && activeSort.sortKey === "guild.name") {
-      setActiveSort({ sortKey: "leaderboardRank", sort: "asc" });
-    }
-  }, [showTribeDetails, activeSort.sortKey]);
 
   useEffect(() => {
     if (!selectedPlayerAddress) {
@@ -162,15 +151,17 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
     );
   }, [playersWithStats]);
 
+  // The leaderboard is always ranked — no column sorting. Sort ascending by the
+  // resolved leaderboard rank so #1 is on top.
   const sortedPlayers = useMemo(() => {
-    const playersForSorting = filteredPlayers.map((player) => ({
-      ...player,
-      rank: player.leaderboardRank,
-      points: player.leaderboardPoints,
-    }));
-
-    return sortItems(playersForSorting, activeSort, { sortKey: "leaderboardRank", sort: "asc" });
-  }, [filteredPlayers, activeSort]);
+    return filteredPlayers
+      .map((player) => ({
+        ...player,
+        rank: player.leaderboardRank,
+        points: player.leaderboardPoints,
+      }))
+      .toSorted((a, b) => a.leaderboardRank - b.leaderboardRank);
+  }, [filteredPlayers]);
 
   // Leaderboard effects for animations
   const { effects, rowRefs } = useLeaderboardEffects(filteredPlayers, ENABLE_LEADERBOARD_EFFECTS_MOCKUP);
@@ -227,12 +218,7 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
 
   return (
     <div className="flex flex-col h-full">
-      <PlayerListHeader
-        activeSort={activeSort}
-        setActiveSort={setActiveSort}
-        showTribeDetails={showTribeDetails}
-        gridTemplateClass={leaderboardGridTemplate}
-      />
+      <PlayerListHeader showTribeDetails={showTribeDetails} gridTemplateClass={leaderboardGridTemplate} />
 
       <div className="mt-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent flex-1">
         {sortedPlayers.length > 0 ? (
@@ -273,67 +259,55 @@ export const PlayerList = ({ players, viewPlayerInfo, whitelistPlayer, isLoading
 };
 
 const PlayerListHeader = ({
-  activeSort,
-  setActiveSort,
   showTribeDetails,
   gridTemplateClass,
 }: {
-  activeSort: SortInterface;
-  setActiveSort: (sort: SortInterface) => void;
   showTribeDetails: boolean;
   gridTemplateClass: string;
 }) => {
-  const sortingParams = useMemo(() => {
-    const params: Array<{ label: string; sortKey: string; align: string }> = [
-      { label: "Rank", sortKey: "leaderboardRank", align: "justify-center text-center" },
-      { label: "Name", sortKey: "name", align: "justify-start text-left" },
+  const columns = useMemo(() => {
+    const params: Array<{ label: string; align: string }> = [
+      { label: "Rank", align: "justify-center text-center" },
+      { label: "Name", align: "justify-start text-left" },
     ];
 
     if (showTribeDetails) {
-      params.push({ label: "Tribe", sortKey: "guild.name", align: "justify-start text-left" });
+      params.push({ label: "Tribe", align: "justify-start text-left" });
     }
 
     params.push(
-      { label: "Tiles", sortKey: "tilesExplored", align: "justify-center text-center" },
-      { label: "Crates", sortKey: "cratesOpened", align: "justify-center text-center" },
-      { label: "Rifts/Camps", sortKey: "riftsTaken", align: "justify-center text-center" },
-      { label: "HS Taken", sortKey: "hyperstructuresTaken", align: "justify-center text-center" },
-      { label: "HS Held", sortKey: "hyperstructuresHeldPoints", align: "justify-center text-center" },
-      { label: "Points", sortKey: "leaderboardPoints", align: "justify-center text-center" },
+      { label: "Tiles", align: "justify-center text-center" },
+      { label: "Crates", align: "justify-center text-center" },
+      { label: "Rifts/Camps", align: "justify-center text-center" },
+      { label: "HS Taken", align: "justify-center text-center" },
+      { label: "HS Held", align: "justify-center text-center" },
+      { label: "Points", align: "justify-center text-center" },
     );
 
     return params;
   }, [showTribeDetails]);
 
   return (
-    <SortPanel
+    // Solid opaque background + z-20 so the sticky header never shows the rows
+    // bleeding through as it scrolls under it.
+    <div
       className={clsx(
-        "grid gap-x-4 items-center pb-3 panel-wood-bottom sticky top-0 z-10 bg-brown/80 backdrop-blur-sm px-4",
+        "grid gap-x-4 items-center py-3 px-4 border-b border-gold/25 sticky top-0 z-20 bg-[#1a1410]",
         gridTemplateClass,
       )}
     >
-      {sortingParams.map(({ label, sortKey, align }) => (
-        <SortButton
-          key={sortKey}
-          label={label}
-          sortKey={sortKey}
-          activeSort={activeSort}
+      {columns.map(({ label, align }) => (
+        <div
+          key={label}
           className={clsx(
-            "w-full gap-2 text-[0.7rem] font-semibold uppercase tracking-[0.16em] transition-colors hover:text-amber-200",
+            "flex w-full items-center text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-gold/70",
             align,
           )}
-          classNameCaret="w-2.5 h-2.5"
-          activeClassName="text-amber-200"
-          inactiveClassName="text-gold/70"
-          onChange={(_sortKey, _sort) => {
-            setActiveSort({
-              sortKey: _sortKey,
-              sort: _sort,
-            });
-          }}
-        />
+        >
+          {label}
+        </div>
       ))}
-    </SortPanel>
+    </div>
   );
 };
 
@@ -513,6 +487,13 @@ const PlayerRow = ({
               onMouseLeave={() => setTooltip(null)}
             >
               ⚡
+            </span>
+          )}
+          {player.isUser && (
+            // Register unregistered shareholder points straight from the row.
+            // Don't let the click bubble up to the row-select handler.
+            <span onClick={(event) => event.stopPropagation()}>
+              <RegisterPointsButton variant="inline" />
             </span>
           )}
         </div>

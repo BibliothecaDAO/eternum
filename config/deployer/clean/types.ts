@@ -1,5 +1,6 @@
 import type {
   Config as EternumConfig,
+  FactoryBiomeClimateOverrides,
   FactoryBlitzRegistrationOverrides,
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
@@ -11,10 +12,12 @@ export type DeploymentEnvironmentId = "slot.blitz" | "slot.eternum" | "mainnet.b
 export type ExecutionMode = "batched" | "sequential";
 export type LaunchTargetKind = "game" | "series" | "rotation";
 export type LaunchStepStatus = "pending" | "running" | "succeeded" | "failed";
+export type LaunchRotationWeekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 export type LaunchGameStepId =
   | "create-world"
   | "wait-for-factory-index"
   | "configure-world"
+  | "reserve-blitz-hyperstructures"
   | "grant-lootchest-role"
   | "grant-village-pass-role"
   | "create-banks"
@@ -25,6 +28,7 @@ export type SeriesLaunchStepId =
   | "create-worlds"
   | "wait-for-factory-indexes"
   | "configure-worlds"
+  | "reserve-blitz-hyperstructures"
   | "grant-lootchest-roles"
   | "grant-village-pass-roles"
   | "create-banks"
@@ -60,6 +64,7 @@ export interface ConfigLogger {
 
 export interface CleanConfigArtifacts {
   worldConfigTxHash?: string;
+  entryTokenAddress?: string;
 }
 
 export interface CleanConfigContext<Provider = unknown> {
@@ -169,6 +174,7 @@ export interface LaunchGameRequest {
   twoPlayerMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   cartridgeApiBase?: string;
   toriiNamespaces?: string;
@@ -198,6 +204,7 @@ export interface LaunchSeriesGameRequest {
   gameName: string;
   startTime: string | number;
   seriesGameNumber?: number;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
 }
 
 export interface LaunchSeriesRequest {
@@ -215,6 +222,7 @@ export interface LaunchSeriesRequest {
   twoPlayerMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   cartridgeApiBase?: string;
   toriiNamespaces?: string;
@@ -250,6 +258,7 @@ export interface LaunchRotationRequest {
   advanceWindowGames?: number;
   targetGameNames?: string[];
   evaluationIntervalMinutes: number;
+  weeklyCadence?: LaunchRotationWeeklyCadenceEntry[];
   rpcUrl?: string;
   factoryAddress?: string;
   accountAddress?: string;
@@ -259,6 +268,8 @@ export interface LaunchRotationRequest {
   twoPlayerMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  biomeClimateOverridesByGameNumber?: Record<number, FactoryBiomeClimateOverrides>;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   cartridgeApiBase?: string;
   toriiNamespaces?: string;
@@ -284,6 +295,14 @@ export interface LaunchRotationStepRequest extends LaunchRotationRequest {
   stepId: RotationLaunchStepId;
 }
 
+export interface LaunchRotationWeeklyCadenceEntry {
+  gameNamePrefix: string;
+  weekday: LaunchRotationWeekday;
+  utcTime: string;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
+}
+
 export interface LaunchGameSummary {
   environment: DeploymentEnvironmentId;
   chain: DeploymentChain;
@@ -295,6 +314,8 @@ export interface LaunchGameSummary {
   rpcUrl: string;
   factoryAddress: string;
   worldAddress?: string;
+  entryTokenAddress?: string;
+  reserveHyperstructuresTxHashes?: string[];
   createGameTxHash?: string;
   configureTxHash?: string;
   worldConfigTxHash?: string;
@@ -334,6 +355,8 @@ export interface PrizeFundingState {
 
 export interface SeriesLaunchGameArtifacts {
   worldAddress?: string;
+  entryTokenAddress?: string;
+  reserveHyperstructuresTxHashes?: string[];
   createGameTxHash?: string;
   configureTxHash?: string;
   worldConfigTxHash?: string;
@@ -371,6 +394,8 @@ export interface SeriesLaunchGameSummary {
   startTime: number;
   startTimeIso: string;
   durationSeconds?: number;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   seriesGameNumber: number;
   currentStepId: SeriesLaunchStepId | null;
   latestEvent: string;
@@ -409,6 +434,7 @@ export interface LaunchRotationSummary {
   maxGames: number;
   advanceWindowGames: number;
   evaluationIntervalMinutes: number;
+  weeklyCadence?: LaunchRotationWeeklyCadenceEntry[];
   rpcUrl: string;
   factoryAddress: string;
   autoRetryEnabled: boolean;

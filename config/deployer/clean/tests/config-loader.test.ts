@@ -7,6 +7,19 @@ type ConfigWithFactoryAddress = {
 };
 
 describe("applyDeploymentConfigOverrides", () => {
+  test("loads generated configs with neutral biome climate defaults", () => {
+    const config = loadEnvironmentConfiguration("slot.blitz");
+
+    expect(config.biomeClimate).toEqual({
+      elevationScaleBps: 10_000,
+      moistureScaleBps: 10_000,
+      elevationBiasBps: 10_000,
+      moistureBiasBps: 10_000,
+      elevationSeed: 0,
+      moistureSeed: 0,
+    });
+  });
+
   test("applies launch-time boolean overrides", () => {
     const baseConfig = loadEnvironmentConfiguration("slot.blitz");
     const result = applyDeploymentConfigOverrides(baseConfig, {
@@ -109,6 +122,55 @@ describe("applyDeploymentConfigOverrides", () => {
     expect(result.blitz.registration.registration_count_max).toBe(12);
     expect(result.blitz.registration.fee_token).toBe("0x1234");
     expect(result.blitz.registration.fee_amount).toBe(40000n);
+  });
+
+  test("applies validated biome climate overrides", () => {
+    const baseConfig = loadEnvironmentConfiguration("slot.blitz");
+    const result = applyDeploymentConfigOverrides(baseConfig, {
+      startMainAt: 1_763_112_600,
+      factoryAddress: "0xabc",
+      biomeClimateOverrides: {
+        elevationScaleBps: 12_000,
+        moistureScaleBps: 9_000,
+        elevationBiasBps: 11_000,
+        moistureBiasBps: 8_000,
+        elevationSeed: 137,
+        moistureSeed: 991,
+      },
+    } as Parameters<typeof applyDeploymentConfigOverrides>[1]);
+
+    expect(result.biomeClimate).toEqual({
+      elevationScaleBps: 12_000,
+      moistureScaleBps: 9_000,
+      elevationBiasBps: 11_000,
+      moistureBiasBps: 8_000,
+      elevationSeed: 137,
+      moistureSeed: 991,
+    });
+  });
+
+  test("rejects invalid biome climate overrides", () => {
+    const baseConfig = loadEnvironmentConfiguration("slot.blitz");
+
+    expect(() =>
+      applyDeploymentConfigOverrides(baseConfig, {
+        startMainAt: 1_763_112_600,
+        factoryAddress: "0xabc",
+        biomeClimateOverrides: {
+          elevationScaleBps: 65_536,
+        },
+      } as Parameters<typeof applyDeploymentConfigOverrides>[1]),
+    ).toThrow("biomeClimateOverrides.elevationScaleBps must be an integer between 0 and 65535");
+
+    expect(() =>
+      applyDeploymentConfigOverrides(baseConfig, {
+        startMainAt: 1_763_112_600,
+        factoryAddress: "0xabc",
+        biomeClimateOverrides: {
+          moistureSeed: 4_294_967_296,
+        },
+      } as Parameters<typeof applyDeploymentConfigOverrides>[1]),
+    ).toThrow("biomeClimateOverrides.moistureSeed must be an integer between 0 and 4294967295");
   });
 
   test("lets explicit launch-time overrides win after the inferred blitz profile is applied", () => {

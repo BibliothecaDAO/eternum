@@ -1,23 +1,2 @@
-// Social Feature - Realtime chat, guilds, player interactions
-// This feature handles all social systems and multiplayer interactions
-
-// Realtime Chat System
 export * from "./realtime-chat";
-
-// Guild Management - Exports used externally
-export { CreateGuildButton } from "./guilds/create-guild-button";
-export { GuildListHeader, GuildRow } from "./guilds/guild-list";
-export { GuildMemberList } from "./guilds/guild-member-list";
-export { GuildMembers } from "./guilds/guild-members";
-export { Guilds } from "./guilds/guilds";
-
-// Player Interactions - Exports used externally
-export { PlayerList, type PlayerCustom } from "./player/player-list";
-export { PlayersPanel } from "./player/players-panel";
-export { FaithLeaderboardPanel } from "./faith";
-
-// Social Components - Exports used externally
-export { EndSeasonButton } from "./components/end-season-button";
-export { RegisterPointsButton } from "./components/register-points-button";
 export { Social } from "./components/social";
-export { useSocialStore } from "./components/use-social-store";

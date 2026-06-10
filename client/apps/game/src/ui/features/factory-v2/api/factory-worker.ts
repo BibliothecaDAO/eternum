@@ -1,5 +1,9 @@
 import { env } from "../../../../../env";
-import type { FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
+import type {
+  FactoryBiomeClimateOverrides,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
 
 export type FactoryWorkerEnvironmentId = "slot.eternum" | "mainnet.eternum" | "slot.blitz" | "mainnet.blitz";
 type FactoryWorkerRunKind = "game" | "series" | "rotation";
@@ -268,6 +272,11 @@ export interface FactoryWorkerRotationRunRecord extends FactoryWorkerBaseRunReco
     maxGames: number;
     advanceWindowGames: number;
     evaluationIntervalMinutes: number;
+    weeklyCadence?: Array<{
+      gameNamePrefix: string;
+      weekday: string;
+      utcTime: string;
+    }>;
     rpcUrl: string;
     factoryAddress: string;
     autoRetryEnabled: boolean;
@@ -299,27 +308,32 @@ export interface CreateFactoryRunRequest {
   environment: FactoryWorkerEnvironmentId;
   gameName: string;
   gameStartTime: string;
+  workflowRef?: string;
   devModeOn?: boolean;
   twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
 }
 
 export interface CreateFactorySeriesRunRequest {
   environment: FactoryWorkerEnvironmentId;
   seriesName: string;
+  workflowRef?: string;
   games: Array<{
     gameName: string;
     startTime: string;
     seriesGameNumber?: number;
+    biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   }>;
   devModeOn?: boolean;
   twoPlayerMode?: boolean;
   singleRealmMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   autoRetryIntervalMinutes?: number;
 }
@@ -327,6 +341,7 @@ export interface CreateFactorySeriesRunRequest {
 export interface CreateFactoryRotationRunRequest {
   environment: FactoryWorkerEnvironmentId;
   rotationName: string;
+  workflowRef?: string;
   firstGameStartTime: string;
   gameIntervalMinutes: number;
   maxGames: number;
@@ -337,6 +352,8 @@ export interface CreateFactoryRotationRunRequest {
   singleRealmMode?: boolean;
   durationSeconds?: number;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  biomeClimateOverridesByGameNumber?: Record<number, FactoryBiomeClimateOverrides>;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   autoRetryIntervalMinutes?: number;
 }

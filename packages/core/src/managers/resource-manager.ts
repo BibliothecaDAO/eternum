@@ -13,6 +13,11 @@ export interface ResourceProductionData {
   timeRemainingSeconds: number;
 }
 
+export interface OptimisticResourceChange {
+  resourceId: ResourcesIds;
+  amount: number;
+}
+
 export class ResourceManager {
   entityId: ID;
 
@@ -89,10 +94,11 @@ export class ResourceManager {
     const overrideId = uuid();
 
     const entity = getEntityIdFromKeys([BigInt(this.entityId)]);
+    const currentResource = getComponentValue(this.components.Resource, entity);
     const currentBalance = this.balance(resourceId);
     const weight = configManager.getResourceWeightKg(resourceId) || 0;
     // current weight in nanograms per unit with precision
-    const currentWeight = getComponentValue(this.components.Resource, entity)?.weight || { capacity: 0n, weight: 0n };
+    const currentWeight = currentResource?.weight || { capacity: 0n, weight: 0n };
     const amountWithPrecision = BigInt(Math.floor(multiplyByPrecision(actualResourceChange)));
     const weightChange = BigInt(kgToGram(weight)) * amountWithPrecision;
 
@@ -102,6 +108,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -114,6 +121,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -126,6 +134,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -138,6 +147,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -150,6 +160,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -162,6 +173,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -174,6 +186,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -186,6 +199,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -198,6 +212,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -210,6 +225,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -222,6 +238,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -234,6 +251,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -246,6 +264,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -258,6 +277,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -270,6 +290,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -282,6 +303,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -294,6 +316,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -306,6 +329,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -318,6 +342,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -330,6 +355,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -342,6 +368,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -354,6 +381,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -366,6 +394,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -378,6 +407,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -390,6 +420,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -402,6 +433,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -414,6 +446,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -426,6 +459,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -438,6 +472,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -450,6 +485,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -462,6 +498,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -474,6 +511,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -486,6 +524,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -498,6 +537,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -510,6 +550,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -522,6 +563,7 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
@@ -534,11 +576,25 @@ export class ResourceManager {
           this.components.Resource.addOverride(overrideId, {
             entity,
             value: {
+              ...currentResource,
               weight: {
                 ...currentWeight,
                 weight: currentWeight.weight + weightChange,
               },
               LORDS_BALANCE: currentBalance + amountWithPrecision,
+            },
+          });
+          break;
+        case ResourcesIds.Research:
+          this.components.Resource.addOverride(overrideId, {
+            entity,
+            value: {
+              ...currentResource,
+              weight: {
+                ...currentWeight,
+                weight: currentWeight.weight + weightChange,
+              },
+              RESEARCH_BALANCE: currentBalance + amountWithPrecision,
             },
           });
           break;
@@ -552,6 +608,19 @@ export class ResourceManager {
 
     return () => {
       this.components.Resource.removeOverride(overrideId);
+    };
+  };
+
+  public optimisticResourceUpdates = (resourceChanges: OptimisticResourceChange[]) => {
+    const removeResourceOverrides = resourceChanges
+      .filter((resourceChange) => Number.isFinite(resourceChange.amount) && resourceChange.amount !== 0)
+      .map((resourceChange) => this.optimisticResourceUpdate(resourceChange.resourceId, resourceChange.amount));
+
+    let cleanedUp = false;
+    return () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
+      removeResourceOverrides.toReversed().forEach((removeOverride) => removeOverride());
     };
   };
 

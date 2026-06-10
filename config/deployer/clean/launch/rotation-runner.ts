@@ -5,6 +5,7 @@ import {
   persistRotationLaunchSummary,
   reconcileRotationLaunchSummary,
   resolveDefaultRotationRetryIntervalMinutes,
+  resolveRotationRequestWithPersistedSchedule,
   validateRotationLaunchRequest,
 } from "./rotation-summary";
 import type {
@@ -47,27 +48,29 @@ function buildDryRunRotationSummary(
 }
 
 export async function runLaunchRotationStep(request: LaunchRotationStepRequest): Promise<LaunchRotationSummary> {
-  validateRotationLaunchRequest(request);
-  const summary = await resolvePlannedRotationSummary(request);
+  const scheduledRequest = resolveRotationRequestWithPersistedSchedule(request);
+  validateRotationLaunchRequest(scheduledRequest);
+  const summary = await resolvePlannedRotationSummary(scheduledRequest);
 
-  if (request.dryRun) {
-    return buildDryRunRotationSummary(request, summary);
+  if (scheduledRequest.dryRun) {
+    return buildDryRunRotationSummary(scheduledRequest, summary);
   }
 
-  return executeRotationStep(request, summary);
+  return executeRotationStep(scheduledRequest, summary);
 }
 
 export async function launchRotation(request: LaunchRotationRequest): Promise<LaunchRotationSummary> {
-  validateRotationLaunchRequest(request);
-  let summary = await resolvePlannedRotationSummary(request);
+  const scheduledRequest = resolveRotationRequestWithPersistedSchedule(request);
+  validateRotationLaunchRequest(scheduledRequest);
+  let summary = await resolvePlannedRotationSummary(scheduledRequest);
 
-  if (request.dryRun) {
-    return buildDryRunRotationSummary(request, summary);
+  if (scheduledRequest.dryRun) {
+    return buildDryRunRotationSummary(scheduledRequest, summary);
   }
 
-  for (const stepId of resolveSeriesLaunchStepIds(request.environmentId)) {
+  for (const stepId of resolveSeriesLaunchStepIds(scheduledRequest.environmentId)) {
     summary = await runLaunchRotationStep({
-      ...request,
+      ...scheduledRequest,
       stepId: stepId as RotationLaunchStepId,
       resumeSummary: summary,
     });

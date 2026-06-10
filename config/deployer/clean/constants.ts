@@ -1,7 +1,8 @@
+import { DEFAULT_FACTORY_CONFIG_VERSION } from "../../shared/factory-defaults";
 import type { DeploymentEnvironment, DeploymentEnvironmentId } from "./types";
 
 export const DEFAULT_NAMESPACE = "s1_eternum";
-export const DEFAULT_VERSION = "180";
+export const DEFAULT_VERSION = DEFAULT_FACTORY_CONFIG_VERSION;
 export const DEFAULT_SLOT_MAX_ACTIONS = 300;
 export const DEFAULT_MAINNET_MAX_ACTIONS = 50;
 export const DEFAULT_MAINNET_CREATE_GAME_SUBMISSION_COUNT = 3;
@@ -18,7 +19,7 @@ export const DEFAULT_TORII_WORKFLOW_FILE = "factory-torii-deployer.yml";
 export const DEFAULT_INDEXER_MAINTENANCE_WORKFLOW_FILE = "factory-indexer-maintenance.yml";
 export const DEFAULT_INDEXER_WORKFLOW_TIMEOUT_MS = 20 * 60 * 1000;
 export const DEFAULT_INDEXER_WORKFLOW_POLL_MS = 5_000;
-export const DEFAULT_TORII_VERSION = "v1.8.15";
+export const DEFAULT_TORII_VERSION = "v1.8.16";
 export const DEFAULT_TORII_SLOT_TEAM = "realms-eternum";
 export const DEFAULT_MANAGED_INDEXER_PROVIDER = "slot";
 export const DEFAULT_RAILWAY_TORII_VOLUME_MOUNT_PATH = "/data";

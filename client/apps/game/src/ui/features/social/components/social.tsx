@@ -8,9 +8,12 @@ import { Tabs } from "@/ui/design-system/atoms/tab";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { PrizePanel } from "@/ui/features/prize";
 import { BlitzMMRTable } from "@/ui/features/prize/components/blitz-mmr-table";
-import { HintSection } from "@/ui/features/progression/hints/hint-modal";
-import { FaithLeaderboardPanel, GuildMembers, Guilds, PlayersPanel } from "@/ui/features/social";
-import { ExpandableOSWindow, leaderboard } from "@/ui/features/world";
+import { FaithLeaderboardPanel } from "../faith";
+import { GuildMembers } from "../guilds/guild-members";
+import { Guilds } from "../guilds/guilds";
+import { PlayersPanel } from "../player/players-panel";
+import { leaderboard } from "@/ui/features/world";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { getRealmCountPerHyperstructure } from "@/ui/utils/utils";
 import { getPlayerInfo, LeaderboardManager } from "@bibliothecadao/eternum";
 import { useDojo, usePlayers } from "@bibliothecadao/react";
@@ -259,26 +262,13 @@ export const Social = () => {
           </div>
         ),
         component: (
-          <div className="p-4">
-            <div className="panel-wood bg-dark/80 rounded-2xl border border-gold/20 p-5 shadow-[0_25px_45px_-25px_rgba(0,0,0,0.65)]">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2 text-gold">
-                  <span className="grid h-8 w-8 place-items-center rounded-full bg-gold/15">
-                    <TrendingUp size={16} />
-                  </span>
-                  <div>
-                    <span className="text-lg font-semibold tracking-wide uppercase">Blitz MMR</span>
-                    <div className="text-xs text-gold/70">Player skill ratings</div>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4">
-                  <BlitzMMRTable />
-                </div>
-                <div className="text-xs text-gold/70 mt-2">
-                  Submit rankings from the Blitz Prize tab to trigger MMR updates, and retry there if the first attempt
-                  fails.
-                </div>
-              </div>
+          <div className="flex flex-col gap-3 p-5">
+            <div className="rounded-xl border border-gold/15 bg-black/30 p-4">
+              <BlitzMMRTable />
+            </div>
+            <div className="text-xs text-gold/70">
+              Submit rankings from the Blitz Prize tab to trigger MMR updates, and retry there if the first attempt
+              fails.
             </div>
           </div>
         ),
@@ -310,20 +300,20 @@ export const Social = () => {
     }
   }, [activeTabIndex, selectedTab, setSelectedTab, tabsLength]);
 
+  if (!isOpen) return null;
+
   return (
-    <ExpandableOSWindow
-      width="1100px"
-      height="760px"
-      widthExpanded="400px"
-      onClick={() => togglePopup(leaderboard)}
-      show={isOpen}
+    <CenteredModalShell
       title={leaderboard}
-      hintSection={showGuildsTab ? HintSection.Tribes : HintSection.Points}
-      childrenExpanded={tabs[activeTabIndex]?.expandedContent ?? null}
-      isExpanded={isExpanded}
+      onClose={() => togglePopup(leaderboard)}
+      persistKey={leaderboard}
+      panelClassName={`h-[760px] max-h-[calc(100vh-64px)] max-w-[calc(100vw-48px)] ${
+        isExpanded ? "w-[1500px]" : "w-[1100px]"
+      }`}
+      bodyClassName="flex overflow-hidden"
     >
-      {isOpen ? (
-        isSyncing ? (
+      <div className="flex-1 min-w-0 overflow-hidden">
+        {isSyncing ? (
           <LoadingAnimation />
         ) : (
           <Tabs
@@ -354,8 +344,13 @@ export const Social = () => {
               </Tabs.Panels>
             </div>
           </Tabs>
-        )
-      ) : null}
-    </ExpandableOSWindow>
+        )}
+      </div>
+      {isExpanded && (
+        <div className="w-[400px] shrink-0 overflow-auto border-l border-gold/15">
+          {tabs[activeTabIndex]?.expandedContent ?? null}
+        </div>
+      )}
+    </CenteredModalShell>
   );
 };

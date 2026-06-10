@@ -1,5 +1,5 @@
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
-import { GRAPHICS_SETTING, GraphicsSettings } from "@/ui/config";
+import { GRAPHICS_SETTING, isLowOrBelow } from "@/ui/config";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import {
   AnimationAction,
@@ -19,6 +19,7 @@ import {
 import { AnimationVisibilityContext } from "../types/animation";
 import { getContactShadowResources } from "../utils/contact-shadow";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
+import { resizeInstancedMorphTexture } from "./morph-texture-resize";
 
 const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
@@ -37,9 +38,56 @@ const instanceMatrix = new Matrix4();
 const rotationMatrix = new Matrix4();
 const zeroMatrix = new Matrix4().makeScale(0, 0, 0);
 const DEFAULT_INITIAL_CAPACITY = 32;
+const MORPH_TEXTURE_RENDER_COUNT_FLOOR = 2;
+
+function hasInstancedMorphTexture(mesh: InstancedMesh): boolean {
+  return mesh.morphTexture !== null && mesh.morphTexture !== undefined;
+}
+
+function resolveRenderedInstanceCount(mesh: InstancedMesh, logicalCount: number): number {
+  return hasInstancedMorphTexture(mesh) ? Math.max(logicalCount, MORPH_TEXTURE_RENDER_COUNT_FLOOR) : logicalCount;
+}
+
+function hideUnusedRenderedInstances(mesh: InstancedMesh, logicalCount: number, renderedCount: number): void {
+  for (let index = logicalCount; index < renderedCount; index++) {
+    mesh.setMatrixAt(index, zeroMatrix);
+  }
+}
+
+function applyRenderedInstanceCount(mesh: InstancedMesh, logicalCount: number): void {
+  const renderedCount = resolveRenderedInstanceCount(mesh, logicalCount);
+  hideUnusedRenderedInstances(mesh, logicalCount, renderedCount);
+  mesh.count = renderedCount;
+}
+
+function shouldApplyStructureAlphaCutoutFallback(material: MeshStandardMaterial): boolean {
+  return !material.depthWrite && !material.transparent;
+}
+
+function applyStructureMaterialOverrides(material: MeshStandardMaterial, modelName: string): void {
+  if (modelName.includes("Quest") || modelName.includes("Chest")) {
+    if (shouldApplyStructureAlphaCutoutFallback(material)) {
+      material.depthWrite = true;
+      material.alphaTest = 0.075;
+    }
+    if (material.emissiveIntensity > 1) {
+      material.emissiveIntensity = 1.5;
+    }
+  }
+
+  if (modelName.includes("FragmentMine") && material.emissiveIntensity > 1) {
+    material.emissiveIntensity = 15;
+  }
+}
 
 interface AnimatedInstancedMesh extends InstancedMesh {
   animated: boolean;
+}
+
+function createAnimatedInstancedMesh(geometry: Mesh["geometry"], material: MeshStandardMaterial, capacity: number) {
+  return Object.assign(new InstancedMesh(geometry, material, capacity), {
+    animated: false,
+  }) as AnimatedInstancedMesh;
 }
 
 // Number of time offset buckets for batched animation updates
@@ -85,7 +133,7 @@ export default class InstancedModel {
     this.name = name;
     this.group = new Group();
     this.count = 0;
-    this.capacity = Math.max(initialCapacity, 1);
+    this.capacity = Math.max(initialCapacity, MORPH_TEXTURE_RENDER_COUNT_FLOOR);
 
     this.timeOffsets = new Float32Array(this.capacity);
     this.animationBuckets = new Uint8Array(this.capacity);
@@ -100,26 +148,12 @@ export default class InstancedModel {
         if (child.scale.x !== 1) {
           return;
         }
-        let material = child.material;
-        if (name.includes("Quest") || name.includes("Chest")) {
-          if (!material.depthWrite) {
-            material.depthWrite = true;
-            material.alphaTest = 0.075;
-          }
-          if (material.emissiveIntensity > 1) {
-            material.emissiveIntensity = 1.5;
-          }
-        }
-        //name.includes("FragmentMine")
-        if (name.includes("FragmentMine")) {
-          if (material.emissiveIntensity > 1) {
-            material.emissiveIntensity = 15;
-          }
-        }
+        let material = child.material as MeshStandardMaterial;
+        applyStructureMaterialOverrides(material, name);
         if (name === StructureType[StructureType.FragmentMine] && child.material.name.includes("crystal")) {
           material = new MeshStandardMaterial(MinesMaterialsParams[ResourcesIds.AncientFragment]);
         }
-        const tmp = new InstancedMesh(child.geometry, material, this.capacity) as AnimatedInstancedMesh;
+        const tmp = createAnimatedInstancedMesh(child.geometry, material, this.capacity);
         tmp.renderOrder = 10;
         const biomeMesh = child;
         if (gltf.animations.length > 0) {
@@ -157,7 +191,7 @@ export default class InstancedModel {
           tmp.raycast = () => {};
         }
 
-        tmp.count = 0;
+        applyRenderedInstanceCount(tmp, 0);
         this.group.add(tmp);
         this.instancedMeshes.push(tmp);
         this.biomeMeshes.push(biomeMesh);
@@ -219,7 +253,7 @@ export default class InstancedModel {
 
   getMatricesAndCount() {
     const mesh = this.group.children[0] as InstancedMesh;
-    const count = mesh.count;
+    const count = this.count;
     const pool = InstancedMatrixAttributePool.getInstance();
     const snapshot = pool.acquire(count);
     const requiredFloats = count * snapshot.itemSize;
@@ -242,7 +276,7 @@ export default class InstancedModel {
       if (floatsToCopy > 0) {
         targetArray.set(sourceArray.subarray(0, floatsToCopy));
       }
-      mesh.count = finalCount;
+      applyRenderedInstanceCount(mesh, finalCount);
       mesh.instanceMatrix.needsUpdate = true;
       resolvedCount = Math.min(resolvedCount, finalCount);
     });
@@ -272,14 +306,19 @@ export default class InstancedModel {
 
   setColorAt(index: number, color: Color) {
     this.ensureCapacity(index + 1);
-    this.instancedMeshes.forEach((mesh) => mesh.setColorAt(index, color));
+    this.instancedMeshes.forEach((mesh) => {
+      mesh.setColorAt(index, color);
+      if (mesh.instanceColor) {
+        mesh.instanceColor.needsUpdate = true;
+      }
+    });
   }
 
   setCount(count: number) {
     this.ensureCapacity(count);
     this.count = count;
     this.instancedMeshes.forEach((mesh) => {
-      mesh.count = count;
+      applyRenderedInstanceCount(mesh, count);
     });
     if (this.contactShadowMesh) {
       this.contactShadowMesh.count = count;
@@ -406,7 +445,7 @@ export default class InstancedModel {
     if (!this.shouldAnimate(visibility)) {
       return;
     }
-    if (GRAPHICS_SETTING === GraphicsSettings.LOW) {
+    if (isLowOrBelow(GRAPHICS_SETTING)) {
       return;
     }
 
@@ -571,6 +610,10 @@ export default class InstancedModel {
 
       mesh.count = Math.min(mesh.count, newCapacity);
 
+      // Phase 2.3: grow the morph texture before writing rows past the initial
+      // capacity, or setMorphAt indexes out of the fixed Float32Array and throws.
+      resizeInstancedMorphTexture(mesh, newCapacity);
+
       for (let i = this.capacity; i < newCapacity; i++) {
         mesh.setMatrixAt(i, zeroMatrix);
         if (mesh.morphTexture) {
@@ -622,6 +665,12 @@ export default class InstancedModel {
   private applyWorldBounds(mesh: InstancedMesh) {
     if (this.worldBounds) {
       mesh.frustumCulled = true;
+      // Three frustum checks InstancedMesh bounds before geometry bounds.
+      mesh.boundingSphere = mesh.boundingSphere ?? new Sphere();
+      mesh.boundingSphere.copy(this.worldBounds.sphere);
+      mesh.boundingBox = mesh.boundingBox ?? new Box3();
+      mesh.boundingBox.copy(this.worldBounds.box);
+
       const geometry = mesh.geometry;
       geometry.boundingSphere = geometry.boundingSphere ?? new Sphere();
       geometry.boundingSphere.copy(this.worldBounds.sphere);
@@ -674,15 +723,24 @@ export default class InstancedModel {
           mesh.material.dispose();
         }
       }
-      if (mesh.morphTexture) {
-        mesh.morphTexture.dispose();
-      }
+      // Phase 2.5: dispose the InstancedMesh itself to free the instanceMatrix/
+      // instanceColor GPU buffers (via the renderer 'dispose' event) and the morph
+      // DataTexture. This subsumes the explicit morphTexture.dispose() and does not
+      // touch geometry/material (disposed above).
+      mesh.dispose();
       // Remove from parent
       if (mesh.parent) {
         mesh.parent.remove(mesh);
       }
     });
     this.instancedMeshes = [];
+
+    // Phase 2.5: free the contact-shadow instance buffers. Its geometry/material are
+    // shared via getContactShadowResources, so dispose only the mesh, not those.
+    if (this.contactShadowMesh) {
+      this.contactShadowMesh.dispose();
+      this.contactShadowMesh = undefined;
+    }
 
     // Clear biome meshes array
     this.biomeMeshes = [];

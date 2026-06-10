@@ -26,23 +26,20 @@ determine rank. The leaderboard is the scoreboard. See `tasks/game.md` for full 
 
 ## Opening Strategy — MANDATORY SPRINT
 
-### Phase 0 — Game Registration (if you have 0 structures)
+### Phase 0 — Blitz Settlement (if you have 0 structures)
 
-If you have 0 structures and 0 armies, you are NOT registered in the game yet. You MUST register before doing anything
-else — no studying handbooks, no listing actions, no writing learnings. Register immediately:
+If you have 0 structures and 0 armies, you are NOT settled into the game yet. You MUST settle before doing anything else
+— no studying handbooks, no listing actions, no writing learnings. Settle immediately:
 
-1. `approve_token` — approve the fee token for the blitz contract (use max u128 amount)
-2. `obtain_entry_token` — mint your entry token (no params needed)
-3. `lock_entry_token` — lock the entry token (token_id from step 2, lock_id is always 69)
-4. `register` — register with params: `name` (your player name), `entry_token_id` (from step 2), `cosmetic_token_ids`
-   (`[]`)
-5. `settle_blitz_realm` — settle your realm(s) (handles VRF + position assignment automatically)
+1. `approve_token` — if the world charges a fee, approve the fee token for the blitz contract (use max u128 amount)
+2. `settle` — settle with params: `name` (your player name as felt252), `entry_token_id` (`1` for the default None
+   path), `cosmetic_token_ids` (`[]`)
 
-After these 5 actions complete, you will have a realm. Then proceed to Phase 1.
+After these 2 actions complete, you will have a realm. Then proceed to Phase 1.
 
 ### First Tick — Study Handbooks
 
-Once registered (you have at least 1 structure), on your first tick read all reference handbooks (`tasks/game.md`,
+Once settled (you have at least 1 structure), on your first tick read all reference handbooks (`tasks/game.md`,
 `tasks/economy.md`, `tasks/exploration.md`, `tasks/combat.md`) to understand the full game rules. Then proceed to the
 build orders below.
 
@@ -195,5 +192,5 @@ Use `list_actions` to see all available actions with their parameters. Key actio
 - **Guild**: `create_guild`, `join_guild`, `leave_guild`, `update_whitelist`, `remove_member`
 - **Hyperstructure**: `contribute_hyperstructure`, `initialize`, `allocate_shares`, `claim_share_points`
 - **Bank**: `buy_resources`, `sell_resources`, `add_liquidity`, `remove_liquidity`
-- **Blitz**: `approve_token`, `obtain_entry_token`, `lock_entry_token`, `register`, `settle_blitz_realm`
+- **Blitz**: `approve_token`, `settle`, `create_hyperstructure`
 - **Relic**: `open_chest`, `apply_relic`

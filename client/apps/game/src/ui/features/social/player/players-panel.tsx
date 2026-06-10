@@ -3,12 +3,10 @@ import Button from "@/ui/design-system/atoms/button";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
 import TextInput from "@/ui/design-system/atoms/text-input";
 import type { LandingLeaderboardEntry } from "@/services/leaderboard/landing-leaderboard-service";
-import {
-  MIN_REFRESH_INTERVAL_MS,
-  useLandingLeaderboardStore,
-} from "@/services/leaderboard/use-landing-leaderboard-store";
+import { useLandingLeaderboardStore } from "@/services/leaderboard/use-landing-leaderboard-store";
 import { VICTORY_POINT_VALUES, formatHyperstructureControlVpRange } from "@/config/victory-points";
-import { EndSeasonButton, PlayerCustom, PlayerList, RegisterPointsButton } from "@/ui/features/social";
+import { EndSeasonButton } from "../components/end-season-button";
+import { PlayerList, type PlayerCustom } from "./player-list";
 import {
   buildFinalizedBlitzStandingLookup,
   buildRegisteredPointsLookup,
@@ -52,10 +50,8 @@ export const PlayersPanel = ({
 
   const leaderboardEntries = useLandingLeaderboardStore((state) => state.entries);
   const fetchLeaderboardEntries = useLandingLeaderboardStore((state) => state.fetchLeaderboard);
-  const lastLeaderboardFetchAt = useLandingLeaderboardStore((state) => state.lastFetchAt);
   const isLeaderboardFetching = useLandingLeaderboardStore((state) => state.isFetching);
 
-  const [refreshCooldownMs, setRefreshCooldownMs] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
@@ -112,33 +108,13 @@ export const PlayersPanel = ({
   }, [inputValue]);
 
   useEffect(() => {
-    const updateCooldown = () => {
-      if (!lastLeaderboardFetchAt) {
-        setRefreshCooldownMs(0);
-        return;
-      }
-
-      const elapsed = Date.now() - lastLeaderboardFetchAt;
-      const remaining = Math.max(0, MIN_REFRESH_INTERVAL_MS - elapsed);
-      setRefreshCooldownMs(remaining);
-    };
-
-    updateCooldown();
-    const interval = window.setInterval(updateCooldown, 250);
-
-    return () => window.clearInterval(interval);
-  }, [lastLeaderboardFetchAt]);
-
-  useEffect(() => {
+    // Fetch once on open for immediate data. The shared 60s polling that keeps
+    // this in sync with the top-bar rank pill is driven by the always-mounted
+    // TopHeader (both read the same store `entries`); the manual refresh button
+    // below still forces an immediate update.
     void fetchLeaderboardEntries({ limit: SOCIAL_LEADERBOARD_LIMIT });
-
-    const interval = window.setInterval(() => {
-      void fetchLeaderboardEntries({ limit: SOCIAL_LEADERBOARD_LIMIT });
-    }, 60_000);
-
-    return () => window.clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Fetch on mount and auto-refresh every 60s
+  }, []);
 
   const playersWithStructures: PlayerCustom[] = useMemo(() => {
     // Sort players by points in descending order
@@ -232,16 +208,14 @@ export const PlayersPanel = ({
   }, [playersWithLeaderboardStats, searchTerm]);
 
   const isRefreshingLeaderboard = isLeaderboardFetching;
-  const isCooldownActive = refreshCooldownMs > 0;
-  const refreshSecondsLeft = Math.ceil(refreshCooldownMs / 1000);
 
   const handleRefreshLeaderboard = useCallback(() => {
-    if (isRefreshingLeaderboard || isCooldownActive) {
+    if (isRefreshingLeaderboard) {
       return;
     }
 
     void fetchLeaderboardEntries({ limit: SOCIAL_LEADERBOARD_LIMIT, force: true });
-  }, [fetchLeaderboardEntries, isRefreshingLeaderboard, isCooldownActive]);
+  }, [fetchLeaderboardEntries, isRefreshingLeaderboard]);
 
   const whitelistPlayer = (address: ContractAddress) => {
     setIsLoading(true);
@@ -271,23 +245,18 @@ export const PlayersPanel = ({
               placeholder="Search players/realms/structures..."
               onChange={(value) => setInputValue(value)}
               onKeyDown={handleKeyDown}
-              className="flex-1 button-wood"
+              className="flex-1 btn-bronze"
             />
             <Button onClick={handleSearch} variant="primary" className="flex items-center gap-1 px-4">
               <Search size={14} />
               <span>Search</span>
             </Button>
           </div>
-          <div className="flex items-center gap-2 text-[0.7rem] uppercase tracking-[0.16em] text-gold/70">
-            {isRefreshingLeaderboard ? (
-              <span aria-live="polite">Refreshing…</span>
-            ) : isCooldownActive ? (
-              <span aria-live="polite">Wait {refreshSecondsLeft}s</span>
-            ) : null}
+          <div className="flex items-center gap-2">
             <RefreshButton
               onClick={handleRefreshLeaderboard}
               isLoading={isRefreshingLeaderboard}
-              disabled={isRefreshingLeaderboard || isCooldownActive}
+              disabled={isRefreshingLeaderboard}
               size="md"
               aria-label="Refresh leaderboard"
             />
@@ -302,55 +271,56 @@ export const PlayersPanel = ({
           </div>
         )}
         <>
-          <button
-            onClick={() => setShowPointsBreakdown(!showPointsBreakdown)}
-            className="bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 rounded-lg p-3 mb-3 border border-gold/20 hover:border-gold/40 transition-colors cursor-pointer"
-          >
-            <div className="flex items-center justify-between">
+          <div className="mb-3 overflow-hidden rounded-lg border border-gold/20 bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5">
+            <button
+              onClick={() => setShowPointsBreakdown(!showPointsBreakdown)}
+              className="flex w-full items-center justify-between p-3 transition-colors cursor-pointer hover:bg-gold/5"
+            >
               <span className="text-gold font-semibold text-sm">Points Breakdown</span>
               {showPointsBreakdown ? (
                 <ChevronUp size={16} className="text-gold" />
               ) : (
                 <ChevronDown size={16} className="text-gold" />
               )}
-            </div>
-          </button>
-          {showPointsBreakdown && (
-            <div className="bg-gradient-to-r from-gold/5 via-gold/10 to-gold/5 rounded-lg p-3 mb-3 border border-gold/20">
-              <div className="flex flex-col gap-1 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-gold/50">Explore a tile</span>
-                  <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.exploreTile} VP</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gold/50">Claim an Essence Rift or Camp from {BANDITS_NAME}</span>
-                  <span className="text-gold font-semibold">
-                    {VICTORY_POINT_VALUES.claimWorldStructureFromBandits} VP
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gold/50">Claim a Hyperstructure from {BANDITS_NAME}</span>
-                  <span className="text-gold font-semibold">
-                    {VICTORY_POINT_VALUES.claimHyperstructureFromBandits} VP
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gold/50">Open a Relic Crest</span>
-                  <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.openRelicChest} VP</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gold/50">
-                    Control a Hyperstructure (1 point per realm settled in 8 tile radius)
-                  </span>
-                  <span className="text-gold font-semibold">{formatHyperstructureControlVpRange()}</span>
+            </button>
+            {showPointsBreakdown && (
+              <div className="border-t border-gold/15 px-3 pb-3 pt-2">
+                <div className="flex flex-col gap-1 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gold/50">Explore a tile</span>
+                    <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.exploreTile} VP</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gold/50">Claim an Essence Rift or Camp from {BANDITS_NAME}</span>
+                    <span className="text-gold font-semibold">
+                      {VICTORY_POINT_VALUES.claimWorldStructureFromBandits} VP
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gold/50">Claim a Hyperstructure from {BANDITS_NAME}</span>
+                    <span className="text-gold font-semibold">
+                      {VICTORY_POINT_VALUES.claimHyperstructureFromBandits} VP
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gold/50">Open a Relic Crest</span>
+                    <span className="text-gold font-semibold">{VICTORY_POINT_VALUES.openRelicChest} VP</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-gold/50">
+                      Control a Hyperstructure (1 point per realm settled in 8 tile radius)
+                    </span>
+                    <span className="text-gold font-semibold">{formatHyperstructureControlVpRange()}</span>
+                  </div>
                 </div>
               </div>
+            )}
+          </div>
+          {mode.ui.showEndSeasonButton && (
+            <div className="flex justify-center">
+              <EndSeasonButton className="flex-1" />
             </div>
           )}
-          <div className="flex gap-2 justify-center">
-            <RegisterPointsButton className="flex-1" />
-            {mode.ui.showEndSeasonButton && <EndSeasonButton className="flex-1" />}
-          </div>
         </>
       </div>
 

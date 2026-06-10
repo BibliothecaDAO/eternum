@@ -36,6 +36,12 @@ interface WorldmapChunkSelectionResult {
   chunkKey: string;
 }
 
+interface WorldmapChunkHexSelectionInput {
+  col: number;
+  row: number;
+  chunkSize: number;
+}
+
 // ── world → hex conversion (pure, no Vector3) ──────────────────────────────
 
 /**
@@ -115,4 +121,17 @@ export function resolveWorldmapChunkFromWorldPosition(
   const { col: focusCol, row: focusRow } = worldToHex(input.worldX, input.worldZ);
   const { startCol, startRow, chunkKey } = resolveChunkKeyFromHex(focusCol, focusRow, input.chunkSize);
   return { focusCol, focusRow, startCol, startRow, chunkKey };
+}
+
+export function resolveWorldmapChunkFromHexPosition(
+  input: WorldmapChunkHexSelectionInput,
+): WorldmapChunkSelectionResult {
+  const { startCol, startRow, chunkKey } = resolveChunkKeyFromHex(input.col, input.row, input.chunkSize);
+  return {
+    focusCol: input.col,
+    focusRow: input.row,
+    startCol,
+    startRow,
+    chunkKey,
+  };
 }

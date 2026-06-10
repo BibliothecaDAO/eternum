@@ -45,6 +45,7 @@ function resolveSeriesLikeDeploymentConfig(request: SeriesLikeRequest, summary: 
     twoPlayerMode: request.twoPlayerMode,
     durationSeconds: request.durationSeconds,
     mapConfigOverrides: request.mapConfigOverrides,
+    biomeClimateOverrides: request.biomeClimateOverrides,
     blitzRegistrationOverrides: request.blitzRegistrationOverrides,
   });
 }

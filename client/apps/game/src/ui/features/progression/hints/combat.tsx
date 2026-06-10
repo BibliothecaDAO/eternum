@@ -116,8 +116,8 @@ export const Combat = () => {
         <div className="space-y-4 text-gray-200">
           <p className="leading-relaxed">
             Damage is the number of casualties dealt. It's calculated based on the number of troops, troop tier,
-            stamina, and biome bonuses. Damage is inflicted simultaneously by both sides. Battles can last multiple
-            rounds.
+            stamina, and biome bonuses. Range-1 combat damage is inflicted simultaneously by both sides. Battles can
+            last multiple rounds.
           </p>
         </div>
       </section>
@@ -133,12 +133,13 @@ export const Combat = () => {
           </p>
           <h5>Stamina - Defending Army</h5>
           <p className="leading-relaxed">
-            Incurs a 1% damage reduction for every stamina point below 30 (e.g., -20% damage at 10 stamina). Maximum
-            penalty is -30% damage at 0 stamina. Successfully defending does not deplete stamina.
+            Range-1 defenders spend stamina and suffer reduced counter-damage if they cannot pay the full defensive
+            stamina requirement. Ranged attack targets do not spend defensive stamina and do not counter-attack.
           </p>
           <h5>Biome Combat Effects</h5>
           <p className="leading-relaxed">
-            Biome of the defending army affects combat. Armies can gain +30% damage, -30% damage, or no effect.
+            Biome of the defending army affects most combat. Armies can gain +30% damage, -30% damage, or no effect.
+            Crossbowman attacks from two hexes away use ranged damage with no biome damage modifier or counter-damage.
           </p>
           <ul className="list-disc pl-6">
             <li>
@@ -154,6 +155,18 @@ export const Combat = () => {
               <strong>Scorched Biome:</strong> +30% damage to ALL troop types.
             </li>
           </ul>
+          <h5>Ranged Crossbowman Attacks</h5>
+          <p className="leading-relaxed">
+            Crossbowmen can attack from two hexes away. Ranged attacks deal reduced damage in field battles and much
+            lower damage against structure guards. Ranged targets do not retaliate, spend defensive stamina, or receive
+            a full battle timer. A ranged attack can clear guards, but structures can only be claimed from an adjacent
+            hex.
+          </p>
+          <h5>Knight Structure Combat</h5>
+          <p className="leading-relaxed">
+            Knights are stronger when assaulting structure guards from an adjacent hex, and Knight guards take reduced
+            incoming damage while defending a structure.
+          </p>
         </div>
       </section>
 

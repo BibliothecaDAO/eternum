@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { resolveExploreCompletionPendingClearPlan } from "./worldmap-travel-effect-policy";
+import {
+  resolveExploreCompletionPendingClearPlan,
+  resolvePendingMovementAuthoritativeResolutionPlan,
+  shouldClearPendingMovementOnAuthoritativePosition,
+  shouldCleanupTrackedTravelEffectOnPendingClear,
+} from "./worldmap-travel-effect-policy";
 
 describe("resolveExploreCompletionPendingClearPlan", () => {
   it("returns pending compass effect entities for the explored tile", () => {
@@ -37,5 +42,97 @@ describe("resolveExploreCompletionPendingClearPlan", () => {
     });
 
     expect(plan).toEqual([]);
+  });
+
+  it("preserves travel effects when pending movement clears because movement started", () => {
+    expect(
+      shouldCleanupTrackedTravelEffectOnPendingClear({
+        trackedEffect: { key: "7,8", effectType: "travel" },
+        reason: "movement_started",
+      }),
+    ).toBe(false);
+  });
+
+  it("cleans up compass effects when pending movement clears because exploration resolved", () => {
+    expect(
+      shouldCleanupTrackedTravelEffectOnPendingClear({
+        trackedEffect: { key: "7,8", effectType: "compass" },
+        reason: "movement_started",
+      }),
+    ).toBe(true);
+  });
+
+  it("cleans up tracked effects when pending movement is force-cleared", () => {
+    expect(
+      shouldCleanupTrackedTravelEffectOnPendingClear({
+        trackedEffect: { key: "7,8", effectType: "travel" },
+        reason: "cleanup_requested",
+      }),
+    ).toBe(true);
+  });
+
+  it("clears pending movement when authoritative position reaches the submitted target", () => {
+    expect(
+      shouldClearPendingMovementOnAuthoritativePosition({
+        authoritativePositionKey: "2103,2104",
+        isMovementInFlight: false,
+        pendingTargetKey: "2103,2104",
+      }),
+    ).toBe(true);
+  });
+
+  it("keeps pending movement for unrelated authoritative updates", () => {
+    expect(
+      shouldClearPendingMovementOnAuthoritativePosition({
+        authoritativePositionKey: "2100,2100",
+        isMovementInFlight: false,
+        pendingTargetKey: "2103,2104",
+      }),
+    ).toBe(false);
+  });
+
+  it("keeps pending movement while the local tween is still active", () => {
+    expect(
+      shouldClearPendingMovementOnAuthoritativePosition({
+        authoritativePositionKey: "2103,2104",
+        isMovementInFlight: true,
+        pendingTargetKey: "2103,2104",
+      }),
+    ).toBe(false);
+  });
+
+  it("defers pending movement cleanup when the authoritative target arrives during the local tween", () => {
+    expect(
+      resolvePendingMovementAuthoritativeResolutionPlan({
+        authoritativePositionKey: "2103,2104",
+        isMovementInFlight: true,
+        pendingTargetKey: "2103,2104",
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      shouldClearAfterVisualCompletion: true,
+    });
+  });
+
+  it("does not defer pending movement cleanup for unrelated authoritative updates", () => {
+    expect(
+      resolvePendingMovementAuthoritativeResolutionPlan({
+        authoritativePositionKey: "2100,2100",
+        isMovementInFlight: true,
+        pendingTargetKey: "2103,2104",
+      }),
+    ).toEqual({
+      shouldClearPendingMovement: false,
+      shouldClearAfterVisualCompletion: false,
+    });
+  });
+
+  it("cleans up travel effects when authoritative reconciliation clears pending movement", () => {
+    expect(
+      shouldCleanupTrackedTravelEffectOnPendingClear({
+        trackedEffect: { key: "7,8", effectType: "travel" },
+        reason: "authoritative_reconciled",
+      }),
+    ).toBe(true);
   });
 });

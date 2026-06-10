@@ -121,28 +121,26 @@ export const HelpContainer = ({
           </button>
         </div>
 
-        <div className="bg-dark-brown/40">
-          <div className="max-h-[70vh] overflow-y-auto p-4">
-            {transferType === TransferType.Relics ? (
-              <TransferResourcesContainer
-                selectedEntityId={currentSelected.id}
-                targetEntityId={currentTarget.id}
-                transferDirection={transferDirection}
-                onTransferComplete={handleTransferComplete}
-              />
-            ) : (
-              <TransferTroopsContainer
-                selectedEntityId={currentSelected.id}
-                targetEntityId={currentTarget.id}
-                selectedHex={currentSelected.hex}
-                targetHex={currentTarget.hex}
-                transferDirection={transferDirection}
-                onTransferComplete={handleTransferComplete}
-                onToggleDirection={handleToggleDirection}
-                canToggleDirection={allowBothDirections}
-              />
-            )}
-          </div>
+        <div className="bg-dark-brown/40 p-4">
+          {transferType === TransferType.Relics ? (
+            <TransferResourcesContainer
+              selectedEntityId={currentSelected.id}
+              targetEntityId={currentTarget.id}
+              transferDirection={transferDirection}
+              onTransferComplete={handleTransferComplete}
+            />
+          ) : (
+            <TransferTroopsContainer
+              selectedEntityId={currentSelected.id}
+              targetEntityId={currentTarget.id}
+              selectedHex={currentSelected.hex}
+              targetHex={currentTarget.hex}
+              transferDirection={transferDirection}
+              onTransferComplete={handleTransferComplete}
+              onToggleDirection={handleToggleDirection}
+              canToggleDirection={allowBothDirections}
+            />
+          )}
         </div>
       </div>
     </div>

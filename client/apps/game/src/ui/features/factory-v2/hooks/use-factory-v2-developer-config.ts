@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { useAccount } from "@starknet-react/core";
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
+import { reportClientTransactionFailure } from "@/observability/transaction-failure-reporting";
 import {
   DEFAULT_FACTORY_NAMESPACE,
   getFactoryExplorerTxUrl,
@@ -9,12 +10,8 @@ import {
   resolveFactoryAddress,
   resolveFactoryConfigDefaultVersion,
 } from "@/ui/features/factory/shared/factory-metadata";
-import {
-  getChainLabel,
-  resolveConnectedTxChainFromRuntime,
-  switchWalletToChain,
-  type WalletChainControllerLike,
-} from "@/ui/utils/network-switch";
+import { useLandingNetworkState } from "@/ui/features/landing/hooks/use-landing-network-state";
+import { getChainLabel } from "@/ui/utils/network-switch";
 import { extractTransactionHash, waitForTransactionConfirmation } from "@/ui/utils/transactions";
 import { buildFactoryConfigMulticall } from "../developer/factory-config-multicall";
 import { buildFactoryConfigSections, listAllFactoryConfigSectionIds } from "../developer/factory-config-sections";
@@ -24,6 +21,7 @@ import type {
   FactoryDeveloperConfigDraft,
 } from "../developer/types";
 import type { FactoryGameMode, FactoryLaunchChain } from "../types";
+import { toast } from "sonner";
 
 type FactoryConfigManifestState = {
   status: "loading" | "ready" | "error";
@@ -78,30 +76,24 @@ function resolveFactoryConfigConfirmationErrorMessage(error: unknown): string {
   return `Submitted, but confirmation could not be verified: ${details}`;
 }
 
-function resolveWalletChainController(connector: unknown): WalletChainControllerLike | null {
-  return (connector as { controller?: WalletChainControllerLike } | undefined)?.controller ?? null;
-}
-
-function canSubmitFactoryConfigOnCurrentNetwork({
-  hasWalletAccount,
-  connectedTxChain,
-  targetChain,
-}: {
-  hasWalletAccount: boolean;
-  connectedTxChain: FactoryLaunchChain | null;
-  targetChain: FactoryLaunchChain;
-}) {
-  return !hasWalletAccount || (connectedTxChain !== null && connectedTxChain === targetChain);
-}
-
 async function submitFactoryConfigMulticall({
   account,
   multicall,
+  chain,
 }: {
   account: NonNullable<ReturnType<typeof useAccountStore.getState>["account"]>;
   multicall: ReturnType<typeof buildFactoryConfigMulticall>;
+  chain: FactoryLaunchChain;
 }) {
-  const result = await account.execute(multicall);
+  const result = await executeObservedClientTransaction({
+    account,
+    calls: multicall,
+    surface: "factory",
+    operation: "factory_config_multicall",
+    chain,
+    waitForConfirmation: false,
+    confirm: false,
+  });
   const txHash = extractTransactionHash(result);
 
   if (!txHash) {
@@ -183,13 +175,32 @@ function isPendingFactoryConfigExecutionState(
   return state.status === "submitted" && state.txHash === txHash;
 }
 
+function canSubmitFactoryConfigOnCurrentNetwork({
+  account,
+  landingNetworkState,
+  chain,
+}: {
+  account: ReturnType<typeof useAccountStore.getState>["account"];
+  landingNetworkState: ReturnType<typeof useLandingNetworkState>;
+  chain: FactoryLaunchChain;
+}): boolean {
+  if (!account) {
+    return true;
+  }
+
+  if (landingNetworkState.status === "detecting" || landingNetworkState.status === "unsupported") {
+    return false;
+  }
+
+  return landingNetworkState.connectedLandingChain === chain;
+}
+
 export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGameMode; chain: FactoryLaunchChain }) => {
   const account = useAccountStore((state) => state.account);
-  const { chainId, connector } = useAccount();
+  const landingNetworkState = useLandingNetworkState();
+  const { hasConnectedWallet, status, switchToPreferredChain } = landingNetworkState;
   const defaultVersion = resolveFactoryConfigDefaultVersion(mode);
   const factoryAddress = resolveFactoryAddress(chain);
-  const controller = resolveWalletChainController(connector);
-  const connectedTxChain = resolveConnectedTxChainFromRuntime({ chainId, controller }) as FactoryLaunchChain | null;
   const [version, setVersion] = useState(defaultVersion);
   const [selectedSectionIds, setSelectedSectionIds] =
     useState<FactoryConfigSectionId[]>(listAllFactoryConfigSectionIds);
@@ -283,9 +294,9 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
     selectedSectionIds.length > 0 &&
     executionState.status !== "sending";
   const canSubmitOnCurrentNetwork = canSubmitFactoryConfigOnCurrentNetwork({
-    hasWalletAccount: Boolean(account),
-    connectedTxChain,
-    targetChain: chain,
+    account,
+    landingNetworkState,
+    chain,
   });
 
   const isVersionCustomized = version !== defaultVersion;
@@ -327,14 +338,16 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
       return;
     }
 
+    if (hasConnectedWallet && status === "detecting") {
+      toast.info("Detecting wallet network. Try again in a moment.");
+      return;
+    }
+
     setShowSwitchNetworkPrompt(true);
   };
 
   const switchWalletToTargetChain = async () => {
-    const switched = await switchWalletToChain({
-      controller,
-      targetChain: chain,
-    });
+    const switched = await switchToPreferredChain(chain);
 
     if (switched) {
       setShowSwitchNetworkPrompt(false);
@@ -362,6 +375,17 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
         );
       })
       .catch((error) => {
+        void reportClientTransactionFailure({
+          error,
+          context: {
+            surface: "factory",
+            operation: "factory_config_multicall_confirmation",
+            stage: "confirmation",
+            transactionHash: txHash,
+            chain,
+            walletAddress: account.address,
+          },
+        });
         if (executionAttemptRef.current !== attemptId) {
           return;
         }
@@ -392,6 +416,7 @@ export const useFactoryV2DeveloperConfig = ({ mode, chain }: { mode: FactoryGame
       const txHash = await submitFactoryConfigMulticall({
         account,
         multicall,
+        chain,
       });
 
       setExecutionState(buildSubmittedExecutionState(txHash));

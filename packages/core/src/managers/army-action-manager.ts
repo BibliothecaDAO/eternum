@@ -4,7 +4,9 @@ import {
   type ContractAddress,
   type DojoAccount,
   getDirectionBetweenAdjacentHexes,
+  getHexesWithinRadius,
   getNeighborHexes,
+  getTroopAttackRange,
   type HexEntityInfo,
   type HexPosition,
   type ID,
@@ -22,12 +24,14 @@ import { type ActionPath, ActionPaths, ActionType } from "../utils/action-paths"
 import { configManager } from "./config-manager";
 import { ResourceManager } from "./resource-manager";
 import { StaminaManager } from "./stamina-manager";
+import { scheduleTransactionCleanup } from "./transaction-cleanup";
 import { computeExploreFoodCosts, computeTravelFoodCosts } from "./utils";
+
+const OPTIMISTIC_RESOURCE_FALLBACK_TIMEOUT_MS = 180_000;
 
 export class ArmyActionManager {
   private readonly entity: Entity;
   private readonly entityId: ID;
-  private readonly resourceManager: ResourceManager;
   private readonly staminaManager: StaminaManager;
   private readonly FELT_CENTER: number;
   constructor(
@@ -37,8 +41,6 @@ export class ArmyActionManager {
   ) {
     this.entity = getEntityIdFromKeys([BigInt(entityId)]);
     this.entityId = entityId;
-    const entityOwnerId = getComponentValue(this.components.ExplorerTroops, this.entity)?.owner;
-    this.resourceManager = new ResourceManager(this.components, entityOwnerId!);
     this.staminaManager = new StaminaManager(this.components, entityId);
     this.FELT_CENTER = FELT_CENTER();
   }
@@ -128,8 +130,16 @@ export class ArmyActionManager {
 
   // getFood is without precision
   public getFood(currentDefaultTick: number) {
-    const wheatBalance = this.resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat);
-    const fishBalance = this.resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish);
+    const resourceManager = this._getOwnerResourceManager();
+    if (!resourceManager) {
+      return {
+        wheat: 0,
+        fish: 0,
+      };
+    }
+
+    const wheatBalance = resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Wheat);
+    const fishBalance = resourceManager.balanceWithProduction(currentDefaultTick, ResourcesIds.Fish);
 
     return {
       wheat: divideByPrecision(wheatBalance.balance),
@@ -140,6 +150,44 @@ export class ArmyActionManager {
   private isWorldSpireHex(position: HexPosition): boolean {
     const tile = getTileAt(this.components, false, position.col, position.row);
     return tile?.occupier_type === TileOccupier.Spire;
+  }
+
+  private getAttackStaminaRequirement(): number {
+    return configManager.getCombatConfig().stamina_attack_req;
+  }
+
+  private addAttackActionPaths(
+    actionPaths: ActionPaths,
+    startPos: HexPosition,
+    attackRange: number,
+    armyHexes: Map<number, Map<number, HexEntityInfo>>,
+    structureHexes: Map<number, Map<number, HexEntityInfo>>,
+    exploredHexes: Map<number, Map<number, BiomeType>>,
+    playerAddress: ContractAddress,
+  ) {
+    const attackStaminaCost = this.getAttackStaminaRequirement();
+    const targetHexes = getHexesWithinRadius(startPos.col, startPos.row, attackRange);
+
+    for (const { col, row } of targetHexes) {
+      const army = armyHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
+      const structure = structureHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
+      const target = army ?? structure;
+      if (!target || target.owner === playerAddress) continue;
+
+      const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
+      actionPaths.set(ActionPaths.posKey({ col, row }), [
+        {
+          hex: { col: startPos.col, row: startPos.row },
+          actionType: ActionType.Move,
+        },
+        {
+          hex: { col, row },
+          actionType: ActionType.Attack,
+          biomeType: biome,
+          staminaCost: attackStaminaCost,
+        },
+      ]);
+    }
   }
 
   public findActionPaths(
@@ -199,6 +247,7 @@ export class ArmyActionManager {
         actionType = ActionType.Help;
       } else if (canAttack) {
         actionType = ActionType.Attack;
+        staminaCost = this.getAttackStaminaRequirement();
       } else if (hasChest) {
         actionType = ActionType.Chest;
       } else if (biome) {
@@ -298,6 +347,18 @@ export class ArmyActionManager {
       }
     }
 
+    if (armyStamina >= this.getAttackStaminaRequirement()) {
+      this.addAttackActionPaths(
+        actionPaths,
+        startPos,
+        getTroopAttackRange(troopType),
+        armyHexes,
+        structureHexes,
+        exploredHexes,
+        playerAddress,
+      );
+    }
+
     return actionPaths;
   }
 
@@ -319,16 +380,43 @@ export class ArmyActionManager {
       return Promise.reject(new Error("Missing destination tile for explore"));
     }
 
+    // Position-freshness guard. The vrf_source_salt below is baked into the
+    // multicall from `destinationHex`, but the chain's actual end tile is
+    // `explorer.coord + direction`. If the client's path[0] disagrees with the
+    // chain-visible coord, the salted request_random and the real consume will
+    // reference different tiles → "VrfProvider: not consumed". Reject upfront
+    // so the user retries with a fresh action path instead of eating a failed tx.
+    const pathStart = path[0]?.hex;
+    const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
+    const chainCoord = explorerTroops?.coord as { x?: unknown; y?: unknown } | undefined;
+    if (pathStart && chainCoord !== undefined && chainCoord.x !== undefined && chainCoord.y !== undefined) {
+      const chainCol = Number(chainCoord.x);
+      const chainRow = Number(chainCoord.y);
+      if (Number.isFinite(chainCol) && Number.isFinite(chainRow)) {
+        if (pathStart.col !== chainCol || pathStart.row !== chainRow) {
+          return Promise.reject(
+            new Error(
+              `Explorer position drifted — path expected (${pathStart.col}, ${pathStart.row}) but chain reports (${chainCol}, ${chainRow}). Retry with a fresh path.`,
+            ),
+          );
+        }
+      }
+    }
+
     const vrfSourceSalt = packTileSeed({ alt: false, col: destinationHex.col, row: destinationHex.row });
+    const removeResourceOverrides = this._optimisticExploreFoodSpend(explorerTroops?.owner, explorerTroops?.troops);
 
     try {
-      return await this.systemCalls.explorer_explore({
+      const result = await this.systemCalls.explorer_explore({
         explorer_id: this.entityId,
         directions: [direction],
         vrf_source_salt: vrfSourceSalt,
         signer,
       });
+      this._scheduleResourceCleanupOnTransaction(signer, result, removeResourceOverrides);
+      return result;
     } catch (e) {
+      removeResourceOverrides();
       return Promise.reject(e);
     }
   };
@@ -347,14 +435,23 @@ export class ArmyActionManager {
         ]);
       })
       .filter((d) => d !== undefined) as number[];
+    const explorerTroops = getComponentValue(this.components.ExplorerTroops, this.entity);
+    const removeResourceOverrides = this._optimisticTravelFoodSpend(
+      explorerTroops?.owner,
+      explorerTroops?.troops,
+      directions.length,
+    );
 
     try {
-      return await this.systemCalls.explorer_travel({
+      const result = await this.systemCalls.explorer_travel({
         signer,
         explorer_id: this.entityId,
         directions,
       });
+      this._scheduleResourceCleanupOnTransaction(signer, result, removeResourceOverrides);
+      return result;
     } catch (e) {
+      removeResourceOverrides();
       console.log({ e });
       return Promise.reject(e);
     }
@@ -398,4 +495,53 @@ export class ArmyActionManager {
       return this._travelToHex(signer, path, currentArmiesTick);
     }
   };
+
+  private _optimisticExploreFoodSpend(
+    ownerId: ID | undefined,
+    troops: Parameters<typeof computeExploreFoodCosts>[0] | undefined,
+  ) {
+    if (!troops) return () => {};
+    const foodCosts = computeExploreFoodCosts(troops);
+    return this._optimisticFoodSpend(ownerId, foodCosts);
+  }
+
+  private _optimisticTravelFoodSpend(
+    ownerId: ID | undefined,
+    troops: Parameters<typeof computeTravelFoodCosts>[0] | undefined,
+    steps: number,
+  ) {
+    if (!troops || steps <= 0) return () => {};
+    const foodCosts = computeTravelFoodCosts(troops);
+    return this._optimisticFoodSpend(ownerId, {
+      wheatPayAmount: foodCosts.wheatPayAmount * steps,
+      fishPayAmount: foodCosts.fishPayAmount * steps,
+    });
+  }
+
+  private _optimisticFoodSpend(ownerId: ID | undefined, foodCosts: { wheatPayAmount: number; fishPayAmount: number }) {
+    if (!ownerId) return () => {};
+    const resourceManager = new ResourceManager(this.components, ownerId);
+    return resourceManager.optimisticResourceUpdates([
+      { resourceId: ResourcesIds.Wheat, amount: -foodCosts.wheatPayAmount },
+      { resourceId: ResourcesIds.Fish, amount: -foodCosts.fishPayAmount },
+    ]);
+  }
+
+  private _getOwnerResourceManager() {
+    const ownerId = getComponentValue(this.components.ExplorerTroops, this.entity)?.owner;
+    return ownerId ? new ResourceManager(this.components, ownerId) : null;
+  }
+
+  private _scheduleResourceCleanupOnTransaction(
+    signer: Account | AccountInterface,
+    result: unknown,
+    cleanup: () => void,
+  ) {
+    scheduleTransactionCleanup({
+      signer,
+      result,
+      cleanup,
+      fallbackTimeoutMs: OPTIMISTIC_RESOURCE_FALLBACK_TIMEOUT_MS,
+    });
+  }
 }

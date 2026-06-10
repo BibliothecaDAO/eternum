@@ -7,6 +7,45 @@ export interface BatchedTransactionDetail {
   count: number;
 }
 
+export type TransactionFailureStage = "submit" | "confirmation" | "revert" | "background_confirmation";
+
+export type TransactionSubmitFailureKind =
+  | "provider_connection_destroyed"
+  | "submission_timeout_no_hash"
+  | "submit_failed";
+
+export type TransactionProviderState = "ready" | "destroyed" | "unavailable" | "unknown";
+
+export type TransactionRetrySafety = "safe_after_reconnect" | "unsafe_until_wallet_checked" | "unknown";
+
+export interface TransactionLifecycleMeta {
+  type?: TransactionType;
+  transactionHash?: string;
+  signerAddress?: string;
+  transactionCount?: number;
+  batchDetails?: BatchedTransactionDetail[];
+  entrypoints?: string[];
+  contractAddresses?: string[];
+  recoveredFromSubmissionTimeout?: boolean;
+}
+
+export interface TransactionFailedPayload extends TransactionLifecycleMeta {
+  message: string;
+  stage: TransactionFailureStage;
+  failureKind?: TransactionSubmitFailureKind;
+  providerState?: TransactionProviderState;
+  hasTxHash?: boolean;
+  retrySafety?: TransactionRetrySafety;
+}
+
+export interface TransactionSubmitGuardContext extends TransactionLifecycleMeta {
+  transactionType?: TransactionType;
+  signerAddress?: string;
+  providerState?: TransactionProviderState;
+}
+
+export type TransactionSubmitGuard = (context: TransactionSubmitGuardContext) => Promise<void> | void;
+
 export enum TransactionType {
   // Exploration & Movement
   EXPLORE = "explore",
@@ -33,6 +72,7 @@ export enum TransactionType {
   // Combat
   ATTACK_EXPLORER_VS_EXPLORER = "attack_explorer_vs_explorer",
   ATTACK_EXPLORER_VS_GUARD = "attack_explorer_vs_guard",
+  ATTACK_EXPLORER_VS_GUARD_AND_GARRISON = "attack_explorer_vs_guard_and_garrison",
   ATTACK_GUARD_VS_EXPLORER = "attack_guard_vs_explorer",
   RAID_EXPLORER_VS_GUARD = "raid_explorer_vs_guard",
   BATTLE_START = "battle_start",
@@ -194,6 +234,7 @@ export enum TransactionType {
   SET_BATTLE_CONFIG = "set_battle_config",
   SET_STRUCTURE_LEVEL_CONFIG = "set_structure_level_config",
   SET_WORLD_CONFIG = "set_world_config",
+  SET_BIOME_CLIMATE_CONFIG = "set_biome_climate_config",
   SET_MERCENARIES_NAME_CONFIG = "set_mercenaries_name_config",
   SET_STRUCTURE_MAX_LEVEL_CONFIG = "set_structure_max_level_config",
   SET_BUILDING_CONFIG = "set_building_config",

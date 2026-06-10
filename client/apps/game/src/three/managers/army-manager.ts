@@ -1,10 +1,13 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { useBlockTimestampStore } from "@/hooks/store/use-block-timestamp-store";
+import { getFreshPendingStaminaSource } from "@/lib/army-stamina/source-store";
+import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { ArmyModel } from "@/three/managers/army-model";
 import { CameraView, HexagonScene } from "@/three/scenes/hexagon-scene";
 import { playerColorManager, PlayerColorProfile } from "@/three/systems/player-colors";
 import type { AnimationVisibilityContext } from "@/three/types/animation";
 import { ModelType } from "@/three/types/army";
-import { GUIManager } from "@/three/utils/";
+import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import {
   incrementWorldmapRenderCounter,
   recordWorldmapRenderDuration,
@@ -22,19 +25,24 @@ import { isAddressEqualToAccount } from "@/three/utils/utils";
 import type { SetupResult } from "@bibliothecadao/dojo";
 import { Position } from "@bibliothecadao/eternum";
 
-import { ExplorerTroopsSystemUpdate, ExplorerTroopsTileSystemUpdate, getBlockTimestamp } from "@bibliothecadao/eternum";
+import {
+  ExplorerTroopsSystemUpdate,
+  ExplorerTroopsTileSystemUpdate,
+  getBlockTimestamp,
+  recordArmyMovementLatencyPhase,
+} from "@bibliothecadao/eternum";
 
 import { gameWorkerManager } from "@/managers/game-worker-manager";
-import { Biome, configManager, StaminaManager } from "@bibliothecadao/eternum";
-import { ClientComponents, ContractAddress, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { configManager } from "@bibliothecadao/eternum";
+import { ClientComponents, ContractAddress, HexPosition, ID, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getComponentValue } from "@dojoengine/recs";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
 import { shortString } from "starknet";
 import * as THREE from "three";
-import { Color, Euler, Group, Raycaster, Scene, Vector3 } from "three";
+import { Color, Euler, Group, Object3D, Raycaster, Scene, Vector3 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
 import { env } from "../../../env";
-import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
+import type { AttachmentTransform, CosmeticAttachmentTemplate, ResolvedCosmeticSkin } from "../cosmetics";
 import {
   CosmeticAttachmentManager,
   findCosmeticById,
@@ -54,19 +62,21 @@ import { getRenderBounds } from "../utils/chunk-geometry";
 import { trackGuiFolder, type TrackableGuiFolder } from "../utils/gui-folder-lifecycle";
 import { getBattleTimerLeft, getCombatAngles } from "../utils/combat-directions";
 import { createArmyLabel, updateArmyLabel } from "../utils/labels/label-factory";
+import { updateStaminaBar } from "../utils/labels/label-components";
 import { LabelPool } from "../utils/labels/label-pool";
 import { applyLabelTransitions } from "../utils/labels/label-transitions";
 import { MemoryMonitor } from "../utils/memory-monitor";
+import type { HoverLabelShowResult } from "./hover-label-show-result";
 import { removeArmyAttachmentsIfTracked, syncArmyAttachmentState } from "./army-attachment-state";
 import { syncArmyAttachmentTransformState } from "./army-attachment-transforms";
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
 import { refreshVisibleArmyCosmeticsByOwner } from "./army-cosmetics-refresh";
 import { FXManager } from "./fx-manager";
 import {
-  syncArmyIndicatorPresentationState,
-  syncMovingArmyIndicatorPresentationState,
-} from "./army-indicator-presentation";
-import { buildArmyLabelDataKey, syncArmyLabelContentState } from "./army-label-content";
+  buildArmyLabelLayoutDataKey,
+  buildArmyLabelStaminaDataKey,
+  syncArmyLabelContentState,
+} from "./army-label-content";
 import {
   configureArmyLabelHoverPriority,
   initializeArmyLabelState,
@@ -75,7 +85,6 @@ import {
 import { syncArmyLabelPresentationState } from "./army-label-presentation";
 import { removeArmyLabels, syncArmyLabelVisibility } from "./army-label-visibility";
 import { PathRenderer } from "./path-renderer";
-import { PlayerIndicatorManager } from "./player-indicator-manager";
 import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from "./army-instance-presentation";
 import { resolveArmyPointLabelSize } from "./army-point-label-policy";
 import {
@@ -85,19 +94,23 @@ import {
   setArmyPointHoverState,
   syncArmyPointIconState,
 } from "./army-point-visuals";
+import { CompactEntityLabelRenderer } from "./compact-entity-label-renderer";
+import { resolveArmyCompactEntityLabel, resolveCompactEntityLabelVariant } from "./compact-entity-label-policy";
 import { createArmyRecord } from "./army-record";
 import { resolveArmyStaminaTickRefresh } from "./army-stamina-tick-policy";
 import { reconcileVisibleArmySet } from "./army-visible-set-reconciler";
 import { resolvePointLabelTextureFlipY } from "./point-label-texture-policy";
 import { PointsLabelRenderer } from "./points-label-renderer";
 import { resolveArmySlotCompactionPlan } from "./army-slot-compaction";
+import { auditArmyRenderIntegrity, auditArmySlots, type ArmySlotAuditEntry } from "./army-slot-auditor";
 import { resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
-import { MAX_INSTANCES } from "../constants/army-constants";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
 import {
   bindManagerChunkRuntimeState,
+  recoverManagerChunkRuntimeAfterStall,
+  type RecoverManagerChunkRuntimeAfterStallInput,
   type ManagerChunkUpdateOptions,
   runManagerChunkUpdateRuntime,
 } from "./manager-chunk-runtime";
@@ -112,10 +125,33 @@ import { snapshotRendererDiagnostics } from "../renderer-diagnostics";
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
 
+// Auto-release window for an optimistic position lock. If no authoritative
+// update matches the locked destination within this window, the lock is
+// released so the next update can drive a correction tween — covers the rare
+// server-divergent-path case without stranding the visual state.
+const OPTIMISTIC_POSITION_LOCK_TTL_MS = 15_000;
+
 interface MovingArmySourceState {
   bucketKey: string;
   col: number;
   row: number;
+}
+
+export interface ArmyMovementPlan {
+  entityId: ID;
+  numericEntityId: number;
+  sourceNormalized: { x: number; y: number };
+  targetNormalized: { x: number; y: number };
+  targetHexCoords: Position;
+  path: Position[];
+  worldPath: Vector3[];
+  armyCategory: TroopType;
+  armyTier: TroopTier;
+}
+
+export interface PendingCreationGhostSource {
+  armyColor: string;
+  sourceScene: Object3D;
 }
 
 interface AddArmyParams {
@@ -166,20 +202,25 @@ export class ArmyManager {
   private hexagonScene?: HexagonScene;
   private fxManager: FXManager;
   private components?: ClientComponents;
+  private movementStartListeners: Map<number, Set<() => void>> = new Map();
   private movementCompleteListeners: Map<number, Set<() => void>> = new Map();
+  private movementVisualCancelListeners: Map<number, Set<() => void>> = new Map();
   private pointsRenderers?: {
     player: PointsLabelRenderer;
     enemy: PointsLabelRenderer;
     ally: PointsLabelRenderer;
     agent: PointsLabelRenderer;
   };
+  private compactLabelRenderer: CompactEntityLabelRenderer;
   private frustumManager?: FrustumManager;
   private frustumVisibilityDirty = false;
+  private labelRenderDistance = Infinity;
   private lastLabelVisibilityUpdate = 0;
   private labelVisibilityIntervalMs = 66;
   // Keep moving-army culling bounds fresh without paying a full recompute every frame.
   private lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
   private readonly movingBoundsRefreshIntervalMs = 1000 / 20;
+  private hadMovingArmiesLastFrame = false;
   private unsubscribeFrustum?: () => void;
   private visibilityManager?: CentralizedVisibilityManager;
   private unsubscribeVisibility?: () => void;
@@ -203,8 +244,35 @@ export class ArmyManager {
   private isDestroyed = false;
   private isArmyChunkTransitioning = false;
   private deferredArmyQueue: Set<ID> = new Set();
+  // Armies that arrived before any chunk was committed — drained on first executeRenderForChunk
+  private preCommitArmyQueue: Set<ID> = new Set();
   // Track source buckets for moving armies to keep them visible during animation
   private movingArmySourceBuckets: Map<ID, MovingArmySourceState> = new Map();
+  // Armies animating via an optimistic tween started at tx submission. Used to
+  // distinguish predicted moves from authoritative ones so we can reconcile or
+  // rewind without double-animating when Torii eventually delivers the update.
+  private optimisticallyMovingArmies: Set<ID> = new Set();
+  // Entities for which the authoritative Torii tile update has already arrived
+  // after an optimistic submission. Phase C's dequeue consults this to avoid
+  // firing a second explorer_explore before the chain+indexer are settled —
+  // fixes the "VrfProvider: not consumed" race on rapid queued explores.
+  private authoritativeReconciledArmies: Set<ID> = new Set();
+  private authoritativeReconcileListeners: Map<number, Set<() => void>> = new Map();
+  // Position locks pinned at the optimistic destination. Suppresses stale
+  // position data from TileOpt / ExplorerTroops snapshot replays (bound-shift,
+  // chunk re-hydration) that would otherwise rubber-band the army back to its
+  // pre-tx tile. normalizedSource is retained so explore-discovery reverts —
+  // where the chain leaves `explorer.coord = from` after rolling a treasure —
+  // are recognised as authoritative and allowed through instead of being
+  // suppressed as stale. Auto-release on matching update or TTL expiry.
+  private optimisticPositionLocks: Map<
+    ID,
+    {
+      normalizedSource: { x: number; y: number };
+      normalizedTarget: { x: number; y: number };
+      lockedAtMs: number;
+    }
+  > = new Map();
   // Armies that have been visually hidden but not yet fully removed — all rendering
   // paths must skip these to prevent ghost units from reappearing during chunk transitions
   private suppressedArmies: Set<ID> = new Set();
@@ -214,15 +282,10 @@ export class ArmyManager {
   private selectedArmyForPath: ID | null = null;
   private guiFolders: TrackableGuiFolder[] = [];
 
-  // Player indicator dots
-  private playerIndicatorManager: PlayerIndicatorManager;
-  private indicatorMetadataCache: Map<ID, number> = new Map(); // entityId -> yOffset
-
   // Reusable objects for memory optimization
   private readonly tempCosmeticPosition: Vector3 = new Vector3();
   private readonly tempIconPosition: Vector3 = new Vector3();
   private readonly tempWorldPosition: Vector3 = new Vector3();
-  private readonly tempColor: Color = new Color();
 
   constructor(
     scene: Scene,
@@ -280,73 +343,14 @@ export class ArmyManager {
 
     // Initialize points-based icon renderers
     this.initializePointsRenderers();
+    this.compactLabelRenderer = new CompactEntityLabelRenderer(scene);
 
     // Initialize path renderer for movement visualization
     this.pathRenderer = new PathRenderer();
     this.pathRenderer.initialize(scene);
     this.pathRenderer.setVisibilityManager(this.visibilityManager);
 
-    // Initialize player indicator manager
-    this.playerIndicatorManager = new PlayerIndicatorManager(scene, MAX_INSTANCES);
-
-    const createArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Create Army"));
-    const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
-
-    createArmyFolder.add(createArmyParams, "entityId").name("Entity ID");
-    createArmyFolder.add(createArmyParams, "col").name("Column");
-    createArmyFolder.add(createArmyParams, "row").name("Row");
-    createArmyFolder.add(createArmyParams, "isMine", [true, false]).name("Is Mine");
-    createArmyFolder
-      .add(
-        {
-          addArmy: () => {
-            this.addArmy({
-              entityId: createArmyParams.entityId,
-              hexCoords: new Position({ x: createArmyParams.col, y: createArmyParams.row }),
-              owner: {
-                address: createArmyParams.isMine
-                  ? ContractAddress(useAccountStore.getState().account?.address || "0")
-                  : 0n,
-                // TODO: Add owner name and guild name
-                ownerName: "Neutral",
-                guildName: "None",
-              },
-              category: TroopType.Paladin,
-              tier: TroopTier.T1,
-              isDaydreamsAgent: false,
-              troopCount: 10,
-              currentStamina: 10,
-              onChainStamina: {
-                amount: 100n,
-                updatedTick: getBlockTimestamp().currentArmiesTick,
-              },
-              maxStamina: 100,
-            });
-          },
-        },
-        "addArmy",
-      )
-      .name("Add army");
-    createArmyFolder.close();
-
-    const deleteArmyFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Delete Army"));
-    const deleteArmyParams = { entityId: 0 };
-
-    deleteArmyFolder.add(deleteArmyParams, "entityId").name("Entity ID");
-    deleteArmyFolder
-      .add(
-        {
-          deleteArmy: () => {
-            this.removeArmy(deleteArmyParams.entityId);
-          },
-        },
-        "deleteArmy",
-      )
-      .name("Delete army");
-    deleteArmyFolder.close();
-
-    // Debug Army Spawner - for performance testing
-    this.setupDebugArmySpawner();
+    this.setupDebugArmyControls();
 
     this.unsubscribeAccountStore = useAccountStore.subscribe(() => {
       this.recheckOwnership();
@@ -364,18 +368,22 @@ export class ArmyManager {
 
   private scheduleTickCheck() {
     this.tickCheckTimeout = setTimeout(() => {
-      const { currentArmiesTick } = getBlockTimestamp();
-      const tickRefresh = resolveArmyStaminaTickRefresh({
-        currentTick: currentArmiesTick,
-        previousTick: this.lastKnownArmiesTick,
-      });
-      if (tickRefresh.shouldRecompute) {
-        this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
+      try {
+        const { currentArmiesTick } = getBlockTimestamp();
+        const tickRefresh = resolveArmyStaminaTickRefresh({
+          currentTick: currentArmiesTick,
+          previousTick: this.lastKnownArmiesTick,
+        });
+        if (tickRefresh.shouldRecompute) {
+          this.lastKnownArmiesTick = tickRefresh.nextTrackedTick;
+        }
+        // Update stamina and battle timers every second
         this.recomputeStaminaForAllArmies();
+        this.recomputeBattleTimersForAllArmies();
+      } catch {
+        // Swallow errors to keep the tick loop alive
       }
-      // Update battle timers every second
-      this.recomputeBattleTimersForAllArmies();
-      // Schedule the next check
+      // Always schedule next check even if current cycle threw
       this.scheduleTickCheck();
     }, 1000);
   }
@@ -405,11 +413,83 @@ export class ArmyManager {
   private debugArmyEntityIdCounter = 900000; // Start high to avoid collisions with real armies
   private debugSpawnedArmyIds: Set<ID> = new Set();
 
+  private setupDebugArmyControls(): void {
+    if (!GRAPHICS_DEV_GUI_ENABLED) {
+      return;
+    }
+
+    this.setupDebugArmyCreationControls();
+    this.setupDebugArmyDeletionControls();
+    this.setupDebugArmySpawner();
+  }
+
+  private setupDebugArmyCreationControls(): void {
+    const createArmyFolder = trackGuiFolder(this.guiFolders, createGuiFolder("Create Army"));
+    const createArmyParams = { entityId: 0, col: 0, row: 0, isMine: false };
+
+    createArmyFolder.add(createArmyParams, "entityId").name("Entity ID");
+    createArmyFolder.add(createArmyParams, "col").name("Column");
+    createArmyFolder.add(createArmyParams, "row").name("Row");
+    createArmyFolder.add(createArmyParams, "isMine", [true, false]).name("Is Mine");
+    createArmyFolder
+      .add(
+        {
+          addArmy: () => {
+            this.addDebugArmyFromControls(createArmyParams);
+          },
+        },
+        "addArmy",
+      )
+      .name("Add army");
+    createArmyFolder.close();
+  }
+
+  private addDebugArmyFromControls(input: { col: number; entityId: number; isMine: boolean; row: number }): void {
+    this.addArmy({
+      entityId: input.entityId,
+      hexCoords: new Position({ x: input.col, y: input.row }),
+      owner: {
+        address: input.isMine ? ContractAddress(useAccountStore.getState().account?.address || "0") : 0n,
+        // TODO: Add owner name and guild name
+        ownerName: "Neutral",
+        guildName: "None",
+      },
+      category: TroopType.Paladin,
+      tier: TroopTier.T1,
+      isDaydreamsAgent: false,
+      troopCount: 10,
+      currentStamina: 10,
+      onChainStamina: {
+        amount: 100n,
+        updatedTick: getBlockTimestamp().currentArmiesTick,
+      },
+      maxStamina: 100,
+    });
+  }
+
+  private setupDebugArmyDeletionControls(): void {
+    const deleteArmyFolder = trackGuiFolder(this.guiFolders, createGuiFolder("Delete Army"));
+    const deleteArmyParams = { entityId: 0 };
+
+    deleteArmyFolder.add(deleteArmyParams, "entityId").name("Entity ID");
+    deleteArmyFolder
+      .add(
+        {
+          deleteArmy: () => {
+            this.removeArmy(deleteArmyParams.entityId);
+          },
+        },
+        "deleteArmy",
+      )
+      .name("Delete army");
+    deleteArmyFolder.close();
+  }
+
   /**
    * Setup debug GUI for spawning multiple armies for performance testing
    */
   private setupDebugArmySpawner(): void {
-    const debugFolder = trackGuiFolder(this.guiFolders, GUIManager.addFolder("Debug Army Spawner"));
+    const debugFolder = trackGuiFolder(this.guiFolders, createGuiFolder("Debug Army Spawner"));
 
     const spawnParams = {
       count: 20,
@@ -607,6 +687,11 @@ export class ArmyManager {
     await this.armyModel.loadPromise;
     const { entityId, hexCoords, ownerAddress, ownerName, guildName, troopType, troopTier, battleData } = update;
 
+    const incomingNormalized = new Position({ x: hexCoords.col, y: hexCoords.row }).getNormalized();
+    if (this.shouldSkipStalePositionUpdate(entityId, incomingNormalized)) {
+      return;
+    }
+
     const {
       battleCooldownEnd,
       latestAttackerId,
@@ -735,7 +820,7 @@ export class ArmyManager {
     if (slot !== undefined && (ownerChanged || ownershipVisualChanged)) {
       const numericId = this.toNumericId(params.entityId);
       const { x, y } = army.hexCoords.getContract();
-      const biome = Biome.getBiome(x, y);
+      const biome = configManager.getBiome(x, y);
       const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
       this.refreshArmyInstance(army, slot, modelType);
       this.refreshVisibleArmyCollection();
@@ -841,6 +926,16 @@ export class ArmyManager {
     });
   }
 
+  recoverChunkUpdateAfterStall(input: RecoverManagerChunkRuntimeAfterStallInput): void {
+    const { didApply } = recoverManagerChunkRuntimeAfterStall(this.resolveChunkUpdateRuntimeState(), input);
+    if (!didApply) {
+      return;
+    }
+    this.isArmyChunkTransitioning = false;
+    this.drainDeferredArmyQueue();
+    this.drainPreCommitArmyQueue();
+  }
+
   private resolveChunkUpdateRuntimeState() {
     return bindManagerChunkRuntimeState({
       getCurrentChunk: () => this.currentChunkKey,
@@ -920,7 +1015,7 @@ export class ArmyManager {
 
     armies.forEach((army) => {
       const { x, y } = army.hexCoords.getContract();
-      const biome = Biome.getBiome(x, y);
+      const biome = configManager.getBiome(x, y);
       const numericId = this.toNumericId(army.entityId);
       const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
       modelTypesByEntity.set(army.entityId, modelType);
@@ -955,7 +1050,6 @@ export class ArmyManager {
     // to prevent frustum culling mismatches at chunk edges
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
-    this.playerIndicatorManager.computeBoundingSphere();
     this.frustumVisibilityDirty = true;
   }
 
@@ -973,14 +1067,20 @@ export class ArmyManager {
 
     plan.reassignments.forEach(({ entityId, toSlot }) => {
       const numericId = this.toNumericId(entityId);
-      this.armyModel.moveInstanceSlot(numericId, toSlot);
-      this.visibleArmyIndices.set(entityId, toSlot);
+      // Mirror EXACTLY the slot the model actually took. If the model declined
+      // the move (no live slot), skip — advancing the mirror to a slot the model
+      // never wrote is what desyncs the SSOT and strands ghosts.
+      const movedSlot = this.armyModel.moveInstanceSlot(numericId, toSlot);
+      if (movedSlot === undefined) {
+        return;
+      }
+      this.visibleArmyIndices.set(entityId, movedSlot);
 
       const army = this.armies.get(entityId);
       if (army) {
         this.armies.set(entityId, {
           ...army,
-          matrixIndex: toSlot,
+          matrixIndex: movedSlot,
         });
       }
     });
@@ -1051,37 +1151,18 @@ export class ArmyManager {
     const updatedArmy = { ...army, matrixIndex: slot };
     this.armies.set(army.entityId, updatedArmy);
     this.armyModel.rebindMovementMatrixIndex(numericId, slot);
-    this.syncArmyAuxiliaryPresentation(updatedArmy, position, modelType, isSuppressed);
+    this.syncArmyAuxiliaryPresentation(updatedArmy, position, isSuppressed);
   }
 
-  private syncArmyAuxiliaryPresentation(
-    army: ArmyData,
-    position: Vector3,
-    modelType: ModelType,
-    isSuppressed: boolean,
-  ) {
+  private syncArmyAuxiliaryPresentation(army: ArmyData, position: Vector3, isSuppressed: boolean) {
     if (isSuppressed) {
       this.hideSuppressedArmyAuxiliaryVisuals(army.entityId);
       return;
     }
 
-    this.syncArmyIndicatorPresentation(army, position, modelType);
     this.recordLastKnownHexFromWorld(army.entityId, position);
     this.syncArmyLabelPresentation(army, position);
     this.syncArmyPointPresentation(army, position);
-  }
-
-  private syncArmyIndicatorPresentation(army: ArmyData, position: Vector3, modelType: ModelType) {
-    syncArmyIndicatorPresentationState({
-      entityId: army.entityId,
-      color: army.color,
-      modelType,
-      position,
-      indicatorMetadataCache: this.indicatorMetadataCache,
-      setIndicatorColor: (color) => this.tempColor.set(color),
-      updateIndicator: ({ entityId, position: indicatorPosition, color, yOffset }) =>
-        this.playerIndicatorManager.updateIndicator(entityId, indicatorPosition, color, yOffset),
-    });
   }
 
   private syncArmyLabelPresentation(army: ArmyData, position: Vector3) {
@@ -1093,9 +1174,10 @@ export class ArmyManager {
 
   private syncArmyPointPresentation(army: ArmyData, position: Vector3) {
     this.updateArmyPointIcon(army, position);
+    this.updateArmyCompactLabel(army, position);
   }
 
-  private removeVisibleArmy(entityId: ID): number | null {
+  private removeVisibleArmy(entityId: ID, options?: { notifyMovementVisualCancel?: boolean }): number | null {
     const slot = this.visibleArmyIndices.get(entityId);
     if (slot === undefined) {
       return null;
@@ -1118,20 +1200,28 @@ export class ArmyManager {
     this.armyPaths.delete(entityId);
     this.lastKnownVisibleHexes.delete(entityId);
     this.removeArmyPointIcon(entityId);
+    this.removeArmyCompactLabel(entityId);
     this.removeEntityIdLabel(entityId);
 
-    // Remove player indicator dot
-    this.playerIndicatorManager.removeIndicator(entityId);
-    this.indicatorMetadataCache.delete(entityId); // Clear cached metadata
-
     const numericId = this.toNumericId(entityId);
+    const shouldNotifyMovementVisualCancel =
+      options?.notifyMovementVisualCancel === true || this.armyModel.isEntityMoving(numericId);
     this.removeTrackedArmyAttachments(entityId);
 
     // Clean up movement source bucket before freeing the slot, since
     // freeInstanceSlot kills the movement callback that would normally do this
     this.cleanupMovementSourceBucket(entityId);
+    // Chunk reconciliation can evict a moving army before the tween completes.
+    // Surface that as a visual cancellation so arrival ghosts and travel effects
+    // do not survive the lost movement-complete callback.
+    if (shouldNotifyMovementVisualCancel) {
+      this.runMovementVisualCancelListeners(numericId);
+    }
 
-    this.armyModel.freeInstanceSlot(numericId, slot);
+    // Free the army-model's live slot (the single source of truth), falling back
+    // to the mirror only when the model has no live slot. Freeing the cached
+    // mirror slot during a transient desync would strand a ghost at the real slot.
+    this.armyModel.freeInstanceSlot(numericId, this.armyModel.getEntitySlot(numericId) ?? slot);
     return slot;
   }
 
@@ -1146,11 +1236,26 @@ export class ArmyManager {
     });
   }
 
+  private updateArmyCompactLabel(army: ArmyData, position: Vector3): void {
+    const labelPosition = this.tempIconPosition.copy(position);
+    labelPosition.y += 2.78;
+    this.compactLabelRenderer.setLabel({
+      entityId: army.entityId,
+      position: labelPosition,
+      text: resolveArmyCompactEntityLabel(army),
+      variant: resolveCompactEntityLabelVariant(army),
+    });
+  }
+
   private removeArmyPointIcon(entityId: ID): void {
     removeArmyPointIconState({
       renderers: this.pointsRenderers,
       entityId,
     });
+  }
+
+  private removeArmyCompactLabel(entityId: ID): void {
+    this.compactLabelRenderer.removeLabel(entityId);
   }
 
   private syncVisibleSlots(): void {
@@ -1196,7 +1301,7 @@ export class ArmyManager {
         scale: this.scale,
         attachmentTransformScratch: this.armyAttachmentTransformScratch,
         getWorldPositionInto: (out, hexCoords) => this.getArmyWorldPositionInto(out, hexCoords),
-        resolveBiome: (x, y) => Biome.getBiome(x, y),
+        resolveBiome: (x, y) => configManager.getBiome(x, y),
         getModelTypeForEntity: (trackedEntityId, category, tier, biome) =>
           this.armyModel.getModelTypeForEntity(trackedEntityId, category, tier, biome),
         resolveMountTransforms: (modelType, baseTransform, scratch) =>
@@ -1274,6 +1379,7 @@ export class ArmyManager {
     } finally {
       this.isArmyChunkTransitioning = false;
       this.drainDeferredArmyQueue();
+      this.drainPreCommitArmyQueue();
       recordWorldmapRenderDuration("executeRenderForChunk", performance.now() - renderStartedAt);
       setWorldmapRenderGauge("visibleArmies", this.visibleArmyOrder.length);
       setWorldmapRenderGauge("activePaths", this.getActivePathCount());
@@ -1537,6 +1643,17 @@ export class ArmyManager {
     }
   }
 
+  private drainPreCommitArmyQueue(): void {
+    if (this.preCommitArmyQueue.size === 0) return;
+    const queued = [...this.preCommitArmyQueue];
+    this.preCommitArmyQueue.clear();
+    for (const entityId of queued) {
+      if (!this.suppressedArmies.has(entityId)) {
+        void this.renderArmyIntoCurrentChunkIfVisible(entityId);
+      }
+    }
+  }
+
   private async renderArmyIntoCurrentChunkIfVisible(entityId: ID): Promise<boolean> {
     if (this.isArmyChunkTransitioning) {
       this.deferredArmyQueue.add(entityId);
@@ -1544,6 +1661,7 @@ export class ArmyManager {
     }
 
     if (!isCommittedManagerChunk(this.currentChunkKey)) {
+      this.preCommitArmyQueue.add(entityId);
       return false;
     }
 
@@ -1558,7 +1676,7 @@ export class ArmyManager {
 
     const numericEntityId = this.toNumericId(entityId);
     const { x, y } = army.hexCoords.getContract();
-    const biome = Biome.getBiome(x, y);
+    const biome = configManager.getBiome(x, y);
     const modelType = this.armyModel.getModelTypeForEntity(numericEntityId, army.category, army.tier, biome);
     await this.armyModel.preloadModels([modelType]);
 
@@ -1593,7 +1711,7 @@ export class ArmyManager {
     const numericEntityId = this.toNumericId(params.entityId);
 
     const { x, y } = params.hexCoords.getContract();
-    const biome = Biome.getBiome(x, y);
+    const biome = configManager.getBiome(x, y);
     const baseModelType = this.armyModel.getModelTypeForEntity(numericEntityId, params.category, params.tier, biome);
 
     // Variables to hold the final values
@@ -1640,12 +1758,13 @@ export class ArmyManager {
       attackTowardDegrees: attackTowardDegrees ?? undefined,
       pendingUpdate,
       resolveCurrentStamina: ({ troopCount, onChainStamina, category, tier }) =>
-        this.calculateArmyCurrentStamina({
+        this.resolveArmyStaminaSnapshot({
+          entityId: params.entityId,
           troopCount,
           onChainStamina,
           category,
           tier,
-        }),
+        })?.current ?? finalCurrentStamina,
     });
     finalTroopCount = pendingSpawnState.troopCount;
     finalCurrentStamina = pendingSpawnState.currentStamina;
@@ -1709,6 +1828,15 @@ export class ArmyManager {
       owner: { address: finalOwnerAddress || 0n },
     });
 
+    const initialStaminaPresentation = this.resolveArmyStaminaSnapshot({
+      entityId: params.entityId,
+      troopCount: finalTroopCount,
+      onChainStamina: finalOnChainStamina,
+      category: params.category,
+      tier: params.tier,
+    });
+    finalCurrentStamina = initialStaminaPresentation?.current ?? finalCurrentStamina;
+
     this.armies.set(
       params.entityId,
       createArmyRecord({
@@ -1733,6 +1861,7 @@ export class ArmyManager {
         troopCount: finalTroopCount,
         currentStamina: finalCurrentStamina,
         maxStamina: finalMaxStamina,
+        displayStaminaRatio: initialStaminaPresentation?.displayRatio,
         // we need to check if there's any pending before we set it because onchain stamina might be 0 from the map data store in the system-manager
         onChainStamina: finalOnChainStamina,
         attackedFromDegrees: attackedFromDegrees ?? undefined,
@@ -1747,18 +1876,19 @@ export class ArmyManager {
     await this.renderArmyIntoCurrentChunkIfVisible(params.entityId);
   }
 
-  public async moveArmy(entityId: ID, hexCoords: Position) {
-    // Monitor memory usage before army movement
+  public async computeMovementPlan(entityId: ID, hexCoords: Position): Promise<ArmyMovementPlan | null> {
     this.memoryMonitor?.getCurrentStats(`moveArmy-start-${entityId}`);
 
     const armyData = this.armies.get(entityId);
-    if (!armyData) return;
+    if (!armyData) return null;
 
     const numericEntityId = this.toNumericId(entityId);
-    const startPos = armyData.hexCoords.getNormalized();
-    const targetPos = hexCoords.getNormalized();
+    const sourceNormalized = armyData.hexCoords.getNormalized();
+    const targetNormalized = hexCoords.getNormalized();
 
-    if (startPos.x === targetPos.x && startPos.y === targetPos.y) return;
+    if (sourceNormalized.x === targetNormalized.x && sourceNormalized.y === targetNormalized.y) {
+      return null;
+    }
 
     // todo: currently taking max stamina of paladin as max stamina but need to refactor
     const maxTroopStamina = configManager.getTroopStaminaConfig(TroopType.Paladin, TroopTier.T3);
@@ -1775,66 +1905,269 @@ export class ArmyManager {
       ? await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex)
       : null;
     const path = resolveMovementPath(armyData.hexCoords, hexCoords, workerPath);
-
-    // Convert path to world positions
     const worldPath = path.map((pos) => this.getArmyWorldPositionInto(new Vector3(), pos));
 
-    // Track source bucket so army remains visible during movement animation.
-    // The spatial index will have the army in BOTH source and destination buckets
-    // until movement completes.
-    const sourceNorm = armyData.hexCoords.getNormalized();
-    const sourceBucketKey = this.getSpatialKey(sourceNorm.x, sourceNorm.y);
-    const destNorm = hexCoords.getNormalized();
-    const destBucketKey = this.getSpatialKey(destNorm.x, destNorm.y);
+    return {
+      entityId,
+      numericEntityId,
+      sourceNormalized,
+      targetNormalized,
+      targetHexCoords: hexCoords,
+      path,
+      worldPath,
+      armyCategory: armyData.category,
+      armyTier: armyData.tier,
+    };
+  }
 
-    // Only track source if buckets are different
+  /**
+   * Apply a pre-computed movement plan. Returns `true` when the plan wrote a
+   * local predicted or authoritative position. For optimistic calls, `true`
+   * means a rewind/reconcile lock exists, so sibling caches can mirror safely.
+   */
+  public async applyMovementPlan(plan: ArmyMovementPlan, options: { optimistic: boolean }): Promise<boolean> {
+    const { entityId, numericEntityId, sourceNormalized, targetNormalized, targetHexCoords, path, worldPath } = plan;
+
+    const armyData = this.armies.get(entityId);
+    if (!armyData) return false;
+
+    const currentNorm = armyData.hexCoords.getNormalized();
+    // Already at target (either this plan or a later authoritative update landed first).
+    if (currentNorm.x === targetNormalized.x && currentNorm.y === targetNormalized.y) return false;
+    // Source drifted (another update moved the army since plan was computed). Abandon this plan.
+    if (currentNorm.x !== sourceNormalized.x || currentNorm.y !== sourceNormalized.y) return false;
+
+    const sourceBucketKey = this.getSpatialKey(sourceNormalized.x, sourceNormalized.y);
+    const destBucketKey = this.getSpatialKey(targetNormalized.x, targetNormalized.y);
+
     if (sourceBucketKey !== destBucketKey) {
       this.movingArmySourceBuckets.set(entityId, {
         bucketKey: sourceBucketKey,
-        col: sourceNorm.x,
-        row: sourceNorm.y,
+        col: sourceNormalized.x,
+        row: sourceNormalized.y,
       });
     }
 
-    // Add to destination bucket (keep in source bucket too - updateSpatialIndex modified below)
-    this.addToSpatialBucket(entityId, hexCoords);
-    this.armies.set(entityId, { ...armyData, hexCoords });
+    this.addToSpatialBucket(entityId, targetHexCoords);
+    this.armies.set(entityId, { ...armyData, hexCoords: targetHexCoords });
 
-    const matrixIndex = armyData.matrixIndex;
+    if (options.optimistic) {
+      // Reset any prior reconciliation flag from an earlier optimistic move on
+      // this entity — we're starting fresh and will wait for the next authoritative
+      // update.
+      this.authoritativeReconciledArmies.delete(entityId);
+      this.optimisticPositionLocks.set(entityId, {
+        normalizedSource: { x: sourceNormalized.x, y: sourceNormalized.y },
+        normalizedTarget: { x: targetNormalized.x, y: targetNormalized.y },
+        lockedAtMs: Date.now(),
+      });
+    }
+
+    // Use the army-model's live slot (the single source of truth), not the
+    // cached ArmyData.matrixIndex mirror. Seeding a movement from a stale mirror
+    // animates the wrong slot and strands a frozen ghost at the unit's old slot.
+    const matrixIndex = this.armyModel.getEntitySlot(numericEntityId) ?? armyData.matrixIndex;
     if (matrixIndex === undefined) {
       this.armyPaths.delete(entityId);
       this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
-      // Clean up source bucket tracking since movement won't actually happen
       this.cleanupMovementSourceBucket(entityId);
-      this.runMovementCompleteListeners(numericEntityId);
       await this.renderArmyIntoCurrentChunkIfVisible(entityId);
-      return;
+      this.runMovementStartListeners(numericEntityId);
+      this.runMovementCompleteListeners(numericEntityId);
+      // No tween played, but optimistic callers still own a lock that can
+      // reconcile or rewind the predicted position.
+      return options.optimistic;
     }
 
     this.armyPaths.set(entityId, path);
 
     this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
-      // Guard: if the army was removed during movement, skip all callbacks
-      // to prevent re-adding to spatial buckets that were already cleaned up
       if (!this.armies.has(entityId)) return;
       this.armyPaths.delete(entityId);
-      // Remove from source bucket now that movement is complete
       this.cleanupMovementSourceBucket(entityId);
-      // Remove path visualization
       this.pathRenderer.removePath(numericEntityId);
+      this.optimisticallyMovingArmies.delete(entityId);
       this.runMovementCompleteListeners(numericEntityId);
     });
 
-    // Start movement in ArmyModel with troop information
-    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, armyData.category, armyData.tier);
+    if (options.optimistic) {
+      this.optimisticallyMovingArmies.add(entityId);
+    }
 
-    // Create path visualization with player-specific color
+    this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
+    this.runMovementStartListeners(numericEntityId);
+
     const colorProfile = this.getArmyColorProfile(armyData);
     const displayState = this.selectedArmyForPath === entityId ? "selected" : "moving";
     this.pathRenderer.createPath(numericEntityId, worldPath, colorProfile.primary, displayState);
 
-    // Monitor memory usage after army movement setup
     this.memoryMonitor?.getCurrentStats(`moveArmy-complete-${entityId}`);
+    return true;
+  }
+
+  public async moveArmy(entityId: ID, hexCoords: Position): Promise<void> {
+    if (this.optimisticallyMovingArmies.has(entityId)) {
+      this.markOptimisticMovementReconciled(entityId);
+    }
+
+    const plan = await this.computeMovementPlan(entityId, hexCoords);
+    if (!plan) return;
+    await this.applyMovementPlan(plan, { optimistic: false });
+  }
+
+  public isArmyMovingOptimistically(entityId: ID): boolean {
+    return this.optimisticallyMovingArmies.has(entityId);
+  }
+
+  public hasUnresolvedOptimisticMovement(entityId: ID): boolean {
+    return this.optimisticallyMovingArmies.has(entityId) || this.optimisticPositionLocks.has(entityId);
+  }
+
+  public hasReceivedAuthoritativeReconciliation(entityId: ID): boolean {
+    return this.authoritativeReconciledArmies.has(entityId);
+  }
+
+  /**
+   * True when an incoming position update should be skipped because it disagrees
+   * with an active optimistic lock and the TTL hasn't elapsed. Matching updates
+   * release the lock as a side effect.
+   *
+   * Source-match is treated the same as target-match: `explorer_explore` can
+   * roll a treasure that leaves `explorer.coord = from` on-chain
+   * (troop_movement.cairo:193). That authoritative revert would otherwise be
+   * swallowed as "stale" and the army would stay visually stranded on the
+   * discovered tile until the TTL expired.
+   */
+  public shouldSkipStalePositionUpdate(entityId: ID, incomingNormalized: { x: number; y: number }): boolean {
+    const lock = this.optimisticPositionLocks.get(entityId);
+    if (!lock) return false;
+
+    const matchesTarget =
+      lock.normalizedTarget.x === incomingNormalized.x && lock.normalizedTarget.y === incomingNormalized.y;
+    if (matchesTarget) {
+      this.optimisticPositionLocks.delete(entityId);
+      this.markOptimisticMovementReconciled(entityId);
+      return false;
+    }
+
+    const matchesSource =
+      lock.normalizedSource.x === incomingNormalized.x && lock.normalizedSource.y === incomingNormalized.y;
+    if (matchesSource) {
+      // Discovery revert: `explorer_explore` rolled a treasure, the chain left
+      // `explorer.coord = from`, and the tx emits an ExplorerTroops delta
+      // (stamina/biomes) but no TileOpt change for the source tile. The
+      // optimistic tween has already parked the visual on `target`, so merely
+      // releasing the lock isn't enough — callers that only touch armyHexes
+      // (processExplorerTroopsUpdate) would leave the visual stranded while
+      // the spatial index reconciled to `from`, producing a clickable-but-
+      // invisible army at `from` and a visible-but-unclickable ghost at
+      // `target`. Tear the tween down here so the visual snaps back to
+      // source. rewindOptimisticMovement also clears the lock.
+      this.rewindOptimisticMovement(entityId);
+      return false;
+    }
+
+    if (Date.now() - lock.lockedAtMs > OPTIMISTIC_POSITION_LOCK_TTL_MS) {
+      this.optimisticPositionLocks.delete(entityId);
+      return false;
+    }
+
+    return true;
+  }
+
+  private markOptimisticMovementReconciled(entityId: ID): void {
+    recordArmyMovementLatencyPhase({
+      phase: "optimistic_animation_reconciled",
+      source: "world_update_listener",
+      entityId,
+    });
+    this.optimisticallyMovingArmies.delete(entityId);
+    this.optimisticPositionLocks.delete(entityId);
+    this.authoritativeReconciledArmies.add(entityId);
+    this.runAuthoritativeReconcileListeners(this.toNumericId(entityId));
+  }
+
+  public onAuthoritativeReconciliation(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.authoritativeReconcileListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.authoritativeReconcileListeners.set(numericEntityId, listeners);
+    }
+    listeners.add(callback);
+
+    return () => {
+      const active = this.authoritativeReconcileListeners.get(numericEntityId);
+      if (!active) return;
+      active.delete(callback);
+      if (active.size === 0) this.authoritativeReconcileListeners.delete(numericEntityId);
+    };
+  }
+
+  private runAuthoritativeReconcileListeners(entityId: number): void {
+    const listeners = this.authoritativeReconcileListeners.get(entityId);
+    if (!listeners || listeners.size === 0) return;
+
+    this.authoritativeReconcileListeners.delete(entityId);
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Authoritative reconciliation listener failed", error);
+      }
+    });
+  }
+
+  public rewindOptimisticMovement(entityId: ID): { col: number; row: number } | null {
+    // Read the lock's normalizedSource before the delete below — it's the
+    // canonical source-of-truth for the pre-tx hex, set for every optimistic
+    // move regardless of whether the source/dest share a spatial bucket.
+    const lock = this.optimisticPositionLocks.get(entityId);
+    if (!this.optimisticallyMovingArmies.has(entityId) && !lock) return null;
+
+    const lockedSource = lock ? { col: lock.normalizedSource.x, row: lock.normalizedSource.y } : null;
+
+    this.optimisticallyMovingArmies.delete(entityId);
+    this.authoritativeReconciledArmies.delete(entityId);
+    this.authoritativeReconcileListeners.delete(this.toNumericId(entityId));
+    this.optimisticPositionLocks.delete(entityId);
+
+    const numericEntityId = this.toNumericId(entityId);
+    const sourceState = this.movingArmySourceBuckets.get(entityId);
+    const armyData = this.armies.get(entityId);
+
+    // Clear the complete callback so cancelMovement's teardown doesn't fire listeners.
+    this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
+    this.armyModel.cancelMovement(numericEntityId);
+
+    this.armyPaths.delete(entityId);
+    this.pathRenderer.removePath(numericEntityId);
+
+    // Drop any pending start/complete listeners — they were registered for the
+    // optimistic tween we just cancelled and should not fire.
+    this.movementStartListeners.delete(numericEntityId);
+    this.movementCompleteListeners.delete(numericEntityId);
+    this.movementVisualCancelListeners.delete(numericEntityId);
+
+    if (armyData && (sourceState || lockedSource)) {
+      const sourcePosition = new Position({
+        x: sourceState?.col ?? lockedSource!.col,
+        y: sourceState?.row ?? lockedSource!.row,
+      });
+      const previousHex = armyData.hexCoords;
+      this.armies.set(entityId, { ...armyData, hexCoords: sourcePosition });
+      this.atomicSpatialTransfer(entityId, previousHex, sourcePosition);
+      this.movingArmySourceBuckets.delete(entityId);
+      void this.renderArmyIntoCurrentChunkIfVisible(entityId);
+    }
+
+    recordArmyMovementLatencyPhase({
+      phase: "optimistic_animation_rewound",
+      source: "worldmap",
+      entityId,
+    });
+
+    return lockedSource;
   }
 
   /**
@@ -1857,6 +2190,24 @@ export class ArmyManager {
     const slot = this.visibleArmyIndices.get(entityId);
     if (slot !== undefined) {
       this.armyModel.restoreHiddenSlot(slot);
+    }
+    const army = this.armies.get(entityId);
+    if (army) {
+      this.updateArmyCompactLabel(army, this.getArmyWorldPosition(entityId, army.hexCoords));
+
+      // restoreHiddenSlot only clears the hidden flag; the model matrix was zeroed
+      // by hideInstanceSlot and stays zeroed until something rewrites it. A moving
+      // army self-heals next frame via updateMovements, but a stationary one would
+      // stay invisible (label restored, model dropped) unless a downstream forced
+      // refresh happens to run. Rewrite the matrix directly here so unsuppress is
+      // self-sufficient and no longer depends on that downstream force=true path.
+      const numericId = this.toNumericId(entityId);
+      if (slot !== undefined && !this.armyModel.isEntityMoving(numericId)) {
+        const { x, y } = army.hexCoords.getContract();
+        const biome = configManager.getBiome(x, y);
+        const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
+        this.refreshArmyInstance(army, slot, modelType);
+      }
     }
   }
 
@@ -1881,7 +2232,6 @@ export class ArmyManager {
 
     this.armyPaths.delete(entityId);
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
-    this.runMovementCompleteListeners(numericEntityId);
     this.lastKnownVisibleHexes.delete(entityId);
 
     // Remove path visualization
@@ -1922,9 +2272,11 @@ export class ArmyManager {
     // console.debug(`[ArmyManager] Preparing world cleanup for entity ${entityId}`);
     const worldPosition = this.getArmyWorldPosition(entityId, army.hexCoords);
 
-    const removedSlot = this.removeVisibleArmy(entityId);
+    const removedSlot = this.removeVisibleArmy(entityId, { notifyMovementVisualCancel: true });
     if (removedSlot === null) {
+      this.runMovementVisualCancelListeners(numericEntityId);
       this.removeArmyPointIcon(entityId);
+      this.removeArmyCompactLabel(entityId);
       this.removeEntityIdLabel(entityId);
     }
 
@@ -1969,6 +2321,106 @@ export class ArmyManager {
 
   public getArmy(entityId: ID): ArmyData | undefined {
     return this.armies.get(entityId);
+  }
+
+  public getArrivalGhostSourceSnapshot(entityId: ID): { armyColor: string; sourceScene: Object3D } | null {
+    const army = this.armies.get(entityId);
+    if (!army) {
+      return null;
+    }
+
+    const numericEntityId = this.toNumericId(entityId);
+    const modelData = this.armyModel.getModelForEntity(numericEntityId);
+    if (!modelData) {
+      return null;
+    }
+
+    return {
+      armyColor: army.color,
+      sourceScene: modelData.sourceScene,
+    };
+  }
+
+  public async resolvePendingCreationGhostSource(input: {
+    entityId: ID;
+    hexCoords: HexPosition;
+    troopType: TroopType;
+    troopTier: TroopTier;
+  }): Promise<PendingCreationGhostSource> {
+    const ownerAddress = this.resolvePendingCreationOwnerAddress();
+    this.hydratePendingCreationCosmetics(ownerAddress);
+
+    const baseModelType = this.resolvePendingCreationBaseModel(input);
+    const cosmetic = resolveArmyCosmetic({
+      owner: ownerAddress,
+      troopType: input.troopType,
+      tier: input.troopTier,
+      defaultModelType: baseModelType,
+    });
+    const sourceScene = await this.resolvePendingCreationSourceScene({
+      baseModelType: cosmetic.skin.modelType ?? baseModelType,
+      cosmeticSkin: cosmetic.skin,
+    });
+
+    return {
+      armyColor: this.resolvePendingCreationGhostColor(ownerAddress),
+      sourceScene,
+    };
+  }
+
+  private resolvePendingCreationOwnerAddress(): bigint {
+    return ContractAddress(useAccountStore.getState().account?.address || "0");
+  }
+
+  private hydratePendingCreationCosmetics(ownerAddress: bigint): void {
+    if (!this.components || ownerAddress === 0n) {
+      return;
+    }
+
+    playerCosmeticsStore.hydrateFromBlitzComponent(this.components, ownerAddress);
+  }
+
+  private resolvePendingCreationBaseModel(input: {
+    entityId: ID;
+    hexCoords: HexPosition;
+    troopType: TroopType;
+    troopTier: TroopTier;
+  }): ModelType {
+    const contractHex = new Position({ x: input.hexCoords.col, y: input.hexCoords.row }).getContract();
+    const biome = configManager.getBiome(contractHex.x, contractHex.y);
+    return this.armyModel.getModelTypeForEntity(
+      this.toNumericId(input.entityId),
+      input.troopType,
+      input.troopTier,
+      biome,
+    );
+  }
+
+  private async resolvePendingCreationSourceScene(input: {
+    baseModelType: ModelType;
+    cosmeticSkin: ResolvedCosmeticSkin;
+  }): Promise<Object3D> {
+    if (this.shouldUsePendingCreationCosmeticSource(input.cosmeticSkin)) {
+      try {
+        return await this.armyModel.getCosmeticModelSourceScene(input.cosmeticSkin);
+      } catch (error) {
+        console.warn("[ArmyManager] Failed to load pending creation cosmetic ghost, falling back to base model", error);
+      }
+    }
+
+    return this.armyModel.getModelSourceScene(input.baseModelType);
+  }
+
+  private shouldUsePendingCreationCosmeticSource(skin: ResolvedCosmeticSkin): boolean {
+    return !skin.isFallback && skin.assetPaths.length > 0;
+  }
+
+  private resolvePendingCreationGhostColor(ownerAddress: bigint): string {
+    return this.getArmyColor({
+      isMine: true,
+      isDaydreamsAgent: false,
+      owner: { address: ownerAddress },
+    });
   }
 
   public syncAttachedArmiesOwnerForStructure(params: {
@@ -2050,6 +2502,28 @@ export class ArmyManager {
     return this.selectedArmyForPath;
   }
 
+  public onMovementStart(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.movementStartListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.movementStartListeners.set(numericEntityId, listeners);
+    }
+
+    listeners.add(callback);
+
+    return () => {
+      const active = this.movementStartListeners.get(numericEntityId);
+      if (!active) {
+        return;
+      }
+      active.delete(callback);
+      if (active.size === 0) {
+        this.movementStartListeners.delete(numericEntityId);
+      }
+    };
+  }
+
   public onMovementComplete(entityId: ID, callback: () => void): () => void {
     const numericEntityId = this.toNumericId(entityId);
     let listeners = this.movementCompleteListeners.get(numericEntityId);
@@ -2072,8 +2546,51 @@ export class ArmyManager {
     };
   }
 
+  public onMovementVisualCancel(entityId: ID, callback: () => void): () => void {
+    const numericEntityId = this.toNumericId(entityId);
+    let listeners = this.movementVisualCancelListeners.get(numericEntityId);
+    if (!listeners) {
+      listeners = new Set();
+      this.movementVisualCancelListeners.set(numericEntityId, listeners);
+    }
+
+    listeners.add(callback);
+
+    return () => {
+      const active = this.movementVisualCancelListeners.get(numericEntityId);
+      if (!active) {
+        return;
+      }
+
+      active.delete(callback);
+      if (active.size === 0) {
+        this.movementVisualCancelListeners.delete(numericEntityId);
+      }
+    };
+  }
+
   public hasMovingArmies(): boolean {
     return this.armyModel.hasMovingInstances();
+  }
+
+  public isArmyMoving(entityId: ID): boolean {
+    return this.armyModel.isEntityMoving(this.toNumericId(entityId));
+  }
+
+  private runMovementStartListeners(entityId: number): void {
+    const listeners = this.movementStartListeners.get(entityId);
+    if (!listeners || listeners.size === 0) {
+      return;
+    }
+
+    this.movementStartListeners.delete(entityId);
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Movement start listener failed", error);
+      }
+    });
   }
 
   private runMovementCompleteListeners(entityId: number): void {
@@ -2083,6 +2600,7 @@ export class ArmyManager {
     }
 
     this.movementCompleteListeners.delete(entityId);
+    this.movementVisualCancelListeners.delete(entityId);
     listeners.forEach((listener) => {
       try {
         listener();
@@ -2092,10 +2610,35 @@ export class ArmyManager {
     });
   }
 
+  private runMovementVisualCancelListeners(entityId: number): void {
+    const listeners = this.movementVisualCancelListeners.get(entityId);
+    this.movementVisualCancelListeners.delete(entityId);
+    this.movementStartListeners.delete(entityId);
+    this.movementCompleteListeners.delete(entityId);
+
+    if (!listeners || listeners.size === 0) {
+      return;
+    }
+
+    listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[ArmyManager] Movement visual cancel listener failed", error);
+      }
+    });
+  }
+
+  // Dev-only ghost tripwire: throttled audit that the manager's slot mirror
+  // matches the army-model source of truth (see army-slot-auditor).
+  private slotAuditFrameCounter = 0;
+  private readonly loggedSlotViolations = new Set<string>();
+
   update(deltaTime: number, animationContext?: AnimationVisibilityContext) {
     // Update movements in ArmyModel
     this.armyModel.updateMovements(deltaTime);
     this.armyModel.updateAnimations(deltaTime, animationContext);
+    this.updateCompactLabelCamera();
 
     // Update FX
     this.fxManager.update(deltaTime);
@@ -2113,9 +2656,9 @@ export class ArmyManager {
     }
 
     // Batch update: single pass over visible armies for all per-frame operations
-    // This consolidates point icons, attachment transforms, and indicators
+    // This consolidates point icons, compact labels, and attachment transforms.
     this.updateVisibleArmiesBatched();
-    this.refreshMovingArmyBoundsIfNeeded();
+    this.syncArmyBoundsForMovementState();
 
     if (this.frustumVisibilityDirty) {
       const now = performance.now();
@@ -2128,6 +2671,130 @@ export class ArmyManager {
 
     // Flush batched label pool operations to minimize layout thrashing
     this.labelPool.flushBatch();
+
+    // Throttled (~1.5s at 60fps) so the per-frame cost stays negligible.
+    this.slotAuditFrameCounter = (this.slotAuditFrameCounter + 1) % 90;
+    if (this.slotAuditFrameCounter === 0) {
+      // All builds: self-heal the two ghosting symptoms (orphaned drawn slot,
+      // visible-but-undrawn army) so a dropped slot can't strand a ghost or a
+      // missing model indefinitely.
+      this.reconcileArmyRenderIntegrity();
+      if (import.meta.env?.DEV) {
+        // DEV-only mirror/SSOT tripwire — narrows where a desync originated.
+        this.auditArmySlotsForGhosts();
+      }
+    }
+  }
+
+  // Self-healing reconciliation for the two reported ghosting symptoms:
+  //   1. orphaned-drawn-slot — a model still drawn for an army no longer tracked
+  //      (a dead unit's frozen ghost). Purge the slot.
+  //   2. visible-not-drawn — a tracked army that should be visible in the
+  //      committed chunk but has no drawn model (a spawn that never appeared).
+  //      Re-run its render, which is idempotent and self-gating.
+  // The label path is unaffected because labels read instanceData.position, not
+  // the slot — which is exactly why labels keep working while models ghost.
+  private reconcileArmyRenderIntegrity(): void {
+    const liveEntityIds = new Set<number>();
+    this.armies.forEach((_, entityId) => liveEntityIds.add(this.toNumericId(entityId)));
+
+    const visibleUndrawnEntityIds: ID[] = [];
+    // Only trust the "should be visible" predicate when the chunk is settled;
+    // mid-transition, an undrawn army is expected (it is queued for render).
+    if (!this.isArmyChunkTransitioning && isCommittedManagerChunk(this.currentChunkKey)) {
+      this.armies.forEach((army, entityId) => {
+        if (this.suppressedArmies.has(entityId)) return;
+        if (!this.isArmyVisibleInCurrentChunk(army)) return;
+        if (this.armyModel.isEntityDrawn(this.toNumericId(entityId))) return;
+        visibleUndrawnEntityIds.push(entityId);
+      });
+    }
+
+    const violations = auditArmyRenderIntegrity({
+      drawnSlotOwners: this.armyModel.collectDrawnSlotOwners(),
+      liveEntityIds,
+      visibleUndrawnEntityIds,
+    });
+
+    if (violations.length === 0) {
+      return;
+    }
+
+    let purgedAny = false;
+    for (const violation of violations) {
+      if (violation.kind === "orphaned-drawn-slot") {
+        this.armyModel.purgeDrawnSlot(violation.slot);
+        purgedAny = true;
+      } else {
+        void this.renderArmyIntoCurrentChunkIfVisible(this.toNumericId(violation.entityId));
+      }
+
+      if (import.meta.env?.DEV) {
+        const signature =
+          violation.kind === "orphaned-drawn-slot"
+            ? `orphan:${violation.slot}:${violation.owner}`
+            : `missing:${violation.entityId}`;
+        if (!this.loggedSlotViolations.has(signature)) {
+          this.loggedSlotViolations.add(signature);
+          console.warn("[ArmyManager] render-integrity heal", violation);
+        }
+      }
+    }
+
+    // Purges mutate activeInstances directly; recompact draw counts so the freed
+    // slot stops drawing this frame.
+    if (purgedAny) {
+      this.updateVisibleArmyBuffers();
+    }
+  }
+
+  // Reports when the manager's slot mirror (visibleArmyIndices) drifts from the
+  // army-model source of truth, or when two entities share a live slot — the two
+  // states that surface as a frozen ghost. Each unique violation is logged once.
+  private auditArmySlotsForGhosts(): void {
+    const entries: ArmySlotAuditEntry[] = [];
+    this.visibleArmyIndices.forEach((mirrorSlot, entityId) => {
+      entries.push({
+        entityId,
+        mirrorSlot,
+        ssotSlot: this.armyModel.getEntitySlot(this.toNumericId(entityId)),
+      });
+    });
+
+    for (const violation of auditArmySlots(entries)) {
+      const signature =
+        violation.kind === "mirror-mismatch"
+          ? `mirror:${violation.entityId}:${violation.mirrorSlot}:${violation.ssotSlot}`
+          : `shared:${violation.slot}:${violation.entityIds.join(",")}`;
+      if (this.loggedSlotViolations.has(signature)) {
+        continue;
+      }
+      this.loggedSlotViolations.add(signature);
+      console.warn("[ArmyManager] slot-audit ghost risk", violation);
+    }
+  }
+
+  private updateCompactLabelCamera(): void {
+    const camera = this.hexagonScene?.getCamera();
+    if (camera) {
+      this.compactLabelRenderer.updateCamera(camera);
+    }
+  }
+
+  private syncArmyBoundsForMovementState() {
+    const hasMovingArmies = this.hasMovingArmies();
+
+    if (hasMovingArmies) {
+      this.refreshMovingArmyBoundsIfNeeded();
+      this.hadMovingArmiesLastFrame = true;
+      return;
+    }
+
+    if (this.hadMovingArmiesLastFrame) {
+      this.refreshSettledArmyBounds();
+    }
+
+    this.hadMovingArmiesLastFrame = false;
   }
 
   private refreshMovingArmyBoundsIfNeeded() {
@@ -2143,21 +2810,28 @@ export class ArmyManager {
     this.lastMovingBoundsRefreshAt = now;
     this.armyModel.requestBoundsUpdate();
     this.armyModel.applyPendingBounds();
-    this.playerIndicatorManager.computeBoundingSphere();
+    this.frustumVisibilityDirty = true;
+  }
+
+  private refreshSettledArmyBounds() {
+    this.lastMovingBoundsRefreshAt = Number.NEGATIVE_INFINITY;
+    this.armyModel.requestBoundsUpdate();
+    this.armyModel.applyPendingBounds();
+    this.frustumVisibilityDirty = true;
   }
 
   /**
    * Batched update for all visible army per-frame operations.
-   * Consolidates point icon updates, attachment transforms, and indicator positions
+   * Consolidates point icon updates, compact labels, and attachment transforms
    * into a single iteration over visibleArmies to reduce iteration overhead.
    */
   private updateVisibleArmiesBatched() {
     const hasPointsRenderers = this.pointsRenderers !== undefined;
     const hasActiveAttachments = this.activeArmyAttachmentEntities.size > 0;
-    const hasIndicators = this.playerIndicatorManager.getVisibleCount() > 0;
+    const hasMovingArmies = this.hasMovingArmies();
 
     // Early exit if nothing to update
-    if (!hasPointsRenderers && !hasActiveAttachments && !hasIndicators) {
+    if (!hasPointsRenderers && !hasActiveAttachments && !hasMovingArmies) {
       return;
     }
 
@@ -2196,17 +2870,8 @@ export class ArmyManager {
         });
       }
 
-      // 1b. Update indicator dot positions for moving armies
-      if (instanceData?.isMoving && instanceData.position) {
-        syncMovingArmyIndicatorPresentationState({
-          entityId: army.entityId,
-          color: army.color,
-          position: instanceData.position,
-          indicatorMetadataCache: this.indicatorMetadataCache,
-          setIndicatorColor: (color) => this.tempColor.set(color),
-          updateIndicator: ({ entityId, position: indicatorPosition, color, yOffset }) =>
-            this.playerIndicatorManager.updateIndicator(entityId, indicatorPosition, color, yOffset),
-        });
+      if (instanceData?.isMoving) {
+        this.updateArmyCompactLabel(army, instanceData.position);
       }
 
       // 2. Update attachment transforms
@@ -2220,7 +2885,7 @@ export class ArmyManager {
           scale: this.scale,
           attachmentTransformScratch: this.armyAttachmentTransformScratch,
           getWorldPositionInto: (out, hexCoords) => this.getArmyWorldPositionInto(out, hexCoords),
-          resolveBiome: (x, y) => Biome.getBiome(x, y),
+          resolveBiome: (x, y) => configManager.getBiome(x, y),
           getModelTypeForEntity: (trackedEntityId, category, tier, biome) =>
             this.armyModel.getModelTypeForEntity(trackedEntityId, category, tier, biome),
           resolveMountTransforms: (modelType, baseTransform, scratch) =>
@@ -2240,8 +2905,8 @@ export class ArmyManager {
   }
 
   private hideSuppressedArmyAuxiliaryVisuals(entityId: ID): void {
-    this.playerIndicatorManager.removeIndicator(entityId);
     this.removeArmyPointIcon(entityId);
+    this.removeArmyCompactLabel(entityId);
 
     const label = this.entityIdLabels.get(entityId);
     if (label) {
@@ -2271,7 +2936,7 @@ export class ArmyManager {
     return this.getArmyWorldPositionInto(this.tempWorldPosition, hexCoords);
   };
 
-  private toNumericId(entityId: ID): number {
+  private toNumericId(entityId: ID | string | null | undefined): number {
     return typeof entityId === "number" ? entityId : Number(entityId ?? 0);
   }
 
@@ -2352,7 +3017,7 @@ export class ArmyManager {
       }
       const numericId = this.toNumericId(army.entityId);
       const { x, y } = army.hexCoords.getContract();
-      const biome = Biome.getBiome(x, y);
+      const biome = configManager.getBiome(x, y);
       const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
       this.refreshArmyInstance(army, slot, modelType);
     });
@@ -2386,27 +3051,37 @@ export class ArmyManager {
     this.frustumVisibilityDirty = true;
   }
 
-  public showLabel(entityId: ID): void {
+  public showLabel(entityId: ID): HoverLabelShowResult {
     const army = this.armies.get(entityId);
     if (!army) {
-      return;
+      return { status: "missing" };
     }
 
     const position = this.getArmyWorldPosition(army.entityId, army.hexCoords);
     if (this.entityIdLabels.has(army.entityId)) {
       const label = this.entityIdLabels.get(army.entityId)!;
+      const wasDetached = label.parent !== this.labelsGroup;
+      const wasHidden = label.visible !== true || label.element.style.display === "none";
       syncArmyLabelPresentationState({
         label,
         position,
       });
+      this.revealArmyLabel(entityId, label);
+      label.visible = true;
+      label.element.style.display = "";
       this.updateArmyLabelData(entityId, army, label);
       this.highlightArmyPointHover(entityId, army);
-      return;
+      if (wasDetached || wasHidden) {
+        this.frustumVisibilityDirty = true;
+        return { status: "reattached" };
+      }
+      return { status: "unchanged" };
     }
 
     this.addEntityIdLabel(army, position);
     this.highlightArmyPointHover(entityId, army);
     this.frustumVisibilityDirty = true;
+    return { status: "shown" };
   }
 
   public hideLabel(entityId: ID): void {
@@ -2425,7 +3100,19 @@ export class ArmyManager {
     this.frustumVisibilityDirty = true;
   }
 
+  public setLabelRenderDistance(distance: number): void {
+    this.labelRenderDistance = distance;
+    // Re-evaluate label visibility on the next update cycle.
+    this.frustumVisibilityDirty = true;
+  }
+
   private isArmyLabelVisible(label: CSS2DObject): boolean {
+    if (this.labelRenderDistance < Infinity) {
+      const camera = this.hexagonScene?.getCamera();
+      if (camera && camera.position.distanceTo(label.position) > this.labelRenderDistance) {
+        return false;
+      }
+    }
     return this.visibilityManager
       ? this.visibilityManager.isPointVisible(label.position)
       : (this.frustumManager?.isPointVisible(label.position) ?? true);
@@ -2446,12 +3133,14 @@ export class ArmyManager {
       rendererKey: resolveArmyPointRendererKey(army),
       entityId,
     });
+    this.compactLabelRenderer.setHover(entityId);
   }
 
   private clearArmyPointHoverIcons() {
     clearArmyPointHoverState({
       renderers: this.pointsRenderers,
     });
+    this.compactLabelRenderer.clearHover();
   }
 
   removeLabelsFromScene() {
@@ -2567,11 +3256,15 @@ export class ArmyManager {
 
   private handleCameraViewChange = (view: CameraView) => {
     const qualityShadowsEnabled = this.hexagonScene?.getShadowsEnabledByQuality() ?? true;
+    const contactShadowsAllowed = this.hexagonScene?.contactShadowsAllowedByQuality() ?? true;
     const enableRealShadows = view === CameraView.Close && qualityShadowsEnabled;
+    // Contact shadows are the fallback for real shadows; gate them off on LOW/below
+    // so the weakest hardware pays for neither real nor contact shadows.
+    const enableContactShadows = !enableRealShadows && contactShadowsAllowed;
 
     // Keep shadow flags in sync even if view is unchanged (quality can toggle shadows dynamically).
     this.armyModel.setShadowsEnabled(enableRealShadows);
-    this.armyModel.setContactShadowsEnabled(!enableRealShadows);
+    this.armyModel.setContactShadowsEnabled(enableContactShadows);
 
     if (this.currentCameraView === view) {
       return;
@@ -2644,84 +3337,84 @@ ${
     `);
   }
 
-  private calculateArmyCurrentStamina(input: {
+  private resolveLiveExplorerTroops(entityId: ID) {
+    if (!this.components) {
+      return null;
+    }
+
+    return getComponentValue(this.components.ExplorerTroops, getEntityIdFromKeys([BigInt(entityId)]))?.troops ?? null;
+  }
+
+  private resolveArmyStaminaSnapshot(input: {
+    entityId: ID;
     troopCount: number;
     onChainStamina: { amount: bigint; updatedTick: number };
     category: TroopType;
     tier: TroopTier;
-  }): number {
-    const { currentArmiesTick } = getBlockTimestamp();
+  }): { current: number; max: number; displayRatio: number } | null {
+    const { currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestampStore.getState();
+    if (!Number.isFinite(currentArmiesTick) || currentArmiesTick <= 0) {
+      return null;
+    }
 
-    return Number(
-      StaminaManager.getStamina(
-        {
-          category: input.category,
-          tier: input.tier,
-          count: BigInt(input.troopCount),
-          stamina: {
-            amount: BigInt(input.onChainStamina.amount),
-            updated_tick: BigInt(input.onChainStamina.updatedTick),
-          },
-          boosts: {
-            incr_stamina_regen_percent_num: 0,
-            incr_stamina_regen_tick_count: 0,
-            incr_explore_reward_percent_num: 0,
-            incr_explore_reward_end_tick: 0,
-            incr_damage_dealt_percent_num: 0,
-            incr_damage_dealt_end_tick: 0,
-            decr_damage_gotten_percent_num: 0,
-            decr_damage_gotten_end_tick: 0,
-          },
-          battle_cooldown_end: 0,
-        },
-        currentArmiesTick,
-      ).amount,
-    );
+    const pendingStamina = getFreshPendingStaminaSource(input.entityId);
+    const staminaSnapshot = getExplorerStaminaSnapshot({
+      entityId: input.entityId,
+      currentArmiesTick,
+      liveTroops: this.resolveLiveExplorerTroops(input.entityId),
+      fallbackArmy: {
+        category: input.category,
+        tier: input.tier,
+        troopCount: input.troopCount,
+        onChainStamina: input.onChainStamina,
+      },
+      pendingStamina: pendingStamina
+        ? {
+            amount: pendingStamina.amount,
+            updatedTick: pendingStamina.updatedTick,
+          }
+        : null,
+    });
+    if (!staminaSnapshot) {
+      return null;
+    }
+
+    // staminaSnapshot.current is already the computed regen value from
+    // StaminaManager.getStamina(troops, currentArmiesTick). Use it directly.
+    return {
+      current: staminaSnapshot.current,
+      max: staminaSnapshot.max,
+      displayRatio: staminaSnapshot.max > 0 ? staminaSnapshot.current / staminaSnapshot.max : 0,
+    };
   }
 
   /**
    * Recompute stamina for all armies and update visible labels when armies tick changes
    */
   private recomputeStaminaForAllArmies(): void {
-    const { currentArmiesTick } = getBlockTimestamp();
-
     // Update all army data in cache
     this.armies.forEach((army, entityId) => {
-      // getBlockTimestamp may change during iteration; preserve existing behavior by
-      // keeping the loop-local tick for the refresh pass.
-      const updatedStamina = Number(
-        StaminaManager.getStamina(
-          {
-            category: army.category,
-            tier: army.tier,
-            count: BigInt(army.troopCount),
-            stamina: {
-              amount: BigInt(army.onChainStamina.amount),
-              updated_tick: BigInt(army.onChainStamina.updatedTick),
-            },
-            boosts: {
-              incr_stamina_regen_percent_num: 0,
-              incr_stamina_regen_tick_count: 0,
-              incr_explore_reward_percent_num: 0,
-              incr_explore_reward_end_tick: 0,
-              incr_damage_dealt_percent_num: 0,
-              incr_damage_dealt_end_tick: 0,
-              decr_damage_gotten_percent_num: 0,
-              decr_damage_gotten_end_tick: 0,
-            },
-            battle_cooldown_end: 0,
-          },
-          currentArmiesTick,
-        ).amount,
-      );
+      try {
+        const staminaSnapshot = this.resolveArmyStaminaSnapshot({
+          entityId,
+          troopCount: army.troopCount,
+          onChainStamina: army.onChainStamina,
+          category: army.category,
+          tier: army.tier,
+        });
 
-      // Update cached army data with new stamina
-      army.currentStamina = updatedStamina;
+        // Update cached army data with new stamina
+        army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
+        army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
+        army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;
 
-      // Update visible label if it exists
-      const label = this.entityIdLabels.get(entityId);
-      if (label) {
-        this.updateArmyLabelData(entityId, army, label);
+        // Update visible label if it exists
+        const label = this.entityIdLabels.get(entityId);
+        if (label) {
+          this.updateArmyLabelData(entityId, army, label);
+        }
+      } catch {
+        // Skip this army — don't let one bad entity block all others
       }
     });
   }
@@ -2753,14 +3446,27 @@ ${
    * Update an army label with fresh data
    */
   private updateArmyLabelData(_entityId: ID, army: ArmyData, existingLabel: CSS2DObject): void {
-    const dataKey = buildArmyLabelDataKey(army);
+    const layoutDataKey = buildArmyLabelLayoutDataKey(army);
+    const staminaDataKey = buildArmyLabelStaminaDataKey(army);
 
     syncArmyLabelContentState({
       label: existingLabel,
-      dataKey,
+      layoutDataKey,
+      staminaDataKey,
       labelsAttachedToScene: this.labelsGroup.parent !== null,
       renderLabel: () => updateArmyLabel(existingLabel.element, army, this.currentCameraView),
+      renderStamina: () => this.updateArmyLabelStamina(existingLabel.element, army),
     });
+  }
+
+  private updateArmyLabelStamina(labelElement: HTMLElement, army: ArmyData): void {
+    const staminaBar = labelElement.querySelector('[data-component="stamina-bar"]');
+    if (!staminaBar) {
+      updateArmyLabel(labelElement, army, this.currentCameraView);
+      return;
+    }
+
+    updateStaminaBar(staminaBar as HTMLElement, army.currentStamina, army.maxStamina);
   }
 
   /**
@@ -2807,6 +3513,9 @@ ${
       return;
     }
 
+    this.markAuthoritativeMovementReconciliation(update.entityId);
+    this.reconcileArmyPositionFromExplorerTroopsUpdate(update, army);
+
     // Log troop count diff and play visual FX for battle damage/healing
     const previousCount = army.troopCount;
     const newCount = update.troopCount;
@@ -2825,13 +3534,18 @@ ${
 
     // Update cached army data
     army.troopCount = update.troopCount;
+    army.onChainStamina = update.onChainStamina;
 
-    army.currentStamina = this.calculateArmyCurrentStamina({
+    const staminaSnapshot = this.resolveArmyStaminaSnapshot({
+      entityId: update.entityId,
       troopCount: update.troopCount,
       onChainStamina: update.onChainStamina,
       category: army.category,
       tier: army.tier,
     });
+    army.currentStamina = staminaSnapshot?.current ?? army.currentStamina;
+    army.maxStamina = staminaSnapshot?.max ?? army.maxStamina;
+    army.displayStaminaRatio = staminaSnapshot?.displayRatio ?? army.displayStaminaRatio;
 
     army.troopCount = update.troopCount;
 
@@ -2852,7 +3566,6 @@ ${
       ownerStructureId,
     });
 
-    army.onChainStamina = update.onChainStamina;
     army.battleCooldownEnd = update.battleCooldownEnd;
     army.battleTimerLeft = getBattleTimerLeft(update.battleCooldownEnd);
 
@@ -2861,6 +3574,46 @@ ${
     if (label) {
       this.updateArmyLabelData(update.entityId, army, label);
     }
+  }
+
+  private markAuthoritativeMovementReconciliation(entityId: ID): void {
+    if (!this.optimisticallyMovingArmies.has(entityId)) {
+      return;
+    }
+
+    this.markOptimisticMovementReconciled(entityId);
+  }
+
+  private reconcileArmyPositionFromExplorerTroopsUpdate(update: ExplorerTroopsSystemUpdate, army: ArmyData): void {
+    const nextHexCoords = new Position({ x: update.hexCoords.col, y: update.hexCoords.row });
+    const currentNormalized = army.hexCoords.getNormalized();
+    const nextNormalized = nextHexCoords.getNormalized();
+
+    if (currentNormalized.x === nextNormalized.x && currentNormalized.y === nextNormalized.y) {
+      return;
+    }
+
+    const previousHexCoords = army.hexCoords;
+    army.hexCoords = nextHexCoords;
+    this.armies.set(update.entityId, army);
+    this.updateSpatialIndex(update.entityId, previousHexCoords, nextHexCoords);
+    this.refreshArmyPositionPresentation(army);
+  }
+
+  private refreshArmyPositionPresentation(army: ArmyData): void {
+    const slot = this.visibleArmyIndices.get(army.entityId);
+    if (slot === undefined) {
+      return;
+    }
+
+    const numericId = this.toNumericId(army.entityId);
+    const { x, y } = army.hexCoords.getContract();
+    const biome = configManager.getBiome(x, y);
+    const modelType = this.armyModel.getModelTypeForEntity(numericId, army.category, army.tier, biome);
+
+    this.refreshArmyInstance(army, slot, modelType);
+    this.refreshVisibleArmyCollection();
+    this.updateVisibleArmyBuffers();
   }
 
   public destroy() {
@@ -2921,9 +3674,16 @@ ${
 
     this.armyPaths.clear();
     this.movingArmySourceBuckets.clear();
+    this.optimisticallyMovingArmies.clear();
+    this.authoritativeReconciledArmies.clear();
+    this.authoritativeReconcileListeners.clear();
+    this.optimisticPositionLocks.clear();
     this.suppressedArmies.clear();
+    this.preCommitArmyQueue.clear();
     this.chunkToArmies.clear();
+    this.movementStartListeners.clear();
     this.movementCompleteListeners.clear();
+    this.movementVisualCancelListeners.clear();
 
     destroyArmyManagerOwnedResources({
       pathRenderer: this.pathRenderer,
@@ -2933,10 +3693,6 @@ ${
 
     // Dispose army model resources including shared materials
     this.armyModel.dispose();
-
-    // Dispose player indicator manager
-    this.playerIndicatorManager.dispose();
-    this.indicatorMetadataCache.clear();
 
     // Tear down FX to avoid lingering RAF loops and textures
     this.fxManager.destroy();
@@ -2955,6 +3711,7 @@ ${
       this.pointsRenderers.ally.dispose();
       this.pointsRenderers.agent.dispose();
     }
+    this.compactLabelRenderer.dispose();
 
     // Clean up any other resources...
   }

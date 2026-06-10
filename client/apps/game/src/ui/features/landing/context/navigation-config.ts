@@ -1,12 +1,15 @@
-import { ArrowLeftRight, Home, Trophy, TrendingUp, User, type LucideIcon } from "lucide-react";
+import { ArrowLeftRight, Bug, Home, Trophy, TrendingUp, User, type LucideIcon } from "lucide-react";
 
-type SectionId = "home" | "leaderboard" | "markets" | "amm" | "profile";
+type SectionId = "home" | "leaderboard" | "markets" | "amm" | "profile" | "debug";
 
 interface SubMenuItem {
   id: string;
   label: string;
   /** Tab parameter value (used in URL query string) */
   tab: string | null;
+  href: string;
+  /** When true, the nav item is rendered with a prominent call-to-action style */
+  primary?: boolean;
 }
 
 interface SectionConfig {
@@ -25,10 +28,10 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
     icon: Home,
     basePath: "/",
     subMenu: [
-      { id: "play", label: "PLAY", tab: null },
-      { id: "learn", label: "LEARN", tab: "learn" },
-      { id: "news", label: "NEWS", tab: "news" },
-      { id: "factory", label: "FACTORY", tab: "factory" },
+      { id: "play", label: "PLAY", tab: null, href: "/" },
+      { id: "learn", label: "LEARN", tab: "learn", href: "/learn" },
+      { id: "news", label: "NEWS", tab: "news", href: "/news" },
+      { id: "factory", label: "CREATE GAME", tab: "factory", href: "/factory", primary: true },
     ],
   },
   {
@@ -37,8 +40,8 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
     icon: Trophy,
     basePath: "/leaderboard",
     subMenu: [
-      { id: "ranked", label: "RANKED", tab: null },
-      { id: "tournaments", label: "TOURNAMENTS", tab: "tournaments" },
+      { id: "ranked", label: "RANKED", tab: null, href: "/leaderboard" },
+      { id: "tournaments", label: "TOURNAMENTS", tab: "tournaments", href: "/leaderboard?tab=tournaments" },
     ],
   },
   {
@@ -46,14 +49,14 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
     label: "Markets",
     icon: TrendingUp,
     basePath: "/markets",
-    subMenu: [{ id: "markets", label: "MARKETS", tab: null }],
+    subMenu: [{ id: "markets", label: "MARKETS", tab: null, href: "/markets" }],
   },
   {
     id: "amm",
     label: "Agora",
     icon: ArrowLeftRight,
     basePath: "/amm",
-    subMenu: [{ id: "amm", label: "AGORA", tab: null }],
+    subMenu: [{ id: "amm", label: "AGORA", tab: null, href: "/amm" }],
   },
   {
     id: "profile",
@@ -61,40 +64,79 @@ export const NAVIGATION_SECTIONS: SectionConfig[] = [
     icon: User,
     basePath: "/profile",
     subMenu: [
-      { id: "profile", label: "PROFILE", tab: null },
-      { id: "cosmetics", label: "COSMETICS", tab: "cosmetics" },
-      { id: "wallet", label: "WALLET", tab: "wallet" },
+      { id: "profile", label: "PROFILE", tab: null, href: "/profile" },
+      { id: "cosmetics", label: "COSMETICS", tab: "cosmetics", href: "/profile?tab=cosmetics" },
+      { id: "wallet", label: "WALLET", tab: "wallet", href: "/profile?tab=wallet" },
     ],
   },
+  ...buildDebugNavigationSections(),
 ];
+
+const HOME_SECTION_PATHS = new Set(["/", "/learn", "/news", "/factory"]);
 
 /**
  * Get the section config for a given route path
  */
 export function getSectionFromPath(pathname: string): SectionConfig {
-  // Check exact matches first, then prefix matches
+  if (HOME_SECTION_PATHS.has(pathname)) {
+    return NAVIGATION_SECTIONS[0];
+  }
+
   for (const section of NAVIGATION_SECTIONS) {
-    if (section.basePath === "/" && pathname === "/") {
-      return section;
-    }
     if (section.basePath !== "/" && pathname.startsWith(section.basePath)) {
       return section;
     }
   }
-  // Default to home
+
   return NAVIGATION_SECTIONS[0];
 }
 
 /**
- * Get the active submenu item based on tab query parameter
+ * Get the active submenu item from the current route context.
  */
-export function getActiveSubItem(section: SectionConfig, tabParam: string | null): SubMenuItem {
+export function getActiveSubItem(section: SectionConfig, pathname: string, searchParams: URLSearchParams): SubMenuItem {
+  if (section.id === "home") {
+    const match = section.subMenu.find((item) => item.href === pathname);
+    return match ?? section.subMenu[0];
+  }
+
+  const tabParam = searchParams.get("tab");
   if (!tabParam) {
-    // Return the default (first) item when no tab is specified
     return section.subMenu[0];
   }
 
-  // Find matching tab
   const match = section.subMenu.find((item) => item.tab === tabParam);
   return match ?? section.subMenu[0];
+}
+
+export function getSubItemHref(section: SectionConfig, item: SubMenuItem, searchParams: URLSearchParams): string {
+  if (section.id === "home") {
+    return item.href;
+  }
+
+  const nextSearchParams = new URLSearchParams(searchParams);
+  if (item.tab === null) {
+    nextSearchParams.delete("tab");
+  } else {
+    nextSearchParams.set("tab", item.tab);
+  }
+
+  const queryString = nextSearchParams.toString();
+  return queryString ? `${section.basePath}?${queryString}` : section.basePath;
+}
+
+function buildDebugNavigationSections(): SectionConfig[] {
+  if (!import.meta.env.DEV) {
+    return [];
+  }
+
+  return [
+    {
+      id: "debug",
+      label: "Debug",
+      icon: Bug,
+      basePath: "/debug/three-chunks",
+      subMenu: [{ id: "three-chunks", label: "DEBUG", tab: null, href: "/debug/three-chunks" }],
+    },
+  ];
 }

@@ -20,6 +20,7 @@ describe("bootstrapRendererStartupRuntime", () => {
       cleanupExpiredTransitions: vi.fn(() => 0),
       document,
       initializeHudScene: vi.fn(),
+      initialSceneName: "map" as never,
       isDestroyed: false,
       prepareScenes: vi.fn(),
       registerCleanupInterval: vi.fn(),
@@ -52,6 +53,7 @@ describe("bootstrapRendererStartupRuntime", () => {
       debug,
       document,
       initializeHudScene: vi.fn(),
+      initialSceneName: "map" as never,
       isDestroyed: false,
       prepareScenes: vi.fn(),
       registerCleanupInterval,
@@ -75,8 +77,9 @@ describe("bootstrapRendererStartupRuntime", () => {
       cleanupExpiredTransitions: () => 0,
       document,
       initializeHudScene: () => calls.push("initializeHud"),
+      initialSceneName: "map" as never,
       isDestroyed: false,
-      prepareScenes: () => calls.push("prepareScenes"),
+      prepareScenes: (sceneName) => calls.push(`prepareScenes:${sceneName}`),
       registerCleanupInterval: () => calls.push("registerInterval"),
       rendererDomElement: document.createElement("canvas"),
       setIntervalFn: ((handler: TimerHandler) => {
@@ -95,10 +98,32 @@ describe("bootstrapRendererStartupRuntime", () => {
       "registerInterval",
       "attachInteraction",
       "initializeHud",
-      "prepareScenes",
+      "prepareScenes:map",
       "syncRoute",
       "animate",
     ]);
+  });
+
+  it("passes the route-selected initial scene into scene preparation", () => {
+    const prepareScenes = vi.fn();
+
+    bootstrapRendererStartupRuntime({
+      animate: vi.fn(),
+      attachInteractionRuntime: vi.fn(),
+      cleanupExpiredTransitions: vi.fn(() => 0),
+      document,
+      initializeHudScene: vi.fn(),
+      initialSceneName: "travel" as never,
+      isDestroyed: false,
+      prepareScenes,
+      registerCleanupInterval: vi.fn(),
+      rendererDomElement: document.createElement("canvas"),
+      setIntervalFn: vi.fn(() => 1 as never),
+      syncRouteFromLocation: vi.fn(),
+      warn: vi.fn(),
+    });
+
+    expect(prepareScenes).toHaveBeenCalledWith("travel");
   });
 
   it("skips startup work entirely when destruction wins the race", () => {
@@ -110,6 +135,7 @@ describe("bootstrapRendererStartupRuntime", () => {
       cleanupExpiredTransitions: vi.fn(() => 0),
       document,
       initializeHudScene: vi.fn(),
+      initialSceneName: "map" as never,
       isDestroyed: true,
       prepareScenes: vi.fn(),
       registerCleanupInterval: vi.fn(),

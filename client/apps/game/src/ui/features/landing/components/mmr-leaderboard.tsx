@@ -8,7 +8,9 @@ import { hash } from "starknet";
 
 import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
 import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
+import { useLandingNetworkState } from "@/ui/features/landing/hooks/use-landing-network-state";
 import { MMRTierBadge } from "@/ui/shared/components/mmr-tier-badge";
+import { getChainLabel } from "@/ui/utils/network-switch";
 import {
   getMMRTier,
   getMMRTierFromRaw,
@@ -32,8 +34,6 @@ const EVENT_CONTRACT_EXPR =
 const SHIMMER_DELTA_THRESHOLD = 100;
 
 type SortBy = "rank" | "timestamp" | "delta";
-
-const CHAIN_OPTIONS: Chain[] = ["mainnet", "slot"];
 
 interface GlobalMMRRow {
   player_address?: string;
@@ -652,12 +652,13 @@ const ExpandedRowDetail = ({ entry }: { entry: GlobalMMREntry }) => {
 
 export const MMRLeaderboard = () => {
   const { address: connectedAddress } = useAccount();
+  const { preferredChain } = useLandingNetworkState();
 
   const [state, setState] = useState<LeaderboardState>({
     entries: [],
     isLoading: false,
     error: null,
-    selectedChain: "mainnet",
+    selectedChain: preferredChain,
     sortBy: "rank",
     searchInput: "",
     searchTerm: "",
@@ -672,6 +673,10 @@ export const MMRLeaderboard = () => {
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const currentUserRowRef = useRef<HTMLTableRowElement>(null);
   const pendingScrollToUser = useRef(false);
+
+  useEffect(() => {
+    setState((prev) => (prev.selectedChain === preferredChain ? prev : { ...prev, selectedChain: preferredChain }));
+  }, [preferredChain]);
 
   const currentUserAddress = useMemo(() => {
     if (!connectedAddress) return null;
@@ -930,28 +935,13 @@ export const MMRLeaderboard = () => {
           </div>
         </div>
 
-        {/* Toolbar: Chain, Sort, Search */}
+        {/* Toolbar: selected chain, sort, search */}
         <div className="flex flex-wrap items-center gap-6">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gold/60">Chain:</span>
-            <div className="flex gap-1">
-              {CHAIN_OPTIONS.map((chain) => {
-                const isSelected = state.selectedChain === chain;
-
-                return (
-                  <button
-                    key={chain}
-                    type="button"
-                    onClick={() => setState((prev) => ({ ...prev, selectedChain: chain }))}
-                    className={`rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition ${
-                      isSelected ? "bg-gold/20 text-gold" : "text-gold/60 hover:bg-gold/10 hover:text-gold"
-                    }`}
-                  >
-                    <span>{chain}</span>
-                  </button>
-                );
-              })}
-            </div>
+            <span className="rounded-lg border border-gold/20 bg-gold/10 px-3 py-1.5 text-sm font-medium text-gold">
+              {getChainLabel(state.selectedChain)}
+            </span>
           </div>
 
           <div className="flex items-center gap-2">

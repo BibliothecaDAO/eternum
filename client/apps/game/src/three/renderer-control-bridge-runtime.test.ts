@@ -104,4 +104,26 @@ describe("renderer control bridge runtime", () => {
     updateOpacity(0.42);
     expect(material.opacity).toBe(0.42);
   });
+
+  it("keeps renderer startup alive when dev gui setup fails", () => {
+    getContactShadowResources.mockReturnValue({ material: { opacity: 0.24 } });
+    setupRendererDevGui.mockImplementationOnce(() => {
+      throw new TypeError("Cannot read properties of undefined (reading 'addFolder')");
+    });
+    const runtime = createRendererControlBridgeRuntime({
+      changeCameraView: vi.fn(),
+      createFolder: vi.fn(),
+      fastTravelEnabled: () => true,
+      getCurrentScene: () => SceneName.WorldMap,
+      getRenderer: () => undefined,
+      markLabelsDirty: vi.fn(),
+      moveCameraToColRow: vi.fn(),
+      moveCameraToXYZ: vi.fn(),
+      requestFastTravelSceneRefresh: vi.fn(),
+      switchScene: vi.fn(),
+      updateContactShadowOpacity: vi.fn(),
+    });
+
+    expect(() => runtime.setupGuiControls()).not.toThrow();
+  });
 });

@@ -4,6 +4,18 @@ import { defineComponent, Type as RecsType, type World } from "@dojoengine/recs"
 
 export type ContractComponents = ReturnType<typeof defineContractComponents>;
 
+type ContractComponentMetadata = {
+  namespace: string;
+  name: string;
+  types: string[];
+  customTypes: string[];
+};
+
+type QuestLevelsSchema = {
+  game_address: typeof RecsType.String;
+  levels: typeof RecsType.T;
+};
+
 export function defineContractComponents(world: World) {
   return {
     AddressName: (() => {
@@ -584,11 +596,11 @@ export function defineContractComponents(world: World) {
       );
     })(),
     QuestLevels: (() => {
-      return defineComponent(
+      return defineComponent<QuestLevelsSchema, ContractComponentMetadata, unknown[]>(
         world,
         {
           game_address: RecsType.String,
-          levels: RecsType.Schema,
+          levels: RecsType.T,
         },
         {
           metadata: {
@@ -1523,6 +1535,14 @@ export function defineContractComponents(world: World) {
           admin_address: RecsType.BigInt,
           vrf_provider_address: RecsType.BigInt,
           map_center_offset: RecsType.Number,
+          biome_climate_config: {
+            elevation_scale_bps: RecsType.Number,
+            moisture_scale_bps: RecsType.Number,
+            elevation_bias_bps: RecsType.Number,
+            moisture_bias_bps: RecsType.Number,
+            elevation_seed: RecsType.Number,
+            moisture_seed: RecsType.Number,
+          },
           season_addresses_config: {
             season_pass_address: RecsType.BigInt,
             realms_address: RecsType.BigInt,
@@ -1766,6 +1786,12 @@ export function defineContractComponents(world: World) {
               "ContractAddress", // admin_address
               "ContractAddress", // vrf_provider_address
               "u32", // map_center_offset
+              "u16", // BiomeClimateConfig elevation_scale_bps
+              "u16", // BiomeClimateConfig moisture_scale_bps
+              "u16", // BiomeClimateConfig elevation_bias_bps
+              "u16", // BiomeClimateConfig moisture_bias_bps
+              "u32", // BiomeClimateConfig elevation_seed
+              "u32", // BiomeClimateConfig moisture_seed
               "ContractAddress", // season_pass_address
               "ContractAddress", // realms_address
               "ContractAddress", // lords_address
@@ -2008,6 +2034,23 @@ export function defineContractComponents(world: World) {
         },
       );
     })(),
+    BlitzSettlement: (() => {
+      return defineComponent(
+        world,
+        {
+          player: RecsType.BigInt,
+          structure_ids: RecsType.NumberArray,
+        },
+        {
+          metadata: {
+            namespace: "s1_eternum",
+            name: "BlitzSettlement",
+            types: ["ContractAddress", "Span<u32>"],
+            customTypes: [],
+          },
+        },
+      );
+    })(),
     BlitzRealmSettleFinish: (() => {
       return defineComponent(
         world,
@@ -2161,7 +2204,7 @@ const eventsComponents = (world: World) => {
             owner: RecsType.OptionalString,
             entity_id: RecsType.OptionalNumber,
             tx_hash: RecsType.String,
-            story: RecsType.Schema,
+            story: RecsType.T,
             timestamp: RecsType.Number,
           },
           {

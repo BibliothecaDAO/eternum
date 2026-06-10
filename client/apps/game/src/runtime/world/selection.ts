@@ -32,6 +32,7 @@ export const applyWorldSelection = async (
   markGameEntryMilestone("world-profile-build-started");
   const profile = await buildWorldProfile(targetChain, selection.name);
   markGameEntryMilestone("world-profile-build-completed");
+  markGameEntryMilestone("world-profile-resolved");
   recordGameEntryDuration("world-profile-build", performance.now() - profileBuildStartedAt);
 
   const statePersistStartedAt = performance.now();

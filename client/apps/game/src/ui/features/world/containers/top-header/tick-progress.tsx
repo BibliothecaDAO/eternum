@@ -1,8 +1,9 @@
 import { useUISound } from "@/audio";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { resolveDebuggableCycleProgress } from "@/utils/cycle-progress";
 import { configManager, formatTime } from "@bibliothecadao/eternum";
 import { TickIds } from "@bibliothecadao/types";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
@@ -20,7 +21,8 @@ export const TickProgress = memo(() => {
   const setTooltip = useUIStore((state) => state.setTooltip);
   const setCycleProgress = useUIStore((state) => state.setCycleProgress);
   const setCycleTime = useUIStore((state) => state.setCycleTime);
-  const { currentBlockTimestamp } = useBlockTimestamp();
+  const debugCycleProgressOverride = useUIStore((state) => state.debugCycleProgressOverride);
+  const currentBlockTimestamp = useCurrentBlockTimestamp();
   const mode = useGameModeConfig();
   const cycleTime = configManager.getTick(TickIds.Armies);
   const hasValidCycle = cycleTime > 0;
@@ -55,9 +57,9 @@ export const TickProgress = memo(() => {
   }, [hasValidCycle, currentBlockTimestamp, cycleTime]);
 
   useEffect(() => {
-    setCycleProgress(Math.min(Math.max(phaseData.dayProgress, 0), 100));
+    setCycleProgress(resolveDebuggableCycleProgress(phaseData.dayProgress, debugCycleProgressOverride));
     setCycleTime(cycleTime);
-  }, [phaseData.dayProgress, cycleTime, setCycleProgress, setCycleTime]);
+  }, [debugCycleProgressOverride, phaseData.dayProgress, cycleTime, setCycleProgress, setCycleTime]);
 
   useEffect(() => {
     if (lastProgressRef.current > phaseData.phaseProgress) {
@@ -94,18 +96,14 @@ export const TickProgress = memo(() => {
     setTooltip(null);
   }, [setTooltip]);
 
-  const size = 32;
+  const size = 24;
   const center = size / 2;
-  const radius = 12;
-  const outerRadius = 14;
+  const radius = 9;
+  const outerRadius = 11;
 
   return (
-    <div
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className="self-center text-center px-1 py-1 flex gap-1 text-xl items-center"
-    >
-      <div className="relative w-8 h-8">
+    <div onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave} className="flex items-center gap-2">
+      <div className="relative h-6 w-6">
         <svg width={size} height={size} className="transform -rotate-90">
           {PHASES.map((phase, index) => {
             const angle = 360 / PHASES.length;
@@ -157,7 +155,9 @@ export const TickProgress = memo(() => {
           <ResourceIcon withTooltip={false} resource="Timeglass" size="xs" className="self-center" />
         </div>
       </div>
-      <span className="text-sm">{phaseData.phaseProgress.toFixed(0)}%</span>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-gold tabular-nums">
+        {phaseData.phaseProgress.toFixed(0)}%
+      </span>
     </div>
   );
 });

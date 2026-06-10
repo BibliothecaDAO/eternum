@@ -7,13 +7,12 @@ import { describe, expect, it } from "vitest";
 
 const readSource = (relativePath: string) => readFileSync(resolve(process.cwd(), relativePath), "utf8");
 
-describe("GameEntryModal asset prefetch timing", () => {
-  it("schedules play asset prefetch after world selection and bootstrap start", () => {
+describe("GameEntryModal entry ownership", () => {
+  it("does not reintroduce inline bootstrap or asset priming into the landing modal", () => {
     const source = readSource("src/ui/features/landing/components/game-entry-modal.tsx");
 
-    expect(source).toContain("primePlayEntryAssets");
-    expect(source).toContain('updateTask("world", "complete")');
-    expect(source).toContain('markGameEntryMilestone("bootstrap-started")');
-    expect(source).toContain("primePlayEntryAssets();");
+    expect(source).not.toContain("useGameEntryBootstrapController");
+    expect(source).not.toContain("bootstrapController.retry()");
+    expect(source).not.toContain("primePlayEntryAssets()");
   });
 });

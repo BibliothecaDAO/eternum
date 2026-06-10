@@ -25,7 +25,6 @@ const idsMatch = (left: ID | bigint | null | undefined, right: ID | bigint | nul
 export const getSameStructureTransferBlockReason = ({
   transferDirection,
   selectedEntityId,
-  targetEntityId,
   selectedExplorerOwner,
   targetExplorerOwner,
   guardSlot,
@@ -34,12 +33,6 @@ export const getSameStructureTransferBlockReason = ({
     return idsMatch(selectedExplorerOwner, targetExplorerOwner)
       ? null
       : "Cannot transfer troops: Both explorers must belong to the same structure";
-  }
-
-  if (transferDirection === TransferDirection.ExplorerToStructure) {
-    return idsMatch(selectedExplorerOwner, targetEntityId)
-      ? null
-      : "Cannot transfer troops: Explorer must belong to the target structure";
   }
 
   if (transferDirection !== TransferDirection.StructureToExplorer) {

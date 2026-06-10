@@ -12,9 +12,11 @@ const mocks = vi.hoisted(() => ({
   waitForTransactionConfirmation: vi.fn(),
   getStructuresDataFromTorii: vi.fn(),
   toastError: vi.fn(),
+  removeResourceOverrides: vi.fn(),
 }));
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
+  useCurrentDefaultTick: () => 0,
   useBlockTimestamp: () => ({ currentDefaultTick: 0 }),
 }));
 
@@ -89,6 +91,11 @@ vi.mock("@bibliothecadao/eternum", () => ({
     owner: "0xowner",
     position: { x: 12, y: 34 },
   }),
+  ResourceManager: class {
+    optimisticResourceUpdates() {
+      return mocks.removeResourceOverrides;
+    }
+  },
 }));
 
 vi.mock("@bibliothecadao/types", () => ({
@@ -177,6 +184,7 @@ describe("useStructureUpgrade", () => {
     mocks.waitForTransactionConfirmation.mockReset();
     mocks.getStructuresDataFromTorii.mockReset();
     mocks.toastError.mockReset();
+    mocks.removeResourceOverrides.mockReset();
     useRealmUpgradeStore.setState({ upgradesByRealm: {} });
 
     mocks.upgradeRealm.mockResolvedValue({ transaction_hash: "0xtx" });

@@ -66,11 +66,11 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         this.props.fallback || (
           <div className="flex h-screen w-screen items-center justify-center bg-brown p-4">
-            <div className="panel-wood max-w-md rounded-xl border p-6 text-center text-gold">
+            <div className="max-w-md rounded-xl border border-gold/30 bg-[#1a1410]/95 p-6 text-center text-gold">
               <h2 className="mb-4 text-xl font-bold">{title}</h2>
               <p className="mb-4 text-sm">{description}</p>
               <button
-                className="button-wood px-4 py-2"
+                className="btn-bronze px-4 py-2"
                 onClick={() => {
                   this.setState({ hasError: false, error: undefined });
                   window.location.reload();

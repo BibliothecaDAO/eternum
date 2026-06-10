@@ -55,7 +55,7 @@ interface Building {
 }
 
 const BUILDING_IMAGES_PATH: Record<string, string> = {
-  [BuildingType.ResourceLabor]: `/images/buildings/castleZero.png`,
+  [BuildingType.ResourceLabor]: `/images/castles/castle-0.png`,
   [BuildingType.ResourceAncientFragment]: "",
   [BuildingType.ResourceStone]: `/images/buildings/mine.png`,
   [BuildingType.ResourceCoal]: `/images/buildings/mine.png`,

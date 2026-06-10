@@ -93,7 +93,7 @@ export const MarketResourceSidebar = ({
   }, [filteredResources, selectedResource, entityId, onClick, ammPrices, priceIndex, localSearch]);
 
   return (
-    <div className="market-resource-bar-selector panel-wood-top">
+    <div className="market-resource-bar-selector border-t border-gold/25">
       <div className="px-2 py-1.5">
         <TextInput
           placeholder="Search resources..."
@@ -102,7 +102,7 @@ export const MarketResourceSidebar = ({
           className="w-full"
         />
       </div>
-      <div className="w-full mb-1 panel-wood-bottom">
+      <div className="w-full mb-1 border-b border-gold/25">
         <div className="grid grid-cols-5 text-xs uppercase py-2 h6">
           <div className="col-span-2 px-2">Resource</div>
           <div className="market-resource-bar-buy-selector flex items-center justify-center">Buy</div>

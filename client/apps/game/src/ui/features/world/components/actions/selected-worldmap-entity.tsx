@@ -1,6 +1,10 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useBlitzHyperstructureCreation } from "@/hooks/use-blitz-hyperstructure-creation";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import Button from "@/ui/design-system/atoms/button";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { HUD_LABEL } from "@/ui/design-system/atoms/hud-typography";
+import { OVERLAY_SURFACE_BASE } from "@/ui/design-system/atoms/overlay-surface";
 import {
   BiomeSummaryCard,
   UnoccupiedTileQuadrants,
@@ -8,39 +12,70 @@ import {
 import { FaithDevotionActionPanel } from "@/ui/features/world/components/actions/faith-devotion-action-panel";
 import { ArmyBannerEntityDetail } from "@/ui/features/world/components/entities/banner/army-banner-entity-detail";
 import { StructureBannerEntityDetail } from "@/ui/features/world/components/entities/banner/structure-banner-entity-detail";
+import { useArmyEntityDetail } from "@/ui/features/world/components/entities/hooks/use-army-entity-detail";
 import { useStructureEntityDetail } from "@/ui/features/world/components/entities/hooks/use-structure-entity-detail";
 import { QuestEntityDetail } from "@/ui/features/world/components/entities/quest-entity-detail";
 import { EntityDetailSection } from "@/ui/features/world/components/entities/layout";
-import { battleSimulation } from "@/ui/features/world/components/config";
-import { HexPosition, ID, StructureType, TileOccupier } from "@bibliothecadao/types";
+import { BattleLab } from "@/ui/features/military/battle/battle-lab";
+import { BiomeType, HexPosition, ID, StructureType, TileOccupier, TroopType } from "@bibliothecadao/types";
 import {
-  Biome,
+  configManager,
   Position,
+  hasTileOccupier,
   isTileOccupierChest,
   isTileOccupierQuest,
+  isTileOccupierReservedHyperstructure,
   isTileOccupierStructure,
   getTileAt,
   DEFAULT_COORD_ALT,
 } from "@bibliothecadao/eternum";
 import { useDojo, useQuery } from "@bibliothecadao/react";
-import { useCallback, useMemo } from "react";
+import { type ReactNode, useCallback, useMemo } from "react";
+import { toast } from "sonner";
 
-export const SelectedWorldmapEntity = () => {
+// Layout: vertical column of bubbles. The outer parent (TileDetails atom in
+// bottom-right-panel) already provides positioning + scroll, so this layout
+// just stacks each section with a small gap and lets each child render its
+// own rounded bubble.
+const occupiedEntityLayoutClass = "flex h-full min-h-0 min-w-0 flex-col gap-2 pointer-events-auto";
+const entityInfoScrollPaneClass = "min-w-0";
+const scrollableEntityDetailClass = "h-auto min-w-0 overflow-visible";
+const scrollableEntitySectionClass = "flex min-w-0";
+
+const EntityInfoScrollPane = ({ children }: { children: ReactNode }) => (
+  <div className={entityInfoScrollPaneClass}>{children}</div>
+);
+
+export const SelectedWorldmapEntity = ({
+  coordsLabel,
+  headerAction,
+}: {
+  coordsLabel?: string;
+  headerAction?: ReactNode;
+} = {}) => {
   const selectedHex = useUIStore((state) => state.selectedHex);
 
   if (!selectedHex) {
     return null;
   }
 
-  return <SelectedWorldmapEntityContent selectedHex={selectedHex} />;
+  return (
+    <SelectedWorldmapEntityContent selectedHex={selectedHex} coordsLabel={coordsLabel} headerAction={headerAction} />
+  );
 };
 
-const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPosition }) => {
+const SelectedWorldmapEntityContent = ({
+  selectedHex,
+  coordsLabel,
+  headerAction,
+}: {
+  selectedHex: HexPosition;
+  coordsLabel?: string;
+  headerAction?: ReactNode;
+}) => {
   const { setup } = useDojo();
   const { handleUrlChange } = useQuery();
-  const openPopup = useUIStore((state) => state.openPopup);
-  const isPopupOpen = useUIStore((state) => state.isPopupOpen);
-  const setCombatSimulationBiome = useUIStore((state) => state.setCombatSimulationBiome);
+  const toggleModal = useUIStore((state) => state.toggleModal);
 
   const gridTemplateColumns = "var(--selected-worldmap-entity-grid-cols, 1fr)";
   const gridTemplateRows = "var(--selected-worldmap-entity-grid-rows, auto)";
@@ -51,18 +86,16 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
   }, [selectedHex, setup.components]);
 
   const biome = useMemo(() => {
-    return Biome.getBiome(selectedHex.col || 0, selectedHex.row || 0);
+    return configManager.getBiome(selectedHex.col || 0, selectedHex.row || 0);
   }, [selectedHex.col, selectedHex.row]);
   const handleSimulateBattle = useCallback(() => {
-    setCombatSimulationBiome(biome);
-    if (!isPopupOpen(battleSimulation)) {
-      openPopup(battleSimulation);
-    }
-  }, [biome, isPopupOpen, openPopup, setCombatSimulationBiome]);
+    toggleModal(<BattleLab mode="sim" initialBiome={biome} />);
+  }, [biome, toggleModal]);
 
-  const hasOccupier = !!tile && Number(tile.occupier_id) !== 0;
+  const hasOccupier = !!tile && hasTileOccupier(tile.occupier_type);
   const occupierType = tile?.occupier_type ?? 0;
   const isSpire = occupierType === TileOccupier.Spire;
+  const isReservedHyperstructure = isTileOccupierReservedHyperstructure(occupierType);
   const isStructure = Boolean(tile?.occupier_is_structure) || isTileOccupierStructure(occupierType);
   const isChest = isTileOccupierChest(occupierType);
   const isQuest = isTileOccupierQuest(occupierType);
@@ -74,26 +107,31 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
     handleUrlChange(`/play/travel?col=${normalizedSelectedHex.x}&row=${normalizedSelectedHex.y}`);
   }, [handleUrlChange, normalizedSelectedHex.x, normalizedSelectedHex.y]);
 
-  const renderUnexploredMessage = () => (
-    <div className="flex h-full min-h-[140px] flex-col items-center justify-center gap-2 text-center">
-      <p className="text-xs font-medium text-gold/60 italic text-center">
-        Unexplored Territory.
-        <br />
-        Send an explorer to discover what lies here.
-      </p>
+  if (!tile || !isExplored) {
+    return null;
+  }
+
+  // Small fallback "STRUCTURE TILE · (x, y)" + re-sync chip for non-structure
+  // tiles. Structure tiles merge the same info into the owner bubble itself.
+  const coordChip = coordsLabel ? (
+    <div
+      className={cn(
+        "pointer-events-auto mb-2 flex items-center justify-between gap-2 rounded-xl px-3 py-2",
+        OVERLAY_SURFACE_BASE,
+      )}
+    >
+      <span className={cn("min-w-0 flex-1 truncate", HUD_LABEL)}>{coordsLabel}</span>
+      {headerAction}
     </div>
-  );
-
-  if (!tile) {
-    return renderUnexploredMessage();
-  }
-
-  if (!isExplored) {
-    return renderUnexploredMessage();
-  }
+  ) : null;
 
   if (!hasOccupier) {
-    return <UnoccupiedTileQuadrants biome={biome} />;
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        {coordChip}
+        <UnoccupiedTileQuadrants biome={biome} />
+      </div>
+    );
   }
 
   const gridAutoRows = "var(--selected-worldmap-entity-grid-auto-rows, minmax(0, auto))";
@@ -106,59 +144,111 @@ const SelectedWorldmapEntityContent = ({ selectedHex }: { selectedHex: HexPositi
 
   return (
     <div
-      className="grid h-full min-h-0 grid-cols-1 gap-2 overflow-y-auto overflow-x-hidden"
+      className="grid h-full min-h-0 grid-cols-1 gap-2"
       style={{ gridTemplateColumns, gridTemplateRows, gridAutoRows }}
     >
+      {isStructure || (!isSpire && !isReservedHyperstructure && !isChest && !isQuest && hasOccupier) ? null : coordChip}
       {isSpire ? (
-        <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[1.15fr_0.85fr]">
-          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
-            <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
-          </EntityDetailSection>
-          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
-            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-          </EntityDetailSection>
+        <div className={occupiedEntityLayoutClass}>
+          <EntityInfoScrollPane>
+            <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
+              <SpireTravelPanel onTravelToEtherealLayer={handleTravelToEtherealLayer} />
+            </EntityDetailSection>
+          </EntityInfoScrollPane>
+          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
+        </div>
+      ) : isReservedHyperstructure ? (
+        <div className={occupiedEntityLayoutClass}>
+          <EntityInfoScrollPane>
+            <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
+              <ReservedHyperstructurePanel selectedHex={selectedHex} />
+            </EntityDetailSection>
+          </EntityInfoScrollPane>
+          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       ) : isStructure ? (
-        <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[1.15fr_0.85fr]">
-          <StructureBannerEntityDetail
-            structureEntityId={occupierEntityId}
-            maxInventory={14}
-            showButtons={false}
-            className="h-full min-h-0"
-            {...sharedDetailProps}
-          />
-          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
-            <SelectedStructureActionPanel
+        <div className={occupiedEntityLayoutClass}>
+          <EntityInfoScrollPane>
+            <StructureBannerEntityDetail
               structureEntityId={occupierEntityId}
-              biome={biome}
-              onSimulateBattle={handleSimulateBattle}
+              maxInventory={14}
+              showButtons={false}
+              className={scrollableEntityDetailClass}
+              coordsLabel={coordsLabel}
+              headerAction={headerAction}
+              {...sharedDetailProps}
             />
-          </EntityDetailSection>
+          </EntityInfoScrollPane>
+          <SelectedStructureActionPanel
+            structureEntityId={occupierEntityId}
+            biome={biome}
+            onSimulateBattle={handleSimulateBattle}
+          />
         </div>
       ) : isChest ? (
-        <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[1.15fr_0.85fr]">
-          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
-            <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
-          </EntityDetailSection>
-          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
-            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-          </EntityDetailSection>
+        <div className={occupiedEntityLayoutClass}>
+          <EntityInfoScrollPane>
+            <EntityDetailSection compact tone="highlight" className={scrollableEntitySectionClass}>
+              <RelicCrateSummaryPanel crateEntityId={occupierEntityId} />
+            </EntityDetailSection>
+          </EntityInfoScrollPane>
+          <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
         </div>
       ) : isQuest ? (
-        <QuestEntityDetail questEntityId={occupierEntityId} className="h-full min-h-0" {...sharedDetailProps} />
+        <EntityInfoScrollPane>
+          <QuestEntityDetail questEntityId={occupierEntityId} className="min-h-full" {...sharedDetailProps} />
+        </EntityInfoScrollPane>
       ) : (
-        <div className="grid h-full min-h-0 grid-cols-1 gap-2 lg:grid-cols-[1.15fr_0.85fr]">
-          <ArmyBannerEntityDetail
-            armyEntityId={occupierEntityId}
-            showButtons={false}
-            className="h-full min-h-0"
-            {...sharedDetailProps}
-          />
-          <EntityDetailSection compact tone="highlight" className="flex h-full min-h-0">
-            <BiomeSummaryCard biome={biome} showSimulateAction onSimulateBattle={handleSimulateBattle} />
-          </EntityDetailSection>
-        </div>
+        <SelectedArmyTilePanel
+          armyEntityId={occupierEntityId}
+          biome={biome}
+          coordsLabel={coordsLabel}
+          headerAction={headerAction}
+          onSimulateBattle={handleSimulateBattle}
+        />
       )}
+    </div>
+  );
+};
+
+// Army tile panel — reads the army to figure out which troop type belongs to
+// the selected explorer so the biome card can highlight the matching bonus row.
+const SelectedArmyTilePanel = ({
+  armyEntityId,
+  biome,
+  coordsLabel,
+  headerAction,
+  onSimulateBattle,
+}: {
+  armyEntityId: ID;
+  biome: BiomeType;
+  coordsLabel?: string;
+  headerAction?: ReactNode;
+  onSimulateBattle: () => void;
+}) => {
+  const { explorer } = useArmyEntityDetail({ armyEntityId });
+  const highlightTroopType =
+    explorer?.troops?.category !== undefined ? (Number(explorer.troops.category) as unknown as TroopType) : undefined;
+
+  return (
+    <div className={occupiedEntityLayoutClass}>
+      <EntityInfoScrollPane>
+        <ArmyBannerEntityDetail
+          armyEntityId={armyEntityId}
+          showButtons={false}
+          className={scrollableEntityDetailClass}
+          coordsLabel={coordsLabel}
+          headerAction={headerAction}
+          compact
+          layoutVariant="banner"
+        />
+      </EntityInfoScrollPane>
+      <BiomeSummaryCard
+        biome={biome}
+        showSimulateAction
+        onSimulateBattle={onSimulateBattle}
+        highlightTroopType={highlightTroopType}
+      />
     </div>
   );
 };
@@ -169,7 +259,7 @@ const SelectedStructureActionPanel = ({
   onSimulateBattle,
 }: {
   structureEntityId: ID;
-  biome: ReturnType<typeof Biome.getBiome>;
+  biome: BiomeType;
   onSimulateBattle: () => void;
 }) => {
   const { structure, isLoadingStructure } = useStructureEntityDetail({ structureEntityId });
@@ -201,6 +291,47 @@ const RelicCrateSummaryPanel = ({ crateEntityId }: { crateEntityId: ID }) => {
         <span className="text-sm font-semibold text-gold">Crate #{crateEntityId}</span>
         <p className="text-xxs text-gold/70">Claim it to discover 3 relics that can empower armies or structures.</p>
         <p className="text-xxs text-gold/70">Cracking it open also grants you 1000 Victory Points !</p>
+      </div>
+    </div>
+  );
+};
+
+const ReservedHyperstructurePanel = ({ selectedHex }: { selectedHex: HexPosition }) => {
+  const { canCreate, createHyperstructure, isCreating } = useBlitzHyperstructureCreation({
+    hexCoords: selectedHex,
+  });
+
+  const handleCreateHyperstructure = useCallback(async () => {
+    try {
+      await createHyperstructure();
+    } catch (error) {
+      console.error("[ReservedHyperstructurePanel] Failed to create reserved hyperstructure", error);
+      toast.error(error instanceof Error ? error.message : "Failed to create the hyperstructure.");
+    }
+  }, [createHyperstructure]);
+
+  return (
+    <div className="flex h-full flex-col gap-3">
+      <div className="flex flex-col gap-1 text-left">
+        <span className="text-xxs uppercase tracking-[0.3em] text-amber-200/80">Unconstructed Hyperstructure</span>
+        <span className="text-sm font-semibold text-amber-100">Reserved Hyperstructure</span>
+        <p className="text-xxs text-gold/70">
+          This tile is already reserved for a future Hyperstructure. Double-click it on the map or press Create Here to
+          awaken the real structure.
+        </p>
+      </div>
+      <div className="flex justify-start">
+        <Button
+          variant="outline"
+          size="xs"
+          className="rounded-full border-amber-300/70 px-3 py-1 text-[11px] text-amber-100 hover:border-amber-200"
+          forceUppercase={false}
+          withoutSound
+          disabled={!canCreate || isCreating}
+          onClick={() => void handleCreateHyperstructure()}
+        >
+          {isCreating ? "Creating..." : "Create Here"}
+        </Button>
       </div>
     </div>
   );

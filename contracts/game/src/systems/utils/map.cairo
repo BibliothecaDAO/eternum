@@ -147,7 +147,7 @@ pub impl IMapImpl of IMapTrait {
                 // Coord { alt: false
                 let tile_opt: TileOpt = world.read_model((start_coord.alt, coord.x, coord.y));
                 let mut tile: Tile = tile_opt.into();
-                let biome: Biome = biome_library.get_biome(start_coord.alt, coord.x.into(), coord.y.into());
+                let biome: Biome = biome_library.get_biome(world, start_coord.alt, coord.x.into(), coord.y.into());
                 Self::explore(ref world, ref tile, biome);
             }
             radius -= 1;

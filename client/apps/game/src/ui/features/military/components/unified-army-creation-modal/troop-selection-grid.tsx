@@ -1,4 +1,5 @@
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
+import { getTierStyle } from "@/ui/utils/tier-styles";
 import { TroopTier, TroopType } from "@bibliothecadao/types";
 import clsx from "clsx";
 import { useMemo } from "react";
@@ -12,24 +13,9 @@ interface TroopSelectionGridProps {
   selectedGuardCategory?: TroopType;
   selectedGuardTier?: TroopTier;
   onSelect: (type: TroopType, tier: TroopTier) => void;
+  /** Drop outer card chrome so the grid blends with a unified parent card. */
+  bare?: boolean;
 }
-
-// Match tier badge styling from label-preview.html
-const getTierClasses = (tier: TroopTier, isActive = false) => {
-  // Convert TroopTier enum ("T1", "T2", "T3") to number
-  const tierNumber = typeof tier === "string" ? parseInt(tier.replace("T", ""), 10) : tier;
-
-  switch (tierNumber) {
-    case 1:
-      return "bg-gradient-to-b from-blue-500/30 to-blue-500/10 border-blue-400/40 text-blue-300";
-    case 2:
-      return "bg-gradient-to-b from-emerald-500/30 to-emerald-500/10 border-emerald-400/40 text-emerald-300";
-    case 3:
-      return `bg-purple-600 text-[#f6f1e5] border-purple-400 ${isActive ? "animate-pulse" : ""}`;
-    default:
-      return "bg-gradient-to-b from-gold/30 to-gold/10 border-gold/40 text-gold";
-  }
-};
 
 export const TroopSelectionGrid = ({
   options,
@@ -38,6 +24,7 @@ export const TroopSelectionGrid = ({
   selectedGuardCategory,
   selectedGuardTier,
   onSelect,
+  bare = false,
 }: TroopSelectionGridProps) => {
   const lockedMap = useMemo(() => {
     if (!isDefenseTroopLocked || selectedGuardCategory === undefined || selectedGuardTier === undefined) {
@@ -48,7 +35,7 @@ export const TroopSelectionGrid = ({
   }, [isDefenseTroopLocked, selectedGuardCategory, selectedGuardTier]);
 
   return (
-    <div className="rounded-lg bg-brown/5 border border-gold/30 p-2.5 shadow-sm">
+    <div className={bare ? "p-1" : "rounded-lg bg-brown/5 border border-gold/30 p-2.5 shadow-sm"}>
       <div className="grid grid-cols-3 gap-3">
         {options.map((option) => (
           <div key={option.type} className="flex flex-col gap-2">
@@ -82,7 +69,7 @@ export const TroopSelectionGrid = ({
                       <div
                         className={clsx(
                           "flex items-center justify-center px-1 py-0.5 rounded border text-xxs font-bold",
-                          getTierClasses(tierOption.tier),
+                          getTierStyle(tierOption.tier),
                         )}
                       >
                         {tierOption.tier}
@@ -110,12 +97,12 @@ export const TroopSelectionGrid = ({
                     onClick={() => canSelect && onSelect(option.type, tierOption.tier)}
                   >
                     {/* Top Row: Badge + Icon + Count */}
-                    <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center justify-between gap-1.5 min-w-0">
                       {/* Tier Badge */}
                       <div
                         className={clsx(
                           "flex items-center justify-center px-1 py-0.5 rounded border text-xs font-bold shadow-sm flex-shrink-0",
-                          getTierClasses(tierOption.tier, isSelected),
+                          getTierStyle(tierOption.tier),
                           isSelected && "shadow-md",
                         )}
                       >
@@ -127,24 +114,16 @@ export const TroopSelectionGrid = ({
                         <ResourceIcon resource={tierOption.resourceTrait} size="sm" withTooltip={false} />
                       </div>
 
-                      {/* Count */}
+                      {/* Count — min-w-0 + truncate so a large value can never
+                          overflow the narrow card. */}
                       <div
-                        className={clsx("text-sm font-bold flex-shrink-0", isSelected ? "text-gold" : "text-gold/90")}
+                        className={clsx(
+                          "min-w-0 flex-1 truncate text-right text-sm font-bold tabular-nums",
+                          isSelected ? "text-gold" : "text-gold/90",
+                        )}
                       >
-                        {tierOption.available >= 10000
-                          ? `${(tierOption.available / 1000).toFixed(1)}k`
-                          : tierOption.available.toLocaleString()}
+                        {tierOption.available.toLocaleString()}
                       </div>
-                    </div>
-
-                    {/* Bottom Row: Troop Name */}
-                    <div
-                      className={clsx(
-                        "text-center text-xxs font-bold uppercase tracking-wide",
-                        isSelected ? "text-gold" : "text-gold/80",
-                      )}
-                    >
-                      {option.type}
                     </div>
 
                     {/* Selected Pulse Effect */}

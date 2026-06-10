@@ -33,10 +33,13 @@ export const openStructureContextMenu = ({
       return;
     }
     uiStore.setStructureEntityId(structure.id);
-    uiStore.openArmyCreationPopup({
+    // Prime the merged Military modal instead of the legacy popup so both
+    // entry points (left HUD button + map right-click) land in one shell.
+    uiStore.setPendingMilitaryAction({
       structureId: Number(structure.id),
       isExplorer,
     });
+    uiStore.setLeftNavigationView(LeftView.MilitaryView);
   };
 
   const selectConstructionBuilding = (building: BuildingType, view: LeftView, resource?: ResourcesIds) => {

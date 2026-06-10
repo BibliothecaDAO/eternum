@@ -93,7 +93,7 @@ export const BaseThreeTooltip = ({
     <div
       ref={ref}
       className={clsx(
-        "min-w-[215px] z-50 isolate ml-3 mt-3 p-1 rounded-xl relative bg-brown/90 panel-wood",
+        "min-w-[215px] z-50 isolate ml-3 mt-3 p-1 rounded-xl relative border border-gold/30 bg-[#15100a]",
         position,
         className,
         {
@@ -112,7 +112,7 @@ export const BaseThreeTooltip = ({
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path d="M15.0003 0.25L29.249 13L0.751603 13L15.0003 0.25Z" fill="fill-dark-brown" />
+          <path d="M15.0003 0.25L29.249 13L0.751603 13L15.0003 0.25Z" fill="#15100a" />
         </svg>
       )}
       {/* Arrow pointing up (when tooltip is below mouse) */}
@@ -125,7 +125,7 @@ export const BaseThreeTooltip = ({
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <path d="M15.0003 12.75L0.751603 -3.445e-06L29.249 9.53674e-07L15.0003 12.75Z" fill="fill-dark-brown" />
+          <path d="M15.0003 12.75L0.751603 -3.445e-06L29.249 9.53674e-07L15.0003 12.75Z" fill="#15100a" />
         </svg>
       )}
     </div>

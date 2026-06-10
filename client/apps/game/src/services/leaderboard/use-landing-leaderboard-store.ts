@@ -22,7 +22,7 @@ type FetchPlayerEntryOptions = {
   force?: boolean;
 };
 
-export const MIN_REFRESH_INTERVAL_MS = 10_000;
+const MIN_REFRESH_INTERVAL_MS = 10_000;
 
 type LandingLeaderboardStore = {
   entries: LandingLeaderboardEntry[];
@@ -169,19 +169,18 @@ export const useLandingLeaderboardStore = create<LandingLeaderboardStore>((set, 
       const timestamp = Date.now();
 
       set((previous) => {
-        const updatedEntries = entry
-          ? previous.entries.map((current) =>
-              normalizeAddress(current.address) === normalized ? { ...current, ...entry } : current,
-            )
-          : previous.entries;
-
+        // Do NOT merge the per-player entry into `entries`: the full-list fetch
+        // is the single source of truth for the board (and the rank pill's
+        // points), so a divergent per-player total can't overwrite a row and
+        // make the pill and the board flip between values. We still cache the
+        // per-player entry separately (used as a rank fallback for players the
+        // list doesn't rank, e.g. Blitz).
         const updatedChampion =
           previous.championEntry && normalizeAddress(previous.championEntry.address) === normalized
             ? { ...previous.championEntry, ...entry }
             : previous.championEntry;
 
         return {
-          entries: updatedEntries,
           championEntry: updatedChampion,
           lastFetchAt: timestamp,
           playerEntries: {

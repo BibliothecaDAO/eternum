@@ -1,5 +1,5 @@
 import { fetchWonderFaithDetail, type WonderFaithDetail } from "@/services/leaderboard/faith-leaderboard-service";
-import { SecondaryPopup } from "@/ui/design-system/molecules/secondary-popup";
+import { CenteredModalShell } from "@/ui/features/world/containers/centered-modal-shell";
 import { displayAddress } from "@/ui/utils/utils";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -222,13 +222,16 @@ interface WonderFaithDetailModalProps {
 
 export const WonderFaithDetailModal = ({ wonderId, fallbackWonderName, onClose }: WonderFaithDetailModalProps) => {
   return (
-    <SecondaryPopup width="980" name="wonder-faith-detail-modal" containerClassName="absolute left-0 top-0">
-      <SecondaryPopup.Head onClose={onClose}>Wonder Faith Details</SecondaryPopup.Head>
-      <SecondaryPopup.Body width="100%" height="auto">
-        <div className="p-4">
-          <WonderFaithDetailPanel wonderId={wonderId} fallbackWonderName={fallbackWonderName} />
-        </div>
-      </SecondaryPopup.Body>
-    </SecondaryPopup>
+    <CenteredModalShell
+      title="Wonder Faith Details"
+      onClose={onClose}
+      persistKey="wonder-faith-detail-modal"
+      panelClassName="w-[980px] h-auto max-h-[calc(100vh-64px)]"
+      bodyClassName="overflow-auto"
+    >
+      <div className="p-4">
+        <WonderFaithDetailPanel wonderId={wonderId} fallbackWonderName={fallbackWonderName} />
+      </div>
+    </CenteredModalShell>
   );
 };

@@ -18,13 +18,13 @@
  */
 import { dojoConfig } from "../../../dojo-config";
 import { buildPolicies } from "./policies";
+import { resolveSessionPolicyRefreshWaiters, setSessionPolicyRefreshInProgress } from "./session-policy-refresh-state";
 
 /**
  * Policy fingerprint. Starts empty since the connector is created
  * without policies (session deferred until game selection).
  */
 let _lastPolicyHash = "";
-let _isRefreshingPolicies = false;
 
 function hashPolicies(manifest: unknown): string {
   try {
@@ -40,8 +40,6 @@ function hashPolicies(manifest: unknown): string {
 const hasPoliciesChanged = (): boolean => {
   return hashPolicies(dojoConfig.manifest) !== _lastPolicyHash;
 };
-
-export const isSessionPolicyRefreshInProgress = (): boolean => _isRefreshingPolicies;
 
 /**
  * Refresh the controller's session policies in-place and recreate the
@@ -65,7 +63,7 @@ export const refreshSessionPolicies = async (
   if (!provider.options) {
     return false;
   }
-  _isRefreshingPolicies = true;
+  setSessionPolicyRefreshInProgress(true);
   try {
     provider.options.policies = newPolicies;
 
@@ -128,6 +126,7 @@ export const refreshSessionPolicies = async (
 
     return true;
   } finally {
-    _isRefreshingPolicies = false;
+    setSessionPolicyRefreshInProgress(false);
+    resolveSessionPolicyRefreshWaiters();
   }
 };

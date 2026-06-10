@@ -7,6 +7,7 @@ import {
   InstancedMesh,
   Group,
   Mesh,
+  Object3D,
   AnimationMixer,
   AnimationClip,
   AnimationAction,
@@ -17,7 +18,6 @@ export interface MovementData {
   startPos: Vector3;
   endPos: Vector3;
   progress: number;
-  matrixIndex: number;
   currentPathIndex: number;
   floatingHeight: number;
   currentRotation: number;
@@ -28,7 +28,6 @@ export interface SplineMovementData {
   spline: CatmullRomCurve3;
   totalLength: number;
   journeyProgress: number;
-  matrixIndex: number;
   floatingHeight: number;
   currentRotation: number;
   easingType: EasingType;
@@ -38,6 +37,7 @@ export interface SplineMovementData {
   isAnticipating: boolean;
   isSettling: boolean;
   finalTangent: Vector3 | null;
+  endpointCache: Vector3;
   // Terrain speed
   currentSpeedMultiplier: number;
   // Rhythmic bob + arrival slam
@@ -82,6 +82,7 @@ export interface AnimatedInstancedMesh extends InstancedMesh {
 
 export interface ModelData {
   group: Group;
+  sourceScene: Object3D;
   instancedMeshes: AnimatedInstancedMesh[];
   contactShadowMesh?: InstancedMesh;
   contactShadowScale?: number;

@@ -12,6 +12,26 @@ interface ChunkBounds {
   maxRow: number;
 }
 
+interface ToriiSubscriptionSwitchDecisionInput {
+  currentSubscriptionAreaKey: string | null;
+  requestedSubscriptionAreaKey: string;
+  requiredRenderAreaKeys: readonly string[];
+  getSubscriptionBoundsForArea: (areaKey: string) => ChunkBounds;
+  getRenderAreaBounds: (areaKey: string) => ChunkBounds;
+}
+
+type ToriiSubscriptionSwitchDecision =
+  | {
+      action: "keep_current";
+      areaKey: string;
+      reason: "covered_by_current_subscription" | "same_subscription_area";
+    }
+  | {
+      action: "switch";
+      areaKey: string;
+      reason: "no_current_subscription" | "useful_area_outside_current_subscription";
+    };
+
 function parseChunkKey(chunkKey: string): { startRow: number; startCol: number } {
   const segments = chunkKey.split(",");
   if (segments.length !== 2) {
@@ -69,5 +89,69 @@ export function getRenderFetchBoundsForArea(
     maxCol: lastBounds.maxCol,
     minRow: firstBounds.minRow,
     maxRow: lastBounds.maxRow,
+  };
+}
+
+function containsChunkBounds(outerBounds: ChunkBounds, innerBounds: ChunkBounds): boolean {
+  return (
+    innerBounds.minCol >= outerBounds.minCol &&
+    innerBounds.maxCol <= outerBounds.maxCol &&
+    innerBounds.minRow >= outerBounds.minRow &&
+    innerBounds.maxRow <= outerBounds.maxRow
+  );
+}
+
+function coversEveryRenderArea(
+  subscriptionBounds: ChunkBounds,
+  areaKeys: readonly string[],
+  getRenderAreaBounds: (areaKey: string) => ChunkBounds,
+): boolean {
+  return (
+    areaKeys.length > 0 &&
+    areaKeys.every((areaKey) => containsChunkBounds(subscriptionBounds, getRenderAreaBounds(areaKey)))
+  );
+}
+
+export function resolveToriiSubscriptionSwitchDecision({
+  currentSubscriptionAreaKey,
+  getRenderAreaBounds,
+  getSubscriptionBoundsForArea,
+  requestedSubscriptionAreaKey,
+  requiredRenderAreaKeys,
+}: ToriiSubscriptionSwitchDecisionInput): ToriiSubscriptionSwitchDecision {
+  if (!currentSubscriptionAreaKey) {
+    return {
+      action: "switch",
+      areaKey: requestedSubscriptionAreaKey,
+      reason: "no_current_subscription",
+    };
+  }
+
+  if (currentSubscriptionAreaKey === requestedSubscriptionAreaKey) {
+    return {
+      action: "keep_current",
+      areaKey: currentSubscriptionAreaKey,
+      reason: "same_subscription_area",
+    };
+  }
+
+  if (
+    coversEveryRenderArea(
+      getSubscriptionBoundsForArea(currentSubscriptionAreaKey),
+      requiredRenderAreaKeys,
+      getRenderAreaBounds,
+    )
+  ) {
+    return {
+      action: "keep_current",
+      areaKey: currentSubscriptionAreaKey,
+      reason: "covered_by_current_subscription",
+    };
+  }
+
+  return {
+    action: "switch",
+    areaKey: requestedSubscriptionAreaKey,
+    reason: "useful_area_outside_current_subscription",
   };
 }

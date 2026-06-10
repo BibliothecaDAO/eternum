@@ -22,6 +22,19 @@ describe("StructureManager deferred bounds", () => {
     expect(methodBody).not.toContain("setWorldBounds");
   });
 
+  it("setChunkBounds invalidates any in-flight visible structure pass before deferring new bounds", () => {
+    const source = readSource("./structure-manager.ts");
+
+    const setChunkBoundsMatch = source.match(/public setChunkBounds\([^)]*\)\s*\{([\s\S]*?)\n  \}/);
+    expect(setChunkBoundsMatch).not.toBeNull();
+    const methodBody = setChunkBoundsMatch![1];
+
+    expect(methodBody).toContain("this.visibleStructurePassFence.invalidate()");
+    expect(methodBody.indexOf("this.visibleStructurePassFence.invalidate()")).toBeLessThan(
+      methodBody.indexOf("this.hasPendingModelBounds = true"),
+    );
+  });
+
   it("performVisibleStructuresUpdate applies pending model world bounds after instance rebuild", () => {
     const managerSource = readSource("./structure-manager.ts");
     const finalizerSource = readSource("./structure-visible-pass-finalizer.ts");

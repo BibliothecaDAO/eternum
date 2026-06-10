@@ -86,6 +86,55 @@ Resolve conflicts in YOUR files only If conflict is in a file you didn't modify,
 
 Use this runbook when validating spectator/game flow in a real browser session.
 
+### Login-First Workflow
+
+Use this workflow before capturing screenshots or validating account-specific game UI:
+
+1. Start the game client with a supported Node runtime. The local shell may pick Node 21.x, which Vite rejects; prefer
+   Node 20.19+ or 22.12+.
+
+```bash
+npx -y node@20.19.0 /opt/homebrew/bin/pnpm --dir /path/to/repo/client/apps/game dev --host 127.0.0.1 --port 4174 --mode mainnet.blitz
+```
+
+When debugging Three.js, world-map rendering, or graphics state, enable the graphics debug mode:
+
+```bash
+VITE_PUBLIC_GRAPHICS_DEV=true npx -y node@20.19.0 /opt/homebrew/bin/pnpm --dir /path/to/repo/client/apps/game dev --host 127.0.0.1 --port 4174 --mode mainnet.blitz
+```
+
+If `npx` reports duplicate workspace names from the monorepo, run the command from `/tmp` and pass the absolute `pnpm`
+path as shown above.
+
+2. Open a headed browser on the game landing page with a persistent profile. If the player is already logged in,
+   continue immediately. If no wallet/account is visible, ask the user to log in themselves. Do not ask for credentials.
+
+```bash
+mkdir -p .context/agent-browser-login-profile
+npx -y agent-browser --session game-check \
+  --profile "$PWD/.context/agent-browser-login-profile" \
+  --headed open https://127.0.0.1:4174/ --ignore-https-errors
+```
+
+3. Check whether the UI shows the user's wallet/account, for example `RASCHEL0...`, and local storage has a real
+   `eternum_account_store.state.accountName`. If both are already present, do not wait for the user; proceed to the live
+   game.
+
+4. Prefer `YOUR ACTIVE GAMES` with an `Enter` button on Slot or Mainnet. This is a live, playable game where the
+   logged-in account is registered. Use spectate or review only if the user explicitly asks for it or no playable
+   registered game exists.
+
+5. For requests about UI "in the game" or "current live game", enter the live match first and use in-game controls. Do
+   not use landing routes such as `/leaderboard` unless the user explicitly asks for the global landing leaderboard.
+
+6. Known in-game controls:
+   - In-game leaderboard: top-right social/leaderboard icon opens the `Leaderboard` popup.
+   - Production window: selected realm left panel `PRODUCTION` card, then `MODIFY`.
+   - Army view: press `Tab` to cycle/select a player army through the world-map shortcut logic.
+
+7. If a Cartridge modal appears while preparing a screenshot, close it or use `SKIP` when available. Do not submit or
+   update session permissions unless the user explicitly asks.
+
 ### Prerequisites
 
 1. Install workspace deps from repo root:

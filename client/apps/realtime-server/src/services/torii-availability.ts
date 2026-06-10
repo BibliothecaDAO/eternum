@@ -1,16 +1,86 @@
-import { fetchFactoryWorldNames } from "./factory-worlds";
-
-export interface WorldAvailabilityEntry {
-  alive: boolean;
-  lastChecked: number;
-}
+import type { WorldSummary, WorldSummaryChain } from "@bibliothecadao/types";
+import { fetchFactoryPrizeAddresses } from "./factory-prize-addresses";
+import { fetchFactoryWorldDeployments, type FactoryWorldDeployment } from "./factory-worlds";
+import { fetchWorldSummaryResult } from "./world-summary";
 
 const CARTRIDGE_API_BASE = "https://api.cartridge.gg";
 
+function buildNullSummary(name: string, chain: WorldSummaryChain, alive: boolean, now: number): WorldSummary {
+  return {
+    name,
+    chain,
+    alive,
+    lastCheckedAt: now,
+    mode: null,
+    startSettlingAt: null,
+    startMainAt: null,
+    endAt: null,
+    devModeOn: null,
+    mmrEnabled: null,
+    singleRealmMode: null,
+    twoPlayerMode: null,
+    seasonPassAddress: null,
+    villagePassAddress: null,
+    worldAddress: null,
+    prizeDistributionAddress: null,
+    entryTokenAddress: null,
+    feeTokenAddress: null,
+    feeAmount: null,
+    registrationCount: null,
+    registrationCountMax: null,
+    registrationStartAt: null,
+    registrationEndAt: null,
+    settledPlayersCount: null,
+    settledRealmsCount: null,
+    settledVillagesCount: null,
+    winnerJackpotAmount: null,
+  };
+}
+
+function resolveChain(chain: string): WorldSummaryChain {
+  return chain === "mainnet" ? "mainnet" : "slot";
+}
+
+function getWorldCacheKey(chain: WorldSummaryChain, name: string): string {
+  return `${chain}:${name}`;
+}
+
+type SummaryFields = Omit<WorldSummary, "name" | "chain" | "alive" | "lastCheckedAt">;
+
+function extractSummaryFields(summary: WorldSummary | undefined, fallback: WorldSummary): SummaryFields {
+  if (!summary) return fallback;
+  return {
+    mode: summary.mode,
+    startSettlingAt: summary.startSettlingAt,
+    startMainAt: summary.startMainAt,
+    endAt: summary.endAt,
+    devModeOn: summary.devModeOn,
+    mmrEnabled: summary.mmrEnabled,
+    singleRealmMode: summary.singleRealmMode,
+    twoPlayerMode: summary.twoPlayerMode,
+    seasonPassAddress: summary.seasonPassAddress,
+    villagePassAddress: summary.villagePassAddress,
+    worldAddress: summary.worldAddress,
+    prizeDistributionAddress: summary.prizeDistributionAddress,
+    entryTokenAddress: summary.entryTokenAddress,
+    feeTokenAddress: summary.feeTokenAddress,
+    feeAmount: summary.feeAmount,
+    registrationCount: summary.registrationCount,
+    registrationCountMax: summary.registrationCountMax,
+    registrationStartAt: summary.registrationStartAt,
+    registrationEndAt: summary.registrationEndAt,
+    settledPlayersCount: summary.settledPlayersCount,
+    settledRealmsCount: summary.settledRealmsCount,
+    settledVillagesCount: summary.settledVillagesCount,
+    winnerJackpotAmount: summary.winnerJackpotAmount,
+  };
+}
+
 export class ToriiAvailabilityService {
-  private cache = new Map<string, WorldAvailabilityEntry>();
+  private cache = new Map<string, WorldSummary>();
   private pollIntervalId: ReturnType<typeof setInterval> | null = null;
   private pollInFlight: Promise<void> | null = null;
+  private hasCompletedPoll = false;
   private factoryChains: string[];
   private pollIntervalMs: number;
   private probeTimeoutMs: number;
@@ -29,34 +99,78 @@ export class ToriiAvailabilityService {
   }
 
   /**
-   * Probe a single world's torii endpoint.
-   * Returns true if the endpoint is alive (2xx), false otherwise.
+   * Probe a single world's torii endpoint and fold in summary data if alive.
+   * Returns true if the endpoint is alive, false otherwise.
    */
-  async probeWorld(worldName: string): Promise<boolean> {
+  async probeWorld(
+    worldName: string,
+    chain: WorldSummaryChain = "mainnet",
+    prizeDistributionAddress: string | null = null,
+    worldAddress: string | null = null,
+  ): Promise<boolean> {
+    const now = Date.now();
+    const cacheKey = getWorldCacheKey(chain, worldName);
+    let alive = false;
     try {
       const url = `${CARTRIDGE_API_BASE}/x/${worldName}/torii/sql`;
       const response = await fetch(url, {
         method: "HEAD",
         signal: AbortSignal.timeout(this.probeTimeoutMs),
       });
-      const alive = response.ok;
-      this.cache.set(worldName, { alive, lastChecked: Date.now() });
-      return alive;
+      alive = response.ok;
     } catch {
-      this.cache.set(worldName, { alive: false, lastChecked: Date.now() });
+      alive = false;
+    }
+
+    if (!alive) {
+      const dead = buildNullSummary(worldName, chain, false, now);
+      dead.prizeDistributionAddress = prizeDistributionAddress;
+      dead.worldAddress = worldAddress;
+      this.cache.set(cacheKey, dead);
       return false;
     }
+
+    const fallbackFields = buildNullSummary(worldName, chain, true, now);
+    const previousSummary = this.cache.get(cacheKey);
+    const summaryResult = await fetchWorldSummaryResult(worldName, this.probeTimeoutMs);
+    const summaryFields = summaryResult.ok
+      ? summaryResult.fields
+      : extractSummaryFields(previousSummary, fallbackFields);
+    this.cache.set(cacheKey, {
+      name: worldName,
+      chain,
+      alive: true,
+      lastCheckedAt: now,
+      ...summaryFields,
+      prizeDistributionAddress: prizeDistributionAddress ?? summaryFields.prizeDistributionAddress,
+      worldAddress: worldAddress ?? summaryFields.worldAddress,
+    });
+    return true;
   }
 
   /**
-   * Get the full availability map as a plain object.
+   * Returns a `name → boolean` map for backcompat consumers of /api/availability/worlds.
    */
   getAvailability(): Record<string, boolean> {
     const result: Record<string, boolean> = {};
-    for (const [name, entry] of this.cache) {
-      result[name] = entry.alive;
+    for (const entry of this.cache.values()) {
+      result[entry.name] = entry.alive;
     }
     return result;
+  }
+
+  isSummaryReady(): boolean {
+    return this.hasCompletedPoll && this.cache.size > 0;
+  }
+
+  /**
+   * Returns the full list of per-world summaries. Stable order: (chain, name).
+   */
+  getSummaries(): WorldSummary[] {
+    return Array.from(this.cache.values()).sort((a, b) => {
+      if (a.chain !== b.chain) return a.chain.localeCompare(b.chain);
+      return a.name.localeCompare(b.name);
+    });
   }
 
   /**
@@ -67,36 +181,65 @@ export class ToriiAvailabilityService {
       return this.pollInFlight;
     }
 
-    const pollPromise = this.runPollCycle().finally(() => {
-      if (this.pollInFlight === pollPromise) {
-        this.pollInFlight = null;
-      }
-    });
+    const pollPromise = this.runPollCycle()
+      .then(() => {
+        this.hasCompletedPoll = true;
+      })
+      .finally(() => {
+        if (this.pollInFlight === pollPromise) {
+          this.pollInFlight = null;
+        }
+      });
     this.pollInFlight = pollPromise;
     return pollPromise;
   }
 
   private async runPollCycle(): Promise<void> {
-    const allNames = new Set<string>();
+    const deploymentByName = new Map<
+      string,
+      FactoryWorldDeployment & {
+        chain: WorldSummaryChain;
+      }
+    >();
+    const prizeByName = new Map<string, string>();
 
     for (const chain of this.factoryChains) {
       try {
-        const names = await fetchFactoryWorldNames(chain, this.factoryTimeoutMs);
-        for (const name of names) {
-          allNames.add(name);
+        const [deployments, prizeAddresses] = await Promise.all([
+          fetchFactoryWorldDeployments(chain, this.factoryTimeoutMs),
+          fetchFactoryPrizeAddresses(chain, this.factoryTimeoutMs),
+        ]);
+        const chainKey = resolveChain(chain);
+        for (const deployment of deployments) {
+          if (!deploymentByName.has(deployment.name)) {
+            deploymentByName.set(deployment.name, { ...deployment, chain: chainKey });
+          }
+        }
+        for (const [name, address] of prizeAddresses) {
+          if (!prizeByName.has(name)) {
+            prizeByName.set(name, address);
+          }
         }
       } catch (err) {
         console.error(`[torii-availability] Failed to fetch worlds for chain ${chain}:`, err);
       }
     }
 
-    // Probe all worlds with concurrency limit of 10
-    const names = Array.from(allNames);
+    const entries = Array.from(deploymentByName.values());
     const concurrency = 10;
 
-    for (let i = 0; i < names.length; i += concurrency) {
-      const batch = names.slice(i, i + concurrency);
-      await Promise.all(batch.map((name) => this.probeWorld(name)));
+    for (let i = 0; i < entries.length; i += concurrency) {
+      const batch = entries.slice(i, i + concurrency);
+      await Promise.all(
+        batch.map((deployment) =>
+          this.probeWorld(
+            deployment.name,
+            deployment.chain,
+            prizeByName.get(deployment.name) ?? null,
+            deployment.worldAddress,
+          ),
+        ),
+      );
     }
   }
 

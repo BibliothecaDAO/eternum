@@ -10,7 +10,7 @@ interface EnqueueWarpTravelPrefetchInput {
   priority: number;
   queue: PrefetchQueueItem[];
   queuedFetchKeys: Set<string>;
-  fetchedFetchKeys: Set<string>;
+  fetchedFetchKeys: PrefetchFetchKeyLookup;
   pendingFetchKeys: PrefetchFetchKeyLookup;
 }
 

@@ -153,7 +153,7 @@ pub impl iExplorerImpl of iExplorerTrait {
                 if !adjacent_tile.discovered() {
                     let biome_library = biome_library::get_dispatcher(@world);
                     let adjacent_coord_biome: Biome = biome_library
-                        .get_biome(adjacent_coord.alt, adjacent_coord.x.into(), adjacent_coord.y.into());
+                        .get_biome(world, adjacent_coord.alt, adjacent_coord.x.into(), adjacent_coord.y.into());
                     IMapImpl::explore(ref world, ref adjacent_tile, adjacent_coord_biome);
                 }
 

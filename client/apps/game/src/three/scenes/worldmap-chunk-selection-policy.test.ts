@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveChunkKeyFromHex, resolveWorldmapChunkFromWorldPosition } from "./worldmap-chunk-selection-policy";
+import {
+  resolveChunkKeyFromHex,
+  resolveWorldmapChunkFromHexPosition,
+  resolveWorldmapChunkFromWorldPosition,
+} from "./worldmap-chunk-selection-policy";
 
 const HORIZ_DIST = Math.sqrt(3);
 const VERT_DIST = 1.5;
@@ -83,5 +87,11 @@ describe("resolveWorldmapChunkFromWorldPosition", () => {
       startRow: -24,
       chunkKey: "-24,-24",
     });
+  });
+
+  it("resolves hex positions through the same chunk-key contract used by world positions", () => {
+    expect(resolveWorldmapChunkFromHexPosition({ col: 24, row: 23, chunkSize: 24 }).chunkKey).toBe("0,24");
+    expect(resolveWorldmapChunkFromHexPosition({ col: 23, row: 24, chunkSize: 24 }).chunkKey).toBe("24,0");
+    expect(resolveWorldmapChunkFromHexPosition({ col: -24, row: -1, chunkSize: 24 }).chunkKey).toBe("-24,-24");
   });
 });

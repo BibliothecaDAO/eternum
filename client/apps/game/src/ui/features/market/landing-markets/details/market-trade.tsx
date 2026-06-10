@@ -1,13 +1,13 @@
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import TrendingUp from "lucide-react/dist/esm/icons/trending-up";
-import X from "lucide-react/dist/esm/icons/x";
 import { useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { BigNumberish, Call, uint256 } from "starknet";
 
 import { useAccountStore } from "@/hooks/store/use-account-store";
+import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import type { RegisteredToken } from "@/pm/bindings";
 import type { MarketClass, MarketOutcome } from "@/pm/class";
 import { ORACLE_FEE_BPS, PROTOCOL_FEE_BPS } from "@/pm/constants/market-creation-defaults";
@@ -17,6 +17,7 @@ import { useUser } from "@/pm/hooks/dojo/user";
 import { formatUnits } from "@/pm/utils";
 import Button from "@/ui/design-system/atoms/button";
 import Panel from "@/ui/design-system/atoms/panel";
+import { DialogShell } from "@/ui/design-system/molecules";
 import { getContractByName } from "@dojoengine/core";
 import { parseLordsToBaseUnits } from "../market-utils";
 import { MaybeController } from "../maybe-controller";
@@ -76,144 +77,121 @@ const TradeConfirmDialog = ({
   if (!open) return null;
 
   const content = (
-    <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-      onClick={onClose}
+    <DialogShell
+      title="Confirm Trade"
+      onClose={onClose}
+      size="sm"
+      zIndexClassName="z-[9999]"
+      panelClassName="animate-fade-in-up border-gold/30"
+      contentClassName="space-y-4"
     >
-      <Panel
-        tone="wood"
-        padding="lg"
-        radius="xl"
-        border="subtle"
-        className="relative mx-4 w-full max-w-sm animate-fade-in-up border-gold/30 shadow-2xl"
-        onClick={(e: React.MouseEvent) => e.stopPropagation()}
-      >
-        {/* Close button */}
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute right-3 top-3 rounded-full p-1.5 text-gold/50 transition-colors hover:bg-gold/10 hover:text-gold"
-          aria-label="Close"
-        >
-          <X className="h-4 w-4" />
-        </button>
-
-        {/* Header */}
-        <div className="mb-4 text-center">
-          <h3 className="font-cinzel text-lg font-semibold text-gold">Confirm Trade</h3>
+      {/* Amount */}
+      <div className="rounded-lg border border-gold/20 bg-brown/55 p-4 text-center">
+        <p className="text-xs uppercase tracking-wide text-gold/50">You are buying</p>
+        <div className="mt-1 flex items-center justify-center gap-2">
+          <span className="font-cinzel text-2xl font-bold text-lightest">{Number(amount) > 0 ? amount : "0"}</span>
+          <TokenIcon token={token} size={20} />
+          <span className="text-gold/70">{token?.symbol}</span>
         </div>
+      </div>
 
-        {/* Trade Summary */}
-        <div className="space-y-4">
-          {/* Amount */}
-          <div className="rounded-lg border border-gold/20 bg-brown/55 p-4 text-center">
-            <p className="text-xs uppercase tracking-wide text-gold/50">You are buying</p>
-            <div className="mt-1 flex items-center justify-center gap-2">
-              <span className="font-cinzel text-2xl font-bold text-lightest">{Number(amount) > 0 ? amount : "0"}</span>
-              <TokenIcon token={token} size={20} />
-              <span className="text-gold/70">{token?.symbol}</span>
-            </div>
-          </div>
+      {/* Selected Outcome */}
+      <div className="rounded-lg border border-gold/20 bg-gold/5 p-3">
+        <p className="mb-2 text-xs uppercase tracking-wide text-gold/50">On outcome</p>
+        <div className="flex items-center gap-2">
+          <div
+            className="h-3 w-3 rounded-full"
+            style={{ backgroundColor: getOutcomeColor(selectedOutcome?.index ?? 0) }}
+          />
+          <span className="font-semibold text-gold">
+            <MaybeController address={selectedOutcome?.name ?? ""} />
+          </span>
+          <span className="ml-auto rounded-full bg-gold/20 px-2 py-0.5 text-xs font-medium text-gold">
+            {selectedOutcome?.odds}%
+          </span>
+        </div>
+      </div>
 
-          {/* Selected Outcome */}
-          <div className="rounded-lg border border-gold/20 bg-gold/5 p-3">
-            <p className="mb-2 text-xs uppercase tracking-wide text-gold/50">On outcome</p>
-            <div className="flex items-center gap-2">
-              <div
-                className="h-3 w-3 rounded-full"
-                style={{ backgroundColor: getOutcomeColor(selectedOutcome?.index ?? 0) }}
-              />
-              <span className="font-semibold text-gold">
-                <MaybeController address={selectedOutcome?.name ?? ""} />
-              </span>
-              <span className="ml-auto rounded-full bg-gold/20 px-2 py-0.5 text-xs font-medium text-gold">
-                {selectedOutcome?.odds}%
-              </span>
-            </div>
-          </div>
-
-          {/* Payout Summary */}
-          {potentialWin && (
-            <div className="rounded-lg border border-gold/25 bg-brown/45 p-3">
-              <div className="space-y-2">
-                {/* Shares */}
-                {userShares != null && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-gold/60">Your Shares</span>
-                    <span className="font-medium text-lightest">{userShares.toFixed(2)}%</span>
-                  </div>
-                )}
-                {/* Payout if Win */}
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gold/60">Payout if Win</span>
-                  <div className="flex items-center gap-1">
-                    <span className="font-cinzel text-lg font-bold text-brilliance">{potentialWin}</span>
-                    <TokenIcon token={token} size={16} />
-                  </div>
-                </div>
-                {/* Net Profit */}
-                {netResult && (
-                  <div className="flex items-center justify-between border-t border-gold/20 pt-2 text-xs">
-                    <span className="text-gold/60">Net Profit</span>
-                    <span className={isProfit ? "font-semibold text-brilliance" : "font-semibold text-danger"}>
-                      {isProfit ? "+" : "-"}
-                      {netResult}
-                    </span>
-                  </div>
-                )}
+      {/* Payout Summary */}
+      {potentialWin && (
+        <div className="rounded-lg border border-gold/25 bg-brown/45 p-3">
+          <div className="space-y-2">
+            {/* Shares */}
+            {userShares != null && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-gold/60">Your Shares</span>
+                <span className="font-medium text-lightest">{userShares.toFixed(2)}%</span>
+              </div>
+            )}
+            {/* Payout if Win */}
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-gold/60">Payout if Win</span>
+              <div className="flex items-center gap-1">
+                <span className="font-cinzel text-lg font-bold text-brilliance">{potentialWin}</span>
+                <TokenIcon token={token} size={16} />
               </div>
             </div>
-          )}
-
-          {/* Risk Notice */}
-          <div className="rounded-lg border border-orange/35 bg-orange/10 p-3">
-            <div className="mb-2 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-orange" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-orange">Alpha Release</span>
-            </div>
-            <p className="text-[11px] leading-relaxed text-gold/70">
-              Smart contracts are not audited. Loss of funds is possible. Trade at your own risk.
-            </p>
+            {/* Net Profit */}
+            {netResult && (
+              <div className="flex items-center justify-between border-t border-gold/20 pt-2 text-xs">
+                <span className="text-gold/60">Net Profit</span>
+                <span className={isProfit ? "font-semibold text-brilliance" : "font-semibold text-danger"}>
+                  {isProfit ? "+" : "-"}
+                  {netResult}
+                </span>
+              </div>
+            )}
           </div>
-
-          {/* Acknowledgment */}
-          <label className="flex cursor-pointer items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={hasAcknowledgedRisk}
-              onChange={(event) => handleRiskChange(event.target.checked)}
-              className="mt-0.5 h-4 w-4 cursor-pointer rounded accent-gold"
-            />
-            <span className="text-gold/85">I understand and accept the risks</span>
-          </label>
         </div>
+      )}
 
-        {/* Actions */}
-        <div className="mt-6 space-y-2">
-          <Button
-            variant="primary"
-            size="md"
-            className="w-full"
-            onClick={onConfirm}
-            disabled={isSubmitting || !hasAcknowledgedRisk}
-            isLoading={isSubmitting}
-            forceUppercase={false}
-          >
-            {isSubmitting ? "Confirming..." : "Confirm Trade"}
-          </Button>
-          <Button
-            variant="outline"
-            size="xs"
-            className="w-full"
-            onClick={onClose}
-            disabled={isSubmitting}
-            forceUppercase={false}
-          >
-            Cancel
-          </Button>
+      {/* Risk Notice */}
+      <div className="rounded-lg border border-orange/35 bg-orange/10 p-3">
+        <div className="mb-2 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-orange" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-orange">Alpha Release</span>
         </div>
-      </Panel>
-    </div>
+        <p className="text-[11px] leading-relaxed text-gold/70">
+          Smart contracts are not audited. Loss of funds is possible. Trade at your own risk.
+        </p>
+      </div>
+
+      {/* Acknowledgment */}
+      <label className="flex cursor-pointer items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={hasAcknowledgedRisk}
+          onChange={(event) => handleRiskChange(event.target.checked)}
+          className="mt-0.5 h-4 w-4 cursor-pointer rounded accent-gold"
+        />
+        <span className="text-gold/85">I understand and accept the risks</span>
+      </label>
+
+      {/* Actions */}
+      <div className="space-y-2 pt-2">
+        <Button
+          variant="primary"
+          size="md"
+          className="w-full"
+          onClick={onConfirm}
+          disabled={isSubmitting || !hasAcknowledgedRisk}
+          isLoading={isSubmitting}
+          forceUppercase={false}
+        >
+          {isSubmitting ? "Confirming..." : "Confirm Trade"}
+        </Button>
+        <Button
+          variant="outline"
+          size="xs"
+          className="w-full"
+          onClick={onClose}
+          disabled={isSubmitting}
+          forceUppercase={false}
+        >
+          Cancel
+        </Button>
+      </div>
+    </DialogShell>
   );
 
   return typeof document !== "undefined" ? createPortal(content, document.body) : content;
@@ -487,11 +465,12 @@ export function MarketTrade({
       setIsDialogOpen(false);
 
       await account.estimateInvokeFee([approveCall, buyCall], { blockIdentifier: "pre_confirmed" });
-      const resultTx = await account.execute([approveCall, buyCall]);
-
-      if ("waitForTransaction" in account && typeof account.waitForTransaction === "function") {
-        await account.waitForTransaction(resultTx.transaction_hash);
-      }
+      await executeObservedClientTransaction({
+        account,
+        calls: [approveCall, buyCall],
+        surface: "prediction_market",
+        operation: "market_buy",
+      });
 
       toast.success("Trade submitted successfully!");
       if (onTradeSuccess) {

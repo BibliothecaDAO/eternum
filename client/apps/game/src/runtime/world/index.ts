@@ -9,4 +9,5 @@ export * from "./manifest-patcher";
 export * from "./profile-builder";
 export * from "./selection";
 export * from "./ensure";
-export { ensureActiveWorldProfileWithUI } from "./ensure-with-ui";
+export * from "./use-active-world";
+export * from "./use-selected-chain";

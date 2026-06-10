@@ -25,7 +25,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
     let prewarmCompleted = false;
     let structureDrainCompleted = false;
 
-    const computeTileEntities = createControlledAsyncCall<[string], boolean>();
+    const computeTileEntities = createControlledAsyncCall<[string, { requireStructures: boolean }], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
@@ -92,7 +92,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
 
     const structureDrainCalls: string[] = [];
 
-    const computeTileEntities = createControlledAsyncCall<[string], boolean>();
+    const computeTileEntities = createControlledAsyncCall<[string, { requireStructures: boolean }], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
     const prewarmChunkAssets = createControlledAsyncCall<[string], void>();
@@ -133,7 +133,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
 
     let prewarmStarted = false;
 
-    const computeTileEntities = createControlledAsyncCall<[string], boolean>();
+    const computeTileEntities = createControlledAsyncCall<[string, { requireStructures: boolean }], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();
@@ -182,7 +182,7 @@ describe("chunk switch critical path — no redundant hydration drain", () => {
   it("overall chunk switch still waits for both structure drain and prewarm to complete", async () => {
     const completionOrder: string[] = [];
 
-    const computeTileEntities = createControlledAsyncCall<[string], boolean>();
+    const computeTileEntities = createControlledAsyncCall<[string, { requireStructures: boolean }], boolean>();
     const updateBoundsSubscription = createControlledAsyncCall<[string, number], void>();
     const waitForTileHydrationIdle = createControlledAsyncCall<[string], void>();
     const prepareTerrainChunk = createControlledAsyncCall<[number, number, number, number], { chunkKey: string }>();

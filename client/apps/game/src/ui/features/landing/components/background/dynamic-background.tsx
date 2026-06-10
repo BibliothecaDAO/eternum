@@ -1,6 +1,9 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { type TransitionEvent, useCallback, useEffect, useRef, useState } from "react";
 
+const DEFAULT_BACKGROUND_ID = "02";
+const OPTIMIZED_BACKGROUND_IDS = new Set(["02", "07"]);
+
 interface DynamicBackgroundProps {
   backgroundId: string;
   className?: string;
@@ -8,7 +11,7 @@ interface DynamicBackgroundProps {
 
 /**
  * A full-bleed background component with smooth crossfade transitions.
- * Uses the existing blitz cover images (01-08.png).
+ * Uses optimized dashboard WebP assets with PNG fallbacks for older browsers.
  */
 export const DynamicBackground = ({ backgroundId, className }: DynamicBackgroundProps) => {
   const [currentBackground, setCurrentBackground] = useState(backgroundId);
@@ -35,7 +38,7 @@ export const DynamicBackground = ({ backgroundId, className }: DynamicBackground
 
     let isActive = true;
     const loader = new Image();
-    loader.src = `/images/covers/blitz/${backgroundId}.png`;
+    loader.src = resolveLandingBackgroundSources(backgroundId).webp;
 
     const handleReady = () => {
       if (!isActive) return;
@@ -81,7 +84,7 @@ export const DynamicBackground = ({ backgroundId, className }: DynamicBackground
   }, [transitionBackground]);
 
   const handleTransitionEnd = useCallback(
-    (event: TransitionEvent<HTMLImageElement>) => {
+    (event: TransitionEvent<HTMLElement>) => {
       if (event.propertyName !== "opacity" || !transitionBackground) return;
 
       setCurrentBackground(transitionBackground);
@@ -95,23 +98,13 @@ export const DynamicBackground = ({ backgroundId, className }: DynamicBackground
   return (
     <div className={cn("absolute inset-0", className)}>
       {/* Base background layer */}
-      <img
-        alt=""
-        aria-hidden="true"
-        src={`/images/covers/blitz/${currentBackground}.png`}
-        className="absolute inset-0 h-full w-full object-cover"
-      />
+      <LandingBackgroundImage backgroundId={currentBackground} />
 
       {/* Transition layer */}
       {transitionBackground && (
-        <img
-          alt=""
-          aria-hidden="true"
-          src={`/images/covers/blitz/${transitionBackground}.png`}
-          className={cn(
-            "absolute inset-0 h-full w-full object-cover transition-opacity duration-700",
-            isTransitioning ? "opacity-100" : "opacity-0",
-          )}
+        <LandingBackgroundImage
+          backgroundId={transitionBackground}
+          className={cn("transition-opacity duration-700", isTransitioning ? "opacity-100" : "opacity-0")}
           onTransitionEnd={handleTransitionEnd}
         />
       )}
@@ -121,4 +114,36 @@ export const DynamicBackground = ({ backgroundId, className }: DynamicBackground
       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/30" />
     </div>
   );
+};
+
+const LandingBackgroundImage = ({
+  backgroundId,
+  className,
+  onTransitionEnd,
+}: {
+  backgroundId: string;
+  className?: string;
+  onTransitionEnd?: (event: TransitionEvent<HTMLElement>) => void;
+}) => {
+  const sources = resolveLandingBackgroundSources(backgroundId);
+
+  return (
+    <picture
+      aria-hidden="true"
+      className={cn("absolute inset-0 block h-full w-full", className)}
+      onTransitionEnd={onTransitionEnd}
+    >
+      <source srcSet={sources.webp} type="image/webp" />
+      <img alt="" src={sources.png} className="h-full w-full object-cover" />
+    </picture>
+  );
+};
+
+const resolveLandingBackgroundSources = (backgroundId: string) => {
+  const resolvedBackgroundId = OPTIMIZED_BACKGROUND_IDS.has(backgroundId) ? backgroundId : DEFAULT_BACKGROUND_ID;
+
+  return {
+    webp: `/images/covers/dashboard/${resolvedBackgroundId}.webp`,
+    png: `/images/covers/blitz/${resolvedBackgroundId}.png`,
+  };
 };

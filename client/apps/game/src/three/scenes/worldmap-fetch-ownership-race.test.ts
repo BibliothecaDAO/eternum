@@ -3,7 +3,12 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-import { finalizePendingChunkFetchOwnership } from "./worldmap-runtime-lifecycle";
+import {
+  createWorldmapRenderAreaHydrationState,
+  finalizePendingRenderAreaHydrationOwnership,
+  getPendingRenderAreaHydrationPromise,
+  registerPendingRenderAreaHydration,
+} from "./worldmap-render-area-hydration-state";
 
 function readWorldmapSource(): string {
   const currentDir = dirname(fileURLToPath(import.meta.url));
@@ -16,31 +21,34 @@ describe("worldmap fetch ownership race hardening", () => {
     const fetchKey = "16,16:render";
     const firstOwner = Promise.resolve(true);
     const secondOwner = Promise.resolve(true);
-    const pendingChunks = new Map<string, Promise<boolean>>([[fetchKey, secondOwner]]);
+    const state = createWorldmapRenderAreaHydrationState();
+    registerPendingRenderAreaHydration(state, fetchKey, ["tileOpt", "explorerTroops"], secondOwner);
 
-    const staleDeleted = finalizePendingChunkFetchOwnership({
-      pendingChunks,
+    const staleDeleted = finalizePendingRenderAreaHydrationOwnership(
+      state,
       fetchKey,
-      fetchPromise: firstOwner,
-    });
+      ["tileOpt", "explorerTroops"],
+      firstOwner,
+    );
 
     expect(staleDeleted).toBe(false);
-    expect(pendingChunks.get(fetchKey)).toBe(secondOwner);
+    expect(getPendingRenderAreaHydrationPromise(state, fetchKey, ["tileOpt", "explorerTroops"])).toBe(secondOwner);
 
-    const currentDeleted = finalizePendingChunkFetchOwnership({
-      pendingChunks,
+    const currentDeleted = finalizePendingRenderAreaHydrationOwnership(
+      state,
       fetchKey,
-      fetchPromise: secondOwner,
-    });
+      ["tileOpt", "explorerTroops"],
+      secondOwner,
+    );
 
     expect(currentDeleted).toBe(true);
-    expect(pendingChunks.has(fetchKey)).toBe(false);
+    expect(getPendingRenderAreaHydrationPromise(state, fetchKey, ["tileOpt", "explorerTroops"])).toBe(null);
   });
 
   it("wires ownership-aware finalizer into executeTileEntitiesFetch", () => {
     const source = readWorldmapSource();
 
-    expect(source).toMatch(/finalizePendingChunkFetchOwnership\s*\(/);
+    expect(source).toMatch(/finalizePendingRenderAreaHydrationOwnership\s*\(/);
   });
 
   it("keeps executeTileEntitiesFetch finalizer free of out-of-scope promise references", () => {

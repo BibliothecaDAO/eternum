@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { TileOccupier } from "@bibliothecadao/types";
 
 const {
   defineComponentSystemMock,
@@ -213,6 +214,26 @@ describe("WorldUpdateListener army tile bootstrap", () => {
     expect(options).toMatchObject({ runOnInit: true });
   });
 
+  it("subscribes structure tile updates with runOnInit enabled", () => {
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          Hyperstructure: {},
+          Structure: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    listener.Structure.onTileUpdate(() => {});
+
+    expect(defineComponentSystemMock).toHaveBeenCalledTimes(1);
+    const options = defineComponentSystemMock.mock.calls[0][3];
+    expect(options).toMatchObject({ runOnInit: true });
+  });
+
   it("uses live explorer troops stamina on tile bootstrap when data enhancer is stale", async () => {
     isComponentUpdateMock.mockReturnValue(true);
     tileOptToTileMock.mockReturnValue({
@@ -283,6 +304,161 @@ describe("WorldUpdateListener army tile bootstrap", () => {
         onChainStamina: {
           amount: 15n,
           updatedTick: 3,
+        },
+      }),
+    );
+  });
+
+  it("uses enhanced stamina when it is fresher than the live explorer troop snapshot", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockReturnValue({
+      occupier_type: 1,
+      occupier_id: 778,
+      col: 12,
+      row: 34,
+    });
+    getExplorerInfoFromTileOccupierMock.mockReturnValue({
+      troopType: "Knight",
+      troopTier: "T1",
+      isDaydreamsAgent: false,
+    });
+    getComponentValueMock.mockReturnValue({
+      owner: 99,
+      troops: {
+        count: 500n,
+        category: "Knight",
+        tier: "T1",
+        stamina: {
+          amount: 15n,
+          updated_tick: 3n,
+        },
+        boosts: {
+          incr_damage_dealt_percent_num: 0,
+          incr_damage_dealt_end_tick: 0,
+          decr_damage_gotten_percent_num: 0,
+          decr_damage_gotten_end_tick: 0,
+          incr_stamina_regen_percent_num: 0,
+          incr_stamina_regen_tick_count: 0,
+          incr_explore_reward_percent_num: 0,
+          incr_explore_reward_end_tick: 0,
+        },
+        battle_cooldown_end: 0,
+      },
+    });
+    enhanceArmyDataMock.mockResolvedValue({
+      troopCount: 500,
+      currentStamina: 45,
+      onChainStamina: {
+        amount: 45n,
+        updatedTick: 7,
+      },
+      owner: { address: 123n, ownerName: "Alice", guildName: "" },
+      ownerStructureId: 99,
+      battleData: undefined,
+    });
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          ExplorerTroops: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    const callback = vi.fn();
+    listener.Army.onTileUpdate(callback);
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+    await handleUpdate({ value: [{ value: "tile" }, undefined] });
+
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityId: 778,
+        troopCount: 500,
+        currentStamina: 45,
+        onChainStamina: {
+          amount: 45n,
+          updatedTick: 7,
+        },
+      }),
+    );
+  });
+
+  it("uses enhanced stamina when updated ticks tie but amounts differ", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockReturnValue({
+      occupier_type: 1,
+      occupier_id: 779,
+      col: 12,
+      row: 34,
+    });
+    getExplorerInfoFromTileOccupierMock.mockReturnValue({
+      troopType: "Knight",
+      troopTier: "T1",
+      isDaydreamsAgent: false,
+    });
+    getComponentValueMock.mockReturnValue({
+      owner: 99,
+      troops: {
+        count: 500n,
+        category: "Knight",
+        tier: "T1",
+        stamina: {
+          amount: 80n,
+          updated_tick: 7n,
+        },
+        boosts: {
+          incr_damage_dealt_percent_num: 0,
+          incr_damage_dealt_end_tick: 0,
+          decr_damage_gotten_percent_num: 0,
+          decr_damage_gotten_end_tick: 0,
+          incr_stamina_regen_percent_num: 0,
+          incr_stamina_regen_tick_count: 0,
+          incr_explore_reward_percent_num: 0,
+          incr_explore_reward_end_tick: 0,
+        },
+        battle_cooldown_end: 0,
+      },
+    });
+    enhanceArmyDataMock.mockResolvedValue({
+      troopCount: 500,
+      currentStamina: 45,
+      onChainStamina: {
+        amount: 45n,
+        updatedTick: 7,
+      },
+      owner: { address: 123n, ownerName: "Alice", guildName: "" },
+      ownerStructureId: 99,
+      battleData: undefined,
+    });
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          ExplorerTroops: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    const callback = vi.fn();
+    listener.Army.onTileUpdate(callback);
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+    await handleUpdate({ value: [{ value: "tile" }, undefined] });
+
+    expect(callback).toHaveBeenCalledWith(
+      expect.objectContaining({
+        entityId: 779,
+        currentStamina: 45,
+        onChainStamina: {
+          amount: 45n,
+          updatedTick: 7,
         },
       }),
     );
@@ -381,6 +557,47 @@ describe("WorldUpdateListener army tile bootstrap", () => {
 
     expect(callback).toHaveBeenCalledTimes(1);
     expect(callback.mock.calls[0][0].structureName).toBe("Realm of Testing");
+  });
+
+  it("resolves a structure tile update directly from a TileOpt snapshot value", async () => {
+    tileOptToTileMock.mockReturnValue({
+      occupier_type: 1,
+      occupier_id: 921,
+      col: 10,
+      row: 15,
+    });
+    getStructureInfoFromTileOccupierMock.mockReturnValue({
+      type: 4,
+      stage: 0,
+      level: 1,
+      hasWonder: false,
+    });
+    enhanceStructureDataMock.mockResolvedValue({
+      owner: { address: 123n, ownerName: "", guildName: "" },
+      guardArmies: [],
+      activeProductions: [],
+      battleData: undefined,
+      structureName: "Realm of Testing",
+    });
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+          Hyperstructure: {},
+          Structure: {},
+          AddressName: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    await expect(listener.resolveStructureTileUpdateFromTileOpt({} as never)).resolves.toMatchObject({
+      entityId: 921,
+      structureName: "Realm of Testing",
+      hexCoords: { col: 10, row: 15 },
+    });
   });
 
   it("re-resolves a non-zero owner when cached data still says The Vanguard", async () => {
@@ -527,6 +744,97 @@ describe("WorldUpdateListener army tile bootstrap", () => {
       address: 123n,
       ownerName: "Alice",
       guildName: "",
+    });
+  });
+
+  it("skips reserved hyperstructure placeholders in the real structure tile stream", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockImplementation((value) => value);
+    getStructureInfoFromTileOccupierMock.mockReturnValue({
+      type: 2,
+      stage: 0,
+      level: 1,
+      hasWonder: false,
+      reserved: true,
+    });
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: structureComponents,
+      } as any,
+      {} as any,
+    );
+
+    const callback = vi.fn();
+    listener.Structure.onTileUpdate(callback);
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+    await handleUpdate({
+      value: [
+        {
+          occupier_type: TileOccupier.ReservedHyperstructure,
+          occupier_id: 0,
+          col: 10,
+          row: 15,
+        },
+        undefined,
+      ],
+      entity: "0x123",
+    });
+
+    expect(callback).not.toHaveBeenCalled();
+  });
+
+  it("emits reserved hyperstructure tile updates from current and previous tile state", async () => {
+    isComponentUpdateMock.mockReturnValue(true);
+    tileOptToTileMock.mockImplementation((value) => value);
+
+    const listener = new WorldUpdateListener(
+      {
+        network: { world: {} },
+        components: {
+          TileOpt: {},
+        },
+      } as any,
+      {} as any,
+    );
+
+    const callback = vi.fn();
+    listener.ReservedHyperstructure.onTileUpdate(callback);
+
+    const handleUpdate = defineComponentSystemMock.mock.calls[0][2];
+
+    await handleUpdate({
+      value: [
+        {
+          occupier_type: TileOccupier.ReservedHyperstructure,
+          occupier_id: 0,
+          col: 12,
+          row: 34,
+        },
+        undefined,
+      ],
+    });
+
+    await handleUpdate({
+      value: [
+        undefined,
+        {
+          occupier_type: TileOccupier.ReservedHyperstructure,
+          occupier_id: 0,
+          col: 12,
+          row: 34,
+        },
+      ],
+    });
+
+    expect(callback).toHaveBeenNthCalledWith(1, {
+      hexCoords: { col: 12, row: 34 },
+    });
+    expect(callback).toHaveBeenNthCalledWith(2, {
+      hexCoords: { col: 12, row: 34 },
+      removed: true,
     });
   });
 });

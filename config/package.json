@@ -42,10 +42,11 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "chalk": "^5.4.1",
-    "@dojoengine/core": "catalog:",
     "@bibliothecadao/provider": "workspace:*",
-    "@bibliothecadao/types": "workspace:*"
+    "@bibliothecadao/types": "workspace:*",
+    "@dojoengine/core": "catalog:",
+    "chalk": "^5.4.1",
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
     "@types/bun": "latest"

@@ -10,6 +10,10 @@ export type WorldmapAsyncStageResult<T> =
     }
   | {
       status: "timed_out";
+    }
+  | {
+      status: "rejected";
+      error: unknown;
     };
 
 interface SettleWorldmapAsyncStageInput<T, TLabel extends string> {
@@ -26,20 +30,37 @@ export async function settleWorldmapAsyncStage<T, TLabel extends string>({
   onTimeout,
 }: SettleWorldmapAsyncStageInput<T, TLabel>): Promise<WorldmapAsyncStageResult<T>> {
   if (timeoutMs === undefined || timeoutMs <= 0) {
-    return {
-      status: "resolved",
-      value: await promise,
-    };
+    try {
+      return {
+        status: "resolved",
+        value: await promise,
+      };
+    } catch (error) {
+      console.warn(`[WorldmapAsync] Phase "${label}" rejected without timeout`, error);
+      return {
+        status: "rejected",
+        error,
+      };
+    }
   }
 
   let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
   try {
     const result = await Promise.race<WorldmapAsyncStageResult<T>>([
-      promise.then((value) => ({
-        status: "resolved",
-        value,
-      })),
+      promise.then(
+        (value) => ({
+          status: "resolved" as const,
+          value,
+        }),
+        (error) => {
+          console.warn(`[WorldmapAsync] Phase "${label}" rejected`, error);
+          return {
+            status: "rejected" as const,
+            error,
+          };
+        },
+      ),
       new Promise<WorldmapAsyncStageResult<T>>((resolve) => {
         timeoutId = setTimeout(() => {
           onTimeout?.({

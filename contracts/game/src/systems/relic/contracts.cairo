@@ -276,8 +276,8 @@ pub mod relic_systems {
         ) {
             // ensure relic resource id is valid
             assert!(
-                relic_resource_id == RELIC_EFFECT::STRUCTURE_GUARD_REDUCE_ENEMY_ATTACK_DAMAGE_15P_6D
-                    || relic_resource_id == RELIC_EFFECT::STRUCTURE_GUARD_REDUCE_ENEMY_ATTACK_DAMAGE_30P_6D,
+                relic_resource_id == RELIC_EFFECT::STRUCTURE_GUARD_REDUCE_ENEMY_ATTACK_DAMAGE_15P_3D
+                    || relic_resource_id == RELIC_EFFECT::STRUCTURE_GUARD_REDUCE_ENEMY_ATTACK_DAMAGE_30P_3D,
                 "Eternum: invalid relic resource id for structure guard",
             );
 
@@ -315,12 +315,12 @@ pub mod relic_systems {
                 || relic_resource_id == RELIC_EFFECT::STRUCTURE_RESOURCE_PRODUCTION_INCREASE_40P_3D {
                 production_boost_bonus.incr_resource_rate_percent_num = rate;
                 production_boost_bonus.incr_resource_rate_end_tick = current_tick + duration;
-            } else if relic_resource_id == RELIC_EFFECT::STRUCTURE_LABOR_PRODUCTION_INCREASE_20P_6D
-                || relic_resource_id == RELIC_EFFECT::STRUCTURE_LABOR_PRODUCTION_INCREASE_20P_12D {
+            } else if relic_resource_id == RELIC_EFFECT::STRUCTURE_LABOR_PRODUCTION_INCREASE_20P_3D
+                || relic_resource_id == RELIC_EFFECT::STRUCTURE_LABOR_PRODUCTION_INCREASE_20P_3D_ALT {
                 production_boost_bonus.incr_labor_rate_percent_num = rate;
                 production_boost_bonus.incr_labor_rate_end_tick = current_tick + duration;
-            } else if relic_resource_id == RELIC_EFFECT::STRUCTURE_TROOP_PRODUCTION_INCREASE_20P_6D
-                || relic_resource_id == RELIC_EFFECT::STRUCTURE_TROOP_PRODUCTION_INCREASE_20P_12D {
+            } else if relic_resource_id == RELIC_EFFECT::STRUCTURE_TROOP_PRODUCTION_INCREASE_15P_3D
+                || relic_resource_id == RELIC_EFFECT::STRUCTURE_TROOP_PRODUCTION_INCREASE_30P_3D {
                 production_boost_bonus.incr_troop_rate_percent_num = rate;
                 production_boost_bonus.incr_troop_rate_end_tick = current_tick + duration;
             } else {

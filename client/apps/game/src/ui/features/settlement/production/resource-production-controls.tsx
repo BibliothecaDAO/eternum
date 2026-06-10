@@ -67,12 +67,19 @@ export const ResourceProductionControls = ({
       production_cycles: [ticks],
       signer: account,
     };
+    const removeResourceOverrides = resourceManager.optimisticResourceUpdates(
+      (configManager.complexSystemResourceInputs[selectedResource] ?? []).map(({ resource, amount }) => ({
+        resourceId: resource,
+        amount: -amount * ticks,
+      })),
+    );
 
     try {
       await burn_resource_for_resource_production(calldata);
     } catch (error) {
       console.error(error);
     } finally {
+      removeResourceOverrides();
       setIsLoading(false);
     }
   };
@@ -88,12 +95,19 @@ export const ResourceProductionControls = ({
         produced_resource_types: [selectedResource],
         signer: account,
       };
+      const removeResourceOverrides = resourceManager.optimisticResourceUpdates(
+        laborConfig.inputResources.map(({ resource, amount }) => ({
+          resourceId: resource,
+          amount: -amount * productionCycles,
+        })),
+      );
 
       try {
         await burn_labor_for_resource_production(calldata);
       } catch (error) {
         console.error(error);
       } finally {
+        removeResourceOverrides();
         setIsLoading(false);
       }
     }
@@ -230,7 +244,7 @@ export const ResourceProductionControls = ({
   if (rawCurrentInputs.length === 0 && laborCurrentInputs.length === 0) return null;
 
   return (
-    <div className="p-6 rounded-lg panel-wood">
+    <div className="p-6 rounded-lg border border-gold/20 bg-black/30">
       <div className={`grid ${canUseLabor ? "grid-cols-2" : "grid-cols-1"} gap-4`}>
         <div className="grid grid-cols-1 gap-4">
           <div className="mb-4">

@@ -37,7 +37,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases stamina regeneration by 50%",
     bonus: 1.5,
-    duration: "15 Eternum Days",
+    duration: "3 Eternum Days",
   },
   {
     id: ResourcesIds.StaminaRelic2,
@@ -49,7 +49,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases stamina regeneration by 100%",
     bonus: 2,
-    duration: "15 Eternum Days",
+    duration: "3 Eternum Days",
   },
 
   // Army Damage Relics
@@ -63,7 +63,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases damage by 20%",
     bonus: 1.2,
-    duration: "15 Eternum Days",
+    duration: "3 Eternum Days",
   },
   {
     id: ResourcesIds.DamageRelic2,
@@ -75,7 +75,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases damage by 40%",
     bonus: 1.4,
-    duration: "15 Eternum Days",
+    duration: "3 Eternum Days",
   },
 
   // Army Damage Reduction Relics
@@ -139,7 +139,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Double all exploration rewards",
     bonus: 2,
-    duration: "15 Eternum Days",
+    duration: "3 Eternum Days",
   },
   {
     id: ResourcesIds.ExplorationRewardRelic2,
@@ -151,7 +151,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Triple all exploration rewards",
     bonus: 3,
-    duration: "15 Eternum Days",
+    duration: "3 Eternum Days",
   },
 
   // Structure Damage Reduction Relics
@@ -163,9 +163,9 @@ export const RELICS: RelicInfo[] = [
     recipientType: RelicRecipientType.Structure,
     level: 1,
     craftable: false,
-    effect: "Reduce attacker damage to structure by 15% for 30 Eternum Days",
+    effect: "Reduce attacker damage to structure by 15% for 3 Eternum Days",
     bonus: 0.85,
-    duration: "30 Eternum Days",
+    duration: "3 Eternum Days",
   },
   {
     id: ResourcesIds.StructureDamageReductionRelic2,
@@ -175,9 +175,9 @@ export const RELICS: RelicInfo[] = [
     recipientType: RelicRecipientType.Structure,
     level: 2,
     craftable: false,
-    effect: "Reduce attacker damage to structure by 30% for 30 Eternum Days",
+    effect: "Reduce attacker damage to structure by 30% for 3 Eternum Days",
     bonus: 0.7,
-    duration: "30 Eternum Days",
+    duration: "3 Eternum Days",
   },
 
   // Structure Production Relics
@@ -191,7 +191,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases resource production rate by 20%",
     bonus: 1.2,
-    duration: "15 Eternum Days",
+    duration: "3 Eternum Days",
   },
   {
     id: ResourcesIds.ProductionRelic2,
@@ -203,7 +203,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases resource production rate by 40%",
     bonus: 1.4,
-    duration: "15 Eternum Days",
+    duration: "3 Eternum Days",
   },
 
   // Structure Labor Production Relics
@@ -217,7 +217,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases labor production rate by 20%",
     bonus: 1.2,
-    duration: "30 Eternum Days",
+    duration: "3 Eternum Days",
   },
   {
     id: ResourcesIds.LaborProductionRelic2,
@@ -229,7 +229,7 @@ export const RELICS: RelicInfo[] = [
     craftable: false,
     effect: "Increases labor production rate by 20%",
     bonus: 1.2,
-    duration: "60 Eternum Days",
+    duration: "3 Eternum Days",
   },
 
   // Structure Troop Production Relics
@@ -241,9 +241,9 @@ export const RELICS: RelicInfo[] = [
     recipientType: RelicRecipientType.Structure,
     level: 1,
     craftable: false,
-    effect: "Increases troop production rate by 20%",
-    bonus: 1.2,
-    duration: "30 Eternum Days",
+    effect: "Increases troop production rate by 15%",
+    bonus: 1.15,
+    duration: "3 Eternum Days",
   },
   {
     id: ResourcesIds.TroopProductionRelic2,
@@ -253,9 +253,9 @@ export const RELICS: RelicInfo[] = [
     recipientType: RelicRecipientType.Structure,
     level: 2,
     craftable: false,
-    effect: "Increases troop production rate by 20%",
-    bonus: 1.2,
-    duration: "60 Eternum Days",
+    effect: "Increases troop production rate by 30%",
+    bonus: 1.3,
+    duration: "3 Eternum Days",
   },
 ];
 

@@ -8,16 +8,17 @@ import {
 } from "./renderer-build-mode";
 
 describe("renderer build mode", () => {
-  it("defaults to the legacy webgl shipping lane", () => {
+  it("defaults to the experimental webgpu shipping lane", () => {
     expect(resolveRendererBuildMode(undefined)).toBe(DEFAULT_RENDERER_BUILD_MODE);
+    expect(DEFAULT_RENDERER_BUILD_MODE).toBe("experimental-webgpu-auto");
   });
 
-  it("resolves the experimental webgpu auto lane", () => {
-    expect(resolveRendererBuildMode("experimental-webgpu-auto")).toBe("experimental-webgpu-auto");
+  it("resolves the legacy webgl lane when explicitly requested", () => {
+    expect(resolveRendererBuildMode("legacy-webgl")).toBe("legacy-webgl");
   });
 
-  it("ignores unknown env values and falls back to legacy webgl", () => {
-    expect(resolveRendererBuildMode("bogus")).toBe("legacy-webgl");
+  it("ignores unknown env values and falls back to the default (webgpu)", () => {
+    expect(resolveRendererBuildMode("bogus")).toBe("experimental-webgpu-auto");
   });
 });
 

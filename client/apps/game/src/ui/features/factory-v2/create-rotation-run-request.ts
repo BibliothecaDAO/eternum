@@ -1,4 +1,8 @@
-import type { FactoryBlitzRegistrationOverrides, FactoryMapConfigOverrides } from "@bibliothecadao/types";
+import type {
+  FactoryBiomeClimateOverrides,
+  FactoryBlitzRegistrationOverrides,
+  FactoryMapConfigOverrides,
+} from "@bibliothecadao/types";
 import type { CreateFactoryRotationRunRequest, FactoryWorkerEnvironmentId } from "./api/factory-worker";
 import type {
   FactoryGameMode,
@@ -10,6 +14,7 @@ import type {
 export const buildFactoryCreateRotationRunRequest = ({
   environmentId,
   rotationName,
+  workflowRef,
   firstGameStartTime,
   gameIntervalMinutes,
   maxGames,
@@ -22,12 +27,15 @@ export const buildFactoryCreateRotationRunRequest = ({
   durationMinutes,
   showsDuration,
   mapConfigOverrides,
+  biomeClimateOverrides,
+  biomeClimateOverridesByGameNumber,
   blitzRegistrationOverrides,
   autoRetryIntervalMinutes,
   resolveStartTime,
 }: {
   environmentId: FactoryWorkerEnvironmentId;
   rotationName: string;
+  workflowRef?: string;
   firstGameStartTime: string;
   gameIntervalMinutes: number;
   maxGames: number;
@@ -40,12 +48,15 @@ export const buildFactoryCreateRotationRunRequest = ({
   durationMinutes: number | null;
   showsDuration: boolean;
   mapConfigOverrides?: FactoryMapConfigOverrides;
+  biomeClimateOverrides?: FactoryBiomeClimateOverrides;
+  biomeClimateOverridesByGameNumber?: Record<number, FactoryBiomeClimateOverrides>;
   blitzRegistrationOverrides?: FactoryBlitzRegistrationOverrides;
   autoRetryIntervalMinutes: FactorySeriesRetryIntervalMinutes;
   resolveStartTime: (startAt: string) => string;
 }): CreateFactoryRotationRunRequest => ({
   environment: environmentId,
   rotationName,
+  workflowRef,
   firstGameStartTime: resolveStartTime(firstGameStartTime),
   gameIntervalMinutes,
   maxGames,
@@ -56,6 +67,8 @@ export const buildFactoryCreateRotationRunRequest = ({
   singleRealmMode: selectedMode === "blitz" ? singleRealmMode : false,
   durationSeconds: showsDuration && durationMinutes ? durationMinutes * 60 : undefined,
   mapConfigOverrides,
+  biomeClimateOverrides,
+  biomeClimateOverridesByGameNumber,
   blitzRegistrationOverrides: selectedMode === "blitz" ? blitzRegistrationOverrides : undefined,
   autoRetryIntervalMinutes,
 });

@@ -154,6 +154,63 @@ export const getNeighborHexes = (col: number, row: number, steps: Steps = Steps.
   }
 };
 
+export const getHexesWithinRadius = (col: number, row: number, radius: number): NeighborHex[] => {
+  if (radius <= 0) return [];
+
+  const visited = new Set<string>([`${col},${row}`]);
+  const hexes: NeighborHex[] = [];
+  let frontier = [{ col, row, direction: Direction.EAST }];
+
+  for (let distance = 1; distance <= radius; distance++) {
+    const nextFrontier: NeighborHex[] = [];
+
+    for (const hex of frontier) {
+      for (const neighbor of getNeighborHexes(hex.col, hex.row)) {
+        const key = `${neighbor.col},${neighbor.row}`;
+        if (visited.has(key)) continue;
+
+        visited.add(key);
+        hexes.push(neighbor);
+        nextFrontier.push(neighbor);
+      }
+    }
+
+    frontier = nextFrontier;
+  }
+
+  return hexes;
+};
+
+export const getHexDistance = (
+  from: { col: number; row: number },
+  to: { col: number; row: number },
+  maxRadius = 64,
+): number => {
+  if (from.col === to.col && from.row === to.row) return 0;
+
+  const visited = new Set<string>([`${from.col},${from.row}`]);
+  let frontier = [{ col: from.col, row: from.row }];
+
+  for (let distance = 1; distance <= maxRadius; distance++) {
+    const nextFrontier: Array<{ col: number; row: number }> = [];
+
+    for (const hex of frontier) {
+      for (const neighbor of getNeighborHexes(hex.col, hex.row)) {
+        const key = `${neighbor.col},${neighbor.row}`;
+        if (visited.has(key)) continue;
+        if (neighbor.col === to.col && neighbor.row === to.row) return distance;
+
+        visited.add(key);
+        nextFrontier.push(neighbor);
+      }
+    }
+
+    frontier = nextFrontier;
+  }
+
+  return Infinity;
+};
+
 export const getNeighborOffsets = (row: number) => {
   return row % 2 === 0 ? NEIGHBOR_OFFSETS_EVEN : NEIGHBOR_OFFSETS_ODD;
 };

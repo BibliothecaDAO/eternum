@@ -21,8 +21,7 @@ describe("ArmyModel deferred bounds", () => {
     expect(methodBody).toContain("requestBoundsUpdate()");
     expect(methodBody).toContain("applyPendingBounds()");
 
-    // Should NOT directly call computeBoundingSphere on armyModel
-    // (playerIndicatorManager.computeBoundingSphere is fine, but armyModel should use deferred)
+    // Should NOT directly call computeBoundingSphere on armyModel.
     expect(methodBody).not.toContain("this.armyModel.computeBoundingSphere()");
   });
 

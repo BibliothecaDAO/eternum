@@ -37,6 +37,7 @@ describe("applyVisibleStructurePresentation", () => {
     const attachmentSignatures = new Map<number, string>();
     const attachmentRetain = new Set<number>();
     const updateLabel = vi.fn();
+    const syncCompactLabel = vi.fn();
     const spawnAttachments = vi.fn();
     const removeAttachments = vi.fn();
     const updateAttachmentTransforms = vi.fn();
@@ -57,6 +58,7 @@ describe("applyVisibleStructurePresentation", () => {
       },
       getLabel: () => label,
       updateLabel,
+      syncCompactLabel,
       getRendererForStructure: (structure) => (structure.structureType === "Village" ? previousRenderer : nextRenderer),
       resolveAttachments: () => [{ id: "banner" }],
       getAttachmentSignature: () => "banner",
@@ -81,6 +83,10 @@ describe("applyVisibleStructurePresentation", () => {
       entityId: 7,
       position: expect.any(Vector3),
     });
+    expect(syncCompactLabel).toHaveBeenCalledWith(
+      { entityId: 7, structureType: "Bank", hexCoords: { col: 4, row: 5 } },
+      expect.any(Vector3),
+    );
     expect(attachmentRetain.has(7)).toBe(true);
     expect(spawnAttachments).toHaveBeenCalledWith(7, [{ id: "banner" }]);
     expect(activeAttachmentEntities.has(7)).toBe(true);
@@ -108,6 +114,7 @@ describe("applyVisibleStructurePresentation", () => {
       },
       getLabel: () => undefined,
       updateLabel: vi.fn(),
+      syncCompactLabel: vi.fn(),
       getRendererForStructure: () => null,
       resolveAttachments: () => [],
       getAttachmentSignature: () => "",

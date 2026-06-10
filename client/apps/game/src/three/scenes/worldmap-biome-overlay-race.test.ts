@@ -13,7 +13,9 @@ describe("worldmap biome overlay race hardening", () => {
   it("wires tile hydration drain into chunk hydration and refresh paths", () => {
     const source = readWorldmapSource();
 
-    expect(source).toMatch(/waitForTileHydrationIdle:\s*async\s*\(targetChunkKey\)/);
+    expect(source).toMatch(
+      /waitForTileHydrationIdle:\s*\(targetChunkKey\)\s*=>\s*this\.waitForTileHydrationIdle\(targetChunkKey\)/,
+    );
   });
 
   it("uses visible terrain membership and reconcile policy to avoid append-on-conflict", () => {

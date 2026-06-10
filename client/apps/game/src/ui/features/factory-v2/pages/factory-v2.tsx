@@ -11,7 +11,7 @@ export const FactoryV2Page = () => {
 
   return (
     <FactoryV2Shell>
-      <FactoryV2Header onBack={() => navigate("/")} onOpenLegacy={() => navigate("/factory")} />
+      <FactoryV2Header onBack={() => navigate("/")} onOpenLegacy={() => navigate("/factory/legacy")} />
       <FactoryV2Content />
     </FactoryV2Shell>
   );

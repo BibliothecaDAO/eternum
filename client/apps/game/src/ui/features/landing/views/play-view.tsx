@@ -4,7 +4,6 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { SignInPromptModal } from "@/ui/layouts/sign-in-prompt-modal";
 import { latestFeatures, type FeatureType } from "@/ui/features/world/latest-features";
 import { MarketsProviders } from "@/ui/features/market/markets-providers";
-import { useAccount } from "@starknet-react/core";
 import {
   BookOpen,
   ChevronRight,
@@ -19,28 +18,33 @@ import {
   Wrench,
   TrendingUp,
   Bug,
-  Zap,
   Clock,
   Trophy,
   RefreshCw,
 } from "lucide-react";
 import { Suspense, lazy, useCallback, useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { primePlayEntryRoute } from "@/game-entry-preload";
+import { primeGameEntry } from "@/game-entry-preload";
+import { buildEntryHrefFromEntryContext, resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { startGameEntryTimeline } from "@/ui/layouts/game-entry-timeline";
-import { UnifiedGameGrid, type GameData, type WorldSelection } from "../components/game-selector/game-card-grid";
-import { GameEntryModal } from "../components/game-entry-modal";
+import { useLocation, useNavigate } from "react-router-dom";
+import { UnifiedGameGrid, type WorldSelection } from "../components/game-selector/game-card-grid";
 import { GameReviewModal } from "../components/game-review-modal";
-import { isGameReviewDismissed, setGameReviewDismissed } from "../lib/game-review-storage";
+import type { LandingModeFilter, LandingEntryRouteState } from "../lib/landing-entry-state";
+import { setGameReviewDismissed } from "../lib/game-review-storage";
 import { useLandingContext } from "../context/landing-context";
+import { useLandingNetworkState } from "../hooks/use-landing-network-state";
+import { invalidateWorldListQueries } from "@/hooks/world-list-queries";
+import { FACTORY_GAME_LIST_REFRESH_EVENT } from "../../factory-v2/game-list-refresh-event";
 
 interface PlayViewProps {
   className?: string;
+  activeTab?: PlayTab;
+  disableReviewFlow?: boolean;
+  initialModeFilter?: LandingModeFilter;
 }
 
 type PlayTab = "play" | "learn" | "news" | "factory";
-type LandingModeFilter = "blitz" | "season";
 const FACTORY_TAB_BLEED_CLASS_NAME = "-mx-6 lg:-mx-10";
 const FACTORY_TAB_HEADER_INSET_CLASS_NAME = "px-3 sm:px-4 lg:px-6";
 
@@ -48,6 +52,8 @@ const FactoryV2Content = lazy(() =>
   import("../../factory-v2").then((module) => ({ default: module.FactoryV2Content })),
 );
 const FactoryPage = lazy(() => import("../../admin").then((module) => ({ default: module.FactoryPage })));
+
+const hasConnectedAccountAddress = (address: string | undefined): boolean => Boolean(address && address !== "0x0");
 
 type LearnGuideTier = "beginner" | "advanced";
 type LearnGuideKind = "video" | "written";
@@ -256,16 +262,16 @@ const LearnTierSection = ({ tier }: { tier: LearnGuideTier }) => {
 const LearnContent = ({
   onPlayGame,
   onSelectGame,
+  onAutoSettleGame,
   onSpectate,
-  onForgeHyperstructures,
   onSeeScore,
   onClaimRewards,
   onRegistrationComplete,
 }: {
   onPlayGame: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
+  onAutoSettleGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
-  onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onSeeScore: (selection: WorldSelection) => void;
   onClaimRewards: (selection: WorldSelection) => void;
   onRegistrationComplete: () => void;
@@ -319,8 +325,8 @@ const LearnContent = ({
       <UnifiedGameGrid
         onPlayGame={onPlayGame}
         onSelectGame={onSelectGame}
+        onAutoSettleGame={onAutoSettleGame}
         onSpectate={onSpectate}
-        onForgeHyperstructures={onForgeHyperstructures}
         onSeeScore={onSeeScore}
         onClaimRewards={onClaimRewards}
         onRegistrationComplete={onRegistrationComplete}
@@ -523,7 +529,7 @@ const MODE_VISUALS: Record<
     subtitle: "Build your empire across seasons. Forge alliances, claim territory, and wage war on your own terms.",
     chip: "Campaign",
     videoSrc: "/videos/menu.mp4",
-    posterSrc: "/images/covers/blitz/07.png",
+    posterSrc: "/images/covers/dashboard/07.webp",
     tone: "from-emerald-700/60 via-lime-500/20 to-amber-300/20",
     icon: Sun,
     panelBorder: "border-emerald-400/40",
@@ -534,7 +540,7 @@ const MODE_VISUALS: Record<
     subtitle: "Fast, brutal matches. Drop in, fight for dominance, and prove yourself before the clock runs out.",
     chip: "Match",
     videoSrc: "/videos/01.mp4",
-    posterSrc: "/images/covers/blitz/02.png",
+    posterSrc: "/images/covers/dashboard/02.webp",
     tone: "from-slate-900/75 via-blue-700/25 to-cyan-400/20",
     icon: CloudLightning,
     panelBorder: "border-cyan-300/40",
@@ -586,7 +592,7 @@ const ModeCoexistenceHero = ({
             onClick={() => onModeFilterChange(mode)}
             className={cn(
               "group relative overflow-hidden rounded-2xl border text-left transition-all duration-500 ease-out",
-              "min-h-[280px] md:min-h-[360px]",
+              "min-h-[140px] md:min-h-[180px]",
               config.panelBorder,
               isEmphasized
                 ? cn("opacity-100 scale-[1.02]", config.panelGlow, "ring-2 ring-gold/50")
@@ -598,12 +604,6 @@ const ModeCoexistenceHero = ({
               transitionDelay: mounted ? "0ms" : `${index * 150}ms`,
             }}
           >
-            <img
-              src={config.posterSrc}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-cover scale-105"
-            />
             <video
               autoPlay
               muted
@@ -611,10 +611,7 @@ const ModeCoexistenceHero = ({
               playsInline
               preload="metadata"
               poster={config.posterSrc}
-              className={cn(
-                "absolute inset-0 h-full w-full object-cover transition-opacity duration-300",
-                hoveredMode === mode ? "opacity-100" : "opacity-75",
-              )}
+              className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
             >
               <source src={config.videoSrc} type="video/mp4" />
             </video>
@@ -622,7 +619,7 @@ const ModeCoexistenceHero = ({
             <div className={cn("absolute inset-0 bg-gradient-to-br", config.tone)} />
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent" />
 
-            <div className="relative z-10 h-full p-4 md:p-6 flex flex-col justify-between">
+            <div className="relative z-10 h-full p-3 md:p-4 flex flex-col justify-between">
               <div className="flex items-center justify-between">
                 <span
                   className={cn(
@@ -640,29 +637,19 @@ const ModeCoexistenceHero = ({
                 />
               </div>
 
-              <div className="overflow-hidden">
+              <div className="flex items-end justify-between gap-3">
                 <h3
                   className={cn(
-                    "font-cinzel text-2xl md:text-3xl transition-all duration-500 ease-out",
-                    isEmphasized ? "text-gold translate-y-0" : "text-white/70 translate-y-1",
+                    "font-cinzel text-xl md:text-2xl transition-colors duration-500 ease-out",
+                    isEmphasized ? "text-gold" : "text-white/70",
                   )}
                 >
                   {config.title}
                 </h3>
-                <p
-                  className={cn(
-                    "text-sm mt-1.5 transition-all duration-500 ease-out delay-75",
-                    isEmphasized
-                      ? "text-gold/70 translate-y-0 opacity-100 max-h-20"
-                      : "text-white/40 translate-y-2 opacity-0 max-h-0",
-                  )}
-                >
-                  {config.subtitle}
-                </p>
                 <div
                   className={cn(
-                    "inline-flex items-center gap-1.5 mt-3 text-xs font-medium transition-all duration-500 ease-out delay-150",
-                    isEmphasized ? "text-gold translate-y-0 opacity-100" : "text-white/40 translate-y-3 opacity-0",
+                    "inline-flex items-center gap-1.5 text-xs font-medium pb-0.5 transition-colors duration-500 ease-out",
+                    isEmphasized ? "text-gold" : "text-white/50",
                   )}
                 >
                   {mode === "season" ? "Enter Campaigns" : "Enter Blitz"}
@@ -683,258 +670,177 @@ const ModeCoexistenceHero = ({
 };
 
 /**
- * Play tab content with centered hero + 3 columns layout:
- * - Hero centered at top with CTA
- * - Three columns below: Live | Upcoming | Ended
- * - Vertical scroll within each column
+ * Full-width strip of the user's active (live + upcoming) registered games for
+ * the current mode. Hidden until there is at least one match so the dashboard
+ * stays clean for anonymous users and players who haven't registered.
+ *
+ * The inner grid stays mounted while hidden so its onGamesResolved callback
+ * keeps firing and can re-reveal the bar when data changes.
  */
-const PlayTabContent = ({
+const RegisteredActiveGamesBar = ({
+  mode,
   onPlayGame,
   onSelectGame,
+  onAutoSettleGame,
+  onSpectate,
+  onRegistrationComplete,
+}: {
+  mode: "blitz" | "eternum";
+  onPlayGame: (selection: WorldSelection) => void;
+  onSelectGame: (selection: WorldSelection) => void;
+  onAutoSettleGame: (selection: WorldSelection) => void;
+  onSpectate: (selection: WorldSelection) => void;
+  onRegistrationComplete: () => void;
+}) => {
+  const [registeredCount, setRegisteredCount] = useState(0);
+  const hasRegistered = registeredCount > 0;
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col rounded-2xl border border-emerald-500/30 bg-black/40 p-3 backdrop-blur-sm",
+        !hasRegistered && "hidden",
+      )}
+    >
+      <div className="flex items-center gap-2 mb-2">
+        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/20">
+          <Sparkles className="h-3.5 w-3.5 text-emerald-400" />
+        </div>
+        <h2 className="font-cinzel text-base text-emerald-400 uppercase tracking-wider">Your Active Games</h2>
+        <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+      </div>
+      <UnifiedGameGrid
+        onPlayGame={onPlayGame}
+        onSelectGame={onSelectGame}
+        onAutoSettleGame={onAutoSettleGame}
+        onSpectate={onPlayGame}
+        onRegistrationComplete={onRegistrationComplete}
+        modeFilter={mode}
+        statusFilter={["ongoing", "upcoming"]}
+        registeredFilter="registered"
+        hideHeader
+        hideLegend
+        layout="horizontal"
+        onGamesResolved={(games) => setRegisteredCount(games.length)}
+      />
+    </div>
+  );
+};
+
+/**
+ * Play tab content layered as:
+ * - Half-height mode hero at the top
+ * - Full-width "Your Active Games" bar (shown only when relevant)
+ * - Two columns below: Open Games (live + upcoming, unregistered) | Played (ended)
+ */
+const PlayTabContent = ({
+  modeFilter,
+  onModeFilterChange,
+  onPlayGame,
+  onSelectGame,
+  onAutoSettleGame,
   onSpectate,
   onSeeScore,
   onClaimRewards,
-  onForgeHyperstructures,
   onRegistrationComplete,
   onRefresh,
   isRefreshing = false,
   disabled = false,
-  onEndedGamesResolved,
 }: {
+  modeFilter: LandingModeFilter;
+  onModeFilterChange: (mode: LandingModeFilter) => void;
   onPlayGame: (selection: WorldSelection) => void;
   onSelectGame: (selection: WorldSelection) => void;
+  onAutoSettleGame: (selection: WorldSelection) => void;
   onSpectate: (selection: WorldSelection) => void;
   onSeeScore: (selection: WorldSelection) => void;
   onClaimRewards: (selection: WorldSelection) => void;
-  onForgeHyperstructures: (selection: WorldSelection, numHyperstructuresLeft: number) => Promise<void> | void;
   onRegistrationComplete: () => void;
   onRefresh: () => void;
   isRefreshing?: boolean;
   disabled?: boolean;
-  onEndedGamesResolved?: (games: GameData[]) => void;
 }) => {
-  const [modeFilter, setModeFilter] = useState<LandingModeFilter>("blitz");
+  const resolvedMode: "blitz" | "eternum" = modeFilter === "season" ? "eternum" : "blitz";
 
   return (
     <div className={cn("flex flex-col gap-4", disabled && "opacity-50 pointer-events-none")}>
-      <ModeCoexistenceHero modeFilter={modeFilter} onModeFilterChange={setModeFilter} />
+      <ModeCoexistenceHero modeFilter={modeFilter} onModeFilterChange={onModeFilterChange} />
 
-      {modeFilter === "season" && (
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-2">
-            {/* Three columns: Live | Upcoming | Ended */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 min-h-0">
-              {/* Live Games Column */}
-              <div className="flex flex-col rounded-2xl border border-emerald-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/20">
-                      <Zap className="h-3.5 w-3.5 text-emerald-400" />
-                    </div>
-                    <h2 className="font-cinzel text-base text-emerald-400 uppercase tracking-wider">Live Games</h2>
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                  </div>
-                  <button
-                    onClick={onRefresh}
-                    disabled={isRefreshing}
-                    className="p-1 rounded-md bg-emerald-500/10 text-emerald-400/70 hover:bg-emerald-500/20 hover:text-emerald-400 transition-all disabled:opacity-50"
-                    title="Refresh"
-                  >
-                    <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-emerald-500/20 scrollbar-track-transparent">
-                  <UnifiedGameGrid
-                    onPlayGame={onPlayGame}
-                    onSelectGame={onSelectGame}
-                    onSpectate={onSpectate}
-                    onForgeHyperstructures={onForgeHyperstructures}
-                    onRegistrationComplete={onRegistrationComplete}
-                    modeFilter="eternum"
-                    statusFilter="ongoing"
-                    hideHeader
-                    hideLegend
-                    layout="vertical"
-                    sortRegisteredFirst
-                  />
-                </div>
-              </div>
+      <RegisteredActiveGamesBar
+        mode={resolvedMode}
+        onPlayGame={onPlayGame}
+        onSelectGame={onSelectGame}
+        onAutoSettleGame={onAutoSettleGame}
+        onSpectate={onSpectate}
+        onRegistrationComplete={onRegistrationComplete}
+      />
 
-              {/* Upcoming Games Column */}
-              <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/20">
-                      <Clock className="h-3.5 w-3.5 text-amber-400" />
-                    </div>
-                    <h2 className="font-cinzel text-base text-amber-400 uppercase tracking-wider">Upcoming Games</h2>
-                  </div>
-                  <button
-                    onClick={onRefresh}
-                    disabled={isRefreshing}
-                    className="p-1 rounded-md bg-amber-500/10 text-amber-400/70 hover:bg-amber-500/20 hover:text-amber-400 transition-all disabled:opacity-50"
-                    title="Refresh"
-                  >
-                    <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
-                  </button>
-                </div>
-                <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-amber-500/20 scrollbar-track-transparent">
-                  <UnifiedGameGrid
-                    onPlayGame={onPlayGame}
-                    onSelectGame={onSelectGame}
-                    onSpectate={onSpectate}
-                    onForgeHyperstructures={onForgeHyperstructures}
-                    onRegistrationComplete={onRegistrationComplete}
-                    modeFilter="eternum"
-                    devModeFilter={false}
-                    statusFilter="upcoming"
-                    hideHeader
-                    hideLegend
-                    layout="vertical"
-                    sortRegisteredFirst
-                  />
-                </div>
+      {/* Two columns: Open Games (live + upcoming, unregistered) | Played (ended) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1 min-h-0">
+        {/* Open Games Column */}
+        <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/20">
+                <Clock className="h-3.5 w-3.5 text-amber-400" />
               </div>
-
-              {/* Ended Games Column */}
-              <div className="flex flex-col rounded-2xl border border-gold/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px] md:col-span-2 xl:col-span-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gold/20">
-                    <Trophy className="h-3.5 w-3.5 text-gold" />
-                  </div>
-                  <h2 className="font-cinzel text-base text-gold uppercase tracking-wider">Ended Games</h2>
-                </div>
-                <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-                  <UnifiedGameGrid
-                    onPlayGame={onPlayGame}
-                    onSelectGame={onSelectGame}
-                    onSpectate={onSpectate}
-                    onSeeScore={onSeeScore}
-                    onClaimRewards={onClaimRewards}
-                    onRegistrationComplete={onRegistrationComplete}
-                    modeFilter="eternum"
-                    devModeFilter={false}
-                    statusFilter="ended"
-                    hideHeader
-                    hideLegend
-                    layout="vertical"
-                    sortClaimableRewardsFirst
-                    sortEndedNewestFirst
-                  />
-                </div>
-              </div>
+              <h2 className="font-cinzel text-base text-amber-400 uppercase tracking-wider">Open Games</h2>
             </div>
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="p-1 rounded-md bg-amber-500/10 text-amber-400/70 hover:bg-amber-500/20 hover:text-amber-400 transition-all disabled:opacity-50"
+              title="Refresh"
+            >
+              <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-amber-500/20 scrollbar-track-transparent">
+            <UnifiedGameGrid
+              onPlayGame={onPlayGame}
+              onSelectGame={onSelectGame}
+              onAutoSettleGame={onAutoSettleGame}
+              onSpectate={onSpectate}
+              onRegistrationComplete={onRegistrationComplete}
+              modeFilter={resolvedMode}
+              statusFilter={["ongoing", "upcoming"]}
+              registeredFilter="unregistered"
+              hideHeader
+              hideLegend
+              layout="vertical"
+            />
           </div>
         </div>
-      )}
 
-      {modeFilter === "blitz" && (
-        <div className="flex flex-col gap-2">
-          {/* Three columns: Live | Upcoming | Ended */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 flex-1 min-h-0">
-            {/* Live Games Column */}
-            <div className="flex flex-col rounded-2xl border border-emerald-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-500/20">
-                    <Zap className="h-3.5 w-3.5 text-emerald-400" />
-                  </div>
-                  <h2 className="font-cinzel text-base text-emerald-400 uppercase tracking-wider">Live Games</h2>
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                </div>
-                <button
-                  onClick={onRefresh}
-                  disabled={isRefreshing}
-                  className="p-1 rounded-md bg-emerald-500/10 text-emerald-400/70 hover:bg-emerald-500/20 hover:text-emerald-400 transition-all disabled:opacity-50"
-                  title="Refresh"
-                >
-                  <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-emerald-500/20 scrollbar-track-transparent">
-                <UnifiedGameGrid
-                  onPlayGame={onPlayGame}
-                  onSelectGame={onSelectGame}
-                  onSpectate={onSpectate}
-                  onForgeHyperstructures={onForgeHyperstructures}
-                  onRegistrationComplete={onRegistrationComplete}
-                  modeFilter="blitz"
-                  statusFilter="ongoing"
-                  hideHeader
-                  hideLegend
-                  layout="vertical"
-                  sortRegisteredFirst
-                />
-              </div>
+        {/* Played Column (ended games) */}
+        <div className="flex flex-col rounded-2xl border border-gold/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gold/20">
+              <Trophy className="h-3.5 w-3.5 text-gold" />
             </div>
-
-            {/* Upcoming Games Column */}
-            <div className="flex flex-col rounded-2xl border border-amber-500/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px]">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-500/20">
-                    <Clock className="h-3.5 w-3.5 text-amber-400" />
-                  </div>
-                  <h2 className="font-cinzel text-base text-amber-400 uppercase tracking-wider">Upcoming Games</h2>
-                </div>
-                <button
-                  onClick={onRefresh}
-                  disabled={isRefreshing}
-                  className="p-1 rounded-md bg-amber-500/10 text-amber-400/70 hover:bg-amber-500/20 hover:text-amber-400 transition-all disabled:opacity-50"
-                  title="Refresh"
-                >
-                  <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-amber-500/20 scrollbar-track-transparent">
-                <UnifiedGameGrid
-                  onPlayGame={onPlayGame}
-                  onSelectGame={onSelectGame}
-                  onSpectate={onSpectate}
-                  onForgeHyperstructures={onForgeHyperstructures}
-                  onRegistrationComplete={onRegistrationComplete}
-                  modeFilter="blitz"
-                  devModeFilter={false}
-                  statusFilter="upcoming"
-                  hideHeader
-                  hideLegend
-                  layout="vertical"
-                  sortRegisteredFirst
-                />
-              </div>
-            </div>
-
-            {/* Ended Games Column */}
-            <div className="flex flex-col rounded-2xl border border-gold/30 bg-black/40 p-3 backdrop-blur-sm min-h-0 max-h-[500px] md:col-span-2 xl:col-span-1">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gold/20">
-                  <Trophy className="h-3.5 w-3.5 text-gold" />
-                </div>
-                <h2 className="font-cinzel text-base text-gold uppercase tracking-wider">Ended Games</h2>
-              </div>
-              <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
-                <UnifiedGameGrid
-                  onPlayGame={onPlayGame}
-                  onSelectGame={onSelectGame}
-                  onSpectate={onSpectate}
-                  onSeeScore={onSeeScore}
-                  onClaimRewards={onClaimRewards}
-                  onRegistrationComplete={onRegistrationComplete}
-                  modeFilter="blitz"
-                  devModeFilter={false}
-                  statusFilter="ended"
-                  hideHeader
-                  hideLegend
-                  layout="vertical"
-                  sortClaimableRewardsFirst
-                  sortEndedNewestFirst
-                  onGamesResolved={onEndedGamesResolved}
-                />
-              </div>
-            </div>
+            <h2 className="font-cinzel text-base text-gold uppercase tracking-wider">Played</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-gold/20 scrollbar-track-transparent">
+            <UnifiedGameGrid
+              onPlayGame={onPlayGame}
+              onSelectGame={onSelectGame}
+              onAutoSettleGame={onAutoSettleGame}
+              onSpectate={onSpectate}
+              onSeeScore={onSeeScore}
+              onClaimRewards={onClaimRewards}
+              onRegistrationComplete={onRegistrationComplete}
+              modeFilter={resolvedMode}
+              devModeFilter={false}
+              statusFilter="ended"
+              hideHeader
+              hideLegend
+              layout="vertical"
+              sortClaimableRewardsFirst
+              sortEndedNewestFirst
+            />
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
@@ -943,114 +849,164 @@ const PlayTabContent = ({
  * Main play view - shows card-based game selector for production games only.
  * This is the default landing page content.
  */
-export const PlayView = ({ className }: PlayViewProps) => {
-  const [searchParams] = useSearchParams();
-  const activeTab = (searchParams.get("tab") as PlayTab) || "play";
+export const PlayView = ({
+  className,
+  activeTab = "play",
+  disableReviewFlow = false,
+  initialModeFilter = "blitz",
+}: PlayViewProps) => {
   const queryClient = useQueryClient();
-
-  // Modal state for game entry
-  const [entryModalOpen, setEntryModalOpen] = useState(false);
-  const [selectedWorld, setSelectedWorld] = useState<WorldSelection | null>(null);
-  const [isSpectateMode, setIsSpectateMode] = useState(false);
-  const [isForgeMode, setIsForgeMode] = useState(false);
-  const [eternumEntryIntent, setEternumEntryIntent] = useState<"play" | "settle">("play");
-  const [numHyperstructuresLeft, setNumHyperstructuresLeft] = useState(0);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { preferredChain } = useLandingNetworkState();
 
   // Review flow state
   const [reviewWorld, setReviewWorld] = useState<WorldSelection | null>(null);
   const [reviewInitialStep, setReviewInitialStep] = useState<"claim-rewards" | undefined>(undefined);
-  const [endedGames, setEndedGames] = useState<GameData[]>([]);
 
   // Refresh state
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [modeFilter, setModeFilter] = useState<LandingModeFilter>(initialModeFilter);
 
   // Auth state
   const account = useAccountStore((state) => state.account);
-  const { isConnected } = useAccount();
   const setModal = useUIStore((state) => state.setModal);
+  const currentLandingHref = `${location.pathname}${location.search}`;
+  const entryRedirectState: LandingEntryRouteState = {
+    returnTo: currentLandingHref,
+    landingModeFilter: modeFilter,
+  };
 
-  const openGameEntryModal = useCallback((selection: WorldSelection, intent: "play" | "settle") => {
-    startGameEntryTimeline();
-    primePlayEntryRoute();
-    setSelectedWorld(selection);
-    setIsSpectateMode(false);
-    setIsForgeMode(false);
-    setEternumEntryIntent(intent);
-    setEntryModalOpen(true);
-  }, []);
+  useEffect(() => {
+    if (activeTab !== "play") {
+      return;
+    }
+
+    try {
+      performance.mark("dashboard-play-preload-scheduled");
+    } catch {
+      // Ignore duplicate or unsupported marks.
+    }
+
+    primeGameEntry("dashboard");
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const refreshGameLists = () => {
+      void invalidateWorldListQueries(queryClient);
+    };
+
+    window.addEventListener(FACTORY_GAME_LIST_REFRESH_EVENT, refreshGameLists);
+    return () => {
+      window.removeEventListener(FACTORY_GAME_LIST_REFRESH_EVENT, refreshGameLists);
+    };
+  }, [queryClient]);
+
+  const navigateToEntryRoute = useCallback(
+    (selection: WorldSelection, intent: "play" | "settle" | "spectate", autoSettle = false) => {
+      const entryContext = resolveEntryContextFromLandingSelection({
+        selection,
+        intent,
+        autoSettle,
+      });
+
+      if (!entryContext) {
+        return;
+      }
+
+      navigate(buildEntryHrefFromEntryContext(entryContext), {
+        state: entryRedirectState,
+      });
+    },
+    [entryRedirectState, navigate],
+  );
+
+  const openGameEntryRoute = useCallback(
+    (selection: WorldSelection, intent: "play" | "settle", autoSettle = false) => {
+      startGameEntryTimeline();
+      primeGameEntry("entry");
+      navigateToEntryRoute(selection, intent, autoSettle);
+    },
+    [navigateToEntryRoute],
+  );
+
+  const buildEntryRedirectHref = useCallback(
+    (selection: WorldSelection, intent: "play" | "settle" | "spectate", autoSettle = false) => {
+      const entryContext = resolveEntryContextFromLandingSelection({
+        selection,
+        intent,
+        autoSettle,
+      });
+
+      return entryContext ? buildEntryHrefFromEntryContext(entryContext) : null;
+    },
+    [],
+  );
 
   const handleSelectGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account) || isConnected;
+      const hasAccount = hasConnectedAccountAddress(account?.address);
 
       // Check if user needs to sign in before entering game
       if (!hasAccount) {
-        setModal(<SignInPromptModal />, true);
+        const redirectTo = buildEntryRedirectHref(selection, "settle", false);
+        if (!redirectTo) {
+          return;
+        }
+
+        setModal(<SignInPromptModal redirectTo={redirectTo} redirectState={entryRedirectState} />, true);
         return;
       }
 
       // Open settle flow
-      openGameEntryModal(selection, "settle");
+      openGameEntryRoute(selection, "settle", false);
     },
-    [account, isConnected, setModal, openGameEntryModal],
+    [account?.address, buildEntryRedirectHref, entryRedirectState, openGameEntryRoute, setModal],
+  );
+
+  const handleAutoSettleGame = useCallback(
+    (selection: WorldSelection) => {
+      const hasAccount = hasConnectedAccountAddress(account?.address);
+      if (!hasAccount) return;
+
+      openGameEntryRoute(selection, "settle", true);
+    },
+    [account?.address, openGameEntryRoute],
   );
 
   const handlePlayGame = useCallback(
     (selection: WorldSelection) => {
-      const hasAccount = Boolean(account) || isConnected;
+      const hasAccount = hasConnectedAccountAddress(account?.address);
 
       if (!hasAccount) {
-        setModal(<SignInPromptModal />, true);
+        const redirectTo = buildEntryRedirectHref(selection, "play", false);
+        if (!redirectTo) {
+          return;
+        }
+
+        setModal(<SignInPromptModal redirectTo={redirectTo} redirectState={entryRedirectState} />, true);
         return;
       }
 
       // Open direct play flow
-      openGameEntryModal(selection, "play");
+      openGameEntryRoute(selection, "play", false);
     },
-    [account, isConnected, setModal, openGameEntryModal],
+    [account?.address, buildEntryRedirectHref, entryRedirectState, openGameEntryRoute, setModal],
   );
 
-  const handleSpectate = useCallback((selection: WorldSelection) => {
-    // Open game entry modal in spectate mode (no account required)
-    startGameEntryTimeline();
-    primePlayEntryRoute();
-    setSelectedWorld(selection);
-    setIsSpectateMode(true);
-    setIsForgeMode(false);
-    setEternumEntryIntent("play");
-    setEntryModalOpen(true);
-  }, []);
-
-  const handleForgeHyperstructures = useCallback(
-    (selection: WorldSelection, numLeft: number) => {
-      const hasAccount = Boolean(account) || isConnected;
-
-      // Check if user needs to sign in before forging
-      if (!hasAccount) {
-        setModal(<SignInPromptModal />, true);
-        return;
-      }
-
-      // Open game entry modal in forge mode
+  const handleSpectate = useCallback(
+    (selection: WorldSelection) => {
+      // Open game entry modal in spectate mode (no account required)
       startGameEntryTimeline();
-      primePlayEntryRoute();
-      setSelectedWorld(selection);
-      setIsSpectateMode(false);
-      setIsForgeMode(true);
-      setEternumEntryIntent("play");
-      setNumHyperstructuresLeft(numLeft);
-      setEntryModalOpen(true);
+      primeGameEntry("entry");
+      navigateToEntryRoute(selection, "spectate", false);
     },
-    [account, isConnected, setModal],
+    [navigateToEntryRoute],
   );
-
-  const handleCloseModal = useCallback(() => {
-    setEntryModalOpen(false);
-    setSelectedWorld(null);
-    setIsForgeMode(false);
-    setEternumEntryIntent("play");
-    setNumHyperstructuresLeft(0);
-  }, []);
 
   const handleSeeScore = useCallback((selection: WorldSelection) => {
     setReviewInitialStep(undefined);
@@ -1067,12 +1023,12 @@ export const PlayView = ({ className }: PlayViewProps) => {
     // The toast is already shown by the GameCard component
   }, []);
 
-  // Refresh games data (invalidate world availability queries)
-  // This also handles the transition from upcoming to live when game starts
+  // Refresh landing game summaries.
+  // The open-games grid is driven by the bulk worlds summary query.
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
     try {
-      await queryClient.invalidateQueries({ queryKey: ["worldAvailability"] });
+      await invalidateWorldListQueries(queryClient);
     } finally {
       // Add a small delay so the spinner is visible
       setTimeout(() => setIsRefreshing(false), 500);
@@ -1091,26 +1047,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
   }, [dismissReviewForWorld, reviewWorld]);
 
   const handleRequireSignIn = useCallback(() => {
-    setModal(<SignInPromptModal />, true);
-  }, [setModal]);
-
-  const handleEndedGamesResolved = useCallback((games: GameData[]) => {
-    setEndedGames(games);
-  }, []);
-
-  useEffect(() => {
-    if (activeTab !== "play") return;
-    if (entryModalOpen || reviewWorld) return;
-    if (endedGames.length === 0) return;
-
-    const candidate = endedGames.toSorted((a, b) => (b.endAt ?? 0) - (a.endAt ?? 0))[0];
-    if (!candidate) return;
-    if (!candidate.worldAddress) return;
-    if (isGameReviewDismissed(candidate.chain, candidate.worldAddress)) return;
-
-    setReviewInitialStep(undefined);
-    setReviewWorld({ name: candidate.name, chain: candidate.chain, worldAddress: candidate.worldAddress });
-  }, [activeTab, endedGames, entryModalOpen, reviewWorld]);
+    setModal(<SignInPromptModal redirectTo={currentLandingHref} />, true);
+  }, [currentLandingHref, setModal]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -1119,8 +1057,8 @@ export const PlayView = ({ className }: PlayViewProps) => {
           <LearnContent
             onPlayGame={handlePlayGame}
             onSelectGame={handleSelectGame}
+            onAutoSettleGame={handleAutoSettleGame}
             onSpectate={handleSpectate}
-            onForgeHyperstructures={handleForgeHyperstructures}
             onSeeScore={handleSeeScore}
             onClaimRewards={handleClaimRewards}
             onRegistrationComplete={handleRegistrationComplete}
@@ -1134,17 +1072,18 @@ export const PlayView = ({ className }: PlayViewProps) => {
       default:
         return (
           <PlayTabContent
+            modeFilter={modeFilter}
+            onModeFilterChange={setModeFilter}
             onPlayGame={handlePlayGame}
             onSelectGame={handleSelectGame}
+            onAutoSettleGame={handleAutoSettleGame}
             onSpectate={handleSpectate}
             onSeeScore={handleSeeScore}
             onClaimRewards={handleClaimRewards}
-            onForgeHyperstructures={handleForgeHyperstructures}
             onRegistrationComplete={handleRegistrationComplete}
             onRefresh={handleRefresh}
             isRefreshing={isRefreshing}
-            disabled={entryModalOpen || Boolean(reviewWorld)}
-            onEndedGamesResolved={handleEndedGamesResolved}
+            disabled={Boolean(reviewWorld)}
           />
         );
     }
@@ -1159,23 +1098,9 @@ export const PlayView = ({ className }: PlayViewProps) => {
 
   return (
     <>
-      {shouldMountMarketsProviders ? <MarketsProviders>{content}</MarketsProviders> : content}
+      {shouldMountMarketsProviders ? <MarketsProviders chain={preferredChain}>{content}</MarketsProviders> : content}
 
-      {/* Game Entry Modal - Loading + Settlement + Forge */}
-      {selectedWorld && selectedWorld.chain && (
-        <GameEntryModal
-          isOpen={entryModalOpen}
-          onClose={handleCloseModal}
-          worldName={selectedWorld.name}
-          chain={selectedWorld.chain}
-          isSpectateMode={isSpectateMode}
-          isForgeMode={isForgeMode}
-          eternumEntryIntent={eternumEntryIntent}
-          numHyperstructuresLeft={numHyperstructuresLeft}
-        />
-      )}
-
-      {reviewWorld && (
+      {reviewWorld && !disableReviewFlow && (
         <GameReviewModal
           isOpen={Boolean(reviewWorld)}
           world={reviewWorld}

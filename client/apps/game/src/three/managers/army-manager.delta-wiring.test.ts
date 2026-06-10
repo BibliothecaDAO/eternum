@@ -33,7 +33,7 @@ describe("army manager delta pipeline wiring", () => {
 
     expect(source).toMatch(/takeFreshPendingExplorerTroopsUpdate\(/);
     expect(source).toMatch(/queuePendingExplorerTroopsUpdate\(/);
-    expect(source).toMatch(/calculateArmyCurrentStamina\(/);
+    expect(source).toMatch(/resolveArmyStaminaSnapshot\(/);
   });
 
   it("routes instance presentation through shared position and cosmetic helpers", () => {
@@ -47,7 +47,6 @@ describe("army manager delta pipeline wiring", () => {
     const source = readArmyManagerSource();
 
     expect(source).toMatch(/syncArmyAuxiliaryPresentation\(/);
-    expect(source).toMatch(/syncArmyIndicatorPresentation\(/);
     expect(source).toMatch(/syncArmyLabelPresentation\(/);
     expect(source).toMatch(/syncArmyPointPresentation\(/);
   });
@@ -55,7 +54,7 @@ describe("army manager delta pipeline wiring", () => {
   it("routes label visibility and label retirement through shared helpers", () => {
     const source = readArmyManagerSource();
 
-    expect(source).toMatch(/syncArmyLabelVisibility\(/);
+    expect(source).toMatch(/syncArmyLabelVisibility(?:<[^>]+>)?\(/);
     expect(source).toMatch(/removeArmyLabels\(/);
   });
 
@@ -76,11 +75,12 @@ describe("army manager delta pipeline wiring", () => {
     expect(source).toMatch(/clearArmyPointHoverState\(/);
   });
 
-  it("routes indicator refresh through shared helpers", () => {
+  it("does not route deprecated ownership dot refresh through army presentation", () => {
     const source = readArmyManagerSource();
 
-    expect(source).toMatch(/syncArmyIndicatorPresentationState\(/);
-    expect(source).toMatch(/syncMovingArmyIndicatorPresentationState\(/);
+    expect(source).not.toMatch(/syncArmyIndicatorPresentation/);
+    expect(source).not.toMatch(/syncMovingArmyIndicatorPresentation/);
+    expect(source).not.toMatch(/PlayerIndicatorManager/);
   });
 
   it("routes label positioning through a shared helper", () => {
@@ -98,7 +98,8 @@ describe("army manager delta pipeline wiring", () => {
   it("routes label content updates through shared helpers", () => {
     const source = readArmyManagerSource();
 
-    expect(source).toMatch(/buildArmyLabelDataKey\(/);
+    expect(source).toMatch(/buildArmyLabelLayoutDataKey\(/);
+    expect(source).toMatch(/buildArmyLabelStaminaDataKey\(/);
     expect(source).toMatch(/syncArmyLabelContentState\(/);
   });
 

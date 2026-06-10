@@ -42,4 +42,38 @@ describe("createRendererSupportRuntimeRegistry", () => {
     expect(registry.ensureRoute()).toBe(registry.ensureRoute());
     expect(registry.ensureEffectsBridge()).toBe(registry.ensureEffectsBridge());
   });
+
+  it("disposes and recreates backend-dependent runtimes on reset", () => {
+    const firstEffectsBridge = { dispose: vi.fn(), id: "effects-1" };
+    const secondEffectsBridge = { dispose: vi.fn(), id: "effects-2" };
+    const firstMonitoringRuntime = { dispose: vi.fn(), id: "monitoring-1" };
+    const secondMonitoringRuntime = { dispose: vi.fn(), id: "monitoring-2" };
+    let effectsBridgeCreateCount = 0;
+    let monitoringCreateCount = 0;
+    const createEffectsBridgeRuntime = vi.fn(() => {
+      effectsBridgeCreateCount += 1;
+      return effectsBridgeCreateCount === 1 ? firstEffectsBridge : secondEffectsBridge;
+    });
+    const createMonitoringRuntime = vi.fn(() => {
+      monitoringCreateCount += 1;
+      return monitoringCreateCount === 1 ? firstMonitoringRuntime : secondMonitoringRuntime;
+    });
+    const registry = createRendererSupportRuntimeRegistry({
+      createControlBridgeRuntime: vi.fn(() => ({}) as never),
+      createEffectsBridgeRuntime: createEffectsBridgeRuntime as never,
+      createMonitoringRuntime: createMonitoringRuntime as never,
+      createRouteRuntime: vi.fn(() => ({ id: "route" }) as never),
+    });
+
+    expect(registry.ensureEffectsBridge()).toBe(firstEffectsBridge);
+    expect(registry.ensureMonitoring()).toBe(firstMonitoringRuntime);
+
+    registry.resetEffectsBridge();
+    registry.resetMonitoring();
+
+    expect(firstEffectsBridge.dispose).toHaveBeenCalledTimes(1);
+    expect(firstMonitoringRuntime.dispose).toHaveBeenCalledTimes(1);
+    expect(registry.ensureEffectsBridge()).toBe(secondEffectsBridge);
+    expect(registry.ensureMonitoring()).toBe(secondMonitoringRuntime);
+  });
 });

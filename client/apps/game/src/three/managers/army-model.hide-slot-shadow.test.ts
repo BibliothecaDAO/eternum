@@ -27,7 +27,7 @@ describe("hideInstanceSlot contact shadow consistency", () => {
     const src = readSource("army-model.ts");
 
     const hideStart = src.indexOf("public hideInstanceSlot");
-    const clearStart = src.indexOf("private clearModelSlot");
+    const clearStart = src.indexOf("private clearModelSlot(");
 
     expect(hideStart).toBeGreaterThan(-1);
     expect(clearStart).toBeGreaterThan(-1);

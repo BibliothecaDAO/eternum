@@ -1,6 +1,6 @@
 import { BUILDING_IMAGES_PATH } from "@/ui/config";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { useBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
+import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
 
 import {
@@ -28,11 +28,11 @@ export const BuildingsList = ({
   producedResources: ResourcesIds[];
   productionBuildings: Building[];
 }) => {
-  const { currentDefaultTick, currentArmiesTick, armiesTickTimeRemaining } = useBlockTimestamp();
+  const currentDefaultTick = useCoarseCurrentDefaultTick();
   // Guard against invalid realm data to prevent crashes
   if (!realm || !realm.position || !realm.entityId) {
     return (
-      <div className="panel-wood p-3 h-[500px] overflow-y-auto">
+      <div className="rounded-lg border border-gold/20 bg-black/30 p-3 h-[500px] overflow-y-auto">
         <h3 className="text-3xl border-gold/20">Production Buildings</h3>
         <p className="text-gold/70 pb-8 text-lg">Realm data is currently unavailable.</p>
       </div>
@@ -83,13 +83,11 @@ export const BuildingsList = ({
           (building) => building.produced.resource === resourceId,
         );
 
-        const balance = resourceManager.balanceWithProduction(currentDefaultTick, resourceId);
         if (!resource) return null;
         const production = ResourceManager.balanceAndProduction(resource, resourceId).production;
 
         return {
           resource: resourceId,
-          balance,
           production,
           buildings: buildingsForResource,
           isLabor: resourceId === ResourcesIds.Labor,
@@ -118,7 +116,7 @@ export const BuildingsList = ({
 
     return (
       <div
-        className="panel-wood relative min-h-28 p-3"
+        className="rounded-lg border border-gold/20 bg-black/30 relative min-h-28 p-3"
         style={{
           backgroundImage: `linear-gradient(rgba(20, 16, 13, 0.9), rgba(20, 16, 13, 0.9)), url(${bgImage})`,
           backgroundSize: "cover",
@@ -153,7 +151,7 @@ export const BuildingsList = ({
     <div className="h-full pt-6">
       <div className="flex flex-col gap-3">
         {productions.length === 0 ? (
-          <div className="panel-wood p-6 text-center">
+          <div className="rounded-lg border border-gold/20 bg-black/30 p-6 text-center">
             <h4 className="mb-2 text-xl font-semibold text-gold">No Production Buildings</h4>
             <p className="text-lg text-gold/70">
               You need to create production buildings first to start producing resources.
@@ -210,9 +208,6 @@ export const BuildingsList = ({
                     activeRelicEffects={activeRelicEffects}
                     canOpenProduction={production.buildings.length > 0}
                     onManageProduction={(resource) => onSelectProduction(resource)}
-                    currentDefaultTick={currentDefaultTick}
-                    currentArmiesTick={currentArmiesTick}
-                    armiesTickTimeRemaining={armiesTickTimeRemaining}
                   />
                 </div>
               </div>

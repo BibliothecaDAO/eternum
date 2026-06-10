@@ -21,6 +21,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
   const sentryAuthToken = process.env.SENTRY_AUTH_TOKEN;
   const sentryOrg = process.env.SENTRY_ORG;
   const sentryProject = process.env.SENTRY_PROJECT;
+  const sentryUploadEnabled = isBuild && Boolean(sentryAuthToken && sentryOrg && sentryProject);
   const rendererBuildMode = resolveRendererBuildMode(
     appEnv.VITE_PUBLIC_RENDERER_BUILD_MODE || process.env.VITE_PUBLIC_RENDERER_BUILD_MODE,
   );
@@ -29,12 +30,13 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     process.env.SENTRY_RELEASE ||
     process.env.VERCEL_GIT_COMMIT_SHA ||
     process.env.GITHUB_SHA ||
+    appEnv.VITE_PUBLIC_SENTRY_RELEASE ||
     process.env.VITE_PUBLIC_GAME_VERSION ||
     undefined;
 
   const plugins = [svgr({ dimensions: false, svgo: false, typescript: true }), react()];
 
-  if (isServe) {
+  if (shouldUseMkcert(isServe)) {
     plugins.unshift(mkcert() as any);
   }
 
@@ -76,15 +78,16 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
       }) as any,
     );
 
-    if (sentryAuthToken && sentryOrg && sentryProject) {
+    if (sentryUploadEnabled) {
       plugins.push(
         sentryVitePlugin({
-          authToken: sentryAuthToken,
-          org: sentryOrg,
-          project: sentryProject,
+          authToken: sentryAuthToken!,
+          org: sentryOrg!,
+          project: sentryProject!,
           release: sentryRelease,
           sourcemaps: {
             assets: "./dist/**",
+            filesToDeleteAfterUpload: ["./dist/**/*.map"],
           },
         }),
       );
@@ -142,13 +145,13 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
         },
         {
           find: "@videos",
-          replacement: path.resolve(__dirname, "../landing/src/assets/videos"),
+          replacement: path.resolve(__dirname, "./src/assets/videos"),
         },
       ],
     },
     build: {
       target: "esnext",
-      sourcemap: true,
+      sourcemap: sentryUploadEnabled ? "hidden" : true,
       chunkSizeWarningLimit: 5000,
       rollupOptions: {
         input: {
@@ -226,3 +229,7 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
     publicDir: "../../public",
   };
 });
+
+function shouldUseMkcert(isServe: boolean): boolean {
+  return isServe && process.env.CI !== "true" && process.env.ETERNUM_DISABLE_MKCERT !== "true";
+}

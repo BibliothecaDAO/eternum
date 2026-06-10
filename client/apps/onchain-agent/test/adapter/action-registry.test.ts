@@ -18,8 +18,11 @@ describe("action-registry (ABI executor)", () => {
     expect(actions).toContain("send_resources");
     expect(actions).toContain("move_to");
     expect(actions).toContain("approve_token");
-    expect(actions).toContain("lock_entry_token");
-    expect(actions).toContain("settle_blitz_realm");
+    expect(actions).toContain("settle");
+    expect(actions).toContain("create_hyperstructure");
+    expect(actions).not.toContain("reserve_hyperstructures");
+    expect(actions).not.toContain("lock_entry_token");
+    expect(actions).not.toContain("settle_blitz_realm");
   });
 
   it("returns handlers for known types", () => {
@@ -81,6 +84,38 @@ describe("action-registry (ABI executor)", () => {
     expect(result.success).toBe(true);
     const call = vi.mocked(mockSigner.execute).mock.calls[0][0] as any;
     expect(call.entrypoint).toBe("leave_guild");
+  });
+
+  it("wraps blitz settle with temporary collection approval when an entry token is configured", async () => {
+    initializeTestActionRegistry({ entryToken: "0xentry" });
+
+    const result = await executeAction(client as any, mockSigner, {
+      type: "settle",
+      params: {
+        name: "0x123",
+        entry_token_id: "1",
+        cosmetic_token_ids: [],
+      },
+    });
+
+    expect(result.success).toBe(true);
+    expect(mockSigner.execute).toHaveBeenCalledOnce();
+
+    const calls = vi.mocked(mockSigner.execute).mock.calls[0][0] as any[];
+    expect(Array.isArray(calls)).toBe(true);
+    expect(calls).toHaveLength(3);
+    expect(calls[0]).toMatchObject({
+      contractAddress: "0xentry",
+      entrypoint: "set_approval_for_all",
+    });
+    expect(calls[1]).toMatchObject({
+      entrypoint: "settle",
+      calldata: ["0x123", "1", "0", "1"],
+    });
+    expect(calls[2]).toMatchObject({
+      contractAddress: "0xentry",
+      entrypoint: "set_approval_for_all",
+    });
   });
 
   it("surfaces signer execution errors", async () => {

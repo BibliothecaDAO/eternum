@@ -14,7 +14,7 @@ export const STRUCTURE_GROUP_COLORS = [
 
 export type StructureGroupColor = (typeof STRUCTURE_GROUP_COLORS)[number]["value"];
 
-export type StructureGroupsMap = Partial<Record<number, StructureGroupColor>>;
+type StructureGroupsMap = Partial<Record<number, StructureGroupColor>>;
 
 export const STRUCTURE_GROUP_CONFIG: Record<StructureGroupColor, (typeof STRUCTURE_GROUP_COLORS)[number]> =
   STRUCTURE_GROUP_COLORS.reduce(

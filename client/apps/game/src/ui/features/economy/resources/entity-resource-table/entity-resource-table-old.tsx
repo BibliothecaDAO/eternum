@@ -85,7 +85,7 @@ export const EntityResourceTableOld = React.memo(
 
     return (
       <div className="flex flex-col gap-4">
-        <div className="sticky top-0 z-20 -mx-2 -mt-2 px-2 pt-3 pb-2 border-b border-gold/20 bg-dark-wood/95 backdrop-blur">
+        <div className="sticky top-0 z-20 -mx-2 -mt-2 px-2 pt-3 pb-2 border-b border-gold/20 bg-black/50 backdrop-blur">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">
               <h4 className="text-sm font-semibold uppercase tracking-wide text-gold">Resources</h4>

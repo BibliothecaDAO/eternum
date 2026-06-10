@@ -264,7 +264,7 @@ function preflightExplorerMove(params: Record<string, unknown>, cachedState?: un
   const dirs = numArray(params.directions);
   const staminaNeeded = 30 * Math.max(dirs.length, 1);
   if (explorer?.stamina !== undefined && explorer.stamina < staminaNeeded) {
-    return `Explorer has ${explorer.stamina} stamina, need ${staminaNeeded} to explore. Use explore=false for traveled tiles (10 stamina/hex). Wait for regen (+20/min).`;
+    return `Explorer has ${explorer.stamina} stamina, need ${staminaNeeded} to explore. Use explore=false for traveled tiles (10 stamina/hex). Wait for regen (+30/min).`;
   }
   return null;
 }
@@ -519,12 +519,12 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   "troop_battle_systems::attack_explorer_vs_explorer": {
     description:
       "Attack another player's explorer with your explorer. Costs 50 stamina (attacker) and 40 stamina (defender). " +
+      "Crossbowman attackers can target enemies within 2 hexes; Knight and Paladin attackers target adjacent enemies. " +
       "Outcome is strength-based — stronger army wins. On victory you can steal resources from the defeated explorer. " +
       "Use simulate_battle first to predict the outcome.",
     paramOverrides: {
       aggressor_id: { description: "Your explorer entity ID" },
       defender_id: { description: "Target explorer entity ID" },
-      defender_direction: { description: `Hex direction from attacker to defender (${DIR})` },
       steal_resources: {
         description: `Array of {resourceId, amount} to steal on victory. ${RESOURCE_IDS}`,
         transform: stealResourceTuples,
@@ -534,26 +534,27 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
 
   "troop_battle_systems::attack_explorer_vs_guard": {
     description:
-      "Attack a structure's guard with your explorer to capture the structure. Costs 30 stamina. " +
-      "If your explorer wins, the guard is destroyed and you take control of the structure. " +
+      "Attack a structure's guard with your explorer. Costs 30 stamina. " +
+      "Crossbowman attackers can target structures within 2 hexes; Knight and Paladin attackers target adjacent structures. " +
+      "If your explorer wins, the guard is destroyed; ranged Crossbowman attacks can clear guards, " +
+      "but only adjacent explorer attacks can claim the structure. " +
       "Use simulate_battle first to predict the outcome.",
     paramOverrides: {
       explorer_id: { description: "Your explorer entity ID" },
       structure_id: { description: "Target structure entity ID" },
-      structure_direction: { description: `Hex direction from explorer to structure (${DIR})` },
     },
   },
 
   "troop_battle_systems::attack_guard_vs_explorer": {
     description:
       "Use your structure's guard to attack a nearby explorer. Costs 30 stamina. " +
+      "Crossbowman guards can target explorers within 2 hexes; Knight and Paladin guards target adjacent explorers. " +
       "Useful for defending your structure against approaching enemies. " +
       "Use simulate_battle first to predict the outcome.",
     paramOverrides: {
       structure_id: { description: "Your structure entity ID" },
       structure_guard_slot: { description: "Guard slot index (0-3)" },
       explorer_id: { description: "Target explorer entity ID" },
-      explorer_direction: { description: `Hex direction from structure to explorer (${DIR})` },
     },
   },
 
@@ -823,29 +824,62 @@ export const ETERNUM_OVERLAYS: DomainOverlayMap = {
   // ── Blitz Game Setup ───────────────────────────────────────────────────────
 
   "blitz_realm_systems::obtain_entry_token": {
-    description: "Obtain an entry token to register for a Blitz game",
+    hidden: true,
+    description: "Deprecated helper — use settle directly.",
   },
 
-  "blitz_realm_systems::register": {
-    description: "Register for a Blitz game using your entry token",
+  "blitz_realm_systems::settle": {
+    description: "Settle directly into a Blitz game after approving the fee token if required.",
     paramOverrides: {
-      name: { description: "Player name (felt252)" },
-      entry_token_id: { description: "Entry token ID obtained from obtain_entry_token" },
-      cosmetic_token_ids: { description: "Array of cosmetic token IDs" },
+      name: { description: "Player name (felt252 encoded)" },
+      entry_token_id: {
+        description:
+          "Optional entry token selector. Use 1 for the default None path unless you know you need a token ID.",
+      },
+      cosmetic_token_ids: { description: "Array of cosmetic token IDs. Use [] when you have none." },
     },
   },
 
   "blitz_realm_systems::make_hyperstructures": {
-    description: "Create hyperstructures for the Blitz game (admin/setup action)",
+    hidden: true,
+    description: "Deprecated helper — no longer needed in the current Blitz flow.",
     paramOverrides: {
       count: { description: "Number of hyperstructures to create" },
     },
   },
 
+  "hyperstructure_create_systems::reserve_hyperstructures": {
+    hidden: true,
+    description: "Launch-time helper — reserve placeholder hyperstructure slots before players settle.",
+    paramOverrides: {
+      count: { description: "Number of hyperstructure slots to reserve in this batch" },
+    },
+  },
+
+  "hyperstructure_create_systems::create_hyperstructure": {
+    description: "Materialize a reserved Blitz hyperstructure at the given coordinate.",
+    paramOverrides: {
+      coord: {
+        description:
+          "Reserved hyperstructure coordinate — pass as {x: number, y: number} using display coordinates from world state",
+        transform: displayCoordsToContract,
+      },
+    },
+  },
+
+  "blitz_realm_systems::register": {
+    hidden: true,
+    description: "Deprecated helper — use settle directly.",
+    paramOverrides: {
+      name: { description: "Player name (felt252 encoded)" },
+      entry_token_id: { description: "Deprecated" },
+      cosmetic_token_ids: { description: "Deprecated" },
+    },
+  },
+
   "blitz_realm_systems::create": {
-    actionType: "blitz_realm_create",
-    hidden: true, // Dojo framework entrypoint — use settle_blitz_realm composite instead
-    description: "Dojo create entrypoint (deprecated — use settle_blitz_realm instead)",
+    hidden: true,
+    description: "Dojo framework entrypoint (deprecated — use settle instead)",
   },
 
   // ── Name ───────────────────────────────────────────────────────────────────

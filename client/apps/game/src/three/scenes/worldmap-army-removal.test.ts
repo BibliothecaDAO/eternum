@@ -1,5 +1,91 @@
 import { describe, expect, it } from "vitest";
-import { findSupersededArmyRemoval } from "./worldmap-army-removal";
+import {
+  findSupersededArmyRemoval,
+  isStaleTrackedArmyTileRemoval,
+  shouldRecoverPendingArmyRemovalFromExplorerTroops,
+} from "./worldmap-army-removal";
+
+describe("isStaleTrackedArmyTileRemoval", () => {
+  it("treats a tile removal as stale when the tracked army already moved elsewhere", () => {
+    expect(
+      isStaleTrackedArmyTileRemoval({
+        reason: "tile",
+        trackedPosition: { col: 12, row: 15 },
+        removalPosition: { col: 10, row: 10 },
+      }),
+    ).toBe(true);
+  });
+
+  it("keeps matching tracked tile removals eligible for normal processing", () => {
+    expect(
+      isStaleTrackedArmyTileRemoval({
+        reason: "tile",
+        trackedPosition: { col: 10, row: 10 },
+        removalPosition: { col: 10, row: 10 },
+      }),
+    ).toBe(false);
+  });
+
+  it("ignores non-tile removals and missing positions", () => {
+    expect(
+      isStaleTrackedArmyTileRemoval({
+        reason: "zero",
+        trackedPosition: { col: 10, row: 10 },
+        removalPosition: { col: 12, row: 15 },
+      }),
+    ).toBe(false);
+
+    expect(
+      isStaleTrackedArmyTileRemoval({
+        reason: "tile",
+        trackedPosition: undefined,
+        removalPosition: { col: 10, row: 10 },
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("shouldRecoverPendingArmyRemovalFromExplorerTroops", () => {
+  it("does not recover tile removals from troop updates still pointing at the removed tile", () => {
+    expect(
+      shouldRecoverPendingArmyRemovalFromExplorerTroops({
+        reason: "tile",
+        removalPosition: { col: 10, row: 10 },
+        troopsPosition: { col: 10, row: 10 },
+      }),
+    ).toBe(false);
+  });
+
+  it("recovers tile removals when troops have moved away from the removed tile", () => {
+    expect(
+      shouldRecoverPendingArmyRemovalFromExplorerTroops({
+        reason: "tile",
+        removalPosition: { col: 10, row: 10 },
+        troopsPosition: { col: 11, row: 10 },
+      }),
+    ).toBe(true);
+  });
+
+  it("requires explicit position evidence for tile removals", () => {
+    expect(
+      shouldRecoverPendingArmyRemovalFromExplorerTroops({
+        reason: "tile",
+        removalPosition: undefined,
+        troopsPosition: { col: 10, row: 10 },
+      }),
+    ).toBe(false);
+  });
+
+  it("does not recover zero-count removals from later troop updates", () => {
+    expect(
+      shouldRecoverPendingArmyRemovalFromExplorerTroops({
+        reason: "zero",
+        removalPosition: { col: 10, row: 10 },
+        troopsPosition: { col: 10, row: 10 },
+      }),
+    ).toBe(false);
+  });
+});
 
 describe("findSupersededArmyRemoval", () => {
   it("returns undefined when incoming owner is missing", () => {

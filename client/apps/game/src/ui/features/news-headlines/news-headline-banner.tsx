@@ -9,6 +9,7 @@ import Trophy from "lucide-react/dist/esm/icons/trophy";
 import X from "lucide-react/dist/esm/icons/x";
 
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import { AlertBannerShell } from "@/ui/shared/components/alert-banner-shell";
 
 import type { Headline, HeadlineType } from "./headline-types";
 
@@ -104,72 +105,57 @@ export function NewsHeadlineBanner({ headline, onDismiss, onNavigate }: NewsHead
           transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
           className="fixed inset-x-0 top-16 z-30 flex justify-center px-4"
         >
-          <div className="w-[520px] max-w-full">
-            <div className="panel-wood panel-wood-corners pointer-events-auto relative overflow-hidden rounded-xl border border-gold/20 bg-dark-wood text-gold shadow-[0_25px_45px_-25px_rgba(0,0,0,0.8)]">
-              <div className="corner-bl z-100" />
-              <div className="corner-br z-100" />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.04] via-transparent to-black/20" />
-              <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-gold/70 to-transparent" />
-              <div
-                className={cn(
-                  "pointer-events-none absolute inset-y-4 left-0 w-[2px] rounded-full",
-                  theme.accentEdgeClassName,
-                )}
-              />
-
-              <div className="relative grid grid-cols-[52px_minmax(0,1fr)_52px] items-center gap-3 px-4 py-3.5">
-                <div className="flex justify-center">
-                  <div
-                    className={cn(
-                      "flex h-10 w-10 items-center justify-center rounded-full border shadow-[inset_0_1px_4px_rgba(0,0,0,0.45)]",
-                      theme.accentSurfaceClassName,
-                    )}
-                  >
-                    <Icon className="h-[18px] w-[18px]" aria-hidden />
-                  </div>
-                </div>
-
-                <div className="min-w-0">
-                  <div
-                    className={cn("text-[9px] font-semibold uppercase tracking-[0.38em]", theme.accentTextClassName)}
-                  >
-                    {theme.eyebrow}
-                  </div>
-                  <div className="mt-1 font-[Cinzel] text-sm font-semibold uppercase tracking-[0.2em] text-gold">
-                    {headline.title}
-                  </div>
-                  <div className="mt-1 text-[12px] leading-[1.35] text-gold/78">{description}</div>
-                </div>
-
-                <div className="relative flex min-h-[52px] flex-col items-center justify-center gap-1.5 before:absolute before:inset-y-1 before:left-0 before:w-px before:bg-gold/10">
-                  {canNavigate ? (
-                    <button
-                      type="button"
-                      onClick={(evt) => {
-                        evt.stopPropagation();
-                        if (!navigationLocation || !onNavigate) return;
-                        onNavigate(navigationLocation);
-                      }}
-                      className={cn(
-                        "button-wood inline-flex h-9 w-11 flex-col items-center justify-center gap-0.5 rounded-md border text-[8px] font-semibold uppercase tracking-[0.16em] transition-colors",
-                        "border-gold/25 bg-black/20 text-gold hover:border-gold/45 hover:bg-black/35",
-                      )}
-                    >
-                      <Navigation className="h-3 w-3" />
-                      <span>View</span>
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={onDismiss}
-                    className="button-wood inline-flex h-7 w-7 items-center justify-center rounded-full border-gold/15 bg-black/20 p-0 text-gold/45 hover:bg-black/35 hover:text-gold"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </button>
+          <AlertBannerShell accentEdgeClassName={theme.accentEdgeClassName}>
+            <div className="relative grid grid-cols-[52px_minmax(0,1fr)_52px] items-center gap-3 px-4 py-3.5">
+              <div className="flex justify-center">
+                <div
+                  className={cn(
+                    "flex h-10 w-10 items-center justify-center rounded-full border shadow-[inset_0_1px_4px_rgba(0,0,0,0.45)]",
+                    theme.accentSurfaceClassName,
+                  )}
+                >
+                  <Icon className="h-[18px] w-[18px]" aria-hidden />
                 </div>
               </div>
+
+              <div className="min-w-0">
+                <div className={cn("text-[9px] font-semibold uppercase tracking-[0.38em]", theme.accentTextClassName)}>
+                  {theme.eyebrow}
+                </div>
+                <div className="mt-1 font-[Cinzel] text-sm font-semibold uppercase tracking-[0.2em] text-gold">
+                  {headline.title}
+                </div>
+                <div className="mt-1 text-[12px] leading-[1.35] text-gold/78">{description}</div>
+              </div>
+
+              <div className="relative flex min-h-[52px] flex-col items-center justify-center gap-1.5 before:absolute before:inset-y-1 before:left-0 before:w-px before:bg-gold/10">
+                {canNavigate ? (
+                  <button
+                    type="button"
+                    onClick={(evt) => {
+                      evt.stopPropagation();
+                      if (!navigationLocation || !onNavigate) return;
+                      onNavigate(navigationLocation);
+                    }}
+                    className={cn(
+                      "btn-bronze inline-flex h-9 w-11 flex-col items-center justify-center gap-0.5 rounded-md border text-[8px] font-semibold uppercase tracking-[0.16em] transition-colors",
+                      "border-gold/25 bg-black/20 text-gold hover:border-gold/45 hover:bg-black/35",
+                    )}
+                  >
+                    <Navigation className="h-3 w-3" />
+                    <span>View</span>
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={onDismiss}
+                  className="btn-bronze inline-flex h-7 w-7 items-center justify-center rounded-full border-gold/15 bg-black/20 p-0 text-gold/45 hover:bg-black/35 hover:text-gold"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
-          </div>
+          </AlertBannerShell>
         </motion.div>
       )}
     </AnimatePresence>

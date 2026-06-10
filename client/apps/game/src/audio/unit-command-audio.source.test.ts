@@ -29,9 +29,9 @@ describe("Unit command audio wiring", () => {
 
   it("plays the shared attack acknowledgement in both attack submission flows", () => {
     const quickAttackPreviewSource = readSource("src/ui/features/military/battle/quick-attack-preview.tsx");
-    const combatContainerSource = readSource("src/ui/features/military/battle/combat-container.tsx");
+    const battleLabSource = readSource("src/ui/features/military/battle/battle-lab/battle-lab.tsx");
 
     expect(quickAttackPreviewSource).toContain('playUnitCommandSound("attack")');
-    expect(combatContainerSource).toContain('playUnitCommandSound("attack")');
+    expect(battleLabSource).toContain('playUnitCommandSound("attack")');
   });
 });

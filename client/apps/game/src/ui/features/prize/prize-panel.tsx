@@ -1,4 +1,5 @@
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
+import { useBlitzSettlementPlayerAddresses } from "@/services/blitz/blitz-settlement-players";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { NumberInput } from "@/ui/design-system/atoms";
 import Button from "@/ui/design-system/atoms/button";
@@ -123,15 +124,8 @@ export const PrizePanel = () => {
     return gameMedian !== undefined && gameMedian !== 0n;
   }, [mmrGameMetaEntities, components.MMRGameMeta]);
 
-  // All registered players (by registration status), regardless of points
-  const blitzRegEntities = useEntityQuery([Has(components.BlitzRealmPlayerRegister)]);
-  const registeredAddresses = useMemo(() => {
-    return blitzRegEntities
-      .map((eid) => getComponentValue(components.BlitzRealmPlayerRegister, eid))
-      .filter((v): v is NonNullable<typeof v> => Boolean(v))
-      .filter((v) => Boolean(v.once_registered))
-      .map((v) => v.player as unknown as bigint);
-  }, [blitzRegEntities, components.BlitzRealmPlayerRegister]);
+  // All settled blitz players, regardless of points
+  const registeredAddresses = useBlitzSettlementPlayerAddresses(components);
 
   const [nowTs, setNowTs] = useState(() => Math.floor(Date.now() / 1000));
   useEffect(() => {
@@ -240,15 +234,6 @@ export const PrizePanel = () => {
         ? seasonTiming.graceEnds - nowTs
         : 0;
   const countdownText = countdownSeconds > 0 ? formatDuration(countdownSeconds) : null;
-  const statusSubtitle = rankingCompleted
-    ? "Ranking complete — rewards are ready to claim."
-    : rankingWindowOpen
-      ? "Finalize the list once to enable prize claims for everyone."
-      : graceActive
-        ? `Registration closes in ${countdownText ?? "..."}.`
-        : seasonRunning
-          ? `${timelineSubject} ends in ${countdownText ?? "..."}.`
-          : `Checking ${timelineSubjectLower} status...`;
   const statusPrimaryTitle = rankingCompleted
     ? "Ranking finalized"
     : rankingWindowOpen
@@ -573,296 +558,263 @@ export const PrizePanel = () => {
 
   if (hasFinal) {
     return (
-      <div className="flex flex-col gap-4 h-full">
-        <div className="panel-wood bg-dark/80 rounded-2xl border border-gold/20 p-5 shadow-[0_25px_45px_-25px_rgba(0,0,0,0.65)]">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2 text-gold">
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-gold/15">
-                  <Trophy size={16} />
-                </span>
-                <div>
-                  <span className="text-lg font-semibold tracking-wide uppercase">Blitz Prize</span>
-                  <div className="text-xs text-gold/70">{`${timelineSubject} rewards — final rankings locked in`}</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-gold/70">
-                <Info size={14} /> Prize amounts are displayed using fee token decimals when available.
-              </div>
-            </div>
+      <div className="flex h-full flex-col gap-3 p-5">
+        <div className="flex items-center justify-end gap-2 text-xs text-gold/70">
+          <Info size={14} /> Prize amounts are displayed using fee token decimals when available.
+        </div>
 
-            <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4">
-              <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-gold/70 pb-3 border-b border-gold/10 mb-3">
-                <span>Ranking Reference</span>
-                <div className="flex items-center gap-4 text-gold/80">
-                  <span className="font-mono inline-flex items-center gap-1">
-                    <span>Total Pot:</span>
-                    <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
-                    <span>{formatTokenAmount(finalTotalPot)}</span>
-                  </span>
-                </div>
-              </div>
-              <WinnersTable />
+        <div className="rounded-xl border border-gold/15 bg-black/30 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-gold/70 pb-3 border-b border-gold/10 mb-3">
+            <span>Ranking Reference</span>
+            <div className="flex items-center gap-4 text-gold/80">
+              <span className="font-mono inline-flex items-center gap-1">
+                <span>Total Pot:</span>
+                <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
+                <span>{formatTokenAmount(finalTotalPot)}</span>
+              </span>
             </div>
+          </div>
+          <WinnersTable />
+        </div>
 
-            <div className="flex items-center justify-between gap-3 pt-1">
-              <ClaimBlitzPrizeButton />
-              <div className="text-xs text-gold/70">Each ranked player can now claim their reward.</div>
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <ClaimBlitzPrizeButton />
+          <div className="text-xs text-gold/70">Each ranked player can now claim their reward.</div>
+        </div>
+        {mmrEnabled && !isMMRCommitted && (
+          <div className="rounded-xl border border-gold/15 bg-black/30 p-4 flex flex-col gap-3">
+            <div className="flex flex-col md:flex-row md:items-center gap-3">
+              <Button
+                className="md:w-auto"
+                variant={canRetryMMR ? "primary" : "outline"}
+                isLoading={mmrRetry.phase === "updating"}
+                disabled={!canRetryMMR || mmrRetry.phase === "updating"}
+                onClick={handleRetryMMR}
+              >
+                {mmrRetry.phase === "updating" ? "Updating MMR..." : "Retry MMR Update"}
+              </Button>
+              <div className="text-xs text-gold/70">
+                Retry the MMR update here if the ranking flow completed but MMR submission failed.
+              </div>
             </div>
-            {mmrEnabled && !isMMRCommitted && (
-              <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4 flex flex-col gap-3">
-                <div className="flex flex-col md:flex-row md:items-center gap-3">
-                  <Button
-                    className="md:w-auto"
-                    variant={canRetryMMR ? "primary" : "outline"}
-                    isLoading={mmrRetry.phase === "updating"}
-                    disabled={!canRetryMMR || mmrRetry.phase === "updating"}
-                    onClick={handleRetryMMR}
-                  >
-                    {mmrRetry.phase === "updating" ? "Updating MMR..." : "Retry MMR Update"}
-                  </Button>
-                  <div className="text-xs text-gold/70">
-                    Retry the MMR update here if the ranking flow completed but MMR submission failed.
-                  </div>
-                </div>
-                {mmrRetryBlockedReason && mmrRetry.phase === "idle" && (
-                  <div className="rounded-md bg-gold/10 border border-gold/30 text-gold/80 p-2 text-xs">
-                    {mmrRetryBlockedReason}
-                  </div>
-                )}
-                {mmrRetry.phase === "updating" && (
-                  <div className="rounded-md bg-gold/10 border border-gold/30 text-gold p-2 text-xs">
-                    {mmrRetry.message ?? "Updating MMR..."}
-                  </div>
-                )}
-                {mmrRetry.phase === "success" && (
-                  <div className="rounded-md bg-brilliance/10 border border-brilliance/40 text-brilliance p-2 text-xs">
-                    {mmrRetry.message ?? "MMR updated successfully."}
-                  </div>
-                )}
-                {mmrRetry.phase === "error" && (
-                  <div className="rounded-md bg-danger/15 border border-danger/40 text-danger p-2 text-xs">
-                    {mmrRetry.message ?? "Failed to update MMR."}
-                  </div>
-                )}
+            {mmrRetryBlockedReason && mmrRetry.phase === "idle" && (
+              <div className="rounded-md bg-gold/10 border border-gold/30 text-gold/80 p-2 text-xs">
+                {mmrRetryBlockedReason}
+              </div>
+            )}
+            {mmrRetry.phase === "updating" && (
+              <div className="rounded-md bg-gold/10 border border-gold/30 text-gold p-2 text-xs">
+                {mmrRetry.message ?? "Updating MMR..."}
+              </div>
+            )}
+            {mmrRetry.phase === "success" && (
+              <div className="rounded-md bg-brilliance/10 border border-brilliance/40 text-brilliance p-2 text-xs">
+                {mmrRetry.message ?? "MMR updated successfully."}
+              </div>
+            )}
+            {mmrRetry.phase === "error" && (
+              <div className="rounded-md bg-danger/15 border border-danger/40 text-danger p-2 text-xs">
+                {mmrRetry.message ?? "Failed to update MMR."}
               </div>
             )}
           </div>
-        </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 h-full">
-      <div className="panel-wood bg-dark/80 rounded-2xl border border-gold/20 p-5 shadow-[0_25px_45px_-25px_rgba(0,0,0,0.65)] h-full flex flex-col gap-5">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2 text-gold">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-gold/15">
-              <Trophy size={16} />
-            </span>
-            <div>
-              <span className="text-lg font-semibold tracking-wide uppercase">Blitz Prize</span>
-              <div className="text-xs text-gold/70">Player rankings determine the prize split</div>
+    <div className="flex h-full flex-col gap-5 p-5">
+      {hasMyTrial ? (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <div className="rounded-xl border border-gold/20 bg-black/30 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
+                <Users size={16} />
+              </span>
+              <div>
+                <div className="text-gold/70">Players Accounted</div>
+                <div className="text-sm text-gold font-medium">{myCommitted}</div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-gold/20 bg-black/30 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
+                <Clock3 size={16} />
+              </span>
+              <div>
+                <div className="text-gold/70">Already Ranked</div>
+                <div className="text-sm text-gold font-medium">{myRevealed}</div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-gold/20 bg-black/30 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-yellow-400/20 text-yellow-300">
+                <AlertTriangle size={16} />
+              </span>
+              <div>
+                <div className="text-gold/70">Still Pending</div>
+                <div className="text-sm text-gold font-medium">{myRemaining}</div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-gold/20 bg-black/30 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/20 text-gold">
+                <Trophy size={16} />
+              </span>
+              <div>
+                <div className="text-gold/70">Reward Pool (raw)</div>
+                <div className="text-sm text-gold font-medium">
+                  {(myTrial!.total_prize_amount as bigint).toString()}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-gold/20 bg-black/30 p-4 shadow-inner shadow-black/60">
+            <div className="flex items-center justify-between text-xs text-gold/70 pb-3 border-b border-gold/10 mb-3">
+              <span>Current Ranking Progress</span>
+              <div className="flex items-center gap-4">
+                <span className="font-mono text-gold/80">Ref: {String(myTrialId)}</span>
+                <span className="text-gold/80 font-medium inline-flex items-center gap-1">
+                  <span>Total Pot:</span>
+                  <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
+                  <span>{formatTokenAmount(myTotalPot)}</span>
+                </span>
+              </div>
+            </div>
+            <WinnersTable trialId={myTrialId} />
+          </div>
+
+          <div className="rounded-xl border border-gold/15 bg-black/30 p-4 flex flex-col gap-4">
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="flex flex-col gap-1 text-xs text-gold/70">
+                <span className="uppercase tracking-[0.3em] text-[10px] text-gold/70">Next Step</span>
+                <span className="text-sm text-gold">Submit the next batch to finish the community ranking.</span>
+              </div>
+              <div
+                className={`ml-auto px-3 py-1 rounded-full border text-[10px] uppercase tracking-[0.25em] ${statusChipClass}`}
+              >
+                {statusChipLabel}
+              </div>
+            </div>
+            <div className="flex flex-col md:flex-row gap-3">
+              <Button
+                className="md:flex-1"
+                variant="primary"
+                isLoading={isSubmissionPending}
+                disabled={submitButtonDisabled}
+                onClick={handleStartOrContinue}
+              >
+                {submitButtonLabel}
+              </Button>
+              <Button className="md:w-auto" variant="outline" onClick={() => setShowAdvanced((v) => !v)}>
+                {showAdvanced ? "Hide Advanced" : "Advanced Controls"}
+              </Button>
+            </div>
+            {showAdvanced && (
+              <div className="border-t border-gold/10 pt-4 space-y-3 text-xs text-gold/70">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.3em] text-gold/70 mb-1">Batch Size</div>
+                    <NumberInput value={playersPerTx} onChange={setPlayersPerTx} min={1} max={500} />
+                    <div className="text-[11px] text-gold/60 mt-1">Players processed per transaction</div>
+                  </div>
+                  <div className="flex flex-col gap-1 p-3 rounded-lg bg-black/30 border border-gold/15">
+                    <div>
+                      Remaining: {myRemaining} of {myCommitted}
+                    </div>
+                    <div>Estimated tx: {myBatchEstimate}</div>
+                    <div>
+                      Next up:{" "}
+                      {registeredPlayers
+                        .slice(myRevealed, Math.min(myRevealed + 4, myCommitted))
+                        .map((p) => displayAddress(toHexString(p.address)))
+                        .join(", ") || "-"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {submissionFeedback}
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-xl border border-gold/20 bg-black/30 p-4 flex items-center gap-3 shadow-inner shadow-black/50">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
+                <Clock3 size={16} />
+              </span>
+              <div>
+                <div className="text-sm text-gold font-medium">{statusPrimaryTitle}</div>
+                <div className="text-xs text-gold/70">{statusPrimaryBody}</div>
+              </div>
+            </div>
+            <div className="rounded-xl border border-gold/20 bg-black/30 p-4 flex items-center gap-3 shadow-inner shadow-black/50">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
+                <Users size={16} />
+              </span>
+              <div>
+                <div className="text-sm text-gold font-medium">{totalRegistered} players ready</div>
+                <div className="text-xs text-gold/70">
+                  Every player with registered points will be included automatically.
+                </div>
+              </div>
             </div>
           </div>
-          <div className={`px-3 py-1 rounded-full border text-[10px] uppercase tracking-[0.25em] ${statusChipClass}`}>
-            {statusChipLabel}
+
+          <div className="rounded-xl border border-gold/15 bg-black/30 p-4 flex flex-col gap-4">
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="flex flex-col gap-1 text-xs text-gold/70">
+                <span className="uppercase tracking-[0.3em] text-[10px] text-gold/70">Preparation</span>
+                <span className="text-sm text-gold">
+                  One player submits when the window opens. Everyone else just claims.
+                </span>
+              </div>
+              <div
+                className={`ml-auto px-3 py-1 rounded-full border text-[10px] uppercase tracking-[0.25em] ${statusChipClass}`}
+              >
+                {statusChipLabel}
+              </div>
+            </div>
+            <div className="flex flex-col md:flex-row gap-3">
+              <Button
+                className="md:flex-1"
+                variant="primary"
+                isLoading={isSubmissionPending}
+                disabled={submitButtonDisabled}
+                onClick={handleStartOrContinue}
+              >
+                {submitButtonLabel}
+              </Button>
+              <Button className="md:w-auto" variant="outline" onClick={() => setShowAdvanced((v) => !v)}>
+                {showAdvanced ? "Hide Advanced" : "Advanced Controls"}
+              </Button>
+            </div>
+            {showAdvanced && (
+              <div className="border-t border-gold/10 pt-4 space-y-3 text-xs text-gold/70">
+                <div className="grid gap-3 md:grid-cols-2">
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.3em] text-gold/70 mb-1">Batch Size</div>
+                    <NumberInput value={playersPerTx} onChange={setPlayersPerTx} min={1} max={500} />
+                    <div className="text-[11px] text-gold/60 mt-1">Players processed per transaction</div>
+                  </div>
+                  <div className="flex flex-col gap-1 p-3 rounded-lg bg-black/30 border border-gold/15">
+                    <div>Commit count: {registeredPlayers.length}</div>
+                    <div>Estimated tx: {Math.ceil(registeredPlayers.length / Math.max(1, playersPerTx))}</div>
+                    <div>
+                      First up:{" "}
+                      {registeredPlayers
+                        .slice(0, Math.min(5, registeredPlayers.length))
+                        .map((p) => displayAddress(toHexString(p.address)))
+                        .join(", ") || "-"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {submissionFeedback}
           </div>
-        </div>
-        <div className="text-xs text-gold/70">{statusSubtitle}</div>
-
-        {hasMyTrial ? (
-          <>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-              <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
-                  <Users size={16} />
-                </span>
-                <div>
-                  <div className="text-gold/70">Players Accounted</div>
-                  <div className="text-sm text-gold font-medium">{myCommitted}</div>
-                </div>
-              </div>
-              <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
-                  <Clock3 size={16} />
-                </span>
-                <div>
-                  <div className="text-gold/70">Already Ranked</div>
-                  <div className="text-sm text-gold font-medium">{myRevealed}</div>
-                </div>
-              </div>
-              <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-yellow-400/20 text-yellow-300">
-                  <AlertTriangle size={16} />
-                </span>
-                <div>
-                  <div className="text-gold/70">Still Pending</div>
-                  <div className="text-sm text-gold font-medium">{myRemaining}</div>
-                </div>
-              </div>
-              <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 flex items-center gap-3 shadow-inner shadow-black/60">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/20 text-gold">
-                  <Trophy size={16} />
-                </span>
-                <div>
-                  <div className="text-gold/70">Reward Pool (raw)</div>
-                  <div className="text-sm text-gold font-medium">
-                    {(myTrial!.total_prize_amount as bigint).toString()}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 shadow-inner shadow-black/60">
-              <div className="flex items-center justify-between text-xs text-gold/70 pb-3 border-b border-gold/10 mb-3">
-                <span>Current Ranking Progress</span>
-                <div className="flex items-center gap-4">
-                  <span className="font-mono text-gold/80">Ref: {String(myTrialId)}</span>
-                  <span className="text-gold/80 font-medium inline-flex items-center gap-1">
-                    <span>Total Pot:</span>
-                    <img src="/tokens/lords.png" alt="LORDS" className="h-4 w-4 rounded-full object-contain" />
-                    <span>{formatTokenAmount(myTotalPot)}</span>
-                  </span>
-                </div>
-              </div>
-              <WinnersTable trialId={myTrialId} />
-            </div>
-
-            <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4 flex flex-col gap-4">
-              <div className="flex flex-wrap items-start gap-3">
-                <div className="flex flex-col gap-1 text-xs text-gold/70">
-                  <span className="uppercase tracking-[0.3em] text-[10px] text-gold/70">Next Step</span>
-                  <span className="text-sm text-gold">Submit the next batch to finish the community ranking.</span>
-                </div>
-                <div
-                  className={`ml-auto px-3 py-1 rounded-full border text-[10px] uppercase tracking-[0.25em] ${statusChipClass}`}
-                >
-                  {statusChipLabel}
-                </div>
-              </div>
-              <div className="flex flex-col md:flex-row gap-3">
-                <Button
-                  className="md:flex-1"
-                  variant="primary"
-                  isLoading={isSubmissionPending}
-                  disabled={submitButtonDisabled}
-                  onClick={handleStartOrContinue}
-                >
-                  {submitButtonLabel}
-                </Button>
-                <Button className="md:w-auto" variant="outline" onClick={() => setShowAdvanced((v) => !v)}>
-                  {showAdvanced ? "Hide Advanced" : "Advanced Controls"}
-                </Button>
-              </div>
-              {showAdvanced && (
-                <div className="border-t border-gold/10 pt-4 space-y-3 text-xs text-gold/70">
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-[0.3em] text-gold/70 mb-1">Batch Size</div>
-                      <NumberInput value={playersPerTx} onChange={setPlayersPerTx} min={1} max={500} />
-                      <div className="text-[11px] text-gold/60 mt-1">Players processed per transaction</div>
-                    </div>
-                    <div className="flex flex-col gap-1 p-3 rounded-lg panel-wood bg-dark/70 border border-gold/15">
-                      <div>
-                        Remaining: {myRemaining} of {myCommitted}
-                      </div>
-                      <div>Estimated tx: {myBatchEstimate}</div>
-                      <div>
-                        Next up:{" "}
-                        {registeredPlayers
-                          .slice(myRevealed, Math.min(myRevealed + 4, myCommitted))
-                          .map((p) => displayAddress(toHexString(p.address)))
-                          .join(", ") || "-"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {submissionFeedback}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="grid gap-3 md:grid-cols-2">
-              <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 flex items-center gap-3 shadow-inner shadow-black/50">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
-                  <Clock3 size={16} />
-                </span>
-                <div>
-                  <div className="text-sm text-gold font-medium">{statusPrimaryTitle}</div>
-                  <div className="text-xs text-gold/70">{statusPrimaryBody}</div>
-                </div>
-              </div>
-              <div className="rounded-xl border border-gold/20 panel-wood bg-dark/70 p-4 flex items-center gap-3 shadow-inner shadow-black/50">
-                <span className="grid h-9 w-9 place-items-center rounded-full bg-gold/15 text-gold">
-                  <Users size={16} />
-                </span>
-                <div>
-                  <div className="text-sm text-gold font-medium">{totalRegistered} players ready</div>
-                  <div className="text-xs text-gold/70">
-                    Every player with registered points will be included automatically.
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-gold/15 panel-wood bg-dark/70 p-4 flex flex-col gap-4">
-              <div className="flex flex-wrap items-start gap-3">
-                <div className="flex flex-col gap-1 text-xs text-gold/70">
-                  <span className="uppercase tracking-[0.3em] text-[10px] text-gold/70">Preparation</span>
-                  <span className="text-sm text-gold">
-                    One player submits when the window opens. Everyone else just claims.
-                  </span>
-                </div>
-                <div
-                  className={`ml-auto px-3 py-1 rounded-full border text-[10px] uppercase tracking-[0.25em] ${statusChipClass}`}
-                >
-                  {statusChipLabel}
-                </div>
-              </div>
-              <div className="flex flex-col md:flex-row gap-3">
-                <Button
-                  className="md:flex-1"
-                  variant="primary"
-                  isLoading={isSubmissionPending}
-                  disabled={submitButtonDisabled}
-                  onClick={handleStartOrContinue}
-                >
-                  {submitButtonLabel}
-                </Button>
-                <Button className="md:w-auto" variant="outline" onClick={() => setShowAdvanced((v) => !v)}>
-                  {showAdvanced ? "Hide Advanced" : "Advanced Controls"}
-                </Button>
-              </div>
-              {showAdvanced && (
-                <div className="border-t border-gold/10 pt-4 space-y-3 text-xs text-gold/70">
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div>
-                      <div className="text-[11px] uppercase tracking-[0.3em] text-gold/70 mb-1">Batch Size</div>
-                      <NumberInput value={playersPerTx} onChange={setPlayersPerTx} min={1} max={500} />
-                      <div className="text-[11px] text-gold/60 mt-1">Players processed per transaction</div>
-                    </div>
-                    <div className="flex flex-col gap-1 p-3 rounded-lg panel-wood bg-dark/70 border border-gold/15">
-                      <div>Commit count: {registeredPlayers.length}</div>
-                      <div>Estimated tx: {Math.ceil(registeredPlayers.length / Math.max(1, playersPerTx))}</div>
-                      <div>
-                        First up:{" "}
-                        {registeredPlayers
-                          .slice(0, Math.min(5, registeredPlayers.length))
-                          .map((p) => displayAddress(toHexString(p.address)))
-                          .join(", ") || "-"}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {submissionFeedback}
-            </div>
-          </>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 };

@@ -8,21 +8,72 @@ function readWorldmapSource(): string {
   return readFileSync(resolve(currentDir, "worldmap.tsx"), "utf8");
 }
 
+function extractMethodBody(source: string, methodName: string): string {
+  const methodStart = source.indexOf(methodName);
+  expect(methodStart).toBeGreaterThan(-1);
+
+  const signatureEnd = findMethodSignatureEnd(source, methodStart + methodName.length);
+  const bodyStart = source.indexOf("{", signatureEnd);
+  expect(bodyStart).toBeGreaterThan(-1);
+
+  let depth = 0;
+  for (let index = bodyStart; index < source.length; index += 1) {
+    const character = source[index];
+    if (character === "{") {
+      depth += 1;
+    }
+    if (character === "}") {
+      depth -= 1;
+    }
+    if (depth === 0) {
+      return source.slice(bodyStart, index + 1);
+    }
+  }
+
+  throw new Error(`Unable to extract ${methodName}`);
+}
+
+function findMethodSignatureEnd(source: string, searchStart: number): number {
+  let depth = 1;
+  for (let index = searchStart; index < source.length; index += 1) {
+    const character = source[index];
+    if (character === "(") {
+      depth += 1;
+    }
+    if (character === ")") {
+      depth -= 1;
+    }
+    if (depth === 0) {
+      return index;
+    }
+  }
+
+  throw new Error("Unable to find method signature end");
+}
+
 describe("worldmap army bootstrap fetch", () => {
-  it("hydrates explorer troops snapshots during exact chunk bootstrap before tile replay", () => {
+  it("hydrates army bootstrap render areas from global spatial RECS instead of exact SQL", () => {
     const source = readWorldmapSource();
 
-    expect(source).toContain("getExplorerTroopsFromToriiExact");
+    expect(source).not.toContain("getExplorerTroopsFromToriiExact");
+    expect(source).not.toContain("getMapFromToriiExact");
+    expect(source).not.toContain("getStructuresFromToriiExact");
 
-    const methodStart = source.indexOf("private async executeTileEntitiesFetch(");
-    expect(methodStart).toBeGreaterThan(-1);
+    const computeMethodBody = extractMethodBody(source, "private async computeTileEntities(");
+    expect(computeMethodBody).toContain("this.resolveRenderAreaHydrationFetchPlans(chunkKey, requiredStages)");
 
-    const methodBody = source.slice(methodStart, methodStart + 1800);
-    const explorerFetchIndex = methodBody.indexOf("getExplorerTroopsFromToriiExact(");
-    const tileFetchIndex = methodBody.indexOf("getMapFromToriiExact(");
+    const hydrationPlanBody = extractMethodBody(source, "private resolveRenderAreaHydrationFetchPlans(");
+    expect(hydrationPlanBody).toContain("this.getExplorerTroopsRenderAreaKeyForChunk(chunkKey)");
+    expect(hydrationPlanBody).toContain('stages: ["explorerTroops"]');
 
-    expect(explorerFetchIndex).toBeGreaterThan(-1);
-    expect(tileFetchIndex).toBeGreaterThan(-1);
-    expect(explorerFetchIndex).toBeLessThan(tileFetchIndex);
+    const fetchMethodBody = extractMethodBody(source, "private async executeTileEntitiesFetch(");
+    expect(fetchMethodBody).toContain(
+      "await this.hydrateRenderAreaFromGlobalSpatialState(fetchKey, localBounds, stages)",
+    );
+    const stagedHydrationBody = extractMethodBody(source, "private async hydrateRenderAreaFromGlobalSpatialState(");
+    expect(stagedHydrationBody).toContain("hydrateExploredTilesFromGlobalTileOptRecs");
+    expect(stagedHydrationBody).toContain("hydrateChestsFromGlobalTileOptRecs");
+    expect(stagedHydrationBody).toContain("hydrateStructuresFromGlobalTileOptRecs");
+    expect(stagedHydrationBody).toContain("global_spatial_recs_hydrated");
   });
 });

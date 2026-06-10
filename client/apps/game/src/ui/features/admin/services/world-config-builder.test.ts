@@ -44,7 +44,19 @@ const BASE_CONFIG = {
     max_current_count: 20,
     max_lifetime_count: 200,
   },
+  biomeClimate: {
+    elevationScaleBps: 10000,
+    moistureScaleBps: 10000,
+    elevationBiasBps: 10000,
+    moistureBiasBps: 10000,
+    elevationSeed: 0,
+    moistureSeed: 0,
+  },
 };
+
+const BASE_CONFIG_WITHOUT_BIOME_CLIMATE = Object.fromEntries(
+  Object.entries(BASE_CONFIG).filter(([key]) => key !== "biomeClimate"),
+);
 
 describe("buildWorldConfigForFactory", () => {
   test("applies expanded M1 overrides and parses numeric fields", () => {
@@ -90,6 +102,12 @@ describe("buildWorldConfigForFactory", () => {
         battleDelaySeconds: "80",
         agentMaxCurrentCount: "99",
         agentMaxLifetimeCount: "999",
+        biomeElevationScaleBps: "12000",
+        biomeMoistureScaleBps: "9000",
+        biomeElevationBiasBps: "11000",
+        biomeMoistureBiasBps: "8000",
+        biomeElevationSeed: "137",
+        biomeMoistureSeed: "991",
       },
     });
 
@@ -101,8 +119,19 @@ describe("buildWorldConfigForFactory", () => {
     const trade = result.trade;
     const battle = result.battle;
     const agent = result.agent;
+    const biomeClimate = result.biomeClimate;
 
-    if (!dev?.mode || !mmr || !season || !blitzRegistration || !settlement || !trade || !battle || !agent) {
+    if (
+      !dev?.mode ||
+      !mmr ||
+      !season ||
+      !blitzRegistration ||
+      !settlement ||
+      !trade ||
+      !battle ||
+      !agent ||
+      !biomeClimate
+    ) {
       throw new Error("Expected all config sections to be defined");
     }
 
@@ -131,6 +160,12 @@ describe("buildWorldConfigForFactory", () => {
     expect(battle.delaySeconds).toBe(80);
     expect(agent.max_current_count).toBe(99);
     expect(agent.max_lifetime_count).toBe(999);
+    expect(biomeClimate.elevationScaleBps).toBe(12000);
+    expect(biomeClimate.moistureScaleBps).toBe(9000);
+    expect(biomeClimate.elevationBiasBps).toBe(11000);
+    expect(biomeClimate.moistureBiasBps).toBe(8000);
+    expect(biomeClimate.elevationSeed).toBe(137);
+    expect(biomeClimate.moistureSeed).toBe(991);
   });
 
   test("uses defaults when optional overrides are not set", () => {
@@ -166,6 +201,34 @@ describe("buildWorldConfigForFactory", () => {
     expect(season.durationSeconds).toBe(11100);
     expect(blitzRegistration.fee_amount).toBe(BigInt("1000"));
     expect(blitzRegistration.fee_token).toBe("0xdefaulttoken");
+  });
+
+  test("uses neutral biome climate when generated base config has no biome climate section", () => {
+    const result = buildWorldConfigForFactory({
+      baseConfig: BASE_CONFIG_WITHOUT_BIOME_CLIMATE,
+      defaults: {
+        factoryAddress: "0xfactory",
+        devModeOn: true,
+        mmrEnabledOn: false,
+        durationHours: 3,
+        baseDurationMinutes: 5,
+        defaultBlitzRegistration: {
+          amount: "0.000000000000001",
+          precision: 18,
+          token: "0xdefaulttoken",
+        },
+      },
+      overrides: {},
+    });
+
+    expect(result.biomeClimate).toEqual({
+      elevationScaleBps: 10000,
+      moistureScaleBps: 10000,
+      elevationBiasBps: 10000,
+      moistureBiasBps: 10000,
+      elevationSeed: 0,
+      moistureSeed: 0,
+    });
   });
 
   test("throws for invalid numeric inputs", () => {
@@ -232,5 +295,47 @@ describe("buildWorldConfigForFactory", () => {
         },
       }),
     ).toThrow("single_realm_mode and two_player_mode cannot both be enabled");
+
+    expect(() =>
+      buildWorldConfigForFactory({
+        baseConfig: BASE_CONFIG,
+        defaults: {
+          factoryAddress: "0xfactory",
+          devModeOn: true,
+          mmrEnabledOn: false,
+          durationHours: 1,
+          baseDurationMinutes: 0,
+          defaultBlitzRegistration: {
+            amount: "1",
+            precision: 18,
+            token: "0xdefaulttoken",
+          },
+        },
+        overrides: {
+          biomeElevationScaleBps: "65536",
+        },
+      }),
+    ).toThrow("Biome elevation scale bps must be at most 65535");
+
+    expect(() =>
+      buildWorldConfigForFactory({
+        baseConfig: BASE_CONFIG,
+        defaults: {
+          factoryAddress: "0xfactory",
+          devModeOn: true,
+          mmrEnabledOn: false,
+          durationHours: 1,
+          baseDurationMinutes: 0,
+          defaultBlitzRegistration: {
+            amount: "1",
+            precision: 18,
+            token: "0xdefaulttoken",
+          },
+        },
+        overrides: {
+          biomeMoistureSeed: "4294967296",
+        },
+      }),
+    ).toThrow("Biome moisture seed must be at most 4294967295");
   });
 });

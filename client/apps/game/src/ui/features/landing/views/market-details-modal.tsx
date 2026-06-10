@@ -215,7 +215,7 @@ const MarketDetailsModalContent = ({
   const [refreshKey, setRefreshKey] = useState(0);
   const [isTradeSyncing, setIsTradeSyncing] = useState(false);
   const [isResolveActionPending, setIsResolveActionPending] = useState(false);
-  const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch();
+  const { watchMarket, watchingMarketId, getWatchState } = useMarketWatch(chain);
   const { address } = useAccount();
   const {
     config: { manifest },
@@ -231,7 +231,7 @@ const MarketDetailsModalContent = ({
   }, [initialMarket.market_id]);
   const { market: fetchedMarket, refresh: refreshMarket, isLoading } = useMarket(marketId);
   const market = fetchedMarket ?? initialMarket;
-  const resolutionController = useMarketResolutionController(market);
+  const resolutionController = useMarketResolutionController(market, chain);
 
   const watchState = getWatchState(market);
   const isWatching = watchingMarketId === String(market.market_id);
