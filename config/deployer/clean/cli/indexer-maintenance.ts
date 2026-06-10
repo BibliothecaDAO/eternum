@@ -456,7 +456,9 @@ async function runInspectOperation(operation: IndexerMaintenanceOperation): Prom
   result: IndexerMaintenanceResult;
 }> {
   const gameName = operation.gameName!;
-  const liveState = resolveManagedIndexerProvider().resolveLiveState(gameName);
+  const liveState = resolveManagedIndexerProvider().resolveLiveState(gameName, {
+    onProgress: (message) => console.error(message),
+  });
   const message = buildIndexerInspectedMessage(gameName, liveState);
 
   return {
@@ -502,7 +504,9 @@ async function runCreateOperation(operation: IndexerMaintenanceOperation): Promi
       },
     };
   } catch (error) {
-    const liveState = resolveManagedIndexerProvider().resolveLiveState(gameName);
+    const liveState = resolveManagedIndexerProvider().resolveLiveState(gameName, {
+      onProgress: (message) => console.error(message),
+    });
     const errorMessage = error instanceof Error ? error.message : String(error);
     const message = buildFailureMessage(operation, errorMessage);
 
@@ -524,7 +528,9 @@ async function runTierOperation(operation: IndexerMaintenanceOperation): Promise
 }> {
   const tier = resolveTierForOperation(operation);
   const provider = resolveManagedIndexerProvider();
-  const liveState = provider.resolveLiveState(operation.gameName!);
+  const liveState = provider.resolveLiveState(operation.gameName!, {
+    onProgress: (message) => console.error(message),
+  });
 
   if (liveState.state !== "existing") {
     const failedAt = new Date().toISOString();
@@ -572,7 +578,11 @@ async function runTierOperation(operation: IndexerMaintenanceOperation): Promise
     };
   }
 
-  const updatedIndexer = provider.ensureTier({ name: operation.gameName!, tier });
+  const updatedIndexer = provider.ensureTier({
+    name: operation.gameName!,
+    tier,
+    onProgress: (message) => console.error(message),
+  });
   const message =
     updatedIndexer.action === "tier-already-matched"
       ? buildAlreadyMatchedMessage(operation.gameName, tier)
@@ -595,7 +605,9 @@ async function runDeleteOperation(operation: IndexerMaintenanceOperation): Promi
   result: IndexerMaintenanceResult;
 }> {
   const provider = resolveManagedIndexerProvider();
-  const currentState = provider.resolveLiveState(operation.gameName!);
+  const currentState = provider.resolveLiveState(operation.gameName!, {
+    onProgress: (message) => console.error(message),
+  });
 
   if (currentState.state === "indeterminate") {
     const errorMessage =
@@ -613,7 +625,10 @@ async function runDeleteOperation(operation: IndexerMaintenanceOperation): Promi
   }
 
   try {
-    const deleteResult = provider.deleteDeployment({ name: operation.gameName! });
+    const deleteResult = provider.deleteDeployment({
+      name: operation.gameName!,
+      onProgress: (message) => console.error(message),
+    });
 
     if (deleteResult.action === "already-missing") {
       const message = buildIndexerAlreadyMissingMessage(operation.gameName);
@@ -641,7 +656,9 @@ async function runDeleteOperation(operation: IndexerMaintenanceOperation): Promi
       },
     };
   } catch (error) {
-    const failedState = provider.resolveLiveState(operation.gameName!);
+    const failedState = provider.resolveLiveState(operation.gameName!, {
+      onProgress: (message) => console.error(message),
+    });
     const errorMessage = error instanceof Error ? error.message : String(error);
     const message = buildFailureMessage(operation, errorMessage);
 

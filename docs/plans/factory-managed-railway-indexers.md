@@ -9,8 +9,8 @@ This document narrows the hosting work to the first practical step:
 
 This is a smaller and better first move.
 
-It changes the deployment backend without forcing us to solve user OAuth, user billing, provider account linking, or
-new support flows all at once.
+It changes the deployment backend without forcing us to solve user OAuth, user billing, provider account linking, or new
+support flows all at once.
 
 ## Product Goal
 
@@ -104,7 +104,10 @@ Suggested shape:
 interface ManagedIndexerProvider {
   ensureDeployment(request: IndexerRequest, options?: ManagedIndexerOptions): ManagedIndexerActionResult;
   resolveLiveState(name: string, options?: ManagedIndexerOptions): IndexerLiveState;
-  resolveLiveStates(names: string[], options?: ManagedIndexerOptions): Array<{ gameName: string; liveState: IndexerLiveState }>;
+  resolveLiveStates(
+    names: string[],
+    options?: ManagedIndexerOptions,
+  ): Array<{ gameName: string; liveState: IndexerLiveState }>;
   ensureTier?(options: EnsureManagedIndexerTierOptions): ManagedIndexerActionResult;
   deleteDeployment(options: DeleteManagedIndexerOptions): DeleteManagedIndexerResult;
 }
@@ -220,8 +223,7 @@ For Railway V1:
 
 This is the hardest part of the swap.
 
-Slot has built-in tier semantics today.
-Railway does not have the same product model.
+Slot has built-in tier semantics today. Railway does not have the same product model.
 
 So we need an explicit decision:
 
@@ -342,8 +344,8 @@ Do not block the provider migration on this.
 
 ### Tier Drift
 
-The current tier model is Slot-shaped.
-If we do not decide how Railway maps to it, scheduled tier maintenance becomes misleading.
+The current tier model is Slot-shaped. If we do not decide how Railway maps to it, scheduled tier maintenance becomes
+misleading.
 
 That is why the initial recommendation is to migrate provider first and tier semantics second.
 

@@ -12,7 +12,12 @@ import { renderToriiConfigArtifact } from "./torii-config";
 const RAILWAY_COMMAND_MAX_BUFFER_BYTES = 10 * 1024 * 1024;
 const RAILWAY_OUTPUT_DIRECTORY = ".context/railway";
 const DEFAULT_RAILWAY_LINK_DIRECTORY = ".context/railway-link";
-const NOT_FOUND_PATTERN = /service not found|could not find service|not found/i;
+// Only treat *service*-scoped lookups as missing. Broader failures (project,
+// environment, auth, ...) must stay indeterminate so we never create duplicates
+// on a misconfigured CLI context.
+const SERVICE_NOT_FOUND_PATTERN = /service\b[^\n]*\bnot found|could not find service/i;
+const VOLUME_ALREADY_EXISTS_PATTERN = /already exists|already mounted|already has a volume/i;
+const REQUIRED_RAILWAY_VARIABLE_KEYS = ["WORLD_ADDRESS", "TORII_CONFIG_BASE64"];
 
 interface RailwayCommandInvocation {
   args: string[];
@@ -32,11 +37,12 @@ export interface EnsureRailwayIndexerOptions {
   railwayToriiImage?: string;
   railwayVolumeMountPath?: string;
   railwayPublicPort?: number;
+  railwayServicePrefixes?: string[];
 }
 
 export interface RailwayIndexerActionResult {
   mode: IndexerCreationMode;
-  action: "created" | "already-live" | "tier-updated" | "tier-already-matched";
+  action: "created" | "repaired" | "already-live";
   liveState: IndexerLiveState;
   requestedTier: IndexerTier;
   previousTier?: IndexerTier;
@@ -81,18 +87,15 @@ function buildRailwayCommandRunner(options: EnsureRailwayIndexerOptions): Railwa
 }
 
 function buildRailwayCommandEnv(options: EnsureRailwayIndexerOptions) {
-  const token = options.railwayApiToken || process.env.RAILWAY_API_TOKEN || process.env.RAILWAY_TOKEN;
-
+  // RAILWAY_TOKEN (project token) and RAILWAY_API_TOKEN (account token) are
+  // distinct credentials for the Railway CLI; never mirror one into the other.
   return {
     ...process.env,
-    ...(token
-      ? {
-          RAILWAY_API_TOKEN: token,
-          RAILWAY_TOKEN: token,
-        }
-      : {}),
+    ...(options.railwayApiToken ? { RAILWAY_API_TOKEN: options.railwayApiToken } : {}),
   };
 }
+
+const linkedRailwayDirectories = new Set<string>();
 
 function ensureRailwayLinkContext(options: EnsureRailwayIndexerOptions) {
   const railwayProjectId = options.railwayProjectId || process.env.RAILWAY_PROJECT_ID;
@@ -111,15 +114,21 @@ function ensureRailwayLinkContext(options: EnsureRailwayIndexerOptions) {
     options.railwayWorkingDirectory ||
     ensureRepoDirectory(path.join(DEFAULT_RAILWAY_LINK_DIRECTORY, railwayProjectId, railwayEnvironmentId));
   const runner = buildRailwayCommandRunner(options);
-  const args = ["link", "--project", railwayProjectId, "--environment", railwayEnvironmentId];
+  const linkCacheKey = [workingDirectory, railwayProjectId, railwayEnvironmentId, railwayWorkspaceId || ""].join("|");
 
-  if (railwayWorkspaceId) {
-    args.push("--workspace", railwayWorkspaceId);
-  }
+  if (!linkedRailwayDirectories.has(linkCacheKey)) {
+    const args = ["link", "--project", railwayProjectId, "--environment", railwayEnvironmentId];
 
-  const linkResult = runner({ args, cwd: workingDirectory });
-  if ((linkResult.status ?? 1) !== 0) {
-    throw new Error(buildRailwayCommandFailureMessage("link the Railway project", linkResult));
+    if (railwayWorkspaceId) {
+      args.push("--workspace", railwayWorkspaceId);
+    }
+
+    const linkResult = runner({ args, cwd: workingDirectory });
+    if ((linkResult.status ?? 1) !== 0) {
+      throw new Error(buildRailwayCommandFailureMessage("link the Railway project", linkResult));
+    }
+
+    linkedRailwayDirectories.add(linkCacheKey);
   }
 
   return {
@@ -195,8 +204,7 @@ function extractRailwayDomain(stdout: string): string | undefined {
 
   const nested = findFirstRecord(record, ["domain", "serviceDomain"]);
   const domain =
-    extractFirstString(record, ["domain", "hostname"]) ||
-    extractFirstString(nested, ["domain", "hostname"]);
+    extractFirstString(record, ["domain", "hostname"]) || extractFirstString(nested, ["domain", "hostname"]);
 
   if (!domain) {
     return undefined;
@@ -207,6 +215,7 @@ function extractRailwayDomain(stdout: string): string | undefined {
 
 function extractRailwayServiceMetadata(stdout: string): {
   version?: string;
+  deploymentStatus?: string;
 } {
   const record = parseJsonRecord(stdout);
   if (!record) {
@@ -218,9 +227,11 @@ function extractRailwayServiceMetadata(stdout: string): {
   const image =
     extractFirstString(service, ["image"]) ||
     extractFirstString(latestDeployment, ["image", "dockerImage", "sourceImage"]);
+  const deploymentStatus = extractFirstString(latestDeployment, ["status", "state"]);
 
   return {
     version: image,
+    deploymentStatus,
   };
 }
 
@@ -228,7 +239,13 @@ export function resolveRailwayToriiLiveState(
   name: string,
   options: Pick<
     EnsureRailwayIndexerOptions,
-    "onProgress" | "railwayCommandRunner" | "railwayWorkingDirectory" | "railwayApiToken" | "railwayWorkspaceId" | "railwayProjectId" | "railwayEnvironmentId"
+    | "onProgress"
+    | "railwayCommandRunner"
+    | "railwayWorkingDirectory"
+    | "railwayApiToken"
+    | "railwayWorkspaceId"
+    | "railwayProjectId"
+    | "railwayEnvironmentId"
   > = {},
 ): IndexerLiveState {
   const context = resolveRailwayCommandContext(options);
@@ -239,7 +256,7 @@ export function resolveRailwayToriiLiveState(
 
   if ((serviceResult.status ?? 1) !== 0) {
     const output = buildRailwayCommandOutput(serviceResult);
-    if (NOT_FOUND_PATTERN.test(output)) {
+    if (SERVICE_NOT_FOUND_PATTERN.test(output)) {
       options.onProgress?.(`Resolved Railway Torii state for ${name} as missing`);
       return {
         state: "missing",
@@ -262,12 +279,15 @@ export function resolveRailwayToriiLiveState(
   const domain = (domainResult.status ?? 1) === 0 ? extractRailwayDomain(domainResult.stdout || "") : undefined;
   const metadata = extractRailwayServiceMetadata(serviceResult.stdout || "");
 
-  options.onProgress?.(`Resolved Railway Torii state for ${name} as existing`);
+  options.onProgress?.(
+    `Resolved Railway Torii state for ${name} as existing${metadata.deploymentStatus ? ` (${metadata.deploymentStatus})` : ""}`,
+  );
   return {
     state: "existing",
     stateSource: "describe",
     url: domain,
     version: metadata.version,
+    deploymentStatus: metadata.deploymentStatus,
     describedAt: new Date().toISOString(),
   };
 }
@@ -276,7 +296,13 @@ export function resolveRailwayToriiLiveStates(
   gameNames: string[],
   options: Pick<
     EnsureRailwayIndexerOptions,
-    "onProgress" | "railwayCommandRunner" | "railwayWorkingDirectory" | "railwayApiToken" | "railwayWorkspaceId" | "railwayProjectId" | "railwayEnvironmentId"
+    | "onProgress"
+    | "railwayCommandRunner"
+    | "railwayWorkingDirectory"
+    | "railwayApiToken"
+    | "railwayWorkspaceId"
+    | "railwayProjectId"
+    | "railwayEnvironmentId"
   > = {},
 ) {
   return gameNames.map((gameName) => ({
@@ -285,10 +311,27 @@ export function resolveRailwayToriiLiveStates(
   }));
 }
 
+function resolveRailwayServicePrefixes(options: Pick<EnsureRailwayIndexerOptions, "railwayServicePrefixes">): string[] {
+  if (options.railwayServicePrefixes) {
+    return options.railwayServicePrefixes.map((value) => value.trim()).filter(Boolean);
+  }
+
+  return (process.env.RAILWAY_TORII_SERVICE_PREFIXES || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
 export function listRailwayToriiDeploymentNames(
   options: Pick<
     EnsureRailwayIndexerOptions,
-    "railwayCommandRunner" | "railwayWorkingDirectory" | "railwayApiToken" | "railwayWorkspaceId" | "railwayProjectId" | "railwayEnvironmentId"
+    | "railwayCommandRunner"
+    | "railwayWorkingDirectory"
+    | "railwayApiToken"
+    | "railwayWorkspaceId"
+    | "railwayProjectId"
+    | "railwayEnvironmentId"
+    | "railwayServicePrefixes"
   > = {},
 ): string[] {
   const context = resolveRailwayCommandContext(options);
@@ -303,13 +346,17 @@ export function listRailwayToriiDeploymentNames(
 
   const record = parseJsonRecord(result.stdout || "");
   const services = Array.isArray(record?.services) ? record?.services : [];
+  // The Railway project may host more than Torii indexers; scope the listing to
+  // the configured service prefixes so account snapshots only track indexers.
+  const prefixes = resolveRailwayServicePrefixes(options);
 
   return services
     .map((service) => {
       const serviceRecord = asRecord(service);
       return extractFirstString(serviceRecord, ["name"]);
     })
-    .filter((value): value is string => Boolean(value));
+    .filter((value): value is string => Boolean(value))
+    .filter((name) => prefixes.length === 0 || prefixes.some((prefix) => name.startsWith(prefix)));
 }
 
 function requireRailwayToriiImage(options: EnsureRailwayIndexerOptions) {
@@ -322,15 +369,32 @@ function requireRailwayToriiImage(options: EnsureRailwayIndexerOptions) {
 }
 
 function resolveRailwayVolumeMountPath(options: EnsureRailwayIndexerOptions) {
-  return options.railwayVolumeMountPath || process.env.RAILWAY_TORII_VOLUME_MOUNT_PATH || DEFAULT_RAILWAY_TORII_VOLUME_MOUNT_PATH;
+  return (
+    options.railwayVolumeMountPath ||
+    process.env.RAILWAY_TORII_VOLUME_MOUNT_PATH ||
+    DEFAULT_RAILWAY_TORII_VOLUME_MOUNT_PATH
+  );
 }
 
 function resolveRailwayPublicPort(options: EnsureRailwayIndexerOptions) {
-  return options.railwayPublicPort || Number(process.env.RAILWAY_TORII_PUBLIC_PORT || DEFAULT_RAILWAY_TORII_PUBLIC_PORT);
+  return (
+    options.railwayPublicPort || Number(process.env.RAILWAY_TORII_PUBLIC_PORT || DEFAULT_RAILWAY_TORII_PUBLIC_PORT)
+  );
 }
 
-function buildRailwayVariableArgs(request: IndexerRequest, configContents: string, options: EnsureRailwayIndexerOptions) {
+function extractImageTag(image: string): string | undefined {
+  const lastSegment = image.slice(image.lastIndexOf("/") + 1);
+  const separatorIndex = lastSegment.lastIndexOf(":");
+  return separatorIndex > 0 ? lastSegment.slice(separatorIndex + 1) : undefined;
+}
+
+function buildRailwayVariableArgs(
+  request: IndexerRequest,
+  configContents: string,
+  options: EnsureRailwayIndexerOptions,
+) {
   const mountPath = resolveRailwayVolumeMountPath(options);
+  const imageTag = extractImageTag(requireRailwayToriiImage(options)) || DEFAULT_TORII_VERSION;
 
   return [
     "variables",
@@ -356,65 +420,61 @@ function buildRailwayVariableArgs(request: IndexerRequest, configContents: strin
     "--set",
     `PORT=${resolveRailwayPublicPort(options)}`,
     "--set",
-    `TORII_IMAGE_TAG=${DEFAULT_TORII_VERSION}`,
+    `TORII_IMAGE_TAG=${imageTag}`,
   ];
 }
 
-export function ensureRailwayIndexerDeployment(
-  request: IndexerRequest,
-  options: EnsureRailwayIndexerOptions = {},
-): RailwayIndexerActionResult {
-  const requestedTier = request.tier || "basic";
-  const preExistingState = resolveRailwayToriiLiveState(request.worldName, options);
-
-  if (preExistingState.state === "existing") {
-    return {
-      mode: "railway-cli",
-      action: "already-live",
-      liveState: preExistingState,
-      requestedTier,
-    };
+function isRailwayServiceConfigured(
+  context: ReturnType<typeof resolveRailwayCommandContext>,
+  serviceName: string,
+): boolean {
+  const variablesResult = context.runner({
+    args: ["variables", "--service", serviceName, "--json"],
+    cwd: context.cwd,
+  });
+  if ((variablesResult.status ?? 1) !== 0) {
+    return false;
   }
 
-  if (preExistingState.state === "indeterminate") {
+  const variables = parseJsonRecord(variablesResult.stdout || "");
+  if (!variables) {
+    return false;
+  }
+
+  return REQUIRED_RAILWAY_VARIABLE_KEYS.every((key) => typeof variables[key] === "string" && variables[key]);
+}
+
+function configureRailwayService(
+  context: ReturnType<typeof resolveRailwayCommandContext>,
+  request: IndexerRequest,
+  configContents: string,
+  options: EnsureRailwayIndexerOptions,
+) {
+  // Torii state must survive redeploys; refuse to configure without a volume.
+  if (!context.railwayEnvironmentId) {
     throw new Error(
-      `Unable to verify whether Railway Torii deployment "${request.worldName}" already exists. Refusing to create a duplicate while state is indeterminate.`,
+      `Railway managed indexers require RAILWAY_ENVIRONMENT_ID to attach a persistent volume for "${request.worldName}"`,
     );
   }
 
-  const context = resolveRailwayCommandContext(options);
-  const { configPath, configContents } = renderToriiConfigArtifact(
-    request,
-    path.join(RAILWAY_OUTPUT_DIRECTORY, request.env, request.worldName),
-  );
-  const railwayToriiImage = requireRailwayToriiImage(options);
-  const volumeMountPath = resolveRailwayVolumeMountPath(options);
-
-  const addResult = context.runner({
-    args: ["add", "--service", request.worldName, "--image", railwayToriiImage],
+  const volumeResult = context.runner({
+    args: [
+      "volume",
+      "add",
+      "--service",
+      request.worldName,
+      "--environment",
+      context.railwayEnvironmentId,
+      "--mount-path",
+      resolveRailwayVolumeMountPath(options),
+    ],
     cwd: context.cwd,
   });
-  if ((addResult.status ?? 1) !== 0) {
-    throw new Error(buildRailwayCommandFailureMessage(`create Railway service "${request.worldName}"`, addResult));
-  }
-
-  if (context.railwayEnvironmentId) {
-    const volumeResult = context.runner({
-      args: [
-        "volume",
-        "add",
-        "--service",
-        request.worldName,
-        "--environment",
-        context.railwayEnvironmentId,
-        "--mount-path",
-        volumeMountPath,
-      ],
-      cwd: context.cwd,
-    });
-    if ((volumeResult.status ?? 1) !== 0) {
-      throw new Error(buildRailwayCommandFailureMessage(`add Railway volume for "${request.worldName}"`, volumeResult));
-    }
+  if (
+    (volumeResult.status ?? 1) !== 0 &&
+    !VOLUME_ALREADY_EXISTS_PATTERN.test(buildRailwayCommandOutput(volumeResult))
+  ) {
+    throw new Error(buildRailwayCommandFailureMessage(`add Railway volume for "${request.worldName}"`, volumeResult));
   }
 
   const variablesResult = context.runner({
@@ -432,7 +492,9 @@ export function ensureRailwayIndexerDeployment(
     cwd: context.cwd,
   });
   if ((domainResult.status ?? 1) !== 0) {
-    throw new Error(buildRailwayCommandFailureMessage(`provision Railway domain for "${request.worldName}"`, domainResult));
+    throw new Error(
+      buildRailwayCommandFailureMessage(`provision Railway domain for "${request.worldName}"`, domainResult),
+    );
   }
 
   const redeployResult = context.runner({
@@ -442,36 +504,66 @@ export function ensureRailwayIndexerDeployment(
   if ((redeployResult.status ?? 1) !== 0) {
     throw new Error(buildRailwayCommandFailureMessage(`redeploy "${request.worldName}"`, redeployResult));
   }
+}
+
+export function ensureRailwayIndexerDeployment(
+  request: IndexerRequest,
+  options: EnsureRailwayIndexerOptions = {},
+): RailwayIndexerActionResult {
+  const requestedTier = request.tier || "basic";
+  const preExistingState = resolveRailwayToriiLiveState(request.worldName, options);
+
+  if (preExistingState.state === "indeterminate") {
+    throw new Error(
+      `Unable to verify whether Railway Torii deployment "${request.worldName}" already exists. Refusing to create a duplicate while state is indeterminate.`,
+    );
+  }
+
+  const context = resolveRailwayCommandContext(options);
+
+  // Service creation is multi-step on Railway, so an earlier run may have died
+  // between `add` and full configuration. Only short-circuit when the service
+  // is verifiably configured; otherwise reconcile it idempotently.
+  if (
+    preExistingState.state === "existing" &&
+    preExistingState.url &&
+    isRailwayServiceConfigured(context, request.worldName)
+  ) {
+    return {
+      mode: "railway-cli",
+      action: "already-live",
+      liveState: preExistingState,
+      requestedTier,
+    };
+  }
+
+  const { configPath, configContents } = renderToriiConfigArtifact(
+    request,
+    path.join(RAILWAY_OUTPUT_DIRECTORY, request.env, request.worldName),
+  );
+
+  if (preExistingState.state === "missing") {
+    const railwayToriiImage = requireRailwayToriiImage(options);
+    const addResult = context.runner({
+      args: ["add", "--service", request.worldName, "--image", railwayToriiImage],
+      cwd: context.cwd,
+    });
+    if ((addResult.status ?? 1) !== 0) {
+      throw new Error(buildRailwayCommandFailureMessage(`create Railway service "${request.worldName}"`, addResult));
+    }
+  } else {
+    options.onProgress?.(`Railway Torii deployment ${request.worldName} exists but is not fully configured; repairing`);
+  }
+
+  configureRailwayService(context, request, configContents, options);
 
   const liveState = resolveRailwayToriiLiveState(request.worldName, options);
   return {
     mode: "railway-cli",
-    action: "created",
+    action: preExistingState.state === "missing" ? "created" : "repaired",
     liveState,
     requestedTier,
     configPath,
-  };
-}
-
-export function ensureRailwayIndexerTier(
-  options: {
-    name: string;
-    tier: IndexerTier;
-  } & Pick<
-    EnsureRailwayIndexerOptions,
-    "onProgress" | "railwayCommandRunner" | "railwayWorkingDirectory" | "railwayApiToken" | "railwayWorkspaceId" | "railwayProjectId" | "railwayEnvironmentId"
-  >,
-): RailwayIndexerActionResult {
-  const liveState = resolveRailwayToriiLiveState(options.name, options);
-  if (liveState.state !== "existing") {
-    throw new Error(`Railway Torii deployment "${options.name}" does not exist`);
-  }
-
-  return {
-    mode: "railway-cli",
-    action: "tier-already-matched",
-    liveState,
-    requestedTier: options.tier,
   };
 }
 
@@ -480,7 +572,13 @@ export function deleteRailwayIndexerDeployment(
     name: string;
   } & Pick<
     EnsureRailwayIndexerOptions,
-    "onProgress" | "railwayCommandRunner" | "railwayWorkingDirectory" | "railwayApiToken" | "railwayWorkspaceId" | "railwayProjectId" | "railwayEnvironmentId"
+    | "onProgress"
+    | "railwayCommandRunner"
+    | "railwayWorkingDirectory"
+    | "railwayApiToken"
+    | "railwayWorkspaceId"
+    | "railwayProjectId"
+    | "railwayEnvironmentId"
   >,
 ): DeleteRailwayIndexerResult {
   const liveState = resolveRailwayToriiLiveState(options.name, options);
@@ -520,10 +618,11 @@ export function createRailwayManagedIndexerProvider(options: EnsureRailwayIndexe
     kind: "railway" as const,
     ensureDeployment: (request: IndexerRequest, operationOptions?: Pick<EnsureRailwayIndexerOptions, "onProgress">) =>
       ensureRailwayIndexerDeployment(request, { ...options, ...operationOptions }),
-    resolveLiveState: (name: string) => resolveRailwayToriiLiveState(name, options),
+    resolveLiveState: (name: string, operationOptions?: Pick<EnsureRailwayIndexerOptions, "onProgress">) =>
+      resolveRailwayToriiLiveState(name, { ...options, ...operationOptions }),
     resolveLiveStates: (gameNames: string[]) => resolveRailwayToriiLiveStates(gameNames, options),
-    ensureTier: (tierOptions: { name: string; tier: IndexerTier; onProgress?: (message: string) => void }) =>
-      ensureRailwayIndexerTier({ ...tierOptions, ...options }),
+    // Railway has no tier concept; omitting ensureTier makes tier operations
+    // fail loudly instead of falsely reporting success.
     deleteDeployment: (deleteOptions: { name: string; onProgress?: (message: string) => void }) =>
       deleteRailwayIndexerDeployment({ ...deleteOptions, ...options }),
     listDeploymentNames: () => listRailwayToriiDeploymentNames(options),

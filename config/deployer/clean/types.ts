@@ -137,6 +137,7 @@ export interface IndexerLiveState {
   url?: string;
   version?: string;
   branch?: string;
+  deploymentStatus?: string;
   describeError?: string;
   describedAt?: string;
 }

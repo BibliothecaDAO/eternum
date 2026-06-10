@@ -47,8 +47,8 @@ The user should be able to:
 - see deployment progress in Factory
 - get a working endpoint they own and pay for
 
-Factory should stay calm and intent-first.
-This should feel like "add live data hosting to my game", not "operate an indexer fleet."
+Factory should stay calm and intent-first. This should feel like "add live data hosting to my game", not "operate an
+indexer fleet."
 
 ## Why Now
 
@@ -107,8 +107,8 @@ An internal operator or admin who needs to:
 
 ### Operator Job
 
-"When I look at a game in Factory, I want to know who owns the indexer, where it lives, whether it is healthy, and
-what action is available next."
+"When I look at a game in Factory, I want to know who owns the indexer, where it lives, whether it is healthy, and what
+action is available next."
 
 ## Current State Summary
 
@@ -252,8 +252,8 @@ If the user chooses Railway:
   - `standard`
   - `large`
 
-We should not expose raw cache and memory knobs in V1.
-The user should pick a profile, not a wall of infrastructure settings.
+We should not expose raw cache and memory knobs in V1. The user should pick a profile, not a wall of infrastructure
+settings.
 
 ### Watch Flow Changes
 
@@ -675,8 +675,8 @@ This is where broader infrastructure sovereignty work belongs.
 
 Users may say they want "decentralization" but only a subset will actually connect a cloud account and pay for it.
 
-That is why the Railway template phase matters.
-It is the cheapest way to validate whether people really want this badly enough to act.
+That is why the Railway template phase matters. It is the cheapest way to validate whether people really want this badly
+enough to act.
 
 ### Support Risk
 

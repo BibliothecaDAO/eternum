@@ -37,15 +37,6 @@ export interface SlotToriiDeploymentInfo {
   serviceName: string;
 }
 
-export interface ResolvedIndexerArtifactState {
-  indexerCreated: boolean;
-  indexerTier?: IndexerTier;
-  indexerUrl?: string;
-  indexerVersion?: string;
-  indexerBranch?: string;
-  lastIndexerDescribeAt?: string;
-}
-
 function runSlotCommand(args: string[]): SpawnSyncReturns<string> {
   return spawnSync("slot", args, {
     encoding: "utf8",
@@ -281,22 +272,6 @@ function requireMissingToriiState(
   }
 
   return liveState;
-}
-
-export function resolveIndexerArtifactState(
-  liveState: IndexerLiveState,
-  options: {
-    fallbackTier?: IndexerTier;
-  } = {},
-): ResolvedIndexerArtifactState {
-  return {
-    indexerCreated: liveState.state === "existing",
-    indexerTier: liveState.currentTier || options.fallbackTier,
-    indexerUrl: liveState.url,
-    indexerVersion: liveState.version,
-    indexerBranch: liveState.branch,
-    lastIndexerDescribeAt: liveState.describedAt,
-  };
 }
 
 export function ensureSlotIndexerDeployment(

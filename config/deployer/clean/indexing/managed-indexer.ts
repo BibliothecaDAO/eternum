@@ -1,7 +1,16 @@
 import { DEFAULT_MANAGED_INDEXER_PROVIDER } from "../constants";
 import type { IndexerLiveState, IndexerRequest, IndexerTier } from "../types";
-import { createRailwayManagedIndexerProvider, type EnsureRailwayIndexerOptions } from "./railway-torii";
-import { createSlotManagedIndexerProvider } from "./slot-torii";
+import {
+  createRailwayManagedIndexerProvider,
+  type DeleteRailwayIndexerResult,
+  type EnsureRailwayIndexerOptions,
+  type RailwayIndexerActionResult,
+} from "./railway-torii";
+import {
+  createSlotManagedIndexerProvider,
+  type DeleteSlotIndexerResult,
+  type SlotIndexerActionResult,
+} from "./slot-torii";
 
 export type ManagedIndexerProviderKind = "slot" | "railway";
 export interface ManagedIndexerOperationOptions {
@@ -14,17 +23,22 @@ export interface ManagedIndexerTierOptions extends ManagedIndexerOperationOption
 export interface ManagedIndexerDeleteOptions extends ManagedIndexerOperationOptions {
   name: string;
 }
-export type ManagedIndexerActionResult =
-  | ReturnType<ReturnType<typeof createSlotManagedIndexerProvider>["ensureDeployment"]>
-  | ReturnType<NonNullable<ReturnType<typeof createRailwayManagedIndexerProvider>["ensureTier"]>>;
-export type ManagedIndexerDeleteResult =
-  | ReturnType<ReturnType<typeof createSlotManagedIndexerProvider>["deleteDeployment"]>
-  | ReturnType<ReturnType<typeof createRailwayManagedIndexerProvider>["deleteDeployment"]>;
+export type ManagedIndexerActionResult = SlotIndexerActionResult | RailwayIndexerActionResult;
+export type ManagedIndexerDeleteResult = DeleteSlotIndexerResult | DeleteRailwayIndexerResult;
+
+export interface ResolvedIndexerArtifactState {
+  indexerCreated: boolean;
+  indexerTier?: IndexerTier;
+  indexerUrl?: string;
+  indexerVersion?: string;
+  indexerBranch?: string;
+  lastIndexerDescribeAt?: string;
+}
 
 export interface ManagedIndexerProvider {
   kind: ManagedIndexerProviderKind;
   ensureDeployment: (request: IndexerRequest, options?: ManagedIndexerOperationOptions) => ManagedIndexerActionResult;
-  resolveLiveState: (name: string) => IndexerLiveState;
+  resolveLiveState: (name: string, options?: ManagedIndexerOperationOptions) => IndexerLiveState;
   resolveLiveStates: (gameNames: string[]) => Array<{ gameName: string; liveState: IndexerLiveState }>;
   ensureTier?: (options: ManagedIndexerTierOptions) => ManagedIndexerActionResult;
   deleteDeployment: (options: ManagedIndexerDeleteOptions) => ManagedIndexerDeleteResult;
@@ -32,13 +46,23 @@ export interface ManagedIndexerProvider {
 }
 
 export function resolveManagedIndexerProviderKind(): ManagedIndexerProviderKind {
-  const configuredValue = (process.env.MANAGED_INDEXER_PROVIDER || DEFAULT_MANAGED_INDEXER_PROVIDER).trim().toLowerCase();
-  return configuredValue === "railway" ? "railway" : "slot";
+  const configuredValue = (process.env.MANAGED_INDEXER_PROVIDER || DEFAULT_MANAGED_INDEXER_PROVIDER)
+    .trim()
+    .toLowerCase();
+
+  if (configuredValue === "railway" || configuredValue === "slot") {
+    return configuredValue;
+  }
+
+  // A typo here would otherwise silently deploy to the wrong provider.
+  throw new Error(`Unrecognized MANAGED_INDEXER_PROVIDER "${configuredValue}" (expected "slot" or "railway")`);
 }
 
-export function resolveManagedIndexerProvider(options: {
-  railway?: EnsureRailwayIndexerOptions;
-} = {}): ManagedIndexerProvider {
+export function resolveManagedIndexerProvider(
+  options: {
+    railway?: EnsureRailwayIndexerOptions;
+  } = {},
+): ManagedIndexerProvider {
   return resolveManagedIndexerProviderKind() === "railway"
     ? (createRailwayManagedIndexerProvider(options.railway) as ManagedIndexerProvider)
     : (createSlotManagedIndexerProvider() as ManagedIndexerProvider);
@@ -49,7 +73,7 @@ export function resolveIndexerArtifactState(
   options: {
     fallbackTier?: IndexerTier;
   } = {},
-) {
+): ResolvedIndexerArtifactState {
   return {
     indexerCreated: liveState.state === "existing",
     indexerTier: liveState.currentTier || options.fallbackTier,
