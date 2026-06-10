@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-10T10:00:35.057Z",
+  "updatedAt": "2026-06-10T10:02:31.149Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -631,7 +631,7 @@
       "path": "runs/mainnet/blitz/bltz-whiz-585.json",
       "inputPath": "inputs/mainnet/blitz/bltz-whiz-585/27230609455-1.json",
       "status": "complete",
-      "updatedAt": "2026-06-10T10:00:35.057Z",
+      "updatedAt": "2026-06-10T10:02:31.149Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -641,10 +641,8 @@
       "durationSeconds": 3600,
       "artifacts": {
         "indexerCreated": true,
-        "indexerTier": "basic",
-        "lastIndexerDescribeAt": "2026-06-09T19:35:38.951Z",
-        "pendingIndexerTierTarget": "pro",
-        "pendingIndexerTierRequestedAt": "2026-06-10T10:00:33.243Z"
+        "indexerTier": "pro",
+        "lastIndexerDescribeAt": "2026-06-10T10:02:31.148Z"
       }
     },
     "bltz-riff-795": {
