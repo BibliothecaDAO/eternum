@@ -6,6 +6,8 @@ import {
   buildArmyEntityLabelViewModel,
   buildChestEntityLabelViewModel,
   buildStructureEntityLabelViewModel,
+  resolveArmyTitle,
+  resolveStructureTitle,
 } from "./entity-label-view-model";
 
 const army = {
@@ -91,6 +93,24 @@ describe("entity label view model", () => {
       relation: "neutral",
       variant: "neutral",
       iconKey: "chest",
+    });
+  });
+
+  // Phase 3.3: the compact label only needs the title, but the compact resolver built
+  // the entire view model (incl. detailRows) per moving army per frame. These standalone
+  // resolvers are exported so the compact path can produce the title directly.
+  describe("standalone title resolvers", () => {
+    it("resolves the army title (owner name, else entity id fallback) matching compactText", () => {
+      expect(resolveArmyTitle(army)).toBe("Sable Order");
+      expect(resolveArmyTitle({ ...army, owner: { ...army.owner, ownerName: "" } })).toBe("Army #101");
+      expect(resolveArmyTitle(army)).toBe(buildArmyEntityLabelViewModel(army).compactText);
+    });
+
+    it("resolves the structure title (name, else type + id fallback) matching compactText", () => {
+      expect(resolveStructureTitle(structure)).toBe(buildStructureEntityLabelViewModel(structure).compactText);
+      expect(
+        resolveStructureTitle({ ...structure, structureName: "", structureType: StructureType.Realm }),
+      ).toBe("Realm #202");
     });
   });
 });
