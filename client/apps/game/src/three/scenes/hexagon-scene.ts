@@ -17,6 +17,8 @@ import { LocationManager } from "@/three/utils/location-manager";
 import { MatrixPool } from "@/three/utils/matrix-pool";
 import { PerformanceMonitor } from "@/three/utils/performance-monitor";
 import { gltfLoader } from "@/three/utils/utils";
+import { loadBiomeGltf } from "@/three/utils/biome-gltf-cache";
+import type { GLTF } from "three-stdlib";
 import type { QualityFeatures } from "@/three/utils/quality-controller";
 import { LeftView } from "@/types";
 import { GRAPHICS_SETTING, IS_FLAT_MODE, isLowOrBelow } from "@/ui/config";
@@ -986,28 +988,35 @@ export abstract class HexagonScene {
     const loader = gltfLoader;
 
     for (const [biome, path] of Object.entries(biomeModelPaths)) {
-      const loadPromise = new Promise<void>((resolve, reject) => {
-        loader.load(
-          path,
-          (gltf) => {
-            const model = gltf.scene as Group;
-            if (biome === "Outline") {
-              ((model.children[0] as Mesh).material as MeshStandardMaterial).transparent = true;
-              ((model.children[0] as Mesh).material as MeshStandardMaterial).opacity = 0.3;
-            }
-            const tmp = new InstancedBiome(gltf, maxInstances, false, biome);
-            this.biomeModels.set(biome as BiomeType, tmp);
-            this.onBiomeModelLoaded(tmp);
-            this.scene.add(tmp.group);
-            resolve();
-          },
-          undefined,
-          (error) => {
-            console.error(`Error loading ${biome} model:`, error);
-            reject(error);
-          },
-        );
-      });
+      // Phase 5.1: parse each biome GLB once (shared across scenes) via the module
+      // cache, then build this scene's own InstancedBiome from the shared gltf. The
+      // InstancedBiome references the gltf's geometry/material (shared) and keeps only
+      // its instance buffers + morph texture per-scene; biome models are disposed only
+      // at full teardown, so the shared resources are never freed mid-session.
+      const loadPromise = loadBiomeGltf<GLTF>(
+        path,
+        (assetPath) =>
+          new Promise<GLTF>((resolve, reject) => {
+            loader.load(assetPath, (gltf) => resolve(gltf), undefined, reject);
+          }),
+      )
+        .then((gltf) => {
+          const model = gltf.scene as Group;
+          if (biome === "Outline") {
+            ((model.children[0] as Mesh).material as MeshStandardMaterial).transparent = true;
+            ((model.children[0] as Mesh).material as MeshStandardMaterial).opacity = 0.3;
+          }
+          const tmp = new InstancedBiome(gltf, maxInstances, false, biome);
+          this.biomeModels.set(biome as BiomeType, tmp);
+          this.onBiomeModelLoaded(tmp);
+          this.scene.add(tmp.group);
+        })
+        .catch((error) => {
+          // Preserve the prior reject-on-failure behaviour (log + propagate) so the
+          // change here is purely the shared parse cache and nothing about error flow.
+          console.error(`Error loading ${biome} model:`, error);
+          throw error;
+        });
       this.modelLoadPromises.push(loadPromise);
     }
   }

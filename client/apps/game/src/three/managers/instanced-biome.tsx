@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { AnimationClip, AnimationMixer } from "three";
 import { AnimationVisibilityContext } from "../types/animation";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
+import { resolveBiomeMeshRenderOrder } from "./instanced-biome-render-order";
 
 const zeroScaledMatrix = new THREE.Matrix4().makeScale(0, 0, 0);
 
@@ -78,13 +79,15 @@ export default class InstancedModel {
           child.material.roughness = 1;
           child.material.normalMap = null;
         }
-        if (!child.material.depthWrite) {
+        // Phase 5.1: derive the draw order idempotently so a biome material shared
+        // across scenes resolves the same renderOrder on every pass (the first pass
+        // flips depthWrite, which would otherwise change later passes' result).
+        const biomeRenderOrder = resolveBiomeMeshRenderOrder(child.material);
+        if (biomeRenderOrder.applyTransparentDepthWrite) {
           child.material.depthWrite = true;
           child.material.alphaTest = 0.075;
-          renderOrder = 3;
-        } else {
-          renderOrder = 2;
         }
+        renderOrder = biomeRenderOrder.renderOrder;
         if (child?.material?.emissiveIntensity > 1 && !isAlt) {
           child.material.emissiveIntensity = 3;
         }

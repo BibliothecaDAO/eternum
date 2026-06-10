@@ -121,6 +121,13 @@ with the existing hydration-tracking tests + a soak scenario in `worldmap-perf-s
 
 ## Phase 5 — Asset residency (biggest VRAM wins)
 
+> **Status: 5.1 implemented** (branch `claude/great-aryabhata-b32e0e`) — `utils/biome-gltf-cache.ts`
+> (tested) dedups the parse per path; `loadBiomeModels` builds each scene's `InstancedBiome` from the
+> shared GLTF (shared geometry/material/textures, per-scene instance buffers + morph texture);
+> `managers/instanced-biome-render-order.ts` (tested) makes the draw-order derivation idempotent so a
+> shared material resolves the same renderOrder in both scenes; the cache is cleared at renderer
+> teardown. Remaining 5.2–5.5 not started.
+
 | # | Fix | Where | Detail |
 |---|-----|-------|--------|
 | 5.1 | Shared biome GLTF cache across scenes | `scenes/hexagon-scene.ts:985-1013` (`loadBiomeModels`), callers `worldmap.tsx:1284`, `hexception.tsx:211` | All ~23 biome GLBs are parsed and GPU-resident **twice** for the whole session (both scenes constructed at bootstrap and kept alive). Add a module-level `Map<path, Promise<GLTF>>` (same pattern as `cosmetics/asset-cache.ts`); share geometries/materials/textures across both scenes' `InstancedBiome` wrappers — only instance buffers (and morph textures) stay per-scene. One of the largest fixed memory costs in the client, halved. **(Confirmed high)** |
