@@ -1871,6 +1871,12 @@ export default class WorldmapScene extends WarpTravel {
         if (positions.oldPos) {
           this.invalidateAllChunkCachesContainingHex(positions.oldPos.col, positions.oldPos.row);
         }
+      } else {
+        // Owner-less update (updateStructureHexes bailed before tracking positions):
+        // fall back to the update's own hex so a count change never skips
+        // invalidation entirely (the pre-Phase-1.1 code flushed the whole cache).
+        const fallbackHex = new Position({ x: value.hexCoords.col, y: value.hexCoords.row }).getNormalized();
+        this.invalidateAllChunkCachesContainingHex(fallbackHex.x, fallbackHex.y);
       }
     }
 

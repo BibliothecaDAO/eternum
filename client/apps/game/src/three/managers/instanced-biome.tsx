@@ -67,8 +67,13 @@ export default class InstancedModel {
     for (let i = 0; i < count; i++) {
       this.animationBuckets[i] = Math.floor(Math.random() * this.ANIMATION_BUCKETS);
     }
+    // Phase 5.1 follow-up: the gltf is shared across scenes (biome-gltf-cache), but the
+    // AnimationMixer writes morphTargetInfluences on the meshes it animates. Clone the
+    // object graph for animated biomes so each InstancedBiome drives its own influence
+    // arrays; geometry/materials/textures stay shared by reference through the clone.
+    const animationScene: THREE.Group = gltf.animations.length > 0 ? gltf.scene.clone() : gltf.scene;
     let renderOrder = 0;
-    gltf.scene.traverse((child: any) => {
+    animationScene.traverse((child: any) => {
       if (child instanceof THREE.Mesh) {
         const isAlt = name.toLowerCase().includes("alt");
         if (name.toLowerCase().includes("deepocean") && child.material) {
@@ -130,7 +135,7 @@ export default class InstancedModel {
           tmp.raycast = () => {};
         }
 
-        this.mixer = new AnimationMixer(gltf.scene);
+        this.mixer = new AnimationMixer(animationScene);
         this.animation = gltf.animations[0];
 
         tmp.count = 0;
