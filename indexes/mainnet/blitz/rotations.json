@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-10T18:26:39.014Z",
+  "updatedAt": "2026-06-10T18:30:26.925Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -86,7 +86,7 @@
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
       "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/27297199387-1.json",
       "status": "attention",
-      "updatedAt": "2026-06-10T18:26:39.014Z",
+      "updatedAt": "2026-06-10T18:30:26.925Z",
       "workflowRef": "next",
       "currentStepId": "configure-worlds",
       "hasRunningStep": false,
@@ -848,7 +848,10 @@
           "gameName": "eu-gladiator-10-06-26-1900",
           "startTime": 1781118000,
           "durationSeconds": 3600,
-          "artifacts": {}
+          "artifacts": {
+            "pendingIndexerTierTarget": "legendary",
+            "pendingIndexerTierRequestedAt": "2026-06-10T18:30:24.832Z"
+          }
         },
         {
           "gameName": "apac-gladiator-11-06-26-1000",
