@@ -45,6 +45,13 @@ interface PrewarmWorldmapChunkPresentationInput<TPreparedTerrain> {
   isPresentationHot: (chunkKey: string) => boolean;
   preparePresentation: () => Promise<PreparedWorldmapChunkPresentation<TPreparedTerrain>>;
   cachePreparedTerrain: (preparedTerrain: TPreparedTerrain) => void;
+  /**
+   * Phase 2.2: release the pooled attributes held by a prepared presentation that
+   * is dropped (stale token, or the chunk became hot during preparation) instead
+   * of cached. The caller discards the return value, so without this the pooled
+   * InstancedBufferAttributes leak.
+   */
+  disposePreparedTerrain?: (preparedTerrain: TPreparedTerrain) => void;
 }
 
 interface PrewarmedWorldmapChunkPresentation<TPreparedTerrain> {
@@ -194,6 +201,7 @@ export async function prewarmWorldmapChunkPresentation<TPreparedTerrain>(
   }
 
   if (!input.isLatestToken(input.prewarmToken)) {
+    input.disposePreparedTerrain?.(preparedPresentation.preparedTerrain);
     return {
       status: "stale_dropped",
       preparedTerrain: null,
@@ -201,6 +209,7 @@ export async function prewarmWorldmapChunkPresentation<TPreparedTerrain>(
   }
 
   if (input.isPresentationHot(input.chunkKey)) {
+    input.disposePreparedTerrain?.(preparedPresentation.preparedTerrain);
     return {
       status: "skipped_hot",
       preparedTerrain: null,

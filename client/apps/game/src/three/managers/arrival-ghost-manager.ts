@@ -93,6 +93,21 @@ function createArrivalGhostDiagnostics(): ArrivalGhostDiagnosticsSnapshot {
   };
 }
 
+// Phase 2.1: ring geometries are constant for every ghost, so share one instance
+// each instead of allocating two RingGeometry buffers per ghost. disposeGhostContainer
+// only frees per-ghost materials and intentionally never disposes these shared
+// geometries (they live for the lifetime of the module, like other shared geometry).
+const ARRIVAL_GHOST_DESTINATION_RING_GEOMETRY = new RingGeometry(
+  ARRIVAL_GHOST_RING_INNER_RADIUS,
+  ARRIVAL_GHOST_RING_OUTER_RADIUS,
+  48,
+);
+const ARRIVAL_GHOST_BURST_RING_GEOMETRY = new RingGeometry(
+  ARRIVAL_GHOST_RING_INNER_RADIUS * 0.7,
+  ARRIVAL_GHOST_RING_OUTER_RADIUS * 0.92,
+  48,
+);
+
 export class ArrivalGhostManager {
   private readonly ghosts = new Map<ID, ArrivalGhostState>();
   private readonly diagnostics = createArrivalGhostDiagnostics();
@@ -259,10 +274,7 @@ export class ArrivalGhostManager {
     });
     material.userData.arrivalGhostMaterial = true;
 
-    const mesh = new Mesh(
-      new RingGeometry(ARRIVAL_GHOST_RING_INNER_RADIUS, ARRIVAL_GHOST_RING_OUTER_RADIUS, 48),
-      material,
-    );
+    const mesh = new Mesh(ARRIVAL_GHOST_DESTINATION_RING_GEOMETRY, material);
     mesh.name = "arrival-ghost-ring";
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.y = -(ARRIVAL_GHOST_SURFACE_Y_OFFSET + visualStyle.yOffset) + ARRIVAL_GHOST_RING_Y_OFFSET;
@@ -282,10 +294,7 @@ export class ArrivalGhostManager {
     });
     material.userData.arrivalGhostMaterial = true;
 
-    const mesh = new Mesh(
-      new RingGeometry(ARRIVAL_GHOST_RING_INNER_RADIUS * 0.7, ARRIVAL_GHOST_RING_OUTER_RADIUS * 0.92, 48),
-      material,
-    );
+    const mesh = new Mesh(ARRIVAL_GHOST_BURST_RING_GEOMETRY, material);
     mesh.name = "arrival-ghost-burst-ring";
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.y = -(ARRIVAL_GHOST_SURFACE_Y_OFFSET + visualStyle.yOffset) + ARRIVAL_GHOST_RING_Y_OFFSET * 1.5;

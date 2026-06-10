@@ -19,6 +19,7 @@ import {
 import { AnimationVisibilityContext } from "../types/animation";
 import { getContactShadowResources } from "../utils/contact-shadow";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
+import { resizeInstancedMorphTexture } from "./morph-texture-resize";
 
 const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
@@ -609,6 +610,10 @@ export default class InstancedModel {
 
       mesh.count = Math.min(mesh.count, newCapacity);
 
+      // Phase 2.3: grow the morph texture before writing rows past the initial
+      // capacity, or setMorphAt indexes out of the fixed Float32Array and throws.
+      resizeInstancedMorphTexture(mesh, newCapacity);
+
       for (let i = this.capacity; i < newCapacity; i++) {
         mesh.setMatrixAt(i, zeroMatrix);
         if (mesh.morphTexture) {
@@ -718,15 +723,24 @@ export default class InstancedModel {
           mesh.material.dispose();
         }
       }
-      if (mesh.morphTexture) {
-        mesh.morphTexture.dispose();
-      }
+      // Phase 2.5: dispose the InstancedMesh itself to free the instanceMatrix/
+      // instanceColor GPU buffers (via the renderer 'dispose' event) and the morph
+      // DataTexture. This subsumes the explicit morphTexture.dispose() and does not
+      // touch geometry/material (disposed above).
+      mesh.dispose();
       // Remove from parent
       if (mesh.parent) {
         mesh.parent.remove(mesh);
       }
     });
     this.instancedMeshes = [];
+
+    // Phase 2.5: free the contact-shadow instance buffers. Its geometry/material are
+    // shared via getContactShadowResources, so dispose only the mesh, not those.
+    if (this.contactShadowMesh) {
+      this.contactShadowMesh.dispose();
+      this.contactShadowMesh = undefined;
+    }
 
     // Clear biome meshes array
     this.biomeMeshes = [];

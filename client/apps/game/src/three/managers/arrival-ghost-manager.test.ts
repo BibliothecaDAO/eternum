@@ -1,8 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { BoxGeometry, Group, Mesh, MeshStandardMaterial, Scene } from "three";
+import { BoxGeometry, BufferGeometry, Group, Mesh, MeshStandardMaterial, Scene } from "three";
 import { ArrivalGhostManager } from "./arrival-ghost-manager";
 
 const hex = (col: number, row: number) => ({ col, row });
+
+function collectMeshGeometriesByName(scene: Scene, name: string): BufferGeometry[] {
+  const geometries: BufferGeometry[] = [];
+  scene.traverse((object) => {
+    if (object instanceof Mesh && object.name === name) {
+      geometries.push(object.geometry);
+    }
+  });
+  return geometries;
+}
 
 function createTemplateScene(): Group {
   const group = new Group();
@@ -186,6 +196,71 @@ describe("ArrivalGhostManager", () => {
     });
     manager.destroy();
     expect(manager.getTrackedEntityIds()).toEqual([]);
+  });
+
+  // Phase 2.1: each ghost used to allocate two new RingGeometry buffers that
+  // disposeGhostContainer never freed (it only disposes tagged materials), leaking
+  // two GPU geometries per army-arrival ghost. The ring geometries are constant, so
+  // every ghost must share one destination-ring and one burst-ring geometry.
+  it("shares a single ring geometry instance across all ghosts", () => {
+    const scene = new Scene();
+    const manager = new ArrivalGhostManager(scene, {
+      chunkStride: 5,
+      renderChunkSize: { width: 10, height: 10 },
+    });
+
+    manager.setCurrentChunk("0,0");
+    manager.upsertLocalArrivalGhost({
+      entityId: 1,
+      hexCoords: hex(0, 0),
+      sourceScene: createTemplateScene(),
+      visualStyle: createVisualStyle(),
+    });
+    manager.upsertLocalArrivalGhost({
+      entityId: 2,
+      hexCoords: hex(1, 1),
+      sourceScene: createTemplateScene(),
+      visualStyle: createVisualStyle(),
+    });
+
+    const destinationRingGeometries = collectMeshGeometriesByName(scene, "arrival-ghost-ring");
+    const burstRingGeometries = collectMeshGeometriesByName(scene, "arrival-ghost-burst-ring");
+
+    expect(destinationRingGeometries).toHaveLength(2);
+    expect(burstRingGeometries).toHaveLength(2);
+    expect(destinationRingGeometries[0]).toBe(destinationRingGeometries[1]);
+    expect(burstRingGeometries[0]).toBe(burstRingGeometries[1]);
+  });
+
+  it("keeps the shared ring geometry alive (not disposed) after a ghost is cleared", () => {
+    const scene = new Scene();
+    const manager = new ArrivalGhostManager(scene, {
+      chunkStride: 5,
+      renderChunkSize: { width: 10, height: 10 },
+    });
+
+    manager.setCurrentChunk("0,0");
+    manager.upsertLocalArrivalGhost({
+      entityId: 1,
+      hexCoords: hex(0, 0),
+      sourceScene: createTemplateScene(),
+      visualStyle: createVisualStyle(),
+    });
+    const [sharedGeometryBeforeClear] = collectMeshGeometriesByName(scene, "arrival-ghost-ring");
+
+    manager.clearArrivalGhost(1, "arrived");
+
+    // A fresh ghost reuses the same shared geometry and it still has its attributes.
+    manager.upsertLocalArrivalGhost({
+      entityId: 2,
+      hexCoords: hex(0, 0),
+      sourceScene: createTemplateScene(),
+      visualStyle: createVisualStyle(),
+    });
+    const [sharedGeometryAfterClear] = collectMeshGeometriesByName(scene, "arrival-ghost-ring");
+
+    expect(sharedGeometryAfterClear).toBe(sharedGeometryBeforeClear);
+    expect(sharedGeometryAfterClear.getAttribute("position")).toBeDefined();
   });
 
   it("tracks created and cleared ghost diagnostics by clear reason", () => {

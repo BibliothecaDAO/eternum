@@ -112,6 +112,120 @@ describe("finalizeWarpTravelChunkSwitch", () => {
     expect(scheduleManagerCatchUp.calls).toEqual([]);
   });
 
+  // Phase 2.2: prepared terrain holds pooled InstancedBufferAttributes. On rollback
+  // and stale-drop the terrain is neither applied (which would transfer ownership to
+  // the matrix cache) nor disposed, leaking the pooled attributes permanently.
+  it("disposes prepared terrain on rollback instead of leaking the pooled attributes", async () => {
+    const applyPreparedTerrain = vi.fn();
+    const disposePreparedTerrain = vi.fn();
+    const preparedTerrain = { chunkKey: "24,24" };
+
+    const result = await finalizeWarpTravelChunkSwitch({
+      fetchSucceeded: false,
+      isCurrentTransition: true,
+      targetChunk: "24,24",
+      previousChunk: "",
+      currentChunk: "0,0",
+      previousPinnedChunks: [],
+      hasFiniteOldChunkCoordinates: false,
+      oldChunkCoordinates: null,
+      startRow: 24,
+      startCol: 24,
+      force: false,
+      transitionToken: 31,
+      preparedTerrain,
+      applyPreparedTerrain,
+      disposePreparedTerrain,
+      setCurrentChunk: vi.fn(),
+      updatePinnedChunks: vi.fn(),
+      unregisterChunk: vi.fn(),
+      restorePreviousChunkVisuals: async () => undefined,
+      clearSceneChunkBounds: vi.fn(),
+      forceVisibilityUpdate: vi.fn(),
+      updateCurrentChunkBounds: vi.fn(),
+      scheduleManagerCatchUp: vi.fn(),
+      unregisterPreviousChunkOnNextFrame: vi.fn(),
+    });
+
+    expect(result).toEqual({ status: "rolled_back" });
+    expect(applyPreparedTerrain).not.toHaveBeenCalled();
+    expect(disposePreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
+  });
+
+  it("disposes prepared terrain on stale drop instead of leaking the pooled attributes", async () => {
+    const applyPreparedTerrain = vi.fn();
+    const disposePreparedTerrain = vi.fn();
+    const preparedTerrain = { chunkKey: "24,24" };
+
+    const result = await finalizeWarpTravelChunkSwitch({
+      fetchSucceeded: true,
+      isCurrentTransition: false,
+      targetChunk: "24,24",
+      previousChunk: "0,0",
+      currentChunk: "0,0",
+      previousPinnedChunks: [],
+      hasFiniteOldChunkCoordinates: false,
+      oldChunkCoordinates: null,
+      startRow: 24,
+      startCol: 24,
+      force: false,
+      transitionToken: 33,
+      preparedTerrain,
+      applyPreparedTerrain,
+      disposePreparedTerrain,
+      setCurrentChunk: vi.fn(),
+      updatePinnedChunks: vi.fn(),
+      unregisterChunk: vi.fn(),
+      restorePreviousChunkVisuals: async () => undefined,
+      clearSceneChunkBounds: vi.fn(),
+      forceVisibilityUpdate: vi.fn(),
+      updateCurrentChunkBounds: vi.fn(),
+      scheduleManagerCatchUp: vi.fn(),
+      unregisterPreviousChunkOnNextFrame: vi.fn(),
+    });
+
+    expect(result).toEqual({ status: "stale_dropped" });
+    expect(applyPreparedTerrain).not.toHaveBeenCalled();
+    expect(disposePreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
+  });
+
+  it("applies (does not dispose) prepared terrain on a committed switch", async () => {
+    const applyPreparedTerrain = vi.fn();
+    const disposePreparedTerrain = vi.fn();
+    const preparedTerrain = { chunkKey: "24,24" };
+
+    const result = await finalizeWarpTravelChunkSwitch({
+      fetchSucceeded: true,
+      isCurrentTransition: true,
+      targetChunk: "24,24",
+      previousChunk: "0,0",
+      currentChunk: "0,0",
+      previousPinnedChunks: [],
+      hasFiniteOldChunkCoordinates: false,
+      oldChunkCoordinates: null,
+      startRow: 24,
+      startCol: 24,
+      force: false,
+      transitionToken: 35,
+      preparedTerrain,
+      applyPreparedTerrain,
+      disposePreparedTerrain,
+      setCurrentChunk: vi.fn(),
+      updatePinnedChunks: vi.fn(),
+      unregisterChunk: vi.fn(),
+      restorePreviousChunkVisuals: async () => undefined,
+      clearSceneChunkBounds: vi.fn(),
+      forceVisibilityUpdate: vi.fn(),
+      updateCurrentChunkBounds: vi.fn(),
+      scheduleManagerCatchUp: vi.fn(),
+      unregisterPreviousChunkOnNextFrame: vi.fn(),
+    });
+
+    expect(result).toEqual({ status: "committed" });
+    expect(applyPreparedTerrain).toHaveBeenCalledWith(preparedTerrain);
+    expect(disposePreparedTerrain).not.toHaveBeenCalled();
+  });
+
   it("commits prepared terrain before deferred manager catch-up completes", async () => {
     const managerCatchUp = createControlledAsyncCall<[string, { force: boolean; transitionToken: number }], void>();
     const phaseOrder: string[] = [];

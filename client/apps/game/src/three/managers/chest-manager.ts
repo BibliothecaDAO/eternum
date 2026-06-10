@@ -61,6 +61,7 @@ export class ChestManager {
   private transitionChunkByToken: Map<number, string> = new Map();
   private pointsRenderer?: PointsLabelRenderer; // Points-based icon renderer
   private chunkToChests: Map<string, Set<ID>> = new Map();
+  private isDestroyed = false;
 
   constructor(
     scene: THREE.Scene,
@@ -160,6 +161,9 @@ export class ChestManager {
   }
 
   public destroy() {
+    // Guard the async loadModel completion from re-adding resources after teardown.
+    this.isDestroyed = true;
+
     // Clean up camera view listener
     if (this.hexagonScene) {
       this.hexagonScene.removeCameraViewListener(this.handleCameraViewChange);
@@ -173,6 +177,24 @@ export class ChestManager {
     if (this.pointsRenderer) {
       this.pointsRenderer.dispose();
     }
+
+    // Phase 2.5: dispose the chest InstancedModel (MAX_INSTANCES geometry/materials/
+    // morph textures + instance buffers) and remove its group from the scene
+    // (InstancedModel.dispose removes the group from its parent).
+    this.chestModel?.dispose();
+
+    // Remove and clear entity labels from the label group.
+    this.entityIdLabels.forEach((label) => this.labelsGroup.remove(label));
+    this.entityIdLabels.clear();
+
+    // Drop spatial/index maps so despawned chests are not retained.
+    this.chunkToChests.clear();
+    this.chestHexCoords.clear();
+    this.entityIdMap.clear();
+    this.chestInstanceIndices.clear();
+    this.chestInstanceOrder = [];
+    this.visibleChests = [];
+    this.transitionChunkByToken.clear();
   }
 
   private async loadModel(): Promise<void> {
@@ -196,6 +218,12 @@ export class ChestManager {
 
     await loadPromise
       .then(({ model, clips }) => {
+        // Phase 2.5: the manager was torn down while the model was loading — dispose
+        // the freshly-parsed model instead of adding it to a dead scene.
+        if (this.isDestroyed) {
+          model.dispose();
+          return;
+        }
         this.chestModel = model;
         this.animationClips = clips;
         this.scene.add(model.group);

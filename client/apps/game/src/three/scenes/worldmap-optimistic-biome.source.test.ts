@@ -31,7 +31,9 @@ describe("Worldmap optimistic destination biome", () => {
     const body = source.slice(handlerStart, handlerEnd);
 
     expect(body).toContain("provisionalBiomes.mark");
-    expect(body).toContain("exploredTilesGeneration.bump");
+    // Per-chunk terrain generations (Phase 1.3): the painter bumps the generation
+    // of every chunk containing the mutated hex via bumpTerrainGenerationForHex.
+    expect(body).toContain("bumpTerrainGenerationForHex");
     // Must feed contract (felt-offset) coords to the configured biome helper
     // so the provisional value matches what the Cairo biome_library will
     // write; otherwise the authoritative update will overwrite with a

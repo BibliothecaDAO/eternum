@@ -986,8 +986,6 @@ export default class HexceptionScene extends HexagonScene {
         [7, -5], //1, -1
       ];
       const neighbors = getNeighborHexes(this.centerColRow[0], this.centerColRow[1]);
-      const label = new Group();
-      this.scene.add(label);
       this.highlights = [];
 
       // compute matrices to update biome models for each of the large hexes
