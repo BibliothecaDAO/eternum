@@ -32,7 +32,8 @@ describe("resizeInstancedMorphTexture", () => {
     expect(mesh.morphTexture!.image.height).toBe(4);
     expect(mesh.morphTexture!.image.width).toBe(3);
     expect(Array.from(mesh.morphTexture!.image.data as Float32Array)).toEqual([1, 2, 3, 4, 5, 6, 0, 0, 0, 0, 0, 0]);
-    expect(mesh.morphTexture!.needsUpdate).toBe(true);
+    // Texture.needsUpdate is a set-only accessor; setting it true bumps `version`.
+    expect(mesh.morphTexture!.version).toBeGreaterThan(0);
     expect(disposeSpy).toHaveBeenCalledTimes(1);
   });
 
