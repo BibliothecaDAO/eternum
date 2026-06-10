@@ -2703,9 +2703,22 @@ export class ArmyModel {
         // Dispose geometry
         mesh.geometry.dispose();
 
+        // Phase 2.5: free the instanceMatrix/instanceColor GPU buffers (via the
+        // renderer 'dispose' event) and the morph DataTexture. InstancedMesh.dispose
+        // does not touch geometry/material, which are handled above (material is a
+        // pooled, refcounted resource released via releasePooledInstancedMaterial).
+        mesh.dispose();
+
         // Remove from scene
         this.scene.remove(mesh);
       });
+
+      // Phase 2.5: free the contact-shadow instance buffers. Its geometry/material
+      // are shared via getContactShadowResources, so dispose only the mesh.
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.dispose();
+        this.scene.remove(modelData.contactShadowMesh);
+      }
 
       // Dispose animations
       modelData.mixer.stopAllAction();
@@ -2719,8 +2732,13 @@ export class ArmyModel {
       modelData.instancedMeshes.forEach((mesh) => {
         releasePooledInstancedMaterial(mesh.material);
         mesh.geometry.dispose();
+        mesh.dispose();
         this.scene.remove(mesh);
       });
+      if (modelData.contactShadowMesh) {
+        modelData.contactShadowMesh.dispose();
+        this.scene.remove(modelData.contactShadowMesh);
+      }
       modelData.mixer.stopAllAction();
       this.scene.remove(modelData.group);
     });
