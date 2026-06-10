@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-10T08:29:27.980Z",
+  "updatedAt": "2026-06-10T08:31:01.545Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -650,9 +650,9 @@
       "environment": "mainnet.blitz",
       "gameName": "bltz-riff-795",
       "path": "runs/mainnet/blitz/bltz-riff-795.json",
-      "inputPath": "inputs/mainnet/blitz/bltz-riff-795/27263354994-1.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-riff-795/27263587932-1.json",
       "status": "attention",
-      "updatedAt": "2026-06-10T08:29:27.980Z",
+      "updatedAt": "2026-06-10T08:31:01.545Z",
       "workflowRef": "next",
       "currentStepId": "configure-world",
       "hasRunningStep": false,
