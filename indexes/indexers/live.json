@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-09T19:17:23.211Z",
+  "updatedAt": "2026-06-10T10:02:17.193Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3263,13 +3263,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-froth-662/torii",
         "version": "v1.8.15",
         "branch": "main",
-        "describedAt": "2026-06-05T01:57:32.894Z"
+        "describedAt": "2026-06-10T10:02:17.193Z"
       },
-      "updatedAt": "2026-06-05T01:57:32.895Z"
+      "updatedAt": "2026-06-10T10:02:17.193Z"
     },
     "bltz-axe-69": {
       "gameName": "bltz-axe-69",
