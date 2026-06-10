@@ -6070,6 +6070,8 @@ export default class WorldmapScene extends WarpTravel {
           }),
         cachePreparedTerrain: (preparedTerrain) =>
           this.cachePreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk),
+        disposePreparedTerrain: (preparedTerrain) =>
+          this.disposePreparedTerrainChunk(preparedTerrain as PreparedTerrainChunk),
       });
     } finally {
       this.activeDirectionalPresentationPrewarms.delete(chunkKey);
@@ -10350,6 +10352,8 @@ export default class WorldmapScene extends WarpTravel {
             incrementWorldmapRenderCounter,
           });
         },
+        disposePreparedTerrain: (droppedPreparedTerrain) =>
+          this.disposePreparedTerrainChunk(droppedPreparedTerrain as PreparedTerrainChunk),
         setCurrentChunk: (targetChunkKey) => this.commitCurrentChunkAuthority(targetChunkKey),
         updatePinnedChunks: (chunkKeys) => this.updatePinnedChunks(chunkKeys),
         unregisterChunk: (targetChunkKey) => this.unregisterVisibilityChunk(targetChunkKey),
@@ -10458,6 +10462,8 @@ export default class WorldmapScene extends WarpTravel {
               incrementWorldmapRenderCounter,
             });
           },
+          disposePreparedTerrain: (droppedPreparedTerrain) =>
+            this.disposePreparedTerrainChunk(droppedPreparedTerrain as PreparedTerrainChunk),
           diagnostics: this.chunkDiagnostics,
           force: true,
           preparedTerrain,

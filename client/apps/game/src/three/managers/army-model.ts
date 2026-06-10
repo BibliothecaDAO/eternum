@@ -21,6 +21,7 @@ import {
   Vector3,
 } from "three";
 import { CSS2DObject } from "three/examples/jsm/renderers/CSS2DRenderer.js";
+import { resizeInstancedMorphTexture } from "./morph-texture-resize";
 import { env } from "../../../env";
 import {
   ANIMATION_STATE_IDLE,
@@ -507,6 +508,11 @@ export class ArmyModel {
         mesh.instanceColor = new InstancedBufferAttribute(resizedColorArray, 3);
         mesh.instanceColor.needsUpdate = true;
       }
+
+      // Phase 2.3: the morph texture was sized for the initial capacity (64). Grow
+      // it before writing rows past that capacity, or setMorphAt indexes out of the
+      // fixed Float32Array and throws on the frame path.
+      resizeInstancedMorphTexture(mesh, newCapacity);
 
       const baseMesh = modelData.baseMeshes[meshIndex];
       for (let i = capacity; i < newCapacity; i++) {

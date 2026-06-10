@@ -19,6 +19,7 @@ import {
 import { AnimationVisibilityContext } from "../types/animation";
 import { getContactShadowResources } from "../utils/contact-shadow";
 import { InstancedMatrixAttributePool } from "../utils/instanced-matrix-attribute-pool";
+import { resizeInstancedMorphTexture } from "./morph-texture-resize";
 
 const BIG_DETAILS_NAME = "big_details";
 const BUILDING_NAME = "building";
@@ -608,6 +609,10 @@ export default class InstancedModel {
       }
 
       mesh.count = Math.min(mesh.count, newCapacity);
+
+      // Phase 2.3: grow the morph texture before writing rows past the initial
+      // capacity, or setMorphAt indexes out of the fixed Float32Array and throws.
+      resizeInstancedMorphTexture(mesh, newCapacity);
 
       for (let i = this.capacity; i < newCapacity; i++) {
         mesh.setMatrixAt(i, zeroMatrix);
