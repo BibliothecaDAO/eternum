@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-10T08:26:54.927Z",
+  "updatedAt": "2026-06-10T08:28:54.032Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -652,14 +652,13 @@
       "path": "runs/mainnet/blitz/bltz-riff-795.json",
       "inputPath": "inputs/mainnet/blitz/bltz-riff-795/27263354994-1.json",
       "status": "running",
-      "updatedAt": "2026-06-10T08:26:54.927Z",
+      "updatedAt": "2026-06-10T08:28:54.032Z",
       "workflowRef": "next",
-      "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-06-10T09:11:54.927Z",
-      "hasRunningStep": true,
+      "currentStepId": "wait-for-factory-index",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "wait-for-factory-index",
-      "startTime": "2026-06-10T11:00:00.000Z",
+      "startTime": 1781089200,
       "durationSeconds": 3600,
       "artifacts": {}
     }
