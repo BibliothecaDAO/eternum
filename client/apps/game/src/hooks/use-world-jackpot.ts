@@ -56,6 +56,9 @@ interface UseWorldJackpotInput {
  * On-demand jackpot balance query. The prize distribution address is assumed already resolved
  * (e.g. via the worlds summary endpoint), so this hook only does the RPC `balance_of` call.
  *
+ * The worlds summary now carries a server-resolved `winnerJackpotAmount`; prefer that and use
+ * this hook only as a fallback when the summary value is null.
+ *
  * Cached for 60s; not refetched on a timer — callers can call `refetch` if needed.
  */
 export const useWorldJackpot = ({

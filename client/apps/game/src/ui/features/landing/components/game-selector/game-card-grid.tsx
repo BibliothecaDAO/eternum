@@ -341,16 +341,17 @@ const GameCard = ({
   const lordsFeeAmount = game.config?.feeAmount ?? 0n;
   const hasLordsFee = lordsFeeAmount > 0n;
   const isMainnetGame = game.chain === "mainnet";
-  // Jackpot is resolved on-demand via useWorldJackpot now — the bulk summary
-  // does not carry per-world balances. Gate the RPC call on mainnet cards
-  // where we actually render the prize pool.
+  // The jackpot is resolved server-side and carried on the bulk summary.
+  // Only fall back to the on-demand RPC lookup when the summary didn't
+  // provide one (e.g. realtime server not yet updated).
+  const summaryJackpotAmount = game.config?.winnerJackpotAmount ?? null;
   const { data: jackpotBalance } = useWorldJackpot({
     chain: game.chain,
     feeTokenAddress: game.config?.feeTokenAddress ?? null,
     prizeDistributionAddress: game.config?.prizeDistributionAddress ?? null,
-    enabled: isMainnetGame && Boolean(game.config?.prizeDistributionAddress),
+    enabled: isMainnetGame && Boolean(game.config?.prizeDistributionAddress) && summaryJackpotAmount == null,
   });
-  const winnerJackpotAmount = jackpotBalance ?? 0n;
+  const winnerJackpotAmount = summaryJackpotAmount ?? jackpotBalance ?? 0n;
   const marketSnapshot = marketState?.data ?? null;
   const hasPrizeAddress = Boolean(game.config?.prizeDistributionAddress);
   const showPredictionMarket = hasPrizeAddress && !devModeOn;

@@ -19,6 +19,7 @@ import {
   CallData,
   GetTransactionReceiptResponse,
   ResourceBoundsBN,
+  TransactionFinalityStatus,
   uint256,
   UniversalDetails,
 } from "starknet";
@@ -74,6 +75,17 @@ const HUNDRED_PERCENT = 100n;
 const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
 const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
 const EXPLORE_RESOURCE_BOUNDS_CACHE_TTL_MS = 15_000;
+const TX_WAIT_RETRY_INTERVAL_MS = 500;
+// Resolve confirmation at PRE_CONFIRMED: the sequencer pre-confirms within
+// ~a second and the receipt already carries execution_status, so reverts are
+// detected immediately while the receipt poll loop drops from dozens of RPC
+// requests per tx (waiting for ACCEPTED_ON_L2 block inclusion) to one or two.
+// Game state itself arrives via torii sync, not this receipt.
+const TX_WAIT_SUCCESS_STATES = [
+  TransactionFinalityStatus.PRE_CONFIRMED,
+  TransactionFinalityStatus.ACCEPTED_ON_L2,
+  TransactionFinalityStatus.ACCEPTED_ON_L1,
+];
 export const SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE =
   "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.";
 const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
@@ -1682,7 +1694,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     const manifestRpcUrl = (this.manifest as any)?.world?.metadata?.rpc_url;
     console.info("[provider] waitForTransaction start", {
       transactionHash,
-      retryInterval: 500,
+      retryInterval: TX_WAIT_RETRY_INTERVAL_MS,
+      successStates: TX_WAIT_SUCCESS_STATES,
       nodeUrl,
       manifestRpcUrl,
       worldAddress: this.manifest?.world?.address,
@@ -1690,7 +1703,8 @@ export class EternumProvider extends EnhancedDojoProvider {
     });
     try {
       receipt = await this.provider.waitForTransaction(transactionHash, {
-        retryInterval: 500,
+        retryInterval: TX_WAIT_RETRY_INTERVAL_MS,
+        successStates: TX_WAIT_SUCCESS_STATES,
       });
     } catch (error) {
       console.error(`Error waiting for transaction ${transactionHash}`, {

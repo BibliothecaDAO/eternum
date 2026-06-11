@@ -66,10 +66,10 @@ export const AmmSwap = () => {
   const [showSlippage, setShowSlippage] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
 
-  const { balance: payTokenBalance } = useResourceBalance({
+  const { balance: payTokenBalance, refetch: refetchPayTokenBalance } = useResourceBalance({
     resourceAddress: payToken || null,
   });
-  const { balance: receiveTokenBalance } = useResourceBalance({
+  const { balance: receiveTokenBalance, refetch: refetchReceiveTokenBalance } = useResourceBalance({
     resourceAddress: receiveToken || null,
   });
 
@@ -210,13 +210,26 @@ export const AmmSwap = () => {
 
       await executeSwap(calls);
       await invalidateAmmReadQueries(queryClient);
+      // Wallet balances are not polled — refresh them after the swap settles.
+      void refetchPayTokenBalance?.();
+      void refetchReceiveTokenBalance?.();
       setShowConfirmation(false);
       setPayAmount(0);
       setReceiveAmount(0);
     } finally {
       setIsSwapping(false);
     }
-  }, [account?.address, client, executeSwap, payAmount, queryClient, route, swapQuote]);
+  }, [
+    account?.address,
+    client,
+    executeSwap,
+    payAmount,
+    queryClient,
+    refetchPayTokenBalance,
+    refetchReceiveTokenBalance,
+    route,
+    swapQuote,
+  ]);
 
   const activePoolForFees = route?.kind === "direct" ? route.pool : route?.outputPool;
   const payAmountBigint = payAmount > 0 ? parseTokenAmount(payAmount.toString()) : 0n;

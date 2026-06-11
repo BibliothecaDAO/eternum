@@ -1,6 +1,7 @@
 import type { WorldSummary, WorldSummaryChain } from "@bibliothecadao/types";
 import { fetchFactoryPrizeAddresses } from "./factory-prize-addresses";
 import { fetchFactoryWorldDeployments, type FactoryWorldDeployment } from "./factory-worlds";
+import { fetchJackpotBalance } from "./jackpot-balance";
 import { fetchWorldSummaryResult } from "./world-summary";
 
 const CARTRIDGE_API_BASE = "https://api.cartridge.gg";
@@ -136,13 +137,29 @@ export class ToriiAvailabilityService {
     const summaryFields = summaryResult.ok
       ? summaryResult.fields
       : extractSummaryFields(previousSummary, fallbackFields);
+
+    // Resolve the jackpot server-side (one RPC call per world per cycle) so
+    // clients can read it from the summary instead of polling RPC themselves.
+    // Only mainnet worlds render a prize pool; keep the last good value on failure.
+    const resolvedPrizeAddress = prizeDistributionAddress ?? summaryFields.prizeDistributionAddress;
+    let winnerJackpotAmount = previousSummary?.winnerJackpotAmount ?? null;
+    if (chain === "mainnet" && summaryFields.feeTokenAddress && resolvedPrizeAddress) {
+      const fetched = await fetchJackpotBalance(
+        summaryFields.feeTokenAddress,
+        resolvedPrizeAddress,
+        this.probeTimeoutMs,
+      );
+      if (fetched != null) winnerJackpotAmount = fetched;
+    }
+
     this.cache.set(cacheKey, {
       name: worldName,
       chain,
       alive: true,
       lastCheckedAt: now,
       ...summaryFields,
-      prizeDistributionAddress: prizeDistributionAddress ?? summaryFields.prizeDistributionAddress,
+      winnerJackpotAmount,
+      prizeDistributionAddress: resolvedPrizeAddress,
       worldAddress: worldAddress ?? summaryFields.worldAddress,
     });
     return true;

@@ -53,22 +53,22 @@ export function UserProvider({ children, chain, ...props }: UserProviderProps) {
   const { account } = useAccount();
   const collateralToken = getPredictionMarketConfig(chain).collateralToken;
 
-  // LORDS balance from RPC
+  // LORDS balance from RPC. Fetched once per account; consumers refetch on demand
+  // (trade panel open, post-trade) instead of interval polling to avoid RPC rate limits.
   const lordsBalanceCall = useCall({
     abi: LordsAbi as Abi,
     functionName: "balance_of",
     address: collateralToken as `0x${string}`,
     args: [(account?.address as `0x${string}`) ?? "0x0"],
-    watch: true,
-    refetchInterval: 5_000,
     enabled: Boolean(account?.address),
   });
 
   const lordsBalance = useMemo(() => normalizeUint256(lordsBalanceCall.data), [lordsBalanceCall.data]);
 
+  const refetchBalance = lordsBalanceCall.refetch;
   const refetchLordsBalance = useCallback(() => {
-    lordsBalanceCall.refetch?.();
-  }, [lordsBalanceCall]);
+    refetchBalance?.();
+  }, [refetchBalance]);
 
   return (
     <UserProviderContext.Provider

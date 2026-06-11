@@ -1,7 +1,7 @@
 import AlertTriangle from "lucide-react/dist/esm/icons/alert-triangle";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 import TrendingUp from "lucide-react/dist/esm/icons/trending-up";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { BigNumberish, Call, uint256 } from "starknet";
@@ -310,6 +310,12 @@ export function MarketTrade({
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const account = useAccountStore((state) => state.account);
+  const { refetchLordsBalance } = useUser();
+
+  // The provider no longer polls the balance; refresh it when the trade panel opens.
+  useEffect(() => {
+    if (account?.address) refetchLordsBalance();
+  }, [account?.address, refetchLordsBalance]);
 
   const marketContractAddress = getContractByName(manifest, "pm", "Markets")?.address;
   const nowSec = Math.floor(Date.now() / 1_000);
@@ -473,6 +479,7 @@ export function MarketTrade({
       });
 
       toast.success("Trade submitted successfully!");
+      refetchLordsBalance();
       if (onTradeSuccess) {
         void Promise.resolve(onTradeSuccess()).catch((callbackError) => {
           console.error("[MarketTrade] post-trade sync callback failed:", callbackError);

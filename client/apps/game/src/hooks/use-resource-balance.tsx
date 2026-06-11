@@ -11,17 +11,18 @@ export const useResourceBalance = ({
 }) => {
   const { account } = useAccount();
 
-  const { data } = useCall({
+  // Fetched once per account/token; callers refetch on demand (e.g. after a
+  // swap) instead of interval polling to avoid RPC rate limits.
+  const { data, refetch } = useCall({
     abi: LordsAbi as Abi, // Using LordsAbi as the interface is the same for all ERC20 tokens
     functionName: "balance_of",
     address: resourceAddress as `0x${string}`,
     args: [(account?.address as `0x${string}`) ?? "0"],
-    watch: true,
-    refetchInterval: 5000, // Reduced from 1000ms to prevent excessive RPC calls
     enabled: !!account?.address && !!resourceAddress && !disabled,
   });
 
   return {
     balance: (data as bigint) || BigInt(0),
+    refetch,
   };
 };
