@@ -11,6 +11,32 @@ const makeResourceBounds = (l2GasMaxAmount: bigint): ResourceBoundsBN => ({
   l2_gas: { max_amount: l2GasMaxAmount, max_price_per_unit: 1n },
 });
 
+const makeManifest = () =>
+  ({
+    world: {
+      address: "0x1",
+      abi: [
+        {
+          type: "interface",
+          name: "IWorld",
+          items: [
+            {
+              type: "function",
+              name: "dummy",
+              inputs: [],
+              outputs: [],
+              state_mutability: "view",
+            },
+          ],
+        },
+      ],
+      metadata: {
+        rpc_url: "http://localhost:5050",
+      },
+    },
+    contracts: [],
+  }) as any;
+
 const makeProvider = () => {
   const provider = Object.create(EternumProvider.prototype) as any;
   provider.emit = vi.fn();
@@ -47,6 +73,43 @@ const findTransactionFailedPayload = (
 describe("EternumProvider.executeAndCheckTransaction gas bounds", () => {
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  it("preserves the legacy fourth-argument retry config", () => {
+    const retryConfig = {
+      maxRetries: 1,
+      baseDelayMs: 0,
+      maxDelayMs: 0,
+      jitterFactor: 0,
+    };
+
+    const provider = new EternumProvider(makeManifest(), "http://localhost:5050", undefined, retryConfig);
+
+    expect((provider as any).retryConfig).toBe(retryConfig);
+    expect((provider as any).transactionReceiptWaiter.constructor.name).toBe("PollingTransactionReceiptWaiter");
+  });
+
+  it("accepts retry and websocket confirmation in the options object", () => {
+    const retryConfig = {
+      maxRetries: 1,
+      baseDelayMs: 0,
+      maxDelayMs: 0,
+      jitterFactor: 0,
+    };
+    const websocketFactory = vi.fn();
+
+    const provider = new EternumProvider(makeManifest(), "http://localhost:5050", undefined, {
+      retryConfig,
+      transactionConfirmation: {
+        mode: "websocket",
+        wsUrl: "wss://rpc.example",
+        websocketFactory,
+      },
+    });
+
+    expect((provider as any).retryConfig).toBe(retryConfig);
+    expect((provider as any).transactionReceiptWaiter.constructor.name).toBe("WebSocketTransactionReceiptWaiter");
+    expect(websocketFactory).not.toHaveBeenCalled();
   });
 
   it("caps l2 gas max_amount at the current v3 mainnet limit", async () => {

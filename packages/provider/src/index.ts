@@ -19,7 +19,6 @@ import {
   CallData,
   GetTransactionReceiptResponse,
   ResourceBoundsBN,
-  TransactionFinalityStatus,
   uint256,
   UniversalDetails,
 } from "starknet";
@@ -27,6 +26,14 @@ import { PromiseQueue, QueueableTransaction } from "./promise-queue";
 import { ExecutionOptions } from "./transaction-executor";
 import { withRetry } from "./retry";
 import type { RetryConfig } from "./retry";
+import {
+  createTransactionReceiptWaiter,
+  TX_WAIT_RETRY_INTERVAL_MS,
+  TX_WAIT_SUCCESS_STATES,
+  type EternumProviderOptions,
+  type TransactionConfirmationConfig,
+  type TransactionReceiptWaiter,
+} from "./transaction-confirmation";
 import {
   BatchedTransactionDetail,
   TransactionFailedPayload,
@@ -55,6 +62,7 @@ export type { TransactionExecutor, ExecutionOptions } from "./transaction-execut
 export { withRetry, isRetryableError, calculateBackoffDelay, DEFAULT_RETRY_CONFIG } from "./retry";
 export type { RetryConfig } from "./retry";
 export { TransactionType } from "./types";
+export { createTransactionReceiptWaiter } from "./transaction-confirmation";
 export type {
   BatchedTransactionDetail,
   TransactionFailedPayload,
@@ -66,6 +74,12 @@ export type {
   TransactionSubmitGuard,
   TransactionSubmitGuardContext,
 } from "./types";
+export type {
+  EternumProviderOptions,
+  TransactionConfirmationConfig,
+  TransactionConfirmationMode,
+  WebSocketFactory,
+} from "./transaction-confirmation";
 export type { VrfSource } from "./vrf";
 
 // Mainnet currently rejects V3 invokes above this l2_gas max_amount ceiling.
@@ -75,17 +89,11 @@ const HUNDRED_PERCENT = 100n;
 const DEFAULT_FEE_ESTIMATE_TIMEOUT_MS = 5_000;
 const DEFAULT_TRANSACTION_SUBMIT_TIMEOUT_MS = 20_000;
 const EXPLORE_RESOURCE_BOUNDS_CACHE_TTL_MS = 15_000;
-const TX_WAIT_RETRY_INTERVAL_MS = 500;
 // Resolve confirmation at PRE_CONFIRMED: the sequencer pre-confirms within
 // ~a second and the receipt already carries execution_status, so reverts are
 // detected immediately while the receipt poll loop drops from dozens of RPC
 // requests per tx (waiting for ACCEPTED_ON_L2 block inclusion) to one or two.
 // Game state itself arrives via torii sync, not this receipt.
-const TX_WAIT_SUCCESS_STATES = [
-  TransactionFinalityStatus.PRE_CONFIRMED,
-  TransactionFinalityStatus.ACCEPTED_ON_L2,
-  TransactionFinalityStatus.ACCEPTED_ON_L1,
-];
 export const SUBMISSION_TIMEOUT_UNCERTAIN_MESSAGE =
   "Submission timed out before a tx hash was returned. Check wallet/activity before retrying.";
 const NON_MEANINGFUL_ERROR_MESSAGES = new Set(["", "[object Object]", "undefined", "null"]);
@@ -487,6 +495,34 @@ const resolveTransactionFailureStage = (error: unknown, fallback: TransactionFai
   return fallback;
 };
 
+const isEternumProviderOptions = (
+  value: RetryConfig | EternumProviderOptions | undefined,
+): value is EternumProviderOptions => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  return "retryConfig" in value || "transactionConfirmation" in value;
+};
+
+const resolveEternumProviderOptions = (
+  retryConfigOrOptions: RetryConfig | EternumProviderOptions | undefined,
+): {
+  retryConfig?: RetryConfig;
+  transactionConfirmation?: TransactionConfirmationConfig;
+} => {
+  if (isEternumProviderOptions(retryConfigOrOptions)) {
+    return {
+      retryConfig: retryConfigOrOptions.retryConfig,
+      transactionConfirmation: retryConfigOrOptions.transactionConfirmation,
+    };
+  }
+
+  return {
+    retryConfig: retryConfigOrOptions,
+  };
+};
+
 /**
  * Gets a contract address from the manifest by name
  *
@@ -589,6 +625,7 @@ export class EternumProvider extends EnhancedDojoProvider {
   private pendingVrfExecutionLocks = new Map<string, VrfExecutionLock>();
   private cachedExploreExecutionDetails = new Map<string, CachedExploreExecutionDetails>();
   private readonly retryConfig?: RetryConfig;
+  private readonly transactionReceiptWaiter?: TransactionReceiptWaiter;
   private transactionSubmitGuard?: TransactionSubmitGuard;
   /**
    * Create a new EternumProvider instance
@@ -600,11 +637,16 @@ export class EternumProvider extends EnhancedDojoProvider {
     katana: Manifest,
     url?: string,
     private VRF_PROVIDER_ADDRESS?: string,
-    retryConfig?: RetryConfig,
+    retryConfigOrOptions?: RetryConfig | EternumProviderOptions,
   ) {
     super(katana, url);
+    const providerOptions = resolveEternumProviderOptions(retryConfigOrOptions);
     this.manifest = katana;
-    this.retryConfig = retryConfig;
+    this.retryConfig = providerOptions.retryConfig;
+    this.transactionReceiptWaiter = createTransactionReceiptWaiter(
+      this.provider,
+      providerOptions.transactionConfirmation,
+    );
 
     this.getWorldAddress = function () {
       const worldAddress = this.manifest.world.address;
@@ -1702,10 +1744,9 @@ export class EternumProvider extends EnhancedDojoProvider {
       transactionType: transactionMeta?.type,
     });
     try {
-      receipt = await this.provider.waitForTransaction(transactionHash, {
-        retryInterval: TX_WAIT_RETRY_INTERVAL_MS,
-        successStates: TX_WAIT_SUCCESS_STATES,
-      });
+      const transactionReceiptWaiter =
+        this.transactionReceiptWaiter ?? createTransactionReceiptWaiter(this.provider, { mode: "polling" });
+      receipt = await transactionReceiptWaiter.waitForTransactionReceipt(transactionHash);
     } catch (error) {
       console.error(`Error waiting for transaction ${transactionHash}`, {
         nodeUrl,
