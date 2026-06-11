@@ -3,7 +3,7 @@
 import { HexPosition, ID, StructureType } from "@bibliothecadao/types";
 import { Component, Has, Metadata, Schema, getComponentValue, runQuery } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
-import { getEntities } from "@dojoengine/state";
+import { getEntities, setEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
 import { Clause, LogicalOperator } from "@dojoengine/torii-wasm";
 import { getEntityIdFromKeys } from "@dojoengine/utils";
@@ -277,16 +277,27 @@ export const getConfigFromTorii = async <S extends Schema>(
     },
   ];
 
-  const fetchConfig = () =>
-    getEntities(
-      client,
-      { Composite: { operator: "Or", clauses: configClauses } },
-      components,
-      [],
-      configModels,
-      EVENT_QUERY_LIMIT,
-      false,
-    );
+  // NOT @dojoengine/state's getEntities: that helper fires its RECS writes
+  // without awaiting them, so its promise resolves before any entity lands
+  // (verified live: 0 config entities at resolve time, all present seconds
+  // later). configManager snapshots RECS immediately after this fetch, so the
+  // writes must be awaited — page manually and await setEntities per page.
+  const fetchConfig = async () => {
+    let cursor: string | undefined;
+    for (;;) {
+      const page = await client.getEntities({
+        pagination: { limit: EVENT_QUERY_LIMIT, cursor, direction: "Forward", order_by: [] },
+        clause: { Composite: { operator: "Or", clauses: configClauses } },
+        no_hashed_keys: false,
+        models: configModels,
+        historical: false,
+      });
+      await setEntities(page.items, components, false);
+      const count = Array.isArray(page.items) ? page.items.length : Object.keys(page.items ?? {}).length;
+      if (count < EVENT_QUERY_LIMIT || !page.next_cursor) break;
+      cursor = page.next_cursor;
+    }
+  };
 
   // Per issue #4653: config data is static within a chain/world deployment and
   // most config models are also covered by GLOBAL_STREAM_CLAUSE's initial state

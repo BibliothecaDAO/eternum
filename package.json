@@ -266,9 +266,6 @@
   "pnpm": {
     "overrides": {
       "@dojoengine/recs": "2.1.0"
-    },
-    "patchedDependencies": {
-      "@dojoengine/state@1.7.0-preview.3": "patches/@dojoengine__state@1.7.0-preview.3.patch"
     }
   },
   "workspaces": {
