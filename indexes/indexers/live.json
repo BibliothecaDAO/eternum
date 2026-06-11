@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-11T11:47:13.687Z",
+  "updatedAt": "2026-06-11T11:58:40.358Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3433,7 +3433,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-11-06-26-1000 not found"
       },
-      "updatedAt": "2026-06-11T11:27:07.727Z"
+      "updatedAt": "2026-06-11T11:58:40.358Z"
     },
     "bltz-swish-277": {
       "gameName": "bltz-swish-277",
