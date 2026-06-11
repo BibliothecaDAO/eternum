@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "27347332507-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-06-11T12:39:59.434Z",
-  "updatedAt": "2026-06-11T12:41:14.068Z",
+  "updatedAt": "2026-06-11T12:41:17.919Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-06-11T12:41:17.919Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -77,5 +78,13 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-vibe-728.json",
     "worldAddress": "0x03a5c61cf4f35bf74331c49d487c5271eddde68af8d645dd7a3311af4f8084da",
     "createGameTxHash": "0x4fe833beae83e33beb11ce4c3aca4605546847247ebda818aea965259a4322"
+  },
+  "activeLease": {
+    "launchRequestId": "27347332507-1",
+    "workflowRunId": 27347332507,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-06-11T12:41:17.919Z",
+    "expiresAt": "2026-06-11T13:26:17.919Z"
   }
 }
