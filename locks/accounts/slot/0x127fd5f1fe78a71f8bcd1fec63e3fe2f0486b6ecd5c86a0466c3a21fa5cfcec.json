@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-vibe-728",
-    "launchRequestId": "27347332507-1",
+    "gameName": "bltz-flux-661",
+    "launchRequestId": "27380963215-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 27347332507,
+    "workflowRunId": 27380963215,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "ca63b676-e6c9-4316-a323-b14b9ad1976f"
+    "stepId": "create-world",
+    "leaseId": "260f541e-74a6-45a9-8ce4-b79cce5fbbab"
   },
-  "acquiredAt": "2026-06-11T12:42:18.877Z",
-  "heartbeatAt": "2026-06-11T12:42:34.055Z",
-  "expiresAt": "2026-06-11T12:42:34.055Z",
-  "releasedAt": "2026-06-11T12:42:34.055Z"
+  "acquiredAt": "2026-06-11T22:19:04.720Z",
+  "heartbeatAt": "2026-06-11T22:19:04.720Z",
+  "expiresAt": "2026-06-11T22:29:04.720Z"
 }
