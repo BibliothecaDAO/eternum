@@ -197,20 +197,31 @@ export const ensureStructureSynced = async (
 };
 
 const CONFIG_LOG_MODELS = [
-  "s1_eternum-WorldConfig",
-  "s1_eternum-BuildingCategoryConfig",
-  "s1_eternum-ResourceList",
-  "s1_eternum-StructureLevelConfig",
-  "s1_eternum-ResourceFactoryConfig",
+  "WorldConfig",
+  "BuildingCategoryConfig",
+  "ResourceList",
+  "StructureLevelConfig",
+  "ResourceFactoryConfig",
 ];
 
-const logConfigEntityCounts = <S extends Schema>(label: string, components: Component<S, Metadata, undefined>[]) => {
-  const counts: Record<string, number | "missing"> = {};
-  for (const name of CONFIG_LOG_MODELS) {
-    const component = components.find((c) => (c.metadata as { name?: string } | undefined)?.name === name);
-    counts[name.replace("s1_eternum-", "")] = component ? runQuery([Has(component)]).size : "missing";
+// Diagnostics only — must never throw, it runs on the bootstrap critical path.
+// `components` arrives either as the contractComponents record or as an array.
+const logConfigEntityCounts = (label: string, componentsInput: unknown) => {
+  try {
+    const list = (Array.isArray(componentsInput) ? componentsInput : Object.values(componentsInput ?? {})) as Component<
+      Schema,
+      Metadata,
+      undefined
+    >[];
+    const counts: Record<string, number | "missing"> = {};
+    for (const name of CONFIG_LOG_MODELS) {
+      const component = list.find((c) => (c?.metadata as { name?: string } | undefined)?.name === name);
+      counts[name] = component ? runQuery([Has(component)]).size : "missing";
+    }
+    console.info(`[config] ${label} — RECS entity counts:`, counts);
+  } catch (error) {
+    console.warn(`[config] ${label} — failed to compute entity counts`, error);
   }
-  console.info(`[config] ${label} — RECS entity counts:`, counts);
 };
 
 export const getConfigFromTorii = async <S extends Schema>(
