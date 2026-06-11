@@ -242,10 +242,14 @@ describe("ToriiAvailabilityService", () => {
 
     it("preserves the last good summary when a later summary fetch fails", async () => {
       mockFetch
-        .mockResolvedValueOnce(new Response(null, { status: 200 }))
-        .mockResolvedValueOnce(new Response(JSON.stringify([blitzSummaryRow]), { status: 200 }))
-        .mockResolvedValueOnce(new Response(null, { status: 200 }))
-        .mockResolvedValueOnce(new Response(null, { status: 500 }));
+        .mockResolvedValueOnce(new Response(null, { status: 200 })) // probe 1: HEAD
+        .mockResolvedValueOnce(new Response(JSON.stringify([blitzSummaryRow]), { status: 200 })) // probe 1: summary
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: ["0x64", "0x0"] }), { status: 200 }),
+        ) // probe 1: jackpot
+        .mockResolvedValueOnce(new Response(null, { status: 200 })) // probe 2: HEAD
+        .mockResolvedValueOnce(new Response(null, { status: 500 })) // probe 2: summary fails
+        .mockResolvedValueOnce(new Response(null, { status: 500 })); // probe 2: jackpot fails
 
       const service = new ToriiAvailabilityService({ factoryChains: [] });
       await service.probeWorld("alpha", "mainnet", "0xprize", "0xabc");
@@ -259,7 +263,45 @@ describe("ToriiAvailabilityService", () => {
         startMainAt: 0x65b1ffe0,
         prizeDistributionAddress: "0xprize",
         worldAddress: "0xabc",
+        // Jackpot from probe 1 is preserved when probe 2's RPC call fails.
+        winnerJackpotAmount: "100",
       });
+    });
+
+    it("folds the mainnet jackpot balance into the summary via one RPC call", async () => {
+      mockFetch
+        .mockResolvedValueOnce(new Response(null, { status: 200 })) // HEAD
+        .mockResolvedValueOnce(new Response(JSON.stringify([blitzSummaryRow]), { status: 200 })) // summary
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ jsonrpc: "2.0", id: 1, result: ["0xff", "0x0"] }), { status: 200 }),
+        ); // jackpot
+
+      const service = new ToriiAvailabilityService({ factoryChains: [] });
+      await service.probeWorld("alpha", "mainnet", "0xprize", "0xabc");
+
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      const [rpcUrl, rpcOpts] = mockFetch.mock.calls[2]!;
+      expect(rpcUrl).toBe("https://api.cartridge.gg/x/starknet/mainnet");
+      const body = JSON.parse((rpcOpts as RequestInit).body as string);
+      expect(body.method).toBe("starknet_call");
+      expect(body.params.request.contract_address).toBe("0xabcd");
+      expect(body.params.request.calldata).toEqual(["0xprize"]);
+
+      const [summary] = service.getSummaries();
+      expect(summary?.winnerJackpotAmount).toBe("255");
+    });
+
+    it("does not fetch the jackpot for non-mainnet worlds", async () => {
+      mockFetch
+        .mockResolvedValueOnce(new Response(null, { status: 200 })) // HEAD
+        .mockResolvedValueOnce(new Response(JSON.stringify([blitzSummaryRow]), { status: 200 })); // summary
+
+      const service = new ToriiAvailabilityService({ factoryChains: [] });
+      await service.probeWorld("alpha", "slot", "0xprize", "0xabc");
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      const [summary] = service.getSummaries();
+      expect(summary?.winnerJackpotAmount).toBeNull();
     });
 
     it("does not fetch summary for dead worlds", async () => {

@@ -8,9 +8,10 @@
  * fields (`isPlayerRegistered`, `hasPlayerSettledRealm`) are not part of the
  * bulk payload — callers layer those in via a separate, gated query.
  *
- * The jackpot balance is fetched on-demand via `useWorldJackpot`, so this
- * adapter leaves `winnerJackpotAmount` at 0n and exposes
- * `prizeDistributionAddress` (already resolved server-side) for that lookup.
+ * The jackpot balance is resolved server-side (one RPC call per world per
+ * poll cycle) and carried on the summary as `winnerJackpotAmount`. When the
+ * server hasn't provided it (null), callers fall back to the on-demand
+ * `useWorldJackpot` RPC lookup via `prizeDistributionAddress`.
  */
 import type { WorldSummary } from "@bibliothecadao/types";
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
@@ -36,12 +37,22 @@ const parseSummaryBigInt = (value: string | null): bigint => {
   }
 };
 
+const parseNullableSummaryBigInt = (value: string | null): bigint | null => {
+  if (value == null) return null;
+  try {
+    return BigInt(value);
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Map a `WorldSummary` payload into the legacy `WorldConfigMeta` shape.
  *
  * Player-specific fields must be passed explicitly; this function does not
- * fetch anything. Jackpot is intentionally left at 0n — callers should
- * resolve it via `useWorldJackpot` when needed (e.g. on card render).
+ * fetch anything. Jackpot is mapped from the server-resolved summary value;
+ * null means the server didn't provide one and callers may fall back to
+ * `useWorldJackpot`.
  */
 export const summaryToWorldConfigMeta = (
   summary: WorldSummary,
@@ -86,8 +97,6 @@ export const summaryToWorldConfigMeta = (
     settledRealmsCount: summary.settledRealmsCount ?? null,
     settledVillagesCount: summary.settledVillagesCount ?? null,
     prizeDistributionAddress: summary.prizeDistributionAddress ?? null,
-    // Jackpot is resolved on-demand via `useWorldJackpot` — callers should
-    // read it from the hook's data, not from this field.
-    winnerJackpotAmount: 0n,
+    winnerJackpotAmount: parseNullableSummaryBigInt(summary.winnerJackpotAmount),
   };
 };

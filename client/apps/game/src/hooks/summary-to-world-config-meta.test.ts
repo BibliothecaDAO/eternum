@@ -57,9 +57,12 @@ describe("summaryToWorldConfigMeta", () => {
     expect(meta.devModeOn).toBe(false);
   });
 
-  it("leaves winnerJackpotAmount at 0n — jackpot is resolved via useWorldJackpot", () => {
+  it("maps the server-resolved winnerJackpotAmount through, null when absent", () => {
     const meta = summaryToWorldConfigMeta(baseSummary, null);
-    expect(meta.winnerJackpotAmount).toBe(0n);
+    expect(meta.winnerJackpotAmount).toBe(999n);
+
+    const withoutJackpot = summaryToWorldConfigMeta({ ...baseSummary, winnerJackpotAmount: null }, null);
+    expect(withoutJackpot.winnerJackpotAmount).toBeNull();
   });
 
   it("resolves eternum mode for eternum summaries", () => {
@@ -131,7 +134,7 @@ describe("summaryToWorldConfigMeta", () => {
     expect(meta.feeAmount).toBe(0n);
     expect(meta.registrationStartAt).toBeNull();
     expect(meta.registrationEndAt).toBeNull();
-    expect(meta.winnerJackpotAmount).toBe(0n);
+    expect(meta.winnerJackpotAmount).toBeNull();
   });
 
   it("threads eternum settlement counts from the summary", () => {

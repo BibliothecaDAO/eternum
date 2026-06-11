@@ -3,20 +3,16 @@
  * This eliminates N+1 request patterns when checking multiple worlds
  * by caching results and sharing them across components.
  */
-import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { BULK_WORLD_AVAILABILITY_QUERY_KEY, WORLD_AVAILABILITY_QUERY_KEY } from "@/hooks/world-list-queries";
-import { fetchBulkAvailability, isToriiAvailable, resolveWorldContracts } from "@/runtime/world/factory-resolver";
-import { normalizeSelector } from "@/runtime/world/normalize";
+import { fetchBulkAvailability, isToriiAvailable } from "@/runtime/world/factory-resolver";
 import {
   parseMaybeBooleanFlag,
   resolveGameModeFromBlitzFlag,
   type ResolvedGameMode,
 } from "@/config/game-modes/resolved-mode";
 import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
-import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import type { Chain } from "@contracts";
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { RpcProvider } from "starknet";
 import { env } from "../../env";
 
 const WORLD_CONFIG_TABLE = "s1_eternum-WorldConfig";
@@ -63,10 +59,6 @@ const WORLD_CONFIG_ETERNUM_QUERY = `
   LIMIT 1;
 `;
 
-const PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR = "0x42230b5f7ccc6ce02a4ecb99c31d92ddd0f24ab472896afd617a2a763cf4179";
-const prizeDistributionSelector = normalizeSelector(PRIZE_DISTRIBUTION_SYSTEMS_SELECTOR);
-const rpcProviderCache = new Map<string, RpcProvider>();
-
 const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
 
 const parseMaybeHexToNumber = (v: unknown): number | null => {
@@ -103,35 +95,6 @@ const parseMaybeHexToAddress = (v: unknown): string | null => {
   const bigIntVal = parseMaybeHexToBigInt(v);
   if (bigIntVal == null || bigIntVal === 0n) return null;
   return `0x${bigIntVal.toString(16)}`;
-};
-
-const getCachedRpcProvider = (rpcUrl: string): RpcProvider => {
-  const existingProvider = rpcProviderCache.get(rpcUrl);
-  if (existingProvider) return existingProvider;
-  const provider = new RpcProvider({ nodeUrl: rpcUrl });
-  rpcProviderCache.set(rpcUrl, provider);
-  return provider;
-};
-
-const fetchTokenBalance = async (
-  provider: RpcProvider,
-  tokenAddress: string,
-  accountAddress: string,
-): Promise<bigint> => {
-  try {
-    const result = await provider.callContract({
-      contractAddress: tokenAddress,
-      entrypoint: "balance_of",
-      calldata: [accountAddress],
-    });
-
-    if (result.length < 2) return 0n;
-    const low = BigInt(result[0] ?? 0);
-    const high = BigInt(result[1] ?? 0);
-    return low + (high << 128n);
-  } catch {
-    return 0n;
-  }
 };
 
 export interface WorldConfigMeta {
@@ -174,8 +137,9 @@ export interface WorldConfigMeta {
   settledVillagesCount: number | null;
   // Reward distribution contract for this world
   prizeDistributionAddress: string | null;
-  // Current fee-token balance held by the reward distribution contract
-  winnerJackpotAmount: bigint;
+  // Current fee-token balance held by the reward distribution contract.
+  // Resolved server-side via the worlds summary; null when not provided.
+  winnerJackpotAmount: bigint | null;
 }
 
 interface WorldRef {
@@ -230,35 +194,6 @@ const fetchPlayerHasSettledRealm = async (toriiBaseUrl: string, playerAddress: s
   return null;
 };
 
-const fetchPrizeDistributionAddress = async (worldName: string, chain: Chain): Promise<string | null> => {
-  try {
-    const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
-    if (!factorySqlBaseUrl) return null;
-
-    const contracts = await resolveWorldContracts(factorySqlBaseUrl, worldName);
-    return contracts[prizeDistributionSelector] ?? null;
-  } catch {
-    return null;
-  }
-};
-
-const fetchWinnerJackpotAmount = async (
-  worldName: string,
-  chain: Chain,
-  feeTokenAddress: string,
-): Promise<{ prizeDistributionAddress: string | null; winnerJackpotAmount: bigint }> => {
-  const prizeDistributionAddress = await fetchPrizeDistributionAddress(worldName, chain);
-  if (!prizeDistributionAddress) {
-    return { prizeDistributionAddress: null, winnerJackpotAmount: 0n };
-  }
-
-  const rpcUrl = getRpcUrlForChain(chain);
-  const provider = getCachedRpcProvider(rpcUrl);
-  const winnerJackpotAmount = await fetchTokenBalance(provider, feeTokenAddress, prizeDistributionAddress);
-
-  return { prizeDistributionAddress, winnerJackpotAmount };
-};
-
 /**
  * Fetch world config metadata from Torii SQL endpoint.
  * Optionally fetches player registration status if playerAddress is provided.
@@ -266,8 +201,6 @@ const fetchWinnerJackpotAmount = async (
  */
 const fetchWorldConfigMeta = async (
   toriiBaseUrl: string,
-  worldName: string,
-  chain?: Chain,
   playerAddress?: string | null,
 ): Promise<WorldConfigMeta> => {
   const meta: WorldConfigMeta = {
@@ -302,7 +235,7 @@ const fetchWorldConfigMeta = async (
     settledRealmsCount: null,
     settledVillagesCount: null,
     prizeDistributionAddress: null,
-    winnerJackpotAmount: 0n,
+    winnerJackpotAmount: null,
   };
 
   try {
@@ -408,16 +341,6 @@ const fetchWorldConfigMeta = async (
         }),
       );
     }
-    if (chain && meta.feeTokenAddress) {
-      sideFetches.push(
-        fetchWinnerJackpotAmount(worldName, chain, meta.feeTokenAddress).then(
-          ({ prizeDistributionAddress, winnerJackpotAmount }) => {
-            meta.prizeDistributionAddress = prizeDistributionAddress;
-            meta.winnerJackpotAmount = winnerJackpotAmount;
-          },
-        ),
-      );
-    }
 
     if (sideFetches.length > 0) {
       await Promise.all(sideFetches);
@@ -435,7 +358,6 @@ const fetchWorldConfigMeta = async (
  */
 const checkWorldAvailability = async (
   worldName: string,
-  chain?: Chain,
   playerAddress?: string | null,
   bulkAvailability?: Record<string, boolean>,
 ): Promise<{ isAvailable: boolean; meta: WorldConfigMeta | null }> => {
@@ -451,7 +373,7 @@ const checkWorldAvailability = async (
     return { isAvailable: false, meta: null };
   }
 
-  const meta = await fetchWorldConfigMeta(toriiBaseUrl, worldName, chain, playerAddress);
+  const meta = await fetchWorldConfigMeta(toriiBaseUrl, playerAddress);
   return { isAvailable: true, meta };
 };
 
@@ -482,7 +404,7 @@ export const useWorldsAvailability = (worlds: WorldRef[], enabled = true, player
     queries: worlds.map((world) => ({
       // Include playerAddress in query key so it refetches when user connects
       queryKey: [...WORLD_AVAILABILITY_QUERY_KEY, getWorldKey(world), playerAddress ?? "anonymous"],
-      queryFn: () => checkWorldAvailability(world.name, world.chain, playerAddress, bulkAvailability),
+      queryFn: () => checkWorldAvailability(world.name, playerAddress, bulkAvailability),
       enabled: enabled && !!world.name && !isBulkAvailabilityPending,
       staleTime: 30 * 1000, // 30 seconds - data is fresh for 30s
       gcTime: 10 * 60 * 1000, // 10 minutes

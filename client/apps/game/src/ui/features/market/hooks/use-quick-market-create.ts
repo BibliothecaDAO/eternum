@@ -377,18 +377,18 @@ export const useQuickMarketCreate = (
     return parsed ?? 0n;
   }, [fundingAmount]);
 
-  // Fetch user's LORDS balance
+  // Fetch user's LORDS balance. Fetched once per account/token and refreshed
+  // after market creation instead of interval polling to avoid RPC rate limits.
   const balanceCall = useCall({
     abi: LordsAbi as Abi,
     functionName: "balance_of",
     address: (collateralToken ?? "0x0") as `0x${string}`,
     args: [(account?.address as `0x${string}`) ?? "0x0"],
-    watch: true,
-    refetchInterval: 10_000,
     enabled: Boolean(account?.address && collateralToken),
   });
 
   const balance = useMemo(() => normalizeUint256(balanceCall.data), [balanceCall.data]);
+  const refetchBalance = balanceCall.refetch;
   const isBalanceLoading = balanceCall.isLoading && Boolean(collateralToken);
   const hasSufficientBalance = balance >= requiredAmount;
 
@@ -645,6 +645,8 @@ export const useQuickMarketCreate = (
       });
 
       toast.success(`Prediction market created for ${worldName}!`);
+      // Balance is not polled — refresh it after the creation spend.
+      void refetchBalance?.();
     } catch (e) {
       console.error("[useQuickMarketCreate] Error:", e);
       const message = e instanceof Error ? e.message : "Failed to create market";
@@ -664,6 +666,7 @@ export const useQuickMarketCreate = (
     gameEndTime,
     playerWeights,
     noneWeight,
+    refetchBalance,
   ]);
 
   return useMemo(
