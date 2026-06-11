@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27328209152-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-06-11T06:26:24.174Z",
+  "updatedAt": "2026-06-11T06:26:29.409Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,7 +27,6 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-06-11T06:41:24.174Z",
     "lastRetryAt": "2026-06-11T06:25:21.231Z"
   },
   "evaluation": {
@@ -60,9 +59,10 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings needs attention"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-06-11T06:26:29.409Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -13135,5 +13135,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
+  },
+  "activeLease": {
+    "launchRequestId": "27328209152-1",
+    "workflowRunId": 27328209152,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-worlds",
+    "acquiredAt": "2026-06-11T06:26:29.409Z",
+    "expiresAt": "2026-06-11T07:11:29.409Z"
   }
 }
