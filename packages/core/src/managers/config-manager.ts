@@ -64,30 +64,6 @@ export class ClientConfigManager {
     this.initializeStructureCosts();
     this.initializeResourceWeights();
     this.initializeMapCenter();
-
-    // Diagnostics only — must never throw, setDojo runs on the bootstrap critical path.
-    try {
-      const buildingConfigEntities = runQuery([Has(this.components.BuildingCategoryConfig)]).size;
-      const snapshot = {
-        buildingConfigEntities,
-        complexBuildingCostCategories: Object.keys(this.complexBuildingCosts).length,
-        simpleBuildingCostCategories: Object.keys(this.simpleBuildingCosts).length,
-        realmUpgradeLevels: Object.keys(this.realmUpgradeCosts).length,
-        resourceWeights: Object.keys(this.resourceWeightsKg).length,
-      };
-      console.info("[config] snapshot applied", snapshot);
-      if (buildingConfigEntities === 0) {
-        console.warn(
-          "[config] snapshot ran with zero BuildingCategoryConfig entities in RECS — config not yet synced at snapshot time",
-        );
-      } else if (snapshot.simpleBuildingCostCategories === 0 && snapshot.complexBuildingCostCategories === 0) {
-        console.warn(
-          "[config] BuildingCategoryConfig entities are present but no cost tables were built — ResourceList rows missing?",
-        );
-      }
-    } catch (error) {
-      console.warn("[config] failed to compute snapshot diagnostics", error);
-    }
   }
 
   public static instance(): ClientConfigManager {

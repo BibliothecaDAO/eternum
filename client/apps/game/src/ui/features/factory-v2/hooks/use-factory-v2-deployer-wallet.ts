@@ -18,7 +18,6 @@ interface FactoryDeployerTokenBalance {
 
 type FactoryDeployerCopyState = "idle" | "copied" | "error";
 
-const rpcProviderCache = new Map<FactoryLaunchChain, RpcProvider>();
 const COPY_RESET_DELAY_MS = 2_000;
 
 export const useFactoryV2DeployerWallet = (chain: FactoryLaunchChain) => {
@@ -144,14 +143,7 @@ async function readFactoryDeployerTokenBalance(
 }
 
 function getCachedFactoryRpcProvider(chain: FactoryLaunchChain) {
-  const existingProvider = rpcProviderCache.get(chain);
-  if (existingProvider) {
-    return existingProvider;
-  }
-
-  const provider = getCachedRpcProvider(getRpcUrlForChain(chain));
-  rpcProviderCache.set(chain, provider);
-  return provider;
+  return getCachedRpcProvider(getRpcUrlForChain(chain));
 }
 
 function buildLoadingBalances(tokens: FactoryDeployerTokenDefinition[]): FactoryDeployerTokenBalance[] {
