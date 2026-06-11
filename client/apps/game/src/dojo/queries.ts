@@ -1,7 +1,7 @@
 // onload -> fetch single key entities
 
 import { HexPosition, ID, StructureType } from "@bibliothecadao/types";
-import { Component, Metadata, Schema, getComponentValue } from "@dojoengine/recs";
+import { Component, Has, Metadata, Schema, getComponentValue, runQuery } from "@dojoengine/recs";
 import { AndComposeClause, MemberClause } from "@dojoengine/sdk";
 import { getEntities } from "@dojoengine/state";
 import { PatternMatching, ToriiClient } from "@dojoengine/torii-client";
@@ -196,6 +196,23 @@ export const ensureStructureSynced = async (
   await getStructuresDataFromTorii(toriiClient, contractComponents, [{ entityId: numericId, position }]);
 };
 
+const CONFIG_LOG_MODELS = [
+  "s1_eternum-WorldConfig",
+  "s1_eternum-BuildingCategoryConfig",
+  "s1_eternum-ResourceList",
+  "s1_eternum-StructureLevelConfig",
+  "s1_eternum-ResourceFactoryConfig",
+];
+
+const logConfigEntityCounts = <S extends Schema>(label: string, components: Component<S, Metadata, undefined>[]) => {
+  const counts: Record<string, number | "missing"> = {};
+  for (const name of CONFIG_LOG_MODELS) {
+    const component = components.find((c) => (c.metadata as { name?: string } | undefined)?.name === name);
+    counts[name.replace("s1_eternum-", "")] = component ? runQuery([Has(component)]).size : "missing";
+  }
+  console.info(`[config] ${label} — RECS entity counts:`, counts);
+};
+
 export const getConfigFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
@@ -271,19 +288,34 @@ export const getConfigFromTorii = async <S extends Schema>(
   // empty state ("No construction cost is configured"). onBackgroundRefresh
   // lets the caller re-run that snapshot once the config entities land.
   if (hasFreshConfigCache()) {
+    console.info("[config] session cache fresh — skipping blocking fetch, revalidating in background");
+    const backgroundStart = performance.now();
     fetchConfig()
       // One retry: a transient failure here would otherwise leave the whole
       // session without building/upgrade costs.
-      .catch(() => fetchConfig())
-      .then(() => onBackgroundRefresh?.())
+      .catch((error) => {
+        console.warn("[config] background fetch failed, retrying once", error);
+        return fetchConfig();
+      })
+      .then(() => {
+        console.info(`[config] background fetch complete in ${Math.round(performance.now() - backgroundStart)}ms`);
+        logConfigEntityCounts("after background fetch", components);
+        console.info("[config] invoking onBackgroundRefresh:", Boolean(onBackgroundRefresh));
+        onBackgroundRefresh?.();
+      })
       .catch((error) => {
         console.warn("[torii] Background config revalidation failed", error);
+        logConfigEntityCounts("after background fetch failure", components);
         clearConfigFetchCache();
       });
     return;
   }
 
+  console.info("[config] no session cache — blocking on config fetch");
+  const blockingStart = performance.now();
   const result = await fetchConfig();
+  console.info(`[config] blocking fetch complete in ${Math.round(performance.now() - blockingStart)}ms`);
+  logConfigEntityCounts("after blocking fetch", components);
   markConfigCacheFresh();
   return result;
 };
