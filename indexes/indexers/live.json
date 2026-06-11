@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-11T14:28:08.817Z",
+  "updatedAt": "2026-06-11T14:28:13.115Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3447,6 +3447,19 @@
         "describedAt": "2026-06-11T14:28:07.132Z"
       },
       "updatedAt": "2026-06-11T14:28:08.817Z"
+    },
+    "bltz-vibe-728": {
+      "gameName": "bltz-vibe-728",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-vibe-728/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-11T14:28:13.115Z"
+      },
+      "updatedAt": "2026-06-11T14:28:13.115Z"
     }
   }
 }
