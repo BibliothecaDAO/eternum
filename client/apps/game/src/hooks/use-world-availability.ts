@@ -199,10 +199,7 @@ const fetchPlayerHasSettledRealm = async (toriiBaseUrl: string, playerAddress: s
  * Optionally fetches player registration status if playerAddress is provided.
  * Cached by React Query.
  */
-const fetchWorldConfigMeta = async (
-  toriiBaseUrl: string,
-  playerAddress?: string | null,
-): Promise<WorldConfigMeta> => {
+const fetchWorldConfigMeta = async (toriiBaseUrl: string, playerAddress?: string | null): Promise<WorldConfigMeta> => {
   const meta: WorldConfigMeta = {
     mode: "unknown",
     startSettlingAt: null,
