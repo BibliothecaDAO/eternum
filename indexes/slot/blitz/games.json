@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-10T10:02:14.217Z",
+  "updatedAt": "2026-06-11T09:50:03.968Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -97,27 +97,6 @@
       "durationSeconds": 7200,
       "artifacts": {}
     },
-    "bltz-dash-416": {
-      "kind": "game",
-      "environment": "slot.blitz",
-      "gameName": "bltz-dash-416",
-      "path": "runs/slot/blitz/bltz-dash-416.json",
-      "inputPath": "inputs/slot/blitz/bltz-dash-416/26630125998-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-03T16:52:35.964Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1780048800,
-      "durationSeconds": 432000,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-03T16:52:35.964Z"
-      }
-    },
     "bltz-glow-285": {
       "kind": "game",
       "environment": "slot.blitz",
@@ -158,27 +137,6 @@
         "indexerCreated": true,
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-06-06T05:42:18.264Z"
-      }
-    },
-    "bltz-nova-77": {
-      "kind": "game",
-      "environment": "slot.blitz",
-      "gameName": "bltz-nova-77",
-      "path": "runs/slot/blitz/bltz-nova-77.json",
-      "inputPath": "inputs/slot/blitz/bltz-nova-77/26880476598-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-03T16:52:54.261Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1780486500,
-      "durationSeconds": 3600,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-03T16:52:54.261Z"
       }
     },
     "bltz-froth-662": {

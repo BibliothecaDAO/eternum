@@ -2,29 +2,8 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-05-27T04:07:54.401Z",
+  "updatedAt": "2026-06-11T09:50:03.968Z",
   "entries": {
-    "etrn-banana": {
-      "kind": "game",
-      "environment": "slot.eternum",
-      "gameName": "etrn-banana",
-      "path": "runs/slot/eternum/etrn-banana.json",
-      "inputPath": "inputs/slot/eternum/etrn-banana/23540305841-1.json",
-      "status": "complete",
-      "updatedAt": "2026-03-25T13:02:13.522Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1774441200,
-      "durationSeconds": 0,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-03-25T13:02:13.521Z"
-      }
-    },
     "mygame": {
       "kind": "game",
       "environment": "slot.eternum",
@@ -41,69 +20,6 @@
       "startTime": 1774555200,
       "durationSeconds": 0,
       "artifacts": {}
-    },
-    "etrn-crown-308": {
-      "kind": "game",
-      "environment": "slot.eternum",
-      "gameName": "etrn-crown-308",
-      "path": "runs/slot/eternum/etrn-crown-308.json",
-      "inputPath": "inputs/slot/eternum/etrn-crown-308/25702164511-1.json",
-      "status": "complete",
-      "updatedAt": "2026-05-11T23:41:37.882Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1778540400,
-      "durationSeconds": 0,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-05-11T23:41:37.881Z"
-      }
-    },
-    "etrn-crest-172": {
-      "kind": "game",
-      "environment": "slot.eternum",
-      "gameName": "etrn-crest-172",
-      "path": "runs/slot/eternum/etrn-crest-172.json",
-      "inputPath": "inputs/slot/eternum/etrn-crest-172/25702835262-1.json",
-      "status": "complete",
-      "updatedAt": "2026-05-12T00:41:38.284Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1778544000,
-      "durationSeconds": 0,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-05-12T00:41:38.284Z"
-      }
-    },
-    "etrn-dusk-363": {
-      "kind": "game",
-      "environment": "slot.eternum",
-      "gameName": "etrn-dusk-363",
-      "path": "runs/slot/eternum/etrn-dusk-363.json",
-      "inputPath": "inputs/slot/eternum/etrn-dusk-363/26482662807-1.json",
-      "status": "complete",
-      "updatedAt": "2026-05-27T04:07:54.401Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1779843600,
-      "durationSeconds": 0,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-05-27T04:07:54.401Z"
-      }
     }
   }
 }

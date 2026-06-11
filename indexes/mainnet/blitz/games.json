@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-11T09:44:02.654Z",
+  "updatedAt": "2026-06-11T09:50:03.968Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -374,48 +374,6 @@
       "startTime": 1780313400,
       "durationSeconds": 3600,
       "artifacts": {}
-    },
-    "bltz-kick-922": {
-      "kind": "game",
-      "environment": "mainnet.blitz",
-      "gameName": "bltz-kick-922",
-      "path": "runs/mainnet/blitz/bltz-kick-922.json",
-      "inputPath": "inputs/mainnet/blitz/bltz-kick-922/26874375212-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-03T16:32:41.061Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1780486200,
-      "durationSeconds": 3600,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-03T16:32:41.061Z"
-      }
-    },
-    "bltz-vibe-361": {
-      "kind": "game",
-      "environment": "mainnet.blitz",
-      "gameName": "bltz-vibe-361",
-      "path": "runs/mainnet/blitz/bltz-vibe-361.json",
-      "inputPath": "inputs/mainnet/blitz/bltz-vibe-361/26921451854-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-04T04:42:07.142Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1780542000,
-      "durationSeconds": 3600,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-04T04:42:07.142Z"
-      }
     },
     "bltz-jolt-315": {
       "kind": "game",
