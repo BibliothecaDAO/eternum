@@ -2,9 +2,10 @@
  * Wallet section for the profile page.
  * Always fetches mainnet balances from the connected wallet.
  */
+import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { useCallback, useEffect, useState } from "react";
 import { useAccount } from "@starknet-react/core";
-import { RpcProvider, uint256 } from "starknet";
+import { uint256 } from "starknet";
 import { getSeasonAddresses } from "@contracts";
 import { displayAddress } from "@/ui/utils/utils";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -73,7 +74,7 @@ export const WalletSection = () => {
    */
   const fetchTokenBalance = useCallback(async (token: TokenConfig, walletAddress: string): Promise<TokenBalance> => {
     try {
-      const provider = new RpcProvider({ nodeUrl: MAINNET_RPC_URL });
+      const provider = getCachedRpcProvider(MAINNET_RPC_URL);
 
       const result = await provider.callContract({
         contractAddress: token.address,

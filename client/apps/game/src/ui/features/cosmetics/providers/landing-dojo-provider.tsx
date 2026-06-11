@@ -1,3 +1,4 @@
+import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { EternumProvider } from "@bibliothecadao/provider";
 import { createSystemCalls, SystemCalls } from "@bibliothecadao/types";
@@ -29,10 +30,7 @@ export function useLandingDojo(): LandingDojoContextType {
   return context;
 }
 
-const createRpcProvider = () =>
-  new RpcProvider({
-    nodeUrl: dojoConfig.rpcUrl,
-  });
+const createRpcProvider = () => getCachedRpcProvider(dojoConfig.rpcUrl);
 
 const createMasterAccount = (rpcProvider: RpcProvider) =>
   new Account({

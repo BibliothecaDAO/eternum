@@ -1,3 +1,4 @@
+import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { useEffect, useRef, useState } from "react";
 import { RpcProvider } from "starknet";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
@@ -148,7 +149,7 @@ function getCachedFactoryRpcProvider(chain: FactoryLaunchChain) {
     return existingProvider;
   }
 
-  const provider = new RpcProvider({ nodeUrl: getRpcUrlForChain(chain) });
+  const provider = getCachedRpcProvider(getRpcUrlForChain(chain));
   rpcProviderCache.set(chain, provider);
   return provider;
 }

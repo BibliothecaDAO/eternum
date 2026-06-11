@@ -1,3 +1,4 @@
+import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { ReactNode, useContext, useMemo } from "react";
 
 import { displayAddress } from "@/ui/utils/utils";
@@ -26,10 +27,7 @@ requiredEnvs.forEach((key) => {
   }
 });
 
-const createRpcProvider = () =>
-  new RpcProvider({
-    nodeUrl: dojoConfig.rpcUrl,
-  });
+const createRpcProvider = () => getCachedRpcProvider(dojoConfig.rpcUrl);
 
 const createMasterAccount = (rpcProvider: RpcProvider) =>
   new Account({

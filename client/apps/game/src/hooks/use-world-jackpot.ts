@@ -1,17 +1,7 @@
+import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import type { Chain } from "@contracts";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { useQuery } from "@tanstack/react-query";
-import { RpcProvider } from "starknet";
-
-const rpcProviderCache = new Map<string, RpcProvider>();
-
-const getCachedRpcProvider = (rpcUrl: string): RpcProvider => {
-  const existing = rpcProviderCache.get(rpcUrl);
-  if (existing) return existing;
-  const provider = new RpcProvider({ nodeUrl: rpcUrl });
-  rpcProviderCache.set(rpcUrl, provider);
-  return provider;
-};
 
 export interface JackpotInput {
   chain: Chain;

@@ -3,6 +3,7 @@
  * Blitz worlds now enter through a single `settle` action.
  * On non-mainnet environments, auto-tops up fee tokens from master account if needed.
  */
+import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { getFactorySqlBaseUrl } from "@/runtime/world";
 import { resolveWorldContracts } from "@/runtime/world/factory-resolver";
@@ -118,7 +119,7 @@ const waitForWorldEntryTransactionConfirmation = async ({
   label: string;
   account: Account;
 }) => {
-  const provider = new RpcProvider({ nodeUrl: getRpcUrlForChain(chain) });
+  const provider = getCachedRpcProvider(getRpcUrlForChain(chain));
   await waitForTransactionConfirmation({
     txHash,
     account: account as unknown as { waitForTransaction?: (txHash: string) => Promise<unknown> },
@@ -203,7 +204,7 @@ export const useWorldRegistration = ({
       setIsCheckingFeeBalance(true);
       try {
         const rpcUrl = getRpcUrlForChain(chain);
-        const rpcProvider = new RpcProvider({ nodeUrl: rpcUrl });
+        const rpcProvider = getCachedRpcProvider(rpcUrl);
         const currentBalance = await fetchTokenBalance(rpcProvider, feeTokenAddress, address);
         if (!cancelled) {
           setHasSufficientFeeBalance(currentBalance >= feeAmount);
@@ -332,7 +333,7 @@ export const useWorldRegistration = ({
         const isNonMainnet = chain !== "mainnet";
         if (isNonMainnet && feeAmount > 0n && config?.feeTokenAddress) {
           const rpcUrl = getRpcUrlForChain(chain);
-          const rpcProvider = new RpcProvider({ nodeUrl: rpcUrl });
+          const rpcProvider = getCachedRpcProvider(rpcUrl);
           const currentBalance = await fetchTokenBalance(rpcProvider, config.feeTokenAddress, address!);
 
           if (currentBalance < feeAmount) {
