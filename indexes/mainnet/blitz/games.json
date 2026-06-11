@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-11T09:42:25.539Z",
+  "updatedAt": "2026-06-11T09:42:34.978Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -690,12 +690,13 @@
       "path": "runs/mainnet/blitz/bltz-swish-277.json",
       "inputPath": "inputs/mainnet/blitz/bltz-swish-277/27337887235-1.json",
       "status": "running",
-      "updatedAt": "2026-06-11T09:42:25.539Z",
+      "updatedAt": "2026-06-11T09:42:34.978Z",
       "workflowRef": "next",
       "currentStepId": "reserve-blitz-hyperstructures",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-06-11T10:27:34.978Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "reserve-blitz-hyperstructures",
+      "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1781177520,
       "durationSeconds": 3600,
       "artifacts": {}
