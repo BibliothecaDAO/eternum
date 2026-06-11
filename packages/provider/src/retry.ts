@@ -25,6 +25,21 @@ const RETRYABLE_MESSAGE_PATTERNS = ["nonce is too low", "nonce too old"];
 // Error patterns that should NOT be retried (business logic failures)
 const NON_RETRYABLE_MESSAGE_PATTERNS = ["execution reverted", "revert", "insufficient"];
 
+// Minimum wait before retrying a rate-limited request. Retrying 429s on the
+// regular 100ms-base backoff just adds pressure to an already-limited gateway.
+const RATE_LIMIT_MIN_DELAY_MS = 2_000;
+
+/**
+ * Whether the error is an HTTP 429 / rate-limit rejection.
+ */
+export function isRateLimitError(error: unknown): boolean {
+  if (!(error instanceof Error) && typeof error !== "object") return false;
+  const err = error as any;
+  if (err?.status === 429) return true;
+  const message = (err?.message ?? "").toLowerCase();
+  return message.includes("429") || message.includes("too many requests");
+}
+
 /**
  * Determine whether an error is transient and safe to retry.
  */
@@ -94,8 +109,12 @@ export async function withRetry<T>(
         retryCallback(error, attempt + 1);
       }
 
-      // Wait before retrying
-      const delay = calculateBackoffDelay(attempt, fullConfig);
+      // Wait before retrying. Rate-limited requests get a longer floor so the
+      // retry itself doesn't keep the gateway saturated.
+      let delay = calculateBackoffDelay(attempt, fullConfig);
+      if (isRateLimitError(error)) {
+        delay = Math.max(delay, RATE_LIMIT_MIN_DELAY_MS * (attempt + 1));
+      }
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }

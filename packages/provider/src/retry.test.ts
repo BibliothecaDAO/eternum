@@ -83,7 +83,7 @@ describe("retry utilities", () => {
       expect(fn).toHaveBeenCalledTimes(3);
     });
 
-    it("retries on HTTP 429 with exponential backoff", async () => {
+    it("retries on HTTP 429 with a rate-limit backoff floor", async () => {
       vi.useFakeTimers();
 
       const rateLimitError = new Error("Too Many Requests");
@@ -101,9 +101,13 @@ describe("retry utilities", () => {
         maxDelayMs: 5000,
       });
 
-      // Advance through the backoff delays
-      await vi.advanceTimersByTimeAsync(100); // first retry delay
-      await vi.advanceTimersByTimeAsync(500); // second retry delay (exponential)
+      // Rate-limited retries wait at least 2s, scaling with the attempt —
+      // the regular 100ms backoff would just keep the gateway saturated.
+      await vi.advanceTimersByTimeAsync(1_900);
+      expect(fn).toHaveBeenCalledTimes(1); // floor not yet elapsed
+      await vi.advanceTimersByTimeAsync(100); // first retry fires at 2s
+      expect(fn).toHaveBeenCalledTimes(2);
+      await vi.advanceTimersByTimeAsync(4_000); // second retry floor (2s * 2)
 
       const result = await retryPromise;
       expect(result).toBe("ok");
