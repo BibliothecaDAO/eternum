@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-froth-662",
-    "launchRequestId": "26986357656-1",
+    "gameName": "bltz-vibe-728",
+    "launchRequestId": "27347332507-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 26986357656,
+    "workflowRunId": 27347332507,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "45321963-7e74-4e9f-9217-f0bbb3548327"
+    "stepId": "create-world",
+    "leaseId": "a3495567-ba59-4bc1-8a62-dedfee4769be"
   },
-  "acquiredAt": "2026-06-04T23:47:58.494Z",
-  "heartbeatAt": "2026-06-04T23:48:14.180Z",
-  "expiresAt": "2026-06-04T23:48:14.180Z",
-  "releasedAt": "2026-06-04T23:48:14.180Z"
+  "acquiredAt": "2026-06-11T12:40:08.116Z",
+  "heartbeatAt": "2026-06-11T12:40:08.116Z",
+  "expiresAt": "2026-06-11T12:50:08.116Z"
 }
