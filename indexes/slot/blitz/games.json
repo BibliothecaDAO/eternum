@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-11T12:42:45.309Z",
+  "updatedAt": "2026-06-11T12:43:07.236Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -166,17 +166,20 @@
       "gameName": "bltz-vibe-728",
       "path": "runs/slot/blitz/bltz-vibe-728.json",
       "inputPath": "inputs/slot/blitz/bltz-vibe-728/27347332507-1.json",
-      "status": "running",
-      "updatedAt": "2026-06-11T12:42:45.309Z",
+      "status": "complete",
+      "updatedAt": "2026-06-11T12:43:07.236Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexer",
-      "activeLeaseExpiresAt": "2026-06-11T13:27:45.309Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "startTime": 1781182800,
       "durationSeconds": 3600,
-      "artifacts": {}
+      "artifacts": {
+        "indexerCreated": true,
+        "indexerTier": "basic",
+        "lastIndexerDescribeAt": "2026-06-11T12:43:05.931Z"
+      }
     }
   }
 }
