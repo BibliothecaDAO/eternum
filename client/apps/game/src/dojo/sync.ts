@@ -755,6 +755,9 @@ type InitialSyncOptions = {
   reportProgress?: boolean;
   subscriptionSetupTimeoutMs?: number;
   onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+  // Re-applies config-derived snapshots (configManager.setDojo) when the
+  // session-cached config fast path finishes its background revalidation.
+  onConfigRefreshed?: () => void;
 };
 
 export const initialSync = async (
@@ -917,7 +920,11 @@ export const initialSync = async (
   // highest value, so individual checkpoints are safe in any order.
   await Promise.all([
     runTimedTask("config query", 50, async () => {
-      await getConfigFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);
+      await getConfigFromTorii(
+        setup.network.toriiClient,
+        setup.network.contractComponents as any,
+        options.onConfigRefreshed,
+      );
     }),
     runTimedTask("address names query", 75, async () => {
       await getAddressNamesFromTorii(setup.network.toriiClient, setup.network.contractComponents as any);

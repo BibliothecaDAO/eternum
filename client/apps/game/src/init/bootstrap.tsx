@@ -132,7 +132,10 @@ const runBootstrap = async ({
   console.log("[STARTING DOJO SETUP]");
   configureDojoRuntime(worldContext);
   const setupResult = await runDojoSetup();
-  await runInitialWorldSync(setupResult, stores);
+  // When the config fast path resolves in the background after boot, re-run
+  // the config snapshot so cost tables don't stay empty for the session.
+  const refreshGameSystems = () => configureGameSystems(setupResult, worldContext.chain);
+  await runInitialWorldSync(setupResult, stores, refreshGameSystems);
   configureGameSystems(setupResult, worldContext.chain);
   await startGameRenderer(setupResult);
   inject();
@@ -289,10 +292,14 @@ const runDojoSetup = async (): Promise<SetupResult> => {
   return setupResult;
 };
 
-const runInitialWorldSync = async (setupResult: SetupResult, stores: BootstrapStores) => {
+const runInitialWorldSync = async (
+  setupResult: SetupResult,
+  stores: BootstrapStores,
+  onConfigRefreshed?: () => void,
+) => {
   const initialSyncStartedAt = performance.now();
   markGameEntryMilestone("initial-sync-started");
-  await initialSync(setupResult, stores.uiStore, stores.syncingStore.setInitialSyncProgress);
+  await initialSync(setupResult, stores.uiStore, stores.syncingStore.setInitialSyncProgress, { onConfigRefreshed });
   markGameEntryMilestone("initial-sync-completed");
   recordGameEntryDuration("initial-sync", performance.now() - initialSyncStartedAt);
   console.log("[INITIAL SYNC COMPLETED]");

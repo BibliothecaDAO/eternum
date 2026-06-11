@@ -199,6 +199,7 @@ export const ensureStructureSynced = async (
 export const getConfigFromTorii = async <S extends Schema>(
   client: ToriiClient,
   components: Component<S, Metadata, undefined>[],
+  onBackgroundRefresh?: () => void,
 ) => {
   const oneKeyConfigModels = [
     "s1_eternum-WorldConfig",
@@ -264,11 +265,21 @@ export const getConfigFromTorii = async <S extends Schema>(
   // flush. On reloads within the same tab session, skip blocking on the fetch —
   // fire it in the background so RECS still revalidates. Clear the marker on
   // failure so the next boot falls back to a blocking fetch.
+  //
+  // configManager snapshots RECS once at setDojo time, so when this fast path
+  // wins the race against the background fetch the cost tables are built from
+  // empty state ("No construction cost is configured"). onBackgroundRefresh
+  // lets the caller re-run that snapshot once the config entities land.
   if (hasFreshConfigCache()) {
-    fetchConfig().catch((error) => {
-      console.warn("[torii] Background config revalidation failed", error);
-      clearConfigFetchCache();
-    });
+    fetchConfig()
+      // One retry: a transient failure here would otherwise leave the whole
+      // session without building/upgrade costs.
+      .catch(() => fetchConfig())
+      .then(() => onBackgroundRefresh?.())
+      .catch((error) => {
+        console.warn("[torii] Background config revalidation failed", error);
+        clearConfigFetchCache();
+      });
     return;
   }
 
