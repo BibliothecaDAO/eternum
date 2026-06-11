@@ -134,7 +134,10 @@ const runBootstrap = async ({
   const setupResult = await runDojoSetup();
   // When the config fast path resolves in the background after boot, re-run
   // the config snapshot so cost tables don't stay empty for the session.
-  const refreshGameSystems = () => configureGameSystems(setupResult, worldContext.chain);
+  const refreshGameSystems = () => {
+    console.info("[config] re-applying config snapshot after background fetch");
+    configureGameSystems(setupResult, worldContext.chain);
+  };
   await runInitialWorldSync(setupResult, stores, refreshGameSystems);
   configureGameSystems(setupResult, worldContext.chain);
   await startGameRenderer(setupResult);
