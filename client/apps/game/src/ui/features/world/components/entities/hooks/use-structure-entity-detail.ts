@@ -16,6 +16,8 @@ import {
   getStructureRelicEffects,
 } from "@bibliothecadao/eternum";
 import { useDojo } from "@bibliothecadao/react";
+import { useComponentValue } from "@dojoengine/react";
+import { getEntityIdFromKeys } from "@/ui/utils/utils";
 import { getStructureFromToriiClient, type ResourceBalanceRow } from "@bibliothecadao/torii";
 import {
   type ClientComponents,
@@ -233,7 +235,18 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
   }, [lastRefresh, refetchStructure]);
 
   const structure = structureDetails?.structure;
-  const resources = structureDetails?.resources;
+
+  // For player-owned structures the Resource row is RECS-synced live and
+  // carries optimistic overrides (building costs, automation spends). Prefer
+  // it over the one-shot torii snapshot above so balances agree with the
+  // build menu and resource table. Remote structures aren't in the RECS sync
+  // and keep the torii-fetched snapshot.
+  const recsEntity = getEntityIdFromKeys([BigInt(structureEntityIdNumber || 0)]);
+  const liveStructure = useComponentValue(components.Structure, recsEntity);
+  const liveResources = useComponentValue(components.Resource, recsEntity);
+  const isOwnSyncedStructure =
+    liveStructure?.owner !== undefined && ContractAddress(liveStructure.owner) === userAddress;
+  const resources = isOwnSyncedStructure && liveResources ? liveResources : structureDetails?.resources;
   const playerGuild = structureDetails?.playerGuild;
   const guards = structureDetails?.guards || [];
   const addressName = structureDetails?.addressName;
