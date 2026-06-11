@@ -6,6 +6,7 @@
  * 2. Settlement phase - If user is registered but hasn't settled
  * 3. Auto-transitions to game when ready
  */
+import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getRealmInfo } from "@bibliothecadao/eternum";
 import { AnimatePresence, motion } from "framer-motion";
@@ -3575,7 +3576,7 @@ export const GameEntryModal = ({
         waitForTransaction?: (txHash: string) => Promise<unknown>;
       },
     ) => {
-      const provider = new RpcProvider({ nodeUrl: selectedWorldRpcUrl });
+      const provider = getCachedRpcProvider(selectedWorldRpcUrl);
       await waitForTransactionConfirmation({
         txHash,
         account: account as unknown as { waitForTransaction?: (txHash: string) => Promise<unknown> },
@@ -3940,9 +3941,7 @@ export const GameEntryModal = ({
     setVillagePassDistributorTransferError(null);
 
     try {
-      const distributorProvider = new RpcProvider({
-        nodeUrl: selectedWorldRpcUrl ?? getRpcUrlForChain(chain),
-      });
+      const distributorProvider = getCachedRpcProvider(selectedWorldRpcUrl ?? getRpcUrlForChain(chain));
       const distributorAccount = new Account({
         provider: distributorProvider,
         address: VILLAGE_PASS_DISTRIBUTOR_ADDRESS,
@@ -4014,7 +4013,7 @@ export const GameEntryModal = ({
 
     try {
       const baseRpcUrl = selectedWorldRpcUrl ?? getRpcUrlForChain(chain);
-      const provider = new RpcProvider({ nodeUrl: baseRpcUrl });
+      const provider = getCachedRpcProvider(baseRpcUrl);
 
       let startingRealmId = 1n;
       const rawInput = mintRealmTokenIdInput.trim();

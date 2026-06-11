@@ -1,5 +1,5 @@
+import { getCachedRpcProvider } from "@/utils/cached-rpc-provider";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { RpcProvider } from "starknet";
 import type { Chain } from "@contracts";
 import { getRpcUrlForChain } from "@/ui/features/admin/constants";
 import { createContractEntrypointSupportResolver, parseUint256CallResult } from "./pass-inventory-rpc";
@@ -45,7 +45,7 @@ export const useVillagePassInventory = ({
     return getRpcUrlForChain(chain);
   }, [chain, rpcUrl]);
 
-  const provider = useMemo(() => new RpcProvider({ nodeUrl: resolvedRpcUrl }), [resolvedRpcUrl]);
+  const provider = useMemo(() => getCachedRpcProvider(resolvedRpcUrl), [resolvedRpcUrl]);
   const supportsEntrypoint = useMemo(() => createContractEntrypointSupportResolver(provider), [provider]);
 
   const refetch = useCallback(() => {
