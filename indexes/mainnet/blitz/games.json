@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-12T09:03:38.487Z",
+  "updatedAt": "2026-06-12T09:41:17.410Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -374,48 +374,6 @@
       "startTime": 1780313400,
       "durationSeconds": 3600,
       "artifacts": {}
-    },
-    "bltz-jolt-315": {
-      "kind": "game",
-      "environment": "mainnet.blitz",
-      "gameName": "bltz-jolt-315",
-      "path": "runs/mainnet/blitz/bltz-jolt-315.json",
-      "inputPath": "inputs/mainnet/blitz/bltz-jolt-315/26942085488-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-04T18:48:07.549Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1780572900,
-      "durationSeconds": 3600,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-04T18:48:07.548Z"
-      }
-    },
-    "bltz-skid-753": {
-      "kind": "game",
-      "environment": "mainnet.blitz",
-      "gameName": "bltz-skid-753",
-      "path": "runs/mainnet/blitz/bltz-skid-753.json",
-      "inputPath": "inputs/mainnet/blitz/bltz-skid-753/26986202984-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-05T03:57:10.831Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1780624800,
-      "durationSeconds": 3600,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-05T03:57:10.830Z"
-      }
     },
     "bltz-axe-69": {
       "kind": "game",
