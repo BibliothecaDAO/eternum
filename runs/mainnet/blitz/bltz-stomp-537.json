@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "27405684629-1",
   "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-06-12T08:59:32.590Z",
-  "updatedAt": "2026-06-12T09:01:30.831Z",
+  "updatedAt": "2026-06-12T09:01:39.435Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,9 +36,10 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Waiting for game started",
+      "startedAt": "2026-06-12T09:01:39.435Z"
     },
     {
       "id": "configure-world",
@@ -82,5 +83,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-stomp-537.json",
     "worldAddress": "0x00e37795e6e0407699e778d732eb45044890595336ba8eb58cd1e6baf7cb378d",
     "createGameTxHash": "0x337909d877ff2942f5f1b99c137a78d0dc015c3de1eba45d86afb9e73af1cf"
+  },
+  "activeLease": {
+    "launchRequestId": "27405684629-1",
+    "workflowRunId": 27405684629,
+    "workflowRunAttempt": 1,
+    "stepId": "wait-for-factory-index",
+    "acquiredAt": "2026-06-12T09:01:39.435Z",
+    "expiresAt": "2026-06-12T09:46:39.435Z"
   }
 }
