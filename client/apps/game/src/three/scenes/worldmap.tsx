@@ -1791,8 +1791,7 @@ export default class WorldmapScene extends WarpTravel {
       onAuthoritativePositionApplied: (update) => this.clearPendingArmyMovementFromAuthoritativePosition(update),
       shouldRecoverPendingArmyRemovalFromExplorerTroops: (update) =>
         this.shouldRecoverPendingArmyRemovalFromExplorerTroopsUpdate(update),
-      recoverPendingArmyRemovalFromExplorerTroops: (update) =>
-        this.recoverPendingArmyRemovalFromExplorerTroops(update),
+      recoverPendingArmyRemovalFromExplorerTroops: (update) => this.recoverPendingArmyRemovalFromExplorerTroops(update),
       shouldSkipStalePositionUpdate: (entityId, normalized) =>
         this.armyManager.shouldSkipStalePositionUpdate(entityId, normalized),
     });
