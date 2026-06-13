@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-13T13:16:59.970Z",
+  "updatedAt": "2026-06-13T13:31:46.076Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3510,13 +3510,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-swish-174/torii",
         "version": "v1.8.16",
         "branch": "main",
-        "describedAt": "2026-06-13T11:21:54.842Z"
+        "describedAt": "2026-06-13T13:31:46.075Z"
       },
-      "updatedAt": "2026-06-13T11:21:54.842Z"
+      "updatedAt": "2026-06-13T13:31:46.076Z"
     },
     "apac-gladiator-13-06-26-1200": {
       "gameName": "apac-gladiator-13-06-26-1200",
