@@ -22,7 +22,7 @@ describe("worldmap army tile-sync recovery", () => {
     );
     expect(listenerStart).toBeGreaterThan(-1);
 
-    const listenerBody = src.slice(listenerStart, listenerStart + 3400);
+    const listenerBody = src.slice(listenerStart, listenerStart + 4400);
     const applyPos = listenerBody.indexOf("await this.armyManager.onTileUpdate(update)");
     const syncPos = listenerBody.indexOf("this.armyLastTileSyncAt.set(update.entityId, Date.now())");
 

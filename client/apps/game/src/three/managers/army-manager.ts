@@ -1632,6 +1632,20 @@ export class ArmyManager {
     return this.isArmyVisible(army, this.getChunkBounds(startRow, startCol));
   }
 
+  // Loop B (worldmap RECS sweep) visibility signal. Reuses the chunk-bounds
+  // predicate rather than visibleArmyIndices membership: an army can be
+  // logically visible yet undrawn (the exact desync the sweep heals), so slot
+  // membership would under-report. Mid-transition the answer is not trusted,
+  // mirroring reconcileArmyRenderIntegrity's settled-chunk gate.
+  public isArmyVisibleInCommittedChunk(entityId: ID): boolean {
+    if (this.isArmyChunkTransitioning || !isCommittedManagerChunk(this.currentChunkKey)) {
+      return false;
+    }
+
+    const army = this.armies.get(entityId);
+    return army !== undefined && this.isArmyVisibleInCurrentChunk(army);
+  }
+
   private drainDeferredArmyQueue(): void {
     if (this.deferredArmyQueue.size === 0) return;
     const deferred = [...this.deferredArmyQueue];
@@ -2725,8 +2739,10 @@ export class ArmyManager {
       if (violation.kind === "orphaned-drawn-slot") {
         this.armyModel.purgeDrawnSlot(violation.slot);
         purgedAny = true;
+        incrementWorldmapRenderCounter("armyRenderIntegrityHealOrphanSlot");
       } else {
         void this.renderArmyIntoCurrentChunkIfVisible(this.toNumericId(violation.entityId));
+        incrementWorldmapRenderCounter("armyRenderIntegrityHealVisibleUndrawn");
       }
 
       if (import.meta.env?.DEV) {
@@ -3614,6 +3630,23 @@ ${
     this.refreshArmyInstance(army, slot, modelType);
     this.refreshVisibleArmyCollection();
     this.updateVisibleArmyBuffers();
+  }
+
+  // DEV-only desync injector for the Loop B sweep test harness: forces the
+  // rendered position away from RECS truth without touching the spatial index
+  // or movement bookkeeping, so the sweep's snap_position heal can be exercised.
+  public debugSetArmyHexCoords(entityId: ID, hexCoords: { col: number; row: number }): void {
+    if (!import.meta.env?.DEV) {
+      return;
+    }
+
+    const army = this.armies.get(entityId);
+    if (!army) {
+      return;
+    }
+
+    army.hexCoords = new Position({ x: hexCoords.col, y: hexCoords.row });
+    this.refreshArmyPositionPresentation(army);
   }
 
   public destroy() {

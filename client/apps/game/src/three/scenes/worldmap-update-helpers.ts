@@ -6,7 +6,8 @@ export type PendingArmyRemovalCancelSource =
   | "delete"
   | "superseded"
   | "explorer_troops_zero"
-  | "explorer_troops_live_recovery";
+  | "explorer_troops_live_recovery"
+  | "recs_sweep";
 
 type ExplorerTroopsUpdateHandlers = {
   cancelPendingArmyRemoval: (entityId: ID, source: PendingArmyRemovalCancelSource) => void;

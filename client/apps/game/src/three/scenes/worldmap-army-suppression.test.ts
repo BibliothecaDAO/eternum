@@ -62,7 +62,9 @@ describe("worldmap army suppression integration", () => {
     const listenerStart = src.indexOf("this.worldUpdateListener.Army.onExplorerTroopsUpdate((update) => {");
     expect(listenerStart).toBeGreaterThan(-1);
 
-    const listenerBody = src.slice(listenerStart, listenerStart + 1200);
+    // Window spans the listener plus the shared applyExplorerTroopsSystemUpdate
+    // helper it delegates to (factored out for the Loop B RECS sweep).
+    const listenerBody = src.slice(listenerStart, listenerStart + 1800);
     expect(listenerBody).not.toContain("this.cancelPendingArmyRemoval(update.entityId)");
     expect(listenerBody).not.toContain("restoreArmyVisualIfVisible(update.entityId)");
     expect(listenerBody).toContain("this.armyManager.updateArmyFromExplorerTroopsUpdate(update)");
