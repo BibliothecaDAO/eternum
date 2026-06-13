@@ -82,7 +82,17 @@ export type WorldmapRenderCounter =
   | "pendingArmyRemovalCancelledByDelete"
   | "pendingArmyRemovalCancelledBySuperseded"
   | "pendingArmyRemovalCancelledByExplorerTroopsZero"
-  | "pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery";
+  | "pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery"
+  | "pendingArmyRemovalCancelledByRecsSweep"
+  | "armyAuthoritativeSweepConfirmedDead"
+  | "armyAuthoritativeSweepReapplied"
+  | "armyAuthoritativeSweepFailed"
+  | "armyRecsSweepRemovedDeadZero"
+  | "armyRecsSweepRemovedDeadMissing"
+  | "armyRecsSweepSnappedPosition"
+  | "armyRecsSweepRestoredAlive"
+  | "armyRenderIntegrityHealOrphanSlot"
+  | "armyRenderIntegrityHealVisibleUndrawn";
 
 export interface WorldmapZoomTelemetrySummary {
   controlsChangeEvents: number;
@@ -219,6 +229,16 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     pendingArmyRemovalCancelledBySuperseded: 0,
     pendingArmyRemovalCancelledByExplorerTroopsZero: 0,
     pendingArmyRemovalCancelledByExplorerTroopsLiveRecovery: 0,
+    pendingArmyRemovalCancelledByRecsSweep: 0,
+    armyAuthoritativeSweepConfirmedDead: 0,
+    armyAuthoritativeSweepReapplied: 0,
+    armyAuthoritativeSweepFailed: 0,
+    armyRecsSweepRemovedDeadZero: 0,
+    armyRecsSweepRemovedDeadMissing: 0,
+    armyRecsSweepSnappedPosition: 0,
+    armyRecsSweepRestoredAlive: 0,
+    armyRenderIntegrityHealOrphanSlot: 0,
+    armyRenderIntegrityHealVisibleUndrawn: 0,
   },
   forceRefreshReasons: {
     default: 0,

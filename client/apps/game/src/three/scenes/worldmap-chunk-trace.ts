@@ -39,7 +39,9 @@ export type WorldmapChunkTraceEvent =
   | "reconnect_refresh_drained"
   | "torii_resubscribe_requested"
   | "torii_resubscribe_completed"
-  | "torii_resubscribe_failed";
+  | "torii_resubscribe_failed"
+  | "army_authoritative_sweep"
+  | "army_recs_sweep_heal";
 
 export interface WorldmapChunkTraceEntry {
   id: number;
