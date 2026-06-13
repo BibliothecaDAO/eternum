@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-13T10:56:57.146Z",
+  "updatedAt": "2026-06-13T11:21:54.842Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3504,6 +3504,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-12-06-26-1800 not found"
       },
       "updatedAt": "2026-06-13T10:56:57.146Z"
+    },
+    "bltz-swish-174": {
+      "gameName": "bltz-swish-174",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-swish-174/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-13T11:21:54.842Z"
+      },
+      "updatedAt": "2026-06-13T11:21:54.842Z"
     }
   }
 }
