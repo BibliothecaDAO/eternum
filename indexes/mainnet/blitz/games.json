@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-13T08:36:09.882Z",
+  "updatedAt": "2026-06-13T10:30:40.253Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -598,6 +598,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-06-12T16:32:42.265Z"
       }
+    },
+    "bltz-swish-174": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "bltz-swish-174",
+      "path": "runs/mainnet/blitz/bltz-swish-174.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-swish-174/27464206378-1.json",
+      "status": "running",
+      "updatedAt": "2026-06-13T10:30:40.253Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-06-13T11:47:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
     }
   }
 }
