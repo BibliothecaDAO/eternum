@@ -39,6 +39,13 @@ const SWEEP_QUERY_BATCH_SIZE = 100;
 const SUSPICIOUS_DEAD_MIN_COUNT = 10;
 const SUSPICIOUS_DEAD_MAX_RATIO = 0.5;
 
+interface ToriiEntityPageItem {
+  hashed_keys: string;
+  models?: Record<string, object | undefined>;
+}
+
+type ToriiEntityPageItems = ToriiEntityPageItem[] | Record<string, ToriiEntityPageItem>;
+
 export interface ArmyAuthoritativeSweepClassification {
   /** Missing from Torii for the second consecutive sweep — confirmed dead. */
   confirmedDead: ID[];
@@ -125,6 +132,13 @@ const hasExplorerTroopsModelData = (models: Record<string, object | undefined> |
   return model !== undefined && model !== null && Object.keys(model).length > 0;
 };
 
+const normalizeToriiPageItems = (items: ToriiEntityPageItems | undefined): ToriiEntityPageItem[] => {
+  if (!items) {
+    return [];
+  }
+  return Array.isArray(items) ? items : Object.values(items);
+};
+
 /**
  * Queries Torii authoritatively for the given army ids and reconciles local
  * RECS: present armies are re-applied (awaited, so RECS writes land before the
@@ -163,7 +177,7 @@ export async function sweepArmiesAgainstTorii<S extends Schema>(
           historical: false,
         });
 
-        const items = Array.isArray(page.items) ? page.items : Object.values(page.items ?? {});
+        const items = normalizeToriiPageItems(page.items as ToriiEntityPageItems | undefined);
         const presentItems = items.filter((item) => hasExplorerTroopsModelData(item.models));
 
         for (const item of presentItems) {
