@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-12T16:32:42.266Z",
+  "updatedAt": "2026-06-13T08:36:09.882Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -374,48 +374,6 @@
       "startTime": 1780313400,
       "durationSeconds": 3600,
       "artifacts": {}
-    },
-    "bltz-axe-69": {
-      "kind": "game",
-      "environment": "mainnet.blitz",
-      "gameName": "bltz-axe-69",
-      "path": "runs/mainnet/blitz/bltz-axe-69.json",
-      "inputPath": "inputs/mainnet/blitz/bltz-axe-69/27009463302-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-05T13:12:06.522Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1780659000,
-      "durationSeconds": 3600,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-05T13:12:06.522Z"
-      }
-    },
-    "bltz-blink-436": {
-      "kind": "game",
-      "environment": "mainnet.blitz",
-      "gameName": "bltz-blink-436",
-      "path": "runs/mainnet/blitz/bltz-blink-436.json",
-      "inputPath": "inputs/mainnet/blitz/bltz-blink-436/27014440433-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-05T14:17:44.067Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1780662900,
-      "durationSeconds": 3600,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-05T14:17:44.067Z"
-      }
     },
     "bltz-thrum-691": {
       "kind": "game",

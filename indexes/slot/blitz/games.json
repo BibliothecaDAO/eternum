@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-11T22:37:45.988Z",
+  "updatedAt": "2026-06-13T08:36:09.882Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -96,48 +96,6 @@
       "startTime": 1780046400,
       "durationSeconds": 7200,
       "artifacts": {}
-    },
-    "bltz-glow-285": {
-      "kind": "game",
-      "environment": "slot.blitz",
-      "gameName": "bltz-glow-285",
-      "path": "runs/slot/blitz/bltz-glow-285.json",
-      "inputPath": "inputs/slot/blitz/bltz-glow-285/26733814760-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-06T05:42:12.197Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1780286400,
-      "durationSeconds": 432000,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-06T05:42:12.197Z"
-      }
-    },
-    "bltz-zoom-993": {
-      "kind": "game",
-      "environment": "slot.blitz",
-      "gameName": "bltz-zoom-993",
-      "path": "runs/slot/blitz/bltz-zoom-993.json",
-      "inputPath": "inputs/slot/blitz/bltz-zoom-993/26736050786-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-06T05:42:18.264Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1780290000,
-      "durationSeconds": 432000,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-06T05:42:18.264Z"
-      }
     },
     "bltz-froth-662": {
       "kind": "game",
