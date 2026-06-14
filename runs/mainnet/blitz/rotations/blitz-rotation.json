@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27511636892-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-06-14T20:51:18.940Z",
+  "updatedAt": "2026-06-14T20:55:16.200Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -13326,7 +13326,7 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-14T20:40:11.727Z"
+          "pendingIndexerTierRequestedAt": "2026-06-14T20:55:13.171Z"
         }
       },
       {
