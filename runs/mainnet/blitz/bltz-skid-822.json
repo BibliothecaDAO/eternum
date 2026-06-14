@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "27492093614-1",
   "currentStepId": null,
   "createdAt": "2026-06-14T07:37:14.985Z",
-  "updatedAt": "2026-06-14T22:10:21.547Z",
+  "updatedAt": "2026-06-14T22:12:09.237Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x38bffdf6eedcb5564bab636c8c2d6009202500a03331988f58edbbf7a693d3"
     ],
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-skid-822/torii",
     "indexerVersion": "v1.8.16",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-06-14T07:40:57.387Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-06-14T22:10:19.794Z"
+    "lastIndexerDescribeAt": "2026-06-14T22:12:09.237Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-06-14T07:41:07.985Z"
 }
