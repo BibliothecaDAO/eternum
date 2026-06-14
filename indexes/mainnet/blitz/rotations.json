@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-14T20:30:25.975Z",
+  "updatedAt": "2026-06-14T20:31:13.885Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -84,9 +84,9 @@
       "environment": "mainnet.blitz",
       "rotationName": "blitz-rotation",
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/27468722165-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/27511121212-1.json",
       "status": "attention",
-      "updatedAt": "2026-06-14T20:30:25.975Z",
+      "updatedAt": "2026-06-14T20:31:13.885Z",
       "workflowRef": "next",
       "currentStepId": "configure-worlds",
       "hasRunningStep": false,
@@ -95,13 +95,13 @@
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15,
-        "nextRetryAt": "2026-06-14T20:45:06.753Z",
+        "nextRetryAt": "2026-06-14T20:46:13.885Z",
         "lastRetryAt": "2026-06-14T20:30:06.753Z"
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-06-13T14:11:15.147Z",
-        "lastEvaluatedAt": "2026-06-13T13:56:15.147Z"
+        "nextEvaluationAt": "2026-06-14T20:46:13.885Z",
+        "lastEvaluatedAt": "2026-06-14T20:31:13.885Z"
       },
       "games": [
         {
@@ -933,6 +933,30 @@
         {
           "gameName": "na-gladiator-15-06-26-0100",
           "startTime": 1781485200,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "apac-gladiator-16-06-26-1100",
+          "startTime": 1781607600,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "na-gladiator-17-06-26-0200",
+          "startTime": 1781661600,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "eu-gladiator-17-06-26-1900",
+          "startTime": 1781722800,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "apac-gladiator-18-06-26-1000",
+          "startTime": 1781776800,
           "durationSeconds": 3600,
           "artifacts": {}
         }
