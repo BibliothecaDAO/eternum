@@ -17,16 +17,13 @@ const namespace: string = "s1_eternum";
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const KATANA_CHAIN_NETWORK = "Katana Local";
 const KATANA_CHAIN_NAME = "katana";
-const KATANA_RPC_URL = "http://localhost:5050";
 const isLocal = env.VITE_PUBLIC_CHAIN === "local";
 
 // ==============================================
 
 const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f34";
-const SLOT_RPC_URL = "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana";
 
 const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
-const SLOT_RPC_URL_TEST = "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana";
 
 const isSlot = env.VITE_PUBLIC_CHAIN === "slot";
 const isSlottest = env.VITE_PUBLIC_CHAIN === "slottest";
@@ -46,15 +43,7 @@ const chain_id = isLocal
 const controller = new ControllerConnector({
   chains: [
     {
-      rpcUrl: isLocal
-        ? KATANA_RPC_URL
-        : isSlot
-          ? SLOT_RPC_URL
-          : isSlottest
-            ? SLOT_RPC_URL_TEST
-            : env.VITE_PUBLIC_NODE_URL !== "http://localhost:5050"
-              ? env.VITE_PUBLIC_NODE_URL
-              : "https://api.cartridge.gg/x/starknet/sepolia",
+      rpcUrl: env.VITE_PUBLIC_NODE_URL,
     },
   ],
   defaultChainId: isLocal
@@ -84,10 +73,10 @@ const katanaLocalChain = {
   },
   rpcUrls: {
     default: {
-      http: [KATANA_RPC_URL],
+      http: [env.VITE_PUBLIC_NODE_URL],
     },
     public: {
-      http: [KATANA_RPC_URL],
+      http: [env.VITE_PUBLIC_NODE_URL],
     },
   },
   paymasterRpcUrls: {

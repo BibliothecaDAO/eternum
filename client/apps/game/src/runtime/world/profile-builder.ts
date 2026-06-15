@@ -2,7 +2,7 @@ import { SqlApi } from "@bibliothecadao/torii";
 import type { Chain } from "@contracts";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
 
-import { env, hasPublicNodeUrl } from "../../../env";
+import { env } from "../../../env";
 import { getFactorySqlBaseUrl } from "./factory-endpoints";
 import { resolveWorldContracts, resolveWorldDeploymentFromFactory } from "./factory-resolver";
 import { buildSharedSlotRpcUrl, isRpcUrlCompatibleForChain, isSlotWorldChain, normalizeRpcUrl } from "./normalize";
@@ -153,8 +153,7 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
       : chain === "mainnet" || chain === "sepolia"
         ? `${cartridgeApiBase}/x/starknet/${chain}`
         : env.VITE_PUBLIC_NODE_URL;
-  const canUseEnvRpc =
-    !isSlotWorldChain(chain) && hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
+  const canUseEnvRpc = !isSlotWorldChain(chain) && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);
   const fallbackRpcUrl = canUseEnvRpc ? env.VITE_PUBLIC_NODE_URL : chainDefaultRpcUrl;
   const rpcUrl = normalizeRpcUrl(
     resolveWorldProfileRpcUrl({

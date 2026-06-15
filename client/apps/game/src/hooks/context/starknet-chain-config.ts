@@ -4,7 +4,6 @@ import { buildSharedSlotRpcUrl, isRpcUrlCompatibleForChain, normalizeRpcUrl } fr
 import { constants, shortString } from "starknet";
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
-const KATANA_RPC_URL = "http://localhost:5050";
 const SLOT_CHAIN_ID = "0x57505f455445524e554d5f424c49545a5f534c4f545f34";
 const SLOT_CHAIN_ID_TEST = "0x57505f455445524e554d5f424c49545a5f534c4f545f54455354";
 
@@ -58,14 +57,24 @@ const buildSupportedRpcUrls = (preferredRpcUrl: string, ...additionalRpcUrls: st
 
 const resolveChainCompatibleRuntimeRpcUrl = ({
   chain,
+  configuredRpcUrl,
   fallbackRpcUrl,
   requestedRpcUrl,
 }: {
   chain: Chain;
+  configuredRpcUrl: string;
   fallbackRpcUrl: string;
   requestedRpcUrl: string;
 }): string => {
-  return isRpcUrlCompatibleForChain(chain, requestedRpcUrl) ? requestedRpcUrl : fallbackRpcUrl;
+  if (isRpcUrlCompatibleForChain(chain, requestedRpcUrl)) {
+    return requestedRpcUrl;
+  }
+
+  if (isRpcUrlCompatibleForChain(chain, configuredRpcUrl)) {
+    return configuredRpcUrl;
+  }
+
+  return fallbackRpcUrl;
 };
 
 const resolveSlotRuntimeChainId = (selectedChain: Chain, baseRpcUrl: string): string => {
@@ -85,14 +94,17 @@ export const resolveStarknetRuntimeConfig = ({
   fallbackChain,
   selectedChain,
   baseRpcUrl,
+  configuredRpcUrl,
   cartridgeApiBase,
 }: {
   fallbackChain: Chain;
   selectedChain: Chain | null;
   baseRpcUrl: string;
+  configuredRpcUrl: string;
   cartridgeApiBase: string;
 }): StarknetRuntimeConfig => {
   const normalizedBaseRpcUrl = normalizeRpcUrl(baseRpcUrl);
+  const normalizedConfiguredRpcUrl = normalizeRpcUrl(configuredRpcUrl);
   const effectiveChain = selectedChain ?? fallbackChain;
   const mainnetRpcUrl = buildCartridgeRpcUrl(cartridgeApiBase, "/x/starknet/mainnet/rpc/v0_9");
   const sepoliaRpcUrl = buildCartridgeRpcUrl(cartridgeApiBase, "/x/starknet/sepolia/rpc/v0_9");
@@ -102,14 +114,15 @@ export const resolveStarknetRuntimeConfig = ({
     return {
       chainKind: "local",
       defaultChainId: KATANA_CHAIN_ID,
-      rpcUrl: KATANA_RPC_URL,
-      controllerSupportedRpcUrls: [KATANA_RPC_URL, slotRpcUrl, sepoliaRpcUrl, mainnetRpcUrl],
+      rpcUrl: normalizedBaseRpcUrl,
+      controllerSupportedRpcUrls: buildSupportedRpcUrls(normalizedBaseRpcUrl, slotRpcUrl, sepoliaRpcUrl, mainnetRpcUrl),
     };
   }
 
   if (effectiveChain === "mainnet") {
     const runtimeRpcUrl = resolveChainCompatibleRuntimeRpcUrl({
       chain: effectiveChain,
+      configuredRpcUrl: normalizedConfiguredRpcUrl,
       fallbackRpcUrl: mainnetRpcUrl,
       requestedRpcUrl: normalizedBaseRpcUrl,
     });
@@ -125,6 +138,7 @@ export const resolveStarknetRuntimeConfig = ({
   if (effectiveChain === "sepolia") {
     const runtimeRpcUrl = resolveChainCompatibleRuntimeRpcUrl({
       chain: effectiveChain,
+      configuredRpcUrl: normalizedConfiguredRpcUrl,
       fallbackRpcUrl: sepoliaRpcUrl,
       requestedRpcUrl: normalizedBaseRpcUrl,
     });

@@ -21,37 +21,37 @@ const namespace: string = "s1_eternum";
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
 const KATANA_CHAIN_NETWORK = "Katana Local";
 const KATANA_CHAIN_NAME = "katana";
-const KATANA_RPC_URL = "http://localhost:5050";
 const fallbackChain = env.VITE_PUBLIC_CHAIN as RuntimeChain;
 const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
-const katanaLocalChain = {
-  id: BigInt(KATANA_CHAIN_ID),
-  network: KATANA_CHAIN_NETWORK,
-  name: KATANA_CHAIN_NAME,
-  nativeCurrency: {
-    address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
-    name: "Ether",
-    symbol: "ETH",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: [KATANA_RPC_URL],
+const createKatanaLocalChain = (rpcUrl: string): Chain =>
+  ({
+    id: BigInt(KATANA_CHAIN_ID),
+    network: KATANA_CHAIN_NETWORK,
+    name: KATANA_CHAIN_NAME,
+    nativeCurrency: {
+      address: "0x049d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
+      name: "Ether",
+      symbol: "ETH",
+      decimals: 18,
     },
-    public: {
-      http: [KATANA_RPC_URL],
+    rpcUrls: {
+      default: {
+        http: [rpcUrl],
+      },
+      public: {
+        http: [rpcUrl],
+      },
     },
-  },
-  paymasterRpcUrls: {
-    default: {
-      http: [],
+    paymasterRpcUrls: {
+      default: {
+        http: [],
+      },
+      public: {
+        http: [],
+      },
     },
-    public: {
-      http: [],
-    },
-  },
-} as const satisfies Chain;
+  }) as const satisfies Chain;
 
 // Custom QueryClient with game-appropriate defaults
 // - Disable refetchOnWindowFocus to prevent surprise refetch storms when alt-tabbing
@@ -85,6 +85,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
         fallbackChain,
         selectedChain: runtimeChain,
         baseRpcUrl,
+        configuredRpcUrl: env.VITE_PUBLIC_NODE_URL,
         cartridgeApiBase,
       }),
     [baseRpcUrl, runtimeChain],
@@ -125,7 +126,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
 
   const resolvedChains = useMemo(() => {
     if (runtimeConfig.chainKind === "local") {
-      return [katanaLocalChain];
+      return [createKatanaLocalChain(runtimeConfig.rpcUrl)];
     }
 
     if (runtimeConfig.chainKind === "slot") {
@@ -137,7 +138,7 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
     }
 
     return [sepolia];
-  }, [runtimeConfig.chainKind, runtimeConfig.defaultChainId]);
+  }, [runtimeConfig.chainKind, runtimeConfig.defaultChainId, runtimeConfig.rpcUrl]);
 
   return (
     <StarknetConfig
@@ -165,7 +166,7 @@ const resolveWalletProviderBaseRpcUrl = ({
   defaultRpcUrl: string;
 }): string => {
   if (runtimeChain === "local") {
-    return KATANA_RPC_URL;
+    return defaultRpcUrl;
   }
 
   return profileRpcUrl ?? defaultRpcUrl;

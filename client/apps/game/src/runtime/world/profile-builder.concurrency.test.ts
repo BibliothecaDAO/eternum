@@ -44,7 +44,6 @@ vi.mock("../../../env", () => ({
     VITE_PUBLIC_CARTRIDGE_API_BASE: "https://api.cartridge.gg",
     VITE_PUBLIC_NODE_URL: "https://fallback-rpc.example",
   },
-  hasPublicNodeUrl: true,
 }));
 
 vi.mock("./factory-endpoints", () => ({
