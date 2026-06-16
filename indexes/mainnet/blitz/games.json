@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-16T17:40:24.266Z",
+  "updatedAt": "2026-06-16T18:00:25.610Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -669,7 +669,7 @@
       "path": "runs/mainnet/blitz/blitz-focgers-001.json",
       "inputPath": "inputs/mainnet/blitz/blitz-focgers-001/27605512757-1.json",
       "status": "complete",
-      "updatedAt": "2026-06-16T17:40:24.266Z",
+      "updatedAt": "2026-06-16T18:00:25.610Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -682,7 +682,7 @@
         "indexerTier": "basic",
         "lastIndexerDescribeAt": "2026-06-16T08:49:23.183Z",
         "pendingIndexerTierTarget": "pro",
-        "pendingIndexerTierRequestedAt": "2026-06-16T17:40:22.335Z"
+        "pendingIndexerTierRequestedAt": "2026-06-16T18:00:23.253Z"
       }
     }
   }
