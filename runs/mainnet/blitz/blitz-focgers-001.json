@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "27605512757-1",
   "currentStepId": null,
   "createdAt": "2026-06-16T08:45:35.591Z",
-  "updatedAt": "2026-06-16T18:00:25.610Z",
+  "updatedAt": "2026-06-16T18:02:24.341Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x747ec53d636e64ad65de4de2cf1ba3e5ac1ff001b461ccb788297bb7884288"
     ],
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/blitz-focgers-001/torii",
     "indexerVersion": "v1.8.16",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-06-16T08:49:23.183Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-06-16T18:00:23.253Z"
+    "lastIndexerDescribeAt": "2026-06-16T18:02:24.340Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-06-16T08:49:34.899Z"
 }
