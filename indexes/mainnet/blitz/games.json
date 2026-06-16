@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-16T08:48:44.767Z",
+  "updatedAt": "2026-06-16T08:48:54.358Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -669,11 +669,10 @@
       "path": "runs/mainnet/blitz/blitz-focgers-001.json",
       "inputPath": "inputs/mainnet/blitz/blitz-focgers-001/27605512757-1.json",
       "status": "running",
-      "updatedAt": "2026-06-16T08:48:44.767Z",
+      "updatedAt": "2026-06-16T08:48:54.358Z",
       "workflowRef": "next",
-      "currentStepId": "grant-lootchest-role",
-      "activeLeaseExpiresAt": "2026-06-16T09:33:44.767Z",
-      "hasRunningStep": true,
+      "currentStepId": "create-indexer",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-indexer",
       "startTime": 1781607600,
