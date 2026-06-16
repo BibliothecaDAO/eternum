@@ -34,7 +34,7 @@ export const ARMY_AUTHORITATIVE_MIN_TRACKED_AGE_MS = 30_000;
 // existing catch treats exactly like a failed query: state unchanged, never a
 // mass-death. This bounds how long a slow/degraded Torii can hold the loop —
 // the LOCAL-freeze failure mode Phase 3 instruments.
-export const ARMY_SWEEP_QUERY_TIMEOUT_MS = 15_000;
+const ARMY_SWEEP_QUERY_TIMEOUT_MS = 15_000;
 
 const EXPLORER_TROOPS_MODEL = "s1_eternum-ExplorerTroops";
 const SWEEP_QUERY_BATCH_SIZE = 100;
@@ -204,7 +204,13 @@ export async function sweepArmiesAgainstTorii<S extends Schema>(
 
   const candidateIds = input.candidateIds.filter(isValidId);
   if (candidateIds.length === 0) {
-    return { outcome: "skipped_empty", confirmedDead: [], nextMissing: new Set(), reappliedCount: 0, timing: buildTiming() };
+    return {
+      outcome: "skipped_empty",
+      confirmedDead: [],
+      nextMissing: new Set(),
+      reappliedCount: 0,
+      timing: buildTiming(),
+    };
   }
 
   const queryTimeoutMs = input.queryTimeoutMs ?? ARMY_SWEEP_QUERY_TIMEOUT_MS;

@@ -14,7 +14,7 @@
  * testable and documents the gap in one place.
  */
 
-export interface ToriiStreamCloseInfo {
+interface ToriiStreamCloseInfo {
   reason: string;
 }
 

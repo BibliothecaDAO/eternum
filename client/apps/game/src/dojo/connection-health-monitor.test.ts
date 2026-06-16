@@ -292,11 +292,12 @@ describe("ConnectionHealthMonitor", () => {
     });
     monitor.start();
 
-    const win = (globalThis as { window: FakeEventTarget }).window;
-    const offlineHandler = win.addEventListener.mock.calls.find(([event]: [string]) => event === "offline")?.[1];
+    const win = (globalThis as unknown as { window: FakeEventTarget }).window;
+    const offlineCall = win.addEventListener.mock.calls.find((call) => call[0] === "offline");
+    const offlineHandler = offlineCall?.[1] as (() => void) | undefined;
     expect(offlineHandler).toBeTypeOf("function");
 
-    offlineHandler();
+    offlineHandler?.();
 
     expect(useConnectionStore.getState().isOnline).toBe(false);
     expect(useConnectionStore.getState().lastOfflineAt).toBe(Date.now());
