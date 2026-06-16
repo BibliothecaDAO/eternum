@@ -7,10 +7,12 @@ import { createConnectionDeadEndRecoveryGate } from "@/dojo/connection-dead-end-
 import { createToriiHeartbeatLifecycle } from "@/dojo/torii-heartbeat-lifecycle";
 import { cancelEntityStreamSubscription, initialSync } from "@/dojo/sync";
 import { probeToriiHealth } from "@/dojo/torii-health-probe";
+import { fetchServerWorldAvailability } from "@/dojo/fetch-server-world-availability";
 import { requestGameRebootstrap } from "@/game-entry/bootstrap-controller";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
   addNetworkBreadcrumb,
+  reportDisconnectClassification,
   reportNetworkOutageDeadEnd,
   reportNetworkOutageResolved,
   setNetworkHealthScopeTags,
@@ -236,6 +238,17 @@ const ConnectionMonitor = () => {
         }
       },
       healthCheckFn: () => probeToriiHealth(toriiBaseUrl),
+      // Phase 2: independent server-side ground truth for the active world, so a
+      // disconnect can be split into LOCAL vs REMOTE rather than inferred.
+      getServerAvailability: () => fetchServerWorldAvailability(env.VITE_PUBLIC_REALTIME_URL, activeWorld?.name),
+      onDisconnectClassified: (classification, snapshot) => {
+        addNetworkBreadcrumb({
+          event: "outage_start",
+          streamType: "both",
+          status: `${classification.source}:${classification.reason}`,
+        });
+        reportDisconnectClassification(classification, snapshot);
+      },
       onRecovery: (outageMs, attempts) => {
         toast.success("Back online", {
           description: `Reconnected after ${Math.max(1, Math.round(outageMs / 1000))}s offline.`,

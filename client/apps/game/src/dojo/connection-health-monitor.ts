@@ -1,5 +1,13 @@
-import { useConnectionStore } from "@/hooks/store/use-connection-store";
+import { useConnectionStore, type ConnectionStatus } from "@/hooks/store/use-connection-store";
 import { addToriiStreamBreadcrumb, reportToriiSubscriptionLifecycle } from "@/observability/network-health-reporting";
+import {
+  classifyDisconnect,
+  type DisconnectClassification,
+  type DisconnectSignalSnapshot,
+  type HealthProbeSignal,
+  type ServerAvailabilityVerdict,
+} from "./connection-disconnect-classification";
+import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
 import type { ToriiHealthProbeResult, ToriiHealthUnreachableReason } from "./torii-health-probe";
 
 const DEFAULT_HEALTH_CHECK_INTERVAL_MS = 10_000;
@@ -16,6 +24,10 @@ interface ConnectionHealthMonitorConfig {
   healthCheckFn: () => Promise<ToriiHealthProbeResult>;
   onRecovery?: (outageMs: number, attempts: number) => void;
   onDeadEnd?: (outageMs: number, attempts: number, reason?: ToriiHealthUnreachableReason) => void;
+  /** Phase 2: independent server-side reachability for the active world. */
+  getServerAvailability?: () => Promise<ServerAvailabilityVerdict>;
+  /** Fired once per outage (connected -> not-connected) with the LOCAL/REMOTE verdict. */
+  onDisconnectClassified?: (classification: DisconnectClassification, snapshot: DisconnectSignalSnapshot) => void;
   healthCheckIntervalMs?: number;
   staleThresholdMs?: number;
   reconnectCooldownMs?: number;
@@ -54,7 +66,17 @@ export async function subscribeToToriiHeartbeat(
       });
     });
     useConnectionStore.getState().markToriiHeartbeatAvailable();
-    return subscription;
+    // Best-effort: if the SDK ever surfaces a real close/error on the heartbeat
+    // stream, record it so the next outage is classified REMOTE. No-op today.
+    const detachLifecycle = observeToriiStreamLifecycle(subscription, () => {
+      useConnectionStore.getState().recordStreamClose();
+    });
+    return {
+      cancel: () => {
+        detachLifecycle();
+        subscription.cancel();
+      },
+    };
   } catch (error) {
     console.warn("[ConnectionHealthMonitor] Failed to subscribe to Torii heartbeat", error);
     return null;
@@ -79,6 +101,11 @@ export class ConnectionHealthMonitor {
   private readonly deadEndAttempts: number;
   private readonly transientHealthFailureThreshold: number;
   private consecutiveTransientHealthFailures = 0;
+  private lastHealthProbeResult: ToriiHealthProbeResult | null = null;
+  private unsubscribeStore: (() => void) | null = null;
+  // Monotonic token: bumped on every connected<->outage edge so an in-flight
+  // async classification can detect that its outage already recovered.
+  private classifyGeneration = 0;
 
   constructor(config: ConnectionHealthMonitorConfig) {
     this.config = config;
@@ -102,14 +129,23 @@ export class ConnectionHealthMonitor {
     this.hasObservedHealthyStreams = this.haveObservedStreamHandshakes(useConnectionStore.getState());
     document.addEventListener("visibilitychange", this.handleVisibilityChange);
     window.addEventListener("online", this.handleOnline);
+    window.addEventListener("offline", this.handleOffline);
     window.addEventListener("pageshow", this.handlePageShow);
+    // Classify every outage at the exact moment overall status leaves "connected"
+    // — the same edge that drives the "Disconnected from the realm" banner.
+    this.unsubscribeStore = useConnectionStore.subscribe((state, previous) => {
+      this.handleStatusTransition(state.status, previous.status);
+    });
     this.startHealthCheckLoop();
   }
 
   stop(): void {
     document.removeEventListener("visibilitychange", this.handleVisibilityChange);
     window.removeEventListener("online", this.handleOnline);
+    window.removeEventListener("offline", this.handleOffline);
     window.removeEventListener("pageshow", this.handlePageShow);
+    this.unsubscribeStore?.();
+    this.unsubscribeStore = null;
     this.stopHealthCheckLoop();
     if (activeMonitor === this) activeMonitor = null;
   }
@@ -149,9 +185,18 @@ export class ConnectionHealthMonitor {
 
   private handleOnline = (): void => {
     if (this.disposed) return;
+    useConnectionStore.getState().recordOnline();
     if (!this.hasObservedHealthyStreams) return;
 
     void this.reconnectStaleStreams(true, true);
+  };
+
+  // A local network drop: record it so a subsequent outage is classified LOCAL.
+  // No reconnect attempt here — the OS is offline, so the `online` event drives
+  // recovery. This is the LOCAL signal the monitor previously could not see.
+  private handleOffline = (): void => {
+    if (this.disposed) return;
+    useConnectionStore.getState().recordOffline();
   };
 
   private handlePageShow = (): void => {
@@ -190,6 +235,8 @@ export class ConnectionHealthMonitor {
   // --- Shared reconnect logic ---
 
   private applyHealthProbeResult(result: ToriiHealthProbeResult): void {
+    // Remembered so disconnect classification can read the latest probe verdict.
+    this.lastHealthProbeResult = result;
     if (result.status === "reachable") {
       this.markHealthCheckPassed();
       return;
@@ -392,6 +439,64 @@ export class ConnectionHealthMonitor {
         this.config.onRecovery?.(outageMs, attemptsBeforeReset);
       }
     }
+  }
+
+  // --- Disconnect classification (LOCAL vs REMOTE) ---
+
+  private handleStatusTransition(next: ConnectionStatus, previous: ConnectionStatus): void {
+    if (this.disposed) return;
+    if (previous === "connected" && next !== "connected") {
+      const generation = ++this.classifyGeneration;
+      void this.classifyOutage(generation);
+    } else if (next === "connected" && previous !== "connected") {
+      // Recovery invalidates any in-flight classification for the prior outage.
+      this.classifyGeneration += 1;
+    }
+  }
+
+  private async classifyOutage(generation: number): Promise<void> {
+    const serverAvailability = await this.resolveServerAvailability();
+    // The outage recovered (or the monitor was disposed) while we awaited the
+    // server probe — drop the now-irrelevant classification.
+    if (this.disposed || generation !== this.classifyGeneration) return;
+
+    const snapshot = this.buildDisconnectSnapshot(serverAvailability);
+    this.config.onDisconnectClassified?.(classifyDisconnect(snapshot), snapshot);
+  }
+
+  private async resolveServerAvailability(): Promise<ServerAvailabilityVerdict> {
+    if (!this.config.getServerAvailability) return "unknown";
+    try {
+      return await this.config.getServerAvailability();
+    } catch {
+      return "unknown";
+    }
+  }
+
+  private buildDisconnectSnapshot(serverAvailability: ServerAvailabilityVerdict): DisconnectSignalSnapshot {
+    const store = useConnectionStore.getState();
+    const now = Date.now();
+    // Only trust navigator.onLine when it is a real boolean; otherwise fall back
+    // to the store snapshot so non-browser/edge runtimes never read as "offline".
+    const navigatorOnLine =
+      typeof navigator !== "undefined" && typeof navigator.onLine === "boolean" ? navigator.onLine : store.isOnline;
+    return {
+      onLine: navigatorOnLine,
+      msSinceOffline: store.lastOfflineAt !== null ? now - store.lastOfflineAt : null,
+      visibilityState:
+        typeof document !== "undefined" && document.visibilityState === "hidden" ? "hidden" : "visible",
+      healthProbeReason: this.resolveHealthProbeReason(),
+      heartbeatAvailable: store.toriiHeartbeatAvailable,
+      msSinceHeartbeat: store.toriiHeartbeatAvailable ? now - store.lastToriiHeartbeat : null,
+      streamCloseObserved: store.lastStreamCloseAt !== null && now - store.lastStreamCloseAt <= this.staleThresholdMs,
+      serverAvailability,
+    };
+  }
+
+  private resolveHealthProbeReason(): HealthProbeSignal {
+    const result = this.lastHealthProbeResult;
+    if (!result) return "unknown";
+    return result.status === "reachable" ? "reachable" : result.reason;
   }
 }
 

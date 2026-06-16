@@ -5208,6 +5208,11 @@ export default class WorldmapScene extends WarpTravel {
 
     this.lastArmyRecsSweepAtMs = nowMs;
 
+    // Loop B runs synchronously inside update(); a pass over N armies that
+    // exceeds a frame budget drops frames and reads to players as a freeze. Time
+    // the whole pass so a perceived "disconnect" can be attributed to it (LOCAL).
+    const passStartedAtMs = performance.now();
+
     const candidates: ArmyRecsConsistencyCandidate[] = [];
     for (const army of this.armyManager.getArmies()) {
       const entityId = army.entityId;
@@ -5249,6 +5254,17 @@ export default class WorldmapScene extends WarpTravel {
 
     for (const action of actions) {
       this.applyArmyRecsConsistencyAction(action, nowMs);
+    }
+
+    const SWEEP_SLOW_PASS_WARN_MS = 16; // one 60fps frame budget
+    const passMs = performance.now() - passStartedAtMs;
+    if (passMs >= SWEEP_SLOW_PASS_WARN_MS) {
+      incrementWorldmapRenderCounter("armyRecsSweepSlowPass");
+      this.traceChunk("army_recs_sweep_slow_pass", {
+        candidateCount: candidates.length,
+        actionCount: actions.length,
+        passMs: Math.round(passMs),
+      });
     }
   }
 
@@ -5443,6 +5459,26 @@ export default class WorldmapScene extends WarpTravel {
           candidateCount: candidateIds.length,
           confirmedDead: result.confirmedDead,
           reappliedCount: result.reappliedCount,
+        });
+      }
+
+      // Loop A blocks the event loop while it awaits Torii/RECS. A single op this
+      // slow is the LOCAL-freeze signal Phase 3 is hunting — record it alongside
+      // heartbeat age so a "disconnect" can be traced back to a self-inflicted stall.
+      const SWEEP_SLOW_OP_WARN_MS = 100;
+      if (result.timing.maxQueryMs >= SWEEP_SLOW_OP_WARN_MS || result.timing.maxApplyMs >= SWEEP_SLOW_OP_WARN_MS) {
+        incrementWorldmapRenderCounter("armyAuthoritativeSweepSlowOp");
+        const connection = useConnectionStore.getState();
+        this.traceChunk("army_authoritative_sweep_slow", {
+          reason,
+          candidateCount: candidateIds.length,
+          maxQueryMs: Math.round(result.timing.maxQueryMs),
+          maxApplyMs: Math.round(result.timing.maxApplyMs),
+          totalMs: Math.round(result.timing.totalMs),
+          pageCount: result.timing.pageCount,
+          msSinceHeartbeat: connection.toriiHeartbeatAvailable
+            ? Math.round(Date.now() - connection.lastToriiHeartbeat)
+            : null,
         });
       }
     } finally {

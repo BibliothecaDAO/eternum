@@ -284,6 +284,84 @@ describe("ConnectionHealthMonitor", () => {
     expect(cancel).toHaveBeenCalledTimes(1);
   });
 
+  it("records a browser offline event so a later outage can be classified LOCAL", () => {
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn: vi.fn(() => Promise.resolve(reachableHealth())),
+      onReconnectGlobal: vi.fn(() => Promise.resolve()),
+      onReconnectSpatial: vi.fn(() => Promise.resolve()),
+    });
+    monitor.start();
+
+    const win = (globalThis as { window: FakeEventTarget }).window;
+    const offlineHandler = win.addEventListener.mock.calls.find(([event]: [string]) => event === "offline")?.[1];
+    expect(offlineHandler).toBeTypeOf("function");
+
+    offlineHandler();
+
+    expect(useConnectionStore.getState().isOnline).toBe(false);
+    expect(useConnectionStore.getState().lastOfflineAt).toBe(Date.now());
+
+    monitor.dispose();
+  });
+
+  it("classifies an outage with server availability when status leaves connected", async () => {
+    useConnectionStore.setState({
+      status: "connected",
+      isOnline: true,
+      lastOfflineAt: null,
+      lastStreamCloseAt: null,
+    } as any);
+    const onDisconnectClassified = vi.fn();
+    const getServerAvailability = vi.fn(() => Promise.resolve("alive" as const));
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn: vi.fn(() => Promise.resolve(reachableHealth())),
+      onReconnectGlobal: vi.fn(() => Promise.resolve()),
+      onReconnectSpatial: vi.fn(() => Promise.resolve()),
+      getServerAvailability,
+      onDisconnectClassified,
+    });
+    monitor.start();
+
+    useConnectionStore.getState().setStatus("disconnected");
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(getServerAvailability).toHaveBeenCalledTimes(1);
+    expect(onDisconnectClassified).toHaveBeenCalledTimes(1);
+    const [, snapshot] = onDisconnectClassified.mock.calls[0];
+    expect(snapshot.serverAvailability).toBe("alive");
+
+    monitor.dispose();
+  });
+
+  it("drops classification if the outage recovers before the server probe resolves", async () => {
+    useConnectionStore.setState({ status: "connected", isOnline: true, lastOfflineAt: null } as any);
+    const onDisconnectClassified = vi.fn();
+    let resolveAvailability!: (value: "alive" | "dead" | "unknown") => void;
+    const getServerAvailability = vi.fn(
+      () =>
+        new Promise<"alive" | "dead" | "unknown">((resolve) => {
+          resolveAvailability = resolve;
+        }),
+    );
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn: vi.fn(() => Promise.resolve(reachableHealth())),
+      onReconnectGlobal: vi.fn(() => Promise.resolve()),
+      onReconnectSpatial: vi.fn(() => Promise.resolve()),
+      getServerAvailability,
+      onDisconnectClassified,
+    });
+    monitor.start();
+
+    useConnectionStore.getState().setStatus("disconnected"); // starts classification, awaits probe
+    useConnectionStore.getState().setStatus("connected"); // recovery invalidates the generation
+    resolveAvailability("dead");
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onDisconnectClassified).not.toHaveBeenCalled();
+
+    monitor.dispose();
+  });
+
   it("does not reconnect twice within a single staleThresholdMs window (cooldown)", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());

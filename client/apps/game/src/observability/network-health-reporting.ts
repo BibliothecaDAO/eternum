@@ -2,6 +2,11 @@ import * as Sentry from "@sentry/react";
 
 import { env } from "../../env";
 import { getActiveWorld } from "@/runtime/world";
+import { captureClientEvent } from "@/posthog";
+import type {
+  DisconnectClassification,
+  DisconnectSignalSnapshot,
+} from "@/dojo/connection-disconnect-classification";
 import { resolveUserIdentity } from "./wallet-identity";
 
 export type NetworkStreamType = "spatial" | "global" | "player" | "both";
@@ -288,6 +293,68 @@ const reportOutage = (report: OutageReport, recovered: boolean): void => {
 export const reportNetworkOutageResolved = (report: OutageReport): void => reportOutage(report, true);
 
 export const reportNetworkOutageDeadEnd = (report: OutageReport): void => reportOutage(report, false);
+
+/**
+ * Emits the single "is this disconnect LOCAL or REMOTE" verdict at outage start.
+ * Mirrored to PostHog (independent of Sentry network-health enablement) so the
+ * split is queryable even where Sentry network-health is off; PostHog has no
+ * other Torii instrumentation today.
+ */
+export const reportDisconnectClassification = (
+  classification: DisconnectClassification,
+  snapshot: DisconnectSignalSnapshot,
+): void => {
+  const eventProps = {
+    source: classification.source,
+    confidence: classification.confidence,
+    reason: classification.reason,
+    on_line: snapshot.onLine,
+    ms_since_offline: snapshot.msSinceOffline,
+    visibility_state: snapshot.visibilityState,
+    health_probe_reason: snapshot.healthProbeReason,
+    heartbeat_available: snapshot.heartbeatAvailable,
+    ms_since_heartbeat: snapshot.msSinceHeartbeat,
+    stream_close_observed: snapshot.streamCloseObserved,
+    server_availability: snapshot.serverAvailability,
+    world: getActiveWorldName(),
+  };
+
+  // PostHog mirror — guarded internally by the PostHog key.
+  captureClientEvent("torii_disconnect_classification", eventProps);
+
+  if (!isEnabled()) return;
+  if (!canEmitMore()) return;
+
+  const dedupeKey = `disconnect-classification:${classification.source}:${classification.reason}`;
+  if (shouldSkipDuplicate(dedupeKey)) return;
+
+  eventsThisSession += 1;
+
+  Sentry.captureMessage(`Torii disconnect classified: ${classification.source} (${classification.reason})`, {
+    level: classification.source === "remote" ? "error" : "warning",
+    tags: {
+      feature: "network-health",
+      "network.kind": "disconnect_classification",
+      "network.disconnect_source": classification.source,
+      "network.disconnect_reason": classification.reason,
+      "network.disconnect_confidence": classification.confidence,
+      "network.server_availability": snapshot.serverAvailability,
+    },
+    contexts: {
+      network: {
+        on_line: snapshot.onLine,
+        ...(snapshot.msSinceOffline !== null ? { ms_since_offline: snapshot.msSinceOffline } : {}),
+        visibility_state: snapshot.visibilityState,
+        health_probe_reason: snapshot.healthProbeReason,
+        heartbeat_available: snapshot.heartbeatAvailable,
+        ...(snapshot.msSinceHeartbeat !== null ? { ms_since_heartbeat: snapshot.msSinceHeartbeat } : {}),
+        stream_close_observed: snapshot.streamCloseObserved,
+        server_availability: snapshot.serverAvailability,
+      },
+    },
+    fingerprint: ["network-health", "disconnect-classification", classification.source, classification.reason],
+  });
+};
 
 export const reportSubscriptionSetupTimeout = ({
   label,

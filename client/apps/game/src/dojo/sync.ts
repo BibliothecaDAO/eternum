@@ -30,6 +30,7 @@ import {
   GLOBAL_SPATIAL_MAP_BOOTSTRAP_MODEL_NAMES,
   GLOBAL_SPATIAL_MAP_BOOTSTRAP_SNAPSHOT_MODELS,
 } from "./torii-spatial-models";
+import { observeToriiStreamLifecycle } from "./torii-stream-lifecycle-observer";
 import { buildModelKeysClause, type GlobalModelStreamConfig } from "./torii-stream-manager";
 import {
   setupToriiSubscriptions,
@@ -618,6 +619,15 @@ export const syncEntitiesDebounced = async (
 
     readiness.markSubscriptionsReady();
 
+    // Best-effort runtime close/error detection. torii-wasm exposes none today,
+    // so these are no-ops; if a future SDK adds one, a silent stream drop records
+    // a close timestamp that classifies the next outage as REMOTE.
+    const recordStreamClose = () => useConnectionStore.getState().recordStreamClose();
+    const detachLifecycle = [
+      observeToriiStreamLifecycle(subscriptions.entitySubscription, recordStreamClose),
+      observeToriiStreamLifecycle(subscriptions.eventSubscription, recordStreamClose),
+    ];
+
     const canUpdateSubscriptionClause =
       typeof client.updateEntitySubscription === "function" &&
       typeof client.updateEventMessageSubscription === "function";
@@ -627,6 +637,7 @@ export const syncEntitiesDebounced = async (
         return readiness.ready;
       },
       cancel: () => {
+        detachLifecycle.forEach((detach) => detach());
         subscriptions.cancel();
         queueProcessor.dispose();
         readiness.cancel();
