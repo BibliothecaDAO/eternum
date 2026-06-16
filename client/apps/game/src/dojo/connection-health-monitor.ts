@@ -34,6 +34,22 @@ interface ConnectionHealthMonitorConfig {
   recoveryToastThresholdMs?: number;
   deadEndAttempts?: number;
   transientHealthFailureThreshold?: number;
+  /**
+   * Cadence of a lightweight heartbeat watchdog that catches staleness between
+   * the slower HTTP probes. Omit/0 to disable (probe-driven detection only).
+   */
+  heartbeatWatchdogIntervalMs?: number;
+  /**
+   * Adaptive reconnect backoff: first retry waits min, then doubles up to max.
+   * When either is omitted, the flat `reconnectCooldownMs` is used (legacy).
+   */
+  minReconnectCooldownMs?: number;
+  maxReconnectCooldownMs?: number;
+  /**
+   * Proactively re-subscribe streams after this long with no activity, to dodge
+   * proxy idle / MAX_CONNECTION_AGE reaps in quiet worlds. Omit/0 to disable.
+   */
+  quietStreamRefreshMs?: number;
 }
 
 interface ConnectionHealthToriiInput {
@@ -89,8 +105,14 @@ export class ConnectionHealthMonitor {
   private readonly staleThresholdMs: number;
   private readonly reconnectCooldownMs: number;
   private readonly recoveryToastThresholdMs: number;
+  private readonly heartbeatWatchdogIntervalMs: number | null;
+  private readonly minReconnectCooldownMs: number | null;
+  private readonly maxReconnectCooldownMs: number | null;
+  private readonly quietStreamRefreshMs: number;
 
   private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
+  private heartbeatWatchdogTimer: ReturnType<typeof setInterval> | null = null;
+  private lastProactiveRefreshAtMs = 0;
   private reconnecting = false;
   private disposed = false;
   private lastStreamReconnectAtMs = 0;
@@ -119,6 +141,10 @@ export class ConnectionHealthMonitor {
     this.deadEndAttempts = config.deadEndAttempts ?? DEFAULT_DEAD_END_ATTEMPTS;
     this.transientHealthFailureThreshold =
       config.transientHealthFailureThreshold ?? DEFAULT_TRANSIENT_HEALTH_FAILURE_THRESHOLD;
+    this.heartbeatWatchdogIntervalMs = config.heartbeatWatchdogIntervalMs ?? null;
+    this.minReconnectCooldownMs = config.minReconnectCooldownMs ?? null;
+    this.maxReconnectCooldownMs = config.maxReconnectCooldownMs ?? null;
+    this.quietStreamRefreshMs = config.quietStreamRefreshMs ?? 0;
   }
 
   start(): void {
@@ -137,6 +163,7 @@ export class ConnectionHealthMonitor {
       this.handleStatusTransition(state.status, previous.status);
     });
     this.startHealthCheckLoop();
+    this.startHeartbeatWatchdog();
   }
 
   stop(): void {
@@ -147,6 +174,7 @@ export class ConnectionHealthMonitor {
     this.unsubscribeStore?.();
     this.unsubscribeStore = null;
     this.stopHealthCheckLoop();
+    this.stopHeartbeatWatchdog();
     if (activeMonitor === this) activeMonitor = null;
   }
 
@@ -216,6 +244,75 @@ export class ConnectionHealthMonitor {
     if (this.healthCheckTimer !== null) {
       clearInterval(this.healthCheckTimer);
       this.healthCheckTimer = null;
+    }
+  }
+
+  // --- Heartbeat watchdog (fast detection) + proactive quiet-stream refresh ---
+
+  private startHeartbeatWatchdog(): void {
+    if (this.heartbeatWatchdogIntervalMs === null || this.heartbeatWatchdogIntervalMs <= 0) return;
+    this.heartbeatWatchdogTimer = setInterval(() => {
+      this.runHeartbeatWatchdog();
+    }, this.heartbeatWatchdogIntervalMs);
+  }
+
+  private stopHeartbeatWatchdog(): void {
+    if (this.heartbeatWatchdogTimer !== null) {
+      clearInterval(this.heartbeatWatchdogTimer);
+      this.heartbeatWatchdogTimer = null;
+    }
+  }
+
+  private runHeartbeatWatchdog(): void {
+    if (this.disposed) return;
+    if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+    if (!this.hasObservedHealthyStreams) return;
+
+    const store = useConnectionStore.getState();
+    // Catch a silently-dropped stream within a watchdog tick rather than waiting
+    // for the next (slower) HTTP probe. Reuses the cooldown-gated reconnect path.
+    this.reconnectSilentStreamsAfterCooldown(store);
+    // Keep quiet streams under proxy idle / max-age limits.
+    void this.maybeProactivelyRefreshQuietStreams();
+  }
+
+  private async maybeProactivelyRefreshQuietStreams(): Promise<void> {
+    if (this.quietStreamRefreshMs <= 0 || this.reconnecting) return;
+
+    const store = useConnectionStore.getState();
+    // Only refresh a healthy, quiet connection; a real outage uses the normal path.
+    if (store.status !== "connected") return;
+
+    const now = Date.now();
+    const lastActivity = Math.max(
+      store.lastGlobalDataUpdate,
+      store.lastSpatialDataUpdate,
+      store.lastGlobalHandshake,
+      store.lastSpatialHandshake,
+    );
+    if (now - lastActivity < this.quietStreamRefreshMs) return;
+    if (now - this.lastProactiveRefreshAtMs < this.quietStreamRefreshMs) return;
+
+    this.lastProactiveRefreshAtMs = now;
+    this.lastStreamReconnectAtMs = now;
+    await this.silentRefreshStreams();
+  }
+
+  // Re-open the streams WITHOUT flipping connection status: a proactive refresh
+  // is maintenance, not an outage, so it must not show the banner or emit a
+  // disconnect classification. A failure is swallowed — the heartbeat/health
+  // path will detect and surface a genuine problem.
+  private async silentRefreshStreams(): Promise<void> {
+    if (this.reconnecting || this.disposed) return;
+    this.reconnecting = true;
+    try {
+      await Promise.all([this.config.onReconnectSpatial(), this.config.onReconnectGlobal()]);
+      this.config.onReconnectComplete?.();
+      useConnectionStore.getState().recordStreamReconnect();
+    } catch (error) {
+      console.warn("[ConnectionHealthMonitor] Proactive stream refresh failed", error);
+    } finally {
+      this.reconnecting = false;
     }
   }
 
@@ -303,9 +400,22 @@ export class ConnectionHealthMonitor {
     return lastSpatialActivity > this.startedAtMs && lastGlobalActivity > this.startedAtMs;
   }
 
+  // Time to wait before the next reconnect attempt. With min/max configured this
+  // is fast-first exponential backoff (min, 2x, 4x… capped at max) keyed on the
+  // consecutive-failure count, so a transient drop recovers in ~min while a
+  // genuinely-down server still backs off. Falls back to the flat cooldown.
+  private currentReconnectCooldownMs(): number {
+    if (this.minReconnectCooldownMs === null || this.maxReconnectCooldownMs === null) {
+      return this.reconnectCooldownMs;
+    }
+    const attempts = useConnectionStore.getState().reconnectAttempts;
+    const scaled = this.minReconnectCooldownMs * 2 ** Math.max(0, attempts);
+    return Math.min(this.maxReconnectCooldownMs, Math.max(this.minReconnectCooldownMs, scaled));
+  }
+
   private reconnectSilentStreamsAfterCooldown(store: ReturnType<typeof useConnectionStore.getState>): void {
     const now = Date.now();
-    if (now - this.lastStreamReconnectAtMs < this.reconnectCooldownMs) return;
+    if (now - this.lastStreamReconnectAtMs < this.currentReconnectCooldownMs()) return;
 
     if (!this.isHeartbeatStale(store)) return;
 
@@ -321,7 +431,7 @@ export class ConnectionHealthMonitor {
 
   private reconnectAfterFailedHealthCheck(reason: ToriiHealthUnreachableReason): void {
     const now = Date.now();
-    if (now - this.lastStreamReconnectAtMs < this.reconnectCooldownMs) return;
+    if (now - this.lastStreamReconnectAtMs < this.currentReconnectCooldownMs()) return;
 
     const store = useConnectionStore.getState();
     store.setStatus("disconnected");

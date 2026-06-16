@@ -962,3 +962,55 @@ const resubscribeEntityStream = async (
     reportProgress: false,
   });
 };
+
+/**
+ * Lightweight reconnect: re-open ONLY the global entity + event stream.
+ *
+ * A silently-dropped stream needs its subscription re-created, but the one-time
+ * hydration that {@link initialSync} also performs (config, guilds, address
+ * names, owned structures, spatial bootstrap snapshot) is already in RECS and
+ * does not change across a brief drop — re-running it turns a transient blip
+ * into a full re-bootstrap. This re-subscribes the global stream only; spatial
+ * recovery is owned by the worldmap recovery handle (onReconnectComplete).
+ */
+export const resubscribeGlobalEntityStream = async (
+  setup: SetupResult,
+  options: {
+    logging?: boolean;
+    subscriptionSetupTimeoutMs?: number;
+    onSubscriptionSetupTimeout?: (info: ToriiSubscriptionSetupTimeoutInfo) => void;
+  } = {},
+): Promise<void> => {
+  const logging = options.logging ?? false;
+  const subscriptionSetupTimeoutMs =
+    options.subscriptionSetupTimeoutMs ?? env.VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS;
+
+  cancelGlobalEntityStreamSubscriptions();
+  // Guard the exported cancelEntityStreamSubscription() against tearing down the
+  // half-built subscription while we re-handshake.
+  isInitialSyncInFlight = true;
+  try {
+    const initialGlobalEntityClause = getInitialGlobalEntityStreamClause();
+    entityStreamSubscription = await syncEntitiesDebounced(
+      setup.network.toriiClient,
+      setup,
+      {
+        entityClause: initialGlobalEntityClause,
+        eventClause: GLOBAL_EVENT_STREAM_CLAUSE,
+      },
+      logging,
+      () => useConnectionStore.getState().recordGlobalUpdate(),
+      {
+        streamType: "global",
+        subscriptionSetupTimeoutMs,
+        onSubscriptionSetupTimeout: options.onSubscriptionSetupTimeout,
+      },
+    );
+    useConnectionStore.getState().recordGlobalHandshake();
+  } catch (error) {
+    cancelGlobalEntityStreamSubscriptions();
+    throw error;
+  } finally {
+    isInitialSyncInFlight = false;
+  }
+};

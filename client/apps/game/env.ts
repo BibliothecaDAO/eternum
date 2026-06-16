@@ -248,6 +248,53 @@ const envSchema = z.object({
     .default("8000")
     .transform((v) => Number(v))
     .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_SUBSCRIPTION_SETUP_TIMEOUT_MS"),
+  // How long without a Torii indexer heartbeat before a stream is treated as
+  // stale. Lower = faster detection of a silently-dropped stream.
+  VITE_PUBLIC_TORII_STALE_THRESHOLD_MS: z
+    .string()
+    .optional()
+    .default("8000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value > 0, "VITE_PUBLIC_TORII_STALE_THRESHOLD_MS"),
+  // Cadence of the lightweight heartbeat watchdog (decoupled from the heavier
+  // HTTP health probe) so staleness is caught in seconds, not a probe interval.
+  // 0 disables the watchdog (falls back to probe-driven detection only).
+  VITE_PUBLIC_TORII_HEARTBEAT_WATCHDOG_INTERVAL_MS: z
+    .string()
+    .optional()
+    .default("3000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_HEARTBEAT_WATCHDOG_INTERVAL_MS"),
+  // Adaptive reconnect backoff: first retry waits min, then doubles up to max.
+  // Replaces the flat 60s cooldown so a transient drop recovers in ~1s while a
+  // genuinely-down server still backs off. min<=0 disables adaptive backoff.
+  VITE_PUBLIC_TORII_RECONNECT_MIN_COOLDOWN_MS: z
+    .string()
+    .optional()
+    .default("1000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_RECONNECT_MIN_COOLDOWN_MS"),
+  VITE_PUBLIC_TORII_RECONNECT_MAX_COOLDOWN_MS: z
+    .string()
+    .optional()
+    .default("30000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_RECONNECT_MAX_COOLDOWN_MS"),
+  // Proactively re-subscribe streams after this long with no activity, to dodge
+  // proxy idle / MAX_CONNECTION_AGE reaps in quiet worlds. 0 disables.
+  VITE_PUBLIC_TORII_QUIET_STREAM_REFRESH_MS: z
+    .string()
+    .optional()
+    .default("120000")
+    .transform((v) => Number(v))
+    .refine((value) => Number.isFinite(value) && value >= 0, "VITE_PUBLIC_TORII_QUIET_STREAM_REFRESH_MS"),
+  // Reconnect by re-opening only the global stream (cheap) instead of a full
+  // initialSync re-bootstrap. Falls back to full re-bootstrap when false.
+  VITE_PUBLIC_TORII_LIGHTWEIGHT_RECONNECT: z
+    .string()
+    .transform((v) => v === "true")
+    .optional()
+    .default("true"),
   VITE_PUBLIC_TORII_SPATIAL_SUBSCRIPTION_UPDATE_ENABLED: z
     .string()
     .transform((v) => v === "true")
