@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-17T22:28:27.470Z",
+  "updatedAt": "2026-06-17T22:36:52.639Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3636,7 +3636,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-17-06-26-1900 not found"
       },
-      "updatedAt": "2026-06-17T21:17:02.199Z"
+      "updatedAt": "2026-06-17T22:36:52.639Z"
     },
     "bltz-boost-329": {
       "gameName": "bltz-boost-329",
