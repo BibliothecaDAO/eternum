@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-boost-329",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-boost-329/27717633428-1.json",
   "latestLaunchRequestId": "27717633428-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-06-17T20:28:39.525Z",
-  "updatedAt": "2026-06-17T20:31:50.510Z",
+  "updatedAt": "2026-06-17T20:32:08.595Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-06-17T20:31:50.510Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-06-17T20:31:50.510Z",
+      "finishedAt": "2026-06-17T20:32:08.595Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x35cf5e1bf53b795f80b22bb2c91f5edda61e4b5473bfe9726ff52833881ea6c"
     ],
-    "lootChestRoleTxHash": "0x431d5244900884f4bfced71642ca209bafc221e541c70b71ff1fc2a5decc683"
+    "lootChestRoleTxHash": "0x431d5244900884f4bfced71642ca209bafc221e541c70b71ff1fc2a5decc683",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-boost-329/torii",
+    "indexerVersion": "v1.8.16",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-06-17T20:32:07.360Z"
   },
-  "activeLease": {
-    "launchRequestId": "27717633428-1",
-    "workflowRunId": 27717633428,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-06-17T20:31:50.510Z",
-    "expiresAt": "2026-06-17T21:16:50.510Z"
-  }
+  "completedAt": "2026-06-17T20:32:08.595Z"
 }
