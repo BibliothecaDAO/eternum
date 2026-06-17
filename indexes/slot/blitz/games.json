@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-16T23:42:05.987Z",
+  "updatedAt": "2026-06-17T10:13:34.838Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -96,27 +96,6 @@
       "startTime": 1780046400,
       "durationSeconds": 7200,
       "artifacts": {}
-    },
-    "bltz-froth-662": {
-      "kind": "game",
-      "environment": "slot.blitz",
-      "gameName": "bltz-froth-662",
-      "path": "runs/slot/blitz/bltz-froth-662.json",
-      "inputPath": "inputs/slot/blitz/bltz-froth-662/26986357656-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-10T10:02:14.217Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1780617600,
-      "durationSeconds": 432000,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-10T10:02:14.217Z"
-      }
     },
     "bltz-vibe-728": {
       "kind": "game",
