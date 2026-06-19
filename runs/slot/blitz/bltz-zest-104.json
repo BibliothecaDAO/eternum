@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-zest-104",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-zest-104/27820290362-1.json",
   "latestLaunchRequestId": "27820290362-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-06-19T10:29:16.391Z",
-  "updatedAt": "2026-06-19T10:32:10.647Z",
+  "updatedAt": "2026-06-19T10:32:29.345Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-06-19T10:32:10.647Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-06-19T10:32:10.647Z",
+      "finishedAt": "2026-06-19T10:32:29.345Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x223f5d0c9197e582fe2fc5378062e299d4c236e5b6c0bf2396c05821994e45f"
     ],
-    "lootChestRoleTxHash": "0x17e20d019147ff4115eb75d29a00906090e50703c978ff5c11d9742d13018df"
+    "lootChestRoleTxHash": "0x17e20d019147ff4115eb75d29a00906090e50703c978ff5c11d9742d13018df",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-zest-104/torii",
+    "indexerVersion": "v1.8.16",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-06-19T10:32:27.997Z"
   },
-  "activeLease": {
-    "launchRequestId": "27820290362-1",
-    "workflowRunId": 27820290362,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-06-19T10:32:10.647Z",
-    "expiresAt": "2026-06-19T11:17:10.647Z"
-  }
+  "completedAt": "2026-06-19T10:32:29.345Z"
 }
