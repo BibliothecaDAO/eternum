@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-19T13:35:23.323Z",
+  "updatedAt": "2026-06-19T13:55:21.999Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -146,7 +146,7 @@
       "path": "runs/slot/blitz/bltz-zest-104.json",
       "inputPath": "inputs/slot/blitz/bltz-zest-104/27820290362-1.json",
       "status": "complete",
-      "updatedAt": "2026-06-19T13:35:23.323Z",
+      "updatedAt": "2026-06-19T13:55:21.999Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -159,7 +159,7 @@
         "indexerTier": "legendary",
         "lastIndexerDescribeAt": "2026-06-19T10:37:02.470Z",
         "pendingIndexerTierTarget": "pro",
-        "pendingIndexerTierRequestedAt": "2026-06-19T13:35:21.567Z"
+        "pendingIndexerTierRequestedAt": "2026-06-19T13:55:20.193Z"
       }
     }
   }
