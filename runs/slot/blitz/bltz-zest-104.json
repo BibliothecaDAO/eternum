@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "27820290362-1",
   "currentStepId": null,
   "createdAt": "2026-06-19T10:29:16.391Z",
-  "updatedAt": "2026-06-19T10:32:29.345Z",
+  "updatedAt": "2026-06-19T10:35:13.901Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -97,7 +97,9 @@
     "indexerUrl": "https://api.cartridge.gg/x/bltz-zest-104/torii",
     "indexerVersion": "v1.8.16",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-06-19T10:32:27.997Z"
+    "lastIndexerDescribeAt": "2026-06-19T10:32:27.997Z",
+    "pendingIndexerTierTarget": "legendary",
+    "pendingIndexerTierRequestedAt": "2026-06-19T10:35:12.157Z"
   },
   "completedAt": "2026-06-19T10:32:29.345Z"
 }
