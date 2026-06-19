@@ -5,12 +5,14 @@ import {
 } from "@/dojo/connection-health-monitor";
 import { createConnectionDeadEndRecoveryGate } from "@/dojo/connection-dead-end-recovery-gate";
 import { createToriiHeartbeatLifecycle } from "@/dojo/torii-heartbeat-lifecycle";
-import { cancelEntityStreamSubscription, initialSync } from "@/dojo/sync";
+import { cancelEntityStreamSubscription, initialSync, resubscribeGlobalEntityStream } from "@/dojo/sync";
 import { probeToriiHealth } from "@/dojo/torii-health-probe";
+import { fetchServerWorldAvailability } from "@/dojo/fetch-server-world-availability";
 import { requestGameRebootstrap } from "@/game-entry/bootstrap-controller";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
   addNetworkBreadcrumb,
+  reportDisconnectClassification,
   reportNetworkOutageDeadEnd,
   reportNetworkOutageResolved,
   setNetworkHealthScopeTags,
@@ -214,8 +216,14 @@ const ConnectionMonitor = () => {
       onReconnectGlobal: async () => {
         addNetworkBreadcrumb({ event: "reconnect_start", streamType: "global" });
         try {
-          cancelEntityStreamSubscription();
-          await initialSync(setup, state, () => {}, { logging: false, reportProgress: false });
+          if (env.VITE_PUBLIC_TORII_LIGHTWEIGHT_RECONNECT) {
+            // Re-open just the global stream; config/guilds/structures already
+            // live in RECS and a full initialSync would turn a blip into a reboot.
+            await resubscribeGlobalEntityStream(setup, { logging: false });
+          } else {
+            cancelEntityStreamSubscription();
+            await initialSync(setup, state, () => {}, { logging: false, reportProgress: false });
+          }
           addNetworkBreadcrumb({ event: "reconnect_success", streamType: "global" });
         } catch (error) {
           addNetworkBreadcrumb({
@@ -236,6 +244,26 @@ const ConnectionMonitor = () => {
         }
       },
       healthCheckFn: () => probeToriiHealth(toriiBaseUrl),
+      // Faster detect + recover (env-tunable per deploy): a lightweight heartbeat
+      // watchdog catches staleness in seconds, and adaptive backoff recovers a
+      // transient drop in ~1s instead of waiting out a flat 60s cooldown. Quiet
+      // streams are proactively refreshed to dodge proxy idle / max-age reaps.
+      staleThresholdMs: env.VITE_PUBLIC_TORII_STALE_THRESHOLD_MS,
+      heartbeatWatchdogIntervalMs: env.VITE_PUBLIC_TORII_HEARTBEAT_WATCHDOG_INTERVAL_MS,
+      minReconnectCooldownMs: env.VITE_PUBLIC_TORII_RECONNECT_MIN_COOLDOWN_MS,
+      maxReconnectCooldownMs: env.VITE_PUBLIC_TORII_RECONNECT_MAX_COOLDOWN_MS,
+      quietStreamRefreshMs: env.VITE_PUBLIC_TORII_QUIET_STREAM_REFRESH_MS,
+      // Phase 2: independent server-side ground truth for the active world, so a
+      // disconnect can be split into LOCAL vs REMOTE rather than inferred.
+      getServerAvailability: () => fetchServerWorldAvailability(env.VITE_PUBLIC_REALTIME_URL, activeWorld?.name),
+      onDisconnectClassified: (classification, snapshot) => {
+        addNetworkBreadcrumb({
+          event: "outage_start",
+          streamType: "both",
+          status: `${classification.source}:${classification.reason}`,
+        });
+        reportDisconnectClassification(classification, snapshot);
+      },
       onRecovery: (outageMs, attempts) => {
         toast.success("Back online", {
           description: `Reconnected after ${Math.max(1, Math.round(outageMs / 1000))}s offline.`,

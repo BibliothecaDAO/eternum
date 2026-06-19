@@ -284,6 +284,191 @@ describe("ConnectionHealthMonitor", () => {
     expect(cancel).toHaveBeenCalledTimes(1);
   });
 
+  it("records a browser offline event so a later outage can be classified LOCAL", () => {
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn: vi.fn(() => Promise.resolve(reachableHealth())),
+      onReconnectGlobal: vi.fn(() => Promise.resolve()),
+      onReconnectSpatial: vi.fn(() => Promise.resolve()),
+    });
+    monitor.start();
+
+    const win = (globalThis as unknown as { window: FakeEventTarget }).window;
+    const offlineCall = win.addEventListener.mock.calls.find((call) => call[0] === "offline");
+    const offlineHandler = offlineCall?.[1] as (() => void) | undefined;
+    expect(offlineHandler).toBeTypeOf("function");
+
+    offlineHandler?.();
+
+    expect(useConnectionStore.getState().isOnline).toBe(false);
+    expect(useConnectionStore.getState().lastOfflineAt).toBe(Date.now());
+
+    monitor.dispose();
+  });
+
+  it("classifies an outage with server availability when status leaves connected", async () => {
+    useConnectionStore.setState({
+      status: "connected",
+      isOnline: true,
+      lastOfflineAt: null,
+      lastStreamCloseAt: null,
+    } as any);
+    const onDisconnectClassified = vi.fn();
+    const getServerAvailability = vi.fn(() => Promise.resolve("alive" as const));
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn: vi.fn(() => Promise.resolve(reachableHealth())),
+      onReconnectGlobal: vi.fn(() => Promise.resolve()),
+      onReconnectSpatial: vi.fn(() => Promise.resolve()),
+      getServerAvailability,
+      onDisconnectClassified,
+    });
+    monitor.start();
+
+    useConnectionStore.getState().setStatus("disconnected");
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(getServerAvailability).toHaveBeenCalledTimes(1);
+    expect(onDisconnectClassified).toHaveBeenCalledTimes(1);
+    const [, snapshot] = onDisconnectClassified.mock.calls[0];
+    expect(snapshot.serverAvailability).toBe("alive");
+
+    monitor.dispose();
+  });
+
+  it("drops classification if the outage recovers before the server probe resolves", async () => {
+    useConnectionStore.setState({ status: "connected", isOnline: true, lastOfflineAt: null } as any);
+    const onDisconnectClassified = vi.fn();
+    let resolveAvailability!: (value: "alive" | "dead" | "unknown") => void;
+    const getServerAvailability = vi.fn(
+      () =>
+        new Promise<"alive" | "dead" | "unknown">((resolve) => {
+          resolveAvailability = resolve;
+        }),
+    );
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn: vi.fn(() => Promise.resolve(reachableHealth())),
+      onReconnectGlobal: vi.fn(() => Promise.resolve()),
+      onReconnectSpatial: vi.fn(() => Promise.resolve()),
+      getServerAvailability,
+      onDisconnectClassified,
+    });
+    monitor.start();
+
+    useConnectionStore.getState().setStatus("disconnected"); // starts classification, awaits probe
+    useConnectionStore.getState().setStatus("connected"); // recovery invalidates the generation
+    resolveAvailability("dead");
+    await vi.runOnlyPendingTimersAsync();
+
+    expect(onDisconnectClassified).not.toHaveBeenCalled();
+
+    monitor.dispose();
+  });
+
+  it("catches heartbeat staleness via the watchdog without waiting for a health probe", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn: vi.fn(() => Promise.resolve(reachableHealth())),
+      healthCheckIntervalMs: 60_000, // probe effectively never fires in-window
+      heartbeatWatchdogIntervalMs: 1_000,
+      staleThresholdMs: 5_000,
+      minReconnectCooldownMs: 1_000,
+      maxReconnectCooldownMs: 30_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+
+    useConnectionStore.setState({
+      lastSpatialUpdate: Date.now(),
+      lastGlobalUpdate: Date.now(),
+      lastToriiHeartbeat: Date.now() - 10_000,
+      toriiHeartbeatAvailable: true,
+    } as any);
+
+    await vi.advanceTimersByTimeAsync(1_200);
+
+    expect(onReconnectSpatial).toHaveBeenCalled();
+    expect(onReconnectGlobal).toHaveBeenCalled();
+
+    monitor.dispose();
+  });
+
+  it("recovers fast-first with adaptive backoff instead of a flat cooldown", async () => {
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn: vi.fn(() => Promise.resolve(reachableHealth())),
+      healthCheckIntervalMs: 60_000,
+      heartbeatWatchdogIntervalMs: 500,
+      staleThresholdMs: 5_000,
+      minReconnectCooldownMs: 1_000,
+      maxReconnectCooldownMs: 30_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+
+    // Heartbeat stays stale (never refreshed), so each cooldown window yields one
+    // more reconnect. With min=1s a flat 60s cooldown would allow only one.
+    useConnectionStore.setState({
+      lastSpatialUpdate: Date.now(),
+      lastGlobalUpdate: Date.now(),
+      lastToriiHeartbeat: Date.now() - 10_000,
+      toriiHeartbeatAvailable: true,
+    } as any);
+
+    await vi.advanceTimersByTimeAsync(2_600);
+
+    expect(onReconnectGlobal.mock.calls.length).toBeGreaterThanOrEqual(2);
+
+    monitor.dispose();
+  });
+
+  it("proactively refreshes quiet streams without flipping status or classifying", async () => {
+    useConnectionStore.setState({
+      status: "connected",
+      spatialStatus: "connected",
+      globalStatus: "connected",
+      toriiHeartbeatAvailable: true,
+      lastToriiHeartbeat: Date.now(),
+      lastGlobalDataUpdate: Date.now() - 60_000,
+      lastSpatialDataUpdate: Date.now() - 60_000,
+      lastGlobalHandshake: Date.now() - 60_000,
+      lastSpatialHandshake: Date.now() - 60_000,
+    } as any);
+
+    const onReconnectSpatial = vi.fn(() => Promise.resolve());
+    const onReconnectGlobal = vi.fn(() => Promise.resolve());
+    const onDisconnectClassified = vi.fn();
+    const monitor = new ConnectionHealthMonitor({
+      healthCheckFn: vi.fn(() => Promise.resolve(reachableHealth())),
+      healthCheckIntervalMs: 60_000,
+      heartbeatWatchdogIntervalMs: 1_000,
+      staleThresholdMs: 5_000,
+      quietStreamRefreshMs: 30_000,
+      minReconnectCooldownMs: 1_000,
+      maxReconnectCooldownMs: 30_000,
+      onReconnectGlobal,
+      onReconnectSpatial,
+      onDisconnectClassified,
+    });
+
+    monitor.start();
+    monitor.exitBootGraceForTests();
+
+    await vi.advanceTimersByTimeAsync(1_200);
+
+    expect(onReconnectGlobal).toHaveBeenCalled();
+    expect(useConnectionStore.getState().status).toBe("connected");
+    expect(onDisconnectClassified).not.toHaveBeenCalled();
+
+    monitor.dispose();
+  });
+
   it("does not reconnect twice within a single staleThresholdMs window (cooldown)", async () => {
     const onReconnectSpatial = vi.fn(() => Promise.resolve());
     const onReconnectGlobal = vi.fn(() => Promise.resolve());

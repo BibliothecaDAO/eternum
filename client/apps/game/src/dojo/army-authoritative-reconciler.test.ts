@@ -203,4 +203,44 @@ describe("sweepArmiesAgainstTorii", () => {
       expect(getComponentValue(explorerTroops, getEntityIdFromKeys([BigInt(id)]))).toBeDefined();
     });
   });
+
+  it("reports timing for a completed sweep", async () => {
+    const { explorerTroops } = makeExplorerTroopsWorld();
+    trackArmy(explorerTroops, 7);
+
+    const result = await sweepArmiesAgainstTorii({
+      toriiClient: makeToriiClient([7]),
+      components: [explorerTroops] as never,
+      explorerTroopsComponent: explorerTroops as never,
+      candidateIds: [7] as ID[],
+      previousMissing: new Set(),
+    });
+
+    expect(result.timing.pageCount).toBeGreaterThanOrEqual(1);
+    expect(typeof result.timing.totalMs).toBe("number");
+    expect(typeof result.timing.maxQueryMs).toBe("number");
+    expect(typeof result.timing.maxApplyMs).toBe("number");
+  });
+
+  it("treats a query past the per-op timeout as a failure with state unchanged", async () => {
+    const { explorerTroops } = makeExplorerTroopsWorld();
+    trackArmy(explorerTroops, 99);
+    const previousMissing = new Set([99] as ID[]);
+    const hangingClient = {
+      getEntities: vi.fn(() => new Promise(() => {})),
+    } as unknown as ToriiClient;
+
+    const result = await sweepArmiesAgainstTorii({
+      toriiClient: hangingClient,
+      components: [explorerTroops] as never,
+      explorerTroopsComponent: explorerTroops as never,
+      candidateIds: [99] as ID[],
+      previousMissing,
+      queryTimeoutMs: 5,
+    });
+
+    expect(result.outcome).toBe("failed");
+    expect(result.nextMissing).toBe(previousMissing);
+    expect(getComponentValue(explorerTroops, getEntityIdFromKeys([99n]))).toBeDefined();
+  });
 });

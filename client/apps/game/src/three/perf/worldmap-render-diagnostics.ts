@@ -87,6 +87,8 @@ export type WorldmapRenderCounter =
   | "armyAuthoritativeSweepConfirmedDead"
   | "armyAuthoritativeSweepReapplied"
   | "armyAuthoritativeSweepFailed"
+  | "armyAuthoritativeSweepSlowOp"
+  | "armyRecsSweepSlowPass"
   | "armyRecsSweepRemovedDeadZero"
   | "armyRecsSweepRemovedDeadMissing"
   | "armyRecsSweepSnappedPosition"
@@ -233,6 +235,8 @@ const createDiagnosticsState = (): WorldmapRenderDiagnosticsSnapshot => ({
     armyAuthoritativeSweepConfirmedDead: 0,
     armyAuthoritativeSweepReapplied: 0,
     armyAuthoritativeSweepFailed: 0,
+    armyAuthoritativeSweepSlowOp: 0,
+    armyRecsSweepSlowPass: 0,
     armyRecsSweepRemovedDeadZero: 0,
     armyRecsSweepRemovedDeadMissing: 0,
     armyRecsSweepSnappedPosition: 0,
