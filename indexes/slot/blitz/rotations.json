@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-20T13:55:23.778Z",
+  "updatedAt": "2026-06-20T14:10:07.009Z",
   "entries": {
     "bltz-855": {
       "kind": "rotation",
@@ -11,7 +11,7 @@
       "path": "runs/slot/blitz/rotations/bltz-855.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-855/27873115747-1.json",
       "status": "running",
-      "updatedAt": "2026-06-20T13:55:23.778Z",
+      "updatedAt": "2026-06-20T14:10:07.009Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -23,8 +23,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-06-20T14:07:44.741Z",
-        "lastEvaluatedAt": "2026-06-20T13:52:44.741Z"
+        "nextEvaluationAt": "2026-06-20T14:25:07.009Z",
+        "lastEvaluatedAt": "2026-06-20T14:10:07.009Z"
       },
       "games": [
         {
