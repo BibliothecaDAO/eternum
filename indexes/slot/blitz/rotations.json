@@ -2,29 +2,29 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-20T17:35:16.501Z",
+  "updatedAt": "2026-06-20T17:36:18.176Z",
   "entries": {
     "bltz-855": {
       "kind": "rotation",
       "environment": "slot.blitz",
       "rotationName": "bltz-855",
       "path": "runs/slot/blitz/rotations/bltz-855.json",
-      "inputPath": "inputs/slot/blitz/rotations/bltz-855/27874079830-1.json",
+      "inputPath": "inputs/slot/blitz/rotations/bltz-855/27878743282-1.json",
       "status": "running",
-      "updatedAt": "2026-06-20T17:35:16.501Z",
+      "updatedAt": "2026-06-20T17:36:18.176Z",
       "workflowRef": "next",
-      "currentStepId": null,
+      "currentStepId": "create-worlds",
       "hasRunningStep": false,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
+      "recoverablePendingStepId": "create-worlds",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-06-20T17:50:16.501Z",
-        "lastEvaluatedAt": "2026-06-20T17:35:16.501Z"
+        "nextEvaluationAt": "2026-06-20T17:51:18.176Z",
+        "lastEvaluatedAt": "2026-06-20T17:36:18.176Z"
       },
       "games": [
         {
@@ -46,7 +46,7 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-06-20T13:32:17.096Z",
             "pendingIndexerTierTarget": "legendary",
-            "pendingIndexerTierRequestedAt": "2026-06-20T14:30:16.350Z"
+            "pendingIndexerTierRequestedAt": "2026-06-20T17:35:27.654Z"
           }
         },
         {
@@ -56,7 +56,9 @@
           "artifacts": {
             "indexerCreated": true,
             "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-06-20T13:32:33.085Z"
+            "lastIndexerDescribeAt": "2026-06-20T13:32:33.085Z",
+            "pendingIndexerTierTarget": "legendary",
+            "pendingIndexerTierRequestedAt": "2026-06-20T17:35:27.654Z"
           }
         },
         {
@@ -66,7 +68,9 @@
           "artifacts": {
             "indexerCreated": true,
             "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-06-20T13:32:46.588Z"
+            "lastIndexerDescribeAt": "2026-06-20T13:32:46.588Z",
+            "pendingIndexerTierTarget": "legendary",
+            "pendingIndexerTierRequestedAt": "2026-06-20T17:35:27.654Z"
           }
         },
         {
@@ -76,7 +80,9 @@
           "artifacts": {
             "indexerCreated": true,
             "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-06-20T13:32:57.398Z"
+            "lastIndexerDescribeAt": "2026-06-20T13:32:57.398Z",
+            "pendingIndexerTierTarget": "legendary",
+            "pendingIndexerTierRequestedAt": "2026-06-20T17:35:27.654Z"
           }
         },
         {
@@ -88,6 +94,24 @@
             "indexerTier": "basic",
             "lastIndexerDescribeAt": "2026-06-20T14:14:44.146Z"
           }
+        },
+        {
+          "gameName": "bltz-855-07",
+          "startTime": 1781985600,
+          "durationSeconds": 432000,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-855-08",
+          "startTime": 1781989200,
+          "durationSeconds": 432000,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-855-09",
+          "startTime": 1781992800,
+          "durationSeconds": 432000,
+          "artifacts": {}
         }
       ]
     }
