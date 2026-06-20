@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27873600985-1",
   "currentStepId": null,
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-20T14:30:06.314Z",
+  "updatedAt": "2026-06-20T14:30:18.271Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -327,7 +327,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "succeeded",
         "configSteps": [
           {
@@ -519,7 +519,9 @@
             "worldAddress": "0x05b538a61f214a3607b64f4bd71cf34df13d7d6a95aa5da4d4a95e58af835894",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "pendingIndexerTierTarget": "legendary",
+          "pendingIndexerTierRequestedAt": "2026-06-20T14:30:16.350Z"
         }
       },
       {
