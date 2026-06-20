@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27881198449-1",
   "currentStepId": null,
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-20T21:35:17.119Z",
+  "updatedAt": "2026-06-20T21:35:31.422Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -1337,7 +1337,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 7,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1528,7 +1528,9 @@
             "worldAddress": "0x05f32997ea09f7f2212578e0c51997e7ecef14faa63ad3e95fa7370294cf1db6",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "pendingIndexerTierTarget": "legendary",
+          "pendingIndexerTierRequestedAt": "2026-06-20T21:35:29.544Z"
         }
       },
       {
@@ -1538,7 +1540,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 8,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1729,7 +1731,9 @@
             "worldAddress": "0x0221188b4e12439d51ef1caee8c21e3a2bc9510ef120e26fa4924fafe5b9fad4",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "pendingIndexerTierTarget": "legendary",
+          "pendingIndexerTierRequestedAt": "2026-06-20T21:35:29.544Z"
         }
       },
       {
@@ -1739,7 +1743,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 9,
         "currentStepId": null,
-        "latestEvent": "Completed create-indexers",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1931,7 +1935,9 @@
             "worldAddress": "0x03ed94894e52ee1dd591824df795d6f1c53927411344070175c15afbdfd38620",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "pendingIndexerTierTarget": "legendary",
+          "pendingIndexerTierRequestedAt": "2026-06-20T21:35:29.544Z"
         }
       },
       {
