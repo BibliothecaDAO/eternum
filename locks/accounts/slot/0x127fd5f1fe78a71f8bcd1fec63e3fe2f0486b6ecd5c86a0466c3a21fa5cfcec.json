@@ -5,15 +5,14 @@
   "owner": {
     "environment": "slot.blitz",
     "gameName": "bltz-855",
-    "launchRequestId": "27878743282-1",
+    "launchRequestId": "27880700139-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 27878743282,
+    "workflowRunId": 27880700139,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "1ab81632-ac48-4de1-b420-ab0ea4b41fee"
+    "stepId": "create-world",
+    "leaseId": "c19ce7e5-39a6-4509-8bc6-a45f623fb29c"
   },
-  "acquiredAt": "2026-06-20T17:42:37.526Z",
-  "heartbeatAt": "2026-06-20T17:42:53.649Z",
-  "expiresAt": "2026-06-20T17:42:53.649Z",
-  "releasedAt": "2026-06-20T17:42:53.649Z"
+  "acquiredAt": "2026-06-20T18:56:35.828Z",
+  "heartbeatAt": "2026-06-20T18:56:35.828Z",
+  "expiresAt": "2026-06-20T19:06:35.828Z"
 }
