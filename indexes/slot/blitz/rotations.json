@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-20T13:31:49.173Z",
+  "updatedAt": "2026-06-20T13:32:58.809Z",
   "entries": {
     "bltz-855": {
       "kind": "rotation",
@@ -11,11 +11,10 @@
       "path": "runs/slot/blitz/rotations/bltz-855.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-855/27872444325-1.json",
       "status": "running",
-      "updatedAt": "2026-06-20T13:31:49.173Z",
+      "updatedAt": "2026-06-20T13:32:58.809Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexers",
-      "activeLeaseExpiresAt": "2026-06-20T14:16:49.173Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "autoRetry": {
@@ -24,39 +23,59 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-06-20T13:46:40.932Z",
-        "lastEvaluatedAt": "2026-06-20T13:31:40.932Z"
+        "nextEvaluationAt": "2026-06-20T13:47:58.809Z",
+        "lastEvaluatedAt": "2026-06-20T13:32:58.809Z"
       },
       "games": [
         {
           "gameName": "bltz-855-01",
           "startTime": 1781964000,
           "durationSeconds": 432000,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-06-20T13:32:04.800Z"
+          }
         },
         {
           "gameName": "bltz-855-02",
           "startTime": 1781967600,
           "durationSeconds": 432000,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-06-20T13:32:17.096Z"
+          }
         },
         {
           "gameName": "bltz-855-03",
           "startTime": 1781971200,
           "durationSeconds": 432000,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-06-20T13:32:33.085Z"
+          }
         },
         {
           "gameName": "bltz-855-04",
           "startTime": 1781974800,
           "durationSeconds": 432000,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-06-20T13:32:46.588Z"
+          }
         },
         {
           "gameName": "bltz-855-05",
           "startTime": 1781978400,
           "durationSeconds": 432000,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-06-20T13:32:57.398Z"
+          }
         }
       ]
     }
