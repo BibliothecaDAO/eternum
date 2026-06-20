@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-855/27872444325-1.json",
   "latestLaunchRequestId": "27872444325-1",
-  "currentStepId": "reserve-blitz-hyperstructures",
+  "currentStepId": "grant-lootchest-roles",
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-20T13:30:06.049Z",
+  "updatedAt": "2026-06-20T13:31:13.656Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-06-20T13:44:57.661Z",
-    "lastEvaluatedAt": "2026-06-20T13:29:57.661Z"
+    "nextEvaluationAt": "2026-06-20T13:46:13.656Z",
+    "lastEvaluatedAt": "2026-06-20T13:31:13.656Z"
   },
   "steps": [
     {
@@ -73,10 +73,11 @@
     {
       "id": "reserve-blitz-hyperstructures",
       "title": "Reserving hyperstructures",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Reserving hyperstructures",
-      "latestEvent": "Reserving hyperstructures started",
-      "startedAt": "2026-06-20T13:30:06.049Z"
+      "latestEvent": "Reserving hyperstructures is complete",
+      "startedAt": "2026-06-20T13:30:06.049Z",
+      "finishedAt": "2026-06-20T13:31:13.656Z"
     },
     {
       "id": "grant-lootchest-roles",
@@ -120,7 +121,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Completed configure-worlds",
+        "latestEvent": "Completed reserve-blitz-hyperstructures",
         "status": "succeeded",
         "configSteps": [
           {
@@ -270,8 +271,9 @@
           },
           {
             "id": "reserve-blitz-hyperstructures",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed reserve-blitz-hyperstructures",
+            "updatedAt": "2026-06-20T13:30:23.249Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -289,7 +291,10 @@
           "createGameTxHash": "0x1e72114b3cf8a7fb86e24b62926de45dc9117da14747268da94fc624be77658",
           "entryTokenAddress": "0x2c2ccf2dacb94fc6ced58ff1c59cbca48765d7bd6d9cfcf0211d06cdbc88017",
           "configureTxHash": "0x13952fe7d08abc8ef6a6a8c9e20b88c268c36b7126e8db8af98777f269e20a6",
-          "worldConfigTxHash": "0x13952fe7d08abc8ef6a6a8c9e20b88c268c36b7126e8db8af98777f269e20a6"
+          "worldConfigTxHash": "0x13952fe7d08abc8ef6a6a8c9e20b88c268c36b7126e8db8af98777f269e20a6",
+          "reserveHyperstructuresTxHashes": [
+            "0x6a1177e27c7123dd660d36d830c9df9207b87164a6ae1bb02880d310d41fc98"
+          ]
         }
       },
       {
@@ -299,7 +304,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Completed configure-worlds",
+        "latestEvent": "Completed reserve-blitz-hyperstructures",
         "status": "succeeded",
         "configSteps": [
           {
@@ -449,8 +454,9 @@
           },
           {
             "id": "reserve-blitz-hyperstructures",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed reserve-blitz-hyperstructures",
+            "updatedAt": "2026-06-20T13:30:34.827Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -468,7 +474,10 @@
           "createGameTxHash": "0x1d6c24f8e8cf6b1c6d6c3251e4174700d9f6efca7fdfa29d06adce145f77984",
           "entryTokenAddress": "0x5d0f10aaa9dae0bf50540ff2119024c541b97f990c59d41b190f12706403d87",
           "configureTxHash": "0x5a3e5d2409b01bf313709554fe8022ab6c8de09a5ebb13d9fa3a59bae398a5d",
-          "worldConfigTxHash": "0x5a3e5d2409b01bf313709554fe8022ab6c8de09a5ebb13d9fa3a59bae398a5d"
+          "worldConfigTxHash": "0x5a3e5d2409b01bf313709554fe8022ab6c8de09a5ebb13d9fa3a59bae398a5d",
+          "reserveHyperstructuresTxHashes": [
+            "0x4eb9ad43c5269368d47e1ac0963616cd609567559197eb25ac13823fcdcdff5"
+          ]
         }
       },
       {
@@ -478,7 +487,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Completed configure-worlds",
+        "latestEvent": "Completed reserve-blitz-hyperstructures",
         "status": "succeeded",
         "configSteps": [
           {
@@ -628,8 +637,9 @@
           },
           {
             "id": "reserve-blitz-hyperstructures",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed reserve-blitz-hyperstructures",
+            "updatedAt": "2026-06-20T13:30:46.330Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -647,7 +657,10 @@
           "createGameTxHash": "0x43d5e4b402d3d2ec51b80232bb6f726012ae12656ec506be80f67b2209e84bc",
           "entryTokenAddress": "0x6f157fd8f86ca02131b4ab8a7112c3e670bc91c01055b003d17ca41f08fa066",
           "configureTxHash": "0xb6aa739e2fbdb17b2a584d1855330ee9034a052085c0205b23d2199cb2c0f9",
-          "worldConfigTxHash": "0xb6aa739e2fbdb17b2a584d1855330ee9034a052085c0205b23d2199cb2c0f9"
+          "worldConfigTxHash": "0xb6aa739e2fbdb17b2a584d1855330ee9034a052085c0205b23d2199cb2c0f9",
+          "reserveHyperstructuresTxHashes": [
+            "0x34f90e660b9986f897fa846cc2ed8777fe018b21d7e36abf6730f76ef94a73e"
+          ]
         }
       },
       {
@@ -657,7 +670,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Completed configure-worlds",
+        "latestEvent": "Completed reserve-blitz-hyperstructures",
         "status": "succeeded",
         "configSteps": [
           {
@@ -807,8 +820,9 @@
           },
           {
             "id": "reserve-blitz-hyperstructures",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed reserve-blitz-hyperstructures",
+            "updatedAt": "2026-06-20T13:30:58.091Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -826,7 +840,10 @@
           "createGameTxHash": "0x3a457a897b9c3580894d93f3fd6bb18517d7b1cd55277da782a2b2275bedab3",
           "entryTokenAddress": "0x69744b5a7ea08fae304efbe3641c21e012ff6bfa449a4b17b279cf230b6c961",
           "configureTxHash": "0x5d5b7b340eea3edaa37e7fbfa61808afa0de3b5a93cce14860912ece0e0e4da",
-          "worldConfigTxHash": "0x5d5b7b340eea3edaa37e7fbfa61808afa0de3b5a93cce14860912ece0e0e4da"
+          "worldConfigTxHash": "0x5d5b7b340eea3edaa37e7fbfa61808afa0de3b5a93cce14860912ece0e0e4da",
+          "reserveHyperstructuresTxHashes": [
+            "0x46e3018d7d3f77941ce5b7404375902ec902b05d4aac9868e3aa9f3d6b8c9d"
+          ]
         }
       },
       {
@@ -836,7 +853,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Completed configure-worlds",
+        "latestEvent": "Completed reserve-blitz-hyperstructures",
         "status": "succeeded",
         "configSteps": [
           {
@@ -986,8 +1003,9 @@
           },
           {
             "id": "reserve-blitz-hyperstructures",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed reserve-blitz-hyperstructures",
+            "updatedAt": "2026-06-20T13:31:09.844Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -1005,7 +1023,10 @@
           "createGameTxHash": "0x17e9f3567e60ef35945bc05ab16c0445160f6c03a7e69faedeabc7f570573e1",
           "entryTokenAddress": "0x9f3bb376e471269e02a790dca0d0735a46ea6fcc963b3b8dc8df5bc23f0610",
           "configureTxHash": "0x5b08864e16d4cc90a03690493c5250550cd5d2e1ee3c330da2fa4d8c10f57",
-          "worldConfigTxHash": "0x5b08864e16d4cc90a03690493c5250550cd5d2e1ee3c330da2fa4d8c10f57"
+          "worldConfigTxHash": "0x5b08864e16d4cc90a03690493c5250550cd5d2e1ee3c330da2fa4d8c10f57",
+          "reserveHyperstructuresTxHashes": [
+            "0x2b952d4be6336eefae51b5e1db8a72eec5dc166646f8f6c1ed6bc7aa032d441"
+          ]
         }
       }
     ],
@@ -1016,13 +1037,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-855.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-06-20T13:23:26.773Z"
-  },
-  "activeLease": {
-    "launchRequestId": "27872444325-1",
-    "workflowRunId": 27872444325,
-    "workflowRunAttempt": 1,
-    "stepId": "reserve-blitz-hyperstructures",
-    "acquiredAt": "2026-06-20T13:30:06.049Z",
-    "expiresAt": "2026-06-20T14:15:06.049Z"
   }
 }
