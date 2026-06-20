@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-20T21:35:17.119Z",
+  "updatedAt": "2026-06-20T21:35:31.422Z",
   "entries": {
     "bltz-855": {
       "kind": "rotation",
@@ -11,7 +11,7 @@
       "path": "runs/slot/blitz/rotations/bltz-855.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-855/27881198449-1.json",
       "status": "running",
-      "updatedAt": "2026-06-20T21:35:17.119Z",
+      "updatedAt": "2026-06-20T21:35:31.422Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -94,7 +94,9 @@
           "artifacts": {
             "indexerCreated": true,
             "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-06-20T17:43:25.518Z"
+            "lastIndexerDescribeAt": "2026-06-20T17:43:25.518Z",
+            "pendingIndexerTierTarget": "legendary",
+            "pendingIndexerTierRequestedAt": "2026-06-20T21:35:29.544Z"
           }
         },
         {
@@ -104,7 +106,9 @@
           "artifacts": {
             "indexerCreated": true,
             "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-06-20T17:43:36.658Z"
+            "lastIndexerDescribeAt": "2026-06-20T17:43:36.658Z",
+            "pendingIndexerTierTarget": "legendary",
+            "pendingIndexerTierRequestedAt": "2026-06-20T21:35:29.544Z"
           }
         },
         {
@@ -114,7 +118,9 @@
           "artifacts": {
             "indexerCreated": true,
             "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-06-20T17:43:48.755Z"
+            "lastIndexerDescribeAt": "2026-06-20T17:43:48.755Z",
+            "pendingIndexerTierTarget": "legendary",
+            "pendingIndexerTierRequestedAt": "2026-06-20T21:35:29.544Z"
           }
         },
         {
