@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-20T14:17:29.395Z",
+  "updatedAt": "2026-06-20T17:39:01.126Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3712,6 +3712,84 @@
         "describedAt": "2026-06-20T14:17:29.395Z"
       },
       "updatedAt": "2026-06-20T14:17:29.395Z"
+    },
+    "bltz-kick-418": {
+      "gameName": "bltz-kick-418",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-kick-418/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-20T17:39:00.996Z"
+      },
+      "updatedAt": "2026-06-20T17:39:01.126Z"
+    },
+    "bltz-froth-357": {
+      "gameName": "bltz-froth-357",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-froth-357/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-20T17:39:01.022Z"
+      },
+      "updatedAt": "2026-06-20T17:39:01.126Z"
+    },
+    "bltz-855-02": {
+      "gameName": "bltz-855-02",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-855-02/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-20T17:39:01.047Z"
+      },
+      "updatedAt": "2026-06-20T17:39:01.126Z"
+    },
+    "bltz-855-03": {
+      "gameName": "bltz-855-03",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-855-03/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-20T17:39:01.073Z"
+      },
+      "updatedAt": "2026-06-20T17:39:01.126Z"
+    },
+    "bltz-855-04": {
+      "gameName": "bltz-855-04",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-855-04/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-20T17:39:01.100Z"
+      },
+      "updatedAt": "2026-06-20T17:39:01.126Z"
+    },
+    "bltz-855-05": {
+      "gameName": "bltz-855-05",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-855-05/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-20T17:39:01.126Z"
+      },
+      "updatedAt": "2026-06-20T17:39:01.126Z"
     }
   }
 }
