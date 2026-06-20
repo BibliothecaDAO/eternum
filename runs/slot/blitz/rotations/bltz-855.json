@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27880700139-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-20T18:57:54.751Z",
+  "updatedAt": "2026-06-20T18:57:58.808Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -64,9 +64,10 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-06-20T18:57:58.808Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -1988,5 +1989,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-855.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-06-20T13:23:26.773Z"
+  },
+  "activeLease": {
+    "launchRequestId": "27880700139-1",
+    "workflowRunId": 27880700139,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-worlds",
+    "acquiredAt": "2026-06-20T18:57:58.808Z",
+    "expiresAt": "2026-06-20T19:42:58.808Z"
   }
 }
