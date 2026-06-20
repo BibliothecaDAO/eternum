@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-855/27873600985-1.json",
   "latestLaunchRequestId": "27873600985-1",
-  "currentStepId": "grant-lootchest-roles",
+  "currentStepId": "create-indexers",
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-20T14:13:53.483Z",
+  "updatedAt": "2026-06-20T14:14:16.210Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-06-20T14:28:44.462Z",
-    "lastEvaluatedAt": "2026-06-20T14:13:44.462Z"
+    "nextEvaluationAt": "2026-06-20T14:29:16.210Z",
+    "lastEvaluatedAt": "2026-06-20T14:14:16.210Z"
   },
   "steps": [
     {
@@ -82,10 +82,11 @@
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests started",
-      "startedAt": "2026-06-20T14:13:53.483Z"
+      "latestEvent": "Setting up loot chests is complete",
+      "startedAt": "2026-06-20T14:13:53.483Z",
+      "finishedAt": "2026-06-20T14:14:16.210Z"
     },
     {
       "id": "create-indexers",
@@ -1134,7 +1135,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 6,
         "currentStepId": null,
-        "latestEvent": "Completed reserve-blitz-hyperstructures",
+        "latestEvent": "Completed grant-lootchest-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1290,8 +1291,9 @@
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed grant-lootchest-roles",
+            "updatedAt": "2026-06-20T14:14:12.096Z"
           },
           {
             "id": "create-indexers",
@@ -1307,7 +1309,8 @@
           "worldConfigTxHash": "0x4ab1a3181d99a07c083b5f474257f63a50add43eb3e38fe4a60e07c3e798f29",
           "reserveHyperstructuresTxHashes": [
             "0x805a052f1fc28f737eef60cb1ea53dadee19df735b0520afe0dcf13257a592"
-          ]
+          ],
+          "lootChestRoleTxHash": "0x4bf1340f9d8537843621543b1f32167e8335bcc15c9caba903827d9de3e4804"
         }
       }
     ],
@@ -1318,13 +1321,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-855.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-06-20T13:23:26.773Z"
-  },
-  "activeLease": {
-    "launchRequestId": "27873600985-1",
-    "workflowRunId": 27873600985,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-roles",
-    "acquiredAt": "2026-06-20T14:13:53.483Z",
-    "expiresAt": "2026-06-20T14:58:53.483Z"
   }
 }
