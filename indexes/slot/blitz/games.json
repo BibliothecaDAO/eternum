@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-20T16:13:58.691Z",
+  "updatedAt": "2026-06-20T16:14:07.734Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -68,9 +68,9 @@
       "environment": "slot.blitz",
       "gameName": "bltz-kick-418",
       "path": "runs/slot/blitz/bltz-kick-418.json",
-      "inputPath": "inputs/slot/blitz/bltz-kick-418/26481243166-1.json",
+      "inputPath": "inputs/slot/blitz/bltz-kick-418/27876716188-1.json",
       "status": "attention",
-      "updatedAt": "2026-05-26T23:35:58.942Z",
+      "updatedAt": "2026-06-20T16:14:07.734Z",
       "workflowRef": "next",
       "currentStepId": "create-indexer",
       "hasRunningStep": false,
