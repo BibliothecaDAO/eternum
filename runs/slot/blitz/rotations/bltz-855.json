@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-855/27878743282-1.json",
   "latestLaunchRequestId": "27878743282-1",
-  "currentStepId": "create-worlds",
+  "currentStepId": "wait-for-factory-indexes",
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-20T17:38:59.104Z",
+  "updatedAt": "2026-06-20T17:40:24.130Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-06-20T17:51:32.726Z",
-    "lastEvaluatedAt": "2026-06-20T17:36:32.726Z"
+    "nextEvaluationAt": "2026-06-20T17:55:24.130Z",
+    "lastEvaluatedAt": "2026-06-20T17:40:24.130Z"
   },
   "steps": [
     {
@@ -46,10 +46,11 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games started",
-      "startedAt": "2026-06-20T17:36:36.849Z"
+      "latestEvent": "Creating games is complete",
+      "startedAt": "2026-06-20T17:36:36.849Z",
+      "finishedAt": "2026-06-20T17:40:24.130Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -1326,8 +1327,8 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 7,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -1337,8 +1338,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-06-20T17:39:25.703Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -1366,7 +1368,9 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x05f32997ea09f7f2212578e0c51997e7ecef14faa63ad3e95fa7370294cf1db6"
+        }
       },
       {
         "gameName": "bltz-855-08",
@@ -1375,8 +1379,8 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 8,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -1386,8 +1390,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-06-20T17:39:26.049Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -1415,7 +1420,9 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x0221188b4e12439d51ef1caee8c21e3a2bc9510ef120e26fa4924fafe5b9fad4"
+        }
       },
       {
         "gameName": "bltz-855-09",
@@ -1424,8 +1431,8 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 9,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
-        "status": "pending",
+        "latestEvent": "Completed create-worlds",
+        "status": "succeeded",
         "configSteps": [],
         "steps": [
           {
@@ -1435,8 +1442,9 @@
           },
           {
             "id": "create-worlds",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-worlds",
+            "updatedAt": "2026-06-20T17:40:19.963Z"
           },
           {
             "id": "wait-for-factory-indexes",
@@ -1464,7 +1472,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "worldAddress": "0x03ed94894e52ee1dd591824df795d6f1c53927411344070175c15afbdfd38620",
+          "createGameTxHash": "0x5062aeba212c512ad88747442fabdb5c0b94d407210be491cb64506542843bf"
+        }
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-855.json",
@@ -1474,13 +1485,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-855.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-06-20T13:23:26.773Z"
-  },
-  "activeLease": {
-    "launchRequestId": "27878743282-1",
-    "workflowRunId": 27878743282,
-    "workflowRunAttempt": 1,
-    "stepId": "create-worlds",
-    "acquiredAt": "2026-06-20T17:36:36.849Z",
-    "expiresAt": "2026-06-20T18:21:36.849Z"
   }
 }
