@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-855/27873600985-1.json",
   "latestLaunchRequestId": "27873600985-1",
-  "currentStepId": "create-indexers",
+  "currentStepId": null,
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-20T14:14:25.146Z",
+  "updatedAt": "2026-06-20T14:14:45.463Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-06-20T14:29:16.210Z",
-    "lastEvaluatedAt": "2026-06-20T14:14:16.210Z"
+    "nextEvaluationAt": "2026-06-20T14:29:45.463Z",
+    "lastEvaluatedAt": "2026-06-20T14:14:45.463Z"
   },
   "steps": [
     {
@@ -91,10 +91,11 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-06-20T14:14:25.146Z"
+      "latestEvent": "Finishing setup is complete",
+      "startedAt": "2026-06-20T14:14:25.146Z",
+      "finishedAt": "2026-06-20T14:14:45.463Z"
     }
   ],
   "summary": {
@@ -1136,7 +1137,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 6,
         "currentStepId": null,
-        "latestEvent": "Completed grant-lootchest-roles",
+        "latestEvent": "Completed create-indexers",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1298,8 +1299,9 @@
           },
           {
             "id": "create-indexers",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed create-indexers",
+            "updatedAt": "2026-06-20T14:14:44.146Z"
           }
         ],
         "artifacts": {
@@ -1311,7 +1313,23 @@
           "reserveHyperstructuresTxHashes": [
             "0x805a052f1fc28f737eef60cb1ea53dadee19df735b0520afe0dcf13257a592"
           ],
-          "lootChestRoleTxHash": "0x4bf1340f9d8537843621543b1f32167e8335bcc15c9caba903827d9de3e4804"
+          "lootChestRoleTxHash": "0x4bf1340f9d8537843621543b1f32167e8335bcc15c9caba903827d9de3e4804",
+          "indexerCreated": true,
+          "indexerMode": "slot-direct",
+          "indexerTier": "basic",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-855-06/torii",
+          "indexerVersion": "v1.8.16",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-06-20T14:14:44.146Z",
+          "indexerRequest": {
+            "env": "slot",
+            "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+            "namespaces": "s1_eternum",
+            "worldName": "bltz-855-06",
+            "worldAddress": "0x07655f24b707767d98ad247aed1c1d24706698fff7c536627428a1ebc6308158",
+            "tier": "basic",
+            "externalContracts": []
+          }
         }
       }
     ],
@@ -1322,13 +1340,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-855.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-06-20T13:23:26.773Z"
-  },
-  "activeLease": {
-    "launchRequestId": "27873600985-1",
-    "workflowRunId": 27873600985,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexers",
-    "acquiredAt": "2026-06-20T14:14:25.146Z",
-    "expiresAt": "2026-06-20T14:59:25.146Z"
   }
 }
