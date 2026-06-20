@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-20T21:39:08.832Z",
+  "updatedAt": "2026-06-20T21:41:45.124Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3811,7 +3811,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-20-06-26-2000 not found"
       },
-      "updatedAt": "2026-06-20T21:37:23.671Z"
+      "updatedAt": "2026-06-20T21:41:45.124Z"
     },
     "bltz-855-07": {
       "gameName": "bltz-855-07",
