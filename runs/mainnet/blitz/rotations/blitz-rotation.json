@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27879224795-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-06-20T17:56:30.073Z",
+  "updatedAt": "2026-06-20T17:57:04.944Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -5309,7 +5309,7 @@
         },
         "seriesGameNumber": 28,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-14-05-26-1000: Torii deployment \"apac-gladiator-14-05-26-1000\" does not exist",
         "status": "succeeded",
         "configSteps": [
           {
@@ -5490,7 +5490,10 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z"
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:00.146Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:00.146Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-14-05-26-1000\" does not exist"
         }
       },
       {
@@ -5503,7 +5506,7 @@
         },
         "seriesGameNumber": 29,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-15-05-26-0100: Torii deployment \"na-gladiator-15-05-26-0100\" does not exist",
         "status": "succeeded",
         "configSteps": [
           {
@@ -5684,7 +5687,10 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z"
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:00.219Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:00.219Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-15-05-26-0100\" does not exist"
         }
       },
       {
@@ -5697,7 +5703,7 @@
         },
         "seriesGameNumber": 30,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-15-05-26-1800: Torii deployment \"eu-gladiator-15-05-26-1800\" does not exist",
         "status": "succeeded",
         "configSteps": [
           {
@@ -5878,7 +5884,10 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z"
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:00.292Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:00.292Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-15-05-26-1800\" does not exist"
         }
       },
       {
@@ -5891,7 +5900,7 @@
         },
         "seriesGameNumber": 31,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-16-05-26-1200: Torii deployment \"apac-gladiator-16-05-26-1200\" does not exist",
         "status": "succeeded",
         "configSteps": [
           {
@@ -6072,7 +6081,10 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z"
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:00.369Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:00.369Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-16-05-26-1200\" does not exist"
         }
       },
       {
@@ -6085,7 +6097,7 @@
         },
         "seriesGameNumber": 32,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-16-05-26-2000: Torii deployment \"eu-gladiator-16-05-26-2000\" does not exist",
         "status": "succeeded",
         "configSteps": [],
         "steps": [
@@ -6149,7 +6161,10 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z"
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:00.441Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:00.441Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-16-05-26-2000\" does not exist"
         }
       },
       {
@@ -6162,7 +6177,7 @@
         },
         "seriesGameNumber": 33,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-17-05-26-0300: Torii deployment \"na-gladiator-17-05-26-0300\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -6337,7 +6352,10 @@
           "worldConfigTxHash": "0x16f50c20e343ddb006f98b0fcaf84ab12f1bbd39556a1caecdee497d59a32f3",
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z"
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:00.516Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:00.516Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-17-05-26-0300\" does not exist"
         }
       },
       {
@@ -6350,7 +6368,7 @@
         },
         "seriesGameNumber": 34,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-17-05-26-1100: Torii deployment \"apac-gladiator-17-05-26-1100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -6524,8 +6542,11 @@
           "configureTxHash": "0x33384b460626da8c1680ce983df0f549598a8806aedf00ab2191db9d808614e",
           "worldConfigTxHash": "0x33384b460626da8c1680ce983df0f549598a8806aedf00ab2191db9d808614e",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:00.588Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:00.588Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-17-05-26-1100\" does not exist"
         }
       },
       {
@@ -6538,7 +6559,7 @@
         },
         "seriesGameNumber": 35,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-17-05-26-1900: Torii deployment \"eu-gladiator-17-05-26-1900\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -6712,8 +6733,11 @@
           "configureTxHash": "0xd2d91f0d24f0209c61030a7800543ac8424e9a0f348b5630592ca4ea4e963f",
           "worldConfigTxHash": "0xd2d91f0d24f0209c61030a7800543ac8424e9a0f348b5630592ca4ea4e963f",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:00.660Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:00.660Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-17-05-26-1900\" does not exist"
         }
       },
       {
@@ -6726,7 +6750,7 @@
         },
         "seriesGameNumber": 36,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-18-05-26-0100: Torii deployment \"na-gladiator-18-05-26-0100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -6900,8 +6924,11 @@
           "configureTxHash": "0x10235c113397affc11efbfb713d26109a4886da7f43570deb3c5471eb1e5669",
           "worldConfigTxHash": "0x10235c113397affc11efbfb713d26109a4886da7f43570deb3c5471eb1e5669",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:00.734Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:00.734Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-18-05-26-0100\" does not exist"
         }
       },
       {
@@ -6914,7 +6941,7 @@
         },
         "seriesGameNumber": 37,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-19-05-26-1100: Torii deployment \"apac-gladiator-19-05-26-1100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -7088,8 +7115,11 @@
           "configureTxHash": "0x2ee00a9eb4aa4431b1e94142191a2d75ae2be16adb97808f03de7b5cd904e8f",
           "worldConfigTxHash": "0x2ee00a9eb4aa4431b1e94142191a2d75ae2be16adb97808f03de7b5cd904e8f",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:00.805Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:00.805Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-19-05-26-1100\" does not exist"
         }
       },
       {
@@ -7102,7 +7132,7 @@
         },
         "seriesGameNumber": 38,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-20-05-26-0200: Torii deployment \"na-gladiator-20-05-26-0200\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -7276,8 +7306,11 @@
           "configureTxHash": "0x3b50a9719eddbc36d28d0f31d3de55c31dda98c27e9797e4bd70e3dc1c8b656",
           "worldConfigTxHash": "0x3b50a9719eddbc36d28d0f31d3de55c31dda98c27e9797e4bd70e3dc1c8b656",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:00.878Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:00.878Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-20-05-26-0200\" does not exist"
         }
       },
       {
@@ -7290,7 +7323,7 @@
         },
         "seriesGameNumber": 39,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-20-05-26-1900: Torii deployment \"eu-gladiator-20-05-26-1900\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -7464,8 +7497,11 @@
           "configureTxHash": "0x1d6d7e305ca6de342dc18ed10dab391e000663b88f0c5c807796033ff1a0bc8",
           "worldConfigTxHash": "0x1d6d7e305ca6de342dc18ed10dab391e000663b88f0c5c807796033ff1a0bc8",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:00.952Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:00.952Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-20-05-26-1900\" does not exist"
         }
       },
       {
@@ -7478,7 +7514,7 @@
         },
         "seriesGameNumber": 40,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-21-05-26-1000: Torii deployment \"apac-gladiator-21-05-26-1000\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -7652,8 +7688,11 @@
           "configureTxHash": "0xce838d82976035d5c5aff9c8e44553c7edb12a382e89059808de48e19718fc",
           "worldConfigTxHash": "0xce838d82976035d5c5aff9c8e44553c7edb12a382e89059808de48e19718fc",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.035Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.035Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-21-05-26-1000\" does not exist"
         }
       },
       {
@@ -7666,7 +7705,7 @@
         },
         "seriesGameNumber": 41,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-22-05-26-0100: Torii deployment \"na-gladiator-22-05-26-0100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -7840,8 +7879,11 @@
           "configureTxHash": "0x750323c1e53f0d812dab72dcb0a19dec9cc93bc33f0645b80b4d95c92d979b2",
           "worldConfigTxHash": "0x750323c1e53f0d812dab72dcb0a19dec9cc93bc33f0645b80b4d95c92d979b2",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.106Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.106Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-22-05-26-0100\" does not exist"
         }
       },
       {
@@ -7854,7 +7896,7 @@
         },
         "seriesGameNumber": 42,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-22-05-26-1800: Torii deployment \"eu-gladiator-22-05-26-1800\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -8028,8 +8070,11 @@
           "configureTxHash": "0x33b727e3c29d6a3b55c983719866a1a906e84db86d2f4dcbf5fba83862120eb",
           "worldConfigTxHash": "0x33b727e3c29d6a3b55c983719866a1a906e84db86d2f4dcbf5fba83862120eb",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.178Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.178Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-22-05-26-1800\" does not exist"
         }
       },
       {
@@ -8042,7 +8087,7 @@
         },
         "seriesGameNumber": 43,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-23-05-26-1200: Torii deployment \"apac-gladiator-23-05-26-1200\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -8216,8 +8261,11 @@
           "configureTxHash": "0x74b5054539ee5911fecf098346b32e2ef5bc326ce4794b2dcc79df2e82cf0cf",
           "worldConfigTxHash": "0x74b5054539ee5911fecf098346b32e2ef5bc326ce4794b2dcc79df2e82cf0cf",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.249Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.249Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-23-05-26-1200\" does not exist"
         }
       },
       {
@@ -8230,7 +8278,7 @@
         },
         "seriesGameNumber": 44,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-23-05-26-2000: Torii deployment \"eu-gladiator-23-05-26-2000\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -8404,8 +8452,11 @@
           "configureTxHash": "0x2a13d20e7a50fa1ed325f5824d901551cccdbf013d680cd9ca3eb07c428febc",
           "worldConfigTxHash": "0x2a13d20e7a50fa1ed325f5824d901551cccdbf013d680cd9ca3eb07c428febc",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.322Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.322Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-23-05-26-2000\" does not exist"
         }
       },
       {
@@ -8418,7 +8469,7 @@
         },
         "seriesGameNumber": 45,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-24-05-26-0300: Torii deployment \"na-gladiator-24-05-26-0300\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -8592,8 +8643,11 @@
           "configureTxHash": "0x13df87059375aa76118da58f9e776e2ba0e18d9f51107961c015fcfec8c5e45",
           "worldConfigTxHash": "0x13df87059375aa76118da58f9e776e2ba0e18d9f51107961c015fcfec8c5e45",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.396Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.396Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-24-05-26-0300\" does not exist"
         }
       },
       {
@@ -8606,7 +8660,7 @@
         },
         "seriesGameNumber": 46,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-24-05-26-1100: Torii deployment \"apac-gladiator-24-05-26-1100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -8780,8 +8834,11 @@
           "configureTxHash": "0xdc074f96db070daf886a185131c5219a85778e29458a9ed9ca4214f240850e",
           "worldConfigTxHash": "0xdc074f96db070daf886a185131c5219a85778e29458a9ed9ca4214f240850e",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.468Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.468Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-24-05-26-1100\" does not exist"
         }
       },
       {
@@ -8794,7 +8851,7 @@
         },
         "seriesGameNumber": 47,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-24-05-26-1900: Torii deployment \"eu-gladiator-24-05-26-1900\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -8968,8 +9025,11 @@
           "configureTxHash": "0xe05350aeb27abebd2922997c4b9fc23c4d41b32804cd201343b8a444bee81f",
           "worldConfigTxHash": "0xe05350aeb27abebd2922997c4b9fc23c4d41b32804cd201343b8a444bee81f",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.539Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.539Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-24-05-26-1900\" does not exist"
         }
       },
       {
@@ -8982,7 +9042,7 @@
         },
         "seriesGameNumber": 48,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-25-05-26-0100: Torii deployment \"na-gladiator-25-05-26-0100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -9156,8 +9216,11 @@
           "configureTxHash": "0x57cbedb1a644869a76711eb1b3119c907dbe58ea56b152e5c865c7c4497fa3a",
           "worldConfigTxHash": "0x57cbedb1a644869a76711eb1b3119c907dbe58ea56b152e5c865c7c4497fa3a",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.615Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.615Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-25-05-26-0100\" does not exist"
         }
       },
       {
@@ -9170,7 +9233,7 @@
         },
         "seriesGameNumber": 49,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-26-05-26-1100: Torii deployment \"apac-gladiator-26-05-26-1100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -9344,8 +9407,11 @@
           "configureTxHash": "0x3c517161212315767155a4965bb546e7f64e280b37230b8f7556de8569df2b1",
           "worldConfigTxHash": "0x3c517161212315767155a4965bb546e7f64e280b37230b8f7556de8569df2b1",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.686Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.686Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-26-05-26-1100\" does not exist"
         }
       },
       {
@@ -9358,7 +9424,7 @@
         },
         "seriesGameNumber": 50,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-27-05-26-0200: Torii deployment \"na-gladiator-27-05-26-0200\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -9532,8 +9598,11 @@
           "configureTxHash": "0x5866b45de59ae82af9dca91cf21ed770585d087970a16938f8e74e37e01c6df",
           "worldConfigTxHash": "0x5866b45de59ae82af9dca91cf21ed770585d087970a16938f8e74e37e01c6df",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.761Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.761Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-27-05-26-0200\" does not exist"
         }
       },
       {
@@ -9546,7 +9615,7 @@
         },
         "seriesGameNumber": 51,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-27-05-26-1900: Torii deployment \"eu-gladiator-27-05-26-1900\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -9720,8 +9789,11 @@
           "configureTxHash": "0x7f24cba967adc6e7e550feb2c5a5d01ddd2129780d3745f6a755df738bb63d6",
           "worldConfigTxHash": "0x7f24cba967adc6e7e550feb2c5a5d01ddd2129780d3745f6a755df738bb63d6",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.831Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.831Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-27-05-26-1900\" does not exist"
         }
       },
       {
@@ -9734,7 +9806,7 @@
         },
         "seriesGameNumber": 52,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-28-05-26-1000: Torii deployment \"apac-gladiator-28-05-26-1000\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -9908,8 +9980,11 @@
           "configureTxHash": "0x6b2b0bfca3d329d3ac28e80d43b9f1972864c65f86531c5b4952b87454ba05e",
           "worldConfigTxHash": "0x6b2b0bfca3d329d3ac28e80d43b9f1972864c65f86531c5b4952b87454ba05e",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.903Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.903Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-28-05-26-1000\" does not exist"
         }
       },
       {
@@ -9922,7 +9997,7 @@
         },
         "seriesGameNumber": 53,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-29-05-26-0100: Torii deployment \"na-gladiator-29-05-26-0100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -10096,8 +10171,11 @@
           "configureTxHash": "0x43c2ec3dd67951448f9374f8f281623710bac0aa3d00af1c0c1c9d74c156893",
           "worldConfigTxHash": "0x43c2ec3dd67951448f9374f8f281623710bac0aa3d00af1c0c1c9d74c156893",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:01.980Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:01.980Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-29-05-26-0100\" does not exist"
         }
       },
       {
@@ -10110,7 +10188,7 @@
         },
         "seriesGameNumber": 54,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-29-05-26-1800: Torii deployment \"eu-gladiator-29-05-26-1800\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -10284,8 +10362,11 @@
           "configureTxHash": "0x694f19561dffd9116b7fd7ca20dd76ba3d7679f9d8b73f21965df8678d54e76",
           "worldConfigTxHash": "0x694f19561dffd9116b7fd7ca20dd76ba3d7679f9d8b73f21965df8678d54e76",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:02.052Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:02.052Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-29-05-26-1800\" does not exist"
         }
       },
       {
@@ -10298,7 +10379,7 @@
         },
         "seriesGameNumber": 55,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-30-05-26-1200: Torii deployment \"apac-gladiator-30-05-26-1200\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -10472,8 +10553,11 @@
           "configureTxHash": "0x4439a8cb7a07ed14fab7f1331872e1a297c77dc25e63566512ee3801ba6dc69",
           "worldConfigTxHash": "0x4439a8cb7a07ed14fab7f1331872e1a297c77dc25e63566512ee3801ba6dc69",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:02.129Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:02.129Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-30-05-26-1200\" does not exist"
         }
       },
       {
@@ -10486,7 +10570,7 @@
         },
         "seriesGameNumber": 56,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-30-05-26-2000: Torii deployment \"eu-gladiator-30-05-26-2000\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -10660,8 +10744,11 @@
           "configureTxHash": "0x3389fb656be422302999bf3143a14872de0e37a1ade737d7bc973735d11b6a",
           "worldConfigTxHash": "0x3389fb656be422302999bf3143a14872de0e37a1ade737d7bc973735d11b6a",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:02.200Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:02.200Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-30-05-26-2000\" does not exist"
         }
       },
       {
@@ -10674,7 +10761,7 @@
         },
         "seriesGameNumber": 57,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-31-05-26-0300: Torii deployment \"na-gladiator-31-05-26-0300\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -10848,8 +10935,11 @@
           "configureTxHash": "0x2b8891b00e9c3430832248eca7fbe6973342b18afada287135f55c3f709ae84",
           "worldConfigTxHash": "0x2b8891b00e9c3430832248eca7fbe6973342b18afada287135f55c3f709ae84",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:02.271Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:02.271Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-31-05-26-0300\" does not exist"
         }
       },
       {
@@ -10862,7 +10952,7 @@
         },
         "seriesGameNumber": 58,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-31-05-26-1100: Torii deployment \"apac-gladiator-31-05-26-1100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -11036,8 +11126,11 @@
           "configureTxHash": "0x601b10e38266e2a3149e2287089bac235344c2dedcde1b8893683b7bd54861",
           "worldConfigTxHash": "0x601b10e38266e2a3149e2287089bac235344c2dedcde1b8893683b7bd54861",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:02.342Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:02.342Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-31-05-26-1100\" does not exist"
         }
       },
       {
@@ -11050,7 +11143,7 @@
         },
         "seriesGameNumber": 59,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-31-05-26-1900: Torii deployment \"eu-gladiator-31-05-26-1900\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -11224,8 +11317,11 @@
           "configureTxHash": "0x1fe95840a9daf6be823d9217da55049f81e10fd01cc8c5e19b9316e52153eaf",
           "worldConfigTxHash": "0x1fe95840a9daf6be823d9217da55049f81e10fd01cc8c5e19b9316e52153eaf",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:02.446Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:02.446Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-31-05-26-1900\" does not exist"
         }
       },
       {
@@ -11238,7 +11334,7 @@
         },
         "seriesGameNumber": 60,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-01-06-26-0100: Torii deployment \"na-gladiator-01-06-26-0100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -11412,8 +11508,11 @@
           "configureTxHash": "0x1e2b9ef79d85d10fac3fb174f1a4b414d1dfd5dcf9632dbac4315fb6ac81c86",
           "worldConfigTxHash": "0x1e2b9ef79d85d10fac3fb174f1a4b414d1dfd5dcf9632dbac4315fb6ac81c86",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:02.522Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:02.522Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-01-06-26-0100\" does not exist"
         }
       },
       {
@@ -11426,7 +11525,7 @@
         },
         "seriesGameNumber": 61,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-02-06-26-1100: Torii deployment \"apac-gladiator-02-06-26-1100\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -11601,7 +11700,10 @@
           "worldConfigTxHash": "0x51274f3fe780616cfe2b03a75589910615e36489385caa969a604ca387d7fe4",
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z"
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:02.594Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:02.594Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-02-06-26-1100\" does not exist"
         }
       },
       {
@@ -11614,7 +11716,7 @@
         },
         "seriesGameNumber": 62,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-03-06-26-0200: Torii deployment \"na-gladiator-03-06-26-0200\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -11788,8 +11890,11 @@
           "configureTxHash": "0x677cf4edf08933ce97c27f0df4fddde239b03c54ec611bff6161bf21e997b7d",
           "worldConfigTxHash": "0x677cf4edf08933ce97c27f0df4fddde239b03c54ec611bff6161bf21e997b7d",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:02.668Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:02.668Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-03-06-26-0200\" does not exist"
         }
       },
       {
@@ -11802,7 +11907,7 @@
         },
         "seriesGameNumber": 63,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-03-06-26-1900: Torii deployment \"eu-gladiator-03-06-26-1900\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -11976,8 +12081,11 @@
           "configureTxHash": "0x797d37b5a273794987d310fb3355187f6658c0189a5ed156fd830bc4faa5ccc",
           "worldConfigTxHash": "0x797d37b5a273794987d310fb3355187f6658c0189a5ed156fd830bc4faa5ccc",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:02.769Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:02.769Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-03-06-26-1900\" does not exist"
         }
       },
       {
@@ -11990,7 +12098,7 @@
         },
         "seriesGameNumber": 64,
         "currentStepId": "reserve-blitz-hyperstructures",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-04-06-26-1000: Torii deployment \"apac-gladiator-04-06-26-1000\" does not exist",
         "status": "failed",
         "configSteps": [
           {
@@ -12164,8 +12272,11 @@
           "configureTxHash": "0x718fc054ce8e4312304ab73911d27167b969b9241b5eaef938fb0716160aa27",
           "worldConfigTxHash": "0x718fc054ce8e4312304ab73911d27167b969b9241b5eaef938fb0716160aa27",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:02.844Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:02.844Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-04-06-26-1000\" does not exist"
         }
       },
       {
@@ -12178,7 +12289,7 @@
         },
         "seriesGameNumber": 65,
         "currentStepId": "configure-worlds",
-        "latestEvent": "RPC: starknet_estimateFee with params {\n  \"request\": [\n    {\n      \"type\": \"INVOKE\",\n      \"sender_address\": \"0x023003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n      \"calldata\": [\n        \"0x92\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x306288504bb3eb83a8dd64bc727c3d3e83b4e026a71acc0c3d2e0e4d69aac43\",\n        \"0x1\",\n        \"0x23003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x3b70c7dbb26a5e2b238d893a2cd4cb319cfbf9eed17132cafa70661bf15b90a\",\n        \"0x1\",\n        \"0x5468652056616e6775617264\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x165a252d6c591fd29c9773b03ac0cb75c37db199db736c4d6abe90937c78664\",\n        \"0x6\",\n        \"0x2710\",\n        \"0x2710\",\n        \"0x2710\",\n        \"0x2710\",\n        \"0x0\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1a44089d1d8978247edb884b5dd13488849fd56edbf3a64ff234ecb0cd5dde5\",\n        \"0x1\",\n        \"0x51fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x26e35916b168ecce44d5a4d5b3bad169c04da6af41764f55db45c8e04900b9e\",\n        \"0x1\",\n        \"0x1\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1d7f08ce804bee81637e1ea41ce0dc68a3d25caeca1c0b7dfcb14dd39dbe894\",\n        \"0x1\",\n        \"0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x122ed795770b597914a8992c2e0abcdd8ae693df76dcc7fc3f6cfdb49a12bc8\",\n        \"0x1\",\n        \"0x1\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x148a838124692abe8685fdab742fde583bfdc05cd87d287115b9eaf5aa716ca\",\n        \"0x9\",\n        \"0x1\",\n        \"0xd5a3c8c5ebcacf3279aafd2de3eb0c4736afc11be6f41c84880080fa7a1aaf\",\n        \"0x5dc\",\n        \"0x1c2\",\n        \"0x2d\",\n        \"0x32\",\n        \"0x9c4\",\n        \"0x96\",\n        \"0x6\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x112178849fa01e884a18722b37506e5f0db4ac68760a7e8fe64316737a4139b\",\n        \"0x5\",\n        \"0xf4240\",\n        \"0x3b9aca00\",\n        \"0xee6b280\",\n        \"0x4c4b40\",\n        \"0xee6b280\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x237099d1d8a8ae7836498b8f3b99e3528db47ea2a4119c1624cd7d087956fb3\",\n        \"0x1\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x10f26b5e2fa6bd1be7029095be28bcf3d7a6f73d1a10b2848b91ea5f30c1a33\",\n        \"0xa\",\n        \"0x3\",\n        \"0x23\",\n        \"0x746a528800\",\n        \"0x746a528800\",\n        \"0x17\",\n        \"0x48c27395000\",\n        \"0x48c27395000\",\n        \"0x19\",\n        \"0xe8d4a51000\",\n        \"0xe8d4a51000\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x7b4c6986e1f0200f58f1804e1bebe594c51e5e84586397ba17f382e244ba52\",\n        \"0x23\",\n        \"0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49\",\n        \"0x40db150844dc372928b3b47e23cb6e240e2c99ddc5381680afd73d777cbd6c8\",\n        \"0x1b1ae4d6e2ef500000\",\n        \"0x0\",\n        \"0x18\",\n        \"0x6a21f55f\",\n        \"0x73e111b8157985c994a7d297bb262a30943abb8d8d9556f113b1886a3ab5909\",\n        \"0x13\",\n        \"0x0\",\n        \"0x5265616c6d733a204c6f6f74204368657374\",\n        \"0x12\",\n        \"0x0\",\n        \"0x524c43\",\n        \"0x3\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x4c6f6f7420436865737420666f72205265616c6d73\",\n        \"0x15\",\n        \"0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153\",\n        \"0x27e0479e199f434c18cdcfd92ed2e46712504bd7c5afe3531d9294abde0d4a4\",\n        \"0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x992acf50dba66f87d8cafffbbc3cdbbec5f8f514b5014f6d4d75e6b8789153\",\n        \"0x1f4\",\n        \"0x0\",\n        \"0x516d31323369646b6d61796265\",\n        \"0xd\",\n        \"0x5\",\n        \"0x1f36515d7d307c9d3e41df48f29e9a6b4bbc445d0fbdbbce944a4678cd52b02\",\n        \"0x70e7aea02752d5e57e78fd455caf9b6a412730ad604a2037d17118d93733711\",\n        \"0x0\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0xb9b9a249b45402e76dd60ab333391beb014be202cabf481278d958b227e9f4\",\n        \"0x5\",\n        \"0x277ee04e3f82d4e805ab0e2044c53fb6d61abd00a2a7f44b78410e9b43e1344\",\n        \"0x2710\",\n        \"0x3e8\",\n        \"0xa\",\n        \"0x23\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x22b0c8998dbe5dbc57533c98005413bb40a30090d932d2c376be13a8965d239\",\n        \"0x9\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49\",\n        \"0x6a21f55f\",\n        \"0x6a221f8f\",\n        \"0x6a222d9f\",\n        \"0x0\",\n        \"0x258\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x3792840527af50a5b9b640f89dd93777cc9db0ec506516802e3544f57a1f62d\",\n        \"0xa\",\n        \"0xfa\",\n        \"0xfa\",\n        \"0xfa\",\n        \"0xfa\",\n        \"0xfa\",\n        \"0xfa\",\n        \"0x1f4\",\n        \"0x1f4\",\n        \"0x45c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5\",\n        \"0x4cd21aa3e634e36d6379bdbb3fef78f7e0a882eb8a048624c4b02eead1bc553\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x3d10087741021673089ea4860bff353f76a5733cf0832fc9b27e2965c3c74ed\",\n        \"0x3\",\n        \"0x0\",\n        \"0x0\",\n        \"0x18\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1e3a2239cc2c67adce73e8d22a86fd3dedd0aac09251b77464b51195d29cbd3\",\n        \"0x2\",\n        \"0x3\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0xce7487c0fb8b6793528608e371dffd9ac0164c264d3a3e800896af6bde14d7\",\n        \"0x3\",\n        \"0x3c\",\n        \"0xb4\",\n        \"0x258\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x3c63168d455b22b51f3af866aabf73593dcd62f88462f1b2708130c65f8cffa\",\n        \"0x12\",\n        \"0x2ee\",\n        \"0x3e8\",\n        \"0xbf68\",\n        \"0x0\",\n        \"0x64\",\n        \"0x5dc\",\n        \"0xbd74\",\n        \"0x0\",\n        \"0x1\",\n        \"0x0\",\n        \"0x1\",\n        \"0x0\",\n        \"0x1\",\n        \"0x265c\",\n        \"0x1\",\n        \"0x12c\",\n        \"0xa\",\n        \"0x3\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1b8fbb836067297b4827db67b9c661724264e1e4b196fd77de5439e95039ce8\",\n        \"0x2\",\n        \"0x1\",\n        \"0x63\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x3498ae84c06601c439fdfb1431b4a2079fe4f9e4bf73731c38be7fa4bff7e48\",\n        \"0xc\",\n        \"0x0\",\n        \"0x2710\",\n        \"0xc350\",\n        \"0x0\",\n        \"0xffffffffffffffff\",\n        \"0xffffffffffffffff\",\n        \"0xffffffffffffffff\",\n        \"0xffffffffffffffff\",\n        \"0xffffffffffffffff\",\n        \"0xffffffffffffffff\",\n        \"0xffffffffffffffff\",\n        \"0xffffffffffffffff\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x20743412fa2bc13f30efa62f73c10bfdfaf213073ef14e335695326f1cd78ab\",\n        \"0x2\",\n        \"0x9\",\n        \"0x1b\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x16f4ece8614e3a5c84810106f6b95a6a17336d2bdaebbb88c67c054d1804405\",\n        \"0x2\",\n        \"0x0\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x274e1b8a332bff8a9b2293997706eec2cdafa4326f2aff9bc6ce8eb12dcaec0\",\n        \"0xb\",\n        \"0x7ffffffe\",\n        \"0x8\",\n        \"0x2\",\n        \"0x6\",\n        \"0x6\",\n        \"0x1f40\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x259fe4040d959f2fae1cae1a499b2748169614d85682e7a537711dec5cb5a7e\",\n        \"0x1a\",\n        \"0x9\",\n        \"0x23\",\n        \"0xe8d4a51000\",\n        \"0x17\",\n        \"0x15d3ef79800\",\n        \"0x3\",\n        \"0x53d1ac1000\",\n        \"0x2\",\n        \"0x37e11d6000\",\n        \"0x4\",\n        \"0x1bf08eb000\",\n        \"0x19\",\n        \"0x746a528800\",\n        \"0x1a\",\n        \"0x32ee841b800\",\n        \"0x1d\",\n        \"0x32ee841b800\",\n        \"0x20\",\n        \"0x32ee841b800\",\n        \"0x3\",\n        \"0x1a\",\n        \"0x746a528800\",\n        \"0x1d\",\n        \"0x746a528800\",\n        \"0x20\",\n        \"0x746a528800\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x1\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x2\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x3\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x4\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x5\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x6\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x7\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x8\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x9\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0xa\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0xb\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0xc\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0xd\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0xe\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0xf\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x10\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x11\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x12\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x13\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x14\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x15\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x16\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x17\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x18\",\n        \"0x64\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x19\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x1a\",\n        \"0x1388\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x1b\",\n        \"0x1388\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x1c\",\n        \"0x1388\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x1d\",\n        \"0x1388\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x1e\",\n        \"0x1388\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x1f\",\n        \"0x1388\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x20\",\n        \"0x1388\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x21\",\n        \"0x1388\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x22\",\n        \"0x1388\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x23\",\n        \"0x64\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x24\",\n        \"0x64\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x25\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x26\",\n        \"0x64\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1ef8e5e2088b6937ce67a9f735aa1964b4f988bc2dd0a40ab027125b3adffa7\",\n        \"0x2\",\n        \"0x39\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x17b1020e7525c63aebc51521e073b585515cfd574e12ca93874d57b7ccfd93f\",\n        \"0xa\",\n        \"0x2\",\n        \"0x4\",\n        \"0x17\",\n        \"0xa7a3582000\",\n        \"0x23\",\n        \"0x22ecb25c000\",\n        \"0x26\",\n        \"0x8bb2c97000\",\n        \"0x3\",\n        \"0x53d1ac1000\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x17b1020e7525c63aebc51521e073b585515cfd574e12ca93874d57b7ccfd93f\",\n        \"0xe\",\n        \"0x3\",\n        \"0x6\",\n        \"0x17\",\n        \"0x14f46b04000\",\n        \"0x23\",\n        \"0x45d964b8000\",\n        \"0x26\",\n        \"0x1176592e000\",\n        \"0x3\",\n        \"0xa7a3582000\",\n        \"0x2\",\n        \"0x53d1ac1000\",\n        \"0x4\",\n        \"0x53d1ac1000\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x23f5dae4f4fea662b737f0dad938f37c46f415fe2c467bf81bec8e976aa7187\",\n        \"0x27\",\n        \"0x3e8\",\n        \"0xbb8\",\n        \"0x4000000000000000\",\n        \"0x1eb851eb851eb851\",\n        \"0x20000000000000000\",\n        \"0x186a00000000000000000\",\n        \"0xc3500000000000000000\",\n        \"0x640000000000000000\",\n        \"0x30000000000000000\",\n        \"0x90000000000000000\",\n        \"0x1e\",\n        \"0x1e\",\n        \"0xa\",\n        \"0x78\",\n        \"0x78\",\n        \"0x78\",\n        \"0x32\",\n        \"0x28\",\n        \"0x1e\",\n        \"0x14\",\n        \"0x1c9c380\",\n        \"0x0\",\n        \"0x1c9c380\",\n        \"0x0\",\n        \"0x258\",\n        \"0x320\",\n        \"0x640\",\n        \"0x1f4\",\n        \"0x3a98\",\n        \"0xbb8\",\n        \"0x3a98\",\n        \"0xafc8\",\n        \"0x15f90\",\n        \"0x1\",\n        \"0x3\",\n        \"0x9\",\n        \"0x32\",\n        \"0x64\",\n        \"0x96\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x293b44b705569856c7433bac9a61a35c7d0c093f00c5f8d3fb14e27accdc42d\",\n        \"0x2\",\n        \"0x6\",\n        \"0x3e8\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xb\",\n        \"0x1\",\n        \"0x2\",\n        \"0x17\",\n        \"0x4a817c800\",\n        \"0x3\",\n        \"0x4a817c800\",\n        \"0x1\",\n        \"0x17\",\n        \"0x174876e800\",\n        \"0x0\",\n        \"0x6\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x3\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xb\",\n        \"0x4\",\n        \"0x2\",\n        \"0x17\",\n        \"0x6fc23ac00\",\n        \"0x3\",\n        \"0x6fc23ac00\",\n        \"0x1\",\n        \"0x17\",\n        \"0x22ecb25c00\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x9\",\n        \"0x5\",\n        \"0x1\",\n        \"0x17\",\n        \"0x6fc23ac00\",\n        \"0x1\",\n        \"0x17\",\n        \"0x6fc23ac00\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xd\",\n        \"0x6\",\n        \"0x3\",\n        \"0x17\",\n        \"0xdf8475800\",\n        \"0x3\",\n        \"0xdf8475800\",\n        \"0x2\",\n        \"0x6fc23ac00\",\n        \"0x1\",\n        \"0x17\",\n        \"0x7dba821800\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xf\",\n        \"0x7\",\n        \"0x4\",\n        \"0x17\",\n        \"0x1bf08eb000\",\n        \"0x3\",\n        \"0x1bf08eb000\",\n        \"0x2\",\n        \"0xdf8475800\",\n        \"0x4\",\n        \"0x6fc23ac00\",\n        \"0x1\",\n        \"0x17\",\n        \"0x13356219000\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x8\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xf\",\n        \"0x9\",\n        \"0x4\",\n        \"0x17\",\n        \"0x1bf08eb000\",\n        \"0x3\",\n        \"0x1bf08eb000\",\n        \"0x2\",\n        \"0xdf8475800\",\n        \"0x4\",\n        \"0x6fc23ac00\",\n        \"0x1\",\n        \"0x17\",\n        \"0x13356219000\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0xa\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xf\",\n        \"0xb\",\n        \"0x5\",\n        \"0x17\",\n        \"0x37e11d6000\",\n        \"0x3\",\n        \"0x29e8d60800\",\n        \"0x4\",\n        \"0x1bf08eb000\",\n        \"0xb\",\n        \"0xdf8475800\",\n        \"0x26\",\n        \"0x45d964b800\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0xc\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xf\",\n        \"0xd\",\n        \"0x4\",\n        \"0x17\",\n        \"0x1bf08eb000\",\n        \"0x3\",\n        \"0x1bf08eb000\",\n        \"0x2\",\n        \"0xdf8475800\",\n        \"0x4\",\n        \"0x6fc23ac00\",\n        \"0x1\",\n        \"0x17\",\n        \"0x13356219000\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0xe\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0xf\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x10\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x11\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x12\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x13\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x14\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xf\",\n        \"0x15\",\n        \"0x5\",\n        \"0x17\",\n        \"0x37e11d6000\",\n        \"0x3\",\n        \"0x29e8d60800\",\n        \"0x4\",\n        \"0x1bf08eb000\",\n        \"0x5\",\n        \"0xdf8475800\",\n        \"0x26\",\n        \"0x45d964b800\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x16\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x17\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xf\",\n        \"0x18\",\n        \"0x5\",\n        \"0x17\",\n        \"0x37e11d6000\",\n        \"0x3\",\n        \"0x29e8d60800\",\n        \"0x4\",\n        \"0x1bf08eb000\",\n        \"0x7\",\n        \"0xdf8475800\",\n        \"0x26\",\n        \"0x45d964b800\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x19\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x1a\",\n        \"0x0\",\n        \"0x0\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xb\",\n        \"0x1b\",\n        \"0x2\",\n        \"0x17\",\n        \"0xdf8475800\",\n        \"0x3\",\n        \"0xdf8475800\",\n        \"0x1\",\n        \"0x17\",\n        \"0x45d964b800\",\n        \"0x3\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xd\",\n        \"0x1c\",\n        \"0x3\",\n        \"0x17\",\n        \"0x29e8d60800\",\n        \"0x3\",\n        \"0x29e8d60800\",\n        \"0x4\",\n        \"0x1bf08eb000\",\n        \"0x1\",\n        \"0x17\",\n        \"0x1176592e000\",\n        \"0x3\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xf\",\n        \"0x1d\",\n        \"0x5\",\n        \"0x17\",\n        \"0x53d1ac1000\",\n        \"0x3\",\n        \"0x37e11d6000\",\n        \"0x4\",\n        \"0x29e8d60800\",\n        \"0xb\",\n        \"0xdf8475800\",\n        \"0x26\",\n        \"0x45d964b800\",\n        \"0x0\",\n        \"0x3\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xf\",\n        \"0x1e\",\n        \"0x5\",\n        \"0x17\",\n        \"0x7dba821800\",\n        \"0x3\",\n        \"0x53d1ac1000\",\n        \"0xb\",\n        \"0x37e11d6000\",\n        \"0x9\",\n        \"0x1bf08eb000\",\n        \"0x26\",\n        \"0x8bb2c97000\",\n        \"0x0\",\n        \"0x3\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xd\",\n        \"0x1f\",\n        \"0x3\",\n        \"0x17\",\n        \"0x29e8d60800\",\n        \"0x3\",\n        \"0x29e8d60800\",\n        \"0x4\",\n        \"0x1bf08eb000\",\n        \"0x1\",\n        \"0x17\",\n        \"0x1176592e000\",\n        \"0x3\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xf\",\n        \"0x20\",\n        \"0x5\",\n        \"0x17\",\n        \"0x53d1ac1000\",\n        \"0x3\",\n        \"0x37e11d6000\",\n        \"0x4\",\n        \"0x29e8d60800\",\n        \"0x5\",\n        \"0xdf8475800\",\n        \"0x26\",\n        \"0x45d964b800\",\n        \"0x0\",\n        \"0x3\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xf\",\n        \"0x21\",\n        \"0x5\",\n        \"0x17\",\n        \"0x7dba821800\",\n        \"0x3\",\n        \"0x53d1ac1000\",\n        \"0x5\",\n        \"0x37e11d6000\",\n        \"0x13\",\n        \"0x1bf08eb000\",\n        \"0x26\",\n        \"0x8bb2c97000\",\n        \"0x0\",\n        \"0x3\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xd\",\n        \"0x22\",\n        \"0x3\",\n        \"0x17\",\n        \"0x29e8d60800\",\n        \"0x3\",\n        \"0x29e8d60800\",\n        \"0x4\",\n        \"0x1bf08eb000\",\n        \"0x1\",\n        \"0x17\",\n        \"0x1176592e000\",\n        \"0x3\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xf\",\n        \"0x23\",\n        \"0x5\",\n        \"0x17\",\n        \"0x53d1ac1000\",\n        \"0x3\",\n        \"0x37e11d6000\",\n        \"0x4\",\n        \"0x29e8d60800\",\n        \"0x7\",\n        \"0xdf8475800\",\n        \"0x26\",\n        \"0x45d964b800\",\n        \"0x0\",\n        \"0x3\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xf\",\n        \"0x24\",\n        \"0x5\",\n        \"0x17\",\n        \"0x7dba821800\",\n        \"0x3\",\n        \"0x53d1ac1000\",\n        \"0x7\",\n        \"0x37e11d6000\",\n        \"0x16\",\n        \"0x1bf08eb000\",\n        \"0x26\",\n        \"0x8bb2c97000\",\n        \"0x0\",\n        \"0x3\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x9\",\n        \"0x25\",\n        \"0x1\",\n        \"0x17\",\n        \"0x2540be400\",\n        \"0x1\",\n        \"0x17\",\n        \"0x2540be400\",\n        \"0x1\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0x5\",\n        \"0x26\",\n        \"0x0\",\n        \"0x0\",\n        \"0x1\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x1877b84efd5260fa9f20641ce09db80eeef827f6cf379cbc67880912a3c7c77\",\n        \"0xd\",\n        \"0x28\",\n        \"0x3\",\n        \"0x17\",\n        \"0x1bf08eb000\",\n        \"0x3\",\n        \"0x1bf08eb000\",\n        \"0x4\",\n        \"0xdf8475800\",\n        \"0x1\",\n        \"0x17\",\n        \"0x53d1ac1000\",\n        \"0x2\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x1\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x2\",\n        \"0x77359400\",\n        \"0x3b9aca00\",\n        \"0xee6b2800\",\n        \"0x77359400\",\n        \"0x2\",\n        \"0x23\",\n        \"0x3b9aca00\",\n        \"0x17\",\n        \"0x77359400\",\n        \"0x77359400\",\n        \"0x3\",\n        \"0x23\",\n        \"0x3b9aca00\",\n        \"0x3\",\n        \"0x11e1a300\",\n        \"0x4\",\n        \"0xbebc200\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x3\",\n        \"0x77359400\",\n        \"0x3b9aca00\",\n        \"0x77359400\",\n        \"0x77359400\",\n        \"0x2\",\n        \"0x23\",\n        \"0x3b9aca00\",\n        \"0x17\",\n        \"0x3b9aca00\",\n        \"0x77359400\",\n        \"0x3\",\n        \"0x23\",\n        \"0x3b9aca00\",\n        \"0x2\",\n        \"0xbebc200\",\n        \"0x4\",\n        \"0xbebc200\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x4\",\n        \"0x77359400\",\n        \"0x3b9aca00\",\n        \"0xee6b2800\",\n        \"0x77359400\",\n        \"0x2\",\n        \"0x23\",\n        \"0x3b9aca00\",\n        \"0x17\",\n        \"0x77359400\",\n        \"0x77359400\",\n        \"0x3\",\n        \"0x23\",\n        \"0x3b9aca00\",\n        \"0x3\",\n        \"0x11e1a300\",\n        \"0x2\",\n        \"0xbebc200\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x5\",\n        \"0x77359400\",\n        \"0x3b9aca00\",\n        \"0x2540be400\",\n        \"0x77359400\",\n        \"0x2\",\n        \"0x23\",\n        \"0x77359400\",\n        \"0x17\",\n        \"0x12a05f200\",\n        \"0x77359400\",\n        \"0x3\",\n        \"0x23\",\n        \"0x77359400\",\n        \"0x2\",\n        \"0x23c34600\",\n        \"0x4\",\n        \"0x17d78400\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x6\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x7\",\n        \"0x77359400\",\n        \"0x3b9aca00\",\n        \"0x2540be400\",\n        \"0x77359400\",\n        \"0x2\",\n        \"0x23\",\n        \"0x77359400\",\n        \"0x17\",\n        \"0x12a05f200\",\n        \"0x77359400\",\n        \"0x3\",\n        \"0x23\",\n        \"0x77359400\",\n        \"0x2\",\n        \"0x23c34600\",\n        \"0x4\",\n        \"0x17d78400\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x8\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x9\",\n        \"0x77359400\",\n        \"0x3b9aca00\",\n        \"0x9502f9000\",\n        \"0x77359400\",\n        \"0x2\",\n        \"0x23\",\n        \"0xee6b2800\",\n        \"0x17\",\n        \"0x4a817c800\",\n        \"0x77359400\",\n        \"0x3\",\n        \"0x23\",\n        \"0xb2d05e00\",\n        \"0x2\",\n        \"0x35a4e900\",\n        \"0xb\",\n        \"0x23c34600\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0xa\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0xb\",\n        \"0x77359400\",\n        \"0x3b9aca00\",\n        \"0x2540be400\",\n        \"0x77359400\",\n        \"0x2\",\n        \"0x23\",\n        \"0x77359400\",\n        \"0x17\",\n        \"0x12a05f200\",\n        \"0x77359400\",\n        \"0x3\",\n        \"0x23\",\n        \"0x77359400\",\n        \"0x2\",\n        \"0x23c34600\",\n        \"0x4\",\n        \"0x17d78400\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0xc\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0xd\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0xe\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0xf\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x10\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x11\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x12\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x13\",\n        \"0x77359400\",\n        \"0x3b9aca00\",\n        \"0x9502f9000\",\n        \"0x77359400\",\n        \"0x2\",\n        \"0x23\",\n        \"0xee6b2800\",\n        \"0x17\",\n        \"0x4a817c800\",\n        \"0x77359400\",\n        \"0x3\",\n        \"0x23\",\n        \"0xb2d05e00\",\n        \"0x2\",\n        \"0x35a4e900\",\n        \"0x5\",\n        \"0x23c34600\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x14\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x15\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x16\",\n        \"0x77359400\",\n        \"0x3b9aca00\",\n        \"0x9502f9000\",\n        \"0x77359400\",\n        \"0x2\",\n        \"0x23\",\n        \"0xee6b2800\",\n        \"0x17\",\n        \"0x4a817c800\",\n        \"0x77359400\",\n        \"0x3\",\n        \"0x23\",\n        \"0xb2d05e00\",\n        \"0x2\",\n        \"0x35a4e900\",\n        \"0x7\",\n        \"0x23c34600\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x17\",\n        \"0x77359400\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x77359400\",\n        \"0x0\",\n        \"0x77359400\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x18\",\n        \"0xb2d05e00\",\n        \"0x59682f00\",\n        \"0x0\",\n        \"0xb2d05e00\",\n        \"0x0\",\n        \"0xb2d05e00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0xa\",\n        \"0x19\",\n        \"0xb2d05e00\",\n        \"0x59682f00\",\n        \"0x0\",\n        \"0xb2d05e00\",\n        \"0x0\",\n        \"0xb2d05e00\",\n        \"0x1\",\n        \"0x23\",\n        \"0xb2d05e00\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x10\",\n        \"0x1a\",\n        \"0x2540be400\",\n        \"0x12a05f200\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x2\",\n        \"0x23\",\n        \"0x77359400\",\n        \"0x17\",\n        \"0x3b9aca00\",\n        \"0x2540be400\",\n        \"0x2\",\n        \"0x23\",\n        \"0x77359400\",\n        \"0x4\",\n        \"0x2faf0800\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x1b\",\n        \"0x2540be400\",\n        \"0x12a05f200\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x5\",\n        \"0x23\",\n        \"0xb2d05e00\",\n        \"0x1a\",\n        \"0x4a817c800\",\n        \"0x4\",\n        \"0x17d78400\",\n        \"0xb\",\n        \"0x47868c00\",\n        \"0x26\",\n        \"0x3b9aca00\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x1c\",\n        \"0x2540be400\",\n        \"0x12a05f200\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x5\",\n        \"0x23\",\n        \"0xee6b2800\",\n        \"0x1b\",\n        \"0x4a817c800\",\n        \"0xb\",\n        \"0x2faf0800\",\n        \"0x9\",\n        \"0x5f5e1000\",\n        \"0x26\",\n        \"0xb2d05e00\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x10\",\n        \"0x1d\",\n        \"0x2540be400\",\n        \"0x12a05f200\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x2\",\n        \"0x23\",\n        \"0x77359400\",\n        \"0x17\",\n        \"0x3b9aca00\",\n        \"0x2540be400\",\n        \"0x2\",\n        \"0x23\",\n        \"0x77359400\",\n        \"0x4\",\n        \"0x2faf0800\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x1e\",\n        \"0x2540be400\",\n        \"0x12a05f200\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x5\",\n        \"0x23\",\n        \"0xb2d05e00\",\n        \"0x1d\",\n        \"0x4a817c800\",\n        \"0x4\",\n        \"0x17d78400\",\n        \"0x5\",\n        \"0x47868c00\",\n        \"0x26\",\n        \"0x3b9aca00\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x1f\",\n        \"0x2540be400\",\n        \"0x12a05f200\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x5\",\n        \"0x23\",\n        \"0xee6b2800\",\n        \"0x1e\",\n        \"0x4a817c800\",\n        \"0x5\",\n        \"0x2faf0800\",\n        \"0x13\",\n        \"0x5f5e1000\",\n        \"0x26\",\n        \"0xb2d05e00\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x10\",\n        \"0x20\",\n        \"0x2540be400\",\n        \"0x12a05f200\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x2\",\n        \"0x23\",\n        \"0x77359400\",\n        \"0x17\",\n        \"0x3b9aca00\",\n        \"0x2540be400\",\n        \"0x2\",\n        \"0x23\",\n        \"0x77359400\",\n        \"0x4\",\n        \"0x2faf0800\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x21\",\n        \"0x2540be400\",\n        \"0x12a05f200\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x5\",\n        \"0x23\",\n        \"0xb2d05e00\",\n        \"0x20\",\n        \"0x4a817c800\",\n        \"0x4\",\n        \"0x17d78400\",\n        \"0x7\",\n        \"0x47868c00\",\n        \"0x26\",\n        \"0x3b9aca00\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x12\",\n        \"0x22\",\n        \"0x2540be400\",\n        \"0x12a05f200\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x0\",\n        \"0x2540be400\",\n        \"0x5\",\n        \"0x23\",\n        \"0xee6b2800\",\n        \"0x21\",\n        \"0x4a817c800\",\n        \"0x7\",\n        \"0x2faf0800\",\n        \"0x16\",\n        \"0x5f5e1000\",\n        \"0x26\",\n        \"0xb2d05e00\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x23\",\n        \"0x165a0bc00\",\n        \"0xb2d05e00\",\n        \"0x0\",\n        \"0x165a0bc00\",\n        \"0x0\",\n        \"0x165a0bc00\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x24\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x25\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0x8\",\n        \"0x26\",\n        \"0x4a817c800\",\n        \"0x2540be400\",\n        \"0x0\",\n        \"0x4a817c800\",\n        \"0x0\",\n        \"0x4a817c800\",\n        \"0x0\",\n        \"0x4a17c1fd885203cc547984d7b4b8a9c57cd437c761e158981bca99cf092f261\",\n        \"0x2bd9f6cc0105e294c0f585a1fe4064242618122c351876c76149f81cc1fc3ae\",\n        \"0xe\",\n        \"0x39\",\n        \"0x3b9aca00\",\n        \"0x1dcd6500\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x0\",\n        \"0x3b9aca00\",\n        \"0x3\",\n        \"0x24\",\n        \"0x37e11d600\",\n        \"0x25\",\n        \"0xf4240\",\n        \"0x26\",\n        \"0x1dcd6500\"\n      ],\n      \"signature\": [],\n      \"nonce\": \"0x50a\",\n      \"resource_bounds\": {\n        \"l2_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        },\n        \"l1_data_gas\": {\n          \"max_amount\": \"0x0\",\n          \"max_price_per_unit\": \"0x0\"\n        }\n      },\n      \"tip\": \"0xbebc201\",\n      \"paymaster_data\": [],\n      \"nonce_data_availability_mode\": \"L1\",\n      \"fee_data_availability_mode\": \"L1\",\n      \"account_deployment_data\": [],\n      \"version\": \"0x3\"\n    }\n  ],\n  \"block_id\": \"latest\",\n  \"simulation_flags\": [\n    \"SKIP_VALIDATE\"\n  ]\n}\n\n      41: Transaction execution error: {\"transaction_index\":0,\"execution_error\":\"Contract address= 0x23003676ef4a5e8f32f5c8714f83fc6bfbefd44c0461a8b7be16d05b8ea1532, Class hash= 0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f, Selector= 0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad, Nested error: (0x617267656e742f6d756c746963616c6c2d6661696c6564 ('argent/multicall-failed'), 0x2, 0x454e545259504f494e545f4e4f545f464f554e44 ('ENTRYPOINT_NOT_FOUND'), 0x454e545259504f494e545f4641494c4544 ('ENTRYPOINT_FAILED'))\"}",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-05-06-26-0100: Torii deployment \"na-gladiator-05-06-26-0100\" does not exist",
         "status": "failed",
         "configSteps": [],
         "steps": [
@@ -12231,8 +12342,11 @@
           "worldAddress": "0x05ca919adf15d01d7e4fad108d96412889446b9dd4125e4bc90a63c50cffc0ac",
           "createGameTxHash": "0x2b632217a544926c30f2c038c8287bbd23def04e837a29fbe13dac473e7fed0",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:02.915Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:02.915Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-05-06-26-0100\" does not exist"
         }
       },
       {
@@ -12245,7 +12359,7 @@
         },
         "seriesGameNumber": 66,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-05-06-26-1800: Torii deployment \"eu-gladiator-05-06-26-1800\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12292,8 +12406,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.011Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.011Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-05-06-26-1800\" does not exist"
         }
       },
       {
@@ -12306,7 +12423,7 @@
         },
         "seriesGameNumber": 67,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-06-06-26-1200: Torii deployment \"apac-gladiator-06-06-26-1200\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12353,8 +12470,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.089Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.089Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-06-06-26-1200\" does not exist"
         }
       },
       {
@@ -12367,7 +12487,7 @@
         },
         "seriesGameNumber": 68,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-06-06-26-2000: Torii deployment \"eu-gladiator-06-06-26-2000\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12414,8 +12534,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.187Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.187Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-06-06-26-2000\" does not exist"
         }
       },
       {
@@ -12428,7 +12551,7 @@
         },
         "seriesGameNumber": 69,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-07-06-26-0300: Torii deployment \"na-gladiator-07-06-26-0300\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12475,8 +12598,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.259Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.259Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-07-06-26-0300\" does not exist"
         }
       },
       {
@@ -12489,7 +12615,7 @@
         },
         "seriesGameNumber": 70,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-07-06-26-1100: Torii deployment \"apac-gladiator-07-06-26-1100\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12536,8 +12662,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.330Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.330Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-07-06-26-1100\" does not exist"
         }
       },
       {
@@ -12550,7 +12679,7 @@
         },
         "seriesGameNumber": 71,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-07-06-26-1900: Torii deployment \"eu-gladiator-07-06-26-1900\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12597,8 +12726,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.401Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.401Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-07-06-26-1900\" does not exist"
         }
       },
       {
@@ -12611,7 +12743,7 @@
         },
         "seriesGameNumber": 72,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-08-06-26-0100: Torii deployment \"na-gladiator-08-06-26-0100\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12658,8 +12790,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.474Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.474Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-08-06-26-0100\" does not exist"
         }
       },
       {
@@ -12672,7 +12807,7 @@
         },
         "seriesGameNumber": 73,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-09-06-26-1100: Torii deployment \"apac-gladiator-09-06-26-1100\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12719,8 +12854,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.551Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.551Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-09-06-26-1100\" does not exist"
         }
       },
       {
@@ -12733,7 +12871,7 @@
         },
         "seriesGameNumber": 74,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-10-06-26-0200: Torii deployment \"na-gladiator-10-06-26-0200\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12780,8 +12918,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.623Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.623Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-10-06-26-0200\" does not exist"
         }
       },
       {
@@ -12794,7 +12935,7 @@
         },
         "seriesGameNumber": 75,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-10-06-26-1900: Torii deployment \"eu-gladiator-10-06-26-1900\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12841,8 +12982,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.697Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.697Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-10-06-26-1900\" does not exist"
         }
       },
       {
@@ -12855,7 +12999,7 @@
         },
         "seriesGameNumber": 76,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-11-06-26-1000: Torii deployment \"apac-gladiator-11-06-26-1000\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12902,8 +13046,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.771Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.771Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-11-06-26-1000\" does not exist"
         }
       },
       {
@@ -12916,7 +13063,7 @@
         },
         "seriesGameNumber": 77,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-12-06-26-0100: Torii deployment \"na-gladiator-12-06-26-0100\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -12963,8 +13110,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.848Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.848Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-12-06-26-0100\" does not exist"
         }
       },
       {
@@ -12977,7 +13127,7 @@
         },
         "seriesGameNumber": 78,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-12-06-26-1800: Torii deployment \"eu-gladiator-12-06-26-1800\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13025,7 +13175,10 @@
         "artifacts": {
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z"
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:03.921Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:03.921Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-12-06-26-1800\" does not exist"
         }
       },
       {
@@ -13038,7 +13191,7 @@
         },
         "seriesGameNumber": 79,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-13-06-26-1200: Torii deployment \"apac-gladiator-13-06-26-1200\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13085,8 +13238,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.035Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.035Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-13-06-26-1200\" does not exist"
         }
       },
       {
@@ -13099,7 +13255,7 @@
         },
         "seriesGameNumber": 80,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-13-06-26-2000: Torii deployment \"eu-gladiator-13-06-26-2000\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13146,8 +13302,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.109Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.109Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-13-06-26-2000\" does not exist"
         }
       },
       {
@@ -13160,7 +13319,7 @@
         },
         "seriesGameNumber": 81,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-14-06-26-0300: Torii deployment \"na-gladiator-14-06-26-0300\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13207,8 +13366,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.183Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.183Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-14-06-26-0300\" does not exist"
         }
       },
       {
@@ -13221,7 +13383,7 @@
         },
         "seriesGameNumber": 82,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-14-06-26-1100: Torii deployment \"apac-gladiator-14-06-26-1100\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13268,8 +13430,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.265Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.265Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-14-06-26-1100\" does not exist"
         }
       },
       {
@@ -13282,7 +13447,7 @@
         },
         "seriesGameNumber": 83,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-14-06-26-1900: Torii deployment \"eu-gladiator-14-06-26-1900\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13329,8 +13494,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.335Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.335Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-14-06-26-1900\" does not exist"
         }
       },
       {
@@ -13343,7 +13511,7 @@
         },
         "seriesGameNumber": 84,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-15-06-26-0100: Torii deployment \"na-gladiator-15-06-26-0100\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13390,8 +13558,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.411Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.411Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-15-06-26-0100\" does not exist"
         }
       },
       {
@@ -13404,7 +13575,7 @@
         },
         "seriesGameNumber": 85,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-16-06-26-1100: Torii deployment \"apac-gladiator-16-06-26-1100\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13451,8 +13622,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.487Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.487Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-16-06-26-1100\" does not exist"
         }
       },
       {
@@ -13465,7 +13639,7 @@
         },
         "seriesGameNumber": 86,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-17-06-26-0200: Torii deployment \"na-gladiator-17-06-26-0200\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13513,7 +13687,10 @@
         "artifacts": {
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z"
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.560Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.560Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-17-06-26-0200\" does not exist"
         }
       },
       {
@@ -13526,7 +13703,7 @@
         },
         "seriesGameNumber": 87,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-17-06-26-1900: Torii deployment \"eu-gladiator-17-06-26-1900\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13573,8 +13750,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.631Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.631Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-17-06-26-1900\" does not exist"
         }
       },
       {
@@ -13587,7 +13767,7 @@
         },
         "seriesGameNumber": 88,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-18-06-26-1000: Torii deployment \"apac-gladiator-18-06-26-1000\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13634,8 +13814,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.705Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.705Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-18-06-26-1000\" does not exist"
         }
       },
       {
@@ -13648,7 +13831,7 @@
         },
         "seriesGameNumber": 89,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-19-06-26-0100: Torii deployment \"na-gladiator-19-06-26-0100\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13695,8 +13878,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.781Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.781Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-19-06-26-0100\" does not exist"
         }
       },
       {
@@ -13709,7 +13895,7 @@
         },
         "seriesGameNumber": 90,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for eu-gladiator-19-06-26-1800: Torii deployment \"eu-gladiator-19-06-26-1800\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13756,8 +13942,11 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z",
-          "indexerCreated": false
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.867Z",
+          "indexerCreated": false,
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.867Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-19-06-26-1800\" does not exist"
         }
       },
       {
@@ -13770,7 +13959,7 @@
         },
         "seriesGameNumber": 91,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for apac-gladiator-20-06-26-1200: Torii deployment \"apac-gladiator-20-06-26-1200\" does not exist",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -13818,7 +14007,10 @@
         "artifacts": {
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-20T17:55:23.059Z"
+          "pendingIndexerTierRequestedAt": "2026-06-20T17:57:04.944Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-20T17:57:04.944Z",
+          "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-20-06-26-1200\" does not exist"
         }
       },
       {
