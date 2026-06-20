@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-855/27881198449-1.json",
   "latestLaunchRequestId": "27881198449-1",
-  "currentStepId": "reserve-blitz-hyperstructures",
+  "currentStepId": "grant-lootchest-roles",
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-20T19:18:28.215Z",
+  "updatedAt": "2026-06-20T19:18:48.844Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-06-20T19:33:19.879Z",
-    "lastEvaluatedAt": "2026-06-20T19:18:19.879Z"
+    "nextEvaluationAt": "2026-06-20T19:33:48.844Z",
+    "lastEvaluatedAt": "2026-06-20T19:18:48.844Z"
   },
   "steps": [
     {
@@ -73,10 +73,11 @@
     {
       "id": "reserve-blitz-hyperstructures",
       "title": "Reserving hyperstructures",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Reserving hyperstructures",
-      "latestEvent": "Reserving hyperstructures started",
-      "startedAt": "2026-06-20T19:18:28.215Z"
+      "latestEvent": "Reserving hyperstructures is complete",
+      "startedAt": "2026-06-20T19:18:28.215Z",
+      "finishedAt": "2026-06-20T19:18:48.844Z"
     },
     {
       "id": "grant-lootchest-roles",
@@ -2138,7 +2139,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 11,
         "currentStepId": null,
-        "latestEvent": "Completed configure-worlds",
+        "latestEvent": "Completed reserve-blitz-hyperstructures",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2288,8 +2289,9 @@
           },
           {
             "id": "reserve-blitz-hyperstructures",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed reserve-blitz-hyperstructures",
+            "updatedAt": "2026-06-20T19:18:45.146Z"
           },
           {
             "id": "grant-lootchest-roles",
@@ -2307,7 +2309,10 @@
           "createGameTxHash": "0x4c1279e1fb6bfd227a47eebecc0ab98e1a269899b1c0659c695b0be232ed7f4",
           "entryTokenAddress": "0x1a7e876eb5784ac181c52d682cc7edd1bbb249e60c7b094331dca002aae61d9",
           "configureTxHash": "0x5bed4061c47e0853803f95dd014e7f8f05b5aef330f2e3e3959360b9780ac6c",
-          "worldConfigTxHash": "0x5bed4061c47e0853803f95dd014e7f8f05b5aef330f2e3e3959360b9780ac6c"
+          "worldConfigTxHash": "0x5bed4061c47e0853803f95dd014e7f8f05b5aef330f2e3e3959360b9780ac6c",
+          "reserveHyperstructuresTxHashes": [
+            "0x2765221afc2b291ffa7dc8ee5c32d85f84155b5efe129c74a850c5b4ca09c64"
+          ]
         }
       }
     ],
@@ -2318,13 +2323,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-855.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-06-20T13:23:26.773Z"
-  },
-  "activeLease": {
-    "launchRequestId": "27881198449-1",
-    "workflowRunId": 27881198449,
-    "workflowRunAttempt": 1,
-    "stepId": "reserve-blitz-hyperstructures",
-    "acquiredAt": "2026-06-20T19:18:28.215Z",
-    "expiresAt": "2026-06-20T20:03:28.215Z"
   }
 }
