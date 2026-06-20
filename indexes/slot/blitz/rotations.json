@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-20T14:13:44.462Z",
+  "updatedAt": "2026-06-20T14:13:53.483Z",
   "entries": {
     "bltz-855": {
       "kind": "rotation",
@@ -11,12 +11,13 @@
       "path": "runs/slot/blitz/rotations/bltz-855.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-855/27873600985-1.json",
       "status": "running",
-      "updatedAt": "2026-06-20T14:13:44.462Z",
+      "updatedAt": "2026-06-20T14:13:53.483Z",
       "workflowRef": "next",
       "currentStepId": "grant-lootchest-roles",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-06-20T14:58:53.483Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "grant-lootchest-roles",
+      "recoverablePendingStepId": "create-indexers",
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15
