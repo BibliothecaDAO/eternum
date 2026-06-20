@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-20T17:43:05.437Z",
+  "updatedAt": "2026-06-20T17:43:50.115Z",
   "entries": {
     "bltz-855": {
       "kind": "rotation",
@@ -11,11 +11,10 @@
       "path": "runs/slot/blitz/rotations/bltz-855.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-855/27878743282-1.json",
       "status": "running",
-      "updatedAt": "2026-06-20T17:43:05.437Z",
+      "updatedAt": "2026-06-20T17:43:50.115Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexers",
-      "activeLeaseExpiresAt": "2026-06-20T18:28:05.437Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "autoRetry": {
@@ -24,8 +23,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-06-20T17:57:56.411Z",
-        "lastEvaluatedAt": "2026-06-20T17:42:56.411Z"
+        "nextEvaluationAt": "2026-06-20T17:58:50.115Z",
+        "lastEvaluatedAt": "2026-06-20T17:43:50.115Z"
       },
       "games": [
         {
@@ -92,19 +91,31 @@
           "gameName": "bltz-855-07",
           "startTime": 1781985600,
           "durationSeconds": 432000,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-06-20T17:43:25.518Z"
+          }
         },
         {
           "gameName": "bltz-855-08",
           "startTime": 1781989200,
           "durationSeconds": 432000,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-06-20T17:43:36.658Z"
+          }
         },
         {
           "gameName": "bltz-855-09",
           "startTime": 1781992800,
           "durationSeconds": 432000,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-06-20T17:43:48.755Z"
+          }
         }
       ]
     }
