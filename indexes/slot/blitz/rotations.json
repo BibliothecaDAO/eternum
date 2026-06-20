@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-20T14:31:55.239Z",
+  "updatedAt": "2026-06-20T14:32:06.453Z",
   "entries": {
     "bltz-855": {
       "kind": "rotation",
@@ -11,11 +11,10 @@
       "path": "runs/slot/blitz/rotations/bltz-855.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-855/27874079830-1.json",
       "status": "running",
-      "updatedAt": "2026-06-20T14:31:55.239Z",
+      "updatedAt": "2026-06-20T14:32:06.453Z",
       "workflowRef": "next",
-      "currentStepId": "configure-worlds",
-      "activeLeaseExpiresAt": "2026-06-20T15:16:55.239Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "autoRetry": {
@@ -24,8 +23,8 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-06-20T14:46:51.151Z",
-        "lastEvaluatedAt": "2026-06-20T14:31:51.151Z"
+        "nextEvaluationAt": "2026-06-20T14:47:06.453Z",
+        "lastEvaluatedAt": "2026-06-20T14:32:06.453Z"
       },
       "games": [
         {
