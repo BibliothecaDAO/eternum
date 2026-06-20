@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-20T21:39:01.492Z",
+  "updatedAt": "2026-06-20T21:39:03.343Z",
   "entries": {
     "bltz-855": {
       "kind": "rotation",
@@ -11,7 +11,7 @@
       "path": "runs/slot/blitz/rotations/bltz-855.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-855/27884568063-1.json",
       "status": "running",
-      "updatedAt": "2026-06-20T21:39:01.492Z",
+      "updatedAt": "2026-06-20T21:39:03.343Z",
       "workflowRef": "next",
       "currentStepId": "grant-lootchest-roles",
       "hasRunningStep": false,
@@ -93,10 +93,8 @@
           "durationSeconds": 432000,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-06-20T17:43:25.518Z",
-            "pendingIndexerTierTarget": "legendary",
-            "pendingIndexerTierRequestedAt": "2026-06-20T21:35:29.544Z"
+            "indexerTier": "legendary",
+            "lastIndexerDescribeAt": "2026-06-20T21:37:22.478Z"
           }
         },
         {
@@ -105,10 +103,8 @@
           "durationSeconds": 432000,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-06-20T17:43:36.658Z",
-            "pendingIndexerTierTarget": "legendary",
-            "pendingIndexerTierRequestedAt": "2026-06-20T21:35:29.544Z"
+            "indexerTier": "legendary",
+            "lastIndexerDescribeAt": "2026-06-20T21:38:48.327Z"
           }
         },
         {
@@ -117,10 +113,8 @@
           "durationSeconds": 432000,
           "artifacts": {
             "indexerCreated": true,
-            "indexerTier": "basic",
-            "lastIndexerDescribeAt": "2026-06-20T17:43:48.755Z",
-            "pendingIndexerTierTarget": "legendary",
-            "pendingIndexerTierRequestedAt": "2026-06-20T21:35:29.544Z"
+            "indexerTier": "legendary",
+            "lastIndexerDescribeAt": "2026-06-20T21:39:03.342Z"
           }
         },
         {
