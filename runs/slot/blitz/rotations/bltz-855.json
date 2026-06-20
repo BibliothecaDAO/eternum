@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27878743282-1",
   "currentStepId": "create-indexers",
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-20T17:42:56.411Z",
+  "updatedAt": "2026-06-20T17:43:05.437Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -91,9 +91,10 @@
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Finishing setup started",
+      "startedAt": "2026-06-20T17:43:05.437Z"
     }
   ],
   "summary": {
@@ -1889,5 +1890,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-855.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-06-20T13:23:26.773Z"
+  },
+  "activeLease": {
+    "launchRequestId": "27878743282-1",
+    "workflowRunId": 27878743282,
+    "workflowRunAttempt": 1,
+    "stepId": "create-indexers",
+    "acquiredAt": "2026-06-20T17:43:05.437Z",
+    "expiresAt": "2026-06-20T18:28:05.437Z"
   }
 }
