@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "environment": "slot.blitz",
+  "kind": "rotation",
+  "updatedAt": "2026-06-20T13:23:05.817Z",
+  "entries": {
+    "bltz-855": {
+      "kind": "rotation",
+      "environment": "slot.blitz",
+      "rotationName": "bltz-855",
+      "path": "runs/slot/blitz/rotations/bltz-855.json",
+      "inputPath": "inputs/slot/blitz/rotations/bltz-855/27872444325-1.json",
+      "status": "running",
+      "updatedAt": "2026-06-20T13:23:05.817Z",
+      "workflowRef": "next",
+      "currentStepId": "create-series",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-series",
+      "autoRetry": {
+        "enabled": true,
+        "intervalMinutes": 15
+      },
+      "evaluation": {
+        "intervalMinutes": 15,
+        "nextEvaluationAt": "2026-06-20T13:38:05.817Z",
+        "lastEvaluatedAt": "2026-06-20T13:23:05.817Z"
+      },
+      "games": [
+        {
+          "gameName": "bltz-855-01",
+          "startTime": 1781964000,
+          "durationSeconds": 432000,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-855-02",
+          "startTime": 1781967600,
+          "durationSeconds": 432000,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-855-03",
+          "startTime": 1781971200,
+          "durationSeconds": 432000,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-855-04",
+          "startTime": 1781974800,
+          "durationSeconds": 432000,
+          "artifacts": {}
+        },
+        {
+          "gameName": "bltz-855-05",
+          "startTime": 1781978400,
+          "durationSeconds": 432000,
+          "artifacts": {}
+        }
+      ]
+    }
+  }
+}
