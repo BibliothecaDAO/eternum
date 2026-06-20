@@ -12,9 +12,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/rotations/bltz-855/27872444325-1.json",
   "latestLaunchRequestId": "27872444325-1",
-  "currentStepId": "grant-lootchest-roles",
+  "currentStepId": "create-indexers",
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-20T13:31:17.017Z",
+  "updatedAt": "2026-06-20T13:31:40.932Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-06-20T13:46:13.656Z",
-    "lastEvaluatedAt": "2026-06-20T13:31:13.656Z"
+    "nextEvaluationAt": "2026-06-20T13:46:40.932Z",
+    "lastEvaluatedAt": "2026-06-20T13:31:40.932Z"
   },
   "steps": [
     {
@@ -82,10 +82,11 @@
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests started",
-      "startedAt": "2026-06-20T13:31:17.017Z"
+      "latestEvent": "Setting up loot chests is complete",
+      "startedAt": "2026-06-20T13:31:17.017Z",
+      "finishedAt": "2026-06-20T13:31:40.932Z"
     },
     {
       "id": "create-indexers",
@@ -122,7 +123,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 1,
         "currentStepId": null,
-        "latestEvent": "Completed reserve-blitz-hyperstructures",
+        "latestEvent": "Completed grant-lootchest-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -278,8 +279,9 @@
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed grant-lootchest-roles",
+            "updatedAt": "2026-06-20T13:31:37.110Z"
           },
           {
             "id": "create-indexers",
@@ -295,7 +297,8 @@
           "worldConfigTxHash": "0x13952fe7d08abc8ef6a6a8c9e20b88c268c36b7126e8db8af98777f269e20a6",
           "reserveHyperstructuresTxHashes": [
             "0x6a1177e27c7123dd660d36d830c9df9207b87164a6ae1bb02880d310d41fc98"
-          ]
+          ],
+          "lootChestRoleTxHash": "0x4ea41bbfc1163d3b95c88b37d5f3c248fc6db06c3a6f2e2bd5fa69bc5b2e688"
         }
       },
       {
@@ -305,7 +308,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 2,
         "currentStepId": null,
-        "latestEvent": "Completed reserve-blitz-hyperstructures",
+        "latestEvent": "Completed grant-lootchest-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -461,8 +464,9 @@
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed grant-lootchest-roles",
+            "updatedAt": "2026-06-20T13:31:37.110Z"
           },
           {
             "id": "create-indexers",
@@ -478,7 +482,8 @@
           "worldConfigTxHash": "0x5a3e5d2409b01bf313709554fe8022ab6c8de09a5ebb13d9fa3a59bae398a5d",
           "reserveHyperstructuresTxHashes": [
             "0x4eb9ad43c5269368d47e1ac0963616cd609567559197eb25ac13823fcdcdff5"
-          ]
+          ],
+          "lootChestRoleTxHash": "0x4ea41bbfc1163d3b95c88b37d5f3c248fc6db06c3a6f2e2bd5fa69bc5b2e688"
         }
       },
       {
@@ -488,7 +493,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 3,
         "currentStepId": null,
-        "latestEvent": "Completed reserve-blitz-hyperstructures",
+        "latestEvent": "Completed grant-lootchest-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -644,8 +649,9 @@
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed grant-lootchest-roles",
+            "updatedAt": "2026-06-20T13:31:37.110Z"
           },
           {
             "id": "create-indexers",
@@ -661,7 +667,8 @@
           "worldConfigTxHash": "0xb6aa739e2fbdb17b2a584d1855330ee9034a052085c0205b23d2199cb2c0f9",
           "reserveHyperstructuresTxHashes": [
             "0x34f90e660b9986f897fa846cc2ed8777fe018b21d7e36abf6730f76ef94a73e"
-          ]
+          ],
+          "lootChestRoleTxHash": "0x4ea41bbfc1163d3b95c88b37d5f3c248fc6db06c3a6f2e2bd5fa69bc5b2e688"
         }
       },
       {
@@ -671,7 +678,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Completed reserve-blitz-hyperstructures",
+        "latestEvent": "Completed grant-lootchest-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -827,8 +834,9 @@
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed grant-lootchest-roles",
+            "updatedAt": "2026-06-20T13:31:37.110Z"
           },
           {
             "id": "create-indexers",
@@ -844,7 +852,8 @@
           "worldConfigTxHash": "0x5d5b7b340eea3edaa37e7fbfa61808afa0de3b5a93cce14860912ece0e0e4da",
           "reserveHyperstructuresTxHashes": [
             "0x46e3018d7d3f77941ce5b7404375902ec902b05d4aac9868e3aa9f3d6b8c9d"
-          ]
+          ],
+          "lootChestRoleTxHash": "0x4ea41bbfc1163d3b95c88b37d5f3c248fc6db06c3a6f2e2bd5fa69bc5b2e688"
         }
       },
       {
@@ -854,7 +863,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Completed reserve-blitz-hyperstructures",
+        "latestEvent": "Completed grant-lootchest-roles",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1010,8 +1019,9 @@
           },
           {
             "id": "grant-lootchest-roles",
-            "status": "pending",
-            "latestEvent": "Waiting to run"
+            "status": "succeeded",
+            "latestEvent": "Completed grant-lootchest-roles",
+            "updatedAt": "2026-06-20T13:31:37.110Z"
           },
           {
             "id": "create-indexers",
@@ -1027,7 +1037,8 @@
           "worldConfigTxHash": "0x5b08864e16d4cc90a03690493c5250550cd5d2e1ee3c330da2fa4d8c10f57",
           "reserveHyperstructuresTxHashes": [
             "0x2b952d4be6336eefae51b5e1db8a72eec5dc166646f8f6c1ed6bc7aa032d441"
-          ]
+          ],
+          "lootChestRoleTxHash": "0x4ea41bbfc1163d3b95c88b37d5f3c248fc6db06c3a6f2e2bd5fa69bc5b2e688"
         }
       }
     ],
@@ -1038,13 +1049,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-855.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-06-20T13:23:26.773Z"
-  },
-  "activeLease": {
-    "launchRequestId": "27872444325-1",
-    "workflowRunId": 27872444325,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-roles",
-    "acquiredAt": "2026-06-20T13:31:17.017Z",
-    "expiresAt": "2026-06-20T14:16:17.017Z"
   }
 }
