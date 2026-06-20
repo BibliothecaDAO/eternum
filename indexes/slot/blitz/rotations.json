@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-20T21:39:43.693Z",
+  "updatedAt": "2026-06-20T21:40:00.519Z",
   "entries": {
     "bltz-855": {
       "kind": "rotation",
@@ -10,12 +10,11 @@
       "rotationName": "bltz-855",
       "path": "runs/slot/blitz/rotations/bltz-855.json",
       "inputPath": "inputs/slot/blitz/rotations/bltz-855/27884568063-1.json",
-      "status": "running",
-      "updatedAt": "2026-06-20T21:39:43.693Z",
+      "status": "complete",
+      "updatedAt": "2026-06-20T21:40:00.519Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexers",
-      "activeLeaseExpiresAt": "2026-06-20T22:24:43.693Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "autoRetry": {
@@ -24,8 +23,7 @@
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-06-20T21:54:34.446Z",
-        "lastEvaluatedAt": "2026-06-20T21:39:34.446Z"
+        "lastEvaluatedAt": "2026-06-20T21:40:00.519Z"
       },
       "games": [
         {
@@ -142,7 +140,11 @@
           "gameName": "bltz-855-12",
           "startTime": 1782003600,
           "durationSeconds": 432000,
-          "artifacts": {}
+          "artifacts": {
+            "indexerCreated": true,
+            "indexerTier": "basic",
+            "lastIndexerDescribeAt": "2026-06-20T21:39:59.147Z"
+          }
         }
       ]
     }
