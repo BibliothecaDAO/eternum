@@ -7,21 +7,21 @@
   "gameType": "blitz",
   "gameName": "bltz-kick-418",
   "status": "attention",
-  "executionMode": "fast_trial",
-  "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/blitz/bltz-kick-418/26481243166-1.json",
-  "latestLaunchRequestId": "26481243166-1",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "create-indexer",
+  "inputPath": "inputs/slot/blitz/bltz-kick-418/27876716188-1.json",
+  "latestLaunchRequestId": "27876716188-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-05-26T23:33:15.730Z",
-  "updatedAt": "2026-05-26T23:35:58.942Z",
+  "updatedAt": "2026-06-20T16:14:07.734Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 26481243166,
+    "workflowRunId": 27876716188,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/26481243166",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/27876716188",
     "ref": "next",
-    "sha": "1d16b37e8d5b46dfbdab60f1be3e37e61a8b5f2a"
+    "sha": "d558a3914030e3e2d043920316234fc43b6095b3"
   },
   "steps": [
     {
