@@ -7,21 +7,21 @@
   "gameType": "blitz",
   "gameName": "bltz-froth-357",
   "status": "attention",
-  "executionMode": "fast_trial",
-  "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/blitz/bltz-froth-357/26628917814-1.json",
-  "latestLaunchRequestId": "26628917814-1",
+  "executionMode": "guided_recovery",
+  "requestedLaunchStep": "create-indexer",
+  "inputPath": "inputs/slot/blitz/bltz-froth-357/27876710540-1.json",
+  "latestLaunchRequestId": "27876710540-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-05-29T09:17:00.690Z",
-  "updatedAt": "2026-05-29T09:20:06.425Z",
+  "updatedAt": "2026-06-20T16:13:54.279Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 26628917814,
+    "workflowRunId": 27876710540,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/26628917814",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/27876710540",
     "ref": "next",
-    "sha": "3103a8b1533890e82d614e1e895d296914bc6990"
+    "sha": "d558a3914030e3e2d043920316234fc43b6095b3"
   },
   "steps": [
     {
