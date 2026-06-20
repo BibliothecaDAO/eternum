@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "27876710540-1",
   "currentStepId": null,
   "createdAt": "2026-05-29T09:17:00.690Z",
-  "updatedAt": "2026-06-20T17:35:31.890Z",
+  "updatedAt": "2026-06-20T17:37:37.532Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -93,13 +93,11 @@
     ],
     "lootChestRoleTxHash": "0x3e3888b29d75d9de0900d2e2fcc531676055e2521018ba607004fc72bd3ac6",
     "indexerCreated": true,
-    "indexerTier": "basic",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-froth-357/torii",
     "indexerVersion": "v1.8.16",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-06-20T16:14:28.490Z",
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-06-20T17:35:27.654Z"
+    "lastIndexerDescribeAt": "2026-06-20T17:37:37.532Z"
   },
   "completedAt": "2026-06-20T16:14:29.862Z"
 }
