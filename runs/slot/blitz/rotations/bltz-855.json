@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27881198449-1",
   "currentStepId": "create-worlds",
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-20T19:16:22.780Z",
+  "updatedAt": "2026-06-20T19:16:26.331Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -46,9 +46,10 @@
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Creating games",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Creating games started",
+      "startedAt": "2026-06-20T19:16:26.331Z"
     },
     {
       "id": "wait-for-factory-indexes",
@@ -2181,5 +2182,13 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-855.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-06-20T13:23:26.773Z"
+  },
+  "activeLease": {
+    "launchRequestId": "27881198449-1",
+    "workflowRunId": 27881198449,
+    "workflowRunAttempt": 1,
+    "stepId": "create-worlds",
+    "acquiredAt": "2026-06-20T19:16:26.331Z",
+    "expiresAt": "2026-06-20T20:01:26.331Z"
   }
 }
