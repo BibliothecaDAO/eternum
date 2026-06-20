@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-20T21:37:23.671Z",
+  "updatedAt": "2026-06-20T21:39:08.832Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3812,6 +3812,45 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-20-06-26-2000 not found"
       },
       "updatedAt": "2026-06-20T21:37:23.671Z"
+    },
+    "bltz-855-07": {
+      "gameName": "bltz-855-07",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-855-07/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-20T21:39:08.783Z"
+      },
+      "updatedAt": "2026-06-20T21:39:08.832Z"
+    },
+    "bltz-855-08": {
+      "gameName": "bltz-855-08",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-855-08/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-20T21:39:08.806Z"
+      },
+      "updatedAt": "2026-06-20T21:39:08.832Z"
+    },
+    "bltz-855-09": {
+      "gameName": "bltz-855-09",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-855-09/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-20T21:39:08.832Z"
+      },
+      "updatedAt": "2026-06-20T21:39:08.832Z"
     }
   }
 }
