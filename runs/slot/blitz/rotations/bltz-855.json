@@ -10,17 +10,17 @@
   "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
-  "inputPath": "inputs/slot/blitz/rotations/bltz-855/27878743282-1.json",
-  "latestLaunchRequestId": "27878743282-1",
-  "currentStepId": null,
+  "inputPath": "inputs/slot/blitz/rotations/bltz-855/27880700139-1.json",
+  "latestLaunchRequestId": "27880700139-1",
+  "currentStepId": "create-worlds",
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-20T18:55:15.632Z",
+  "updatedAt": "2026-06-20T18:56:17.250Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 27878743282,
+    "workflowRunId": 27880700139,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/27878743282",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/27880700139",
     "ref": "next",
     "sha": "d558a3914030e3e2d043920316234fc43b6095b3"
   },
@@ -30,8 +30,8 @@
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-06-20T19:10:15.632Z",
-    "lastEvaluatedAt": "2026-06-20T18:55:15.632Z"
+    "nextEvaluationAt": "2026-06-20T19:11:17.250Z",
+    "lastEvaluatedAt": "2026-06-20T18:56:17.250Z"
   },
   "steps": [
     {
@@ -39,63 +39,49 @@
       "title": "Creating series",
       "status": "succeeded",
       "workflowStepName": "Creating series",
-      "latestEvent": "Series is ready to accept rotation games",
-      "startedAt": "2026-06-20T17:36:26.878Z",
-      "finishedAt": "2026-06-20T17:36:32.726Z"
+      "latestEvent": "Series is ready to accept rotation games"
     },
     {
       "id": "create-worlds",
       "title": "Creating games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Creating games",
-      "latestEvent": "Creating games is complete",
-      "startedAt": "2026-06-20T17:36:36.849Z",
-      "finishedAt": "2026-06-20T17:40:24.130Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "wait-for-factory-indexes",
       "title": "Waiting for games",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Waiting for games",
-      "latestEvent": "Waiting for games is complete",
-      "startedAt": "2026-06-20T17:40:30.354Z",
-      "finishedAt": "2026-06-20T17:40:36.915Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings is complete",
-      "startedAt": "2026-06-20T17:40:40.950Z",
-      "finishedAt": "2026-06-20T17:41:26.222Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "reserve-blitz-hyperstructures",
       "title": "Reserving hyperstructures",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Reserving hyperstructures",
-      "latestEvent": "Reserving hyperstructures is complete",
-      "startedAt": "2026-06-20T17:41:35.174Z",
-      "finishedAt": "2026-06-20T17:42:24.496Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "grant-lootchest-roles",
       "title": "Setting up loot chests",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests is complete",
-      "startedAt": "2026-06-20T17:42:33.441Z",
-      "finishedAt": "2026-06-20T17:42:56.411Z"
+      "latestEvent": "Waiting to run"
     },
     {
       "id": "create-indexers",
       "title": "Finishing setup",
-      "status": "succeeded",
+      "status": "pending",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup is complete",
-      "startedAt": "2026-06-20T17:43:05.437Z",
-      "finishedAt": "2026-06-20T17:43:50.115Z"
+      "latestEvent": "Waiting to run"
     }
   ],
   "summary": {
@@ -1933,6 +1919,55 @@
             "externalContracts": []
           }
         }
+      },
+      {
+        "gameName": "bltz-855-10",
+        "startTime": 1781996400,
+        "startTimeIso": "2026-06-20T23:00:00.000Z",
+        "durationSeconds": 432000,
+        "seriesGameNumber": 10,
+        "currentStepId": null,
+        "latestEvent": "Waiting to run",
+        "status": "pending",
+        "configSteps": [],
+        "steps": [
+          {
+            "id": "create-series",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "wait-for-factory-indexes",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "configure-worlds",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "reserve-blitz-hyperstructures",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "grant-lootchest-roles",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          },
+          {
+            "id": "create-indexers",
+            "status": "pending",
+            "latestEvent": "Waiting to run"
+          }
+        ],
+        "artifacts": {}
       }
     ],
     "outputPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-slot-blitz-bltz-855.json",
