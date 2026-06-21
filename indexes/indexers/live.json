@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-21T11:46:48.287Z",
+  "updatedAt": "2026-06-21T11:51:54.421Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3921,6 +3921,19 @@
         "describedAt": "2026-06-21T11:02:06.262Z"
       },
       "updatedAt": "2026-06-21T11:02:06.262Z"
+    },
+    "bltz-pulse-337": {
+      "gameName": "bltz-pulse-337",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-pulse-337/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-21T11:51:54.421Z"
+      },
+      "updatedAt": "2026-06-21T11:51:54.421Z"
     }
   }
 }
