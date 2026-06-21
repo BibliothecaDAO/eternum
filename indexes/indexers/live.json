@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-21T13:27:14.128Z",
+  "updatedAt": "2026-06-21T13:41:57.036Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3907,7 +3907,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-21-06-26-1100 not found"
       },
-      "updatedAt": "2026-06-21T13:21:44.246Z"
+      "updatedAt": "2026-06-21T13:41:57.036Z"
     },
     "bltz-burst-200": {
       "gameName": "bltz-burst-200",
@@ -3927,13 +3927,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-pulse-337/torii",
         "version": "v1.8.16",
         "branch": "main",
-        "describedAt": "2026-06-21T11:51:54.421Z"
+        "describedAt": "2026-06-21T13:41:57.016Z"
       },
-      "updatedAt": "2026-06-21T11:51:54.421Z"
+      "updatedAt": "2026-06-21T13:41:57.036Z"
     }
   }
 }
