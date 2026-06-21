@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27890688088-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-06-21T02:17:01.716Z",
+  "updatedAt": "2026-06-21T02:30:13.456Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -14087,7 +14087,7 @@
         },
         "seriesGameNumber": 93,
         "currentStepId": null,
-        "latestEvent": "Waiting to run",
+        "latestEvent": "Queued indexer tier update to legendary",
         "status": "pending",
         "configSteps": [],
         "steps": [
@@ -14132,7 +14132,10 @@
             "latestEvent": "Waiting to run"
           }
         ],
-        "artifacts": {}
+        "artifacts": {
+          "pendingIndexerTierTarget": "legendary",
+          "pendingIndexerTierRequestedAt": "2026-06-21T02:30:10.435Z"
+        }
       },
       {
         "gameName": "apac-gladiator-21-06-26-1100",
