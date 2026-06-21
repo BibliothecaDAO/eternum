@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-21T14:07:12.879Z",
+  "updatedAt": "2026-06-21T14:21:40.195Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3907,7 +3907,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-21-06-26-1100 not found"
       },
-      "updatedAt": "2026-06-21T13:41:57.036Z"
+      "updatedAt": "2026-06-21T14:21:40.195Z"
     },
     "bltz-burst-200": {
       "gameName": "bltz-burst-200",
