@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-21T13:07:16.940Z",
+  "updatedAt": "2026-06-21T13:11:45.715Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3914,13 +3914,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-burst-200/torii",
         "version": "v1.8.16",
         "branch": "main",
-        "describedAt": "2026-06-21T11:02:06.262Z"
+        "describedAt": "2026-06-21T13:11:45.715Z"
       },
-      "updatedAt": "2026-06-21T11:02:06.262Z"
+      "updatedAt": "2026-06-21T13:11:45.715Z"
     },
     "bltz-pulse-337": {
       "gameName": "bltz-pulse-337",
