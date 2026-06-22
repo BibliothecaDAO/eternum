@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-22T11:12:08.973Z",
+  "updatedAt": "2026-06-22T11:17:12.827Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3952,6 +3952,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-22-06-26-0100 not found"
       },
       "updatedAt": "2026-06-22T11:12:08.973Z"
+    },
+    "bltz-ping-474": {
+      "gameName": "bltz-ping-474",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-ping-474/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-22T11:17:12.827Z"
+      },
+      "updatedAt": "2026-06-22T11:17:12.827Z"
     }
   }
 }
