@@ -2,6 +2,7 @@ import type {
   DeploymentChain,
   DeploymentEnvironmentId,
   DeploymentGameType,
+  RuntimeProvider,
   IndexerWorkflowRun,
   LaunchGameRequest,
   LaunchGameStepId,
@@ -13,6 +14,7 @@ import type {
   LaunchSeriesSummary,
   PrizeFundingState,
 } from "../types";
+import type { AwsRuntimeArtifact } from "../runtime/aws-runtime";
 
 export type LaunchWorkflowScope = "full" | LaunchGameStepId;
 export type SeriesLaunchWorkflowScope = "full" | LaunchSeriesStepId;
@@ -102,6 +104,8 @@ export interface FactoryRunArtifacts {
   indexerVersion?: string;
   indexerBranch?: string;
   lastIndexerDescribeAt?: string;
+  runtimeProvider?: RuntimeProvider;
+  awsRuntime?: AwsRuntimeArtifact;
   pendingIndexerTierTarget?: string;
   pendingIndexerTierRequestedAt?: string;
   lastIndexerTierDispatchTarget?: string;

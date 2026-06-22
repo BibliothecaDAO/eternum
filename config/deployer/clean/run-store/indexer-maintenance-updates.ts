@@ -1,8 +1,10 @@
 import { resolveIndexerArtifactState, resolveSlotToriiLiveState } from "../indexing/slot-torii";
+import { toAwsRuntimeArtifact, type AwsRuntimeLiveState } from "../runtime/aws-runtime";
 import type { IndexerTier, SeriesLaunchGameArtifacts, SeriesLaunchGameSummary } from "../types";
 import type { FactoryRotationRunRecord, FactoryRunArtifacts, FactoryRunRecord, FactorySeriesRunRecord } from "./types";
 
 type SlotToriiLiveState = ReturnType<typeof resolveSlotToriiLiveState>;
+type IndexerMaintenanceLiveState = SlotToriiLiveState | AwsRuntimeLiveState;
 type IndexerMaintenanceRunRecord = FactoryRunRecord | FactorySeriesRunRecord | FactoryRotationRunRecord | null;
 
 interface IndexerMaintenanceRunTarget {
@@ -18,13 +20,13 @@ interface BaseIndexerMaintenanceRunUpdate {
 
 export interface RefreshIndexerMaintenanceRunUpdate extends BaseIndexerMaintenanceRunUpdate {
   kind: "refresh";
-  liveState: SlotToriiLiveState;
+  liveState: IndexerMaintenanceLiveState;
 }
 
 export interface TierSuccessIndexerMaintenanceRunUpdate extends BaseIndexerMaintenanceRunUpdate {
   kind: "tier-success";
   tier: IndexerTier;
-  liveState: SlotToriiLiveState;
+  liveState: IndexerMaintenanceLiveState;
 }
 
 export interface TierFailureIndexerMaintenanceRunUpdate extends BaseIndexerMaintenanceRunUpdate {
@@ -32,17 +34,17 @@ export interface TierFailureIndexerMaintenanceRunUpdate extends BaseIndexerMaint
   tier: IndexerTier;
   failedAt: string;
   errorMessage: string;
-  liveState: SlotToriiLiveState;
+  liveState: IndexerMaintenanceLiveState;
 }
 
 export interface DeleteSuccessIndexerMaintenanceRunUpdate extends BaseIndexerMaintenanceRunUpdate {
   kind: "delete-success";
-  liveState: SlotToriiLiveState;
+  liveState: IndexerMaintenanceLiveState;
 }
 
 export interface DeleteFailureIndexerMaintenanceRunUpdate extends BaseIndexerMaintenanceRunUpdate {
   kind: "delete-failure";
-  liveState: SlotToriiLiveState;
+  liveState: IndexerMaintenanceLiveState;
 }
 
 export type IndexerMaintenanceRunUpdate =
@@ -132,31 +134,35 @@ function buildNextArtifacts(
 
 function buildRefreshedArtifacts(
   currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
-  liveState: SlotToriiLiveState,
+  liveState: IndexerMaintenanceLiveState,
 ): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
   return {
     ...currentArtifacts,
-    ...resolveIndexerArtifactState(liveState),
-    pendingIndexerTierTarget: liveState.state === "existing" ? undefined : currentArtifacts.pendingIndexerTierTarget,
-    pendingIndexerTierRequestedAt:
-      liveState.state === "existing" ? undefined : currentArtifacts.pendingIndexerTierRequestedAt,
-    lastIndexerTierDispatchTarget:
-      liveState.state === "existing" ? undefined : currentArtifacts.lastIndexerTierDispatchTarget,
-    lastIndexerTierDispatchFailedAt:
-      liveState.state === "existing" ? undefined : currentArtifacts.lastIndexerTierDispatchFailedAt,
-    lastIndexerTierDispatchError:
-      liveState.state === "existing" ? undefined : currentArtifacts.lastIndexerTierDispatchError,
+    ...resolveMaintenanceIndexerArtifactState(liveState),
+    pendingIndexerTierTarget: isLiveIndexerExisting(liveState) ? undefined : currentArtifacts.pendingIndexerTierTarget,
+    pendingIndexerTierRequestedAt: isLiveIndexerExisting(liveState)
+      ? undefined
+      : currentArtifacts.pendingIndexerTierRequestedAt,
+    lastIndexerTierDispatchTarget: isLiveIndexerExisting(liveState)
+      ? undefined
+      : currentArtifacts.lastIndexerTierDispatchTarget,
+    lastIndexerTierDispatchFailedAt: isLiveIndexerExisting(liveState)
+      ? undefined
+      : currentArtifacts.lastIndexerTierDispatchFailedAt,
+    lastIndexerTierDispatchError: isLiveIndexerExisting(liveState)
+      ? undefined
+      : currentArtifacts.lastIndexerTierDispatchError,
   };
 }
 
 function buildTierSuccessArtifacts(
   currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
   tier: IndexerTier,
-  liveState: SlotToriiLiveState,
+  liveState: IndexerMaintenanceLiveState,
 ): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
   return {
     ...currentArtifacts,
-    ...resolveIndexerArtifactState(liveState, { fallbackTier: tier }),
+    ...resolveMaintenanceIndexerArtifactState(liveState, tier),
     pendingIndexerTierTarget: undefined,
     pendingIndexerTierRequestedAt: undefined,
     lastIndexerTierDispatchTarget: undefined,
@@ -170,11 +176,11 @@ function buildTierFailureArtifacts(
   tier: IndexerTier,
   failedAt: string,
   errorMessage: string,
-  liveState: SlotToriiLiveState,
+  liveState: IndexerMaintenanceLiveState,
 ): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
   return {
     ...currentArtifacts,
-    ...resolveIndexerArtifactState(liveState),
+    ...resolveMaintenanceIndexerArtifactState(liveState),
     pendingIndexerTierTarget: tier,
     pendingIndexerTierRequestedAt: failedAt,
     lastIndexerTierDispatchTarget: tier,
@@ -185,16 +191,18 @@ function buildTierFailureArtifacts(
 
 function buildDeleteSuccessArtifacts(
   currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
-  liveState: SlotToriiLiveState,
+  liveState: IndexerMaintenanceLiveState,
 ): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
   return {
     ...currentArtifacts,
-    ...resolveIndexerArtifactState(liveState),
+    ...resolveMaintenanceIndexerArtifactState(liveState),
     indexerCreated: false,
     indexerTier: undefined,
     indexerUrl: undefined,
     indexerVersion: undefined,
     indexerBranch: undefined,
+    runtimeProvider: isAwsRuntimeLiveState(liveState) ? "aws" : currentArtifacts.runtimeProvider,
+    awsRuntime: undefined,
     pendingIndexerTierTarget: undefined,
     pendingIndexerTierRequestedAt: undefined,
     lastIndexerTierDispatchTarget: undefined,
@@ -205,16 +213,41 @@ function buildDeleteSuccessArtifacts(
 
 function buildDeleteFailureArtifacts(
   currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
-  liveState: SlotToriiLiveState,
+  liveState: IndexerMaintenanceLiveState,
 ): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
   return {
     ...currentArtifacts,
-    ...resolveIndexerArtifactState(liveState),
+    ...resolveMaintenanceIndexerArtifactState(liveState),
     pendingIndexerTierTarget: undefined,
     pendingIndexerTierRequestedAt: undefined,
     lastIndexerTierDispatchTarget: undefined,
     lastIndexerTierDispatchFailedAt: undefined,
     lastIndexerTierDispatchError: undefined,
+  };
+}
+
+function isAwsRuntimeLiveState(liveState: IndexerMaintenanceLiveState): liveState is AwsRuntimeLiveState {
+  return (liveState as AwsRuntimeLiveState).provider === "aws";
+}
+
+function isLiveIndexerExisting(liveState: IndexerMaintenanceLiveState): boolean {
+  return isAwsRuntimeLiveState(liveState) ? liveState.status === "existing" : liveState.state === "existing";
+}
+
+function resolveMaintenanceIndexerArtifactState(liveState: IndexerMaintenanceLiveState, fallbackTier?: IndexerTier) {
+  if (!isAwsRuntimeLiveState(liveState)) {
+    return resolveIndexerArtifactState(liveState, { fallbackTier });
+  }
+
+  return {
+    indexerCreated: liveState.status === "existing",
+    indexerTier: liveState.tier || fallbackTier,
+    indexerUrl: liveState.endpointUrl,
+    indexerVersion: liveState.version,
+    indexerBranch: undefined,
+    lastIndexerDescribeAt: liveState.describedAt,
+    runtimeProvider: "aws" as const,
+    awsRuntime: toAwsRuntimeArtifact(liveState),
   };
 }
 

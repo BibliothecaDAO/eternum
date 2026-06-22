@@ -1,0 +1,159 @@
+name: AWS Runtime Deployer
+run-name: >-
+  AWS Runtime / ${{ inputs.operation || github.event.inputs.operation || 'deploy' }} / ${{ inputs.environment ||
+  github.event.inputs.environment || 'unknown' }} / ${{ inputs.runtime_name || github.event.inputs.runtime_name ||
+  'runtime' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Runtime operation"
+        required: false
+        default: deploy
+        type: choice
+        options:
+          - deploy
+          - inspect
+          - resize
+          - delete
+      environment:
+        description: "Deployment environment"
+        required: true
+        type: choice
+        options:
+          - slot.blitz
+          - slot.eternum
+          - mainnet.blitz
+          - mainnet.eternum
+      runtime_kind:
+        description: "Runtime kind"
+        required: true
+        type: choice
+        options:
+          - katana
+          - torii
+      runtime_name:
+        description: "Runtime name"
+        required: true
+        type: string
+      tier:
+        description: "Fixed runtime tier"
+        required: false
+        default: basic
+        type: choice
+        options:
+          - basic
+          - pro
+          - epic
+          - legendary
+      rpc_url:
+        description: "RPC URL used by Torii"
+        required: false
+        type: string
+      world_address:
+        description: "World address indexed by Torii"
+        required: false
+        type: string
+      namespaces:
+        description: "Comma-separated Torii namespaces"
+        required: false
+        default: s1_eternum
+        type: string
+      external_contracts:
+        description: "Comma-separated or newline-separated Torii external contracts"
+        required: false
+        default: ""
+        type: string
+      version:
+        description: "Dojo runtime version"
+        required: false
+        default: v1.8.16
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  runtime:
+    name: Reconcile AWS runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ github.event.inputs.environment }}
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_RUNTIME_CLUSTER: ${{ vars.AWS_RUNTIME_CLUSTER }}
+      AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
+      AWS_RUNTIME_ECR_IMAGE: ${{ vars.AWS_RUNTIME_ECR_IMAGE }}
+      AWS_RUNTIME_ECR_IMAGE_DIGEST: ${{ vars.AWS_RUNTIME_ECR_IMAGE_DIGEST }}
+      AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN }}
+      AWS_RUNTIME_TASK_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_ROLE_ARN }}
+      AWS_RUNTIME_SUBNET_IDS: ${{ vars.AWS_RUNTIME_SUBNET_IDS }}
+      AWS_RUNTIME_SECURITY_GROUP_IDS: ${{ vars.AWS_RUNTIME_SECURITY_GROUP_IDS }}
+      AWS_RUNTIME_EFS_FILE_SYSTEM_ID: ${{ vars.AWS_RUNTIME_EFS_FILE_SYSTEM_ID }}
+      AWS_RUNTIME_VPC_ID: ${{ vars.AWS_RUNTIME_VPC_ID }}
+      AWS_RUNTIME_ALB_LISTENER_ARN: ${{ vars.AWS_RUNTIME_ALB_LISTENER_ARN }}
+      AWS_RUNTIME_LOG_GROUP: ${{ vars.AWS_RUNTIME_LOG_GROUP || '/ecs/eternum-game-runtime' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Configure AWS credentials
+        if: ${{ vars.AWS_ROLE_TO_ASSUME != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Reconcile runtime
+        run: |
+          set -euo pipefail
+
+          args=(
+            --operation "${{ github.event.inputs.operation }}"
+            --environment "${{ github.event.inputs.environment }}"
+            --runtime-kind "${{ github.event.inputs.runtime_kind }}"
+            --runtime-name "${{ github.event.inputs.runtime_name }}"
+            --tier "${{ github.event.inputs.tier }}"
+            --version "${{ github.event.inputs.version }}"
+          )
+
+          if [ -n "${{ github.event.inputs.rpc_url }}" ]; then
+            args+=(--rpc-url "${{ github.event.inputs.rpc_url }}")
+          fi
+
+          if [ -n "${{ github.event.inputs.world_address }}" ]; then
+            args+=(--world-address "${{ github.event.inputs.world_address }}")
+          fi
+
+          if [ -n "${{ github.event.inputs.namespaces }}" ]; then
+            args+=(--namespaces "${{ github.event.inputs.namespaces }}")
+          fi
+
+          if [ -n "${{ github.event.inputs.external_contracts }}" ]; then
+            args+=(--external-contracts "${{ github.event.inputs.external_contracts }}")
+          fi
+
+          bun config/deployer/clean/cli/aws-runtime.ts "${args[@]}" | tee aws-runtime-result.json
+
+      - name: Upload runtime result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aws-runtime-result
+          path: aws-runtime-result.json

@@ -13,6 +13,9 @@ function buildIndexerRequest(options: {
 
   return {
     env: environment.toriiEnv,
+    environmentId: options.environmentId,
+    runtimeProvider: environment.runtimeProvider,
+    runtimeDomain: environment.runtimeDomain,
     rpcUrl: environment.rpcUrl,
     namespaces: options.namespaces,
     worldName: options.gameName,

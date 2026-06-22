@@ -21,6 +21,8 @@ export const DEFAULT_INDEXER_WORKFLOW_TIMEOUT_MS = 20 * 60 * 1000;
 export const DEFAULT_INDEXER_WORKFLOW_POLL_MS = 5_000;
 export const DEFAULT_TORII_VERSION = "v1.8.16";
 export const DEFAULT_TORII_SLOT_TEAM = "realms-eternum";
+export const DEFAULT_RUNTIME_PROVIDER = "aws";
+export const DEFAULT_AWS_RUNTIME_DOMAIN = "runtime.realms.world";
 export const DEFAULT_VRF_PROVIDER_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
 export const DEFAULT_MAINNET_FACTORY_ADDRESS = "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da";
 export const DEFAULT_SLOT_FACTORY_ADDRESS = "0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb";
@@ -49,6 +51,8 @@ export function resolveDefaultRpcUrl(chain: string): string {
 }
 
 const SLOT_DEFAULTS = {
+  runtimeProvider: DEFAULT_RUNTIME_PROVIDER,
+  runtimeDomain: DEFAULT_AWS_RUNTIME_DOMAIN,
   factoryAddress: DEFAULT_SLOT_FACTORY_ADDRESS,
   rpcUrl: DEFAULT_SLOT_RPC_URL,
   accountAddress: DEFAULT_SLOT_ACCOUNT_ADDRESS,
@@ -62,6 +66,8 @@ const SLOT_DEFAULTS = {
 };
 
 const MAINNET_DEFAULTS = {
+  runtimeProvider: DEFAULT_RUNTIME_PROVIDER,
+  runtimeDomain: DEFAULT_AWS_RUNTIME_DOMAIN,
   factoryAddress: DEFAULT_MAINNET_FACTORY_ADDRESS,
   rpcUrl: DEFAULT_MAINNET_RPC_URL,
   createGame: {

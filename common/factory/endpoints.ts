@@ -2,15 +2,56 @@ import { shortString } from "starknet";
 
 type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet" | string;
 
+const DEFAULT_CARTRIDGE_API_BASE = "https://api.cartridge.gg";
+const DEFAULT_AWS_RUNTIME_DOMAIN = "runtime.realms.world";
+
+function readEnv(name: string): string | undefined {
+  if (typeof process === "undefined") {
+    return undefined;
+  }
+
+  const value = (process as any).env?.[name];
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function shouldUseAwsFactoryRuntime(): boolean {
+  return readEnv("FACTORY_RUNTIME_PROVIDER")?.toLowerCase() === "aws";
+}
+
+function resolveAwsRuntimeDomain(): string {
+  return (readEnv("AWS_RUNTIME_DOMAIN") || DEFAULT_AWS_RUNTIME_DOMAIN).replace(/^https?:\/\//, "");
+}
+
+function resolveAwsFactoryRuntimeName(chain: Chain): string {
+  switch (chain) {
+    case "mainnet":
+      return readEnv("AWS_FACTORY_TORII_MAINNET_RUNTIME_NAME") || "eternum-factory-mainnet";
+    case "sepolia":
+      return readEnv("AWS_FACTORY_TORII_SEPOLIA_RUNTIME_NAME") || "eternum-factory-sepolia";
+    case "slot":
+    case "slottest":
+    case "local":
+      return readEnv("AWS_FACTORY_TORII_SLOT_RUNTIME_NAME") || "eternum-factory-slot-d";
+    default:
+      return "";
+  }
+}
+
+function buildAwsFactorySqlBaseUrl(chain: Chain): string {
+  const runtimeName = resolveAwsFactoryRuntimeName(chain);
+  return runtimeName ? `https://${resolveAwsRuntimeDomain()}/x/${runtimeName}/torii/sql` : "";
+}
+
 /**
  * Returns the Factory Torii SQL base URL for a given chain.
  * The Cartridge API base can be overridden; defaults to https://api.cartridge.gg.
  */
 export function getFactorySqlBaseUrl(chain: Chain, cartridgeApiBase?: string): string {
-  const base =
-    cartridgeApiBase ||
-    (typeof process !== "undefined" ? (process as any).env?.CARTRIDGE_API_BASE : undefined) ||
-    "https://api.cartridge.gg";
+  if (shouldUseAwsFactoryRuntime()) {
+    return buildAwsFactorySqlBaseUrl(chain);
+  }
+
+  const base = cartridgeApiBase || readEnv("CARTRIDGE_API_BASE") || DEFAULT_CARTRIDGE_API_BASE;
   switch (chain) {
     case "mainnet":
       return `${base}/x/eternum-factory-mainnet/torii/sql`;

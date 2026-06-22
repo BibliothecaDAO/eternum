@@ -22,6 +22,7 @@
     "client/apps/game/src/ui/shared/components/blitz-game-stats-card.tsx",
 
     "client/apps/gg-xyz/**",
+    "deploy/aws/runtime-image/*.mjs",
     "scripts/codemod-lucide-imports.mjs",
     "scripts/ci/roles/grant-prize-distributor-minter-role.ts",
     "config/**",

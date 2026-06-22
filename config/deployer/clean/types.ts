@@ -5,10 +5,12 @@ import type {
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 import type { Account } from "starknet";
+import type { AwsRuntimeArtifact } from "./runtime/aws-runtime";
 
 export type DeploymentChain = "slot" | "mainnet";
 export type DeploymentGameType = "blitz" | "eternum";
 export type DeploymentEnvironmentId = "slot.blitz" | "slot.eternum" | "mainnet.blitz" | "mainnet.eternum";
+export type RuntimeProvider = "aws" | "slot";
 export type ExecutionMode = "batched" | "sequential";
 export type LaunchTargetKind = "game" | "series" | "rotation";
 export type LaunchStepStatus = "pending" | "running" | "succeeded" | "failed";
@@ -48,6 +50,8 @@ export interface DeploymentEnvironment {
   id: DeploymentEnvironmentId;
   chain: DeploymentChain;
   gameType: DeploymentGameType;
+  runtimeProvider: RuntimeProvider;
+  runtimeDomain?: string;
   toriiEnv: DeploymentChain;
   configPath: string;
   factoryAddress?: string;
@@ -111,15 +115,19 @@ export interface FactoryWorldProfile {
 export type IndexerTier = "basic" | "pro" | "legendary" | "epic";
 export type IndexerResolutionState = "existing" | "missing" | "indeterminate";
 export type IndexerResolutionSource = "describe" | "describe-not-found" | "list" | "describe-and-list-failed";
-export type IndexerCreationMode = "github-actions" | "slot-direct";
+export type IndexerCreationMode = "github-actions" | "slot-direct" | "aws-ecs";
 
 export interface IndexerRequest {
   env: string;
+  environmentId?: DeploymentEnvironmentId;
+  runtimeProvider?: RuntimeProvider;
+  runtimeDomain?: string;
   rpcUrl: string;
   namespaces: string;
   worldName: string;
   worldAddress: string;
   tier?: IndexerTier;
+  toriiVersion?: string;
   workflowFile?: string;
   ref?: string;
   externalContracts?: string[];
@@ -329,6 +337,8 @@ export interface LaunchGameSummary {
   indexerVersion?: string;
   indexerBranch?: string;
   lastIndexerDescribeAt?: string;
+  runtimeProvider?: RuntimeProvider;
+  awsRuntime?: AwsRuntimeArtifact;
   indexerRequest?: IndexerRequest;
   indexerWorkflowRun?: IndexerWorkflowRun;
   prizeFunding?: PrizeFundingState;
@@ -370,6 +380,8 @@ export interface SeriesLaunchGameArtifacts {
   indexerVersion?: string;
   indexerBranch?: string;
   lastIndexerDescribeAt?: string;
+  runtimeProvider?: RuntimeProvider;
+  awsRuntime?: AwsRuntimeArtifact;
   pendingIndexerTierTarget?: IndexerTier;
   pendingIndexerTierRequestedAt?: string;
   lastIndexerTierDispatchTarget?: IndexerTier;

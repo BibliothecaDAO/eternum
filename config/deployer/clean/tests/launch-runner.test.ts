@@ -55,18 +55,21 @@ const executeConfigStepsMock = mock(async ({ mode }: { mode?: string }) => ({
 }));
 const deriveMapCenterOffsetFromWorldConfigTxMock = mock(() => 50);
 const buildBanksForMapCenterOffsetMock = mock(() => []);
-const ensureSlotIndexerDeploymentMock = mock(async () => ({
-  mode: "slot-direct",
+const ensureIndexerDeploymentMock = mock(async () => ({
+  mode: "aws-ecs",
   action: "created",
   requestedTier: "basic",
   previousTier: undefined,
   liveState: {
-    state: "existing",
-    stateSource: "describe",
-    currentTier: "basic",
-    url: "https://torii.example",
+    provider: "aws",
+    runtimeKind: "torii",
+    runtimeName: "bltz-test",
+    serviceName: "slot-blitz-torii-bltz-test",
+    status: "existing",
+    endpointUrl: "https://torii.example",
+    tier: "basic",
     version: "v1.8.15",
-    branch: "main",
+    region: "us-east-1",
     describedAt: "2026-03-23T10:00:00.000Z",
   },
 }));
@@ -140,6 +143,19 @@ mock.module("starknet", () => ({
   RpcProvider: class RpcProvider {
     constructor(_options: unknown) {}
   },
+  CallData: {
+    compile: (value: unknown) => value,
+  },
+  constants: {
+    LegacyUDC: {
+      ADDRESS: "0xudc",
+    },
+  },
+  hash: {
+    computePedersenHash: (_left: string, _right: string) => "0xsalt",
+    calculateContractAddressFromHash: () => "0x55587061e1f470c749e9f7e568a3eb8b8d2335ac2c9b5adf8d9669fb378b38",
+    getSelectorFromName: (value: string) => `selector:${value}`,
+  },
   shortString: {
     encodeShortString: (value: string) => `felt:${value}`,
   },
@@ -164,30 +180,57 @@ mock.module("../eternum", () => ({
   grantVillagePassRolesToWorldSystems: grantVillagePassRolesToWorldSystemsMock,
 }));
 
+function resolveMockManifestAddress(
+  manifest: { contracts?: { tag?: string; address?: string }[] },
+  exactTag: string,
+  suffix: string,
+  fallback: string,
+): string {
+  return (
+    manifest.contracts?.find((contract) => contract.tag === exactTag)?.address ||
+    manifest.contracts?.find((contract) => contract.tag?.endsWith(suffix))?.address ||
+    fallback
+  );
+}
+
 mock.module("../factory/discovery", () => ({
   isZeroAddress: () => false,
   patchManifestWithFactory: (manifest: unknown) => manifest,
   resolvePrizeDistributionSystemsAddress: () => "0xprize",
+  resolveVillageSystemsAddress: (manifest: { contracts?: { tag?: string; address?: string }[] }) =>
+    resolveMockManifestAddress(manifest, "s1_eternum-village_systems", "-village_systems", "0xvillage"),
   resolveFactoryWorldProfile: resolveFactoryWorldProfileMock,
   waitForFactoryWorldProfile: waitForFactoryWorldProfileMock,
 }));
 
-mock.module("../indexing/slot-torii", () => ({
-  ensureSlotIndexerDeployment: ensureSlotIndexerDeploymentMock,
-  resolveIndexerArtifactState: (liveState: {
-    state: string;
-    currentTier?: string;
-    url?: string;
-    version?: string;
-    branch?: string;
-    describedAt?: string;
+mock.module("../runtime/indexer-provider", () => ({
+  ensureIndexerDeployment: ensureIndexerDeploymentMock,
+  resolveIndexerArtifactStateFromProvider: (result: {
+    mode: string;
+    requestedTier?: string;
+    liveState: {
+      status?: string;
+      tier?: string;
+      endpointUrl?: string;
+      version?: string;
+      describedAt?: string;
+    };
   }) => ({
-    indexerCreated: liveState.state === "existing",
-    indexerTier: liveState.currentTier,
-    indexerUrl: liveState.url,
-    indexerVersion: liveState.version,
-    indexerBranch: liveState.branch,
-    lastIndexerDescribeAt: liveState.describedAt,
+    indexerCreated: result.liveState.status === "existing",
+    indexerMode: result.mode,
+    indexerTier: result.liveState.tier || result.requestedTier,
+    indexerUrl: result.liveState.endpointUrl,
+    indexerVersion: result.liveState.version,
+    indexerBranch: undefined,
+    lastIndexerDescribeAt: result.liveState.describedAt,
+    runtimeProvider: "aws",
+    awsRuntime: {
+      provider: "aws",
+      runtimeKind: "torii",
+      runtimeName: "bltz-test",
+      serviceName: "slot-blitz-torii-bltz-test",
+      endpointUrl: result.liveState.endpointUrl,
+    },
   }),
 }));
 
@@ -252,19 +295,22 @@ describe("runLaunchStep mainnet launch steps", () => {
     deriveMapCenterOffsetFromWorldConfigTxMock.mockImplementation(() => 50);
     buildBanksForMapCenterOffsetMock.mockClear();
     buildBanksForMapCenterOffsetMock.mockImplementation(() => []);
-    ensureSlotIndexerDeploymentMock.mockClear();
-    ensureSlotIndexerDeploymentMock.mockImplementation(async () => ({
-      mode: "slot-direct",
+    ensureIndexerDeploymentMock.mockClear();
+    ensureIndexerDeploymentMock.mockImplementation(async () => ({
+      mode: "aws-ecs",
       action: "created",
       requestedTier: "basic",
       previousTier: undefined,
       liveState: {
-        state: "existing",
-        stateSource: "describe",
-        currentTier: "basic",
-        url: "https://torii.example",
+        provider: "aws",
+        runtimeKind: "torii",
+        runtimeName: "alpha",
+        serviceName: "slot-blitz-torii-alpha",
+        status: "existing",
+        endpointUrl: "https://torii.example",
+        tier: "basic",
         version: "v1.8.15",
-        branch: "main",
+        region: "us-east-1",
         describedAt: "2026-03-23T10:00:00.000Z",
       },
     }));
@@ -290,7 +336,7 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(createGameExecuteMock.mock.calls[0]?.[0]).toEqual({
       contractAddress: factoryAddress,
       entrypoint: "create_game",
-      calldata: ["felt:alpha", 50, "180", "0x0", 0],
+      calldata: ["felt:alpha", 50, "140", "0x0", 0],
     });
     expect(waitForTransactionMock.mock.calls).toHaveLength(15);
     expect(createGameDelayMock.mock.calls).toHaveLength(14);
@@ -321,7 +367,7 @@ describe("runLaunchStep mainnet launch steps", () => {
       process.stderr.write = originalWrite;
     }
 
-    expect(capturedLogs.join("")).toContain('Raw create_game calldata: ["felt:alpha",50,"180","0x0",0]');
+    expect(capturedLogs.join("")).toContain('Raw create_game calldata: ["felt:alpha",50,"140","0x0",0]');
   });
 
   test("submits create_game five times on slot across five retries", async () => {
@@ -340,7 +386,7 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(createGameExecuteMock.mock.calls[0]?.[0]).toEqual({
       contractAddress: factoryAddress,
       entrypoint: "create_game",
-      calldata: ["felt:alpha", 300, "180", "0x0", 0],
+      calldata: ["felt:alpha", 300, "140", "0x0", 0],
     });
     expect(waitForTransactionMock.mock.calls).toHaveLength(5);
     expect(createGameDelayMock).not.toHaveBeenCalled();
@@ -680,7 +726,7 @@ describe("runLaunchStep mainnet launch steps", () => {
     ]);
   });
 
-  test("creates the indexer directly via Slot and stores live torii state", async () => {
+  test("creates the indexer through the configured runtime provider and stores AWS runtime state", async () => {
     const summary = await runLaunchStep({
       environmentId: "slot.blitz",
       stepId: "create-indexer",
@@ -692,9 +738,12 @@ describe("runLaunchStep mainnet launch steps", () => {
       privateKey,
     });
 
-    expect(ensureSlotIndexerDeploymentMock).toHaveBeenCalledTimes(1);
-    expect(ensureSlotIndexerDeploymentMock.mock.calls[0]?.[0]).toMatchObject({
+    expect(ensureIndexerDeploymentMock).toHaveBeenCalledTimes(1);
+    expect(ensureIndexerDeploymentMock.mock.calls[0]?.[0]).toMatchObject({
       env: "slot",
+      environmentId: "slot.blitz",
+      runtimeProvider: "aws",
+      runtimeDomain: "runtime.realms.world",
       rpcUrl: "https://rpc.example",
       namespaces: "s1_eternum",
       worldName: "alpha",
@@ -702,12 +751,18 @@ describe("runLaunchStep mainnet launch steps", () => {
       tier: "basic",
     });
     expect(summary.indexerCreated).toBe(true);
-    expect(summary.indexerMode).toBe("slot-direct");
+    expect(summary.indexerMode).toBe("aws-ecs");
     expect(summary.indexerTier).toBe("basic");
     expect(summary.indexerUrl).toBe("https://torii.example");
     expect(summary.indexerVersion).toBe("v1.8.15");
-    expect(summary.indexerBranch).toBe("main");
+    expect(summary.indexerBranch).toBeUndefined();
     expect(summary.lastIndexerDescribeAt).toBe("2026-03-23T10:00:00.000Z");
+    expect(summary.runtimeProvider).toBe("aws");
+    expect(summary.awsRuntime).toMatchObject({
+      provider: "aws",
+      runtimeKind: "torii",
+      endpointUrl: "https://torii.example",
+    });
     expect(summary.indexerWorkflowRun).toBeUndefined();
     expect(summary.worldAddress).toBe("0xworld");
   });

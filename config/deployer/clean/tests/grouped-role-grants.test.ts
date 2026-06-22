@@ -67,6 +67,7 @@ mock.module("../factory/discovery", () => ({
   waitForFactoryWorldProfile: resolveFactoryWorldProfileMock,
   patchManifestWithFactory: (_manifest: unknown, worldAddress: string) => ({ worldAddress }),
   resolvePrizeDistributionSystemsAddress: (manifest: { worldAddress?: string }) => `0xprize-${manifest.worldAddress}`,
+  resolveVillageSystemsAddress: (manifest: { worldAddress?: string }) => `0xvillage-${manifest.worldAddress}`,
   isZeroAddress: (value?: string | null) => !value || /^0x?0*$/.test(value),
 }));
 

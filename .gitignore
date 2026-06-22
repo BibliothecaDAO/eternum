@@ -19,3 +19,7 @@ client/apps/game/minimap
 **/.claude/tsc-cache/
 thoughts/
 client/apps/bot/.env
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars

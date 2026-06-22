@@ -21,6 +21,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 env:
   CI: "true"
@@ -30,10 +31,24 @@ jobs:
     name: Reconcile Indexers
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    environment: ${{ github.event.inputs.environment == 'mixed' && 'slot.blitz' || github.event.inputs.environment }}
     env:
       FACTORY_RUN_STORE_BRANCH: factory-runs
+      FACTORY_RUNTIME_PROVIDER: aws
       GITHUB_TOKEN: ${{ github.token }}
-      SLOT_AUTH: ${{ secrets.SLOT_AUTH }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_RUNTIME_CLUSTER: ${{ vars.AWS_RUNTIME_CLUSTER }}
+      AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
+      AWS_RUNTIME_ECR_IMAGE: ${{ vars.AWS_RUNTIME_ECR_IMAGE }}
+      AWS_RUNTIME_ECR_IMAGE_DIGEST: ${{ vars.AWS_RUNTIME_ECR_IMAGE_DIGEST }}
+      AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN }}
+      AWS_RUNTIME_TASK_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_ROLE_ARN }}
+      AWS_RUNTIME_SUBNET_IDS: ${{ vars.AWS_RUNTIME_SUBNET_IDS }}
+      AWS_RUNTIME_SECURITY_GROUP_IDS: ${{ vars.AWS_RUNTIME_SECURITY_GROUP_IDS }}
+      AWS_RUNTIME_EFS_FILE_SYSTEM_ID: ${{ vars.AWS_RUNTIME_EFS_FILE_SYSTEM_ID }}
+      AWS_RUNTIME_VPC_ID: ${{ vars.AWS_RUNTIME_VPC_ID }}
+      AWS_RUNTIME_ALB_LISTENER_ARN: ${{ vars.AWS_RUNTIME_ALB_LISTENER_ARN }}
+      AWS_RUNTIME_LOG_GROUP: ${{ vars.AWS_RUNTIME_LOG_GROUP || '/ecs/eternum-game-runtime' }}
 
     steps:
       - name: Checkout repository
@@ -53,20 +68,17 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
 
+      - name: Configure AWS credentials
+        if: ${{ vars.AWS_ROLE_TO_ASSUME != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
       - name: Install dependencies
         run: |
           set -euo pipefail
           pnpm install --frozen-lockfile --ignore-scripts
-
-      - name: Install Slot CLI
-        run: |
-          set -euo pipefail
-          slot_bin_dir="${HOME}/.config/.slot/bin"
-          curl -L https://slot.cartridge.sh | bash
-          "${slot_bin_dir}/slotup"
-          export PATH="${slot_bin_dir}:${PATH}"
-          echo "${slot_bin_dir}" >> $GITHUB_PATH
-          "${slot_bin_dir}/slot" --version
 
       - name: Apply indexer maintenance
         run: |

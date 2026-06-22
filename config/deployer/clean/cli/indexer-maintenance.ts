@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import * as fs from "node:fs";
 import { DEFAULT_CARTRIDGE_API_BASE, DEFAULT_NAMESPACE, DEFAULT_INDEXER_MAINTENANCE_WORKFLOW_FILE } from "../constants";
+import { resolveDeploymentEnvironment } from "../environment";
 import { resolveFactoryGameIndexerRequest } from "../indexing/factory-indexer-request";
 import {
   deleteSlotIndexerDeployment,
@@ -10,6 +11,14 @@ import {
   resolveSlotToriiLiveStates,
   resolveSlotToriiLiveState,
 } from "../indexing/slot-torii";
+import {
+  deleteAwsRuntime,
+  describeAwsRuntime,
+  resizeAwsRuntime,
+  type AwsRuntimeLiveState,
+  type AwsRuntimeRequest,
+} from "../runtime/aws-runtime";
+import { ensureIndexerDeployment } from "../runtime/indexer-provider";
 import {
   requireGitHubBranchStoreConfig,
   readGitHubBranchJsonFile,
@@ -35,12 +44,13 @@ import {
   type TierSuccessIndexerMaintenanceRunUpdate,
 } from "../run-store/indexer-maintenance-updates";
 import type { FactoryRotationRunRecord, FactoryRunRecord, FactorySeriesRunRecord } from "../run-store/types";
-import type { DeploymentEnvironmentId, IndexerTier } from "../types";
+import type { DeploymentEnvironmentId, IndexerTier, RuntimeProvider } from "../types";
 import { parseArgs } from "./args";
 
 type IndexerMaintenanceRunKind = "game" | "series" | "rotation";
 type IndexerMaintenanceAction = "inspect" | "inspect-account" | "create" | "set-tier" | "delete";
 type IndexerMaintenanceRunRecord = FactoryRunRecord | FactorySeriesRunRecord | FactoryRotationRunRecord | null;
+type IndexerMaintenanceLiveState = ReturnType<typeof resolveSlotToriiLiveState> | AwsRuntimeLiveState;
 
 interface IndexerMaintenanceOperation {
   action: IndexerMaintenanceAction;
@@ -197,12 +207,12 @@ function buildAlreadyMatchedMessage(gameName: string, tier: IndexerTier) {
   return `Indexer tier already matched ${tier} for ${gameName}`;
 }
 
-function buildIndexerInspectedMessage(gameName: string, liveState: ReturnType<typeof resolveSlotToriiLiveState>) {
-  if (liveState.state === "existing") {
+function buildIndexerInspectedMessage(gameName: string, liveState: IndexerMaintenanceLiveState) {
+  if (isLiveIndexerExisting(liveState)) {
     return `Live indexer state refreshed for ${gameName}`;
   }
 
-  if (liveState.state === "missing") {
+  if (isLiveIndexerMissing(liveState)) {
     return `Indexer is missing for ${gameName}`;
   }
 
@@ -247,10 +257,72 @@ function buildFailureMessage(operation: IndexerMaintenanceOperation, errorMessag
   return `Indexer maintenance failed for ${operation.gameName}: ${errorMessage}`;
 }
 
+function isAwsRuntimeLiveState(liveState: IndexerMaintenanceLiveState): liveState is AwsRuntimeLiveState {
+  return (liveState as AwsRuntimeLiveState).provider === "aws";
+}
+
+function isLiveIndexerExisting(liveState: IndexerMaintenanceLiveState): boolean {
+  return isAwsRuntimeLiveState(liveState) ? liveState.status === "existing" : liveState.state === "existing";
+}
+
+function isLiveIndexerMissing(liveState: IndexerMaintenanceLiveState): boolean {
+  return isAwsRuntimeLiveState(liveState) ? liveState.status === "missing" : liveState.state === "missing";
+}
+
+function isLiveIndexerIndeterminate(liveState: IndexerMaintenanceLiveState): boolean {
+  return isAwsRuntimeLiveState(liveState) ? liveState.status === "indeterminate" : liveState.state === "indeterminate";
+}
+
+function resolveLiveIndexerTier(liveState: IndexerMaintenanceLiveState): IndexerTier | undefined {
+  return isAwsRuntimeLiveState(liveState) ? liveState.tier : liveState.currentTier;
+}
+
+function resolveLiveIndexerError(liveState: IndexerMaintenanceLiveState): string | undefined {
+  return liveState.describeError;
+}
+
+function resolveMaintenanceRuntimeProvider(environmentId: string): RuntimeProvider {
+  const override = process.env.INDEXER_RUNTIME_PROVIDER?.trim().toLowerCase();
+  if (override === "aws" || override === "slot") {
+    return override;
+  }
+
+  return resolveDeploymentEnvironment(environmentId).runtimeProvider;
+}
+
+function shouldUseAwsRuntime(operation: IndexerMaintenanceOperation): boolean {
+  return resolveMaintenanceRuntimeProvider(operation.environmentId) === "aws";
+}
+
+function buildAwsRuntimeRequestForOperation(
+  operation: IndexerMaintenanceOperation,
+  tier?: IndexerTier,
+): AwsRuntimeRequest {
+  const environment = resolveDeploymentEnvironment(operation.environmentId);
+
+  return {
+    environmentId: environment.id,
+    runtimeKind: "torii",
+    runtimeName: operation.gameName!,
+    tier,
+    domain: environment.runtimeDomain,
+  };
+}
+
+async function resolveLiveIndexerState(operation: IndexerMaintenanceOperation): Promise<IndexerMaintenanceLiveState> {
+  if (shouldUseAwsRuntime(operation)) {
+    return describeAwsRuntime(buildAwsRuntimeRequestForOperation(operation));
+  }
+
+  return resolveSlotToriiLiveState(operation.gameName!, {
+    onProgress: (message) => console.error(message),
+  });
+}
+
 function buildRefreshRunUpdate(
   operation: IndexerMaintenanceOperation,
   message: string,
-  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
+  liveState: IndexerMaintenanceLiveState,
 ): RefreshIndexerMaintenanceRunUpdate {
   return {
     kind: "refresh",
@@ -265,7 +337,7 @@ function buildTierSuccessRunUpdate(
   operation: IndexerMaintenanceOperation,
   message: string,
   tier: IndexerTier,
-  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
+  liveState: IndexerMaintenanceLiveState,
 ): TierSuccessIndexerMaintenanceRunUpdate {
   return {
     kind: "tier-success",
@@ -283,7 +355,7 @@ function buildTierFailureRunUpdate(
   tier: IndexerTier,
   failedAt: string,
   errorMessage: string,
-  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
+  liveState: IndexerMaintenanceLiveState,
 ): TierFailureIndexerMaintenanceRunUpdate {
   return {
     kind: "tier-failure",
@@ -300,7 +372,7 @@ function buildTierFailureRunUpdate(
 function buildDeleteSuccessRunUpdate(
   operation: IndexerMaintenanceOperation,
   message: string,
-  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
+  liveState: IndexerMaintenanceLiveState,
 ): DeleteSuccessIndexerMaintenanceRunUpdate {
   return {
     kind: "delete-success",
@@ -314,7 +386,7 @@ function buildDeleteSuccessRunUpdate(
 function buildDeleteFailureRunUpdate(
   operation: IndexerMaintenanceOperation,
   message: string,
-  liveState: ReturnType<typeof resolveSlotToriiLiveState>,
+  liveState: IndexerMaintenanceLiveState,
 ): DeleteFailureIndexerMaintenanceRunUpdate {
   return {
     kind: "delete-failure",
@@ -449,11 +521,14 @@ async function runInspectAccountOperation(operation: IndexerMaintenanceOperation
   update?: IndexerMaintenanceRunUpdate;
   result: IndexerMaintenanceResult;
 }> {
+  const providerLabel =
+    resolveMaintenanceRuntimeProvider(operation.environmentId) === "aws" ? "AWS runtime" : "Slot Torii";
+
   return {
     result: {
       operation,
       outcome: "inspected",
-      message: `Refreshed live Slot Torii deployments for ${operation.environmentId}`,
+      message: `Refreshed live ${providerLabel} deployments for ${operation.environmentId}`,
     },
   };
 }
@@ -463,9 +538,7 @@ async function runInspectOperation(operation: IndexerMaintenanceOperation): Prom
   result: IndexerMaintenanceResult;
 }> {
   const gameName = operation.gameName!;
-  const liveState = resolveSlotToriiLiveState(gameName, {
-    onProgress: (message) => console.error(message),
-  });
+  const liveState = await resolveLiveIndexerState(operation);
   const message = buildIndexerInspectedMessage(gameName, liveState);
 
   return {
@@ -473,7 +546,7 @@ async function runInspectOperation(operation: IndexerMaintenanceOperation): Prom
     result: {
       operation,
       outcome: "inspected",
-      currentTier: liveState.currentTier,
+      currentTier: resolveLiveIndexerTier(liveState),
       message,
     },
   };
@@ -492,9 +565,7 @@ async function runCreateOperation(operation: IndexerMaintenanceOperation): Promi
       cartridgeApiBase: process.env.CARTRIDGE_API_BASE || DEFAULT_CARTRIDGE_API_BASE,
       toriiNamespaces: process.env.TORII_NAMESPACES || DEFAULT_NAMESPACE,
     });
-    const createdIndexer = ensureSlotIndexerDeployment(indexerRequest, {
-      onProgress: (message) => console.error(message),
-    });
+    const createdIndexer = await ensureIndexerDeployment(indexerRequest);
     const message =
       createdIndexer.action === "already-live"
         ? buildIndexerAlreadyLiveMessage(gameName)
@@ -506,14 +577,12 @@ async function runCreateOperation(operation: IndexerMaintenanceOperation): Promi
         operation,
         outcome: createdIndexer.action === "already-live" ? "already-live" : "created",
         previousTier: createdIndexer.previousTier,
-        currentTier: createdIndexer.liveState.currentTier,
+        currentTier: resolveLiveIndexerTier(createdIndexer.liveState),
         message,
       },
     };
   } catch (error) {
-    const liveState = resolveSlotToriiLiveState(gameName, {
-      onProgress: (message) => console.error(message),
-    });
+    const liveState = await resolveLiveIndexerState(operation);
     const errorMessage = error instanceof Error ? error.message : String(error);
     const message = buildFailureMessage(operation, errorMessage);
 
@@ -522,7 +591,7 @@ async function runCreateOperation(operation: IndexerMaintenanceOperation): Promi
       result: {
         operation,
         outcome: "failed",
-        currentTier: liveState.currentTier,
+        currentTier: resolveLiveIndexerTier(liveState),
         message,
       },
     };
@@ -534,16 +603,13 @@ async function runTierOperation(operation: IndexerMaintenanceOperation): Promise
   result: IndexerMaintenanceResult;
 }> {
   const tier = resolveTierForOperation(operation);
-  const liveState = resolveSlotToriiLiveState(operation.gameName, {
-    onProgress: (message) => console.error(message),
-  });
+  const liveState = await resolveLiveIndexerState(operation);
 
-  if (liveState.state !== "existing") {
+  if (!isLiveIndexerExisting(liveState)) {
     const failedAt = new Date().toISOString();
-    const errorMessage =
-      liveState.state === "missing"
-        ? `Torii deployment "${operation.gameName}" does not exist`
-        : liveState.describeError || `Unable to verify the Torii deployment state for "${operation.gameName}"`;
+    const errorMessage = isLiveIndexerMissing(liveState)
+      ? `Torii deployment "${operation.gameName}" does not exist`
+      : resolveLiveIndexerError(liveState) || `Unable to verify the Torii deployment state for "${operation.gameName}"`;
     const message = buildFailureMessage(operation, errorMessage);
 
     return {
@@ -556,24 +622,26 @@ async function runTierOperation(operation: IndexerMaintenanceOperation): Promise
     };
   }
 
-  if (liveState.currentTier === tier) {
+  if (resolveLiveIndexerTier(liveState) === tier) {
     const message = buildAlreadyMatchedMessage(operation.gameName, tier);
     return {
       update: buildTierSuccessRunUpdate(operation, message, tier, liveState),
       result: {
         operation,
         outcome: "tier-already-matched",
-        currentTier: liveState.currentTier,
+        currentTier: resolveLiveIndexerTier(liveState),
         message,
       },
     };
   }
 
-  const updatedIndexer = ensureSlotIndexerTier({
-    name: operation.gameName,
-    tier,
-    onProgress: (message) => console.error(message),
-  });
+  const updatedIndexer = shouldUseAwsRuntime(operation)
+    ? await resizeAwsRuntime(buildAwsRuntimeRequestForOperation(operation, tier))
+    : ensureSlotIndexerTier({
+        name: operation.gameName,
+        tier,
+        onProgress: (message) => console.error(message),
+      });
   const message = buildTierUpdatedMessage(operation.gameName, updatedIndexer.previousTier, tier);
 
   return {
@@ -582,7 +650,7 @@ async function runTierOperation(operation: IndexerMaintenanceOperation): Promise
       operation,
       outcome: "tier-updated",
       previousTier: updatedIndexer.previousTier,
-      currentTier: updatedIndexer.liveState.currentTier,
+      currentTier: resolveLiveIndexerTier(updatedIndexer.liveState),
       message,
     },
   };
@@ -592,13 +660,12 @@ async function runDeleteOperation(operation: IndexerMaintenanceOperation): Promi
   update: DeleteSuccessIndexerMaintenanceRunUpdate | DeleteFailureIndexerMaintenanceRunUpdate;
   result: IndexerMaintenanceResult;
 }> {
-  const currentState = resolveSlotToriiLiveState(operation.gameName, {
-    onProgress: (message) => console.error(message),
-  });
+  const currentState = await resolveLiveIndexerState(operation);
 
-  if (currentState.state === "indeterminate") {
+  if (isLiveIndexerIndeterminate(currentState)) {
     const errorMessage =
-      currentState.describeError || `Unable to verify the Torii deployment state for "${operation.gameName}"`;
+      resolveLiveIndexerError(currentState) ||
+      `Unable to verify the Torii deployment state for "${operation.gameName}"`;
     const message = buildFailureMessage(operation, errorMessage);
 
     return {
@@ -612,10 +679,12 @@ async function runDeleteOperation(operation: IndexerMaintenanceOperation): Promi
   }
 
   try {
-    const deleteResult = deleteSlotIndexerDeployment({
-      name: operation.gameName,
-      onProgress: (message) => console.error(message),
-    });
+    const deleteResult = shouldUseAwsRuntime(operation)
+      ? await deleteAwsRuntime(buildAwsRuntimeRequestForOperation(operation))
+      : deleteSlotIndexerDeployment({
+          name: operation.gameName,
+          onProgress: (message) => console.error(message),
+        });
 
     if (deleteResult.action === "already-missing") {
       const message = buildIndexerAlreadyMissingMessage(operation.gameName);
@@ -643,9 +712,7 @@ async function runDeleteOperation(operation: IndexerMaintenanceOperation): Promi
       },
     };
   } catch (error) {
-    const failedState = resolveSlotToriiLiveState(operation.gameName, {
-      onProgress: (message) => console.error(message),
-    });
+    const failedState = await resolveLiveIndexerState(operation);
     const errorMessage = error instanceof Error ? error.message : String(error);
     const message = buildFailureMessage(operation, errorMessage);
 
@@ -733,7 +800,7 @@ function resolveSummaryTargetName(result: IndexerMaintenanceResult) {
   }
 
   if (result.operation.action === "inspect-account") {
-    return "slot-account";
+    return "runtime-account";
   }
 
   return result.operation.gameName || result.operation.runName || "unknown";
@@ -773,6 +840,10 @@ async function updateLiveIndexerSnapshots(
   config: ReturnType<typeof requireGitHubBranchStoreConfig>,
   operations: IndexerMaintenanceOperation[],
 ) {
+  if (operations.every((operation) => resolveMaintenanceRuntimeProvider(operation.environmentId) === "aws")) {
+    return;
+  }
+
   if (operations.some((operation) => operation.action === "inspect-account")) {
     const gameNames = listSlotToriiDeploymentNames();
     const liveStates = resolveSlotToriiLiveStates(gameNames);

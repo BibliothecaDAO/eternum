@@ -37,7 +37,7 @@ import {
   resolveFactoryWorldProfile,
   waitForFactoryWorldProfile,
 } from "../factory/discovery";
-import { ensureSlotIndexerDeployment, resolveIndexerArtifactState } from "../indexing/slot-torii";
+import { ensureIndexerDeployment, resolveIndexerArtifactStateFromProvider } from "../runtime/indexer-provider";
 import { syncPaymasterPolicy, type PaymasterAction } from "../paymaster";
 import { buildLootChestMinterRoleGrantCall, grantRoles, resolveLootChestMinterRoleGrantTarget } from "../role-grants";
 import { resolveAccountCredentials } from "../shared/credentials";
@@ -285,6 +285,9 @@ function prepareLaunchExecution(request: LaunchGameRequest): PreparedLaunchExecu
 }
 
 function buildIndexerRequest(options: {
+  environmentId: DeploymentEnvironment["id"];
+  runtimeProvider: DeploymentEnvironment["runtimeProvider"];
+  runtimeDomain?: string;
   env: string;
   rpcUrl: string;
   namespaces: string;
@@ -295,6 +298,9 @@ function buildIndexerRequest(options: {
 }): IndexerRequest {
   return {
     env: options.env,
+    environmentId: options.environmentId,
+    runtimeProvider: options.runtimeProvider,
+    runtimeDomain: options.runtimeDomain,
     rpcUrl: options.rpcUrl,
     namespaces: options.namespaces,
     worldName: options.worldName,
@@ -313,6 +319,9 @@ function buildDryRunSummary(execution: PreparedLaunchExecution): LaunchGameSumma
     description: step.description,
   }));
   execution.summary.indexerRequest = buildIndexerRequest({
+    environmentId: execution.runtime.environment.id,
+    runtimeProvider: execution.runtime.environment.runtimeProvider,
+    runtimeDomain: execution.runtime.environment.runtimeDomain,
     env: execution.runtime.environment.toriiEnv,
     rpcUrl: execution.runtime.rpcUrl,
     namespaces: execution.runtime.toriiNamespaces,
@@ -1046,6 +1055,9 @@ async function createIndexerIfNeeded(
   }
 
   const indexerRequest = buildIndexerRequest({
+    environmentId: runtime.environment.id,
+    runtimeProvider: runtime.environment.runtimeProvider,
+    runtimeDomain: runtime.environment.runtimeDomain,
     env: runtime.environment.toriiEnv,
     rpcUrl: runtime.rpcUrl,
     namespaces: runtime.toriiNamespaces,
@@ -1054,31 +1066,30 @@ async function createIndexerIfNeeded(
     workflowFile: request.workflowFile,
     ref: request.ref,
   });
-  const result = await runtime.progress.run(
-    "create indexer",
-    async () => ensureSlotIndexerDeployment(indexerRequest, { onProgress: (message) => runtime.progress.log(message) }),
-    {
-      start: `Creating indexer for ${shortenHash(worldAddress)}`,
-      success: (indexerResult, elapsedMs) => {
-        const liveTier = indexerResult.liveState.currentTier || indexerResult.requestedTier;
-        const liveUrl = indexerResult.liveState.url;
-        const outcome = indexerResult.action === "already-live" ? "Indexer already live" : "Indexer deployed via Slot";
-        return `${outcome} in ${formatDuration(elapsedMs)} (${liveTier}${liveUrl ? `, ${liveUrl}` : ""})`;
-      },
+  const result = await runtime.progress.run("create indexer", async () => ensureIndexerDeployment(indexerRequest), {
+    start: `Creating indexer for ${shortenHash(worldAddress)}`,
+    success: (indexerResult, elapsedMs) => {
+      const liveArtifacts = resolveIndexerArtifactStateFromProvider(indexerResult);
+      const liveTier = liveArtifacts.indexerTier || indexerResult.requestedTier;
+      const liveUrl = liveArtifacts.indexerUrl;
+      const providerLabel = liveArtifacts.runtimeProvider === "aws" ? "AWS" : "Slot";
+      const outcome =
+        indexerResult.action === "already-live" ? "Indexer already live" : `Indexer deployed via ${providerLabel}`;
+      return `${outcome} in ${formatDuration(elapsedMs)} (${liveTier}${liveUrl ? `, ${liveUrl}` : ""})`;
     },
-  );
-  const liveArtifacts = resolveIndexerArtifactState(result.liveState, {
-    fallbackTier: indexerRequest.tier,
   });
+  const liveArtifacts = resolveIndexerArtifactStateFromProvider(result);
 
   return {
     indexerCreated: liveArtifacts.indexerCreated,
-    indexerMode: result.mode,
+    indexerMode: liveArtifacts.indexerMode,
     indexerTier: liveArtifacts.indexerTier,
     indexerUrl: liveArtifacts.indexerUrl,
     indexerVersion: liveArtifacts.indexerVersion,
     indexerBranch: liveArtifacts.indexerBranch,
     lastIndexerDescribeAt: liveArtifacts.lastIndexerDescribeAt,
+    runtimeProvider: liveArtifacts.runtimeProvider,
+    awsRuntime: liveArtifacts.awsRuntime,
     indexerRequest,
     indexerWorkflowRun: undefined,
   };
