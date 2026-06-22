@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-ping-474/27948385781-1.json",
   "latestLaunchRequestId": "27948385781-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-06-22T11:10:22.361Z",
-  "updatedAt": "2026-06-22T11:10:27.698Z",
+  "updatedAt": "2026-06-22T11:12:26.933Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-06-22T11:10:27.698Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-06-22T11:10:27.698Z",
+      "finishedAt": "2026-06-22T11:12:26.933Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -76,15 +77,10 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "2026-06-22T11:30:00.000Z",
-    "durationSeconds": 3600
-  },
-  "activeLease": {
-    "launchRequestId": "27948385781-1",
-    "workflowRunId": 27948385781,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-06-22T11:10:27.698Z",
-    "expiresAt": "2026-06-22T11:55:27.698Z"
+    "scheduledStartTime": 1782127800,
+    "durationSeconds": 3600,
+    "summaryPath": ".context/game-launch/mainnet-blitz-bltz-ping-474.json",
+    "worldAddress": "0x039abd94a3f7a268d6679c21879bacbc15c07b0c7f92dfb4b0187a48540a8183",
+    "createGameTxHash": "0x47c0d57549be26eda16c7994d3f43ef2e86abecf556e3fb36618a24dc6f10d6"
   }
 }
