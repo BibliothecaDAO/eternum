@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-23T08:42:15.676Z",
+  "updatedAt": "2026-06-23T10:02:54.014Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -598,6 +598,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-06-23T03:26:58.364Z"
       }
+    },
+    "bltz-crisp-353": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "bltz-crisp-353",
+      "path": "runs/mainnet/blitz/bltz-crisp-353.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-crisp-353/28018249100-1.json",
+      "status": "running",
+      "updatedAt": "2026-06-23T10:02:54.014Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-06-23T11:30:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
     }
   }
 }
