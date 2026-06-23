@@ -70,6 +70,7 @@ pub mod combat {
         mod test_troop_battle;
         mod test_troop_management;
         mod test_troop_movement;
+        mod test_troop_movement_active;
     }
     pub mod contracts {
         pub mod troop_battle;

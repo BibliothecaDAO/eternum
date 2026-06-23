@@ -23,6 +23,7 @@ pub impl WeightZeroableImpl of Zero<Weight> {
 
 #[generate_trait]
 pub impl WeightImpl of WeightTrait {
+    #[inline(always)]
     fn deduct_capacity(ref self: Weight, amount: u128, is_troop: bool) {
         if self.capacity != Bounded::MAX {
             self.capacity -= amount;
@@ -37,12 +38,14 @@ pub impl WeightImpl of WeightTrait {
     }
 
 
+    #[inline(always)]
     fn add_capacity(ref self: Weight, amount: u128) {
         if self.capacity != Bounded::MAX {
             self.capacity += amount;
         }
     }
 
+    #[inline(always)]
     fn deduct(ref self: Weight, amount: u128) {
         if self.capacity != Bounded::MAX {
             // this should never happen. check is a contract sanity check
@@ -51,6 +54,7 @@ pub impl WeightImpl of WeightTrait {
         }
     }
 
+    #[inline(always)]
     fn add(ref self: Weight, amount: u128) {
         // the amount > 0 check fixes the case where there is an error
         // if entity weight > capacity and you try to add a weightless resource
@@ -60,6 +64,7 @@ pub impl WeightImpl of WeightTrait {
         }
     }
 
+    #[inline(always)]
     fn unused(ref self: Weight) -> u128 {
         if self.capacity != Bounded::MAX {
             if self.weight > self.capacity {

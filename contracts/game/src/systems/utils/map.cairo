@@ -125,18 +125,23 @@ pub impl IMapImpl of IMapTrait {
 
 
     fn explore(ref world: WorldStorage, ref tile: Tile, biome: Biome) {
-        tile.biome = biome.into();
-
-        let tile_opt: TileOpt = tile.into();
-        world.write_model(@tile_opt);
+        Self::explore_memory(ref tile, biome);
+        Self::store_tile(ref world, tile);
         // todo add event {if not already explored}
     }
 
+    fn explore_memory(ref tile: Tile, biome: Biome) {
+        tile.biome = biome.into();
+    }
+
     fn mark_reward_extracted(ref world: WorldStorage, ref tile: Tile) {
-        tile.reward_extracted = true;
-        let tile_opt: TileOpt = tile.into();
-        world.write_model(@tile_opt);
+        Self::mark_reward_extracted_memory(ref tile);
+        Self::store_tile(ref world, tile);
         // todo add event {if not already extracted}
+    }
+
+    fn mark_reward_extracted_memory(ref tile: Tile) {
+        tile.reward_extracted = true;
     }
 
     fn explore_ring(ref world: WorldStorage, start_coord: Coord, mut radius: u32) {
@@ -155,6 +160,12 @@ pub impl IMapImpl of IMapTrait {
     }
 
     fn occupy(ref world: WorldStorage, ref tile: Tile, category: TileOccupier, id: ID) {
+        Self::occupy_memory(ref tile, category, id);
+        Self::store_tile(ref world, tile);
+        // todo add event {if not already explored}
+    }
+
+    fn occupy_memory(ref tile: Tile, category: TileOccupier, id: ID) {
         tile.occupier_type = category.into();
         tile.occupier_id = id;
         tile.occupier_is_structure = match category {
@@ -180,9 +191,11 @@ pub impl IMapImpl of IMapTrait {
             TileOccupier::ExplorerCrossbowmanT3Daydreams => false,
             _ => true,
         };
+    }
+
+    fn store_tile(ref world: WorldStorage, tile: Tile) {
         let tile_opt: TileOpt = tile.into();
         world.write_model(@tile_opt);
-        // todo add event {if not already explored}
     }
 
     fn unoccupy(ref world: WorldStorage, ref tile: Tile) {
@@ -205,4 +218,3 @@ pub impl IMapImpl of IMapTrait {
         false
     }
 }
-

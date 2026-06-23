@@ -210,6 +210,7 @@ pub struct PlayerRegisteredPoints {
 
 #[generate_trait]
 pub impl PlayerRegisteredPointsImpl of PlayerRegisteredPointsTrait {
+    #[inline(always)]
     fn register_points(ref world: WorldStorage, address: ContractAddress, points: u128) {
         if points.is_non_zero() {
             let mut player_registered_points: PlayerRegisteredPoints = world.read_model(address);

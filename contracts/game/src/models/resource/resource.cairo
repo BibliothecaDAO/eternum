@@ -34,11 +34,13 @@ impl SingleResourceDisplay of Display<SingleResource> {
 
 #[generate_trait]
 pub impl WeightStoreImpl of WeightStoreTrait {
+    #[inline(always)]
     fn retrieve(ref world: WorldStorage, entity_id: ID) -> Weight {
         assert!(entity_id.is_non_zero(), "entity id not found");
         ResourceImpl::read_weight(ref world, entity_id)
     }
 
+    #[inline(always)]
     fn store(ref self: Weight, ref world: WorldStorage, entity_id: ID) {
         ResourceImpl::write_weight(ref world, entity_id, self);
     }
@@ -46,6 +48,7 @@ pub impl WeightStoreImpl of WeightStoreTrait {
 
 #[generate_trait]
 pub impl ResourceWeightImpl of ResourceWeightTrait {
+    #[inline(always)]
     fn grams(ref world: WorldStorage, resource_type: u8) -> u128 {
         let unit_weight_config: WeightConfig = world.read_model(resource_type);
         unit_weight_config.weight_gram
@@ -55,6 +58,7 @@ pub impl ResourceWeightImpl of ResourceWeightTrait {
 
 #[generate_trait]
 pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
+    #[inline(always)]
     fn retrieve(
         ref world: WorldStorage,
         entity_id: ID,
@@ -93,6 +97,7 @@ pub impl SingleResourceStoreImpl of SingleResourceStoreTrait {
         return resource;
     }
 
+    #[inline(always)]
     fn store(ref self: SingleResource, ref world: WorldStorage) {
         ResourceImpl::write_balance(ref world, self.entity_id, self.resource_type, self.balance);
         if self.produces {
@@ -149,6 +154,7 @@ pub impl TroopResourceImpl of TroopResourceTrait {
 
 #[generate_trait]
 pub impl SingleResourceImpl of SingleResourceTrait {
+    #[inline(always)]
     fn ensure_correct_precision(ref self: SingleResource) {
         if RelicResourceImpl::is_relic(self.resource_type) {
             assert!(
@@ -158,6 +164,7 @@ pub impl SingleResourceImpl of SingleResourceTrait {
         }
     }
 
+    #[inline(always)]
     fn spend(ref self: SingleResource, amount: u128, ref entity_weight: Weight, unit_weight: u128) {
         assert!(self.balance >= amount, "Insufficient Balance: {} < {}", self, amount);
         self.balance -= amount;
@@ -167,6 +174,7 @@ pub impl SingleResourceImpl of SingleResourceTrait {
     }
 
 
+    #[inline(always)]
     fn add(ref self: SingleResource, amount: u128, ref entity_weight: Weight, unit_weight: u128) -> u128 {
         // todo: increase capacity with storehouse buildings
 
@@ -180,6 +188,7 @@ pub impl SingleResourceImpl of SingleResourceTrait {
         max_storable
     }
 
+    #[inline(always)]
     fn storable_amount(amount: u128, storage_left: u128, unit_weight: u128) -> (u128, u128) {
         let mut max_storable: u128 = amount;
         let mut total_weight: u128 = unit_weight * amount;
@@ -313,17 +322,20 @@ pub struct Resource {
 
 #[generate_trait]
 pub impl ResourceImpl of ResourceTrait {
+    #[inline(always)]
     fn initialize(ref world: WorldStorage, entity_id: ID) {
         let mut resource: Resource = Default::default();
         resource.entity_id = entity_id;
         world.write_model(@resource);
     }
 
+    #[inline(always)]
     fn read_balance(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> u128 {
         return world
             .read_member(Model::<Resource>::ptr_from_keys(entity_id), Self::balance_selector(resource_type.into()));
     }
 
+    #[inline(always)]
     fn read_production(ref world: WorldStorage, entity_id: ID, resource_type: u8) -> Production {
         // Skip production for resources that don't have production mechanics
         if RelicResourceImpl::is_relic(resource_type) || resource_type == ResourceTypes::LORDS {
@@ -334,6 +346,7 @@ pub impl ResourceImpl of ResourceTrait {
     }
 
 
+    #[inline(always)]
     fn write_balance(ref world: WorldStorage, entity_id: ID, resource_type: u8, balance: u128) {
         world
             .write_member(
@@ -341,6 +354,7 @@ pub impl ResourceImpl of ResourceTrait {
             );
     }
 
+    #[inline(always)]
     fn write_production(ref world: WorldStorage, entity_id: ID, resource_type: u8, production: Production) {
         // Skip production for resources that don't have production mechanics
         if RelicResourceImpl::is_relic(resource_type) || resource_type == ResourceTypes::LORDS {
@@ -354,14 +368,17 @@ pub impl ResourceImpl of ResourceTrait {
             );
     }
 
+    #[inline(always)]
     fn read_weight(ref world: WorldStorage, entity_id: ID) -> Weight {
         return world.read_member(Model::<Resource>::ptr_from_keys(entity_id), selector!("weight"));
     }
 
+    #[inline(always)]
     fn write_weight(ref world: WorldStorage, entity_id: ID, weight: Weight) {
         world.write_member(Model::<Resource>::ptr_from_keys(entity_id), selector!("weight"), weight);
     }
 
+    #[inline(always)]
     fn balance_selector(resource_type: felt252) -> felt252 {
         match resource_type {
             0 => panic!("Invalid resource type"),

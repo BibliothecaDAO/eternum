@@ -91,6 +91,7 @@ pub impl AchievementImpl of AchievementTrait {
     }
 
 
+    #[inline(always)]
     fn progress(world: WorldStorage, player_id: felt252, task_id: felt252, count: u32, time: u64) {
         let store: Store = StoreTrait::new(world);
         store.progress(player_id: player_id, task_id: task_id, count: count.into(), time: time)

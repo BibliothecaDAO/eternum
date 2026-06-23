@@ -59,6 +59,7 @@ const ALT_MASK: u128 = 0x1; // 1 bit
 
 #[generate_trait]
 pub impl TileOptDataWriteImpl of TileOptDataWriteTrait {
+    #[inline(always)]
     fn with_alt(data: u128, alt: bool) -> u128 {
         let value: u128 = if alt {
             1
@@ -68,26 +69,32 @@ pub impl TileOptDataWriteImpl of TileOptDataWriteTrait {
         Self::_set_field(data, value, ALT_SHIFT, ALT_MASK)
     }
 
+    #[inline(always)]
     fn with_col(data: u128, col: u32) -> u128 {
         Self::_set_field(data, col.into(), COL_SHIFT, COL_MASK)
     }
 
+    #[inline(always)]
     fn with_row(data: u128, row: u32) -> u128 {
         Self::_set_field(data, row.into(), ROW_SHIFT, ROW_MASK)
     }
 
+    #[inline(always)]
     fn with_biome(data: u128, biome: u8) -> u128 {
         Self::_set_field(data, biome.into(), BIOME_SHIFT, BIOME_MASK)
     }
 
+    #[inline(always)]
     fn with_occupier_id(data: u128, occupier_id: ID) -> u128 {
         Self::_set_field(data, occupier_id.into(), OCCUPIER_ID_SHIFT, OCCUPIER_ID_MASK)
     }
 
+    #[inline(always)]
     fn with_occupier_type(data: u128, occupier_type: u8) -> u128 {
         Self::_set_field(data, occupier_type.into(), OCCUPIER_TYPE_SHIFT, OCCUPIER_TYPE_MASK)
     }
 
+    #[inline(always)]
     fn with_occupier_is_structure(data: u128, occupier_is_structure: bool) -> u128 {
         let value: u128 = if occupier_is_structure {
             1
@@ -97,6 +104,7 @@ pub impl TileOptDataWriteImpl of TileOptDataWriteTrait {
         Self::_set_field(data, value, OCCUPIER_IS_STRUCTURE_SHIFT, OCCUPIER_IS_STRUCTURE_MASK)
     }
 
+    #[inline(always)]
     fn with_reward_extracted(data: u128, reward_extracted: bool) -> u128 {
         let value: u128 = if reward_extracted {
             1
@@ -106,6 +114,25 @@ pub impl TileOptDataWriteImpl of TileOptDataWriteTrait {
         Self::_set_field(data, value, REWARD_EXTRACTED_SHIFT, REWARD_EXTRACTED_MASK)
     }
 
+    #[inline(always)]
+    fn without_occupier(data: u128) -> u128 {
+        let data = Self::with_occupier_is_structure(data, false);
+        let data = Self::with_occupier_type(data, 0);
+        Self::with_occupier_id(data, 0)
+    }
+
+    #[inline(always)]
+    fn with_tile_state(
+        data: u128, biome: u8, occupier_type: u8, occupier_is_structure: bool, occupier_id: ID, reward_extracted: bool,
+    ) -> u128 {
+        let data = Self::with_biome(data, biome);
+        let data = Self::with_occupier_type(data, occupier_type);
+        let data = Self::with_occupier_is_structure(data, occupier_is_structure);
+        let data = Self::with_occupier_id(data, occupier_id);
+        Self::with_reward_extracted(data, reward_extracted)
+    }
+
+    #[inline(always)]
     fn _set_field(data: u128, value: u128, shift: u8, mask: u128) -> u128 {
         let shifted_mask = BitShift::shl(mask, shift.into());
         let cleared = data & ~shifted_mask;
@@ -116,41 +143,50 @@ pub impl TileOptDataWriteImpl of TileOptDataWriteTrait {
 
 #[generate_trait]
 pub impl TileOptDataReadImpl of TileOptDataReadTrait {
+    #[inline(always)]
     fn alt(data: u128) -> bool {
         let value = Self::_get_field(data, ALT_SHIFT, ALT_MASK);
         value != 0
     }
 
+    #[inline(always)]
     fn col(data: u128) -> u32 {
         Self::_get_field(data, COL_SHIFT, COL_MASK).try_into().unwrap()
     }
 
+    #[inline(always)]
     fn row(data: u128) -> u32 {
         Self::_get_field(data, ROW_SHIFT, ROW_MASK).try_into().unwrap()
     }
 
+    #[inline(always)]
     fn biome(data: u128) -> u8 {
         Self::_get_field(data, BIOME_SHIFT, BIOME_MASK).try_into().unwrap()
     }
 
+    #[inline(always)]
     fn occupier_id(data: u128) -> ID {
         Self::_get_field(data, OCCUPIER_ID_SHIFT, OCCUPIER_ID_MASK).try_into().unwrap()
     }
 
+    #[inline(always)]
     fn occupier_type(data: u128) -> u8 {
         Self::_get_field(data, OCCUPIER_TYPE_SHIFT, OCCUPIER_TYPE_MASK).try_into().unwrap()
     }
 
+    #[inline(always)]
     fn occupier_is_structure(data: u128) -> bool {
         let value = Self::_get_field(data, OCCUPIER_IS_STRUCTURE_SHIFT, OCCUPIER_IS_STRUCTURE_MASK);
         value != 0
     }
 
+    #[inline(always)]
     fn reward_extracted(data: u128) -> bool {
         let value = Self::_get_field(data, REWARD_EXTRACTED_SHIFT, REWARD_EXTRACTED_MASK);
         value != 0
     }
 
+    #[inline(always)]
     fn _get_field(data: u128, shift: u8, mask: u128) -> u128 {
         BitShift::shr(data, shift.into()) & mask
     }
@@ -158,6 +194,7 @@ pub impl TileOptDataReadImpl of TileOptDataReadTrait {
 
 #[generate_trait]
 pub impl TileOptDataPackImpl of TileOptDataPackTrait {
+    #[inline(always)]
     fn pack(
         alt: bool,
         col: u32,
@@ -182,6 +219,7 @@ pub impl TileOptDataPackImpl of TileOptDataPackTrait {
 }
 
 pub impl TileIntoTileOpt of Into<Tile, TileOpt> {
+    #[inline(always)]
     fn into(self: Tile) -> TileOpt {
         let data = TileOptDataPackTrait::pack(
             self.alt,
@@ -198,6 +236,7 @@ pub impl TileIntoTileOpt of Into<Tile, TileOpt> {
 }
 
 pub impl TileOptIntoTile of Into<TileOpt, Tile> {
+    #[inline(always)]
     fn into(self: TileOpt) -> Tile {
         let alt = self.alt;
         let col = self.col;

@@ -726,7 +726,10 @@ export class EternumProvider extends EnhancedDojoProvider {
 
   private getExploreTransactionExplorerId(transactionDetails: AllowArray<Call>): string | undefined {
     const explorerCall = this.getTransactionCalls(transactionDetails).find(
-      (detail) => detail.entrypoint === "explorer_move" || detail.entrypoint === "explorer_extract_reward",
+      (detail) =>
+        detail.entrypoint === "explorer_move" ||
+        detail.entrypoint === "explorer_extract_reward" ||
+        detail.entrypoint === "explorer_explore_and_extract",
     );
     if (!Array.isArray(explorerCall?.calldata)) {
       return undefined;
@@ -3302,7 +3305,7 @@ export class EternumProvider extends EnhancedDojoProvider {
     const troopMovementSystemsAddress = getContractByName(this.manifest, `${NAMESPACE}-troop_movement_systems`);
     const callData: Call[] = [];
 
-    // explorer_move now consumes Source::Salt(tile.to_seed()).
+    // explorer_explore_and_extract consumes Source::Salt(tile.to_seed()).
     if (isVrfEnabled(this.VRF_PROVIDER_ADDRESS)) {
       if (vrf_source_salt === undefined) {
         throw new Error(
@@ -3318,18 +3321,11 @@ export class EternumProvider extends EnhancedDojoProvider {
       );
     }
 
-    // Explorer move with explore=1
+    // Explorer move and reward extraction in one system entrypoint.
     callData.push({
       contractAddress: troopMovementSystemsAddress,
-      entrypoint: "explorer_move",
-      calldata: [explorer_id, directions, 1],
-    });
-
-    // Extract reward
-    callData.push({
-      contractAddress: troopMovementSystemsAddress,
-      entrypoint: "explorer_extract_reward",
-      calldata: [explorer_id],
+      entrypoint: "explorer_explore_and_extract",
+      calldata: [explorer_id, directions],
     });
 
     return await this.promiseQueue.enqueue({ signer, calls: callData, transactionType: TransactionType.EXPLORE });

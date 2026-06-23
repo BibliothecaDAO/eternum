@@ -11,16 +11,19 @@ pub struct Stamina {
 
 #[generate_trait]
 pub impl StaminaImpl of StaminaTrait {
+    #[inline(always)]
     fn reset(ref self: Stamina) {
         self.amount = 0;
         self.updated_tick = 0;
     }
 
+    #[inline(always)]
     fn grant_initial_amount(ref self: Stamina, troop_stamina_config: TroopStaminaConfig, current_tick: u64) {
         self.amount = troop_stamina_config.stamina_initial.into();
         self.updated_tick = current_tick;
     }
 
+    #[inline(always)]
     fn revert_initial_amount(ref self: Stamina, troop_stamina_config: TroopStaminaConfig, current_tick: u64) {
         if self.amount > troop_stamina_config.stamina_initial.into() {
             self.grant_initial_amount(troop_stamina_config, current_tick);
@@ -28,6 +31,7 @@ pub impl StaminaImpl of StaminaTrait {
     }
 
 
+    #[inline(always)]
     fn refill(
         ref self: Stamina,
         ref troop_boosts: TroopBoosts,
@@ -72,6 +76,7 @@ pub impl StaminaImpl of StaminaTrait {
         }
     }
 
+    #[inline(always)]
     fn spend(
         ref self: Stamina,
         ref troop_boosts: TroopBoosts,
@@ -95,6 +100,7 @@ pub impl StaminaImpl of StaminaTrait {
         }
     }
 
+    #[inline(always)]
     fn add(
         ref self: Stamina,
         ref troop_boosts: TroopBoosts,
@@ -110,6 +116,7 @@ pub impl StaminaImpl of StaminaTrait {
     }
 
 
+    #[inline(always)]
     fn max(troop_type: TroopType, troop_tier: TroopTier, troop_stamina_config: TroopStaminaConfig) -> u64 {
         let initial_max = match troop_type {
             TroopType::Knight => troop_stamina_config.stamina_knight_max.into(),

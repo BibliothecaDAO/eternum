@@ -545,6 +545,10 @@ export const policies = toSessionPolicies({
           entrypoint: "explorer_move",
         },
         {
+          name: "explorer_explore_and_extract",
+          entrypoint: "explorer_explore_and_extract",
+        },
+        {
           name: "explorer_extract_reward",
           entrypoint: "explorer_extract_reward",
         },

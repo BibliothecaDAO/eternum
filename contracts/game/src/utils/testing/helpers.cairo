@@ -615,15 +615,17 @@ pub fn namespace_def_combat() -> NamespaceDef {
             TestResource::Model("StructureVillageSlots"), TestResource::Model("StructureBuildings"),
             TestResource::Model("Building"), // Troop models
             TestResource::Model("ExplorerTroops"), // Map models
-            TestResource::Model("TileOpt"), TestResource::Model("BiomeDiscovered"),
-            TestResource::Model("Wonder"), // Resource models
-            TestResource::Model("Resource"),
-            TestResource::Model("ResourceList"), TestResource::Model("ResourceFactoryConfig"),
-            // Contracts
+            TestResource::Model("TileOpt"), TestResource::Model("BiomeDiscovered"), TestResource::Model("Wonder"),
+            TestResource::Model("StructureReservation"), // Discovery models
+            TestResource::Model("RNG"),
+            TestResource::Model("PlayerRegisteredPoints"), TestResource::Model("SeasonPrize"),
+            TestResource::Model("HyperstructureGlobals"), TestResource::Model("AgentCount"),
+            TestResource::Model("AgentLifetimeCount"), TestResource::Model("AgentConfig"), // Resource models
+            TestResource::Model("Resource"), TestResource::Model("ResourceList"),
+            TestResource::Model("ResourceFactoryConfig"), // Contracts
             TestResource::Contract("troop_management_systems"), TestResource::Contract("troop_movement_systems"),
             TestResource::Contract("troop_battle_systems"), TestResource::Contract("village_systems"),
-            TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
-            // Libraries
+            TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"), // Libraries
             TestResource::Library(("structure_creation_library", "0_1_18")),
             TestResource::Library(("biome_library", "0_1_13")), TestResource::Library(("rng_library", "0_1_16")),
             TestResource::Library(("combat_library", "0_1_14")),
@@ -631,7 +633,8 @@ pub fn namespace_def_combat() -> NamespaceDef {
                 ("raid_library", "0_1_0"),
             ), // Events - TrophyProgression is from achievement crate, declared via build-external-contracts
             TestResource::Event("StoryEvent"), TestResource::Event("ExplorerMoveEvent"),
-            TestResource::Event("BattleEvent"), TestResource::Event("TrophyProgression"),
+            TestResource::Event("ExplorerRewardEvent"), TestResource::Event("BattleEvent"),
+            TestResource::Event("TrophyProgression"),
         ]
             .span(),
     }
@@ -1186,17 +1189,25 @@ pub fn namespace_def_troop_management() -> NamespaceDef {
             TestResource::Model("StructureVillageSlots"), TestResource::Model("StructureBuildings"),
             TestResource::Model("Building"), // Troop models
             TestResource::Model("ExplorerTroops"), // Map models
-            TestResource::Model("TileOpt"), TestResource::Model("BiomeDiscovered"),
-            TestResource::Model("Wonder"), // Resource models
-            TestResource::Model("Resource"),
-            TestResource::Model("ResourceList"), TestResource::Model("ResourceFactoryConfig"),
-            // Events
-            TestResource::Event("TrophyProgression"), TestResource::Event("StoryEvent"),
-            TestResource::Event("ExplorerMoveEvent"), // Contracts
+            TestResource::Model("TileOpt"), TestResource::Model("BiomeDiscovered"), TestResource::Model("Wonder"),
+            TestResource::Model("StructureReservation"), // Discovery models
+            TestResource::Model("RNG"),
+            TestResource::Model("PlayerRegisteredPoints"), TestResource::Model("SeasonPrize"),
+            TestResource::Model("HyperstructureGlobals"), TestResource::Model("AgentCount"),
+            TestResource::Model("AgentLifetimeCount"), TestResource::Model("AgentConfig"), // Resource models
+            TestResource::Model("Resource"), TestResource::Model("ResourceList"),
+            TestResource::Model("ResourceFactoryConfig"), // Events
+            TestResource::Event("TrophyProgression"),
+            TestResource::Event("StoryEvent"), TestResource::Event("ExplorerMoveEvent"),
+            TestResource::Event("ExplorerRewardEvent"), // Contracts
             TestResource::Contract("troop_management_systems"),
-            TestResource::Contract("troop_movement_systems"), TestResource::Contract("village_systems"),
-            TestResource::Contract("realm_internal_systems"), TestResource::Contract("resource_systems"),
-            // Libraries
+            TestResource::Contract("troop_movement_systems"), TestResource::Contract("troop_movement_util_systems"),
+            TestResource::Contract("relic_chest_discovery_systems"),
+            TestResource::Contract("hyperstructure_discovery_systems"),
+            TestResource::Contract("mine_discovery_systems"), TestResource::Contract("holysite_discovery_systems"),
+            TestResource::Contract("camp_discovery_systems"), TestResource::Contract("agent_discovery_systems"),
+            TestResource::Contract("village_systems"), TestResource::Contract("realm_internal_systems"),
+            TestResource::Contract("resource_systems"), // Libraries
             TestResource::Library(("structure_creation_library", "0_1_18")),
             TestResource::Library(("biome_library", "0_1_13")), TestResource::Library(("rng_library", "0_1_16")),
             TestResource::Library(("combat_library", "0_1_14")),
@@ -1210,6 +1221,20 @@ pub fn contract_defs_troop_management() -> Span<ContractDef> {
         ContractDefTrait::new(DEFAULT_NS(), @"troop_management_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_util_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"relic_chest_discovery_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"hyperstructure_discovery_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"mine_discovery_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"holysite_discovery_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"camp_discovery_systems")
+            .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+        ContractDefTrait::new(DEFAULT_NS(), @"agent_discovery_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
         ContractDefTrait::new(DEFAULT_NS(), @"village_systems")
             .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
