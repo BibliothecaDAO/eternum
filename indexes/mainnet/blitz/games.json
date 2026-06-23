@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-23T10:05:21.574Z",
+  "updatedAt": "2026-06-23T10:05:37.798Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -606,11 +606,10 @@
       "path": "runs/mainnet/blitz/bltz-crisp-353.json",
       "inputPath": "inputs/mainnet/blitz/bltz-crisp-353/28018249100-1.json",
       "status": "running",
-      "updatedAt": "2026-06-23T10:05:21.574Z",
+      "updatedAt": "2026-06-23T10:05:37.798Z",
       "workflowRef": "next",
-      "currentStepId": "configure-world",
-      "activeLeaseExpiresAt": "2026-06-23T10:50:21.574Z",
-      "hasRunningStep": true,
+      "currentStepId": "reserve-blitz-hyperstructures",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "reserve-blitz-hyperstructures",
       "startTime": 1782214200,
