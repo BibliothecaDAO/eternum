@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "27989494511-1",
   "currentStepId": null,
   "createdAt": "2026-06-22T22:54:27.727Z",
-  "updatedAt": "2026-06-23T03:25:12.072Z",
+  "updatedAt": "2026-06-23T03:26:58.364Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -101,14 +101,12 @@
       "0x5efb0c7af996a1b8cd99ea4e51b9f46bcf1df679c9028f946ed74a0cbbe8adb"
     ],
     "indexerCreated": true,
-    "indexerTier": "legendary",
+    "indexerTier": "pro",
     "indexerUrl": "https://api.cartridge.gg/x/bltz-burst-291/torii",
     "indexerVersion": "v1.8.16",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-06-23T00:33:00.528Z",
-    "paymasterSynced": true,
-    "pendingIndexerTierTarget": "pro",
-    "pendingIndexerTierRequestedAt": "2026-06-23T03:25:10.964Z"
+    "lastIndexerDescribeAt": "2026-06-23T03:26:58.364Z",
+    "paymasterSynced": true
   },
   "completedAt": "2026-06-22T22:58:48.781Z"
 }
