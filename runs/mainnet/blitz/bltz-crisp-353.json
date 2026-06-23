@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "bltz-crisp-353",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-crisp-353/28018249100-1.json",
   "latestLaunchRequestId": "28018249100-1",
-  "currentStepId": "sync-paymaster",
+  "currentStepId": null,
   "createdAt": "2026-06-23T10:02:54.014Z",
-  "updatedAt": "2026-06-23T10:07:14.934Z",
+  "updatedAt": "2026-06-23T10:07:21.209Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -81,10 +81,11 @@
     {
       "id": "sync-paymaster",
       "title": "Setting up gas coverage",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up gas coverage",
-      "latestEvent": "Setting up gas coverage started",
-      "startedAt": "2026-06-23T10:07:14.934Z"
+      "latestEvent": "Setting up gas coverage succeeded",
+      "startedAt": "2026-06-23T10:07:14.934Z",
+      "finishedAt": "2026-06-23T10:07:21.209Z"
     }
   ],
   "artifacts": {
@@ -104,14 +105,8 @@
     "indexerUrl": "https://api.cartridge.gg/x/bltz-crisp-353/torii",
     "indexerVersion": "v1.8.16",
     "indexerBranch": "main",
-    "lastIndexerDescribeAt": "2026-06-23T10:07:10.025Z"
+    "lastIndexerDescribeAt": "2026-06-23T10:07:10.025Z",
+    "paymasterSynced": true
   },
-  "activeLease": {
-    "launchRequestId": "28018249100-1",
-    "workflowRunId": 28018249100,
-    "workflowRunAttempt": 1,
-    "stepId": "sync-paymaster",
-    "acquiredAt": "2026-06-23T10:07:14.934Z",
-    "expiresAt": "2026-06-23T10:52:14.934Z"
-  }
+  "completedAt": "2026-06-23T10:07:21.209Z"
 }
