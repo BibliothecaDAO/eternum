@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "28064449132-1",
   "currentStepId": "configure-world",
   "createdAt": "2026-06-23T23:37:14.218Z",
-  "updatedAt": "2026-06-23T23:39:25.064Z",
+  "updatedAt": "2026-06-23T23:39:28.841Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -45,9 +45,10 @@
     {
       "id": "configure-world",
       "title": "Applying settings",
-      "status": "pending",
+      "status": "running",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Waiting to run"
+      "latestEvent": "Applying settings started",
+      "startedAt": "2026-06-23T23:39:28.841Z"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -84,5 +85,13 @@
     "summaryPath": ".context/game-launch/mainnet-blitz-bltz-bolt-274.json",
     "worldAddress": "0x05afab4ef06ed223fa6d8e38b4406ea71023b9d157eb55242052d67fa9711a3f",
     "createGameTxHash": "0x4de20a5eee2df87d1653f9c91966b7aef2d40c08bfeae53a51870f5a7f461d9"
+  },
+  "activeLease": {
+    "launchRequestId": "28064449132-1",
+    "workflowRunId": 28064449132,
+    "workflowRunAttempt": 1,
+    "stepId": "configure-world",
+    "acquiredAt": "2026-06-23T23:39:28.841Z",
+    "expiresAt": "2026-06-24T00:24:28.841Z"
   }
 }
