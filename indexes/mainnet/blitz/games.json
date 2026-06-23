@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-23T00:33:00.528Z",
+  "updatedAt": "2026-06-23T03:25:12.072Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -606,7 +606,7 @@
       "path": "runs/mainnet/blitz/bltz-burst-291.json",
       "inputPath": "inputs/mainnet/blitz/bltz-burst-291/27989494511-1.json",
       "status": "complete",
-      "updatedAt": "2026-06-23T00:33:00.528Z",
+      "updatedAt": "2026-06-23T03:25:12.072Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -617,7 +617,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "legendary",
-        "lastIndexerDescribeAt": "2026-06-23T00:33:00.528Z"
+        "lastIndexerDescribeAt": "2026-06-23T00:33:00.528Z",
+        "pendingIndexerTierTarget": "pro",
+        "pendingIndexerTierRequestedAt": "2026-06-23T03:25:10.964Z"
       }
     }
   }
