@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-23T03:26:58.364Z",
+  "updatedAt": "2026-06-23T08:42:15.676Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -493,27 +493,6 @@
       "startTime": "2026-06-11T01:00:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
-    },
-    "test-jc": {
-      "kind": "game",
-      "environment": "mainnet.blitz",
-      "gameName": "test-jc",
-      "path": "runs/mainnet/blitz/test-jc.json",
-      "inputPath": "inputs/mainnet/blitz/test-jc/27578983818-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-16T00:52:02.172Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1781561400,
-      "durationSeconds": 3600,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-16T00:52:02.172Z"
-      }
     },
     "blitz-focgers-001": {
       "kind": "game",
