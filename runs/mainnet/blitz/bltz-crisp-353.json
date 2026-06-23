@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-crisp-353/28018249100-1.json",
   "latestLaunchRequestId": "28018249100-1",
-  "currentStepId": "grant-lootchest-role",
+  "currentStepId": "create-indexer",
   "createdAt": "2026-06-23T10:02:54.014Z",
-  "updatedAt": "2026-06-23T10:06:22.395Z",
+  "updatedAt": "2026-06-23T10:06:44.759Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -63,10 +63,11 @@
     {
       "id": "grant-lootchest-role",
       "title": "Setting up loot chests",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Setting up loot chests",
-      "latestEvent": "Setting up loot chests started",
-      "startedAt": "2026-06-23T10:06:22.395Z"
+      "latestEvent": "Setting up loot chests succeeded",
+      "startedAt": "2026-06-23T10:06:22.395Z",
+      "finishedAt": "2026-06-23T10:06:44.759Z"
     },
     {
       "id": "create-indexer",
@@ -95,13 +96,5 @@
     "reserveHyperstructuresTxHashes": [
       "0x284cd8bf6a46bdd4fd85a05a90a238f00216f9f8866b10b47aa646cb15a7c2e"
     ]
-  },
-  "activeLease": {
-    "launchRequestId": "28018249100-1",
-    "workflowRunId": 28018249100,
-    "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "acquiredAt": "2026-06-23T10:06:22.395Z",
-    "expiresAt": "2026-06-23T10:51:22.395Z"
   }
 }
