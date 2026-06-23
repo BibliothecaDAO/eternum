@@ -5,15 +5,14 @@
   "owner": {
     "environment": "mainnet.blitz",
     "gameName": "blitz-rotation",
-    "launchRequestId": "28005077725-1",
+    "launchRequestId": "28005895535-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 28005077725,
+    "workflowRunId": 28005895535,
     "workflowRunAttempt": 1,
     "stepId": "configure-world",
-    "leaseId": "a87ad50c-9035-4319-8c4a-880af6a376ca"
+    "leaseId": "83ffce43-e2cd-4d9b-a5d0-12df2fe66227"
   },
-  "acquiredAt": "2026-06-23T05:46:13.080Z",
-  "heartbeatAt": "2026-06-23T05:46:18.159Z",
-  "expiresAt": "2026-06-23T05:46:18.159Z",
-  "releasedAt": "2026-06-23T05:46:18.159Z"
+  "acquiredAt": "2026-06-23T06:06:16.587Z",
+  "heartbeatAt": "2026-06-23T06:06:16.587Z",
+  "expiresAt": "2026-06-23T06:16:16.587Z"
 }
