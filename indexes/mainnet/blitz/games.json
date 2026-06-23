@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-23T10:06:12.406Z",
+  "updatedAt": "2026-06-23T10:06:22.395Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -606,12 +606,13 @@
       "path": "runs/mainnet/blitz/bltz-crisp-353.json",
       "inputPath": "inputs/mainnet/blitz/bltz-crisp-353/28018249100-1.json",
       "status": "running",
-      "updatedAt": "2026-06-23T10:06:12.406Z",
+      "updatedAt": "2026-06-23T10:06:22.395Z",
       "workflowRef": "next",
       "currentStepId": "grant-lootchest-role",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-06-23T10:51:22.395Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "grant-lootchest-role",
+      "recoverablePendingStepId": "create-indexer",
       "startTime": 1782214200,
       "durationSeconds": 3600,
       "artifacts": {}
