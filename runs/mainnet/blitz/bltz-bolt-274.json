@@ -13,7 +13,7 @@
   "latestLaunchRequestId": "28064449132-1",
   "currentStepId": null,
   "createdAt": "2026-06-23T23:37:14.218Z",
-  "updatedAt": "2026-06-23T23:47:00.083Z",
+  "updatedAt": "2026-06-24T01:40:12.388Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -106,7 +106,9 @@
     "indexerVersion": "v1.8.16",
     "indexerBranch": "main",
     "lastIndexerDescribeAt": "2026-06-23T23:47:00.083Z",
-    "paymasterSynced": true
+    "paymasterSynced": true,
+    "pendingIndexerTierTarget": "pro",
+    "pendingIndexerTierRequestedAt": "2026-06-24T01:40:11.249Z"
   },
   "completedAt": "2026-06-23T23:41:20.936Z"
 }
