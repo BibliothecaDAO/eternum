@@ -63,7 +63,9 @@ describe("classifyDisconnect", () => {
   });
 
   it("flags REMOTE (medium) when probe fails and server status is unknown", () => {
-    const result = classifyDisconnect(baseSignal({ healthProbeReason: "network_error", serverAvailability: "unknown" }));
+    const result = classifyDisconnect(
+      baseSignal({ healthProbeReason: "network_error", serverAvailability: "unknown" }),
+    );
     expect(result).toEqual({ source: "remote", confidence: "medium", reason: "probe_network_error" });
   });
 

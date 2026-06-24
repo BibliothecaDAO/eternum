@@ -525,7 +525,8 @@ mod tests {
     };
     use crate::systems::combat::contracts::troop_movement::{
         ITroopMovementSystemsDispatcher, ITroopMovementSystemsDispatcherTrait, agent_discovery_systems,
-        hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_systems, troop_movement_util_systems,
+        hyperstructure_discovery_systems, mine_discovery_systems, troop_movement_reward_systems, troop_movement_systems,
+        troop_movement_util_systems,
     };
     use crate::systems::quest::constants::{
         MAXIMUM_QUEST_CAPACITY, MINIMUM_QUEST_CAPACITY, QUEST_REWARD_BASE_MULTIPLIER, VERSION,
@@ -579,6 +580,7 @@ mod tests {
                 TestResource::Contract(troop_management_systems::TEST_CLASS_HASH),
                 TestResource::Contract(troop_movement_systems::TEST_CLASS_HASH),
                 TestResource::Contract(troop_movement_util_systems::TEST_CLASS_HASH),
+                TestResource::Contract(troop_movement_reward_systems::TEST_CLASS_HASH),
                 TestResource::Contract(agent_discovery_systems::TEST_CLASS_HASH),
                 TestResource::Contract(hyperstructure_discovery_systems::TEST_CLASS_HASH),
                 TestResource::Contract(mine_discovery_systems::TEST_CLASS_HASH),
@@ -602,6 +604,8 @@ mod tests {
             ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_systems")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_util_systems")
+                .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
+            ContractDefTrait::new(DEFAULT_NS(), @"troop_movement_reward_systems")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),
             ContractDefTrait::new(DEFAULT_NS(), @"agent_discovery_systems")
                 .with_writer_of([dojo::utils::bytearray_hash(DEFAULT_NS())].span()),

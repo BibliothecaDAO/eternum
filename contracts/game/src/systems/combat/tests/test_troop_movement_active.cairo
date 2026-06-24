@@ -366,86 +366,171 @@ mod tests {
     }
 
     #[test]
-    fn test_explorer_explore_and_extract_does_not_store_unused_final_rng_seed() {
+    fn test_explorer_explore_and_extract_stores_same_final_rng_seed_as_legacy_path() {
         let (
-            mut world,
-            movement_addr,
-            movement,
+            mut legacy_world,
+            legacy_movement_addr,
+            legacy_movement,
             _realm_id,
-            realm_owner,
-            explorer_id,
+            legacy_realm_owner,
+            legacy_explorer_id,
             _source_coord,
             _target_coord,
-            target_direction,
+            legacy_target_direction,
         ) =
             setup_no_treasure_explorer();
 
         let explore_tx_hash = 0x4558504c4f52455f54585f48415348;
         start_cheat_transaction_hash_global(explore_tx_hash);
-        run_combined_explore_and_extract(movement_addr, movement, realm_owner, explorer_id, target_direction);
+        run_legacy_explore_then_extract(
+            legacy_movement_addr, legacy_movement, legacy_realm_owner, legacy_explorer_id, legacy_target_direction,
+        );
         stop_cheat_transaction_hash_global();
 
-        let rng: RNG = world.read_model(explore_tx_hash);
-        assert!(rng.seed == 0, "combined explore should not persist unused final rng seed");
+        let (
+            mut combined_world,
+            combined_movement_addr,
+            combined_movement,
+            _combined_realm_id,
+            combined_realm_owner,
+            combined_explorer_id,
+            _combined_source_coord,
+            _combined_target_coord,
+            combined_target_direction,
+        ) =
+            setup_no_treasure_explorer();
+
+        start_cheat_transaction_hash_global(explore_tx_hash);
+        run_combined_explore_and_extract(
+            combined_movement_addr,
+            combined_movement,
+            combined_realm_owner,
+            combined_explorer_id,
+            combined_target_direction,
+        );
+        stop_cheat_transaction_hash_global();
+
+        let legacy_rng: RNG = legacy_world.read_model(explore_tx_hash);
+        let combined_rng: RNG = combined_world.read_model(explore_tx_hash);
+        assert!(combined_rng.seed == legacy_rng.seed, "combined explore rng seed should match legacy path");
     }
 
     #[test]
-    fn test_explorer_explore_and_extract_uses_seeded_rng_without_storing_unused_final_seed() {
+    fn test_explorer_explore_and_extract_advances_seeded_rng_like_legacy_path() {
         let (
-            mut world,
-            movement_addr,
-            movement,
-            realm_id,
-            realm_owner,
-            explorer_id,
-            source_coord,
-            target_coord,
-            target_direction,
+            mut legacy_world,
+            legacy_movement_addr,
+            legacy_movement,
+            _legacy_realm_id,
+            legacy_realm_owner,
+            legacy_explorer_id,
+            _legacy_source_coord,
+            _legacy_target_coord,
+            legacy_target_direction,
         ) =
             setup_no_treasure_explorer();
 
         let explore_tx_hash = 0x5345454445445f4558504c4f52455f54585f48415348;
         let seeded_rng = 987654321;
-        world.write_model(@RNG { tx_hash: explore_tx_hash, seed: seeded_rng });
+        legacy_world.write_model(@RNG { tx_hash: explore_tx_hash, seed: seeded_rng });
 
         start_cheat_transaction_hash_global(explore_tx_hash);
-        run_combined_explore_and_extract(movement_addr, movement, realm_owner, explorer_id, target_direction);
+        run_legacy_explore_then_extract(
+            legacy_movement_addr, legacy_movement, legacy_realm_owner, legacy_explorer_id, legacy_target_direction,
+        );
         stop_cheat_transaction_hash_global();
 
-        assert_explore_without_treasure_result(ref world, realm_id, explorer_id, source_coord, target_coord);
+        let (
+            mut combined_world,
+            combined_movement_addr,
+            combined_movement,
+            combined_realm_id,
+            combined_realm_owner,
+            combined_explorer_id,
+            combined_source_coord,
+            combined_target_coord,
+            combined_target_direction,
+        ) =
+            setup_no_treasure_explorer();
+        combined_world.write_model(@RNG { tx_hash: explore_tx_hash, seed: seeded_rng });
 
-        let rng: RNG = world.read_model(explore_tx_hash);
-        assert!(rng.seed == seeded_rng, "combined explore should not persist the unused final seeded rng");
+        start_cheat_transaction_hash_global(explore_tx_hash);
+        run_combined_explore_and_extract(
+            combined_movement_addr,
+            combined_movement,
+            combined_realm_owner,
+            combined_explorer_id,
+            combined_target_direction,
+        );
+        stop_cheat_transaction_hash_global();
+
+        assert_explore_without_treasure_result(
+            ref combined_world, combined_realm_id, combined_explorer_id, combined_source_coord, combined_target_coord,
+        );
+
+        let legacy_rng: RNG = legacy_world.read_model(explore_tx_hash);
+        let combined_rng: RNG = combined_world.read_model(explore_tx_hash);
+        assert!(combined_rng.seed == legacy_rng.seed, "combined seeded rng should match legacy path");
     }
 
     #[test]
-    fn test_explorer_explore_and_extract_uses_seeded_rng_and_reuses_discovered_biome() {
+    fn test_explorer_explore_and_extract_advances_seeded_rng_like_legacy_path_with_reused_biome() {
         let (
-            mut world,
-            movement_addr,
-            movement,
-            realm_id,
-            realm_owner,
-            explorer_id,
-            source_coord,
-            target_coord,
-            target_direction,
+            mut legacy_world,
+            legacy_movement_addr,
+            legacy_movement,
+            _legacy_realm_id,
+            legacy_realm_owner,
+            legacy_explorer_id,
+            _legacy_source_coord,
+            legacy_target_coord,
+            legacy_target_direction,
         ) =
             setup_no_treasure_explorer();
 
         let explore_tx_hash = 0x5345454445445f52455045415445445f4558504c4f5245;
         let seeded_rng = 987654321;
-        world.write_model(@RNG { tx_hash: explore_tx_hash, seed: seeded_rng });
-        mark_target_biome_discovered(ref world, realm_owner, target_coord);
+        legacy_world.write_model(@RNG { tx_hash: explore_tx_hash, seed: seeded_rng });
+        mark_target_biome_discovered(ref legacy_world, legacy_realm_owner, legacy_target_coord);
 
         start_cheat_transaction_hash_global(explore_tx_hash);
-        run_combined_explore_and_extract(movement_addr, movement, realm_owner, explorer_id, target_direction);
+        run_legacy_explore_then_extract(
+            legacy_movement_addr, legacy_movement, legacy_realm_owner, legacy_explorer_id, legacy_target_direction,
+        );
         stop_cheat_transaction_hash_global();
 
-        assert_explore_without_treasure_result(ref world, realm_id, explorer_id, source_coord, target_coord);
+        let (
+            mut combined_world,
+            combined_movement_addr,
+            combined_movement,
+            combined_realm_id,
+            combined_realm_owner,
+            combined_explorer_id,
+            combined_source_coord,
+            combined_target_coord,
+            combined_target_direction,
+        ) =
+            setup_no_treasure_explorer();
+        combined_world.write_model(@RNG { tx_hash: explore_tx_hash, seed: seeded_rng });
+        mark_target_biome_discovered(ref combined_world, combined_realm_owner, combined_target_coord);
 
-        let rng: RNG = world.read_model(explore_tx_hash);
-        assert!(rng.seed == seeded_rng, "combined repeated explore should not persist the unused final seeded rng");
+        start_cheat_transaction_hash_global(explore_tx_hash);
+        run_combined_explore_and_extract(
+            combined_movement_addr,
+            combined_movement,
+            combined_realm_owner,
+            combined_explorer_id,
+            combined_target_direction,
+        );
+        stop_cheat_transaction_hash_global();
+
+        assert_explore_without_treasure_result(
+            ref combined_world, combined_realm_id, combined_explorer_id, combined_source_coord, combined_target_coord,
+        );
+
+        let legacy_rng: RNG = legacy_world.read_model(explore_tx_hash);
+        let combined_rng: RNG = combined_world.read_model(explore_tx_hash);
+        assert!(combined_rng.seed == legacy_rng.seed, "combined reused-biome rng should match legacy path");
     }
 
     #[test]
