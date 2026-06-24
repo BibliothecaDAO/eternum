@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-20T17:37:37.532Z",
+  "updatedAt": "2026-06-24T08:39:03.339Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -103,27 +103,6 @@
         "indexerCreated": true,
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-06-20T17:37:37.532Z"
-      }
-    },
-    "bltz-flux-661": {
-      "kind": "game",
-      "environment": "slot.blitz",
-      "gameName": "bltz-flux-661",
-      "path": "runs/slot/blitz/bltz-flux-661.json",
-      "inputPath": "inputs/slot/blitz/bltz-flux-661/27380963215-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-16T23:42:05.987Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1781218800,
-      "durationSeconds": 432000,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-16T23:42:05.987Z"
       }
     },
     "bltz-boost-329": {
