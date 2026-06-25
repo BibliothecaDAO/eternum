@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-glow-265",
-    "launchRequestId": "28148765108-1",
+    "gameName": "bltz-flux-94",
+    "launchRequestId": "28148815210-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 28148765108,
+    "workflowRunId": 28148815210,
     "workflowRunAttempt": 1,
     "stepId": "reserve-blitz-hyperstructures",
-    "leaseId": "f91d80dd-216b-4911-af7d-d2426a34c627"
+    "leaseId": "8bdd3580-d5e7-4432-af1e-3462753cf285"
   },
-  "acquiredAt": "2026-06-25T05:27:48.606Z",
-  "heartbeatAt": "2026-06-25T05:28:09.942Z",
-  "expiresAt": "2026-06-25T05:28:09.942Z",
-  "releasedAt": "2026-06-25T05:28:09.942Z"
+  "acquiredAt": "2026-06-25T05:28:17.896Z",
+  "heartbeatAt": "2026-06-25T05:28:17.896Z",
+  "expiresAt": "2026-06-25T05:38:17.896Z"
 }
