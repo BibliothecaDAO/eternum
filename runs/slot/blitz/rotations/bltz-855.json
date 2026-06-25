@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27884568063-1",
   "currentStepId": null,
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-25T20:40:22.632Z",
+  "updatedAt": "2026-06-25T20:42:00.007Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -1336,7 +1336,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 7,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier updated legendary -> pro for bltz-855-07",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1514,11 +1514,11 @@
           "lootChestRoleTxHash": "0x30215162e0e2039e230a9f11a4536c0e4dbdc0be4ca44f799dba361d127f4f9",
           "indexerCreated": true,
           "indexerMode": "slot-direct",
-          "indexerTier": "legendary",
+          "indexerTier": "pro",
           "indexerUrl": "https://api.cartridge.gg/x/bltz-855-07/torii",
           "indexerVersion": "v1.8.16",
           "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-06-20T21:37:22.478Z",
+          "lastIndexerDescribeAt": "2026-06-25T20:42:00.007Z",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -1527,9 +1527,7 @@
             "worldAddress": "0x05f32997ea09f7f2212578e0c51997e7ecef14faa63ad3e95fa7370294cf1db6",
             "tier": "basic",
             "externalContracts": []
-          },
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-25T20:40:20.384Z"
+          }
         }
       },
       {
