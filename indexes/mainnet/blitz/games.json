@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-25T07:44:42.912Z",
+  "updatedAt": "2026-06-25T07:44:53.067Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -669,11 +669,10 @@
       "path": "runs/mainnet/blitz/bltz-glow-121.json",
       "inputPath": "inputs/mainnet/blitz/bltz-glow-121/28154728951-1.json",
       "status": "running",
-      "updatedAt": "2026-06-25T07:44:42.912Z",
+      "updatedAt": "2026-06-25T07:44:53.067Z",
       "workflowRef": "next",
-      "currentStepId": "grant-lootchest-role",
-      "activeLeaseExpiresAt": "2026-06-25T08:29:42.912Z",
-      "hasRunningStep": true,
+      "currentStepId": "create-indexer",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "create-indexer",
       "startTime": 1782384300,
