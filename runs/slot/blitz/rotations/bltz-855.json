@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27884568063-1",
   "currentStepId": null,
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-25T16:42:09.942Z",
+  "updatedAt": "2026-06-25T18:40:23.465Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -730,7 +730,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 4,
         "currentStepId": null,
-        "latestEvent": "Indexer tier updated basic -> legendary for bltz-855-04",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -922,7 +922,9 @@
             "worldAddress": "0x002bede3d2c79c2a724267b068f3717d325a7a19492c92b397a476065fffb099",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-06-25T18:40:21.068Z"
         }
       },
       {
@@ -932,7 +934,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 5,
         "currentStepId": null,
-        "latestEvent": "Indexer tier updated basic -> legendary for bltz-855-05",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1124,7 +1126,9 @@
             "worldAddress": "0x0586efa76b3f30fc0d304f6fd5260b0207c65ea4716fd1a66a80db0dc642c308",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-06-25T18:40:21.068Z"
         }
       },
       {
