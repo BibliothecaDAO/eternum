@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27884568063-1",
   "currentStepId": null,
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-25T20:42:00.007Z",
+  "updatedAt": "2026-06-25T22:10:20.258Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -1537,7 +1537,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 8,
         "currentStepId": null,
-        "latestEvent": "Indexer tier updated basic -> legendary for bltz-855-08",
+        "latestEvent": "Queued indexer tier update to pro",
         "status": "succeeded",
         "configSteps": [
           {
@@ -1728,7 +1728,9 @@
             "worldAddress": "0x0221188b4e12439d51ef1caee8c21e3a2bc9510ef120e26fa4924fafe5b9fad4",
             "tier": "basic",
             "externalContracts": []
-          }
+          },
+          "pendingIndexerTierTarget": "pro",
+          "pendingIndexerTierRequestedAt": "2026-06-25T22:10:18.518Z"
         }
       },
       {
