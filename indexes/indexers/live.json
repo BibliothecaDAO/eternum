@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-25T05:34:14.083Z",
+  "updatedAt": "2026-06-25T05:47:13.745Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -4044,6 +4044,19 @@
         "describedAt": "2026-06-25T05:34:11.688Z"
       },
       "updatedAt": "2026-06-25T05:34:14.083Z"
+    },
+    "bltz-flux-94": {
+      "gameName": "bltz-flux-94",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-flux-94/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-25T05:47:13.745Z"
+      },
+      "updatedAt": "2026-06-25T05:47:13.745Z"
     }
   }
 }
