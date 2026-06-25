@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-24T08:39:03.339Z",
+  "updatedAt": "2026-06-25T05:23:14.927Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -619,6 +619,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-06-24T03:41:50.822Z"
       }
+    },
+    "bltz-glow-265": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "bltz-glow-265",
+      "path": "runs/mainnet/blitz/bltz-glow-265.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-glow-265/28148765108-1.json",
+      "status": "running",
+      "updatedAt": "2026-06-25T05:23:14.927Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-06-25T06:00:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
     }
   }
 }
