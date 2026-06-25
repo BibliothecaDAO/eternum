@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-25T07:55:51.719Z",
+  "updatedAt": "2026-06-25T08:34:57.321Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -103,27 +103,6 @@
         "indexerCreated": true,
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-06-20T17:37:37.532Z"
-      }
-    },
-    "bltz-boost-329": {
-      "kind": "game",
-      "environment": "slot.blitz",
-      "gameName": "bltz-boost-329",
-      "path": "runs/slot/blitz/bltz-boost-329.json",
-      "inputPath": "inputs/slot/blitz/bltz-boost-329/27717633428-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-17T22:42:03.179Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1781730000,
-      "durationSeconds": 3600,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-17T22:42:03.178Z"
       }
     },
     "bltz-zest-104": {
