@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-26T12:55:26.931Z",
+  "updatedAt": "2026-06-26T12:56:11.012Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -84,9 +84,9 @@
       "environment": "mainnet.blitz",
       "rotationName": "blitz-rotation",
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/28238361360-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/28239365506-1.json",
       "status": "attention",
-      "updatedAt": "2026-06-26T12:55:26.931Z",
+      "updatedAt": "2026-06-26T12:56:11.012Z",
       "workflowRef": "next",
       "currentStepId": "configure-worlds",
       "hasRunningStep": false,
@@ -95,13 +95,13 @@
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15,
-        "nextRetryAt": "2026-06-26T13:10:04.521Z",
+        "nextRetryAt": "2026-06-26T13:11:11.012Z",
         "lastRetryAt": "2026-06-26T12:55:04.521Z"
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-06-26T12:51:20.244Z",
-        "lastEvaluatedAt": "2026-06-26T12:36:20.244Z"
+        "nextEvaluationAt": "2026-06-26T13:11:11.012Z",
+        "lastEvaluatedAt": "2026-06-26T12:56:11.012Z"
       },
       "games": [
         {
