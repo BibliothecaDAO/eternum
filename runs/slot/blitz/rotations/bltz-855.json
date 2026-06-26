@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27884568063-1",
   "currentStepId": null,
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-26T00:40:12.270Z",
+  "updatedAt": "2026-06-26T00:41:45.229Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -2142,7 +2142,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 11,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer maintenance failed for bltz-855-11: Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2319,13 +2319,8 @@
             "0x2765221afc2b291ffa7dc8ee5c32d85f84155b5efe129c74a850c5b4ca09c64"
           ],
           "lootChestRoleTxHash": "0x37bf76a377e701f293914018f2682cfefaf3e29004e735f1aa3549584319ae1",
-          "indexerCreated": true,
+          "indexerCreated": false,
           "indexerMode": "slot-direct",
-          "indexerTier": "legendary",
-          "indexerUrl": "https://api.cartridge.gg/x/bltz-855-11/torii",
-          "indexerVersion": "v1.8.16",
-          "indexerBranch": "main",
-          "lastIndexerDescribeAt": "2026-06-20T23:32:11.815Z",
           "indexerRequest": {
             "env": "slot",
             "rpcUrl": "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
@@ -2336,7 +2331,10 @@
             "externalContracts": []
           },
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-26T00:40:09.788Z"
+          "pendingIndexerTierRequestedAt": "2026-06-26T00:41:45.229Z",
+          "lastIndexerTierDispatchTarget": "pro",
+          "lastIndexerTierDispatchFailedAt": "2026-06-26T00:41:45.229Z",
+          "lastIndexerTierDispatchError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
         }
       },
       {
