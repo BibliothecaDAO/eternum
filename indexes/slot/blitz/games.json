@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-26T00:16:53.367Z",
+  "updatedAt": "2026-06-26T10:12:34.628Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -167,6 +167,23 @@
         "pendingIndexerTierTarget": "legendary",
         "pendingIndexerTierRequestedAt": "2026-06-26T00:16:53.367Z"
       }
+    },
+    "bltz-glow-429": {
+      "kind": "game",
+      "environment": "slot.blitz",
+      "gameName": "bltz-glow-429",
+      "path": "runs/slot/blitz/bltz-glow-429.json",
+      "inputPath": "inputs/slot/blitz/bltz-glow-429/28231622443-1.json",
+      "status": "running",
+      "updatedAt": "2026-06-26T10:12:34.628Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-06-26T11:30:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
     }
   }
 }
