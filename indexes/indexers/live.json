@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-26T18:47:10.426Z",
+  "updatedAt": "2026-06-26T19:06:55.669Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3872,7 +3872,7 @@
         "stateSource": "describe-and-list-failed",
         "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-06-26T18:46:54.223Z"
+      "updatedAt": "2026-06-26T19:06:55.669Z"
     },
     "bltz-855-12": {
       "gameName": "bltz-855-12",
@@ -3881,7 +3881,7 @@
         "stateSource": "describe-and-list-failed",
         "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-06-26T18:46:54.223Z"
+      "updatedAt": "2026-06-26T19:06:55.669Z"
     },
     "na-gladiator-21-06-26-0300": {
       "gameName": "na-gladiator-21-06-26-0300",
