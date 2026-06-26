@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-26T00:52:17.045Z",
+  "updatedAt": "2026-06-26T01:01:45.617Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3872,7 +3872,7 @@
         "stateSource": "describe-and-list-failed",
         "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
-      "updatedAt": "2026-06-26T00:41:47.175Z"
+      "updatedAt": "2026-06-26T01:01:45.617Z"
     },
     "bltz-855-12": {
       "gameName": "bltz-855-12",
