@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27884568063-1",
   "currentStepId": null,
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-26T10:15:22.284Z",
+  "updatedAt": "2026-06-26T10:35:21.755Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -2331,7 +2331,7 @@
             "externalContracts": []
           },
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-26T10:15:20.057Z"
+          "pendingIndexerTierRequestedAt": "2026-06-26T10:35:19.686Z"
         }
       },
       {
@@ -2530,7 +2530,7 @@
             "externalContracts": []
           },
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-26T10:15:20.057Z"
+          "pendingIndexerTierRequestedAt": "2026-06-26T10:35:19.686Z"
         }
       }
     ],
