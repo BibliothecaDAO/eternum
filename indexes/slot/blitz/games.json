@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-27T10:05:30.456Z",
+  "updatedAt": "2026-06-27T10:08:47.722Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -186,9 +186,9 @@
       "environment": "slot.blitz",
       "gameName": "bltz-riff-988",
       "path": "runs/slot/blitz/bltz-riff-988.json",
-      "inputPath": "inputs/slot/blitz/bltz-riff-988/28286008392-1.json",
+      "inputPath": "inputs/slot/blitz/bltz-riff-988/28286088286-1.json",
       "status": "attention",
-      "updatedAt": "2026-06-27T10:05:30.456Z",
+      "updatedAt": "2026-06-27T10:08:47.722Z",
       "workflowRef": "next",
       "currentStepId": "create-indexer",
       "hasRunningStep": false,
