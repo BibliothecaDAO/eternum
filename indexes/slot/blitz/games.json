@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-27T09:44:58.414Z",
+  "updatedAt": "2026-06-27T09:59:31.727Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -178,6 +178,23 @@
       "recoverableFailedStepId": "create-indexer",
       "recoverablePendingStepId": null,
       "startTime": 1782560100,
+      "durationSeconds": 3600,
+      "artifacts": {}
+    },
+    "bltz-riff-988": {
+      "kind": "game",
+      "environment": "slot.blitz",
+      "gameName": "bltz-riff-988",
+      "path": "runs/slot/blitz/bltz-riff-988.json",
+      "inputPath": "inputs/slot/blitz/bltz-riff-988/28285874590-1.json",
+      "status": "running",
+      "updatedAt": "2026-06-27T09:59:31.727Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-06-27T11:40:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
     }
