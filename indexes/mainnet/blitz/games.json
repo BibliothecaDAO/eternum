@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-27T13:58:19.808Z",
+  "updatedAt": "2026-06-27T13:58:25.377Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -690,12 +690,13 @@
       "path": "runs/mainnet/blitz/bltz-twist-401.json",
       "inputPath": "inputs/mainnet/blitz/bltz-twist-401/28291302898-1.json",
       "status": "running",
-      "updatedAt": "2026-06-27T13:58:19.808Z",
+      "updatedAt": "2026-06-27T13:58:25.377Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-06-27T14:43:25.377Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-06-27T14:00:00.000Z",
       "durationSeconds": 5400,
       "artifacts": {}
