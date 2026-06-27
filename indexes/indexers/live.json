@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-27T11:29:12.677Z",
+  "updatedAt": "2026-06-27T11:31:52.258Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -4111,6 +4111,15 @@
         "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
       "updatedAt": "2026-06-27T11:29:12.677Z"
+    },
+    "apac-gladiator-27-06-26-1200": {
+      "gameName": "apac-gladiator-27-06-26-1200",
+      "liveState": {
+        "state": "indeterminate",
+        "stateSource": "describe-and-list-failed",
+        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
+      },
+      "updatedAt": "2026-06-27T11:31:52.258Z"
     }
   }
 }
