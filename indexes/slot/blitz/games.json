@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-27T09:43:53.545Z",
+  "updatedAt": "2026-06-27T09:44:14.880Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -171,11 +171,10 @@
       "path": "runs/slot/blitz/bltz-zip-271.json",
       "inputPath": "inputs/slot/blitz/bltz-zip-271/28285492279-1.json",
       "status": "running",
-      "updatedAt": "2026-06-27T09:43:53.545Z",
+      "updatedAt": "2026-06-27T09:44:14.880Z",
       "workflowRef": "next",
-      "currentStepId": "reserve-blitz-hyperstructures",
-      "activeLeaseExpiresAt": "2026-06-27T10:28:53.545Z",
-      "hasRunningStep": true,
+      "currentStepId": "grant-lootchest-role",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1782560100,
