@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-25T12:27:06.335Z",
+  "updatedAt": "2026-06-27T13:58:19.808Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -682,6 +682,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-06-25T12:27:06.334Z"
       }
+    },
+    "bltz-twist-401": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "bltz-twist-401",
+      "path": "runs/mainnet/blitz/bltz-twist-401.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-twist-401/28291302898-1.json",
+      "status": "running",
+      "updatedAt": "2026-06-27T13:58:19.808Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-06-27T14:00:00.000Z",
+      "durationSeconds": 5400,
+      "artifacts": {}
     }
   }
 }
