@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-froth-492",
-  "status": "running",
+  "status": "complete",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "create-indexer",
   "inputPath": "inputs/slot/blitz/bltz-froth-492/28321106393-1.json",
   "latestLaunchRequestId": "28321106393-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-06-28T08:27:35.093Z",
-  "updatedAt": "2026-06-28T11:44:25.038Z",
+  "updatedAt": "2026-06-28T11:44:42.595Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,11 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
+      "latestEvent": "Finishing setup succeeded",
       "startedAt": "2026-06-28T11:44:25.038Z",
-      "finishedAt": "2026-06-28T11:41:58.960Z"
+      "finishedAt": "2026-06-28T11:44:42.595Z"
     }
   ],
   "artifacts": {
@@ -91,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x1d19c6fbc860a11ffd6f2d22afc7c9c1b24ac7021cf350ae8e2d43ea879ab1c"
     ],
-    "lootChestRoleTxHash": "0x383cbb4d41474a51bb71169ee6b9bfe25c40be6c6d91fed1567e906e7a9b7c0"
+    "lootChestRoleTxHash": "0x383cbb4d41474a51bb71169ee6b9bfe25c40be6c6d91fed1567e906e7a9b7c0",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-froth-492/torii",
+    "indexerVersion": "v1.8.16",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-06-28T11:44:41.266Z"
   },
-  "activeLease": {
-    "launchRequestId": "28321106393-1",
-    "workflowRunId": 28321106393,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-06-28T11:44:25.038Z",
-    "expiresAt": "2026-06-28T12:29:25.038Z"
-  }
+  "completedAt": "2026-06-28T11:44:42.595Z"
 }
