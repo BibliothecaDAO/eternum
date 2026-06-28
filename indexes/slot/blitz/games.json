@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-28T08:30:18.188Z",
+  "updatedAt": "2026-06-28T08:31:51.358Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -62,48 +62,6 @@
       "startTime": 1777132800,
       "durationSeconds": 5400,
       "artifacts": {}
-    },
-    "bltz-kick-418": {
-      "kind": "game",
-      "environment": "slot.blitz",
-      "gameName": "bltz-kick-418",
-      "path": "runs/slot/blitz/bltz-kick-418.json",
-      "inputPath": "inputs/slot/blitz/bltz-kick-418/27876716188-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-20T17:37:15.388Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1779840000,
-      "durationSeconds": 5400,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-20T17:37:15.387Z"
-      }
-    },
-    "bltz-froth-357": {
-      "kind": "game",
-      "environment": "slot.blitz",
-      "gameName": "bltz-froth-357",
-      "path": "runs/slot/blitz/bltz-froth-357.json",
-      "inputPath": "inputs/slot/blitz/bltz-froth-357/27876710540-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-20T17:37:37.532Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1780046400,
-      "durationSeconds": 7200,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-20T17:37:37.532Z"
-      }
     },
     "bltz-fizz-383": {
       "kind": "game",
