@@ -49,7 +49,7 @@ export const formatSocialText = (template: string, variables: Partial<TemplateVa
 };
 
 const tweetFooterLines = [
-  "@realms_gg",
+  "@realmsgg",
   "The most insane fully onchain game, live on Starknet",
   "blitz.realms.world",
 ] as const;
@@ -59,8 +59,8 @@ const tweetFooter = tweetFooterLines.join("\n");
 export const twitterTemplates = {
   combat: `⚔️ BATTLE DECLARED! ⚔️\n\n{attackerNameText} with {attackerTroopsText}\n\n🗡️ VS 🛡️\n\n{defenderNameText} with {defenderTroopsText}\n\n${tweetFooter}`,
   raid: `🔥 SUCCESSFUL RAID! 🔥\n\n{attackerNameText}\n\n🗡️ VS 🛡️\n\n{defenderNameText} \n\nSpoils of war: {raidResources} 💰\n\n${tweetFooter}`,
-  realmSettled: `🏰 REALM SETTLED! 🏰\n\nI, {addressName}, have settled {realmName} in @realms_gg!\n\nThis realm produces: {realmResources} ⛏️\n\n${tweetFooter}`,
-  villageResourceReveal: `🛖 NEW VILLAGE SETTLED! 🛖\n\nI, {addressName}, have settled a {resourceType} village in @realms_gg!\n\nWith a {resourceProbability}% chance of finding this {resourceTier} tier resource!{tierEmoji}{tierEmoji}{tierEmoji}\n\n${tweetFooter}`,
+  realmSettled: `🏰 REALM SETTLED! 🏰\n\nI, {addressName}, have settled {realmName} in @realmsgg!\n\nThis realm produces: {realmResources} ⛏️\n\n${tweetFooter}`,
+  villageResourceReveal: `🛖 NEW VILLAGE SETTLED! 🛖\n\nI, {addressName}, have settled a {resourceType} village in @realmsgg!\n\nWith a {resourceProbability}% chance of finding this {resourceTier} tier resource!{tierEmoji}{tierEmoji}{tierEmoji}\n\n${tweetFooter}`,
   joinedTribe: `⚔️ NEW ALLIANCE FORGED! ⚔️\n\nI, {addressName}, have pledged allegiance to the mighty {tribeName} tribe!\n\n${tweetFooter}`,
   createdTribe: `⚔️ A NEW POWER RISES! ⚔️\n\nI, {addressName}, have founded the {tribeName} tribe!\n\n${tweetFooter}`,
 };
@@ -202,7 +202,7 @@ export const buildGameReviewStepShareMessage = ({
     const includeOnlyTimeMetrics = isTimeFocusedAwardsShareStep(step);
 
     return [
-      `${worldLabel} Blitz Awards on @realms_gg:`,
+      `${worldLabel} Blitz Awards on @realmsgg:`,
       `First Blood: ${resolveWinnerName(data.stats.firstBlood, formatDuration)}`,
       `First T3 Troops: ${resolveWinnerName(data.stats.timeToFirstT3Seconds, formatDuration)}`,
       `First Hyperstructure: ${resolveWinnerName(data.stats.timeToFirstHyperstructureSeconds, formatDuration)}`,

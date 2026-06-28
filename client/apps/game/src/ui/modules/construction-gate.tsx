@@ -34,7 +34,7 @@ export const ConstructionGate = () => {
           </a>
 
           <a
-            href="https://x.com/realms_gg"
+            href="https://x.com/realmsgg"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-bronze flex items-center px-4 py-2"

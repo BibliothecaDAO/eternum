@@ -200,8 +200,8 @@ divided into six 'phases'.
 
 * **Exploration System**: Players must explore unrevealed hexes to find essence, claim Hyperstructures, and attack
   neighbors.
-* **Essence Discovery**: Players primarily find essence when exploring, along with stacks of donkeys and labor. Resources
-  cannot be discovered through exploration.
+* **Essence Discovery**: Players primarily find essence when exploring, along with stacks of donkeys and labor.
+  Resources cannot be discovered through exploration.
 * **Relic Discovery**: Powerful Relics can be found in Relic Crates that occasionally appear on the world map.
 * **Biomes**: 16 unique biome types affecting combat effectiveness and troop movement.
 * **Movement & Stamina**: Armies move using stamina (regenerating at +30 per Phase, +180 per Eternum Day), with costs
@@ -384,14 +384,14 @@ The total prize pool comes from two sources:
     width: "100%",
     tableLayout: "fixed",
     borderCollapse: "collapse",
-    backgroundColor: "#332f28",
-    border: "1px solid #564e3e",
-    borderRadius: "10px",
+    backgroundColor: "rgba(7, 10, 12, 0.82)",
+    border: "1px solid rgba(201, 169, 96, 0.18)",
+    borderRadius: "8px",
     overflow: "hidden",
     fontSize: "0.85rem",
   }}
   >
-    <thead style={{ backgroundColor: "#383a4a" }}>
+    <thead style={{ backgroundColor: "rgba(22, 27, 32, 0.86)" }}>
       <tr>
         <th
           style={{
@@ -399,8 +399,8 @@ The total prize pool comes from two sources:
           padding: "0.6rem 1rem",
           textAlign: "left",
           fontWeight: 700,
-          color: "#c9b06a",
-          borderBottom: "1px solid #6b6250",
+          color: "#c9a960",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
           whiteSpace: "nowrap",
           fontSize: "0.85rem",
         }}
@@ -414,8 +414,8 @@ The total prize pool comes from two sources:
           padding: "0.6rem 1rem",
           textAlign: "left",
           fontWeight: 700,
-          color: "#c9b06a",
-          borderBottom: "1px solid #6b6250",
+          color: "#c9a960",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
           fontSize: "0.85rem",
         }}
         >
@@ -430,8 +430,8 @@ The total prize pool comes from two sources:
           style={{
           padding: "0.6rem 1rem",
           textAlign: "left",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           whiteSpace: "nowrap",
           fontSize: "0.85rem",
         }}
@@ -443,8 +443,8 @@ The total prize pool comes from two sources:
           style={{
           padding: "0.6rem 1rem",
           textAlign: "left",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -457,7 +457,7 @@ The total prize pool comes from two sources:
           style={{
           padding: "0.6rem 1rem",
           textAlign: "left",
-          color: "#e8e4dc",
+          color: "#ece0bd",
           whiteSpace: "nowrap",
           fontSize: "0.85rem",
         }}
@@ -465,7 +465,7 @@ The total prize pool comes from two sources:
           <strong>Sponsorship (S)</strong>
         </td>
 
-        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", fontSize: "0.85rem" }}>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#ece0bd", fontSize: "0.85rem" }}>
           Additional $LORDS added by the game host or external sponsors
         </td>
       </tr>
@@ -874,52 +874,6 @@ When a camp is claimed, it spawns with an initial stockpile of materials.
 
 ---
 
-file: docs/pages/changelog/5-june-2026.mdx
-meta: {
-  "layout": "docs"
-}
-
-# 5th June 2026
-
-### Combat v3
-
-* Crossbowmen now have a distinct ranged role: they can attack from **2 hexes away**, while Knights and Paladins remain adjacent-only.
-* Range-2 Crossbowman attacks are ranged pokes: **70%** damage into field armies, **30%** damage into structure guards, no biome damage modifier, no defender counter-damage, shorter battle timers, and no normal damage-ratio refunds.
-* Range-2 Crossbowman attacks cost **50 stamina** for the attacker and **20 stamina** for the defender. Range-1 combat remains **50 stamina** for the attacker and **40 stamina** for the defender.
-* Ranged attacks can clear structure guards, but structures still require adjacency to claim.
-* Knights now specialize in structure combat: **+15%** damage when assaulting structure guards from adjacent range, and Knight guards take **15% reduced incoming damage** while defending structures.
-* Paladins are unchanged mechanically and remain high-mobility cavalry.
-* T2 and T3 troop strength multipliers are standardized at **3×** and **9×**.
-
-### Blitz Stamina & Relic Consistency
-
-* [Blitz/Stamina & Biomes](/blitz/military/stamina-and-biomes): Clarified Blitz stamina regeneration as **30 stamina per phase** and **180 stamina per Eternum Day**.
-* Confirmed combat stamina thresholds are config-driven values, not dynamically derived at runtime from regeneration.
-
-### Relic Duration Standardisation
-
-* [Blitz/Relics](/blitz/materials/relics): Standardised all timed relic effects to **3 Eternum Days (18 minutes)**.
-* Updated relic reference table and explanatory text to remove older mixed-duration values.
-
-### Troop Production Relic Rebalance
-
-* [Blitz/Relics](/blitz/materials/relics): Updated Troop Production Relics to:
-  * **Relic I**: +15% troop production for 3 Eternum Days.
-  * **Relic II**: +30% troop production for 3 Eternum Days.
-* Updated shared relic metadata and descriptive resource text to match the new values.
-
-### Release Note
-
-* Updated docs, generated config artifacts, shared TypeScript constants, and Cairo defaults covered by this release pass.
-
-***
-
-*This changelog replaces the unshipped 1 May 2026 entry and covers the combined Combat v3, stamina, and relic release pass.*
-
-
-
----
-
 file: docs/pages/changelog/14-november-2025.mdx
 meta: {
   "layout": "docs"
@@ -1057,8 +1011,7 @@ The first official Blitz series has launched with significant balance changes ac
 **Realm Progression**
 
 * All Realms now start the game at **City level** — the Settlement → City upgrade has been removed.
-* [Kingdom upgrade costs](/blitz/realms/realm#realm-progression) updated: 720 Labor, 2,400 Wheat, 600 Essence, 360
-  Wood.
+* [Kingdom upgrade costs](/blitz/realms/realm#realm-progression) updated: 720 Labor, 2,400 Wheat, 600 Essence, 360 Wood.
 * Empire upgrade costs updated: 1,440 Labor, 4,800 Wheat, 1,200 Essence, 720 Wood, 360 Coal, 360 Copper.
 
 **Production Rates**
@@ -1078,8 +1031,8 @@ The first official Blitz series has launched with significant balance changes ac
 
 **Exploration Rewards**
 
-* [Exploration reward](/blitz/worldmap-movement/movement#exploring) table updated. T1 troop drops have been removed
-  from exploration rewards:
+* [Exploration reward](/blitz/worldmap-movement/movement#exploring) table updated. T1 troop drops have been removed from
+  exploration rewards:
 
 <div style={table.container}>
   <div style={table.wrapper}>
@@ -1308,6 +1261,46 @@ meta: {
 ***
 
 *This changelog reflects all documentation updates made since the previous release.*
+
+
+
+---
+
+file: docs/pages/changelog/5-june-2026.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 5th June 2026
+
+### Combat v3
+
+* Crossbowmen now have a distinct ranged role: they can attack from **2 hexes away**, while Knights and Paladins remain
+  adjacent-only.
+* Range-2 Crossbowman attacks are ranged pokes: **70%** damage into field armies, **30%** damage into structure guards,
+  no biome damage modifier, no defender counter-damage, shorter battle timers, and no normal damage-ratio refunds.
+* Range-2 Crossbowman attacks cost **50 stamina** for the attacker and **20 stamina** for the defender. Range-1 combat
+  remains **50 stamina** for the attacker and **40 stamina** for the defender.
+* Ranged attacks can clear structure guards, but structures still require adjacency to claim.
+* Knights now specialize in structure combat: **+15%** damage when assaulting structure guards from adjacent range, and
+  Knight guards take **15% reduced incoming damage** while defending structures.
+* Paladins are unchanged mechanically and remain high-mobility cavalry.
+* T2 and T3 troop strength multipliers are standardized at **3×** and **9×**.
+
+### Blitz Stamina & Relic Consistency
+
+* [Blitz/Stamina & Biomes](/blitz/military/stamina-and-biomes): Clarified Blitz stamina regeneration as **30 stamina per
+  phase** and **180 stamina per Eternum Day**.
+* Confirmed combat stamina thresholds are config-driven values, not dynamically derived at runtime from regeneration.
+* [Blitz/Relics](/blitz/materials/relics): Standardized all timed relic effects to **3 Eternum Days (18 minutes)**.
+* Updated Troop Production Relics to **+15%** and **+30%** troop production for 3 Eternum Days.
+* Updated docs, generated config artifacts, shared TypeScript constants, and Cairo defaults covered by this release
+  pass.
+
+***
+
+*This changelog replaces the unshipped 1 May 2026 entry and covers the combined Combat v3, stamina, and relic release
+pass.*
 
 
 
@@ -3041,7 +3034,7 @@ meta: {
 * [Realms World](https://realms.world/) - The DAO behind Eternum
 * [Discord](https://discord.gg/realmsworld) - Join our Discord
 * [X (Community)](https://x.com/LootRealms) - Follow the community
-* [X (Realms Games)](https://x.com/realms_gg) - Follow for Realms games updates
+* [X (Realms Games)](https://x.com/realmsgg) - Follow for Realms games updates
 
 
 
@@ -3573,6 +3566,13 @@ import "@/styles.css";
 Individual armies consist of a single troop type and tier. Each hex can host only one army, so Lords must carefully
 manage their positioning and engagement opportunities.
 
+## Structure Guards and Claims
+
+Structure guards defend Camps, Essence Rifts, Hyperstructures, and Realms from their guard slots. Crossbowman armies and
+Crossbowman guards can use Combat v3 range-2 attacks to clear or threaten enemies from a distance, but a ranged attack
+never claims a structure. Once guards are cleared, the claiming army must move adjacent and use an adjacent attack/claim
+path to take control.
+
 ## Army Strength and Deployment
 
 Blitz uses a strength-based deployment system that determines how many troops can be deployed based on Realm level and
@@ -3599,14 +3599,14 @@ number of field and guard army slots.
     width: "100%",
     tableLayout: "fixed",
     borderCollapse: "collapse",
-    backgroundColor: "#332f28",
-    border: "1px solid #564e3e",
-    borderRadius: "10px",
+    backgroundColor: "rgba(7, 10, 12, 0.82)",
+    border: "1px solid rgba(201, 169, 96, 0.18)",
+    borderRadius: "8px",
     overflow: "hidden",
     fontSize: "0.85rem",
   }}
   >
-    <thead style={{ backgroundColor: "#383a4a" }}>
+    <thead style={{ backgroundColor: "rgba(22, 27, 32, 0.86)" }}>
       <tr>
         <th
           style={{
@@ -3614,8 +3614,8 @@ number of field and guard army slots.
           padding: "0.6rem 1rem",
           textAlign: "left",
           fontWeight: 700,
-          color: "#c9b06a",
-          borderBottom: "1px solid #6b6250",
+          color: "#c9a960",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
           fontSize: "0.85rem",
         }}
         >
@@ -3628,8 +3628,8 @@ number of field and guard army slots.
           padding: "0.6rem 1rem",
           textAlign: "center",
           fontWeight: 700,
-          color: "#c9b06a",
-          borderBottom: "1px solid #6b6250",
+          color: "#c9a960",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
           fontSize: "0.85rem",
         }}
         >
@@ -3642,8 +3642,8 @@ number of field and guard army slots.
           padding: "0.6rem 1rem",
           textAlign: "center",
           fontWeight: 700,
-          color: "#c9b06a",
-          borderBottom: "1px solid #6b6250",
+          color: "#c9a960",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
           fontSize: "0.85rem",
         }}
         >
@@ -3656,8 +3656,8 @@ number of field and guard army slots.
           padding: "0.6rem 1rem",
           textAlign: "center",
           fontWeight: 700,
-          color: "#c9b06a",
-          borderBottom: "1px solid #6b6250",
+          color: "#c9a960",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
           fontSize: "0.85rem",
         }}
         >
@@ -3672,8 +3672,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "left",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3684,8 +3684,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3696,8 +3696,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3708,8 +3708,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3722,8 +3722,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "left",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3734,8 +3734,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3746,8 +3746,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3758,8 +3758,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3772,8 +3772,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "left",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3784,8 +3784,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3796,8 +3796,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3808,8 +3808,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3818,10 +3818,10 @@ number of field and guard army slots.
       </tr>
 
       <tr>
-        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", fontSize: "0.85rem" }}>Empire</td>
-        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>90,000</td>
-        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>8</td>
-        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>4</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#ece0bd", fontSize: "0.85rem" }}>Empire</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#ece0bd", fontSize: "0.85rem" }}>90,000</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#ece0bd", fontSize: "0.85rem" }}>8</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#ece0bd", fontSize: "0.85rem" }}>4</td>
       </tr>
     </tbody>
   </table>
@@ -3918,8 +3918,8 @@ import { DamageCalculation } from "@/components/DamageCalculation";
 ## Damage Overview
 
 Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
-is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on a
-damage formula that considers troop numbers, troop tier, biome effects, stamina penalties, and battle timer penalties.
+is initiated (i.e. one army attacks another), damage is calculated from troop numbers, troop tier, biome effects,
+stamina penalties, battle timer penalties, and Combat v3 role modifiers.
 
 ## Combat Process
 
@@ -3932,6 +3932,19 @@ When an army attacks another from an adjacent tile, the following sequence occur
 4. **Battle Timers**: Each combatant receives a battle timer, which prevents them from initiating new attacks while
    active.
 5. **Refunds**: Damage-ratio refunds are calculated and applied to battle timers and stamina
+
+## Combat v3 Role Modifiers
+
+* **Crossbowmen** can attack from 2 hexes away. Range-2 attacks deal **70%** damage to field armies, deal **30%** damage
+  to structure guards, ignore biome damage modifiers, and receive no counter-damage.
+* **Knights** specialize in structure combat. Adjacent Knight assaults deal **+15%** damage to structure guards, and
+  Knight guards take **15% reduced incoming damage** while defending structures.
+* **Paladins** keep their high-mobility cavalry role; their main balance pressure comes from biome movement and damage
+  affinities.
+
+Range-2 Crossbowman attacks are ranged pokes rather than full battles: they apply shorter battle timers and bypass the
+normal damage-ratio refund calculation. Ranged attacks can clear structure guards, but structures still require
+adjacency to claim.
 
 ## Damage Calculation
 
@@ -4012,14 +4025,13 @@ Stamina is granted instantly when a new Phase begins, and no other automatic sta
 ### Attacking Army
 
 The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **50
-stamina**. If the attacker does not have the full stamina cost, the attack command is
-rejected and no combat occurs.
+stamina**. If the attacker does not have the full stamina cost, the attack command is rejected and no combat occurs.
 
 ### Defending Army
 
 The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **40
-stamina**. If the defender's current stamina is below this required threshold, they
-receive a **30% damage penalty** during that combat round.
+stamina**. If the defender's current stamina is below this required threshold, they receive a **30% damage penalty**
+during that combat round.
 
 ### Crossbowman Range-2 Attacks
 
@@ -4074,6 +4086,14 @@ as inputs:
 * Two T2 troops combine to produce one T3 troop
 
 Each troop tier provides escalating advantages in terms of damage output and stamina.
+
+## Combat Roles
+
+* **Knights** are adjacent-only structure specialists, with stronger assaults into structure guards and sturdier guard
+  defense when garrisoned.
+* **Crossbowmen** can attack from 2 hexes away. Their adjacent attacks are normal combat; their ranged attacks are safer
+  but damage-inefficient pokes.
+* **Paladins** remain high-mobility cavalry whose strengths depend heavily on map position and biome distribution.
 
 <TroopTiers />
 
@@ -4736,6 +4756,9 @@ minute), totaling +180 stamina per Eternum Day. Each troop type possesses differ
 in the table below:
 
 <BlitzTroopMovementTable />
+
+Most attacks require adjacency. Crossbowmen can attack from 2 hexes away, but structures can only be claimed from an
+adjacent hex after their guards are cleared.
 
 Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
 themselves severely disadvantaged if attacked by enemy forces.

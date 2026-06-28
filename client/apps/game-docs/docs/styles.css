@@ -6,20 +6,30 @@
 
 /* Realms Theme — Global Overrides */
 :root {
-  --realm-bg-void: #141520;
-  --realm-bg-smoke: #1e2030;
-  --realm-surface-iron: #332f28;
-  --realm-surface-slate: #383a4a;
+  --realm-bg-void: #050709;
+  --realm-bg-smoke: #070b0d;
+  --realm-surface-iron: #101417;
+  --realm-surface-slate: #161b20;
   --realm-accent-ember: #c4874a;
-  --realm-accent-brass: #c9b06a;
+  --realm-accent-brass: #c9a960;
   --realm-accent-arcane: #8088b8;
-  --realm-border-etched: #564e3e;
-  --realm-border-strong: #6b6250;
+  --realm-border-etched: #423925;
+  --realm-border-strong: #5f5030;
 }
 
 /* Body font */
+html,
 body {
   font-family: "Exo 2", sans-serif !important;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(201, 169, 96, 0.08), transparent 38rem),
+    linear-gradient(rgba(201, 169, 96, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201, 169, 96, 0.045) 1px, transparent 1px),
+    linear-gradient(180deg, #040607 0%, #070b0d 54%, #050709 100%) !important;
+  background-attachment: fixed;
+  background-position: center top, center center, center center, center center;
+  background-size: auto, 96px 96px, 96px 96px, auto;
+  color: #ece0bd;
 }
 
 /* Headings use Cinzel */
@@ -34,7 +44,7 @@ h2,
 h3,
 h4 {
   font-family: "Cinzel", serif !important;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
 }
 
 /* Code blocks */
@@ -46,8 +56,9 @@ pre,
 
 /* Sidebar styling */
 .vocs_Sidebar {
-  background-color: var(--realm-bg-void) !important;
-  border-right-color: var(--realm-border-etched) !important;
+  background:
+    linear-gradient(180deg, rgba(7, 10, 12, 0.96), rgba(5, 7, 9, 0.98)) !important;
+  border-right-color: rgba(201, 169, 96, 0.18) !important;
 }
 
 .vocs_Sidebar a {
@@ -85,13 +96,14 @@ pre,
 /* Navigation */
 .vocs_NavBar,
 .vocs_Header {
-  background-color: var(--realm-bg-void) !important;
-  border-bottom-color: var(--realm-border-etched) !important;
+  background: rgba(5, 7, 9, 0.92) !important;
+  border-bottom-color: rgba(201, 169, 96, 0.18) !important;
+  backdrop-filter: blur(14px);
 }
 
 /* Content area */
 .vocs_Content {
-  color: #e8e4dc;
+  color: #ece0bd;
 }
 
 .vocs_Content a {
@@ -220,9 +232,9 @@ pre,
 .vocs_Content table {
   width: 100% !important;
   border-collapse: collapse;
-  background-color: var(--realm-surface-iron);
-  border: 1px solid var(--realm-border-etched);
-  border-radius: 10px;
+  background-color: rgba(7, 10, 12, 0.82);
+  border: 1px solid rgba(201, 169, 96, 0.18);
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -230,11 +242,11 @@ pre,
   font-family: "Exo 2", sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
-  letter-spacing: 0.005em;
+  letter-spacing: 0;
   text-transform: none;
   color: var(--realm-accent-brass);
-  background-color: var(--realm-surface-slate);
-  border-bottom: 1px solid var(--realm-border-strong) !important;
+  background-color: rgba(22, 27, 32, 0.86);
+  border-bottom: 1px solid rgba(201, 169, 96, 0.24) !important;
   border-left: none !important;
   border-right: none !important;
   border-top: none !important;
@@ -242,9 +254,9 @@ pre,
 }
 
 .vocs_Content td {
-  border-bottom: 1px solid var(--realm-border-etched) !important;
+  border-bottom: 1px solid rgba(201, 169, 96, 0.13) !important;
   vertical-align: middle;
-  color: #e8e4dc;
+  color: #ece0bd;
   border-left: none !important;
   border-right: none !important;
   border-top: none !important;
@@ -312,7 +324,7 @@ pre,
 
 /* Subtle hover state for data rows */
 .vocs_Content tbody tr:hover {
-  background-color: rgba(201, 176, 106, 0.05);
+  background-color: rgba(201, 169, 96, 0.05);
   transition: background-color 0.15s ease;
 }
 

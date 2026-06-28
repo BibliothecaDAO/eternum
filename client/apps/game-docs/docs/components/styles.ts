@@ -11,33 +11,33 @@ export const fonts = {
 
 // Colors — Realms palette
 export const colors = {
-  primary: "#c9b06a", // brass accent
+  primary: "#c9a960", // brass accent
   secondary: "#c4874a", // ember accent
-  border: "#564e3e", // etched border
-  borderDark: "#6b6250", // strong border
+  border: "rgba(201, 169, 96, 0.18)", // etched border
+  borderDark: "rgba(201, 169, 96, 0.28)", // strong border
   arcane: "#8088b8", // cool accent
   background: {
-    void: "#141520",
-    smoke: "#1e2030",
-    light: "rgba(51, 47, 40, 0.3)", // iron tint
-    medium: "rgba(51, 47, 40, 0.55)", // iron
-    dark: "rgba(56, 58, 74, 0.6)", // slate
-    header: "rgba(56, 58, 74, 0.7)", // slate header
+    void: "#050709",
+    smoke: "#070b0d",
+    light: "rgba(16, 20, 23, 0.54)", // iron tint
+    medium: "rgba(7, 10, 12, 0.82)", // iron
+    dark: "rgba(22, 27, 32, 0.86)", // slate
+    header: "rgba(22, 27, 32, 0.92)", // slate header
   },
   text: {
-    light: "#e8e4dc",
-    muted: "#c9b06a",
+    light: "#ece0bd",
+    muted: "rgba(236, 224, 189, 0.72)",
   },
   modifiers: {
     positive: "#69db7c",
     negative: "#ff6b6b",
   },
   resource: {
-    military: "#c9b06a",
+    military: "#c9a960",
     food: "#c4874a",
     labor: "#8088b8",
     transport: "#a89060",
-    default: "#c9b06a",
+    default: "#c9a960",
   },
 };
 
@@ -45,11 +45,11 @@ export const colors = {
 export const table = {
   container: {
     overflowX: "auto" as const,
-    borderRadius: "10px",
+    borderRadius: "8px",
     backgroundColor: colors.background.medium,
     border: `1px solid ${colors.border}`,
     marginBottom: "1.5rem",
-    boxShadow: "inset 0 1px 0 rgba(201, 176, 106, 0.08), 0 18px 36px rgba(0, 0, 0, 0.25)",
+    boxShadow: "inset 0 1px 0 rgba(201, 169, 96, 0.08), 0 18px 36px rgba(0, 0, 0, 0.28)",
     fontFamily: fonts.body,
   },
   wrapper: {
@@ -72,7 +72,7 @@ export const table = {
     borderBottom: `1px solid ${colors.borderDark}`,
     fontFamily: fonts.body,
     fontSize: "0.85rem",
-    letterSpacing: "0.005em",
+    letterSpacing: "0",
   },
   cell: {
     padding: "0.5rem",
@@ -103,7 +103,7 @@ export const table = {
     marginBottom: "1.5rem",
     backgroundColor: colors.background.medium,
     border: `1px solid ${colors.border}`,
-    borderRadius: "10px",
+    borderRadius: "8px",
     overflow: "hidden",
   },
   tableHeaderCell: {
@@ -113,7 +113,7 @@ export const table = {
     fontSize: "0.85rem",
     fontWeight: 700,
     fontFamily: fonts.body,
-    letterSpacing: "0.005em",
+    letterSpacing: "0",
   },
   tableFirstColumn: {
     width: "30%",
@@ -134,7 +134,7 @@ export const table = {
     padding: "0.75rem 0.5rem",
     color: colors.text.light,
     fontSize: "0.95rem",
-    borderBottom: `1px solid rgba(107, 98, 80, 0.3)`,
+    borderBottom: `1px solid rgba(201, 169, 96, 0.13)`,
   },
   tableRow: {
     transition: "background-color 0.2s",
@@ -151,10 +151,10 @@ export const table = {
     borderRadius: "0.25rem",
     fontSize: "0.75rem",
     fontWeight: "bold",
-    backgroundColor: `rgba(201, 176, 106, 0.12)`,
+    backgroundColor: `rgba(201, 169, 96, 0.12)`,
     color: colors.primary,
     fontFamily: fonts.heading,
-    letterSpacing: "0.01em",
+    letterSpacing: "0",
   },
 };
 
@@ -166,7 +166,7 @@ export const section = {
   card: {
     border: `1px solid ${colors.border}`,
     padding: "1rem",
-    borderRadius: "10px",
+    borderRadius: "8px",
     backgroundColor: colors.background.light,
     fontFamily: fonts.body,
   },
@@ -175,7 +175,7 @@ export const section = {
     fontSize: "1.45rem",
     marginBottom: "1.5rem",
     fontFamily: fonts.display,
-    letterSpacing: "-0.01em",
+    letterSpacing: "0",
     color: colors.text.light,
   },
   subtitle: {
@@ -199,7 +199,7 @@ export const section = {
     gap: "1.5rem",
   },
   legend: {
-    backgroundColor: "rgba(30, 32, 48, 0.6)",
+    backgroundColor: "rgba(7, 10, 12, 0.72)",
     padding: "1rem 1.5rem",
     borderRadius: "0.5rem",
     marginTop: "1rem",
@@ -210,15 +210,15 @@ export const section = {
   },
   divider: {
     margin: "1.25rem 0",
-    borderTop: `1px solid rgba(107, 98, 80, 0.5)`,
+    borderTop: `1px solid rgba(201, 169, 96, 0.18)`,
   },
   commonCard: {
     padding: "1.5rem",
-    borderRadius: "10px",
+    borderRadius: "8px",
     backgroundColor: colors.background.medium,
     border: `1px solid ${colors.border}`,
     marginBottom: "2rem",
-    boxShadow: "inset 0 1px 0 rgba(201, 176, 106, 0.08), 0 18px 36px rgba(0, 0, 0, 0.25)",
+    boxShadow: "inset 0 1px 0 rgba(201, 169, 96, 0.08), 0 18px 36px rgba(0, 0, 0, 0.25)",
     fontFamily: fonts.body,
   },
   commonHeader: {
@@ -275,7 +275,7 @@ export const icon = {
     width: "2rem",
     height: "2rem",
     borderRadius: "50%",
-    backgroundColor: "rgba(201, 176, 106, 0.12)",
+    backgroundColor: "rgba(201, 169, 96, 0.12)",
     marginRight: "0.5rem",
   },
   biome: {
@@ -424,10 +424,10 @@ export const importantNote = {
     padding: "1.5rem",
     marginBottom: "1.5rem",
     backgroundColor: colors.background.medium,
-    borderRadius: "10px",
+    borderRadius: "8px",
     borderLeft: `4px solid ${colors.secondary}`,
     border: `1px solid ${colors.border}`,
-    boxShadow: "inset 0 1px 0 rgba(201, 176, 106, 0.08), 0 18px 36px rgba(0, 0, 0, 0.25)",
+    boxShadow: "inset 0 1px 0 rgba(201, 169, 96, 0.08), 0 18px 36px rgba(0, 0, 0, 0.25)",
     fontFamily: fonts.body,
   },
   title: {
@@ -454,7 +454,7 @@ export const troop = {
   },
   card: {
     padding: "1.25rem",
-    borderRadius: "10px",
+    borderRadius: "8px",
     backgroundColor: colors.background.light,
     border: `1px solid ${colors.border}`,
     transition: "transform 0.2s, box-shadow 0.2s",
@@ -474,7 +474,7 @@ export const troop = {
   },
   limitsCard: {
     padding: "1rem",
-    borderRadius: "10px",
+    borderRadius: "8px",
     backgroundColor: colors.background.medium,
     border: `1px solid ${colors.border}`,
     marginBottom: "1.5rem",
