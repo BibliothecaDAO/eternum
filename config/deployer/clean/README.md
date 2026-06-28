@@ -81,9 +81,11 @@ GitHub Actions credentials are selected through GitHub Environments:
 - environment `slot.blitz`
   - var: `GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS`
   - secret: `GAME_LAUNCH_DOJO_PRIVATE_KEY`
+  - secret: `SLOT_AUTH`
 - environment `slot.eternum`
   - var: `GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS`
   - secret: `GAME_LAUNCH_DOJO_PRIVATE_KEY`
+  - secret: `SLOT_AUTH`
 - environment `mainnet.blitz`
   - var: `GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS`
   - secret: `GAME_LAUNCH_DOJO_PRIVATE_KEY`
@@ -97,9 +99,9 @@ The workflow does not need CI-provided defaults for Torii namespaces, Cartridge 
 are defaulted inside the clean deployer module, and the VRF provider default matches the shared slot value from the game
 env files.
 
-The clean deployer creates indexers only by dispatching `.github/workflows/factory-torii-deployer.yml` directly with
-GitHub's workflow API. It waits for that workflow run to finish, and only marks the indexer as created when the workflow
-concludes with `success`.
+The clean deployer creates indexers by calling the Slot CLI directly. It validates the configured `SLOT_AUTH` before
+launch steps that can reach indexer creation, then verifies whether the target Torii deployment already exists before
+creating a new one.
 
 When running locally, the clean deployer can fill in missing GitHub dispatch inputs from local tooling:
 

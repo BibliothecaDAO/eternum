@@ -799,6 +799,55 @@ jobs:
           }
           EOF
 
+      - name: Validate Slot auth
+        run: |
+          set -euo pipefail
+          source .context/game-launch/launch-env.sh
+
+          launch_step_reaches_indexer() {
+            if [ "${GAME_LAUNCH_KIND}" = "game" ]; then
+              case "${GAME_LAUNCH_STEP}" in
+                full|create-world|wait-for-factory-index|configure-world|grant-lootchest-role|grant-village-pass-role|create-banks|create-indexer)
+                  return 0
+                  ;;
+                *)
+                  return 1
+                  ;;
+              esac
+            fi
+
+            case "${GAME_LAUNCH_STEP}" in
+              full|create-series|create-worlds|wait-for-factory-indexes|configure-worlds|grant-lootchest-roles|grant-village-pass-roles|create-banks|create-indexers)
+                return 0
+                ;;
+              *)
+                return 1
+                ;;
+            esac
+          }
+
+          if [ "${GAME_LAUNCH_SKIP_INDEXER:-}" = "true" ]; then
+            echo "Skipping Slot auth validation because indexer creation is disabled."
+            exit 0
+          fi
+
+          if ! launch_step_reaches_indexer; then
+            echo "Skipping Slot auth validation because this launch step does not create indexers."
+            exit 0
+          fi
+
+          if [ -z "${SLOT_AUTH:-}" ]; then
+            echo "Missing SLOT_AUTH. Configure a valid Slot auth token before launching indexers." >&2
+            exit 1
+          fi
+
+          if ! slot auth info >/tmp/slot-auth-info.log 2>&1; then
+            echo "SLOT_AUTH is not accepted by the Slot CLI. Refresh the GitHub secret with a current token from slot auth token." >&2
+            exit 1
+          fi
+
+          echo "Slot auth validated for indexer deployment."
+
       - name: Record launch input
         run: |
           set -euo pipefail

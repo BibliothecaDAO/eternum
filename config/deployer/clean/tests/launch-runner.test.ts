@@ -143,6 +143,19 @@ mock.module("starknet", () => ({
   shortString: {
     encodeShortString: (value: string) => `felt:${value}`,
   },
+  CallData: {
+    compile: (values: unknown[]) => values,
+  },
+  constants: {
+    LegacyUDC: {
+      ADDRESS: "0xudc",
+    },
+  },
+  hash: {
+    calculateContractAddressFromHash: () => "0xentrytoken",
+    computePedersenHash: () => "0xsalt",
+    getSelectorFromName: (name: string) => `selector:${name}`,
+  },
 }));
 
 mock.module("../config/config-loader", () => ({
@@ -290,7 +303,7 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(createGameExecuteMock.mock.calls[0]?.[0]).toEqual({
       contractAddress: factoryAddress,
       entrypoint: "create_game",
-      calldata: ["felt:alpha", 50, "180", "0x0", 0],
+      calldata: ["felt:alpha", 50, "140", "0x0", 0],
     });
     expect(waitForTransactionMock.mock.calls).toHaveLength(15);
     expect(createGameDelayMock.mock.calls).toHaveLength(14);
@@ -321,7 +334,7 @@ describe("runLaunchStep mainnet launch steps", () => {
       process.stderr.write = originalWrite;
     }
 
-    expect(capturedLogs.join("")).toContain('Raw create_game calldata: ["felt:alpha",50,"180","0x0",0]');
+    expect(capturedLogs.join("")).toContain('Raw create_game calldata: ["felt:alpha",50,"140","0x0",0]');
   });
 
   test("submits create_game five times on slot across five retries", async () => {
@@ -340,7 +353,7 @@ describe("runLaunchStep mainnet launch steps", () => {
     expect(createGameExecuteMock.mock.calls[0]?.[0]).toEqual({
       contractAddress: factoryAddress,
       entrypoint: "create_game",
-      calldata: ["felt:alpha", 300, "180", "0x0", 0],
+      calldata: ["felt:alpha", 300, "140", "0x0", 0],
     });
     expect(waitForTransactionMock.mock.calls).toHaveLength(5);
     expect(createGameDelayMock).not.toHaveBeenCalled();
@@ -563,7 +576,7 @@ describe("runLaunchStep mainnet launch steps", () => {
       privateKey,
     });
 
-    expect(summary.entryTokenAddress).toBe("0x55587061e1f470c749e9f7e568a3eb8b8d2335ac2c9b5adf8d9669fb378b38");
+    expect(summary.entryTokenAddress).toBe("0xentrytoken");
   });
 
   test("reserves blitz hyperstructures in one fixed-size call when one batch is enough", async () => {
