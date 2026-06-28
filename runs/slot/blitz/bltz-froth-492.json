@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-froth-492",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-froth-492/28316464975-1.json",
   "latestLaunchRequestId": "28316464975-1",
   "currentStepId": "create-indexer",
   "createdAt": "2026-06-28T08:27:35.093Z",
-  "updatedAt": "2026-06-28T08:30:12.803Z",
+  "updatedAt": "2026-06-28T08:30:18.188Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,12 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-06-28T08:30:12.803Z"
+      "latestEvent": "Finishing setup failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-froth-492\" on slot.blitz\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for slot.blitz\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-froth-492\"\n\u001b[2m[+87ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-froth-492\" in 72ms (0x04759170...973c52)\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x04759170...973c52\n\u001b[2m[+237ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 140ms: Unable to verify whether Torii deployment \"bltz-froth-492\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\nError: Unable to verify whether Torii deployment \"bltz-froth-492\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:372:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1059:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1057:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1252:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1290:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1305:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:150:25)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-06-28T08:30:12.803Z",
+      "finishedAt": "2026-06-28T08:30:18.188Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-froth-492\" on slot.blitz\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for slot.blitz\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"bltz-froth-492\"\n\u001b[2m[+87ms]\u001b[0m \u001b[1m\u001b[32mOK\u001b[0m Factory SQL indexed \"bltz-froth-492\" in 72ms (0x04759170...973c52)\n\u001b[2m[+97ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Creating indexer for 0x04759170...973c52\n\u001b[2m[+237ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m create indexer failed after 140ms: Unable to verify whether Torii deployment \"bltz-froth-492\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\nError: Unable to verify whether Torii deployment \"bltz-froth-492\" already exists. Refusing to create a duplicate while state is indeterminate.\nSlot output:\nInvalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`\n    at ensureSlotIndexerDeployment (/home/runner/work/eternum/eternum/config/deployer/clean/indexing/slot-torii.ts:372:15)\n    at <anonymous> (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1059:17)\n    at run (/home/runner/work/eternum/eternum/config/deployer/clean/launch/progress.ts:108:30)\n    at createIndexerIfNeeded (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1057:41)\n    at runCreateIndexerStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1252:11)\n    at async executeLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1290:13)\n    at async runLaunchStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/runner.ts:1305:9)\n    at async main (/home/runner/work/eternum/eternum/config/deployer/clean/cli/launch-step.ts:150:25)\n    at processTicksAndRejections (native:7:39)"
     }
   ],
   "artifacts": {
@@ -91,13 +93,5 @@
       "0x1d19c6fbc860a11ffd6f2d22afc7c9c1b24ac7021cf350ae8e2d43ea879ab1c"
     ],
     "lootChestRoleTxHash": "0x383cbb4d41474a51bb71169ee6b9bfe25c40be6c6d91fed1567e906e7a9b7c0"
-  },
-  "activeLease": {
-    "launchRequestId": "28316464975-1",
-    "workflowRunId": 28316464975,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-06-28T08:30:12.803Z",
-    "expiresAt": "2026-06-28T09:15:12.803Z"
   }
 }
