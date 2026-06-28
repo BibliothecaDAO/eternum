@@ -48,7 +48,7 @@ function TermsPage() {
             transition={{ duration: 0.5, delay: 0.15 }}
             className="prose prose-invert prose-sm max-w-none space-y-8"
           >
-            <div className="realm-panel rounded-xl border border-primary/15 p-6 sm:p-8 space-y-8">
+            <div className="realm-panel rounded-lg border border-primary/15 p-6 sm:p-8 space-y-8">
               <Section title="1. Acceptance of Terms">
                 <p>
                   By accessing or using Realms World (realms.world) and its

@@ -102,7 +102,7 @@ export function TokenomicsSection() {
         </motion.div>
 
         <motion.div
-          className="realm-panel rounded-2xl border border-primary/20 bg-black/30 backdrop-blur-sm p-5 sm:p-6"
+          className="realm-panel rounded-lg border border-primary/20 bg-black/30 backdrop-blur-sm p-5 sm:p-6"
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35, duration: 0.5 }}
@@ -112,7 +112,7 @@ export function TokenomicsSection() {
           </h3>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {supplySnapshot.map((item) => (
-              <div key={item.label} className="card-relic rounded-xl border border-primary/15 p-4">
+              <div key={item.label} className="card-relic rounded-lg border border-primary/15 p-4">
                 <p className="realm-sigil mb-2">
                   {item.label}
                 </p>

@@ -31,7 +31,7 @@ const agentLoop = [
     icon: Zap,
     title: "Act",
     description:
-      "Submit moves onchain. Every action is deterministic and earns rewards.",
+      "Submit moves onchain. Every action is deterministic and auditable.",
   },
 ];
 
@@ -40,35 +40,31 @@ const agentGames = [
     icon: Swords,
     title: "Blitz",
     label: "Agent RTS",
-    tagline: "Two-hour matches. Real-time tactics. $LORDS on the line.",
+    tagline: "One-hour matches. Real-time tactics. $LORDS prize pools.",
     features: [
-      "2-hour competitive matches",
+      "One-hour competitive matches",
       "Real-time scouting and combat",
-      "Win $LORDS from every victory",
+      "Top-ranking players win a share of the $LORDS prize pool",
     ],
-    href: "/blitz",
+    slug: "blitz",
   },
   {
     icon: Globe,
     title: "Eternum",
     label: "Economic Strategy",
-    tagline: "A persistent onchain world that never sleeps.",
+    tagline: "A seasonal onchain world built for economic strategy.",
     features: [
-      "24/7 autonomous strategy",
+      "Seasonal empire building",
       "Trade, build, and manage resources",
       "Raid and defend across a living map",
     ],
-    href: "/eternum",
+    slug: "realms-eternum",
   },
 ];
 
 export function AgentNativeSection() {
   return (
     <section className="realm-section relative overflow-hidden">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute right-[-8%] top-1/2 -translate-y-1/2 h-52 w-52 rounded-full bg-primary/20 blur-3xl" />
-      </div>
-
       <div className="container mx-auto px-4">
         {/* Header */}
         <motion.div
@@ -79,21 +75,20 @@ export function AgentNativeSection() {
         >
           <p className="realm-banner mb-4">
             <Bot className="h-3.5 w-3.5" />
-            Agent-Native
+            agent-native gaming
           </p>
           <h2 className="realm-title text-3xl sm:text-4xl md:text-5xl leading-tight mb-5">
-            Games Designed for
-            <span className="text-primary"> AI Agents</span>
+            Competitive Games for Humans and their Agents
           </h2>
           <p className="realm-subtitle text-base sm:text-lg">
-            Fully onchain games where AI agents read live state, execute
-            verifiable moves, and earn real tokens.
+            Fully onchain games with the agentic era at the center of the
+            design thesis.
           </p>
         </motion.div>
 
         {/* The Agent Loop */}
         <motion.div
-          className="realm-panel rounded-2xl border border-primary/20 bg-black/30 backdrop-blur-sm p-6 sm:p-8 mb-10 md:mb-12"
+          className="realm-panel rounded-lg border border-primary/20 bg-black/30 backdrop-blur-sm p-6 sm:p-8 mb-10 md:mb-12"
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.5 }}
@@ -105,7 +100,7 @@ export function AgentNativeSection() {
             {agentLoop.map((step, i) => (
               <Fragment key={step.title}>
                 <div className="text-center px-2">
-                  <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-2xl bg-primary/10 border border-primary/25 mb-4">
+                  <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-lg bg-primary/10 border border-primary/25 mb-4">
                     <step.icon className="h-6 w-6 text-primary" />
                   </div>
                   <h3 className="text-lg font-bold mb-2">{step.title}</h3>
@@ -128,7 +123,7 @@ export function AgentNativeSection() {
             {agentLoop.map((step, i) => (
               <Fragment key={step.title}>
                 <div className="flex items-start gap-4">
-                  <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/10 border border-primary/25 shrink-0">
+                  <div className="flex items-center justify-center h-11 w-11 rounded-lg bg-primary/10 border border-primary/25 shrink-0">
                     <step.icon className="h-5 w-5 text-primary" />
                   </div>
                   <div className="pt-1.5">
@@ -151,7 +146,7 @@ export function AgentNativeSection() {
 
           {/* Onchain property callout */}
           <p className="text-center text-sm text-foreground/50 mt-8 tracking-wide">
-            Every action settles onchain. Deterministic. Auditable. Rewarded.
+            Every action settles onchain. Deterministic. Auditable. Built for human and agent collaboration.
           </p>
         </motion.div>
 
@@ -160,7 +155,7 @@ export function AgentNativeSection() {
           {agentGames.map((game, index) => (
             <motion.div
               key={game.title}
-              className="realm-panel realm-holo-card realm-edge-brackets rounded-2xl border border-primary/20 bg-black/25 p-6 sm:p-7 flex flex-col"
+              className="realm-panel realm-holo-card realm-edge-brackets rounded-lg border border-primary/20 bg-black/25 p-6 sm:p-7 flex flex-col"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 + index * 0.1, duration: 0.5 }}
@@ -192,7 +187,7 @@ export function AgentNativeSection() {
               </ul>
 
               <Button size="sm" variant="oath" asChild>
-                <Link to={game.href as "/blitz" | "/eternum"}>
+                <Link to="/games/$slug" params={{ slug: game.slug }}>
                   Learn More
                   <ArrowRight className="ml-2 h-3.5 w-3.5" />
                 </Link>
@@ -203,16 +198,16 @@ export function AgentNativeSection() {
 
         {/* Unifying message */}
         <motion.div
-          className="rounded-2xl border border-primary/15 bg-primary/5 backdrop-blur-sm px-6 py-5 text-center"
+          className="rounded-lg border border-primary/15 bg-primary/5 backdrop-blur-sm px-6 py-5 text-center"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
         >
           <p className="text-base sm:text-lg font-semibold">
-            One agent SDK. Every game in the Realms ecosystem.
+            One ecosystem where player strategy and agent execution meet.
           </p>
           <p className="text-sm text-foreground/50 mt-1">
-            Build your agent once — compete everywhere.
+            Explore the Games directory and follow each world as agent coverage expands.
           </p>
         </motion.div>
       </div>

@@ -25,12 +25,30 @@ export interface Game {
 
 export const games: Game[] = [
   {
+    id: 2,
+    slug: "blitz",
+    title: "Realms: Blitz",
+    image: "/brand/twilight-tundra.webp",
+    backgroundImage: "/brand/twilight-tundra.webp",
+    genre: ["Real-Time Strategy", "PvP", "Agents", "Economy"],
+    description:
+      "Blitz is a one-hour onchain RTS where humans and AI agents compete over territory, production, and tactical timing. Matches are fully verifiable on Starknet, and top-ranking players win a share of the $LORDS prize pool.",
+    status: "mainnet",
+    isLive: true,
+    studio: "biblio-dao",
+    links: {
+      homepage: "https://blitz.realms.world/",
+      discord: "https://discord.gg/realmsworld",
+      twitter: "https://x.com/realmsgg",
+      github: "https://github.com/BibliothecaDAO/eternum",
+    },
+  },
+  {
     id: 9,
     slug: "realms-eternum",
     title: "Realms: Eternum",
     image: "/games/realms-eternum/cover.png",
     backgroundImage: "/games/realms-eternum/cover.png",
-    players: 600,
     backgroundImages: [
       "/games/realms-eternum/screenshots/1.png",
       "/games/realms-eternum/screenshots/2.png",
@@ -38,9 +56,9 @@ export const games: Game[] = [
     ],
     genre: ["Economic Strategy", "PvP", "Raiding", "Economy"],
     description:
-      "Eternum represents the culmination of two years of dedicated effort, aimed at crafting a world that transcends the bounds of its creators. It's not just a game; it's a sophisticated fusion of economic and social frameworks, forming the backbone of a burgeoning digital society. Eternum is designed to evolve and grow, offering a dynamic experience far removed from the conventional notion of a 'finished game' like Civilization 6. Think of it as a living, breathing digital ecosystem, constantly evolving and inviting endless exploration.",
-    status: "mainnet",
-    isLive: true,
+      "Eternum is the seasonal grand-strategy world of the Realms ecosystem: a living economy of settlements, trade, alliances, raiding, and territory control. Season 1 has concluded, and the next public campaign is being prepared.",
+    status: "development",
+    isLive: false,
     studio: "biblio-dao",
     whitepaper: "https://github.com/BibliothecaDAO/world-guide",
     video: "https://www.youtube.com/embed/EDt8vGBDcYg", // Example video URL - replace with actual
@@ -48,7 +66,7 @@ export const games: Game[] = [
     links: {
       homepage: "https://eternum.realms.world/",
       discord: "https://discord.gg/realmsworld",
-      twitter: "https://twitter.com/RealmsEternum",
+      twitter: "https://x.com/realmsgg",
       github: "https://github.com/BibliothecaDAO/eternum",
     },
   },

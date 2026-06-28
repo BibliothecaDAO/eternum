@@ -29,7 +29,7 @@ export function PartnersSection() {
                 href={partner.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex flex-col items-center gap-3 rounded-xl border border-primary/20 bg-black/30 p-5 sm:p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/55"
+                className="group flex flex-col items-center gap-3 rounded-lg border border-primary/20 bg-black/30 p-5 sm:p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/55"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 + index * 0.07, duration: 0.4 }}

@@ -37,8 +37,13 @@ function EconomicsSectionContent() {
   const marketPercentage = (100 - parseFloat(treasuryPercentage)).toFixed(1);
 
   const totalTreasuryBalance = treasuryBalance
-    ? Object.values(treasuryBalance).reduce((sum, t) => sum + t.usdValue, 0)
+    ? Object.values(treasuryBalance).reduce(
+        (sum, asset) => sum + (asset.usdValue ?? 0),
+        0,
+      )
     : 0;
+
+  const parsedLordsPrice = Number.parseFloat(lordsInfo?.price?.rate ?? "");
 
   const treasuryData = [
     {
@@ -86,19 +91,19 @@ function EconomicsSectionContent() {
   const heroMetrics = [
     {
       label: "LORDS Price",
-      value: lordsInfo?.price?.rate
-        ? `$${parseFloat(lordsInfo.price.rate).toFixed(4)}`
+      value: Number.isFinite(parsedLordsPrice)
+        ? `$${parsedLordsPrice.toFixed(4)}`
         : "—",
       highlight: false,
     },
     {
       label: "Staking APY",
-      value: currentAPY ? `${currentAPY.toFixed(1)}%` : "—",
+      value: typeof currentAPY === "number" ? `${currentAPY.toFixed(1)}%` : "—",
       highlight: true,
     },
     {
       label: "Total Value Locked",
-      value: tvl
+      value: typeof tvl === "number"
         ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
         : "—",
       highlight: false,
@@ -132,7 +137,7 @@ function EconomicsSectionContent() {
 
         {/* Hero Metrics */}
         <motion.div
-          className="grid grid-cols-3 rounded-2xl border border-primary/20 bg-black/30 backdrop-blur-sm overflow-hidden"
+          className="grid grid-cols-3 rounded-lg border border-primary/20 bg-black/30 backdrop-blur-sm overflow-hidden"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.6 }}
@@ -167,7 +172,7 @@ function EconomicsSectionContent() {
                   maximumFractionDigits: 0,
                 })
               : undefined,
-            currentAPY: currentAPY
+            currentAPY: typeof currentAPY === "number"
               ? `${currentAPY.toFixed(1)}%`
               : undefined,
           }}
@@ -175,7 +180,7 @@ function EconomicsSectionContent() {
 
         {/* Token & Treasury — full width */}
         <motion.div
-          className="realm-panel realm-edge-brackets rounded-2xl border border-primary/20 bg-black/30 backdrop-blur-sm p-5 sm:p-6"
+          className="realm-panel realm-edge-brackets rounded-lg border border-primary/20 bg-black/30 backdrop-blur-sm p-5 sm:p-6"
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
@@ -211,7 +216,7 @@ function EconomicsSectionContent() {
                 ).map((item) => (
                   <div
                     key={item.label}
-                    className="rounded-xl border border-primary/15 bg-black/40 p-3.5"
+                    className="rounded-lg border border-primary/15 bg-black/40 p-3.5"
                   >
                     <div className="flex items-center gap-1.5 mb-2">
                       <item.icon className="h-3 w-3 text-primary/60" />
@@ -296,7 +301,7 @@ function EconomicsSectionContent() {
 
         {/* Stake CTA Bar */}
         <motion.div
-          className="rounded-2xl border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent backdrop-blur-sm p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          className="rounded-lg border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent backdrop-blur-sm p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
@@ -317,7 +322,7 @@ function EconomicsSectionContent() {
           <div className="flex gap-3 shrink-0">
             <Button size="lg" variant="war" asChild>
               <a
-                href="https://staking.realms.world"
+                href="https://account.realms.world/velords"
                 target="_blank"
                 rel="noopener noreferrer"
               >

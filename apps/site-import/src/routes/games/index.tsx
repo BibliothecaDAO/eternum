@@ -13,7 +13,7 @@ export const Route = createFileRoute("/games/")({
     meta: generateMetaTags({
       title: "Games - Realms World",
       description:
-        "Explore all games in the Realms World ecosystem. Discover onchain games powered by $LORDS token.",
+        "Explore onchain games in the Realms ecosystem, including worlds built for human players, AI agents, and $LORDS-powered economies.",
       path: "/games",
     }),
   }),
@@ -70,7 +70,14 @@ function GamesPage() {
   };
 
   return (
-    <section className="realm-section realm-games-stage relative py-10 sm:py-14">
+    <section className="realm-section realm-games-stage relative overflow-hidden py-10 sm:py-14">
+      <img
+        src="/brand/twilight-tundra.webp"
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem] w-full object-cover opacity-18"
+      />
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem] bg-gradient-to-b from-black/50 via-black/72 to-transparent" />
       <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -78,7 +85,7 @@ function GamesPage() {
           transition={{ duration: 0.45 }}
           className="space-y-6 sm:space-y-8"
         >
-          <header className="realm-panel realm-grid-scan realm-games-hero rounded-2xl p-5 sm:p-7 lg:p-8">
+          <header className="realm-panel realm-grid-scan realm-games-hero rounded-lg p-5 sm:p-7 lg:p-8">
             <p className="realm-banner mb-4">War Table Directory</p>
             <div className="flex flex-wrap items-end justify-between gap-5">
               <div className="max-w-3xl">
@@ -87,8 +94,8 @@ function GamesPage() {
                 </h1>
                 <p className="mt-3 text-foreground/80 text-base sm:text-lg">
                   Survey active fronts, filter by deployment status, and move from
-                  scouting to play in one pass. This is the live command view for games
-                  shipping across the Realms ecosystem.
+                  scouting to play in one pass. This is the command view for games
+                  shipping across the Realms ecosystem, including agent-ready worlds.
                 </p>
               </div>
               <div className="flex gap-2 sm:gap-3">
@@ -98,7 +105,7 @@ function GamesPage() {
             </div>
             <div className="realm-games-metrics mt-5">
               <article className="realm-games-metric">
-                <p className="realm-sigil">Live Realms</p>
+                <p className="realm-sigil">Live Games</p>
                 <p className="mt-2 text-2xl font-semibold text-primary tabular-nums">
                   {liveGamesCount}
                 </p>
@@ -110,7 +117,7 @@ function GamesPage() {
                 </p>
               </article>
               <article className="realm-games-metric">
-                <p className="realm-sigil">Mainnet Live</p>
+                <p className="realm-sigil">Mainnet</p>
                 <p className="mt-2 text-2xl font-semibold text-primary tabular-nums">
                   {mainnetGamesCount}
                 </p>
@@ -118,7 +125,7 @@ function GamesPage() {
             </div>
           </header>
 
-          <div className="realm-panel realm-games-filterbar rounded-2xl p-4 sm:p-5">
+          <div className="realm-panel realm-games-filterbar rounded-lg p-4 sm:p-5">
             <div className="flex flex-wrap gap-3 sm:gap-4">
               <label className="inline-flex items-center gap-2 text-sm text-foreground/80">
                 <span className="realm-sigil">Status</span>
@@ -155,7 +162,7 @@ function GamesPage() {
           {featuredGame ? (
             <motion.button
               type="button"
-              className="group realm-panel realm-grid-scan realm-games-feature text-left rounded-2xl overflow-hidden"
+              className="group realm-panel realm-grid-scan realm-games-feature text-left rounded-lg overflow-hidden"
               onClick={() => navigate({ to: `/games/${featuredGame.slug}` })}
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
@@ -218,7 +225,7 @@ function GamesPage() {
                 <motion.button
                   key={game.id}
                   type="button"
-                  className="group realm-panel realm-holo-card realm-games-card text-left rounded-2xl overflow-hidden"
+                  className="group realm-panel realm-holo-card realm-games-card text-left rounded-lg overflow-hidden"
                   onClick={() => navigate({ to: `/games/${game.slug}` })}
                   initial={{ opacity: 0, y: 22 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -287,7 +294,7 @@ function GamesPage() {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="realm-panel rounded-xl p-8 text-center"
+              className="realm-panel rounded-lg p-8 text-center"
             >
               <p className="text-foreground/70">No games found matching your filters.</p>
             </motion.div>

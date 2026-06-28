@@ -79,21 +79,21 @@ export const Route = createRootRoute({
     return {
       meta: [
         {
-          title: "Realms World - Onchain Gaming Powered by $LORDS",
+          title: "Realms World - Onchain Games Powered by $LORDS",
         },
         {
           name: "description",
           content:
-            "The future of gaming is onchain. Explore games powered by $LORDS token in the Realms ecosystem.",
+            "Explore onchain games powered by $LORDS in the Realms ecosystem.",
         },
         {
           property: "og:title",
-          content: "Realms World - Onchain Gaming Powered by $LORDS",
+          content: "Realms World - Onchain Games Powered by $LORDS",
         },
         {
           property: "og:description",
           content:
-            "The future of gaming is onchain. Explore games powered by $LORDS token in the Realms ecosystem.",
+            "Explore onchain games powered by $LORDS in the Realms ecosystem.",
         },
         {
           property: "og:image",
@@ -113,12 +113,12 @@ export const Route = createRootRoute({
         },
         {
           name: "twitter:title",
-          content: "Realms World - Onchain Gaming Powered by $LORDS",
+          content: "Realms World - Onchain Games Powered by $LORDS",
         },
         {
           name: "twitter:description",
           content:
-            "The future of gaming is onchain. Explore games powered by $LORDS token in the Realms ecosystem.",
+            "Explore onchain games powered by $LORDS in the Realms ecosystem.",
         },
         {
           name: "twitter:image",
@@ -131,9 +131,6 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const location = useLocation();
-  const isBlitzRoute = location.pathname === "/blitz";
-  const isEternumRoute = location.pathname === "/eternum";
-
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [location.pathname]);
@@ -161,9 +158,7 @@ function RootComponent() {
         <TopBar />
         <div
           className={cn(
-            isBlitzRoute || isEternumRoute
-              ? "min-h-screen"
-              : "min-h-screen pt-12 sm:pt-16 md:pt-24 mx-1 sm:mx-2 md:mx-4"
+            "min-h-screen pt-12 sm:pt-16 md:pt-24 mx-1 sm:mx-2 md:mx-4"
           )}
         >
           <Outlet />

@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
-  Bot,
+  Castle,
   ChevronDown,
   Coins,
   Gamepad2,
@@ -40,21 +40,22 @@ function IntroSectionContent() {
   const { data: lordsInfo } = useQuery(lordsInfoQueryOptions());
   const { data: treasuryBalance } = useQuery(treasuryBalanceQueryOptions());
 
-  const lordsPrice = lordsInfo?.price?.rate
-    ? `$${parseFloat(lordsInfo.price.rate).toFixed(4)}`
+  const parsedLordsPrice = Number.parseFloat(lordsInfo?.price?.rate ?? "");
+  const lordsPrice = Number.isFinite(parsedLordsPrice)
+    ? `$${parsedLordsPrice.toFixed(4)}`
     : null;
 
   const totalTreasury = treasuryBalance
-    ? (treasuryBalance.LORDS.usdValue ?? 0) +
-      (treasuryBalance.ETH.usdValue ?? 0) +
-      (treasuryBalance.WETH.usdValue ?? 0) +
-      (treasuryBalance.USDC.usdValue ?? 0)
+    ? Object.values(treasuryBalance).reduce(
+        (sum, asset) => sum + (asset.usdValue ?? 0),
+        0,
+      )
     : null;
 
   const tickerStats = [
     {
       icon: Gamepad2,
-      label: "Agent-Native Games",
+      label: "Onchain Games",
       value: liveGameCount.toString(),
     },
     {
@@ -80,6 +81,13 @@ function IntroSectionContent() {
     <section className="realm-section relative min-h-[100vh] overflow-hidden flex flex-col items-center justify-center">
       {/* Agent consciousness background */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
+        <img
+          src="/brand/castle.webp"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover opacity-45 saturate-[0.9]"
+        />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,9,12,0.38),rgba(9,9,12,0.78)),radial-gradient(circle_at_50%_42%,rgba(246,194,122,0.12),transparent_46%)]" />
         <Suspense fallback={null}>
           <RealmSceneBackground />
         </Suspense>
@@ -87,7 +95,7 @@ function IntroSectionContent() {
 
       {/* Centered hero content */}
       <div className="container mx-auto px-4 py-24 sm:py-28 md:py-32">
-        <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
+        <div className="flex flex-col items-center text-center max-w-5xl mx-auto">
           {/* Banner */}
           <motion.p
             className="realm-banner mb-8"
@@ -95,39 +103,31 @@ function IntroSectionContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
           >
-            <Bot className="h-3.5 w-3.5" />
-            Agent-Native Gaming
+            <Castle className="h-3.5 w-3.5" />
+            WELCOME TO THE REALMS
           </motion.p>
 
-          {/* Title line 1 */}
+          {/* Title */}
           <motion.h1
-            className="realm-title text-5xl sm:text-6xl md:text-8xl lg:text-9xl leading-[0.88] mb-2 hero-title-glow"
+            className="realm-title hero-title-shimmer text-5xl sm:text-6xl md:text-8xl lg:text-9xl leading-[0.9] mb-8"
             initial={{ opacity: 0, y: 30, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: 0.4, duration: 0.9, ease: "easeOut" }}
           >
-            Agents Play.
+            The New Frontier of Gaming
           </motion.h1>
-
-          {/* Title line 2 - shimmer */}
-          <motion.span
-            className="realm-title hero-title-shimmer text-5xl sm:text-6xl md:text-8xl lg:text-9xl leading-[0.88] mb-8 block"
-            initial={{ opacity: 0, y: 30, scale: 0.96 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            transition={{ delay: 0.7, duration: 0.9, ease: "easeOut" }}
-          >
-            You Earn.
-          </motion.span>
 
           {/* Subtitle */}
           <motion.p
-            className="realm-subtitle text-base sm:text-lg md:text-xl max-w-2xl mb-10"
+            className="realm-subtitle text-base sm:text-lg md:text-xl max-w-3xl mb-10"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.1, duration: 0.7, ease: "easeOut" }}
           >
-            AI agents compete across onchain strategy games in the Realms
-            ecosystem. Every move is verified. Every win earns $LORDS.
+            The AI era is here and fundamentally changing gaming as we know it.
+            The Realms Ecosystem is building for the new age, one where AI and
+            humans can build, strategize, collaborate, and compete. Together.
+            Onchain. Forever.
           </motion.p>
 
           {/* CTAs */}
@@ -143,12 +143,14 @@ function IntroSectionContent() {
               className="shadow-lg shadow-primary/20 text-base px-8"
               asChild
             >
-              <Link to="/blitz">
-                Play Blitz <ArrowRight className="ml-2 h-4 w-4" />
+              <Link to="/games">
+                Explore Games <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
             <Button size="lg" variant="oath" className="text-base px-8" asChild>
-              <a href="#games">Explore Games</a>
+              <a href="https://account.realms.world/velords" target="_blank" rel="noopener noreferrer">
+                Stake veLORDS
+              </a>
             </Button>
           </motion.div>
 
@@ -163,7 +165,7 @@ function IntroSectionContent() {
               {tickerStats.map((stat, index) => (
                 <motion.div
                   key={stat.label}
-                  className="realm-panel realm-holo-card flex flex-col items-center gap-1.5 rounded-xl border border-primary/20 bg-black/30 backdrop-blur-sm px-3 py-3"
+                  className="realm-panel realm-holo-card flex flex-col items-center gap-1.5 rounded-lg border border-primary/20 bg-black/30 backdrop-blur-sm px-3 py-3"
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{

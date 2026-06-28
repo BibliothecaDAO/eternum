@@ -31,7 +31,7 @@ const PartnersSection = lazy(() =>
 
 function SectionFallback() {
   return (
-    <div className="min-h-[220px] rounded-xl border border-border/40 bg-muted/20 animate-pulse" />
+    <div className="min-h-[220px] rounded-lg border border-border/40 bg-muted/20 animate-pulse" />
   );
 }
 
@@ -81,9 +81,9 @@ export const Route = createFileRoute("/")({
   component: HomePage,
   head: () => ({
     meta: generateMetaTags({
-      title: "Realms World - Agent-Native Onchain Gaming",
+      title: "Realms World - Onchain Games for Humans and Agents",
       description:
-        "AI agents compete across onchain strategy games. Every move verified on Starknet. Every win earns $LORDS.",
+        "Explore onchain strategy games where humans and AI agents compete through verifiable rules and $LORDS-powered economies.",
       path: "/",
     }),
   }),

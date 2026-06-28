@@ -25,12 +25,12 @@ const blitzFeatures = [
   {
     icon: Swords,
     label: "Real-Time Strategy",
-    detail: "Two-hour matches with live tactical decisions",
+    detail: "One-hour matches with live tactical decisions",
   },
   {
     icon: Bot,
     label: "Agent-Driven",
-    detail: "AI agents execute your tactics onchain",
+    detail: "Humans and agents execute tactics onchain",
   },
   {
     icon: Shield,
@@ -40,17 +40,13 @@ const blitzFeatures = [
   {
     icon: Coins,
     label: "$LORDS Rewards",
-    detail: "Earn real tokens as you compete",
+    detail: "Top-ranking players win a prize-pool share",
   },
 ];
 
 export function EcosystemAtlasSection() {
   return (
     <section className="realm-section relative">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute left-[15%] top-0 h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
-      </div>
-
       <div className="container mx-auto px-4">
         {/* Section header */}
         <motion.div
@@ -62,16 +58,16 @@ export function EcosystemAtlasSection() {
           <div className="max-w-2xl">
             <p className="realm-banner mb-3">Games</p>
             <h2 className="realm-title text-3xl sm:text-4xl md:text-5xl mb-4">
-              Agent-Native Worlds
+              Realms Ecosystem Games
             </h2>
             <p className="realm-subtitle text-base sm:text-lg">
-              Onchain games built for AI agents. Compete, earn $LORDS, and
-              verify every move.
+              Onchain games built for players, builders, and AI agents.
+              Compete through verifiable rules and transparent economies.
             </p>
           </div>
           <Link
             to="/games"
-            className="inline-flex items-center justify-center rounded-xl border border-primary/30 bg-black/30 px-4 py-3 text-sm uppercase tracking-[0.14em] text-primary/90 hover:border-primary/55 transition-colors realm-panel shrink-0"
+            className="inline-flex items-center justify-center rounded-lg border border-primary/30 bg-black/30 px-4 py-3 text-sm uppercase tracking-[0.14em] text-primary/90 hover:border-primary/55 transition-colors realm-panel shrink-0"
           >
             All Games
             <ArrowRight className="ml-2 h-4 w-4" />
@@ -80,23 +76,18 @@ export function EcosystemAtlasSection() {
 
         {/* ── Blitz Flagship Card ── */}
         <motion.div
-          className="group relative overflow-hidden rounded-2xl border border-primary/30 bg-black/40 mb-12"
+          className="group relative overflow-hidden rounded-lg border border-primary/30 bg-black/40 mb-12"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.7 }}
         >
-          {/* Video background */}
-          <video
-            className="absolute inset-0 h-full w-full object-cover opacity-50 mix-blend-screen saturate-150 scale-[1.02] transition-transform duration-700 group-hover:scale-[1.05]"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            poster="/og.jpg"
-          >
-            <source src="/videos/blitz-stub.mp4" type="video/mp4" />
-          </video>
+          {/* Background art */}
+          <img
+            src="/brand/twilight-tundra.webp"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover opacity-58 saturate-[0.95] contrast-110 scale-[1.02] transition-transform duration-700 group-hover:scale-[1.05]"
+          />
 
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-black/20" />
@@ -119,9 +110,9 @@ export function EcosystemAtlasSection() {
                   Blitz
                 </h3>
                 <p className="text-base sm:text-lg text-foreground/85 max-w-xl mb-6 leading-relaxed">
-                  A fast-paced onchain RTS where AI agents execute your tactics
-                  in real-time. Two-hour matches, fully verified on Starknet,
-                  with real $LORDS rewards for every win.
+                  A fast-paced onchain RTS where humans and AI agents execute
+                  tactics in real time. One-hour matches are fully verified on
+                  Starknet, with top-ranking players winning a share of the $LORDS prize pool.
                 </p>
 
                 <div className="flex flex-wrap gap-3 mb-6">
@@ -137,7 +128,7 @@ export function EcosystemAtlasSection() {
                     </a>
                   </Button>
                   <Button size="lg" variant="oath" asChild>
-                    <Link to="/blitz">Learn More</Link>
+                    <Link to="/games/$slug" params={{ slug: "blitz" }}>Learn More</Link>
                   </Button>
                 </div>
               </motion.div>
@@ -148,7 +139,7 @@ export function EcosystemAtlasSection() {
               {blitzFeatures.map((feature, index) => (
                 <motion.div
                   key={feature.label}
-                  className="flex items-center gap-3 rounded-xl border border-primary/20 bg-black/50 backdrop-blur-sm px-4 py-3"
+                  className="flex items-center gap-3 rounded-lg border border-primary/20 bg-black/50 backdrop-blur-sm px-4 py-3"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.5 + index * 0.1, duration: 0.4 }}
@@ -192,7 +183,7 @@ export function EcosystemAtlasSection() {
         >
           <p className="flex items-center gap-2 text-sm text-foreground/80">
             <Users className="h-3.5 w-3.5" />
-            {totalPlayers.toLocaleString()}+ players across {liveCount} live
+            {totalPlayers.toLocaleString()}+ tracked players across {liveCount} live
             worlds built by {studioCount} studios
           </p>
           <p className="realm-banner">Ecosystem</p>
@@ -203,7 +194,7 @@ export function EcosystemAtlasSection() {
           {sortedGames.map((game, index) => (
             <motion.article
               key={game.slug}
-              className={`group relative overflow-hidden rounded-2xl border border-primary/20 bg-black/25 backdrop-blur-sm aspect-[16/10] realm-panel realm-holo-card ${!game.isLive ? "opacity-60" : ""}`}
+              className={`group relative overflow-hidden rounded-lg border border-primary/20 bg-black/25 backdrop-blur-sm aspect-[16/10] realm-panel realm-holo-card ${!game.isLive ? "opacity-60" : ""}`}
               initial={{ opacity: 0, y: 26 }}
               animate={{ opacity: game.isLive ? 1 : 0.6, y: 0 }}
               transition={{ delay: 0.35 + 0.06 * index, duration: 0.45 }}

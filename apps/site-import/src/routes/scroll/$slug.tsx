@@ -55,7 +55,7 @@ function ScrollPostPage() {
         transition={{ duration: 0.45 }}
       >
         <div className="mx-auto max-w-5xl space-y-6 sm:space-y-8">
-          <header className="realm-panel realm-grid-scan scroll-detail-hero rounded-2xl p-5 sm:p-7">
+          <header className="realm-panel realm-grid-scan scroll-detail-hero rounded-lg p-5 sm:p-7">
             <Link to="/scroll" className="scroll-detail-back inline-flex items-center">
               Back to Scroll
             </Link>
@@ -99,7 +99,7 @@ function ScrollPostPage() {
             <div className="scroll-hero-eyebrow">Scroll Article</div>
           </div>
 
-          <section className="realm-panel scroll-detail-body rounded-2xl p-5 sm:p-8">
+          <section className="realm-panel scroll-detail-body rounded-lg p-5 sm:p-8">
             <div
               className="scroll-content"
               dangerouslySetInnerHTML={{ __html: post.html }}
@@ -111,7 +111,7 @@ function ScrollPostPage() {
               <Link
                 to="/scroll/$slug"
                 params={{ slug: newer.slug }}
-                className="realm-panel scroll-detail-neighbor-card block rounded-xl p-4"
+                className="realm-panel scroll-detail-neighbor-card block rounded-lg p-4"
               >
                 <p className="text-xs uppercase tracking-[0.13em] text-foreground/55">
                   Newer Entry
@@ -119,7 +119,7 @@ function ScrollPostPage() {
                 <p className="mt-2 text-lg font-semibold text-foreground/90">{newer.title}</p>
               </Link>
             ) : (
-              <div className="realm-panel scroll-detail-neighbor-card rounded-xl p-4 opacity-55">
+              <div className="realm-panel scroll-detail-neighbor-card rounded-lg p-4 opacity-55">
                 <p className="text-xs uppercase tracking-[0.13em] text-foreground/55">
                   Newer Entry
                 </p>
@@ -131,7 +131,7 @@ function ScrollPostPage() {
               <Link
                 to="/scroll/$slug"
                 params={{ slug: older.slug }}
-                className="realm-panel scroll-detail-neighbor-card block rounded-xl p-4"
+                className="realm-panel scroll-detail-neighbor-card block rounded-lg p-4"
               >
                 <p className="text-xs uppercase tracking-[0.13em] text-foreground/55">
                   Older Entry
@@ -139,7 +139,7 @@ function ScrollPostPage() {
                 <p className="mt-2 text-lg font-semibold text-foreground/90">{older.title}</p>
               </Link>
             ) : (
-              <div className="realm-panel scroll-detail-neighbor-card rounded-xl p-4 opacity-55">
+              <div className="realm-panel scroll-detail-neighbor-card rounded-lg p-4 opacity-55">
                 <p className="text-xs uppercase tracking-[0.13em] text-foreground/55">
                   Older Entry
                 </p>
@@ -149,7 +149,7 @@ function ScrollPostPage() {
           </footer>
 
           {similarPosts.length > 0 ? (
-            <section className="realm-panel scroll-detail-similar rounded-2xl p-5 sm:p-6">
+            <section className="realm-panel scroll-detail-similar rounded-lg p-5 sm:p-6">
               <h2 className="realm-title text-2xl font-semibold mb-4">Similar Scrolls</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {similarPosts.map((candidate) => (

@@ -13,7 +13,6 @@ import {
   TrendingUp,
   ExternalLink,
   Github,
-  ShoppingBag,
 } from "lucide-react";
 import { games } from "@/data/games";
 import { Link } from "@tanstack/react-router";
@@ -52,7 +51,7 @@ function DeferredApyValue() {
     });
   }, [ApyValue, shouldLoad]);
 
-  return <span ref={wrapperRef}>{ApyValue ? <ApyValue /> : "12.5%"}</span>;
+  return <span ref={wrapperRef}>{ApyValue ? <ApyValue /> : "—"}</span>;
 }
 
 export function FooterSection() {
@@ -63,20 +62,22 @@ export function FooterSection() {
   const { data: treasuryBalance } = useQuery(treasuryBalanceQueryOptions());
 
   const totalTreasuryValue = treasuryBalance
-    ? treasuryBalance.LORDS.usdValue +
-      treasuryBalance.ETH.usdValue +
-      treasuryBalance.WETH.usdValue +
-      treasuryBalance.USDC.usdValue
+    ? Object.values(treasuryBalance).reduce(
+        (sum, asset) => sum + (asset.usdValue ?? 0),
+        0,
+      )
     : 0;
+
+  const parsedMarketCap = Number.parseFloat(lordsInfo?.price?.marketCapUsd ?? "");
 
   const keyMetrics = [
     {
       icon: Coins,
       label: "Market Cap",
       sublabel: "LORDS",
-      value: lordsInfo?.price?.marketCapUsd
-        ? `$${(parseFloat(lordsInfo.price.marketCapUsd) / 1000000).toFixed(1)}M`
-        : "...",
+      value: Number.isFinite(parsedMarketCap)
+        ? `$${(parsedMarketCap / 1_000_000).toFixed(1)}M`
+        : "—",
     },
     {
       icon: TrendingUp,
@@ -89,8 +90,8 @@ export function FooterSection() {
       label: "DAO Treasury",
       sublabel: "Multi-asset",
       value: totalTreasuryValue
-        ? `$${(totalTreasuryValue / 1000000).toFixed(1)}M`
-        : "...",
+        ? `$${(totalTreasuryValue / 1_000_000).toFixed(1)}M`
+        : "—",
     },
     {
       icon: Gamepad2,
@@ -134,11 +135,6 @@ export function FooterSection() {
     {
       title: "Ecosystem",
       links: [
-        {
-          label: "Realms Shop",
-          href: "https://shop.realms.world",
-          icon: ShoppingBag,
-        },
         {
           label: "Frontinus House",
           href: "https://snapshot.box/#/sn:0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62",

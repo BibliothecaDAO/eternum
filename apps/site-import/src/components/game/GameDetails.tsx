@@ -177,7 +177,7 @@ export function GameDetails({ game }: { game: Game }) {
 
   return (
     <>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl rounded-2xl realm-games-detail-shell">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl rounded-lg realm-games-detail-shell">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -194,7 +194,7 @@ export function GameDetails({ game }: { game: Game }) {
             Back to Games
           </Button>
 
-          <section className="realm-panel realm-grid-scan realm-games-detail-hero rounded-2xl p-5 sm:p-6 lg:p-7">
+          <section className="realm-panel realm-grid-scan realm-games-detail-hero rounded-lg p-5 sm:p-6 lg:p-7">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
               <div className="space-y-5">
                 <div>
@@ -226,7 +226,7 @@ export function GameDetails({ game }: { game: Game }) {
                 </p>
 
                 <div className="flex flex-wrap gap-3">
-                  {game.links?.homepage ? (
+                  {game.isLive && game.links?.homepage ? (
                     <Button
                       size="lg"
                       variant="rune"
@@ -273,7 +273,7 @@ export function GameDetails({ game }: { game: Game }) {
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.15 }}
-                className="realm-games-detail-media relative aspect-video overflow-hidden rounded-xl border border-primary/25"
+                className="realm-games-detail-media relative aspect-video overflow-hidden rounded-lg border border-primary/25"
               >
                 {game.video ? (
                   <iframe
@@ -300,7 +300,7 @@ export function GameDetails({ game }: { game: Game }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <article className="realm-panel realm-games-detail-stat rounded-xl p-4">
+            <article className="realm-panel realm-games-detail-stat rounded-lg p-4">
               <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
                 <Building className="h-4 w-4" />
                 Studio
@@ -309,7 +309,7 @@ export function GameDetails({ game }: { game: Game }) {
             </article>
 
             {game.players ? (
-              <article className="realm-panel realm-games-detail-stat rounded-xl p-4">
+              <article className="realm-panel realm-games-detail-stat rounded-lg p-4">
                 <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
                   <Users className="h-4 w-4" />
                   Active Players
@@ -321,7 +321,7 @@ export function GameDetails({ game }: { game: Game }) {
             ) : null}
 
             {game.tvl ? (
-              <article className="realm-panel realm-games-detail-stat rounded-xl p-4">
+              <article className="realm-panel realm-games-detail-stat rounded-lg p-4">
                 <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
                   <DollarSign className="h-4 w-4" />
                   Total Value Locked
@@ -332,7 +332,7 @@ export function GameDetails({ game }: { game: Game }) {
               </article>
             ) : null}
 
-            <article className="realm-panel realm-games-detail-stat rounded-xl p-4">
+            <article className="realm-panel realm-games-detail-stat rounded-lg p-4">
               <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
                 <Gamepad2 className="h-4 w-4" />
                 Game Status
@@ -351,7 +351,7 @@ export function GameDetails({ game }: { game: Game }) {
 
           {game.backgroundImages && game.backgroundImages.length > 0 ? (
             <motion.section
-              className="realm-panel realm-games-detail-gallery rounded-2xl p-5 sm:p-6"
+              className="realm-panel realm-games-detail-gallery rounded-lg p-5 sm:p-6"
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
@@ -392,7 +392,7 @@ export function GameDetails({ game }: { game: Game }) {
 
           {game.links && Object.keys(game.links).length > 0 ? (
             <motion.section
-              className="realm-panel realm-games-detail-links rounded-2xl p-5 sm:p-6"
+              className="realm-panel realm-games-detail-links rounded-lg p-5 sm:p-6"
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}

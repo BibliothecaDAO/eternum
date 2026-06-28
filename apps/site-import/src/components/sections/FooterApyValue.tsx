@@ -3,7 +3,7 @@ import { useVelords } from "@/hooks/use-velords";
 
 function FooterApyValueContent() {
   const { currentAPY } = useVelords();
-  return <>{currentAPY ? `${currentAPY.toFixed(2)}%` : "12.5%"}</>;
+  return <>{typeof currentAPY === "number" ? `${currentAPY.toFixed(2)}%` : "—"}</>;
 }
 
 export function FooterApyValue() {

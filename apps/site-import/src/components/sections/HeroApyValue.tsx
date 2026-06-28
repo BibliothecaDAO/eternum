@@ -3,7 +3,7 @@ import { useVelords } from "@/hooks/use-velords";
 
 function HeroApyValueContent() {
   const { currentAPY } = useVelords();
-  return <>{currentAPY ? `${currentAPY.toFixed(2)}%` : "—"}</>;
+  return <>{typeof currentAPY === "number" ? `${currentAPY.toFixed(2)}%` : "—"}</>;
 }
 
 export function HeroApyValue() {

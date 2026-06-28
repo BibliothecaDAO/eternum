@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link, useLocation } from "@tanstack/react-router";
@@ -8,9 +8,10 @@ import {
   Bot,
   Coins,
   Compass,
-  Handshake,
-  Menu,
   Github,
+  Handshake,
+  Home,
+  Menu,
   type LucideIcon,
 } from "lucide-react";
 import {
@@ -22,7 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 const homeSections = [
-  { id: "hero", label: "Home", href: "#" },
+  { id: "hero", label: "Welcome", href: "#" },
   { id: "agent-native", label: "Agents", href: "#agent-native" },
   { id: "games", label: "Games", href: "#games" },
   { id: "economics", label: "Economics", href: "#economics" },
@@ -30,30 +31,12 @@ const homeSections = [
 ];
 
 const railIcons: Record<string, LucideIcon> = {
+  hero: Home,
   "agent-native": Bot,
   games: Compass,
   economics: Coins,
   partners: Handshake,
 };
-
-function DeferredHeaderApyValue() {
-  const [ApyValue, setApyValue] = useState<ComponentType | null>(null);
-
-  useEffect(() => {
-    let mounted = true;
-
-    import("@/components/sections/FooterApyValue").then((module) => {
-      if (!mounted) return;
-      setApyValue(() => module.FooterApyValue);
-    });
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  return <>{ApyValue ? <ApyValue /> : "12.5%"}</>;
-}
 
 export function TopBar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -79,12 +62,9 @@ export function TopBar() {
 
   const pageSections = useMemo(
     () => (location.pathname === "/" ? homeSections : []),
-    [location.pathname]
+    [location.pathname],
   );
-  const railSections = useMemo(
-    () => pageSections.filter((section) => section.id !== "hero"),
-    [pageSections]
-  );
+  const railSections = pageSections;
 
   const scheduleActiveSection = useCallback(
     (nextSection: string, immediate = false) => {
@@ -103,7 +83,7 @@ export function TopBar() {
         activeSectionTimeoutRef.current = null;
       }, 95);
     },
-    []
+    [],
   );
 
   const scheduleRailExpanded = useCallback((nextExpanded: boolean) => {
@@ -147,7 +127,7 @@ export function TopBar() {
           .sort(
             (a, b) =>
               b.intersectionRatio - a.intersectionRatio ||
-              a.boundingClientRect.top - b.boundingClientRect.top
+              a.boundingClientRect.top - b.boundingClientRect.top,
           );
 
         if (visibleEntries.length === 0) {
@@ -163,7 +143,7 @@ export function TopBar() {
       {
         rootMargin: "-24% 0px -52% 0px",
         threshold: [0.15, 0.35, 0.55, 0.75],
-      }
+      },
     );
 
     sectionsToObserve.forEach((section) => observer.observe(section));
@@ -193,20 +173,18 @@ export function TopBar() {
   };
 
   return (
-    <motion.header
-      className="fixed top-0 left-0 right-0 z-50"
-    >
+    <motion.header className="fixed top-0 left-0 right-0 z-50">
       <div
         className={cn(
           "transition-all duration-300",
           isScrolled
             ? "realm-header-shell border-b border-primary/25 bg-black/45 backdrop-blur-xl supports-[backdrop-filter]:bg-black/35"
-            : "bg-transparent border-b border-transparent"
+            : "bg-transparent border-b border-transparent",
         )}
       >
         <div className={cn("transition-all duration-300", isScrolled ? "py-2" : "py-3.5 sm:py-4")}>
           <div className="container mx-auto px-3 sm:px-4">
-            <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-4">
               <button
                 className="flex items-center gap-2 sm:gap-3 text-left"
                 onClick={handleTitleClick}
@@ -217,58 +195,50 @@ export function TopBar() {
                   alt="Realms.World"
                   className={cn(
                     "transition-all duration-300",
-                    isScrolled ? "w-10 sm:w-11" : "w-11 sm:w-13"
+                    isScrolled ? "w-10 sm:w-11" : "w-11 sm:w-13",
                   )}
                 />
               </button>
 
-              <nav className="hidden xl:flex items-center gap-3">
+              <nav className="hidden lg:flex items-center justify-center gap-5 xl:gap-7">
+                <Link
+                  to="/"
+                  className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
+                  activeProps={{ className: "text-primary" }}
+                >
+                  Home
+                </Link>
                 <Link
                   to="/games"
                   className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
-                  activeProps={{
-                    className: "text-primary",
-                  }}
+                  activeProps={{ className: "text-primary" }}
                 >
                   Games
                 </Link>
                 <Link
-                  to="/eternum"
-                  className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
-                  activeProps={{
-                    className: "text-primary",
-                  }}
-                >
-                  Eternum
-                </Link>
-                <Link
-                  to="/blitz"
-                  className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
-                  activeProps={{
-                    className: "text-primary",
-                  }}
-                >
-                  Blitz
-                </Link>
-                <Link
                   to="/scroll"
                   className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
-                  activeProps={{
-                    className: "text-primary",
-                  }}
+                  activeProps={{ className: "text-primary" }}
                 >
                   Scroll
                 </Link>
+                <a
+                  href="https://account.realms.world/velords"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
+                >
+                  veLORDS
+                </a>
               </nav>
 
-              <div className="flex items-center gap-2 sm:gap-3">
-                {/* Mobile nav menu — visible below xl */}
+              <div className="flex items-center justify-end gap-2 sm:gap-3">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="rune"
                       size="sm"
-                      className="xl:hidden px-2"
+                      className="lg:hidden px-2"
                       aria-label="Open navigation menu"
                     >
                       <Menu className="h-4 w-4" />
@@ -276,16 +246,18 @@ export function TopBar() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52">
                     <DropdownMenuItem asChild>
+                      <Link to="/" className="w-full">Home</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
                       <Link to="/games" className="w-full">Games</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/eternum" className="w-full">Eternum</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/blitz" className="w-full">Blitz</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
                       <Link to="/scroll" className="w-full">Scroll</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <a href="https://account.realms.world/velords" target="_blank" rel="noopener noreferrer" className="w-full">
+                        veLORDS
+                      </a>
                     </DropdownMenuItem>
 
                     {pageSections.length > 0 && (
@@ -307,14 +279,8 @@ export function TopBar() {
 
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <a href="https://account.realms.world" target="_blank" rel="noopener noreferrer" className="w-full">
-                        Account
-                      </a>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
                       <a href="https://x.com/LootRealms" target="_blank" rel="noopener noreferrer" className="w-full">
-                        Twitter
+                        X / Twitter
                       </a>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
@@ -330,14 +296,13 @@ export function TopBar() {
                   </DropdownMenuContent>
                 </DropdownMenu>
 
-                {/* Social links — desktop only (in mobile menu above) */}
-                <div className="hidden xl:flex items-center gap-1">
+                <div className="hidden lg:flex items-center gap-1">
                   <a
                     href="https://x.com/LootRealms"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-foreground/50 hover:text-primary hover:bg-primary/10 transition-colors"
-                    aria-label="Twitter"
+                    aria-label="X / Twitter"
                   >
                     <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
                   </a>
@@ -360,21 +325,6 @@ export function TopBar() {
                     <Github className="h-3.5 w-3.5" />
                   </a>
                 </div>
-
-                <div className="hidden md:inline-flex items-center gap-2 rounded-full border border-primary/25 bg-black/35 px-2.5 py-1">
-                  <span className="text-[10px] uppercase tracking-[0.14em] text-foreground/62">
-                    veLORDS APY
-                  </span>
-                  <span className="text-xs font-semibold tabular-nums text-primary">
-                    <DeferredHeaderApyValue />
-                  </span>
-                </div>
-
-                <Button variant="oath" size="sm" asChild>
-                  <a href="https://account.realms.world" target="_blank" rel="noopener noreferrer">
-                    Account
-                  </a>
-                </Button>
               </div>
             </div>
           </div>
@@ -386,7 +336,7 @@ export function TopBar() {
           aria-label="Section rail navigation"
           className={cn(
             "group realm-rail-shell fixed right-3 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col gap-1.5",
-            isRailExpanded ? "realm-rail-shell-expanded" : ""
+            isRailExpanded ? "realm-rail-shell-expanded" : "",
           )}
           onMouseEnter={() => scheduleRailExpanded(true)}
           onMouseLeave={() => scheduleRailExpanded(false)}
@@ -410,7 +360,7 @@ export function TopBar() {
                 className={cn(
                   "group realm-rail-button realm-rail-item realm-holo-card",
                   isRailExpanded ? "realm-rail-item-expanded" : "",
-                  activeSection === section.id ? "realm-rail-item-active" : ""
+                  activeSection === section.id ? "realm-rail-item-active" : "",
                 )}
               >
                 <span className="realm-rail-glyph" aria-hidden="true">
@@ -421,7 +371,7 @@ export function TopBar() {
                     "realm-rail-label truncate transition-all duration-200",
                     isRailExpanded
                       ? "max-w-[11rem] opacity-100 ml-2"
-                      : "max-w-0 opacity-0 ml-0"
+                      : "max-w-0 opacity-0 ml-0",
                   )}
                 >
                   {section.label}
