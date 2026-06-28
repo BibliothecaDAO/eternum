@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-28T08:31:51.358Z",
+  "updatedAt": "2026-06-28T11:41:48.622Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -161,9 +161,9 @@
       "environment": "slot.blitz",
       "gameName": "bltz-froth-492",
       "path": "runs/slot/blitz/bltz-froth-492.json",
-      "inputPath": "inputs/slot/blitz/bltz-froth-492/28316464975-1.json",
+      "inputPath": "inputs/slot/blitz/bltz-froth-492/28321042056-1.json",
       "status": "attention",
-      "updatedAt": "2026-06-28T08:30:18.188Z",
+      "updatedAt": "2026-06-28T11:41:48.622Z",
       "workflowRef": "next",
       "currentStepId": "create-indexer",
       "hasRunningStep": false,
