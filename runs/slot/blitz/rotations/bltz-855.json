@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "27884568063-1",
   "currentStepId": null,
   "createdAt": "2026-06-20T13:23:05.817Z",
-  "updatedAt": "2026-06-29T02:05:22.198Z",
+  "updatedAt": "2026-06-29T02:07:46.484Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -2142,7 +2142,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 11,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier updated legendary -> pro for bltz-855-11",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2319,7 +2319,7 @@
             "0x2765221afc2b291ffa7dc8ee5c32d85f84155b5efe129c74a850c5b4ca09c64"
           ],
           "lootChestRoleTxHash": "0x37bf76a377e701f293914018f2682cfefaf3e29004e735f1aa3549584319ae1",
-          "indexerCreated": false,
+          "indexerCreated": true,
           "indexerMode": "slot-direct",
           "indexerRequest": {
             "env": "slot",
@@ -2330,8 +2330,11 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-29T02:05:19.448Z"
+          "indexerTier": "pro",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-855-11/torii",
+          "indexerVersion": "v1.8.16",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-06-29T02:07:41.552Z"
         }
       },
       {
@@ -2341,7 +2344,7 @@
         "durationSeconds": 432000,
         "seriesGameNumber": 12,
         "currentStepId": null,
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Indexer tier updated legendary -> pro for bltz-855-12",
         "status": "succeeded",
         "configSteps": [
           {
@@ -2518,7 +2521,7 @@
             "0x42210b5b17a4120fa0e2bbea953dbe473a72a84f1d5eff211bdf09a86f08904"
           ],
           "lootChestRoleTxHash": "0x4678f9417cda6d6698f4bfa63e139e21d754b1c0039d4df45985ca05fb9e14",
-          "indexerCreated": false,
+          "indexerCreated": true,
           "indexerMode": "slot-direct",
           "indexerRequest": {
             "env": "slot",
@@ -2529,8 +2532,11 @@
             "tier": "basic",
             "externalContracts": []
           },
-          "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-06-29T02:05:19.448Z"
+          "indexerTier": "pro",
+          "indexerUrl": "https://api.cartridge.gg/x/bltz-855-12/torii",
+          "indexerVersion": "v1.8.16",
+          "indexerBranch": "main",
+          "lastIndexerDescribeAt": "2026-06-29T02:07:46.484Z"
         }
       }
     ],
