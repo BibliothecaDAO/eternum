@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-28T00:42:25.145Z",
+  "updatedAt": "2026-06-29T02:07:49.741Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -3868,20 +3868,28 @@
     "bltz-855-11": {
       "gameName": "bltz-855-11",
       "liveState": {
-        "state": "indeterminate",
-        "stateSource": "describe-and-list-failed",
-        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-855-11/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-29T02:07:49.635Z"
       },
-      "updatedAt": "2026-06-28T00:41:55.948Z"
+      "updatedAt": "2026-06-29T02:07:49.741Z"
     },
     "bltz-855-12": {
       "gameName": "bltz-855-12",
       "liveState": {
-        "state": "indeterminate",
-        "stateSource": "describe-and-list-failed",
-        "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-855-12/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-29T02:07:49.740Z"
       },
-      "updatedAt": "2026-06-28T00:41:55.948Z"
+      "updatedAt": "2026-06-29T02:07:49.741Z"
     },
     "na-gladiator-21-06-26-0300": {
       "gameName": "na-gladiator-21-06-26-0300",
@@ -4129,6 +4137,19 @@
         "describeError": "Invalid OAuth token, please authenticate with `slot auth login`\nInvalid OAuth token, please authenticate with `slot auth login`"
       },
       "updatedAt": "2026-06-28T00:42:25.145Z"
+    },
+    "bltz-froth-492": {
+      "gameName": "bltz-froth-492",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "pro",
+        "url": "https://api.cartridge.gg/x/bltz-froth-492/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-06-29T02:07:49.531Z"
+      },
+      "updatedAt": "2026-06-29T02:07:49.741Z"
     }
   }
 }
