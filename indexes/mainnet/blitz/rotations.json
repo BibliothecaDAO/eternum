@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "rotation",
-  "updatedAt": "2026-06-29T02:05:24.889Z",
+  "updatedAt": "2026-06-29T02:06:22.049Z",
   "entries": {
     "bltz-warzone": {
       "kind": "rotation",
@@ -84,9 +84,9 @@
       "environment": "mainnet.blitz",
       "rotationName": "blitz-rotation",
       "path": "runs/mainnet/blitz/rotations/blitz-rotation.json",
-      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/28306617966-1.json",
+      "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/28344123724-1.json",
       "status": "attention",
-      "updatedAt": "2026-06-29T02:05:24.889Z",
+      "updatedAt": "2026-06-29T02:06:22.049Z",
       "workflowRef": "next",
       "currentStepId": "configure-worlds",
       "hasRunningStep": false,
@@ -95,13 +95,13 @@
       "autoRetry": {
         "enabled": true,
         "intervalMinutes": 15,
-        "nextRetryAt": "2026-06-29T02:20:13.036Z",
+        "nextRetryAt": "2026-06-29T02:21:22.049Z",
         "lastRetryAt": "2026-06-29T02:05:13.036Z"
       },
       "evaluation": {
         "intervalMinutes": 15,
-        "nextEvaluationAt": "2026-06-28T00:56:42.275Z",
-        "lastEvaluatedAt": "2026-06-28T00:41:42.275Z"
+        "nextEvaluationAt": "2026-06-29T02:21:22.049Z",
+        "lastEvaluatedAt": "2026-06-29T02:06:22.049Z"
       },
       "games": [
         {
@@ -1183,6 +1183,30 @@
         {
           "gameName": "apac-gladiator-30-06-26-1100",
           "startTime": 1782817200,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "na-gladiator-01-07-26-0200",
+          "startTime": 1782871200,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "eu-gladiator-01-07-26-1900",
+          "startTime": 1782932400,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "apac-gladiator-02-07-26-1000",
+          "startTime": 1782986400,
+          "durationSeconds": 3600,
+          "artifacts": {}
+        },
+        {
+          "gameName": "na-gladiator-03-07-26-0100",
+          "startTime": 1783040400,
           "durationSeconds": 3600,
           "artifacts": {}
         }
