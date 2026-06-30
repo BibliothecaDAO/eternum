@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-pop-959",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-pop-959/28434174976-1.json",
   "latestLaunchRequestId": "28434174976-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-06-30T09:26:26.375Z",
-  "updatedAt": "2026-06-30T09:30:31.896Z",
+  "updatedAt": "2026-06-30T09:30:49.886Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-06-30T09:30:31.896Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-06-30T09:30:31.896Z",
+      "finishedAt": "2026-06-30T09:30:49.886Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x6cf8ec59a0876c324fdd2035efcf7a704e760f28d04b1612c3807f54810b188"
     ],
-    "lootChestRoleTxHash": "0x4a42a850d6b2a8cd5446c855aaedebdd7d4424263b0eb8c4bcf16b569ed6dc9"
+    "lootChestRoleTxHash": "0x4a42a850d6b2a8cd5446c855aaedebdd7d4424263b0eb8c4bcf16b569ed6dc9",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-pop-959/torii",
+    "indexerVersion": "v1.8.16",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-06-30T09:30:48.558Z"
   },
-  "activeLease": {
-    "launchRequestId": "28434174976-1",
-    "workflowRunId": 28434174976,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-06-30T09:30:31.896Z",
-    "expiresAt": "2026-06-30T10:15:31.896Z"
-  }
+  "completedAt": "2026-06-30T09:30:49.886Z"
 }
