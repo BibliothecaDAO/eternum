@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-30T08:41:22.484Z",
+  "updatedAt": "2026-06-30T09:15:33.186Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -614,6 +614,23 @@
       "recoverablePendingStepId": "sync-paymaster",
       "startTime": 1782568800,
       "durationSeconds": 5400,
+      "artifacts": {}
+    },
+    "bltz-boost-816": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "bltz-boost-816",
+      "path": "runs/mainnet/blitz/bltz-boost-816.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-boost-816/28433533953-1.json",
+      "status": "running",
+      "updatedAt": "2026-06-30T09:15:33.186Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-06-30T11:30:00.000Z",
+      "durationSeconds": 3600,
       "artifacts": {}
     }
   }
