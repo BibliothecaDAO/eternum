@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-06-30T09:18:18.830Z",
+  "updatedAt": "2026-06-30T09:18:24.633Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -623,11 +623,10 @@
       "path": "runs/mainnet/blitz/bltz-boost-816.json",
       "inputPath": "inputs/mainnet/blitz/bltz-boost-816/28433533953-1.json",
       "status": "running",
-      "updatedAt": "2026-06-30T09:18:18.830Z",
+      "updatedAt": "2026-06-30T09:18:24.633Z",
       "workflowRef": "next",
-      "currentStepId": "wait-for-factory-index",
-      "activeLeaseExpiresAt": "2026-06-30T10:03:18.830Z",
-      "hasRunningStep": true,
+      "currentStepId": "configure-world",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "configure-world",
       "startTime": 1782819000,
