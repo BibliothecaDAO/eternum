@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-06-30T11:22:28.229Z",
+  "updatedAt": "2026-06-30T11:31:52.042Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -4194,7 +4194,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-30-06-26-1100 not found"
       },
-      "updatedAt": "2026-06-30T11:12:04.300Z"
+      "updatedAt": "2026-06-30T11:31:52.042Z"
     },
     "bltz-pop-959": {
       "gameName": "bltz-pop-959",
