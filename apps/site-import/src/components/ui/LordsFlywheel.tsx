@@ -398,10 +398,10 @@ export function LordsFlywheel({ metrics }: FlywheelProps) {
                 style={{
                   left: `${leftPct}%`,
                   top: `${topPct}%`,
-                  width: "clamp(120px, 28%, 160px)",
+                  width: "160px",
                 }}
               >
-                <div className="fw-node-card flex flex-col items-center rounded-lg border border-primary/20 bg-black/70 backdrop-blur-md px-3 py-3">
+                <div className="fw-node-card flex h-[136px] w-[160px] flex-col items-center justify-center rounded-lg border border-primary/20 bg-black/70 px-3 py-3 backdrop-blur-md">
                   <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 border border-primary/25 mb-2">
                     <step.icon className="h-5 w-5 text-primary" />
                   </div>
@@ -430,7 +430,7 @@ export function LordsFlywheel({ metrics }: FlywheelProps) {
             const metricValue =
               step.metricKey && metrics?.[step.metricKey];
             return (
-              <div key={step.label} className="flex items-start gap-4">
+              <div key={step.label} className="flex min-h-[120px] items-start gap-4 rounded-lg border border-primary/15 bg-black/35 p-4">
                 <div className="relative flex flex-col items-center">
                   <div className="flex items-center justify-center h-11 w-11 rounded-lg bg-primary/10 border border-primary/25 shrink-0">
                     <step.icon className="h-5 w-5 text-primary" />

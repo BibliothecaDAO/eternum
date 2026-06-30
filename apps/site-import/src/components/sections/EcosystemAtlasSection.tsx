@@ -7,6 +7,7 @@ import {
   Bot,
   Coins,
   ExternalLink,
+  Gamepad2,
   Shield,
   Swords,
   Users,
@@ -16,6 +17,9 @@ import { Button } from "@/components/ui/button";
 const liveGames = games.filter((game) => game.isLive);
 const developmentGames = games.filter((game) => !game.isLive);
 const sortedGames = [...liveGames, ...developmentGames];
+const homepageGames = sortedGames
+  .filter((game) => !["pistols-at-dawn", "rising-revenant"].includes(game.slug))
+  .slice(0, 6);
 
 const liveCount = liveGames.length;
 const studioCount = new Set(games.map((game) => game.studio)).size;
@@ -50,24 +54,25 @@ export function EcosystemAtlasSection() {
       <div className="container mx-auto px-4">
         {/* Section header */}
         <motion.div
-          className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8"
+          className="mx-auto mb-8 max-w-3xl text-center"
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="max-w-2xl">
-            <p className="realm-banner mb-3">Games</p>
-            <h2 className="realm-title text-3xl sm:text-4xl md:text-5xl mb-4">
-              Realms Ecosystem Games
-            </h2>
-            <p className="realm-subtitle text-base sm:text-lg">
-              Onchain games built for players, builders, and AI agents.
-              Compete through verifiable rules and transparent economies.
-            </p>
-          </div>
+          <p className="realm-banner mx-auto mb-3 flex w-fit">
+            <Gamepad2 className="h-3.5 w-3.5" />
+            Games
+          </p>
+          <h2 className="realm-title mb-4 text-3xl sm:text-4xl md:text-5xl">
+            Realms Ecosystem Games
+          </h2>
+          <p className="realm-subtitle text-base sm:text-lg">
+            Onchain games built for players, builders, and AI agents.
+            Compete through verifiable rules and transparent economies.
+          </p>
           <Link
             to="/games"
-            className="inline-flex items-center justify-center rounded-lg border border-primary/30 bg-black/30 px-4 py-3 text-sm uppercase tracking-[0.14em] text-primary/90 hover:border-primary/55 transition-colors realm-panel shrink-0"
+            className="realm-panel mt-5 inline-flex items-center justify-center rounded-lg border border-primary/30 bg-black/30 px-4 py-3 text-sm uppercase tracking-[0.14em] text-primary/90 transition-colors hover:border-primary/55"
           >
             All Games
             <ArrowRight className="ml-2 h-4 w-4" />
@@ -83,7 +88,7 @@ export function EcosystemAtlasSection() {
         >
           {/* Background art */}
           <img
-            src="/brand/twilight-tundra.webp"
+            src="/brand/blitz-card.png"
             alt=""
             aria-hidden="true"
             className="absolute inset-0 h-full w-full object-cover opacity-58 saturate-[0.95] contrast-110 scale-[1.02] transition-transform duration-700 group-hover:scale-[1.05]"
@@ -191,7 +196,7 @@ export function EcosystemAtlasSection() {
 
         {/* ── Games grid ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {sortedGames.map((game, index) => (
+          {homepageGames.map((game, index) => (
             <motion.article
               key={game.slug}
               className={`group relative overflow-hidden rounded-lg border border-primary/20 bg-black/25 backdrop-blur-sm aspect-[16/10] realm-panel realm-holo-card ${!game.isLive ? "opacity-60" : ""}`}

@@ -5,6 +5,12 @@
 @plugin 'tailwindcss-animate';
 
 @custom-variant dark (&:is(.dark *));
+@font-face {
+  font-family: "IM Fell English SC";
+  src: url("/brand/im-fell-english-sc-regular.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root {
   --background: oklch(0.98 0 0);
   --foreground: oklch(0.24 0 0);
@@ -51,6 +57,7 @@
   --realm-vignette: linear-gradient(180deg, transparent 0%, color-mix(in oklab, black 38%, transparent) 100%);
   --font-sans: "Exo 2", Rajdhani, sans-serif;
   --font-serif: MedievalSharp, serif;
+  --font-title: "IM Fell English SC", Cinzel, serif;
   --font-ui: Cinzel, serif;
   --font-mono: Source Code Pro, monospace;
   --radius: 0.5rem;
@@ -110,6 +117,7 @@
   --realm-vignette: linear-gradient(180deg, transparent 0%, color-mix(in oklab, black 55%, transparent) 100%);
   --font-sans: "Exo 2", Rajdhani, sans-serif;
   --font-serif: MedievalSharp, serif;
+  --font-title: "IM Fell English SC", Cinzel, serif;
   --font-ui: Cinzel, serif;
   --font-mono: Source Code Pro, monospace;
   --radius: 0.5rem;
@@ -391,7 +399,10 @@
   }
 
   .realm-title {
-    @apply font-serif tracking-tight text-foreground;
+    @apply text-foreground;
+    font-family: var(--font-title);
+    font-weight: 400;
+    letter-spacing: 0;
   }
 
   .realm-subtitle {

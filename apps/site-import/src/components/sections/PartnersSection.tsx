@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { Handshake } from "lucide-react";
 import { partners } from "@/data/partners";
 
 const partnerRoles: Record<string, string> = {
@@ -20,7 +21,10 @@ export function PartnersSection() {
           transition={{ duration: 0.65 }}
           className="space-y-8"
         >
-          <p className="realm-banner text-center">Built With</p>
+          <p className="realm-banner mx-auto flex w-fit text-center">
+            <Handshake className="h-3.5 w-3.5" />
+            Partners
+          </p>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
             {partners.map((partner, index) => (

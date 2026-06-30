@@ -2,7 +2,6 @@ import { Suspense, lazy } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
-  ArrowRight,
   Castle,
   ChevronDown,
   Coins,
@@ -132,22 +131,25 @@ function IntroSectionContent() {
 
           {/* CTAs */}
           <motion.div
-            className="flex flex-col sm:flex-row gap-3 mb-12"
+            className="grid w-full max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3 mb-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.4, duration: 0.6, ease: "easeOut" }}
           >
+            <Button size="lg" variant="oath" className="w-full justify-center text-base px-6" asChild>
+              <a href="https://market.realms.world/" target="_blank" rel="noopener noreferrer">
+                Browse Marketplace
+              </a>
+            </Button>
             <Button
               size="lg"
               variant="war"
-              className="shadow-lg shadow-primary/20 text-base px-8"
+              className="w-full justify-center shadow-lg shadow-primary/20 text-base px-6"
               asChild
             >
-              <Link to="/games">
-                Explore Games <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
+              <Link to="/games">Explore Games</Link>
             </Button>
-            <Button size="lg" variant="oath" className="text-base px-8" asChild>
+            <Button size="lg" variant="oath" className="w-full justify-center text-base px-6" asChild>
               <a href="https://account.realms.world/velords" target="_blank" rel="noopener noreferrer">
                 Stake veLORDS
               </a>

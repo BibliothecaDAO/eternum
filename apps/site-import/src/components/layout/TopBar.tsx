@@ -114,41 +114,46 @@ export function TopBar() {
   useEffect(() => {
     if (pageSections.length === 0) return;
 
-    const sectionsToObserve = pageSections
-      .map((section) => document.getElementById(section.id))
-      .filter((section): section is HTMLElement => section !== null);
+    let frameId: number | null = null;
 
-    if (sectionsToObserve.length === 0) return;
+    const updateActiveSection = () => {
+      frameId = null;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleEntries = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort(
-            (a, b) =>
-              b.intersectionRatio - a.intersectionRatio ||
-              a.boundingClientRect.top - b.boundingClientRect.top,
-          );
+      const scrollPosition = window.scrollY + HEADER_SCROLL_OFFSET + 96;
+      const documentBottom = window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 8;
+      let currentSection = pageSections[0]?.id ?? "hero";
 
-        if (visibleEntries.length === 0) {
-          if (window.scrollY < 100) {
-            scheduleActiveSection("hero");
-          }
-          return;
+      for (const section of pageSections) {
+        const element = document.getElementById(section.id);
+        if (!element) continue;
+
+        const sectionTop = element.getBoundingClientRect().top + window.scrollY;
+        if (scrollPosition >= sectionTop) {
+          currentSection = section.id;
         }
+      }
 
-        const [topEntry] = visibleEntries;
-        scheduleActiveSection(topEntry.target.id);
-      },
-      {
-        rootMargin: "-24% 0px -52% 0px",
-        threshold: [0.15, 0.35, 0.55, 0.75],
-      },
-    );
+      if (documentBottom) {
+        currentSection = pageSections[pageSections.length - 1]?.id ?? currentSection;
+      }
 
-    sectionsToObserve.forEach((section) => observer.observe(section));
+      scheduleActiveSection(currentSection, true);
+    };
 
-    return () => observer.disconnect();
+    const requestUpdate = () => {
+      if (frameId !== null) return;
+      frameId = window.requestAnimationFrame(updateActiveSection);
+    };
+
+    requestUpdate();
+    window.addEventListener("scroll", requestUpdate, { passive: true });
+    window.addEventListener("resize", requestUpdate);
+
+    return () => {
+      if (frameId !== null) window.cancelAnimationFrame(frameId);
+      window.removeEventListener("scroll", requestUpdate);
+      window.removeEventListener("resize", requestUpdate);
+    };
   }, [pageSections, scheduleActiveSection]);
 
   const scrollToSection = (href: string) => {
@@ -182,7 +187,7 @@ export function TopBar() {
             : "bg-transparent border-b border-transparent",
         )}
       >
-        <div className={cn("transition-all duration-300", isScrolled ? "py-2" : "py-3.5 sm:py-4")}>
+        <div className="py-3.5 sm:py-4">
           <div className="container mx-auto px-3 sm:px-4">
             <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-4">
               <button
@@ -193,10 +198,7 @@ export function TopBar() {
                 <img
                   src="/rw-logo.svg"
                   alt="Realms.World"
-                  className={cn(
-                    "transition-all duration-300",
-                    isScrolled ? "w-10 sm:w-11" : "w-11 sm:w-13",
-                  )}
+                  className="w-11 sm:w-13"
                 />
               </button>
 
@@ -215,6 +217,22 @@ export function TopBar() {
                 >
                   Games
                 </Link>
+                <a
+                  href="https://account.realms.world/velords"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
+                >
+                  Account
+                </a>
+                <a
+                  href="https://market.realms.world/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
+                >
+                  Marketplace
+                </a>
                 <Link
                   to="/scroll"
                   className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
@@ -222,14 +240,6 @@ export function TopBar() {
                 >
                   Scroll
                 </Link>
-                <a
-                  href="https://account.realms.world/velords"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
-                >
-                  veLORDS
-                </a>
               </nav>
 
               <div className="flex items-center justify-end gap-2 sm:gap-3">
@@ -252,12 +262,17 @@ export function TopBar() {
                       <Link to="/games" className="w-full">Games</Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link to="/scroll" className="w-full">Scroll</Link>
+                      <a href="https://account.realms.world/velords" target="_blank" rel="noopener noreferrer" className="w-full">
+                        Account
+                      </a>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <a href="https://account.realms.world/velords" target="_blank" rel="noopener noreferrer" className="w-full">
-                        veLORDS
+                      <a href="https://market.realms.world/" target="_blank" rel="noopener noreferrer" className="w-full">
+                        Marketplace
                       </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/scroll" className="w-full">Scroll</Link>
                     </DropdownMenuItem>
 
                     {pageSections.length > 0 && (

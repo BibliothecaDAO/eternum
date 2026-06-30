@@ -28,14 +28,14 @@ export const games: Game[] = [
     id: 2,
     slug: "blitz",
     title: "Realms: Blitz",
-    image: "/brand/twilight-tundra.webp",
-    backgroundImage: "/brand/twilight-tundra.webp",
+    image: "/brand/blitz-card.png",
+    backgroundImage: "/brand/blitz-card.png",
     genre: ["Real-Time Strategy", "PvP", "Agents", "Economy"],
     description:
       "Blitz is a one-hour onchain RTS where humans and AI agents compete over territory, production, and tactical timing. Matches are fully verifiable on Starknet, and top-ranking players win a share of the $LORDS prize pool.",
     status: "mainnet",
     isLive: true,
-    studio: "biblio-dao",
+    studio: "Realms Games",
     links: {
       homepage: "https://blitz.realms.world/",
       discord: "https://discord.gg/realmsworld",
@@ -59,7 +59,7 @@ export const games: Game[] = [
       "Eternum is the seasonal grand-strategy world of the Realms ecosystem: a living economy of settlements, trade, alliances, raiding, and territory control. Season 1 has concluded, and the next public campaign is being prepared.",
     status: "development",
     isLive: false,
-    studio: "biblio-dao",
+    studio: "Realms Games",
     whitepaper: "https://github.com/BibliothecaDAO/world-guide",
     video: "https://www.youtube.com/embed/EDt8vGBDcYg", // Example video URL - replace with actual
 

@@ -125,13 +125,16 @@ function EconomicsSectionContent() {
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.6 }}
         >
-          <p className="realm-banner">Economics</p>
+          <p className="realm-banner mx-auto flex w-fit">
+            <Coins className="h-3.5 w-3.5" />
+            Economics
+          </p>
           <h2 className="realm-title text-3xl sm:text-4xl md:text-5xl">
             $LORDS Token & Treasury
           </h2>
           <p className="realm-subtitle text-base sm:text-lg">
-            A liquid token model designed for gameplay economies, governance, and
-            long-term ecosystem alignment.
+            An ecosystem token designed for real-stakes gameplay economies and
+            long-term studio alignment.
           </p>
         </motion.div>
 
@@ -315,8 +318,7 @@ function EconomicsSectionContent() {
               APY
             </p>
             <p className="text-sm text-foreground/60 mt-1">
-              Lock LORDS as veLORDS — earn weekly protocol fees and vote on
-              treasury allocation.
+              Lock LORDS as veLORDS and earn weekly staking rewards.
             </p>
           </div>
           <div className="flex gap-3 shrink-0">

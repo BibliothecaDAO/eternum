@@ -1,4 +1,3 @@
-import { Fragment } from "react";
 import { motion } from "framer-motion";
 import {
   Bot,
@@ -6,8 +5,8 @@ import {
   Brain,
   Zap,
   ArrowRight,
-  ChevronRight,
-  ChevronDown,
+  MessageSquare,
+  RefreshCw,
   Swords,
   Globe,
 } from "lucide-react";
@@ -18,14 +17,19 @@ const agentLoop = [
   {
     icon: Eye,
     title: "Observe",
+    description: "Read the full game state in one snapshot.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Report",
     description:
-      "Read full game state — map, resources, opponents — in one snapshot.",
+      "Send information, warnings, and strategic advice to a human player in real time.",
   },
   {
     icon: Brain,
     title: "Decide",
     description:
-      "Score candidate moves and pick the highest-value action.",
+      "Score candidate moves and take action within strategic bounds.",
   },
   {
     icon: Zap,
@@ -33,30 +37,42 @@ const agentLoop = [
     description:
       "Submit moves onchain. Every action is deterministic and auditable.",
   },
+  {
+    icon: RefreshCw,
+    title: "Review",
+    description:
+      "Consider outcomes and learn from every victory and defeat.",
+  },
+];
+
+const loopPositions = [
+  "left-1/2 top-[2%] -translate-x-1/2",
+  "left-[86%] top-[30%] -translate-x-1/2",
+  "left-[72%] top-[78%] -translate-x-1/2",
+  "left-[28%] top-[78%] -translate-x-1/2",
+  "left-[14%] top-[30%] -translate-x-1/2",
 ];
 
 const agentGames = [
   {
     icon: Swords,
     title: "Blitz",
-    label: "Agent RTS",
-    tagline: "One-hour matches. Real-time tactics. $LORDS prize pools.",
+    label: "Fast-paced Onchain Strategy",
     features: [
-      "One-hour competitive matches",
-      "Real-time scouting and combat",
-      "Top-ranking players win a share of the $LORDS prize pool",
+      "One-hour competitive matches, fast-paced gameplay.",
+      "RTS-style development, movement and combat.",
+      "Top-ranking players win a share of the $LORDS prize pool and build their MMR.",
     ],
     slug: "blitz",
   },
   {
     icon: Globe,
     title: "Eternum",
-    label: "Economic Strategy",
-    tagline: "A seasonal onchain world built for economic strategy.",
+    label: "Seasonal Campaigns",
     features: [
-      "Seasonal empire building",
-      "Trade, build, and manage resources",
-      "Raid and defend across a living map",
+      "Seasonal grand strategy games that unfold over several weeks.",
+      "Join tribes, build religious followings, develop empires, and conquer the competition.",
+      "Expansive economic gameplay with real stakes.",
     ],
     slug: "realms-eternum",
   },
@@ -95,120 +111,100 @@ export function AgentNativeSection() {
         >
           <p className="realm-banner text-center mb-8">The Agent Loop</p>
 
-          {/* Desktop: horizontal flow */}
-          <div className="hidden md:grid grid-cols-[1fr_auto_1fr_auto_1fr] items-start gap-4">
-            {agentLoop.map((step, i) => (
-              <Fragment key={step.title}>
-                <div className="text-center px-2">
-                  <div className="mx-auto flex items-center justify-center h-14 w-14 rounded-lg bg-primary/10 border border-primary/25 mb-4">
-                    <step.icon className="h-6 w-6 text-primary" />
+          {/* Desktop: circular loop */}
+          <div className="hidden md:block">
+            <div className="relative mx-auto aspect-square max-w-[680px]">
+              <div className="absolute left-1/2 top-1/2 h-[58%] w-[58%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/25 bg-primary/[0.03] shadow-[inset_0_0_40px_rgba(246,194,122,0.08)]" />
+              <div className="absolute left-1/2 top-1/2 h-[42%] w-[42%] -translate-x-1/2 -translate-y-1/2 rounded-full border border-primary/15 bg-black/35" />
+              <RefreshCw className="absolute left-1/2 top-1/2 h-9 w-9 -translate-x-1/2 -translate-y-1/2 text-primary/55" aria-hidden="true" />
+
+              {agentLoop.map((step, index) => (
+                <div
+                  key={step.title}
+                  className={`absolute ${loopPositions[index]} w-44 rounded-lg border border-primary/20 bg-black/65 px-4 py-4 text-center backdrop-blur-md`}
+                >
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg border border-primary/25 bg-primary/10">
+                    <step.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <h3 className="text-lg font-bold mb-2">{step.title}</h3>
-                  <p className="text-sm text-foreground/60 leading-relaxed">
+                  <h3 className="mb-2 text-base font-bold">{step.title}</h3>
+                  <p className="text-xs leading-relaxed text-foreground/65">
                     {step.description}
                   </p>
                 </div>
-                {i < agentLoop.length - 1 && (
-                  <div className="flex items-center pt-7">
-                    <div className="w-10 h-px bg-gradient-to-r from-primary/15 via-primary/30 to-primary/15" />
-                    <ChevronRight className="h-4 w-4 text-primary/35 -ml-1.5" />
-                  </div>
-                )}
-              </Fragment>
-            ))}
+              ))}
+            </div>
           </div>
 
-          {/* Mobile: vertical flow */}
-          <div className="md:hidden flex flex-col gap-5">
-            {agentLoop.map((step, i) => (
-              <Fragment key={step.title}>
-                <div className="flex items-start gap-4">
-                  <div className="flex items-center justify-center h-11 w-11 rounded-lg bg-primary/10 border border-primary/25 shrink-0">
-                    <step.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="pt-1.5">
-                    <p className="text-base font-bold leading-tight mb-1">
-                      {step.title}
-                    </p>
-                    <p className="text-sm text-foreground/60 leading-relaxed">
-                      {step.description}
-                    </p>
-                  </div>
+          {/* Mobile: compact loop cards */}
+          <div className="grid gap-3 md:hidden">
+            {agentLoop.map((step) => (
+              <div key={step.title} className="flex items-start gap-4 rounded-lg border border-primary/15 bg-black/35 p-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10">
+                  <step.icon className="h-5 w-5 text-primary" />
                 </div>
-                {i < agentLoop.length - 1 && (
-                  <div className="flex justify-center -my-2">
-                    <ChevronDown className="h-4 w-4 text-primary/30" />
-                  </div>
-                )}
-              </Fragment>
+                <div className="pt-1">
+                  <p className="mb-1 text-base font-bold leading-tight">
+                    {step.title}
+                  </p>
+                  <p className="text-sm leading-relaxed text-foreground/60">
+                    {step.description}
+                  </p>
+                </div>
+              </div>
             ))}
           </div>
-
-          {/* Onchain property callout */}
-          <p className="text-center text-sm text-foreground/50 mt-8 tracking-wide">
-            Every action settles onchain. Deterministic. Auditable. Built for human and agent collaboration.
-          </p>
         </motion.div>
 
         {/* Game Showcase */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-10 md:mb-12">
-          {agentGames.map((game, index) => (
-            <motion.div
-              key={game.title}
-              className="realm-panel realm-holo-card realm-edge-brackets rounded-lg border border-primary/20 bg-black/25 p-6 sm:p-7 flex flex-col"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 + index * 0.1, duration: 0.5 }}
-            >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 border border-primary/20">
-                  <game.icon className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold">{game.title}</h3>
-                  <p className="realm-sigil">{game.label}</p>
-                </div>
-              </div>
-
-              <p className="text-sm text-foreground/85 mb-4 leading-relaxed font-medium">
-                {game.tagline}
-              </p>
-
-              <ul className="space-y-2 mb-5 flex-1">
-                {game.features.map((feat) => (
-                  <li
-                    key={feat}
-                    className="flex items-center gap-2.5 text-sm text-foreground/65"
-                  >
-                    <span className="w-1 h-1 rounded-full bg-primary/50 shrink-0" />
-                    {feat}
-                  </li>
-                ))}
-              </ul>
-
-              <Button size="sm" variant="oath" asChild>
-                <Link to="/games/$slug" params={{ slug: game.slug }}>
-                  Learn More
-                  <ArrowRight className="ml-2 h-3.5 w-3.5" />
-                </Link>
-              </Button>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Unifying message */}
         <motion.div
-          className="rounded-lg border border-primary/15 bg-primary/5 backdrop-blur-sm px-6 py-5 text-center"
-          initial={{ opacity: 0, y: 10 }}
+          className="realm-panel rounded-lg border border-primary/20 bg-black/30 p-6 backdrop-blur-sm sm:p-8"
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
         >
-          <p className="text-base sm:text-lg font-semibold">
-            One ecosystem where player strategy and agent execution meet.
+          <p className="realm-banner mx-auto mb-8 flex w-fit text-center">
+            Flagship Agent-Native Games
           </p>
-          <p className="text-sm text-foreground/50 mt-1">
-            Explore the Games directory and follow each world as agent coverage expands.
-          </p>
+          <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2">
+            {agentGames.map((game, index) => (
+              <motion.div
+                key={game.title}
+                className="realm-panel realm-holo-card realm-edge-brackets flex flex-col rounded-lg border border-primary/20 bg-black/25 p-6 sm:p-7"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.38 + index * 0.1, duration: 0.5 }}
+              >
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
+                    <game.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold">{game.title}</h3>
+                    <p className="realm-sigil">{game.label}</p>
+                  </div>
+                </div>
+
+                <ul className="mb-5 flex-1 space-y-2.5">
+                  {game.features.map((feat) => (
+                    <li
+                      key={feat}
+                      className="flex items-start gap-2.5 text-sm leading-relaxed text-foreground/68"
+                    >
+                      <span className="mt-2 h-1 w-1 shrink-0 rounded-full bg-primary/50" />
+                      {feat}
+                    </li>
+                  ))}
+                </ul>
+
+                <Button size="sm" variant="oath" asChild>
+                  <Link to="/games/$slug" params={{ slug: game.slug }}>
+                    Learn More
+                    <ArrowRight className="ml-2 h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
       </div>
     </section>
