@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-thrum-391",
-  "status": "running",
+  "status": "complete",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-thrum-391/28546706019-1.json",
   "latestLaunchRequestId": "28546706019-1",
-  "currentStepId": "create-indexer",
+  "currentStepId": null,
   "createdAt": "2026-07-01T20:47:36.266Z",
-  "updatedAt": "2026-07-01T20:50:29.600Z",
+  "updatedAt": "2026-07-01T20:50:47.409Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -72,10 +72,11 @@
     {
       "id": "create-indexer",
       "title": "Finishing setup",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Finishing setup",
-      "latestEvent": "Finishing setup started",
-      "startedAt": "2026-07-01T20:50:29.600Z"
+      "latestEvent": "Finishing setup succeeded",
+      "startedAt": "2026-07-01T20:50:29.600Z",
+      "finishedAt": "2026-07-01T20:50:47.409Z"
     }
   ],
   "artifacts": {
@@ -90,14 +91,13 @@
     "reserveHyperstructuresTxHashes": [
       "0x35ee4e4d5cd57825984daab9c1b891f9a311e0a3976419b9c3f2b63e5f0b9d4"
     ],
-    "lootChestRoleTxHash": "0x7f7d5f39983df9c628eb003586c2eb01af9d3d8c28cac5c17d4145a25a3543f"
+    "lootChestRoleTxHash": "0x7f7d5f39983df9c628eb003586c2eb01af9d3d8c28cac5c17d4145a25a3543f",
+    "indexerCreated": true,
+    "indexerTier": "basic",
+    "indexerUrl": "https://api.cartridge.gg/x/bltz-thrum-391/torii",
+    "indexerVersion": "v1.8.16",
+    "indexerBranch": "main",
+    "lastIndexerDescribeAt": "2026-07-01T20:50:46.079Z"
   },
-  "activeLease": {
-    "launchRequestId": "28546706019-1",
-    "workflowRunId": 28546706019,
-    "workflowRunAttempt": 1,
-    "stepId": "create-indexer",
-    "acquiredAt": "2026-07-01T20:50:29.600Z",
-    "expiresAt": "2026-07-01T21:35:29.600Z"
-  }
+  "completedAt": "2026-07-01T20:50:47.409Z"
 }
