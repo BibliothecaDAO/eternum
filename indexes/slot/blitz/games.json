@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-07-01T11:07:16.895Z",
+  "updatedAt": "2026-07-01T14:05:25.786Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -205,7 +205,7 @@
       "path": "runs/slot/blitz/bltz-crisp-220.json",
       "inputPath": "inputs/slot/blitz/bltz-crisp-220/28503987879-1.json",
       "status": "complete",
-      "updatedAt": "2026-07-01T11:07:16.895Z",
+      "updatedAt": "2026-07-01T14:05:25.786Z",
       "workflowRef": "next",
       "currentStepId": null,
       "hasRunningStep": false,
@@ -216,7 +216,9 @@
       "artifacts": {
         "indexerCreated": true,
         "indexerTier": "legendary",
-        "lastIndexerDescribeAt": "2026-07-01T11:07:16.895Z"
+        "lastIndexerDescribeAt": "2026-07-01T11:07:16.895Z",
+        "pendingIndexerTierTarget": "pro",
+        "pendingIndexerTierRequestedAt": "2026-07-01T14:05:24.347Z"
       }
     }
   }
