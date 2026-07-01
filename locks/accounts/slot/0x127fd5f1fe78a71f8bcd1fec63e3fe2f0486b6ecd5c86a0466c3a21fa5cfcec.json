@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-pop-959",
-    "launchRequestId": "28434174976-1",
+    "gameName": "bltz-crisp-220",
+    "launchRequestId": "28503987879-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 28434174976,
+    "workflowRunId": 28503987879,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "580279f2-2986-46e9-aafa-1e412945d9cb"
+    "stepId": "create-world",
+    "leaseId": "2842bf4d-0abe-4627-a230-f3c0f8fef7b7"
   },
-  "acquiredAt": "2026-06-30T09:30:05.490Z",
-  "heartbeatAt": "2026-06-30T09:30:20.825Z",
-  "expiresAt": "2026-06-30T09:30:20.825Z",
-  "releasedAt": "2026-06-30T09:30:20.825Z"
+  "acquiredAt": "2026-07-01T08:25:23.374Z",
+  "heartbeatAt": "2026-07-01T08:25:23.374Z",
+  "expiresAt": "2026-07-01T08:35:23.374Z"
 }
