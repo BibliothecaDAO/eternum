@@ -77,7 +77,7 @@ function IntroSectionContent() {
   ];
 
   return (
-    <section className="realm-section relative min-h-[100vh] overflow-hidden flex flex-col items-center justify-center">
+    <section className="realm-section relative min-h-[92vh] overflow-hidden flex flex-col items-center justify-start">
       {/* Agent consciousness background */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
         <img
@@ -93,11 +93,11 @@ function IntroSectionContent() {
       </div>
 
       {/* Centered hero content */}
-      <div className="container mx-auto px-4 py-24 sm:py-28 md:py-32">
+      <div className="container mx-auto px-4 pb-16 pt-24 sm:pb-20 sm:pt-24 md:pb-24 md:pt-28">
         <div className="flex flex-col items-center text-center max-w-5xl mx-auto">
           {/* Banner */}
           <motion.p
-            className="realm-banner mb-8"
+            className="realm-banner mb-4 sm:mb-5"
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
@@ -108,12 +108,12 @@ function IntroSectionContent() {
 
           {/* Title */}
           <motion.h1
-            className="realm-title hero-title-shimmer text-5xl sm:text-6xl md:text-8xl lg:text-9xl leading-[0.9] mb-8"
+            className="realm-title hero-title-shimmer text-4xl sm:text-5xl md:text-7xl lg:text-8xl leading-[0.9] mb-7"
             initial={{ opacity: 0, y: 30, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{ delay: 0.4, duration: 0.9, ease: "easeOut" }}
           >
-            The New Frontier of Gaming
+            THE NEW FRONTIER OF GAMING
           </motion.h1>
 
           {/* Subtitle */}

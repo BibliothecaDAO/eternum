@@ -30,7 +30,7 @@ export const games: Game[] = [
     title: "Realms: Blitz",
     image: "/brand/blitz-card.png",
     backgroundImage: "/brand/blitz-card.png",
-    genre: ["Real-Time Strategy", "PvP", "Agents", "Economy"],
+    genre: ["Real-Time Strategy", "Free-for-All", "PvP", "Realms Games"],
     description:
       "Blitz is a one-hour onchain RTS where humans and AI agents compete over territory, production, and tactical timing. Matches are fully verifiable on Starknet, and top-ranking players win a share of the $LORDS prize pool.",
     status: "mainnet",
@@ -54,7 +54,7 @@ export const games: Game[] = [
       "/games/realms-eternum/screenshots/2.png",
       "/games/realms-eternum/screenshots/3.png",
     ],
-    genre: ["Economic Strategy", "PvP", "Raiding", "Economy"],
+    genre: ["Grand Strategy", "Economic Sim", "PvP", "Realms Games"],
     description:
       "Eternum is the seasonal grand-strategy world of the Realms ecosystem: a living economy of settlements, trade, alliances, raiding, and territory control. Season 1 has concluded, and the next public campaign is being prepared.",
     status: "development",

@@ -25,7 +25,7 @@ export function EconomicsSection() {
 }
 
 function EconomicsSectionContent() {
-  const { currentAPY, tokensThisWeek, lordsLocked, tvl } = useVelords();
+  const { currentAPY, tokensThisWeek, lordsLocked } = useVelords();
   const { data: lordsInfo } = useQuery(lordsInfoQueryOptions());
   const { data: treasuryBalance } = useQuery(treasuryBalanceQueryOptions());
 
@@ -36,57 +36,11 @@ function EconomicsSectionContent() {
   ).toFixed(1);
   const marketPercentage = (100 - parseFloat(treasuryPercentage)).toFixed(1);
 
-  const totalTreasuryBalance = treasuryBalance
-    ? Object.values(treasuryBalance).reduce(
-        (sum, asset) => sum + (asset.usdValue ?? 0),
-        0,
-      )
-    : 0;
-
   const parsedLordsPrice = Number.parseFloat(lordsInfo?.price?.rate ?? "");
-
-  const treasuryData = [
-    {
-      name: "LORDS",
-      value: treasuryBalance?.LORDS.usdValue ?? 0,
-      amount: treasuryBalance?.LORDS.amount ?? 0,
-      color: "bg-primary",
-    },
-    {
-      name: "ETH + WETH",
-      value:
-        (treasuryBalance?.ETH.usdValue ?? 0) +
-        (treasuryBalance?.WETH.usdValue ?? 0),
-      amount:
-        (treasuryBalance?.ETH.amount ?? 0) +
-        (treasuryBalance?.WETH.amount ?? 0),
-      color: "bg-blue-500",
-    },
-    {
-      name: "STRK",
-      value: treasuryBalance?.STRK.usdValue ?? 0,
-      amount: treasuryBalance?.STRK.amount ?? 0,
-      color: "bg-purple-500",
-    },
-    {
-      name: "EKUBO",
-      value: treasuryBalance?.EKUBO.usdValue ?? 0,
-      amount: treasuryBalance?.EKUBO.amount ?? 0,
-      color: "bg-cyan-500",
-    },
-    {
-      name: "SURVIVOR",
-      value: treasuryBalance?.SURVIVOR.usdValue ?? 0,
-      amount: treasuryBalance?.SURVIVOR.amount ?? 0,
-      color: "bg-red-500",
-    },
-    {
-      name: "USDC",
-      value: treasuryBalance?.USDC.usdValue ?? 0,
-      amount: treasuryBalance?.USDC.amount ?? 0,
-      color: "bg-green-500",
-    },
-  ].filter((asset) => asset.value > 0 || asset.amount > 0);
+  const lordsLockedUsd =
+    Number.isFinite(parsedLordsPrice) && typeof lordsLocked === "number"
+      ? lordsLocked * parsedLordsPrice
+      : null;
 
   const heroMetrics = [
     {
@@ -103,12 +57,33 @@ function EconomicsSectionContent() {
     },
     {
       label: "Total Value Locked",
-      value: typeof tvl === "number"
-        ? `$${tvl.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+      value: typeof lordsLockedUsd === "number"
+        ? `$${lordsLockedUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
         : "—",
       highlight: false,
     },
   ];
+
+  const supplyStats = [
+    {
+      label: "Total Supply",
+      value: "300M",
+      sub: "$LORDS",
+      icon: Coins,
+    },
+    {
+      label: "Treasury",
+      value: treasuryLords > 0 ? `${treasuryPercentage}%` : "~40%",
+      sub: treasuryLords > 0 ? "Onchain" : "Estimated",
+      icon: Landmark,
+    },
+    {
+      label: "Circulating",
+      value: treasuryLords > 0 ? `${marketPercentage}%` : "~60%",
+      sub: "Freely liquid",
+      icon: TrendingUp,
+    },
+  ] as const;
 
   return (
     <section className="realm-section container mx-auto px-4 py-16 md:py-24">
@@ -118,19 +93,18 @@ function EconomicsSectionContent() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
       >
-        {/* Header */}
         <motion.div
-          className="text-center max-w-3xl mx-auto space-y-4"
+          className="mx-auto max-w-3xl space-y-4 text-center"
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.6 }}
         >
           <p className="realm-banner mx-auto flex w-fit">
             <Coins className="h-3.5 w-3.5" />
-            Economics
+            ECONOMICS
           </p>
-          <h2 className="realm-title text-3xl sm:text-4xl md:text-5xl">
-            $LORDS Token & Treasury
+          <h2 className="realm-title text-2xl sm:text-3xl md:text-4xl">
+            $LORDS TOKEN & TREASURY
           </h2>
           <p className="realm-subtitle text-base sm:text-lg">
             An ecosystem token designed for real-stakes gameplay economies and
@@ -138,23 +112,22 @@ function EconomicsSectionContent() {
           </p>
         </motion.div>
 
-        {/* Hero Metrics */}
         <motion.div
-          className="grid grid-cols-3 rounded-lg border border-primary/20 bg-black/30 backdrop-blur-sm overflow-hidden"
+          className="grid grid-cols-3 overflow-hidden rounded-lg border border-primary/20 bg-black/30 backdrop-blur-sm"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.6 }}
         >
-          {heroMetrics.map((metric, i) => (
+          {heroMetrics.map((metric, index) => (
             <div
               key={metric.label}
-              className={`p-4 sm:p-6 md:p-8 text-center ${
-                i > 0 ? "border-l border-primary/10" : ""
+              className={`p-4 text-center sm:p-6 md:p-8 ${
+                index > 0 ? "border-l border-primary/10" : ""
               }`}
             >
               <p className="realm-sigil mb-2">{metric.label}</p>
               <p
-                className={`text-xl sm:text-2xl md:text-4xl font-bold tabular-nums tracking-tight ${
+                className={`text-xl font-bold tabular-nums tracking-tight sm:text-2xl md:text-4xl ${
                   metric.highlight ? "text-primary" : "text-foreground/95"
                 }`}
               >
@@ -164,7 +137,6 @@ function EconomicsSectionContent() {
           ))}
         </motion.div>
 
-        {/* LORDS Flywheel with embedded data */}
         <LordsFlywheel
           metrics={{
             weeklyRewards: tokensThisWeek
@@ -181,147 +153,57 @@ function EconomicsSectionContent() {
           }}
         />
 
-        {/* Token & Treasury — full width */}
         <motion.div
-          className="realm-panel realm-edge-brackets rounded-lg border border-primary/20 bg-black/30 backdrop-blur-sm p-5 sm:p-6"
+          className="realm-panel realm-edge-brackets mx-auto max-w-4xl rounded-lg border border-primary/20 bg-black/30 p-5 text-center backdrop-blur-sm sm:p-6"
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.6 }}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-            {/* Left: Supply snapshot */}
-            <div className="space-y-4">
-              <h3 className="realm-banner">Token Supply</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {(
-                  [
-                    {
-                      label: "Total Supply",
-                      value: "300M",
-                      sub: "$LORDS",
-                      icon: Coins,
-                    },
-                    {
-                      label: "Treasury",
-                      value:
-                        treasuryLords > 0 ? `${treasuryPercentage}%` : "~40%",
-                      sub: treasuryLords > 0 ? "Onchain" : "Estimated",
-                      icon: Landmark,
-                    },
-                    {
-                      label: "Circulating",
-                      value:
-                        treasuryLords > 0 ? `${marketPercentage}%` : "~60%",
-                      sub: "Freely liquid",
-                      icon: TrendingUp,
-                    },
-                  ] as const
-                ).map((item) => (
-                  <div
-                    key={item.label}
-                    className="rounded-lg border border-primary/15 bg-black/40 p-3.5"
-                  >
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <item.icon className="h-3 w-3 text-primary/60" />
-                      <p className="realm-sigil">{item.label}</p>
-                    </div>
-                    <p className="text-lg font-bold tabular-nums tracking-tight text-foreground/95">
-                      {item.value}
-                    </p>
-                    <p className="text-[10px] text-foreground/60 mt-1">
-                      {item.sub}
-                    </p>
+          <div className="mx-auto space-y-4">
+            <h3 className="realm-banner mx-auto flex w-fit text-center">
+              TOKEN SUPPLY
+            </h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {supplyStats.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex flex-col items-center rounded-lg border border-primary/15 bg-black/40 p-4 text-center"
+                >
+                  <div className="mb-2 flex items-center justify-center gap-1.5">
+                    <item.icon className="h-3 w-3 text-primary/60" />
+                    <p className="realm-sigil">{item.label}</p>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right: Treasury composition */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="realm-banner">DAO Treasury</h3>
-                <p className="text-xl font-bold text-primary tabular-nums">
-                  {totalTreasuryBalance > 0
-                    ? `$${(totalTreasuryBalance / 1_000_000).toFixed(2)}M`
-                    : "—"}
-                </p>
-              </div>
-
-              {/* Stacked bar */}
-              <div className="space-y-3">
-                <div className="relative w-full h-3 bg-white/5 rounded-full overflow-hidden flex">
-                  {treasuryData.map((asset) => {
-                    const percentage =
-                      totalTreasuryBalance > 0
-                        ? (asset.value / totalTreasuryBalance) * 100
-                        : 0;
-                    return (
-                      <motion.div
-                        key={asset.name}
-                        className={`h-full ${asset.color} first:rounded-l-full last:rounded-r-full`}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${percentage}%` }}
-                        transition={{ duration: 1, delay: 0.5 }}
-                      />
-                    );
-                  })}
+                  <p className="text-lg font-bold tabular-nums tracking-tight text-foreground/95">
+                    {item.value}
+                  </p>
+                  <p className="mt-1 text-[10px] text-foreground/60">
+                    {item.sub}
+                  </p>
                 </div>
-
-                {/* Legend */}
-                <div className="flex flex-wrap gap-x-5 gap-y-2">
-                  {treasuryData.map((asset) => {
-                    const percentage =
-                      totalTreasuryBalance > 0
-                        ? (asset.value / totalTreasuryBalance) * 100
-                        : 0;
-                    return (
-                      <div
-                        key={asset.name}
-                        className="flex items-center gap-2 text-xs"
-                      >
-                        <div
-                          className={`w-2.5 h-2.5 rounded-full ${asset.color}`}
-                        />
-                        <span className="font-medium text-foreground/75">
-                          {asset.name}
-                        </span>
-                        <span className="tabular-nums text-foreground/50">
-                          {asset.amount.toLocaleString(undefined, {
-                            maximumFractionDigits: 2,
-                          })}
-                        </span>
-                        <span className="font-bold tabular-nums text-foreground/70">
-                          {percentage.toFixed(1)}%
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </motion.div>
 
-        {/* Stake CTA Bar */}
         <motion.div
-          className="rounded-lg border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent backdrop-blur-sm p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+          className="mx-auto flex max-w-4xl flex-col items-start justify-between gap-4 rounded-lg border border-primary/25 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-5 backdrop-blur-sm sm:flex-row sm:items-center sm:p-6"
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
         >
           <div>
-            <p className="text-lg sm:text-xl font-bold">
+            <p className="text-lg font-bold sm:text-xl">
               Earn{" "}
               <span className="text-primary">
-                {currentAPY ? `${currentAPY.toFixed(1)}%` : "—"}
+                {typeof currentAPY === "number" ? `${currentAPY.toFixed(1)}%` : "—"}
               </span>{" "}
               APY
             </p>
-            <p className="text-sm text-foreground/60 mt-1">
+            <p className="mt-1 text-sm text-foreground/60">
               Lock LORDS as veLORDS and earn weekly staking rewards.
             </p>
           </div>
-          <div className="flex gap-3 shrink-0">
+          <div className="flex shrink-0 gap-3">
             <Button size="lg" variant="war" asChild>
               <a
                 href="https://account.realms.world/velords"

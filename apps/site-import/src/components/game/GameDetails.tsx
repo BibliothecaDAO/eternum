@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Game } from "@/data/games";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  Users,
   DollarSign,
   Globe,
   Github,
@@ -295,7 +294,7 @@ export function GameDetails({ game }: { game: Game }) {
           </section>
 
           <motion.section
-            className="realm-games-detail-stats grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"
+            className="realm-games-detail-stats grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -308,17 +307,6 @@ export function GameDetails({ game }: { game: Game }) {
               <p className="mt-3 text-lg font-semibold text-foreground">{game.studio}</p>
             </article>
 
-            {game.players ? (
-              <article className="realm-panel realm-games-detail-stat rounded-lg p-4">
-                <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
-                  <Users className="h-4 w-4" />
-                  Active Players
-                </p>
-                <p className="mt-3 text-lg font-semibold text-foreground tabular-nums">
-                  {game.players.toLocaleString()}
-                </p>
-              </article>
-            ) : null}
 
             {game.tvl ? (
               <article className="realm-panel realm-games-detail-stat rounded-lg p-4">

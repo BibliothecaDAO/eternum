@@ -10,7 +10,6 @@ import {
   Gamepad2,
   Shield,
   Swords,
-  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -21,9 +20,6 @@ const homepageGames = sortedGames
   .filter((game) => !["pistols-at-dawn", "rising-revenant"].includes(game.slug))
   .slice(0, 6);
 
-const liveCount = liveGames.length;
-const studioCount = new Set(games.map((game) => game.studio)).size;
-const totalPlayers = games.reduce((sum, g) => sum + (g.players || 0), 0);
 
 const blitzFeatures = [
   {
@@ -33,8 +29,8 @@ const blitzFeatures = [
   },
   {
     icon: Bot,
-    label: "Agent-Driven",
-    detail: "Humans and agents execute tactics onchain",
+    label: "Agent-Permissive",
+    detail: "Agents can scrape game data and transact onchain as human players can",
   },
   {
     icon: Shield,
@@ -63,8 +59,8 @@ export function EcosystemAtlasSection() {
             <Gamepad2 className="h-3.5 w-3.5" />
             Games
           </p>
-          <h2 className="realm-title mb-4 text-3xl sm:text-4xl md:text-5xl">
-            Realms Ecosystem Games
+          <h2 className="realm-title mb-4 text-2xl sm:text-3xl md:text-4xl">
+            REALMS ECOSYSTEM GAMES
           </h2>
           <p className="realm-subtitle text-base sm:text-lg">
             Onchain games built for players, builders, and AI agents.
@@ -112,7 +108,7 @@ export function EcosystemAtlasSection() {
                   Flagship Agent Game
                 </p>
                 <h3 className="realm-title text-3xl sm:text-4xl md:text-5xl leading-tight mb-3">
-                  Blitz
+                  Realms: Blitz
                 </h3>
                 <p className="text-base sm:text-lg text-foreground/85 max-w-xl mb-6 leading-relaxed">
                   A fast-paced onchain RTS where humans and AI agents execute
@@ -179,19 +175,14 @@ export function EcosystemAtlasSection() {
           </div>
         </motion.div>
 
-        {/* ── Social proof + games grid header ── */}
+        {/* ── Games grid header ── */}
         <motion.div
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6"
+          className="mb-6 flex justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
         >
-          <p className="flex items-center gap-2 text-sm text-foreground/80">
-            <Users className="h-3.5 w-3.5" />
-            {totalPlayers.toLocaleString()}+ tracked players across {liveCount} live
-            worlds built by {studioCount} studios
-          </p>
-          <p className="realm-banner">Ecosystem</p>
+          <p className="realm-banner mx-auto flex w-fit text-center">ECOSYSTEM GAMES</p>
         </motion.div>
 
         {/* ── Games grid ── */}
@@ -225,15 +216,6 @@ export function EcosystemAtlasSection() {
                   )}
                 </div>
 
-                {/* Player count badge */}
-                {game.players && (
-                  <div className="absolute top-3 left-3">
-                    <span className="realm-sigil">
-                      <Users className="h-2.5 w-2.5 mr-1 inline" />
-                      {game.players.toLocaleString()}
-                    </span>
-                  </div>
-                )}
 
                 <h3 className="text-xl font-semibold mb-1.5">{game.title}</h3>
                 <p className="text-xs text-foreground/80 mb-2.5 line-clamp-2">

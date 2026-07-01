@@ -279,11 +279,6 @@ function GamesPage() {
                       ))}
                     </div>
 
-                    {game.players ? (
-                      <p className="mt-4 text-xs text-foreground/60">
-                        {game.players.toLocaleString()} tracked players
-                      </p>
-                    ) : null}
                   </div>
                 </motion.button>
               ))}

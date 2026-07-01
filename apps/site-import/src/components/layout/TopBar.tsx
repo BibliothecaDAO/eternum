@@ -183,13 +183,13 @@ export function TopBar() {
         className={cn(
           "transition-all duration-300",
           isScrolled
-            ? "realm-header-shell border-b border-primary/25 bg-black/45 backdrop-blur-xl supports-[backdrop-filter]:bg-black/35"
-            : "bg-transparent border-b border-transparent",
+            ? "realm-header-shell border border-primary/25 bg-black/45 backdrop-blur-xl supports-[backdrop-filter]:bg-black/35"
+            : "border border-transparent bg-transparent",
         )}
       >
         <div className="py-3.5 sm:py-4">
           <div className="container mx-auto px-3 sm:px-4">
-            <div className="grid grid-cols-[auto_1fr_auto] items-center gap-2 sm:gap-4">
+            <div className="relative flex items-center justify-between gap-2 sm:gap-4">
               <button
                 className="flex items-center gap-2 sm:gap-3 text-left"
                 onClick={handleTitleClick}
@@ -202,7 +202,7 @@ export function TopBar() {
                 />
               </button>
 
-              <nav className="hidden lg:flex items-center justify-center gap-5 xl:gap-7">
+              <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center justify-center gap-5 lg:flex xl:gap-7">
                 <Link
                   to="/"
                   className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
