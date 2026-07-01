@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-01T22:32:19.741Z",
+  "updatedAt": "2026-07-01T22:33:05.694Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -4239,6 +4239,19 @@
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-01-07-26-1900 not found"
       },
       "updatedAt": "2026-07-01T22:32:19.741Z"
+    },
+    "bltz-thrum-391": {
+      "gameName": "bltz-thrum-391",
+      "liveState": {
+        "state": "existing",
+        "stateSource": "describe",
+        "currentTier": "legendary",
+        "url": "https://api.cartridge.gg/x/bltz-thrum-391/torii",
+        "version": "v1.8.16",
+        "branch": "main",
+        "describedAt": "2026-07-01T22:33:05.694Z"
+      },
+      "updatedAt": "2026-07-01T22:33:05.694Z"
     }
   }
 }
