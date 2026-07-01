@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-07-01T14:07:16.106Z",
+  "updatedAt": "2026-07-01T20:47:36.266Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -218,6 +218,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-07-01T14:07:16.106Z"
       }
+    },
+    "bltz-thrum-391": {
+      "kind": "game",
+      "environment": "slot.blitz",
+      "gameName": "bltz-thrum-391",
+      "path": "runs/slot/blitz/bltz-thrum-391.json",
+      "inputPath": "inputs/slot/blitz/bltz-thrum-391/28546706019-1.json",
+      "status": "running",
+      "updatedAt": "2026-07-01T20:47:36.266Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-07-01T21:00:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
     }
   }
 }
