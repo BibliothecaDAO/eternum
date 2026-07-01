@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-01T14:07:15.648Z",
+  "updatedAt": "2026-07-01T14:07:19.844Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -4223,13 +4223,13 @@
       "liveState": {
         "state": "existing",
         "stateSource": "describe",
-        "currentTier": "legendary",
+        "currentTier": "pro",
         "url": "https://api.cartridge.gg/x/bltz-crisp-220/torii",
         "version": "v1.8.16",
         "branch": "main",
-        "describedAt": "2026-07-01T11:07:19.217Z"
+        "describedAt": "2026-07-01T14:07:19.844Z"
       },
-      "updatedAt": "2026-07-01T11:07:19.217Z"
+      "updatedAt": "2026-07-01T14:07:19.844Z"
     }
   }
 }
