@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-07-01T22:42:15.244Z",
+  "updatedAt": "2026-07-02T07:27:24.089Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -239,6 +239,23 @@
         "indexerTier": "pro",
         "lastIndexerDescribeAt": "2026-07-01T22:42:15.244Z"
       }
+    },
+    "bltz-crisp-75": {
+      "kind": "game",
+      "environment": "slot.blitz",
+      "gameName": "bltz-crisp-75",
+      "path": "runs/slot/blitz/bltz-crisp-75.json",
+      "inputPath": "inputs/slot/blitz/bltz-crisp-75/28573003196-1.json",
+      "status": "running",
+      "updatedAt": "2026-07-02T07:27:24.089Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-07-02T11:00:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
     }
   }
 }
