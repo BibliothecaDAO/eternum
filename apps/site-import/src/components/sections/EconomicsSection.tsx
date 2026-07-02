@@ -25,7 +25,7 @@ export function EconomicsSection() {
 }
 
 function EconomicsSectionContent() {
-  const { currentAPY, tokensThisWeek, lordsLocked } = useVelords();
+  const { currentAPY, averageWeeklyRewards, lordsLocked } = useVelords();
   const { data: lordsInfo } = useQuery(lordsInfoQueryOptions());
   const { data: treasuryBalance } = useQuery(treasuryBalanceQueryOptions());
 
@@ -52,7 +52,7 @@ function EconomicsSectionContent() {
     },
     {
       label: "Staking APY",
-      value: typeof currentAPY === "number" ? `${currentAPY.toFixed(1)}%` : "—",
+      value: typeof currentAPY === "number" ? `${currentAPY.toFixed(1)}%*` : "—",
       highlight: true,
     },
     {
@@ -137,10 +137,15 @@ function EconomicsSectionContent() {
           ))}
         </motion.div>
 
+        <p className="mx-auto max-w-3xl text-center text-xs leading-relaxed text-foreground/55">
+          * APY and fee figures use rolling 4-week averages from completed
+          weekly epochs.
+        </p>
+
         <LordsFlywheel
           metrics={{
-            weeklyRewards: tokensThisWeek
-              ? `${tokensThisWeek.toLocaleString(undefined, { maximumFractionDigits: 0 })} LORDS`
+            weeklyRewards: averageWeeklyRewards
+              ? `${averageWeeklyRewards.toLocaleString(undefined, { maximumFractionDigits: 0 })} LORDS`
               : undefined,
             lordsLocked: lordsLocked
               ? lordsLocked.toLocaleString(undefined, {
@@ -148,7 +153,7 @@ function EconomicsSectionContent() {
                 })
               : undefined,
             currentAPY: typeof currentAPY === "number"
-              ? `${currentAPY.toFixed(1)}%`
+              ? `${currentAPY.toFixed(1)}%*`
               : undefined,
           }}
         />
@@ -195,7 +200,7 @@ function EconomicsSectionContent() {
             <p className="text-lg font-bold sm:text-xl">
               Earn{" "}
               <span className="text-primary">
-                {typeof currentAPY === "number" ? `${currentAPY.toFixed(1)}%` : "—"}
+                {typeof currentAPY === "number" ? `${currentAPY.toFixed(1)}%*` : "—"}
               </span>{" "}
               APY
             </p>

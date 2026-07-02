@@ -7,15 +7,11 @@ import {
   Coins,
   Gamepad2,
   TrendingUp,
-  Wallet,
 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { games } from "@/data/games";
 import { useQuery } from "@tanstack/react-query";
-import {
-  lordsInfoQueryOptions,
-  treasuryBalanceQueryOptions,
-} from "@/lib/query-options";
+import { lordsInfoQueryOptions } from "@/lib/query-options";
 
 const HeroApyValue = lazy(() =>
   import("@/components/sections/HeroApyValue").then((module) => ({
@@ -37,18 +33,10 @@ function IntroSectionContent() {
   const liveGameCount = games.filter((game) => game.isLive).length;
 
   const { data: lordsInfo } = useQuery(lordsInfoQueryOptions());
-  const { data: treasuryBalance } = useQuery(treasuryBalanceQueryOptions());
 
   const parsedLordsPrice = Number.parseFloat(lordsInfo?.price?.rate ?? "");
   const lordsPrice = Number.isFinite(parsedLordsPrice)
     ? `$${parsedLordsPrice.toFixed(4)}`
-    : null;
-
-  const totalTreasury = treasuryBalance
-    ? Object.values(treasuryBalance).reduce(
-        (sum, asset) => sum + (asset.usdValue ?? 0),
-        0,
-      )
     : null;
 
   const tickerStats = [
@@ -66,13 +54,6 @@ function IntroSectionContent() {
       icon: TrendingUp,
       label: "Staking APY",
       value: null as string | null,
-    },
-    {
-      icon: Wallet,
-      label: "Treasury",
-      value: totalTreasury
-        ? `$${(totalTreasury / 1_000_000).toFixed(2)}M`
-        : null,
     },
   ];
 
@@ -163,7 +144,7 @@ function IntroSectionContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.7, duration: 0.7, ease: "easeOut" }}
           >
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               {tickerStats.map((stat, index) => (
                 <motion.div
                   key={stat.label}
@@ -198,6 +179,9 @@ function IntroSectionContent() {
                 </motion.div>
               ))}
             </div>
+            <p className="mt-3 text-[11px] leading-relaxed text-foreground/50">
+              * Rolling 4-week average from completed weekly epochs.
+            </p>
           </motion.div>
         </div>
       </div>

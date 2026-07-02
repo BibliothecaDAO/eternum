@@ -25,7 +25,7 @@ const STEPS = [
   {
     icon: Coins,
     label: "Fees",
-    detail: "Weekly game revenue",
+    detail: "4w avg weekly revenue",
     metricKey: "weeklyRewards" as keyof FlywheelMetrics | null,
   },
   {
@@ -37,7 +37,7 @@ const STEPS = [
   {
     icon: RefreshCw,
     label: "Earn",
-    detail: "Staking yield",
+    detail: "4w avg staking yield",
     metricKey: "currentAPY" as keyof FlywheelMetrics | null,
   },
 ];
