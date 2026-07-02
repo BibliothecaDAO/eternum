@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-07-02T07:30:26.646Z",
+  "updatedAt": "2026-07-02T07:30:44.269Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -246,17 +246,20 @@
       "gameName": "bltz-crisp-75",
       "path": "runs/slot/blitz/bltz-crisp-75.json",
       "inputPath": "inputs/slot/blitz/bltz-crisp-75/28573003196-1.json",
-      "status": "running",
-      "updatedAt": "2026-07-02T07:30:26.646Z",
+      "status": "complete",
+      "updatedAt": "2026-07-02T07:30:44.269Z",
       "workflowRef": "next",
-      "currentStepId": "create-indexer",
-      "activeLeaseExpiresAt": "2026-07-02T08:15:26.646Z",
-      "hasRunningStep": true,
+      "currentStepId": null,
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": null,
       "startTime": 1782990000,
       "durationSeconds": 3600,
-      "artifacts": {}
+      "artifacts": {
+        "indexerCreated": true,
+        "indexerTier": "basic",
+        "lastIndexerDescribeAt": "2026-07-02T07:30:42.960Z"
+      }
     }
   }
 }
