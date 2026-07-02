@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-07-01T08:58:56.479Z",
+  "updatedAt": "2026-07-02T08:28:20.547Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -493,48 +493,6 @@
       "startTime": "2026-06-11T01:00:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
-    },
-    "bltz-glow-265": {
-      "kind": "game",
-      "environment": "mainnet.blitz",
-      "gameName": "bltz-glow-265",
-      "path": "runs/mainnet/blitz/bltz-glow-265.json",
-      "inputPath": "inputs/mainnet/blitz/bltz-glow-265/28148765108-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-25T08:17:00.572Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1782367200,
-      "durationSeconds": 3600,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-25T08:17:00.572Z"
-      }
-    },
-    "bltz-flux-94": {
-      "kind": "game",
-      "environment": "mainnet.blitz",
-      "gameName": "bltz-flux-94",
-      "path": "runs/mainnet/blitz/bltz-flux-94.json",
-      "inputPath": "inputs/mainnet/blitz/bltz-flux-94/28148815210-1.json",
-      "status": "complete",
-      "updatedAt": "2026-06-25T08:17:10.951Z",
-      "workflowRef": "next",
-      "currentStepId": null,
-      "hasRunningStep": false,
-      "recoverableFailedStepId": null,
-      "recoverablePendingStepId": null,
-      "startTime": 1782368100,
-      "durationSeconds": 3600,
-      "artifacts": {
-        "indexerCreated": true,
-        "indexerTier": "pro",
-        "lastIndexerDescribeAt": "2026-06-25T08:17:10.951Z"
-      }
     },
     "bltz-glow-121": {
       "kind": "game",
