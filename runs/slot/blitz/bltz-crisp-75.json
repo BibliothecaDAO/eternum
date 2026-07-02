@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-crisp-75/28573003196-1.json",
   "latestLaunchRequestId": "28573003196-1",
-  "currentStepId": "wait-for-factory-index",
+  "currentStepId": "configure-world",
   "createdAt": "2026-07-02T07:27:24.089Z",
-  "updatedAt": "2026-07-02T07:28:37.879Z",
+  "updatedAt": "2026-07-02T07:28:43.283Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -36,10 +36,11 @@
     {
       "id": "wait-for-factory-index",
       "title": "Waiting for game",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Waiting for game",
-      "latestEvent": "Waiting for game started",
-      "startedAt": "2026-07-02T07:28:37.879Z"
+      "latestEvent": "Waiting for game succeeded",
+      "startedAt": "2026-07-02T07:28:37.879Z",
+      "finishedAt": "2026-07-02T07:28:43.283Z"
     },
     {
       "id": "configure-world",
@@ -76,13 +77,5 @@
     "summaryPath": ".context/game-launch/slot-blitz-bltz-crisp-75.json",
     "worldAddress": "0x07b057a1f3f6895e34879afd54895e336b7a21a1b9b20a32d8cff86d4635cdbf",
     "createGameTxHash": "0x3422d62885d3c6b273f84e76b744c87a8c29f674056bdd25022c90fe5f36b7c"
-  },
-  "activeLease": {
-    "launchRequestId": "28573003196-1",
-    "workflowRunId": 28573003196,
-    "workflowRunAttempt": 1,
-    "stepId": "wait-for-factory-index",
-    "acquiredAt": "2026-07-02T07:28:37.879Z",
-    "expiresAt": "2026-07-02T08:13:37.879Z"
   }
 }
