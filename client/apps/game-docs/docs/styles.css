@@ -6,10 +6,10 @@
 
 /* Realms Theme — Global Overrides */
 :root {
-  --realm-bg-void: #080a0c;
-  --realm-bg-smoke: #0b0d10;
-  --realm-surface-iron: #101417;
-  --realm-surface-slate: #151a1d;
+  --realm-bg-void: #07111f;
+  --realm-bg-smoke: #0a1728;
+  --realm-surface-iron: #0f1c2d;
+  --realm-surface-slate: #132238;
   --realm-accent-ember: #c4874a;
   --realm-accent-brass: #e7cf88;
   --realm-accent-arcane: #8d98c8;
@@ -21,14 +21,8 @@
 html,
 body {
   font-family: "Exo 2", sans-serif !important;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(201, 169, 96, 0.08), transparent 38rem),
-    linear-gradient(rgba(201, 169, 96, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(201, 169, 96, 0.045) 1px, transparent 1px),
-    linear-gradient(180deg, #040607 0%, #070b0d 54%, #050709 100%) !important;
+  background: #07111f !important;
   background-attachment: fixed;
-  background-position: center top, center center, center center, center center;
-  background-size: auto, 96px 96px, 96px 96px, auto;
   color: #ece0bd;
 }
 
@@ -96,11 +90,16 @@ pre,
 }
 
 /* Navigation */
-.vocs_NavBar,
-.vocs_Header {
-  background: rgba(5, 7, 9, 0.92) !important;
-  border-bottom-color: rgba(201, 169, 96, 0.18) !important;
+.vocs_NavBar {
+  background: rgba(7, 17, 31, 0.94) !important;
+  border-bottom-color: rgba(231, 207, 136, 0.16) !important;
   backdrop-filter: blur(14px);
+}
+
+.vocs_Header {
+  background: transparent !important;
+  border: 0 !important;
+  backdrop-filter: none !important;
 }
 
 /* Content area */
@@ -386,18 +385,12 @@ body::before {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 16% 0%, rgba(231, 207, 136, 0.12), transparent 28rem),
-    radial-gradient(circle at 88% 12%, rgba(141, 152, 200, 0.1), transparent 24rem),
-    linear-gradient(rgba(231, 207, 136, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(231, 207, 136, 0.035) 1px, transparent 1px),
-    linear-gradient(180deg, #080a0c 0%, #101417 48%, #080a0c 100%);
-  background-size: auto, auto, 96px 96px, 96px 96px, auto;
+  background: #07111f;
 }
 
 .vocs_DocsLayout,
 .vocs_DocsLayout_content {
-  background: transparent !important;
+  background: #07111f !important;
 }
 
 .vocs_DocsLayout_content {
@@ -407,24 +400,18 @@ body::before {
 .vocs_DocsLayout_gutterLeft,
 .vocs_Sidebar_logoWrapper {
   background:
-    linear-gradient(180deg, rgba(16, 20, 23, 0.96), rgba(8, 10, 12, 0.98)) !important;
+    linear-gradient(180deg, rgba(7, 17, 31, 0.98), rgba(7, 17, 31, 0.98)) !important;
 }
 
 .vocs_DocsLayout_gutterTop,
 .vocs_DocsLayout_gutterTopCurtain {
-  background: rgba(8, 10, 12, 0.9) !important;
-  border-bottom: 1px solid rgba(231, 207, 136, 0.2);
+  background: rgba(7, 17, 31, 0.94) !important;
+  border-bottom: 1px solid rgba(231, 207, 136, 0.16);
   backdrop-filter: blur(16px);
 }
 
 .vocs_Content {
   color: #e8dcc2;
-}
-
-.vocs_Content > .vocs_Heading:first-child,
-.vocs_Content h1:first-child {
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(231, 207, 136, 0.2);
 }
 
 .vocs_Content h2,
@@ -506,7 +493,7 @@ body::before {
 
 .vocs_Sidebar {
   background:
-    linear-gradient(180deg, rgba(16, 20, 23, 0.96), rgba(8, 10, 12, 0.98)) !important;
+    linear-gradient(180deg, rgba(7, 17, 31, 0.98), rgba(7, 17, 31, 0.98)) !important;
   border-right: 1px solid rgba(231, 207, 136, 0.2) !important;
 }
 
@@ -575,9 +562,17 @@ body::before {
   color: #e8dcc2 !important;
 }
 
-@media (max-width: 720px) {
-  .vocs_Content > .vocs_Heading:first-child,
-  .vocs_Content h1:first-child {
-    padding-bottom: 0.75rem;
-  }
+
+.vocs_Header,
+.vocs_Content > .vocs_Header:first-child {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding-bottom: 0 !important;
+}
+
+.vocs_Content > .vocs_Heading:first-child,
+.vocs_Content h1:first-child {
+  border: 0 !important;
+  box-shadow: none !important;
 }
