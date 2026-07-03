@@ -6,15 +6,15 @@
 
 /* Realms Theme — Global Overrides */
 :root {
-  --realm-bg-void: #050709;
-  --realm-bg-smoke: #070b0d;
+  --realm-bg-void: #080a0c;
+  --realm-bg-smoke: #0b0d10;
   --realm-surface-iron: #101417;
-  --realm-surface-slate: #161b20;
+  --realm-surface-slate: #151a1d;
   --realm-accent-ember: #c4874a;
-  --realm-accent-brass: #c9a960;
-  --realm-accent-arcane: #8088b8;
-  --realm-border-etched: #423925;
-  --realm-border-strong: #5f5030;
+  --realm-accent-brass: #e7cf88;
+  --realm-accent-arcane: #8d98c8;
+  --realm-border-etched: rgba(231, 207, 136, 0.22);
+  --realm-border-strong: rgba(231, 207, 136, 0.38);
 }
 
 /* Body font */
@@ -43,8 +43,10 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: "Cinzel", serif !important;
+  font-family: "IM Fell English SC", "Cinzel", serif !important;
+  font-weight: 400;
   letter-spacing: 0;
+  text-transform: uppercase;
 }
 
 /* Code blocks */
@@ -365,4 +367,217 @@ pre,
 .table-first-col-auto th:first-child {
   width: auto;
   white-space: normal;
+}
+
+
+/* Realms.World alignment pass */
+:root,
+:root.dark {
+  --vocs-borderRadius_4: 8px;
+  --vocs-borderRadius_6: 8px;
+  --vocs-borderRadius_8: 8px;
+  --vocs-fontFamily_default: "Exo 2", Rajdhani, sans-serif;
+  --vocs-fontFamily_mono: "Source Code Pro", monospace;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 16% 0%, rgba(231, 207, 136, 0.12), transparent 28rem),
+    radial-gradient(circle at 88% 12%, rgba(141, 152, 200, 0.1), transparent 24rem),
+    linear-gradient(rgba(231, 207, 136, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(231, 207, 136, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, #080a0c 0%, #101417 48%, #080a0c 100%);
+  background-size: auto, auto, 96px 96px, 96px 96px, auto;
+}
+
+.vocs_DocsLayout,
+.vocs_DocsLayout_content {
+  background: transparent !important;
+}
+
+.vocs_DocsLayout_content {
+  color: #e8dcc2;
+}
+
+.vocs_DocsLayout_gutterLeft,
+.vocs_Sidebar_logoWrapper {
+  background:
+    linear-gradient(180deg, rgba(16, 20, 23, 0.96), rgba(8, 10, 12, 0.98)) !important;
+}
+
+.vocs_DocsLayout_gutterTop,
+.vocs_DocsLayout_gutterTopCurtain {
+  background: rgba(8, 10, 12, 0.9) !important;
+  border-bottom: 1px solid rgba(231, 207, 136, 0.2);
+  backdrop-filter: blur(16px);
+}
+
+.vocs_Content {
+  color: #e8dcc2;
+}
+
+.vocs_Content > .vocs_Heading:first-child,
+.vocs_Content h1:first-child {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(231, 207, 136, 0.2);
+}
+
+.vocs_Content h2,
+.vocs_Content h3 {
+  color: #f5ead0 !important;
+}
+
+.vocs_Content p,
+.vocs_Content li {
+  color: #d8c8a8;
+}
+
+.vocs_Content strong {
+  color: #f5ead0;
+}
+
+.vocs_Content blockquote,
+.vocs_Callout,
+.vocs_Details,
+.vocs_Tabs,
+.vocs_CodeBlock,
+.vocs_Pre,
+.vocs_Content table {
+  border: 1px solid rgba(231, 207, 136, 0.22) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(160deg, rgba(21, 26, 29, 0.9), rgba(8, 10, 12, 0.88)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(231, 207, 136, 0.12),
+    0 16px 34px rgba(0, 0, 0, 0.28);
+}
+
+.vocs_Content blockquote {
+  padding: 1rem 1.25rem;
+  color: #cfc0a0;
+}
+
+.vocs_CodeBlock pre,
+.vocs_Pre pre,
+.vocs_Tabs_content,
+.vocs_Tabs pre {
+  background: transparent !important;
+}
+
+.vocs_CodeTitle,
+.vocs_Tabs_list,
+.vocs_Content th {
+  background: rgba(231, 207, 136, 0.1) !important;
+  border-color: rgba(231, 207, 136, 0.22) !important;
+  color: #f2dd9b !important;
+}
+
+.vocs_Button_button,
+.vocs_HomePage_button,
+.vocs_Footer_navigationItem {
+  border: 1px solid rgba(231, 207, 136, 0.32) !important;
+  border-radius: 8px !important;
+  background:
+    linear-gradient(180deg, rgba(231, 207, 136, 0.12), rgba(16, 20, 23, 0.9)) !important;
+  color: #f5ead0 !important;
+  box-shadow: inset 0 1px 0 rgba(231, 207, 136, 0.16);
+}
+
+.vocs_Button_button:hover,
+.vocs_HomePage_button:hover,
+.vocs_Footer_navigationItem:hover {
+  border-color: rgba(231, 207, 136, 0.58) !important;
+  background:
+    linear-gradient(180deg, rgba(231, 207, 136, 0.18), rgba(21, 26, 29, 0.95)) !important;
+  color: #fff6dc !important;
+}
+
+.vocs_Button_button_accent,
+.vocs_HomePage_button_accent {
+  background: #e7cf88 !important;
+  border-color: #f2dd9b !important;
+  color: #17110a !important;
+}
+
+.vocs_Sidebar {
+  background:
+    linear-gradient(180deg, rgba(16, 20, 23, 0.96), rgba(8, 10, 12, 0.98)) !important;
+  border-right: 1px solid rgba(231, 207, 136, 0.2) !important;
+}
+
+.vocs_Sidebar_navigation > .vocs_Sidebar_group > .vocs_Sidebar_section + .vocs_Sidebar_section {
+  border-top-color: rgba(231, 207, 136, 0.16) !important;
+}
+
+.vocs_Sidebar_sectionTitle {
+  color: #f5ead0 !important;
+  font-family: "IM Fell English SC", "Cinzel", serif !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase;
+}
+
+.vocs_Sidebar_item {
+  border-radius: 8px;
+  padding: 0.28rem 0.5rem;
+  color: #bcae91 !important;
+}
+
+.vocs_Sidebar_item:hover {
+  color: #f5ead0 !important;
+  background: rgba(231, 207, 136, 0.07);
+}
+
+.vocs_Sidebar_item[data-active="true"],
+.vocs_Sidebar_sectionTitleLink[data-active="true"] {
+  color: #17110a !important;
+  background: #e7cf88 !important;
+}
+
+.vocs_Sidebar_levelInset {
+  border-left-color: rgba(231, 207, 136, 0.22) !important;
+}
+
+.vocs_Outline,
+.vocs_Outline a {
+  color: #a99570 !important;
+}
+
+.vocs_Outline a:hover,
+.vocs_Outline a[data-active="true"] {
+  color: #e7cf88 !important;
+}
+
+.vocs_SearchDialog,
+.vocs_DesktopSearch_button,
+.vocs_MobileSearch_button {
+  border-color: rgba(231, 207, 136, 0.24) !important;
+  background: rgba(16, 20, 23, 0.82) !important;
+  color: #d8c8a8 !important;
+}
+
+.vocs_HomePage {
+  color: #e8dcc2;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.45);
+}
+
+.vocs_HomePage_logo img {
+  max-height: 52px;
+}
+
+.vocs_HomePage_description {
+  max-width: 48rem;
+  color: #e8dcc2 !important;
+}
+
+@media (max-width: 720px) {
+  .vocs_Content > .vocs_Heading:first-child,
+  .vocs_Content h1:first-child {
+    padding-bottom: 0.75rem;
+  }
 }
