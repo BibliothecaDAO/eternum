@@ -432,6 +432,7 @@ export const importantNote = {
   },
   title: {
     fontSize: "1.1rem",
+    marginTop: 0,
     fontWeight: "bold",
     color: colors.primary,
     marginBottom: "0.75rem",
@@ -442,6 +443,8 @@ export const importantNote = {
   },
   content: {
     color: colors.text.light,
+    marginTop: 0,
+    marginBottom: 0,
   },
 };
 
