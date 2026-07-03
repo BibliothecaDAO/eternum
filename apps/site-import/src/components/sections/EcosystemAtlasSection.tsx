@@ -223,16 +223,21 @@ export function EcosystemAtlasSection() {
                 </p>
 
                 {/* Genre tags */}
-                <div className="mb-3 flex flex-wrap gap-1.5">
-                  {game.genre?.slice(0, 3).map((genre) => (
-                    <span
-                      key={`${game.slug}-${genre}`}
-                      className="realm-sigil text-[9px]"
-                    >
-                      {genre}
-                    </span>
-                  ))}
-                  <span className="realm-sigil realm-studio-tag text-[9px]">
+                <div className="mb-3 flex flex-nowrap items-start justify-between gap-2">
+                  <div className="flex min-w-0 flex-wrap gap-1.5">
+                    {game.genre
+                      ?.filter((genre) => genre !== game.studio)
+                      .slice(0, 3)
+                      .map((genre) => (
+                        <span
+                          key={`${game.slug}-${genre}`}
+                          className="realm-sigil text-[9px]"
+                        >
+                          {genre}
+                        </span>
+                      ))}
+                  </div>
+                  <span className="realm-sigil realm-studio-tag ml-auto shrink-0 text-[9px]">
                     {game.studio}
                   </span>
                 </div>

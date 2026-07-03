@@ -35,8 +35,8 @@ function statusChipClasses(status: string) {
   return "bg-slate-300/10 text-slate-200 border-slate-300/30";
 }
 
-function gameTagList(game: { genre?: string[]; studio: string }) {
-  return (game.genre || []).slice(0, 3).concat(game.studio);
+function gameGenreTags(game: { genre?: string[]; studio: string }) {
+  return (game.genre || []).filter((tag) => tag !== game.studio).slice(0, 3);
 }
 
 function GamesPage() {
@@ -131,22 +131,20 @@ function GamesPage() {
                   <p className="mt-4 text-sm leading-relaxed text-foreground/78">
                     {blitzFeaturedDetail}
                   </p>
-                  <div className="mt-5 flex flex-wrap gap-1.5">
-                    {gameTagList(featuredGame).map((tag) => {
-                      const isStudio = tag === featuredGame.studio;
-                      return (
+                  <div className="mt-5 flex flex-nowrap items-start justify-between gap-2">
+                    <div className="flex min-w-0 flex-wrap gap-1.5">
+                      {gameGenreTags(featuredGame).map((tag) => (
                         <span
                           key={tag}
-                          className={
-                            isStudio
-                              ? "realm-sigil realm-studio-tag text-[11px]"
-                              : "rounded-md border border-primary/25 bg-black/35 px-2 py-0.5 text-[11px] text-foreground/75"
-                          }
+                          className="rounded-md border border-primary/25 bg-black/35 px-2 py-0.5 text-[11px] text-foreground/75"
                         >
                           {tag}
                         </span>
-                      );
-                    })}
+                      ))}
+                    </div>
+                    <span className="realm-sigil realm-studio-tag ml-auto shrink-0 text-[11px]">
+                      {featuredGame.studio}
+                    </span>
                   </div>
                   <div className="mt-5 flex flex-wrap items-center gap-2">
                     {featuredGame.isLive ? (
@@ -175,7 +173,7 @@ function GamesPage() {
                 <motion.button
                   key={game.id}
                   type="button"
-                  className="group realm-panel realm-holo-card realm-games-card overflow-hidden rounded-lg text-left"
+                  className="group realm-panel realm-holo-card realm-games-card flex h-full flex-col overflow-hidden rounded-lg text-left"
                   onClick={() =>
                     navigate({ to: "/games/$slug", params: { slug: game.slug } })
                   }
@@ -184,7 +182,7 @@ function GamesPage() {
                   transition={{ duration: 0.35, delay: index * 0.03 }}
                   whileHover={{ y: -4 }}
                 >
-                  <div className="relative aspect-[4/3] overflow-hidden border-b border-primary/20">
+                  <div className="realm-games-card-media relative aspect-[16/10] overflow-hidden border-b border-primary/20 bg-black/40">
                     <img
                       src={game.image}
                       alt={game.title}
@@ -210,33 +208,31 @@ function GamesPage() {
                     </div>
                   </div>
 
-                  <div className="p-4 sm:p-5">
+                  <div className="flex flex-1 flex-col p-4 sm:p-5">
                     <h2 className="text-xl font-semibold text-foreground transition-colors group-hover:text-primary">
                       {game.title}
                     </h2>
                     <p className="mt-1 text-xs uppercase tracking-[0.14em] text-foreground/55">
                       {game.studio}
                     </p>
-                    <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-foreground/78">
+                    <p className="mt-3 line-clamp-3 flex-1 text-sm leading-relaxed text-foreground/78">
                       {game.description}
                     </p>
 
-                    <div className="mt-4 flex flex-wrap gap-1.5">
-                      {gameTagList(game).map((tag) => {
-                        const isStudio = tag === game.studio;
-                        return (
+                    <div className="mt-4 flex flex-nowrap items-start justify-between gap-2">
+                      <div className="flex min-w-0 flex-wrap gap-1.5">
+                        {gameGenreTags(game).map((tag) => (
                           <span
                             key={tag}
-                            className={
-                              isStudio
-                                ? "realm-sigil realm-studio-tag text-[11px]"
-                                : "rounded-md border border-primary/25 bg-black/35 px-2 py-0.5 text-[11px] text-foreground/75"
-                            }
+                            className="rounded-md border border-primary/25 bg-black/35 px-2 py-0.5 text-[11px] text-foreground/75"
                           >
                             {tag}
                           </span>
-                        );
-                      })}
+                        ))}
+                      </div>
+                      <span className="realm-sigil realm-studio-tag ml-auto shrink-0 text-[11px]">
+                        {game.studio}
+                      </span>
                     </div>
                   </div>
                 </motion.button>

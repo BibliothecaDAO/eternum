@@ -418,6 +418,7 @@
     color: color-mix(in oklab, var(--primary) 82%, white);
     padding: 0.2rem 0.5rem;
     border-radius: 999px;
+    white-space: nowrap;
   }
 
   .realm-studio-tag {
@@ -1014,6 +1015,18 @@
 
   .realm-games-card {
     border-color: color-mix(in oklab, var(--realm-border-etched) 74%, transparent);
+    min-height: 100%;
+  }
+
+  .realm-games-card-media {
+    flex: 0 0 auto;
+  }
+
+  .realm-games-card-media img {
+    height: 100%;
+    min-height: 100%;
+    object-fit: cover;
+    object-position: center;
   }
 
   .realm-games-card:hover,
