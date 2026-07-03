@@ -50,13 +50,6 @@ function GamesPage() {
 
   return (
     <section className="realm-section realm-games-stage relative overflow-hidden py-10 sm:py-14">
-      <img
-        src="/brand/twilight-tundra.webp"
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem] w-full object-cover opacity-18"
-      />
-      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[32rem] bg-gradient-to-b from-black/50 via-black/72 to-transparent" />
       <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -68,7 +61,7 @@ function GamesPage() {
             <div className="flex flex-wrap items-end justify-between gap-5">
               <div className="max-w-3xl">
                 <h1 className="realm-title text-3xl leading-tight sm:text-4xl lg:text-5xl">
-                  Ecosystem Games Directory
+                  Games Directory
                 </h1>
                 <p className="mt-3 text-base text-foreground/80 sm:text-lg">
                   Browse live and in-development games shipping across the
