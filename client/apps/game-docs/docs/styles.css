@@ -53,7 +53,7 @@ pre,
 /* Sidebar styling */
 .vocs_Sidebar {
   background:
-    linear-gradient(180deg, rgba(7, 10, 12, 0.96), rgba(5, 7, 9, 0.98)) !important;
+    linear-gradient(180deg, rgba(7, 17, 31, 0.98), rgba(10, 23, 40, 0.98)) !important;
   border-right-color: rgba(201, 169, 96, 0.18) !important;
 }
 
@@ -233,7 +233,7 @@ pre,
 .vocs_Content table {
   width: 100% !important;
   border-collapse: collapse;
-  background-color: rgba(7, 10, 12, 0.82);
+  background-color: rgba(10, 23, 40, 0.86);
   border: 1px solid rgba(201, 169, 96, 0.18);
   border-radius: 8px;
   overflow: hidden;
@@ -246,7 +246,7 @@ pre,
   letter-spacing: 0;
   text-transform: none;
   color: var(--realm-accent-brass);
-  background-color: rgba(22, 27, 32, 0.86);
+  background-color: rgba(15, 28, 45, 0.92);
   border-bottom: 1px solid rgba(201, 169, 96, 0.24) !important;
   border-left: none !important;
   border-right: none !important;
@@ -389,7 +389,10 @@ body::before {
 }
 
 .vocs_DocsLayout,
-.vocs_DocsLayout_content {
+.vocs_DocsLayout_content,
+.vocs_Content,
+article.vocs_Content,
+#vocs-content {
   background: #07111f !important;
 }
 
@@ -403,11 +406,24 @@ body::before {
     linear-gradient(180deg, rgba(7, 17, 31, 0.98), rgba(7, 17, 31, 0.98)) !important;
 }
 
-.vocs_DocsLayout_gutterTop,
-.vocs_DocsLayout_gutterTopCurtain {
-  background: rgba(7, 17, 31, 0.94) !important;
-  border-bottom: 1px solid rgba(231, 207, 136, 0.16);
-  backdrop-filter: blur(16px);
+@media (min-width: 1081px) {
+  .vocs_DocsLayout_gutterTop,
+  .vocs_DocsLayout_gutterTopCurtain,
+  .vocs_DesktopTopNav,
+  .vocs_DesktopTopNav_curtain {
+    display: none !important;
+  }
+
+  .vocs_DocsLayout_content_withTopNav {
+    padding-top: calc(var(--vocs-topNav_height) + var(--vocs-content_verticalPadding)) !important;
+  }
+}
+
+@media (max-width: 1080px) {
+  .vocs_DocsLayout_gutterTop,
+  .vocs_DocsLayout_gutterTopCurtain {
+    background: #07111f !important;
+  }
 }
 
 .vocs_Content {
@@ -438,7 +454,7 @@ body::before {
   border: 1px solid rgba(231, 207, 136, 0.22) !important;
   border-radius: 8px !important;
   background:
-    linear-gradient(160deg, rgba(21, 26, 29, 0.9), rgba(8, 10, 12, 0.88)) !important;
+    linear-gradient(160deg, rgba(15, 28, 45, 0.94), rgba(10, 23, 40, 0.9)) !important;
   box-shadow:
     inset 0 1px 0 rgba(231, 207, 136, 0.12),
     0 16px 34px rgba(0, 0, 0, 0.28);
@@ -470,7 +486,7 @@ body::before {
   border: 1px solid rgba(231, 207, 136, 0.32) !important;
   border-radius: 8px !important;
   background:
-    linear-gradient(180deg, rgba(231, 207, 136, 0.12), rgba(16, 20, 23, 0.9)) !important;
+    linear-gradient(180deg, rgba(231, 207, 136, 0.12), rgba(10, 23, 40, 0.92)) !important;
   color: #f5ead0 !important;
   box-shadow: inset 0 1px 0 rgba(231, 207, 136, 0.16);
 }
@@ -480,7 +496,7 @@ body::before {
 .vocs_Footer_navigationItem:hover {
   border-color: rgba(231, 207, 136, 0.58) !important;
   background:
-    linear-gradient(180deg, rgba(231, 207, 136, 0.18), rgba(21, 26, 29, 0.95)) !important;
+    linear-gradient(180deg, rgba(231, 207, 136, 0.18), rgba(15, 28, 45, 0.96)) !important;
   color: #fff6dc !important;
 }
 
@@ -544,7 +560,7 @@ body::before {
 .vocs_DesktopSearch_button,
 .vocs_MobileSearch_button {
   border-color: rgba(231, 207, 136, 0.24) !important;
-  background: rgba(16, 20, 23, 0.82) !important;
+  background: rgba(10, 23, 40, 0.9) !important;
   color: #d8c8a8 !important;
 }
 
