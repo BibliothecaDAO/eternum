@@ -132,7 +132,7 @@ function GamesPage() {
                 </div>
                 <div className="p-5 sm:p-6 lg:py-7">
                   <p className="realm-banner">Featured Game</p>
-                  <h2 className="mt-3 text-3xl font-semibold text-foreground transition-colors group-hover:text-primary sm:text-4xl lg:text-5xl">
+                  <h2 className="realm-title mt-3 text-3xl leading-tight transition-colors group-hover:text-primary sm:text-4xl lg:text-5xl">
                     {featuredGame.title}
                   </h2>
                   <p className="mt-2 text-sm font-semibold uppercase tracking-[0.14em] text-foreground/70 sm:text-base">
