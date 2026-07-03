@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-07-03T09:48:22.306Z",
+  "updatedAt": "2026-07-03T09:49:21.473Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -247,14 +247,13 @@
       "path": "runs/slot/blitz/bltz-chirp-914.json",
       "inputPath": "inputs/slot/blitz/bltz-chirp-914/28652550927-1.json",
       "status": "running",
-      "updatedAt": "2026-07-03T09:48:22.306Z",
+      "updatedAt": "2026-07-03T09:49:21.473Z",
       "workflowRef": "next",
-      "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-07-03T10:33:22.306Z",
-      "hasRunningStep": true,
+      "currentStepId": "wait-for-factory-index",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "wait-for-factory-index",
-      "startTime": "2026-07-03T11:30:00.000Z",
+      "startTime": 1783078200,
       "durationSeconds": 3600,
       "artifacts": {}
     }
