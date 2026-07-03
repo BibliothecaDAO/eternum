@@ -65,11 +65,10 @@ function ScrollIndexPage() {
         className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 space-y-6 sm:space-y-8"
       >
         <header className="realm-panel realm-grid-scan scroll-codex-hero rounded-lg p-5 sm:p-7">
-          <p className="realm-banner mb-4">Signal Archive</p>
           <div className="flex flex-wrap items-end justify-between gap-5">
             <div className="max-w-3xl">
               <h1 className="realm-title text-3xl sm:text-4xl lg:text-5xl leading-tight">
-                Scroll Codex Dispatches
+                Scroll Archive
               </h1>
               <p className="mt-3 text-base sm:text-lg text-foreground/80">
                 The written layer for Realms. Read ecosystem updates, design notes,
@@ -78,7 +77,6 @@ function ScrollIndexPage() {
             </div>
             <div className="flex gap-2 sm:gap-3">
               <span className="realm-sigil">{posts.length} entries</span>
-              <span className="realm-sigil">{filteredPosts.length} visible</span>
             </div>
           </div>
 

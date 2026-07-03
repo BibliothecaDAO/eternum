@@ -83,7 +83,7 @@ const CIRC = 2 * Math.PI * R;
 const NODE_SCREEN_DEGS = [270, 342, 54, 126, 198];
 const NODE_ORBIT_DEGS = [0, 72, 144, 216, 288];
 const ARROW_DEGS = [306, 18, 90, 162, 234];
-const NUM_PARTICLES = 4;
+const NUM_PARTICLES = 1;
 const ORBIT_SECS = 9;
 
 function screenDegToXY(deg: number) {

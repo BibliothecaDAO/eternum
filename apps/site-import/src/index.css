@@ -420,6 +420,14 @@
     border-radius: 999px;
   }
 
+  .realm-studio-tag {
+    border-color: color-mix(in oklab, var(--primary) 58%, white 24%);
+    background: color-mix(in oklab, var(--primary) 86%, white);
+    color: #14100b;
+    font-weight: 800;
+    box-shadow: inset 0 1px 0 color-mix(in oklab, white 48%, transparent);
+  }
+
   .realm-header-shell {
     border: 1px solid color-mix(in oklab, var(--realm-border-strong) 70%, transparent);
     background:

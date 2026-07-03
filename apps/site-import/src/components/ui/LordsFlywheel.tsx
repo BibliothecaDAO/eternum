@@ -50,7 +50,7 @@ const CIRC = 2 * Math.PI * R;
 const NODE_SCREEN_DEGS = [270, 0, 90, 180];
 const NODE_ORBIT_DEGS = [0, 90, 180, 270];
 
-const NUM_PARTICLES = 3;
+const NUM_PARTICLES = 1;
 const ORBIT_SECS = 8;
 
 function screenDegToXY(deg: number) {

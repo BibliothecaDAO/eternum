@@ -8,6 +8,7 @@ import {
   Bot,
   Coins,
   Compass,
+  Gamepad2,
   Github,
   Handshake,
   Home,
@@ -33,7 +34,7 @@ const homeSections = [
 const railIcons: Record<string, LucideIcon> = {
   hero: Home,
   "agent-native": Bot,
-  games: Compass,
+  games: Gamepad2,
   economics: Coins,
   partners: Handshake,
 };

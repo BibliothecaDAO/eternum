@@ -232,7 +232,7 @@ export function EcosystemAtlasSection() {
                       {genre}
                     </span>
                   ))}
-                  <span className="realm-sigil text-[9px] text-foreground/80">
+                  <span className="realm-sigil realm-studio-tag text-[9px]">
                     {game.studio}
                   </span>
                 </div>

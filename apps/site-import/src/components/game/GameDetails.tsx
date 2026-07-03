@@ -187,7 +187,7 @@ export function GameDetails({ game }: { game: Game }) {
             variant="rune"
             size="sm"
             onClick={() => navigate({ to: "/games" })}
-            className="mb-1"
+            className="mb-5 sm:mb-6"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Games
@@ -197,7 +197,7 @@ export function GameDetails({ game }: { game: Game }) {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
               <div className="space-y-5">
                 <div>
-                  <p className="realm-banner">Campaign Brief</p>
+                  <p className="realm-banner">Game Summary</p>
                   <motion.h1
                     className="realm-title mt-3 text-3xl sm:text-4xl lg:text-5xl"
                     initial={{ opacity: 0, x: -18 }}
@@ -346,7 +346,7 @@ export function GameDetails({ game }: { game: Game }) {
             >
               <header className="mb-4 flex items-end justify-between gap-4">
                 <div>
-                  <p className="realm-banner">Recon Archive</p>
+                  <p className="realm-banner">Archive</p>
                   <h2 className="realm-title mt-3 text-2xl sm:text-3xl">Screenshots</h2>
                 </div>
                 <span className="realm-sigil">
@@ -386,7 +386,7 @@ export function GameDetails({ game }: { game: Game }) {
               transition={{ delay: 0.3 }}
             >
               <header className="mb-4">
-                <p className="realm-banner">Deploy Channels</p>
+                <p className="realm-banner">Socials and More</p>
                 <h2 className="realm-title mt-3 text-2xl sm:text-3xl">Connect</h2>
               </header>
 
