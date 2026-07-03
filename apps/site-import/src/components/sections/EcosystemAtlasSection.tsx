@@ -13,13 +13,19 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const liveGames = games.filter((game) => game.isLive);
-const developmentGames = games.filter((game) => !game.isLive);
-const sortedGames = [...liveGames, ...developmentGames];
-const homepageGames = sortedGames
-  .filter((game) => !["pistols-at-dawn", "rising-revenant"].includes(game.slug))
-  .slice(0, 6);
+const homepageGameOrder = [
+  "blitz",
+  "loot-survivor",
+  "blob-arena",
+  "dark-shuffle",
+  "zkube",
+  "realms-eternum",
+];
 
+const gamesBySlug = new Map(games.map((game) => [game.slug, game]));
+const homepageGames = homepageGameOrder
+  .map((slug) => gamesBySlug.get(slug))
+  .filter((game): game is (typeof games)[number] => Boolean(game));
 
 const blitzFeatures = [
   {

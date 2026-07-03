@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { generateMetaTags } from "@/lib/og-image";
+import type { Game } from "@/data/games";
 
 export const Route = createFileRoute("/games/")({
   loader: async () => {
@@ -17,6 +18,24 @@ export const Route = createFileRoute("/games/")({
     }),
   }),
 });
+
+const gamesDirectoryOrder = [
+  "blitz",
+  "realms-eternum",
+  "loot-survivor",
+  "blob-arena",
+  "dark-shuffle",
+  "zkube",
+  "pistols-at-dawn",
+  "rising-revenant",
+];
+
+function orderGames(games: Game[]) {
+  const gamesBySlug = new Map(games.map((game) => [game.slug, game]));
+  return gamesDirectoryOrder
+    .map((slug) => gamesBySlug.get(slug))
+    .filter((game): game is Game => Boolean(game));
+}
 
 const blitzGrab =
   "Blitz is a one-hour, fully onchain real-time strategy game where human players and AI agents compete over territory, resources, and Hyperstructures. Every match is fully onchain and verifiable, with top-ranked players sharing the $LORDS prize pool.";
@@ -43,8 +62,9 @@ function GamesPage() {
   const navigate = useNavigate();
   const { games } = Route.useLoaderData();
 
-  const featuredGame = games[0];
-  const secondaryGames = games.slice(1);
+  const orderedGames = orderGames(games);
+  const featuredGame = orderedGames[0];
+  const secondaryGames = orderedGames.slice(1);
   const liveGamesCount = games.filter((game) => game.isLive).length;
   const studiosCount = new Set(games.map((game) => game.studio)).size;
 
