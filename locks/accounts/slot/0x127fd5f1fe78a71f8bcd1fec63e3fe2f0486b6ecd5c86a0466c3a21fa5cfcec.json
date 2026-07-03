@@ -9,11 +9,10 @@
     "workflowName": "Game Launch",
     "workflowRunId": 28652550927,
     "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "leaseId": "11e82f38-fc09-4b78-b99b-6529cbd61ec0"
+    "stepId": "configure-world",
+    "leaseId": "652db106-7698-4522-ae74-870eaaba51c8"
   },
-  "acquiredAt": "2026-07-03T09:48:25.739Z",
-  "heartbeatAt": "2026-07-03T09:49:18.929Z",
-  "expiresAt": "2026-07-03T09:49:18.929Z",
-  "releasedAt": "2026-07-03T09:49:18.929Z"
+  "acquiredAt": "2026-07-03T09:49:41.279Z",
+  "heartbeatAt": "2026-07-03T09:49:41.279Z",
+  "expiresAt": "2026-07-03T09:59:41.279Z"
 }
