@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-07-04T07:09:05.306Z",
+  "updatedAt": "2026-07-04T07:10:05.337Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -268,14 +268,13 @@
       "path": "runs/slot/blitz/bltz-blink-751.json",
       "inputPath": "inputs/slot/blitz/bltz-blink-751/28698652805-1.json",
       "status": "running",
-      "updatedAt": "2026-07-04T07:09:05.306Z",
+      "updatedAt": "2026-07-04T07:10:05.337Z",
       "workflowRef": "next",
-      "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-07-04T07:54:05.306Z",
-      "hasRunningStep": true,
+      "currentStepId": "wait-for-factory-index",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "wait-for-factory-index",
-      "startTime": "2026-07-04T11:15:00.000Z",
+      "startTime": 1783163700,
       "durationSeconds": 3600,
       "artifacts": {}
     }
