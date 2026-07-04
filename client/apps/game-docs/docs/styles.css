@@ -285,9 +285,12 @@ article.vocs_Content,
   color: var(--realm-title) !important;
   cursor: pointer !important;
   font-family: "IM Fell English SC", Cinzel, serif !important;
+  font-size: clamp(0.86rem, 0.74rem + 0.28vw, 1rem) !important;
   font-weight: 400 !important;
   letter-spacing: 0 !important;
+  line-height: 1.05 !important;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .vocs_Sidebar_item {

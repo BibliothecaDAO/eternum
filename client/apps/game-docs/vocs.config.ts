@@ -186,7 +186,7 @@ export default defineConfig({
       ],
     },
     {
-      text: "Eternum (Season Concluded)",
+      text: "Eternum (Season Ended)",
       items: [
         { text: "Key Concepts", link: "/eternum/key-concepts" },
         { text: "Game Entry", link: "/eternum/game-entry" },
