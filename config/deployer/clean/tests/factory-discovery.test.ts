@@ -11,10 +11,11 @@ const { getFactorySqlBaseUrl } = await import("../../../../common/factory/endpoi
 const { resolveVillageSystemsAddress } = await import("../factory/discovery.ts");
 
 const FACTORY_ENDPOINT_ENV_KEYS = [
-  "FACTORY_RUNTIME_PROVIDER",
+  "RUNTIME_PROVIDER",
   "AWS_RUNTIME_DOMAIN",
   "AWS_FACTORY_TORII_SLOT_RUNTIME_NAME",
   "AWS_FACTORY_TORII_MAINNET_RUNTIME_NAME",
+  "AWS_FACTORY_TORII_SLOT_ENVIRONMENT",
 ] as const;
 
 const originalEnv = new Map<string, string | undefined>(
@@ -55,16 +56,19 @@ describe("resolveVillageSystemsAddress", () => {
 
 describe("getFactorySqlBaseUrl", () => {
   test("keeps Cartridge factory Torii as the default lookup path", () => {
-    delete process.env.FACTORY_RUNTIME_PROVIDER;
+    delete process.env.RUNTIME_PROVIDER;
 
     expect(getFactorySqlBaseUrl("slot")).toBe("https://api.cartridge.gg/x/eternum-factory-slot-d/torii/sql");
   });
 
   test("resolves factory Torii through the AWS runtime domain when selected", () => {
-    process.env.FACTORY_RUNTIME_PROVIDER = "aws";
+    process.env.RUNTIME_PROVIDER = "aws";
     process.env.AWS_RUNTIME_DOMAIN = "runtime.realms.world";
     process.env.AWS_FACTORY_TORII_SLOT_RUNTIME_NAME = "eternum-factory-slot";
+    process.env.AWS_FACTORY_TORII_SLOT_ENVIRONMENT = "slot-blitz";
 
-    expect(getFactorySqlBaseUrl("slot")).toBe("https://runtime.realms.world/x/eternum-factory-slot/torii/sql");
+    expect(getFactorySqlBaseUrl("slot")).toBe(
+      "https://runtime.realms.world/x/slot-blitz/eternum-factory-slot/torii/sql",
+    );
   });
 });

@@ -12,12 +12,30 @@ function tomlList(values) {
   return values.map((value) => JSON.stringify(value)).join(", ");
 }
 
-process.stdout.write(`rpc = "${process.env.RPC_URL || ""}"
-world_address = "${process.env.WORLD_ADDRESS || ""}"
-db_dir = "${process.env.DATA_DIR || "/data"}/torii"
+function tomlString(value) {
+  return JSON.stringify(value);
+}
+
+function renderWorldBlock() {
+  const value = process.env.TORII_WORLD_BLOCK?.trim();
+  if (!value) {
+    return "";
+  }
+
+  const block = Number(value);
+  if (!Number.isInteger(block) || block < 0) {
+    throw new Error(`Invalid TORII_WORLD_BLOCK: ${value}`);
+  }
+
+  return `world_block = ${block}\n`;
+}
+
+process.stdout.write(`rpc = ${tomlString(process.env.RPC_URL || "")}
+world_address = ${tomlString(process.env.WORLD_ADDRESS || "")}
+db_dir = ${tomlString(`${process.env.DATA_DIR || "/data"}/torii`)}
 
 [indexing]
-events_chunk_size = 1024
+${renderWorldBlock()}events_chunk_size = 1024
 blocks_chunk_size = 10240
 pending = true
 polling_interval = 250

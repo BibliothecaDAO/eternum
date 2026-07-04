@@ -138,7 +138,7 @@ jobs:
       GAME_LAUNCH_TARGET_GAME_NAMES_JSON: ${{ github.event.inputs.target_game_names_json }}
       GAME_LAUNCH_STEP: ${{ github.event.inputs.launch_step }}
       FACTORY_RUN_STORE_BRANCH: factory-runs
-      FACTORY_RUNTIME_PROVIDER: aws
+      RUNTIME_PROVIDER: ${{ vars.RUNTIME_PROVIDER || 'slot' }}
       FACTORY_ADDRESS: ${{ vars.FACTORY_ADDRESS }}
       DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
       DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
@@ -146,8 +146,8 @@ jobs:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
       AWS_RUNTIME_CLUSTER: ${{ vars.AWS_RUNTIME_CLUSTER }}
       AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
+      AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
       AWS_RUNTIME_ECR_IMAGE: ${{ vars.AWS_RUNTIME_ECR_IMAGE }}
-      AWS_RUNTIME_ECR_IMAGE_DIGEST: ${{ vars.AWS_RUNTIME_ECR_IMAGE_DIGEST }}
       AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN }}
       AWS_RUNTIME_TASK_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_ROLE_ARN }}
       AWS_RUNTIME_SUBNET_IDS: ${{ vars.AWS_RUNTIME_SUBNET_IDS }}
@@ -156,6 +156,7 @@ jobs:
       AWS_RUNTIME_VPC_ID: ${{ vars.AWS_RUNTIME_VPC_ID }}
       AWS_RUNTIME_ALB_LISTENER_ARN: ${{ vars.AWS_RUNTIME_ALB_LISTENER_ARN }}
       AWS_RUNTIME_LOG_GROUP: ${{ vars.AWS_RUNTIME_LOG_GROUP || '/ecs/eternum-game-runtime' }}
+      AWS_RUNTIME_SNS_TOPIC_ARN: ${{ vars.AWS_RUNTIME_SNS_TOPIC_ARN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

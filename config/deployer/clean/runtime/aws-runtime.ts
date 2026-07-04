@@ -1,40 +1,105 @@
-import { spawnSync, type SpawnSyncReturns } from "node:child_process";
-import { DEFAULT_TORII_VERSION } from "../constants";
-import type { DeploymentEnvironmentId, IndexerRequest, IndexerTier } from "../types";
-
-const DEFAULT_AWS_RUNTIME_REGION = "us-east-1";
-const DEFAULT_AWS_RUNTIME_DOMAIN = "runtime.realms.world";
-const DEFAULT_AWS_RUNTIME_CLUSTER = "eternum-game-runtime";
-const DEFAULT_AWS_RUNTIME_CONTAINER_NAME = "runtime";
-const DEFAULT_AWS_RUNTIME_LOG_GROUP = "/ecs/eternum-game-runtime";
-const DEFAULT_AWS_RUNTIME_ASSIGN_PUBLIC_IP = "DISABLED";
-const DEFAULT_AWS_RUNTIME_RULE_PRIORITY_BASE = 10_000;
-const AWS_COMMAND_MAX_BUFFER_BYTES = 10 * 1024 * 1024;
+import type { SpawnSyncReturns } from "node:child_process";
+import {
+  buildRuntimeEndpointUrl,
+  type RuntimeEndpointKind as AwsRuntimeEndpointKind,
+} from "../../../../common/factory/runtime-endpoints";
+import type { DeploymentEnvironmentId, IndexerTier } from "../types";
+import {
+  buildAwsRuntimeTags,
+  readTag,
+  resolveAwsRuntimeClusterName,
+  resolveAwsRuntimeCommandConfig,
+  resolveAwsRuntimeTier,
+  resolveRuntimeDomain,
+  resolveRuntimeLogGroup,
+  resolveRuntimeRegion,
+  resolveRuntimeTier,
+  resolveRuntimeVersion,
+  toEcsTagList,
+  type AwsRuntimeCommandConfig,
+  type AwsRuntimeTierConfig,
+} from "./aws/config";
+import {
+  buildAwsCommandOutput,
+  buildAwsCommandFailureMessage,
+  commandOutputText,
+  isMissingAwsCleanupOutput,
+  isMissingAwsServiceOutput,
+  parseJsonOutput,
+  runAwsCommand,
+  runRequiredAwsCommand,
+  type AwsCommandRunner,
+} from "./aws/commands";
+import {
+  buildHealthFromEndpoint,
+  probePublicRuntimeHealth,
+  type AwsRuntimeHealth,
+  type AwsRuntimeHealthProbe,
+} from "./aws/health";
+import { buildAwsRuntimeServiceName } from "./aws/naming";
+import {
+  deleteEfsAccessPointIfPresent,
+  ensureEfsAccessPoint,
+  resolveEfsAccessPointIdByRootPath,
+} from "./aws/resources";
+import {
+  buildContainerDefinitions,
+  buildEfsVolume,
+  describeLiveTaskDefinition,
+  buildRuntimeEnvironment,
+} from "./aws/task-definition";
+import { deleteRuntimeAlarms, ensureRuntimeAlarms } from "./aws/alarms";
+import {
+  deleteListenerRuleIfPresent,
+  deleteTargetGroupIfPresent,
+  ensureListenerRule,
+  ensureTargetGroup,
+  resolveTargetGroupArnByName,
+} from "./aws/routing";
+import {
+  cleanupRuntimeSnapshotStore,
+  deleteEcsService,
+  ensureEcsService,
+  registerTaskDefinitionFromLiveRuntime,
+  updateRuntimeServiceTags,
+  updateRuntimeServiceTaskDefinition,
+  waitForRuntimeServiceDeletion,
+  type AwsRuntimeRegisteredTask,
+} from "./aws/service";
+export { resolveAwsRuntimeTier } from "./aws/config";
+export type { AwsRuntimeTierConfig } from "./aws/config";
+export type { AwsRuntimeHealth, AwsRuntimeHealthProbe, AwsRuntimeHealthStatus } from "./aws/health";
+export { buildAwsRuntimeServiceName } from "./aws/naming";
+export {
+  buildAwsToriiRuntimeRequest,
+  deleteAwsRuntime,
+  describeAwsRuntime,
+  ensureAwsKatanaRuntime,
+  ensureAwsRuntime,
+  ensureAwsToriiRuntime,
+  resizeAwsRuntime,
+} from "./aws/reconcile";
 
 export type AwsRuntimeKind = "katana" | "torii";
 export type AwsRuntimeStatus = "existing" | "missing" | "indeterminate";
-export type AwsRuntimeHealthStatus = "healthy" | "unhealthy" | "unknown";
 export type AwsRuntimeAction = "created" | "already-live" | "updated" | "deleted" | "already-missing";
+export type AwsRuntimeAdoptedResource = "access-point" | "target-group" | "listener-rule" | "service";
+export type AwsRuntimeSweptResource =
+  | "alarms"
+  | "snapshots"
+  | "listener-rule"
+  | "service"
+  | "target-group"
+  | "access-point";
 export type AwsRuntimeFailureClassification =
   | "missing-foundation-config"
   | "aws-command-failed"
+  | "image-not-found"
+  | "rollout-failed"
+  | "stabilization-timeout"
   | "runtime-state-indeterminate"
   | "runtime-validation"
   | "unknown";
-
-export interface AwsRuntimeTierConfig {
-  cpu: number;
-  memory: number;
-  desiredCount: number;
-  efsProvisionedThroughputMibps: number;
-}
-
-export interface AwsRuntimeHealth {
-  status: AwsRuntimeHealthStatus;
-  checkedAt: string;
-  endpoint: string;
-  details?: string;
-}
 
 export interface AwsRuntimeLiveState {
   provider: "aws";
@@ -53,6 +118,8 @@ export interface AwsRuntimeLiveState {
   efsAccessPointId?: string;
   imageDigest?: string;
   health?: AwsRuntimeHealth;
+  restoredFromSnapshot?: string;
+  serviceCreatedAt?: string;
   describeError?: string;
   describedAt?: string;
 }
@@ -73,6 +140,7 @@ export interface AwsRuntimeArtifact {
   version?: string;
   imageDigest?: string;
   health?: AwsRuntimeHealth;
+  restoredFromSnapshot?: string;
 }
 
 export interface AwsRuntimeRequest {
@@ -81,12 +149,14 @@ export interface AwsRuntimeRequest {
   runtimeName: string;
   rpcUrl?: string;
   worldAddress?: string;
+  worldBlock?: string;
   namespaces?: string;
   externalContracts?: string[];
   tier?: IndexerTier;
   version?: string;
   region?: string;
   domain?: string;
+  retainData?: boolean;
 }
 
 export interface AwsRuntimeActionResult {
@@ -95,279 +165,34 @@ export interface AwsRuntimeActionResult {
   requestedTier: IndexerTier;
   liveState: AwsRuntimeLiveState;
   previousTier?: IndexerTier;
+  diff?: AwsRuntimeDiff;
+  adopted?: AwsRuntimeAdoptedResource[];
+  swept?: AwsRuntimeSweptResource[];
+}
+
+export interface AwsRuntimeDiff {
+  tier?: {
+    from?: IndexerTier;
+    to: IndexerTier;
+  };
+  image?: {
+    from?: string;
+    to: string;
+  };
+  envChangedKeys?: string[];
 }
 
 export interface AwsRuntimeBackend {
   describeRuntime(request: AwsRuntimeRequest): Promise<AwsRuntimeLiveState>;
-  createRuntime(request: AwsRuntimeRequest): Promise<void>;
+  createRuntime(request: AwsRuntimeRequest): Promise<AwsRuntimeAdoptedResource[]>;
+  reconcileRuntime?(request: AwsRuntimeRequest, liveState: AwsRuntimeLiveState): Promise<AwsRuntimeDiff | undefined>;
+  inspectSnapshotRestore?(request: AwsRuntimeRequest, liveState: AwsRuntimeLiveState): Promise<string | undefined>;
   updateRuntimeTier(request: AwsRuntimeRequest): Promise<void>;
-  deleteRuntime(request: AwsRuntimeRequest): Promise<void>;
+  deleteRuntime(request: AwsRuntimeRequest, liveState?: AwsRuntimeLiveState): Promise<AwsRuntimeSweptResource[]>;
 }
 
-interface AwsRuntimeCommandConfig {
-  region: string;
-  cluster: string;
-  image: string;
-  executionRoleArn: string;
-  taskRoleArn?: string;
-  subnetIds: string[];
-  securityGroupIds: string[];
-  efsFileSystemId: string;
-  vpcId: string;
-  listenerArn: string;
-  assignPublicIp: "ENABLED" | "DISABLED";
-  logGroup: string;
-  containerName: string;
-}
-
-interface AwsRuntimeRegisteredTask {
-  taskDefinitionArn: string;
-  efsAccessPointId: string;
-}
-
-type AwsRuntimeEndpointKind = "base" | "health" | "rpc" | "sql" | "wss";
-type AwsCommandRunner = (args: string[]) => SpawnSyncReturns<string>;
-type AwsCommandTag = { key: string; value: string };
-
-const AWS_RUNTIME_TIERS: Record<IndexerTier, AwsRuntimeTierConfig> = {
-  basic: {
-    cpu: 1024,
-    memory: 2048,
-    desiredCount: 1,
-    efsProvisionedThroughputMibps: 8,
-  },
-  pro: {
-    cpu: 2048,
-    memory: 4096,
-    desiredCount: 1,
-    efsProvisionedThroughputMibps: 16,
-  },
-  epic: {
-    cpu: 4096,
-    memory: 8192,
-    desiredCount: 1,
-    efsProvisionedThroughputMibps: 32,
-  },
-  legendary: {
-    cpu: 8192,
-    memory: 16384,
-    desiredCount: 1,
-    efsProvisionedThroughputMibps: 64,
-  },
-};
-
-function runAwsCommand(args: string[]): SpawnSyncReturns<string> {
-  return spawnSync("aws", args, {
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-    maxBuffer: AWS_COMMAND_MAX_BUFFER_BYTES,
-    env: process.env,
-  });
-}
-
-function normalizeRuntimeSegment(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .replace(/-{2,}/g, "-");
-}
-
-function truncateWithCleanSuffix(value: string, maxLength: number): string {
-  return value.length <= maxLength ? value : value.slice(0, maxLength).replace(/-+$/g, "");
-}
-
-function resolveRuntimeDomain(domain?: string): string {
-  return (domain || process.env.AWS_RUNTIME_DOMAIN || DEFAULT_AWS_RUNTIME_DOMAIN).replace(/^https?:\/\//, "");
-}
-
-function resolveRuntimeRegion(region?: string): string {
-  return region || process.env.AWS_REGION || process.env.AWS_DEFAULT_REGION || DEFAULT_AWS_RUNTIME_REGION;
-}
-
-function resolveRuntimeTier(tier?: IndexerTier): IndexerTier {
-  return tier || "basic";
-}
-
-function resolveRuntimeVersion(request: AwsRuntimeRequest): string {
-  return request.version || DEFAULT_TORII_VERSION;
-}
-
-function resolveRuntimeContainerPort(runtimeKind: AwsRuntimeKind): number {
-  return runtimeKind === "katana" ? 5050 : 8080;
-}
-
-function buildAwsRuntimeBasePath(runtimeName: string, runtimeKind: AwsRuntimeKind): string {
-  return `/x/${normalizeRuntimeSegment(runtimeName)}/${runtimeKind}`;
-}
-
-function buildEndpointPath(
-  runtimeName: string,
-  runtimeKind: AwsRuntimeKind,
-  endpointKind: AwsRuntimeEndpointKind,
-): string {
-  const basePath = buildAwsRuntimeBasePath(runtimeName, runtimeKind);
-
-  if (endpointKind === "base") {
-    return basePath;
-  }
-
-  if (runtimeKind === "katana" && endpointKind === "rpc") {
-    return `${basePath}/rpc/v0_9`;
-  }
-
-  return `${basePath}/${endpointKind}`;
-}
-
-function normalizeCapturedOutput(output: string | null | undefined): string {
-  return `${output || ""}`.trim();
-}
-
-function buildAwsCommandOutput(result: Pick<SpawnSyncReturns<string>, "stdout" | "stderr">): string {
-  return [normalizeCapturedOutput(result.stderr), normalizeCapturedOutput(result.stdout)].filter(Boolean).join("\n");
-}
-
-function buildAwsCommandFailureMessage(action: string, result: SpawnSyncReturns<string>): string {
-  if (result.error) {
-    return `Failed to ${action}: ${result.error.message}`;
-  }
-
-  const exitCode = result.status ?? 1;
-  const output = buildAwsCommandOutput(result);
-  return output ? `Failed to ${action}: ${output}` : `Failed to ${action}: aws exited with code ${exitCode}`;
-}
-
-function parseJsonOutput<T>(output: string, fallback: T): T {
-  const normalizedOutput = normalizeCapturedOutput(output);
-  if (!normalizedOutput) {
-    return fallback;
-  }
-
-  return JSON.parse(normalizedOutput) as T;
-}
-
-function isMissingAwsServiceOutput(output: string): boolean {
-  return /MISSING|ServiceNotFound|not found/i.test(output);
-}
-
-function isMissingAwsCleanupOutput(output: string): boolean {
-  return /MISSING|NotFound|not found|does not exist|not exist/i.test(output);
-}
-
-function parseCsvEnv(name: string): string[] {
-  return (process.env[name] || "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-}
-
-function requireEnv(name: string): string {
-  const value = process.env[name]?.trim();
-  if (!value) {
-    throw new Error(`Missing AWS runtime foundation config: ${name}`);
-  }
-
-  return value;
-}
-
-function requireCsvEnv(name: string): string[] {
-  const values = parseCsvEnv(name);
-  if (values.length === 0) {
-    throw new Error(`Missing AWS runtime foundation config: ${name}`);
-  }
-
-  return values;
-}
-
-function resolveAwsRuntimeClusterName(): string {
-  return process.env.AWS_RUNTIME_CLUSTER || DEFAULT_AWS_RUNTIME_CLUSTER;
-}
-
-function resolveAwsRuntimeListenerArn(): string {
-  const value = process.env.AWS_RUNTIME_ALB_LISTENER_ARN?.trim() || process.env.AWS_RUNTIME_LISTENER_ARN?.trim();
-  if (!value) {
-    throw new Error("Missing AWS runtime foundation config: AWS_RUNTIME_ALB_LISTENER_ARN");
-  }
-
-  return value;
-}
-
-function resolveAwsRuntimeCommandConfig(request: AwsRuntimeRequest): AwsRuntimeCommandConfig {
-  const assignPublicIp =
-    process.env.AWS_RUNTIME_ASSIGN_PUBLIC_IP === "ENABLED" ? "ENABLED" : DEFAULT_AWS_RUNTIME_ASSIGN_PUBLIC_IP;
-
-  return {
-    region: resolveRuntimeRegion(request.region),
-    cluster: resolveAwsRuntimeClusterName(),
-    image: requireEnv("AWS_RUNTIME_ECR_IMAGE"),
-    executionRoleArn: requireEnv("AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN"),
-    taskRoleArn: process.env.AWS_RUNTIME_TASK_ROLE_ARN?.trim() || undefined,
-    subnetIds: requireCsvEnv("AWS_RUNTIME_SUBNET_IDS"),
-    securityGroupIds: requireCsvEnv("AWS_RUNTIME_SECURITY_GROUP_IDS"),
-    efsFileSystemId: requireEnv("AWS_RUNTIME_EFS_FILE_SYSTEM_ID"),
-    vpcId: requireEnv("AWS_RUNTIME_VPC_ID"),
-    listenerArn: resolveAwsRuntimeListenerArn(),
-    assignPublicIp,
-    logGroup: process.env.AWS_RUNTIME_LOG_GROUP || DEFAULT_AWS_RUNTIME_LOG_GROUP,
-    containerName: process.env.AWS_RUNTIME_CONTAINER_NAME || DEFAULT_AWS_RUNTIME_CONTAINER_NAME,
-  };
-}
-
-function buildAwsRuntimeTags(request: AwsRuntimeRequest, extraTags: AwsCommandTag[] = []): AwsCommandTag[] {
-  return [
-    { key: "Project", value: "eternum" },
-    { key: "Environment", value: request.environmentId },
-    { key: "RuntimeKind", value: request.runtimeKind },
-    { key: "RuntimeName", value: request.runtimeName },
-    { key: "RuntimeProvider", value: "aws" },
-    { key: "RuntimeTier", value: resolveRuntimeTier(request.tier) },
-    { key: "RuntimeVersion", value: resolveRuntimeVersion(request) },
-    { key: "RuntimeServiceName", value: buildAwsRuntimeServiceName(request) },
-    ...extraTags,
-  ];
-}
-
-function toEcsTagList(tags: AwsCommandTag[]): string[] {
-  return tags.map((tag) => `key=${tag.key},value=${tag.value}`);
-}
-
-function toAwsTagList(tags: AwsCommandTag[]): string[] {
-  return tags.map((tag) => `Key=${tag.key},Value=${tag.value}`);
-}
-
-function readTag(tags: unknown, key: string): string | undefined {
-  if (!Array.isArray(tags)) {
-    return undefined;
-  }
-
-  const found = tags.find((tag) => {
-    const record = tag as Record<string, unknown>;
-    return record.key === key || record.Key === key;
-  }) as Record<string, unknown> | undefined;
-
-  const value = found?.value ?? found?.Value;
-  return typeof value === "string" && value ? value : undefined;
-}
-
-function buildHealthFromEndpoint(endpointUrl: string | undefined): AwsRuntimeHealth | undefined {
-  if (!endpointUrl) {
-    return undefined;
-  }
-
-  return {
-    status: "unknown",
-    checkedAt: new Date().toISOString(),
-    endpoint: buildAwsRuntimeEndpointUrlFromBase(endpointUrl, "health"),
-  };
-}
-
-function buildAwsRuntimeEndpointUrlFromBase(baseUrl: string, endpointKind: AwsRuntimeEndpointKind): string {
-  if (endpointKind === "base") {
-    return baseUrl.replace(/\/+$/, "");
-  }
-
-  return `${baseUrl.replace(/\/+$/, "")}/${endpointKind}`;
+interface AwsRuntimeCommandBackendOptions {
+  healthProbe?: AwsRuntimeHealthProbe;
 }
 
 function buildLiveStateFromService(request: AwsRuntimeRequest, service: Record<string, unknown>): AwsRuntimeLiveState {
@@ -375,14 +200,14 @@ function buildLiveStateFromService(request: AwsRuntimeRequest, service: Record<s
   const tier = readTag(tags, "RuntimeTier") as IndexerTier | undefined;
   const version = readTag(tags, "RuntimeVersion");
   const efsAccessPointId = readTag(tags, "EfsAccessPointId");
-  const imageDigest =
-    readTag(tags, "ImageDigest") || process.env.AWS_RUNTIME_ECR_IMAGE_DIGEST || process.env.AWS_RUNTIME_ECR_IMAGE;
+  const imageDigest = readTag(tags, "ImageDigest") || process.env.AWS_RUNTIME_ECR_IMAGE;
   const loadBalancers = Array.isArray(service.loadBalancers)
     ? (service.loadBalancers as Record<string, unknown>[])
     : [];
   const targetGroupArn = `${loadBalancers[0]?.targetGroupArn || ""}` || readTag(tags, "TargetGroupArn");
   const endpointUrl = buildAwsRuntimeEndpointUrl({
     domain: request.domain,
+    environmentId: request.environmentId,
     runtimeName: request.runtimeName,
     runtimeKind: request.runtimeKind,
     endpointKind: "base",
@@ -405,8 +230,84 @@ function buildLiveStateFromService(request: AwsRuntimeRequest, service: Record<s
     efsAccessPointId,
     imageDigest,
     health: buildHealthFromEndpoint(endpointUrl),
+    serviceCreatedAt: resolveServiceCreatedAt(service),
     describedAt: new Date().toISOString(),
   };
+}
+
+function resolveServiceCreatedAt(service: Record<string, unknown>): string | undefined {
+  const createdAt = service.createdAt;
+  if (typeof createdAt !== "string") {
+    return undefined;
+  }
+
+  const timestamp = Date.parse(createdAt);
+  return Number.isFinite(timestamp) ? new Date(timestamp).toISOString() : undefined;
+}
+
+function buildRestoredSnapshotFilterPattern(request: AwsRuntimeRequest): string {
+  return [
+    '"snapshot-restored:"',
+    `"environment=${request.environmentId}"`,
+    `"runtime=${request.runtimeName}"`,
+    `"kind=${request.runtimeKind}"`,
+  ].join(" ");
+}
+
+function readRestoredSnapshotTimestampFromLogs(
+  commandRunner: AwsCommandRunner,
+  request: AwsRuntimeRequest,
+  liveState: AwsRuntimeLiveState,
+): string | undefined {
+  const result = commandRunner([
+    "logs",
+    "filter-log-events",
+    "--region",
+    resolveRuntimeRegion(request.region),
+    "--log-group-name",
+    resolveRuntimeLogGroup(),
+    "--filter-pattern",
+    buildRestoredSnapshotFilterPattern(request),
+    "--limit",
+    "50",
+    ...buildRestoreLogStartTimeArgs(liveState),
+    "--output",
+    "json",
+  ]);
+
+  if ((result.status ?? 1) !== 0) {
+    return undefined;
+  }
+
+  return selectLatestRestoredSnapshotTimestamp(result.stdout || "");
+}
+
+function buildRestoreLogStartTimeArgs(liveState: AwsRuntimeLiveState): string[] {
+  const startTime = Date.parse(liveState.serviceCreatedAt || "");
+  if (!Number.isFinite(startTime)) {
+    return [];
+  }
+
+  return ["--start-time", String(startTime)];
+}
+
+function selectLatestRestoredSnapshotTimestamp(output: string): string | undefined {
+  const payload = parseJsonOutput<{ events?: Array<{ message?: string; timestamp?: number }> }>(output, {});
+  const restoredEvents = (payload.events || [])
+    .map((event) => ({
+      eventTimestamp: typeof event.timestamp === "number" ? event.timestamp : 0,
+      restoredFromSnapshot: extractRestoredSnapshotTimestamp(event.message || ""),
+    }))
+    .filter((event): event is { eventTimestamp: number; restoredFromSnapshot: string } =>
+      Boolean(event.restoredFromSnapshot),
+    )
+    .sort((left, right) => left.eventTimestamp - right.eventTimestamp);
+
+  return restoredEvents.at(-1)?.restoredFromSnapshot;
+}
+
+function extractRestoredSnapshotTimestamp(message: string): string | undefined {
+  return /\bsnapshot-restored:\s+(\S+)/.exec(message)?.[1];
 }
 
 function buildMissingLiveState(request: AwsRuntimeRequest, describeError?: string): AwsRuntimeLiveState {
@@ -429,204 +330,13 @@ function buildIndeterminateLiveState(request: AwsRuntimeRequest, describeError: 
   };
 }
 
-function requireExistingRuntime(
-  request: AwsRuntimeRequest,
-  liveState: AwsRuntimeLiveState,
-  action: string,
-): AwsRuntimeLiveState {
-  if (liveState.status !== "existing") {
-    throw new Error(`AWS runtime "${request.runtimeName}" is not available after ${action}`);
-  }
-
-  return liveState;
-}
-
-function runRequiredAwsCommand(
-  commandRunner: AwsCommandRunner,
-  action: string,
-  args: string[],
-): SpawnSyncReturns<string> {
-  const result = commandRunner(args);
-  if ((result.status ?? 1) !== 0) {
-    throw new Error(buildAwsCommandFailureMessage(action, result));
-  }
-
-  return result;
-}
-
-function runOptionalAwsCleanupCommand(
-  commandRunner: AwsCommandRunner,
-  action: string,
-  args: string[],
-): SpawnSyncReturns<string> {
-  const result = commandRunner(args);
-  if ((result.status ?? 1) === 0) {
-    return result;
-  }
-
-  const output = buildAwsCommandOutput(result);
-  if (isMissingAwsCleanupOutput(output)) {
-    return result;
-  }
-
-  throw new Error(buildAwsCommandFailureMessage(action, result));
-}
-
-function commandOutputText(result: SpawnSyncReturns<string>): string {
-  return normalizeCapturedOutput(result.stdout);
-}
-
-function buildRuntimeRootPath(request: AwsRuntimeRequest): string {
-  return `/runtimes/${buildAwsRuntimeServiceName(request)}`;
-}
-
-function buildTargetGroupName(request: AwsRuntimeRequest): string {
-  return truncateWithCleanSuffix(`${request.runtimeKind}-${hashString(buildAwsRuntimeServiceName(request))}`, 32);
-}
-
-function resolveListenerRulePriority(request: AwsRuntimeRequest): number {
-  const base = Number(process.env.AWS_RUNTIME_LISTENER_RULE_PRIORITY_BASE || DEFAULT_AWS_RUNTIME_RULE_PRIORITY_BASE);
-  const normalizedBase = Number.isFinite(base)
-    ? Math.max(1, Math.min(40_000, Math.floor(base)))
-    : DEFAULT_AWS_RUNTIME_RULE_PRIORITY_BASE;
-  return normalizedBase + (hashString(buildAwsRuntimeServiceName(request)) % 9_000);
-}
-
-function hashString(value: string): number {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
-
-  return hash;
-}
-
-function buildRuntimeEnvironment(request: AwsRuntimeRequest): Array<{ name: string; value: string }> {
-  return [
-    { name: "RUNTIME_KIND", value: request.runtimeKind },
-    { name: "RUNTIME_NAME", value: request.runtimeName },
-    { name: "RUNTIME_BASE_PATH", value: buildAwsRuntimeBasePath(request.runtimeName, request.runtimeKind) },
-    { name: "RUNTIME_VERSION", value: resolveRuntimeVersion(request) },
-    { name: "RPC_URL", value: request.rpcUrl || "" },
-    { name: "WORLD_ADDRESS", value: request.worldAddress || "" },
-    { name: "TORII_NAMESPACES", value: request.namespaces || "" },
-    { name: "TORII_EXTERNAL_CONTRACTS", value: (request.externalContracts || []).join("\n") },
-    { name: "DATA_DIR", value: "/data" },
-    { name: "PUBLIC_PORT", value: `${resolveRuntimeContainerPort(request.runtimeKind)}` },
-    { name: "INTERNAL_PORT", value: `${request.runtimeKind === "katana" ? 5051 : 8081}` },
-  ];
-}
-
-function buildContainerDefinitions(
-  request: AwsRuntimeRequest,
-  config: AwsRuntimeCommandConfig,
-): Array<Record<string, unknown>> {
-  const containerPort = resolveRuntimeContainerPort(request.runtimeKind);
-
-  return [
-    {
-      name: config.containerName,
-      image: config.image,
-      essential: true,
-      portMappings: [
-        {
-          containerPort,
-          hostPort: containerPort,
-          protocol: "tcp",
-        },
-      ],
-      environment: buildRuntimeEnvironment(request),
-      mountPoints: [
-        {
-          sourceVolume: "runtime-data",
-          containerPath: "/data",
-          readOnly: false,
-        },
-      ],
-      logConfiguration: {
-        logDriver: "awslogs",
-        options: {
-          "awslogs-group": config.logGroup,
-          "awslogs-region": config.region,
-          "awslogs-stream-prefix": request.runtimeKind,
-        },
-      },
-      healthCheck: {
-        command: ["CMD-SHELL", "/usr/local/bin/healthcheck.sh"],
-        interval: 30,
-        timeout: 5,
-        retries: 3,
-        startPeriod: 90,
-      },
-    },
-  ];
-}
-
-function buildEfsVolume(config: AwsRuntimeCommandConfig, efsAccessPointId: string): Array<Record<string, unknown>> {
-  return [
-    {
-      name: "runtime-data",
-      efsVolumeConfiguration: {
-        fileSystemId: config.efsFileSystemId,
-        transitEncryption: "ENABLED",
-        authorizationConfig: {
-          accessPointId: efsAccessPointId,
-          iam: "ENABLED",
-        },
-      },
-    },
-  ];
-}
-
-function buildNetworkConfiguration(config: AwsRuntimeCommandConfig): string {
-  return `awsvpcConfiguration={subnets=[${config.subnetIds.join(",")}],securityGroups=[${config.securityGroupIds.join(",")}],assignPublicIp=${config.assignPublicIp}}`;
-}
-
-function buildLoadBalancerConfiguration(
-  config: AwsRuntimeCommandConfig,
-  request: AwsRuntimeRequest,
-  targetGroupArn: string,
-): string {
-  return [
-    `targetGroupArn=${targetGroupArn}`,
-    `containerName=${config.containerName}`,
-    `containerPort=${resolveRuntimeContainerPort(request.runtimeKind)}`,
-  ].join(",");
-}
-
-function createEfsAccessPoint(
-  commandRunner: AwsCommandRunner,
-  request: AwsRuntimeRequest,
-  config: AwsRuntimeCommandConfig,
-): string {
-  const result = runRequiredAwsCommand(commandRunner, `create EFS access point for "${request.runtimeName}"`, [
-    "efs",
-    "create-access-point",
-    "--region",
-    config.region,
-    "--file-system-id",
-    config.efsFileSystemId,
-    "--posix-user",
-    "Uid=1000,Gid=1000",
-    "--root-directory",
-    `Path=${buildRuntimeRootPath(request)},CreationInfo={OwnerUid=1000,OwnerGid=1000,Permissions=750}`,
-    "--tags",
-    ...toAwsTagList(buildAwsRuntimeTags(request)),
-    "--query",
-    "AccessPointId",
-    "--output",
-    "text",
-  ]);
-
-  return commandOutputText(result);
-}
-
 function registerTaskDefinition(
   commandRunner: AwsCommandRunner,
   request: AwsRuntimeRequest,
   config: AwsRuntimeCommandConfig,
   efsAccessPointId: string,
 ): string {
+  resolveRuntimeImageDigest(commandRunner, request, config);
   const tier = resolveAwsRuntimeTier(request.tier);
   const args = [
     "ecs",
@@ -639,10 +349,14 @@ function registerTaskDefinition(
     "awsvpc",
     "--requires-compatibilities",
     "FARGATE",
+    "--runtime-platform",
+    "cpuArchitecture=X86_64,operatingSystemFamily=LINUX",
     "--cpu",
     `${tier.cpu}`,
     "--memory",
     `${tier.memory}`,
+    "--ephemeral-storage",
+    JSON.stringify({ sizeInGiB: tier.ephemeralStorageGib }),
     "--execution-role-arn",
     config.executionRoleArn,
     "--container-definitions",
@@ -665,127 +379,207 @@ function registerTaskDefinition(
   return commandOutputText(result);
 }
 
-function createTargetGroup(
+function resolveRuntimeImageDigest(
   commandRunner: AwsCommandRunner,
   request: AwsRuntimeRequest,
   config: AwsRuntimeCommandConfig,
-): string {
-  const healthPath = buildEndpointPath(request.runtimeName, request.runtimeKind, "health");
-  const result = runRequiredAwsCommand(commandRunner, `create target group for "${request.runtimeName}"`, [
-    "elbv2",
-    "create-target-group",
+): void {
+  if (!config.ecrRepositoryName || !config.ecrImageTag) {
+    return;
+  }
+
+  const result = commandRunner([
+    "ecr",
+    "describe-images",
     "--region",
     config.region,
-    "--name",
-    buildTargetGroupName(request),
-    "--protocol",
-    "HTTP",
-    "--port",
-    `${resolveRuntimeContainerPort(request.runtimeKind)}`,
-    "--vpc-id",
-    config.vpcId,
-    "--target-type",
-    "ip",
-    "--health-check-enabled",
-    "--health-check-protocol",
-    "HTTP",
-    "--health-check-path",
-    healthPath,
-    "--matcher",
-    "HttpCode=200-399",
-    "--tags",
-    ...toAwsTagList(buildAwsRuntimeTags(request)),
-    "--query",
-    "TargetGroups[0].TargetGroupArn",
+    "--repository-name",
+    config.ecrRepositoryName,
+    "--image-ids",
+    `imageTag=${config.ecrImageTag}`,
     "--output",
-    "text",
+    "json",
   ]);
 
-  return commandOutputText(result);
+  if ((result.status ?? 1) !== 0) {
+    throw new Error(buildAwsRuntimeImageNotFoundMessage(request, config, result));
+  }
+
+  const payload = parseJsonOutput<{ imageDetails?: Array<{ imageDigest?: string }> }>(result.stdout || "", {});
+  const imageDigest = payload.imageDetails?.[0]?.imageDigest;
+  if (!imageDigest) {
+    throw new Error(`AWS runtime image not found: ${config.ecrRepositoryName}:${config.ecrImageTag}`);
+  }
+
+  config.imageDigest = imageDigest;
 }
 
-function createListenerRule(
-  commandRunner: AwsCommandRunner,
+function buildAwsRuntimeImageNotFoundMessage(
   request: AwsRuntimeRequest,
   config: AwsRuntimeCommandConfig,
-  targetGroupArn: string,
-): void {
-  const basePath = buildAwsRuntimeBasePath(request.runtimeName, request.runtimeKind);
-
-  runRequiredAwsCommand(commandRunner, `create ALB listener rule for "${request.runtimeName}"`, [
-    "elbv2",
-    "create-rule",
-    "--region",
-    config.region,
-    "--listener-arn",
-    config.listenerArn,
-    "--priority",
-    `${resolveListenerRulePriority(request)}`,
-    "--conditions",
-    `Field=path-pattern,Values=${basePath},${basePath}/*`,
-    "--actions",
-    `Type=forward,TargetGroupArn=${targetGroupArn}`,
-  ]);
-}
-
-function createEcsService(
-  commandRunner: AwsCommandRunner,
-  request: AwsRuntimeRequest,
-  config: AwsRuntimeCommandConfig,
-  runtimeTask: AwsRuntimeRegisteredTask,
-  targetGroupArn: string,
-): void {
-  const tier = resolveAwsRuntimeTier(request.tier);
-  const imageDigest = process.env.AWS_RUNTIME_ECR_IMAGE_DIGEST || config.image;
-
-  runRequiredAwsCommand(commandRunner, `create ECS service for "${request.runtimeName}"`, [
-    "ecs",
-    "create-service",
-    "--region",
-    config.region,
-    "--cluster",
-    config.cluster,
-    "--service-name",
-    buildAwsRuntimeServiceName(request),
-    "--desired-count",
-    `${tier.desiredCount}`,
-    "--launch-type",
-    "FARGATE",
-    "--platform-version",
-    "LATEST",
-    "--task-definition",
-    runtimeTask.taskDefinitionArn,
-    "--network-configuration",
-    buildNetworkConfiguration(config),
-    "--load-balancers",
-    buildLoadBalancerConfiguration(config, request, targetGroupArn),
-    "--enable-execute-command",
-    "--tags",
-    ...toEcsTagList(
-      buildAwsRuntimeTags(request, [
-        { key: "EfsAccessPointId", value: runtimeTask.efsAccessPointId },
-        { key: "TargetGroupArn", value: targetGroupArn },
-        { key: "ImageDigest", value: imageDigest },
-      ]),
-    ),
-  ]);
+  result: SpawnSyncReturns<string>,
+): string {
+  const output = buildAwsCommandOutput(result);
+  const imageName = `${config.ecrRepositoryName}:${config.ecrImageTag}`;
+  return output
+    ? `AWS runtime image not found: ${imageName}\n${output}`
+    : `AWS runtime image not found for "${request.runtimeName}": ${imageName}`;
 }
 
 function registerTaskDefinitionForNewAccessPoint(
   commandRunner: AwsCommandRunner,
   request: AwsRuntimeRequest,
   config: AwsRuntimeCommandConfig,
-): AwsRuntimeRegisteredTask {
-  const efsAccessPointId = createEfsAccessPoint(commandRunner, request, config);
-  const taskDefinitionArn = registerTaskDefinition(commandRunner, request, config, efsAccessPointId);
+): AwsRuntimeRegisteredTask & { adopted: boolean } {
+  const accessPoint = ensureEfsAccessPoint(commandRunner, request, config);
+  const reusableTaskDefinitionArn = resolveReusableTaskDefinitionArn(
+    commandRunner,
+    request,
+    config,
+    accessPoint.efsAccessPointId,
+  );
+  if (reusableTaskDefinitionArn) {
+    resolveRuntimeImageDigest(commandRunner, request, config);
+  }
+  const taskDefinitionArn =
+    reusableTaskDefinitionArn ?? registerTaskDefinition(commandRunner, request, config, accessPoint.efsAccessPointId);
 
   return {
     taskDefinitionArn,
-    efsAccessPointId,
+    efsAccessPointId: accessPoint.efsAccessPointId,
+    adopted: accessPoint.adopted,
   };
 }
 
-function registerTaskDefinitionForExistingAccessPoint(
+function resolveReusableTaskDefinitionArn(
+  commandRunner: AwsCommandRunner,
+  request: AwsRuntimeRequest,
+  config: AwsRuntimeCommandConfig,
+  efsAccessPointId: string,
+): string | undefined {
+  const result = commandRunner([
+    "ecs",
+    "describe-task-definition",
+    "--region",
+    config.region,
+    "--task-definition",
+    buildAwsRuntimeServiceName(request),
+    "--output",
+    "json",
+  ]);
+
+  if ((result.status ?? 1) !== 0) {
+    const output = buildAwsCommandOutput(result);
+    if (isMissingTaskDefinitionOutput(output)) {
+      return undefined;
+    }
+
+    throw new Error(buildAwsCommandFailureMessage(`describe task definition for "${request.runtimeName}"`, result));
+  }
+
+  const payload = parseJsonOutput<{ taskDefinition?: Record<string, unknown> }>(result.stdout || "", {});
+  const taskDefinition = payload.taskDefinition;
+  if (!taskDefinition || !taskDefinitionMatchesCreateRequest(taskDefinition, request, config, efsAccessPointId)) {
+    return undefined;
+  }
+
+  const taskDefinitionArn = taskDefinition.taskDefinitionArn;
+  return typeof taskDefinitionArn === "string" && taskDefinitionArn ? taskDefinitionArn : undefined;
+}
+
+function isMissingTaskDefinitionOutput(output: string): boolean {
+  return isMissingAwsCleanupOutput(output) || /Unable to describe task definition|ClientException/i.test(output);
+}
+
+function taskDefinitionMatchesCreateRequest(
+  taskDefinition: Record<string, unknown>,
+  request: AwsRuntimeRequest,
+  config: AwsRuntimeCommandConfig,
+  efsAccessPointId: string,
+): boolean {
+  return (
+    taskDefinitionHasRequestedTier(taskDefinition, request) &&
+    taskDefinitionHasRuntimePlatform(taskDefinition) &&
+    taskDefinitionHasEfsAccessPoint(taskDefinition, efsAccessPointId) &&
+    taskDefinitionHasDesiredContainer(taskDefinition, request, config)
+  );
+}
+
+function taskDefinitionHasRequestedTier(taskDefinition: Record<string, unknown>, request: AwsRuntimeRequest): boolean {
+  const tier = resolveAwsRuntimeTier(request.tier);
+  const ephemeralStorage = taskDefinition.ephemeralStorage as Record<string, unknown> | undefined;
+  return (
+    `${taskDefinition.cpu || ""}` === `${tier.cpu}` &&
+    `${taskDefinition.memory || ""}` === `${tier.memory}` &&
+    ephemeralStorage?.sizeInGiB === tier.ephemeralStorageGib
+  );
+}
+
+function taskDefinitionHasRuntimePlatform(taskDefinition: Record<string, unknown>): boolean {
+  const runtimePlatform = taskDefinition.runtimePlatform as Record<string, unknown> | undefined;
+  return runtimePlatform?.cpuArchitecture === "X86_64" && runtimePlatform?.operatingSystemFamily === "LINUX";
+}
+
+function taskDefinitionHasEfsAccessPoint(taskDefinition: Record<string, unknown>, efsAccessPointId: string): boolean {
+  const volumes = Array.isArray(taskDefinition.volumes) ? (taskDefinition.volumes as Record<string, unknown>[]) : [];
+  return volumes.some((volume) => {
+    const efsVolume = volume.efsVolumeConfiguration as Record<string, unknown> | undefined;
+    const authorizationConfig = efsVolume?.authorizationConfig as Record<string, unknown> | undefined;
+    return authorizationConfig?.accessPointId === efsAccessPointId;
+  });
+}
+
+function taskDefinitionHasDesiredContainer(
+  taskDefinition: Record<string, unknown>,
+  request: AwsRuntimeRequest,
+  config: AwsRuntimeCommandConfig,
+): boolean {
+  const liveContainer = resolvePrimaryContainerDefinition(taskDefinition, config.containerName);
+  if (liveContainer.image !== config.image) {
+    return false;
+  }
+
+  const liveEnvironment = toEnvironmentMap(liveContainer.environment);
+  return buildRuntimeEnvironment(request).every((entry) => liveEnvironment.get(entry.name) === entry.value);
+}
+
+async function reconcileRuntimeConfiguration(
+  commandRunner: AwsCommandRunner,
+  request: AwsRuntimeRequest,
+  config: AwsRuntimeCommandConfig,
+  liveState: AwsRuntimeLiveState,
+  healthProbe: AwsRuntimeHealthProbe,
+): Promise<AwsRuntimeDiff | undefined> {
+  const liveTaskDefinition = describeRuntimeTaskDefinition(commandRunner, request, config, liveState);
+  const diff = diffRuntimeConfiguration(request, config, liveState, liveTaskDefinition);
+
+  if (isRuntimeDiffEmpty(diff)) {
+    ensureRuntimeAlarms(commandRunner, request, config, requireRuntimeTargetGroupArn(request, liveState));
+    return undefined;
+  }
+
+  const taskDefinitionArn = registerTaskDefinitionForExistingRuntime(commandRunner, request, config, liveState);
+  await updateRuntimeServiceTaskDefinition(commandRunner, request, config, taskDefinitionArn, healthProbe);
+  updateRuntimeServiceTags(commandRunner, request, config, liveState);
+  ensureRuntimeAlarms(commandRunner, request, config, requireRuntimeTargetGroupArn(request, liveState));
+
+  return diff;
+}
+
+function describeRuntimeTaskDefinition(
+  commandRunner: AwsCommandRunner,
+  request: AwsRuntimeRequest,
+  config: AwsRuntimeCommandConfig,
+  liveState: AwsRuntimeLiveState,
+): Record<string, unknown> {
+  if (!liveState.taskDefinitionArn) {
+    throw new Error(`AWS runtime "${request.runtimeName}" is missing task definition metadata`);
+  }
+
+  return describeLiveTaskDefinition(commandRunner, request, config, liveState.taskDefinitionArn);
+}
+
+function registerTaskDefinitionForExistingRuntime(
   commandRunner: AwsCommandRunner,
   request: AwsRuntimeRequest,
   config: AwsRuntimeCommandConfig,
@@ -798,187 +592,70 @@ function registerTaskDefinitionForExistingAccessPoint(
   return registerTaskDefinition(commandRunner, request, config, liveState.efsAccessPointId);
 }
 
-function buildMutableRuntimeTags(request: AwsRuntimeRequest, liveState: AwsRuntimeLiveState): AwsCommandTag[] {
-  const extraTags: AwsCommandTag[] = [];
+function diffRuntimeConfiguration(
+  request: AwsRuntimeRequest,
+  config: AwsRuntimeCommandConfig,
+  liveState: AwsRuntimeLiveState,
+  liveTaskDefinition: Record<string, unknown>,
+): AwsRuntimeDiff {
+  const requestedTier = resolveRuntimeTier(request.tier);
+  const liveContainer = resolvePrimaryContainerDefinition(liveTaskDefinition, config.containerName);
+  const diff: AwsRuntimeDiff = {};
 
-  if (liveState.efsAccessPointId) {
-    extraTags.push({ key: "EfsAccessPointId", value: liveState.efsAccessPointId });
+  if (liveState.tier && liveState.tier !== requestedTier) {
+    diff.tier = { from: liveState.tier, to: requestedTier };
   }
 
-  if (liveState.targetGroupArn) {
-    extraTags.push({ key: "TargetGroupArn", value: liveState.targetGroupArn });
+  const liveImage = typeof liveContainer.image === "string" ? liveContainer.image : undefined;
+  if (liveImage && liveImage !== config.image) {
+    diff.image = { from: liveImage, to: config.image };
   }
 
-  extraTags.push({
-    key: "ImageDigest",
-    value: process.env.AWS_RUNTIME_ECR_IMAGE_DIGEST || liveState.imageDigest || process.env.AWS_RUNTIME_ECR_IMAGE || "",
-  });
+  const changedEnvKeys = diffRuntimeEnvironment(request, liveContainer);
+  if (changedEnvKeys.length > 0) {
+    diff.envChangedKeys = changedEnvKeys;
+  }
 
-  return buildAwsRuntimeTags(
-    request,
-    extraTags.filter((tag) => tag.value),
+  return diff;
+}
+
+function resolvePrimaryContainerDefinition(
+  taskDefinition: Record<string, unknown>,
+  containerName: string,
+): Record<string, unknown> {
+  const containers = Array.isArray(taskDefinition.containerDefinitions)
+    ? (taskDefinition.containerDefinitions as Record<string, unknown>[])
+    : [];
+  return containers.find((container) => container.name === containerName) || containers[0] || {};
+}
+
+function diffRuntimeEnvironment(request: AwsRuntimeRequest, liveContainer: Record<string, unknown>): string[] {
+  const liveEnvironment = toEnvironmentMap(liveContainer.environment);
+  return buildRuntimeEnvironment(request)
+    .filter((entry) => liveEnvironment.get(entry.name) !== entry.value)
+    .map((entry) => entry.name)
+    .sort();
+}
+
+function toEnvironmentMap(environment: unknown): Map<string, string> {
+  const entries = Array.isArray(environment) ? (environment as Array<Record<string, unknown>>) : [];
+  return new Map(
+    entries
+      .map((entry) => [entry.name, entry.value])
+      .filter((entry): entry is [string, string] => typeof entry[0] === "string" && typeof entry[1] === "string"),
   );
 }
 
-function updateRuntimeServiceTags(
-  commandRunner: AwsCommandRunner,
-  request: AwsRuntimeRequest,
-  config: AwsRuntimeCommandConfig,
-  liveState: AwsRuntimeLiveState,
-): void {
-  if (!liveState.serviceArn) {
-    throw new Error(`AWS runtime "${request.runtimeName}" is missing ECS service metadata`);
-  }
-
-  runRequiredAwsCommand(commandRunner, `tag AWS runtime service "${request.runtimeName}"`, [
-    "ecs",
-    "tag-resource",
-    "--region",
-    config.region,
-    "--resource-arn",
-    liveState.serviceArn,
-    "--tags",
-    ...toEcsTagList(buildMutableRuntimeTags(request, liveState)),
-  ]);
+function isRuntimeDiffEmpty(diff: AwsRuntimeDiff): boolean {
+  return !diff.tier && !diff.image && (!diff.envChangedKeys || diff.envChangedKeys.length === 0);
 }
 
-function resolveListenerRuleArn(
-  commandRunner: AwsCommandRunner,
-  request: AwsRuntimeRequest,
-  config: AwsRuntimeCommandConfig,
-  targetGroupArn: string,
-): string | undefined {
-  const result = commandRunner([
-    "elbv2",
-    "describe-rules",
-    "--region",
-    config.region,
-    "--listener-arn",
-    config.listenerArn,
-    "--output",
-    "json",
-  ]);
-
-  if ((result.status ?? 1) !== 0) {
-    const output = buildAwsCommandOutput(result);
-    if (isMissingAwsCleanupOutput(output)) {
-      return undefined;
-    }
-
-    throw new Error(buildAwsCommandFailureMessage(`describe ALB listener rules for "${request.runtimeName}"`, result));
+function requireRuntimeTargetGroupArn(request: AwsRuntimeRequest, liveState: AwsRuntimeLiveState): string {
+  if (liveState.targetGroupArn) {
+    return liveState.targetGroupArn;
   }
 
-  const payload = parseJsonOutput<{ Rules?: Array<Record<string, unknown>> }>(result.stdout || "", {});
-  const priority = `${resolveListenerRulePriority(request)}`;
-  const rule = (payload.Rules || []).find((candidate) => {
-    const actions = Array.isArray(candidate.Actions) ? (candidate.Actions as Record<string, unknown>[]) : [];
-    const forwardsToTargetGroup = actions.some((action) => action.TargetGroupArn === targetGroupArn);
-    return forwardsToTargetGroup || candidate.Priority === priority;
-  });
-
-  const ruleArn = rule?.RuleArn;
-  return typeof ruleArn === "string" && ruleArn ? ruleArn : undefined;
-}
-
-function deleteListenerRuleIfPresent(
-  commandRunner: AwsCommandRunner,
-  request: AwsRuntimeRequest,
-  config: AwsRuntimeCommandConfig,
-  liveState: AwsRuntimeLiveState,
-): void {
-  if (!liveState.targetGroupArn) {
-    return;
-  }
-
-  const ruleArn = resolveListenerRuleArn(commandRunner, request, config, liveState.targetGroupArn);
-  if (!ruleArn) {
-    return;
-  }
-
-  runOptionalAwsCleanupCommand(commandRunner, `delete ALB listener rule for "${request.runtimeName}"`, [
-    "elbv2",
-    "delete-rule",
-    "--region",
-    config.region,
-    "--rule-arn",
-    ruleArn,
-  ]);
-}
-
-function deleteEcsService(
-  commandRunner: AwsCommandRunner,
-  request: AwsRuntimeRequest,
-  config: AwsRuntimeCommandConfig,
-): void {
-  runOptionalAwsCleanupCommand(commandRunner, `delete AWS runtime "${request.runtimeName}"`, [
-    "ecs",
-    "delete-service",
-    "--region",
-    config.region,
-    "--cluster",
-    config.cluster,
-    "--service",
-    buildAwsRuntimeServiceName(request),
-    "--force",
-  ]);
-}
-
-function waitForRuntimeServiceDeletion(
-  commandRunner: AwsCommandRunner,
-  request: AwsRuntimeRequest,
-  config: AwsRuntimeCommandConfig,
-): void {
-  runOptionalAwsCleanupCommand(commandRunner, `wait for AWS runtime service deletion "${request.runtimeName}"`, [
-    "ecs",
-    "wait",
-    "services-inactive",
-    "--region",
-    config.region,
-    "--cluster",
-    config.cluster,
-    "--services",
-    buildAwsRuntimeServiceName(request),
-  ]);
-}
-
-function deleteTargetGroupIfPresent(
-  commandRunner: AwsCommandRunner,
-  request: AwsRuntimeRequest,
-  config: AwsRuntimeCommandConfig,
-  liveState: AwsRuntimeLiveState,
-): void {
-  if (!liveState.targetGroupArn) {
-    return;
-  }
-
-  runOptionalAwsCleanupCommand(commandRunner, `delete target group for "${request.runtimeName}"`, [
-    "elbv2",
-    "delete-target-group",
-    "--region",
-    config.region,
-    "--target-group-arn",
-    liveState.targetGroupArn,
-  ]);
-}
-
-function deleteEfsAccessPointIfPresent(
-  commandRunner: AwsCommandRunner,
-  request: AwsRuntimeRequest,
-  config: AwsRuntimeCommandConfig,
-  liveState: AwsRuntimeLiveState,
-): void {
-  if (!liveState.efsAccessPointId) {
-    return;
-  }
-
-  runOptionalAwsCleanupCommand(commandRunner, `delete EFS access point for "${request.runtimeName}"`, [
-    "efs",
-    "delete-access-point",
-    "--region",
-    config.region,
-    "--access-point-id",
-    liveState.efsAccessPointId,
-  ]);
+  throw new Error(`AWS runtime "${request.runtimeName}" is missing target group metadata`);
 }
 
 function deleteRuntimeResources(
@@ -986,12 +663,38 @@ function deleteRuntimeResources(
   request: AwsRuntimeRequest,
   config: AwsRuntimeCommandConfig,
   liveState: AwsRuntimeLiveState,
-): void {
-  deleteListenerRuleIfPresent(commandRunner, request, config, liveState);
-  deleteEcsService(commandRunner, request, config);
-  waitForRuntimeServiceDeletion(commandRunner, request, config);
-  deleteTargetGroupIfPresent(commandRunner, request, config, liveState);
-  deleteEfsAccessPointIfPresent(commandRunner, request, config, liveState);
+): AwsRuntimeSweptResource[] {
+  const targetGroupArn = liveState.targetGroupArn || resolveTargetGroupArnByName(commandRunner, request, config);
+  const efsAccessPointId =
+    liveState.efsAccessPointId || resolveEfsAccessPointIdByRootPath(commandRunner, request, config);
+  const swept: AwsRuntimeSweptResource[] = [];
+
+  if (deleteRuntimeAlarms(commandRunner, request, config)) {
+    swept.push("alarms");
+  }
+
+  if (deleteListenerRuleIfPresent(commandRunner, request, config, targetGroupArn)) {
+    swept.push("listener-rule");
+  }
+
+  if (liveState.status === "existing" && deleteEcsService(commandRunner, request, config)) {
+    waitForRuntimeServiceDeletion(commandRunner, request, config);
+    swept.push("service");
+  }
+
+  if (deleteTargetGroupIfPresent(commandRunner, request, config, targetGroupArn)) {
+    swept.push("target-group");
+  }
+
+  if (cleanupRuntimeSnapshotStore(commandRunner, request, config, liveState, efsAccessPointId)) {
+    swept.push("snapshots");
+  }
+
+  if (deleteEfsAccessPointIfPresent(commandRunner, request, config, efsAccessPointId)) {
+    swept.push("access-point");
+  }
+
+  return swept;
 }
 
 function describeRuntimeWithCommandRunner(
@@ -1032,106 +735,116 @@ function describeRuntimeWithCommandRunner(
   return buildLiveStateFromService(request, service);
 }
 
-export function createAwsRuntimeCommandBackend(commandRunner: AwsCommandRunner = runAwsCommand): AwsRuntimeBackend {
+export function createAwsRuntimeCommandBackend(
+  commandRunner: AwsCommandRunner = runAwsCommand,
+  options: AwsRuntimeCommandBackendOptions = {},
+): AwsRuntimeBackend {
+  const healthProbe = options.healthProbe || probePublicRuntimeHealth;
+
   return {
     async describeRuntime(request) {
       return describeRuntimeWithCommandRunner(commandRunner, request);
     },
 
+    async inspectSnapshotRestore(request, liveState) {
+      return liveState.status === "existing"
+        ? readRestoredSnapshotTimestampFromLogs(commandRunner, request, liveState)
+        : undefined;
+    },
+
     async createRuntime(request) {
       const config = resolveAwsRuntimeCommandConfig(request);
+      const adopted: AwsRuntimeAdoptedResource[] = [];
       const runtimeTask = registerTaskDefinitionForNewAccessPoint(commandRunner, request, config);
-      const targetGroupArn = createTargetGroup(commandRunner, request, config);
-      createListenerRule(commandRunner, request, config, targetGroupArn);
-      createEcsService(commandRunner, request, config, runtimeTask, targetGroupArn);
+      if (runtimeTask.adopted) {
+        adopted.push("access-point");
+      }
+
+      const targetGroup = ensureTargetGroup(commandRunner, request, config);
+      if (targetGroup.adopted) {
+        adopted.push("target-group");
+      }
+
+      if (ensureListenerRule(commandRunner, request, config, targetGroup.targetGroupArn)) {
+        adopted.push("listener-rule");
+      }
+
+      if (
+        await ensureEcsService(
+          commandRunner,
+          request,
+          config,
+          runtimeTask,
+          targetGroup.targetGroupArn,
+          healthProbe,
+          () => describeRuntimeWithCommandRunner(commandRunner, request),
+        )
+      ) {
+        adopted.push("service");
+      }
+
+      ensureRuntimeAlarms(commandRunner, request, config, targetGroup.targetGroupArn);
+
+      return adopted;
+    },
+
+    async reconcileRuntime(request, liveState) {
+      const config = resolveAwsRuntimeCommandConfig(request);
+      return reconcileRuntimeConfiguration(commandRunner, request, config, liveState, healthProbe);
     },
 
     async updateRuntimeTier(request) {
       const config = resolveAwsRuntimeCommandConfig(request);
       const liveState = describeRuntimeWithCommandRunner(commandRunner, request);
-      const taskDefinitionArn = registerTaskDefinitionForExistingAccessPoint(commandRunner, request, config, liveState);
-      const tier = resolveAwsRuntimeTier(request.tier);
-      runRequiredAwsCommand(commandRunner, `update AWS runtime "${request.runtimeName}"`, [
-        "ecs",
-        "update-service",
-        "--region",
-        config.region,
-        "--cluster",
-        config.cluster,
-        "--service",
-        buildAwsRuntimeServiceName(request),
-        "--task-definition",
-        taskDefinitionArn,
-        "--desired-count",
-        `${tier.desiredCount}`,
-      ]);
-
+      const taskDefinitionArn = registerTaskDefinitionFromLiveRuntime(commandRunner, request, config, liveState);
+      await updateRuntimeServiceTaskDefinition(commandRunner, request, config, taskDefinitionArn, healthProbe);
       updateRuntimeServiceTags(commandRunner, request, config, liveState);
+      ensureRuntimeAlarms(commandRunner, request, config, requireRuntimeTargetGroupArn(request, liveState));
     },
 
-    async deleteRuntime(request) {
+    async deleteRuntime(request, describedLiveState) {
       const config = resolveAwsRuntimeCommandConfig(request);
-      const liveState = describeRuntimeWithCommandRunner(commandRunner, request);
-
-      if (liveState.status === "missing") {
-        return;
-      }
+      const liveState = describedLiveState || describeRuntimeWithCommandRunner(commandRunner, request);
 
       if (liveState.status === "indeterminate") {
         throw new Error(`Unable to verify AWS runtime "${request.runtimeName}": ${liveState.describeError}`);
       }
 
-      deleteRuntimeResources(commandRunner, request, config, liveState);
+      return deleteRuntimeResources(commandRunner, request, config, liveState);
     },
   };
 }
 
 export function buildAwsRuntimeEndpointUrl(options: {
   domain?: string;
+  environmentId: DeploymentEnvironmentId;
   runtimeName: string;
   runtimeKind: AwsRuntimeKind;
   endpointKind: AwsRuntimeEndpointKind;
 }): string {
-  return `https://${resolveRuntimeDomain(options.domain)}${buildEndpointPath(
+  return buildRuntimeEndpointUrl(
+    resolveRuntimeDomain(options.domain),
+    options.environmentId,
     options.runtimeName,
     options.runtimeKind,
     options.endpointKind,
-  )}`;
+  );
 }
 
 export function resolveAwsRuntimeEndpoint(options: {
   domain?: string;
+  environmentId: DeploymentEnvironmentId;
   runtimeId: string;
   runtimeKind: AwsRuntimeKind;
   endpointKind: AwsRuntimeEndpointKind;
 }): string {
   return buildAwsRuntimeEndpointUrl({
     domain: options.domain,
+    environmentId: options.environmentId,
     runtimeName: options.runtimeId,
     runtimeKind: options.runtimeKind,
     endpointKind: options.endpointKind,
   });
-}
-
-export function buildAwsRuntimeServiceName(options: {
-  environmentId: DeploymentEnvironmentId;
-  runtimeKind: AwsRuntimeKind;
-  runtimeName: string;
-}): string {
-  return truncateWithCleanSuffix(
-    [
-      normalizeRuntimeSegment(options.environmentId),
-      normalizeRuntimeSegment(options.runtimeKind),
-      normalizeRuntimeSegment(options.runtimeName),
-    ]
-      .filter(Boolean)
-      .join("-"),
-    63,
-  );
-}
-
-export function resolveAwsRuntimeTier(tier: IndexerTier = "basic"): AwsRuntimeTierConfig {
-  return AWS_RUNTIME_TIERS[tier];
 }
 
 export function classifyAwsRuntimeFailure(error: unknown): AwsRuntimeFailureClassification {
@@ -1141,8 +854,20 @@ export function classifyAwsRuntimeFailure(error: unknown): AwsRuntimeFailureClas
     return "missing-foundation-config";
   }
 
+  if (/AWS runtime image not found|ImageNotFoundException/i.test(message)) {
+    return "image-not-found";
+  }
+
   if (/Unable to verify AWS runtime/i.test(message)) {
     return "runtime-state-indeterminate";
+  }
+
+  if (/wait for AWS runtime service stability|ServicesStable failed|stabilization.*timed?-?out/i.test(message)) {
+    return "stabilization-timeout";
+  }
+
+  if (/rollout failed health check/i.test(message)) {
+    return "rollout-failed";
   }
 
   if (
@@ -1156,25 +881,6 @@ export function classifyAwsRuntimeFailure(error: unknown): AwsRuntimeFailureClas
   }
 
   return "unknown";
-}
-
-export function buildAwsToriiRuntimeRequest(request: IndexerRequest): AwsRuntimeRequest {
-  if (!request.environmentId) {
-    throw new Error("AWS Torii runtime requests require environmentId");
-  }
-
-  return {
-    environmentId: request.environmentId,
-    runtimeKind: "torii",
-    runtimeName: request.worldName,
-    rpcUrl: request.rpcUrl,
-    worldAddress: request.worldAddress,
-    namespaces: request.namespaces,
-    externalContracts: request.externalContracts || [],
-    tier: request.tier || "basic",
-    version: request.toriiVersion || DEFAULT_TORII_VERSION,
-    domain: request.runtimeDomain,
-  };
 }
 
 export function toAwsRuntimeArtifact(liveState: AwsRuntimeLiveState): AwsRuntimeArtifact {
@@ -1194,140 +900,6 @@ export function toAwsRuntimeArtifact(liveState: AwsRuntimeLiveState): AwsRuntime
     version: liveState.version,
     imageDigest: liveState.imageDigest,
     health: liveState.health,
-  };
-}
-
-export async function ensureAwsRuntime(
-  runtimeRequest: AwsRuntimeRequest,
-  options: {
-    backend?: AwsRuntimeBackend;
-  } = {},
-): Promise<AwsRuntimeActionResult> {
-  const backend = options.backend || createAwsRuntimeCommandBackend();
-  const requestedTier = resolveRuntimeTier(runtimeRequest.tier);
-  const currentState = await backend.describeRuntime(runtimeRequest);
-
-  if (currentState.status === "existing") {
-    return {
-      mode: "aws-ecs",
-      action: "already-live",
-      requestedTier,
-      liveState: currentState,
-      previousTier: currentState.tier,
-    };
-  }
-
-  if (currentState.status === "indeterminate") {
-    throw new Error(`Unable to verify AWS runtime "${runtimeRequest.runtimeName}": ${currentState.describeError}`);
-  }
-
-  await backend.createRuntime(runtimeRequest);
-  const liveState = requireExistingRuntime(runtimeRequest, await backend.describeRuntime(runtimeRequest), "create");
-
-  return {
-    mode: "aws-ecs",
-    action: "created",
-    requestedTier,
-    liveState,
-    previousTier: currentState.tier,
-  };
-}
-
-export async function ensureAwsToriiRuntime(
-  request: IndexerRequest,
-  options: {
-    backend?: AwsRuntimeBackend;
-  } = {},
-): Promise<AwsRuntimeActionResult> {
-  return ensureAwsRuntime(buildAwsToriiRuntimeRequest(request), options);
-}
-
-export async function ensureAwsKatanaRuntime(
-  request: Omit<AwsRuntimeRequest, "runtimeKind">,
-  options: {
-    backend?: AwsRuntimeBackend;
-  } = {},
-): Promise<AwsRuntimeActionResult> {
-  return ensureAwsRuntime({ ...request, runtimeKind: "katana" }, options);
-}
-
-export async function resizeAwsRuntime(
-  request: AwsRuntimeRequest,
-  options: {
-    backend?: AwsRuntimeBackend;
-  } = {},
-): Promise<AwsRuntimeActionResult> {
-  const backend = options.backend || createAwsRuntimeCommandBackend();
-  const requestedTier = resolveRuntimeTier(request.tier);
-  const currentState = await backend.describeRuntime(request);
-
-  if (currentState.status !== "existing") {
-    throw new Error(`AWS runtime "${request.runtimeName}" does not exist`);
-  }
-
-  if (currentState.tier === requestedTier) {
-    return {
-      mode: "aws-ecs",
-      action: "already-live",
-      requestedTier,
-      liveState: currentState,
-      previousTier: currentState.tier,
-    };
-  }
-
-  await backend.updateRuntimeTier(request);
-  const liveState = requireExistingRuntime(request, await backend.describeRuntime(request), "resize");
-
-  return {
-    mode: "aws-ecs",
-    action: "updated",
-    requestedTier,
-    liveState,
-    previousTier: currentState.tier,
-  };
-}
-
-export async function describeAwsRuntime(
-  request: AwsRuntimeRequest,
-  options: {
-    backend?: AwsRuntimeBackend;
-  } = {},
-): Promise<AwsRuntimeLiveState> {
-  const backend = options.backend || createAwsRuntimeCommandBackend();
-  return backend.describeRuntime(request);
-}
-
-export async function deleteAwsRuntime(
-  request: AwsRuntimeRequest,
-  options: {
-    backend?: AwsRuntimeBackend;
-  } = {},
-): Promise<AwsRuntimeActionResult> {
-  const backend = options.backend || createAwsRuntimeCommandBackend();
-  const requestedTier = resolveRuntimeTier(request.tier);
-  const currentState = await backend.describeRuntime(request);
-
-  if (currentState.status === "missing") {
-    return {
-      mode: "aws-ecs",
-      action: "already-missing",
-      requestedTier,
-      liveState: currentState,
-      previousTier: currentState.tier,
-    };
-  }
-
-  if (currentState.status === "indeterminate") {
-    throw new Error(`Unable to verify AWS runtime "${request.runtimeName}": ${currentState.describeError}`);
-  }
-
-  await backend.deleteRuntime(request);
-
-  return {
-    mode: "aws-ecs",
-    action: "deleted",
-    requestedTier,
-    liveState: buildMissingLiveState(request),
-    previousTier: currentState.tier,
+    restoredFromSnapshot: liveState.restoredFromSnapshot,
   };
 }

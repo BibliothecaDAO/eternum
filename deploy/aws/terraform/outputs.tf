@@ -49,3 +49,11 @@ output "aws_runtime_alb_listener_arn" {
 output "aws_runtime_log_group" {
   value = aws_cloudwatch_log_group.runtime.name
 }
+
+output "aws_runtime_sns_topic_arn" {
+  value = aws_sns_topic.runtime_alerts.arn
+}
+
+output "aws_runtime_alb_access_log_bucket" {
+  value = aws_s3_bucket.alb_access_logs.bucket
+}

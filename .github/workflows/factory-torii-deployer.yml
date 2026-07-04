@@ -64,7 +64,7 @@ on:
         description: "Torii world address"
         required: false
       world_block:
-        description: "Deprecated Slot config input retained for caller compatibility"
+        description: "First world block for Torii indexing"
         required: false
         default: "0"
       torii_namespaces:
@@ -91,6 +91,13 @@ permissions:
 env:
   CI: "true"
 
+concurrency:
+  group:
+    aws-runtime-${{ inputs.environment_id || github.event.inputs.environment_id || (github.event.inputs.env == 'mainnet'
+    && 'mainnet.blitz' || 'slot.blitz') }}-${{ inputs.torii_name || github.event.inputs.torii_name ||
+    inputs.torii_prefix || github.event.inputs.torii_prefix || 'factory-torii' }}
+  cancel-in-progress: false
+
 jobs:
   deploy-torii:
     name: Reconcile AWS Torii
@@ -100,12 +107,12 @@ jobs:
       ${{ github.event.inputs.environment_id || (github.event.inputs.env == 'mainnet' && 'mainnet.blitz' ||
       'slot.blitz') }}
     env:
-      FACTORY_RUNTIME_PROVIDER: aws
+      RUNTIME_PROVIDER: ${{ vars.RUNTIME_PROVIDER || 'slot' }}
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
       AWS_RUNTIME_CLUSTER: ${{ vars.AWS_RUNTIME_CLUSTER }}
       AWS_RUNTIME_DOMAIN: ${{ github.event.inputs.runtime_domain || vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
+      AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
       AWS_RUNTIME_ECR_IMAGE: ${{ vars.AWS_RUNTIME_ECR_IMAGE }}
-      AWS_RUNTIME_ECR_IMAGE_DIGEST: ${{ vars.AWS_RUNTIME_ECR_IMAGE_DIGEST }}
       AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN }}
       AWS_RUNTIME_TASK_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_ROLE_ARN }}
       AWS_RUNTIME_SUBNET_IDS: ${{ vars.AWS_RUNTIME_SUBNET_IDS }}
@@ -114,6 +121,8 @@ jobs:
       AWS_RUNTIME_VPC_ID: ${{ vars.AWS_RUNTIME_VPC_ID }}
       AWS_RUNTIME_ALB_LISTENER_ARN: ${{ vars.AWS_RUNTIME_ALB_LISTENER_ARN }}
       AWS_RUNTIME_LOG_GROUP: ${{ vars.AWS_RUNTIME_LOG_GROUP || '/ecs/eternum-game-runtime' }}
+      AWS_RUNTIME_SNS_TOPIC_ARN: ${{ vars.AWS_RUNTIME_SNS_TOPIC_ARN }}
+      AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS: ${{ vars.AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS }}
 
     steps:
       - name: Checkout repository
@@ -188,6 +197,10 @@ jobs:
 
           if [ -n "${{ github.event.inputs.torii_world_address }}" ]; then
             args+=(--world-address "${{ github.event.inputs.torii_world_address }}")
+          fi
+
+          if [ -n "${{ github.event.inputs.world_block }}" ]; then
+            args+=(--world-block "${{ github.event.inputs.world_block }}")
           fi
 
           if [ -n "${{ github.event.inputs.torii_namespaces }}" ]; then

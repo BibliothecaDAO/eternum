@@ -28,3 +28,15 @@ jobs:
 
       - name: Run knip
         run: pnpm knip
+
+      - name: Check AWS runtime IAM policy
+        run: pnpm run check:aws-runtime-iam
+
+      - name: Check AWS runtime README variable parity
+        run: pnpm run check:aws-runtime-readme
+
+      - name: Check AWS runtime Terraform backend
+        run: pnpm run check:aws-runtime-terraform
+
+      - name: Check AWS runtime URL builders
+        run: pnpm run check:aws-runtime-urls

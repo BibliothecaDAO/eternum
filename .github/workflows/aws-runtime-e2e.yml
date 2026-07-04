@@ -1,0 +1,119 @@
+name: AWS Runtime E2E
+run-name: AWS Runtime E2E / ${{ github.event.inputs.environment || vars.AWS_RUNTIME_E2E_ENVIRONMENT || 'slot.blitz' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Deployment environment"
+        required: false
+        default: slot.blitz
+        type: choice
+        options:
+          - slot.blitz
+          - slot.eternum
+          - mainnet.blitz
+          - mainnet.eternum
+      runtime_name:
+        description: "Runtime name prefix"
+        required: false
+        default: e2e-nightly
+        type: string
+      domain:
+        description: "Runtime domain"
+        required: false
+        default: runtime.realms.world
+        type: string
+      version:
+        description: "Dojo runtime image version"
+        required: false
+        default: v1.8.16
+        type: string
+  schedule:
+    - cron: "17 3 * * *"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: aws-runtime-${{ github.event.inputs.environment || vars.AWS_RUNTIME_E2E_ENVIRONMENT || 'slot.blitz' }}-e2e
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    name: Runtime e2e (${{ matrix.runtime_kind }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: ${{ github.event.inputs.environment || vars.AWS_RUNTIME_E2E_ENVIRONMENT || 'slot.blitz' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime_kind:
+          - katana
+          - torii
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_RUNTIME_E2E_ENVIRONMENT:
+        ${{ github.event.inputs.environment || vars.AWS_RUNTIME_E2E_ENVIRONMENT || 'slot.blitz' }}
+      AWS_RUNTIME_E2E_RUNTIME_KIND: ${{ matrix.runtime_kind }}
+      AWS_RUNTIME_E2E_DOMAIN:
+        ${{ github.event.inputs.domain || vars.AWS_RUNTIME_E2E_DOMAIN || vars.AWS_RUNTIME_DOMAIN ||
+        'runtime.realms.world' }}
+      AWS_RUNTIME_E2E_TIER: ${{ vars.AWS_RUNTIME_E2E_TIER || 'basic' }}
+      AWS_RUNTIME_E2E_RESIZE_TIER: ${{ vars.AWS_RUNTIME_E2E_RESIZE_TIER || 'pro' }}
+      AWS_RUNTIME_E2E_VERSION: ${{ github.event.inputs.version || vars.AWS_RUNTIME_E2E_VERSION || 'v1.8.16' }}
+      AWS_RUNTIME_E2E_RPC_URL: ${{ vars.AWS_RUNTIME_E2E_RPC_URL }}
+      AWS_RUNTIME_E2E_WORLD_ADDRESS: ${{ vars.AWS_RUNTIME_E2E_WORLD_ADDRESS }}
+      AWS_RUNTIME_CLUSTER: ${{ vars.AWS_RUNTIME_CLUSTER }}
+      AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
+      AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
+      AWS_RUNTIME_ECR_IMAGE: ${{ vars.AWS_RUNTIME_ECR_IMAGE }}
+      AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN }}
+      AWS_RUNTIME_TASK_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_ROLE_ARN }}
+      AWS_RUNTIME_SUBNET_IDS: ${{ vars.AWS_RUNTIME_SUBNET_IDS }}
+      AWS_RUNTIME_SECURITY_GROUP_IDS: ${{ vars.AWS_RUNTIME_SECURITY_GROUP_IDS }}
+      AWS_RUNTIME_EFS_FILE_SYSTEM_ID: ${{ vars.AWS_RUNTIME_EFS_FILE_SYSTEM_ID }}
+      AWS_RUNTIME_VPC_ID: ${{ vars.AWS_RUNTIME_VPC_ID }}
+      AWS_RUNTIME_ALB_LISTENER_ARN: ${{ vars.AWS_RUNTIME_ALB_LISTENER_ARN }}
+      AWS_RUNTIME_LOG_GROUP: ${{ vars.AWS_RUNTIME_LOG_GROUP || '/ecs/eternum-game-runtime' }}
+      AWS_RUNTIME_SNS_TOPIC_ARN: ${{ vars.AWS_RUNTIME_SNS_TOPIC_ARN }}
+      AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS: ${{ vars.AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Configure AWS credentials
+        if: ${{ vars.AWS_ROLE_TO_ASSUME != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Run runtime e2e
+        run: |
+          set -euo pipefail
+          runtime_name_prefix="${{ github.event.inputs.runtime_name || 'e2e-nightly' }}"
+          export AWS_RUNTIME_E2E_RUNTIME_NAME="${runtime_name_prefix}-${AWS_RUNTIME_E2E_RUNTIME_KIND}"
+          make aws-runtime-e2e | tee aws-runtime-e2e-result.json
+
+      - name: Upload e2e result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aws-runtime-e2e-result-${{ matrix.runtime_kind }}
+          path: aws-runtime-e2e-result.json

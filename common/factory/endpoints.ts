@@ -1,4 +1,4 @@
-import { shortString } from "starknet";
+import { buildRuntimeEndpointUrl, type RuntimeEndpointKind } from "./runtime-endpoints";
 
 type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet" | string;
 
@@ -14,12 +14,24 @@ function readEnv(name: string): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
-function shouldUseAwsFactoryRuntime(): boolean {
-  return readEnv("FACTORY_RUNTIME_PROVIDER")?.toLowerCase() === "aws";
+type RuntimeProvider = "aws" | "slot";
+
+interface FactorySqlBaseUrlOptions {
+  provider?: RuntimeProvider;
+  awsDomain?: string;
+  cartridgeApiBase?: string;
 }
 
-function resolveAwsRuntimeDomain(): string {
-  return (readEnv("AWS_RUNTIME_DOMAIN") || DEFAULT_AWS_RUNTIME_DOMAIN).replace(/^https?:\/\//, "");
+function resolveRuntimeProvider(options?: FactorySqlBaseUrlOptions): RuntimeProvider {
+  const configuredProvider = options?.provider || readEnv("RUNTIME_PROVIDER");
+  return configuredProvider?.toLowerCase() === "aws" ? "aws" : "slot";
+}
+
+function resolveAwsRuntimeDomain(options?: FactorySqlBaseUrlOptions): string {
+  return (options?.awsDomain || readEnv("AWS_RUNTIME_DOMAIN") || DEFAULT_AWS_RUNTIME_DOMAIN).replace(
+    /^https?:\/\//,
+    "",
+  );
 }
 
 function resolveAwsFactoryRuntimeName(chain: Chain): string {
@@ -37,21 +49,51 @@ function resolveAwsFactoryRuntimeName(chain: Chain): string {
   }
 }
 
-function buildAwsFactorySqlBaseUrl(chain: Chain): string {
+function resolveAwsFactoryEnvironmentId(chain: Chain): string {
+  switch (chain) {
+    case "mainnet":
+      return readEnv("AWS_FACTORY_TORII_MAINNET_ENVIRONMENT") || "mainnet-blitz";
+    case "sepolia":
+      return readEnv("AWS_FACTORY_TORII_SEPOLIA_ENVIRONMENT") || "slot-blitz";
+    case "slot":
+    case "slottest":
+    case "local":
+      return readEnv("AWS_FACTORY_TORII_SLOT_ENVIRONMENT") || "slot-blitz";
+    default:
+      return "";
+  }
+}
+
+function buildAwsFactoryEndpointBaseUrl(
+  chain: Chain,
+  endpointKind: Extract<RuntimeEndpointKind, "base" | "sql">,
+  options?: FactorySqlBaseUrlOptions,
+): string {
   const runtimeName = resolveAwsFactoryRuntimeName(chain);
-  return runtimeName ? `https://${resolveAwsRuntimeDomain()}/x/${runtimeName}/torii/sql` : "";
+  const environmentId = resolveAwsFactoryEnvironmentId(chain);
+  return runtimeName && environmentId
+    ? buildRuntimeEndpointUrl(resolveAwsRuntimeDomain(options), environmentId, runtimeName, "torii", endpointKind)
+    : "";
 }
 
 /**
  * Returns the Factory Torii SQL base URL for a given chain.
  * The Cartridge API base can be overridden; defaults to https://api.cartridge.gg.
  */
-export function getFactorySqlBaseUrl(chain: Chain, cartridgeApiBase?: string): string {
-  if (shouldUseAwsFactoryRuntime()) {
-    return buildAwsFactorySqlBaseUrl(chain);
+export function getFactorySqlBaseUrl(
+  chain: Chain,
+  optionsOrCartridgeApiBase?: FactorySqlBaseUrlOptions | string,
+): string {
+  const options =
+    typeof optionsOrCartridgeApiBase === "string"
+      ? { cartridgeApiBase: optionsOrCartridgeApiBase }
+      : optionsOrCartridgeApiBase;
+
+  if (resolveRuntimeProvider(options) === "aws") {
+    return buildAwsFactoryEndpointBaseUrl(chain, "sql", options);
   }
 
-  const base = cartridgeApiBase || readEnv("CARTRIDGE_API_BASE") || DEFAULT_CARTRIDGE_API_BASE;
+  const base = options?.cartridgeApiBase || readEnv("CARTRIDGE_API_BASE") || DEFAULT_CARTRIDGE_API_BASE;
   switch (chain) {
     case "mainnet":
       return `${base}/x/eternum-factory-mainnet/torii/sql`;
@@ -91,14 +133,6 @@ export const decodePaddedFeltAscii = (hex: string): string => {
   if (!hex) return "";
   const normalizedHex = hex.startsWith("0x") || hex.startsWith("0X") ? hex.slice(2) : hex;
   if (normalizedHex === "0") return "";
-
-  try {
-    const asDecimal = BigInt(`0x${normalizedHex}`).toString();
-    const decoded = shortString.decodeShortString(asDecimal);
-    if (decoded && decoded.trim().length > 0) return decoded;
-  } catch {
-    // Ignore decode failures and fall back to manual byte parsing.
-  }
 
   let index = 0;
   while (index + 1 < normalizedHex.length && normalizedHex.slice(index, index + 2) === "00") index += 2;

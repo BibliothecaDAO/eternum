@@ -19,6 +19,7 @@ import {
   type AwsRuntimeRequest,
 } from "../runtime/aws-runtime";
 import { ensureIndexerDeployment } from "../runtime/indexer-provider";
+import { resolveRuntimeProvider } from "../runtime/provider-config";
 import {
   requireGitHubBranchStoreConfig,
   readGitHubBranchJsonFile,
@@ -282,12 +283,7 @@ function resolveLiveIndexerError(liveState: IndexerMaintenanceLiveState): string
 }
 
 function resolveMaintenanceRuntimeProvider(environmentId: string): RuntimeProvider {
-  const override = process.env.INDEXER_RUNTIME_PROVIDER?.trim().toLowerCase();
-  if (override === "aws" || override === "slot") {
-    return override;
-  }
-
-  return resolveDeploymentEnvironment(environmentId).runtimeProvider;
+  return resolveRuntimeProvider(resolveDeploymentEnvironment(environmentId));
 }
 
 function shouldUseAwsRuntime(operation: IndexerMaintenanceOperation): boolean {

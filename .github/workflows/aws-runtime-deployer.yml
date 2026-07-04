@@ -55,6 +55,11 @@ on:
         description: "World address indexed by Torii"
         required: false
         type: string
+      world_block:
+        description: "First world block indexed by Torii"
+        required: false
+        default: ""
+        type: string
       namespaces:
         description: "Comma-separated Torii namespaces"
         required: false
@@ -70,10 +75,21 @@ on:
         required: false
         default: v1.8.16
         type: string
+      retain_data:
+        description: "Keep snapshot data when deleting a runtime"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
   id-token: write
+
+concurrency:
+  group:
+    aws-runtime-${{ inputs.environment || github.event.inputs.environment }}-${{ inputs.runtime_name ||
+    github.event.inputs.runtime_name }}
+  cancel-in-progress: false
 
 jobs:
   runtime:
@@ -85,8 +101,8 @@ jobs:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
       AWS_RUNTIME_CLUSTER: ${{ vars.AWS_RUNTIME_CLUSTER }}
       AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
+      AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
       AWS_RUNTIME_ECR_IMAGE: ${{ vars.AWS_RUNTIME_ECR_IMAGE }}
-      AWS_RUNTIME_ECR_IMAGE_DIGEST: ${{ vars.AWS_RUNTIME_ECR_IMAGE_DIGEST }}
       AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN }}
       AWS_RUNTIME_TASK_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_ROLE_ARN }}
       AWS_RUNTIME_SUBNET_IDS: ${{ vars.AWS_RUNTIME_SUBNET_IDS }}
@@ -95,6 +111,8 @@ jobs:
       AWS_RUNTIME_VPC_ID: ${{ vars.AWS_RUNTIME_VPC_ID }}
       AWS_RUNTIME_ALB_LISTENER_ARN: ${{ vars.AWS_RUNTIME_ALB_LISTENER_ARN }}
       AWS_RUNTIME_LOG_GROUP: ${{ vars.AWS_RUNTIME_LOG_GROUP || '/ecs/eternum-game-runtime' }}
+      AWS_RUNTIME_SNS_TOPIC_ARN: ${{ vars.AWS_RUNTIME_SNS_TOPIC_ARN }}
+      AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS: ${{ vars.AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -141,12 +159,20 @@ jobs:
             args+=(--world-address "${{ github.event.inputs.world_address }}")
           fi
 
+          if [ -n "${{ github.event.inputs.world_block }}" ]; then
+            args+=(--world-block "${{ github.event.inputs.world_block }}")
+          fi
+
           if [ -n "${{ github.event.inputs.namespaces }}" ]; then
             args+=(--namespaces "${{ github.event.inputs.namespaces }}")
           fi
 
           if [ -n "${{ github.event.inputs.external_contracts }}" ]; then
             args+=(--external-contracts "${{ github.event.inputs.external_contracts }}")
+          fi
+
+          if [ "${{ github.event.inputs.operation }}" = "delete" ] && [ "${{ github.event.inputs.retain_data }}" = "true" ]; then
+            args+=(--retain-data)
           fi
 
           bun config/deployer/clean/cli/aws-runtime.ts "${args[@]}" | tee aws-runtime-result.json

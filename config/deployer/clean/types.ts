@@ -126,6 +126,7 @@ export interface IndexerRequest {
   namespaces: string;
   worldName: string;
   worldAddress: string;
+  worldBlock?: string;
   tier?: IndexerTier;
   toriiVersion?: string;
   workflowFile?: string;

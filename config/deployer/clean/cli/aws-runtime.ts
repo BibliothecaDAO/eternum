@@ -9,6 +9,7 @@ import {
   resizeAwsRuntime,
   toAwsRuntimeArtifact,
   type AwsRuntimeActionResult,
+  type AwsRuntimeDiff,
   type AwsRuntimeKind,
   type AwsRuntimeLiveState,
 } from "../runtime/aws-runtime";
@@ -17,7 +18,7 @@ import { parseArgs } from "./args";
 
 type AwsRuntimeOperation = "deploy" | "inspect" | "resize" | "delete";
 
-interface AwsRuntimeCliRequest {
+export interface AwsRuntimeCliRequest {
   operation: AwsRuntimeOperation;
   environmentId: DeploymentEnvironmentId;
   runtimeKind: AwsRuntimeKind;
@@ -25,12 +26,14 @@ interface AwsRuntimeCliRequest {
   tier?: IndexerTier;
   rpcUrl?: string;
   worldAddress?: string;
+  worldBlock?: string;
   namespaces?: string;
   externalContracts?: string[];
   version?: string;
+  retainData?: boolean;
 }
 
-interface AwsRuntimeCliResult {
+export interface AwsRuntimeCliResult {
   operation: AwsRuntimeOperation;
   environmentId: DeploymentEnvironmentId;
   runtimeKind: AwsRuntimeKind;
@@ -38,11 +41,16 @@ interface AwsRuntimeCliResult {
   action?: AwsRuntimeActionResult["action"];
   mode?: AwsRuntimeActionResult["mode"];
   requestedTier?: IndexerTier;
+  diff?: AwsRuntimeDiff;
+  adopted?: AwsRuntimeActionResult["adopted"];
+  swept?: AwsRuntimeActionResult["swept"];
+  restoredFromSnapshot?: string;
+  health?: AwsRuntimeLiveState["health"];
   liveState: AwsRuntimeLiveState;
   artifact: ReturnType<typeof toAwsRuntimeArtifact>;
 }
 
-interface AwsRuntimeCliFailureResult {
+export interface AwsRuntimeCliFailureResult {
   operation?: AwsRuntimeOperation;
   environmentId?: DeploymentEnvironmentId;
   runtimeKind?: AwsRuntimeKind;
@@ -51,6 +59,38 @@ interface AwsRuntimeCliFailureResult {
   errorMessage: string;
   failedAt: string;
 }
+
+const supportedFailureClassifications: ReadonlySet<AwsRuntimeCliFailureResult["failureClassification"]> = new Set([
+  "missing-foundation-config",
+  "aws-command-failed",
+  "image-not-found",
+  "rollout-failed",
+  "stabilization-timeout",
+  "runtime-state-indeterminate",
+  "runtime-validation",
+  "unknown",
+]);
+const supportedOperations: ReadonlySet<AwsRuntimeCliResult["operation"]> = new Set([
+  "deploy",
+  "inspect",
+  "resize",
+  "delete",
+]);
+const supportedEnvironmentIds: ReadonlySet<DeploymentEnvironmentId> = new Set([
+  "slot.blitz",
+  "slot.eternum",
+  "mainnet.blitz",
+  "mainnet.eternum",
+]);
+const supportedRuntimeKinds: ReadonlySet<AwsRuntimeKind> = new Set(["katana", "torii"]);
+const supportedActions: ReadonlySet<NonNullable<AwsRuntimeCliResult["action"]>> = new Set([
+  "created",
+  "already-live",
+  "updated",
+  "deleted",
+  "already-missing",
+]);
+const supportedTiers: ReadonlySet<IndexerTier> = new Set(["basic", "pro", "epic", "legendary"]);
 
 function usage() {
   console.log(
@@ -62,9 +102,11 @@ function usage() {
       "  --tier <basic|pro|epic|legendary>",
       "  --rpc-url <url>",
       "  --world-address <0x...>",
+      "  --world-block <block-number>",
       "  --namespaces <comma-separated namespaces>",
       "  --external-contracts <newline-or-comma-separated contracts>",
       "  --version <dojo runtime version>",
+      "  --retain-data (delete only; keep snapshot data for later restore)",
       "",
     ].join("\n"),
   );
@@ -132,9 +174,11 @@ function resolveCliRequest(): AwsRuntimeCliRequest {
     tier: parseTier(args.tier),
     rpcUrl: args["rpc-url"],
     worldAddress: args["world-address"],
+    worldBlock: args["world-block"],
     namespaces: args.namespaces,
     externalContracts: parseExternalContracts(args["external-contracts"] || args["torii-external-contracts"]),
     version: args.version,
+    retainData: args["retain-data"] === "true",
   };
 }
 
@@ -148,30 +192,35 @@ function buildRuntimeRequest(request: AwsRuntimeCliRequest) {
     tier: request.tier,
     rpcUrl: request.rpcUrl || environment.rpcUrl,
     worldAddress: request.worldAddress,
+    worldBlock: request.worldBlock,
     namespaces: request.namespaces,
     externalContracts: request.externalContracts,
     version: request.version,
     domain: environment.runtimeDomain,
+    retainData: request.retainData,
   };
 }
 
-function validateRuntimeOperationRequest(request: AwsRuntimeCliRequest): void {
-  if (request.operation !== "deploy" || request.runtimeKind !== "torii") {
+function validateRuntimeOperationRequest(
+  request: AwsRuntimeCliRequest,
+  runtimeRequest: ReturnType<typeof buildRuntimeRequest>,
+): void {
+  if (request.operation !== "deploy" || runtimeRequest.runtimeKind !== "torii") {
     return;
   }
 
-  if (!request.rpcUrl) {
+  if (!runtimeRequest.rpcUrl) {
     throw new Error("Torii AWS runtime deploy requires --rpc-url");
   }
 
-  if (!request.worldAddress) {
+  if (!runtimeRequest.worldAddress) {
     throw new Error("Torii AWS runtime deploy requires --world-address");
   }
 }
 
 async function runAwsRuntimeOperation(request: AwsRuntimeCliRequest): Promise<AwsRuntimeCliResult> {
-  validateRuntimeOperationRequest(request);
   const runtimeRequest = buildRuntimeRequest(request);
+  validateRuntimeOperationRequest(request, runtimeRequest);
 
   if (request.operation === "inspect") {
     const liveState = await describeAwsRuntime(runtimeRequest);
@@ -195,6 +244,8 @@ function buildCliResult(request: AwsRuntimeCliRequest, liveState: AwsRuntimeLive
     environmentId: request.environmentId,
     runtimeKind: request.runtimeKind,
     runtimeName: request.runtimeName,
+    restoredFromSnapshot: liveState.restoredFromSnapshot,
+    health: liveState.health,
     liveState,
     artifact: toAwsRuntimeArtifact(liveState),
   };
@@ -206,12 +257,108 @@ function buildCliResultFromAction(request: AwsRuntimeCliRequest, result: AwsRunt
     action: result.action,
     mode: result.mode,
     requestedTier: result.requestedTier,
+    diff: result.diff,
+    adopted: result.adopted,
+    swept: result.swept,
   };
 }
 
 function writeJsonResult(result: AwsRuntimeCliResult | AwsRuntimeCliFailureResult): void {
+  validateCliResult(result);
   const json = `${JSON.stringify(result, null, 2)}\n`;
   process.stdout.write(json);
+}
+
+export function validateCliResult(result: AwsRuntimeCliResult | AwsRuntimeCliFailureResult): void {
+  if ("failureClassification" in result) {
+    validateFailureResult(result);
+    return;
+  }
+
+  validateSuccessResult(result);
+}
+
+function validateSuccessResult(result: AwsRuntimeCliResult): void {
+  const requiredStrings = [
+    ["operation", result.operation],
+    ["environmentId", result.environmentId],
+    ["runtimeKind", result.runtimeKind],
+    ["runtimeName", result.runtimeName],
+  ];
+  const missingField = requiredStrings.find(([, value]) => typeof value !== "string" || value.length === 0)?.[0];
+  if (missingField) {
+    throw new Error(`AWS runtime CLI result missing ${missingField}`);
+  }
+
+  if (!supportedOperations.has(result.operation)) {
+    throw new Error(`AWS runtime CLI result has unsupported operation "${result.operation}"`);
+  }
+
+  if (!supportedEnvironmentIds.has(result.environmentId)) {
+    throw new Error(`AWS runtime CLI result has unsupported environmentId "${result.environmentId}"`);
+  }
+
+  if (!supportedRuntimeKinds.has(result.runtimeKind)) {
+    throw new Error(`AWS runtime CLI result has unsupported runtimeKind "${result.runtimeKind}"`);
+  }
+
+  if (result.operation !== "inspect" && !result.action) {
+    throw new Error("AWS runtime CLI result missing action");
+  }
+
+  if (result.action && !supportedActions.has(result.action)) {
+    throw new Error(`AWS runtime CLI result has unsupported action "${result.action}"`);
+  }
+
+  if (result.operation !== "inspect" && !supportedTiers.has(result.requestedTier as IndexerTier)) {
+    throw new Error(`AWS runtime CLI result has unsupported requestedTier "${result.requestedTier || ""}"`);
+  }
+
+  if (result.action && result.mode !== "aws-ecs") {
+    throw new Error("AWS runtime CLI action result missing aws-ecs mode");
+  }
+
+  if (!result.liveState || !result.artifact) {
+    throw new Error("AWS runtime CLI result missing live state or artifact");
+  }
+
+  if (!artifactMatchesLiveState(result)) {
+    throw new Error("AWS runtime CLI result artifact does not match live state");
+  }
+
+  if (result.liveState.health && result.health !== result.liveState.health) {
+    throw new Error("AWS runtime CLI result health does not match live state");
+  }
+
+  if (result.artifact.health && result.health !== result.artifact.health) {
+    throw new Error("AWS runtime CLI result health does not match artifact");
+  }
+
+  if (result.health && result.health.status !== "unknown" && !Number.isFinite(result.health.latencyMs)) {
+    throw new Error("AWS runtime CLI result probed health missing latency");
+  }
+}
+
+function artifactMatchesLiveState(result: AwsRuntimeCliResult): boolean {
+  return JSON.stringify(result.artifact) === JSON.stringify(toAwsRuntimeArtifact(result.liveState));
+}
+
+function validateFailureResult(result: AwsRuntimeCliFailureResult): void {
+  if (!result.failureClassification) {
+    throw new Error("AWS runtime CLI failure result missing classification");
+  }
+
+  if (!supportedFailureClassifications.has(result.failureClassification)) {
+    throw new Error(`AWS runtime CLI failure result has unsupported classification "${result.failureClassification}"`);
+  }
+
+  if (!result.errorMessage) {
+    throw new Error("AWS runtime CLI failure result missing error message");
+  }
+
+  if (!Number.isFinite(Date.parse(result.failedAt))) {
+    throw new Error("AWS runtime CLI failure result missing failedAt timestamp");
+  }
 }
 
 function writeCliSummary(result: AwsRuntimeCliResult): void {
@@ -254,7 +401,7 @@ function writeFailureSummary(result: AwsRuntimeCliFailureResult): void {
   );
 }
 
-function buildFailureResult(error: unknown, request?: AwsRuntimeCliRequest): AwsRuntimeCliFailureResult {
+export function buildFailureResult(error: unknown, request?: AwsRuntimeCliRequest): AwsRuntimeCliFailureResult {
   return {
     operation: request?.operation,
     environmentId: request?.environmentId,

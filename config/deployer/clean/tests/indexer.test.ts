@@ -177,6 +177,7 @@ describe("createIndexer", () => {
         expect(body.inputs.torii_version).toBe("v1.8.16");
         expect(body.inputs.rpc_url).toBe("https://rpc.example");
         expect(body.inputs.torii_world_address).toBe("0x123");
+        expect(body.inputs.world_block).toBe("12345");
         expect(body.inputs.torii_namespaces).toBe("s1_eternum");
         return new Response(null, { status: 204 });
       }
@@ -228,6 +229,7 @@ describe("createIndexer", () => {
         namespaces: "s1_eternum",
         worldName: "bltz-fire-gate-42",
         worldAddress: "0x123",
+        worldBlock: "12345",
         toriiVersion: "v1.8.16",
       },
       {

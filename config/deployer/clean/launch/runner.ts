@@ -38,6 +38,7 @@ import {
   waitForFactoryWorldProfile,
 } from "../factory/discovery";
 import { ensureIndexerDeployment, resolveIndexerArtifactStateFromProvider } from "../runtime/indexer-provider";
+import { resolveRuntimeProvider } from "../runtime/provider-config";
 import { syncPaymasterPolicy, type PaymasterAction } from "../paymaster";
 import { buildLootChestMinterRoleGrantCall, grantRoles, resolveLootChestMinterRoleGrantTarget } from "../role-grants";
 import { resolveAccountCredentials } from "../shared/credentials";
@@ -158,10 +159,11 @@ function resolveCreateGameSettings(request: LaunchGameRequest, environment: Depl
 
 function createLaunchRuntime(request: LaunchGameRequest, progress: LaunchProgress): LaunchRuntime {
   const environment = resolveDeploymentEnvironment(request.environmentId);
+  const runtimeProvider = resolveRuntimeProvider(environment);
 
   return {
     progress,
-    environment,
+    environment: { ...environment, runtimeProvider },
     factoryAddress: resolveLaunchFactoryAddress(request, environment),
     rpcUrl: request.rpcUrl || environment.rpcUrl,
     startTime: parseStartTime(request.startTime),

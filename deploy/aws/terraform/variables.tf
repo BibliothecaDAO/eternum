@@ -31,10 +31,28 @@ variable "github_repo" {
   type        = string
 }
 
-variable "github_environment" {
-  description = "Optional GitHub environment restriction. Use * to allow any environment."
+variable "github_environments" {
+  description = "GitHub environments allowed to assume the runtime deploy role."
+  type        = list(string)
+  default     = ["slot.blitz", "slot.eternum", "mainnet.blitz", "mainnet.eternum"]
+}
+
+variable "alert_email_addresses" {
+  description = "Email endpoints subscribed to runtime foundation alerts."
+  type        = list(string)
+  default     = []
+}
+
+variable "alert_webhook_url" {
+  description = "Optional HTTPS webhook endpoint subscribed to runtime foundation alerts."
   type        = string
-  default     = "*"
+  default     = null
+}
+
+variable "enable_vpc_endpoints" {
+  description = "Create private S3, ECR, and CloudWatch Logs endpoints for runtime tasks."
+  type        = bool
+  default     = true
 }
 
 variable "vpc_cidr" {

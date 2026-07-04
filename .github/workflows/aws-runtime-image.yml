@@ -1,0 +1,98 @@
+name: AWS Runtime Image
+run-name: AWS Runtime Image / ${{ inputs.dojo_version || 'v1.8.16' }} / ${{ github.sha }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "GitHub environment containing AWS runtime variables"
+        required: false
+        default: slot.blitz
+        type: choice
+        options:
+          - slot.blitz
+          - slot.eternum
+          - mainnet.blitz
+          - mainnet.eternum
+      dojo_version:
+        description: "Dojo runtime image version"
+        required: false
+        default: v1.8.16
+        type: string
+  push:
+    branches:
+      - next
+    paths:
+      - ".github/workflows/aws-runtime-image.yml"
+      - "deploy/aws/runtime-image/**"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    name: Build and push runtime image
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ inputs.environment || 'slot.blitz' }}
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
+      DOJO_VERSION: ${{ inputs.dojo_version || 'v1.8.16' }}
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
+      image_tag: ${{ steps.meta.outputs.image_tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        if: ${{ vars.AWS_ROLE_TO_ASSUME != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Login to ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set image metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          if [ -z "${AWS_RUNTIME_ECR_REPOSITORY_URL}" ]; then
+            echo "AWS_RUNTIME_ECR_REPOSITORY_URL is required" >&2
+            exit 1
+          fi
+
+          short_sha="${GITHUB_SHA::12}"
+          image_tag="${DOJO_VERSION}-${short_sha}"
+          echo "image_tag=${image_tag}" >> "${GITHUB_OUTPUT}"
+          echo "image_ref=${AWS_RUNTIME_ECR_REPOSITORY_URL}:${image_tag}" >> "${GITHUB_OUTPUT}"
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push linux/amd64 image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: deploy/aws/runtime-image
+          file: deploy/aws/runtime-image/Dockerfile
+          platforms: linux/amd64
+          push: true
+          build-args: |
+            DOJO_VERSION=${{ env.DOJO_VERSION }}
+          tags: ${{ steps.meta.outputs.image_ref }}
+
+      - name: Summarize image
+        run: |
+          {
+            echo "## AWS runtime image"
+            echo "- Tag: \`${{ steps.meta.outputs.image_tag }}\`"
+            echo "- Image: \`${{ steps.meta.outputs.image_ref }}\`"
+            echo "- Digest: \`${{ steps.build.outputs.digest }}\`"
+            echo ""
+            echo "Use this tag as the runtime deployer \`--version\` input."
+          } >> "${GITHUB_STEP_SUMMARY}"
