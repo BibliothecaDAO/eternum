@@ -12,10 +12,10 @@
 
 :root,
 :root.dark {
-  --realm-bg-void: #07111f;
-  --realm-bg-smoke: #0a1728;
-  --realm-surface-iron: #0f1c2d;
-  --realm-surface-slate: #132238;
+  --realm-bg-void: #050709;
+  --realm-bg-smoke: #070b0d;
+  --realm-surface-iron: #101417;
+  --realm-surface-slate: #161b20;
   --realm-accent-ember: #c4874a;
   --realm-accent-brass: #e7cf88;
   --realm-accent-arcane: #8d98c8;
@@ -107,7 +107,7 @@ article.vocs_Content,
   .vocs_DocsLayout_gutterTopCurtain,
   .vocs_MobileTopNav,
   .vocs_MobileTopNav_curtain {
-    background: rgba(7, 17, 31, 0.98) !important;
+    background: rgba(5, 7, 9, 0.98) !important;
   }
 }
 
@@ -130,7 +130,7 @@ article.vocs_Content,
   margin-bottom: 0 !important;
   border: 0 !important;
   box-shadow: none !important;
-  font-size: clamp(1.85rem, 4.1vw, 3rem) !important;
+  font-size: clamp(1.55rem, 3.15vw, 2.45rem) !important;
   line-height: 0.98 !important;
 }
 
@@ -168,7 +168,7 @@ article.vocs_Content,
 .vocs_Content table {
   border: 1px solid var(--realm-border-etched) !important;
   border-radius: 8px !important;
-  background: linear-gradient(160deg, rgba(15, 28, 45, 0.94), rgba(10, 23, 40, 0.9)) !important;
+  background: linear-gradient(160deg, rgba(22, 27, 32, 0.94), rgba(7, 10, 12, 0.9)) !important;
   box-shadow: inset 0 1px 0 rgba(231, 207, 136, 0.12), 0 14px 30px rgba(0, 0, 0, 0.24);
 }
 
@@ -185,11 +185,16 @@ article.vocs_Content,
 }
 
 .vocs_CodeTitle,
-.vocs_Tabs_list,
-.vocs_Content th {
+.vocs_Tabs_list {
   background: rgba(231, 207, 136, 0.1) !important;
   border-color: var(--realm-border-etched) !important;
   color: #f2dd9b !important;
+}
+
+.vocs_Content th {
+  background: rgba(22, 27, 32, 0.92) !important;
+  border-color: rgba(201, 169, 96, 0.28) !important;
+  color: #c9a960 !important;
 }
 
 .vocs_Button_button,
@@ -199,7 +204,7 @@ article.vocs_Content,
 .vocs_Pagination_link {
   border: 1px solid rgba(231, 207, 136, 0.32) !important;
   border-radius: 8px !important;
-  background: linear-gradient(180deg, rgba(231, 207, 136, 0.12), rgba(10, 23, 40, 0.92)) !important;
+  background: linear-gradient(180deg, rgba(231, 207, 136, 0.12), rgba(7, 10, 12, 0.92)) !important;
   color: var(--realm-title) !important;
   box-shadow: inset 0 1px 0 rgba(231, 207, 136, 0.16);
 }
@@ -210,7 +215,7 @@ article.vocs_Content,
 .vocs_NavigationLink:hover,
 .vocs_Pagination_link:hover {
   border-color: rgba(231, 207, 136, 0.58) !important;
-  background: linear-gradient(180deg, rgba(231, 207, 136, 0.18), rgba(15, 28, 45, 0.96)) !important;
+  background: linear-gradient(180deg, rgba(231, 207, 136, 0.18), rgba(22, 27, 32, 0.96)) !important;
   color: #fff6dc !important;
 }
 
@@ -244,7 +249,7 @@ article.vocs_Content,
 
 .vocs_Sidebar,
 .vocs_DocsLayout_gutterLeft {
-  background: linear-gradient(180deg, rgba(7, 17, 31, 0.98), rgba(10, 23, 40, 0.98)) !important;
+  background: linear-gradient(180deg, rgba(5, 7, 9, 0.98), rgba(7, 10, 12, 0.98)) !important;
 }
 
 .vocs_Sidebar_logoWrapper {
@@ -322,7 +327,7 @@ article.vocs_Content,
 .vocs_DesktopSearch_search,
 .vocs_MobileSearch_searchButton {
   border-color: rgba(231, 207, 136, 0.24) !important;
-  background: rgba(10, 23, 40, 0.9) !important;
+  background: rgba(7, 10, 12, 0.9) !important;
   color: #d8c8a8 !important;
 }
 
@@ -396,8 +401,8 @@ article.vocs_Content,
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 38%, rgba(7, 17, 31, 0.16), rgba(7, 17, 31, 0.72) 68%, rgba(7, 17, 31, 0.9)),
-    linear-gradient(180deg, rgba(7, 17, 31, 0.08), rgba(7, 17, 31, 0.78));
+    radial-gradient(circle at 50% 38%, rgba(5, 7, 9, 0.14), rgba(5, 7, 9, 0.7) 68%, rgba(5, 7, 9, 0.9)),
+    linear-gradient(180deg, rgba(5, 7, 9, 0.08), rgba(5, 7, 9, 0.78));
 }
 
 .vocs_HomePage > :not(.realms-homepage-background) {
@@ -538,8 +543,8 @@ article.vocs_Content,
 .vocs_Content table {
   width: 100% !important;
   border-collapse: collapse;
-  background-color: rgba(10, 23, 40, 0.86);
-  border: 1px solid rgba(201, 169, 96, 0.18);
+  background-color: rgba(7, 10, 12, 0.82);
+  border: 1px solid rgba(201, 169, 96, 0.18) !important;
   border-radius: 8px;
   overflow: hidden;
 }
@@ -550,9 +555,9 @@ article.vocs_Content,
   font-size: 0.85rem;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--realm-accent-brass);
-  background-color: rgba(15, 28, 45, 0.92);
-  border-bottom: 1px solid rgba(201, 169, 96, 0.24) !important;
+  color: #c9a960;
+  background-color: rgba(22, 27, 32, 0.92);
+  border-bottom: 1px solid rgba(201, 169, 96, 0.28) !important;
   border-left: none !important;
   border-right: none !important;
   border-top: none !important;
