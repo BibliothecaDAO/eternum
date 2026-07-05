@@ -3,17 +3,16 @@
   "chain": "mainnet",
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
-    "environment": "mainnet.eternum",
-    "gameName": "etrn-fate-122",
-    "launchRequestId": "28751622346-1",
+    "environment": "mainnet.blitz",
+    "gameName": "blitz-rotation",
+    "launchRequestId": "28752026758-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 28751622346,
+    "workflowRunId": 28752026758,
     "workflowRunAttempt": 1,
-    "stepId": "grant-village-pass-role",
-    "leaseId": "5c513797-7fb2-4861-aa89-32cb6542d22a"
+    "stepId": "configure-world",
+    "leaseId": "4214cbb6-8903-4383-becf-f16a359c497c"
   },
-  "acquiredAt": "2026-07-05T19:09:15.164Z",
-  "heartbeatAt": "2026-07-05T19:09:20.382Z",
-  "expiresAt": "2026-07-05T19:09:20.382Z",
-  "releasedAt": "2026-07-05T19:09:20.382Z"
+  "acquiredAt": "2026-07-05T19:21:43.341Z",
+  "heartbeatAt": "2026-07-05T19:21:43.341Z",
+  "expiresAt": "2026-07-05T19:31:43.341Z"
 }
