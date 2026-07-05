@@ -3,17 +3,16 @@
   "chain": "mainnet",
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
-    "environment": "mainnet.blitz",
-    "gameName": "blitz-rotation",
-    "launchRequestId": "28751489680-1",
+    "environment": "mainnet.eternum",
+    "gameName": "etrn-fate-122",
+    "launchRequestId": "28751622346-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 28751489680,
+    "workflowRunId": 28751622346,
     "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "leaseId": "5b4b6a90-b1d0-4073-83c8-d15b0ca49725"
+    "stepId": "create-world",
+    "leaseId": "f23add1a-a2ff-4e22-af56-1e56368b2f38"
   },
-  "acquiredAt": "2026-07-05T19:01:41.677Z",
-  "heartbeatAt": "2026-07-05T19:01:47.120Z",
-  "expiresAt": "2026-07-05T19:01:47.120Z",
-  "releasedAt": "2026-07-05T19:01:47.120Z"
+  "acquiredAt": "2026-07-05T19:06:19.684Z",
+  "heartbeatAt": "2026-07-05T19:06:19.684Z",
+  "expiresAt": "2026-07-05T19:16:19.684Z"
 }
