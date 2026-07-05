@@ -11,9 +11,9 @@
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/eternum/etrn-fate-122/28751622346-1.json",
   "latestLaunchRequestId": "28751622346-1",
-  "currentStepId": "create-world",
+  "currentStepId": "wait-for-factory-index",
   "createdAt": "2026-07-05T19:06:11.243Z",
-  "updatedAt": "2026-07-05T19:06:16.177Z",
+  "updatedAt": "2026-07-05T19:08:12.705Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "succeeded",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-07-05T19:06:16.177Z"
+      "latestEvent": "Creating world succeeded",
+      "startedAt": "2026-07-05T19:06:16.177Z",
+      "finishedAt": "2026-07-05T19:08:12.705Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -83,14 +84,10 @@
     }
   ],
   "artifacts": {
-    "scheduledStartTime": "2026-07-05T20:00:00.000Z"
-  },
-  "activeLease": {
-    "launchRequestId": "28751622346-1",
-    "workflowRunId": 28751622346,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-07-05T19:06:16.177Z",
-    "expiresAt": "2026-07-05T19:51:16.177Z"
+    "scheduledStartTime": 1783281600,
+    "summaryPath": ".context/game-launch/mainnet-eternum-etrn-fate-122.json",
+    "durationSeconds": 7200,
+    "worldAddress": "0x0487b3a81996080b736a4f4ea9cf61d842d98b5e9327dd5f4b68945cf76366fb",
+    "createGameTxHash": "0x465c6614b8c8df985015da9956d7d514d8e67f65f12ea61efe83b70c1b94b27"
   }
 }
