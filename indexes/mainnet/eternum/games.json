@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.eternum",
   "kind": "game",
-  "updatedAt": "2026-07-05T19:06:16.177Z",
+  "updatedAt": "2026-07-05T19:08:12.705Z",
   "entries": {
     "etrn-gloom-467": {
       "kind": "game",
@@ -62,14 +62,14 @@
       "path": "runs/mainnet/eternum/etrn-fate-122.json",
       "inputPath": "inputs/mainnet/eternum/etrn-fate-122/28751622346-1.json",
       "status": "running",
-      "updatedAt": "2026-07-05T19:06:16.177Z",
+      "updatedAt": "2026-07-05T19:08:12.705Z",
       "workflowRef": "next",
-      "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-07-05T19:51:16.177Z",
-      "hasRunningStep": true,
+      "currentStepId": "wait-for-factory-index",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "wait-for-factory-index",
-      "startTime": "2026-07-05T20:00:00.000Z",
+      "startTime": 1783281600,
+      "durationSeconds": 7200,
       "artifacts": {}
     }
   }
