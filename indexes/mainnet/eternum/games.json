@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.eternum",
   "kind": "game",
-  "updatedAt": "2026-07-05T19:08:53.339Z",
+  "updatedAt": "2026-07-05T19:09:03.333Z",
   "entries": {
     "etrn-gloom-467": {
       "kind": "game",
@@ -62,11 +62,10 @@
       "path": "runs/mainnet/eternum/etrn-fate-122.json",
       "inputPath": "inputs/mainnet/eternum/etrn-fate-122/28751622346-1.json",
       "status": "running",
-      "updatedAt": "2026-07-05T19:08:53.339Z",
+      "updatedAt": "2026-07-05T19:09:03.333Z",
       "workflowRef": "next",
-      "currentStepId": "grant-lootchest-role",
-      "activeLeaseExpiresAt": "2026-07-05T19:53:53.339Z",
-      "hasRunningStep": true,
+      "currentStepId": "grant-village-pass-role",
+      "hasRunningStep": false,
       "recoverableFailedStepId": null,
       "recoverablePendingStepId": "grant-village-pass-role",
       "startTime": 1783281600,
