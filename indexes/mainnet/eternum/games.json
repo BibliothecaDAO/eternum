@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.eternum",
   "kind": "game",
-  "updatedAt": "2026-07-05T19:09:03.333Z",
+  "updatedAt": "2026-07-05T19:09:11.865Z",
   "entries": {
     "etrn-gloom-467": {
       "kind": "game",
@@ -62,12 +62,13 @@
       "path": "runs/mainnet/eternum/etrn-fate-122.json",
       "inputPath": "inputs/mainnet/eternum/etrn-fate-122/28751622346-1.json",
       "status": "running",
-      "updatedAt": "2026-07-05T19:09:03.333Z",
+      "updatedAt": "2026-07-05T19:09:11.865Z",
       "workflowRef": "next",
       "currentStepId": "grant-village-pass-role",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-07-05T19:54:11.865Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "grant-village-pass-role",
+      "recoverablePendingStepId": "create-banks",
       "startTime": 1783281600,
       "durationSeconds": 7200,
       "artifacts": {}
