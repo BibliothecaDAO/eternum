@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "blitz-rotation",
-    "launchRequestId": "28857855674-1",
+    "gameName": "bltz-focgers-003",
+    "launchRequestId": "28857937037-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 28857855674,
+    "workflowRunId": 28857937037,
     "workflowRunAttempt": 1,
-    "stepId": "configure-world",
-    "leaseId": "21bd0606-c0cb-4bf9-a2d5-344c29016566"
+    "stepId": "create-world",
+    "leaseId": "4e0ecc05-5c88-456f-9038-61a293c15f1b"
   },
-  "acquiredAt": "2026-07-07T10:02:03.857Z",
-  "heartbeatAt": "2026-07-07T10:02:09.092Z",
-  "expiresAt": "2026-07-07T10:02:09.092Z",
-  "releasedAt": "2026-07-07T10:02:09.092Z"
+  "acquiredAt": "2026-07-07T10:03:13.842Z",
+  "heartbeatAt": "2026-07-07T10:03:13.842Z",
+  "expiresAt": "2026-07-07T10:13:13.842Z"
 }
