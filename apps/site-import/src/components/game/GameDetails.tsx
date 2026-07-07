@@ -337,44 +337,88 @@ export function GameDetails({ game }: { game: Game }) {
             </article>
           </motion.section>
 
-          {game.backgroundImages && game.backgroundImages.length > 0 ? (
+          {game.dashboards?.length || game.backgroundImages?.length ? (
             <motion.section
               className="realm-panel realm-games-detail-gallery rounded-lg p-5 sm:p-6"
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
             >
-              <header className="mb-4 flex items-end justify-between gap-4">
-                <div>
-                  <p className="realm-banner">Archive</p>
-                  <h2 className="realm-title mt-3 text-2xl sm:text-3xl">Screenshots</h2>
-                </div>
-                <span className="realm-sigil">
-                  {game.backgroundImages.length} captures
-                </span>
-              </header>
+              {game.dashboards?.length ? (
+                <div className={game.backgroundImages?.length ? "mb-6 sm:mb-7" : ""}>
+                  <header className="mb-4 flex items-end justify-between gap-4">
+                    <div>
+                      <p className="realm-banner">Archive</p>
+                      <h2 className="realm-title mt-3 text-2xl sm:text-3xl">Dashboards</h2>
+                    </div>
+                    <span className="realm-sigil">
+                      {game.dashboards.length} dashboard
+                    </span>
+                  </header>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {game.backgroundImages.map((img, index) => (
-                  <motion.button
-                    key={img}
-                    type="button"
-                    className="realm-games-detail-shot group relative aspect-video cursor-pointer overflow-hidden rounded-lg border border-primary/25 bg-black/35 text-left"
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.3 + index * 0.04 }}
-                    whileHover={{ y: -2 }}
-                    onClick={() => setSelectedScreenshot(index)}
-                  >
-                    <img
-                      src={img}
-                      alt={`${game.title} Screenshot ${index + 1}`}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors" />
-                  </motion.button>
-                ))}
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {game.dashboards.map((dashboard, index) => (
+                      <motion.a
+                        key={dashboard.href}
+                        href={dashboard.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${dashboard.title} ${dashboard.subtitle}`}
+                        className="realm-games-detail-shot realm-games-detail-dashboard group relative aspect-video cursor-pointer overflow-hidden rounded-lg border border-primary/25 bg-black/35 text-left"
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3 + index * 0.04 }}
+                        whileHover={{ y: -2 }}
+                      >
+                        <img
+                          src={dashboard.image}
+                          alt={`${dashboard.title} ${dashboard.subtitle}`}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors" />
+                      </motion.a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {game.backgroundImages?.length ? (
+                <div>
+                  <header className="mb-4 flex items-end justify-between gap-4">
+                    <div>
+                      {!game.dashboards?.length ? <p className="realm-banner">Archive</p> : null}
+                      <h2 className={game.dashboards?.length ? "realm-title text-2xl sm:text-3xl" : "realm-title mt-3 text-2xl sm:text-3xl"}>
+                        Screenshots
+                      </h2>
+                    </div>
+                    <span className="realm-sigil">
+                      {game.backgroundImages.length} captures
+                    </span>
+                  </header>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {game.backgroundImages.map((img, index) => (
+                      <motion.button
+                        key={img}
+                        type="button"
+                        className="realm-games-detail-shot group relative aspect-video cursor-pointer overflow-hidden rounded-lg border border-primary/25 bg-black/35 text-left"
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.34 + index * 0.04 }}
+                        whileHover={{ y: -2 }}
+                        onClick={() => setSelectedScreenshot(index)}
+                      >
+                        <img
+                          src={img}
+                          alt={`${game.title} Screenshot ${index + 1}`}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors" />
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </motion.section>
           ) : null}
 

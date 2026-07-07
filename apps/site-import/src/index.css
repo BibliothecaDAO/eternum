@@ -1113,6 +1113,16 @@
       0 16px 28px color-mix(in oklab, black 38%, transparent);
   }
 
+  .realm-games-detail-dashboard {
+    display: block;
+    text-decoration: none;
+  }
+
+  .realm-games-detail-dashboard:focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--realm-accent-brass) 82%, white 10%);
+    outline-offset: 3px;
+  }
+
   .realm-games-detail-links {
     border-color: color-mix(in oklab, var(--realm-border-strong) 66%, transparent);
   }

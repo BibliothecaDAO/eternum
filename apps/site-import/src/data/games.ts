@@ -5,6 +5,12 @@ export interface Game {
   image: string;
   backgroundImage: string;
   backgroundImages?: string[];
+  dashboards?: {
+    title: string;
+    subtitle: string;
+    image: string;
+    href: string;
+  }[];
   genre?: string[];
   description: string;
   status: "mainnet" | "testnet" | "development";
@@ -53,6 +59,14 @@ export const games: Game[] = [
       "/games/realms-eternum/screenshots/1.png",
       "/games/realms-eternum/screenshots/2.png",
       "/games/realms-eternum/screenshots/3.png",
+    ],
+    dashboards: [
+      {
+        title: "Eternum Season One",
+        subtitle: "Revenue & Rewards Dashboard",
+        image: "/games/realms-eternum/dashboards/eternum-stats-dashboard.svg",
+        href: "https://eternum-stats-mu.vercel.app/",
+      },
     ],
     genre: ["Grand Strategy", "Economic Sim", "PvP", "Realms Games"],
     description:
