@@ -253,7 +253,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
 
   return (
     <div className="container">
-      <h1>{isMobile ? 'Season 1 Revenue' : 'Season 1 Total Revenue Distribution'}</h1>
+      <h1>{isMobile ? 'Season Revenue' : 'Season Total Revenue Distribution'}</h1>
       
       <div className="chart-container">
         <div className="chart-wrapper">

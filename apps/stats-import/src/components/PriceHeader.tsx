@@ -32,7 +32,7 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
   const formatPrice = (price: number): string => {
     if (loading) return 'Loading...';
     if (error) return 'Error';
-    return price.toFixed(6);
+    return price.toFixed(4);
   };
 
   const formatPriceChange = (change: number | null): string | null => {
@@ -72,7 +72,7 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
 
   // Responsive brand title
   const getBrandTitle = (): string => {
-    return isMobile ? 'Eternum Stats' : 'Eternum Stats Dashboard';
+    return isMobile ? 'Eternum Statistics' : 'Eternum Statistics Dashboard';
   };
 
   // Responsive brand subtitle
@@ -102,7 +102,10 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
           />
         </div>
         <div className="price-details">
-          <div className="token-name">{isMobile ? 'LORDS' : 'LORDS Token'}</div>
+          <div className="token-name">
+            LORDS Token
+            {priceNote ? <span className="token-note">({priceNote})</span> : null}
+          </div>
           <div className="price-value">
             $<span className={loading ? 'loading' : error ? 'error' : ''}>{formatPrice(lordsPrice)}</span>
             {priceChange !== null && !loading && !error && (
@@ -114,17 +117,16 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
         </div>
       </div>
       
-      <div className="price-meta">
-        {priceNote && (
-          <div className="last-updated">{priceNote}</div>
-        )}
-        {!priceNote && lastUpdated && (
-          <div className="last-updated">{formatLastUpdated(lastUpdated)}</div>
-        )}
-        {!priceNote && error && (
-          <div className="error">{error}</div>
-        )}
-      </div>
+      {(lastUpdated || error) && (
+        <div className="price-meta">
+          {lastUpdated && (
+            <div className="last-updated">{formatLastUpdated(lastUpdated)}</div>
+          )}
+          {error && (
+            <div className="error">{error}</div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

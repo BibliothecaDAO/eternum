@@ -202,36 +202,32 @@ const SeasonPassValue: React.FC<SeasonPassValueProps> = ({ lordsPrice }) => {
           </div>
         </div>
 
-        <div className="marketplace-summary">
-          <div className="analysis-card">
-            <div className="card-header">
-              <h3>💰 Marketplace Statistics</h3>
+        <div className="marketplace-summary marketplace-summary-compact">
+          <div className="marketplace-summary-heading">Marketplace Statistics</div>
+          <div className="marketplace-metrics">
+            <div className="marketplace-metric">
+              <span className="metric-label">Average Sale</span>
+              <span className="metric-value">
+                {formatLordsDetailed(stats.averagePrice)} LORDS
+                <span className="metric-usd">{formatUSDDetailed(stats.averagePrice)}</span>
+              </span>
             </div>
-            <div className="card-content">
-              <div className="metric-row">
-                <span className="metric-label">Average Sale Price:</span>
-                <span className="metric-value">
-                  {formatLordsDetailed(stats.averagePrice)} LORDS
-                  <span className="metric-usd">({formatUSDDetailed(stats.averagePrice)})</span>
-                </span>
-              </div>
-              <div className="metric-row">
-                <span className="metric-label">Total Marketplace Revenue:</span>
-                <span className="metric-value">
-                  {formatLords(stats.totalRevenue)} LORDS
-                  <span className="metric-usd">({formatUSD(stats.totalRevenue)})</span>
-                </span>
-              </div>
-              <div className="metric-row">
-                <span className="metric-label">Total Sales Volume:</span>
-                <span className="metric-value">{stats.totalSoldOnMarketplace.toLocaleString()} passes</span>
-              </div>
+            <div className="marketplace-metric">
+              <span className="metric-label">Total Revenue</span>
+              <span className="metric-value">
+                {formatLords(stats.totalRevenue)} LORDS
+                <span className="metric-usd">{formatUSD(stats.totalRevenue)}</span>
+              </span>
+            </div>
+            <div className="marketplace-metric">
+              <span className="metric-label">Sales Volume</span>
+              <span className="metric-value">{stats.totalSoldOnMarketplace.toLocaleString()} passes</span>
             </div>
           </div>
         </div>
 
         <div className="scenarios-section">
-          <h3>📊 Value Creation Estimation</h3>
+          <h3>Value Creation Estimation</h3>
           <p className="scenarios-intro">
             All season passes were provided <strong>free</strong> to Realms NFT holders. 
             Here are different scenarios to estimate the total value created for Realms NFT holders using the average price of the marketplace sales:

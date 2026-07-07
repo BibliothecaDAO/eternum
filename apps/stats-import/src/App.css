@@ -3587,3 +3587,322 @@ tr:hover,
         text-align: center;
     }
 }
+
+
+/* Final statistics alignment pass */
+body {
+    font-family: "Exo 2", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: radial-gradient(circle at 18% 0%, rgba(196, 135, 74, 0.12), transparent 34%), #090b0d;
+}
+
+.App,
+.container,
+.rewards-container {
+    color: #efe5d1;
+}
+
+.price-header,
+.tab-navigation,
+.container,
+.rewards-content,
+.season-totals-banner,
+.victory-prizes,
+.cartridge-table,
+.daydreams-table,
+.chest-table,
+.marketplace-summary-compact,
+.scenario-card,
+.stat-card {
+    background: linear-gradient(145deg, rgba(17, 18, 20, 0.94), rgba(8, 9, 11, 0.98));
+    border: 1px solid rgba(231, 207, 136, 0.24);
+    box-shadow: inset 0 1px 0 rgba(231, 207, 136, 0.08), 0 18px 36px rgba(0, 0, 0, 0.28);
+}
+
+.price-header {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
+    background: linear-gradient(145deg, rgba(19, 20, 22, 0.96), rgba(7, 8, 10, 0.98));
+}
+
+.price-info {
+    grid-column: 2;
+    justify-self: end;
+    text-align: right;
+}
+
+.price-details {
+    align-items: flex-end;
+}
+
+.brand-title,
+h1,
+.season-title h2,
+.victory-title h3,
+.cartridge-title h3,
+.daydreams-title h3,
+.chest-title h3,
+.marketplace-summary-heading,
+.scenarios-section h3 {
+    font-family: "IM Fell English SC", Georgia, serif;
+    text-transform: uppercase;
+    letter-spacing: 0 !important;
+    color: #e7cf88;
+}
+
+.brand-title {
+    font-size: clamp(1.28rem, 2vw, 1.55rem);
+    line-height: 1.05;
+}
+
+.brand-subtitle,
+.token-name,
+.tab-text,
+.summary-label,
+.stat-label,
+.total-token {
+    font-family: "IM Fell English SC", Georgia, serif;
+    text-transform: uppercase;
+    letter-spacing: 0 !important;
+}
+
+.token-name {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.45rem;
+    color: #e7cf88;
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+.token-note {
+    color: #b9a989;
+    font-family: "Exo 2", sans-serif;
+    font-size: 0.82rem;
+    text-transform: none;
+    white-space: nowrap;
+}
+
+.price-value {
+    color: #f5ead0;
+    justify-content: flex-end;
+}
+
+.tab-button,
+.tab-button:hover,
+.tab-button:focus {
+    text-decoration: none !important;
+}
+
+.tab-button {
+    min-height: 3.25rem;
+}
+
+.tab-text {
+    font-size: clamp(0.95rem, 1.15vw, 1.08rem);
+}
+
+.tab-button:hover {
+    transform: translateY(-1px);
+}
+
+h1 {
+    border-left: 0;
+    padding-left: 0;
+    font-size: clamp(1.34rem, 2vw, 1.58rem);
+    text-align: center;
+}
+
+.chart-container {
+    grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.82fr);
+    align-items: stretch;
+    gap: clamp(2.25rem, 4vw, 3.5rem);
+}
+
+.chart-wrapper {
+    max-width: 575px;
+    justify-self: center;
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(2.75rem, 4vw, 3.55rem);
+    background: linear-gradient(145deg, rgba(13, 14, 16, 0.96), rgba(5, 6, 8, 0.98));
+    border: 1px solid rgba(231, 207, 136, 0.2);
+}
+
+.legend-container {
+    justify-content: space-between;
+}
+
+.legend-item,
+.summary-card,
+.total-card,
+.distribution-item,
+.search-input,
+.sort-select,
+.sort-order-btn,
+.reward-type-btn {
+    background: rgba(8, 9, 11, 0.72);
+    border-color: rgba(231, 207, 136, 0.22);
+}
+
+.marketplace-summary-compact {
+    padding: clamp(1.25rem, 2vw, 1.75rem);
+    margin-bottom: 2.25rem;
+}
+
+.marketplace-summary-heading {
+    margin-bottom: 1rem;
+    font-size: clamp(1.15rem, 1.6vw, 1.35rem);
+    text-align: center;
+}
+
+.marketplace-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.85rem;
+}
+
+.marketplace-metric {
+    min-height: 6.25rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.45rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(231, 207, 136, 0.18);
+    background: rgba(5, 6, 8, 0.54);
+    text-align: center;
+}
+
+.marketplace-metric .metric-value {
+    min-width: 0;
+    text-align: center;
+}
+
+.victory-prizes {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    overflow: visible;
+}
+
+.victory-header,
+.cartridge-header,
+.daydreams-header,
+.chest-header {
+    align-items: flex-start;
+    border-bottom-color: rgba(231, 207, 136, 0.16);
+    padding-top: 0;
+}
+
+.victory-title h3,
+.cartridge-title h3,
+.daydreams-title h3,
+.chest-title h3 {
+    margin-top: 0;
+    line-height: 1.08;
+}
+
+.victory-summary,
+.cartridge-summary,
+.daydreams-summary,
+.chest-summary {
+    align-items: flex-start;
+    padding-top: 0.18rem;
+}
+
+.victory-controls,
+.cartridge-controls,
+.daydreams-controls,
+.chest-controls {
+    border-color: rgba(231, 207, 136, 0.16);
+}
+
+.players-table {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(231, 207, 136, 0.18);
+    background: rgba(5, 6, 8, 0.52);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(231, 207, 136, 0.55) rgba(8, 9, 11, 0.85);
+}
+
+.players-table::-webkit-scrollbar,
+.table-wrapper::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+.players-table::-webkit-scrollbar-track,
+.table-wrapper::-webkit-scrollbar-track {
+    background: rgba(8, 9, 11, 0.9);
+    border-radius: 999px;
+}
+
+.players-table::-webkit-scrollbar-thumb,
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(231, 207, 136, 0.72), rgba(196, 135, 74, 0.76));
+    border: 2px solid rgba(8, 9, 11, 0.92);
+    border-radius: 999px;
+}
+
+.strk-price-note {
+    margin: -0.55rem 0 1.1rem;
+    color: #b9a989;
+    font-size: 0.82rem;
+    text-align: center;
+}
+
+.reward-usd,
+.total-usd,
+.summary-usd,
+.tribe-prize {
+    color: #b9a989;
+}
+
+.season-breakdown .breakdown-item,
+.chest-distribution-explanation {
+    background: rgba(5, 6, 8, 0.54);
+    border-color: rgba(231, 207, 136, 0.18);
+}
+
+@media (max-width: 1024px) {
+    .price-header {
+        grid-template-columns: 1fr;
+    }
+
+    .price-info,
+    .price-details {
+        justify-self: center;
+        align-items: center;
+        text-align: center;
+    }
+
+    .token-name,
+    .price-value {
+        justify-content: center;
+    }
+
+    .chart-wrapper {
+        max-width: 460px;
+        align-self: auto;
+    }
+
+    .marketplace-metrics {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .brand-title {
+        font-size: 1.2rem;
+    }
+
+    .victory-summary,
+    .cartridge-summary,
+    .daydreams-summary,
+    .chest-summary {
+        width: 100%;
+        flex-direction: column;
+    }
+}

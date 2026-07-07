@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
 import PriceHeader from './components/PriceHeader';
 import RevenuePage from './pages/RevenuePage';
 import RewardsPage from './pages/RewardsPage';
 import SeasonPassPage from './pages/SeasonPassPage';
-import { RevenueData, StarknetApiResponse } from './types';
+import { RevenueData } from './types';
 import { Analytics } from "@vercel/analytics/react"
 
 const S1_LORDS_PRICE_USD = 0.02;
-const STRK_PRICE_FALLBACK_USD = 1.15;
+const S1_STRK_PRICE_USD = 0.125;
 const VILLAGES_SOLD = 1156;
 const VILLAGE_PRICE_USD = 5;
 const DAYDREAMS_AGENTS_KILLED = 1019;
@@ -19,35 +19,8 @@ const AMOUNT_LEFT_IN_BRIDGE_CONTRACT = 151412;
 
 function App(): React.JSX.Element {
   const location = useLocation();
-  const [strkPrice, setStrkPrice] = useState<number>(STRK_PRICE_FALLBACK_USD);
   const lordsPrice = S1_LORDS_PRICE_USD;
-
-  const fetchStrkPrice = async (): Promise<void> => {
-    try {
-      const response = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=starknet&vs_currencies=usd'
-      );
-      const data: StarknetApiResponse = await response.json();
-      
-      if (data.starknet?.usd) {
-        setStrkPrice(data.starknet.usd);
-      } else {
-        throw new Error('STRK price data not found');
-      }
-    } catch (error) {
-      console.error('Error fetching STRK price:', error);
-      setStrkPrice(STRK_PRICE_FALLBACK_USD);
-    }
-  };
-
-  useEffect(() => {
-    fetchStrkPrice();
-    
-    // LORDS remains anchored to the Season 1 close price; only STRK refreshes for mixed reward displays.
-    const interval = setInterval(fetchStrkPrice, 5 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
+  const strkPrice = S1_STRK_PRICE_USD;
 
   const villageRevenueUSD = VILLAGES_SOLD * VILLAGE_PRICE_USD;
   const villageRevenueLords = villageRevenueUSD / lordsPrice;
@@ -106,7 +79,7 @@ function App(): React.JSX.Element {
 
   const getCurrentTab = () => {
     const path = location.pathname;
-    if (path === '/rewards') return 'rewards';
+    if (path.startsWith('/rewards')) return 'rewards';
     if (path === '/seasonpass') return 'seasonpass';
     return 'revenue';
   };
@@ -129,7 +102,6 @@ function App(): React.JSX.Element {
           className={`tab-button ${getCurrentTab() === 'revenue' ? 'active' : ''}`}
           aria-label="View revenue analytics"
         >
-          <span className="tab-icon">📊</span>
           <span className="tab-text">Revenue</span>
         </Link>
         <Link
@@ -137,7 +109,6 @@ function App(): React.JSX.Element {
           className={`tab-button ${getCurrentTab() === 'seasonpass' ? 'active' : ''}`}
           aria-label="View season pass value analysis"
         >
-          <span className="tab-icon">🎫</span>
           <span className="tab-text">Season Pass</span>
         </Link>
         <Link
@@ -145,7 +116,6 @@ function App(): React.JSX.Element {
           className={`tab-button ${getCurrentTab() === 'rewards' ? 'active' : ''}`}
           aria-label="View rewards information"
         >
-          <span className="tab-icon">🏆</span>
           <span className="tab-text">Rewards</span>
         </Link>
       </div>

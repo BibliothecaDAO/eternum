@@ -35,12 +35,6 @@ export interface ColorScheme {
   hover: string;
 }
 
-export interface StarknetApiResponse {
-  starknet: {
-    usd: number;
-  };
-}
-
 // Rewards types
 export interface PlayerRewards {
   lords: number;
