@@ -4028,3 +4028,117 @@ h1 {
         grid-template-columns: 1fr;
     }
 }
+
+
+/* Victory table and S1 price note corrections */
+.price-value {
+    gap: 0.08rem !important;
+}
+
+.price-asterisk {
+    align-self: flex-start;
+    margin-left: 0.05rem;
+    color: var(--realm-accent-brass, #e7cf88);
+    font-size: 0.95rem;
+    line-height: 1;
+}
+
+.price-footnote {
+    margin-top: 0.16rem;
+    color: var(--realm-text-muted, #b9a989);
+    font-size: 0.75rem;
+    line-height: 1.15;
+    text-align: right;
+}
+
+.chart-canvas-wrapper canvas {
+    display: block !important;
+    transform: translateY(10px);
+}
+
+.victory-prizes {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.victory-header,
+.victory-controls {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.victory-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-start !important;
+    gap: 2rem !important;
+}
+
+.victory-title {
+    flex: 1 1 auto !important;
+}
+
+.victory-summary {
+    flex: 0 0 auto !important;
+}
+
+.victory-controls {
+    display: flex !important;
+    align-items: center !important;
+    gap: 1rem !important;
+}
+
+.victory-table {
+    max-height: 600px !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    border: 1px solid rgba(231, 207, 136, 0.18) !important;
+    border-radius: 0.75rem !important;
+    background: rgba(5, 6, 8, 0.52) !important;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(231, 207, 136, 0.55) rgba(8, 9, 11, 0.85);
+}
+
+.victory-table .table-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 3 !important;
+}
+
+.victory-table::-webkit-scrollbar {
+    width: 10px;
+}
+
+.victory-table::-webkit-scrollbar-track {
+    background: rgba(8, 9, 11, 0.9);
+    border-radius: 999px;
+}
+
+.victory-table::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, rgba(231, 207, 136, 0.72), rgba(196, 135, 74, 0.76));
+    border: 2px solid rgba(8, 9, 11, 0.92);
+    border-radius: 999px;
+}
+
+@media (max-width: 1024px) {
+    .victory-header,
+    .victory-controls {
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+
+    .victory-summary {
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .price-footnote {
+        text-align: center;
+    }
+}

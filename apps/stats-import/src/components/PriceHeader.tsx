@@ -94,18 +94,17 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
       
       <div className="price-info">
         <div className="price-details">
-          <div className="token-name">
-            $LORDS Token
-            {priceNote ? <span className="token-note">({priceNote})</span> : null}
-          </div>
+          <div className="token-name">$LORDS Token</div>
           <div className="price-value">
             $<span className={loading ? 'loading' : error ? 'error' : ''}>{formatPrice(lordsPrice)}</span>
+            {!loading && !error && priceNote ? <span className="price-asterisk">*</span> : null}
             {priceChange !== null && !loading && !error && (
               <span className={`price-change ${priceChange >= 0 ? 'positive' : 'negative'}`}>
                 {formatPriceChange(priceChange)}
               </span>
             )}
           </div>
+          {!loading && !error && priceNote ? <div className="price-footnote">* {priceNote}</div> : null}
         </div>
       </div>
       

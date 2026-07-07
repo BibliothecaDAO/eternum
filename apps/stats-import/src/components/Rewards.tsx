@@ -907,7 +907,7 @@ const Rewards: React.FC<RewardsProps> = ({ lordsPrice, strkPrice, initialTab }) 
           </div>
         </div>
 
-        <div className="players-table">
+        <div className="players-table victory-table">
           <div className="table-header">
             <div className="header-player">Player</div>
             <div className="header-tribe">Tribe</div>
