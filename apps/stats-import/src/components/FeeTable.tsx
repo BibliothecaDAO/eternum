@@ -21,15 +21,15 @@ const FeeTable: React.FC<FeeTableProps> = ({ revenueData, lordsPrice }) => {
       return (
         <div className="source-breakdown">
           • Season Pool: 18,637 LORDS<br />
-          &nbsp;&nbsp;<span style={{fontFamily: "'Monaco', 'Menlo', monospace", fontSize: '0.65rem', color: '#dfc296'}}>
+          &nbsp;&nbsp;<span style={{fontFamily: "'Monaco', 'Menlo', monospace", fontSize: '0.65rem', color: 'var(--realm-text-muted)'}}>
             0x04cd21aa3e634e36d6379bdbb3fef78f7e0a882eb8a048624c4b02eead1bc553
           </span><br />
           • VeLords Bridge Fees: 18,637 LORDS<br />
-          &nbsp;&nbsp;<span style={{fontFamily: "'Monaco', 'Menlo', monospace", fontSize: '0.65rem', color: '#dfc296'}}>
+          &nbsp;&nbsp;<span style={{fontFamily: "'Monaco', 'Menlo', monospace", fontSize: '0.65rem', color: 'var(--realm-text-muted)'}}>
             0x045c587318c9ebcf2fbe21febf288ee2e3597a21cd48676005a5770a50d433c5
           </span><br />
           • Client Integration: 18,008 LORDS<br />
-          &nbsp;&nbsp;<span style={{fontFamily: "'Monaco', 'Menlo', monospace", fontSize: '0.65rem', color: '#dfc296'}}>
+          &nbsp;&nbsp;<span style={{fontFamily: "'Monaco', 'Menlo', monospace", fontSize: '0.65rem', color: 'var(--realm-text-muted)'}}>
             0x009d838f2db23afd64e4a2a116eda44a00cda1b1c8cb2ce9c11eb534e8bc50e0
           </span>
         </div>
@@ -67,25 +67,6 @@ const FeeTable: React.FC<FeeTableProps> = ({ revenueData, lordsPrice }) => {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="address-link"
-                      style={{
-                        color: '#f0b060',
-                        textDecoration: 'none',
-                        fontFamily: "'Monaco', 'Menlo', monospace",
-                        fontSize: '0.75rem',
-                        background: 'rgba(240, 176, 96, 0.1)',
-                        padding: '0.5rem',
-                        borderRadius: '0.25rem',
-                        border: '1px solid rgba(240, 176, 96, 0.2)',
-                        transition: 'all 0.3s ease'
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.background = 'rgba(240, 176, 96, 0.2)';
-                        e.currentTarget.style.borderColor = 'rgba(240, 176, 96, 0.3)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.background = 'rgba(240, 176, 96, 0.1)';
-                        e.currentTarget.style.borderColor = 'rgba(240, 176, 96, 0.2)';
-                      }}
                     >
                       {`${item.address.slice(0, 6)}...${item.address.slice(-4)}`}
                     </a>

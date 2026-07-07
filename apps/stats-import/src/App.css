@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700&family=IM+Fell+English+SC&display=swap");
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     margin: 0;
@@ -3082,4 +3084,506 @@ tr:hover {
     .breakdown-description {
         font-size: 0.75rem;
     }
-} 
+}
+
+/* Realms ecosystem alignment pass */
+:root {
+    --realm-bg-void: #050709;
+    --realm-bg-smoke: #070b0d;
+    --realm-surface-iron: #101417;
+    --realm-surface-slate: #161b20;
+    --realm-surface-panel: rgba(16, 20, 23, 0.94);
+    --realm-accent-ember: #c4874a;
+    --realm-accent-brass: #e7cf88;
+    --realm-accent-arcane: #8d98c8;
+    --realm-border-etched: rgba(231, 207, 136, 0.22);
+    --realm-border-strong: rgba(231, 207, 136, 0.38);
+    --realm-text: #e8dcc2;
+    --realm-text-muted: #d8c8a8;
+    --realm-title: #f5ead0;
+    --realm-danger: #ef6a58;
+    --realm-success: #7fc68b;
+    --realm-radius: 8px;
+}
+
+* {
+    box-sizing: border-box;
+    letter-spacing: 0 !important;
+}
+
+body {
+    font-family: "Exo 2", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    padding: clamp(0.75rem, 2vw, 1.5rem);
+    background:
+        linear-gradient(180deg, rgba(231, 207, 136, 0.045), transparent 18rem),
+        linear-gradient(135deg, var(--realm-bg-void), var(--realm-bg-smoke) 48%, var(--realm-bg-void));
+    background-attachment: fixed;
+    color: var(--realm-text);
+}
+
+.App {
+    width: 100%;
+}
+
+.price-header,
+.tab-navigation,
+.container,
+.rewards-content,
+.rewards-placeholder,
+.victory-prizes,
+.calculation-explanation,
+.season-pass-analysis .analysis-card,
+.scenario-card,
+.cartridge-table,
+.daydreams-table,
+.chest-table,
+.chest-distribution-explanation,
+.season-pass-analysis .stat-card,
+.summary-card,
+.distribution-item {
+    border: 1px solid var(--realm-border-etched) !important;
+    border-radius: var(--realm-radius) !important;
+    background: linear-gradient(160deg, rgba(16, 20, 23, 0.96), rgba(5, 7, 9, 0.92)) !important;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 18px 42px rgba(0, 0, 0, 0.22) !important;
+}
+
+.price-header,
+.tab-navigation,
+.container {
+    max-width: 1400px;
+}
+
+.price-header {
+    margin-bottom: 1rem;
+    padding: clamp(1rem, 2vw, 1.35rem) clamp(1rem, 2vw, 1.75rem);
+}
+
+.tab-navigation {
+    margin-bottom: 1.25rem;
+    padding: 0.5rem;
+    gap: 0.5rem;
+    backdrop-filter: blur(12px);
+}
+
+.tab-navigation::before,
+.chart-wrapper::before {
+    display: none !important;
+}
+
+.tab-button,
+.reward-type-btn,
+.calculation-toggle,
+.sort-order-btn {
+    border-radius: 6px !important;
+    color: var(--realm-text-muted) !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+.tab-button {
+    min-height: 3rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid transparent;
+}
+
+.tab-button::before {
+    border-radius: 6px !important;
+    background: rgba(231, 207, 136, 0.08) !important;
+}
+
+.tab-button::after {
+    display: none;
+}
+
+.tab-button:hover,
+.tab-button.active,
+.reward-type-btn:hover,
+.reward-type-btn.active,
+.calculation-toggle:hover,
+.sort-order-btn:hover {
+    border-color: var(--realm-border-strong) !important;
+    background: rgba(231, 207, 136, 0.1) !important;
+    color: var(--realm-title) !important;
+    transform: none !important;
+}
+
+.tab-button.active {
+    background: linear-gradient(180deg, rgba(231, 207, 136, 0.16), rgba(16, 20, 23, 0.82)) !important;
+}
+
+.tab-icon {
+    filter: none !important;
+    transform: none !important;
+}
+
+.container,
+.rewards-content {
+    padding: clamp(1rem, 2.5vw, 1.75rem);
+    margin-bottom: 1.25rem;
+    border-left: 1px solid var(--realm-border-etched) !important;
+    border-bottom: 1px solid var(--realm-border-etched) !important;
+}
+
+.brand-title,
+h1,
+.rewards-content h2,
+.rewards-placeholder h3,
+.victory-title h3,
+.cartridge-title h3,
+.daydreams-title h3,
+.chest-title h3,
+.calc-card-header h4,
+.example-header h4,
+.scenarios-section h3,
+.card-header h3,
+.token-name {
+    font-family: "IM Fell English SC", Cinzel, Georgia, serif !important;
+    text-transform: uppercase;
+    font-weight: 400 !important;
+    color: var(--realm-title) !important;
+}
+
+h1 {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.25rem;
+    margin: 0 0 1.25rem;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--realm-border-etched) !important;
+    border-radius: 6px;
+    background: rgba(231, 207, 136, 0.08);
+    font-size: clamp(1.1rem, 2vw, 1.45rem);
+    line-height: 1.1;
+}
+
+.brand-title {
+    font-size: clamp(1.1rem, 2vw, 1.35rem);
+}
+
+.brand-subtitle,
+.last-updated,
+.total-revenue,
+.rewards-content p,
+.victory-subtitle,
+.cartridge-subtitle,
+.daydreams-subtitle,
+.chest-subtitle,
+.summary-label,
+.summary-usd,
+.fee-description,
+.legend-info .legend-subtitle,
+.legend-lords,
+.source,
+.source-breakdown,
+.calc-card-content p,
+.calc-list li,
+.calc-note,
+.data-label,
+.step-label,
+.metric-label,
+.scenarios-intro,
+.scenario-description,
+.scenario-explanation,
+.stat-label,
+.stat-subtitle,
+.player-address,
+.player-stats,
+.reward-usd,
+.breakdown-label,
+.points-label,
+.achievement-description,
+.distribution-players {
+    color: var(--realm-text-muted) !important;
+}
+
+.price-value,
+.center-text .total-usd,
+.legend-info .legend-title,
+.fee-category,
+.source-breakdown,
+.formula-value,
+.data-value,
+.step-value,
+.player-name,
+.tribe-name,
+.breakdown-value,
+.points-value,
+.player-address-only,
+.distribution-range,
+.metric-value,
+.scenario-value,
+.stat-value {
+    color: var(--realm-text) !important;
+}
+
+.eternum-logo,
+.token-name,
+.center-text .total-amount,
+.legend-amount,
+.amount-usd,
+.lords-badge,
+.address.no-address,
+.address-link,
+.summary-value,
+.reward-amount,
+.tribe-rank,
+.player-points,
+.percentage-value,
+.achievement-name,
+.distribution-chest-count,
+.formula-label,
+.calculation-arrow,
+.calc-step.highlight .step-label,
+.calc-step.highlight .step-value {
+    color: var(--realm-accent-brass) !important;
+}
+
+.chart-wrapper,
+.legend-item,
+.table-wrapper,
+.search-input,
+.sort-select,
+.sort-order-btn,
+.reward-type-btn,
+.address,
+.address-link,
+.calc-formula,
+.example-data,
+.example-calculation,
+.players-table,
+.player-row,
+.metric-row,
+.scenario-card,
+.analysis-card,
+.stat-card {
+    border: 1px solid var(--realm-border-etched) !important;
+    border-radius: var(--realm-radius) !important;
+    background: rgba(7, 10, 12, 0.74) !important;
+    box-shadow: none !important;
+}
+
+.chart-wrapper {
+    padding: clamp(1.5rem, 4vw, 2.5rem);
+}
+
+.legend-item {
+    border-left-width: 4px !important;
+    min-height: 4.75rem;
+}
+
+.legend-item:hover,
+.calculation-card:hover,
+.cartridge-table .player-row:hover,
+.daydreams-table .player-row:hover,
+.scenario-card:hover,
+.stat-card:hover,
+.address-link:hover {
+    transform: none !important;
+    border-color: var(--realm-border-strong) !important;
+    background: rgba(231, 207, 136, 0.075) !important;
+    box-shadow: 0 0 18px rgba(231, 207, 136, 0.08) !important;
+}
+
+.legend-color,
+.loading-spinner {
+    border-radius: 999px !important;
+}
+
+.table-wrapper {
+    overflow: auto;
+}
+
+table {
+    border-collapse: collapse;
+    color: var(--realm-text);
+}
+
+thead,
+th,
+.table-header,
+.cartridge-table .table-header,
+.daydreams-table .table-header,
+.chest-table .table-header,
+.analysis-card .card-header,
+.card-header {
+    background: rgba(16, 20, 23, 0.96) !important;
+    border-color: var(--realm-border-etched) !important;
+    color: var(--realm-accent-brass) !important;
+}
+
+th,
+td,
+.table-header,
+.player-row,
+.victory-header,
+.victory-controls,
+.calc-card-header,
+.example-header,
+.metric-row {
+    border-color: rgba(231, 207, 136, 0.16) !important;
+}
+
+td {
+    background: rgba(5, 7, 9, 0.42) !important;
+}
+
+tr:hover,
+.player-row:hover {
+    background: rgba(231, 207, 136, 0.055) !important;
+}
+
+.address,
+.address-link,
+.formula-value,
+.player-address,
+.player-address-only,
+.metric-value {
+    font-family: "SF Mono", Monaco, Consolas, "Liberation Mono", monospace !important;
+}
+
+.address-link,
+.lords-badge,
+.calc-step.highlight,
+.metric-usd {
+    background: rgba(231, 207, 136, 0.1) !important;
+    border-color: var(--realm-border-etched) !important;
+}
+
+.search-input,
+.sort-select {
+    color: var(--realm-text) !important;
+}
+
+.search-input::placeholder {
+    color: rgba(216, 200, 168, 0.68) !important;
+}
+
+.search-input:focus,
+.sort-select:focus,
+.tab-button:focus,
+.reward-type-btn:focus,
+.sort-order-btn:focus,
+.address-link:focus {
+    outline: 2px solid rgba(231, 207, 136, 0.34) !important;
+    outline-offset: 2px;
+    border-color: var(--realm-border-strong) !important;
+    box-shadow: none !important;
+}
+
+.price-change.positive {
+    background-color: rgba(127, 198, 139, 0.14) !important;
+    color: var(--realm-success) !important;
+}
+
+.price-change.negative,
+.error,
+.error-message {
+    background-color: rgba(239, 106, 88, 0.12) !important;
+    color: var(--realm-danger) !important;
+}
+
+.calculation-card,
+.calculation-example,
+.summary-card,
+.stat-card,
+.scenario-card {
+    padding: 1rem;
+}
+
+.calc-list li::before {
+    color: var(--realm-accent-brass) !important;
+}
+
+.loading-spinner {
+    border-color: rgba(231, 207, 136, 0.2) !important;
+    border-top-color: var(--realm-accent-brass) !important;
+}
+
+
+
+.season-totals-banner,
+.total-card,
+.season-breakdown .breakdown-item,
+.methodology,
+.key-insights,
+.insight-item {
+    border: 1px solid var(--realm-border-etched) !important;
+    border-radius: var(--realm-radius) !important;
+    background: linear-gradient(160deg, rgba(16, 20, 23, 0.96), rgba(5, 7, 9, 0.9)) !important;
+    box-shadow: none !important;
+}
+
+.season-totals-banner::before,
+.total-card::before {
+    display: none !important;
+}
+
+.season-title h2,
+.total-token,
+.breakdown-category {
+    font-family: "IM Fell English SC", Cinzel, Georgia, serif !important;
+    text-transform: uppercase;
+    font-weight: 400 !important;
+    color: var(--realm-accent-brass) !important;
+    text-shadow: none !important;
+}
+
+.season-subtitle,
+.total-usd,
+.breakdown-description,
+.insight-item {
+    color: var(--realm-text-muted) !important;
+}
+
+.total-amount,
+.insight-item strong {
+    color: var(--realm-title) !important;
+    text-shadow: none !important;
+}
+
+.total-card:hover,
+.season-breakdown .breakdown-item:hover,
+.total-card:hover .total-icon {
+    transform: none !important;
+    border-color: var(--realm-border-strong) !important;
+    background: rgba(231, 207, 136, 0.075) !important;
+    box-shadow: 0 0 18px rgba(231, 207, 136, 0.08) !important;
+}
+
+.season-icon,
+.total-icon,
+.lords-icon,
+.strk-icon {
+    animation: none !important;
+    filter: none !important;
+}
+
+.divider-line {
+    background: var(--realm-border-etched) !important;
+}
+
+.divider-text {
+    color: var(--realm-accent-brass) !important;
+    text-shadow: none !important;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 0.75rem;
+    }
+
+    .tab-navigation {
+        gap: 0.35rem;
+    }
+
+    .tab-button {
+        min-height: 3.25rem;
+        padding: 0.75rem 0.5rem;
+    }
+
+    h1 {
+        width: 100%;
+        justify-content: center;
+        text-align: center;
+    }
+}

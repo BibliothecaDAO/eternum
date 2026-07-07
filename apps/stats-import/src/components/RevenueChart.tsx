@@ -49,29 +49,29 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
 
   const colors: ColorScheme[] = [
     {
-      background: 'rgba(240, 176, 96, 0.9)',
-      border: '#f0b060',
-      hover: 'rgba(240, 176, 96, 1)'
+      background: 'rgba(231, 207, 136, 0.9)',
+      border: '#e7cf88',
+      hover: 'rgba(231, 207, 136, 1)'
     },
     {
-      background: 'rgba(223, 194, 150, 0.9)',
-      border: '#dfc296',
-      hover: 'rgba(223, 194, 150, 1)'
+      background: 'rgba(196, 135, 74, 0.9)',
+      border: '#c4874a',
+      hover: 'rgba(196, 135, 74, 1)'
     },
     {
-      background: 'rgba(90, 114, 158, 0.9)',
-      border: '#5a729e',
-      hover: 'rgba(90, 114, 158, 1)'
+      background: 'rgba(141, 152, 200, 0.86)',
+      border: '#8d98c8',
+      hover: 'rgba(141, 152, 200, 1)'
     },
     {
-      background: 'rgba(192, 192, 192, 0.9)',
-      border: '#c0c0c0',
-      hover: 'rgba(192, 192, 192, 1)'
+      background: 'rgba(138, 163, 154, 0.86)',
+      border: '#8aa39a',
+      hover: 'rgba(138, 163, 154, 1)'
     },
     {
-      background: 'rgba(166, 124, 0, 0.9)',
-      border: '#a67c00',
-      hover: 'rgba(166, 124, 0, 1)'
+      background: 'rgba(216, 200, 168, 0.88)',
+      border: '#d8c8a8',
+      hover: 'rgba(216, 200, 168, 1)'
     }
   ];
 
@@ -83,7 +83,7 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
       borderColor: colors.map(color => color.border),
       borderWidth: isMobile ? 2 : 3,
       hoverBorderWidth: isMobile ? 4 : 5,
-      hoverBorderColor: '#ffffff',
+      hoverBorderColor: '#f5ead0',
       hoverBackgroundColor: colors.map(color => color.hover)
     }]
   };
@@ -97,12 +97,12 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
         display: false
       },
       tooltip: {
-        backgroundColor: 'rgba(20, 15, 10, 0.95)',
-        titleColor: '#f0b060',
-        bodyColor: '#dfc296',
-        borderColor: '#f0b060',
-        borderWidth: 2,
-        cornerRadius: 12,
+        backgroundColor: 'rgba(5, 7, 9, 0.96)',
+        titleColor: '#e7cf88',
+        bodyColor: '#e8dcc2',
+        borderColor: 'rgba(231, 207, 136, 0.38)',
+        borderWidth: 1,
+        cornerRadius: 8,
         displayColors: false,
         titleFont: {
           size: isMobile ? 14 : 16,
