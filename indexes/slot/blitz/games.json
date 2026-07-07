@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-07-07T09:54:26.187Z",
+  "updatedAt": "2026-07-07T09:54:34.064Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -268,12 +268,13 @@
       "path": "runs/slot/blitz/bltz-focgers-002.json",
       "inputPath": "inputs/slot/blitz/bltz-focgers-002/28857438257-1.json",
       "status": "running",
-      "updatedAt": "2026-07-07T09:54:26.187Z",
+      "updatedAt": "2026-07-07T09:54:34.064Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-07-07T10:39:34.064Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-07-07T11:15:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
