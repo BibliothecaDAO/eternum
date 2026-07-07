@@ -4142,3 +4142,54 @@ h1 {
         text-align: center;
     }
 }
+
+
+/* Final victory tab alignment pass */
+.chart-canvas-wrapper canvas {
+    transform: translateY(50px) !important;
+}
+
+.victory-title h3 {
+    justify-content: flex-start !important;
+    text-align: left !important;
+    font-size: 1.8rem !important;
+    margin: 0 0 0.5rem !important;
+    line-height: 1.08 !important;
+}
+
+.victory-subtitle {
+    text-align: left !important;
+    font-size: 0.9rem !important;
+    line-height: 1.5 !important;
+    margin: 0 !important;
+    opacity: 0.8 !important;
+}
+
+.victory-header {
+    margin-bottom: 2rem !important;
+}
+
+.victory-table {
+    border-radius: 1rem !important;
+    background: rgba(7, 10, 12, 0.74) !important;
+}
+
+.victory-table .table-header {
+    display: grid !important;
+    grid-template-columns: 1.5fr 1.5fr 1fr 1.5fr !important;
+    gap: 1rem !important;
+    padding: 1.5rem 2rem !important;
+    background: rgba(16, 20, 23, 0.96) !important;
+    border-bottom: 2px solid rgba(231, 207, 136, 0.18) !important;
+    color: var(--realm-accent-brass, #e7cf88) !important;
+    font-size: 0.9rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+    text-transform: uppercase !important;
+}
+
+@media (max-width: 1024px) {
+    .victory-table .table-header {
+        display: none !important;
+    }
+}
