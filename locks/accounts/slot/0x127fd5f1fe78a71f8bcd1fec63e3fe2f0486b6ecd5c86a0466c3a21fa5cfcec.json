@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-blink-751",
-    "launchRequestId": "28698652805-1",
+    "gameName": "bltz-focgers-002",
+    "launchRequestId": "28857438257-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 28698652805,
+    "workflowRunId": 28857438257,
     "workflowRunAttempt": 1,
-    "stepId": "grant-lootchest-role",
-    "leaseId": "8475c628-dd50-47ea-a949-e9a75dd86935"
+    "stepId": "create-world",
+    "leaseId": "601f6bde-dda2-440c-b469-1a85f547f73d"
   },
-  "acquiredAt": "2026-07-04T07:11:32.496Z",
-  "heartbeatAt": "2026-07-04T07:11:47.328Z",
-  "expiresAt": "2026-07-04T07:11:47.328Z",
-  "releasedAt": "2026-07-04T07:11:47.328Z"
+  "acquiredAt": "2026-07-07T09:54:38.347Z",
+  "heartbeatAt": "2026-07-07T09:54:38.347Z",
+  "expiresAt": "2026-07-07T10:04:38.347Z"
 }
