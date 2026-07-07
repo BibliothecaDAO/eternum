@@ -369,13 +369,13 @@ export function GameDetails({ game }: { game: Game }) {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ delay: 0.3 + index * 0.04 }}
                         whileHover={{ y: -2 }}
+                        style={{ backgroundImage: `url(${dashboard.image})` }}
                       >
-                        <img
-                          src={dashboard.image}
-                          alt={`${dashboard.title} ${dashboard.subtitle}`}
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors" />
+                        <div className="realm-games-detail-dashboard-copy">
+                          <span>{dashboard.title}</span>
+                          <span>{dashboard.subtitle}</span>
+                        </div>
                       </motion.a>
                     ))}
                   </div>

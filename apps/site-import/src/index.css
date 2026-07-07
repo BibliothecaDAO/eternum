@@ -1115,7 +1115,36 @@
 
   .realm-games-detail-dashboard {
     display: block;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     text-decoration: none;
+  }
+
+  .realm-games-detail-dashboard-copy {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 0.15rem;
+    min-height: 34%;
+    padding: 1rem;
+    background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.86) 42%, rgba(0, 0, 0, 0.94));
+    color: var(--realm-title);
+    font-family: var(--realm-font-title, "IM Fell English SC", serif);
+    font-size: clamp(1rem, 1.8vw, 1.45rem);
+    line-height: 1.05;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .realm-games-detail-dashboard-copy span:last-child {
+    color: var(--foreground);
+    font-size: clamp(0.86rem, 1.35vw, 1.05rem);
   }
 
   .realm-games-detail-dashboard:focus-visible {
