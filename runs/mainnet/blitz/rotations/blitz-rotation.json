@@ -10,30 +10,30 @@
   "status": "attention",
   "executionMode": "guided_recovery",
   "requestedLaunchStep": "configure-worlds",
-  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/28895699746-1.json",
-  "latestLaunchRequestId": "28895699746-1",
+  "inputPath": "inputs/mainnet/blitz/rotations/blitz-rotation/28903195144-1.json",
+  "latestLaunchRequestId": "28903195144-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-07-07T22:30:51.152Z",
+  "updatedAt": "2026-07-07T22:31:47.170Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
-    "workflowRunId": 28895699746,
+    "workflowRunId": 28903195144,
     "workflowRunAttempt": 1,
-    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/28895699746",
+    "workflowUrl": "https://github.com/BibliothecaDAO/eternum/actions/runs/28903195144",
     "ref": "next",
     "sha": "d558a3914030e3e2d043920316234fc43b6095b3"
   },
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
-    "nextRetryAt": "2026-07-07T22:45:43.066Z",
+    "nextRetryAt": "2026-07-07T22:46:47.170Z",
     "lastRetryAt": "2026-07-07T22:30:43.066Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-07-07T20:32:09.702Z",
-    "lastEvaluatedAt": "2026-07-07T20:17:09.702Z"
+    "nextEvaluationAt": "2026-07-07T22:46:47.170Z",
+    "lastEvaluatedAt": "2026-07-07T22:31:47.170Z"
   },
   "steps": [
     {
@@ -62,10 +62,7 @@
       "title": "Applying settings",
       "status": "failed",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"na-gladiator-05-06-26-0100\" on mainnet.blitz\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\n\u001b[2m[+30ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"na-gladiator-05-06-26-0100\"\n\u001b[2m[+175ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m wait for factory SQL indexing failed after 145ms: Failed to fetch world deployment: 410 Gone\nError: 1 rotation or series game failed during configure-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:497:15)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-07-07T20:16:56.355Z",
-      "finishedAt": "2026-07-07T20:17:09.702Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"na-gladiator-05-06-26-0100\" on mainnet.blitz\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+21ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\n\u001b[2m[+30ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"na-gladiator-05-06-26-0100\"\n\u001b[2m[+175ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m wait for factory SQL indexing failed after 145ms: Failed to fetch world deployment: 410 Gone\nError: 1 rotation or series game failed during configure-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:497:15)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Applying settings needs attention"
     },
     {
       "id": "reserve-blitz-hyperstructures",
