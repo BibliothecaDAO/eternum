@@ -348,20 +348,42 @@ article.vocs_Content,
 
 .vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_gutterTop,
 .vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_gutterTopCurtain,
+.vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_gutterLeft,
+.vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_sidebar,
+.vocs_DocsLayout[data-layout="landing"] .vocs_Sidebar,
 .vocs_DocsLayout[data-layout="landing"] .vocs_DesktopTopNav,
 .vocs_DocsLayout[data-layout="landing"] .vocs_MobileTopNav {
   display: none !important;
 }
 
+.vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_content,
+.vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_content_withSidebar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100vw !important;
+}
+
 .vocs_DocsLayout[data-layout="landing"] #vocs-content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   max-width: none;
+  width: 100vw;
   height: 100dvh;
   min-height: 100dvh;
   overflow: hidden;
-  padding-top: 0 !important;
+  padding: 0 !important;
 }
 
 .vocs_DocsLayout[data-layout="landing"] .vocs_Content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100%;
   height: 100dvh;
   min-height: 100dvh;
 }
@@ -369,6 +391,7 @@ article.vocs_Content,
 .vocs_HomePage {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 100%;
@@ -376,7 +399,8 @@ article.vocs_Content,
   min-height: 100dvh;
   overflow: hidden;
   gap: clamp(1rem, 2vw, 1.5rem) !important;
-  padding: clamp(4rem, 9vw, 7rem) 1.5rem clamp(3rem, 7vw, 5rem) !important;
+  margin: 0 auto !important;
+  padding: clamp(2rem, 5vw, 4rem) 1.5rem !important;
   color: var(--realm-text);
   text-align: center;
   text-shadow: 0 2px 18px rgba(0, 0, 0, 0.48);
@@ -411,6 +435,8 @@ article.vocs_Content,
 .vocs_HomePage > :not(.realms-homepage-background) {
   position: relative;
   z-index: 1;
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
 .vocs_HomePage_logo img,
@@ -422,11 +448,17 @@ article.vocs_Content,
 .vocs_HomePage_description {
   max-width: 48rem;
   color: var(--realm-text) !important;
+  text-align: center !important;
+}
+
+.vocs_HomePage_description p {
+  text-align: center !important;
 }
 
 .vocs_HomePage_buttons {
   flex-wrap: wrap;
   justify-content: center;
+  width: fit-content;
 }
 
 ::-webkit-scrollbar {
