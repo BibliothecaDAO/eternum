@@ -77,7 +77,7 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
 
   // Responsive brand subtitle
   const getBrandSubtitle = (): string => {
-    return isMobile ? 'Season 1 Analytics' : 'Eternum Season 1 Analytics';
+    return 'Eternum Season One Revenue & Rewards Analytics';
   };
 
   return (
@@ -93,17 +93,9 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
       </div>
       
       <div className="price-info">
-        <div className="lords-logo">
-          <img 
-            src="/Lords.svg" 
-            width={isMobile ? "48" : "64"} 
-            height={isMobile ? "48" : "64"} 
-            alt="LORDS Token Logo" 
-          />
-        </div>
         <div className="price-details">
           <div className="token-name">
-            LORDS Token
+            $LORDS Token
             {priceNote ? <span className="token-note">({priceNote})</span> : null}
           </div>
           <div className="price-value">

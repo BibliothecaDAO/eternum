@@ -205,21 +205,6 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
     chart.update('none');
   };
 
-  const handleLegendClick = (index: number): void => {
-    const chart = chartRef.current;
-    if (!chart) return;
-
-    const meta = chart.getDatasetMeta(0);
-    const segment = meta.data[index] as any;
-    segment.hidden = !segment.hidden;
-    chart.update();
-    
-    // Provide haptic feedback on mobile if available
-    if (isMobile && navigator.vibrate) {
-      navigator.vibrate(50);
-    }
-  };
-
   const formatUSD = (lordsAmount: number): string => {
     const usdValue = Math.round(lordsAmount * lordsPrice);
     return isMobile && usdValue >= 1000000
@@ -293,10 +278,6 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ revenueData, lordsPrice, to
               className="legend-item"
               onMouseEnter={() => handleLegendHover(index, true)}
               onMouseLeave={() => handleLegendHover(index, false)}
-              onClick={() => handleLegendClick(index)}
-              onTouchStart={() => handleLegendClick(index)} // Better touch support
-              role="button"
-              tabIndex={0}
               aria-label={`${item.category}: ${item.amount.toLocaleString()} LORDS`}
             >
               <div className="legend-item-left">
