@@ -13,6 +13,7 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
   lastUpdated, 
   loading, 
   error, 
+  priceNote,
   totalLords 
 }) => {
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -114,10 +115,13 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
       </div>
       
       <div className="price-meta">
-        {lastUpdated && (
+        {priceNote && (
+          <div className="last-updated">{priceNote}</div>
+        )}
+        {!priceNote && lastUpdated && (
           <div className="last-updated">{formatLastUpdated(lastUpdated)}</div>
         )}
-        {error && (
+        {!priceNote && error && (
           <div className="error">{error}</div>
         )}
       </div>

@@ -5,9 +5,11 @@ import PriceHeader from './components/PriceHeader';
 import RevenuePage from './pages/RevenuePage';
 import RewardsPage from './pages/RewardsPage';
 import SeasonPassPage from './pages/SeasonPassPage';
-import { RevenueData, LordsApiResponse } from './types';
+import { RevenueData, StarknetApiResponse } from './types';
 import { Analytics } from "@vercel/analytics/react"
 
+const S1_LORDS_PRICE_USD = 0.02;
+const STRK_PRICE_FALLBACK_USD = 1.15;
 const VILLAGES_SOLD = 1156;
 const VILLAGE_PRICE_USD = 5;
 const DAYDREAMS_AGENTS_KILLED = 1019;
@@ -17,52 +19,38 @@ const AMOUNT_LEFT_IN_BRIDGE_CONTRACT = 151412;
 
 function App(): React.JSX.Element {
   const location = useLocation();
-  const [lordsPrice, setLordsPrice] = useState<number>(0);
-  const [strkPrice, setStrkPrice] = useState<number>(0);
-  const [priceChange, setPriceChange] = useState<number | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [priceError, setPriceError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const fetchPrices = async (): Promise<void> => {
+  const [strkPrice, setStrkPrice] = useState<number>(STRK_PRICE_FALLBACK_USD);
+  const lordsPrice = S1_LORDS_PRICE_USD;
+
+  const fetchStrkPrice = async (): Promise<void> => {
     try {
-      setLoading(true);
-      setPriceError(null);
-      
       const response = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=lords,starknet&vs_currencies=usd&include_24hr_change=true&include_last_updated_at=true'
+        'https://api.coingecko.com/api/v3/simple/price?ids=starknet&vs_currencies=usd'
       );
-      const data: LordsApiResponse = await response.json();
+      const data: StarknetApiResponse = await response.json();
       
-      if (data.lords && data.starknet) {
-        setLordsPrice(data.lords.usd);
+      if (data.starknet?.usd) {
         setStrkPrice(data.starknet.usd);
-        setPriceChange(data.lords.usd_24h_change);
-        setLastUpdated(new Date(data.lords.last_updated_at * 1000));
       } else {
-        throw new Error('Price data not found');
+        throw new Error('STRK price data not found');
       }
     } catch (error) {
-      console.error('Error fetching prices:', error);
-      setPriceError('Failed to load price data');
-      // Fallback values if API fails
-      setLordsPrice(0.02);
-      setStrkPrice(1.15);
-    } finally {
-      setLoading(false);
+      console.error('Error fetching STRK price:', error);
+      setStrkPrice(STRK_PRICE_FALLBACK_USD);
     }
   };
 
   useEffect(() => {
-    fetchPrices();
+    fetchStrkPrice();
     
-    // Refresh prices every 5 minutes
-    const interval = setInterval(fetchPrices, 5 * 60 * 1000);
+    // LORDS remains anchored to the Season 1 close price; only STRK refreshes for mixed reward displays.
+    const interval = setInterval(fetchStrkPrice, 5 * 60 * 1000);
     
     return () => clearInterval(interval);
   }, []);
 
   const villageRevenueUSD = VILLAGES_SOLD * VILLAGE_PRICE_USD;
-  const villageRevenueLords = lordsPrice > 0 ? villageRevenueUSD / lordsPrice : 0;
+  const villageRevenueLords = villageRevenueUSD / lordsPrice;
 
   const revenueData: RevenueData[] = [
     {
@@ -72,7 +60,7 @@ function App(): React.JSX.Element {
       percentage: 56.8,
       address: 'No specific address',
       source: `Paid in USD: $${villageRevenueUSD.toLocaleString()} (${VILLAGES_SOLD.toLocaleString()} villages × $${VILLAGE_PRICE_USD} each)`,
-      breakdown: `Equivalent to ${villageRevenueLords.toLocaleString()} LORDS at $${lordsPrice.toFixed(6)} per token`
+      breakdown: `Equivalent to ${villageRevenueLords.toLocaleString()} LORDS at $${lordsPrice.toFixed(2)} per token (S1 close price)`
     },
     {
       category: 'Donkey Network Fees',
@@ -127,10 +115,11 @@ function App(): React.JSX.Element {
     <div className="App">
       <PriceHeader 
         lordsPrice={lordsPrice}
-        priceChange={priceChange}
-        lastUpdated={lastUpdated}
-        loading={loading}
-        error={priceError}
+        priceChange={null}
+        lastUpdated={null}
+        loading={false}
+        error={null}
+        priceNote="S1 close price"
         totalLords={totalLords}
       />
       

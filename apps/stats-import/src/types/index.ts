@@ -14,6 +14,7 @@ export interface PriceHeaderProps {
   lastUpdated: Date | null;
   loading: boolean;
   error: string | null;
+  priceNote?: string;
   totalLords: number;
 }
 
@@ -34,16 +35,9 @@ export interface ColorScheme {
   hover: string;
 }
 
-export interface LordsApiResponse {
-  lords: {
-    usd: number;
-    usd_24h_change: number;
-    last_updated_at: number;
-  };
+export interface StarknetApiResponse {
   starknet: {
     usd: number;
-    usd_24h_change: number;
-    last_updated_at: number;
   };
 }
 
