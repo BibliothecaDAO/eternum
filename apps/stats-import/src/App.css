@@ -4193,3 +4193,20 @@ h1 {
         display: none !important;
     }
 }
+
+
+/* Final chart and season-pass title corrections */
+.chart-canvas-wrapper canvas {
+    transform: translateY(40px) !important;
+}
+
+.victory-subtitle {
+    font-size: 1.1rem !important;
+    line-height: 1.5 !important;
+}
+
+.scenarios-section h3 {
+    border-left: 0 !important;
+    padding-left: 0 !important;
+    text-align: center !important;
+}
