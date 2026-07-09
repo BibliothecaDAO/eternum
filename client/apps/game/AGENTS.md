@@ -1,5 +1,17 @@
 # Agent Instructions for Game Client
 
+## Game Renderer Architecture Skill
+
+Before building, refactoring, reviewing, or debugging the game renderer, Three.js runtime, world map, scenes, managers,
+hydration, chunking, terrain, labels, FX, or any code under `src/three`, read:
+
+```
+.claude/skills/game-three-architecture/SKILL.md
+```
+
+Follow it as the architectural standard for game presentation code. The existing Three.js best-practices skill remains
+the rendering/performance companion; this skill defines the ownership boundaries.
+
 ## Documenting UX Changes and New Features
 
 Whenever you make a UX change or add a new feature in the client, you **must** add an entry to the latest features list
