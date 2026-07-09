@@ -72,7 +72,7 @@ export function AnimatedStat({
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
       className="h-full"
     >
-      <Card className="backdrop-blur-md transition-all duration-300 group flex flex-col h-full border rounded-xl">
+      <Card className="backdrop-blur-md transition-all duration-300 group flex flex-col h-full border rounded-lg">
         <CardHeader className="pb-2 uppercase">
           <div className="flex items-center justify-between mb-8">
             <CardDescription className="text-base sm:text-lg font-medium">

@@ -64,12 +64,11 @@ function ScrollIndexPage() {
         transition={{ duration: 0.45 }}
         className="w-full px-4 sm:px-6 lg:px-8 xl:px-12 space-y-6 sm:space-y-8"
       >
-        <header className="realm-panel realm-grid-scan scroll-codex-hero rounded-2xl p-5 sm:p-7">
-          <p className="realm-banner mb-4">Signal Archive</p>
+        <header className="realm-panel realm-grid-scan scroll-codex-hero rounded-lg p-5 sm:p-7">
           <div className="flex flex-wrap items-end justify-between gap-5">
             <div className="max-w-3xl">
               <h1 className="realm-title text-3xl sm:text-4xl lg:text-5xl leading-tight">
-                Scroll Codex Dispatches
+                Scroll Archive
               </h1>
               <p className="mt-3 text-base sm:text-lg text-foreground/80">
                 The written layer for Realms. Read ecosystem updates, design notes,
@@ -78,7 +77,6 @@ function ScrollIndexPage() {
             </div>
             <div className="flex gap-2 sm:gap-3">
               <span className="realm-sigil">{posts.length} entries</span>
-              <span className="realm-sigil">{filteredPosts.length} visible</span>
             </div>
           </div>
 
@@ -104,7 +102,7 @@ function ScrollIndexPage() {
           </div>
         </header>
 
-        <div className="realm-panel scroll-codex-filters rounded-2xl p-4 sm:p-5">
+        <div className="realm-panel scroll-codex-filters rounded-lg p-4 sm:p-5">
           <div className="flex flex-wrap gap-2.5">
             {filterOptions.map((option) => (
               <button
@@ -127,7 +125,7 @@ function ScrollIndexPage() {
           <Link
             to="/scroll/$slug"
             params={{ slug: featuredPost.slug }}
-            className="scroll-codex-feature realm-panel realm-grid-scan block rounded-2xl p-5 sm:p-7 transition-transform duration-300 hover:-translate-y-1"
+            className="scroll-codex-feature realm-panel realm-grid-scan block rounded-lg p-5 sm:p-7 transition-transform duration-300 hover:-translate-y-1"
           >
             <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.13em] text-foreground/60">
               <span>{typeLabel(featuredPost.type)}</span>
@@ -163,7 +161,7 @@ function ScrollIndexPage() {
             {feedPosts.map((post) => (
               <article
                 key={post.slug}
-                className="scroll-codex-card realm-panel rounded-2xl p-5 md:p-6"
+                className="scroll-codex-card realm-panel rounded-lg p-5 md:p-6"
               >
                 <div className="text-xs uppercase tracking-[0.13em] text-foreground/60">
                   <span>{typeLabel(post.type)}</span>
@@ -201,7 +199,7 @@ function ScrollIndexPage() {
         ) : null}
 
         {filteredPosts.length === 0 ? (
-          <div className="realm-panel rounded-xl p-8 text-center">
+          <div className="realm-panel rounded-lg p-8 text-center">
             <p className="text-foreground/70">No dispatches match this filter.</p>
           </div>
         ) : null}

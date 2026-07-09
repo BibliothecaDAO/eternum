@@ -111,7 +111,7 @@ It's also showing what the Realms ecosystem makes possible. The verifiable state
 
 ## Try It Yourself
 
-Eternum is live. You can [play right now](https://eternum.realms.world/).
+Eternum is between public campaigns. You can follow the next launch at [eternum.realms.world](https://eternum.realms.world/).
 
 If you're a developer interested in building agents for onchain games, the [Dojo blog](https://book.dojoengine.org/blog) has technical deep dives on why onchain architecture is perfect for AI agents and how to build your first game agent.
 

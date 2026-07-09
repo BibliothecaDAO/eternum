@@ -1,10 +1,16 @@
-@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=MedievalSharp&family=Rajdhani:wght@400;500;600;700&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400..900&family=Exo+2:wght@400;500;600;700&family=MedievalSharp&family=Rajdhani:wght@400;500;600;700&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap');
 
 @import 'tailwindcss';
 
 @plugin 'tailwindcss-animate';
 
 @custom-variant dark (&:is(.dark *));
+@font-face {
+  font-family: "IM Fell English SC";
+  src: url("/brand/im-fell-english-sc-regular.ttf") format("truetype");
+  font-display: swap;
+}
+
 :root {
   --background: oklch(0.98 0 0);
   --foreground: oklch(0.24 0 0);
@@ -49,8 +55,9 @@
   --realm-border-strong: oklch(0.44 0.03 80);
   --realm-glow-soft: color-mix(in oklab, var(--primary) 30%, transparent);
   --realm-vignette: linear-gradient(180deg, transparent 0%, color-mix(in oklab, black 38%, transparent) 100%);
-  --font-sans: Rajdhani, sans-serif;
+  --font-sans: "Exo 2", Rajdhani, sans-serif;
   --font-serif: MedievalSharp, serif;
+  --font-title: "IM Fell English SC", Cinzel, serif;
   --font-ui: Cinzel, serif;
   --font-mono: Source Code Pro, monospace;
   --radius: 0.5rem;
@@ -65,11 +72,11 @@
 }
 
 .dark {
-  --background: oklch(0.18 0 0);
+  --background: oklch(0.12 0.012 250);
   --foreground: oklch(0.95 0 0);
-  --card: oklch(0.21 0 0);
+  --card: oklch(0.16 0.008 250);
   --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.21 0 0);
+  --popover: oklch(0.16 0.008 250);
   --popover-foreground: oklch(0.95 0 0);
   --primary: oklch(0.92 0.05 66.17);
   --primary-foreground: oklch(0.20 0.02 200.20);
@@ -81,7 +88,7 @@
   --accent-foreground: oklch(0.95 0 0);
   --destructive: oklch(0.63 0.19 33.34);
   --destructive-foreground: oklch(1.00 0 0);
-  --border: oklch(0.24 0.01 91.75);
+  --border: oklch(0.30 0.035 78);
   --input: oklch(0.40 0 0);
   --ring: oklch(0.92 0.05 66.17);
   --chart-1: oklch(0.92 0.05 66.17);
@@ -97,10 +104,10 @@
   --sidebar-accent-foreground: oklch(0.97 0.00 286.38);
   --sidebar-border: oklch(0.27 0.01 286.03);
   --sidebar-ring: oklch(0.87 0.01 286.29);
-  --realm-bg-void: oklch(0.12 0.012 260);
-  --realm-bg-smoke: oklch(0.17 0.016 250);
-  --realm-surface-iron: oklch(0.23 0.01 80);
-  --realm-surface-slate: oklch(0.27 0.012 260);
+  --realm-bg-void: oklch(0.10 0.014 250);
+  --realm-bg-smoke: oklch(0.15 0.014 245);
+  --realm-surface-iron: oklch(0.18 0.012 230);
+  --realm-surface-slate: oklch(0.19 0.014 250);
   --realm-accent-ember: oklch(0.72 0.14 55);
   --realm-accent-brass: oklch(0.78 0.10 85);
   --realm-accent-arcane: oklch(0.65 0.08 260);
@@ -108,8 +115,9 @@
   --realm-border-strong: oklch(0.46 0.04 82);
   --realm-glow-soft: color-mix(in oklab, var(--primary) 32%, transparent);
   --realm-vignette: linear-gradient(180deg, transparent 0%, color-mix(in oklab, black 55%, transparent) 100%);
-  --font-sans: Rajdhani, sans-serif;
+  --font-sans: "Exo 2", Rajdhani, sans-serif;
   --font-serif: MedievalSharp, serif;
+  --font-title: "IM Fell English SC", Cinzel, serif;
   --font-ui: Cinzel, serif;
   --font-mono: Source Code Pro, monospace;
   --radius: 0.5rem;
@@ -182,7 +190,12 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    font-family: var(--font-sans);
+    letter-spacing: 0;
+    background:
+      radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--realm-accent-brass) 8%, transparent), transparent 38rem),
+      linear-gradient(180deg, #040607 0%, #070b0d 54%, #050709 100%);
   }
 }
 @layer base {
@@ -351,47 +364,45 @@
     pointer-events: none;
     z-index: -1;
     background:
-      radial-gradient(110% 70% at 20% 0%, color-mix(in oklab, var(--realm-accent-ember) 18%, transparent) 0%, transparent 55%),
-      radial-gradient(90% 60% at 80% 100%, color-mix(in oklab, var(--realm-accent-arcane) 14%, transparent) 0%, transparent 58%);
-    opacity: 0.6;
+      radial-gradient(circle at 50% 18%, color-mix(in oklab, var(--realm-accent-brass) 8%, transparent), transparent 42%),
+      linear-gradient(color-mix(in oklab, var(--realm-accent-brass) 7%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--realm-accent-brass) 7%, transparent) 1px, transparent 1px);
+    background-size: auto, 96px 96px, 96px 96px;
+    background-position: center, center, center;
+    mask-image: radial-gradient(circle at center, black 0%, black 35%, transparent 82%);
+    -webkit-mask-image: radial-gradient(circle at center, black 0%, black 35%, transparent 82%);
+    opacity: 0.24;
   }
 
   .realm-panel {
-    border: 1px solid color-mix(in oklab, var(--realm-border-etched) 70%, transparent);
+    border: 1px solid color-mix(in oklab, var(--realm-accent-brass) 18%, transparent);
     background:
-      linear-gradient(
-        90deg,
-        color-mix(in oklab, var(--realm-accent-ember) 10%, transparent) 0%,
-        transparent 14%,
-        transparent 86%,
-        color-mix(in oklab, var(--realm-accent-arcane) 12%, transparent) 100%
-      ),
-      linear-gradient(
-        150deg,
-        color-mix(in oklab, var(--realm-surface-iron) 76%, transparent),
-        color-mix(in oklab, var(--realm-surface-slate) 72%, transparent)
-      );
+      radial-gradient(circle at 50% 0%, color-mix(in oklab, var(--realm-accent-brass) 6%, transparent), transparent 58%),
+      color-mix(in oklab, #070a0c 78%, transparent);
     box-shadow:
-      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 12%, transparent),
-      inset 0 -1px 0 color-mix(in oklab, var(--realm-accent-arcane) 10%, transparent),
-      0 18px 36px color-mix(in oklab, black 36%, transparent);
-    backdrop-filter: blur(8px);
-    border-radius: 10px;
-    clip-path: polygon(0 12px, 12px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 12px), calc(100% - 12px) 100%, 14px 100%, 0 calc(100% - 14px));
+      inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 13%, transparent),
+      0 24px 60px color-mix(in oklab, black 42%, transparent),
+      0 0 1px color-mix(in oklab, var(--realm-accent-brass) 15%, transparent);
+    backdrop-filter: blur(16px);
+    border-radius: 8px;
   }
 
   .realm-banner {
-    @apply inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-primary/90;
+    @apply inline-flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-primary/90;
     font-family: var(--font-ui);
     font-weight: 600;
     border: 1px solid color-mix(in oklab, var(--realm-border-etched) 72%, transparent);
-    background: color-mix(in oklab, var(--realm-bg-smoke) 45%, transparent);
-    padding: 0.35rem 0.65rem;
-    border-radius: 999px;
+    background: color-mix(in oklab, #070a0c 58%, transparent);
+    padding: 0.38rem 0.72rem;
+    border-radius: 0.35rem;
   }
 
   .realm-title {
-    @apply font-serif tracking-tight text-foreground;
+    @apply text-foreground;
+    font-family: var(--font-title);
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: uppercase;
   }
 
   .realm-subtitle {
@@ -407,6 +418,15 @@
     color: color-mix(in oklab, var(--primary) 82%, white);
     padding: 0.2rem 0.5rem;
     border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .realm-studio-tag {
+    border-color: color-mix(in oklab, var(--primary) 58%, white 24%);
+    background: color-mix(in oklab, var(--primary) 86%, white);
+    color: #14100b;
+    font-weight: 800;
+    box-shadow: inset 0 1px 0 color-mix(in oklab, white 48%, transparent);
   }
 
   .realm-header-shell {
@@ -424,7 +444,7 @@
 
   .realm-nav-link {
     position: relative;
-    font-family: var(--font-ui);
+    font-family: var(--font-title);
     letter-spacing: 0.16em;
   }
 
@@ -447,7 +467,8 @@
     transition: transform 220ms ease, opacity 220ms ease;
   }
 
-  .realm-nav-link:hover::after {
+  .realm-nav-link:hover::after,
+  .realm-nav-link-active::after {
     opacity: 1;
     transform: scaleX(1);
   }
@@ -695,7 +716,7 @@
       inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 12%, transparent),
       0 14px 26px color-mix(in oklab, black 35%, transparent);
     backdrop-filter: blur(8px);
-    border-radius: 10px;
+    border-radius: 8px;
     @apply p-4;
   }
 
@@ -727,7 +748,6 @@
   }
 
   .realm-holo-card:hover {
-    transform: translateY(-4px) rotateX(2deg);
     border-color: color-mix(in oklab, var(--realm-accent-brass) 75%, transparent);
     box-shadow:
       inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 16%, transparent),
@@ -742,7 +762,7 @@
         color-mix(in oklab, var(--realm-surface-iron) 64%, transparent),
         color-mix(in oklab, var(--realm-bg-void) 72%, transparent)
       );
-    border-radius: 10px;
+    border-radius: 8px;
   }
 
   .hero-summoning-panel {
@@ -996,6 +1016,18 @@
 
   .realm-games-card {
     border-color: color-mix(in oklab, var(--realm-border-etched) 74%, transparent);
+    min-height: 100%;
+  }
+
+  .realm-games-card-media {
+    flex: 0 0 auto;
+  }
+
+  .realm-games-card-media img {
+    height: 100%;
+    min-height: 100%;
+    object-fit: cover;
+    object-position: center;
   }
 
   .realm-games-card:hover,
@@ -1080,6 +1112,45 @@
     box-shadow:
       inset 0 1px 0 color-mix(in oklab, var(--realm-accent-brass) 15%, transparent),
       0 16px 28px color-mix(in oklab, black 38%, transparent);
+  }
+
+  .realm-games-detail-dashboard {
+    display: block;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    text-decoration: none;
+  }
+
+  .realm-games-detail-dashboard-copy {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 0.15rem;
+    min-height: 34%;
+    padding: 1rem;
+    background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.86) 42%, rgba(0, 0, 0, 0.94));
+    color: var(--realm-title);
+    font-family: var(--realm-font-title, "IM Fell English SC", serif);
+    font-size: clamp(1rem, 1.8vw, 1.45rem);
+    line-height: 1.05;
+    text-align: center;
+    text-transform: uppercase;
+  }
+
+  .realm-games-detail-dashboard-copy span:last-child {
+    color: var(--foreground);
+    font-size: clamp(0.86rem, 1.35vw, 1.05rem);
+  }
+
+  .realm-games-detail-dashboard:focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--realm-accent-brass) 82%, white 10%);
+    outline-offset: 3px;
   }
 
   .realm-games-detail-links {

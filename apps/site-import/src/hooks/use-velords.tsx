@@ -53,6 +53,26 @@ const toBigInt = (value: unknown): bigint => {
   return 0n;
 };
 
+const useWeeklyRewardPoolSnapshot = (week: number, enabled: boolean) => {
+  const { data: tokens, error: tokensError } = useReadContract({
+    abi: REWARD_POOL_ABI,
+    functionName: "get_tokens_per_week",
+    address: CONTRACTS.STARKNET.REWARD_POOL,
+    args: [week],
+    enabled,
+  });
+
+  const { data: veSupply, error: veSupplyError } = useReadContract({
+    abi: REWARD_POOL_ABI,
+    functionName: "get_ve_supply",
+    address: CONTRACTS.STARKNET.REWARD_POOL,
+    args: [week],
+    enabled,
+  });
+
+  return { week, tokens, tokensError, veSupply, veSupplyError };
+};
+
 export const useVelords = () => {
   const { chain } = useNetwork();
   const { address: userAddress } = useAccount();
@@ -65,6 +85,33 @@ export const useVelords = () => {
   // Ensure we don't query before protocol start
   const protocolStartWeek = floorToWeek(TIME_CONSTANTS.PROTOCOL_START_TIME);
   const safeLastWeek = Math.max(lastWeek, protocolStartWeek);
+  const rollingWeekStarts = [1, 2, 3, 4].map((weekOffset) =>
+    Math.max(currentWeek - TIME_CONSTANTS.WEEK * weekOffset, protocolStartWeek),
+  );
+  const [rollingWeekOne, rollingWeekTwo, rollingWeekThree, rollingWeekFour] =
+    rollingWeekStarts;
+  const rollingWeekOneSnapshot = useWeeklyRewardPoolSnapshot(
+    rollingWeekOne,
+    !!chain,
+  );
+  const rollingWeekTwoSnapshot = useWeeklyRewardPoolSnapshot(
+    rollingWeekTwo,
+    !!chain,
+  );
+  const rollingWeekThreeSnapshot = useWeeklyRewardPoolSnapshot(
+    rollingWeekThree,
+    !!chain,
+  );
+  const rollingWeekFourSnapshot = useWeeklyRewardPoolSnapshot(
+    rollingWeekFour,
+    !!chain,
+  );
+  const rollingRewardSnapshots = [
+    rollingWeekOneSnapshot,
+    rollingWeekTwoSnapshot,
+    rollingWeekThreeSnapshot,
+    rollingWeekFourSnapshot,
+  ];
 
   console.log("[useVelords] Hook initialized:", {
     chain: chain?.name,
@@ -75,6 +122,7 @@ export const useVelords = () => {
     safeLastWeek,
     protocolStartTime: TIME_CONSTANTS.PROTOCOL_START_TIME,
     protocolStartWeek,
+    rollingWeekStarts,
     contracts: {
       VELORDS: CONTRACTS.STARKNET.VELORDS,
       REWARD_POOL: CONTRACTS.STARKNET.REWARD_POOL,
@@ -268,73 +316,63 @@ export const useVelords = () => {
     formatted: parsedUserLocked ?? "N/A",
   });
 
-  // Calculate APY based on weekly rewards
-  const calculateAPY = useQuery({
+  const rollingSnapshotDataReady = rollingRewardSnapshots.every(
+    (snapshot) => snapshot.tokens !== undefined && snapshot.veSupply !== undefined,
+  );
+
+  // Calculate APY and fees from the last four completed weekly epochs.
+  const rollingFourWeekAverages = useQuery({
     queryKey: [
-      "velords-apy",
-      tokensThisWeek?.toString(),
-      tokensLastWeek?.toString(),
-      veSupplyThisWeek?.toString(),
-      veSupplyLastWeek?.toString(),
+      "velords-rolling-4w-averages",
+      ...rollingRewardSnapshots.flatMap((snapshot) => [
+        snapshot.week,
+        snapshot.tokens?.toString() ?? "pending",
+        snapshot.veSupply?.toString() ?? "pending",
+      ]),
     ],
     queryFn: () => {
-      console.log("[useVelords] Calculating APY with:", {
-        tokensThisWeek,
-        tokensLastWeek,
-        veSupplyThisWeek,
-        veSupplyLastWeek,
-      });
+      const snapshots = rollingRewardSnapshots.filter(
+        (snapshot) => snapshot.tokens !== undefined && snapshot.veSupply !== undefined,
+      );
 
-      if (
-        tokensThisWeek === undefined ||
-        tokensLastWeek === undefined ||
-        veSupplyThisWeek === undefined ||
-        veSupplyLastWeek === undefined
-      ) {
-        console.log("[useVelords] APY calculation skipped - missing data");
+      if (snapshots.length === 0) {
         return null;
       }
 
-      // Use average of this week and last week for more stable APY
-      const avgTokensPerWeek =
-        (toBigInt(tokensThisWeek) + toBigInt(tokensLastWeek)) / 2n;
-      const avgVeSupply =
-        (toBigInt(veSupplyThisWeek) + toBigInt(veSupplyLastWeek)) / 2n;
+      const totalTokens = snapshots.reduce(
+        (sum, snapshot) => sum + toBigInt(snapshot.tokens),
+        0n,
+      );
+      const totalVeSupply = snapshots.reduce(
+        (sum, snapshot) => sum + toBigInt(snapshot.veSupply),
+        0n,
+      );
+      const observedWeeks = snapshots.length;
+      const averageWeeklyRewards = formatTokenAmount(totalTokens) / observedWeeks;
+      const averageVeSupply = formatTokenAmount(totalVeSupply) / observedWeeks;
+      const averageAPY =
+        averageVeSupply > 0
+          ? (averageWeeklyRewards / averageVeSupply) *
+            APY_CONSTANTS.BLOCKS_PER_YEAR *
+            100
+          : 0;
 
-      console.log("[useVelords] APY calculation intermediates:", {
-        avgTokensPerWeek: avgTokensPerWeek.toString(),
-        avgVeSupply: avgVeSupply.toString(),
+      console.log("[useVelords] Rolling 4w averages calculated:", {
+        weeks: snapshots.map((snapshot) => snapshot.week),
+        averageWeeklyRewards,
+        averageVeSupply,
+        averageAPY,
       });
 
-      if (avgVeSupply === 0n) {
-        console.log("[useVelords] APY calculation failed - zero supply");
-        return 0;
-      }
-
-      // Calculate weekly yield
-      const weeklyYield =
-        Number((avgTokensPerWeek * 10000n) / avgVeSupply) / 10000;
-
-      // Annualize (52 weeks)
-      const annualYield = weeklyYield * APY_CONSTANTS.BLOCKS_PER_YEAR;
-
-      // Convert to percentage
-      const apy = annualYield * 100;
-
-      console.log("[useVelords] APY calculated:", {
-        weeklyYield,
-        annualYield,
-        apy,
-      });
-
-      return apy;
+      return {
+        averageAPY,
+        averageWeeklyRewards,
+        observedWeeks,
+        weeks: snapshots.map((snapshot) => snapshot.week),
+      };
     },
-    enabled:
-      tokensThisWeek !== undefined &&
-      tokensLastWeek !== undefined &&
-      veSupplyThisWeek !== undefined &&
-      veSupplyLastWeek !== undefined,
-    staleTime: 60000, // Cache for 1 minute
+    enabled: rollingSnapshotDataReady,
+    staleTime: 60000,
   });
 
   // Calculate user's expected weekly rewards
@@ -415,7 +453,10 @@ export const useVelords = () => {
     staleTime: 300000, // Cache for 5 minutes when enabled
   });
 
-  console.log("[useVelords] APY calculation result:", calculateAPY.data);
+  console.log(
+    "[useVelords] Rolling 4w APY calculation result:",
+    rollingFourWeekAverages.data,
+  );
 
   const result = {
     // Supply data
@@ -443,8 +484,11 @@ export const useVelords = () => {
         : undefined,
 
     // APY data
-    currentAPY: calculateAPY.data,
-    isAPYLoading: calculateAPY.isLoading,
+    currentAPY: rollingFourWeekAverages.data?.averageAPY,
+    rollingAverageAPY: rollingFourWeekAverages.data?.averageAPY,
+    isAPYLoading: rollingFourWeekAverages.isLoading,
+    averageWeeklyRewards: rollingFourWeekAverages.data?.averageWeeklyRewards,
+    rollingAverageWeeks: rollingFourWeekAverages.data?.weeks,
 
     // TVL data
     tvl: tvl.data,

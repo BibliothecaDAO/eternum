@@ -1,105 +1,9 @@
 import { socials } from "@/data/socials";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
-import { ComponentType, useEffect, useRef, useState } from "react";
-import {
-  lordsInfoQueryOptions,
-  treasuryBalanceQueryOptions,
-} from "@/lib/query-options";
-import {
-  Coins,
-  Users,
-  Gamepad2,
-  TrendingUp,
-  ExternalLink,
-  Github,
-  ShoppingBag,
-} from "lucide-react";
-import { games } from "@/data/games";
+import { ExternalLink, Github } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
-function DeferredApyValue() {
-  const wrapperRef = useRef<HTMLSpanElement | null>(null);
-  const [shouldLoad, setShouldLoad] = useState(false);
-  const [ApyValue, setApyValue] = useState<ComponentType | null>(null);
-
-  useEffect(() => {
-    if (shouldLoad) return;
-
-    const node = wrapperRef.current;
-    if (!node) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          setShouldLoad(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: "300px 0px" }
-    );
-
-    observer.observe(node);
-
-    return () => observer.disconnect();
-  }, [shouldLoad]);
-
-  useEffect(() => {
-    if (!shouldLoad || ApyValue) return;
-
-    import("./FooterApyValue").then((module) => {
-      setApyValue(() => module.FooterApyValue);
-    });
-  }, [ApyValue, shouldLoad]);
-
-  return <span ref={wrapperRef}>{ApyValue ? <ApyValue /> : "12.5%"}</span>;
-}
-
 export function FooterSection() {
-  const liveGameCount = games.filter((game) => game.isLive).length;
-  const totalGameCount = games.length;
-
-  const { data: lordsInfo } = useQuery(lordsInfoQueryOptions());
-  const { data: treasuryBalance } = useQuery(treasuryBalanceQueryOptions());
-
-  const totalTreasuryValue = treasuryBalance
-    ? treasuryBalance.LORDS.usdValue +
-      treasuryBalance.ETH.usdValue +
-      treasuryBalance.WETH.usdValue +
-      treasuryBalance.USDC.usdValue
-    : 0;
-
-  const keyMetrics = [
-    {
-      icon: Coins,
-      label: "Market Cap",
-      sublabel: "LORDS",
-      value: lordsInfo?.price?.marketCapUsd
-        ? `$${(parseFloat(lordsInfo.price.marketCapUsd) / 1000000).toFixed(1)}M`
-        : "...",
-    },
-    {
-      icon: TrendingUp,
-      label: "veLORDS APY",
-      sublabel: "Staking",
-      value: <DeferredApyValue />,
-    },
-    {
-      icon: Users,
-      label: "DAO Treasury",
-      sublabel: "Multi-asset",
-      value: totalTreasuryValue
-        ? `$${(totalTreasuryValue / 1000000).toFixed(1)}M`
-        : "...",
-    },
-    {
-      icon: Gamepad2,
-      label: "Game Coverage",
-      sublabel: "Live / Total",
-      value: `${liveGameCount}/${totalGameCount}`,
-    },
-  ];
-
   const quickLinks = [
     {
       title: "Developers",
@@ -135,11 +39,6 @@ export function FooterSection() {
       title: "Ecosystem",
       links: [
         {
-          label: "Realms Shop",
-          href: "https://shop.realms.world",
-          icon: ShoppingBag,
-        },
-        {
           label: "Frontinus House",
           href: "https://snapshot.box/#/sn:0x07bd3419669f9f0cc8f19e9e2457089cdd4804a4c41a5729ee9c7fd02ab8ab62",
           icon: ExternalLink,
@@ -154,45 +53,6 @@ export function FooterSection() {
       <div className="absolute top-0 left-0 right-0 h-16 bg-gradient-to-b from-[var(--realm-accent-brass)]/[0.03] to-transparent pointer-events-none" />
 
       <div className="container relative mx-auto px-4">
-        {/* Key Metrics */}
-        <motion.div
-          className="realm-panel p-2 sm:p-3"
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          viewport={{ once: true }}
-        >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
-            {keyMetrics.map((metric, index) => (
-              <motion.div
-                key={metric.label}
-                className="relative group text-center py-5 px-3 rounded-lg border border-[var(--realm-border-etched)]/50 bg-gradient-to-b from-[var(--realm-bg-smoke)]/30 to-transparent transition-all duration-300 hover:border-[var(--realm-accent-brass)]/50 hover:bg-[var(--realm-bg-smoke)]/40"
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.08 }}
-                viewport={{ once: true }}
-              >
-                <metric.icon className="w-5 h-5 mx-auto mb-2 text-[var(--realm-accent-brass)]/70 group-hover:text-[var(--realm-accent-brass)] transition-colors" />
-                <div className="text-xl sm:text-2xl font-bold font-serif text-foreground tracking-tight">
-                  {metric.value}
-                </div>
-                <div
-                  className="text-[10px] uppercase tracking-[0.18em] mt-1 text-[var(--realm-accent-brass)]/60"
-                  style={{ fontFamily: "var(--font-ui)" }}
-                >
-                  {metric.label}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Divider with glow */}
-        <div className="relative my-10">
-          <div className="h-px bg-gradient-to-r from-transparent via-[var(--realm-border-etched)]/60 to-transparent" />
-          <div className="absolute left-1/2 -translate-x-1/2 -top-1 w-24 h-2 bg-[var(--realm-accent-brass)]/10 blur-md rounded-full" />
-        </div>
-
         {/* Main Footer Content */}
         <div className="pb-12">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 lg:gap-8">

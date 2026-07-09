@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { Game } from "@/data/games";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  Users,
   DollarSign,
   Globe,
   Github,
@@ -177,7 +176,7 @@ export function GameDetails({ game }: { game: Game }) {
 
   return (
     <>
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl rounded-2xl realm-games-detail-shell">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-7xl rounded-lg realm-games-detail-shell">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -188,17 +187,17 @@ export function GameDetails({ game }: { game: Game }) {
             variant="rune"
             size="sm"
             onClick={() => navigate({ to: "/games" })}
-            className="mb-1"
+            className="mb-5 sm:mb-6"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Games
           </Button>
 
-          <section className="realm-panel realm-grid-scan realm-games-detail-hero rounded-2xl p-5 sm:p-6 lg:p-7">
+          <section className="realm-panel realm-grid-scan realm-games-detail-hero rounded-lg p-5 sm:p-6 lg:p-7">
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
               <div className="space-y-5">
                 <div>
-                  <p className="realm-banner">Campaign Brief</p>
+                  <p className="realm-banner">Game Summary</p>
                   <motion.h1
                     className="realm-title mt-3 text-3xl sm:text-4xl lg:text-5xl"
                     initial={{ opacity: 0, x: -18 }}
@@ -226,7 +225,7 @@ export function GameDetails({ game }: { game: Game }) {
                 </p>
 
                 <div className="flex flex-wrap gap-3">
-                  {game.links?.homepage ? (
+                  {game.isLive && game.links?.homepage ? (
                     <Button
                       size="lg"
                       variant="rune"
@@ -273,7 +272,7 @@ export function GameDetails({ game }: { game: Game }) {
                 initial={{ opacity: 0, scale: 0.96 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.15 }}
-                className="realm-games-detail-media relative aspect-video overflow-hidden rounded-xl border border-primary/25"
+                className="realm-games-detail-media relative aspect-video overflow-hidden rounded-lg border border-primary/25"
               >
                 {game.video ? (
                   <iframe
@@ -295,12 +294,12 @@ export function GameDetails({ game }: { game: Game }) {
           </section>
 
           <motion.section
-            className="realm-games-detail-stats grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4"
+            className="realm-games-detail-stats grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <article className="realm-panel realm-games-detail-stat rounded-xl p-4">
+            <article className="realm-panel realm-games-detail-stat rounded-lg p-4">
               <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
                 <Building className="h-4 w-4" />
                 Studio
@@ -308,20 +307,9 @@ export function GameDetails({ game }: { game: Game }) {
               <p className="mt-3 text-lg font-semibold text-foreground">{game.studio}</p>
             </article>
 
-            {game.players ? (
-              <article className="realm-panel realm-games-detail-stat rounded-xl p-4">
-                <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
-                  <Users className="h-4 w-4" />
-                  Active Players
-                </p>
-                <p className="mt-3 text-lg font-semibold text-foreground tabular-nums">
-                  {game.players.toLocaleString()}
-                </p>
-              </article>
-            ) : null}
 
             {game.tvl ? (
-              <article className="realm-panel realm-games-detail-stat rounded-xl p-4">
+              <article className="realm-panel realm-games-detail-stat rounded-lg p-4">
                 <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
                   <DollarSign className="h-4 w-4" />
                   Total Value Locked
@@ -332,7 +320,7 @@ export function GameDetails({ game }: { game: Game }) {
               </article>
             ) : null}
 
-            <article className="realm-panel realm-games-detail-stat rounded-xl p-4">
+            <article className="realm-panel realm-games-detail-stat rounded-lg p-4">
               <p className="inline-flex items-center gap-2 text-sm text-foreground/60">
                 <Gamepad2 className="h-4 w-4" />
                 Game Status
@@ -349,56 +337,100 @@ export function GameDetails({ game }: { game: Game }) {
             </article>
           </motion.section>
 
-          {game.backgroundImages && game.backgroundImages.length > 0 ? (
+          {game.dashboards?.length || game.backgroundImages?.length ? (
             <motion.section
-              className="realm-panel realm-games-detail-gallery rounded-2xl p-5 sm:p-6"
+              className="realm-panel realm-games-detail-gallery rounded-lg p-5 sm:p-6"
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.25 }}
             >
-              <header className="mb-4 flex items-end justify-between gap-4">
-                <div>
-                  <p className="realm-banner">Recon Archive</p>
-                  <h2 className="realm-title mt-3 text-2xl sm:text-3xl">Screenshots</h2>
-                </div>
-                <span className="realm-sigil">
-                  {game.backgroundImages.length} captures
-                </span>
-              </header>
+              {game.dashboards?.length ? (
+                <div className={game.backgroundImages?.length ? "mb-6 sm:mb-7" : ""}>
+                  <header className="mb-4 flex items-end justify-between gap-4">
+                    <div>
+                      <p className="realm-banner">Archive</p>
+                      <h2 className="realm-title mt-3 text-2xl sm:text-3xl">Dashboards</h2>
+                    </div>
+                    <span className="realm-sigil">
+                      {game.dashboards.length} dashboard
+                    </span>
+                  </header>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {game.backgroundImages.map((img, index) => (
-                  <motion.button
-                    key={img}
-                    type="button"
-                    className="realm-games-detail-shot group relative aspect-video cursor-pointer overflow-hidden rounded-lg border border-primary/25 bg-black/35 text-left"
-                    initial={{ opacity: 0, scale: 0.96 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.3 + index * 0.04 }}
-                    whileHover={{ y: -2 }}
-                    onClick={() => setSelectedScreenshot(index)}
-                  >
-                    <img
-                      src={img}
-                      alt={`${game.title} Screenshot ${index + 1}`}
-                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors" />
-                  </motion.button>
-                ))}
-              </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {game.dashboards.map((dashboard, index) => (
+                      <motion.a
+                        key={dashboard.href}
+                        href={dashboard.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`${dashboard.title} ${dashboard.subtitle}`}
+                        className="realm-games-detail-shot realm-games-detail-dashboard group relative aspect-video cursor-pointer overflow-hidden rounded-lg border border-primary/25 bg-black/35 text-left"
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.3 + index * 0.04 }}
+                        whileHover={{ y: -2 }}
+                        style={{ backgroundImage: `url(${dashboard.image})` }}
+                      >
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/15 transition-colors" />
+                        <div className="realm-games-detail-dashboard-copy">
+                          <span>{dashboard.title}</span>
+                          <span>{dashboard.subtitle}</span>
+                        </div>
+                      </motion.a>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {game.backgroundImages?.length ? (
+                <div>
+                  <header className="mb-4 flex items-end justify-between gap-4">
+                    <div>
+                      {!game.dashboards?.length ? <p className="realm-banner">Archive</p> : null}
+                      <h2 className={game.dashboards?.length ? "realm-title text-2xl sm:text-3xl" : "realm-title mt-3 text-2xl sm:text-3xl"}>
+                        Screenshots
+                      </h2>
+                    </div>
+                    <span className="realm-sigil">
+                      {game.backgroundImages.length} captures
+                    </span>
+                  </header>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {game.backgroundImages.map((img, index) => (
+                      <motion.button
+                        key={img}
+                        type="button"
+                        className="realm-games-detail-shot group relative aspect-video cursor-pointer overflow-hidden rounded-lg border border-primary/25 bg-black/35 text-left"
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: 0.34 + index * 0.04 }}
+                        whileHover={{ y: -2 }}
+                        onClick={() => setSelectedScreenshot(index)}
+                      >
+                        <img
+                          src={img}
+                          alt={`${game.title} Screenshot ${index + 1}`}
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors" />
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </motion.section>
           ) : null}
 
           {game.links && Object.keys(game.links).length > 0 ? (
             <motion.section
-              className="realm-panel realm-games-detail-links rounded-2xl p-5 sm:p-6"
+              className="realm-panel realm-games-detail-links rounded-lg p-5 sm:p-6"
               initial={{ opacity: 0, y: 18 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
               <header className="mb-4">
-                <p className="realm-banner">Deploy Channels</p>
+                <p className="realm-banner">Socials and More</p>
                 <h2 className="realm-title mt-3 text-2xl sm:text-3xl">Connect</h2>
               </header>
 

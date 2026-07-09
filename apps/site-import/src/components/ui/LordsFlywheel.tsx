@@ -25,7 +25,7 @@ const STEPS = [
   {
     icon: Coins,
     label: "Fees",
-    detail: "Weekly game revenue",
+    detail: "4w avg weekly revenue",
     metricKey: "weeklyRewards" as keyof FlywheelMetrics | null,
   },
   {
@@ -37,7 +37,7 @@ const STEPS = [
   {
     icon: RefreshCw,
     label: "Earn",
-    detail: "Staking yield",
+    detail: "4w avg staking yield",
     metricKey: "currentAPY" as keyof FlywheelMetrics | null,
   },
 ];
@@ -50,7 +50,7 @@ const CIRC = 2 * Math.PI * R;
 const NODE_SCREEN_DEGS = [270, 0, 90, 180];
 const NODE_ORBIT_DEGS = [0, 90, 180, 270];
 
-const NUM_PARTICLES = 3;
+const NUM_PARTICLES = 1;
 const ORBIT_SECS = 8;
 
 function screenDegToXY(deg: number) {
@@ -260,7 +260,7 @@ export function LordsFlywheel({ metrics }: FlywheelProps) {
   return (
     <div
       ref={containerRef}
-      className="realm-panel realm-holo-card rounded-2xl border border-primary/20 bg-black/30 backdrop-blur-sm p-6 sm:p-10"
+      className="realm-panel realm-holo-card rounded-lg border border-primary/20 bg-black/30 backdrop-blur-sm p-6 sm:p-10"
     >
       {/* Header */}
       <div className="text-center mb-6 sm:mb-8">
@@ -398,10 +398,10 @@ export function LordsFlywheel({ metrics }: FlywheelProps) {
                 style={{
                   left: `${leftPct}%`,
                   top: `${topPct}%`,
-                  width: "clamp(120px, 28%, 160px)",
+                  width: "160px",
                 }}
               >
-                <div className="fw-node-card flex flex-col items-center rounded-xl border border-primary/20 bg-black/70 backdrop-blur-md px-3 py-3">
+                <div className="fw-node-card flex h-[136px] w-[160px] flex-col items-center justify-center rounded-lg border border-primary/20 bg-black/70 px-3 py-3 backdrop-blur-md">
                   <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 border border-primary/25 mb-2">
                     <step.icon className="h-5 w-5 text-primary" />
                   </div>
@@ -430,9 +430,9 @@ export function LordsFlywheel({ metrics }: FlywheelProps) {
             const metricValue =
               step.metricKey && metrics?.[step.metricKey];
             return (
-              <div key={step.label} className="flex items-start gap-4">
+              <div key={step.label} className="flex min-h-[120px] items-start gap-4 rounded-lg border border-primary/15 bg-black/35 p-4">
                 <div className="relative flex flex-col items-center">
-                  <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/10 border border-primary/25 shrink-0">
+                  <div className="flex items-center justify-center h-11 w-11 rounded-lg bg-primary/10 border border-primary/25 shrink-0">
                     <step.icon className="h-5 w-5 text-primary" />
                   </div>
                   {index < STEPS.length - 1 && (

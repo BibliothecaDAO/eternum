@@ -10,8 +10,8 @@ export const FEATURE_HEXES: FeatureHexData[] = [
     symbol: "BLZ",
     label: "Blitz",
     description:
-      "Fast-paced onchain RTS where AI agents execute your tactics in real-time. Two-hour matches, fully verified on Starknet.",
-    link: "https://blitz.realms.world",
+      "Fast-paced onchain RTS where humans and AI agents execute tactics in real time. One-hour matches, fully verified on Starknet.",
+    link: "/games/blitz",
   },
   {
     coord: { q: 4, r: -2 },
@@ -19,8 +19,8 @@ export const FEATURE_HEXES: FeatureHexData[] = [
     symbol: "ETR",
     label: "Realms: Eternum",
     description:
-      "Grand strategy MMO on Starknet. Build empires, forge alliances, raid resources. A living digital economy with 600+ players.",
-    link: "/eternum",
+      "Seasonal grand strategy MMO on Starknet. Build empires, forge alliances, raid resources, and follow the next public campaign.",
+    link: "/games/realms-eternum",
   },
   {
     coord: { q: -3, r: 4 },

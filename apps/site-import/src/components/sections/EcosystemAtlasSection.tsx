@@ -7,30 +7,36 @@ import {
   Bot,
   Coins,
   ExternalLink,
+  Gamepad2,
   Shield,
   Swords,
-  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const liveGames = games.filter((game) => game.isLive);
-const developmentGames = games.filter((game) => !game.isLive);
-const sortedGames = [...liveGames, ...developmentGames];
+const homepageGameOrder = [
+  "blitz",
+  "loot-survivor",
+  "blob-arena",
+  "dark-shuffle",
+  "zkube",
+  "realms-eternum",
+];
 
-const liveCount = liveGames.length;
-const studioCount = new Set(games.map((game) => game.studio)).size;
-const totalPlayers = games.reduce((sum, g) => sum + (g.players || 0), 0);
+const gamesBySlug = new Map(games.map((game) => [game.slug, game]));
+const homepageGames = homepageGameOrder
+  .map((slug) => gamesBySlug.get(slug))
+  .filter((game): game is (typeof games)[number] => Boolean(game));
 
 const blitzFeatures = [
   {
     icon: Swords,
     label: "Real-Time Strategy",
-    detail: "Two-hour matches with live tactical decisions",
+    detail: "One-hour matches with live tactical decisions",
   },
   {
     icon: Bot,
-    label: "Agent-Driven",
-    detail: "AI agents execute your tactics onchain",
+    label: "Agent-Permissive",
+    detail: "Agents can scrape game data and transact onchain as human players can",
   },
   {
     icon: Shield,
@@ -40,38 +46,35 @@ const blitzFeatures = [
   {
     icon: Coins,
     label: "$LORDS Rewards",
-    detail: "Earn real tokens as you compete",
+    detail: "Top-ranking players win a prize-pool share",
   },
 ];
 
 export function EcosystemAtlasSection() {
   return (
     <section className="realm-section relative">
-      <div className="absolute inset-0 -z-10">
-        <div className="absolute left-[15%] top-0 h-32 w-32 rounded-full bg-primary/20 blur-3xl" />
-      </div>
-
       <div className="container mx-auto px-4">
         {/* Section header */}
         <motion.div
-          className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5 mb-8"
+          className="mx-auto mb-8 max-w-3xl text-center"
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="max-w-2xl">
-            <p className="realm-banner mb-3">Games</p>
-            <h2 className="realm-title text-3xl sm:text-4xl md:text-5xl mb-4">
-              Agent-Native Worlds
-            </h2>
-            <p className="realm-subtitle text-base sm:text-lg">
-              Onchain games built for AI agents. Compete, earn $LORDS, and
-              verify every move.
-            </p>
-          </div>
+          <p className="realm-banner mx-auto mb-3 flex w-fit">
+            <Gamepad2 className="h-3.5 w-3.5" />
+            Games
+          </p>
+          <h2 className="realm-title mb-4 text-2xl sm:text-3xl md:text-4xl">
+            REALMS ECOSYSTEM GAMES
+          </h2>
+          <p className="realm-subtitle text-base sm:text-lg">
+            Onchain games built for players, builders, and AI agents.
+            Compete through verifiable rules and transparent economies.
+          </p>
           <Link
             to="/games"
-            className="inline-flex items-center justify-center rounded-xl border border-primary/30 bg-black/30 px-4 py-3 text-sm uppercase tracking-[0.14em] text-primary/90 hover:border-primary/55 transition-colors realm-panel shrink-0"
+            className="realm-panel mt-5 inline-flex items-center justify-center rounded-lg border border-primary/30 bg-black/30 px-4 py-3 text-sm uppercase tracking-[0.14em] text-primary/90 transition-colors hover:border-primary/55"
           >
             All Games
             <ArrowRight className="ml-2 h-4 w-4" />
@@ -80,23 +83,18 @@ export function EcosystemAtlasSection() {
 
         {/* ── Blitz Flagship Card ── */}
         <motion.div
-          className="group relative overflow-hidden rounded-2xl border border-primary/30 bg-black/40 mb-12"
+          className="group relative overflow-hidden rounded-lg border border-primary/30 bg-black/40 mb-12"
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, duration: 0.7 }}
         >
-          {/* Video background */}
-          <video
-            className="absolute inset-0 h-full w-full object-cover opacity-50 mix-blend-screen saturate-150 scale-[1.02] transition-transform duration-700 group-hover:scale-[1.05]"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="metadata"
-            poster="/og.jpg"
-          >
-            <source src="/videos/blitz-stub.mp4" type="video/mp4" />
-          </video>
+          {/* Background art */}
+          <img
+            src="/brand/blitz-card.png"
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover opacity-58 saturate-[0.95] contrast-110 scale-[1.02] transition-transform duration-700 group-hover:scale-[1.05]"
+          />
 
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-black/20" />
@@ -116,12 +114,12 @@ export function EcosystemAtlasSection() {
                   Flagship Agent Game
                 </p>
                 <h3 className="realm-title text-3xl sm:text-4xl md:text-5xl leading-tight mb-3">
-                  Blitz
+                  Realms: Blitz
                 </h3>
                 <p className="text-base sm:text-lg text-foreground/85 max-w-xl mb-6 leading-relaxed">
-                  A fast-paced onchain RTS where AI agents execute your tactics
-                  in real-time. Two-hour matches, fully verified on Starknet,
-                  with real $LORDS rewards for every win.
+                  A fast-paced onchain RTS where humans and AI agents execute
+                  tactics in real time. One-hour matches are fully verified on
+                  Starknet, with top-ranking players winning a share of the $LORDS prize pool.
                 </p>
 
                 <div className="flex flex-wrap gap-3 mb-6">
@@ -137,7 +135,7 @@ export function EcosystemAtlasSection() {
                     </a>
                   </Button>
                   <Button size="lg" variant="oath" asChild>
-                    <Link to="/blitz">Learn More</Link>
+                    <Link to="/games/$slug" params={{ slug: "blitz" }}>Learn More</Link>
                   </Button>
                 </div>
               </motion.div>
@@ -148,7 +146,7 @@ export function EcosystemAtlasSection() {
               {blitzFeatures.map((feature, index) => (
                 <motion.div
                   key={feature.label}
-                  className="flex items-center gap-3 rounded-xl border border-primary/20 bg-black/50 backdrop-blur-sm px-4 py-3"
+                  className="flex items-center gap-3 rounded-lg border border-primary/20 bg-black/50 backdrop-blur-sm px-4 py-3"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.5 + index * 0.1, duration: 0.4 }}
@@ -183,27 +181,22 @@ export function EcosystemAtlasSection() {
           </div>
         </motion.div>
 
-        {/* ── Social proof + games grid header ── */}
+        {/* ── Games grid header ── */}
         <motion.div
-          className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6"
+          className="mb-6 flex justify-center"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.5 }}
         >
-          <p className="flex items-center gap-2 text-sm text-foreground/80">
-            <Users className="h-3.5 w-3.5" />
-            {totalPlayers.toLocaleString()}+ players across {liveCount} live
-            worlds built by {studioCount} studios
-          </p>
-          <p className="realm-banner">Ecosystem</p>
+          <p className="realm-banner mx-auto flex w-fit text-center">ECOSYSTEM GAMES</p>
         </motion.div>
 
         {/* ── Games grid ── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {sortedGames.map((game, index) => (
+          {homepageGames.map((game, index) => (
             <motion.article
               key={game.slug}
-              className={`group relative overflow-hidden rounded-2xl border border-primary/20 bg-black/25 backdrop-blur-sm aspect-[16/10] realm-panel realm-holo-card ${!game.isLive ? "opacity-60" : ""}`}
+              className={`group relative overflow-hidden rounded-lg border border-primary/20 bg-black/25 backdrop-blur-sm aspect-[16/10] realm-panel realm-holo-card ${!game.isLive ? "opacity-60" : ""}`}
               initial={{ opacity: 0, y: 26 }}
               animate={{ opacity: game.isLive ? 1 : 0.6, y: 0 }}
               transition={{ delay: 0.35 + 0.06 * index, duration: 0.45 }}
@@ -229,15 +222,6 @@ export function EcosystemAtlasSection() {
                   )}
                 </div>
 
-                {/* Player count badge */}
-                {game.players && (
-                  <div className="absolute top-3 left-3">
-                    <span className="realm-sigil">
-                      <Users className="h-2.5 w-2.5 mr-1 inline" />
-                      {game.players.toLocaleString()}
-                    </span>
-                  </div>
-                )}
 
                 <h3 className="text-xl font-semibold mb-1.5">{game.title}</h3>
                 <p className="text-xs text-foreground/80 mb-2.5 line-clamp-2">
@@ -245,16 +229,21 @@ export function EcosystemAtlasSection() {
                 </p>
 
                 {/* Genre tags */}
-                <div className="mb-3 flex flex-wrap gap-1.5">
-                  {game.genre?.slice(0, 3).map((genre) => (
-                    <span
-                      key={`${game.slug}-${genre}`}
-                      className="realm-sigil text-[9px]"
-                    >
-                      {genre}
-                    </span>
-                  ))}
-                  <span className="realm-sigil text-[9px] text-foreground/80">
+                <div className="mb-3 flex flex-nowrap items-start justify-between gap-2">
+                  <div className="flex min-w-0 flex-wrap gap-1.5">
+                    {game.genre
+                      ?.filter((genre) => genre !== game.studio)
+                      .slice(0, 3)
+                      .map((genre) => (
+                        <span
+                          key={`${game.slug}-${genre}`}
+                          className="realm-sigil text-[9px]"
+                        >
+                          {genre}
+                        </span>
+                      ))}
+                  </div>
+                  <span className="realm-sigil realm-studio-tag ml-auto shrink-0 text-[9px]">
                     {game.studio}
                   </span>
                 </div>

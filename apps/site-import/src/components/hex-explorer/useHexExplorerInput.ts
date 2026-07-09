@@ -24,7 +24,7 @@ export function useHexExplorerInput(
     if (!isActive) return;
 
     function handleKeyDown(e: KeyboardEvent) {
-      let dir: HexDirection | null = null;
+      let dir: HexDirection;
 
       switch (e.key) {
         case "ArrowRight":

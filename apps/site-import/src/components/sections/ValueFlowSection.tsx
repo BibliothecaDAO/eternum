@@ -117,7 +117,7 @@ function VeLordsNode({
   data: { label: string; value?: number; tvl?: number; apy?: number };
 }) {
   return (
-    <div className="px-8 py-6 shadow-xl rounded-xl bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-2 border-primary relative">
+    <div className="px-8 py-6 shadow-xl rounded-lg bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-2 border-primary relative">
       <Handle
         type="target"
         position={Position.Left}
@@ -394,7 +394,7 @@ function ValueFlowSectionContent() {
       </div>
 
       <motion.div
-        className="realm-panel mb-10 rounded-2xl border border-primary/20 bg-black/30 backdrop-blur-sm p-5 sm:p-6"
+        className="realm-panel mb-10 rounded-lg border border-primary/20 bg-black/30 backdrop-blur-sm p-5 sm:p-6"
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35, duration: 0.5 }}
@@ -404,7 +404,7 @@ function ValueFlowSectionContent() {
         </h3>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {flowSnapshot.map((item) => (
-            <div key={item.label} className="card-relic rounded-xl border border-primary/15 p-4">
+            <div key={item.label} className="card-relic rounded-lg border border-primary/15 p-4">
               <p className="realm-sigil mb-2">
                 {item.label}
               </p>
@@ -416,7 +416,7 @@ function ValueFlowSectionContent() {
       </motion.div>
 
       <motion.div
-        className="realm-panel h-[420px] sm:h-[600px] bg-background/50 backdrop-blur-sm rounded-xl border border-border overflow-hidden shadow-lg"
+        className="realm-panel h-[420px] sm:h-[600px] bg-background/50 backdrop-blur-sm rounded-lg border border-border overflow-hidden shadow-lg"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 0.4, duration: 0.5 }}
@@ -486,7 +486,7 @@ function ValueFlowSectionContent() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <motion.div
-            className="bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-xl p-6 border border-green-500/20"
+            className="bg-gradient-to-br from-green-500/10 to-green-500/5 rounded-lg p-6 border border-green-500/20"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.0 }}
@@ -502,7 +502,7 @@ function ValueFlowSectionContent() {
           </motion.div>
 
           <motion.div
-            className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-xl p-6 border border-blue-500/20"
+            className="bg-gradient-to-br from-blue-500/10 to-blue-500/5 rounded-lg p-6 border border-blue-500/20"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.1 }}
@@ -518,7 +518,7 @@ function ValueFlowSectionContent() {
           </motion.div>
 
           <motion.div
-            className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-xl p-6 border border-purple-500/20"
+            className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 rounded-lg p-6 border border-purple-500/20"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2 }}

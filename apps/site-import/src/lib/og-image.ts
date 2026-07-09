@@ -49,7 +49,7 @@ export function generateMetaTags(
 ) {
   const {
     title,
-    description = "The future of gaming is onchain. Explore games powered by $LORDS token in the Realms ecosystem.",
+    description = "Explore onchain games powered by $LORDS in the Realms ecosystem.",
     url = BASE_URL,
     type = "website",
     siteName = "Realms World",
@@ -77,7 +77,7 @@ export function generateMetaTags(
     { name: "twitter:title", content: title },
     { name: "twitter:description", content: description },
     { name: "twitter:image", content: ogImage },
-    { name: "twitter:site", content: "@LordsRealms" },
-    { name: "twitter:creator", content: "@LordsRealms" },
+    { name: "twitter:site", content: "@LootRealms" },
+    { name: "twitter:creator", content: "@LootRealms" },
   ];
 }
