@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.blitz",
   "kind": "game",
-  "updatedAt": "2026-07-07T10:03:22.359Z",
+  "updatedAt": "2026-07-09T07:12:27.248Z",
   "entries": {
     "bltz-lilt-606": {
       "kind": "game",
@@ -542,6 +542,23 @@
       "recoverableFailedStepId": "create-world",
       "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-07-07T11:15:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
+    },
+    "bltz-kick-258": {
+      "kind": "game",
+      "environment": "mainnet.blitz",
+      "gameName": "bltz-kick-258",
+      "path": "runs/mainnet/blitz/bltz-kick-258.json",
+      "inputPath": "inputs/mainnet/blitz/bltz-kick-258/29000775272-1.json",
+      "status": "running",
+      "updatedAt": "2026-07-09T07:12:27.248Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-07-09T07:15:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
     }
