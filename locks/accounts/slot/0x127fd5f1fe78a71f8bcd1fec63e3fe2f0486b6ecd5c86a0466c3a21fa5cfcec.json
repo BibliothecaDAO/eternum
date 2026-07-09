@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-twist-154",
-    "launchRequestId": "28989628540-1",
+    "gameName": "bltz-rush-263",
+    "launchRequestId": "28993528142-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 28989628540,
+    "workflowRunId": 28993528142,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "a531b25d-0388-475e-8775-e12669db7f91"
+    "leaseId": "0a1891eb-4e93-4e3a-b4af-832275fe6b8a"
   },
-  "acquiredAt": "2026-07-09T02:25:17.242Z",
-  "heartbeatAt": "2026-07-09T02:25:21.581Z",
-  "expiresAt": "2026-07-09T02:25:21.581Z",
-  "releasedAt": "2026-07-09T02:25:21.581Z"
+  "acquiredAt": "2026-07-09T04:14:28.408Z",
+  "heartbeatAt": "2026-07-09T04:14:28.408Z",
+  "expiresAt": "2026-07-09T04:24:28.408Z"
 }
