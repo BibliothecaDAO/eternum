@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-focgers-002",
-    "launchRequestId": "28857438257-1",
+    "gameName": "bltz-twist-154",
+    "launchRequestId": "28989628540-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 28857438257,
+    "workflowRunId": 28989628540,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "601f6bde-dda2-440c-b469-1a85f547f73d"
+    "leaseId": "a531b25d-0388-475e-8775-e12669db7f91"
   },
-  "acquiredAt": "2026-07-07T09:54:38.347Z",
-  "heartbeatAt": "2026-07-07T09:54:46.886Z",
-  "expiresAt": "2026-07-07T09:54:46.886Z",
-  "releasedAt": "2026-07-07T09:54:46.886Z"
+  "acquiredAt": "2026-07-09T02:25:17.242Z",
+  "heartbeatAt": "2026-07-09T02:25:17.242Z",
+  "expiresAt": "2026-07-09T02:35:17.242Z"
 }
