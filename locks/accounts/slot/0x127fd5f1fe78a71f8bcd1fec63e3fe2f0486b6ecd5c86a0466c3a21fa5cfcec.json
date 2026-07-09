@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.blitz",
-    "gameName": "bltz-blip-471",
-    "launchRequestId": "29000190618-1",
+    "gameName": "bltz-rush-857",
+    "launchRequestId": "29001318574-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 29000190618,
+    "workflowRunId": 29001318574,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "71d82127-7a8c-4d30-b9c8-9ae81bf90a69"
+    "leaseId": "b67bc74c-69fd-4361-8ae5-7e332da63e61"
   },
-  "acquiredAt": "2026-07-09T07:00:59.886Z",
-  "heartbeatAt": "2026-07-09T07:01:04.137Z",
-  "expiresAt": "2026-07-09T07:01:04.137Z",
-  "releasedAt": "2026-07-09T07:01:04.137Z"
+  "acquiredAt": "2026-07-09T07:23:23.452Z",
+  "heartbeatAt": "2026-07-09T07:23:23.452Z",
+  "expiresAt": "2026-07-09T07:33:23.452Z"
 }
