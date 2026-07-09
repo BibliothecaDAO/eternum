@@ -206,15 +206,19 @@ export function TopBar() {
               <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center justify-center gap-5 lg:flex xl:gap-7">
                 <Link
                   to="/"
-                  className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
-                  activeProps={{ className: "text-primary" }}
+                  className={cn(
+                    "realm-nav-link text-xs uppercase tracking-[0.15em] hover:text-primary transition-colors",
+                    location.pathname === "/"
+                      ? "realm-nav-link-active text-primary"
+                      : "text-foreground/75",
+                  )}
                 >
                   Home
                 </Link>
                 <Link
                   to="/games"
                   className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
-                  activeProps={{ className: "text-primary" }}
+                  activeProps={{ className: "realm-nav-link-active text-primary" }}
                 >
                   Games
                 </Link>
@@ -237,7 +241,7 @@ export function TopBar() {
                 <Link
                   to="/scroll"
                   className="realm-nav-link text-xs uppercase tracking-[0.15em] text-foreground/75 hover:text-primary transition-colors"
-                  activeProps={{ className: "text-primary" }}
+                  activeProps={{ className: "realm-nav-link-active text-primary" }}
                 >
                   Scroll
                 </Link>
