@@ -5,15 +5,14 @@
   "owner": {
     "environment": "mainnet.blitz",
     "gameName": "bltz-kick-258",
-    "launchRequestId": "29000775272-1",
+    "launchRequestId": "29000929218-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 29000775272,
+    "workflowRunId": 29000929218,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "d5c960a4-598c-42d8-b018-635b850f80a6"
+    "leaseId": "03892fc7-72e3-42b7-b86d-5ec5fca7c5ef"
   },
-  "acquiredAt": "2026-07-09T07:12:35.487Z",
-  "heartbeatAt": "2026-07-09T07:12:39.539Z",
-  "expiresAt": "2026-07-09T07:12:39.539Z",
-  "releasedAt": "2026-07-09T07:12:39.539Z"
+  "acquiredAt": "2026-07-09T07:15:43.390Z",
+  "heartbeatAt": "2026-07-09T07:15:43.390Z",
+  "expiresAt": "2026-07-09T07:25:43.390Z"
 }
