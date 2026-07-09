@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.blitz",
   "kind": "game",
-  "updatedAt": "2026-07-08T07:45:14.771Z",
+  "updatedAt": "2026-07-09T02:25:08.325Z",
   "entries": {
     "bltz-riff-363": {
       "kind": "game",
@@ -254,6 +254,23 @@
       "recoverableFailedStepId": "create-world",
       "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-07-07T11:15:00.000Z",
+      "durationSeconds": 3600,
+      "artifacts": {}
+    },
+    "bltz-twist-154": {
+      "kind": "game",
+      "environment": "slot.blitz",
+      "gameName": "bltz-twist-154",
+      "path": "runs/slot/blitz/bltz-twist-154.json",
+      "inputPath": "inputs/slot/blitz/bltz-twist-154/28989628540-1.json",
+      "status": "running",
+      "updatedAt": "2026-07-09T02:25:08.325Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-07-09T05:00:00.000Z",
       "durationSeconds": 3600,
       "artifacts": {}
     }
