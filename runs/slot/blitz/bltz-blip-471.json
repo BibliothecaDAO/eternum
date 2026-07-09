@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "blitz",
   "gameName": "bltz-blip-471",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/blitz/bltz-blip-471/29000190618-1.json",
   "latestLaunchRequestId": "29000190618-1",
   "currentStepId": "create-world",
   "createdAt": "2026-07-09T07:00:49.902Z",
-  "updatedAt": "2026-07-09T07:00:55.841Z",
+  "updatedAt": "2026-07-09T07:01:07.255Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,10 +27,12 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
-      "startedAt": "2026-07-09T07:00:55.841Z"
+      "latestEvent": "Creating world failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-blip-471\" on slot.blitz\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for slot.blitz\nError: Failed to fetch world contracts: 410 Gone\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:51:15)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-07-09T07:00:55.841Z",
+      "finishedAt": "2026-07-09T07:01:07.255Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-blip-471\" on slot.blitz\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=5400, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for slot.blitz\nError: Failed to fetch world contracts: 410 Gone\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:51:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "wait-for-factory-index",
@@ -71,13 +73,5 @@
   "artifacts": {
     "scheduledStartTime": "2026-07-09T07:00:00.000Z",
     "durationSeconds": 5400
-  },
-  "activeLease": {
-    "launchRequestId": "29000190618-1",
-    "workflowRunId": 29000190618,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-07-09T07:00:55.841Z",
-    "expiresAt": "2026-07-09T07:45:55.841Z"
   }
 }
