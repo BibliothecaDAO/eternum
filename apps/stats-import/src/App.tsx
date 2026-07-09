@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
 import './App.css';
 import PriceHeader from './components/PriceHeader';
 import RevenuePage from './pages/RevenuePage';
 import RewardsPage from './pages/RewardsPage';
 import SeasonPassPage from './pages/SeasonPassPage';
-import { RevenueData, LordsApiResponse } from './types';
+import { RevenueData } from './types';
 import { Analytics } from "@vercel/analytics/react"
 
+const S1_LORDS_PRICE_USD = 0.02;
+const S1_STRK_PRICE_USD = 0.125;
 const VILLAGES_SOLD = 1156;
 const VILLAGE_PRICE_USD = 5;
 const DAYDREAMS_AGENTS_KILLED = 1019;
@@ -17,52 +19,11 @@ const AMOUNT_LEFT_IN_BRIDGE_CONTRACT = 151412;
 
 function App(): React.JSX.Element {
   const location = useLocation();
-  const [lordsPrice, setLordsPrice] = useState<number>(0);
-  const [strkPrice, setStrkPrice] = useState<number>(0);
-  const [priceChange, setPriceChange] = useState<number | null>(null);
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const [priceError, setPriceError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const fetchPrices = async (): Promise<void> => {
-    try {
-      setLoading(true);
-      setPriceError(null);
-      
-      const response = await fetch(
-        'https://api.coingecko.com/api/v3/simple/price?ids=lords,starknet&vs_currencies=usd&include_24hr_change=true&include_last_updated_at=true'
-      );
-      const data: LordsApiResponse = await response.json();
-      
-      if (data.lords && data.starknet) {
-        setLordsPrice(data.lords.usd);
-        setStrkPrice(data.starknet.usd);
-        setPriceChange(data.lords.usd_24h_change);
-        setLastUpdated(new Date(data.lords.last_updated_at * 1000));
-      } else {
-        throw new Error('Price data not found');
-      }
-    } catch (error) {
-      console.error('Error fetching prices:', error);
-      setPriceError('Failed to load price data');
-      // Fallback values if API fails
-      setLordsPrice(0.02);
-      setStrkPrice(1.15);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPrices();
-    
-    // Refresh prices every 5 minutes
-    const interval = setInterval(fetchPrices, 5 * 60 * 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
+  const lordsPrice = S1_LORDS_PRICE_USD;
+  const strkPrice = S1_STRK_PRICE_USD;
 
   const villageRevenueUSD = VILLAGES_SOLD * VILLAGE_PRICE_USD;
-  const villageRevenueLords = lordsPrice > 0 ? villageRevenueUSD / lordsPrice : 0;
+  const villageRevenueLords = villageRevenueUSD / lordsPrice;
 
   const revenueData: RevenueData[] = [
     {
@@ -72,7 +33,7 @@ function App(): React.JSX.Element {
       percentage: 56.8,
       address: 'No specific address',
       source: `Paid in USD: $${villageRevenueUSD.toLocaleString()} (${VILLAGES_SOLD.toLocaleString()} villages × $${VILLAGE_PRICE_USD} each)`,
-      breakdown: `Equivalent to ${villageRevenueLords.toLocaleString()} LORDS at $${lordsPrice.toFixed(6)} per token`
+      breakdown: `Equivalent to ${villageRevenueLords.toLocaleString()} LORDS at $${lordsPrice.toFixed(2)} per token (S1 close price)`
     },
     {
       category: 'Donkey Network Fees',
@@ -118,7 +79,7 @@ function App(): React.JSX.Element {
 
   const getCurrentTab = () => {
     const path = location.pathname;
-    if (path === '/rewards') return 'rewards';
+    if (path.startsWith('/rewards')) return 'rewards';
     if (path === '/seasonpass') return 'seasonpass';
     return 'revenue';
   };
@@ -127,10 +88,11 @@ function App(): React.JSX.Element {
     <div className="App">
       <PriceHeader 
         lordsPrice={lordsPrice}
-        priceChange={priceChange}
-        lastUpdated={lastUpdated}
-        loading={loading}
-        error={priceError}
+        priceChange={null}
+        lastUpdated={null}
+        loading={false}
+        error={null}
+        priceNote="S1 close price"
         totalLords={totalLords}
       />
       
@@ -140,7 +102,6 @@ function App(): React.JSX.Element {
           className={`tab-button ${getCurrentTab() === 'revenue' ? 'active' : ''}`}
           aria-label="View revenue analytics"
         >
-          <span className="tab-icon">📊</span>
           <span className="tab-text">Revenue</span>
         </Link>
         <Link
@@ -148,7 +109,6 @@ function App(): React.JSX.Element {
           className={`tab-button ${getCurrentTab() === 'seasonpass' ? 'active' : ''}`}
           aria-label="View season pass value analysis"
         >
-          <span className="tab-icon">🎫</span>
           <span className="tab-text">Season Pass</span>
         </Link>
         <Link
@@ -156,7 +116,6 @@ function App(): React.JSX.Element {
           className={`tab-button ${getCurrentTab() === 'rewards' ? 'active' : ''}`}
           aria-label="View rewards information"
         >
-          <span className="tab-icon">🏆</span>
           <span className="tab-text">Rewards</span>
         </Link>
       </div>

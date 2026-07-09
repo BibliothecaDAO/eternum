@@ -14,6 +14,7 @@ export interface PriceHeaderProps {
   lastUpdated: Date | null;
   loading: boolean;
   error: string | null;
+  priceNote?: string;
   totalLords: number;
 }
 
@@ -32,19 +33,6 @@ export interface ColorScheme {
   background: string;
   border: string;
   hover: string;
-}
-
-export interface LordsApiResponse {
-  lords: {
-    usd: number;
-    usd_24h_change: number;
-    last_updated_at: number;
-  };
-  starknet: {
-    usd: number;
-    usd_24h_change: number;
-    last_updated_at: number;
-  };
 }
 
 // Rewards types

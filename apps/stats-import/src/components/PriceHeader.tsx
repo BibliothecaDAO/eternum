@@ -13,6 +13,7 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
   lastUpdated, 
   loading, 
   error, 
+  priceNote,
   totalLords 
 }) => {
   const [isMobile, setIsMobile] = useState<boolean>(false);
@@ -31,7 +32,7 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
   const formatPrice = (price: number): string => {
     if (loading) return 'Loading...';
     if (error) return 'Error';
-    return price.toFixed(6);
+    return price.toFixed(4);
   };
 
   const formatPriceChange = (change: number | null): string | null => {
@@ -71,12 +72,12 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
 
   // Responsive brand title
   const getBrandTitle = (): string => {
-    return isMobile ? 'Eternum Stats' : 'Eternum Stats Dashboard';
+    return isMobile ? 'Eternum Statistics' : 'Eternum Statistics Dashboard';
   };
 
   // Responsive brand subtitle
   const getBrandSubtitle = (): string => {
-    return isMobile ? 'Season 1 Analytics' : 'Eternum Season 1 Analytics';
+    return 'Eternum Season One Revenue & Rewards Analytics';
   };
 
   return (
@@ -92,35 +93,31 @@ const PriceHeader: React.FC<PriceHeaderProps> = ({
       </div>
       
       <div className="price-info">
-        <div className="lords-logo">
-          <img 
-            src="/Lords.svg" 
-            width={isMobile ? "48" : "64"} 
-            height={isMobile ? "48" : "64"} 
-            alt="LORDS Token Logo" 
-          />
-        </div>
         <div className="price-details">
-          <div className="token-name">{isMobile ? 'LORDS' : 'LORDS Token'}</div>
+          <div className="token-name">$LORDS Token</div>
           <div className="price-value">
             $<span className={loading ? 'loading' : error ? 'error' : ''}>{formatPrice(lordsPrice)}</span>
+            {!loading && !error && priceNote ? <span className="price-asterisk">*</span> : null}
             {priceChange !== null && !loading && !error && (
               <span className={`price-change ${priceChange >= 0 ? 'positive' : 'negative'}`}>
                 {formatPriceChange(priceChange)}
               </span>
             )}
           </div>
+          {!loading && !error && priceNote ? <div className="price-footnote">* {priceNote}</div> : null}
         </div>
       </div>
       
-      <div className="price-meta">
-        {lastUpdated && (
-          <div className="last-updated">{formatLastUpdated(lastUpdated)}</div>
-        )}
-        {error && (
-          <div className="error">{error}</div>
-        )}
-      </div>
+      {(lastUpdated || error) && (
+        <div className="price-meta">
+          {lastUpdated && (
+            <div className="last-updated">{formatLastUpdated(lastUpdated)}</div>
+          )}
+          {error && (
+            <div className="error">{error}</div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
