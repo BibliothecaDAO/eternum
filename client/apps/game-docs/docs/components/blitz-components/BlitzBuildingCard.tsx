@@ -46,7 +46,7 @@ export const BlitzBuildingCard = ({
       padding: "0.75rem",
       marginBottom: "1rem",
       borderRadius: "0.375rem",
-      border: `1px solid #564e3e`,
+      border: `1px solid rgba(201, 169, 96, 0.18)`,
       backgroundColor: colors.background.dark,
     },
     header: {
@@ -61,7 +61,7 @@ export const BlitzBuildingCard = ({
       alignItems: "center",
       gap: "0.5rem",
       fontWeight: "bold",
-      color: "#c9b06a",
+      color: "#c9a960",
     },
     content: {
       display: "flex",
@@ -104,7 +104,7 @@ export const BlitzBuildingCard = ({
     costsTitle: {
       fontWeight: "bold",
       fontSize: "0.875rem",
-      color: "#c9b06a",
+      color: "#c9a960",
       marginBottom: "0.375rem",
     },
     modeHeader: {

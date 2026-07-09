@@ -4,25 +4,52 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Realms Theme — Global Overrides */
-:root {
-  --realm-bg-void: #141520;
-  --realm-bg-smoke: #1e2030;
-  --realm-surface-iron: #332f28;
-  --realm-surface-slate: #383a4a;
-  --realm-accent-ember: #c4874a;
-  --realm-accent-brass: #c9b06a;
-  --realm-accent-arcane: #8088b8;
-  --realm-border-etched: #564e3e;
-  --realm-border-strong: #6b6250;
+@font-face {
+  font-family: "IM Fell English SC";
+  src: url("/fonts/im-fell-english-sc-regular.ttf") format("truetype");
+  font-display: swap;
 }
 
-/* Body font */
+:root,
+:root.dark {
+  --realm-bg-void: #050709;
+  --realm-bg-smoke: #070b0d;
+  --realm-surface-iron: #101417;
+  --realm-surface-slate: #161b20;
+  --realm-accent-ember: #c4874a;
+  --realm-accent-brass: #e7cf88;
+  --realm-accent-arcane: #8d98c8;
+  --realm-border-etched: rgba(231, 207, 136, 0.22);
+  --realm-border-strong: rgba(231, 207, 136, 0.38);
+  --realm-text: #e8dcc2;
+  --realm-text-muted: #d8c8a8;
+  --realm-title: #f5ead0;
+  --vocs-borderRadius_4: 8px;
+  --vocs-borderRadius_6: 8px;
+  --vocs-borderRadius_8: 8px;
+  --vocs-content_horizontalPadding: clamp(1rem, 4vw, 3rem);
+  --vocs-content_verticalPadding: clamp(1.5rem, 2.6vw, 2.25rem);
+  --vocs-content_width: calc(76ch + (var(--vocs-content_horizontalPadding) * 2));
+  --vocs-fontFamily_default: "Exo 2", Rajdhani, sans-serif;
+  --vocs-fontFamily_mono: "Source Code Pro", monospace;
+}
+
+html,
 body {
+  background: var(--realm-bg-void) !important;
+  color: var(--realm-text);
   font-family: "Exo 2", sans-serif !important;
 }
 
-/* Headings use Cinzel */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background: var(--realm-bg-void);
+}
+
 .vocs_Content h1,
 .vocs_Content h2,
 .vocs_Content h3,
@@ -33,28 +60,210 @@ h1,
 h2,
 h3,
 h4 {
-  font-family: "Cinzel", serif !important;
-  letter-spacing: 0.02em;
+  color: var(--realm-title) !important;
+  font-family: "IM Fell English SC", Cinzel, serif !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  text-transform: uppercase;
 }
 
-/* Code blocks */
 code,
 pre,
 .vocs_Code {
   font-family: "Source Code Pro", monospace !important;
 }
 
-/* Sidebar styling */
+.vocs_DocsLayout,
+.vocs_DocsLayout_content,
+.vocs_Content,
+article.vocs_Content,
+#vocs-content {
+  background: var(--realm-bg-void) !important;
+}
+
+.vocs_DocsLayout_content {
+  color: var(--realm-text);
+}
+
+@media (min-width: 1081px) {
+  .vocs_DocsLayout_gutterTop,
+  .vocs_DocsLayout_gutterTopCurtain,
+  .vocs_DesktopTopNav,
+  .vocs_DesktopTopNav_curtain {
+    display: none !important;
+  }
+
+  .vocs_DocsLayout_content_withTopNav {
+    padding-top: var(--vocs-content_verticalPadding) !important;
+  }
+
+  .vocs_DocsLayout_gutterRight {
+    padding-top: var(--vocs-content_verticalPadding) !important;
+  }
+}
+
+@media (max-width: 1080px) {
+  .vocs_DocsLayout_gutterTop,
+  .vocs_DocsLayout_gutterTopCurtain,
+  .vocs_MobileTopNav,
+  .vocs_MobileTopNav_curtain {
+    background: rgba(5, 7, 9, 0.98) !important;
+  }
+}
+
+.vocs_Content {
+  color: var(--realm-text);
+}
+
+.vocs_Content > .vocs_Header:first-child {
+  margin: 0 0 clamp(1.25rem, 3vw, 2rem) !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.vocs_Content > .vocs_Header:first-child .vocs_H1,
+.vocs_Content > .vocs_Heading:first-child,
+.vocs_Content h1:first-child {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  font-size: clamp(1.55rem, 3.15vw, 2.45rem) !important;
+  line-height: 0.98 !important;
+}
+
+.vocs_Content .vocs_H2 {
+  margin-top: clamp(2rem, 4vw, 3rem) !important;
+}
+
+.vocs_Content .vocs_H3 {
+  margin-top: clamp(1.5rem, 3vw, 2.25rem) !important;
+}
+
+.vocs_Content p,
+.vocs_Content li {
+  color: var(--realm-text-muted);
+}
+
+.vocs_Content strong {
+  color: var(--realm-title);
+}
+
+.vocs_Content a {
+  color: var(--realm-accent-brass) !important;
+}
+
+.vocs_Content a:hover {
+  color: var(--realm-accent-ember) !important;
+}
+
+.vocs_Content blockquote,
+.vocs_Callout,
+.vocs_Details,
+.vocs_Tabs,
+.vocs_CodeBlock,
+.vocs_Pre,
+.vocs_Content table {
+  border: 1px solid var(--realm-border-etched) !important;
+  border-radius: 8px !important;
+  background: linear-gradient(160deg, rgba(22, 27, 32, 0.94), rgba(7, 10, 12, 0.9)) !important;
+  box-shadow: inset 0 1px 0 rgba(231, 207, 136, 0.12), 0 14px 30px rgba(0, 0, 0, 0.24);
+}
+
+.vocs_Content blockquote {
+  padding: 1rem 1.25rem;
+  color: #cfc0a0;
+}
+
+.vocs_CodeBlock pre,
+.vocs_Pre pre,
+.vocs_Tabs_content,
+.vocs_Tabs pre {
+  background: transparent !important;
+}
+
+.vocs_CodeTitle,
+.vocs_Tabs_list {
+  background: rgba(231, 207, 136, 0.1) !important;
+  border-color: var(--realm-border-etched) !important;
+  color: #f2dd9b !important;
+}
+
+.vocs_Content th {
+  background: rgba(22, 27, 32, 0.92) !important;
+  border-color: rgba(201, 169, 96, 0.28) !important;
+  color: #c9a960 !important;
+}
+
+.vocs_Button_button,
+.vocs_HomePage_button,
+.vocs_Footer_navigationItem,
+.vocs_NavigationLink,
+.vocs_Pagination_link {
+  border: 1px solid rgba(231, 207, 136, 0.32) !important;
+  border-radius: 8px !important;
+  background: linear-gradient(180deg, rgba(231, 207, 136, 0.12), rgba(7, 10, 12, 0.92)) !important;
+  color: var(--realm-title) !important;
+  box-shadow: inset 0 1px 0 rgba(231, 207, 136, 0.16);
+}
+
+.vocs_Button_button:hover,
+.vocs_HomePage_button:hover,
+.vocs_Footer_navigationItem:hover,
+.vocs_NavigationLink:hover,
+.vocs_Pagination_link:hover {
+  border-color: rgba(231, 207, 136, 0.58) !important;
+  background: linear-gradient(180deg, rgba(231, 207, 136, 0.18), rgba(22, 27, 32, 0.96)) !important;
+  color: #fff6dc !important;
+}
+
+.vocs_Button_button_accent,
+.vocs_HomePage_button_accent {
+  background: var(--realm-accent-brass) !important;
+  border-color: #f2dd9b !important;
+  color: #17110a !important;
+}
+
+.vocs_Footer {
+  margin-top: clamp(2.5rem, 5vw, 4rem) !important;
+  padding-bottom: clamp(2rem, 5vw, 4rem) !important;
+}
+
+.vocs_Footer_container,
+.vocs_Footer_navigation,
+.vocs_Pagination,
+.vocs_NavigationLinks {
+  gap: 1rem !important;
+  margin-top: clamp(1.5rem, 3vw, 2rem) !important;
+}
+
+.vocs_Footer_navigationItem,
+.vocs_NavigationLink,
+.vocs_Pagination_link {
+  margin: 0.25rem 0 !important;
+  min-height: 4.25rem;
+  padding: 0.95rem 1rem !important;
+}
+
+.vocs_Sidebar,
+.vocs_DocsLayout_gutterLeft {
+  background: linear-gradient(180deg, rgba(5, 7, 9, 0.98), rgba(7, 10, 12, 0.98)) !important;
+}
+
+.vocs_Sidebar_logoWrapper {
+  background: var(--realm-bg-void) !important;
+}
+
 .vocs_Sidebar {
-  background-color: var(--realm-bg-void) !important;
-  border-right-color: var(--realm-border-etched) !important;
+  border-right: 1px solid rgba(231, 207, 136, 0.2) !important;
 }
 
 .vocs_Sidebar a {
   font-family: "Exo 2", sans-serif !important;
 }
 
-/* Sidebar chevrons: align right and visible */
 .vocs_Sidebar_sectionHeader {
   cursor: pointer !important;
   display: flex;
@@ -68,41 +277,190 @@ pre,
   padding: 0.2rem !important;
   color: var(--realm-accent-brass) !important;
   opacity: 0.85;
-  transition:
-    opacity 0.2s,
-    transform 0.25s;
+  transition: opacity 0.2s, transform 0.25s;
   --vocs_Icon_size: 12px !important;
 }
 
-.vocs_Sidebar_sectionCollapse:hover {
-  opacity: 1;
-}
-
 .vocs_Sidebar_sectionTitle {
+  color: var(--realm-title) !important;
   cursor: pointer !important;
+  font-family: "IM Fell English SC", Cinzel, serif !important;
+  font-size: clamp(0.86rem, 0.74rem + 0.28vw, 1rem) !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  line-height: 1.05 !important;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-/* Navigation */
-.vocs_NavBar,
-.vocs_Header {
-  background-color: var(--realm-bg-void) !important;
-  border-bottom-color: var(--realm-border-etched) !important;
+.vocs_Sidebar_item {
+  border-radius: 8px;
+  padding: 0.28rem 0.5rem;
+  color: #bcae91 !important;
 }
 
-/* Content area */
-.vocs_Content {
-  color: #e8e4dc;
+.vocs_Sidebar_item:hover {
+  color: var(--realm-title) !important;
+  background: rgba(231, 207, 136, 0.07);
 }
 
-.vocs_Content a {
+.vocs_Sidebar_item[data-active="true"],
+.vocs_Sidebar_sectionTitleLink[data-active="true"] {
+  color: #17110a !important;
+  background: var(--realm-accent-brass) !important;
+}
+
+.vocs_Sidebar_levelInset {
+  border-left-color: var(--realm-border-etched) !important;
+}
+
+.vocs_Outline,
+.vocs_Outline a {
+  color: #a99570 !important;
+}
+
+.vocs_Outline a:hover,
+.vocs_Outline a[data-active="true"] {
   color: var(--realm-accent-brass) !important;
 }
 
-.vocs_Content a:hover {
-  color: var(--realm-accent-ember) !important;
+.vocs_SearchDialog,
+.vocs_DesktopSearch_button,
+.vocs_MobileSearch_button,
+.vocs_DesktopSearch_search,
+.vocs_MobileSearch_searchButton {
+  border-color: rgba(231, 207, 136, 0.24) !important;
+  background: rgba(7, 10, 12, 0.9) !important;
+  color: #d8c8a8 !important;
 }
 
-/* Scrollbar styling */
+.vocs_DocsLayout[data-layout="landing"],
+.vocs_DocsLayout[data-layout="landing"] #vocs-content,
+.vocs_DocsLayout[data-layout="landing"] .vocs_Content,
+.vocs_DocsLayout[data-layout="landing"] .vocs_HomePage {
+  background: transparent !important;
+}
+
+.vocs_DocsLayout[data-layout="landing"] {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_gutterTop,
+.vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_gutterTopCurtain,
+.vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_gutterLeft,
+.vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_sidebar,
+.vocs_DocsLayout[data-layout="landing"] .vocs_Sidebar,
+.vocs_DocsLayout[data-layout="landing"] .vocs_DesktopTopNav,
+.vocs_DocsLayout[data-layout="landing"] .vocs_MobileTopNav {
+  display: none !important;
+}
+
+.vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_content,
+.vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_content_withSidebar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  width: 100vw !important;
+}
+
+.vocs_DocsLayout[data-layout="landing"] #vocs-content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  max-width: none;
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding: 0 !important;
+}
+
+.vocs_DocsLayout[data-layout="landing"] .vocs_Content {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+}
+
+.vocs_HomePage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100dvh;
+  overflow: hidden;
+  gap: clamp(1rem, 2vw, 1.5rem) !important;
+  margin: 0 auto !important;
+  padding: clamp(2rem, 5vw, 4rem) 1.5rem !important;
+  color: var(--realm-text);
+  text-align: center;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.48);
+}
+
+.realms-homepage-background {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--realm-bg-void);
+}
+
+.realms-homepage-background img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  filter: brightness(0.76) contrast(1.02) saturate(0.9);
+}
+
+.realms-homepage-background::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(5, 7, 9, 0.14), rgba(5, 7, 9, 0.7) 68%, rgba(5, 7, 9, 0.9)),
+    linear-gradient(180deg, rgba(5, 7, 9, 0.08), rgba(5, 7, 9, 0.78));
+}
+
+.vocs_HomePage > :not(.realms-homepage-background) {
+  position: relative;
+  z-index: 1;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.vocs_HomePage_logo img,
+.vocs_HomePage > img {
+  max-height: 58px;
+  width: auto;
+}
+
+.vocs_HomePage_description {
+  max-width: 48rem;
+  color: var(--realm-text) !important;
+  text-align: center !important;
+}
+
+.vocs_HomePage_description p {
+  text-align: center !important;
+}
+
+.vocs_HomePage_buttons {
+  flex-wrap: wrap;
+  justify-content: center;
+  width: fit-content;
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -220,9 +578,9 @@ pre,
 .vocs_Content table {
   width: 100% !important;
   border-collapse: collapse;
-  background-color: var(--realm-surface-iron);
-  border: 1px solid var(--realm-border-etched);
-  border-radius: 10px;
+  background-color: rgba(7, 10, 12, 0.82);
+  border: 1px solid rgba(201, 169, 96, 0.18) !important;
+  border-radius: 8px;
   overflow: hidden;
 }
 
@@ -230,11 +588,11 @@ pre,
   font-family: "Exo 2", sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
-  letter-spacing: 0.005em;
+  letter-spacing: 0;
   text-transform: none;
-  color: var(--realm-accent-brass);
-  background-color: var(--realm-surface-slate);
-  border-bottom: 1px solid var(--realm-border-strong) !important;
+  color: #c9a960;
+  background-color: rgba(22, 27, 32, 0.92);
+  border-bottom: 1px solid rgba(201, 169, 96, 0.28) !important;
   border-left: none !important;
   border-right: none !important;
   border-top: none !important;
@@ -242,9 +600,9 @@ pre,
 }
 
 .vocs_Content td {
-  border-bottom: 1px solid var(--realm-border-etched) !important;
+  border-bottom: 1px solid rgba(201, 169, 96, 0.13) !important;
   vertical-align: middle;
-  color: #e8e4dc;
+  color: #ece0bd;
   border-left: none !important;
   border-right: none !important;
   border-top: none !important;
@@ -312,7 +670,7 @@ pre,
 
 /* Subtle hover state for data rows */
 .vocs_Content tbody tr:hover {
-  background-color: rgba(201, 176, 106, 0.05);
+  background-color: rgba(201, 169, 96, 0.05);
   transition: background-color 0.15s ease;
 }
 

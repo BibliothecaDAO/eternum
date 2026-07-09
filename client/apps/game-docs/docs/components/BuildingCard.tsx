@@ -45,7 +45,7 @@ export default function BuildingCard({ title, image, buildingType, description }
       padding: "0.75rem",
       marginBottom: "1rem",
       borderRadius: "0.375rem",
-      border: `1px solid #564e3e`,
+      border: `1px solid rgba(201, 169, 96, 0.18)`,
       backgroundColor: colors.background.dark,
     },
     header: {
@@ -60,7 +60,7 @@ export default function BuildingCard({ title, image, buildingType, description }
       alignItems: "center",
       gap: "0.5rem",
       fontWeight: "bold",
-      color: "#c9b06a",
+      color: "#c9a960",
     },
     content: {
       display: "flex",
