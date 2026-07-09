@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "blitz",
   "gameName": "bltz-kick-258",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/blitz/bltz-kick-258/29000929218-1.json",
   "latestLaunchRequestId": "29000929218-1",
   "currentStepId": "create-world",
   "createdAt": "2026-07-09T07:12:27.248Z",
-  "updatedAt": "2026-07-09T07:15:39.912Z",
+  "updatedAt": "2026-07-09T07:15:50.189Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,11 +27,12 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
+      "latestEvent": "Creating world failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-kick-258\" on mainnet.blitz\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\nError: Failed to fetch world deployment: 410 Gone\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:51:15)\n    at processTicksAndRejections (native:7:39)",
       "startedAt": "2026-07-09T07:15:39.912Z",
-      "finishedAt": "2026-07-09T07:12:42.097Z"
+      "finishedAt": "2026-07-09T07:15:50.189Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"bltz-kick-258\" on mainnet.blitz\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\nError: Failed to fetch world deployment: 410 Gone\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:51:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "wait-for-factory-index",
@@ -79,13 +80,5 @@
   "artifacts": {
     "scheduledStartTime": "2026-07-09T07:15:00.000Z",
     "durationSeconds": 3600
-  },
-  "activeLease": {
-    "launchRequestId": "29000929218-1",
-    "workflowRunId": 29000929218,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-07-09T07:15:39.912Z",
-    "expiresAt": "2026-07-09T08:00:39.912Z"
   }
 }
