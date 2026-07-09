@@ -4,16 +4,15 @@
   "accountAddress": "0x023003676EF4A5E8f32f5c8714f83fc6bfbefD44C0461a8b7Be16d05b8Ea1532",
   "owner": {
     "environment": "mainnet.blitz",
-    "gameName": "bltz-kick-258",
-    "launchRequestId": "29000929218-1",
+    "gameName": "blitz-rotation",
+    "launchRequestId": "29000998768-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 29000929218,
+    "workflowRunId": 29000998768,
     "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "leaseId": "03892fc7-72e3-42b7-b86d-5ec5fca7c5ef"
+    "stepId": "configure-world",
+    "leaseId": "ceafaa75-6b00-4ed3-b707-927b086c3fdd"
   },
-  "acquiredAt": "2026-07-09T07:15:43.390Z",
-  "heartbeatAt": "2026-07-09T07:15:47.488Z",
-  "expiresAt": "2026-07-09T07:15:47.488Z",
-  "releasedAt": "2026-07-09T07:15:47.488Z"
+  "acquiredAt": "2026-07-09T07:17:01.588Z",
+  "heartbeatAt": "2026-07-09T07:17:01.588Z",
+  "expiresAt": "2026-07-09T07:27:01.588Z"
 }
