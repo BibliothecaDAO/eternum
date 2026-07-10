@@ -1,11 +1,9 @@
 import type { Chain } from "@contracts";
 import { getFactorySqlBaseUrl as sharedFactorySqlBase } from "../../../../../../common/factory/endpoints";
-import { env } from "../../../env";
+import { resolveConfiguredRuntimeRegistry } from "../../config/runtime-endpoints";
 
 // Factory SQL base endpoints by chain. Delegates to shared helper.
 export const getFactorySqlBaseUrl = (chain: Chain): string =>
   sharedFactorySqlBase(chain, {
-    provider: env.VITE_FACTORY_RUNTIME_PROVIDER || undefined,
-    awsDomain: env.VITE_AWS_RUNTIME_DOMAIN || undefined,
-    cartridgeApiBase: env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg",
+    registry: resolveConfiguredRuntimeRegistry(),
   });

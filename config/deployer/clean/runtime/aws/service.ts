@@ -62,6 +62,7 @@ export function registerTaskDefinitionFromLiveRuntime(
   }
 
   const liveTaskDefinition = describeLiveTaskDefinition(commandRunner, request, config, liveState.taskDefinitionArn);
+  assertResizeKeepsLiveImageDigest(request, config, liveTaskDefinition);
   const nextTaskDefinition = buildResizedTaskDefinition(liveTaskDefinition, request);
   const result = runRequiredAwsCommand(commandRunner, `register resized task definition for "${request.runtimeName}"`, [
     "ecs",
@@ -77,6 +78,27 @@ export function registerTaskDefinitionFromLiveRuntime(
   ]);
 
   return commandOutputText(result);
+}
+
+function assertResizeKeepsLiveImageDigest(
+  request: AwsRuntimeRequest,
+  config: AwsRuntimeCommandConfig,
+  liveTaskDefinition: Record<string, unknown>,
+): void {
+  if (!request.imageDigest) {
+    return;
+  }
+
+  const containerDefinitions = Array.isArray(liveTaskDefinition.containerDefinitions)
+    ? (liveTaskDefinition.containerDefinitions as Array<Record<string, unknown>>)
+    : [];
+  const runtimeContainer = containerDefinitions.find((container) => container.name === config.containerName);
+  const liveDigest = /@(sha256:[a-f0-9]{64})$/.exec(`${runtimeContainer?.image || ""}`)?.[1];
+  if (liveDigest !== request.imageDigest) {
+    throw new Error(
+      `AWS runtime "${request.runtimeName}" resize must use its live image digest; deploy first to change images`,
+    );
+  }
 }
 
 export async function updateRuntimeServiceTaskDefinition(
@@ -107,6 +129,57 @@ export async function updateRuntimeServiceTaskDefinition(
   ]);
   waitForRuntimeServiceStable(commandRunner, request, config);
   await verifyRuntimePublicHealth(request, healthProbe);
+  pruneRuntimeTaskDefinitionRevisions(commandRunner, request, config);
+}
+
+export function pruneRuntimeTaskDefinitionRevisions(
+  commandRunner: AwsCommandRunner,
+  request: AwsRuntimeRequest,
+  config: AwsRuntimeCommandConfig,
+): void {
+  const activeTaskDefinitions = listRuntimeTaskDefinitions(commandRunner, request, config, "ACTIVE");
+  for (const taskDefinitionArn of activeTaskDefinitions.slice(3)) {
+    runRequiredAwsCommand(commandRunner, `deregister old task definition for "${request.runtimeName}"`, [
+      "ecs",
+      "deregister-task-definition",
+      "--region",
+      config.region,
+      "--task-definition",
+      taskDefinitionArn,
+    ]);
+  }
+}
+
+export function deleteRuntimeTaskDefinitionRevisions(
+  commandRunner: AwsCommandRunner,
+  request: AwsRuntimeRequest,
+  config: AwsRuntimeCommandConfig,
+): boolean {
+  const activeTaskDefinitions = listRuntimeTaskDefinitions(commandRunner, request, config, "ACTIVE");
+  for (const taskDefinitionArn of activeTaskDefinitions) {
+    runOptionalAwsCleanupCommand(commandRunner, `deregister task definition for "${request.runtimeName}"`, [
+      "ecs",
+      "deregister-task-definition",
+      "--region",
+      config.region,
+      "--task-definition",
+      taskDefinitionArn,
+    ]);
+  }
+
+  const inactiveTaskDefinitions = listRuntimeTaskDefinitions(commandRunner, request, config, "INACTIVE");
+  for (let index = 0; index < inactiveTaskDefinitions.length; index += 10) {
+    runOptionalAwsCleanupCommand(commandRunner, `delete task definitions for "${request.runtimeName}"`, [
+      "ecs",
+      "delete-task-definitions",
+      "--region",
+      config.region,
+      "--task-definitions",
+      ...inactiveTaskDefinitions.slice(index, index + 10),
+    ]);
+  }
+
+  return activeTaskDefinitions.length > 0 || inactiveTaskDefinitions.length > 0;
 }
 
 export function updateRuntimeServiceTags(
@@ -119,6 +192,7 @@ export function updateRuntimeServiceTags(
     throw new Error(`AWS runtime "${request.runtimeName}" is missing ECS service metadata`);
   }
 
+  const desiredTags = buildMutableRuntimeTags(request, config, liveState);
   runRequiredAwsCommand(commandRunner, `tag AWS runtime service "${request.runtimeName}"`, [
     "ecs",
     "tag-resource",
@@ -127,8 +201,10 @@ export function updateRuntimeServiceTags(
     "--resource-arn",
     liveState.serviceArn,
     "--tags",
-    ...toEcsTagList(buildMutableRuntimeTags(request, config, liveState)),
+    ...toEcsTagList(desiredTags),
   ]);
+
+  removeObsoleteRuntimeServiceTags(commandRunner, request, config, liveState, desiredTags);
 }
 
 export function deleteEcsService(
@@ -275,6 +351,37 @@ function buildDeploymentConfiguration(): string {
   return "deploymentCircuitBreaker={enable=true,rollback=true},maximumPercent=100,minimumHealthyPercent=0";
 }
 
+function listRuntimeTaskDefinitions(
+  commandRunner: AwsCommandRunner,
+  request: AwsRuntimeRequest,
+  config: AwsRuntimeCommandConfig,
+  status: "ACTIVE" | "INACTIVE",
+): string[] {
+  const taskDefinitionFamily = buildAwsRuntimeServiceName(request);
+  const result = runRequiredAwsCommand(commandRunner, `list task definitions for "${request.runtimeName}"`, [
+    "ecs",
+    "list-task-definitions",
+    "--region",
+    config.region,
+    "--family-prefix",
+    taskDefinitionFamily,
+    "--status",
+    status,
+    "--sort",
+    "DESC",
+    "--output",
+    "json",
+  ]);
+  const payload = parseJsonOutput<{ taskDefinitionArns?: string[] }>(result.stdout || "", {});
+  return (payload.taskDefinitionArns || []).filter(
+    (taskDefinitionArn) => readTaskDefinitionFamily(taskDefinitionArn) === taskDefinitionFamily,
+  );
+}
+
+function readTaskDefinitionFamily(taskDefinitionArn: string): string | undefined {
+  return /\/([^/:]+):\d+$/.exec(taskDefinitionArn)?.[1];
+}
+
 function buildMutableRuntimeTags(
   request: AwsRuntimeRequest,
   config: AwsRuntimeCommandConfig,
@@ -299,6 +406,42 @@ function buildMutableRuntimeTags(
     request,
     extraTags.filter((tag) => tag.value),
   );
+}
+
+function removeObsoleteRuntimeServiceTags(
+  commandRunner: AwsCommandRunner,
+  request: AwsRuntimeRequest,
+  config: AwsRuntimeCommandConfig,
+  liveState: AwsRuntimeLiveState,
+  desiredTags: AwsCommandTag[],
+): void {
+  const desiredKeys = new Set(desiredTags.map((tag) => tag.key));
+  const obsoleteKeys = [
+    "AutoTeardown",
+    "DeleteAfter",
+    "ExposurePolicy",
+    "GameName",
+    "LifecycleClass",
+    "RetainRuntime",
+    "RoutingShard",
+    "RunKind",
+    "RunName",
+  ].filter((key) => !desiredKeys.has(key));
+
+  if (obsoleteKeys.length === 0) {
+    return;
+  }
+
+  runRequiredAwsCommand(commandRunner, `remove obsolete tags from AWS runtime service "${request.runtimeName}"`, [
+    "ecs",
+    "untag-resource",
+    "--region",
+    config.region,
+    "--resource-arn",
+    liveState.serviceArn!,
+    "--tag-keys",
+    ...obsoleteKeys,
+  ]);
 }
 
 function startRuntimeSnapshotCleanupTask(

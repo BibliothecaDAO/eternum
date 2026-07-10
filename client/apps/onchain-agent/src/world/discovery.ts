@@ -3,6 +3,13 @@ import { decodePaddedFeltAscii, extractNameFelt, fetchFactoryRows } from "./fact
 import { patchManifestWithFactory } from "./manifest-patcher";
 import { normalizeRpcUrl } from "./normalize";
 import type { WorldProfile } from "./types";
+import {
+  buildFactoryRuntimeAlias,
+  buildGameRuntimeAlias,
+  buildSharedChainRuntimeAlias,
+  loadRuntimeRegistry,
+  resolveRuntimeEndpointAlias,
+} from "../../../../../common/factory/runtime-registry";
 
 import manifestLocal from "../../../../../contracts/game/manifest_local.json";
 import manifestMainnet from "../../../../../contracts/game/manifest_mainnet.json";
@@ -20,56 +27,52 @@ export interface DiscoveredWorld {
   status: GameStatus;
 }
 
-async function discoverSlotFactories(): Promise<string[]> {
-  const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
-  const suffixes = "abcdefghijklmnopqrstuvwxyz".split("");
-  const probe = async (suffix: string): Promise<string | null> => {
-    const url = `${base}/x/eternum-factory-slot-${suffix}/torii/sql`;
-    try {
-      const res = await fetch(`${url}?query=${encodeURIComponent("SELECT 1 LIMIT 1;")}`, {
-        signal: AbortSignal.timeout(3000),
-      });
-      return res.ok ? url : null;
-    } catch {
-      return null;
-    }
-  };
-  const results = await Promise.all(suffixes.map(probe));
-  return results.filter((url): url is string => url !== null);
-}
-
-let cachedSlotFactories: string[] | null = null;
-
 async function getFactorySqlBaseUrls(chain: Chain): Promise<string[]> {
-  const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
-  switch (chain) {
-    case "mainnet":
-      return [`${base}/x/eternum-factory-mainnet/torii/sql`];
-    case "sepolia":
-      return [`${base}/x/eternum-factory-sepolia/torii/sql`];
-    case "slot":
-    case "slottest":
-    case "local":
-      if (!cachedSlotFactories) {
-        cachedSlotFactories = await discoverSlotFactories();
-      }
-      return cachedSlotFactories;
-  }
+  await ensureRuntimeRegistryLoaded();
+  return [resolveRuntimeEndpointAlias(buildFactoryRuntimeAlias(chain, "eternum"))];
 }
 
-const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
+let runtimeRegistryLoad: Promise<void> | undefined;
+
+async function ensureRuntimeRegistryLoaded(): Promise<void> {
+  const registryUrl = process.env.RUNTIME_REGISTRY_URL?.trim();
+  if (!registryUrl) {
+    return;
+  }
+  runtimeRegistryLoad ??= loadRuntimeRegistry({
+    embedded: process.env.RUNTIME_REGISTRY_JSON,
+    url: registryUrl,
+  }).then((result) => {
+    if (result.remoteError) {
+      console.warn("Runtime registry load failed; using fallback", {
+        error: result.remoteError,
+        revision: result.registry.revision,
+        source: result.source,
+      });
+    }
+  });
+  await runtimeRegistryLoad;
+}
+
+const buildToriiBaseUrl = (chain: Chain, worldName: string) =>
+  resolveRuntimeEndpointAlias(buildGameRuntimeAlias(resolveEnvironmentId(chain), worldName, "torii", "base"));
 
 function getDefaultRpcUrl(chain: Chain): string {
-  const base = process.env.CARTRIDGE_API_BASE || "https://api.cartridge.gg";
+  const registryChain = chain === "local" ? "slot" : chain;
+  return resolveRuntimeEndpointAlias(buildSharedChainRuntimeAlias(registryChain));
+}
+
+function resolveEnvironmentId(chain: Chain): string {
   switch (chain) {
     case "mainnet":
-      return `${base}/x/starknet/mainnet`;
-    case "sepolia":
-      return `${base}/x/starknet/sepolia`;
-    case "slot":
+      return "mainnet.eternum";
     case "slottest":
+      return "slottest.eternum";
+    case "slot":
     case "local":
-      return `${base}/x/eternum-blitz-slot-4/katana`;
+      return "slot.eternum";
+    case "sepolia":
+      return "sepolia.eternum";
   }
 }
 
@@ -98,8 +101,11 @@ function deriveGameStatus(startMainAt: number | null, endAt: number | null): Gam
   return "unknown";
 }
 
-async function checkWorldAvailability(worldName: string): Promise<{ available: boolean; status: GameStatus }> {
-  const toriiBaseUrl = buildToriiBaseUrl(worldName);
+async function checkWorldAvailability(
+  chain: Chain,
+  worldName: string,
+): Promise<{ available: boolean; status: GameStatus }> {
+  const toriiBaseUrl = buildToriiBaseUrl(chain, worldName);
 
   const available = await isToriiAvailable(toriiBaseUrl);
   if (!available) return { available: false, status: "unknown" };
@@ -121,7 +127,7 @@ async function checkWorldAvailability(worldName: string): Promise<{ available: b
   }
 }
 
-const DISCOVERABLE_CHAINS: Chain[] = ["slot", "sepolia", "mainnet"];
+const DISCOVERABLE_CHAINS: Chain[] = ["slot", "slottest", "sepolia", "mainnet"];
 
 async function discoverWorldsForChain(chain: Chain): Promise<DiscoveredWorld[]> {
   const factoryUrls = await getFactorySqlBaseUrls(chain);
@@ -156,7 +162,7 @@ async function discoverWorldsForChain(chain: Chain): Promise<DiscoveredWorld[]> 
   // Check availability + game status in parallel
   const checks = await Promise.all(
     candidates.map(async (c) => {
-      const { available, status } = await checkWorldAvailability(c.name);
+      const { available, status } = await checkWorldAvailability(c.chain, c.name);
       return { ...c, available, status };
     }),
   );
@@ -183,7 +189,7 @@ export async function findWorldByName(worldName: string): Promise<DiscoveredWorl
       try {
         const { deployment } = await resolveFromFactories(chain, worldName);
         if (deployment?.worldAddress) {
-          const { status } = await checkWorldAvailability(worldName);
+          const { status } = await checkWorldAvailability(chain, worldName);
           return { name: worldName, chain, status };
         }
       } catch {
@@ -257,8 +263,8 @@ export async function buildWorldProfile(chain: Chain, worldName: string): Promis
     throw new Error(`Could not resolve world address for "${worldName}" on ${chain}`);
   }
 
-  const toriiBaseUrl = `https://api.cartridge.gg/x/${worldName}/torii`;
-  const rpcUrl = normalizeRpcUrl(deployment?.rpcUrl ?? getDefaultRpcUrl(chain));
+  const toriiBaseUrl = buildToriiBaseUrl(chain, worldName);
+  const rpcUrl = normalizeRpcUrl(getDefaultRpcUrl(chain));
 
   const { entryTokenAddress, feeTokenAddress } = await fetchTokenAddresses(toriiBaseUrl);
 

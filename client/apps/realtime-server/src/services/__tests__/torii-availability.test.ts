@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../runtime-endpoints", () => ({
+  resolveChainRpcEndpoint: (chain: string) => `https://api.cartridge.gg/x/starknet/${chain}/rpc/v0_9`,
+  resolveFactoryToriiSqlEndpoint: (chain: string) => `https://api.cartridge.gg/x/eternum-factory-${chain}/torii/sql`,
+  resolveGameToriiEndpoint: (worldName: string, endpointKind: string) =>
+    `https://api.cartridge.gg/x/${worldName}/torii${endpointKind === "sql" ? "/sql" : ""}`,
+}));
+
 import { ToriiAvailabilityService } from "../torii-availability";
 
 const mockFetch = vi.fn<typeof globalThis.fetch>();
@@ -281,7 +288,7 @@ describe("ToriiAvailabilityService", () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(3);
       const [rpcUrl, rpcOpts] = mockFetch.mock.calls[2]!;
-      expect(rpcUrl).toBe("https://api.cartridge.gg/x/starknet/mainnet");
+      expect(rpcUrl).toBe("https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9");
       const body = JSON.parse((rpcOpts as RequestInit).body as string);
       expect(body.method).toBe("starknet_call");
       expect(body.params.request.contract_address).toBe("0xabcd");

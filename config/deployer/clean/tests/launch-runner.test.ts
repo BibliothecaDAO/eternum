@@ -1,6 +1,7 @@
 import { afterAll, afterEach, describe, expect, mock, test } from "bun:test";
 
 const createGameTransactionHashes = ["0xcreate1", "0xcreate2", "0xcreate3"];
+const originalRuntimeProviderOverride = process.env.RUNTIME_PROVIDER_OVERRIDE;
 const createGameDelayMock = mock(async (_delayMs: number) => undefined);
 let createGameExecuteCount = 0;
 const createGameExecuteMock = mock(async () => {
@@ -264,6 +265,11 @@ describe("runLaunchStep mainnet launch steps", () => {
   const factoryAddress = "0xfactory";
 
   afterEach(() => {
+    if (originalRuntimeProviderOverride === undefined) {
+      delete process.env.RUNTIME_PROVIDER_OVERRIDE;
+    } else {
+      process.env.RUNTIME_PROVIDER_OVERRIDE = originalRuntimeProviderOverride;
+    }
     createGameDelayMock.mockClear();
     createGameExecuteMock.mockClear();
     createGameExecuteCount = 0;
@@ -727,6 +733,7 @@ describe("runLaunchStep mainnet launch steps", () => {
   });
 
   test("creates the indexer through the configured runtime provider and stores AWS runtime state", async () => {
+    process.env.RUNTIME_PROVIDER_OVERRIDE = "aws";
     const summary = await runLaunchStep({
       environmentId: "slot.blitz",
       stepId: "create-indexer",

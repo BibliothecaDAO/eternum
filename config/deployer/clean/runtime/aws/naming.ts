@@ -6,6 +6,7 @@ import {
   type RuntimeKind as AwsRuntimeKind,
 } from "../../../../../common/factory/runtime-endpoints";
 import type { DeploymentEnvironmentId } from "../../types";
+import { assertCanonicalRuntimeName, buildRuntimeResourceHash } from "../runtime-identity";
 
 const DEFAULT_AWS_RUNTIME_RULE_PRIORITY_BASE = 10_000;
 
@@ -13,6 +14,7 @@ export interface AwsRuntimeNamingRequest {
   environmentId: DeploymentEnvironmentId;
   runtimeKind: AwsRuntimeKind;
   runtimeName: string;
+  runtimeInstanceId?: string;
 }
 
 export function buildAwsRuntimeBasePath(request: AwsRuntimeNamingRequest): string {
@@ -33,6 +35,17 @@ export function buildRuntimeRootPath(request: AwsRuntimeNamingRequest): string {
 }
 
 export function buildTargetGroupName(request: AwsRuntimeNamingRequest): string {
+  if (request.runtimeInstanceId) {
+    assertCanonicalRuntimeName(request.runtimeName);
+    const resourceHash = buildRuntimeResourceHash({
+      ...request,
+      runtimeInstanceId: request.runtimeInstanceId,
+    });
+    const prefix = `${request.runtimeKind}-${request.runtimeName}`;
+    const readablePrefix = truncateWithCleanSuffix(prefix, 32 - resourceHash.length - 1);
+    return `${readablePrefix}-${resourceHash}`;
+  }
+
   return truncateWithCleanSuffix(`${request.runtimeKind}-${hashString(buildAwsRuntimeServiceName(request))}`, 32);
 }
 
@@ -44,6 +57,20 @@ export function resolveListenerRulePriority(_request: AwsRuntimeNamingRequest): 
 }
 
 export function buildAwsRuntimeServiceName(options: AwsRuntimeNamingRequest): string {
+  if (options.runtimeInstanceId) {
+    assertCanonicalRuntimeName(options.runtimeName);
+    const prefix = [normalizeRuntimeSegment(options.environmentId), normalizeRuntimeSegment(options.runtimeKind)]
+      .filter(Boolean)
+      .join("-");
+    const resourceHash = buildRuntimeResourceHash({
+      ...options,
+      runtimeInstanceId: options.runtimeInstanceId,
+    });
+    const runtimeNameLength = 63 - prefix.length - resourceHash.length - 2;
+    const runtimeName = truncateWithCleanSuffix(options.runtimeName, runtimeNameLength);
+    return `${prefix}-${runtimeName}-${resourceHash}`;
+  }
+
   return truncateWithCleanSuffix(
     [
       normalizeRuntimeSegment(options.environmentId),

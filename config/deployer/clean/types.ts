@@ -7,12 +7,22 @@ import type {
 import type { Account } from "starknet";
 import type { AwsRuntimeArtifact } from "./runtime/aws-runtime";
 
-export type DeploymentChain = "slot" | "mainnet";
+export type DeploymentChain = "slot" | "slottest" | "mainnet";
 export type DeploymentGameType = "blitz" | "eternum";
-export type DeploymentEnvironmentId = "slot.blitz" | "slot.eternum" | "mainnet.blitz" | "mainnet.eternum";
+export type DeploymentEnvironmentId =
+  | "slot.blitz"
+  | "slot.eternum"
+  | "slottest.blitz"
+  | "slottest.eternum"
+  | "mainnet.blitz"
+  | "mainnet.eternum";
 export type RuntimeProvider = "aws" | "slot";
+export type RuntimeExposurePolicy = "public-read" | "public-dev-rpc";
+export type RuntimeLifecycleClass = "ephemeral" | "shared";
 export type ExecutionMode = "batched" | "sequential";
 export type LaunchTargetKind = "game" | "series" | "rotation";
+export type RuntimeTeardownReason = "expired" | "ttl-fallback" | "manual";
+export type RuntimeTeardownStatus = "pending" | "dispatched" | "complete" | "failed";
 export type LaunchStepStatus = "pending" | "running" | "succeeded" | "failed";
 export type LaunchRotationWeekday = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday";
 export type LaunchGameStepId =
@@ -132,6 +142,22 @@ export interface IndexerRequest {
   workflowFile?: string;
   ref?: string;
   externalContracts?: string[];
+  runtimeOwner?: RuntimeOwnerMetadata;
+  runtimeInstanceId?: string;
+  imageDigest?: string;
+  exposurePolicy?: RuntimeExposurePolicy;
+  upstreamRpcSecretArn?: string;
+  routingShard?: number;
+}
+
+export interface RuntimeOwnerMetadata {
+  runtimeInstanceId?: string;
+  gameName: string;
+  runKind: LaunchTargetKind;
+  runName: string;
+  autoTeardown?: boolean;
+  deleteAfter?: string;
+  lifecycleClass?: RuntimeLifecycleClass;
 }
 
 export interface IndexerWorkflowRun {
@@ -172,6 +198,7 @@ export interface LaunchGameRequest {
   launchKind?: "game";
   environmentId: DeploymentEnvironmentId;
   gameName: string;
+  runtimeInstanceId?: string;
   startTime: string | number;
   rpcUrl?: string;
   factoryAddress?: string;
@@ -193,6 +220,8 @@ export interface LaunchGameRequest {
   maxActions?: number;
   seriesName?: string;
   seriesGameNumber?: number;
+  parentRunKind?: LaunchTargetKind;
+  parentRunName?: string;
   waitForFactoryIndexTimeoutMs?: number;
   waitForFactoryIndexPollMs?: number;
   skipIndexer?: boolean;
@@ -219,6 +248,7 @@ export interface LaunchSeriesRequest {
   launchKind?: "series";
   environmentId: DeploymentEnvironmentId;
   seriesName: string;
+  runtimeInstanceId?: string;
   games: LaunchSeriesGameRequest[];
   targetGameNames?: string[];
   rpcUrl?: string;
@@ -260,6 +290,7 @@ export interface LaunchRotationRequest {
   launchKind?: "rotation";
   environmentId: DeploymentEnvironmentId;
   rotationName: string;
+  runtimeInstanceId?: string;
   firstGameStartTime: string | number;
   gameIntervalMinutes: number;
   maxGames: number;
@@ -343,6 +374,7 @@ export interface LaunchGameSummary {
   indexerRequest?: IndexerRequest;
   indexerWorkflowRun?: IndexerWorkflowRun;
   prizeFunding?: PrizeFundingState;
+  runtimeTeardown?: import("./run-store/types").FactoryRuntimeTeardownState;
   configMode: ExecutionMode;
   configSteps: ExecutedConfigStep[];
   dryRun: boolean;
@@ -391,6 +423,7 @@ export interface SeriesLaunchGameArtifacts {
   indexerRequest?: IndexerRequest;
   indexerWorkflowRun?: IndexerWorkflowRun;
   prizeFunding?: PrizeFundingState;
+  runtimeTeardown?: import("./run-store/types").FactoryRuntimeTeardownState;
 }
 
 export interface SeriesLaunchGameStepState {

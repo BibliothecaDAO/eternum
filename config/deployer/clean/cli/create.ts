@@ -8,7 +8,7 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/create.ts --environment <slot.blitz|slot.eternum|mainnet.blitz|mainnet.eternum> --game <world-name> --start-time <unix|iso>",
+      "  bun config/deployer/clean/cli/create.ts --environment <slot.blitz|slot.eternum|slottest.blitz|slottest.eternum|mainnet.blitz|mainnet.eternum> --game <world-name> --start-time <unix|iso>",
       "  bun config/deployer/clean/cli/create.ts --config-path <path-to-launch.yaml>",
       "",
       "Optional env or flags:",

@@ -7,13 +7,15 @@ import {
   type AwsRuntimeHealthProbe,
 } from "./health";
 import { buildAwsRuntimeServiceName } from "./naming";
-import { resolveRuntimeRegion, resolveRuntimeTier } from "./config";
+import { resolveRuntimeRegion, resolveRuntimeRouteHost, resolveRuntimeTier } from "./config";
 import {
   type AwsRuntimeActionResult,
   type AwsRuntimeBackend,
   type AwsRuntimeLiveState,
   type AwsRuntimeRequest,
+  type AwsRuntimeSweptResource,
 } from "../aws-runtime";
+import { assertCanonicalRuntimeName, requireRuntimeInstanceId } from "../runtime-identity";
 
 export function buildAwsToriiRuntimeRequest(request: IndexerRequest): AwsRuntimeRequest {
   if (!request.environmentId) {
@@ -24,6 +26,7 @@ export function buildAwsToriiRuntimeRequest(request: IndexerRequest): AwsRuntime
     environmentId: request.environmentId,
     runtimeKind: "torii",
     runtimeName: request.worldName,
+    runtimeInstanceId: request.runtimeInstanceId || request.runtimeOwner?.runtimeInstanceId,
     rpcUrl: request.rpcUrl,
     worldAddress: request.worldAddress,
     worldBlock: request.worldBlock,
@@ -31,7 +34,13 @@ export function buildAwsToriiRuntimeRequest(request: IndexerRequest): AwsRuntime
     externalContracts: request.externalContracts || [],
     tier: request.tier || "basic",
     version: request.toriiVersion || DEFAULT_TORII_VERSION,
+    imageDigest: request.imageDigest,
+    exposurePolicy: request.exposurePolicy || "public-read",
+    lifecycleClass: request.runtimeOwner?.lifecycleClass || "ephemeral",
+    upstreamRpcSecretArn: request.upstreamRpcSecretArn,
+    routingShard: request.routingShard,
     domain: request.runtimeDomain,
+    owner: request.runtimeOwner,
   };
 }
 
@@ -41,6 +50,7 @@ export async function ensureAwsRuntime(
     backend?: AwsRuntimeBackend;
   } = {},
 ): Promise<AwsRuntimeActionResult> {
+  validateAwsRuntimeDesiredState(runtimeRequest);
   const backend = await resolveAwsRuntimeBackend(options.backend);
   const requestedTier = resolveRuntimeTier(runtimeRequest.tier);
   const currentState = await backend.describeRuntime(runtimeRequest);
@@ -94,6 +104,39 @@ export async function ensureAwsRuntime(
   };
 }
 
+function validateAwsRuntimeDesiredState(request: AwsRuntimeRequest): void {
+  assertCanonicalRuntimeName(request.runtimeName);
+  requireRuntimeInstanceId(request.runtimeInstanceId);
+
+  if (!/^sha256:[a-f0-9]{64}$/.test(request.imageDigest || "")) {
+    throw new Error("AWS runtime desired state requires imageDigest=sha256:<64 lowercase hex>");
+  }
+
+  if (!request.exposurePolicy) {
+    throw new Error("AWS runtime desired state requires exposurePolicy");
+  }
+
+  if (request.environmentId.startsWith("mainnet.") && request.runtimeKind === "katana") {
+    throw new Error(`AWS Katana is not permitted in production environment ${request.environmentId}`);
+  }
+
+  if (request.runtimeKind === "katana" && request.lifecycleClass !== "shared") {
+    throw new Error("AWS Katana requires lifecycleClass=shared");
+  }
+
+  if (request.runtimeKind === "katana" && request.owner) {
+    throw new Error("Shared AWS Katana cannot be owned by a game or launch run");
+  }
+
+  if (request.exposurePolicy && request.runtimeKind === "katana" && request.exposurePolicy !== "public-dev-rpc") {
+    throw new Error("AWS Katana requires exposurePolicy=public-dev-rpc");
+  }
+
+  if (request.exposurePolicy && request.runtimeKind === "torii" && request.exposurePolicy !== "public-read") {
+    throw new Error("AWS Torii requires exposurePolicy=public-read");
+  }
+}
+
 export async function ensureAwsToriiRuntime(
   request: IndexerRequest,
   options: {
@@ -118,6 +161,7 @@ export async function resizeAwsRuntime(
     backend?: AwsRuntimeBackend;
   } = {},
 ): Promise<AwsRuntimeActionResult> {
+  validateAwsRuntimeDesiredState(request);
   const backend = await resolveAwsRuntimeBackend(options.backend);
   const requestedTier = resolveRuntimeTier(request.tier);
   const currentState = await backend.describeRuntime(request);
@@ -175,6 +219,7 @@ export async function deleteAwsRuntime(
     backend?: AwsRuntimeBackend;
   } = {},
 ): Promise<AwsRuntimeActionResult> {
+  validateAwsRuntimeTeardownRequest(request);
   const backend = await resolveAwsRuntimeBackend(options.backend);
   const requestedTier = resolveRuntimeTier(request.tier);
   const currentState = await backend.describeRuntime(request);
@@ -183,7 +228,22 @@ export async function deleteAwsRuntime(
     throw new Error(`Unable to verify AWS runtime "${request.runtimeName}": ${currentState.describeError}`);
   }
 
-  const swept = await backend.deleteRuntime(request, currentState);
+  let swept: AwsRuntimeSweptResource[];
+  try {
+    swept = await backend.deleteRuntime(request, currentState);
+  } catch (error) {
+    if (!isStaleRuntimeTeardownError(error)) {
+      throw error;
+    }
+
+    return {
+      mode: "aws-ecs",
+      action: "skipped-stale",
+      requestedTier,
+      liveState: await backend.describeRuntime(request),
+      previousTier: currentState.tier,
+    };
+  }
 
   if (currentState.status === "missing" && swept.length === 0) {
     return {
@@ -203,6 +263,18 @@ export async function deleteAwsRuntime(
     previousTier: currentState.tier,
     swept,
   };
+}
+
+function validateAwsRuntimeTeardownRequest(request: AwsRuntimeRequest): void {
+  assertCanonicalRuntimeName(request.runtimeName);
+  requireRuntimeInstanceId(request.runtimeInstanceId);
+  if (!Number.isFinite(Date.parse(request.expectedDeleteAfter || ""))) {
+    throw new Error("AWS runtime teardown requires a valid expectedDeleteAfter timestamp");
+  }
+}
+
+function isStaleRuntimeTeardownError(error: unknown): boolean {
+  return error instanceof Error && error.name === "AwsRuntimeStaleTeardownError";
 }
 
 async function resolveAwsRuntimeBackend(backend: AwsRuntimeBackend | undefined): Promise<AwsRuntimeBackend> {
@@ -231,11 +303,18 @@ async function includeRuntimeRestoreArtifact(
 function buildMissingLiveState(request: AwsRuntimeRequest, describeError?: string): AwsRuntimeLiveState {
   return {
     provider: "aws",
+    environmentId: request.environmentId,
     runtimeKind: request.runtimeKind,
     runtimeName: request.runtimeName,
+    runtimeInstanceId: request.runtimeInstanceId,
     serviceName: buildAwsRuntimeServiceName(request),
     status: "missing",
     region: resolveRuntimeRegion(request.region),
+    imageDigest: request.imageDigest,
+    exposurePolicy: request.exposurePolicy,
+    lifecycleClass: request.lifecycleClass,
+    routingShard: request.routingShard,
+    routeHost: resolveRuntimeRouteHost(request),
     describeError,
     describedAt: new Date().toISOString(),
   };

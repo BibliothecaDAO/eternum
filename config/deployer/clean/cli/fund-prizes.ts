@@ -80,7 +80,7 @@ function usage() {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/fund-prizes.ts --environment <slot.blitz|mainnet.blitz|slot.eternum|mainnet.eternum> --run-kind <game|series|rotation> --run-name <name> --amount <tokens>",
+      "  bun config/deployer/clean/cli/fund-prizes.ts --environment <slot.blitz|slottest.blitz|mainnet.blitz|slot.eternum|slottest.eternum|mainnet.eternum> --run-kind <game|series|rotation> --run-name <name> --amount <tokens>",
       "",
       "Optional:",
       "  --selected-games-json <json-array-of-game-names>",

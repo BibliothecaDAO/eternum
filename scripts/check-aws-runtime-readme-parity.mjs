@@ -14,10 +14,18 @@ const defaultForbiddenVariablePaths = [
   "deploy/aws/README.md",
 ];
 const forbiddenVariablePaths = resolveForbiddenVariablePaths();
+const supportedGithubEnvironments = [
+  "slot.blitz",
+  "slot.eternum",
+  "slottest.blitz",
+  "slottest.eternum",
+  "mainnet.blitz",
+  "mainnet.eternum",
+];
 
 function main() {
   const outputVariables = extractTerraformOutputVariables(fs.readFileSync(outputsPath, "utf8"));
-  const githubEnvironments = extractGithubEnvironmentDefaults(fs.readFileSync(variablesPath, "utf8"));
+  const variables = fs.readFileSync(variablesPath, "utf8");
   const readme = fs.readFileSync(readmePath, "utf8");
   const outputSectionVariables = extractBulletCodeValues(readme, "The important outputs map directly to GitHub");
   const operatorSectionVariables = extractBulletCodeValues(readme, "Operator-set GitHub environment variables:");
@@ -26,7 +34,8 @@ function main() {
     ...findUnknownOutputVariables(outputVariables, outputSectionVariables),
     ...findMisclassifiedOutputVariables(outputVariables, operatorSectionVariables),
     ...validateEnvironmentChecklist(readme),
-    ...validateAccessControlDocs(readme, githubEnvironments),
+    ...validateExactEnvironmentVariable(variables),
+    ...validateAccessControlDocs(readme),
     ...validateStorageValidationDocs(readme),
     ...findForbiddenVariableReferences(),
   ];
@@ -45,14 +54,6 @@ function main() {
 function extractTerraformOutputVariables(source) {
   return Array.from(source.matchAll(/output\s+"(?<name>[^"]+)"/g))
     .map((match) => match.groups.name.toUpperCase())
-    .sort();
-}
-
-function extractGithubEnvironmentDefaults(source) {
-  const variableSource = extractTerraformVariable(source, "github_environments");
-  const defaultList = /default\s*=\s*\[(?<values>[\s\S]*?)\]/.exec(variableSource)?.groups?.values ?? "";
-  return Array.from(defaultList.matchAll(/"(?<environment>[^"]+)"/g))
-    .map((match) => match.groups.environment)
     .sort();
 }
 
@@ -111,6 +112,8 @@ function validateEnvironmentChecklist(source) {
     "## GitHub Environment Checklist",
     "`slot.blitz`",
     "`slot.eternum`",
+    "`slottest.blitz`",
+    "`slottest.eternum`",
     "`mainnet.blitz`",
     "`mainnet.eternum`",
     "required reviewers",
@@ -122,16 +125,28 @@ function validateEnvironmentChecklist(source) {
     .map((snippet) => `README missing GitHub environment checklist snippet: ${snippet}`);
 }
 
-function validateAccessControlDocs(source, githubEnvironments) {
+function validateExactEnvironmentVariable(source) {
+  const variable = extractTerraformVariable(source, "github_environment");
+  if (!variable) {
+    return ["Terraform must define singular github_environment"];
+  }
+  return [
+    ...(!variable.includes("type        = string") ? ["github_environment must be a string"] : []),
+    ...(!variable.includes('!strcontains(var.github_environment, "*")')
+      ? ["github_environment must reject wildcard values"]
+      : []),
+  ];
+}
+
+function validateAccessControlDocs(source) {
   const accessControlSection = extractMarkdownSection(source, "## Access Control");
   const requiredSnippets = [
     "## Access Control",
-    ...githubEnvironments.map((environment) => `\`${environment}\``),
-    "single role",
+    "one exact",
+    "Deploy roles",
+    "Maintenance roles",
     "cannot assume",
-    "required reviewers",
-    "deployment branch",
-    "`next`",
+    "environment cluster",
   ];
 
   return requiredSnippets
@@ -148,6 +163,8 @@ function validateStorageValidationDocs(source) {
     "mdbx_copy",
     "RPO/RTO sign-off",
     "mainnet cutover",
+    "checkpoint/update",
+    "cross-account DR drill",
   ];
 
   return requiredSnippets

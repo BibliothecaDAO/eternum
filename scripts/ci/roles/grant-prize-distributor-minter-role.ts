@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Account, RpcProvider } from "starknet";
 import { getFactorySqlBaseUrl } from "../../../common/factory/endpoints.ts";
+import { buildSharedChainRuntimeAlias, resolveRuntimeEndpointAlias } from "../../../common/factory/runtime-registry.ts";
 
 interface FactoryContractRow {
   contract_address: string;
@@ -361,7 +362,10 @@ async function main() {
 
   const accountAddress = process.env.CI_MAINNET_ACCOUNT_ADDRESS || args["account-address"] || "";
   const privateKey = process.env.CI_MAINNET_PRIVATE_KEY || args["private-key"] || "";
-  const rpcUrl = process.env.CI_MAINNET_RPC_URL || args["rpc-url"] || "https://api.cartridge.gg/x/starknet/mainnet";
+  const rpcUrl =
+    process.env.CI_MAINNET_RPC_URL ||
+    args["rpc-url"] ||
+    resolveRuntimeEndpointAlias(buildSharedChainRuntimeAlias("mainnet"));
 
   if (!accountAddress || !privateKey) {
     throw new Error("Missing CI_MAINNET_ACCOUNT_ADDRESS/CI_MAINNET_PRIVATE_KEY (or --account-address/--private-key)");

@@ -50,12 +50,12 @@ import { type Dispatch, type SetStateAction, useCallback, useEffect, useMemo, us
 import { useNavigate } from "react-router-dom";
 import { shortString } from "starknet";
 import { useBootDocumentState } from "@/ui/modules/boot-loader";
+import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 import { env } from "../../../../../env";
 import { AdminHeader } from "../components/admin-header";
 import { BiomePreviewCard, type BiomeClimateOverrideField } from "../components/biome-preview-card";
 import {
   BANK_COUNT,
-  CARTRIDGE_API_BASE,
   DEFAULT_NAMESPACE,
   FACTORY_ADDRESSES,
   getDefaultBlitzRegistrationConfig,
@@ -1465,7 +1465,9 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                         {worldIndexerStatus[name] ? (
                                           <div className="flex flex-wrap items-center gap-2">
                                             <a
-                                              href={`${CARTRIDGE_API_BASE}/x/${name}/torii`}
+                                              href={resolveGameRuntimeEndpoint(name, "base", {
+                                                chain: currentChain,
+                                              })}
                                               target="_blank"
                                               rel="noopener noreferrer"
                                               className="flex items-center gap-1.5 px-3 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-md border border-emerald-200 hover:border-emerald-300 transition-colors"
@@ -1568,7 +1570,10 @@ export const FactoryPage = ({ embedded = false }: FactoryPageProps = {}) => {
                                                     env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS,
                                                   );
 
-                                                  const mapCenterOffset = await fetchWorldMapCenterOffset(name);
+                                                  const mapCenterOffset = await fetchWorldMapCenterOffset(
+                                                    currentChain as Chain,
+                                                    name,
+                                                  );
                                                   const banks = buildAdminBanksForMapCenterOffset(mapCenterOffset);
 
                                                   // Contract requires exactly 6 banks in one call

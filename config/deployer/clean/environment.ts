@@ -8,7 +8,7 @@ export function isDeploymentEnvironmentId(value: string): value is DeploymentEnv
 export function resolveDeploymentEnvironment(value: string): DeploymentEnvironment {
   if (!isDeploymentEnvironmentId(value)) {
     throw new Error(
-      `Unsupported environment "${value}". Expected one of: mainnet.blitz, mainnet.eternum, slot.blitz, slot.eternum`,
+      `Unsupported environment "${value}". Expected one of: mainnet.blitz, mainnet.eternum, slot.blitz, slot.eternum, slottest.blitz, slottest.eternum`,
     );
   }
 

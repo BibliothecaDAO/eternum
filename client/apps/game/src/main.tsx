@@ -5,7 +5,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import * as Sentry from "@sentry/react";
 
-import App from "./app";
+import { loadConfiguredRuntimeRegistry } from "./config/runtime-endpoints";
 import { resolveSentryRuntimeOptions } from "./sentry-config";
 import { BootLoaderCrashFallback, markBootMilestone, setBootDocumentState } from "./ui/modules/boot-loader";
 
@@ -81,19 +81,39 @@ const root = ReactDOM.createRoot(rootElement as HTMLElement, {
     : undefined,
 });
 
-markBootMilestone("boot_react_mount_start");
-setBootDocumentState("react-mounted");
+async function startApplication() {
+  const registryLoad = await loadConfiguredRuntimeRegistry();
+  if (registryLoad.remoteError) {
+    console.warn("Runtime registry load failed; using fallback", {
+      error: registryLoad.remoteError,
+      revision: registryLoad.registry.revision,
+      source: registryLoad.source,
+    });
+  }
 
-root.render(
-  <React.StrictMode>
-    {sentryEnabled ? (
-      <Sentry.ErrorBoundary fallback={<BootLoaderCrashFallback />}>
-        <App />
-      </Sentry.ErrorBoundary>
-    ) : (
-      <BootCrashBoundary fallback={<BootLoaderCrashFallback />}>
-        <App />
-      </BootCrashBoundary>
-    )}
-  </React.StrictMode>,
-);
+  const { default: App } = await import("./app");
+  markBootMilestone("boot_react_mount_start");
+  setBootDocumentState("react-mounted");
+
+  root.render(
+    <React.StrictMode>
+      {sentryEnabled ? (
+        <Sentry.ErrorBoundary fallback={<BootLoaderCrashFallback />}>
+          <App />
+        </Sentry.ErrorBoundary>
+      ) : (
+        <BootCrashBoundary fallback={<BootLoaderCrashFallback />}>
+          <App />
+        </BootCrashBoundary>
+      )}
+    </React.StrictMode>,
+  );
+}
+
+void startApplication().catch((error) => {
+  console.error("Application startup failed", error);
+  if (sentryEnabled) {
+    Sentry.captureException(error);
+  }
+  root.render(<BootLoaderCrashFallback />);
+});

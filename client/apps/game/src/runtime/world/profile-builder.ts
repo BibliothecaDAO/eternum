@@ -1,6 +1,7 @@
 import { SqlApi } from "@bibliothecadao/torii";
 import type { Chain } from "@contracts";
 import { recordGameEntryDuration } from "@/ui/layouts/game-entry-timeline";
+import { resolveChainRpcEndpoint, resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 
 import { env, hasPublicNodeUrl } from "../../../env";
 import { getFactorySqlBaseUrl } from "./factory-endpoints";
@@ -8,10 +9,6 @@ import { resolveWorldContracts, resolveWorldDeploymentFromFactory } from "./fact
 import { buildSharedSlotRpcUrl, isRpcUrlCompatibleForChain, isSlotWorldChain, normalizeRpcUrl } from "./normalize";
 import { saveWorldProfile } from "./store";
 import type { WorldProfile } from "./types";
-
-const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
-
-const toriiBaseUrlFromName = (name: string) => `${cartridgeApiBase}/x/${name}/torii`;
 
 const assertSlotWorldAddressIsAvailable = ({
   chain,
@@ -124,7 +121,10 @@ const resolveWorldConfigAddresses = async (
  */
 export const buildWorldProfile = async (chain: Chain, name: string): Promise<WorldProfile> => {
   const factorySqlBaseUrl = getFactorySqlBaseUrl(chain);
-  const toriiBaseUrl = toriiBaseUrlFromName(name);
+  const toriiBaseUrl = resolveGameRuntimeEndpoint(name, "base", {
+    chain,
+    gameType: env.VITE_PUBLIC_GAME_TYPE,
+  });
 
   // 1) Resolve selectors -> addresses and deployment metadata from the factory.
   const { contractsBySelector, deployment } = await resolveFactoryWorldData(factorySqlBaseUrl, chain, name);
@@ -146,12 +146,12 @@ export const buildWorldProfile = async (chain: Chain, name: string): Promise<Wor
   // As a last resort, default to 0x0 so configuration can still proceed with patched contracts
   if (!worldAddress) worldAddress = "0x0";
 
-  const slotDefaultRpcUrl = buildSharedSlotRpcUrl(cartridgeApiBase);
+  const slotDefaultRpcUrl = buildSharedSlotRpcUrl(chain === "slottest" ? "slottest" : "slot");
   const chainDefaultRpcUrl =
     chain === "slot" || chain === "slottest"
       ? slotDefaultRpcUrl
       : chain === "mainnet" || chain === "sepolia"
-        ? `${cartridgeApiBase}/x/starknet/${chain}`
+        ? resolveChainRpcEndpoint(chain)
         : env.VITE_PUBLIC_NODE_URL;
   const canUseEnvRpc =
     !isSlotWorldChain(chain) && hasPublicNodeUrl && isRpcUrlCompatibleForChain(chain, env.VITE_PUBLIC_NODE_URL);

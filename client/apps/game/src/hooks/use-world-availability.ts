@@ -14,6 +14,7 @@ import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-se
 import type { Chain } from "@contracts";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { env } from "../../env";
+import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 
 const WORLD_CONFIG_TABLE = "s1_eternum-WorldConfig";
 const ZERO_OWNER_ADDRESS = "0x0000000000000000000000000000000000000000000000000000000000000000";
@@ -59,7 +60,7 @@ const WORLD_CONFIG_ETERNUM_QUERY = `
   LIMIT 1;
 `;
 
-const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
+const buildToriiBaseUrl = (worldName: string) => resolveGameRuntimeEndpoint(worldName);
 
 const parseMaybeHexToNumber = (v: unknown): number | null => {
   if (v == null) return null;

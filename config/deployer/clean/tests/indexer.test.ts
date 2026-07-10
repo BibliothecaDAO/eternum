@@ -169,16 +169,16 @@ describe("createIndexer", () => {
         };
         dispatchId = body.inputs.launch_request_id;
         expect(body.ref).toBe("credence0x/clean-ci-game-launch");
-        expect(body.inputs.env).toBe("slot");
         expect(body.inputs.environment_id).toBe("slot.blitz");
         expect(body.inputs.runtime_provider).toBe("aws");
-        expect(body.inputs.runtime_domain).toBe("runtime.realms.world");
-        expect(body.inputs.torii_prefix).toBe("bltz-fire-gate-42");
-        expect(body.inputs.torii_version).toBe("v1.8.16");
-        expect(body.inputs.rpc_url).toBe("https://rpc.example");
-        expect(body.inputs.torii_world_address).toBe("0x123");
-        expect(body.inputs.world_block).toBe("12345");
-        expect(body.inputs.torii_namespaces).toBe("s1_eternum");
+        expect(JSON.parse(body.inputs.request_json)).toEqual({
+          version: "v1.8.16",
+          rpcUrl: "https://rpc.example",
+          worldAddress: "0x123",
+          worldBlock: "12345",
+          namespaces: "s1_eternum",
+          externalContracts: [],
+        });
         return new Response(null, { status: 204 });
       }
 

@@ -76,4 +76,13 @@ describe("prediction-market-config", () => {
     expect(getPredictionMarketChain("mainnet")).toBe("mainnet");
     expect(getPredictionMarketChain("slot")).toBe("slot");
   });
+
+  it("resolves global Torii endpoints through the runtime registry", () => {
+    expect(getPredictionMarketConfigForChain("slot").toriiUrl).toBe(
+      "https://api.cartridge.gg/x/blitz-slot-global-1/torii",
+    );
+    expect(getPredictionMarketConfigForChain("mainnet").toriiUrl).toBe(
+      "https://api.cartridge.gg/x/blitz-mainnet-global-1/torii",
+    );
+  });
 });

@@ -10,13 +10,7 @@ mock.module("starknet", () => ({
 const { getFactorySqlBaseUrl } = await import("../../../../common/factory/endpoints");
 const { resolveVillageSystemsAddress } = await import("../factory/discovery.ts");
 
-const FACTORY_ENDPOINT_ENV_KEYS = [
-  "RUNTIME_PROVIDER",
-  "AWS_RUNTIME_DOMAIN",
-  "AWS_FACTORY_TORII_SLOT_RUNTIME_NAME",
-  "AWS_FACTORY_TORII_MAINNET_RUNTIME_NAME",
-  "AWS_FACTORY_TORII_SLOT_ENVIRONMENT",
-] as const;
+const FACTORY_ENDPOINT_ENV_KEYS = ["RUNTIME_PROVIDER", "RUNTIME_REGISTRY_JSON"] as const;
 
 const originalEnv = new Map<string, string | undefined>(
   FACTORY_ENDPOINT_ENV_KEYS.map((key) => [key, process.env[key]]),
@@ -61,14 +55,33 @@ describe("getFactorySqlBaseUrl", () => {
     expect(getFactorySqlBaseUrl("slot")).toBe("https://api.cartridge.gg/x/eternum-factory-slot-d/torii/sql");
   });
 
-  test("resolves factory Torii through the AWS runtime domain when selected", () => {
+  test("resolves factory Torii through the AWS registry target when selected", () => {
     process.env.RUNTIME_PROVIDER = "aws";
-    process.env.AWS_RUNTIME_DOMAIN = "runtime.realms.world";
-    process.env.AWS_FACTORY_TORII_SLOT_RUNTIME_NAME = "eternum-factory-slot";
-    process.env.AWS_FACTORY_TORII_SLOT_ENVIRONMENT = "slot-blitz";
+    process.env.RUNTIME_REGISTRY_JSON = JSON.stringify({
+      schemaVersion: "realms-runtime-registry/v1",
+      revision: 2,
+      generatedAt: "2026-07-10T00:00:00.000Z",
+      aliases: {
+        "factory.slot.blitz.torii.sql": {
+          scope: "factory",
+          environmentId: "slot.blitz",
+          runtimeKind: "torii",
+          endpointKind: "sql",
+          activeProvider: "aws",
+          runtimeName: "eternum-factory-slot",
+          runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b451",
+          imageDigest: `sha256:${"a".repeat(64)}`,
+          routingShard: 0,
+          providers: {
+            slot: "https://api.cartridge.gg/x/eternum-factory-slot-d/torii/sql",
+            aws: "https://s0.slot-blitz.runtime.realms.world/x/slot-blitz/eternum-factory-slot/torii/sql",
+          },
+        },
+      },
+    });
 
     expect(getFactorySqlBaseUrl("slot")).toBe(
-      "https://runtime.realms.world/x/slot-blitz/eternum-factory-slot/torii/sql",
+      "https://s0.slot-blitz.runtime.realms.world/x/slot-blitz/eternum-factory-slot/torii/sql",
     );
   });
 });

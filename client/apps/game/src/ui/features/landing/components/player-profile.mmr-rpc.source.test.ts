@@ -12,7 +12,7 @@ describe("LandingPlayer MMR RPC selection", () => {
       "utf8",
     );
 
-    expect(source).toContain("buildSharedSlotRpcUrl(cartridgeApiBase)");
+    expect(source).toContain("buildSharedSlotRpcUrl(chain)");
     expect(source).not.toContain("dojoConfig.rpcUrl");
   });
 });

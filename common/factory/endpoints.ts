@@ -1,9 +1,11 @@
-import { buildRuntimeEndpointUrl, type RuntimeEndpointKind } from "./runtime-endpoints";
+import {
+  buildFactoryRuntimeAlias,
+  parseRuntimeRegistry,
+  resolveRuntimeEndpointAlias,
+  type RuntimeRegistryV1,
+} from "./runtime-registry";
 
 type Chain = "slot" | "slottest" | "local" | "sepolia" | "mainnet" | string;
-
-const DEFAULT_CARTRIDGE_API_BASE = "https://api.cartridge.gg";
-const DEFAULT_AWS_RUNTIME_DOMAIN = "runtime.realms.world";
 
 function readEnv(name: string): string | undefined {
   if (typeof process === "undefined") {
@@ -18,67 +20,15 @@ type RuntimeProvider = "aws" | "slot";
 
 interface FactorySqlBaseUrlOptions {
   provider?: RuntimeProvider;
+  registry?: RuntimeRegistryV1 | string;
+  /** @deprecated Endpoint ownership now belongs to the runtime registry. */
   awsDomain?: string;
+  /** @deprecated Endpoint ownership now belongs to the runtime registry. */
   cartridgeApiBase?: string;
 }
 
-function resolveRuntimeProvider(options?: FactorySqlBaseUrlOptions): RuntimeProvider {
-  const configuredProvider = options?.provider || readEnv("RUNTIME_PROVIDER");
-  return configuredProvider?.toLowerCase() === "aws" ? "aws" : "slot";
-}
-
-function resolveAwsRuntimeDomain(options?: FactorySqlBaseUrlOptions): string {
-  return (options?.awsDomain || readEnv("AWS_RUNTIME_DOMAIN") || DEFAULT_AWS_RUNTIME_DOMAIN).replace(
-    /^https?:\/\//,
-    "",
-  );
-}
-
-function resolveAwsFactoryRuntimeName(chain: Chain): string {
-  switch (chain) {
-    case "mainnet":
-      return readEnv("AWS_FACTORY_TORII_MAINNET_RUNTIME_NAME") || "eternum-factory-mainnet";
-    case "sepolia":
-      return readEnv("AWS_FACTORY_TORII_SEPOLIA_RUNTIME_NAME") || "eternum-factory-sepolia";
-    case "slot":
-    case "slottest":
-    case "local":
-      return readEnv("AWS_FACTORY_TORII_SLOT_RUNTIME_NAME") || "eternum-factory-slot-d";
-    default:
-      return "";
-  }
-}
-
-function resolveAwsFactoryEnvironmentId(chain: Chain): string {
-  switch (chain) {
-    case "mainnet":
-      return readEnv("AWS_FACTORY_TORII_MAINNET_ENVIRONMENT") || "mainnet-blitz";
-    case "sepolia":
-      return readEnv("AWS_FACTORY_TORII_SEPOLIA_ENVIRONMENT") || "slot-blitz";
-    case "slot":
-    case "slottest":
-    case "local":
-      return readEnv("AWS_FACTORY_TORII_SLOT_ENVIRONMENT") || "slot-blitz";
-    default:
-      return "";
-  }
-}
-
-function buildAwsFactoryEndpointBaseUrl(
-  chain: Chain,
-  endpointKind: Extract<RuntimeEndpointKind, "base" | "sql">,
-  options?: FactorySqlBaseUrlOptions,
-): string {
-  const runtimeName = resolveAwsFactoryRuntimeName(chain);
-  const environmentId = resolveAwsFactoryEnvironmentId(chain);
-  return runtimeName && environmentId
-    ? buildRuntimeEndpointUrl(resolveAwsRuntimeDomain(options), environmentId, runtimeName, "torii", endpointKind)
-    : "";
-}
-
 /**
- * Returns the Factory Torii SQL base URL for a given chain.
- * The Cartridge API base can be overridden; defaults to https://api.cartridge.gg.
+ * Returns the registered Factory Torii SQL alias for a chain.
  */
 export function getFactorySqlBaseUrl(
   chain: Chain,
@@ -89,23 +39,24 @@ export function getFactorySqlBaseUrl(
       ? { cartridgeApiBase: optionsOrCartridgeApiBase }
       : optionsOrCartridgeApiBase;
 
-  if (resolveRuntimeProvider(options) === "aws") {
-    return buildAwsFactoryEndpointBaseUrl(chain, "sql", options);
+  if (!new Set(["mainnet", "sepolia", "slot", "slottest", "local"]).has(chain)) {
+    return "";
   }
 
-  const base = options?.cartridgeApiBase || readEnv("CARTRIDGE_API_BASE") || DEFAULT_CARTRIDGE_API_BASE;
-  switch (chain) {
-    case "mainnet":
-      return `${base}/x/eternum-factory-mainnet/torii/sql`;
-    case "sepolia":
-      return `${base}/x/eternum-factory-sepolia/torii/sql`;
-    case "slot":
-    case "slottest":
-    case "local":
-      return `${base}/x/eternum-factory-slot-d/torii/sql`;
-    default:
-      return "";
+  const registry = resolveRegistry(options?.registry);
+  return resolveRuntimeEndpointAlias(buildFactoryRuntimeAlias(chain), {
+    provider: options?.provider,
+    registry,
+  });
+}
+
+function resolveRegistry(registry?: RuntimeRegistryV1 | string): RuntimeRegistryV1 | undefined {
+  if (registry) {
+    return parseRuntimeRegistry(registry);
   }
+
+  const configuredRegistry = readEnv("RUNTIME_REGISTRY_JSON");
+  return configuredRegistry ? parseRuntimeRegistry(configuredRegistry) : undefined;
 }
 
 const asRecord = (value: unknown): Record<string, unknown> | null => {

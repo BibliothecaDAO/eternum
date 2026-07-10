@@ -13,7 +13,8 @@ import {
   type AwsRuntimeKind,
   type AwsRuntimeLiveState,
 } from "../runtime/aws-runtime";
-import type { DeploymentEnvironmentId, IndexerTier } from "../types";
+import type { DeploymentEnvironmentId, IndexerTier, RuntimeLifecycleClass } from "../types";
+import { assertCanonicalRuntimeName, requireRuntimeInstanceId } from "../runtime/runtime-identity";
 import { parseArgs } from "./args";
 
 type AwsRuntimeOperation = "deploy" | "inspect" | "resize" | "delete";
@@ -23,6 +24,7 @@ export interface AwsRuntimeCliRequest {
   environmentId: DeploymentEnvironmentId;
   runtimeKind: AwsRuntimeKind;
   runtimeName: string;
+  runtimeInstanceId?: string;
   tier?: IndexerTier;
   rpcUrl?: string;
   worldAddress?: string;
@@ -30,7 +32,12 @@ export interface AwsRuntimeCliRequest {
   namespaces?: string;
   externalContracts?: string[];
   version?: string;
+  imageDigest?: string;
+  upstreamRpcSecretArn?: string;
+  routingShard?: number;
+  lifecycleClass?: RuntimeLifecycleClass;
   retainData?: boolean;
+  expectedDeleteAfter?: string;
 }
 
 export interface AwsRuntimeCliResult {
@@ -38,6 +45,7 @@ export interface AwsRuntimeCliResult {
   environmentId: DeploymentEnvironmentId;
   runtimeKind: AwsRuntimeKind;
   runtimeName: string;
+  runtimeInstanceId?: string;
   action?: AwsRuntimeActionResult["action"];
   mode?: AwsRuntimeActionResult["mode"];
   requestedTier?: IndexerTier;
@@ -55,6 +63,7 @@ export interface AwsRuntimeCliFailureResult {
   environmentId?: DeploymentEnvironmentId;
   runtimeKind?: AwsRuntimeKind;
   runtimeName?: string;
+  runtimeInstanceId?: string;
   failureClassification: ReturnType<typeof classifyAwsRuntimeFailure>;
   errorMessage: string;
   failedAt: string;
@@ -79,6 +88,8 @@ const supportedOperations: ReadonlySet<AwsRuntimeCliResult["operation"]> = new S
 const supportedEnvironmentIds: ReadonlySet<DeploymentEnvironmentId> = new Set([
   "slot.blitz",
   "slot.eternum",
+  "slottest.blitz",
+  "slottest.eternum",
   "mainnet.blitz",
   "mainnet.eternum",
 ]);
@@ -89,17 +100,37 @@ const supportedActions: ReadonlySet<NonNullable<AwsRuntimeCliResult["action"]>> 
   "updated",
   "deleted",
   "already-missing",
+  "skipped-stale",
 ]);
 const supportedTiers: ReadonlySet<IndexerTier> = new Set(["basic", "pro", "epic", "legendary"]);
+const maxRequestFileBytes = 64 * 1024;
+const requestFieldArgs: Readonly<Record<string, string>> = {
+  version: "version",
+  rpcUrl: "rpc-url",
+  worldAddress: "world-address",
+  worldBlock: "world-block",
+  namespaces: "namespaces",
+  externalContracts: "external-contracts",
+  retainData: "retain-data",
+  routingShard: "routing-shard",
+  lifecycleClass: "lifecycle-class",
+  expectedDeleteAfter: "expected-delete-after",
+};
 
 function usage() {
   console.log(
     [
       "",
-      "Usage: bun config/deployer/clean/cli/aws-runtime.ts --operation <deploy|inspect|resize|delete> --environment <slot.blitz|slot.eternum|mainnet.blitz|mainnet.eternum> --runtime-kind <katana|torii> --runtime-name <name>",
+      "Usage: bun config/deployer/clean/cli/aws-runtime.ts --operation <deploy|inspect|resize|delete> --environment <slot.blitz|slot.eternum|slottest.blitz|slottest.eternum|mainnet.blitz|mainnet.eternum> --runtime-kind <katana|torii> --runtime-name <name>",
       "",
       "Optional flags:",
       "  --tier <basic|pro|epic|legendary>",
+      "  --runtime-instance-id <immutable runtime id>",
+      "  --expected-delete-after <exact lifecycle timestamp required for delete>",
+      "  --image-digest <sha256 digest>",
+      "  --upstream-rpc-secret-arn <Secrets Manager ARN>",
+      "  --routing-shard <non-negative shard number>",
+      "  --lifecycle-class <shared|ephemeral>",
       "  --rpc-url <url>",
       "  --world-address <0x...>",
       "  --world-block <block-number>",
@@ -107,6 +138,7 @@ function usage() {
       "  --external-contracts <newline-or-comma-separated contracts>",
       "  --version <dojo runtime version>",
       "  --retain-data (delete only; keep snapshot data for later restore)",
+      "  --request-file <validated JSON request>",
       "",
     ].join("\n"),
   );
@@ -147,8 +179,26 @@ function parseExternalContracts(value: string | undefined): string[] {
     .filter(Boolean);
 }
 
+function parseRoutingShard(value: string | undefined): number | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  const routingShard = Number(value);
+  if (!Number.isInteger(routingShard) || routingShard < 0) {
+    throw new Error("--routing-shard must be a non-negative integer");
+  }
+  return routingShard;
+}
+
+function parseLifecycleClass(value: string | undefined): RuntimeLifecycleClass | undefined {
+  if (value === undefined || value === "shared" || value === "ephemeral") {
+    return value;
+  }
+  throw new Error("--lifecycle-class must be shared or ephemeral");
+}
+
 function resolveCliRequest(): AwsRuntimeCliRequest {
-  const args = parseArgs(process.argv.slice(2));
+  const args = resolveCliArgs(process.argv.slice(2));
 
   if (args.help === "true") {
     usage();
@@ -171,6 +221,7 @@ function resolveCliRequest(): AwsRuntimeCliRequest {
     environmentId: environment.id,
     runtimeKind: parseRuntimeKind(args["runtime-kind"]),
     runtimeName,
+    runtimeInstanceId: args["runtime-instance-id"],
     tier: parseTier(args.tier),
     rpcUrl: args["rpc-url"],
     worldAddress: args["world-address"],
@@ -178,8 +229,75 @@ function resolveCliRequest(): AwsRuntimeCliRequest {
     namespaces: args.namespaces,
     externalContracts: parseExternalContracts(args["external-contracts"] || args["torii-external-contracts"]),
     version: args.version,
+    imageDigest: args["image-digest"],
+    upstreamRpcSecretArn: args["upstream-rpc-secret-arn"],
+    routingShard: parseRoutingShard(args["routing-shard"]),
+    lifecycleClass: parseLifecycleClass(args["lifecycle-class"]),
     retainData: args["retain-data"] === "true",
+    expectedDeleteAfter: args["expected-delete-after"],
   };
+}
+
+function resolveCliArgs(argv: string[]): Record<string, string> {
+  const args = parseArgs(argv);
+  const requestFile = args["request-file"];
+  if (!requestFile) {
+    return args;
+  }
+
+  return { ...buildRequestFileArgs(readRequestFile(requestFile)), ...args };
+}
+
+function readRequestFile(requestFile: string): Record<string, unknown> {
+  let contents: string;
+  try {
+    const requestSize = fs.statSync(requestFile).size;
+    if (requestSize > maxRequestFileBytes) {
+      throw new Error(`exceeds the ${maxRequestFileBytes}-byte limit`);
+    }
+    contents = fs.readFileSync(requestFile, "utf8");
+  } catch (error) {
+    throw new Error(`AWS runtime request file could not be read: ${error instanceof Error ? error.message : error}`);
+  }
+
+  let request: unknown;
+  try {
+    request = JSON.parse(contents) as unknown;
+  } catch (error) {
+    throw new Error(
+      `AWS runtime request file contains invalid JSON: ${error instanceof Error ? error.message : error}`,
+    );
+  }
+
+  if (!request || typeof request !== "object" || Array.isArray(request)) {
+    throw new Error("AWS runtime request file must contain a JSON object");
+  }
+
+  return request as Record<string, unknown>;
+}
+
+function buildRequestFileArgs(request: Record<string, unknown>): Record<string, string> {
+  const requestEntries = Object.entries(request);
+  const unsupportedKey = requestEntries.find(([key]) => !requestFieldArgs[key])?.[0];
+  if (unsupportedKey) {
+    throw new Error(`AWS runtime request file contains unsupported field "${unsupportedKey}"`);
+  }
+
+  const requestArgs = Object.fromEntries(
+    requestEntries.map(([key, value]) => {
+      if (key === "externalContracts") {
+        if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+          throw new Error("AWS runtime request externalContracts must be a string array");
+        }
+        return [requestFieldArgs[key], value.join("\n")];
+      }
+      if (typeof value !== "string" && typeof value !== "number" && typeof value !== "boolean") {
+        throw new Error(`AWS runtime request field "${key}" must be a scalar value`);
+      }
+      return [requestFieldArgs[key], `${value}`];
+    }),
+  );
+  return requestArgs;
 }
 
 function buildRuntimeRequest(request: AwsRuntimeCliRequest) {
@@ -189,6 +307,7 @@ function buildRuntimeRequest(request: AwsRuntimeCliRequest) {
     environmentId: environment.id,
     runtimeKind: request.runtimeKind,
     runtimeName: request.runtimeName,
+    runtimeInstanceId: request.runtimeInstanceId,
     tier: request.tier,
     rpcUrl: request.rpcUrl || environment.rpcUrl,
     worldAddress: request.worldAddress,
@@ -196,8 +315,14 @@ function buildRuntimeRequest(request: AwsRuntimeCliRequest) {
     namespaces: request.namespaces,
     externalContracts: request.externalContracts,
     version: request.version,
+    imageDigest: request.imageDigest,
+    upstreamRpcSecretArn: request.upstreamRpcSecretArn,
+    routingShard: request.routingShard,
+    exposurePolicy: request.runtimeKind === "katana" ? ("public-dev-rpc" as const) : ("public-read" as const),
+    lifecycleClass: request.lifecycleClass || ("shared" as const),
     domain: environment.runtimeDomain,
     retainData: request.retainData,
+    expectedDeleteAfter: request.expectedDeleteAfter,
   };
 }
 
@@ -205,7 +330,21 @@ function validateRuntimeOperationRequest(
   request: AwsRuntimeCliRequest,
   runtimeRequest: ReturnType<typeof buildRuntimeRequest>,
 ): void {
+  assertCanonicalRuntimeName(request.runtimeName);
+  if (request.operation !== "inspect") {
+    requireRuntimeInstanceId(request.runtimeInstanceId);
+  }
+
+  if (request.environmentId.startsWith("mainnet.") && request.runtimeKind === "katana") {
+    throw new Error(`AWS Katana is not permitted in production environment ${request.environmentId}`);
+  }
+
+  if (request.operation === "delete" && !Number.isFinite(Date.parse(request.expectedDeleteAfter || ""))) {
+    throw new Error("AWS runtime delete requires --expected-delete-after with a valid timestamp");
+  }
+
   if (request.operation !== "deploy" || runtimeRequest.runtimeKind !== "torii") {
+    validatePinnedImageForMutation(request);
     return;
   }
 
@@ -215,6 +354,18 @@ function validateRuntimeOperationRequest(
 
   if (!runtimeRequest.worldAddress) {
     throw new Error("Torii AWS runtime deploy requires --world-address");
+  }
+
+  validatePinnedImageForMutation(request);
+}
+
+function validatePinnedImageForMutation(request: AwsRuntimeCliRequest): void {
+  if (request.operation === "inspect" || request.operation === "delete") {
+    return;
+  }
+
+  if (!/^sha256:[a-f0-9]{64}$/.test(request.imageDigest || "")) {
+    throw new Error("AWS runtime mutation requires --image-digest sha256:<64 lowercase hex>");
   }
 }
 
@@ -244,6 +395,7 @@ function buildCliResult(request: AwsRuntimeCliRequest, liveState: AwsRuntimeLive
     environmentId: request.environmentId,
     runtimeKind: request.runtimeKind,
     runtimeName: request.runtimeName,
+    runtimeInstanceId: request.runtimeInstanceId,
     restoredFromSnapshot: liveState.restoredFromSnapshot,
     health: liveState.health,
     liveState,
@@ -304,6 +456,10 @@ function validateSuccessResult(result: AwsRuntimeCliResult): void {
 
   if (result.operation !== "inspect" && !result.action) {
     throw new Error("AWS runtime CLI result missing action");
+  }
+
+  if (result.operation !== "inspect") {
+    requireRuntimeInstanceId(result.runtimeInstanceId);
   }
 
   if (result.action && !supportedActions.has(result.action)) {
@@ -407,6 +563,7 @@ export function buildFailureResult(error: unknown, request?: AwsRuntimeCliReques
     environmentId: request?.environmentId,
     runtimeKind: request?.runtimeKind,
     runtimeName: request?.runtimeName,
+    runtimeInstanceId: request?.runtimeInstanceId,
     failureClassification: classifyAwsRuntimeFailure(error),
     errorMessage: error instanceof Error ? error.message : String(error),
     failedAt: new Date().toISOString(),

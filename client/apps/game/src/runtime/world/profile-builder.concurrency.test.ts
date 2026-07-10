@@ -27,6 +27,8 @@ const mocks = vi.hoisted(() => ({
   isRpcUrlCompatibleForChain: vi.fn(),
   normalizeRpcUrl: vi.fn(),
   recordGameEntryDuration: vi.fn(),
+  resolveChainRpcEndpoint: vi.fn(),
+  resolveGameRuntimeEndpoint: vi.fn(),
   resolveWorldContracts: vi.fn(),
   resolveWorldDeploymentFromFactory: vi.fn(),
   saveWorldProfile: vi.fn(),
@@ -71,6 +73,11 @@ vi.mock("@/ui/layouts/game-entry-timeline", () => ({
   recordGameEntryDuration: mocks.recordGameEntryDuration,
 }));
 
+vi.mock("@/config/runtime-endpoints", () => ({
+  resolveChainRpcEndpoint: mocks.resolveChainRpcEndpoint,
+  resolveGameRuntimeEndpoint: mocks.resolveGameRuntimeEndpoint,
+}));
+
 import { buildWorldProfile } from "./profile-builder";
 
 describe("buildWorldProfile concurrency", () => {
@@ -83,6 +90,8 @@ describe("buildWorldProfile concurrency", () => {
     mocks.isRpcUrlCompatibleForChain.mockReset();
     mocks.normalizeRpcUrl.mockReset();
     mocks.recordGameEntryDuration.mockReset();
+    mocks.resolveChainRpcEndpoint.mockReset();
+    mocks.resolveGameRuntimeEndpoint.mockReset();
     mocks.resolveWorldContracts.mockReset();
     mocks.resolveWorldDeploymentFromFactory.mockReset();
     mocks.saveWorldProfile.mockReset();
@@ -92,6 +101,8 @@ describe("buildWorldProfile concurrency", () => {
     mocks.isSlotWorldChain.mockImplementation((chain: string) => chain === "slot" || chain === "slottest");
     mocks.isRpcUrlCompatibleForChain.mockReturnValue(true);
     mocks.normalizeRpcUrl.mockImplementation((value: string) => value);
+    mocks.resolveChainRpcEndpoint.mockReturnValue("https://chain-rpc.example");
+    mocks.resolveGameRuntimeEndpoint.mockImplementation((name: string) => `https://torii.example/${name}`);
     vi.stubGlobal("fetch", mocks.fetch);
   });
 

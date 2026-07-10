@@ -6,6 +6,7 @@ import { buildSettledBlitzPlayersWithNamesQuery } from "@/services/blitz/blitz-s
 import type { Chain } from "@contracts";
 
 import { env } from "../../../../../env";
+import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 import { decodePaddedFeltAscii, normalizeHex, parseMaybeHexToNumber } from "./market-utils";
 
 const WORLD_CONFIG_QUERY =
@@ -13,7 +14,8 @@ const WORLD_CONFIG_QUERY =
 
 const PLAYERS_QUERY = buildSettledBlitzPlayersWithNamesQuery();
 
-export const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
+export const buildToriiBaseUrl = (worldName: string, chain?: string) =>
+  resolveGameRuntimeEndpoint(worldName, "base", { chain, gameType: "blitz" });
 
 const fetchWorldConfigMeta = async (
   toriiBaseUrl: string,
@@ -142,7 +144,7 @@ const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayer
                 const i = index++;
                 const name = names[i];
                 try {
-                  if (await isToriiAvailable(buildToriiBaseUrl(name))) alive.push(name);
+                  if (await isToriiAvailable(buildToriiBaseUrl(name, runtimeChain))) alive.push(name);
                 } catch {
                   /* skip */
                 }
@@ -157,7 +159,7 @@ const useMarketServers = ({ allowFakePlayerFallback = false }: { allowFakePlayer
       // Fetch metadata for alive worlds in parallel
       await Promise.all(
         aliveNames.map(async (name) => {
-          const toriiBaseUrl = buildToriiBaseUrl(name);
+          const toriiBaseUrl = buildToriiBaseUrl(name, runtimeChain);
           const meta = await fetchWorldConfigMeta(toriiBaseUrl);
           nextServers.push({
             name,

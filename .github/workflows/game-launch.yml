@@ -21,6 +21,8 @@ on:
           - mainnet.eternum
           - slot.blitz
           - slot.eternum
+          - slottest.blitz
+          - slottest.eternum
       game_name:
         description: "Game/world name"
         required: false
@@ -43,47 +45,10 @@ on:
         description: "Rotation name (required when launch_kind=rotation)"
         required: false
         type: string
-      first_game_start_time:
-        description: "First game start time for a rotation (required when launch_kind=rotation)"
+      request_json:
+        description: "Validated JSON object with replayable launch, rotation, retry, and recovery options"
         required: false
-        type: string
-      game_interval_minutes:
-        description: "Minutes between rotation games"
-        required: false
-        type: string
-      max_games:
-        description: "Maximum number of rotation games to create"
-        required: false
-        type: string
-      advance_window_games:
-        description: "How many future rotation games to keep ready (max 5)"
-        required: false
-        type: string
-      evaluation_interval_minutes:
-        description: "How often a rotation becomes due for evaluation"
-        required: false
-        type: string
-      launch_options_json:
-        description:
-          "Optional JSON object with replayable launch settings and overrides, including config flags, durations, and
-          advanced runtime options."
-        required: false
-        type: string
-      auto_retry_enabled:
-        description: "Enable scheduled auto-retry for multi-game launches"
-        required: false
-        default: "true"
-        type: choice
-        options:
-          - "true"
-          - "false"
-      auto_retry_interval_minutes:
-        description: "Multi-game auto-retry interval in minutes"
-        required: false
-        type: string
-      target_game_names_json:
-        description: "Optional JSON array of child game names to target during grouped indexer recovery"
-        required: false
+        default: "{}"
         type: string
       launch_step:
         description: "Launch scope. Use full for a fresh run, or resume from a step and continue forward from there."
@@ -127,15 +92,7 @@ jobs:
       GAME_LAUNCH_SERIES_NAME: ${{ github.event.inputs.series_name }}
       GAME_LAUNCH_SERIES_GAMES_JSON: ${{ github.event.inputs.series_games_json }}
       GAME_LAUNCH_ROTATION_NAME: ${{ github.event.inputs.rotation_name }}
-      GAME_LAUNCH_FIRST_GAME_START_TIME: ${{ github.event.inputs.first_game_start_time }}
-      GAME_LAUNCH_GAME_INTERVAL_MINUTES: ${{ github.event.inputs.game_interval_minutes }}
-      GAME_LAUNCH_MAX_GAMES: ${{ github.event.inputs.max_games }}
-      GAME_LAUNCH_ADVANCE_WINDOW_GAMES: ${{ github.event.inputs.advance_window_games }}
-      GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES: ${{ github.event.inputs.evaluation_interval_minutes }}
-      GAME_LAUNCH_OPTIONS_JSON: ${{ github.event.inputs.launch_options_json }}
-      GAME_LAUNCH_AUTO_RETRY_ENABLED: ${{ github.event.inputs.auto_retry_enabled }}
-      GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES: ${{ github.event.inputs.auto_retry_interval_minutes }}
-      GAME_LAUNCH_TARGET_GAME_NAMES_JSON: ${{ github.event.inputs.target_game_names_json }}
+      GAME_LAUNCH_REQUEST_JSON: ${{ github.event.inputs.request_json || '{}' }}
       GAME_LAUNCH_STEP: ${{ github.event.inputs.launch_step }}
       FACTORY_RUN_STORE_BRANCH: factory-runs
       RUNTIME_PROVIDER: ${{ vars.RUNTIME_PROVIDER || 'slot' }}
@@ -148,6 +105,8 @@ jobs:
       AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
       AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
       AWS_RUNTIME_ECR_IMAGE: ${{ vars.AWS_RUNTIME_ECR_IMAGE }}
+      AWS_RUNTIME_IMAGE_DIGEST: ${{ vars.AWS_RUNTIME_IMAGE_DIGEST }}
+      AWS_RUNTIME_UPSTREAM_RPC_SECRET_ARN: ${{ vars.AWS_RUNTIME_UPSTREAM_RPC_SECRET_ARN }}
       AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN }}
       AWS_RUNTIME_TASK_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_ROLE_ARN }}
       AWS_RUNTIME_SUBNET_IDS: ${{ vars.AWS_RUNTIME_SUBNET_IDS }}
@@ -155,34 +114,82 @@ jobs:
       AWS_RUNTIME_EFS_FILE_SYSTEM_ID: ${{ vars.AWS_RUNTIME_EFS_FILE_SYSTEM_ID }}
       AWS_RUNTIME_VPC_ID: ${{ vars.AWS_RUNTIME_VPC_ID }}
       AWS_RUNTIME_ALB_LISTENER_ARN: ${{ vars.AWS_RUNTIME_ALB_LISTENER_ARN }}
+      AWS_RUNTIME_ALB_LISTENER_ARNS: ${{ vars.AWS_RUNTIME_ALB_LISTENER_ARNS }}
       AWS_RUNTIME_LOG_GROUP: ${{ vars.AWS_RUNTIME_LOG_GROUP || '/ecs/eternum-game-runtime' }}
       AWS_RUNTIME_SNS_TOPIC_ARN: ${{ vars.AWS_RUNTIME_SNS_TOPIC_ARN }}
+      AWS_RUNTIME_CONTROL_TABLE_NAME: ${{ vars.AWS_RUNTIME_CONTROL_TABLE_NAME }}
+      AWS_RUNTIME_REQUIRE_CONTROL_TABLE: ${{ vars.AWS_RUNTIME_REQUIRE_CONTROL_TABLE || 'true' }}
+      AWS_RUNTIME_CORS_ORIGINS: ${{ vars.AWS_RUNTIME_CORS_ORIGINS }}
+      AWS_RUNTIME_REGISTRY_ACTIVATE: ${{ vars.AWS_RUNTIME_REGISTRY_ACTIVATE || 'false' }}
+      RUNTIME_REGISTRY_URL: ${{ vars.RUNTIME_REGISTRY_URL }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: "22"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7
 
       - name: Configure AWS credentials
-        if: ${{ vars.AWS_ROLE_TO_ASSUME != '' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
         with:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Setup ECS Exec client
+        uses: ./.github/actions/setup-session-manager-plugin
 
       - name: Install dependencies
         run: |
           set -euo pipefail
           pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Resolve validated launch request
+        run: |
+          set -euo pipefail
+          request_file="${RUNNER_TEMP}/game-launch-request.json"
+          printf '%s' "${GAME_LAUNCH_REQUEST_JSON}" > "${request_file}"
+          jq -e '
+            type == "object" and
+            ((keys - [
+              "advanceWindowGames",
+              "autoRetryEnabled",
+              "autoRetryIntervalMinutes",
+              "evaluationIntervalMinutes",
+              "firstGameStartTime",
+              "gameIntervalMinutes",
+              "launchOptions",
+              "maxGames",
+              "targetGameNames"
+            ]) | length == 0)
+          ' "${request_file}" >/dev/null
+
+          write_request_env() {
+            local name="$1"
+            local filter="$2"
+            local delimiter
+            local value
+            delimiter="GAME_LAUNCH_$(openssl rand -hex 12)"
+            value="$(jq -r "${filter}" "${request_file}")"
+            printf '%s<<%s\n%s\n%s\n' "${name}" "${delimiter}" "${value}" "${delimiter}" >> "${GITHUB_ENV}"
+          }
+
+          write_request_env GAME_LAUNCH_FIRST_GAME_START_TIME '(.firstGameStartTime // "") | tostring'
+          write_request_env GAME_LAUNCH_GAME_INTERVAL_MINUTES '(.gameIntervalMinutes // "") | tostring'
+          write_request_env GAME_LAUNCH_MAX_GAMES '(.maxGames // "") | tostring'
+          write_request_env GAME_LAUNCH_ADVANCE_WINDOW_GAMES '(.advanceWindowGames // "") | tostring'
+          write_request_env GAME_LAUNCH_EVALUATION_INTERVAL_MINUTES '(.evaluationIntervalMinutes // "") | tostring'
+          write_request_env GAME_LAUNCH_OPTIONS_JSON '(.launchOptions // {}) | tojson'
+          write_request_env GAME_LAUNCH_AUTO_RETRY_ENABLED 'if .autoRetryEnabled == false then "false" else "true" end'
+          write_request_env GAME_LAUNCH_AUTO_RETRY_INTERVAL_MINUTES '(.autoRetryIntervalMinutes // "") | tostring'
+          write_request_env GAME_LAUNCH_TARGET_GAME_NAMES_JSON '(.targetGameNames // []) | tojson'
 
       - name: Build required packages
         run: |
@@ -250,6 +257,7 @@ jobs:
           }
 
           const mappings = {
+            runtimeInstanceId: "GAME_LAUNCH_RUNTIME_INSTANCE_ID",
             rpcUrl: "GAME_LAUNCH_RPC_URL",
             factoryAddress: "GAME_LAUNCH_FACTORY_ADDRESS",
             accountAddress: "GAME_LAUNCH_ACCOUNT_ADDRESS",
@@ -301,6 +309,21 @@ jobs:
           # shellcheck disable=SC1091
           source .context/game-launch/launch-options.sh
 
+          if [ -z "${GAME_LAUNCH_RUNTIME_INSTANCE_ID:-}" ]; then
+            runtime_identity_name="${GAME_LAUNCH_GAME_NAME:-${GAME_LAUNCH_SERIES_NAME:-${GAME_LAUNCH_ROTATION_NAME:-manual}}}"
+            GAME_LAUNCH_RUNTIME_INSTANCE_ID="$(
+              bun config/deployer/clean/cli/runtime-instance-id.ts \
+                --seed-part github-run \
+                --seed-part "${GITHUB_REPOSITORY}" \
+                --seed-part "${GITHUB_WORKFLOW_REF}" \
+                --seed-part "${GITHUB_RUN_ID}" \
+                --seed-part "${GAME_LAUNCH_ENVIRONMENT}" \
+                --seed-part "${GAME_LAUNCH_KIND}" \
+                --seed-part "${runtime_identity_name}"
+            )"
+            export GAME_LAUNCH_RUNTIME_INSTANCE_ID
+          fi
+
           RESOLVED_GAME_LAUNCH_ACCOUNT_ADDRESS="${GAME_LAUNCH_ACCOUNT_ADDRESS:-${DOJO_ACCOUNT_ADDRESS:-}}"
 
           if [ "${GAME_LAUNCH_STEP}" != "sync-paymaster" ] && { [ -z "${RESOLVED_GAME_LAUNCH_ACCOUNT_ADDRESS}" ] || [ -z "${DOJO_PRIVATE_KEY}" ]; }; then
@@ -349,6 +372,7 @@ jobs:
 
             args_ref+=(
               --mode "${resolved_execution_mode}"
+              --runtime-instance-id "${GAME_LAUNCH_RUNTIME_INSTANCE_ID}"
             )
 
             append_optional_arg "${args_name}" --rpc-url "${GAME_LAUNCH_RPC_URL:-}"
@@ -1003,6 +1027,28 @@ jobs:
           source .context/game-launch/launch-env.sh
           run_launch_step create-indexers
 
+      - name: Publish launched runtime endpoints
+        if:
+          ${{ vars.RUNTIME_REGISTRY_URL != '' && (github.event.inputs.launch_step == 'full' ||
+          github.event.inputs.launch_step == 'create-world' || github.event.inputs.launch_step ==
+          'wait-for-factory-index' || github.event.inputs.launch_step == 'configure-world' ||
+          github.event.inputs.launch_step == 'grant-lootchest-role' || github.event.inputs.launch_step ==
+          'grant-village-pass-role' || github.event.inputs.launch_step == 'create-banks' ||
+          github.event.inputs.launch_step == 'create-indexer' || github.event.inputs.launch_step == 'create-series' ||
+          github.event.inputs.launch_step == 'create-worlds' || github.event.inputs.launch_step ==
+          'wait-for-factory-indexes' || github.event.inputs.launch_step == 'configure-worlds' ||
+          github.event.inputs.launch_step == 'grant-lootchest-roles' || github.event.inputs.launch_step ==
+          'grant-village-pass-roles' || github.event.inputs.launch_step == 'create-indexers') }}
+        env:
+          FACTORY_WORKER_ADMIN_SECRET: ${{ secrets.FACTORY_WORKER_ADMIN_SECRET }}
+        run: |
+          set -euo pipefail
+          bun scripts/update-runtime-registry.ts \
+            --registry-url "${RUNTIME_REGISTRY_URL}" \
+            --launch-summary-directory .context/game-launch \
+            --activate-aws "${AWS_RUNTIME_REGISTRY_ACTIVATE}" \
+            | tee .context/game-launch/runtime-registry-result.json
+
       - name: Sync paymaster
         if:
           ${{ startsWith(github.event.inputs.environment, 'mainnet.') && (github.event.inputs.launch_step == 'full' ||
@@ -1023,7 +1069,7 @@ jobs:
 
       - name: Upload launch summary
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: game-launch-summary
           path: .context/game-launch/*.json

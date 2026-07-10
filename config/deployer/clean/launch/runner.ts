@@ -297,6 +297,7 @@ function buildIndexerRequest(options: {
   worldAddress: string;
   workflowFile?: string;
   ref?: string;
+  runtimeOwner?: IndexerRequest["runtimeOwner"];
 }): IndexerRequest {
   return {
     env: options.env,
@@ -311,7 +312,39 @@ function buildIndexerRequest(options: {
     workflowFile: options.workflowFile,
     ref: options.ref,
     externalContracts: [],
+    imageDigest: process.env.AWS_RUNTIME_IMAGE_DIGEST,
+    upstreamRpcSecretArn: process.env.AWS_RUNTIME_UPSTREAM_RPC_SECRET_ARN,
+    exposurePolicy: "public-read",
+    runtimeOwner: options.runtimeOwner,
   };
+}
+
+function buildRuntimeOwnerMetadata(request: LaunchGameRequest, summary: Pick<LaunchGameSummary, "durationSeconds">) {
+  const runKind = request.parentRunKind || (request.seriesName ? "series" : "game");
+  const runName = request.parentRunName || request.seriesName || request.gameName;
+  const deleteAfter = resolveRuntimeDeleteAfter(request.startTime, summary.durationSeconds);
+
+  return {
+    runtimeInstanceId: request.runtimeInstanceId,
+    gameName: request.gameName,
+    runKind,
+    runName,
+    autoTeardown: true,
+    lifecycleClass: "ephemeral",
+    ...(deleteAfter ? { deleteAfter } : {}),
+  } satisfies IndexerRequest["runtimeOwner"];
+}
+
+function resolveRuntimeDeleteAfter(
+  startTime: LaunchGameRequest["startTime"],
+  durationSeconds?: number,
+): string | undefined {
+  if (!Number.isFinite(durationSeconds)) {
+    return undefined;
+  }
+
+  const startAtSeconds = parseStartTime(startTime);
+  return new Date((startAtSeconds + durationSeconds + 60 * 60) * 1000).toISOString();
 }
 
 function buildDryRunSummary(execution: PreparedLaunchExecution): LaunchGameSummary {
@@ -331,6 +364,7 @@ function buildDryRunSummary(execution: PreparedLaunchExecution): LaunchGameSumma
     worldAddress: "<pending>",
     workflowFile: execution.request.workflowFile,
     ref: execution.request.ref,
+    runtimeOwner: buildRuntimeOwnerMetadata(execution.request, execution.summary),
   });
   execution.summary.outputPath = writeLaunchSummary(execution.summary);
   execution.runtime.progress.log(`Dry run summary written to ${execution.summary.outputPath}`);
@@ -1037,6 +1071,7 @@ async function createIndexerIfNeeded(
   runtime: LaunchRuntime,
   request: LaunchGameRequest,
   worldAddress: string,
+  summary: Pick<LaunchGameSummary, "durationSeconds">,
 ): Promise<
   Pick<
     LaunchGameSummary,
@@ -1067,6 +1102,7 @@ async function createIndexerIfNeeded(
     worldAddress,
     workflowFile: request.workflowFile,
     ref: request.ref,
+    runtimeOwner: buildRuntimeOwnerMetadata(request, summary),
   });
   const result = await runtime.progress.run("create indexer", async () => ensureIndexerDeployment(indexerRequest), {
     start: `Creating indexer for ${shortenHash(worldAddress)}`,
@@ -1262,7 +1298,12 @@ async function runCreateIndexerStep(
   updateWorldAddress(execution.summary, resolvedWorldContext);
   Object.assign(
     execution.summary,
-    await createIndexerIfNeeded(execution.runtime, execution.request, resolvedWorldContext.worldProfile.worldAddress),
+    await createIndexerIfNeeded(
+      execution.runtime,
+      execution.request,
+      resolvedWorldContext.worldProfile.worldAddress,
+      execution.summary,
+    ),
   );
 
   return resolvedWorldContext;

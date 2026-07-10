@@ -1,4 +1,5 @@
 import type { Chain } from "@contracts";
+import { resolveChainRpcEndpoint } from "@/config/runtime-endpoints";
 
 // Hex helpers
 const strip0x = (v: string) => (v.startsWith("0x") || v.startsWith("0X") ? v.slice(2) : v);
@@ -27,14 +28,10 @@ export const nameToPaddedFelt = (name: string) => {
 };
 
 const RPC_VERSION_PATH = "/rpc/v0_9";
-const SHARED_SLOT_RPC_PATH = "/x/eternum-blitz-slot-4/katana/rpc/v0_9";
 
 export const isSlotWorldChain = (chain: Chain): boolean => chain === "slot" || chain === "slottest";
 
-export const buildSharedSlotRpcUrl = (cartridgeApiBase: string) => {
-  const baseUrl = cartridgeApiBase.replace(/\/+$/, "");
-  return normalizeRpcUrl(`${baseUrl}${SHARED_SLOT_RPC_PATH}`);
-};
+export const buildSharedSlotRpcUrl = (chain: "slot" | "slottest" = "slot") => resolveChainRpcEndpoint(chain);
 
 export const normalizeRpcUrl = (value: string) => {
   if (!value || value.includes("/rpc/")) return value;

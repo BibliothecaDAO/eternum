@@ -1,5 +1,7 @@
 import { Coord, Direction, getAllHexDirections, HexGrid } from "@bibliothecadao/types";
-import { BANK_COUNT, BANK_NAME_PREFIX, BANK_STEPS_FROM_CENTER, CARTRIDGE_API_BASE } from "../constants";
+import type { Chain } from "@contracts";
+import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
+import { BANK_COUNT, BANK_NAME_PREFIX, BANK_STEPS_FROM_CENTER } from "../constants";
 
 const WORLD_CONFIG_TABLE = "s1_eternum-WorldConfig";
 const WORLD_MAP_CENTER_OFFSET_QUERY = `SELECT "map_center_offset" AS map_center_offset FROM "${WORLD_CONFIG_TABLE}" LIMIT 1;`;
@@ -21,8 +23,8 @@ function parseMaybeHexToNumber(value: unknown): number | null {
   return null;
 }
 
-function buildWorldToriiSqlUrl(worldName: string, query: string): string {
-  return `${CARTRIDGE_API_BASE}/x/${worldName}/torii/sql?query=${encodeURIComponent(query)}`;
+function buildWorldToriiSqlUrl(chain: Chain, worldName: string, query: string): string {
+  return `${resolveGameRuntimeEndpoint(worldName, "sql", { chain })}?query=${encodeURIComponent(query)}`;
 }
 
 function resolveWorldMapCenterCoord(mapCenterOffset: number): Coord {
@@ -39,8 +41,8 @@ function buildAdminBankCoord(center: Coord, direction: Direction) {
   };
 }
 
-export async function fetchWorldMapCenterOffset(worldName: string): Promise<number> {
-  const response = await fetch(buildWorldToriiSqlUrl(worldName, WORLD_MAP_CENTER_OFFSET_QUERY));
+export async function fetchWorldMapCenterOffset(chain: Chain, worldName: string): Promise<number> {
+  const response = await fetch(buildWorldToriiSqlUrl(chain, worldName, WORLD_MAP_CENTER_OFFSET_QUERY));
   if (!response.ok) {
     throw new Error(`Failed to fetch map_center_offset for "${worldName}" (HTTP ${response.status})`);
   }

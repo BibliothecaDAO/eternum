@@ -2,12 +2,19 @@ import { getSeasonAddresses } from "@contracts";
 import { mainnet, sepolia } from "@starknet-react/chains";
 import { constants } from "starknet";
 import { env } from "../../../../../env";
+import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 
 export type CosmeticsNetwork = "mainnet" | "sepolia";
 
 const DEFAULT_MARKETPLACE_URLS: Record<CosmeticsNetwork, string> = {
-  mainnet: "https://api.cartridge.gg/x/eternum-marketplace-mainnet19/torii",
-  sepolia: "https://api.cartridge.gg/x/eternum-marketplace-sepolia-1/torii",
+  mainnet: resolveGameRuntimeEndpoint("eternum-marketplace-mainnet19", "base", {
+    chain: "mainnet",
+    gameType: "eternum",
+  }),
+  sepolia: resolveGameRuntimeEndpoint("eternum-marketplace-sepolia-1", "base", {
+    chain: "sepolia",
+    gameType: "eternum",
+  }),
 };
 
 const importMetaEnv = import.meta.env as Record<string, string | undefined>;

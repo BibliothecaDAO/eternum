@@ -48,6 +48,7 @@ describe("AWS runtime e2e harness", () => {
         AWS_RUNTIME_AUDIT_ENVIRONMENT: "",
         AWS_RUNTIME_AUDIT_RUNTIME_NAME: "",
         AWS_RUNTIME_AUDIT_RUNTIME_KIND: "",
+        AWS_RUNTIME_AUDIT_RUNTIME_INSTANCE_ID: "",
       },
     });
 
@@ -63,9 +64,10 @@ describe("AWS runtime e2e harness", () => {
     expect(payload.errorMessage).toContain("AWS_RUNTIME_AUDIT_ENVIRONMENT");
     expect(payload.errorMessage).toContain("AWS_RUNTIME_AUDIT_RUNTIME_NAME");
     expect(payload.errorMessage).toContain("AWS_RUNTIME_AUDIT_RUNTIME_KIND");
+    expect(payload.errorMessage).toContain("AWS_RUNTIME_AUDIT_RUNTIME_INSTANCE_ID");
   });
 
-  test("resource audit follows pagination before declaring zero orphans", () => {
+  test("resource audit checks concrete AWS resource surfaces", () => {
     const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "aws-runtime-audit-"));
     const binDir = path.join(workspace, "bin");
     const callsPath = path.join(workspace, "calls.log");
@@ -76,16 +78,12 @@ describe("AWS runtime e2e harness", () => {
         "#!/usr/bin/env bash",
         "set -euo pipefail",
         'printf "%s\\n" "$*" >> "${AWS_AUDIT_CALLS}"',
-        'if [[ "$*" == *"--pagination-token page-2"* ]]; then',
+        'if [[ "$*" == *"elbv2 describe-target-groups"* ]]; then',
         "  cat <<'JSON'",
         JSON.stringify({
-          ResourceTagMappingList: [
+          TargetGroups: [
             {
-              ResourceARN: "arn:aws:elasticloadbalancing:us-east-1:111111111111:targetgroup/orphan/abc",
-              Tags: [
-                { Key: "RuntimeServiceName", Value: "slot-blitz-katana-e2e-smoke" },
-                { Key: "RuntimeKind", Value: "katana" },
-              ],
+              TargetGroupArn: "arn:aws:elasticloadbalancing:us-east-1:111111111111:targetgroup/orphan/abc",
             },
           ],
         }),
@@ -93,10 +91,7 @@ describe("AWS runtime e2e harness", () => {
         "  exit 0",
         "fi",
         "cat <<'JSON'",
-        JSON.stringify({
-          ResourceTagMappingList: [],
-          PaginationToken: "page-2",
-        }),
+        JSON.stringify({}),
         "JSON",
       ].join("\n"),
     );
@@ -112,6 +107,8 @@ describe("AWS runtime e2e harness", () => {
         "katana",
         "--runtime-name",
         "e2e-smoke",
+        "--runtime-instance-id",
+        "018f6e54-5f4a-7ae2-a0ff-123456789abc",
         "--region",
         "us-east-1",
       ],
@@ -121,6 +118,7 @@ describe("AWS runtime e2e harness", () => {
         env: {
           ...process.env,
           AWS_AUDIT_CALLS: callsPath,
+          AWS_RUNTIME_AUDIT_ATTEMPTS: "1",
           PATH: `${binDir}:${process.env.PATH}`,
         },
       },
@@ -132,14 +130,19 @@ describe("AWS runtime e2e harness", () => {
     const payload = JSON.parse(result.stdout) as {
       failureClassification: string;
       resourceCount: number;
-      resources: Array<{ arn: string }>;
+      resources: Array<{ type: string; id: string }>;
     };
     expect(payload.failureClassification).toBe("runtime-orphans-detected");
     expect(payload.resourceCount).toBe(1);
-    expect(payload.resources[0]?.arn).toBe(
-      "arn:aws:elasticloadbalancing:us-east-1:111111111111:targetgroup/orphan/abc",
-    );
-    expect(fs.readFileSync(callsPath, "utf8")).toContain("--pagination-token page-2");
+    expect(payload.resources[0]).toEqual({
+      type: "target-group",
+      id: "arn:aws:elasticloadbalancing:us-east-1:111111111111:targetgroup/orphan/abc",
+    });
+    const calls = fs.readFileSync(callsPath, "utf8");
+    expect(calls).toContain("ecs describe-services");
+    expect(calls).toContain("ecs list-task-definitions");
+    expect(calls).toContain("elbv2 describe-target-groups --names katana-e2e-smok-ba8d41929bfc7092");
+    expect(calls).toContain("cloudwatch describe-alarms");
   });
 
   test("IAM guard rejects wildcard PassRole and wildcard OIDC environments", () => {
@@ -270,7 +273,7 @@ variable "github_environments" {
       `
 commandRunner([
   "ecs",
-  "list-services",
+  "list-account-settings",
 ]);
 `,
     );
@@ -292,7 +295,7 @@ commandRunner([
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("AWS runtime deployer uses commands without an IAM mapping");
-    expect(result.stderr).toContain("ecs:list-services");
+    expect(result.stderr).toContain("ecs:list-account-settings");
   });
 
   test("Terraform guard rejects broad task ingress and dead runtime surfaces", () => {
@@ -369,7 +372,7 @@ aws-runtime/foundation.tfstate
     expect(result.stderr).toContain("Terraform must not define aws_ssm_parameter.runtime_domain");
     expect(result.stderr).toContain("Terraform must not define aws_efs_backup_policy.runtime");
     expect(result.stderr).toContain("README missing network hardening snippet: enable_vpc_endpoints");
-    expect(result.stderr).toContain("README missing network hardening snippet: single NAT gateway");
+    expect(result.stderr).toContain("README missing network hardening snippet: one non-production NAT gateway");
   });
 
   test("README parity guard rejects missing access control docs", () => {
@@ -428,7 +431,7 @@ Mainnet environments must set required reviewers and deployment branch policy = 
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("README missing access control snippet: ## Access Control");
-    expect(result.stderr).toContain("README missing access control snippet: single role");
+    expect(result.stderr).toContain("README missing access control snippet: Deploy roles");
     expect(result.stderr).toContain("README missing access control snippet: cannot assume");
   });
 
@@ -600,6 +603,43 @@ jobs:
     expect(result.stderr).toContain("aws-runtime-image.yml must request OIDC id-token permission");
     expect(result.stderr).toContain("aws-runtime-image.yml must configure AWS credentials");
     expect(result.stderr).toContain("aws-runtime-image.yml must login to ECR before pushing");
+    expect(result.stderr).toContain(
+      "aws-runtime-image.yml must allow only exact non-production candidate environments",
+    );
+    expect(result.stderr).toContain("aws-runtime-image.yml must validate dojo_version before writing outputs");
+    expect(result.stderr).toContain(
+      "aws-runtime-image.yml must validate the candidate request before assuming AWS credentials",
+    );
+  });
+
+  test("maintenance workflow payload transport does not execute shell syntax", () => {
+    const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "aws-runtime-injection-"));
+    const outputPath = path.join(workspace, "operations.json");
+    const markerPath = path.join(workspace, "payload-executed");
+    const payload = JSON.stringify([
+      {
+        action: "inspect",
+        environmentId: "slot.blitz",
+        gameName: `quote-'\"\n$(touch ${markerPath})\n\`touch ${markerPath}\`\n; touch ${markerPath}`,
+      },
+    ]);
+
+    const result = spawnSync(
+      "bash",
+      ["-c", 'set -euo pipefail\nprintf \'%s\' "${OPERATIONS_JSON}" > "${OUTPUT_FILE}"'],
+      {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: { ...process.env, OPERATIONS_JSON: payload, OUTPUT_FILE: outputPath },
+      },
+    );
+
+    expect(result.status).toBe(0);
+    expect(fs.readFileSync(outputPath, "utf8")).toBe(payload);
+    expect(fs.existsSync(markerPath)).toBe(false);
+    expect(fs.readFileSync(".github/workflows/factory-indexer-maintenance.yml", "utf8")).toContain(
+      'printf \'%s\' "${OPERATIONS_JSON}" > "${operations_file}"',
+    );
   });
 
   test("workflow guard rejects missing nightly runtime e2e validation workflow", () => {
@@ -818,7 +858,7 @@ The public URL shape includes /x/{env}/{runtime}/torii/wss.
         '  count="$(cat "${AWS_E2E_INSPECT_COUNT}" 2>/dev/null || printf "0")"',
         '  count="$((count + 1))"',
         '  printf "%s" "${count}" > "${AWS_E2E_INSPECT_COUNT}"',
-        '  if [[ "${count}" == "3" ]]; then',
+        '  if [[ "${count}" == "4" ]]; then',
         '    printf \'{"operation":"inspect","liveState":{},"artifact":{}}\\n\'',
         "    exit 0",
         "  fi",
@@ -826,11 +866,16 @@ The public URL shape includes /x/{env}/{runtime}/torii/wss.
         'printf \'{"operation":"%s","restoredFromSnapshot":"2026-07-04T00:00:00.000Z","liveState":{},"artifact":{}}\\n\' "${operation}"',
       ].join("\n"),
     );
+    fs.writeFileSync(
+      path.join(binDir, "node"),
+      ["#!/usr/bin/env bash", "set -euo pipefail", 'printf \'{"status":"passed"}\\n\''].join("\n"),
+    );
     fs.chmodSync(path.join(binDir, "pnpm"), 0o755);
     fs.chmodSync(path.join(binDir, "bun"), 0o755);
+    fs.chmodSync(path.join(binDir, "node"), 0o755);
 
     const result = spawnSync(
-      "node",
+      process.execPath,
       [
         "scripts/aws-runtime-e2e.mjs",
         "--environment",
@@ -839,6 +884,8 @@ The public URL shape includes /x/{env}/{runtime}/torii/wss.
         "katana",
         "--runtime-name",
         "e2e-smoke",
+        "--image-digest",
+        `sha256:${"a".repeat(64)}`,
       ],
       {
         cwd: process.cwd(),
@@ -906,11 +953,16 @@ The public URL shape includes /x/{env}/{runtime}/torii/wss.
         'printf \'{"operation":"%s","liveState":{},"artifact":{}}\\n\' "${operation}"',
       ].join("\n"),
     );
+    fs.writeFileSync(
+      path.join(binDir, "node"),
+      ["#!/usr/bin/env bash", "set -euo pipefail", 'printf \'{"status":"passed"}\\n\''].join("\n"),
+    );
     fs.chmodSync(path.join(binDir, "pnpm"), 0o755);
     fs.chmodSync(path.join(binDir, "bun"), 0o755);
+    fs.chmodSync(path.join(binDir, "node"), 0o755);
 
     const result = spawnSync(
-      "node",
+      process.execPath,
       [
         "scripts/aws-runtime-e2e.mjs",
         "--environment",
@@ -919,6 +971,8 @@ The public URL shape includes /x/{env}/{runtime}/torii/wss.
         "katana",
         "--runtime-name",
         "e2e-smoke",
+        "--image-digest",
+        `sha256:${"a".repeat(64)}`,
       ],
       {
         cwd: process.cwd(),

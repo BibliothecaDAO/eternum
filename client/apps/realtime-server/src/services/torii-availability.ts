@@ -3,8 +3,7 @@ import { fetchFactoryPrizeAddresses } from "./factory-prize-addresses";
 import { fetchFactoryWorldDeployments, type FactoryWorldDeployment } from "./factory-worlds";
 import { fetchJackpotBalance } from "./jackpot-balance";
 import { fetchWorldSummaryResult } from "./world-summary";
-
-const CARTRIDGE_API_BASE = "https://api.cartridge.gg";
+import { resolveGameToriiEndpoint } from "./runtime-endpoints";
 
 function buildNullSummary(name: string, chain: WorldSummaryChain, alive: boolean, now: number): WorldSummary {
   return {
@@ -113,7 +112,7 @@ export class ToriiAvailabilityService {
     const cacheKey = getWorldCacheKey(chain, worldName);
     let alive = false;
     try {
-      const url = `${CARTRIDGE_API_BASE}/x/${worldName}/torii/sql`;
+      const url = resolveGameToriiEndpoint(worldName, "sql", chain);
       const response = await fetch(url, {
         method: "HEAD",
         signal: AbortSignal.timeout(this.probeTimeoutMs),
@@ -133,7 +132,7 @@ export class ToriiAvailabilityService {
 
     const fallbackFields = buildNullSummary(worldName, chain, true, now);
     const previousSummary = this.cache.get(cacheKey);
-    const summaryResult = await fetchWorldSummaryResult(worldName, this.probeTimeoutMs);
+    const summaryResult = await fetchWorldSummaryResult(worldName, this.probeTimeoutMs, chain);
     const summaryFields = summaryResult.ok
       ? summaryResult.fields
       : extractSummaryFields(previousSummary, fallbackFields);

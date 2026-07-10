@@ -23,7 +23,8 @@ bun config/deployer/clean/cli/create.ts \
 
 Required inputs:
 
-- `--environment`: `slot.blitz`, `slot.eternum`, `mainnet.blitz`, or `mainnet.eternum`
+- `--environment`: `slot.blitz`, `slot.eternum`, `slottest.blitz`, `slottest.eternum`, `mainnet.blitz`, or
+  `mainnet.eternum`
 - `--game`
 - `--start-time`: unix seconds, unix milliseconds, or ISO-8601
 

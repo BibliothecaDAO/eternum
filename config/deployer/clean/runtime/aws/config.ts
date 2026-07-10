@@ -1,8 +1,9 @@
 import { type RuntimeKind as AwsRuntimeKind } from "../../../../../common/factory/runtime-endpoints";
-import { DEFAULT_TORII_VERSION } from "../../constants";
-import type { DeploymentEnvironmentId, IndexerTier } from "../../types";
+import { DEFAULT_KATANA_VERSION, DEFAULT_TORII_VERSION } from "../../constants";
+import type { DeploymentEnvironmentId, IndexerTier, RuntimeExposurePolicy, RuntimeLifecycleClass } from "../../types";
 import type { AwsCommandTag } from "./commands";
 import { buildAwsRuntimeServiceName } from "./naming";
+import { normalizeRuntimeSegment } from "../../../../../common/factory/runtime-endpoints";
 
 const DEFAULT_AWS_RUNTIME_REGION = "us-east-1";
 const DEFAULT_AWS_RUNTIME_DOMAIN = "runtime.realms.world";
@@ -42,9 +43,15 @@ export interface AwsRuntimeConfigRequest {
   environmentId: DeploymentEnvironmentId;
   runtimeKind: AwsRuntimeKind;
   runtimeName: string;
+  runtimeInstanceId?: string;
   tier?: IndexerTier;
   version?: string;
+  imageDigest?: string;
+  exposurePolicy?: RuntimeExposurePolicy;
+  lifecycleClass?: RuntimeLifecycleClass;
+  routingShard?: number;
   region?: string;
+  owner?: RuntimeOwnerTagMetadata;
 }
 
 export interface AwsRuntimeCommandConfig {
@@ -54,7 +61,6 @@ export interface AwsRuntimeCommandConfig {
   image: string;
   imageDigest: string;
   ecrRepositoryName?: string;
-  ecrImageTag?: string;
   executionRoleArn: string;
   taskRoleArn?: string;
   subnetIds: string[];
@@ -75,7 +81,40 @@ export interface AwsRuntimeTierConfig {
 }
 
 export function resolveRuntimeDomain(domain?: string): string {
-  return (domain || process.env.AWS_RUNTIME_DOMAIN || DEFAULT_AWS_RUNTIME_DOMAIN).replace(/^https?:\/\//, "");
+  const runtimeDomain = (domain || process.env.AWS_RUNTIME_DOMAIN || DEFAULT_AWS_RUNTIME_DOMAIN)
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/\.$/, "");
+  const labels = runtimeDomain.split(".");
+  const isValidDomain =
+    runtimeDomain.length <= 253 &&
+    labels.length >= 2 &&
+    labels.every((label) => label.length >= 1 && label.length <= 63 && /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(label));
+  if (!isValidDomain) {
+    throw new Error(`Invalid AWS runtime domain "${runtimeDomain}"`);
+  }
+
+  return runtimeDomain;
+}
+
+export function resolveRuntimeRouteHost(
+  request: Pick<AwsRuntimeConfigRequest, "environmentId" | "runtimeInstanceId" | "routingShard"> & {
+    domain?: string;
+    routeHost?: string;
+  },
+): string {
+  if (request.routeHost) {
+    return resolveRuntimeDomain(request.routeHost);
+  }
+
+  const runtimeDomain = resolveRuntimeDomain(request.domain);
+  if (!request.runtimeInstanceId) {
+    return runtimeDomain;
+  }
+
+  const shard = request.routingShard ?? 0;
+  return `s${shard}.${normalizeRuntimeSegment(request.environmentId)}.${runtimeDomain}`;
 }
 
 export function resolveRuntimeRegion(region?: string): string {
@@ -87,7 +126,7 @@ export function resolveRuntimeTier(tier?: IndexerTier): IndexerTier {
 }
 
 export function resolveRuntimeVersion(request: AwsRuntimeConfigRequest): string {
-  return request.version || DEFAULT_TORII_VERSION;
+  return request.version || (request.runtimeKind === "katana" ? DEFAULT_KATANA_VERSION : DEFAULT_TORII_VERSION);
 }
 
 export function resolveRuntimeContainerPort(runtimeKind: AwsRuntimeKind): number {
@@ -123,14 +162,13 @@ export function resolveAwsRuntimeCommandConfig(request: AwsRuntimeConfigRequest)
     image: image.reference,
     imageDigest: image.digest,
     ecrRepositoryName: image.repositoryName,
-    ecrImageTag: image.tag,
     executionRoleArn: requireEnv("AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN"),
     taskRoleArn: process.env.AWS_RUNTIME_TASK_ROLE_ARN?.trim() || undefined,
     subnetIds: requireCsvEnv("AWS_RUNTIME_SUBNET_IDS"),
     securityGroupIds: requireCsvEnv("AWS_RUNTIME_SECURITY_GROUP_IDS"),
     efsFileSystemId: requireEnv("AWS_RUNTIME_EFS_FILE_SYSTEM_ID"),
     vpcId: requireEnv("AWS_RUNTIME_VPC_ID"),
-    listenerArn: resolveAwsRuntimeListenerArn(),
+    listenerArn: resolveAwsRuntimeListenerArn(request.routingShard),
     assignPublicIp,
     logGroup: resolveRuntimeLogGroup(),
     containerName: process.env.AWS_RUNTIME_CONTAINER_NAME || DEFAULT_AWS_RUNTIME_CONTAINER_NAME,
@@ -146,12 +184,44 @@ export function buildAwsRuntimeTags(
     { key: "Environment", value: request.environmentId },
     { key: "RuntimeKind", value: request.runtimeKind },
     { key: "RuntimeName", value: request.runtimeName },
+    ...(request.runtimeInstanceId ? [{ key: "RuntimeInstanceId", value: request.runtimeInstanceId }] : []),
     { key: "RuntimeProvider", value: "aws" },
     { key: "RuntimeTier", value: resolveRuntimeTier(request.tier) },
     { key: "RuntimeVersion", value: resolveRuntimeVersion(request) },
     { key: "RuntimeServiceName", value: buildAwsRuntimeServiceName(request) },
+    ...(request.exposurePolicy ? [{ key: "ExposurePolicy", value: request.exposurePolicy }] : []),
+    ...(request.lifecycleClass ? [{ key: "LifecycleClass", value: request.lifecycleClass }] : []),
+    ...(request.routingShard !== undefined ? [{ key: "RoutingShard", value: `${request.routingShard}` }] : []),
+    ...buildRuntimeOwnerTags(request),
     ...extraTags,
   ];
+}
+
+function buildRuntimeOwnerTags(request: AwsRuntimeConfigRequest): AwsCommandTag[] {
+  const owner = request.owner;
+  if (!owner) {
+    return [];
+  }
+
+  return [
+    ...(owner.runtimeInstanceId ? [{ key: "RuntimeInstanceId", value: owner.runtimeInstanceId }] : []),
+    { key: "GameName", value: owner.gameName },
+    { key: "RunKind", value: owner.runKind },
+    { key: "RunName", value: owner.runName },
+    ...(owner.autoTeardown ? [{ key: "AutoTeardown", value: "true" }] : []),
+    ...(owner.deleteAfter ? [{ key: "DeleteAfter", value: owner.deleteAfter }] : []),
+    ...(owner.lifecycleClass ? [{ key: "LifecycleClass", value: owner.lifecycleClass }] : []),
+  ];
+}
+
+interface RuntimeOwnerTagMetadata {
+  runtimeInstanceId?: string;
+  gameName: string;
+  runKind: "game" | "series" | "rotation";
+  runName: string;
+  autoTeardown?: boolean;
+  deleteAfter?: string;
+  lifecycleClass?: RuntimeLifecycleClass;
 }
 
 export function toEcsTagList(tags: AwsCommandTag[]): string[] {
@@ -218,7 +288,16 @@ function requireCsvEnv(name: string): string[] {
   return values;
 }
 
-function resolveAwsRuntimeListenerArn(): string {
+function resolveAwsRuntimeListenerArn(routingShard?: number): string {
+  const shardListeners = parseShardListenerArns();
+  if (routingShard !== undefined && shardListeners.length > 0) {
+    const listenerArn = shardListeners[routingShard];
+    if (!listenerArn) {
+      throw new Error(`Missing AWS runtime foundation config: listener ARN for routing shard ${routingShard}`);
+    }
+    return listenerArn;
+  }
+
   const value = process.env.AWS_RUNTIME_ALB_LISTENER_ARN?.trim() || process.env.AWS_RUNTIME_LISTENER_ARN?.trim();
   if (!value) {
     throw new Error("Missing AWS runtime foundation config: AWS_RUNTIME_ALB_LISTENER_ARN");
@@ -227,29 +306,66 @@ function resolveAwsRuntimeListenerArn(): string {
   return value;
 }
 
+function parseShardListenerArns(): string[] {
+  const value = process.env.AWS_RUNTIME_ALB_LISTENER_ARNS?.trim();
+  if (!value) {
+    return [];
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    throw new Error("Invalid AWS runtime foundation config: AWS_RUNTIME_ALB_LISTENER_ARNS must be JSON");
+  }
+
+  if (!Array.isArray(parsed) || parsed.some((listenerArn) => typeof listenerArn !== "string" || !listenerArn)) {
+    throw new Error("Invalid AWS runtime foundation config: AWS_RUNTIME_ALB_LISTENER_ARNS must be a string array");
+  }
+
+  return parsed;
+}
+
 function resolveRuntimeImageReference(request: AwsRuntimeConfigRequest): {
   reference: string;
   digest: string;
   repositoryName?: string;
-  tag?: string;
 } {
-  const version = request.version?.trim();
-
-  if (version) {
+  const imageDigest = normalizeImageDigest(request.imageDigest);
+  if (imageDigest) {
     const repositoryUrl = requireEnv("AWS_RUNTIME_ECR_REPOSITORY_URL");
     return {
-      reference: `${repositoryUrl}:${version}`,
-      digest: "",
+      reference: `${repositoryUrl}@${imageDigest}`,
+      digest: imageDigest,
       repositoryName: resolveEcrRepositoryName(repositoryUrl),
-      tag: version,
     };
   }
 
   const pinnedImage = requireEnv("AWS_RUNTIME_ECR_IMAGE");
+  const pinnedDigest = /@(sha256:[a-f0-9]{64})$/i.exec(pinnedImage)?.[1];
+  if (!pinnedDigest) {
+    throw new Error(
+      "AWS_RUNTIME_ECR_IMAGE must be pinned as repository@sha256:<64 hex> when imageDigest is not provided",
+    );
+  }
   return {
     reference: pinnedImage,
-    digest: pinnedImage,
+    digest: pinnedDigest.toLowerCase(),
+    repositoryName: resolveEcrRepositoryName(pinnedImage.split("@")[0]),
   };
+}
+
+function normalizeImageDigest(value: string | undefined): string | undefined {
+  const digest = value?.trim();
+  if (!digest) {
+    return undefined;
+  }
+
+  if (!/^sha256:[a-f0-9]{64}$/i.test(digest)) {
+    throw new Error(`Invalid AWS runtime image digest "${digest}"`);
+  }
+
+  return digest.toLowerCase();
 }
 
 function resolveEcrRepositoryName(repositoryUrl: string): string {

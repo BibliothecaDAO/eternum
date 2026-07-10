@@ -1,4 +1,5 @@
 import { getFactorySqlBaseUrl as getFactorySqlBaseUrlRuntime } from "@/runtime/world";
+import { resolveChainRpcEndpoint } from "@/config/runtime-endpoints";
 import {
   DEFAULT_FACTORY_NAMESPACE,
   FACTORY_ADDRESSES as SHARED_FACTORY_ADDRESSES,
@@ -23,7 +24,6 @@ export const DEFAULT_NAMESPACE = DEFAULT_FACTORY_NAMESPACE;
 export const INDEXER_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
 // External endpoints (env-backed with safe defaults)
-export const CARTRIDGE_API_BASE = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 export const TORII_CREATOR_URL =
   env.VITE_PUBLIC_TORII_CREATOR_URL || "https://torii-creator.zerocredence.workers.dev/dispatch/torii";
 
@@ -90,16 +90,5 @@ export const BANK_COUNT = 6;
 
 // Torii RPC per environment (admin usage)
 export const getRpcUrlForChain = (chain: Chain | ChainType): string => {
-  switch (chain) {
-    case "mainnet":
-      return `${CARTRIDGE_API_BASE}/x/starknet/mainnet`;
-    case "sepolia":
-      return `${CARTRIDGE_API_BASE}/x/starknet/sepolia`;
-    case "slot":
-      return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-4/katana`;
-    case "slottest":
-      return `${CARTRIDGE_API_BASE}/x/eternum-blitz-slot-test/katana`;
-    default:
-      return env.VITE_PUBLIC_NODE_URL as string;
-  }
+  return chain === "local" ? (env.VITE_PUBLIC_NODE_URL as string) : resolveChainRpcEndpoint(chain);
 };

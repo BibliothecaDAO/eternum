@@ -1,8 +1,16 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import process from "node:process";
 
-const validEnvironments = new Set(["slot.blitz", "slot.eternum", "mainnet.blitz", "mainnet.eternum"]);
+const validEnvironments = new Set([
+  "slot.blitz",
+  "slot.eternum",
+  "slottest.blitz",
+  "slottest.eternum",
+  "mainnet.blitz",
+  "mainnet.eternum",
+]);
 const validRuntimeKinds = new Set(["katana", "torii"]);
 
 function main() {
@@ -10,7 +18,7 @@ function main() {
   const args = parseArgs(process.argv.slice(2));
 
   try {
-    const request = resolveE2eRequest(args);
+    const request = resolveE2eRequest(args, args.dryRun);
     const steps = buildE2eSteps(request);
 
     if (args.dryRun) {
@@ -71,7 +79,7 @@ function parseArgs(argv) {
   return parsed;
 }
 
-function resolveE2eRequest(args) {
+function resolveE2eRequest(args, dryRun) {
   const request = {
     environmentId: resolveInput(args.environment, "AWS_RUNTIME_E2E_ENVIRONMENT"),
     runtimeName: resolveInput(args.runtimeName, "AWS_RUNTIME_E2E_RUNTIME_NAME"),
@@ -80,11 +88,13 @@ function resolveE2eRequest(args) {
     tier: resolveInput(args.tier, "AWS_RUNTIME_E2E_TIER") || "basic",
     resizeTier: resolveInput(args.resizeTier, "AWS_RUNTIME_E2E_RESIZE_TIER") || "pro",
     version: resolveInput(args.version, "AWS_RUNTIME_E2E_VERSION"),
+    imageDigest: resolveInput(args.imageDigest, "AWS_RUNTIME_E2E_IMAGE_DIGEST"),
+    runtimeInstanceId: resolveInput(args.runtimeInstanceId, "AWS_RUNTIME_E2E_RUNTIME_INSTANCE_ID") || randomUUID(),
     rpcUrl: resolveInput(args.rpcUrl, "AWS_RUNTIME_E2E_RPC_URL"),
     worldAddress: resolveInput(args.worldAddress, "AWS_RUNTIME_E2E_WORLD_ADDRESS"),
   };
 
-  validateE2eRequest(request);
+  validateE2eRequest(request, dryRun);
   return request;
 }
 
@@ -92,7 +102,7 @@ function resolveInput(argValue, envName) {
   return argValue || process.env[envName]?.trim() || "";
 }
 
-function validateE2eRequest(request) {
+function validateE2eRequest(request, dryRun) {
   const missingInputs = [
     ["AWS_RUNTIME_E2E_ENVIRONMENT", request.environmentId],
     ["AWS_RUNTIME_E2E_RUNTIME_NAME", request.runtimeName],
@@ -125,6 +135,10 @@ function validateE2eRequest(request) {
       throw new ValidationError(`Missing required Torii e2e inputs: ${missingToriiInputs.join(", ")}`);
     }
   }
+
+  if (!dryRun && !/^sha256:[a-f0-9]{64}$/.test(request.imageDigest)) {
+    throw new ValidationError("AWS_RUNTIME_E2E_IMAGE_DIGEST must be an immutable sha256 digest");
+  }
 }
 
 function buildE2eSteps(request) {
@@ -132,8 +146,10 @@ function buildE2eSteps(request) {
     ...buildStaticGuardSteps(),
     buildConcurrentAwsRuntimeDeployStep(request),
     buildAwsRuntimeStep("inspect", request),
-    buildAwsRuntimeStep("resize", request, { tier: request.resizeTier }),
+    buildCheckpointUpdateStep(request),
     buildAwsRuntimeStep("inspect-after-resize", request, { operation: "inspect" }),
+    buildForcedCrashStep(request),
+    buildAwsRuntimeStep("inspect-after-forced-crash", request, { operation: "inspect" }),
     buildAwsRuntimeStep("delete-retain-data", request, { operation: "delete", retainData: true }),
     buildAwsRuntimeStep("deploy-retained-data", request, { operation: "deploy", tier: request.tier }),
     buildAwsRuntimeStep("inspect-retained-data", request, { operation: "inspect" }),
@@ -174,16 +190,55 @@ function buildAwsRuntimeStep(name, request, overrides = {}) {
     request.runtimeKind,
     "--runtime-name",
     request.runtimeName,
+    "--runtime-instance-id",
+    request.runtimeInstanceId,
   ];
 
   appendOptionalFlag(command, "--domain", request.domain);
   appendOptionalFlag(command, "--tier", overrides.tier);
   appendOptionalFlag(command, "--version", request.version);
+  appendOptionalFlag(command, "--image-digest", request.imageDigest);
   appendOptionalFlag(command, "--rpc-url", request.rpcUrl);
   appendOptionalFlag(command, "--world-address", request.worldAddress);
   appendOptionalFlag(command, "--retain-data", overrides.retainData ? "true" : "");
 
   return { name, command };
+}
+
+function buildForcedCrashStep(request) {
+  return buildShellStep("forced-crash", [
+    "node",
+    "scripts/aws-runtime-forced-crash.mjs",
+    "--environment",
+    request.environmentId,
+    "--runtime-kind",
+    request.runtimeKind,
+    "--runtime-name",
+    request.runtimeName,
+    "--runtime-instance-id",
+    request.runtimeInstanceId,
+  ]);
+}
+
+function buildCheckpointUpdateStep(request) {
+  return buildShellStep("checkpoint-update", [
+    "node",
+    "scripts/aws-runtime-forced-crash.mjs",
+    "--test-mode",
+    "checkpoint-update",
+    "--environment",
+    request.environmentId,
+    "--runtime-kind",
+    request.runtimeKind,
+    "--runtime-name",
+    request.runtimeName,
+    "--runtime-instance-id",
+    request.runtimeInstanceId,
+    "--resize-tier",
+    request.resizeTier,
+    "--image-digest",
+    request.imageDigest,
+  ]);
 }
 
 function buildConcurrentAwsRuntimeDeployStep(request) {
@@ -227,6 +282,10 @@ function buildResourceAuditStep(name, request) {
     request.runtimeKind,
     "--runtime-name",
     request.runtimeName,
+    "--runtime-instance-id",
+    request.runtimeInstanceId,
+    "--expected-snapshot-intent",
+    "deleted",
   ];
 
   appendOptionalFlag(command, "--region", request.region);

@@ -9,14 +9,16 @@ import type {
 
 const FACTORY_ENVIRONMENT_LABELS: Record<string, string> = {
   "slot.eternum": "Slot",
+  "slottest.eternum": "Slot Test",
   "mainnet.eternum": "Mainnet",
   "slot.blitz": "Slot",
+  "slottest.blitz": "Slot Test",
   "mainnet.blitz": "Mainnet",
 };
 
 const FACTORY_ENVIRONMENTS_BY_MODE: Record<FactoryGameMode, string[]> = {
-  eternum: ["slot.eternum", "mainnet.eternum"],
-  blitz: ["slot.blitz", "mainnet.blitz"],
+  eternum: ["slot.eternum", "slottest.eternum", "mainnet.eternum"],
+  blitz: ["slot.blitz", "slottest.blitz", "mainnet.blitz"],
 };
 
 const MINUTES_PER_HOUR = 60;

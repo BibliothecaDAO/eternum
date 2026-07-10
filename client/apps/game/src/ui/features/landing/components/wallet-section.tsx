@@ -11,6 +11,7 @@ import { displayAddress } from "@/ui/utils/utils";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useCartridgeUsername } from "@/hooks/use-cartridge-username";
 import { getAvatarUrl, useMyAvatar } from "@/hooks/use-player-avatar";
+import { resolveChainRpcEndpoint } from "@/config/runtime-endpoints";
 
 // Token configs - always mainnet
 interface TokenConfig {
@@ -46,7 +47,7 @@ const MAINNET_TOKENS: TokenConfig[] = (() => {
 })();
 
 // Always use mainnet RPC
-const MAINNET_RPC_URL = "https://api.cartridge.gg/x/starknet/mainnet";
+const MAINNET_RPC_URL = resolveChainRpcEndpoint("mainnet");
 
 interface TokenBalance {
   symbol: string;

@@ -20,13 +20,26 @@ const DEFAULT_FACTORY_ROTATION_RUN_RECOVERY_GRACE_MS = 15_000;
 const DEFAULT_SERIES_AUTO_RETRY_INTERVAL_MINUTES = 15;
 const DEFAULT_INDEXER_MAINTENANCE_WORKFLOW_FILE = "factory-indexer-maintenance.yml";
 const FACTORY_LIVE_INDEXER_SNAPSHOT_PATH = "indexes/indexers/live.json";
+const RUNTIME_REGISTRY_PATH = "registry/runtime-registry.v1.json";
+const RUNTIME_REGISTRY_SCHEMA_VERSION = "realms-runtime-registry/v1";
+const CANONICAL_RUNTIME_NAME_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,46}[a-z0-9])?$/;
 const DEFAULT_INDEXER_LEGENDARY_LEAD_MS = 30 * 60_000;
 const DEFAULT_INDEXER_PRO_COOLDOWN_MS = 40 * 60_000;
 const DEFAULT_INDEXER_TIER_REQUEST_COOLDOWN_MS = 15 * 60_000;
+const DEFAULT_RUNTIME_TEARDOWN_GRACE_MS = 60 * 60_000;
+const DEFAULT_RUNTIME_TEARDOWN_DISPATCH_COOLDOWN_MS = 15 * 60_000;
 const DEFAULT_FACTORY_RECENT_RUN_LIST_LIMIT = 50;
 const MAX_FACTORY_RECENT_RUN_LIST_LIMIT = 100;
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
-const FACTORY_ENVIRONMENTS = ["slot.blitz", "slot.eternum", "mainnet.blitz", "mainnet.eternum"];
+const RUNTIME_INSTANCE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const FACTORY_ENVIRONMENTS = [
+  "slot.blitz",
+  "slot.eternum",
+  "slottest.blitz",
+  "slottest.eternum",
+  "mainnet.blitz",
+  "mainnet.eternum",
+];
 const BIOME_CLIMATE_OVERRIDE_LIMITS = {
   elevationScaleBps: 65_535,
   moistureScaleBps: 65_535,
@@ -77,6 +90,15 @@ async function handleRequest(request, env) {
 
     if (request.method === "OPTIONS") {
       return buildCorsPreflightResponse(request, env);
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/runtime-registry/v1") {
+      return await handleReadRuntimeRegistry(request, env);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/runtime-registry/v1") {
+      requireFactoryWorkerAdminAuthorization(request, env);
+      return await handlePublishRuntimeRegistry(request, env);
     }
 
     if (request.method === "GET" && url.pathname === "/api/factory/runs") {
@@ -1011,6 +1033,7 @@ async function handleCreateFactoryIndexers(request, env) {
     action: "create",
     environmentId: body.environment,
     gameName,
+    runtimeInstanceId: crypto.randomUUID(),
   }));
   const workflowRun = await dispatchFactoryIndexerMaintenanceWorkflow(github, {
     environment: body.environment,
@@ -1126,6 +1149,7 @@ function validateCreateFactoryRunBody(body) {
   validateMapConfigOverrides(body.mapConfigOverrides);
   validateBiomeClimateOverrides(body.biomeClimateOverrides);
   validateBlitzRegistrationOverrides(body.blitzRegistrationOverrides);
+  validateOptionalRuntimeInstanceId(body.runtimeInstanceId);
 
   if (!body.gameStartTime?.trim()) {
     throw new HttpError(400, "gameStartTime is required");
@@ -1140,6 +1164,7 @@ function validateCreateFactorySeriesRunBody(body) {
   validateBiomeClimateOverrides(body.biomeClimateOverrides);
   validateBlitzRegistrationOverrides(body.blitzRegistrationOverrides);
   validateSeriesGames(body.games);
+  validateOptionalRuntimeInstanceId(body.runtimeInstanceId);
 
   if (body.autoRetryIntervalMinutes !== undefined) {
     validatePositiveNumber(body.autoRetryIntervalMinutes, "autoRetryIntervalMinutes");
@@ -1154,6 +1179,7 @@ function validateCreateFactoryRotationRunBody(body) {
   validateBiomeClimateOverrides(body.biomeClimateOverrides);
   validateBiomeClimateOverridesByGameNumber(body.biomeClimateOverridesByGameNumber);
   validateBlitzRegistrationOverrides(body.blitzRegistrationOverrides);
+  validateOptionalRuntimeInstanceId(body.runtimeInstanceId);
 
   if (hasWeeklyCadence(body)) {
     validateWeeklyCadence(body.weeklyCadence);
@@ -1181,6 +1207,15 @@ function validateCreateFactoryRotationRunBody(body) {
 }
 
 const WEEKLY_CADENCE_WEEKDAYS = new Set(["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]);
+
+function validateOptionalRuntimeInstanceId(runtimeInstanceId) {
+  if (runtimeInstanceId === undefined) {
+    return;
+  }
+  if (typeof runtimeInstanceId !== "string" || !RUNTIME_INSTANCE_ID_PATTERN.test(runtimeInstanceId)) {
+    throw new HttpError(400, "runtimeInstanceId must be a lowercase RFC 9562 UUID");
+  }
+}
 
 function hasWeeklyCadence(body) {
   return Array.isArray(body.weeklyCadence) && body.weeklyCadence.length > 0;
@@ -1394,6 +1429,7 @@ function buildContinueWorkflowRequest(route, run, inputRecord, launchStep) {
     environment,
     gameName,
     gameStartTime: String(gameStartTime),
+    runtimeInstanceId: rawRequest.runtimeInstanceId,
     rpcUrl: rawRequest.rpcUrl,
     factoryAddress: rawRequest.factoryAddress,
     devModeOn: rawRequest.devModeOn,
@@ -1446,6 +1482,7 @@ function buildContinueSeriesWorkflowRequest(route, run, inputRecord, launchStep,
     environment,
     seriesName,
     games,
+    runtimeInstanceId: rawRequest.runtimeInstanceId,
     rpcUrl: rawRequest.rpcUrl,
     factoryAddress: rawRequest.factoryAddress,
     devModeOn: rawRequest.devModeOn,
@@ -1500,6 +1537,7 @@ function buildContinueRotationWorkflowRequest(route, run, inputRecord, launchSte
     launchKind: "rotation",
     environment,
     rotationName,
+    runtimeInstanceId: rawRequest.runtimeInstanceId,
     firstGameStartTime: String(rawRequest.firstGameStartTime),
     gameIntervalMinutes: resolveRotationGameIntervalMinutes(rawRequest, run.summary, weeklyCadence),
     maxGames: rawRequest.maxGames ?? run.summary?.maxGames,
@@ -1982,6 +2020,142 @@ function requireFactoryWorkerAdminAuthorization(request, env) {
 
 function resolveRunStoreBranch(env) {
   return env.FACTORY_RUN_STORE_BRANCH || "factory-runs";
+}
+
+async function handleReadRuntimeRegistry(request, env) {
+  const github = createGitHubClient(env);
+  const registryRecord = await readBranchJsonWithMetadataIfPresent(
+    github,
+    RUNTIME_REGISTRY_PATH,
+    resolveRunStoreBranch(env),
+  );
+  if (!registryRecord) {
+    throw new HttpError(503, "Runtime registry is not published");
+  }
+
+  validateRuntimeRegistryDocument(registryRecord.value);
+  return new Response(JSON.stringify(registryRecord.value, null, 2), {
+    status: 200,
+    headers: {
+      ...buildCorsHeaders(request, env),
+      "Cache-Control": "public, max-age=30, stale-if-error=300",
+      "Content-Type": "application/json",
+      ETag: `"${registryRecord.sha}"`,
+    },
+  });
+}
+
+async function handlePublishRuntimeRegistry(request, env) {
+  const body = await readJsonBody(request);
+  const registry = body.registry;
+  const expectedRevision = body.expectedRevision;
+  validateRuntimeRegistryDocument(registry);
+  if (!Number.isInteger(expectedRevision) || expectedRevision < 0) {
+    throw new HttpError(400, "expectedRevision must be a non-negative integer");
+  }
+
+  const github = createGitHubClient(env);
+  const branch = resolveRunStoreBranch(env);
+  const publishedRegistry = await updateBranchJsonFileValue(
+    github,
+    RUNTIME_REGISTRY_PATH,
+    branch,
+    (existingRegistry) => {
+      const currentRevision = existingRegistry?.revision || 0;
+      if (currentRevision !== expectedRevision) {
+        throw new HttpError(
+          409,
+          `Runtime registry revision changed: expected ${expectedRevision}, found ${currentRevision}`,
+        );
+      }
+      if (registry.revision !== currentRevision + 1) {
+        throw new HttpError(400, `Runtime registry revision must be ${currentRevision + 1}`);
+      }
+      return registry;
+    },
+    `runtime-registry: publish revision ${registry.revision}`,
+  );
+
+  return buildJsonResponse(request, env, publishedRegistry, 200);
+}
+
+function validateRuntimeRegistryDocument(registry) {
+  if (!registry || typeof registry !== "object" || Array.isArray(registry)) {
+    throw new HttpError(400, "Runtime registry must be an object");
+  }
+  if (registry.schemaVersion !== RUNTIME_REGISTRY_SCHEMA_VERSION) {
+    throw new HttpError(400, `Runtime registry schemaVersion must be ${RUNTIME_REGISTRY_SCHEMA_VERSION}`);
+  }
+  if (!Number.isInteger(registry.revision) || registry.revision < 1) {
+    throw new HttpError(400, "Runtime registry revision must be a positive integer");
+  }
+  if (!registry.generatedAt || !Number.isFinite(Date.parse(registry.generatedAt))) {
+    throw new HttpError(400, "Runtime registry generatedAt must be an ISO timestamp");
+  }
+  if (!registry.aliases || typeof registry.aliases !== "object" || Array.isArray(registry.aliases)) {
+    throw new HttpError(400, "Runtime registry aliases must be an object");
+  }
+
+  for (const [alias, entry] of Object.entries(registry.aliases)) {
+    validateRuntimeRegistryAlias(alias, entry);
+  }
+}
+
+function validateRuntimeRegistryAlias(alias, entry) {
+  if (!/^[a-z0-9.-]+$/.test(alias)) {
+    throw new HttpError(400, `Runtime registry alias "${alias}" is not canonical`);
+  }
+  if (!entry || typeof entry !== "object" || !["slot", "aws"].includes(entry.activeProvider)) {
+    throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid activeProvider`);
+  }
+  if (!["factory", "global", "shared-chain", "game"].includes(entry.scope)) {
+    throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid scope`);
+  }
+  if (typeof entry.environmentId !== "string" || !/^[a-z0-9.-]+$/.test(entry.environmentId)) {
+    throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid environmentId`);
+  }
+  if (!["katana", "torii", "chain-rpc"].includes(entry.runtimeKind)) {
+    throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid runtimeKind`);
+  }
+  if (!["base", "health", "rpc", "sql"].includes(entry.endpointKind)) {
+    throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid endpointKind`);
+  }
+  if (!entry.providers?.slot) {
+    throw new HttpError(400, `Runtime registry alias "${alias}" must retain a Slot rollback target`);
+  }
+  if (!entry.providers[entry.activeProvider]) {
+    throw new HttpError(400, `Runtime registry alias "${alias}" is missing its active provider endpoint`);
+  }
+  for (const [provider, endpoint] of Object.entries(entry.providers)) {
+    if (!["slot", "aws"].includes(provider)) {
+      throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid provider "${provider}"`);
+    }
+    if (!isValidPublicRuntimeEndpoint(endpoint)) {
+      throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid ${provider} endpoint`);
+    }
+  }
+  if (entry.providers.aws) {
+    if (typeof entry.runtimeName !== "string" || !CANONICAL_RUNTIME_NAME_PATTERN.test(entry.runtimeName)) {
+      throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid runtimeName`);
+    }
+    if (typeof entry.runtimeInstanceId !== "string" || !RUNTIME_INSTANCE_ID_PATTERN.test(entry.runtimeInstanceId)) {
+      throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid runtimeInstanceId`);
+    }
+    if (typeof entry.imageDigest !== "string" || !/^sha256:[a-f0-9]{64}$/.test(entry.imageDigest)) {
+      throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid imageDigest`);
+    }
+    if (!Number.isInteger(entry.routingShard) || entry.routingShard < 0) {
+      throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid routingShard`);
+    }
+  }
+}
+
+function isValidPublicRuntimeEndpoint(endpoint) {
+  try {
+    return new URL(endpoint).protocol === "https:";
+  } catch {
+    return false;
+  }
 }
 
 function hasActiveLease(run) {
@@ -2681,6 +2855,9 @@ function buildFactoryMaintenanceArtifactsSnapshot(artifacts) {
     lastIndexerDescribeAt: artifacts?.lastIndexerDescribeAt,
     pendingIndexerTierTarget: artifacts?.pendingIndexerTierTarget,
     pendingIndexerTierRequestedAt: artifacts?.pendingIndexerTierRequestedAt,
+    runtimeProvider: artifacts?.runtimeProvider,
+    awsRuntime: artifacts?.awsRuntime,
+    runtimeTeardown: artifacts?.runtimeTeardown,
   };
 }
 
@@ -3132,6 +3309,7 @@ function assignOptionalLaunchOption(launchOptions, key, value) {
 function buildReplayableLaunchOptions(request) {
   const launchOptions = {};
 
+  assignOptionalLaunchOption(launchOptions, "runtimeInstanceId", request.runtimeInstanceId || crypto.randomUUID());
   assignOptionalLaunchOption(launchOptions, "rpcUrl", request.rpcUrl);
   assignOptionalLaunchOption(launchOptions, "factoryAddress", request.factoryAddress);
   assignOptionalLaunchOption(launchOptions, "accountAddress", request.accountAddress);
@@ -3170,50 +3348,37 @@ function buildBaseLaunchWorkflowInputs(request) {
     launch_kind: request.launchKind || "game",
     environment: request.environment,
     launch_step: request.launchStep,
+    request_json: JSON.stringify(buildLaunchWorkflowRequest(request)),
   };
+  return inputs;
+}
 
-  const launchOptions = buildReplayableLaunchOptions(request);
-  if (Object.keys(launchOptions).length > 0) {
-    inputs.launch_options_json = JSON.stringify(launchOptions);
+function buildLaunchWorkflowRequest(request) {
+  const workflowRequest = {
+    launchOptions: buildReplayableLaunchOptions(request),
+    autoRetryEnabled: request.autoRetryEnabled !== false,
+  };
+  assignOptionalLaunchOption(workflowRequest, "autoRetryIntervalMinutes", request.autoRetryIntervalMinutes);
+  assignOptionalLaunchOption(workflowRequest, "targetGameNames", request.targetGameNames);
+
+  if (request.launchKind === "rotation") {
+    assignOptionalLaunchOption(workflowRequest, "firstGameStartTime", request.firstGameStartTime);
+    assignOptionalLaunchOption(workflowRequest, "gameIntervalMinutes", request.gameIntervalMinutes);
+    assignOptionalLaunchOption(workflowRequest, "maxGames", request.maxGames);
+    assignOptionalLaunchOption(workflowRequest, "advanceWindowGames", request.advanceWindowGames);
+    assignOptionalLaunchOption(workflowRequest, "evaluationIntervalMinutes", request.evaluationIntervalMinutes);
   }
 
-  return inputs;
+  return workflowRequest;
 }
 
 function assignSeriesLaunchWorkflowInputs(inputs, request) {
   assignOptionalWorkflowInput(inputs, "series_name", request.seriesName);
   assignOptionalWorkflowInput(inputs, "series_games_json", JSON.stringify(request.games));
-  assignOptionalWorkflowInput(inputs, "auto_retry_enabled", request.autoRetryEnabled === false ? "false" : "true");
-  assignOptionalWorkflowInput(
-    inputs,
-    "auto_retry_interval_minutes",
-    request.autoRetryIntervalMinutes !== undefined ? String(request.autoRetryIntervalMinutes) : undefined,
-  );
-  assignOptionalWorkflowInput(
-    inputs,
-    "target_game_names_json",
-    request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : undefined,
-  );
 }
 
 function assignRotationLaunchWorkflowInputs(inputs, request) {
   assignOptionalWorkflowInput(inputs, "rotation_name", request.rotationName);
-  assignOptionalWorkflowInput(inputs, "first_game_start_time", request.firstGameStartTime);
-  assignOptionalWorkflowInput(inputs, "game_interval_minutes", request.gameIntervalMinutes);
-  assignOptionalWorkflowInput(inputs, "max_games", request.maxGames);
-  assignOptionalWorkflowInput(inputs, "advance_window_games", request.advanceWindowGames);
-  assignOptionalWorkflowInput(inputs, "evaluation_interval_minutes", request.evaluationIntervalMinutes);
-  assignOptionalWorkflowInput(inputs, "auto_retry_enabled", request.autoRetryEnabled === false ? "false" : "true");
-  assignOptionalWorkflowInput(
-    inputs,
-    "auto_retry_interval_minutes",
-    request.autoRetryIntervalMinutes !== undefined ? String(request.autoRetryIntervalMinutes) : undefined,
-  );
-  assignOptionalWorkflowInput(
-    inputs,
-    "target_game_names_json",
-    request.targetGameNames?.length ? JSON.stringify(request.targetGameNames) : undefined,
-  );
 }
 
 function assignSingleGameWorkflowInputs(inputs, request) {
@@ -3485,7 +3650,18 @@ function resolveIndexerMaintenanceWorkflowGitHubClient(github, run, inputRecord,
   };
 }
 
-function buildIndexerMaintenanceOperation({ action, kind, environment, recordPath, runName, gameName, tier }) {
+function buildIndexerMaintenanceOperation({
+  action,
+  kind,
+  environment,
+  recordPath,
+  runName,
+  gameName,
+  tier,
+  reason,
+  deleteAfter,
+  runtimeInstanceId,
+}) {
   return {
     action,
     ...(kind ? { kind } : {}),
@@ -3494,10 +3670,14 @@ function buildIndexerMaintenanceOperation({ action, kind, environment, recordPat
     ...(runName ? { runName } : {}),
     ...(gameName ? { gameName } : {}),
     ...(tier ? { tier } : {}),
+    ...(reason ? { reason } : {}),
+    ...(deleteAfter ? { expectedDeleteAfter: deleteAfter } : {}),
+    ...(runtimeInstanceId ? { runtimeInstanceId } : {}),
   };
 }
 
 function buildGameIndexerMaintenanceOperation(entry, tier) {
+  const runtime = resolveAwsRuntimeArtifact(entry);
   return buildIndexerMaintenanceOperation({
     action: "set-tier",
     kind: "game",
@@ -3506,10 +3686,13 @@ function buildGameIndexerMaintenanceOperation(entry, tier) {
     runName: entry.gameName,
     gameName: entry.gameName,
     tier,
+    deleteAfter: runtime?.deleteAfter,
+    runtimeInstanceId: runtime?.runtimeInstanceId,
   });
 }
 
 function buildSeriesIndexerMaintenanceOperation(entry, game, tier) {
+  const runtime = resolveAwsRuntimeArtifact(game);
   return buildIndexerMaintenanceOperation({
     action: "set-tier",
     kind: "series",
@@ -3518,10 +3701,13 @@ function buildSeriesIndexerMaintenanceOperation(entry, game, tier) {
     runName: entry.seriesName,
     gameName: game.gameName,
     tier,
+    deleteAfter: runtime?.deleteAfter,
+    runtimeInstanceId: runtime?.runtimeInstanceId,
   });
 }
 
 function buildRotationIndexerMaintenanceOperation(entry, game, tier) {
+  const runtime = resolveAwsRuntimeArtifact(game);
   return buildIndexerMaintenanceOperation({
     action: "set-tier",
     kind: "rotation",
@@ -3530,10 +3716,63 @@ function buildRotationIndexerMaintenanceOperation(entry, game, tier) {
     runName: entry.rotationName,
     gameName: game.gameName,
     tier,
+    deleteAfter: runtime?.deleteAfter,
+    runtimeInstanceId: runtime?.runtimeInstanceId,
   });
 }
 
-function buildGameIndexerDeleteOperation(environment, gameName) {
+function buildGameRuntimeDeleteOperation(entry, deleteAfter) {
+  return buildIndexerMaintenanceOperation({
+    action: "delete-runtime-tags",
+    kind: "game",
+    environment: entry.environment,
+    recordPath: entry.path,
+    runName: entry.gameName,
+    gameName: entry.gameName,
+    reason: "expired",
+    deleteAfter,
+    runtimeInstanceId: entry.artifacts?.awsRuntime?.runtimeInstanceId,
+  });
+}
+
+function buildSeriesRuntimeDeleteOperation(entry, game, deleteAfter) {
+  return buildIndexerMaintenanceOperation({
+    action: "delete-runtime-tags",
+    kind: "series",
+    environment: entry.environment,
+    recordPath: entry.path,
+    runName: entry.seriesName,
+    gameName: game.gameName,
+    reason: "expired",
+    deleteAfter,
+    runtimeInstanceId: game.awsRuntime?.runtimeInstanceId || game.artifacts?.awsRuntime?.runtimeInstanceId,
+  });
+}
+
+function buildRotationRuntimeDeleteOperation(entry, game, deleteAfter) {
+  return buildIndexerMaintenanceOperation({
+    action: "delete-runtime-tags",
+    kind: "rotation",
+    environment: entry.environment,
+    recordPath: entry.path,
+    runName: entry.rotationName,
+    gameName: game.gameName,
+    reason: "expired",
+    deleteAfter,
+    runtimeInstanceId: game.awsRuntime?.runtimeInstanceId || game.artifacts?.awsRuntime?.runtimeInstanceId,
+  });
+}
+
+function buildRuntimeFallbackSweepOperation(environment) {
+  return buildIndexerMaintenanceOperation({
+    action: "sweep-expired-runtimes",
+    environment,
+    reason: "ttl-fallback",
+  });
+}
+
+function buildGameIndexerDeleteOperation(environment, gameName, run) {
+  const runtime = resolveAwsRuntimeArtifact(run);
   return buildIndexerMaintenanceOperation({
     action: "delete",
     kind: "game",
@@ -3541,28 +3780,36 @@ function buildGameIndexerDeleteOperation(environment, gameName) {
     recordPath: resolveFactoryRunRecordPath(environment, gameName),
     runName: gameName,
     gameName,
+    deleteAfter: runtime?.deleteAfter,
+    runtimeInstanceId: runtime?.runtimeInstanceId,
   });
 }
 
-function buildSeriesIndexerDeleteOperation(environment, seriesName, gameName) {
+function buildSeriesIndexerDeleteOperation(environment, seriesName, game) {
+  const runtime = resolveAwsRuntimeArtifact(game);
   return buildIndexerMaintenanceOperation({
     action: "delete",
     kind: "series",
     environment,
     recordPath: resolveFactorySeriesRunRecordPath(environment, seriesName),
     runName: seriesName,
-    gameName,
+    gameName: game.gameName,
+    deleteAfter: runtime?.deleteAfter,
+    runtimeInstanceId: runtime?.runtimeInstanceId,
   });
 }
 
-function buildRotationIndexerDeleteOperation(environment, rotationName, gameName) {
+function buildRotationIndexerDeleteOperation(environment, rotationName, game) {
+  const runtime = resolveAwsRuntimeArtifact(game);
   return buildIndexerMaintenanceOperation({
     action: "delete",
     kind: "rotation",
     environment,
     recordPath: resolveFactoryRotationRunRecordPath(environment, rotationName),
     runName: rotationName,
-    gameName,
+    gameName: game.gameName,
+    deleteAfter: runtime?.deleteAfter,
+    runtimeInstanceId: runtime?.runtimeInstanceId,
   });
 }
 
@@ -3658,6 +3905,8 @@ async function resolveIndexerMaintenanceDispatchTargetForGame(
         runName: gameName,
         gameName,
         tier,
+        deleteAfter: resolveAwsRuntimeArtifact(gameRun)?.deleteAfter,
+        runtimeInstanceId: resolveAwsRuntimeArtifact(gameRun)?.runtimeInstanceId,
       }),
     };
   }
@@ -3802,7 +4051,7 @@ async function resolveGameIndexerDeleteDispatchTarget(github, branch, body) {
   return {
     github: resolveIndexerMaintenanceWorkflowGitHubClient(github, run, null, body.workflowRef),
     selectedGameNames,
-    operations: selectedGameNames.map((gameName) => buildGameIndexerDeleteOperation(body.environment, gameName)),
+    operations: selectedGameNames.map((gameName) => buildGameIndexerDeleteOperation(body.environment, gameName, run)),
   };
 }
 
@@ -3822,7 +4071,11 @@ async function resolveSeriesIndexerDeleteDispatchTarget(github, branch, body) {
     github: resolveIndexerMaintenanceWorkflowGitHubClient(github, run, null, body.workflowRef),
     selectedGameNames,
     operations: selectedGameNames.map((gameName) =>
-      buildSeriesIndexerDeleteOperation(body.environment, run.seriesName, gameName),
+      buildSeriesIndexerDeleteOperation(
+        body.environment,
+        run.seriesName,
+        (run.summary?.games || []).find((game) => game.gameName === gameName),
+      ),
     ),
   };
 }
@@ -3843,7 +4096,11 @@ async function resolveRotationIndexerDeleteDispatchTarget(github, branch, body) 
     github: resolveIndexerMaintenanceWorkflowGitHubClient(github, run, null, body.workflowRef),
     selectedGameNames,
     operations: selectedGameNames.map((gameName) =>
-      buildRotationIndexerDeleteOperation(body.environment, run.rotationName, gameName),
+      buildRotationIndexerDeleteOperation(
+        body.environment,
+        run.rotationName,
+        (run.summary?.games || []).find((game) => game.gameName === gameName),
+      ),
     ),
   };
 }
@@ -4022,6 +4279,9 @@ async function handleScheduledFactoryMaintenance(env) {
   await retryEligibleFactoryRotationRuns(github, branch);
   await evaluateEligibleFactoryRotationRuns(github, branch);
   await reconcileFactoryIndexerTiers(github, branch);
+  if (env.AWS_RUNTIME_AUTO_TEARDOWN_ENABLED === "true") {
+    await reconcileExpiredAwsRuntimes(github, branch, env);
+  }
 }
 
 async function retryEligibleFactorySeriesRuns(github, branch) {
@@ -4254,6 +4514,26 @@ async function reconcileFactoryIndexerTiers(github, branch) {
   await dispatchCollectedIndexerTierOperations(github, branch, pendingOperations);
 }
 
+async function reconcileExpiredAwsRuntimes(github, branch, env) {
+  const pendingOperations = [];
+
+  for (const environment of FACTORY_ENVIRONMENTS) {
+    pendingOperations.push(...(await collectFactoryGameRunRuntimeDeleteOperations(github, branch, environment)));
+    pendingOperations.push(...(await collectFactorySeriesRunRuntimeDeleteOperations(github, branch, environment)));
+    pendingOperations.push(...(await collectFactoryRotationRunRuntimeDeleteOperations(github, branch, environment)));
+
+    if (shouldDispatchRuntimeFallbackSweep(env, environment)) {
+      pendingOperations.push({
+        workflowRef: github.workflowRef,
+        environment,
+        operation: buildRuntimeFallbackSweepOperation(environment),
+      });
+    }
+  }
+
+  await dispatchCollectedRuntimeTeardownOperations(github, branch, pendingOperations);
+}
+
 async function collectFactoryGameRunIndexerTierOperations(github, branch, environment) {
   const entries = await readFactoryGameRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
   const pendingOperations = [];
@@ -4284,6 +4564,82 @@ async function collectFactoryGameRunIndexerTierOperations(github, branch, enviro
         environment,
         gameName: entry.gameName,
         message: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  return pendingOperations;
+}
+
+async function collectFactoryGameRunRuntimeDeleteOperations(github, branch, environment) {
+  const entries = await readFactoryGameRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
+  const pendingOperations = [];
+
+  for (const entry of entries) {
+    if (!canDispatchRuntimeTeardownForRunEntry(entry)) {
+      continue;
+    }
+
+    const deleteAfter = resolveExpiredRuntimeDeleteAfter(entry);
+    if (!deleteAfter) {
+      continue;
+    }
+
+    pendingOperations.push({
+      workflowRef: entry.workflowRef || github.workflowRef,
+      environment,
+      operation: buildGameRuntimeDeleteOperation(entry, deleteAfter),
+    });
+  }
+
+  return pendingOperations;
+}
+
+async function collectFactorySeriesRunRuntimeDeleteOperations(github, branch, environment) {
+  const entries = await readFactorySeriesRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
+  const pendingOperations = [];
+
+  for (const entry of entries) {
+    if (!canDispatchRuntimeTeardownForRunEntry(entry)) {
+      continue;
+    }
+
+    for (const game of entry.games || []) {
+      const deleteAfter = resolveExpiredRuntimeDeleteAfter(game);
+      if (!deleteAfter) {
+        continue;
+      }
+
+      pendingOperations.push({
+        workflowRef: entry.workflowRef || github.workflowRef,
+        environment,
+        operation: buildSeriesRuntimeDeleteOperation(entry, game, deleteAfter),
+      });
+    }
+  }
+
+  return pendingOperations;
+}
+
+async function collectFactoryRotationRunRuntimeDeleteOperations(github, branch, environment) {
+  const entries = await readFactoryRotationRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
+  const pendingOperations = [];
+
+  for (const entry of entries) {
+    if (!canDispatchRuntimeTeardownForRunEntry(entry)) {
+      continue;
+    }
+
+    for (const game of entry.games || []) {
+      const deleteAfter = resolveExpiredRuntimeDeleteAfter(game);
+      if (!deleteAfter) {
+        continue;
+      }
+
+      pendingOperations.push({
+        workflowRef: entry.workflowRef || github.workflowRef,
+        environment,
+        operation: buildRotationRuntimeDeleteOperation(entry, game, deleteAfter),
       });
     }
   }
@@ -4418,12 +4774,33 @@ async function dispatchCollectedIndexerTierOperations(github, branch, pendingOpe
   }
 }
 
+async function dispatchCollectedRuntimeTeardownOperations(github, branch, pendingOperations) {
+  for (const batch of groupIndexerMaintenanceOperations(pendingOperations)) {
+    const workflowGitHub = resolveIndexerMaintenanceWorkflowGitHubClient(github, null, null, batch.workflowRef);
+    const dispatchResult = await requestIndexerMaintenanceDispatch(workflowGitHub, batch.operations);
+
+    if (!dispatchResult.errorMessage) {
+      await markPendingRuntimeTeardownsForOperations(github, branch, batch.operations, dispatchResult.at);
+      continue;
+    }
+
+    await markRuntimeTeardownDispatchFailuresForOperations(
+      github,
+      branch,
+      batch.operations,
+      dispatchResult.at,
+      dispatchResult.errorMessage,
+    );
+  }
+}
+
 async function requestIndexerMaintenanceDispatch(github, operations) {
   const at = new Date().toISOString();
 
   try {
+    const environment = requireIndexerMaintenanceBatchEnvironment(operations);
     await dispatchFactoryIndexerMaintenanceWorkflow(github, {
-      environment: operations[0]?.environmentId || "mixed",
+      environment,
       operations,
     });
 
@@ -4433,8 +4810,8 @@ async function requestIndexerMaintenanceDispatch(github, operations) {
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logFactoryError("indexer_tier_dispatch_failed", {
-      environment: operations[0]?.environmentId || "mixed",
+    logFactoryError("indexer_maintenance_dispatch_failed", {
+      environment: operations[0]?.environmentId || null,
       workflowRef: github.workflowRef,
       operationCount: operations.length,
       gameNames: operations.map((operation) => operation.gameName).join(","),
@@ -4446,6 +4823,19 @@ async function requestIndexerMaintenanceDispatch(github, operations) {
       errorMessage,
     };
   }
+}
+
+function requireIndexerMaintenanceBatchEnvironment(operations) {
+  const environment = operations[0]?.environmentId;
+  if (!environment) {
+    throw new Error("Indexer maintenance dispatch requires at least one environment-scoped operation");
+  }
+
+  if (operations.some((operation) => operation.environmentId !== environment)) {
+    throw new Error(`Indexer maintenance dispatch contains operations outside environment "${environment}"`);
+  }
+
+  return environment;
 }
 
 function parseLaunchStartTime(value) {
@@ -4466,6 +4856,94 @@ function parseLaunchStartTime(value) {
   }
 
   return null;
+}
+
+function resolveExpiredRuntimeDeleteAfter(game) {
+  if (!canDispatchRuntimeTeardownForGame(game)) {
+    return null;
+  }
+
+  const deleteAfterMs = resolveRuntimeDeleteAfterMs(game);
+  if (!Number.isFinite(deleteAfterMs) || Date.now() < deleteAfterMs) {
+    return null;
+  }
+
+  return new Date(deleteAfterMs).toISOString();
+}
+
+function hasImmutableAwsRuntimeIdentity(game) {
+  return RUNTIME_INSTANCE_ID_PATTERN.test(resolveAwsRuntimeArtifact(game)?.runtimeInstanceId || "");
+}
+
+function resolveRuntimeDeleteAfterMs(game) {
+  const runtimeArtifact = resolveAwsRuntimeArtifact(game);
+  const recordedDeleteAfterMs = Date.parse(runtimeArtifact?.deleteAfter || "");
+  const dispatchedDeleteAfterMs = Date.parse(game.artifacts?.runtimeTeardown?.deleteAfter || "");
+  const startTime = parseLaunchStartTime(game.startTime);
+  const durationSeconds = Number(game.durationSeconds);
+  const calculatedDeleteAfterMs =
+    Number.isFinite(startTime) && Number.isFinite(durationSeconds)
+      ? startTime * 1000 + durationSeconds * 1000 + DEFAULT_RUNTIME_TEARDOWN_GRACE_MS
+      : Number.NaN;
+  const candidates = [recordedDeleteAfterMs, dispatchedDeleteAfterMs, calculatedDeleteAfterMs].filter(Number.isFinite);
+  return candidates.length > 0 ? Math.max(...candidates) : null;
+}
+
+function canDispatchRuntimeTeardownForGame(game) {
+  const artifacts = game.artifacts || {};
+  const runtimeArtifact = resolveAwsRuntimeArtifact(game);
+  return (
+    hasAwsRuntimeArtifacts(artifacts) &&
+    hasImmutableAwsRuntimeIdentity(game) &&
+    runtimeArtifact?.autoTeardown === true &&
+    runtimeArtifact?.lifecycleClass === "ephemeral" &&
+    !isRuntimeTeardownComplete(artifacts) &&
+    !hasRecentRuntimeTeardownDispatch(artifacts)
+  );
+}
+
+function resolveAwsRuntimeArtifact(game) {
+  return game.awsRuntime || game.artifacts?.awsRuntime;
+}
+
+function canDispatchRuntimeTeardownForRunEntry(entry) {
+  return !hasActiveLeaseForMaintenanceEntry(entry) && entry.hasRunningStep !== true;
+}
+
+function hasAwsRuntimeArtifacts(artifacts) {
+  return artifacts?.runtimeProvider === "aws" || artifacts?.awsRuntime?.provider === "aws";
+}
+
+function isRuntimeTeardownComplete(artifacts) {
+  return artifacts?.runtimeTeardown?.status === "complete";
+}
+
+function hasRecentRuntimeTeardownDispatch(artifacts) {
+  const teardown = artifacts?.runtimeTeardown;
+  if (!teardown || (teardown.status !== "dispatched" && teardown.status !== "failed")) {
+    return false;
+  }
+
+  const timestamp = teardown.status === "failed" ? teardown.failedAt : teardown.requestedAt;
+  const timestampMs = Date.parse(timestamp || "");
+  if (!Number.isFinite(timestampMs)) {
+    return false;
+  }
+
+  return Date.now() - timestampMs < DEFAULT_RUNTIME_TEARDOWN_DISPATCH_COOLDOWN_MS;
+}
+
+function hasActiveLeaseForMaintenanceEntry(entry) {
+  const activeLeaseExpiresAtMs = Date.parse(entry.activeLeaseExpiresAt || "");
+  return Number.isFinite(activeLeaseExpiresAtMs) && activeLeaseExpiresAtMs > Date.now();
+}
+
+function isMainnetEnvironment(environment) {
+  return String(environment || "").startsWith("mainnet.");
+}
+
+function shouldDispatchRuntimeFallbackSweep(env, environment) {
+  return env?.FACTORY_RUNTIME_FALLBACK_SWEEP_ENABLED === "true" && !isMainnetEnvironment(environment);
 }
 
 function resolveDesiredIndexerTier({ startTime, durationSeconds, currentTier }) {
@@ -4554,6 +5032,44 @@ function buildFailedIndexerTierEvent(tier, errorMessage) {
   return `Failed to queue indexer tier update to ${tier}: ${errorMessage}`;
 }
 
+function buildPendingRuntimeTeardownArtifacts(artifacts, operation, requestedAt) {
+  return {
+    ...artifacts,
+    runtimeTeardown: {
+      ...(artifacts?.runtimeTeardown || {}),
+      deleteAfter: operation.expectedDeleteAfter || artifacts?.runtimeTeardown?.deleteAfter,
+      status: "dispatched",
+      requestedAt,
+      reason: operation.reason || "expired",
+      completedAt: undefined,
+      failedAt: undefined,
+      errorMessage: undefined,
+    },
+  };
+}
+
+function buildRuntimeTeardownDispatchFailureArtifacts(artifacts, operation, failedAt, errorMessage) {
+  return {
+    ...artifacts,
+    runtimeTeardown: {
+      ...(artifacts?.runtimeTeardown || {}),
+      deleteAfter: operation.expectedDeleteAfter || artifacts?.runtimeTeardown?.deleteAfter,
+      status: "failed",
+      failedAt,
+      reason: operation.reason || "expired",
+      errorMessage,
+    },
+  };
+}
+
+function buildPendingRuntimeTeardownEvent() {
+  return "Queued AWS runtime teardown";
+}
+
+function buildFailedRuntimeTeardownEvent(errorMessage) {
+  return `Failed to queue AWS runtime teardown: ${errorMessage}`;
+}
+
 async function markPendingIndexerTierUpdateForOperation(github, branch, operation, requestedAt) {
   if (!operation.recordPath) {
     return;
@@ -4622,6 +5138,47 @@ async function markIndexerTierDispatchFailuresForOperations(github, branch, oper
             buildIndexerTierDispatchFailureArtifacts(artifacts, operation.tier, failedAt, errorMessage),
         ),
       `factory-runs: record indexer tier dispatch failures for ${groupedOperations[0].environmentId}/${groupedOperations
+        .map((operation) => operation.gameName)
+        .join(",")}`,
+    );
+  }
+}
+
+async function markPendingRuntimeTeardownsForOperations(github, branch, operations, requestedAt) {
+  for (const [recordPath, groupedOperations] of groupIndexerOperationsByRecordPath(operations)) {
+    await updateBranchJsonFile(
+      github,
+      recordPath,
+      branch,
+      (currentRun) =>
+        updateIndexerOperationRecordBatch(
+          currentRun,
+          groupedOperations,
+          () => buildPendingRuntimeTeardownEvent(),
+          (operation, artifacts) => buildPendingRuntimeTeardownArtifacts(artifacts, operation, requestedAt),
+        ),
+      `factory-runs: record pending runtime teardown for ${groupedOperations[0].environmentId}/${groupedOperations
+        .map((operation) => operation.gameName)
+        .join(",")}`,
+    );
+  }
+}
+
+async function markRuntimeTeardownDispatchFailuresForOperations(github, branch, operations, failedAt, errorMessage) {
+  for (const [recordPath, groupedOperations] of groupIndexerOperationsByRecordPath(operations)) {
+    await updateBranchJsonFile(
+      github,
+      recordPath,
+      branch,
+      (currentRun) =>
+        updateIndexerOperationRecordBatch(
+          currentRun,
+          groupedOperations,
+          () => buildFailedRuntimeTeardownEvent(errorMessage),
+          (operation, artifacts) =>
+            buildRuntimeTeardownDispatchFailureArtifacts(artifacts, operation, failedAt, errorMessage),
+        ),
+      `factory-runs: record runtime teardown dispatch failures for ${groupedOperations[0].environmentId}/${groupedOperations
         .map((operation) => operation.gameName)
         .join(",")}`,
     );

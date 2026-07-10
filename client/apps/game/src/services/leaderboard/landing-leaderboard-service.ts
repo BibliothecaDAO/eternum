@@ -1,4 +1,5 @@
 import { createSqlApi, sqlApi } from "@/services/api";
+import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 import { SqlApi, type PlayerLeaderboardRow } from "@bibliothecadao/torii";
 
 const DEFAULT_LIMIT = 20;
@@ -84,10 +85,10 @@ interface ScoreToBeatStaticRow {
 }
 
 const SCORE_TO_BEAT_STATIC_ENDPOINT_BY_GAME: Record<ScoreToBeatStaticGame, string> = {
-  "s0-game-1": "https://api.cartridge.gg/x/s0-game-1/torii/sql",
-  "s0-game-2": "https://api.cartridge.gg/x/s0-game-2/torii/sql",
-  "s0-game-3": "https://api.cartridge.gg/x/s0-game-3/torii/sql",
-  "s0-game-4": "https://api.cartridge.gg/x/s0-game-4/torii/sql",
+  "s0-game-1": resolveGameRuntimeEndpoint("s0-game-1", "sql", { chain: "mainnet", gameType: "blitz" }),
+  "s0-game-2": resolveGameRuntimeEndpoint("s0-game-2", "sql", { chain: "mainnet", gameType: "blitz" }),
+  "s0-game-3": resolveGameRuntimeEndpoint("s0-game-3", "sql", { chain: "mainnet", gameType: "blitz" }),
+  "s0-game-4": resolveGameRuntimeEndpoint("s0-game-4", "sql", { chain: "mainnet", gameType: "blitz" }),
 };
 
 const SCORE_TO_BEAT_STATIC_ENDPOINT_TO_GAME = new Map<string, ScoreToBeatStaticGame>(

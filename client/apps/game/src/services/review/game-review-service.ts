@@ -1,4 +1,5 @@
 import { GLOBAL_TORII_BY_CHAIN, MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
+import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 import { executeObservedClientTransaction } from "@/observability/observed-client-transaction";
 import { buildWorldProfile, patchManifestWithFactory } from "@/runtime/world";
 import {
@@ -178,7 +179,7 @@ const buildReviewUnclaimedPlayersQuery = (trialId: bigint) => `
   ORDER BY rank ASC;
 `;
 
-const buildToriiSqlUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii/sql`;
+const buildToriiSqlUrl = (worldName: string) => resolveGameRuntimeEndpoint(worldName, "sql");
 
 const formatTokenAmount = (amount: bigint, decimals: number): string => {
   const s = amount.toString();

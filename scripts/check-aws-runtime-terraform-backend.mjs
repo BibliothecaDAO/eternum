@@ -1,16 +1,30 @@
 import fs from "node:fs";
+import path from "node:path";
 import process from "node:process";
 
 const versionsPath = process.env.AWS_RUNTIME_TERRAFORM_VERSIONS_SOURCE ?? "deploy/aws/terraform/versions.tf";
 const mainPath = process.env.AWS_RUNTIME_TERRAFORM_MAIN_SOURCE ?? "deploy/aws/terraform/main.tf";
 const readmePath = process.env.AWS_RUNTIME_TERRAFORM_README_SOURCE ?? "deploy/aws/README.md";
+const rootsPath = process.env.AWS_RUNTIME_TERRAFORM_ROOTS_SOURCE ?? "deploy/aws/terraform/roots";
+const stateBootstrapPath =
+  process.env.AWS_RUNTIME_TERRAFORM_STATE_BOOTSTRAP_SOURCE ?? "deploy/aws/terraform/state-bootstrap";
+const expectedRoots = new Map([
+  ["slot-blitz", "aws-runtime/non-production/slot.blitz.tfstate"],
+  ["slot-eternum", "aws-runtime/non-production/slot.eternum.tfstate"],
+  ["slottest-blitz", "aws-runtime/non-production/slottest.blitz.tfstate"],
+  ["slottest-eternum", "aws-runtime/non-production/slottest.eternum.tfstate"],
+  ["mainnet-blitz", "aws-runtime/production/mainnet.blitz.tfstate"],
+  ["mainnet-eternum", "aws-runtime/production/mainnet.eternum.tfstate"],
+  ["dr-mainnet-blitz", "aws-runtime/dr/mainnet.blitz.tfstate"],
+  ["dr-mainnet-eternum", "aws-runtime/dr/mainnet.eternum.tfstate"],
+]);
 
 function main() {
   const versions = fs.readFileSync(versionsPath, "utf8");
   const main = fs.readFileSync(mainPath, "utf8");
   const readme = fs.readFileSync(readmePath, "utf8");
   const failures = [
-    ...validateVersionsBackend(versions),
+    ...validateStateLayout(versions),
     ...validateTerraformHardening(main),
     ...validateRemoteStateDocs(readme),
     ...validateNetworkHardeningDocs(readme),
@@ -25,6 +39,72 @@ function main() {
     console.error(`- ${failure}`);
   }
   process.exit(1);
+}
+
+function validateStateLayout(moduleVersions) {
+  if (process.env.AWS_RUNTIME_TERRAFORM_VERSIONS_SOURCE) {
+    return validateVersionsBackend(moduleVersions);
+  }
+
+  const failures = [];
+  if (/backend\s+"s3"/.test(moduleVersions)) {
+    failures.push("reusable Terraform module must not own a shared backend");
+  }
+
+  for (const [rootName, expectedKey] of expectedRoots) {
+    const versionsFile = path.join(rootsPath, rootName, "versions.tf");
+    const mainFile = path.join(rootsPath, rootName, "main.tf");
+    if (!fs.existsSync(versionsFile) || !fs.existsSync(mainFile)) {
+      failures.push(`missing isolated Terraform root ${rootName}`);
+      continue;
+    }
+
+    const rootVersions = fs.readFileSync(versionsFile, "utf8");
+    const rootMain = fs.readFileSync(mainFile, "utf8");
+    const backend = extractBackendBlock(rootVersions);
+    if (!backend) {
+      failures.push(`${rootName} missing terraform backend \"s3\" block`);
+      continue;
+    }
+    for (const [field, pattern] of [
+      ["key", new RegExp(`key\\s*=\\s*"${escapeRegex(expectedKey)}"`)],
+      ["region", /region\s*=\s*"us-east-1"/],
+      ["dynamodb_table", /dynamodb_table\s*=\s*"[^"]+"/],
+      ["encrypt", /encrypt\s*=\s*true/],
+    ]) {
+      if (!pattern.test(backend)) {
+        failures.push(`${rootName} backend \"s3\" missing ${field}`);
+      }
+    }
+    if (!rootMain.includes(`github_environment                  = local.environment_id`)) {
+      failures.push(`${rootName} must bind OIDC to its exact environment`);
+    }
+  }
+
+  return [...failures, ...validateStateBootstrap()];
+}
+
+function validateStateBootstrap() {
+  const mainFile = path.join(stateBootstrapPath, "main.tf");
+  if (!fs.existsSync(mainFile)) {
+    return ["missing hardened Terraform state bootstrap"];
+  }
+
+  const source = fs.readFileSync(mainFile, "utf8");
+  const requiredSnippets = [
+    'resource "aws_kms_key" "state"',
+    'resource "aws_s3_bucket_versioning" "state"',
+    'resource "aws_s3_bucket_public_access_block" "state"',
+    'resource "aws_s3_bucket_replication_configuration" "state"',
+    'resource "aws_ecr_replication_configuration" "runtime"',
+    'resource "aws_ecr_registry_policy" "runtime_replication"',
+    'resource "aws_dynamodb_table" "locks"',
+    "deletion_protection_enabled = true",
+    '"aws:SecureTransport"',
+  ];
+  return requiredSnippets
+    .filter((snippet) => !source.includes(snippet))
+    .map((snippet) => `state bootstrap missing ${snippet}`);
 }
 
 function validateVersionsBackend(source) {
@@ -48,10 +128,12 @@ function validateVersionsBackend(source) {
 function validateRemoteStateDocs(source) {
   const requiredSnippets = [
     "## Remote State",
-    "terraform init",
+    " init \\",
     '-backend-config="bucket=',
     '-backend-config="dynamodb_table=',
-    "aws-runtime/foundation.tfstate",
+    "aws-runtime/non-production/slot.blitz.tfstate",
+    "aws-runtime/production/mainnet.blitz.tfstate",
+    "aws-runtime/dr/mainnet.blitz.tfstate",
   ];
 
   return requiredSnippets
@@ -60,7 +142,7 @@ function validateRemoteStateDocs(source) {
 }
 
 function validateNetworkHardeningDocs(source) {
-  const requiredSnippets = ["enable_vpc_endpoints", "single NAT gateway"];
+  const requiredSnippets = ["enable_vpc_endpoints", "one non-production NAT gateway", "per-AZ production NAT gateways"];
 
   return requiredSnippets
     .filter((snippet) => !source.includes(snippet))
@@ -74,9 +156,57 @@ function validateTerraformHardening(source) {
     ...validateRuntimeImageLifecycle(source),
     ...validateVpcEndpoints(source),
     ...validateFoundationAlerts(source),
+    ...validateAlertPolicyOwnership(source),
     ...validateRemovedDeadRuntimeSurfaces(source),
     ...validateSingleBackupMechanism(source),
+    ...validateIsolationControls(source),
   ];
+}
+
+function validateAlertPolicyOwnership(source) {
+  const runtimeAlertPolicies = extractTerraformResources(source, "aws_sns_topic_policy").filter(({ body }) =>
+    body.includes("aws_sns_topic.runtime_alerts.arn"),
+  );
+  const failures = [];
+  if (runtimeAlertPolicies.length !== 1) {
+    failures.push("Terraform must manage the runtime alert topic with exactly one aws_sns_topic_policy resource");
+  }
+  if (!source.includes('identifiers = ["budgets.amazonaws.com", "cloudwatch.amazonaws.com", "events.amazonaws.com"]')) {
+    failures.push("Terraform runtime KMS policy must allow every encrypted alert publisher");
+  }
+  return failures;
+}
+
+function validateIsolationControls(source) {
+  const requiredResources = [
+    ["aws_dynamodb_table", "runtime_control"],
+    ["aws_wafv2_web_acl", "runtime"],
+    ["aws_wafv2_web_acl_association", "runtime"],
+    ["aws_backup_vault_lock_configuration", "runtime"],
+    ["aws_backup_plan", "runtime"],
+    ["aws_secretsmanager_secret", "upstream_rpc"],
+    ["aws_ssm_parameter", "foundation_manifest"],
+  ];
+  const failures = requiredResources
+    .filter(([type, name]) => !hasTerraformBlock(source, "resource", type, name))
+    .map(([type, name]) => `Terraform missing ${type}.${name}`);
+
+  if (!source.includes("local.is_production ? length(var.public_subnet_cidrs) : 1")) {
+    failures.push("Terraform must use per-AZ production NAT gateways and one non-production NAT gateway");
+  }
+  if (!source.includes('!startswith(var.environment_id, "mainnet.") || var.waf_enforcement_mode == "block"')) {
+    failures.push("Terraform must require enforced WAF rules for mainnet foundations");
+  }
+  for (const protectedPath of ["/rpc/", "/sql", "/graphql"]) {
+    if (!source.includes(`path = "${protectedPath}"`)) {
+      failures.push(`Terraform WAF must rate-limit ${protectedPath}`);
+    }
+  }
+  const foundationManifest = extractTerraformBlock(source, "resource", "aws_ssm_parameter", "foundation_manifest");
+  if (!foundationManifest?.includes('type        = "SecureString"') || !foundationManifest.includes("key_id")) {
+    failures.push("Terraform must encrypt the non-secret foundation manifest with the environment KMS key");
+  }
+  return failures;
 }
 
 function validateRuntimeTaskIngress(source) {
@@ -85,16 +215,19 @@ function validateRuntimeTaskIngress(source) {
     return ['missing resource "aws_security_group" "runtime_tasks"'];
   }
 
-  const ingressPorts = Array.from(runtimeTasksSecurityGroup.matchAll(/ingress\s*\{(?<body>[\s\S]*?)\n\s*\}/g))
-    .map((match) => parseIngressPortRange(match.groups.body))
-    .filter(Boolean)
-    .sort((left, right) => left.from - right.from || left.to - right.to);
-  const expectedPorts = [
-    { from: 5050, to: 5050 },
-    { from: 8080, to: 8080 },
-  ];
+  const taskIngressRules = extractTerraformResources(source, "aws_vpc_security_group_ingress_rule").filter(({ body }) =>
+    /^\s*security_group_id\s*=\s*aws_security_group\.runtime_tasks\.id/m.test(body),
+  );
+  const runtimeAlbRule = taskIngressRules.find(({ name }) => name === "runtime_alb")?.body;
+  const hasExpectedRule =
+    taskIngressRules.length === 1 &&
+    runtimeAlbRule?.includes('for_each = toset(["5050", "8080"])') &&
+    /referenced_security_group_id\s*=\s*aws_security_group\.alb\.id/.test(runtimeAlbRule) &&
+    /from_port\s*=\s*tonumber\(each\.key\)/.test(runtimeAlbRule) &&
+    /to_port\s*=\s*tonumber\(each\.key\)/.test(runtimeAlbRule) &&
+    !runtimeAlbRule.includes("cidr_ipv4");
 
-  if (JSON.stringify(ingressPorts) === JSON.stringify(expectedPorts)) {
+  if (!/\bingress\s*\{/.test(runtimeTasksSecurityGroup) && hasExpectedRule) {
     return [];
   }
 
@@ -152,6 +285,7 @@ function validateFoundationAlerts(source) {
   const requiredResources = [
     ["aws_sns_topic", "runtime_alerts"],
     ["aws_cloudwatch_metric_alarm", "alb_elb_5xx"],
+    ["aws_cloudwatch_metric_alarm", "routing_shard_capacity"],
     ["aws_cloudwatch_metric_alarm", "nat_error_port_allocation"],
     ["aws_cloudwatch_metric_alarm", "efs_percent_io_limit"],
   ];
@@ -184,18 +318,24 @@ function extractBackendBlock(source) {
   return /backend\s+"s3"\s*\{(?<body>[\s\S]*?)\n\s*\}/.exec(source)?.groups?.body;
 }
 
-function parseIngressPortRange(source) {
-  const from = Number(/from_port\s*=\s*(?<port>\d+)/.exec(source)?.groups?.port);
-  const to = Number(/to_port\s*=\s*(?<port>\d+)/.exec(source)?.groups?.port);
-  if (!Number.isFinite(from) || !Number.isFinite(to)) {
-    return undefined;
-  }
-
-  return { from, to };
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function hasTerraformBlock(source, blockKind, type, name) {
   return extractTerraformBlock(source, blockKind, type, name) !== undefined;
+}
+
+function extractTerraformResources(source, type) {
+  return Array.from(source.matchAll(new RegExp(`resource "${escapeRegex(type)}" "(?<name>[^"]+)"`, "g"))).map(
+    (match) => {
+      const blockStart = source.indexOf("{", match.index);
+      return {
+        name: match.groups.name,
+        body: source.slice(blockStart + 1, findMatchingBrace(source, blockStart)),
+      };
+    },
+  );
 }
 
 function extractTerraformBlock(source, blockKind, type, name) {

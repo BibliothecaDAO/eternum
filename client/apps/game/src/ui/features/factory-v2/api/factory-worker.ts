@@ -5,7 +5,13 @@ import type {
   FactoryMapConfigOverrides,
 } from "@bibliothecadao/types";
 
-export type FactoryWorkerEnvironmentId = "slot.eternum" | "mainnet.eternum" | "slot.blitz" | "mainnet.blitz";
+export type FactoryWorkerEnvironmentId =
+  | "slot.eternum"
+  | "slottest.eternum"
+  | "mainnet.eternum"
+  | "slot.blitz"
+  | "slottest.blitz"
+  | "mainnet.blitz";
 type FactoryWorkerRunKind = "game" | "series" | "rotation";
 export type FactoryWorkerGameLaunchStepId =
   | "create-world"
@@ -470,8 +476,10 @@ const FACTORY_WORKER_BASE_URL = env.VITE_PUBLIC_FACTORY_WORKER_URL.replace(/\/$/
 
 const SUPPORTED_FACTORY_WORKER_ENVIRONMENTS = new Set<FactoryWorkerEnvironmentId>([
   "slot.eternum",
+  "slottest.eternum",
   "mainnet.eternum",
   "slot.blitz",
+  "slottest.blitz",
   "mainnet.blitz",
 ]);
 

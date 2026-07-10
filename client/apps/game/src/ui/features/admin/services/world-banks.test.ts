@@ -4,7 +4,9 @@ vi.mock("../constants", () => ({
   BANK_COUNT: 6,
   BANK_NAME_PREFIX: "Central Bank",
   BANK_STEPS_FROM_CENTER: 15 * 21,
-  CARTRIDGE_API_BASE: "https://api.cartridge.gg",
+}));
+vi.mock("@/config/runtime-endpoints", () => ({
+  resolveGameRuntimeEndpoint: () => "https://runtime.example/torii/sql",
 }));
 
 const { buildAdminBanksForMapCenterOffset, fetchWorldMapCenterOffset } = await import("./world-banks");
@@ -20,9 +22,9 @@ describe("world-banks", () => {
   test("parses map_center_offset from WorldConfig", async () => {
     globalThis.fetch = vi.fn(async () => Response.json([{ map_center_offset: "0x32" }])) as typeof fetch;
 
-    await expect(fetchWorldMapCenterOffset("alpha")).resolves.toBe(50);
+    await expect(fetchWorldMapCenterOffset("slot", "alpha")).resolves.toBe(50);
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      "https://api.cartridge.gg/x/alpha/torii/sql?query=SELECT%20%22map_center_offset%22%20AS%20map_center_offset%20FROM%20%22s1_eternum-WorldConfig%22%20LIMIT%201%3B",
+      "https://runtime.example/torii/sql?query=SELECT%20%22map_center_offset%22%20AS%20map_center_offset%20FROM%20%22s1_eternum-WorldConfig%22%20LIMIT%201%3B",
     );
   });
 

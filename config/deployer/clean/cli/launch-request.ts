@@ -508,6 +508,7 @@ function requireRotationLaunchArgs(args: Args): {
 
 function resolveSharedLaunchRequestOptions(args: Args) {
   return {
+    runtimeInstanceId: resolveOptionalArg(args, "runtime-instance-id", ["GAME_LAUNCH_RUNTIME_INSTANCE_ID"]),
     rpcUrl: args["rpc-url"] || process.env.RPC_URL || process.env.VITE_PUBLIC_NODE_URL,
     factoryAddress: args["factory-address"] || process.env.FACTORY_ADDRESS,
     accountAddress: resolveOptionalArg(args, "account-address", ["DOJO_ACCOUNT_ADDRESS", "VITE_PUBLIC_MASTER_ADDRESS"]),

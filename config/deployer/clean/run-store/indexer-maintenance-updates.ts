@@ -47,12 +47,25 @@ export interface DeleteFailureIndexerMaintenanceRunUpdate extends BaseIndexerMai
   liveState: IndexerMaintenanceLiveState;
 }
 
+export interface RuntimeDeleteSuccessIndexerMaintenanceRunUpdate extends BaseIndexerMaintenanceRunUpdate {
+  kind: "runtime-delete-success";
+  reason: "expired" | "ttl-fallback" | "manual";
+}
+
+export interface RuntimeDeleteFailureIndexerMaintenanceRunUpdate extends BaseIndexerMaintenanceRunUpdate {
+  kind: "runtime-delete-failure";
+  reason: "expired" | "ttl-fallback" | "manual";
+  errorMessage: string;
+}
+
 export type IndexerMaintenanceRunUpdate =
   | RefreshIndexerMaintenanceRunUpdate
   | TierSuccessIndexerMaintenanceRunUpdate
   | TierFailureIndexerMaintenanceRunUpdate
   | DeleteSuccessIndexerMaintenanceRunUpdate
-  | DeleteFailureIndexerMaintenanceRunUpdate;
+  | DeleteFailureIndexerMaintenanceRunUpdate
+  | RuntimeDeleteSuccessIndexerMaintenanceRunUpdate
+  | RuntimeDeleteFailureIndexerMaintenanceRunUpdate;
 
 export function applyIndexerMaintenanceRunUpdates(
   run: IndexerMaintenanceRunRecord,
@@ -129,6 +142,10 @@ function buildNextArtifacts(
       return buildDeleteSuccessArtifacts(currentArtifacts, update.liveState);
     case "delete-failure":
       return buildDeleteFailureArtifacts(currentArtifacts, update.liveState);
+    case "runtime-delete-success":
+      return buildRuntimeDeleteSuccessArtifacts(currentArtifacts, update);
+    case "runtime-delete-failure":
+      return buildRuntimeDeleteFailureArtifacts(currentArtifacts, update);
   }
 }
 
@@ -223,6 +240,44 @@ function buildDeleteFailureArtifacts(
     lastIndexerTierDispatchTarget: undefined,
     lastIndexerTierDispatchFailedAt: undefined,
     lastIndexerTierDispatchError: undefined,
+  };
+}
+
+function buildRuntimeDeleteSuccessArtifacts(
+  currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
+  update: RuntimeDeleteSuccessIndexerMaintenanceRunUpdate,
+): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
+  return {
+    ...currentArtifacts,
+    indexerCreated: false,
+    indexerTier: undefined,
+    indexerUrl: undefined,
+    indexerVersion: undefined,
+    indexerBranch: undefined,
+    awsRuntime: undefined,
+    runtimeTeardown: {
+      ...currentArtifacts.runtimeTeardown,
+      status: "complete",
+      reason: update.reason,
+      completedAt: update.updatedAt,
+      errorMessage: undefined,
+    },
+  };
+}
+
+function buildRuntimeDeleteFailureArtifacts(
+  currentArtifacts: FactoryRunArtifacts | SeriesLaunchGameArtifacts,
+  update: RuntimeDeleteFailureIndexerMaintenanceRunUpdate,
+): FactoryRunArtifacts | SeriesLaunchGameArtifacts {
+  return {
+    ...currentArtifacts,
+    runtimeTeardown: {
+      ...currentArtifacts.runtimeTeardown,
+      status: "failed",
+      reason: update.reason,
+      failedAt: update.updatedAt,
+      errorMessage: update.errorMessage,
+    },
   };
 }
 

@@ -4,10 +4,9 @@ import {
 } from "../../../../../common/factory/runtime-endpoints";
 import type { DeploymentEnvironmentId } from "../../types";
 import { parseJsonOutput, runRequiredAwsCommand, type AwsCommandRunner } from "./commands";
-import type { AwsRuntimeCommandConfig } from "./config";
+import { resolveRuntimeDomain, type AwsRuntimeCommandConfig } from "./config";
 import { buildAwsRuntimeServiceName } from "./naming";
 
-const DEFAULT_AWS_RUNTIME_DOMAIN = "runtime.realms.world";
 const DEFAULT_RUNTIME_HEALTH_TIMEOUT_MS = 5_000;
 const DEFAULT_KATANA_STABILITY_DEADLINE_MS = 10 * 60 * 1_000;
 const DEFAULT_TORII_STABILITY_DEADLINE_MS = 15 * 60 * 1_000;
@@ -282,10 +281,6 @@ function buildAwsRuntimeEndpointUrl(options: {
     options.runtimeKind,
     options.endpointKind,
   );
-}
-
-function resolveRuntimeDomain(domain?: string): string {
-  return (domain || process.env.AWS_RUNTIME_DOMAIN || DEFAULT_AWS_RUNTIME_DOMAIN).replace(/^https?:\/\//, "");
 }
 
 function buildAwsRuntimeEndpointUrlFromBase(baseUrl: string, endpointKind: AwsRuntimeEndpointKind): string {

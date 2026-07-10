@@ -23,7 +23,6 @@ const KATANA_CHAIN_NETWORK = "Katana Local";
 const KATANA_CHAIN_NAME = "katana";
 const KATANA_RPC_URL = "http://localhost:5050";
 const fallbackChain = env.VITE_PUBLIC_CHAIN as RuntimeChain;
-const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
 const katanaLocalChain = {
   id: BigInt(KATANA_CHAIN_ID),
@@ -85,7 +84,6 @@ export function StarknetProvider({ children }: { children: React.ReactNode }) {
         fallbackChain,
         selectedChain: runtimeChain,
         baseRpcUrl,
-        cartridgeApiBase,
       }),
     [baseRpcUrl, runtimeChain],
   );

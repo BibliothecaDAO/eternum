@@ -4,13 +4,15 @@ import * as fs from "fs";
 import * as path from "path";
 import { Account, RpcProvider, cairo } from "starknet";
 import { fileURLToPath } from "url";
+import { buildSharedChainRuntimeAlias, resolveRuntimeEndpointAlias } from "../../common/factory/runtime-registry.ts";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Configuration
 const LORDS_CONTRACT_ADDRESS = "0x0124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49";
-const RPC_URL = "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_7";
+const RPC_URL =
+  process.env.RUNTIME_MAINNET_RPC_URL || resolveRuntimeEndpointAlias(buildSharedChainRuntimeAlias("mainnet"));
 const LORDS_DECIMALS = 18;
 const BATCH_SIZE = 25; // Number of transfers per batch transaction
 

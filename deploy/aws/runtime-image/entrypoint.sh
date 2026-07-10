@@ -3,10 +3,10 @@ set -euo pipefail
 
 runtime_kind="${RUNTIME_KIND:-}"
 data_dir="${DATA_DIR:-/data}"
-snapshot_dir="${SNAPSHOT_DIR:-/snapshots}"
 internal_port="${INTERNAL_PORT:-8081}"
 dry_run="${RUNTIME_ENTRYPOINT_DRY_RUN:-0}"
 cleanup_path="${RUNTIME_CLEANUP_PATH:-}"
+runtime_pid_file="${RUNTIME_PID_FILE:-/runtime-control/runtime.pid}"
 
 print_command() {
   printf '%s\n' "$@"
@@ -89,6 +89,7 @@ if [[ "${dry_run}" == "1" ]]; then
 fi
 
 mkdir -p "${data_dir}"
+printf '%s\n' "$$" > "${runtime_pid_file}"
 node /usr/local/bin/runtime-snapshot.mjs restore
 
 case "${runtime_kind}" in
@@ -112,6 +113,7 @@ node /usr/local/bin/runtime-snapshot.mjs snapshot-loop &
 snapshot_pid="$!"
 
 shutdown() {
+  rm -f "${runtime_pid_file}"
   kill "${snapshot_pid}" 2>/dev/null || true
   wait "${snapshot_pid}" 2>/dev/null || true
   kill "${runtime_pid}" 2>/dev/null || true
@@ -123,4 +125,4 @@ shutdown() {
 
 trap shutdown EXIT TERM INT
 
-wait -n "${runtime_pid}" "${proxy_pid}"
+wait -n "${runtime_pid}" "${proxy_pid}" "${snapshot_pid}"

@@ -55,6 +55,68 @@ describe("indexer maintenance run updates", () => {
       },
     });
   });
+
+  test("marks successful runtime deletes complete and clears AWS runtime artifacts", () => {
+    const run = buildRotationRunRecord();
+
+    const nextRun = applyIndexerMaintenanceRunUpdates(run, [
+      {
+        kind: "runtime-delete-success",
+        target: {
+          gameName: "bltz-warzone-05",
+          recordPath: "runs/mainnet/blitz/rotations/bltz-warzone.json",
+        },
+        message: "Deleted tagged runtimes",
+        updatedAt: "2026-03-25T16:00:00.000Z",
+        reason: "expired",
+      },
+    ]) as FactoryRotationRunRecord;
+    const updatedWarzone05 = nextRun.summary.games.find((game) => game.gameName === "bltz-warzone-05");
+    const preservedWarzone10 = nextRun.summary.games.find((game) => game.gameName === "bltz-warzone-10");
+
+    expect(updatedWarzone05?.artifacts).toMatchObject({
+      indexerCreated: false,
+      runtimeTeardown: {
+        status: "complete",
+        reason: "expired",
+        completedAt: "2026-03-25T16:00:00.000Z",
+      },
+    });
+    expect(updatedWarzone05?.artifacts.awsRuntime).toBeUndefined();
+    expect(preservedWarzone10?.artifacts.awsRuntime).toBeDefined();
+  });
+
+  test("marks failed runtime deletes without clearing runtime artifacts", () => {
+    const run = buildRotationRunRecord();
+
+    const nextRun = applyIndexerMaintenanceRunUpdates(run, [
+      {
+        kind: "runtime-delete-failure",
+        target: {
+          gameName: "bltz-warzone-05",
+          recordPath: "runs/mainnet/blitz/rotations/bltz-warzone.json",
+        },
+        message: "Runtime delete failed",
+        updatedAt: "2026-03-25T16:00:00.000Z",
+        reason: "expired",
+        errorMessage: "delete failed",
+      },
+    ]) as FactoryRotationRunRecord;
+    const updatedWarzone05 = nextRun.summary.games.find((game) => game.gameName === "bltz-warzone-05");
+
+    expect(updatedWarzone05?.artifacts).toMatchObject({
+      awsRuntime: {
+        provider: "aws",
+        runtimeKind: "torii",
+      },
+      runtimeTeardown: {
+        status: "failed",
+        reason: "expired",
+        failedAt: "2026-03-25T16:00:00.000Z",
+        errorMessage: "delete failed",
+      },
+    });
+  });
 });
 
 function buildRotationRunRecord(): FactoryRotationRunRecord {
@@ -121,6 +183,17 @@ function buildRotationRunRecord(): FactoryRotationRunRecord {
             indexerCreated: true,
             indexerTier: "basic",
             indexerUrl: "https://api.cartridge.gg/x/bltz-warzone-05/torii",
+            runtimeProvider: "aws",
+            awsRuntime: {
+              provider: "aws",
+              runtimeKind: "torii",
+              runtimeName: "bltz-warzone-05",
+              status: "existing",
+            },
+            runtimeTeardown: {
+              status: "dispatched",
+              requestedAt: "2026-03-25T15:00:00.000Z",
+            },
           },
         },
         {
@@ -138,6 +211,13 @@ function buildRotationRunRecord(): FactoryRotationRunRecord {
             indexerCreated: true,
             indexerTier: "basic",
             indexerUrl: "https://api.cartridge.gg/x/bltz-warzone-10/torii",
+            runtimeProvider: "aws",
+            awsRuntime: {
+              provider: "aws",
+              runtimeKind: "torii",
+              runtimeName: "bltz-warzone-10",
+              status: "existing",
+            },
           },
         },
       ],

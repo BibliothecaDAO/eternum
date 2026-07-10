@@ -108,13 +108,47 @@ describe("AWS runtime image scripts", () => {
     expect(dockerfile).toContain("zstd");
   });
 
+  test("checkpoint sidecar can terminate the workload through its recorded PID", async () => {
+    const workspace = await fs.mkdtemp(path.join(os.tmpdir(), "runtime-checkpoint-agent-"));
+    const pidFile = path.join(workspace, "runtime.pid");
+    const runtime = spawn("sleep", ["60"]);
+    const exited = new Promise<NodeJS.Signals | null>((resolve) => {
+      runtime.once("exit", (_code, signal) => resolve(signal));
+    });
+    await fs.writeFile(pidFile, `${runtime.pid}\n`);
+
+    const result = spawnSync("bash", ["deploy/aws/runtime-image/checkpoint-agent.sh", "kill-runtime"], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: { ...process.env, RUNTIME_PID_FILE: pidFile },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(`runtime-killed:${runtime.pid}`);
+    await expect(exited).resolves.toBe("SIGKILL");
+  });
+
   test("runtime image builds pinned mdbx_copy instead of apt-installing mdbx tools", async () => {
     const dockerfile = await fs.readFile("deploy/aws/runtime-image/Dockerfile", "utf8");
 
-    expect(dockerfile).toContain("ARG LIBMDBX_VERSION=");
+    expect(dockerfile).toContain("ARG LIBMDBX_COMMIT=");
+    expect(dockerfile).toContain('test "$(git -C /tmp/libmdbx rev-parse FETCH_HEAD)" = "${LIBMDBX_COMMIT}"');
     expect(dockerfile).toContain("AS mdbx-builder");
     expect(dockerfile).toContain("COPY --from=mdbx-builder /usr/local/bin/mdbx_copy /usr/local/bin/mdbx_copy");
     expect(dockerfile).not.toContain("mdbx-tools");
+  });
+
+  test("runtime image verifies the pinned Katana release archive", async () => {
+    const dockerfile = await fs.readFile("deploy/aws/runtime-image/Dockerfile", "utf8");
+
+    expect(dockerfile).toContain("ARG KATANA_VERSION=v1.7.1");
+    expect(dockerfile).toContain("ARG KATANA_ARCHIVE_SHA256=");
+    expect(dockerfile).toContain("sha256sum --check --strict");
+    expect(dockerfile).toContain("FROM cgr.dev/chainguard/wolfi-base:latest@sha256:");
+    expect(dockerfile).toContain("nodejs-22=");
+    expect(dockerfile).toContain("ENV TAR_BIN=bsdtar");
+    expect(dockerfile).toContain("COPY --from=mdbx-builder /usr/local/bin/katana /usr/local/bin/katana");
+    expect(dockerfile).not.toContain("ghcr.io/dojoengine/dojo");
   });
 
   test("entrypoint snapshots only after the runtime process stops on shutdown", async () => {
@@ -130,6 +164,23 @@ describe("AWS runtime image scripts", () => {
     expect(finalSnapshot).toBeGreaterThan(waitRuntime);
   });
 
+  test("snapshot supervisor validates its cadence and heartbeats checkpoint leases out of process", async () => {
+    const source = await fs.readFile("deploy/aws/runtime-image/runtime-snapshot.mjs", "utf8");
+    const lease = source.slice(
+      source.indexOf("async function withSnapshotLease"),
+      source.indexOf("async function acquireSnapshotLease"),
+    );
+
+    expect(source).toContain("positiveInteger(process.env.SNAPSHOT_INTERVAL_SECONDS, 300)");
+    expect(lease).toContain('spawn(process.execPath, [process.argv[1], "lease-heartbeat"');
+    expect(lease.indexOf("heartbeat = await startSnapshotLeaseHeartbeat(leasePath)")).toBeGreaterThan(
+      lease.indexOf("try {"),
+    );
+    expect(lease.indexOf("await stopSnapshotLeaseHeartbeat(heartbeat)")).toBeLessThan(
+      lease.indexOf("await fs.rm(leasePath"),
+    );
+  });
+
   test("path proxy health probes the upstream runtime", async () => {
     const upstream = await startUpstreamRuntime();
     const proxy = await startPathProxy(upstream);
@@ -140,6 +191,59 @@ describe("AWS runtime image scripts", () => {
 
       await upstream.stop();
       await expect(fetchHealth(proxy.publicPort)).resolves.toEqual({ status: 503, ok: false });
+    } finally {
+      proxy.process.kill();
+      await upstream.stop();
+    }
+  });
+
+  test("path proxy enforces public edge request and mutation limits", async () => {
+    const upstream = await startUpstreamRuntime();
+    const proxy = await startPathProxy(upstream, {
+      PROXY_CORS_ORIGINS: "https://game.example",
+      PROXY_MAX_BODY_BYTES: "64",
+      PROXY_MAX_URL_BYTES: "64",
+      PROXY_UPSTREAM_TIMEOUT_MS: "50",
+    });
+
+    try {
+      await waitForProxy(proxy.publicPort);
+      const baseUrl = `http://127.0.0.1:${proxy.publicPort}`;
+
+      expect((await fetch(baseUrl, { headers: { Origin: "https://evil.example" } })).status).toBe(403);
+      const allowed = await fetch(baseUrl, { headers: { Origin: "https://game.example" } });
+      expect(allowed.status).toBe(200);
+      expect(allowed.headers.get("access-control-allow-origin")).toBe("https://game.example");
+
+      expect(
+        (
+          await fetch(baseUrl, {
+            method: "POST",
+            headers: { "content-type": "text/plain" },
+            body: "x".repeat(65),
+          })
+        ).status,
+      ).toBe(413);
+      expect(
+        (
+          await fetch(baseUrl, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: "{invalid",
+          })
+        ).status,
+      ).toBe(400);
+      expect(
+        (
+          await fetch(baseUrl, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ query: "mutation { updateWorld }" }),
+          })
+        ).status,
+      ).toBe(403);
+      expect((await fetch(`${baseUrl}/${"x".repeat(65)}`)).status).toBe(414);
+      expect((await fetch(`${baseUrl}/slow`)).status).toBe(502);
     } finally {
       proxy.process.kill();
       await upstream.stop();
@@ -471,6 +575,41 @@ describe("AWS runtime image scripts", () => {
     await expect(fs.readFile(path.join(dataDir, "torii", "world.db"), "utf8")).resolves.toBe("committed-snapshot");
   });
 
+  test("runtime restore skips snapshots from an incompatible runtime version", async () => {
+    const workspace = await fs.mkdtemp(path.join(os.tmpdir(), "runtime-version-restore-"));
+    const dataDir = path.join(workspace, "data");
+    const snapshotDir = path.join(workspace, "snapshots");
+
+    await fs.mkdir(path.join(dataDir, "torii"), { recursive: true });
+    await fs.writeFile(path.join(dataDir, "torii", "world.db"), "old-version-snapshot");
+    runSnapshotCommand("snapshot-once", {
+      DATA_DIR: dataDir,
+      SNAPSHOT_DIR: snapshotDir,
+      RUNTIME_KIND: "torii",
+      RUNTIME_VERSION: "v1.8.16",
+      WORLD_ADDRESS: "0xabc",
+      SNAPSHOT_NOW: "2026-07-04T00:00:00.000Z",
+    });
+    await fs.rm(dataDir, { recursive: true, force: true });
+
+    const result = spawnSync("node", ["deploy/aws/runtime-image/runtime-snapshot.mjs", "restore"], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        DATA_DIR: dataDir,
+        SNAPSHOT_DIR: snapshotDir,
+        RUNTIME_KIND: "torii",
+        RUNTIME_VERSION: "v1.9.0",
+        WORLD_ADDRESS: "0xabc",
+      },
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("runtime_version_mismatch");
+    await expect(fileExists(path.join(dataDir, "torii", "world.db"))).resolves.toBe(false);
+  });
+
   test("runtime restore logs and skips corrupt snapshots", async () => {
     const workspace = await fs.mkdtemp(path.join(os.tmpdir(), "runtime-corrupt-restore-"));
     const dataDir = path.join(workspace, "data");
@@ -636,9 +775,23 @@ async function extractSnapshotArtifact(snapshotDir: string, snapshotArtifact: st
 
 async function startUpstreamRuntime(): Promise<{ port: number; stop: () => Promise<void> }> {
   const server = http.createServer((request, response) => {
+    if (request.method === "GET" && request.url === "/sql?query=SELECT%201%20AS%20ok") {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify([{ ok: 1 }]));
+      return;
+    }
+
     if (request.method === "GET" && request.url === "/") {
       response.writeHead(200, { "content-type": "application/json" });
       response.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
+    if (request.method === "GET" && request.url === "/slow") {
+      setTimeout(() => {
+        response.writeHead(200);
+        response.end("slow");
+      }, 250);
       return;
     }
 
@@ -658,7 +811,10 @@ async function startUpstreamRuntime(): Promise<{ port: number; stop: () => Promi
   };
 }
 
-async function startPathProxy(upstream: { port: number }): Promise<{ publicPort: number; process: ChildProcess }> {
+async function startPathProxy(
+  upstream: { port: number },
+  env: NodeJS.ProcessEnv = {},
+): Promise<{ publicPort: number; process: ChildProcess }> {
   const publicPort = await reserveFreePort();
   return {
     publicPort,
@@ -670,6 +826,7 @@ async function startPathProxy(upstream: { port: number }): Promise<{ publicPort:
         PUBLIC_PORT: `${publicPort}`,
         INTERNAL_PORT: `${upstream.port}`,
         PROXY_HEALTH_CACHE_MS: "0",
+        ...env,
       },
       stdio: "ignore",
     }),

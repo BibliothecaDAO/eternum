@@ -1,6 +1,6 @@
 import { type WorldSummary, type WorldSummaryMode } from "@bibliothecadao/types";
 
-const CARTRIDGE_API_BASE = "https://api.cartridge.gg";
+import { resolveGameToriiEndpoint } from "./runtime-endpoints";
 const ZERO_OWNER_ADDRESS = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 const WORLD_SUMMARY_QUERY = `
@@ -161,9 +161,14 @@ export interface WorldSummaryFetchResult {
   ok: boolean;
 }
 
-export async function fetchWorldSummaryResult(worldName: string, timeoutMs: number): Promise<WorldSummaryFetchResult> {
+export async function fetchWorldSummaryResult(
+  worldName: string,
+  timeoutMs: number,
+  chain?: string,
+): Promise<WorldSummaryFetchResult> {
   try {
-    const url = `${CARTRIDGE_API_BASE}/x/${worldName}/torii/sql?query=${encodeURIComponent(WORLD_SUMMARY_QUERY)}`;
+    const sqlEndpoint = resolveGameToriiEndpoint(worldName, "sql", chain);
+    const url = `${sqlEndpoint}?query=${encodeURIComponent(WORLD_SUMMARY_QUERY)}`;
     const response = await fetch(url, {
       signal: AbortSignal.timeout(timeoutMs),
     });

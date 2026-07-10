@@ -27,7 +27,7 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/launch-step.ts --launch-kind <game|series|rotation> --step <step-id> --environment <slot.blitz|slot.eternum|mainnet.blitz|mainnet.eternum>",
+      "  bun config/deployer/clean/cli/launch-step.ts --launch-kind <game|series|rotation> --step <step-id> --environment <slot.blitz|slot.eternum|slottest.blitz|slottest.eternum|mainnet.blitz|mainnet.eternum>",
       "  bun config/deployer/clean/cli/launch-step.ts --config-path <path-to-launch.yaml> --step <step-id>",
       "",
       "Game launch:",

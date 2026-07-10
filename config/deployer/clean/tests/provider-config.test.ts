@@ -17,6 +17,15 @@ afterEach(() => {
 });
 
 describe("resolveRuntimeProvider", () => {
+  test("resolves first-class slottest deployment environments", () => {
+    expect(resolveDeploymentEnvironment("slottest.blitz")).toMatchObject({
+      chain: "slottest",
+      rpcUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana/rpc/v0_9",
+      runtimeProvider: "slot",
+    });
+    expect(resolveDeploymentEnvironment("slottest.eternum").configPath).toBe("config/generated/eternum.slottest.json");
+  });
+
   test("uses override env before github env before environment default", () => {
     const environment = resolveDeploymentEnvironment("slot.blitz");
 

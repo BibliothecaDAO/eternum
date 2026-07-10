@@ -1,0 +1,234 @@
+name: AWS Runtime DR
+run-name: AWS Runtime DR / ${{ inputs.environment || 'scheduled' }} / ${{ inputs.operation || 'status' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Protected mainnet environment"
+        required: true
+        type: choice
+        options:
+          - mainnet.blitz
+          - mainnet.eternum
+      operation:
+        description: "DR operation"
+        required: true
+        default: status
+        type: choice
+        options:
+          - configure
+          - status
+          - promote
+  schedule:
+    - cron: "41 4 1 */3 *"
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: aws-runtime-dr-${{ inputs.environment || 'scheduled' }}
+  cancel-in-progress: false
+
+jobs:
+  replication:
+    name: Replication (${{ matrix.environment }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        environment:
+          ${{ inputs.environment && fromJSON(format('["{0}"]', inputs.environment)) ||
+          fromJSON('["mainnet.blitz","mainnet.eternum"]') }}
+    environment: ${{ matrix.environment }}
+    outputs:
+      recovery_started_at: ${{ steps.recovery_start.outputs.recovery_started_at }}
+    env:
+      DR_OPERATION: ${{ inputs.operation || 'status' }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_RUNTIME_EFS_FILE_SYSTEM_ID: ${{ vars.AWS_RUNTIME_EFS_FILE_SYSTEM_ID }}
+      AWS_RUNTIME_DR_EFS_FILE_SYSTEM_ARN: ${{ vars.AWS_RUNTIME_DR_EFS_FILE_SYSTEM_ARN }}
+      AWS_RUNTIME_EFS_REPLICATION_ROLE_ARN: ${{ vars.AWS_RUNTIME_EFS_REPLICATION_ROLE_ARN }}
+      AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_DR_RUNTIME_ECR_REPOSITORY_URL }}
+      AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
+      DR_RECOVERY_MANIFEST: ${{ vars.AWS_RUNTIME_DR_RECOVERY_MANIFEST }}
+      RUNTIME_REGISTRY_URL: ${{ vars.RUNTIME_REGISTRY_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Record recovery start
+        id: recovery_start
+        run: echo "recovery_started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "${GITHUB_OUTPUT}"
+
+      - name: Configure destination DR role
+        if: ${{ (inputs.operation || 'status') == 'configure' || (inputs.operation || 'status') == 'promote' }}
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
+        with:
+          role-to-assume: ${{ vars.AWS_RUNTIME_DESTINATION_DR_ROLE_ARN }}
+          aws-region: us-west-2
+
+      - name: Prepare destination EFS for replication
+        if: ${{ (inputs.operation || 'status') == 'configure' }}
+        run: |
+          set -euo pipefail
+          destination_file_system_id="${AWS_RUNTIME_DR_EFS_FILE_SYSTEM_ARN##*/}"
+          aws efs update-file-system-protection \
+            --region us-west-2 \
+            --file-system-id "${destination_file_system_id}" \
+            --replication-overwrite-protection DISABLED \
+            --query ReplicationOverwriteProtection \
+            --output text | grep -Fx DISABLED
+
+      - name: Preflight recovery manifest and replicated images
+        if: ${{ (inputs.operation || 'status') == 'promote' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${DR_RECOVERY_MANIFEST}" ]; then
+            echo "AWS_RUNTIME_DR_RECOVERY_MANIFEST is required before promotion" >&2
+            exit 1
+          fi
+          manifest_file="${RUNNER_TEMP}/dr-recovery-preflight-manifest.json"
+          printf '%s' "${DR_RECOVERY_MANIFEST}" > "${manifest_file}"
+          node scripts/recover-aws-runtime-from-registry.mjs \
+            --manifest-file "${manifest_file}" \
+            --operation preflight | tee aws-runtime-dr-image-preflight.json
+
+      - name: Configure source DR role
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
+        with:
+          role-to-assume: ${{ vars.AWS_RUNTIME_SOURCE_DR_ROLE_ARN || vars.AWS_RUNTIME_DR_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Check or mutate cross-account replication
+        run: |
+          set -euo pipefail
+          node scripts/aws-runtime-dr.mjs --operation "${DR_OPERATION}" | tee aws-runtime-dr-result.json
+
+      - name: Upload replication evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: aws-runtime-dr-replication-${{ matrix.environment }}
+          path: |
+            aws-runtime-dr-result.json
+            aws-runtime-dr-image-preflight.json
+          if-no-files-found: error
+          retention-days: 365
+
+  recover:
+    name: Recover services (${{ matrix.environment }})
+    needs: replication
+    if: ${{ inputs.operation == 'promote' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: ${{ inputs.environment && fromJSON(format('["{0}"]', inputs.environment)) || fromJSON('[]') }}
+    environment: ${{ matrix.environment }}
+    env:
+      AWS_REGION: us-west-2
+      AWS_RUNTIME_CLUSTER: ${{ vars.AWS_DR_RUNTIME_CLUSTER }}
+      AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
+      AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_DR_RUNTIME_ECR_REPOSITORY_URL }}
+      AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN: ${{ vars.AWS_DR_RUNTIME_TASK_EXECUTION_ROLE_ARN }}
+      AWS_RUNTIME_TASK_ROLE_ARN: ${{ vars.AWS_DR_RUNTIME_TASK_ROLE_ARN }}
+      AWS_RUNTIME_SUBNET_IDS: ${{ vars.AWS_DR_RUNTIME_SUBNET_IDS }}
+      AWS_RUNTIME_SECURITY_GROUP_IDS: ${{ vars.AWS_DR_RUNTIME_SECURITY_GROUP_IDS }}
+      AWS_RUNTIME_EFS_FILE_SYSTEM_ID: ${{ vars.AWS_DR_RUNTIME_EFS_FILE_SYSTEM_ID }}
+      AWS_RUNTIME_VPC_ID: ${{ vars.AWS_DR_RUNTIME_VPC_ID }}
+      AWS_RUNTIME_ALB_LISTENER_ARN: ${{ vars.AWS_DR_RUNTIME_ALB_LISTENER_ARN }}
+      AWS_RUNTIME_ALB_LISTENER_ARNS: ${{ vars.AWS_DR_RUNTIME_ALB_LISTENER_ARNS }}
+      AWS_DR_RUNTIME_ALB_DNS_NAMES: ${{ vars.AWS_DR_RUNTIME_ALB_DNS_NAMES }}
+      AWS_DR_RUNTIME_ALB_HOSTED_ZONE_IDS: ${{ vars.AWS_DR_RUNTIME_ALB_HOSTED_ZONE_IDS }}
+      AWS_RUNTIME_LOG_GROUP: ${{ vars.AWS_DR_RUNTIME_LOG_GROUP }}
+      AWS_RUNTIME_SNS_TOPIC_ARN: ${{ vars.AWS_DR_RUNTIME_SNS_TOPIC_ARN }}
+      AWS_RUNTIME_CONTROL_TABLE_NAME: ${{ vars.AWS_DR_RUNTIME_CONTROL_TABLE_NAME }}
+      AWS_RUNTIME_REQUIRE_CONTROL_TABLE: "true"
+      AWS_RUNTIME_CORS_ORIGINS: ${{ vars.AWS_DR_RUNTIME_CORS_ORIGINS }}
+      AWS_RUNTIME_UPSTREAM_RPC_SECRET_ARN: ${{ vars.AWS_DR_RUNTIME_UPSTREAM_RPC_SECRET_ARN }}
+      AWS_RUNTIME_VERIFY_PUBLIC_HEALTH: "0"
+      DR_RECOVERY_MANIFEST: ${{ vars.AWS_RUNTIME_DR_RECOVERY_MANIFEST }}
+      RUNTIME_REGISTRY_URL: ${{ vars.RUNTIME_REGISTRY_URL }}
+      FACTORY_WORKER_ADMIN_SECRET: ${{ secrets.FACTORY_WORKER_ADMIN_SECRET }}
+      RECOVERY_STARTED_AT: ${{ needs.replication.outputs.recovery_started_at }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7
+
+      - name: Configure destination deploy role
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
+        with:
+          role-to-assume: ${{ vars.AWS_RUNTIME_DESTINATION_DR_ROLE_ARN }}
+          aws-region: us-west-2
+
+      - name: Setup ECS Exec client
+        uses: ./.github/actions/setup-session-manager-plugin
+
+      - name: Write validated recovery request
+        run: |
+          set -euo pipefail
+          if [[ -z "${DR_RECOVERY_MANIFEST}" ]]; then
+            echo "AWS_RUNTIME_DR_RECOVERY_MANIFEST is required" >&2
+            exit 1
+          fi
+          printf '%s' "${DR_RECOVERY_MANIFEST}" |
+            jq -e --arg recovery_started_at "${RECOVERY_STARTED_AT}" \
+              '.recoveryStartedAt = $recovery_started_at' > dr-recovery-manifest.json
+
+      - name: Recreate runtimes from the recovery manifest
+        run: |
+          set -euo pipefail
+          node scripts/recover-aws-runtime-from-registry.mjs \
+            --manifest-file dr-recovery-manifest.json \
+            --operation deploy | tee aws-runtime-dr-recovery.json
+
+      - name: Configure production DNS failover role
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
+        with:
+          role-to-assume: ${{ vars.AWS_RUNTIME_SOURCE_DR_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: Update Route53 failover records
+        run: |
+          set -euo pipefail
+          node scripts/recover-aws-runtime-from-registry.mjs \
+            --manifest-file dr-recovery-manifest.json \
+            --operation route53 | tee aws-runtime-dr-route53.json
+
+      - name: Activate recovered registry aliases
+        run: |
+          set -euo pipefail
+          jq -r '.registryAliasPrefixes[]' dr-recovery-manifest.json | while IFS= read -r alias_prefix; do
+            bun scripts/update-runtime-registry.ts \
+              --registry-url "${RUNTIME_REGISTRY_URL}" \
+              --admin-secret "${FACTORY_WORKER_ADMIN_SECRET}" \
+              --alias-prefix "${alias_prefix}" \
+              --provider aws
+          done
+
+      - name: Enforce measured regional RTO
+        run: |
+          set -euo pipefail
+          node scripts/recover-aws-runtime-from-registry.mjs \
+            --manifest-file dr-recovery-manifest.json \
+            --operation measure | tee aws-runtime-dr-rto.json
+
+      - name: Upload recovery evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: aws-runtime-dr-recovery-${{ matrix.environment }}
+          path: |
+            aws-runtime-dr-recovery.json
+            aws-runtime-dr-route53.json
+            aws-runtime-dr-rto.json
+            dr-recovery-manifest.json
+          if-no-files-found: error
+          retention-days: 365

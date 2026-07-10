@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../runtime-endpoints", () => ({
+  resolveGameToriiEndpoint: (worldName: string, endpointKind: string) =>
+    `https://api.cartridge.gg/x/${worldName}/torii${endpointKind === "sql" ? "/sql" : ""}`,
+}));
+
 import { fetchWorldSummary } from "../world-summary";
 
 const mockFetch = vi.fn<typeof globalThis.fetch>();

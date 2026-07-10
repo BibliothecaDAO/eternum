@@ -19,13 +19,19 @@ export const useFactoryAdmin = (chain: ChainType) => {
     [chain],
   );
 
-  const checkIndexerExists = useCallback(async (worldName: string) => {
-    return checkIndexerExistsService(worldName);
-  }, []);
+  const checkIndexerExists = useCallback(
+    async (worldName: string) => {
+      return checkIndexerExistsService(chain as any, worldName);
+    },
+    [chain],
+  );
 
-  const checkBanksExist = useCallback(async (worldName: string, expectedCount: number) => {
-    return checkBanksExistService(worldName, expectedCount);
-  }, []);
+  const checkBanksExist = useCallback(
+    async (worldName: string, expectedCount: number) => {
+      return checkBanksExistService(chain as any, worldName, expectedCount);
+    },
+    [chain],
+  );
 
   const refreshStatuses = useCallback(
     async (worldNames: string[], opts?: { checkBanks?: boolean; bankCount?: number }) => {

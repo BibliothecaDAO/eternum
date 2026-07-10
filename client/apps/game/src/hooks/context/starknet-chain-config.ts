@@ -1,6 +1,7 @@
 import type { Chain } from "@contracts";
 
 import { buildSharedSlotRpcUrl, isRpcUrlCompatibleForChain, normalizeRpcUrl } from "@/runtime/world/normalize";
+import { resolveChainRpcEndpoint } from "@/config/runtime-endpoints";
 import { constants, shortString } from "starknet";
 
 const KATANA_CHAIN_ID = shortString.encodeShortString("KATANA");
@@ -49,9 +50,6 @@ const deriveChainFromRpcUrl = (value: string): DerivedChain | null => {
   }
 };
 
-const buildCartridgeRpcUrl = (cartridgeApiBase: string, path: string) =>
-  normalizeRpcUrl(`${cartridgeApiBase}${path.startsWith("/") ? path : `/${path}`}`);
-
 const buildSupportedRpcUrls = (preferredRpcUrl: string, ...additionalRpcUrls: string[]): string[] => {
   return Array.from(new Set([preferredRpcUrl, ...additionalRpcUrls]));
 };
@@ -85,18 +83,17 @@ export const resolveStarknetRuntimeConfig = ({
   fallbackChain,
   selectedChain,
   baseRpcUrl,
-  cartridgeApiBase,
 }: {
   fallbackChain: Chain;
   selectedChain: Chain | null;
   baseRpcUrl: string;
-  cartridgeApiBase: string;
+  cartridgeApiBase?: string;
 }): StarknetRuntimeConfig => {
   const normalizedBaseRpcUrl = normalizeRpcUrl(baseRpcUrl);
   const effectiveChain = selectedChain ?? fallbackChain;
-  const mainnetRpcUrl = buildCartridgeRpcUrl(cartridgeApiBase, "/x/starknet/mainnet/rpc/v0_9");
-  const sepoliaRpcUrl = buildCartridgeRpcUrl(cartridgeApiBase, "/x/starknet/sepolia/rpc/v0_9");
-  const slotRpcUrl = buildSharedSlotRpcUrl(cartridgeApiBase);
+  const mainnetRpcUrl = resolveChainRpcEndpoint("mainnet");
+  const sepoliaRpcUrl = resolveChainRpcEndpoint("sepolia");
+  const slotRpcUrl = buildSharedSlotRpcUrl(effectiveChain === "slottest" ? "slottest" : "slot");
 
   if (effectiveChain === "local") {
     return {

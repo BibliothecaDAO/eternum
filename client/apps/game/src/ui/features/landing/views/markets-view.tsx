@@ -1,4 +1,5 @@
 import { MMR_TOKEN_BY_CHAIN } from "@/config/global-chain";
+import { resolveChainRpcEndpoint } from "@/config/runtime-endpoints";
 import {
   getAvatarUrl,
   normalizeAvatarAddress,
@@ -52,8 +53,8 @@ type PlayerMmrSnapshot = { mmrRaw: bigint; mmr: number; tier: MMRTier; chain: Ma
 
 const GET_PLAYER_MMR_SELECTOR = hash.getSelectorFromName("get_player_mmr");
 const MMR_RPC_BY_CHAIN: Record<MarketDataChain, string> = {
-  mainnet: "https://api.cartridge.gg/x/starknet/mainnet",
-  slot: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+  mainnet: resolveChainRpcEndpoint("mainnet"),
+  slot: resolveChainRpcEndpoint("slot"),
 };
 
 const normalizeHexAddress = (value: string): string | null => {

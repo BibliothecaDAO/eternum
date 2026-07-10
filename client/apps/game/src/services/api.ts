@@ -2,6 +2,7 @@ import { SqlApi } from "@bibliothecadao/torii";
 import { getActiveWorld } from "@/runtime/world";
 import type { Chain } from "@contracts";
 import { env } from "../../env";
+import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 
 const ensureSqlSuffix = (baseUrl: string): string => (baseUrl.endsWith("/sql") ? baseUrl : `${baseUrl}/sql`);
 
@@ -20,7 +21,7 @@ const resolveWorldToriiBaseUrl = ({ chain, worldName }: { chain: Chain; worldNam
     return active.toriiBaseUrl;
   }
 
-  return chain === "local" ? env.VITE_PUBLIC_TORII : `https://api.cartridge.gg/x/${worldName}/torii`;
+  return chain === "local" ? env.VITE_PUBLIC_TORII : resolveGameRuntimeEndpoint(worldName, "base", { chain });
 };
 
 export const resolveWorldSqlBaseUrl = ({ chain, worldName }: { chain: Chain; worldName: string }): string =>

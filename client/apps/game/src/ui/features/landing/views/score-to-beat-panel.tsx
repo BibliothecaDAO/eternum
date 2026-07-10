@@ -6,6 +6,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import Download from "lucide-react/dist/esm/icons/download";
 
 import { useFactorySeriesIndex, type FactorySeriesIndex } from "@/hooks/use-factory-series-index";
+import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 import { getAvatarUrl, normalizeAvatarAddress, useAvatarProfiles } from "@/hooks/use-player-avatar";
 import { useWorldsSummary } from "@/hooks/use-worlds-summary";
 import { RefreshButton } from "@/ui/design-system/atoms/refresh-button";
@@ -70,7 +71,8 @@ const describeEndpoint = (endpoint: string) => {
   }
 };
 
-const buildToriiSqlUrl = (gameName: string) => `https://api.cartridge.gg/x/${gameName}/torii/sql`;
+const buildToriiSqlUrl = (gameName: string, chain: Chain) =>
+  resolveGameRuntimeEndpoint(gameName, "sql", { chain, gameType: "blitz" });
 
 const loadStoredSelectedGames = (): string[] | null => {
   if (typeof window === "undefined") return null;
@@ -451,8 +453,8 @@ export const ScoreToBeatPanel = () => {
 
   // Build endpoints from selected games and selected series games
   const resolvedEndpoints = useMemo(
-    () => cappedSelectedGameNames.map((name) => buildToriiSqlUrl(name)),
-    [cappedSelectedGameNames],
+    () => cappedSelectedGameNames.map((name) => buildToriiSqlUrl(name, selectedChain)),
+    [cappedSelectedGameNames, selectedChain],
   );
 
   // Persist preferences

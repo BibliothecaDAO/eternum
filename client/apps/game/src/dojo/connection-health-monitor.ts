@@ -593,8 +593,7 @@ export class ConnectionHealthMonitor {
     return {
       onLine: navigatorOnLine,
       msSinceOffline: store.lastOfflineAt !== null ? now - store.lastOfflineAt : null,
-      visibilityState:
-        typeof document !== "undefined" && document.visibilityState === "hidden" ? "hidden" : "visible",
+      visibilityState: typeof document !== "undefined" && document.visibilityState === "hidden" ? "hidden" : "visible",
       healthProbeReason: this.resolveHealthProbeReason(),
       heartbeatAvailable: store.toriiHeartbeatAvailable,
       msSinceHeartbeat: store.toriiHeartbeatAvailable ? now - store.lastToriiHeartbeat : null,

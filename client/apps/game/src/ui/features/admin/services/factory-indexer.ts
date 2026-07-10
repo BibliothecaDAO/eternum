@@ -1,5 +1,6 @@
-import { CARTRIDGE_API_BASE, TORII_CREATOR_URL } from "../constants";
+import { TORII_CREATOR_URL } from "../constants";
 import { getFactorySqlBaseUrl } from "../constants";
+import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 import { resolveWorldAddressFromFactory } from "@/runtime/world/factory-resolver";
 import {
   updateFactoryIndexerTier as updateFactoryIndexerTierViaWorker,
@@ -19,8 +20,8 @@ interface ToriiConfigPayload {
   torii_world_address?: string; // deployed world contract
 }
 
-export const checkIndexerExists = async (worldName: string): Promise<boolean> => {
-  const url = `${CARTRIDGE_API_BASE}/x/${worldName}/torii/sql`;
+export const checkIndexerExists = async (chain: Chain, worldName: string): Promise<boolean> => {
+  const url = resolveGameRuntimeEndpoint(worldName, "sql", { chain });
   try {
     const res = await fetch(url, { method: "HEAD" });
     return res.ok;
@@ -71,8 +72,8 @@ export const getWorldDeployedAddress = async (chain: Chain, worldName: string): 
  * Check if banks have been created for a world by querying its torii SQL endpoint.
  * Bank structures have category = 3 in the Structure model.
  */
-export const checkBanksExist = async (worldName: string, expectedCount: number): Promise<boolean> => {
-  const url = `${CARTRIDGE_API_BASE}/x/${worldName}/torii/sql?query=${encodeURIComponent(
+export const checkBanksExist = async (chain: Chain, worldName: string, expectedCount: number): Promise<boolean> => {
+  const url = `${resolveGameRuntimeEndpoint(worldName, "sql", { chain })}?query=${encodeURIComponent(
     "SELECT COUNT(*) as count FROM [s1_eternum-Structure] WHERE category = 3",
   )}`;
   try {

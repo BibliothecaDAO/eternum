@@ -1,20 +1,11 @@
-const CARTRIDGE_API_BASE = "https://api.cartridge.gg";
+import { resolveFactoryToriiSqlEndpoint } from "./runtime-endpoints";
 
 type FactoryRow = Record<string, unknown>;
 
 export function getFactorySqlBaseUrl(chain: string): string {
-  switch (chain) {
-    case "mainnet":
-      return `${CARTRIDGE_API_BASE}/x/eternum-factory-mainnet/torii/sql`;
-    case "sepolia":
-      return `${CARTRIDGE_API_BASE}/x/eternum-factory-sepolia/torii/sql`;
-    case "slot":
-    case "slottest":
-    case "local":
-      return `${CARTRIDGE_API_BASE}/x/eternum-factory-slot-d/torii/sql`;
-    default:
-      return "";
-  }
+  return new Set(["mainnet", "sepolia", "slot", "slottest", "local"]).has(chain)
+    ? resolveFactoryToriiSqlEndpoint(chain)
+    : "";
 }
 
 export async function fetchFactoryRows(

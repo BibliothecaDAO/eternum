@@ -48,6 +48,11 @@ const envSchema = z.object({
     .optional()
     .default(""),
   VITE_AWS_RUNTIME_DOMAIN: z.string().optional().default(""),
+  VITE_PUBLIC_RUNTIME_REGISTRY_JSON: z.string().optional().default(""),
+  VITE_PUBLIC_RUNTIME_REGISTRY_URL: z
+    .union([z.string().url(), z.literal("")])
+    .optional()
+    .default(""),
   VITE_PUBLIC_TORII_CREATOR_URL: z
     .string()
     .url()

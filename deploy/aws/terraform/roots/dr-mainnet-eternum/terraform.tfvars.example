@@ -1,0 +1,12 @@
+hosted_zone_id     = "TODO_HOSTED_ZONE_ID"
+github_org         = "BibliothecaDAO"
+github_repo        = "eternum"
+github_oidc_provider_arn = "arn:aws:iam::TODO_DR_ACCOUNT_ID:oidc-provider/token.actions.githubusercontent.com"
+monthly_budget_usd = 100
+existing_certificate_arn = "arn:aws:acm:us-west-2:TODO_DR_ACCOUNT_ID:certificate/TODO_CERTIFICATE_ID"
+
+alert_email_addresses               = ["runtime-alerts@example.com"]
+budget_notification_email_addresses = ["runtime-budgets@example.com"]
+cors_origins                         = ["https://eternum.realms.world"]
+
+production_account_id = "TODO_PRODUCTION_ACCOUNT_ID"

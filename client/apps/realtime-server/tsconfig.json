@@ -6,7 +6,6 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "outDir": "dist",
-    "rootDir": "src",
     "esModuleInterop": true,
     "baseUrl": ".",
     "paths": {
@@ -14,7 +13,7 @@
     },
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "noEmitOnError": true,
+    "noEmit": true,
     "types": ["bun-types", "node"]
   },
   "include": ["src/**/*"],

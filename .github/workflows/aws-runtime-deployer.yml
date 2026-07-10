@@ -24,6 +24,8 @@ on:
         options:
           - slot.blitz
           - slot.eternum
+          - slottest.blitz
+          - slottest.eternum
           - mainnet.blitz
           - mainnet.eternum
       runtime_kind:
@@ -37,6 +39,15 @@ on:
         description: "Runtime name"
         required: true
         type: string
+      runtime_instance_id:
+        description: "Immutable runtime instance id"
+        required: true
+        type: string
+      expected_delete_after:
+        description: "Exact DeleteAfter timestamp required for teardown"
+        required: false
+        default: ""
+        type: string
       tier:
         description: "Fixed runtime tier"
         required: false
@@ -47,39 +58,21 @@ on:
           - pro
           - epic
           - legendary
-      rpc_url:
-        description: "RPC URL used by Torii"
-        required: false
-        type: string
-      world_address:
-        description: "World address indexed by Torii"
-        required: false
-        type: string
-      world_block:
-        description: "First world block indexed by Torii"
+      image_digest:
+        description: "Approved runtime image digest"
         required: false
         default: ""
         type: string
-      namespaces:
-        description: "Comma-separated Torii namespaces"
+      registry_json:
+        description: "Registry scope, activation, and optional Slot rollback endpoints"
         required: false
-        default: s1_eternum
+        default: '{"scope":"game","activate":false,"slotFallbackEndpoints":{}}'
         type: string
-      external_contracts:
-        description: "Comma-separated or newline-separated Torii external contracts"
+      request_json:
+        description: "Optional JSON object containing secondary runtime fields"
         required: false
-        default: ""
+        default: "{}"
         type: string
-      version:
-        description: "Dojo runtime version"
-        required: false
-        default: v1.8.16
-        type: string
-      retain_data:
-        description: "Keep snapshot data when deleting a runtime"
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   contents: read
@@ -110,30 +103,51 @@ jobs:
       AWS_RUNTIME_EFS_FILE_SYSTEM_ID: ${{ vars.AWS_RUNTIME_EFS_FILE_SYSTEM_ID }}
       AWS_RUNTIME_VPC_ID: ${{ vars.AWS_RUNTIME_VPC_ID }}
       AWS_RUNTIME_ALB_LISTENER_ARN: ${{ vars.AWS_RUNTIME_ALB_LISTENER_ARN }}
+      AWS_RUNTIME_ALB_LISTENER_ARNS: ${{ vars.AWS_RUNTIME_ALB_LISTENER_ARNS }}
       AWS_RUNTIME_LOG_GROUP: ${{ vars.AWS_RUNTIME_LOG_GROUP || '/ecs/eternum-game-runtime' }}
       AWS_RUNTIME_SNS_TOPIC_ARN: ${{ vars.AWS_RUNTIME_SNS_TOPIC_ARN }}
+      AWS_RUNTIME_CONTROL_TABLE_NAME: ${{ vars.AWS_RUNTIME_CONTROL_TABLE_NAME }}
+      AWS_RUNTIME_REQUIRE_CONTROL_TABLE: ${{ vars.AWS_RUNTIME_REQUIRE_CONTROL_TABLE || 'true' }}
+      AWS_RUNTIME_CORS_ORIGINS: ${{ vars.AWS_RUNTIME_CORS_ORIGINS }}
       AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS: ${{ vars.AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS }}
+      SELECTED_ROLE_ARN:
+        ${{ github.event.inputs.operation == 'delete' && vars.AWS_MAINTENANCE_ROLE_TO_ASSUME || vars.AWS_ROLE_TO_ASSUME
+        }}
+      INPUT_OPERATION: ${{ github.event.inputs.operation }}
+      INPUT_ENVIRONMENT: ${{ github.event.inputs.environment }}
+      INPUT_RUNTIME_KIND: ${{ github.event.inputs.runtime_kind }}
+      INPUT_RUNTIME_NAME: ${{ github.event.inputs.runtime_name }}
+      INPUT_RUNTIME_INSTANCE_ID: ${{ github.event.inputs.runtime_instance_id }}
+      INPUT_EXPECTED_DELETE_AFTER: ${{ github.event.inputs.expected_delete_after }}
+      INPUT_TIER: ${{ github.event.inputs.tier }}
+      INPUT_IMAGE_DIGEST: ${{ github.event.inputs.image_digest || vars.AWS_RUNTIME_IMAGE_DIGEST }}
+      INPUT_REGISTRY_JSON:
+        ${{ github.event.inputs.registry_json || '{"scope":"game","activate":false,"slotFallbackEndpoints":{}}' }}
+      INPUT_REQUEST_JSON: ${{ github.event.inputs.request_json || '{}' }}
+      INPUT_UPSTREAM_RPC_SECRET_ARN: ${{ vars.AWS_RUNTIME_UPSTREAM_RPC_SECRET_ARN }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: "22"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7
 
       - name: Configure AWS credentials
-        if: ${{ vars.AWS_ROLE_TO_ASSUME != '' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: ${{ env.SELECTED_ROLE_ARN }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Setup ECS Exec client
+        uses: ./.github/actions/setup-session-manager-plugin
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
@@ -143,43 +157,76 @@ jobs:
           set -euo pipefail
 
           args=(
-            --operation "${{ github.event.inputs.operation }}"
-            --environment "${{ github.event.inputs.environment }}"
-            --runtime-kind "${{ github.event.inputs.runtime_kind }}"
-            --runtime-name "${{ github.event.inputs.runtime_name }}"
-            --tier "${{ github.event.inputs.tier }}"
-            --version "${{ github.event.inputs.version }}"
+            --operation "${INPUT_OPERATION}"
+            --environment "${INPUT_ENVIRONMENT}"
+            --runtime-kind "${INPUT_RUNTIME_KIND}"
+            --runtime-name "${INPUT_RUNTIME_NAME}"
+            --runtime-instance-id "${INPUT_RUNTIME_INSTANCE_ID}"
+            --tier "${INPUT_TIER}"
           )
 
-          if [ -n "${{ github.event.inputs.rpc_url }}" ]; then
-            args+=(--rpc-url "${{ github.event.inputs.rpc_url }}")
+          request_file="${RUNNER_TEMP}/aws-runtime-request.json"
+          printf '%s' "${INPUT_REQUEST_JSON}" > "${request_file}"
+          args+=(--request-file "${request_file}")
+
+          if [ -n "${INPUT_IMAGE_DIGEST}" ]; then
+            args+=(--image-digest "${INPUT_IMAGE_DIGEST}")
           fi
 
-          if [ -n "${{ github.event.inputs.world_address }}" ]; then
-            args+=(--world-address "${{ github.event.inputs.world_address }}")
+          if [ -n "${INPUT_UPSTREAM_RPC_SECRET_ARN}" ]; then
+            args+=(--upstream-rpc-secret-arn "${INPUT_UPSTREAM_RPC_SECRET_ARN}")
           fi
 
-          if [ -n "${{ github.event.inputs.world_block }}" ]; then
-            args+=(--world-block "${{ github.event.inputs.world_block }}")
+          if [ -n "${INPUT_EXPECTED_DELETE_AFTER}" ]; then
+            args+=(--expected-delete-after "${INPUT_EXPECTED_DELETE_AFTER}")
           fi
 
-          if [ -n "${{ github.event.inputs.namespaces }}" ]; then
-            args+=(--namespaces "${{ github.event.inputs.namespaces }}")
-          fi
-
-          if [ -n "${{ github.event.inputs.external_contracts }}" ]; then
-            args+=(--external-contracts "${{ github.event.inputs.external_contracts }}")
-          fi
-
-          if [ "${{ github.event.inputs.operation }}" = "delete" ] && [ "${{ github.event.inputs.retain_data }}" = "true" ]; then
-            args+=(--retain-data)
-          fi
 
           bun config/deployer/clean/cli/aws-runtime.ts "${args[@]}" | tee aws-runtime-result.json
 
+      - name: Publish runtime registry
+        if: ${{ github.event.inputs.operation != 'inspect' && vars.RUNTIME_REGISTRY_URL != '' }}
+        env:
+          FACTORY_WORKER_ADMIN_SECRET: ${{ secrets.FACTORY_WORKER_ADMIN_SECRET }}
+          RUNTIME_REGISTRY_URL: ${{ vars.RUNTIME_REGISTRY_URL }}
+        run: |
+          set -euo pipefail
+
+          registry_request_file="${RUNNER_TEMP}/aws-runtime-registry-request.json"
+          printf '%s' "${INPUT_REGISTRY_JSON}" > "${registry_request_file}"
+          jq -e '
+            type == "object" and
+            ((keys - ["activate", "scope", "slotFallbackEndpoints"]) | length == 0) and
+            (.scope | IN("game", "factory", "global", "shared-chain")) and
+            (.activate | type == "boolean") and
+            (.slotFallbackEndpoints | type == "object")
+          ' "${registry_request_file}" >/dev/null
+          registry_scope="$(jq -r '.scope' "${registry_request_file}")"
+          activate_registry="$(jq -r '.activate' "${registry_request_file}")"
+          slot_fallback_endpoints="$(jq -c '.slotFallbackEndpoints' "${registry_request_file}")"
+
+          registry_args=(--registry-url "${RUNTIME_REGISTRY_URL}")
+          if [ "${INPUT_OPERATION}" = "delete" ]; then
+            registry_args+=(--teardown-result-file aws-runtime-result.json)
+          else
+            registry_args+=(
+              --artifact-file aws-runtime-result.json
+              --scope "${registry_scope}"
+              --provider aws
+              --activate "${activate_registry}"
+            )
+            if [ "${slot_fallback_endpoints}" != "{}" ]; then
+              registry_args+=(--fallback-endpoints-json "${slot_fallback_endpoints}")
+            fi
+          fi
+
+          bun scripts/update-runtime-registry.ts "${registry_args[@]}" | tee runtime-registry-result.json
+
       - name: Upload runtime result
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: aws-runtime-result
-          path: aws-runtime-result.json
+          path: |
+            aws-runtime-result.json
+            runtime-registry-result.json

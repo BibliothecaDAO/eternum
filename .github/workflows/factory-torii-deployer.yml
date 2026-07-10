@@ -1,8 +1,7 @@
 name: Factory Torii Deployer
 run-name: >-
-  Factory Torii Deployer / ${{ inputs.env || github.event.inputs.env || 'slot' }} / ${{ inputs.torii_prefix ||
-  github.event.inputs.torii_prefix || inputs.torii_name || github.event.inputs.torii_name || 'torii' }} / ${{
-  inputs.launch_request_id || github.event.inputs.launch_request_id || 'manual' }}
+  Factory Torii Deployer / ${{ inputs.environment_id || 'unknown' }} / ${{ inputs.torii_name || 'torii' }} / ${{
+  inputs.launch_request_id || 'manual' }}
 
 on:
   workflow_dispatch:
@@ -15,38 +14,32 @@ on:
         options:
           - deploy
           - update-tier
-      env:
-        description: "Legacy environment label used by older callers"
-        required: false
-        default: "slot"
       environment_id:
         description: "Clean deployer environment id"
-        required: false
-        default: ""
+        required: true
+        type: choice
+        options:
+          - slot.blitz
+          - slot.eternum
+          - slottest.blitz
+          - slottest.eternum
+          - mainnet.blitz
+          - mainnet.eternum
       runtime_provider:
         description: "Runtime provider; AWS is the v1 replacement path"
         required: false
         default: "aws"
-      runtime_domain:
-        description: "Public runtime domain"
-        required: false
-        default: "runtime.realms.world"
-      torii_prefix:
-        description: "Torii runtime name prefix"
-        required: false
-        default: "eternum-torii"
       torii_name:
-        description: "Existing or explicit Torii runtime name"
+        description: "Canonical Torii runtime name"
+        required: true
+      runtime_instance_id:
+        description: "Immutable shared runtime instance id"
         required: false
         default: ""
-      torii_version:
-        description: "Dojo/Torii image version metadata"
+      image_digest:
+        description: "Approved runtime image digest"
         required: false
-        default: "v1.8.16"
-      slot_team:
-        description: "Deprecated Slot team input retained for caller compatibility"
-        required: false
-        default: "realms-eternum"
+        default: ""
       torii_tier:
         description: "Fixed AWS runtime tier"
         required: false
@@ -57,28 +50,10 @@ on:
           - pro
           - epic
           - legendary
-      rpc_url:
-        description: "Starknet RPC URL used by Torii"
+      request_json:
+        description: "Validated secondary Torii request fields"
         required: false
-      torii_world_address:
-        description: "Torii world address"
-        required: false
-      world_block:
-        description: "First world block for Torii indexing"
-        required: false
-        default: "0"
-      torii_namespaces:
-        description: "Comma-separated namespaces"
-        required: false
-        default: "s1_eternum"
-      torii_external_contracts:
-        description: "External contracts to index"
-        required: false
-        default: ""
-      torii_replicas:
-        description: "Deprecated Slot replica input retained for caller compatibility"
-        required: false
-        default: "1"
+        default: "{}"
       launch_request_id:
         description: "Internal launch correlation id"
         required: false
@@ -92,10 +67,7 @@ env:
   CI: "true"
 
 concurrency:
-  group:
-    aws-runtime-${{ inputs.environment_id || github.event.inputs.environment_id || (github.event.inputs.env == 'mainnet'
-    && 'mainnet.blitz' || 'slot.blitz') }}-${{ inputs.torii_name || github.event.inputs.torii_name ||
-    inputs.torii_prefix || github.event.inputs.torii_prefix || 'factory-torii' }}
+  group: aws-runtime-${{ inputs.environment_id }}-${{ inputs.torii_name || 'factory-torii' }}
   cancel-in-progress: false
 
 jobs:
@@ -103,14 +75,12 @@ jobs:
     name: Reconcile AWS Torii
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    environment:
-      ${{ github.event.inputs.environment_id || (github.event.inputs.env == 'mainnet' && 'mainnet.blitz' ||
-      'slot.blitz') }}
+    environment: ${{ inputs.environment_id }}
     env:
       RUNTIME_PROVIDER: ${{ vars.RUNTIME_PROVIDER || 'slot' }}
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
       AWS_RUNTIME_CLUSTER: ${{ vars.AWS_RUNTIME_CLUSTER }}
-      AWS_RUNTIME_DOMAIN: ${{ github.event.inputs.runtime_domain || vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
+      AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
       AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
       AWS_RUNTIME_ECR_IMAGE: ${{ vars.AWS_RUNTIME_ECR_IMAGE }}
       AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN: ${{ vars.AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN }}
@@ -120,34 +90,49 @@ jobs:
       AWS_RUNTIME_EFS_FILE_SYSTEM_ID: ${{ vars.AWS_RUNTIME_EFS_FILE_SYSTEM_ID }}
       AWS_RUNTIME_VPC_ID: ${{ vars.AWS_RUNTIME_VPC_ID }}
       AWS_RUNTIME_ALB_LISTENER_ARN: ${{ vars.AWS_RUNTIME_ALB_LISTENER_ARN }}
+      AWS_RUNTIME_ALB_LISTENER_ARNS: ${{ vars.AWS_RUNTIME_ALB_LISTENER_ARNS }}
       AWS_RUNTIME_LOG_GROUP: ${{ vars.AWS_RUNTIME_LOG_GROUP || '/ecs/eternum-game-runtime' }}
       AWS_RUNTIME_SNS_TOPIC_ARN: ${{ vars.AWS_RUNTIME_SNS_TOPIC_ARN }}
+      AWS_RUNTIME_CONTROL_TABLE_NAME: ${{ vars.AWS_RUNTIME_CONTROL_TABLE_NAME }}
+      AWS_RUNTIME_REQUIRE_CONTROL_TABLE: ${{ vars.AWS_RUNTIME_REQUIRE_CONTROL_TABLE || 'true' }}
+      AWS_RUNTIME_CORS_ORIGINS: ${{ vars.AWS_RUNTIME_CORS_ORIGINS }}
       AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS: ${{ vars.AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS }}
+      INPUT_RUNTIME_PROVIDER: ${{ github.event.inputs.runtime_provider || 'aws' }}
+      INPUT_OPERATION: ${{ github.event.inputs.operation || 'deploy' }}
+      INPUT_ENVIRONMENT_ID: ${{ github.event.inputs.environment_id }}
+      INPUT_RUNTIME_NAME: ${{ github.event.inputs.torii_name }}
+      INPUT_RUNTIME_INSTANCE_ID: ${{ github.event.inputs.runtime_instance_id || vars.AWS_FACTORY_TORII_INSTANCE_ID }}
+      INPUT_TIER: ${{ github.event.inputs.torii_tier || 'basic' }}
+      INPUT_IMAGE_DIGEST: ${{ github.event.inputs.image_digest || vars.AWS_RUNTIME_IMAGE_DIGEST }}
+      INPUT_REQUEST_JSON: ${{ github.event.inputs.request_json || '{}' }}
+      INPUT_UPSTREAM_RPC_SECRET_ARN: ${{ vars.AWS_RUNTIME_UPSTREAM_RPC_SECRET_ARN }}
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
           fetch-depth: 0
           ref: ${{ github.ref }}
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: "22"
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7
 
       - name: Configure AWS credentials
-        if: ${{ vars.AWS_ROLE_TO_ASSUME != '' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
         with:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Setup ECS Exec client
+        uses: ./.github/actions/setup-session-manager-plugin
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
@@ -156,66 +141,49 @@ jobs:
         run: |
           set -euo pipefail
 
-          provider="${{ github.event.inputs.runtime_provider || 'aws' }}"
+          provider="${INPUT_RUNTIME_PROVIDER}"
           if [ "${provider}" != "aws" ]; then
             echo "factory-torii-deployer now provisions AWS runtimes only. Requested provider: ${provider}" >&2
             exit 1
           fi
 
-          operation="${{ github.event.inputs.operation || 'deploy' }}"
+          operation="${INPUT_OPERATION}"
           runtime_operation="deploy"
           if [ "${operation}" = "update-tier" ]; then
             runtime_operation="resize"
           fi
 
-          environment_id="${{ github.event.inputs.environment_id }}"
-          if [ -z "${environment_id}" ]; then
-            case "${{ github.event.inputs.env || 'slot' }}" in
-              slot) environment_id="slot.blitz" ;;
-              mainnet) environment_id="mainnet.blitz" ;;
-              *) environment_id="${{ github.event.inputs.env || 'slot.blitz' }}" ;;
-            esac
-          fi
-
-          runtime_name="${{ github.event.inputs.torii_name }}"
-          if [ -z "${runtime_name}" ]; then
-            runtime_name="${{ github.event.inputs.torii_prefix }}"
+          if [ -z "${INPUT_RUNTIME_INSTANCE_ID}" ]; then
+            echo "runtime_instance_id or AWS_FACTORY_TORII_INSTANCE_ID is required" >&2
+            exit 1
           fi
 
           args=(
             --operation "${runtime_operation}"
-            --environment "${environment_id}"
+            --environment "${INPUT_ENVIRONMENT_ID}"
             --runtime-kind torii
-            --runtime-name "${runtime_name}"
-            --tier "${{ github.event.inputs.torii_tier || 'basic' }}"
-            --version "${{ github.event.inputs.torii_version || 'v1.8.16' }}"
+            --runtime-name "${INPUT_RUNTIME_NAME}"
+            --runtime-instance-id "${INPUT_RUNTIME_INSTANCE_ID}"
+            --tier "${INPUT_TIER}"
           )
 
-          if [ -n "${{ github.event.inputs.rpc_url }}" ]; then
-            args+=(--rpc-url "${{ github.event.inputs.rpc_url }}")
+          request_file="${RUNNER_TEMP}/factory-torii-request.json"
+          printf '%s' "${INPUT_REQUEST_JSON}" > "${request_file}"
+          args+=(--request-file "${request_file}")
+
+          if [ -n "${INPUT_IMAGE_DIGEST}" ]; then
+            args+=(--image-digest "${INPUT_IMAGE_DIGEST}")
           fi
 
-          if [ -n "${{ github.event.inputs.torii_world_address }}" ]; then
-            args+=(--world-address "${{ github.event.inputs.torii_world_address }}")
-          fi
-
-          if [ -n "${{ github.event.inputs.world_block }}" ]; then
-            args+=(--world-block "${{ github.event.inputs.world_block }}")
-          fi
-
-          if [ -n "${{ github.event.inputs.torii_namespaces }}" ]; then
-            args+=(--namespaces "${{ github.event.inputs.torii_namespaces }}")
-          fi
-
-          if [ -n "${{ github.event.inputs.torii_external_contracts }}" ]; then
-            args+=(--external-contracts "${{ github.event.inputs.torii_external_contracts }}")
+          if [ -n "${INPUT_UPSTREAM_RPC_SECRET_ARN}" ]; then
+            args+=(--upstream-rpc-secret-arn "${INPUT_UPSTREAM_RPC_SECRET_ARN}")
           fi
 
           bun config/deployer/clean/cli/aws-runtime.ts "${args[@]}" | tee aws-runtime-result.json
 
       - name: Upload runtime result
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: aws-torii-runtime-result
           path: aws-runtime-result.json

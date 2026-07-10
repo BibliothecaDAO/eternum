@@ -1,8 +1,9 @@
 import type { Chain } from "@contracts";
+import { resolveGlobalToriiEndpoint } from "./runtime-endpoints";
 
 export const GLOBAL_TORII_BY_CHAIN: Record<"mainnet" | "slot", string> = {
-  mainnet: "https://api.cartridge.gg/x/blitz-mainnet-global-1/torii",
-  slot: "https://api.cartridge.gg/x/blitz-slot-global-1/torii",
+  mainnet: resolveGlobalToriiEndpoint("mainnet"),
+  slot: resolveGlobalToriiEndpoint("slot"),
 };
 
 export const MMR_TOKEN_BY_CHAIN: Partial<Record<Chain, string>> = {

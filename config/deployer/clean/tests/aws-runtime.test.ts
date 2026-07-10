@@ -8,10 +8,12 @@ import {
   buildAwsRuntimeEndpointUrl,
   buildAwsRuntimeServiceName,
   classifyAwsRuntimeFailure,
-  createAwsRuntimeCommandBackend,
+  createAwsRuntimeCommandBackend as createAwsRuntimeCommandBackendImpl,
   deleteAwsRuntime,
+  deleteAwsRuntimeGroup,
   describeAwsRuntime,
   ensureAwsRuntime,
+  findExpiredAwsRuntimes,
   resolveAwsRuntimeTier,
   resolveAwsRuntimeEndpoint,
   toAwsRuntimeArtifact,
@@ -21,6 +23,20 @@ import {
   resolveRuntimeStabilityDeadlineMs,
   waitForRuntimeServiceStable,
 } from "../runtime/aws/health";
+import { resolveAwsRuntimeCommandConfig, resolveRuntimeDomain, resolveRuntimeVersion } from "../runtime/aws/config";
+import { buildRuntimeRootPath, buildTargetGroupName } from "../runtime/aws/naming";
+import { deleteRuntimeTaskDefinitionRevisions, pruneRuntimeTaskDefinitionRevisions } from "../runtime/aws/service";
+import {
+  checkpointRuntimeBeforeMutation,
+  ensureRuntimeRouteAssignment,
+  recordRuntimeDeletionAudit,
+  withRuntimeMutationLease,
+} from "../runtime/aws/control";
+import {
+  deriveChildRuntimeInstanceId,
+  deriveDeterministicRuntimeInstanceId,
+  requireRuntimeInstanceId,
+} from "../runtime/runtime-identity";
 
 const AWS_ENV_KEYS = [
   "AWS_REGION",
@@ -38,10 +54,24 @@ const AWS_ENV_KEYS = [
   "AWS_RUNTIME_VERIFY_PUBLIC_HEALTH",
   "AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS",
   "AWS_RUNTIME_HEALTH_TIMEOUT_MS",
+  "AWS_RUNTIME_CONTROL_TABLE_NAME",
+  "AWS_RUNTIME_REQUIRE_CONTROL_TABLE",
+  "AWS_RUNTIME_ALB_LISTENER_ARNS",
+  "AWS_RUNTIME_LEASE_SECONDS",
 ] as const;
 
 const originalEnv = new Map<string, string | undefined>(AWS_ENV_KEYS.map((key) => [key, process.env[key]]));
 const originalFetch = globalThis.fetch;
+const TEST_RUNTIME_INSTANCE_ID = "018f6e54-5f4a-7ae2-a0ff-000000000042";
+const EXPIRED_DELETE_AFTER = "2024-01-01T00:00:00.000Z";
+const TEST_DELETE_IDENTITY = {
+  environmentId: "slot.blitz" as const,
+  runtimeKind: "torii" as const,
+  runtimeName: "bltz-fire-gate-42",
+  runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+};
+const TEST_RUNTIME_SERVICE_NAME = buildAwsRuntimeServiceName(TEST_DELETE_IDENTITY);
+const TEST_RUNTIME_ROOT_PATH = buildRuntimeRootPath(TEST_DELETE_IDENTITY);
 
 function restoreAwsEnv(): void {
   for (const key of AWS_ENV_KEYS) {
@@ -57,8 +87,8 @@ function restoreAwsEnv(): void {
 function configureAwsRuntimeEnv(): void {
   process.env.AWS_REGION = "us-east-1";
   process.env.AWS_RUNTIME_CLUSTER = "eternum-game-runtime";
-  process.env.AWS_RUNTIME_ECR_IMAGE = "123456789012.dkr.ecr.us-east-1.amazonaws.com/eternum-runtime@sha256:abc";
-  delete process.env.AWS_RUNTIME_ECR_REPOSITORY_URL;
+  process.env.AWS_RUNTIME_ECR_IMAGE = `123456789012.dkr.ecr.us-east-1.amazonaws.com/eternum-runtime@sha256:${"a".repeat(64)}`;
+  process.env.AWS_RUNTIME_ECR_REPOSITORY_URL = "123456789012.dkr.ecr.us-east-1.amazonaws.com/eternum-runtime";
   process.env.AWS_RUNTIME_TASK_EXECUTION_ROLE_ARN = "arn:aws:iam::123456789012:role/runtime-execution";
   process.env.AWS_RUNTIME_TASK_ROLE_ARN = "arn:aws:iam::123456789012:role/runtime-task";
   process.env.AWS_RUNTIME_SUBNET_IDS = "subnet-a,subnet-b";
@@ -92,7 +122,20 @@ function failedAwsCommand(stderr: string) {
   } as never;
 }
 
-function activeRuntimeServicePayload() {
+function createAwsRuntimeCommandBackend(
+  commandRunner: Parameters<typeof createAwsRuntimeCommandBackendImpl>[0],
+  options?: Parameters<typeof createAwsRuntimeCommandBackendImpl>[1],
+): ReturnType<typeof createAwsRuntimeCommandBackendImpl> {
+  return createAwsRuntimeCommandBackendImpl((args) => {
+    const result = commandRunner(args);
+    if (args.slice(0, 2).join(" ") === "ecr describe-images" && (result.status ?? 1) === 0 && !result.stdout) {
+      return okAwsCommand(JSON.stringify({ imageDetails: [{ imageDigest: `sha256:${"a".repeat(64)}` }] }));
+    }
+    return result;
+  }, options);
+}
+
+function activeRuntimeServicePayload(extraTags: Array<{ key: string; value: string }> = []) {
   return JSON.stringify({
     services: [
       {
@@ -122,10 +165,81 @@ function activeRuntimeServicePayload() {
           { key: "RuntimeVersion", value: "v1.8.16" },
           { key: "EfsAccessPointId", value: "fsap-123" },
           { key: "TargetGroupArn", value: "arn:aws:elasticloadbalancing:targetgroup/runtime/123" },
+          ...extraTags,
         ],
       },
     ],
   });
+}
+
+function buildRuntimeOwnerTags(
+  runtimeKind: string,
+  runtimeName: string,
+  gameName: string,
+  options: {
+    environment?: string;
+    retainRuntime?: boolean;
+    runtimeInstanceId?: string;
+    deleteAfter?: string;
+    lifecycleClass?: "ephemeral" | "shared";
+    autoTeardown?: boolean;
+  } = {},
+) {
+  return [
+    { key: "Project", value: "eternum" },
+    { key: "RuntimeProvider", value: "aws" },
+    { key: "Environment", value: options.environment || "slot.blitz" },
+    { key: "RuntimeKind", value: runtimeKind },
+    { key: "RuntimeName", value: runtimeName },
+    { key: "GameName", value: gameName },
+    { key: "RunKind", value: "game" },
+    { key: "RunName", value: gameName },
+    { key: "AutoTeardown", value: `${options.autoTeardown ?? true}` },
+    { key: "LifecycleClass", value: options.lifecycleClass || "ephemeral" },
+    { key: "RuntimeTier", value: "basic" },
+    ...(options.runtimeInstanceId ? [{ key: "RuntimeInstanceId", value: options.runtimeInstanceId }] : []),
+    ...(options.deleteAfter ? [{ key: "DeleteAfter", value: options.deleteAfter }] : []),
+    ...(options.retainRuntime ? [{ key: "RetainRuntime", value: "true" }] : []),
+  ];
+}
+
+function buildTaggedRuntimeService(
+  runtimeKind: string,
+  runtimeName: string,
+  gameName: string,
+  options: {
+    createdAt?: string;
+    environment?: string;
+    runtimeInstanceId?: string;
+    deleteAfter?: string;
+    lifecycleClass?: "ephemeral" | "shared";
+    autoTeardown?: boolean;
+    retainRuntime?: boolean;
+  } = {},
+) {
+  return {
+    status: "ACTIVE",
+    desiredCount: 1,
+    runningCount: 1,
+    pendingCount: 0,
+    createdAt: options.createdAt || "2026-07-04T00:00:00.000Z",
+    clusterArn: "arn:aws:ecs:cluster/runtime",
+    serviceArn: `arn:aws:ecs:service/runtime/${runtimeName}`,
+    taskDefinition: `arn:aws:ecs:task-definition/slot-blitz-${runtimeKind}-${runtimeName}:1`,
+    loadBalancers: [
+      {
+        targetGroupArn: "arn:aws:elasticloadbalancing:targetgroup/runtime/123",
+      },
+    ],
+    tags: buildRuntimeOwnerTags(runtimeKind, runtimeName, gameName, {
+      environment: options.environment,
+      runtimeInstanceId: options.runtimeInstanceId,
+      deleteAfter: options.deleteAfter,
+      lifecycleClass: options.lifecycleClass,
+      autoTeardown: options.autoTeardown,
+      retainRuntime: options.retainRuntime,
+    }),
+  };
 }
 
 function runtimeServiceStabilityPayload(options: {
@@ -165,7 +279,12 @@ function activeTaskDefinitionPayload(overrides: { rpcUrl?: string; image?: strin
       revision: 1,
       status: "ACTIVE",
       networkMode: "awsvpc",
+      pidMode: "task",
       requiresCompatibilities: ["FARGATE"],
+      runtimePlatform: {
+        cpuArchitecture: "X86_64",
+        operatingSystemFamily: "LINUX",
+      },
       cpu: "1024",
       memory: "2048",
       executionRoleArn: "arn:aws:iam::123456789012:role/runtime-execution",
@@ -173,12 +292,28 @@ function activeTaskDefinitionPayload(overrides: { rpcUrl?: string; image?: strin
       containerDefinitions: [
         {
           name: "runtime",
-          image: overrides.image || "123456789012.dkr.ecr.us-east-1.amazonaws.com/eternum-runtime@sha256:abc",
+          image:
+            overrides.image || `123456789012.dkr.ecr.us-east-1.amazonaws.com/eternum-runtime@sha256:${"a".repeat(64)}`,
           essential: true,
+          user: "1000:1000",
+          readonlyRootFilesystem: true,
+          mountPoints: [
+            { sourceVolume: "runtime-working-data", containerPath: "/data", readOnly: false },
+            { sourceVolume: "runtime-data", containerPath: "/snapshots", readOnly: false },
+            { sourceVolume: "runtime-tmp", containerPath: "/tmp", readOnly: false },
+            { sourceVolume: "runtime-control", containerPath: "/runtime-control", readOnly: false },
+          ],
+          linuxParameters: {
+            initProcessEnabled: true,
+            capabilities: { drop: ["ALL"] },
+          },
           environment: [
             { name: "RUNTIME_ENVIRONMENT_ID", value: "slot.blitz" },
             { name: "RUNTIME_KIND", value: "torii" },
             { name: "RUNTIME_NAME", value: "bltz-fire-gate-42" },
+            { name: "RUNTIME_INSTANCE_ID", value: TEST_RUNTIME_INSTANCE_ID },
+            { name: "RUNTIME_IMAGE_DIGEST", value: `sha256:${"a".repeat(64)}` },
+            { name: "RUNTIME_EXPOSURE_POLICY", value: "public-read" },
             { name: "RUNTIME_BASE_PATH", value: "/x/slot-blitz/bltz-fire-gate-42/torii" },
             { name: "RUNTIME_VERSION", value: "v1.8.16" },
             { name: "RPC_URL", value: overrides.rpcUrl || "https://rpc.example.test" },
@@ -189,13 +324,44 @@ function activeTaskDefinitionPayload(overrides: { rpcUrl?: string; image?: strin
             { name: "DATA_DIR", value: "/data" },
             { name: "SNAPSHOT_DIR", value: "/snapshots" },
             { name: "SNAPSHOT_INTERVAL_SECONDS", value: "300" },
-            { name: "SNAPSHOT_RETAIN", value: "3" },
+            { name: "SNAPSHOT_RETAIN", value: "12" },
+            { name: "SNAPSHOT_MAX_CONSECUTIVE_FAILURES", value: "3" },
+            { name: "PROXY_CORS_ORIGINS", value: "" },
+            { name: "PROXY_MAX_BODY_BYTES", value: "1048576" },
+            { name: "PROXY_MAX_URL_BYTES", value: "8192" },
+            { name: "PROXY_UPSTREAM_TIMEOUT_MS", value: "30000" },
+            { name: "PROXY_MAX_WEBSOCKET_CONNECTIONS", value: "100" },
             { name: "PUBLIC_PORT", value: "8080" },
             { name: "INTERNAL_PORT", value: "8081" },
           ],
         },
+        {
+          name: "runtime-checkpoint",
+          image:
+            overrides.image || `123456789012.dkr.ecr.us-east-1.amazonaws.com/eternum-runtime@sha256:${"a".repeat(64)}`,
+          essential: false,
+          user: "1000:1000",
+          readonlyRootFilesystem: false,
+          entryPoint: ["/usr/local/bin/checkpoint-agent.sh", "serve"],
+          mountPoints: [
+            { sourceVolume: "runtime-working-data", containerPath: "/data", readOnly: false },
+            { sourceVolume: "runtime-data", containerPath: "/snapshots", readOnly: false },
+            { sourceVolume: "checkpoint-tmp", containerPath: "/tmp", readOnly: false },
+            { sourceVolume: "runtime-control", containerPath: "/runtime-control", readOnly: false },
+          ],
+          linuxParameters: {
+            initProcessEnabled: true,
+            capabilities: { drop: ["ALL"] },
+          },
+        },
       ],
-      volumes: [],
+      volumes: [
+        { name: "runtime-working-data" },
+        { name: "runtime-data" },
+        { name: "runtime-tmp" },
+        { name: "checkpoint-tmp" },
+        { name: "runtime-control" },
+      ],
       requiresAttributes: [],
       compatibilities: ["EC2", "FARGATE"],
       registeredAt: "2026-07-04T00:00:00.000Z",
@@ -226,19 +392,21 @@ function activeRuntimeTaskDefinitionPayload(
 ) {
   const payload = JSON.parse(activeTaskDefinitionPayload(overrides)) as { taskDefinition: Record<string, unknown> };
   payload.taskDefinition.ephemeralStorage = { sizeInGiB: 25 };
-  payload.taskDefinition.runtimePlatform = {
-    cpuArchitecture: "X86_64",
-    operatingSystemFamily: "LINUX",
-  };
   payload.taskDefinition.volumes = [
     {
-      name: "runtime-snapshots",
+      name: "runtime-working-data",
+    },
+    {
+      name: "runtime-data",
       efsVolumeConfiguration: {
         authorizationConfig: {
           accessPointId: efsAccessPointId,
         },
       },
     },
+    { name: "runtime-tmp" },
+    { name: "checkpoint-tmp" },
+    { name: "runtime-control" },
   ];
   return JSON.stringify(payload);
 }
@@ -350,6 +518,11 @@ if (args[0] === "ecs" && args[1] === "describe-services") {
   } else {
     write(${JSON.stringify(activeRuntimeServicePayload())});
   }
+  process.exit(0);
+}
+
+if (args[0] === "ecr" && args[1] === "describe-images") {
+  write(JSON.stringify({ imageDetails: [{ imageDigest: "sha256:${"a".repeat(64)}" }] }));
   process.exit(0);
 }
 
@@ -585,10 +758,345 @@ describe("AWS runtime helpers", () => {
     ).toBe("https://runtime.realms.world/x/mainnet-blitz/bltz-fire-gate-42/torii/health");
   });
 
+  test("normalizes and validates runtime route domains", () => {
+    expect(resolveRuntimeDomain("https://Runtime.Realms.World.")).toBe("runtime.realms.world");
+    expect(() => resolveRuntimeDomain("runtime.realms.world/attacker.example")).toThrow("Invalid AWS runtime domain");
+  });
+
   test("normalizes AWS service names for runtime isolation", () => {
     expect(
       buildAwsRuntimeServiceName({ environmentId: "slot.blitz", runtimeKind: "torii", runtimeName: "Bltz_01" }),
     ).toBe("slot-blitz-torii-bltz-01");
+  });
+
+  test("builds collision-resistant service names for immutable runtime identities", () => {
+    const first = buildAwsRuntimeServiceName({
+      environmentId: "slot.blitz",
+      runtimeKind: "torii",
+      runtimeName: "bltz-fire-gate",
+      runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-123456789abc",
+    });
+    const second = buildAwsRuntimeServiceName({
+      environmentId: "slot.blitz",
+      runtimeKind: "torii",
+      runtimeName: "bltz-fire-gate",
+      runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-abcdef012345",
+    });
+
+    expect(first).not.toBe(second);
+    expect(first.length).toBeLessThanOrEqual(63);
+    expect(second.length).toBeLessThanOrEqual(63);
+  });
+
+  test("keeps generated AWS identifiers unique and within service limits across canonical identities", () => {
+    const services = new Set<string>();
+    const targetGroups = new Set<string>();
+
+    for (let index = 0; index < 512; index += 1) {
+      const identity = {
+        environmentId: index % 2 === 0 ? ("slot.blitz" as const) : ("slottest.eternum" as const),
+        runtimeKind: index % 3 === 0 ? ("katana" as const) : ("torii" as const),
+        runtimeName: `${index % 2 === 0 ? "runtime" : "long-runtime-name"}-${index.toString(36)}`,
+        runtimeInstanceId: `018f6e54-5f4a-7ae2-a0ff-${index.toString(16).padStart(12, "0")}`,
+      };
+      const serviceName = buildAwsRuntimeServiceName(identity);
+      const targetGroupName = buildTargetGroupName(identity);
+
+      expect(serviceName).toMatch(/^[a-z0-9-]+$/);
+      expect(serviceName.length).toBeLessThanOrEqual(63);
+      expect(targetGroupName).toMatch(/^[a-z0-9-]+-[a-f0-9]{16}$/);
+      expect(targetGroupName.length).toBeLessThanOrEqual(32);
+      expect(buildRuntimeRootPath(identity).length).toBeLessThanOrEqual(1000);
+      expect(services.has(serviceName)).toBe(false);
+      expect(targetGroups.has(targetGroupName)).toBe(false);
+      services.add(serviceName);
+      targetGroups.add(targetGroupName);
+    }
+  });
+
+  test("rejects non-canonical runtime names for immutable identities", () => {
+    expect(() =>
+      buildAwsRuntimeServiceName({
+        environmentId: "slot.blitz",
+        runtimeKind: "torii",
+        runtimeName: "foo_bar",
+        runtimeInstanceId: "runtime-1",
+      }),
+    ).toThrow("Invalid runtime name");
+  });
+
+  test("derives retry-stable UUIDs and distinct UUIDs for child runtimes", () => {
+    const seed = ["github-run", "dojoengine/eternum", "game-launch", "12345", "slot.blitz", "game", "bltz-01"];
+    const runtimeInstanceId = deriveDeterministicRuntimeInstanceId(seed);
+    const retriedInstanceId = deriveDeterministicRuntimeInstanceId(seed);
+    const nextRunInstanceId = deriveDeterministicRuntimeInstanceId([...seed.slice(0, 3), "12346", ...seed.slice(4)]);
+    const firstChild = deriveChildRuntimeInstanceId(runtimeInstanceId, "bltz-01");
+    const secondChild = deriveChildRuntimeInstanceId(runtimeInstanceId, "bltz-02");
+
+    expect(runtimeInstanceId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+    expect(retriedInstanceId).toBe(runtimeInstanceId);
+    expect(nextRunInstanceId).not.toBe(runtimeInstanceId);
+    expect(firstChild).not.toBe(secondChild);
+    expect(() => requireRuntimeInstanceId(firstChild)).not.toThrow();
+    expect(() => requireRuntimeInstanceId("runtime-1")).toThrow("lowercase RFC 9562 UUID");
+  });
+
+  test("rejects incomplete immutable desired state before reading AWS", async () => {
+    const backend = {
+      async describeRuntime() {
+        throw new Error("desired-state validation must run before AWS");
+      },
+      async createRuntime() {
+        return [];
+      },
+      async updateRuntimeTier() {},
+      async deleteRuntime() {
+        return [];
+      },
+    };
+    const identity = {
+      environmentId: "slot.blitz" as const,
+      runtimeKind: "torii" as const,
+      runtimeName: "bltz-01",
+      runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-000000000030",
+    };
+
+    await expect(
+      ensureAwsRuntime(
+        {
+          ...identity,
+          runtimeInstanceId: undefined,
+          imageDigest: `sha256:${"a".repeat(64)}`,
+          exposurePolicy: "public-read",
+        },
+        { backend },
+      ),
+    ).rejects.toThrow("runtimeInstanceId is required");
+    await expect(ensureAwsRuntime({ ...identity, exposurePolicy: "public-read" }, { backend })).rejects.toThrow(
+      "requires imageDigest",
+    );
+    await expect(
+      ensureAwsRuntime({ ...identity, imageDigest: `sha256:${"a".repeat(64)}` }, { backend }),
+    ).rejects.toThrow("requires exposurePolicy");
+  });
+
+  test("rejects ephemeral or game-owned Katana desired state", async () => {
+    const backend = {
+      async describeRuntime() {
+        throw new Error("desired-state validation must run before AWS");
+      },
+      async createRuntime() {
+        return [];
+      },
+      async updateRuntimeTier() {},
+      async deleteRuntime() {
+        return [];
+      },
+    };
+    const katanaRequest = {
+      environmentId: "slot.blitz" as const,
+      runtimeKind: "katana" as const,
+      runtimeName: "shared-slot",
+      runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+      imageDigest: `sha256:${"a".repeat(64)}`,
+      exposurePolicy: "public-dev-rpc" as const,
+    };
+
+    await expect(ensureAwsRuntime({ ...katanaRequest, lifecycleClass: "ephemeral" }, { backend })).rejects.toThrow(
+      "AWS Katana requires lifecycleClass=shared",
+    );
+    await expect(
+      ensureAwsRuntime(
+        {
+          ...katanaRequest,
+          lifecycleClass: "shared",
+          owner: {
+            runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+            gameName: "bltz-fire-gate-42",
+            runKind: "game",
+            runName: "bltz-fire-gate-42",
+            autoTeardown: false,
+            lifecycleClass: "shared",
+          },
+        },
+        { backend },
+      ),
+    ).rejects.toThrow("Shared AWS Katana cannot be owned by a game or launch run");
+  });
+
+  test("rejects a mutation while another operation owns the runtime lease", async () => {
+    configureAwsRuntimeEnv();
+    process.env.AWS_RUNTIME_CONTROL_TABLE_NAME = "runtime-control";
+    let mutated = false;
+
+    await expect(
+      withRuntimeMutationLease(
+        () => failedAwsCommand("ConditionalCheckFailedException: lease is active"),
+        {
+          environmentId: "slot.blitz",
+          runtimeKind: "torii",
+          runtimeName: "bltz-fire-gate-42",
+          runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-123456789abc",
+        },
+        "delete",
+        () => {
+          mutated = true;
+        },
+      ),
+    ).rejects.toThrow("already has an active mutation lease");
+    expect(mutated).toBe(false);
+  });
+
+  test("rejects every mutation when the required control table is missing", async () => {
+    configureAwsRuntimeEnv();
+    delete process.env.AWS_RUNTIME_CONTROL_TABLE_NAME;
+    process.env.AWS_RUNTIME_REQUIRE_CONTROL_TABLE = "true";
+    let mutated = false;
+
+    await expect(
+      withRuntimeMutationLease(
+        () => okAwsCommand(),
+        {
+          environmentId: "slot.blitz",
+          runtimeKind: "torii",
+          runtimeName: "bltz-fire-gate-42",
+          runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-123456789abc",
+        },
+        "delete",
+        () => {
+          mutated = true;
+        },
+      ),
+    ).rejects.toThrow("AWS_RUNTIME_CONTROL_TABLE_NAME");
+    expect(mutated).toBe(false);
+  });
+
+  test("rejects a sticky route owned by a different runtime instance", () => {
+    configureAwsRuntimeEnv();
+    process.env.AWS_RUNTIME_CONTROL_TABLE_NAME = "runtime-control";
+
+    expect(() =>
+      ensureRuntimeRouteAssignment(
+        () =>
+          okAwsCommand(
+            JSON.stringify({
+              Item: {
+                RoutingShard: { N: "0" },
+                RuntimeInstanceId: { S: "018f6e54-5f4a-7ae2-a0ff-previous0000" },
+              },
+            }),
+          ),
+        {
+          environmentId: "slot.blitz",
+          runtimeKind: "torii",
+          runtimeName: "bltz-fire-gate-42",
+          runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-current000000",
+        },
+      ),
+    ).toThrow("route belongs to instance");
+  });
+
+  test("releases shard admission only after destructive runtime deletion", () => {
+    configureAwsRuntimeEnv();
+    process.env.AWS_RUNTIME_CONTROL_TABLE_NAME = "runtime-control";
+    const commands: string[][] = [];
+    const runtimeInstanceId = "018f6e54-5f4a-7ae2-a0ff-123456789abc";
+    const commandRunner = (args: string[]) => {
+      commands.push(args);
+      if (args.slice(0, 2).join(" ") === "dynamodb get-item" && commands.length === 2) {
+        return okAwsCommand(
+          JSON.stringify({ Item: { RoutingShard: { N: "1" }, RuntimeInstanceId: { S: runtimeInstanceId } } }),
+        );
+      }
+      if (args.slice(0, 2).join(" ") === "dynamodb get-item") {
+        return okAwsCommand(JSON.stringify({ Item: { RuntimeCount: { N: "0" } } }));
+      }
+      return okAwsCommand();
+    };
+
+    recordRuntimeDeletionAudit(commandRunner, {
+      environmentId: "slot.blitz",
+      runtimeKind: "torii",
+      runtimeName: "bltz-fire-gate-42",
+      runtimeInstanceId,
+      retainData: false,
+    });
+
+    expect(commands.map((command) => command.slice(0, 2).join(" "))).toEqual([
+      "dynamodb put-item",
+      "dynamodb get-item",
+      "dynamodb transact-write-items",
+      "dynamodb get-item",
+      "cloudwatch put-metric-data",
+    ]);
+    const transaction = readJsonArg<Array<Record<string, unknown>>>(commands[2]!, "--transact-items");
+    expect(transaction).toHaveLength(2);
+
+    commands.length = 0;
+    recordRuntimeDeletionAudit(commandRunner, {
+      environmentId: "slot.blitz",
+      runtimeKind: "torii",
+      runtimeName: "bltz-fire-gate-42",
+      runtimeInstanceId,
+      retainData: true,
+    });
+    expect(commands.map((command) => command.slice(0, 2).join(" "))).toEqual(["dynamodb put-item"]);
+  });
+
+  test("runs audited checkpoints only in the writable checkpoint sidecar", () => {
+    configureAwsRuntimeEnv();
+    const commands: string[][] = [];
+    const commandRunner = (args: string[]) => {
+      commands.push(args);
+      if (args.slice(0, 2).join(" ") === "ecs list-tasks") {
+        return okAwsCommand(JSON.stringify({ taskArns: ["arn:aws:ecs:task/runtime/task-123"] }));
+      }
+      if (args.slice(0, 2).join(" ") === "ecs execute-command") {
+        const correlationId = /checkpoint ([0-9a-f-]+)$/.exec(args.at(-1) || "")?.[1];
+        return okAwsCommand(`checkpoint-complete:${correlationId} checksum=abc123`);
+      }
+      return okAwsCommand();
+    };
+
+    const correlationId = checkpointRuntimeBeforeMutation(
+      commandRunner,
+      {
+        environmentId: "slot.blitz",
+        runtimeKind: "torii",
+        runtimeName: "bltz-fire-gate-42",
+        runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-123456789abc",
+      },
+      {
+        region: "us-east-1",
+        cluster: "eternum-runtime",
+        snsTopicArn: "arn:aws:sns:us-east-1:123456789012:runtime-alerts",
+        image: `runtime@sha256:${"a".repeat(64)}`,
+        imageDigest: `sha256:${"a".repeat(64)}`,
+        executionRoleArn: "arn:aws:iam::123456789012:role/runtime-execution",
+        taskRoleArn: "arn:aws:iam::123456789012:role/runtime-task",
+        subnetIds: ["subnet-a"],
+        securityGroupIds: ["sg-runtime"],
+        efsFileSystemId: "fs-123",
+        vpcId: "vpc-123",
+        listenerArn: "arn:aws:elasticloadbalancing:listener/app/runtime/123/456",
+        assignPublicIp: "DISABLED",
+        logGroup: "/ecs/runtime",
+        containerName: "runtime",
+      },
+      {
+        provider: "aws",
+        runtimeKind: "torii",
+        runtimeName: "bltz-fire-gate-42",
+        serviceName: "slot-blitz-torii-bltz-fire-gate-42",
+        status: "existing",
+      },
+      "deploy",
+    );
+
+    expect(correlationId).toMatch(/^[0-9a-f-]{36}$/);
+    const executeCommand = findCommand(commands, "ecs execute-command");
+    expect(executeCommand[executeCommand.indexOf("--container") + 1]).toBe("runtime-checkpoint");
+    expect(executeCommand[executeCommand.indexOf("--command") + 1]).toContain(`checkpoint ${correlationId}`);
   });
 
   test("maps fixed runtime tiers to conservative Fargate sizing", () => {
@@ -605,6 +1113,15 @@ describe("AWS runtime helpers", () => {
       desiredCount: 1,
       ephemeralStorageGib: 100,
     });
+  });
+
+  test("uses engine-specific default versions in runtime metadata", () => {
+    expect(resolveRuntimeVersion({ environmentId: "slot.blitz", runtimeKind: "torii", runtimeName: "factory" })).toBe(
+      "v1.8.16",
+    );
+    expect(resolveRuntimeVersion({ environmentId: "slot.blitz", runtimeKind: "katana", runtimeName: "shared" })).toBe(
+      "v1.7.1",
+    );
   });
 
   test("rejects runtime tiers that would run multiple database writers", () => {
@@ -635,7 +1152,7 @@ describe("AWS runtime helpers", () => {
         taskDefinitionArn: "arn:aws:ecs:task-definition/torii:1",
         targetGroupArn: "arn:aws:elasticloadbalancing:targetgroup/torii",
         efsAccessPointId: "fsap-123",
-        imageDigest: "sha256:abc",
+        imageDigest: `sha256:${"a".repeat(64)}`,
         health: {
           status: "healthy",
           checkedAt: "2026-06-22T00:00:00.000Z",
@@ -643,7 +1160,9 @@ describe("AWS runtime helpers", () => {
         },
       }),
     ).toEqual({
+      schemaVersion: 2,
       provider: "aws",
+      identity: undefined,
       runtimeKind: "torii",
       runtimeName: "bltz-fire-gate-42",
       serviceName: "slot-blitz-torii-bltz-fire-gate-42",
@@ -656,12 +1175,30 @@ describe("AWS runtime helpers", () => {
       endpointUrl: "https://runtime.realms.world/x/bltz-fire-gate-42/torii",
       tier: "basic",
       version: "v1.8.16",
-      imageDigest: "sha256:abc",
+      imageDigest: `sha256:${"a".repeat(64)}`,
       health: {
         status: "healthy",
         checkedAt: "2026-06-22T00:00:00.000Z",
         endpoint: "https://runtime.realms.world/x/bltz-fire-gate-42/torii/health",
       },
+      environmentId: undefined,
+      runtimeInstanceId: undefined,
+      exposurePolicy: undefined,
+      lifecycleClass: undefined,
+      autoTeardown: undefined,
+      deleteAfter: undefined,
+      routingShard: undefined,
+      routeHost: undefined,
+      endpoints: undefined,
+      snapshotStatus: {
+        state: "unknown",
+        restoredFromSnapshot: undefined,
+      },
+      deploymentTimestamps: {
+        serviceCreatedAt: undefined,
+        observedAt: undefined,
+      },
+      restoredFromSnapshot: undefined,
     });
   });
 
@@ -941,6 +1478,7 @@ describe("AWS runtime helpers", () => {
       "efs describe-access-points",
       "efs create-access-point",
       "ecs describe-task-definition",
+      "ecr describe-images",
       "ecs register-task-definition",
       "elbv2 describe-target-groups",
       "elbv2 create-target-group",
@@ -953,6 +1491,9 @@ describe("AWS runtime helpers", () => {
       "cloudwatch put-metric-alarm",
       "cloudwatch put-metric-alarm",
       "cloudwatch put-metric-alarm",
+      "cloudwatch put-metric-alarm",
+      "cloudwatch put-metric-alarm",
+      "ecs list-task-definitions",
     ]);
     expect(commands[1]).toContain(
       "Path=/runtimes/slot-blitz-torii-bltz-fire-gate-42,CreationInfo={OwnerUid=1000,OwnerGid=1000,Permissions=750}",
@@ -963,35 +1504,70 @@ describe("AWS runtime helpers", () => {
     expect(registerCommand).toContain(JSON.stringify({ sizeInGiB: 25 }));
     expect(registerCommand).toContain("--runtime-platform");
     expect(registerCommand).toContain("cpuArchitecture=X86_64,operatingSystemFamily=LINUX");
+    expect(registerCommand).toContain("--pid-mode");
+    expect(registerCommand).toContain("task");
     const containerDefinitions = JSON.parse(
       registerCommand[registerCommand.indexOf("--container-definitions") + 1],
     ) as Array<Record<string, unknown>>;
-    expect(containerDefinitions[0].stopTimeout).toBe(120);
-    expect(containerDefinitions[0].environment).toContainEqual({ name: "TORII_WORLD_BLOCK", value: "98765" });
-    expect(containerDefinitions[0].healthCheck).toMatchObject({ startPeriod: 90 });
-    expect(commands[5]).toContain("/x/slot-blitz/bltz-fire-gate-42/torii/health");
-    expect(commands[8]).toContain(
+    const runtimeContainer = containerDefinitions.find((container) => container.name === "runtime");
+    const checkpointContainer = containerDefinitions.find((container) => container.name === "runtime-checkpoint");
+    expect(runtimeContainer).toMatchObject({
+      essential: true,
+      user: "1000:1000",
+      readonlyRootFilesystem: true,
+      stopTimeout: 120,
+      linuxParameters: { capabilities: { drop: ["ALL"] } },
+      healthCheck: { startPeriod: 90 },
+    });
+    expect(runtimeContainer?.environment).toContainEqual({ name: "TORII_WORLD_BLOCK", value: "98765" });
+    expect(runtimeContainer?.mountPoints).toEqual(
+      expect.arrayContaining([
+        { sourceVolume: "runtime-working-data", containerPath: "/data", readOnly: false },
+        { sourceVolume: "runtime-data", containerPath: "/snapshots", readOnly: false },
+        { sourceVolume: "runtime-tmp", containerPath: "/tmp", readOnly: false },
+        { sourceVolume: "runtime-control", containerPath: "/runtime-control", readOnly: false },
+      ]),
+    );
+    expect(checkpointContainer).toMatchObject({
+      essential: false,
+      user: "1000:1000",
+      readonlyRootFilesystem: false,
+      entryPoint: ["/usr/local/bin/checkpoint-agent.sh", "serve"],
+      linuxParameters: { capabilities: { drop: ["ALL"] } },
+    });
+    const volumes = readJsonArg<Array<{ name: string }>>(registerCommand, "--volumes");
+    expect(volumes.map((volume) => volume.name)).toEqual([
+      "runtime-working-data",
+      "runtime-data",
+      "runtime-tmp",
+      "checkpoint-tmp",
+      "runtime-control",
+    ]);
+    expect(findCommand(commands, "elbv2 create-target-group")).toContain(
+      "/x/slot-blitz/bltz-fire-gate-42/torii/health",
+    );
+    expect(commands[9]).toContain(
       "Field=path-pattern,Values=/x/slot-blitz/bltz-fire-gate-42/torii,/x/slot-blitz/bltz-fire-gate-42/torii/*",
     );
-    expect(commands[10]).toContain(
+    expect(commands[11]).toContain(
       "awsvpcConfiguration={subnets=[subnet-a,subnet-b],securityGroups=[sg-runtime],assignPublicIp=DISABLED}",
     );
-    expect(commands[10]).toContain(
+    expect(commands[11]).toContain(
       "deploymentCircuitBreaker={enable=true,rollback=true},maximumPercent=100,minimumHealthyPercent=0",
     );
-    expect(commands[10]).toContain("--health-check-grace-period-seconds");
-    expect(commands[10]).toContain("90");
-    expect(commands[12]).toContain("slot-blitz-torii-bltz-fire-gate-42-unhealthy-hosts");
-    expect(commands[12]).toContain("UnHealthyHostCount");
-    expect(commands[12]).toContain("Name=LoadBalancer,Value=app/runtime/123");
-    expect(commands[12]).toContain("Name=TargetGroup,Value=targetgroup/runtime/123");
-    expect(commands[13]).toContain("slot-blitz-torii-bltz-fire-gate-42-target-5xx");
-    expect(commands[13]).toContain("HTTPCode_Target_5XX_Count");
+    expect(commands[11]).toContain("--health-check-grace-period-seconds");
+    expect(commands[11]).toContain("90");
+    expect(commands[13]).toContain("slot-blitz-torii-bltz-fire-gate-42-unhealthy-hosts");
+    expect(commands[13]).toContain("UnHealthyHostCount");
     expect(commands[13]).toContain("Name=LoadBalancer,Value=app/runtime/123");
     expect(commands[13]).toContain("Name=TargetGroup,Value=targetgroup/runtime/123");
-    expect(commands[14]).toContain("slot-blitz-torii-bltz-fire-gate-42-running-tasks");
-    expect(commands[14]).toContain("RunningTaskCount");
-    expect(commands[14]).toContain("arn:aws:sns:us-east-1:123456789012:runtime-alerts");
+    expect(commands[14]).toContain("slot-blitz-torii-bltz-fire-gate-42-target-5xx");
+    expect(commands[14]).toContain("HTTPCode_Target_5XX_Count");
+    expect(commands[14]).toContain("Name=LoadBalancer,Value=app/runtime/123");
+    expect(commands[14]).toContain("Name=TargetGroup,Value=targetgroup/runtime/123");
+    expect(commands[15]).toContain("slot-blitz-torii-bltz-fire-gate-42-running-tasks");
+    expect(commands[15]).toContain("RunningTaskCount");
+    expect(commands[15]).toContain("arn:aws:sns:us-east-1:123456789012:runtime-alerts");
   });
 
   test("sizes ECS health check start period for snapshot restore", async () => {
@@ -1197,10 +1773,11 @@ describe("AWS runtime helpers", () => {
     ).toThrow('wait for AWS runtime service stability "bltz-fire-gate-42" timed out after 0ms');
   });
 
-  test("resolves versioned runtime images from ECR before registering task definitions", async () => {
+  test("verifies immutable runtime image digests in ECR before registering task definitions", async () => {
     configureAwsRuntimeEnv();
     delete process.env.AWS_RUNTIME_ECR_IMAGE;
     process.env.AWS_RUNTIME_ECR_REPOSITORY_URL = "123456789012.dkr.ecr.us-east-1.amazonaws.com/eternum-runtime";
+    const imageDigest = `sha256:${"d".repeat(64)}`;
 
     const commands: string[][] = [];
     const serviceState = createServiceStateTracker();
@@ -1212,7 +1789,7 @@ describe("AWS runtime helpers", () => {
       }
 
       if (args.slice(0, 2).join(" ") === "ecr describe-images") {
-        return okAwsCommand(JSON.stringify({ imageDetails: [{ imageDigest: "sha256:def" }] }));
+        return okAwsCommand(JSON.stringify({ imageDetails: [{ imageDigest }] }));
       }
 
       if (args.slice(0, 2).join(" ") === "efs create-access-point") {
@@ -1244,22 +1821,23 @@ describe("AWS runtime helpers", () => {
       runtimeName: "bltz-fire-gate-42",
       worldAddress: "0x123",
       version: "v1.8.17",
+      imageDigest,
     });
 
     const ecrCommand = findCommand(commands, "ecr describe-images");
     expect(ecrCommand).toContain("--repository-name");
     expect(ecrCommand).toContain("eternum-runtime");
-    expect(ecrCommand).toContain("imageTag=v1.8.17");
+    expect(ecrCommand).toContain(`imageDigest=${imageDigest}`);
 
     const registerCommand = findCommand(commands, "ecs register-task-definition");
     const containers = readJsonArg<Array<{ image: string }>>(registerCommand, "--container-definitions");
-    expect(containers[0].image).toBe("123456789012.dkr.ecr.us-east-1.amazonaws.com/eternum-runtime:v1.8.17");
+    expect(containers[0].image).toBe(`123456789012.dkr.ecr.us-east-1.amazonaws.com/eternum-runtime@${imageDigest}`);
 
     const createServiceCommand = findCommand(commands, "ecs create-service");
-    expect(createServiceCommand).toContain("key=ImageDigest,value=sha256:def");
+    expect(createServiceCommand).toContain(`key=ImageDigest,value=${imageDigest}`);
   });
 
-  test("classifies missing versioned runtime images", async () => {
+  test("classifies missing immutable runtime images", async () => {
     configureAwsRuntimeEnv();
     process.env.AWS_RUNTIME_ECR_REPOSITORY_URL = "123456789012.dkr.ecr.us-east-1.amazonaws.com/eternum-runtime";
     const backend = createAwsRuntimeCommandBackend((args) => {
@@ -1277,15 +1855,16 @@ describe("AWS runtime helpers", () => {
         environmentId: "slot.blitz",
         runtimeKind: "torii",
         runtimeName: "bltz-fire-gate-42",
-        version: "v9.9.9",
+        imageDigest: `sha256:${"e".repeat(64)}`,
       }),
     ).rejects.toThrow(/image not found/i);
 
     expect(classifyAwsRuntimeFailure(new Error("AWS runtime image not found: v9.9.9"))).toBe("image-not-found");
   });
 
-  test("requires the ECR repository URL when a runtime version is requested", async () => {
+  test("rejects tag-only emergency runtime images", async () => {
     configureAwsRuntimeEnv();
+    process.env.AWS_RUNTIME_ECR_IMAGE = "123456789012.dkr.ecr.us-east-1.amazonaws.com/eternum-runtime:v1.8.17";
     const backend = createAwsRuntimeCommandBackend(() => okAwsCommand());
 
     await expect(
@@ -1295,7 +1874,7 @@ describe("AWS runtime helpers", () => {
         runtimeName: "bltz-fire-gate-42",
         version: "v1.8.17",
       }),
-    ).rejects.toThrow("Missing AWS runtime foundation config: AWS_RUNTIME_ECR_REPOSITORY_URL");
+    ).rejects.toThrow("AWS_RUNTIME_ECR_IMAGE must be pinned");
   });
 
   test("classifies ECS service-stability polling timeouts separately from health failures", () => {
@@ -1631,6 +2210,7 @@ describe("AWS runtime helpers", () => {
     expect(commands.map((command) => command.slice(0, 2).join(" "))).toEqual([
       "efs describe-access-points",
       "ecs describe-task-definition",
+      "ecr describe-images",
       "ecs register-task-definition",
       "elbv2 describe-target-groups",
       "elbv2 describe-tags",
@@ -1640,6 +2220,9 @@ describe("AWS runtime helpers", () => {
       "cloudwatch put-metric-alarm",
       "cloudwatch put-metric-alarm",
       "cloudwatch put-metric-alarm",
+      "cloudwatch put-metric-alarm",
+      "cloudwatch put-metric-alarm",
+      "ecs list-task-definitions",
     ]);
   });
 
@@ -2004,6 +2587,9 @@ describe("AWS runtime helpers", () => {
         environmentId: "slot.blitz",
         runtimeKind: "torii",
         runtimeName: "bltz",
+        runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-000000000010",
+        imageDigest: `sha256:${"a".repeat(64)}`,
+        exposurePolicy: "public-read",
       },
       {
         backend: {
@@ -2044,12 +2630,16 @@ describe("AWS runtime helpers", () => {
         "torii",
         "--runtime-name",
         "bltz-fire-gate-42",
+        "--runtime-instance-id",
+        "018f6e54-5f4a-7ae2-a0ff-000000000001",
         "--rpc-url",
         "https://runtime.realms.world/x/eternum-slot/katana/rpc/v0_9",
         "--world-address",
         "0x123",
         "--external-contracts",
         "erc20:0xabc\nerc721:0xdef",
+        "--image-digest",
+        `sha256:${"a".repeat(64)}`,
       ],
       {
         cwd: process.cwd(),
@@ -2075,6 +2665,105 @@ describe("AWS runtime helpers", () => {
     });
   });
 
+  test("CLI request files preserve shell-like payloads without executing them", () => {
+    configureAwsRuntimeEnv();
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "aws-runtime-cli-request-"));
+    const commandLogPath = path.join(tempDir, "commands.jsonl");
+    const statePath = path.join(tempDir, "state.json");
+    const markerPath = path.join(tempDir, "payload-executed");
+    const requestPath = path.join(tempDir, "request.json");
+    const injectedVersion = `v1.8.17; touch ${markerPath}`;
+    writeFakeAwsCli(tempDir);
+    fs.writeFileSync(
+      requestPath,
+      JSON.stringify({
+        version: injectedVersion,
+        worldAddress: "0x123",
+        externalContracts: ["erc20:0xabc", "$(touch should-not-run)\n`uname`"],
+      }),
+    );
+
+    const result = spawnSync(
+      "bun",
+      [
+        "config/deployer/clean/cli/aws-runtime.ts",
+        "--operation",
+        "deploy",
+        "--environment",
+        "slot.blitz",
+        "--runtime-kind",
+        "torii",
+        "--runtime-name",
+        "bltz-fire-gate-42",
+        "--runtime-instance-id",
+        "018f6e54-5f4a-7ae2-a0ff-000000000002",
+        "--request-file",
+        requestPath,
+        "--image-digest",
+        `sha256:${"a".repeat(64)}`,
+      ],
+      {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: {
+          ...process.env,
+          AWS_COMMAND_LOG: commandLogPath,
+          AWS_STATE_FILE: statePath,
+          PATH: `${tempDir}:${process.env.PATH}`,
+        },
+      },
+    );
+
+    expect(result.status).toBe(0);
+    expect(fs.existsSync(markerPath)).toBe(false);
+    const registerCommand = findCommand(readLoggedAwsCommands(commandLogPath), "ecs register-task-definition");
+    const containers = readJsonArg<Array<{ environment: Array<{ name: string; value: string }> }>>(
+      registerCommand,
+      "--container-definitions",
+    );
+    expect(containers[0]?.environment).toContainEqual({
+      name: "TORII_EXTERNAL_CONTRACTS",
+      value: "erc20:0xabc\n$(touch should-not-run)\n`uname`",
+    });
+    expect(registerCommand).toContain(`key=RuntimeVersion,value=${injectedVersion}`);
+  });
+
+  test("CLI rejects unsupported request-file fields before invoking AWS", () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "aws-runtime-cli-request-"));
+    const requestPath = path.join(tempDir, "request.json");
+    fs.writeFileSync(requestPath, JSON.stringify({ worldAddress: "0x123", unexpectedCommand: "uname" }));
+
+    const result = spawnSync(
+      "bun",
+      [
+        "config/deployer/clean/cli/aws-runtime.ts",
+        "--operation",
+        "deploy",
+        "--environment",
+        "slot.blitz",
+        "--runtime-kind",
+        "torii",
+        "--runtime-name",
+        "bltz-fire-gate-42",
+        "--runtime-instance-id",
+        "018f6e54-5f4a-7ae2-a0ff-000000000003",
+        "--request-file",
+        requestPath,
+      ],
+      {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: process.env,
+      },
+    );
+
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      failureClassification: "runtime-validation",
+      errorMessage: 'AWS runtime request file contains unsupported field "unexpectedCommand"',
+    });
+  });
+
   test("CLI validates torii deploy after applying environment rpc defaults", () => {
     configureAwsRuntimeEnv();
     const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "aws-runtime-cli-"));
@@ -2094,8 +2783,12 @@ describe("AWS runtime helpers", () => {
         "torii",
         "--runtime-name",
         "bltz-fire-gate-42",
+        "--runtime-instance-id",
+        "018f6e54-5f4a-7ae2-a0ff-000000000004",
         "--world-address",
         "0x123",
+        "--image-digest",
+        `sha256:${"a".repeat(64)}`,
       ],
       {
         cwd: process.cwd(),
@@ -2140,8 +2833,12 @@ describe("AWS runtime helpers", () => {
         "torii",
         "--runtime-name",
         "bltz-fire-gate-42",
+        "--runtime-instance-id",
+        "018f6e54-5f4a-7ae2-a0ff-000000000005",
         "--world-address",
         "0x123",
+        "--image-digest",
+        `sha256:${"a".repeat(64)}`,
       ],
       {
         cwd: process.cwd(),
@@ -2175,6 +2872,8 @@ describe("AWS runtime helpers", () => {
         "torii",
         "--runtime-name",
         "bltz-fire-gate-42",
+        "--runtime-instance-id",
+        "018f6e54-5f4a-7ae2-a0ff-000000000006",
       ],
       {
         cwd: process.cwd(),
@@ -2242,6 +2941,7 @@ describe("AWS runtime helpers", () => {
       environmentId: "slot.blitz",
       runtimeKind: "torii",
       runtimeName: "bltz-fire-gate-42",
+      runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
       action: "created",
       mode: "aws-ecs",
       requestedTier: "basic",
@@ -2341,6 +3041,7 @@ describe("AWS runtime helpers", () => {
       cpu: string;
       memory: string;
       ephemeralStorage: { sizeInGiB: number };
+      pidMode?: string;
       runtimePlatform?: { cpuArchitecture: string; operatingSystemFamily: string };
       containerDefinitions: Array<{ environment: Array<{ name: string; value: string }> }>;
       taskDefinitionArn?: string;
@@ -2351,6 +3052,7 @@ describe("AWS runtime helpers", () => {
     expect(taskDefinition.cpu).toBe("4096");
     expect(taskDefinition.memory).toBe("8192");
     expect(taskDefinition.ephemeralStorage).toEqual({ sizeInGiB: 100 });
+    expect(taskDefinition.pidMode).toBe("task");
     expect(taskDefinition.runtimePlatform).toEqual({
       cpuArchitecture: "X86_64",
       operatingSystemFamily: "LINUX",
@@ -2366,6 +3068,30 @@ describe("AWS runtime helpers", () => {
     expect(taskDefinition.taskDefinitionArn).toBeUndefined();
     expect(taskDefinition.revision).toBeUndefined();
     expect(taskDefinition.status).toBeUndefined();
+    expect(commands.some((command) => command.slice(0, 2).join(" ") === "ecs list-task-definitions")).toBe(true);
+  });
+
+  test("rejects resize requests that would silently ignore an image change", async () => {
+    configureAwsRuntimeEnv();
+    const backend = createAwsRuntimeCommandBackend((args) => {
+      if (args.slice(0, 2).join(" ") === "ecs describe-services") {
+        return okAwsCommand(activeRuntimeServicePayload());
+      }
+      if (args.slice(0, 2).join(" ") === "ecs describe-task-definition") {
+        return okAwsCommand(activeTaskDefinitionPayload());
+      }
+      return okAwsCommand();
+    });
+
+    await expect(
+      backend.updateRuntimeTier({
+        environmentId: "slot.blitz",
+        runtimeKind: "torii",
+        runtimeName: "bltz-fire-gate-42",
+        tier: "epic",
+        imageDigest: `sha256:${"b".repeat(64)}`,
+      }),
+    ).rejects.toThrow("resize must use its live image digest");
   });
 
   test("deploy reconciles existing runtime environment drift", async () => {
@@ -2383,6 +3109,15 @@ describe("AWS runtime helpers", () => {
         return okAwsCommand(activeTaskDefinitionPayload());
       }
 
+      if (args.slice(0, 2).join(" ") === "ecs list-tasks") {
+        return okAwsCommand(JSON.stringify({ taskArns: ["arn:aws:ecs:task/runtime/task-123"] }));
+      }
+
+      if (args.slice(0, 2).join(" ") === "ecs execute-command") {
+        const correlationId = /checkpoint ([0-9a-f-]+)$/.exec(args.at(-1) || "")?.[1];
+        return okAwsCommand(`checkpoint-complete:${correlationId} checksum=abc123`);
+      }
+
       if (args.slice(0, 2).join(" ") === "ecs register-task-definition") {
         return okAwsCommand("arn:aws:ecs:task-definition/slot-blitz-torii-bltz-fire-gate-42:2\n");
       }
@@ -2395,9 +3130,12 @@ describe("AWS runtime helpers", () => {
         environmentId: "slot.blitz",
         runtimeKind: "torii",
         runtimeName: "bltz-fire-gate-42",
+        runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
         rpcUrl: "https://rpc.changed.example.test",
         worldAddress: "0xabc",
         tier: "basic",
+        imageDigest: `sha256:${"a".repeat(64)}`,
+        exposurePolicy: "public-read",
       },
       { backend },
     );
@@ -2450,9 +3188,12 @@ describe("AWS runtime helpers", () => {
         environmentId: "slot.blitz",
         runtimeKind: "torii",
         runtimeName: "bltz-fire-gate-42",
+        runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
         rpcUrl: "https://rpc.example.test",
         worldAddress: "0xabc",
         tier: "basic",
+        imageDigest: `sha256:${"a".repeat(64)}`,
+        exposurePolicy: "public-read",
       },
       { backend },
     );
@@ -2461,11 +3202,16 @@ describe("AWS runtime helpers", () => {
     expect(commands.map((command) => command.slice(0, 2).join(" "))).toEqual([
       "ecs describe-services",
       "ecs describe-task-definition",
+      "ecs tag-resource",
+      "ecs untag-resource",
+      "cloudwatch put-metric-alarm",
+      "cloudwatch put-metric-alarm",
       "cloudwatch put-metric-alarm",
       "cloudwatch put-metric-alarm",
       "cloudwatch put-metric-alarm",
       "logs filter-log-events",
     ]);
+    expect(findCommand(commands, "ecs untag-resource")).toContain("RetainRuntime");
   });
 
   test("deploy reconciles existing runtime tier drift", async () => {
@@ -2482,6 +3228,15 @@ describe("AWS runtime helpers", () => {
         return okAwsCommand(activeTaskDefinitionPayload());
       }
 
+      if (args.slice(0, 2).join(" ") === "ecs list-tasks") {
+        return okAwsCommand(JSON.stringify({ taskArns: ["arn:aws:ecs:task/runtime/task-123"] }));
+      }
+
+      if (args.slice(0, 2).join(" ") === "ecs execute-command") {
+        const correlationId = /checkpoint ([0-9a-f-]+)$/.exec(args.at(-1) || "")?.[1];
+        return okAwsCommand(`checkpoint-complete:${correlationId} checksum=abc123`);
+      }
+
       if (args.slice(0, 2).join(" ") === "ecs register-task-definition") {
         return okAwsCommand("arn:aws:ecs:task-definition/slot-blitz-torii-bltz-fire-gate-42:2\n");
       }
@@ -2494,9 +3249,12 @@ describe("AWS runtime helpers", () => {
         environmentId: "slot.blitz",
         runtimeKind: "torii",
         runtimeName: "bltz-fire-gate-42",
+        runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
         rpcUrl: "https://rpc.example.test",
         worldAddress: "0xabc",
         tier: "epic",
+        imageDigest: `sha256:${"a".repeat(64)}`,
+        exposurePolicy: "public-read",
       },
       { backend },
     );
@@ -2515,7 +3273,24 @@ describe("AWS runtime helpers", () => {
       commands.push(args);
 
       if (args.slice(0, 2).join(" ") === "ecs describe-services") {
-        return okAwsCommand(activeRuntimeServicePayload());
+        return okAwsCommand(
+          activeRuntimeServicePayload([
+            { key: "RuntimeInstanceId", value: TEST_RUNTIME_INSTANCE_ID },
+            { key: "DeleteAfter", value: EXPIRED_DELETE_AFTER },
+            { key: "LifecycleClass", value: "ephemeral" },
+            { key: "AutoTeardown", value: "true" },
+          ]),
+        );
+      }
+
+      if (args.slice(0, 2).join(" ") === "ecs list-tasks") {
+        return okAwsCommand(JSON.stringify({ taskArns: ["arn:aws:ecs:task/runtime/task-123"] }));
+      }
+
+      if (args.slice(0, 2).join(" ") === "ecs execute-command") {
+        const checkpointCommand = args[args.indexOf("--command") + 1] || "";
+        const correlationId = checkpointCommand.split(" ").at(-1);
+        return okAwsCommand(`checkpoint-complete:${correlationId}`);
       }
 
       if (args.slice(0, 2).join(" ") === "cloudwatch describe-alarms") {
@@ -2572,13 +3347,14 @@ describe("AWS runtime helpers", () => {
     });
 
     await backend.deleteRuntime({
-      environmentId: "slot.blitz",
-      runtimeKind: "torii",
-      runtimeName: "bltz-fire-gate-42",
+      ...TEST_DELETE_IDENTITY,
+      expectedDeleteAfter: EXPIRED_DELETE_AFTER,
     });
 
     expect(commands.map((command) => command.slice(0, 2).join(" "))).toEqual([
       "ecs describe-services",
+      "ecs list-tasks",
+      "ecs execute-command",
       "cloudwatch describe-alarms",
       "cloudwatch delete-alarms",
       "elbv2 describe-rules",
@@ -2591,7 +3367,337 @@ describe("AWS runtime helpers", () => {
       "ecs wait",
       "ecs describe-tasks",
       "efs delete-access-point",
+      "ecs list-task-definitions",
+      "ecs list-task-definitions",
     ]);
+  });
+
+  test("deletes the matching expired runtime while protecting shared owner-tagged runtimes", async () => {
+    configureAwsRuntimeEnv();
+    const runtimeInstanceId = "018f6e54-5f4a-7ae2-a0ff-000000000011";
+    const expectedDeleteAfter = new Date(Date.now() - 60_000).toISOString();
+    const deletedRequests: Array<{ runtimeKind: string; runtimeName: string }> = [];
+    const commandRunner = (args: string[]) => {
+      if (args.slice(0, 2).join(" ") === "ecs list-services") {
+        return okAwsCommand(
+          JSON.stringify({
+            serviceArns: [
+              "arn:aws:ecs:service/runtime/bltz-owned-torii",
+              "arn:aws:ecs:service/runtime/bltz-owned-katana",
+            ],
+          }),
+        );
+      }
+
+      if (args.slice(0, 2).join(" ") === "ecs describe-services") {
+        return okAwsCommand(
+          JSON.stringify({
+            services: [
+              buildTaggedRuntimeService("torii", "bltz-owned-torii", "bltz-owned", {
+                runtimeInstanceId,
+                deleteAfter: expectedDeleteAfter,
+              }),
+              buildTaggedRuntimeService("katana", "bltz-owned-katana", "bltz-owned", {
+                runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-000000000012",
+                deleteAfter: expectedDeleteAfter,
+                lifecycleClass: "shared",
+                autoTeardown: false,
+              }),
+            ],
+          }),
+        );
+      }
+
+      return okAwsCommand();
+    };
+    const backend = {
+      async describeRuntime(request: {
+        runtimeKind: "torii" | "katana";
+        runtimeName: string;
+        environmentId: "slot.blitz";
+      }) {
+        return {
+          ...buildTaggedRuntimeService(request.runtimeKind, request.runtimeName, "bltz-owned"),
+          provider: "aws",
+          runtimeKind: request.runtimeKind,
+          runtimeName: request.runtimeName,
+          status: "existing",
+          tier: "basic",
+          serviceName: `slot-blitz-${request.runtimeKind}-${request.runtimeName}`,
+          endpointUrl: "https://runtime.example",
+          describedAt: "2026-07-04T00:00:00.000Z",
+        };
+      },
+      async createRuntime() {
+        throw new Error("unexpected create");
+      },
+      async resizeRuntime() {
+        throw new Error("unexpected resize");
+      },
+      async deleteRuntime(request: { runtimeKind: string; runtimeName: string }) {
+        deletedRequests.push({
+          runtimeKind: request.runtimeKind,
+          runtimeName: request.runtimeName,
+        });
+        return [];
+      },
+    };
+
+    const result = await deleteAwsRuntimeGroup(
+      {
+        environmentId: "slot.blitz",
+        runtimeInstanceId,
+        expectedDeleteAfter,
+        gameName: "bltz-owned",
+        runKind: "game",
+        runName: "bltz-owned",
+      },
+      { commandRunner, backend },
+    );
+
+    expect(result.failed).toHaveLength(0);
+    expect(result.deleted).toHaveLength(1);
+    expect(result.skipped).toHaveLength(1);
+    expect(result.outcomes.map((outcome) => outcome.status).sort()).toEqual(["deleted", "skipped-stale"]);
+    expect(deletedRequests).toEqual([
+      {
+        runtimeKind: "torii",
+        runtimeName: "bltz-owned-torii",
+      },
+    ]);
+  });
+
+  test("returns skipped-stale when teardown lifecycle or immutable identity changes", async () => {
+    configureAwsRuntimeEnv();
+    const requestedRuntimeInstanceId = "018f6e54-5f4a-7ae2-a0ff-000000000020";
+    const expectedDeleteAfter = new Date(Date.now() - 60_000).toISOString();
+    const scenarios = [
+      {
+        name: "duration-extension",
+        runtimeInstanceId: requestedRuntimeInstanceId,
+        deleteAfter: new Date(Date.now() + 60 * 60_000).toISOString(),
+        autoTeardown: true,
+        lifecycleClass: "ephemeral" as const,
+      },
+      {
+        name: "relaunch",
+        runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-000000000021",
+        deleteAfter: expectedDeleteAfter,
+        autoTeardown: true,
+        lifecycleClass: "ephemeral" as const,
+      },
+      {
+        name: "auto-teardown-removed",
+        runtimeInstanceId: requestedRuntimeInstanceId,
+        deleteAfter: expectedDeleteAfter,
+        autoTeardown: false,
+        lifecycleClass: "ephemeral" as const,
+      },
+      {
+        name: "shared-runtime",
+        runtimeInstanceId: requestedRuntimeInstanceId,
+        deleteAfter: expectedDeleteAfter,
+        autoTeardown: true,
+        lifecycleClass: "shared" as const,
+      },
+    ];
+
+    for (const scenario of scenarios) {
+      const runtimeName = `bltz-${scenario.name}`;
+      const commandRunner = (args: string[]) => {
+        if (args.slice(0, 2).join(" ") === "ecs list-services") {
+          return okAwsCommand(
+            JSON.stringify({
+              serviceArns: [`arn:aws:ecs:service/runtime/${runtimeName}`],
+            }),
+          );
+        }
+        if (args.slice(0, 2).join(" ") === "ecs describe-services") {
+          return okAwsCommand(
+            JSON.stringify({
+              services: [buildTaggedRuntimeService("torii", runtimeName, "bltz-stale", scenario)],
+            }),
+          );
+        }
+        return okAwsCommand();
+      };
+      const result = await deleteAwsRuntimeGroup(
+        {
+          environmentId: "slot.blitz",
+          runtimeInstanceId: requestedRuntimeInstanceId,
+          expectedDeleteAfter,
+          gameName: "bltz-stale",
+          runKind: "game",
+          runName: "bltz-stale",
+        },
+        {
+          commandRunner,
+          backend: {
+            async describeRuntime() {
+              throw new Error("stale teardown must not describe for deletion");
+            },
+            async createRuntime() {
+              throw new Error("unexpected create");
+            },
+            async updateRuntimeTier() {
+              throw new Error("unexpected resize");
+            },
+            async deleteRuntime() {
+              throw new Error("stale teardown must not delete");
+            },
+          },
+        },
+      );
+
+      expect(result.deleted).toHaveLength(0);
+      expect(result.failed).toHaveLength(0);
+      expect(result.outcomes).toMatchObject([{ status: "skipped-stale" }]);
+    }
+  });
+
+  test("single-runtime delete returns skipped-stale when lifecycle changes after its initial read", async () => {
+    const liveState = {
+      provider: "aws" as const,
+      environmentId: "slot.blitz" as const,
+      runtimeKind: "torii" as const,
+      runtimeName: "bltz-fire-gate-42",
+      runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+      serviceName: "slot-blitz-torii-bltz-fire-gate-42",
+      status: "existing" as const,
+      lifecycleClass: "ephemeral" as const,
+      autoTeardown: true,
+      deleteAfter: "2024-01-02T00:00:00.000Z",
+    };
+    const backend = {
+      describeRuntime: async () => liveState,
+      createRuntime: async () => [],
+      updateRuntimeTier: async () => undefined,
+      deleteRuntime: async () => {
+        const error = new Error("runtime duration was extended");
+        error.name = "AwsRuntimeStaleTeardownError";
+        throw error;
+      },
+    };
+
+    const result = await deleteAwsRuntime(
+      {
+        environmentId: "slot.blitz",
+        runtimeKind: "torii",
+        runtimeName: "bltz-fire-gate-42",
+        runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+        expectedDeleteAfter: EXPIRED_DELETE_AFTER,
+      },
+      { backend },
+    );
+
+    expect(result.action).toBe("skipped-stale");
+    expect(result.liveState.deleteAfter).toBe("2024-01-02T00:00:00.000Z");
+  });
+
+  test("single-runtime delete rejects requests without the exact expected expiry", async () => {
+    const backend = {
+      describeRuntime: async () => {
+        throw new Error("delete validation should run before AWS reads");
+      },
+      createRuntime: async () => [],
+      updateRuntimeTier: async () => undefined,
+      deleteRuntime: async () => [],
+    };
+
+    await expect(
+      deleteAwsRuntime(
+        {
+          environmentId: "slot.blitz",
+          runtimeKind: "torii",
+          runtimeName: "bltz-fire-gate-42",
+          runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+        },
+        { backend },
+      ),
+    ).rejects.toThrow("expectedDeleteAfter");
+  });
+
+  test("orphan cleanup returns skipped-stale before the expected expiry", async () => {
+    configureAwsRuntimeEnv();
+    const commands: string[][] = [];
+    const backend = createAwsRuntimeCommandBackend((args) => {
+      commands.push(args);
+      if (args.slice(0, 2).join(" ") === "ecs describe-services") {
+        return okAwsCommand(JSON.stringify({ services: [] }));
+      }
+      return okAwsCommand();
+    });
+
+    const result = await deleteAwsRuntime(
+      {
+        ...TEST_DELETE_IDENTITY,
+        expectedDeleteAfter: new Date(Date.now() + 60_000).toISOString(),
+      },
+      { backend },
+    );
+
+    expect(result.action).toBe("skipped-stale");
+    expect(commands.map((command) => command.slice(0, 2).join(" "))).not.toContain("elbv2 delete-target-group");
+  });
+
+  test("finds expired fallback runtimes while skipping mainnet, protected, and future delete-after services", async () => {
+    configureAwsRuntimeEnv();
+    const oldCreatedAt = new Date(Date.now() - 25 * 60 * 60_000).toISOString();
+    const youngCreatedAt = new Date(Date.now() - 60_000).toISOString();
+    const expiredDeleteAfter = new Date(Date.now() - 60_000).toISOString();
+    const futureDeleteAfter = new Date(Date.now() + 60 * 60_000).toISOString();
+    const commandRunner = (args: string[]) => {
+      if (args.slice(0, 2).join(" ") === "ecs list-services") {
+        return okAwsCommand(
+          JSON.stringify({
+            serviceArns: [
+              "arn:aws:ecs:service/runtime/slot-old",
+              "arn:aws:ecs:service/runtime/slot-young",
+              "arn:aws:ecs:service/runtime/mainnet-old",
+              "arn:aws:ecs:service/runtime/protected-old",
+            ],
+          }),
+        );
+      }
+
+      if (args.slice(0, 2).join(" ") === "ecs describe-services") {
+        return okAwsCommand(
+          JSON.stringify({
+            services: [
+              buildTaggedRuntimeService("torii", "slot-old", "bltz-old", {
+                createdAt: oldCreatedAt,
+                deleteAfter: expiredDeleteAfter,
+              }),
+              buildTaggedRuntimeService("torii", "slot-young", "bltz-young", {
+                createdAt: youngCreatedAt,
+                deleteAfter: futureDeleteAfter,
+              }),
+              buildTaggedRuntimeService("torii", "mainnet-old", "bltz-mainnet", {
+                environment: "mainnet.blitz",
+                createdAt: oldCreatedAt,
+                deleteAfter: expiredDeleteAfter,
+              }),
+              buildTaggedRuntimeService("torii", "protected-old", "bltz-protected", {
+                createdAt: oldCreatedAt,
+                deleteAfter: expiredDeleteAfter,
+                retainRuntime: true,
+              }),
+            ],
+          }),
+        );
+      }
+
+      return okAwsCommand();
+    };
+
+    const expiredRuntimes = await findExpiredAwsRuntimes(
+      {
+        environmentId: "slot.blitz",
+      },
+      { commandRunner },
+    );
+
+    expect(expiredRuntimes.map((runtime) => runtime.runtimeName)).toEqual(["slot-old"]);
   });
 
   test("delete sweeps runtime orphans when the ECS service is already missing", async () => {
@@ -2647,14 +3753,14 @@ describe("AWS runtime helpers", () => {
               {
                 AccessPointId: "fsap-123",
                 RootDirectory: {
-                  Path: "/runtimes/slot-blitz-torii-bltz-fire-gate-42",
+                  Path: TEST_RUNTIME_ROOT_PATH,
                 },
                 Tags: [
                   { Key: "Project", Value: "eternum" },
                   { Key: "Environment", Value: "slot.blitz" },
                   { Key: "RuntimeKind", Value: "torii" },
                   { Key: "RuntimeName", Value: "bltz-fire-gate-42" },
-                  { Key: "RuntimeServiceName", Value: "slot-blitz-torii-bltz-fire-gate-42" },
+                  { Key: "RuntimeServiceName", Value: TEST_RUNTIME_SERVICE_NAME },
                 ],
               },
             ],
@@ -2695,6 +3801,8 @@ describe("AWS runtime helpers", () => {
         environmentId: "slot.blitz",
         runtimeKind: "torii",
         runtimeName: "bltz-fire-gate-42",
+        runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+        expectedDeleteAfter: EXPIRED_DELETE_AFTER,
       },
       { backend },
     );
@@ -2702,6 +3810,7 @@ describe("AWS runtime helpers", () => {
     expect(result.action).toBe("deleted");
     expect(result.swept).toEqual(["alarms", "listener-rule", "target-group", "snapshots", "access-point"]);
     expect(commands.map((command) => command.slice(0, 2).join(" "))).toEqual([
+      "ecs describe-services",
       "ecs describe-services",
       "elbv2 describe-target-groups",
       "elbv2 describe-tags",
@@ -2716,6 +3825,8 @@ describe("AWS runtime helpers", () => {
       "ecs wait",
       "ecs describe-tasks",
       "efs delete-access-point",
+      "ecs list-task-definitions",
+      "ecs list-task-definitions",
     ]);
 
     const cleanupTask = findCommand(commands, "ecs run-task");
@@ -2726,6 +3837,69 @@ describe("AWS runtime helpers", () => {
       name: "RUNTIME_CLEANUP_PATH",
       value: "/snapshots",
     });
+  });
+
+  test("delete resolves a missing runtime's sticky shard before checking listener-rule orphans", async () => {
+    configureAwsRuntimeEnv();
+    process.env.AWS_RUNTIME_CONTROL_TABLE_NAME = "runtime-control";
+    process.env.AWS_RUNTIME_REQUIRE_CONTROL_TABLE = "true";
+    const listeners = [
+      "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/runtime-s0/1/0",
+      "arn:aws:elasticloadbalancing:us-east-1:123456789012:listener/app/runtime-s1/1/1",
+    ];
+    process.env.AWS_RUNTIME_ALB_LISTENER_ARNS = JSON.stringify(listeners);
+    const commands: string[][] = [];
+    const backend = createAwsRuntimeCommandBackend((args) => {
+      commands.push(args);
+      const command = args.slice(0, 2).join(" ");
+      if (command === "ecs describe-services") {
+        return okAwsCommand(JSON.stringify({ services: [] }));
+      }
+      if (command === "dynamodb get-item") {
+        const key = readJsonArg<{ ControlKey: { S: string } }>(args, "--key").ControlKey.S;
+        if (key.startsWith("ROUTE#")) {
+          return okAwsCommand(
+            JSON.stringify({
+              Item: {
+                RoutingShard: { N: "1" },
+                RuntimeInstanceId: { S: TEST_RUNTIME_INSTANCE_ID },
+              },
+            }),
+          );
+        }
+        if (key.startsWith("SHARD#")) {
+          return okAwsCommand(JSON.stringify({ Item: { RuntimeCount: { N: "0" } } }));
+        }
+      }
+      if (command === "elbv2 describe-target-groups") {
+        return okAwsCommand(JSON.stringify({ TargetGroups: [] }));
+      }
+      if (command === "elbv2 describe-rules") {
+        return okAwsCommand(JSON.stringify({ Rules: [] }));
+      }
+      if (command === "efs describe-access-points") {
+        return okAwsCommand(JSON.stringify({ AccessPoints: [] }));
+      }
+      if (command === "cloudwatch describe-alarms") {
+        return okAwsCommand(JSON.stringify({ MetricAlarms: [] }));
+      }
+      if (command === "ecs list-task-definitions") {
+        return okAwsCommand(JSON.stringify({ taskDefinitionArns: [] }));
+      }
+      return okAwsCommand();
+    });
+
+    const result = await deleteAwsRuntime(
+      {
+        ...TEST_DELETE_IDENTITY,
+        expectedDeleteAfter: EXPIRED_DELETE_AFTER,
+      },
+      { backend },
+    );
+
+    expect(result.action).toBe("already-missing");
+    const listenerRuleCheck = findCommand(commands, "elbv2 describe-rules");
+    expect(listenerRuleCheck[listenerRuleCheck.indexOf("--listener-arn") + 1]).toBe(listeners[1]);
   });
 
   test("delete skips a target-group matched listener rule tagged for another runtime", async () => {
@@ -2754,7 +3928,7 @@ describe("AWS runtime helpers", () => {
         const resourceArn = args.at(-3);
         const runtimeServiceName =
           resourceArn === "arn:aws:elasticloadbalancing:targetgroup/runtime/123"
-            ? "slot-blitz-torii-bltz-fire-gate-42"
+            ? TEST_RUNTIME_SERVICE_NAME
             : "slot-blitz-torii-other-runtime";
         return okAwsCommand(
           JSON.stringify({
@@ -2808,6 +3982,8 @@ describe("AWS runtime helpers", () => {
         environmentId: "slot.blitz",
         runtimeKind: "torii",
         runtimeName: "bltz-fire-gate-42",
+        runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+        expectedDeleteAfter: EXPIRED_DELETE_AFTER,
       },
       { backend },
     );
@@ -2841,14 +4017,14 @@ describe("AWS runtime helpers", () => {
               {
                 AccessPointId: "fsap-123",
                 RootDirectory: {
-                  Path: "/runtimes/slot-blitz-torii-bltz-fire-gate-42",
+                  Path: TEST_RUNTIME_ROOT_PATH,
                 },
                 Tags: [
                   { Key: "Project", Value: "eternum" },
                   { Key: "Environment", Value: "slot.blitz" },
                   { Key: "RuntimeKind", Value: "torii" },
                   { Key: "RuntimeName", Value: "bltz-fire-gate-42" },
-                  { Key: "RuntimeServiceName", Value: "slot-blitz-torii-bltz-fire-gate-42" },
+                  { Key: "RuntimeServiceName", Value: TEST_RUNTIME_SERVICE_NAME },
                 ],
               },
             ],
@@ -2872,6 +4048,8 @@ describe("AWS runtime helpers", () => {
         environmentId: "slot.blitz",
         runtimeKind: "torii",
         runtimeName: "bltz-fire-gate-42",
+        runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+        expectedDeleteAfter: EXPIRED_DELETE_AFTER,
       },
       { backend },
     );
@@ -2880,12 +4058,15 @@ describe("AWS runtime helpers", () => {
     expect(result.swept).toEqual(["access-point"]);
     expect(commands.map((command) => command.slice(0, 2).join(" "))).toEqual([
       "ecs describe-services",
+      "ecs describe-services",
       "elbv2 describe-target-groups",
       "efs describe-access-points",
       "cloudwatch describe-alarms",
       "elbv2 describe-rules",
       "ecs run-task",
       "efs delete-access-point",
+      "ecs list-task-definitions",
+      "ecs list-task-definitions",
     ]);
   });
 
@@ -2932,14 +4113,14 @@ describe("AWS runtime helpers", () => {
               {
                 AccessPointId: "fsap-123",
                 RootDirectory: {
-                  Path: "/runtimes/slot-blitz-torii-bltz-fire-gate-42",
+                  Path: TEST_RUNTIME_ROOT_PATH,
                 },
                 Tags: [
                   { Key: "Project", Value: "eternum" },
                   { Key: "Environment", Value: "slot.blitz" },
                   { Key: "RuntimeKind", Value: "torii" },
                   { Key: "RuntimeName", Value: "bltz-fire-gate-42" },
-                  { Key: "RuntimeServiceName", Value: "slot-blitz-torii-bltz-fire-gate-42" },
+                  { Key: "RuntimeServiceName", Value: TEST_RUNTIME_SERVICE_NAME },
                 ],
               },
             ],
@@ -2959,6 +4140,8 @@ describe("AWS runtime helpers", () => {
         environmentId: "slot.blitz",
         runtimeKind: "torii",
         runtimeName: "bltz-fire-gate-42",
+        runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+        expectedDeleteAfter: EXPIRED_DELETE_AFTER,
         retainData: true,
       },
       { backend },
@@ -2996,12 +4179,84 @@ describe("AWS runtime helpers", () => {
         environmentId: "slot.blitz",
         runtimeKind: "torii",
         runtimeName: "bltz-fire-gate-42",
+        runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+        expectedDeleteAfter: EXPIRED_DELETE_AFTER,
       },
       { backend },
     );
 
     expect(result.action).toBe("already-missing");
     expect(result.swept).toBeUndefined();
+  });
+
+  test("retains three exact-family task definition revisions and ignores prefix matches", () => {
+    configureAwsRuntimeEnv();
+    const request = TEST_DELETE_IDENTITY;
+    const config = resolveAwsRuntimeCommandConfig(request);
+    const family = buildAwsRuntimeServiceName(request);
+    const commands: string[][] = [];
+    const commandRunner = (args: string[]) => {
+      commands.push(args);
+      if (args.slice(0, 2).join(" ") === "ecs list-task-definitions") {
+        return okAwsCommand(
+          JSON.stringify({
+            taskDefinitionArns: [5, 4, 3, 2, 1]
+              .map((revision) => `arn:aws:ecs:us-east-1:123456789012:task-definition/${family}:${revision}`)
+              .concat(`arn:aws:ecs:us-east-1:123456789012:task-definition/${family}-other:99`),
+          }),
+        );
+      }
+      return okAwsCommand();
+    };
+
+    pruneRuntimeTaskDefinitionRevisions(commandRunner, request, config);
+
+    const deregistered = commands
+      .filter((command) => command.slice(0, 2).join(" ") === "ecs deregister-task-definition")
+      .map((command) => command.at(-1));
+    expect(deregistered).toEqual([
+      `arn:aws:ecs:us-east-1:123456789012:task-definition/${family}:2`,
+      `arn:aws:ecs:us-east-1:123456789012:task-definition/${family}:1`,
+    ]);
+  });
+
+  test("destructive deletion removes only exact-family task definition revisions", () => {
+    configureAwsRuntimeEnv();
+    const request = TEST_DELETE_IDENTITY;
+    const config = resolveAwsRuntimeCommandConfig(request);
+    const family = buildAwsRuntimeServiceName(request);
+    const commands: string[][] = [];
+    const commandRunner = (args: string[]) => {
+      commands.push(args);
+      if (args.slice(0, 2).join(" ") !== "ecs list-task-definitions") {
+        return okAwsCommand();
+      }
+
+      const status = args[args.indexOf("--status") + 1];
+      const revision = status === "ACTIVE" ? 2 : 1;
+      return okAwsCommand(
+        JSON.stringify({
+          taskDefinitionArns: [
+            `arn:aws:ecs:us-east-1:123456789012:task-definition/${family}:${revision}`,
+            `arn:aws:ecs:us-east-1:123456789012:task-definition/${family}-other:99`,
+          ],
+        }),
+      );
+    };
+
+    expect(deleteRuntimeTaskDefinitionRevisions(commandRunner, request, config)).toBe(true);
+
+    const deregisterCommand = findCommand(commands, "ecs deregister-task-definition");
+    const deleteCommand = findCommand(commands, "ecs delete-task-definitions");
+    const mutatedTaskDefinitions = [
+      deregisterCommand[deregisterCommand.indexOf("--task-definition") + 1],
+      ...deleteCommand.slice(deleteCommand.indexOf("--task-definitions") + 1),
+    ];
+    expect(mutatedTaskDefinitions).toEqual([
+      `arn:aws:ecs:us-east-1:123456789012:task-definition/${family}:2`,
+      `arn:aws:ecs:us-east-1:123456789012:task-definition/${family}:1`,
+    ]);
+    expect(mutatedTaskDefinitions.some((value) => value?.includes(`${family}-other`))).toBe(false);
   });
 
   test("classifies missing AWS foundation configuration failures", async () => {

@@ -2,6 +2,24 @@ name: AWS Runtime Image
 run-name: AWS Runtime Image / ${{ inputs.dojo_version || 'v1.8.16' }} / ${{ github.sha }}
 
 on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Exact GitHub environment containing AWS image-build variables"
+        required: true
+        type: string
+      dojo_version:
+        description: "Dojo runtime image version"
+        required: false
+        default: v1.8.16
+        type: string
+    outputs:
+      image_digest:
+        description: "Immutable digest produced by the candidate build"
+        value: ${{ jobs.build.outputs.image_digest }}
+      image_tag:
+        description: "Human-readable candidate tag"
+        value: ${{ jobs.build.outputs.image_tag }}
   workflow_dispatch:
     inputs:
       environment:
@@ -12,8 +30,8 @@ on:
         options:
           - slot.blitz
           - slot.eternum
-          - mainnet.blitz
-          - mainnet.eternum
+          - slottest.blitz
+          - slottest.eternum
       dojo_version:
         description: "Dojo runtime image version"
         required: false
@@ -34,28 +52,48 @@ jobs:
   build:
     name: Build and push runtime image
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     environment: ${{ inputs.environment || 'slot.blitz' }}
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
       AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
       DOJO_VERSION: ${{ inputs.dojo_version || 'v1.8.16' }}
+      SELECTED_ENVIRONMENT: ${{ inputs.environment || 'slot.blitz' }}
     outputs:
       image_digest: ${{ steps.build.outputs.digest }}
       image_tag: ${{ steps.meta.outputs.image_tag }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Validate candidate request
+        run: |
+          set -euo pipefail
+          case "${SELECTED_ENVIRONMENT}" in
+            slot.blitz|slot.eternum|slottest.blitz|slottest.eternum) ;;
+            *)
+              echo "Candidate builds require an exact non-production environment" >&2
+              exit 1
+              ;;
+          esac
+          if [[ ! "${DOJO_VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "dojo_version must be a canonical v-prefixed release version" >&2
+            exit 1
+          fi
+          pinned_dojo_version="$(sed -n 's/^ARG DOJO_VERSION=//p' deploy/aws/runtime-image/Dockerfile)"
+          if [[ "${DOJO_VERSION}" != "${pinned_dojo_version}" ]]; then
+            echo "dojo_version must match the digest-pinned Dockerfile version ${pinned_dojo_version}" >&2
+            exit 1
+          fi
 
       - name: Configure AWS credentials
-        if: ${{ vars.AWS_ROLE_TO_ASSUME != '' }}
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
         with:
-          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          role-to-assume: ${{ vars.AWS_RUNTIME_IMAGE_ROLE_ARN || vars.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
 
       - name: Login to ECR
-        uses: aws-actions/amazon-ecr-login@v2
+        uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64
 
       - name: Set image metadata
         id: meta
@@ -72,27 +110,87 @@ jobs:
           echo "image_ref=${AWS_RUNTIME_ECR_REPOSITORY_URL}:${image_tag}" >> "${GITHUB_OUTPUT}"
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
 
       - name: Build and push linux/amd64 image
         id: build
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
         with:
           context: deploy/aws/runtime-image
           file: deploy/aws/runtime-image/Dockerfile
           platforms: linux/amd64
           push: true
+          provenance: mode=max
+          sbom: true
           build-args: |
             DOJO_VERSION=${{ env.DOJO_VERSION }}
           tags: ${{ steps.meta.outputs.image_ref }}
 
+      - name: Scan candidate image
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8
+        with:
+          image-ref: ${{ steps.meta.outputs.image_ref }}@${{ steps.build.outputs.digest }}
+          format: json
+          output: trivy-image-scan.json
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: false
+
+      - name: Upload candidate vulnerability report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: aws-runtime-trivy-scan-${{ steps.meta.outputs.image_tag }}
+          path: trivy-image-scan.json
+          if-no-files-found: error
+          retention-days: 35
+
+      - name: Wait for ECR image scan
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          repository_name="${AWS_RUNTIME_ECR_REPOSITORY_URL##*/}"
+          aws ecr wait image-scan-complete \
+            --region "${AWS_REGION}" \
+            --repository-name "${repository_name}" \
+            --image-id imageDigest="${IMAGE_DIGEST}"
+
+          aws ecr describe-image-scan-findings \
+            --region "${AWS_REGION}" \
+            --repository-name "${repository_name}" \
+            --image-id imageDigest="${IMAGE_DIGEST}" \
+            --output json > image-scan.json
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac
+
+      - name: Sign candidate image digest
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          set -euo pipefail
+          cosign sign --yes "${AWS_RUNTIME_ECR_REPOSITORY_URL}@${IMAGE_DIGEST}"
+
+      - name: Upload image scan report
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: aws-runtime-image-scan-${{ steps.meta.outputs.image_tag }}
+          path: image-scan.json
+          if-no-files-found: error
+          retention-days: 35
+
       - name: Summarize image
+        env:
+          IMAGE_TAG: ${{ steps.meta.outputs.image_tag }}
+          IMAGE_REF: ${{ steps.meta.outputs.image_ref }}
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
         run: |
           {
             echo "## AWS runtime image"
-            echo "- Tag: \`${{ steps.meta.outputs.image_tag }}\`"
-            echo "- Image: \`${{ steps.meta.outputs.image_ref }}\`"
-            echo "- Digest: \`${{ steps.build.outputs.digest }}\`"
+            echo "- Tag: \`${IMAGE_TAG}\`"
+            echo "- Image: \`${IMAGE_REF}\`"
+            echo "- Digest: \`${IMAGE_DIGEST}\`"
             echo ""
-            echo "Use this tag as the runtime deployer \`--version\` input."
+            echo "Deploy the immutable reference \`${AWS_RUNTIME_ECR_REPOSITORY_URL}@${IMAGE_DIGEST}\`."
           } >> "${GITHUB_STEP_SUMMARY}"

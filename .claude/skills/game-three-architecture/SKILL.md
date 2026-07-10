@@ -1,6 +1,9 @@
 ---
 name: game-three-architecture
-description: Use when building, refactoring, reviewing, or debugging the Eternum game client renderer, especially client/apps/game/src/three, world map, scenes, managers, hydration, chunking, terrain, labels, FX, or gameplay presentation code.
+description:
+  Use when building, refactoring, reviewing, or debugging the Eternum game client renderer, especially
+  client/apps/game/src/three, world map, scenes, managers, hydration, chunking, terrain, labels, FX, or gameplay
+  presentation code.
 ---
 
 # Eternum Game Three Architecture
@@ -11,10 +14,13 @@ Use this skill before changing the game renderer. Three.js is the drawing backen
 
 - Render from resolved state: `domain state -> presentation state -> render plans -> Three.js objects`.
 - Scenes own camera, picking, scene graph roots, scene lifecycle, and input surfaces.
-- Scenes do not own gameplay rules, account lookup, transactions, React modals, toasts, chain-time policy, or ECS hydration policy.
+- Scenes do not own gameplay rules, account lookup, transactions, React modals, toasts, chain-time policy, or ECS
+  hydration policy.
 - Render managers render one category: terrain, armies, structures, chests, labels, FX.
-- Render managers consume explicit render plans and narrow environment interfaces. They must not read app stores or depend on concrete scenes.
-- Stateful async systems are runtimes: hydration, prefetch, terrain presentation, optimistic movement, reconnect recovery, diagnostics.
+- Render managers consume explicit render plans and narrow environment interfaces. They must not read app stores or
+  depend on concrete scenes.
+- Stateful async systems are runtimes: hydration, prefetch, terrain presentation, optimistic movement, reconnect
+  recovery, diagnostics.
 - Policy helpers should be pure where possible. Stateful orchestration belongs in named runtime objects.
 - Shared constants and geometry policy must have one source of truth.
 - Most world-map behavior should be testable without WebGL or a Three `Scene`.
@@ -22,12 +28,14 @@ Use this skill before changing the game renderer. Three.js is the drawing backen
 ## Preferred Boundaries
 
 - `WorldmapScene`: coordinates scene lifecycle, input, camera, and renderer application.
-- `WorldmapCommandController`: validates and submits gameplay commands; owns account lookup, stamina checks, tx lifecycle, toasts, and modals.
+- `WorldmapCommandController`: validates and submits gameplay commands; owns account lookup, stamina checks, tx
+  lifecycle, toasts, and modals.
 - `WorldmapInteractionController`: turns pointer/keyboard input into domain intents.
 - `WorldmapHydrationRuntime`: owns render-area hydration, pending/completed fetches, retention, and recovery.
 - `WorldmapTerrainRuntime`: owns terrain cache, visual pages, matrix preparation, and presentation composition.
 - `WorldmapEntityPresentationRuntime`: converts domain entities into army, structure, chest, label, and FX render plans.
-- `ArmyRenderer`, `StructureRenderer`, `ChestRenderer`, `TerrainRenderer`, `LabelRenderer`, `FxRenderer`: apply plans and update frame-local animation only.
+- `ArmyRenderer`, `StructureRenderer`, `ChestRenderer`, `TerrainRenderer`, `LabelRenderer`, `FxRenderer`: apply plans
+  and update frame-local animation only.
 
 ## Do Not
 

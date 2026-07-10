@@ -58,6 +58,18 @@ describe("resolveStarknetRuntimeConfig", () => {
     expect(config.defaultChainId).toBe("0x57505f455445524e554d5f424c49545a5f534c4f545f34");
   });
 
+  it("keeps slottest isolated on the shared slottest runtime", () => {
+    const config = resolveStarknetRuntimeConfig({
+      fallbackChain: "slot",
+      selectedChain: "slottest",
+      baseRpcUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+    });
+
+    expect(config.chainKind).toBe("slot");
+    expect(config.rpcUrl).toBe("https://api.cartridge.gg/x/eternum-blitz-slot-test/katana/rpc/v0_9");
+    expect(config.defaultChainId).toBe("0x57505f455445524e554d5f424c49545a5f534c4f545f54455354");
+  });
+
   it("pins slot worlds to the shared slot runtime even when the active profile has a per-world katana rpc", () => {
     const config = resolveStarknetRuntimeConfig({
       fallbackChain: "slot",

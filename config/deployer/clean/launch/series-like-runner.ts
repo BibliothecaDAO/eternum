@@ -16,6 +16,7 @@ import type {
 } from "../types";
 import { runLaunchStep } from "./runner";
 import { SERIES_GAME_STEP_BY_GROUPED_STEP } from "./series-plan";
+import { deriveChildRuntimeInstanceId } from "../runtime/runtime-identity";
 
 const DEFAULT_MAINNET_STEP_DELAY_MS = 1_500;
 const DEFAULT_SLOT_STEP_DELAY_MS = 250;
@@ -138,6 +139,9 @@ function buildSeriesLikeGameRequest(
     launchKind: "game",
     environmentId: request.environmentId,
     gameName: game.gameName,
+    runtimeInstanceId: request.runtimeInstanceId
+      ? deriveChildRuntimeInstanceId(request.runtimeInstanceId, game.gameName)
+      : undefined,
     startTime: game.startTime,
     rpcUrl: summary.rpcUrl,
     factoryAddress: summary.factoryAddress,
@@ -159,6 +163,8 @@ function buildSeriesLikeGameRequest(
     maxActions: request.maxActions,
     seriesName: summary.seriesName,
     seriesGameNumber: game.seriesGameNumber,
+    parentRunKind: "rotationName" in summary ? "rotation" : "series",
+    parentRunName: "rotationName" in summary ? summary.rotationName : summary.seriesName,
     waitForFactoryIndexTimeoutMs: request.waitForFactoryIndexTimeoutMs,
     waitForFactoryIndexPollMs: request.waitForFactoryIndexPollMs,
     skipIndexer: request.skipIndexer,

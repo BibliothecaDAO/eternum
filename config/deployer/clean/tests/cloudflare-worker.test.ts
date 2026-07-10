@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import worker from "../run-store/cloudflare-worker.js";
+import { getDefaultRuntimeRegistry } from "../../../../common/factory/runtime-registry";
 
 const originalFetch = globalThis.fetch;
 
@@ -8,7 +9,11 @@ afterEach(() => {
 });
 
 function parseLaunchOptionsInput(dispatchBody: { inputs?: Record<string, string> }) {
-  const rawValue = dispatchBody.inputs?.launch_options_json;
+  return parseLaunchRequestInput(dispatchBody).launchOptions || {};
+}
+
+function parseLaunchRequestInput(dispatchBody: { inputs?: Record<string, string> }) {
+  const rawValue = dispatchBody.inputs?.request_json;
   return rawValue ? JSON.parse(rawValue) : {};
 }
 
@@ -51,7 +56,7 @@ describe("factory worker map config overrides", () => {
     const launchOptions = parseLaunchOptionsInput(dispatchBody);
 
     expect(response.status).toBe(202);
-    expect(Object.keys(dispatchBody.inputs).length).toBeLessThanOrEqual(25);
+    expect(Object.keys(dispatchBody.inputs).length).toBeLessThanOrEqual(10);
     expect(launchOptions.mapConfigOverrides).toEqual({
       bitcoinMineWinProbability: 1638,
       bitcoinMineFailProbability: 63897,
@@ -216,6 +221,27 @@ describe("factory worker map config overrides", () => {
     expect(dispatchBody.inputs.environment).toBe("mainnet.blitz");
   });
 
+  test("rejects malformed runtime instance IDs before dispatch", async () => {
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          environment: "slot.blitz",
+          gameName: "bltz-invalid-runtime-id",
+          gameStartTime: "2099-01-01T00:00:00Z",
+          runtimeInstanceId: "runtime-invalid",
+        }),
+      }),
+      buildWorkerEnv(),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: "runtimeInstanceId must be a lowercase RFC 9562 UUID",
+    });
+  });
+
   test("dispatches rotation launches with rotation-specific inputs", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = async (url, init) => {
@@ -256,12 +282,14 @@ describe("factory worker map config overrides", () => {
     expect(response.status).toBe(202);
     expect(dispatchBody.inputs.launch_kind).toBe("rotation");
     expect(dispatchBody.inputs.rotation_name).toBe("bltz-ladder-loop");
-    expect(dispatchBody.inputs.first_game_start_time).toBe("2026-03-18T10:00:00Z");
-    expect(dispatchBody.inputs.game_interval_minutes).toBe("60");
-    expect(dispatchBody.inputs.max_games).toBe("12");
-    expect(dispatchBody.inputs.advance_window_games).toBe("5");
-    expect(dispatchBody.inputs.evaluation_interval_minutes).toBe("30");
-    expect(dispatchBody.inputs.auto_retry_interval_minutes).toBe("15");
+    expect(parseLaunchRequestInput(dispatchBody)).toMatchObject({
+      firstGameStartTime: "2026-03-18T10:00:00Z",
+      gameIntervalMinutes: 60,
+      maxGames: 12,
+      advanceWindowGames: 5,
+      evaluationIntervalMinutes: 30,
+      autoRetryIntervalMinutes: 15,
+    });
   });
 
   test("dispatches weekly cadence rotations without a fixed game interval", async () => {
@@ -309,10 +337,11 @@ describe("factory worker map config overrides", () => {
     const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
     const launchOptions = parseLaunchOptionsInput(dispatchBody);
+    const workflowRequest = parseLaunchRequestInput(dispatchBody);
 
     expect(response.status).toBe(202);
     expect(dispatchBody.inputs.launch_kind).toBe("rotation");
-    expect(dispatchBody.inputs.game_interval_minutes).toBeUndefined();
+    expect(workflowRequest.gameIntervalMinutes).toBeUndefined();
     expect(launchOptions.weeklyCadence).toEqual([
       {
         gameNamePrefix: "na-gladiator",
@@ -1126,7 +1155,7 @@ describe("factory worker recovery signals", () => {
 
     expect(response.status).toBe(202);
     expect(dispatchBody.inputs.launch_step).toBe("create-indexers");
-    expect(dispatchBody.inputs.target_game_names_json).toBe(JSON.stringify(["bltz-knicker-03"]));
+    expect(parseLaunchRequestInput(dispatchBody).targetGameNames).toEqual(["bltz-knicker-03"]);
   });
 
   test("requires the admin secret for manual indexer tier updates", async () => {
@@ -1296,20 +1325,27 @@ describe("factory worker recovery signals", () => {
       call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
     );
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const operations = JSON.parse(dispatchBody.inputs.operations_json);
 
     expect(response.status).toBe(202);
-    expect(JSON.parse(dispatchBody.inputs.operations_json)).toEqual([
+    expect(operations).toEqual([
       {
         action: "create",
         environmentId: "slot.blitz",
         gameName: "bltz-franky-01",
+        runtimeInstanceId: expect.any(String),
       },
       {
         action: "create",
         environmentId: "slot.blitz",
         gameName: "bltz-franky-02",
+        runtimeInstanceId: expect.any(String),
       },
     ]);
+    expect(operations[0].runtimeInstanceId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+    expect(operations[1].runtimeInstanceId).not.toBe(operations[0].runtimeInstanceId);
   });
 
   test("cancels auto retry for a rotation run when the admin secret is provided", async () => {
@@ -1718,20 +1754,25 @@ describe("factory worker recovery signals", () => {
     };
 
     const scheduledTasks: Promise<unknown>[] = [];
-    await worker.scheduled({}, buildWorkerEnv({ GITHUB_WORKFLOW_REF: "next" }), {
-      waitUntil(promise: Promise<unknown>) {
-        scheduledTasks.push(promise);
+    await worker.scheduled(
+      {},
+      buildWorkerEnv({ GITHUB_WORKFLOW_REF: "next", AWS_RUNTIME_AUTO_TEARDOWN_ENABLED: "true" }),
+      {
+        waitUntil(promise: Promise<unknown>) {
+          scheduledTasks.push(promise);
+        },
       },
-    });
+    );
     await Promise.all(scheduledTasks);
 
     const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
     const launchOptions = parseLaunchOptionsInput(dispatchBody);
+    const workflowRequest = parseLaunchRequestInput(dispatchBody);
 
     expect(dispatchBody.inputs.launch_kind).toBe("rotation");
     expect(dispatchBody.inputs.rotation_name).toBe("blitz-rotation");
-    expect(dispatchBody.inputs.game_interval_minutes).toBeUndefined();
+    expect(workflowRequest.gameIntervalMinutes).toBeUndefined();
     expect(launchOptions.weeklyCadence).toEqual(weeklyCadence);
   });
 
@@ -1871,11 +1912,15 @@ describe("factory worker recovery signals", () => {
     };
 
     const scheduledTasks: Promise<unknown>[] = [];
-    await worker.scheduled({}, buildWorkerEnv({ GITHUB_WORKFLOW_REF: "next" }), {
-      waitUntil(promise: Promise<unknown>) {
-        scheduledTasks.push(promise);
+    await worker.scheduled(
+      {},
+      buildWorkerEnv({ GITHUB_WORKFLOW_REF: "next", AWS_RUNTIME_AUTO_TEARDOWN_ENABLED: "true" }),
+      {
+        waitUntil(promise: Promise<unknown>) {
+          scheduledTasks.push(promise);
+        },
       },
-    });
+    );
     await Promise.all(scheduledTasks);
 
     const dispatchCalls = fetchCalls.filter((call) =>
@@ -2007,6 +2052,317 @@ describe("factory worker recovery signals", () => {
     expect(fetchCalls.some((call) => call.url.includes("/contents/runs/slot/blitz/series/bltz-paused.json"))).toBe(
       false,
     );
+  });
+
+  test("scheduled runtime teardown dispatches expired AWS game runtimes and records pending state", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    const startedAt = offsetTimestamp(-3 * 60 * 60_000);
+    const gameRecord = buildAwsRuntimeGameRunRecord("bltz-expired-runtime", startedAt);
+
+    globalThis.fetch = async (url, init) => {
+      const value = String(url);
+      fetchCalls.push({ url: value, init });
+
+      if (value.includes("/contents/indexes/slot/blitz/games.json") && (!init?.method || init.method === "GET")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "game",
+          updatedAt: startedAt,
+          entries: {
+            "bltz-expired-runtime": buildAwsRuntimeGameMaintenanceEntry("bltz-expired-runtime", startedAt),
+          },
+        });
+      }
+
+      if (value.includes("/contents/indexes/") && value.includes("?ref=factory-runs")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      if (
+        value.includes("/contents/runs/slot/blitz/bltz-expired-runtime.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse(gameRecord);
+      }
+
+      if (value.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      if (
+        (value.includes("/contents/runs/slot/blitz/bltz-expired-runtime.json") ||
+          value.includes("/contents/indexes/slot/blitz/games.json")) &&
+        init?.method === "PUT"
+      ) {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const scheduledTasks: Promise<unknown>[] = [];
+    await worker.scheduled(
+      {},
+      buildWorkerEnv({ GITHUB_WORKFLOW_REF: "next", AWS_RUNTIME_AUTO_TEARDOWN_ENABLED: "true" }),
+      {
+        waitUntil(promise: Promise<unknown>) {
+          scheduledTasks.push(promise);
+        },
+      },
+    );
+    await Promise.all(scheduledTasks);
+
+    const dispatchCall = fetchCalls.find((call) =>
+      call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
+    );
+    const updateCall = fetchCalls.find(
+      (call) => call.url.includes("/contents/runs/slot/blitz/bltz-expired-runtime.json") && call.init?.method === "PUT",
+    );
+    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    const operations = JSON.parse(String(dispatchBody.inputs.operations_json));
+    const updateBody = JSON.parse(String(updateCall?.init?.body));
+    const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
+
+    expect(operations).toEqual([
+      {
+        action: "delete-runtime-tags",
+        kind: "game",
+        environmentId: "slot.blitz",
+        recordPath: "runs/slot/blitz/bltz-expired-runtime.json",
+        runName: "bltz-expired-runtime",
+        gameName: "bltz-expired-runtime",
+        reason: "expired",
+        expectedDeleteAfter: expect.any(String),
+        runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-000000000001",
+      },
+    ]);
+    expect(nextRunRecord.artifacts.runtimeTeardown).toMatchObject({
+      status: "dispatched",
+      reason: "expired",
+      requestedAt: expect.any(String),
+    });
+  });
+
+  test("scheduled runtime teardown skips active, recent, complete, and pre-grace AWS runtimes", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    const expiredStartedAt = offsetTimestamp(-3 * 60 * 60_000);
+    const preGraceStartedAt = offsetTimestamp(-90 * 60_000);
+
+    globalThis.fetch = async (url, init) => {
+      const value = String(url);
+      fetchCalls.push({ url: value, init });
+
+      if (value.includes("/contents/indexes/slot/blitz/games.json?ref=factory-runs")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "game",
+          updatedAt: expiredStartedAt,
+          entries: {
+            active: {
+              ...buildAwsRuntimeGameMaintenanceEntry("active", expiredStartedAt),
+              activeLeaseExpiresAt: offsetTimestamp(60_000),
+            },
+            running: {
+              ...buildAwsRuntimeGameMaintenanceEntry("running", expiredStartedAt),
+              hasRunningStep: true,
+            },
+            complete: {
+              ...buildAwsRuntimeGameMaintenanceEntry("complete", expiredStartedAt),
+              artifacts: {
+                ...buildAwsRuntimeGameArtifacts("complete"),
+                runtimeTeardown: {
+                  status: "complete",
+                },
+              },
+            },
+            recent: {
+              ...buildAwsRuntimeGameMaintenanceEntry("recent", expiredStartedAt),
+              artifacts: {
+                ...buildAwsRuntimeGameArtifacts("recent"),
+                runtimeTeardown: {
+                  status: "dispatched",
+                  requestedAt: offsetTimestamp(-60_000),
+                },
+              },
+            },
+            "pre-grace": {
+              ...buildAwsRuntimeGameMaintenanceEntry("pre-grace", preGraceStartedAt),
+              artifacts: {
+                ...buildAwsRuntimeGameArtifacts("pre-grace"),
+                indexerTier: "legendary",
+              },
+            },
+          },
+        });
+      }
+
+      if (value.includes("/contents/indexes/") && value.includes("?ref=factory-runs")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const scheduledTasks: Promise<unknown>[] = [];
+    await worker.scheduled(
+      {},
+      buildWorkerEnv({ GITHUB_WORKFLOW_REF: "next", AWS_RUNTIME_AUTO_TEARDOWN_ENABLED: "true" }),
+      {
+        waitUntil(promise: Promise<unknown>) {
+          scheduledTasks.push(promise);
+        },
+      },
+    );
+    await Promise.all(scheduledTasks);
+
+    expect(
+      fetchCalls.some((call) => call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")),
+    ).toBe(false);
+  });
+
+  test("scheduled runtime teardown records dispatch failures", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    const startedAt = offsetTimestamp(-3 * 60 * 60_000);
+    const gameRecord = buildAwsRuntimeGameRunRecord("bltz-runtime-failure", startedAt);
+
+    globalThis.fetch = async (url, init) => {
+      const value = String(url);
+      fetchCalls.push({ url: value, init });
+
+      if (value.includes("/contents/indexes/slot/blitz/games.json") && (!init?.method || init.method === "GET")) {
+        return buildGitHubContentsResponse({
+          version: 1,
+          environment: "slot.blitz",
+          kind: "game",
+          updatedAt: startedAt,
+          entries: {
+            "bltz-runtime-failure": buildAwsRuntimeGameMaintenanceEntry("bltz-runtime-failure", startedAt),
+          },
+        });
+      }
+
+      if (value.includes("/contents/indexes/") && value.includes("?ref=factory-runs")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      if (
+        value.includes("/contents/runs/slot/blitz/bltz-runtime-failure.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
+        return buildGitHubContentsResponse(gameRecord);
+      }
+
+      if (value.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")) {
+        return new Response(JSON.stringify({ message: "dispatch exploded" }), {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      if (
+        (value.includes("/contents/runs/slot/blitz/bltz-runtime-failure.json") ||
+          value.includes("/contents/indexes/slot/blitz/games.json")) &&
+        init?.method === "PUT"
+      ) {
+        return new Response(JSON.stringify({ content: {} }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const scheduledTasks: Promise<unknown>[] = [];
+    await worker.scheduled(
+      {},
+      buildWorkerEnv({ GITHUB_WORKFLOW_REF: "next", AWS_RUNTIME_AUTO_TEARDOWN_ENABLED: "true" }),
+      {
+        waitUntil(promise: Promise<unknown>) {
+          scheduledTasks.push(promise);
+        },
+      },
+    );
+    await Promise.all(scheduledTasks);
+
+    const updateCall = fetchCalls.find(
+      (call) => call.url.includes("/contents/runs/slot/blitz/bltz-runtime-failure.json") && call.init?.method === "PUT",
+    );
+    const updateBody = JSON.parse(String(updateCall?.init?.body));
+    const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
+
+    expect(nextRunRecord.artifacts.runtimeTeardown).toMatchObject({
+      status: "failed",
+      reason: "expired",
+      failedAt: expect.any(String),
+      errorMessage: expect.stringContaining("Failed to dispatch factory-indexer-maintenance workflow"),
+    });
+  });
+
+  test("scheduled fallback sweep dispatches only non-mainnet AWS runtime sweeps when enabled", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+
+    globalThis.fetch = async (url, init) => {
+      const value = String(url);
+      fetchCalls.push({ url: value, init });
+
+      if (value.includes("/contents/indexes/") && value.includes("?ref=factory-runs")) {
+        return new Response("{}", { status: 404 });
+      }
+
+      if (value.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")) {
+        return new Response(null, { status: 204 });
+      }
+
+      throw new Error(`Unexpected fetch call: ${value}`);
+    };
+
+    const scheduledTasks: Promise<unknown>[] = [];
+    await worker.scheduled(
+      {},
+      buildWorkerEnv({
+        FACTORY_RUNTIME_FALLBACK_SWEEP_ENABLED: "true",
+        AWS_RUNTIME_AUTO_TEARDOWN_ENABLED: "true",
+      }),
+      {
+        waitUntil(promise: Promise<unknown>) {
+          scheduledTasks.push(promise);
+        },
+      },
+    );
+    await Promise.all(scheduledTasks);
+
+    const dispatchedOperations = fetchCalls
+      .filter((call) => call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"))
+      .flatMap((call) => JSON.parse(JSON.parse(String(call.init?.body)).inputs.operations_json));
+
+    expect(dispatchedOperations).toEqual([
+      {
+        action: "sweep-expired-runtimes",
+        environmentId: "slot.blitz",
+        reason: "ttl-fallback",
+      },
+      {
+        action: "sweep-expired-runtimes",
+        environmentId: "slot.eternum",
+        reason: "ttl-fallback",
+      },
+      {
+        action: "sweep-expired-runtimes",
+        environmentId: "slottest.blitz",
+        reason: "ttl-fallback",
+      },
+      {
+        action: "sweep-expired-runtimes",
+        environmentId: "slottest.eternum",
+        reason: "ttl-fallback",
+      },
+    ]);
   });
 
   test("dispatches delete-indexer maintenance for the requested run games", async () => {
@@ -3104,6 +3460,88 @@ describe("factory worker prize funding", () => {
   });
 });
 
+describe("factory worker runtime registry", () => {
+  test("publishes one validated optimistic registry revision", async () => {
+    const currentRegistry = getDefaultRuntimeRegistry();
+    const nextRegistry = {
+      ...currentRegistry,
+      revision: currentRegistry.revision + 1,
+      generatedAt: "2026-07-10T04:00:00.000Z",
+    };
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+      if (String(url).includes("/contents/registry/runtime-registry.v1.json") && init?.method === "PUT") {
+        return Response.json({ content: { sha: "next-sha" } });
+      }
+      if (String(url).includes("/contents/registry/runtime-registry.v1.json")) {
+        return buildGitHubContentsResponse(currentRegistry);
+      }
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/runtime-registry/v1", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({ registry: nextRegistry, expectedRevision: currentRegistry.revision }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    const writeCall = fetchCalls.find((call) => call.init?.method === "PUT");
+    const writeBody = JSON.parse(String(writeCall?.init?.body));
+    const storedRegistry = JSON.parse(Buffer.from(writeBody.content, "base64").toString("utf8"));
+    expect(response.status).toBe(200);
+    expect(storedRegistry.revision).toBe(currentRegistry.revision + 1);
+  });
+
+  test("rejects malformed registry aliases before writing GitHub state", async () => {
+    const currentRegistry = getDefaultRuntimeRegistry();
+    const alias = "game.slot.blitz.invalid.torii.base";
+    const invalidRegistry = {
+      ...currentRegistry,
+      revision: currentRegistry.revision + 1,
+      generatedAt: "2026-07-10T04:00:00.000Z",
+      aliases: {
+        ...currentRegistry.aliases,
+        [alias]: {
+          scope: "invalid",
+          environmentId: "slot.blitz",
+          runtimeKind: "torii",
+          endpointKind: "base",
+          activeProvider: "slot",
+          providers: { slot: "https://api.cartridge.gg/x/invalid/torii" },
+        },
+      },
+    };
+    const fetchCalls: string[] = [];
+    globalThis.fetch = async (url) => {
+      fetchCalls.push(String(url));
+      throw new Error(`Unexpected fetch call: ${String(url)}`);
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/runtime-registry/v1", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({ registry: invalidRegistry, expectedRevision: currentRegistry.revision }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(fetchCalls).toHaveLength(0);
+    expect(await response.json()).toEqual({ error: `Runtime registry alias "${alias}" has an invalid scope` });
+  });
+});
+
 function buildWorkerEnv(overrides: Record<string, string> = {}) {
   return {
     GITHUB_TOKEN: "test-token",
@@ -3112,7 +3550,76 @@ function buildWorkerEnv(overrides: Record<string, string> = {}) {
     GITHUB_WORKFLOW_FILE: "game-launch.yml",
     GITHUB_WORKFLOW_REF: "next",
     FACTORY_RUN_STORE_BRANCH: "factory-runs",
+    FACTORY_RUNTIME_FALLBACK_SWEEP_ENABLED: "false",
     ...overrides,
+  };
+}
+
+function buildAwsRuntimeGameArtifacts(gameName: string) {
+  return {
+    indexerCreated: true,
+    indexerTier: "pro",
+    runtimeProvider: "aws",
+    awsRuntime: {
+      schemaVersion: 2,
+      provider: "aws",
+      runtimeKind: "torii",
+      runtimeName: gameName,
+      status: "existing",
+      serviceName: `slot-blitz-torii-${gameName}`,
+      runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-000000000001",
+      lifecycleClass: "ephemeral",
+      autoTeardown: true,
+    },
+  };
+}
+
+function buildAwsRuntimeGameMaintenanceEntry(gameName: string, startedAt: string) {
+  return {
+    kind: "game",
+    environment: "slot.blitz",
+    gameName,
+    path: `runs/slot/blitz/${gameName}.json`,
+    status: "complete",
+    updatedAt: startedAt,
+    workflowRef: "next",
+    currentStepId: null,
+    hasRunningStep: false,
+    recoverableFailedStepId: null,
+    recoverablePendingStepId: null,
+    startTime: startedAt,
+    durationSeconds: 3600,
+    artifacts: buildAwsRuntimeGameArtifacts(gameName),
+  };
+}
+
+function buildAwsRuntimeGameRunRecord(gameName: string, startedAt: string) {
+  return {
+    version: 1,
+    kind: "game",
+    runId: `slot.blitz:${gameName}`,
+    environment: "slot.blitz",
+    chain: "slot",
+    gameType: "blitz",
+    gameName,
+    status: "complete",
+    executionMode: "fast_trial",
+    requestedLaunchStep: "full",
+    inputPath: `inputs/slot/blitz/${gameName}/101-1.json`,
+    latestLaunchRequestId: "101-1",
+    currentStepId: null,
+    createdAt: startedAt,
+    updatedAt: startedAt,
+    workflow: {
+      workflowName: "game-launch.yml",
+      ref: "next",
+    },
+    steps: [],
+    artifacts: {
+      scheduledStartTime: startedAt,
+      durationSeconds: 3600,
+      ...buildAwsRuntimeGameArtifacts(gameName),
+    },
   };
 }
 

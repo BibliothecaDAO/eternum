@@ -5,9 +5,10 @@ import { describe, expect, it } from "vitest";
 import { buildSharedSlotRpcUrl, isSlotWorldChain } from "./normalize";
 
 describe("slot rpc helpers", () => {
-  it("builds the shared slot rpc from the cartridge api base", () => {
-    expect(buildSharedSlotRpcUrl("https://api.cartridge.gg")).toBe(
-      "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+  it("resolves isolated shared RPC endpoints for slot and slottest", () => {
+    expect(buildSharedSlotRpcUrl("slot")).toBe("https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9");
+    expect(buildSharedSlotRpcUrl("slottest")).toBe(
+      "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana/rpc/v0_9",
     );
   });
 

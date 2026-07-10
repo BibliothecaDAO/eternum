@@ -22,9 +22,12 @@
     "client/apps/game/src/ui/shared/components/blitz-game-stats-card.tsx",
 
     "client/apps/gg-xyz/**",
+    "common/factory/runtime-registry-artifact.ts",
     "deploy/aws/runtime-image/*.mjs",
+    "scripts/aws-runtime-forced-crash.mjs",
     "scripts/codemod-lucide-imports.mjs",
     "scripts/ci/roles/grant-prize-distributor-minter-role.ts",
+    "scripts/update-runtime-registry.ts",
     "config/**",
     "contracts/**",
 

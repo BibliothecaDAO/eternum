@@ -1,0 +1,126 @@
+name: AWS Runtime CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - next
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aws-runtime-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate runtime control plane
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Run focused runtime tests
+        run: |
+          set -euo pipefail
+          bun test \
+            config/deployer/clean/tests/aws-runtime.test.ts \
+            config/deployer/clean/tests/aws-runtime-e2e.test.ts \
+            config/deployer/clean/tests/aws-runtime-dr.test.ts \
+            config/deployer/clean/tests/runtime-image.test.ts \
+            config/deployer/clean/tests/runtime-registry.test.ts \
+            config/deployer/clean/tests/cloudflare-worker.test.ts
+
+      - name: Run runtime static guards
+        run: |
+          set -euo pipefail
+          pnpm run check:aws-runtime-iam
+          pnpm run check:aws-runtime-readme
+          pnpm run check:aws-runtime-terraform
+          pnpm run check:aws-runtime-urls
+          pnpm run check:aws-runtime-workflows
+
+      - name: Validate GitHub Actions
+        run: |
+          docker run --rm -v "${PWD}:/repo" -w /repo rhysd/actionlint:1.7.7 \
+            .github/workflows/aws-runtime-ci.yml \
+            .github/workflows/aws-runtime-deployer.yml \
+            .github/workflows/aws-runtime-dr.yml \
+            .github/workflows/aws-runtime-e2e.yml \
+            .github/workflows/aws-runtime-image-promote.yml \
+            .github/workflows/aws-runtime-image.yml \
+            .github/workflows/factory-indexer-maintenance.yml \
+            .github/workflows/factory-torii-deployer.yml \
+            .github/workflows/game-launch.yml
+
+      - name: Validate shell scripts
+        run: >-
+          docker run --rm -v "${PWD}:/repo" -w /repo koalaman/shellcheck:v0.10.0
+          deploy/aws/runtime-image/checkpoint-agent.sh deploy/aws/runtime-image/entrypoint.sh
+          deploy/aws/scripts/install-session-manager-plugin.sh
+
+      - name: Validate runtime Dockerfile
+        run:
+          docker run --rm -i hadolint/hadolint:v2.12.0 hadolint --ignore DL3008 - < deploy/aws/runtime-image/Dockerfile
+
+      - name: Validate Terraform formatting and modules
+        run: |
+          set -euo pipefail
+          terraform() {
+            docker run --rm \
+              -e TF_PLUGIN_CACHE_DIR=/repo/.context/terraform-plugin-cache \
+              -v "${PWD}:/repo" \
+              -w /repo \
+              hashicorp/terraform:1.9.8 "$@"
+          }
+          mkdir -p .context/terraform-plugin-cache
+          terraform fmt -check -recursive deploy/aws/terraform
+          terraform -chdir=deploy/aws/terraform init -backend=false -input=false
+          terraform -chdir=deploy/aws/terraform validate
+          terraform -chdir=deploy/aws/terraform/state-bootstrap init -backend=false -input=false
+          terraform -chdir=deploy/aws/terraform/state-bootstrap validate
+          for main in deploy/aws/terraform/roots/*/main.tf; do
+            root="${main%/main.tf}"
+            terraform -chdir="${root}" init -backend=false -input=false
+            terraform -chdir="${root}" validate
+          done
+
+      - name: Run TFLint
+        run:
+          docker run --rm -v "${PWD}:/repo" -w /repo ghcr.io/terraform-linters/tflint:v0.53.0
+          --chdir=deploy/aws/terraform --recursive
+
+      - name: Run Checkov
+        run:
+          docker run --rm -v "${PWD}:/repo" -w /repo bridgecrew/checkov:3.2.461 -d deploy/aws/terraform --quiet
+          --compact
+
+      - name: Scan infrastructure and runtime image configuration
+        run: >-
+          docker run --rm -v "${PWD}:/repo" -w /repo aquasec/trivy:0.56.2 config --skip-check-update --skip-dirs
+          deploy/aws/terraform/roots --exit-code 1 deploy/aws
+
+      - name: Check repository formatting
+        run: |
+          set -euo pipefail
+          pnpm run format
+          git diff --exit-code
+
+      - name: Check unused dependencies and exports
+        run: pnpm run knip

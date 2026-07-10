@@ -40,6 +40,7 @@ import availabilityRoutes from "./http/routes/availability";
 import worldDeploymentRoutes from "./http/routes/world-deployments";
 import worldsRoutes from "./http/routes/worlds";
 import { availabilityService } from "./services/torii-availability";
+import { loadConfiguredRuntimeRegistry } from "./services/runtime-endpoints";
 import { createZoneRegistry } from "./ws/zone-registry";
 
 const app = new Hono<AppEnv>();
@@ -669,12 +670,23 @@ app.get(
   }),
 );
 
+const runtimeRegistryLoad = await loadConfiguredRuntimeRegistry();
+if (runtimeRegistryLoad.remoteError) {
+  console.warn("Runtime registry load failed; using fallback", {
+    error: runtimeRegistryLoad.remoteError,
+    revision: runtimeRegistryLoad.registry.revision,
+    source: runtimeRegistryLoad.source,
+  });
+}
+
 console.log("Starting realtime server...");
 console.log("Environment:", {
   PORT: port,
   DATABASE_URL: process.env.DATABASE_URL ? "Set" : "Not set",
   TORII_SQL_BASE_URL: process.env.TORII_SQL_BASE_URL ? "Set" : "Not set",
   NODE_ENV: process.env.NODE_ENV || "development",
+  RUNTIME_REGISTRY_REVISION: runtimeRegistryLoad.registry.revision,
+  RUNTIME_REGISTRY_SOURCE: runtimeRegistryLoad.source,
   TORII_AVAILABILITY_POLL: "30s (mainnet, slot)",
 });
 

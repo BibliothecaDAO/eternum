@@ -2,9 +2,11 @@ import "dotenv/config";
 import { RpcProvider } from "starknet";
 import * as fs from "fs";
 import { parse } from "csv-parse/sync";
+import { buildSharedChainRuntimeAlias, resolveRuntimeEndpointAlias } from "../../common/factory/runtime-registry.ts";
 
 // Configuration
-const RPC_URL = "https://api.cartridge.gg/x/starknet/mainnet";
+const RPC_URL =
+  process.env.RUNTIME_MAINNET_RPC_URL || resolveRuntimeEndpointAlias(buildSharedChainRuntimeAlias("mainnet"));
 const LORDS_DECIMALS = 18;
 const STRK_DECIMALS = 18;
 

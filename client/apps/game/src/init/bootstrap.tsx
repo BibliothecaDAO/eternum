@@ -42,7 +42,6 @@ export interface BootstrappedEntrySession {
 
 type BootstrapResult = BootstrappedEntrySession;
 const bootstrapSession = createBootstrapSession<BootstrapResult>();
-const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
 
 type BootstrapLifecycle = {
   onBootstrapCompleted?: () => void;
@@ -249,7 +248,7 @@ const resolveBootstrapRpcUrl = (chain: Chain, profile: WorldProfile): string => 
   }
 
   if (isSlotWorldChain(chain)) {
-    return buildSharedSlotRpcUrl(cartridgeApiBase);
+    return buildSharedSlotRpcUrl(chain === "slottest" ? "slottest" : "slot");
   }
 
   return profile.rpcUrl ?? env.VITE_PUBLIC_NODE_URL;

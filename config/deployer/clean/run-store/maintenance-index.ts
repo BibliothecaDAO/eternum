@@ -12,6 +12,7 @@ import type {
   FactoryRotationRunRecord,
   FactoryRunMaintenanceIndexEntry,
   FactoryRunMaintenanceIndexGame,
+  FactoryRunMaintenanceArtifacts,
   FactoryRunMaintenanceIndexRecord,
   FactoryRunRecord,
   FactoryRunStepStatus,
@@ -80,6 +81,9 @@ function buildMaintenanceIndexGame(game: {
     lastIndexerDescribeAt?: string;
     pendingIndexerTierTarget?: string;
     pendingIndexerTierRequestedAt?: string;
+    runtimeProvider?: FactoryRunMaintenanceArtifacts["runtimeProvider"];
+    awsRuntime?: FactoryRunMaintenanceArtifacts["awsRuntime"];
+    runtimeTeardown?: FactoryRunMaintenanceArtifacts["runtimeTeardown"];
   };
 }): FactoryRunMaintenanceIndexGame {
   return {
@@ -92,6 +96,9 @@ function buildMaintenanceIndexGame(game: {
       lastIndexerDescribeAt: game.artifacts?.lastIndexerDescribeAt,
       pendingIndexerTierTarget: game.artifacts?.pendingIndexerTierTarget,
       pendingIndexerTierRequestedAt: game.artifacts?.pendingIndexerTierRequestedAt,
+      runtimeProvider: game.artifacts?.runtimeProvider,
+      awsRuntime: game.artifacts?.awsRuntime,
+      runtimeTeardown: game.artifacts?.runtimeTeardown,
     },
   };
 }
@@ -126,6 +133,9 @@ function buildGameRunMaintenanceIndexEntry(run: FactoryRunRecord): FactoryGameRu
       lastIndexerDescribeAt: run.artifacts.lastIndexerDescribeAt,
       pendingIndexerTierTarget: run.artifacts.pendingIndexerTierTarget,
       pendingIndexerTierRequestedAt: run.artifacts.pendingIndexerTierRequestedAt,
+      runtimeProvider: run.artifacts.runtimeProvider,
+      awsRuntime: run.artifacts.awsRuntime,
+      runtimeTeardown: run.artifacts.runtimeTeardown,
     },
   };
 }

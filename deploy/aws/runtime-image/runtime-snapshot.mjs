@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+import { createReadStream } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
@@ -10,9 +11,14 @@ const snapshotDir = process.env.SNAPSHOT_DIR || "/snapshots";
 const runtimeEnvironmentId = process.env.RUNTIME_ENVIRONMENT_ID || "";
 const runtimeKind = process.env.RUNTIME_KIND || "";
 const runtimeName = process.env.RUNTIME_NAME || "";
+const runtimeInstanceId = process.env.RUNTIME_INSTANCE_ID || "";
 const runtimeVersion = process.env.RUNTIME_VERSION || "";
+const runtimeImageDigest = process.env.RUNTIME_IMAGE_DIGEST || "";
 const worldAddress = process.env.WORLD_ADDRESS || "";
-const retainCount = Number(process.env.SNAPSHOT_RETAIN || "3");
+const retainCount = Number(process.env.SNAPSHOT_RETAIN || "12");
+const maxConsecutiveFailures = positiveInteger(process.env.SNAPSHOT_MAX_CONSECUTIVE_FAILURES, 3);
+const retrySeconds = positiveInteger(process.env.SNAPSHOT_RETRY_SECONDS, 15);
+const snapshotFormatVersion = 2;
 const mdbxCopyCommand = process.env.MDBX_COPY_BIN || "mdbx_copy";
 const sqliteCommand = process.env.SQLITE_BIN || "sqlite3";
 const tarCommand = process.env.TAR_BIN || "tar";
@@ -20,7 +26,10 @@ const tarCommand = process.env.TAR_BIN || "tar";
 async function main() {
   switch (command) {
     case "snapshot-once":
-      await createSnapshot();
+      await createRecordedSnapshot("checkpoint");
+      return;
+    case "checkpoint":
+      await createCorrelatedCheckpoint(process.argv[3]);
       return;
     case "snapshot-loop":
       await runSnapshotLoop();
@@ -28,36 +37,209 @@ async function main() {
     case "restore":
       await restoreNewestMatchingSnapshot();
       return;
+    case "lease-heartbeat":
+      await runSnapshotLeaseHeartbeat(process.argv[3], process.argv[4]);
+      return;
     default:
       throw new Error(`Unsupported snapshot command: ${command}`);
   }
 }
 
+async function createCorrelatedCheckpoint(correlationId) {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(correlationId || "")) {
+    throw new Error("checkpoint requires a UUID v4 correlation ID");
+  }
+
+  const snapshot = await createRecordedSnapshot("deployer-checkpoint");
+  const marker = {
+    schemaVersion: 1,
+    correlationId,
+    runtimeInstanceId,
+    createdAt: snapshot.timestamp,
+    artifact: path.basename(snapshot.artifactPath),
+    checksum: snapshot.checksum,
+  };
+  const markerDirectory = path.join(snapshotDir, "checkpoint-markers");
+  const markerPath = path.join(markerDirectory, `${correlationId}.json`);
+  await fs.mkdir(markerDirectory, { recursive: true });
+  await fs.writeFile(markerPath, `${JSON.stringify(marker, null, 2)}\n`, { flag: "wx" });
+  console.log(`checkpoint-complete:${correlationId} checksum=${snapshot.checksum}`);
+}
+
 async function runSnapshotLoop() {
-  const intervalSeconds = Number(process.env.SNAPSHOT_INTERVAL_SECONDS || "300");
-  const intervalMs = Math.max(1, intervalSeconds) * 1000;
+  const intervalMs = positiveInteger(process.env.SNAPSHOT_INTERVAL_SECONDS, 300) * 1000;
+  let consecutiveFailures = 0;
 
   for (;;) {
-    await delay(intervalMs);
-    await createSnapshot();
+    await delay(consecutiveFailures === 0 ? intervalMs : retrySeconds * 1000);
+
+    try {
+      await createRecordedSnapshot("scheduled", consecutiveFailures);
+      consecutiveFailures = 0;
+    } catch (error) {
+      consecutiveFailures += 1;
+      if (consecutiveFailures >= maxConsecutiveFailures) {
+        throw new Error(
+          `snapshot supervisor stopped after ${consecutiveFailures} consecutive failures: ${errorMessage(error)}`,
+        );
+      }
+    }
+  }
+}
+
+async function createRecordedSnapshot(trigger, previousFailureCount = 0) {
+  try {
+    const snapshot = await createSnapshot();
+    const status = {
+      state: "healthy",
+      trigger,
+      lastSuccessAt: snapshot.timestamp,
+      artifact: path.basename(snapshot.artifactPath),
+      checksum: snapshot.checksum,
+      consecutiveFailures: 0,
+    };
+    await writeSnapshotStatus(status);
+    logSnapshotEvent("snapshot_succeeded", status);
+    return snapshot;
+  } catch (error) {
+    const previousStatus = await readSnapshotStatus();
+    const status = {
+      state: "failed",
+      trigger,
+      lastFailureAt: new Date().toISOString(),
+      consecutiveFailures: previousFailureCount + 1,
+      freshnessSeconds: resolveSnapshotFreshnessSeconds(previousStatus.lastSuccessAt),
+      error: errorMessage(error),
+    };
+    await writeSnapshotStatus(status);
+    logSnapshotEvent("snapshot_failed", status);
+    throw error;
   }
 }
 
 async function createSnapshot() {
   await fs.mkdir(snapshotDir, { recursive: true });
+  return withSnapshotLease(async () => {
+    const timestamp = resolveSnapshotTimestamp();
+    const snapshotWrite = buildSnapshotWrite(timestamp);
 
-  const timestamp = resolveSnapshotTimestamp();
-  const snapshotWrite = buildSnapshotWrite(timestamp);
+    await resetSnapshotWrite(snapshotWrite);
 
-  await resetSnapshotWrite(snapshotWrite);
+    try {
+      const checksum = await writeSnapshotArtifact(snapshotWrite, timestamp);
+      await commitSnapshotWrite(snapshotWrite, timestamp);
+      await pruneOldSnapshots();
+      return { timestamp, checksum, artifactPath: snapshotWrite.finalArtifactPath };
+    } catch (error) {
+      await discardSnapshotWrite(snapshotWrite);
+      throw error;
+    }
+  });
+}
 
+async function withSnapshotLease(operation) {
+  const leasePath = path.join(snapshotDir, ".checkpoint-lock");
+  await acquireSnapshotLease(leasePath);
+  let heartbeat;
   try {
-    await writeSnapshotArtifact(snapshotWrite, timestamp);
-    await commitSnapshotWrite(snapshotWrite, timestamp);
-    await pruneOldSnapshots();
+    heartbeat = await startSnapshotLeaseHeartbeat(leasePath);
+    return await operation();
+  } finally {
+    try {
+      if (heartbeat) {
+        await stopSnapshotLeaseHeartbeat(heartbeat);
+      }
+    } finally {
+      await fs.rm(leasePath, { recursive: true, force: true });
+    }
+  }
+}
+
+async function startSnapshotLeaseHeartbeat(leasePath) {
+  const staleSeconds = positiveInteger(process.env.SNAPSHOT_LOCK_STALE_SECONDS, 900);
+  const configuredSeconds = positiveInteger(process.env.SNAPSHOT_LOCK_HEARTBEAT_SECONDS, 30);
+  const heartbeatSeconds = Math.min(configuredSeconds, Math.max(1, Math.floor(staleSeconds / 3)));
+  const heartbeat = spawn(process.execPath, [process.argv[1], "lease-heartbeat", leasePath, String(heartbeatSeconds)], {
+    stdio: "ignore",
+  });
+  await waitForChildSpawn(heartbeat);
+  return heartbeat;
+}
+
+async function stopSnapshotLeaseHeartbeat(heartbeat) {
+  if (heartbeat.exitCode !== null || heartbeat.signalCode !== null) {
+    return;
+  }
+
+  const exited = new Promise((resolve) => heartbeat.once("exit", resolve));
+  heartbeat.kill("SIGKILL");
+  await exited;
+}
+
+function waitForChildSpawn(child) {
+  return new Promise((resolve, reject) => {
+    child.once("spawn", resolve);
+    child.once("error", reject);
+  });
+}
+
+async function runSnapshotLeaseHeartbeat(leasePath, intervalValue) {
+  if (!path.isAbsolute(leasePath || "")) {
+    throw new Error("snapshot lease heartbeat requires an absolute lease path");
+  }
+
+  const intervalMs = positiveInteger(intervalValue, 30) * 1000;
+  for (;;) {
+    await delay(intervalMs);
+    try {
+      const now = new Date();
+      await fs.utimes(leasePath, now, now);
+    } catch (error) {
+      if (error?.code === "ENOENT") {
+        return;
+      }
+      throw error;
+    }
+  }
+}
+
+async function acquireSnapshotLease(leasePath) {
+  const timeoutMs = positiveInteger(process.env.SNAPSHOT_LOCK_TIMEOUT_SECONDS, 120) * 1000;
+  const staleMs = positiveInteger(process.env.SNAPSHOT_LOCK_STALE_SECONDS, 900) * 1000;
+  const deadline = Date.now() + timeoutMs;
+
+  for (;;) {
+    try {
+      await fs.mkdir(leasePath);
+      await fs.writeFile(
+        path.join(leasePath, "owner.json"),
+        `${JSON.stringify({ pid: process.pid, acquiredAt: new Date().toISOString() })}\n`,
+      );
+      return;
+    } catch (error) {
+      if (error?.code !== "EEXIST") {
+        throw error;
+      }
+
+      await removeStaleSnapshotLease(leasePath, staleMs);
+      if (Date.now() >= deadline) {
+        throw new Error(`timed out waiting for the snapshot checkpoint lease after ${timeoutMs / 1000} seconds`);
+      }
+      await delay(250);
+    }
+  }
+}
+
+async function removeStaleSnapshotLease(leasePath, staleMs) {
+  try {
+    const stat = await fs.stat(leasePath);
+    if (Date.now() - stat.mtimeMs > staleMs) {
+      await fs.rm(leasePath, { recursive: true, force: true });
+    }
   } catch (error) {
-    await discardSnapshotWrite(snapshotWrite);
-    throw error;
+    if (error?.code !== "ENOENT") {
+      throw error;
+    }
   }
 }
 
@@ -86,6 +268,7 @@ async function writeSnapshotArtifact(snapshotWrite, timestamp) {
   await archiveSnapshotData(snapshotWrite.tempDataPath, snapshotWrite.tempArtifactPath);
   const checksum = await checksumFile(snapshotWrite.tempArtifactPath);
   await writeSnapshotMetadata(snapshotWrite.tempMetadataPath, { timestamp, checksum });
+  return checksum;
 }
 
 async function commitSnapshotWrite(snapshotWrite, timestamp) {
@@ -290,6 +473,11 @@ function isSafeSnapshotName(snapshotName) {
 }
 
 async function snapshotMatchesRuntime(snapshot) {
+  if (!isSupportedSnapshotFormat(snapshot.metadata)) {
+    logStaleSnapshot(snapshot, "snapshot_format_mismatch");
+    return false;
+  }
+
   if (resolveSnapshotKind(snapshot.metadata) !== runtimeKind) {
     logStaleSnapshot(snapshot, "runtime_kind_mismatch");
     return false;
@@ -297,6 +485,28 @@ async function snapshotMatchesRuntime(snapshot) {
 
   if (worldAddress && snapshot.metadata.worldAddress !== worldAddress) {
     logStaleSnapshot(snapshot, "world_address_mismatch");
+    return false;
+  }
+
+  const snapshotRuntimeVersion = resolveSnapshotRuntimeVersion(snapshot.metadata);
+  if (runtimeVersion && snapshotRuntimeVersion && snapshotRuntimeVersion !== runtimeVersion) {
+    logStaleSnapshot(snapshot, "runtime_version_mismatch");
+    return false;
+  }
+
+  const snapshotIdentity = resolveSnapshotRuntimeIdentity(snapshot.metadata);
+  if (runtimeEnvironmentId && snapshotIdentity.environmentId && snapshotIdentity.environmentId !== runtimeEnvironmentId) {
+    logStaleSnapshot(snapshot, "environment_id_mismatch");
+    return false;
+  }
+
+  if (runtimeName && snapshotIdentity.runtimeName && snapshotIdentity.runtimeName !== runtimeName) {
+    logStaleSnapshot(snapshot, "runtime_name_mismatch");
+    return false;
+  }
+
+  if (runtimeInstanceId && snapshotIdentity.runtimeInstanceId !== runtimeInstanceId) {
+    logStaleSnapshot(snapshot, "runtime_instance_id_mismatch");
     return false;
   }
 
@@ -333,7 +543,7 @@ async function restoreSnapshot(snapshot) {
 
 async function pruneOldSnapshots() {
   const snapshots = await listCompleteSnapshots();
-  const limit = Number.isInteger(retainCount) && retainCount > 0 ? retainCount : 3;
+  const limit = Number.isInteger(retainCount) && retainCount > 0 ? retainCount : 12;
   const snapshotsToRemove = snapshots.slice(0, Math.max(0, snapshots.length - limit));
 
   await Promise.all(snapshotsToRemove.map((snapshot) => removeSnapshot(snapshot)));
@@ -390,12 +600,28 @@ async function writeSnapshotMetadata(metadataPath, options) {
     metadataPath,
     `${JSON.stringify(
       {
+        snapshotFormatVersion,
         timestamp: options.timestamp,
         createdAt: options.timestamp,
         kind: runtimeKind,
         runtimeKind,
+        environmentId: runtimeEnvironmentId,
+        runtimeName,
+        runtimeInstanceId,
         runtimeVersion,
+        imageDigest: runtimeImageDigest,
         worldAddress,
+        runtimeIdentity: {
+          environmentId: runtimeEnvironmentId,
+          runtimeKind,
+          runtimeName,
+          runtimeInstanceId,
+        },
+        compatibility: {
+          runtimeVersion,
+          imageDigest: runtimeImageDigest,
+          worldAddress,
+        },
         checksum: options.checksum,
         sha256: options.checksum,
       },
@@ -413,8 +639,26 @@ function resolveSnapshotKind(metadata) {
   return metadata.runtimeKind || metadata.kind || "";
 }
 
+function resolveSnapshotRuntimeVersion(metadata) {
+  return metadata.compatibility?.runtimeVersion || metadata.runtimeVersion || "";
+}
+
 function resolveSnapshotCreatedAt(metadata) {
   return metadata.timestamp || metadata.createdAt || "";
+}
+
+function isSupportedSnapshotFormat(metadata) {
+  return metadata.snapshotFormatVersion === undefined || metadata.snapshotFormatVersion === snapshotFormatVersion;
+}
+
+function resolveSnapshotRuntimeIdentity(metadata) {
+  const identity = metadata.runtimeIdentity || {};
+  return {
+    environmentId: identity.environmentId || metadata.environmentId || "",
+    runtimeKind: identity.runtimeKind || resolveSnapshotKind(metadata),
+    runtimeName: identity.runtimeName || metadata.runtimeName || "",
+    runtimeInstanceId: identity.runtimeInstanceId || metadata.runtimeInstanceId || "",
+  };
 }
 
 async function writeLatestSnapshotPointer(snapshotArtifactPath, timestamp) {
@@ -444,7 +688,9 @@ async function checksumSnapshot(snapshot) {
 
 async function checksumFile(filePath) {
   const hash = crypto.createHash("sha256");
-  hash.update(await fs.readFile(filePath));
+  for await (const chunk of createReadStream(filePath)) {
+    hash.update(chunk);
+  }
   return hash.digest("hex");
 }
 
@@ -456,7 +702,9 @@ async function checksumDirectory(directory) {
     const relativePath = path.relative(directory, file);
     hash.update(relativePath);
     hash.update("\0");
-    hash.update(await fs.readFile(file));
+    for await (const chunk of createReadStream(file)) {
+      hash.update(chunk);
+    }
     hash.update("\0");
   }
 
@@ -576,6 +824,83 @@ async function removeSnapshot(snapshot) {
   }
 
   await fs.rm(snapshot.path, { recursive: true, force: true });
+}
+
+async function writeSnapshotStatus(status) {
+  const statusPath = path.join(snapshotDir, "runtime-snapshot-status.json");
+  const tempStatusPath = `${statusPath}.tmp-${process.pid}`;
+  const current = await readSnapshotStatus();
+  const nextStatus = {
+    schemaVersion: 1,
+    environmentId: runtimeEnvironmentId,
+    runtimeKind,
+    runtimeName,
+    runtimeInstanceId,
+    intervalSeconds: positiveInteger(process.env.SNAPSHOT_INTERVAL_SECONDS, 300),
+    ...current,
+    ...status,
+    updatedAt: new Date().toISOString(),
+  };
+  await fs.writeFile(tempStatusPath, `${JSON.stringify(nextStatus, null, 2)}\n`);
+  await fs.rename(tempStatusPath, statusPath);
+}
+
+async function readSnapshotStatus() {
+  try {
+    return JSON.parse(await fs.readFile(path.join(snapshotDir, "runtime-snapshot-status.json"), "utf8"));
+  } catch {
+    return {};
+  }
+}
+
+function logSnapshotEvent(event, status) {
+  const success = event === "snapshot_succeeded" ? 1 : 0;
+  const failure = event === "snapshot_failed" ? 1 : 0;
+  console.log(
+    JSON.stringify({
+      _aws: {
+        Timestamp: Date.now(),
+        CloudWatchMetrics: [
+          {
+            Namespace: "Eternum/AwsRuntime",
+            Dimensions: [["EnvironmentId", "RuntimeKind", "RuntimeName", "RuntimeInstanceId"]],
+            Metrics: [
+              { Name: "SnapshotSuccess", Unit: "Count" },
+              { Name: "SnapshotFailure", Unit: "Count" },
+              { Name: "SnapshotFreshnessSeconds", Unit: "Seconds" },
+            ],
+          },
+        ],
+      },
+      EnvironmentId: runtimeEnvironmentId,
+      RuntimeKind: runtimeKind,
+      RuntimeName: runtimeName,
+      RuntimeInstanceId: runtimeInstanceId || "legacy",
+      SnapshotSuccess: success,
+      SnapshotFailure: failure,
+      SnapshotFreshnessSeconds: status.freshnessSeconds || 0,
+      event,
+      environmentId: runtimeEnvironmentId,
+      runtimeKind,
+      runtimeName,
+      runtimeInstanceId,
+      ...status,
+    }),
+  );
+}
+
+function resolveSnapshotFreshnessSeconds(lastSuccessAt) {
+  const lastSuccessAtMs = Date.parse(lastSuccessAt || "");
+  return Number.isFinite(lastSuccessAtMs) ? Math.max(0, Math.floor((Date.now() - lastSuccessAtMs) / 1000)) : 0;
+}
+
+function positiveInteger(value, fallback) {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function errorMessage(error) {
+  return error instanceof Error ? error.message : String(error);
 }
 
 function delay(ms) {

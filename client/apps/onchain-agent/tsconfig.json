@@ -10,8 +10,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "lib": ["ESNext"],
-    "outDir": "./dist",
-    "rootDir": "./src"
+    "outDir": "./dist"
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "test", "src/build-plugins.ts"]

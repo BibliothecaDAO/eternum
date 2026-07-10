@@ -8,9 +8,11 @@ import { Chain, getGameManifest } from "@contracts";
 import { toast } from "sonner";
 
 import { decodePaddedFeltAscii } from "./market-utils";
+import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 
 const FACTORY_WORLD_QUERY = "SELECT name FROM [wf-WorldDeployed] LIMIT 300;";
-const toriiBaseUrlFromName = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
+const toriiBaseUrlFromName = (worldName: string, chain: Chain) =>
+  resolveGameRuntimeEndpoint(worldName, "base", { chain, gameType: "blitz" });
 
 const normalizeHex = (value: unknown): string | null => {
   try {
@@ -163,7 +165,7 @@ export const useMarketWatch = (chain: Chain) => {
           return null;
         }
 
-        const online = await isToriiAvailable(toriiBaseUrlFromName(worldName));
+        const online = await isToriiAvailable(toriiBaseUrlFromName(worldName, chain));
         updateWatchState(marketId, { status: online ? "ready" : "offline", worldName });
         return online ? worldName : null;
       } catch {

@@ -7,8 +7,14 @@ const resourceAuditSourcePath =
   process.env.AWS_RUNTIME_IAM_RESOURCE_AUDIT_SOURCE ?? "scripts/check-aws-runtime-resources.mjs";
 const terraformPolicyPath = process.env.AWS_RUNTIME_IAM_TERRAFORM_SOURCE ?? "deploy/aws/terraform/main.tf";
 const terraformVariablesPath = process.env.AWS_RUNTIME_IAM_VARIABLES_SOURCE ?? "deploy/aws/terraform/variables.tf";
-const requiredGithubEnvironments = ["slot.blitz", "slot.eternum", "mainnet.blitz", "mainnet.eternum"];
-const documentedWildcardExceptionSids = new Set(["EcsTaskDefinitions", "ElbRuntimeCreation"]);
+const documentedWildcardExceptionSids = new Set([
+  "EcsTaskDefinitionRegistration",
+  "EcsTaskDefinitionListing",
+  "ListRuntimeTaskDefinitions",
+  "ElbRuntimeCreation",
+  "ElbRuntimeRead",
+  "ReadRuntimeRouting",
+]);
 const resourceScopedActionPrefixes = ["ecs:", "elasticloadbalancing:", "elasticfilesystem:"];
 const requiredEcsExecTaskRoleActions = [
   "ssmmessages:CreateControlChannel",
@@ -20,15 +26,23 @@ const commandActionMap = new Map([
   ["cloudwatch:delete-alarms", "cloudwatch:DeleteAlarms"],
   ["cloudwatch:describe-alarms", "cloudwatch:DescribeAlarms"],
   ["cloudwatch:put-metric-alarm", "cloudwatch:PutMetricAlarm"],
+  ["cloudwatch:put-metric-data", "cloudwatch:PutMetricData"],
   ["ecr:describe-images", "ecr:DescribeImages"],
   ["ecs:create-service", "ecs:CreateService"],
   ["ecs:delete-service", "ecs:DeleteService"],
   ["ecs:describe-services", "ecs:DescribeServices"],
   ["ecs:describe-task-definition", "ecs:DescribeTaskDefinition"],
   ["ecs:describe-tasks", "ecs:DescribeTasks"],
+  ["ecs:delete-task-definitions", "ecs:DeleteTaskDefinitions"],
+  ["ecs:deregister-task-definition", "ecs:DeregisterTaskDefinition"],
+  ["ecs:execute-command", "ecs:ExecuteCommand"],
+  ["ecs:list-services", "ecs:ListServices"],
+  ["ecs:list-task-definitions", "ecs:ListTaskDefinitions"],
+  ["ecs:list-tasks", "ecs:ListTasks"],
   ["ecs:register-task-definition", "ecs:RegisterTaskDefinition"],
   ["ecs:run-task", "ecs:RunTask"],
   ["ecs:tag-resource", "ecs:TagResource"],
+  ["ecs:untag-resource", "ecs:UntagResource"],
   ["ecs:update-service", "ecs:UpdateService"],
   ["ecs:wait", "ecs:DescribeServices"],
   ["efs:create-access-point", "elasticfilesystem:CreateAccessPoint"],
@@ -42,7 +56,11 @@ const commandActionMap = new Map([
   ["elbv2:describe-tags", "elasticloadbalancing:DescribeTags"],
   ["elbv2:describe-target-groups", "elasticloadbalancing:DescribeTargetGroups"],
   ["logs:filter-log-events", "logs:FilterLogEvents"],
-  ["resourcegroupstaggingapi:get-resources", "tag:GetResources"],
+  ["dynamodb:delete-item", "dynamodb:DeleteItem"],
+  ["dynamodb:get-item", "dynamodb:GetItem"],
+  ["dynamodb:put-item", "dynamodb:PutItem"],
+  ["dynamodb:transact-write-items", "dynamodb:TransactWriteItems"],
+  ["dynamodb:update-item", "dynamodb:UpdateItem"],
 ]);
 
 function main() {
@@ -60,9 +78,11 @@ function main() {
     ...validateDeployerGrantMapping(terraformSource),
     ...validatePassRoleScope(terraformSource),
     ...validateEcsExecTaskRole(terraformSource),
+    ...validateEcsExecCallerScope(terraformSource),
     ...validateRuntimeResourceScopes(terraformSource),
     ...validateOidcTrustScope(terraformSource),
-    ...validateGithubEnvironmentDefaults(terraformVariablesSource),
+    ...validateGithubEnvironmentContract(terraformVariablesSource),
+    ...validateEnvironmentBoundaryPolicies(terraformSource),
   ];
 
   if (failures.length === 0) {
@@ -111,9 +131,7 @@ function isRuntimeSourceFile(fileName) {
 
 function extractAwsCommands(source) {
   return Array.from(
-    source.matchAll(
-      /"(?<service>cloudwatch|ecr|ecs|efs|elbv2|logs|resourcegroupstaggingapi)"\s*,\s*\n\s*"(?<command>[a-z-]+)"/g,
-    ),
+    source.matchAll(/"(?<service>cloudwatch|dynamodb|ecr|ecs|efs|elbv2|logs)"\s*,\s*"(?<command>[a-z-]+)"/g),
   ).map((match) => `${match.groups.service}:${match.groups.command}`);
 }
 
@@ -133,7 +151,9 @@ function resolveRequiredPolicyActions(commands) {
 function extractGrantedPolicyActions(terraformSource) {
   return new Set(
     Array.from(
-      terraformSource.matchAll(/"(cloudwatch|ecr|ecs|elasticfilesystem|elasticloadbalancing|iam|logs|tag):[^"]+"/g),
+      terraformSource.matchAll(
+        /"(cloudwatch|dynamodb|ecr|ecs|elasticfilesystem|elasticloadbalancing|iam|logs|tag):[^"]+"/g,
+      ),
     ).map((match) => match[0].slice(1, -1)),
   );
 }
@@ -145,7 +165,8 @@ function validateRuntimeStoppedNotifications(terraformSource) {
     'detail-type = ["ECS Task State Change"]',
     'lastStatus = ["STOPPED"]',
     'resource "aws_cloudwatch_event_target" "ecs_task_stopped_alerts"',
-    'resource "aws_sns_topic_policy" "runtime_alerts_events"',
+    'resource "aws_sns_topic_policy" "runtime_alerts"',
+    'identifiers = ["events.amazonaws.com"]',
   ];
 
   return requiredSnippets
@@ -214,6 +235,32 @@ function validateEcsExecTaskRole(terraformSource) {
     .map((action) => `task role missing ${action} for ECS Exec`);
 }
 
+function validateEcsExecCallerScope(terraformSource) {
+  const executeCommandFailures = extractPolicyStatements(terraformSource)
+    .filter((statement) => statement.source.includes('"ecs:ExecuteCommand"'))
+    .flatMap((statement) => {
+      const failures = [];
+      if (!statement.source.includes('"ecs:container-name" = "runtime-checkpoint"')) {
+        failures.push(`${statement.sid} must restrict ECS Exec to the runtime-checkpoint sidecar`);
+      }
+      if (!statement.source.includes('"ecs:cluster" = aws_ecs_cluster.runtime.arn')) {
+        failures.push(`${statement.sid} must restrict ECS Exec to the environment cluster`);
+      }
+      return failures;
+    });
+
+  const callerPolicies = ["github_runtime_deployer", "github_runtime_maintenance"];
+  const directSessionFailures = callerPolicies.flatMap((policyName) => {
+    const policy = extractTerraformResource(terraformSource, "aws_iam_role_policy", policyName);
+    if (policy?.includes('Sid      = "DenyUnloggedSsmSessions"') && policy.includes('"ssm:StartSession"')) {
+      return [];
+    }
+    return [`${policyName} must explicitly deny direct ssm:StartSession calls`];
+  });
+
+  return [...executeCommandFailures, ...directSessionFailures];
+}
+
 function validateRuntimeResourceScopes(terraformSource) {
   return extractPolicyStatements(terraformSource)
     .filter((statement) => hasWildcardResource(statement.source))
@@ -230,24 +277,54 @@ function validateOidcTrustScope(terraformSource) {
   if (terraformSource.includes("environment:*")) {
     return ["OIDC trust policy must not allow environment:*"];
   }
-  if (!terraformSource.includes("var.github_environments")) {
-    return ["OIDC trust policy must enumerate var.github_environments"];
+  if (!terraformSource.includes(":environment:${var.github_environment}")) {
+    return ["OIDC trust policy must bind to var.github_environment exactly"];
   }
   return [];
 }
 
-function validateGithubEnvironmentDefaults(terraformVariablesSource) {
-  const githubEnvironmentVariable = extractTerraformVariable(terraformVariablesSource, "github_environments");
-  if (!githubEnvironmentVariable) {
-    return ["github_environments variable must declare the allowed GitHub environments"];
-  }
-  if (githubEnvironmentVariable.includes('"*"')) {
-    return ["github_environments must not default to wildcard entries"];
+function validateGithubEnvironmentContract(terraformVariablesSource) {
+  const githubEnvironmentVariable = extractTerraformVariable(terraformVariablesSource, "github_environment");
+  if (githubEnvironmentVariable) {
+    const failures = [];
+    if (!githubEnvironmentVariable.includes("type        = string")) {
+      failures.push("github_environment must be one string");
+    }
+    if (!githubEnvironmentVariable.includes('!strcontains(var.github_environment, "*")')) {
+      failures.push("github_environment must reject wildcard values");
+    }
+    if (/default\s*=/.test(githubEnvironmentVariable)) {
+      failures.push("github_environment must not have a shared default");
+    }
+    return failures;
   }
 
-  return requiredGithubEnvironments
-    .filter((environment) => !githubEnvironmentVariable.includes(`"${environment}"`))
-    .map((environment) => `github_environments must include ${environment}`);
+  const legacyVariable = extractTerraformVariable(terraformVariablesSource, "github_environments");
+  if (legacyVariable?.includes('"*"')) {
+    return [
+      "github_environment variable must declare one exact GitHub environment",
+      "github_environments must not default to wildcard entries",
+    ];
+  }
+  return ["github_environment variable must declare one exact GitHub environment"];
+}
+
+function validateEnvironmentBoundaryPolicies(terraformSource) {
+  const requiredSnippets = [
+    '"ecs:cluster" = aws_ecs_cluster.runtime.arn',
+    '"aws:RequestTag/Environment" = var.environment_id',
+    "local.environment_task_definition_arn_pattern",
+    "local.runtime_alarm_arn_pattern",
+    "Resource = [for listener in values(aws_lb_listener.https) : listener.arn]",
+    "Resource = aws_dynamodb_table.runtime_control.arn",
+  ];
+  const failures = requiredSnippets
+    .filter((snippet) => !terraformSource.includes(snippet))
+    .map((snippet) => `Terraform IAM isolation missing ${snippet}`);
+  if (terraformSource.includes('"tag:GetResources"')) {
+    failures.push("Environment roles must not use account-wide tag:GetResources discovery");
+  }
+  return failures;
 }
 
 function extractPolicyStatements(source) {

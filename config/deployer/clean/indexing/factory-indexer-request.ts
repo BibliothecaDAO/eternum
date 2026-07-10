@@ -6,6 +6,7 @@ import type { DeploymentEnvironmentId, IndexerRequest } from "../types";
 function buildIndexerRequest(options: {
   environmentId: DeploymentEnvironmentId;
   gameName: string;
+  runtimeInstanceId?: string;
   worldAddress: string;
   namespaces: string;
 }): IndexerRequest {
@@ -22,12 +23,25 @@ function buildIndexerRequest(options: {
     worldAddress: options.worldAddress,
     tier: "basic",
     externalContracts: [],
+    runtimeInstanceId: options.runtimeInstanceId,
+    imageDigest: process.env.AWS_RUNTIME_IMAGE_DIGEST,
+    upstreamRpcSecretArn: process.env.AWS_RUNTIME_UPSTREAM_RPC_SECRET_ARN,
+    exposurePolicy: "public-read",
+    runtimeOwner: {
+      runtimeInstanceId: options.runtimeInstanceId,
+      gameName: options.gameName,
+      runKind: "game",
+      runName: options.gameName,
+      autoTeardown: true,
+      lifecycleClass: "ephemeral",
+    },
   };
 }
 
 export async function resolveFactoryGameIndexerRequest(options: {
   environmentId: DeploymentEnvironmentId;
   gameName: string;
+  runtimeInstanceId?: string;
   cartridgeApiBase?: string;
   toriiNamespaces?: string;
 }): Promise<IndexerRequest> {
@@ -42,6 +56,7 @@ export async function resolveFactoryGameIndexerRequest(options: {
   return buildIndexerRequest({
     environmentId: options.environmentId,
     gameName: options.gameName,
+    runtimeInstanceId: options.runtimeInstanceId,
     worldAddress: worldProfile.worldAddress,
     namespaces: options.toriiNamespaces || DEFAULT_NAMESPACE,
   });

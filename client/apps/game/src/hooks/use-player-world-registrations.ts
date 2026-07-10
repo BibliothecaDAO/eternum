@@ -14,6 +14,7 @@ import type { WorldSummary } from "@bibliothecadao/types";
 import { buildPlayerBlitzSettlementStatusQuery } from "@/services/blitz/blitz-settlement-sql";
 import { PLAYER_WORLD_REGISTRATION_QUERY_KEY } from "@/hooks/world-list-queries";
 import { useQueries } from "@tanstack/react-query";
+import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 
 interface PlayerWorldRegistration {
   isPlayerRegistered: boolean | null;
@@ -25,7 +26,8 @@ interface PlayerWorldRegistrationResult {
   isAnyLoading: boolean;
 }
 
-const buildToriiBaseUrl = (worldName: string) => `https://api.cartridge.gg/x/${worldName}/torii`;
+const buildToriiBaseUrl = (worldName: string, chain: string, gameType: "blitz" | "eternum") =>
+  resolveGameRuntimeEndpoint(worldName, "base", { chain, gameType });
 
 const parseMaybeHexToNumber = (v: unknown): number | null => {
   if (v == null) return null;
@@ -110,7 +112,10 @@ export const usePlayerWorldRegistrations = ({
           if (!playerAddress) {
             return { isPlayerRegistered: null, hasPlayerSettledRealm: null };
           }
-          const toriiBaseUrl = buildToriiBaseUrl(world.name);
+          if (!isBlitz && !isEternum) {
+            return { isPlayerRegistered: null, hasPlayerSettledRealm: null };
+          }
+          const toriiBaseUrl = buildToriiBaseUrl(world.name, world.chain, isBlitz ? "blitz" : "eternum");
           if (isBlitz) {
             const isRegistered = await fetchPlayerRegistration(toriiBaseUrl, playerAddress);
             return { isPlayerRegistered: isRegistered, hasPlayerSettledRealm: null };

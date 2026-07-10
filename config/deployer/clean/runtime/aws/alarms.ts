@@ -28,6 +28,7 @@ interface AwsRuntimeMetricAlarm {
   evaluationPeriods: number;
   threshold: number;
   dimensions: Array<{ name: string; value: string }>;
+  treatMissingData?: "breaching" | "notBreaching";
 }
 
 export function ensureRuntimeAlarms(
@@ -79,6 +80,40 @@ export function ensureRuntimeAlarms(
       { name: "ClusterName", value: config.cluster },
       { name: "ServiceName", value: serviceName },
     ],
+  });
+
+  const runtimeMetricDimensions = [
+    { name: "EnvironmentId", value: request.environmentId },
+    { name: "RuntimeKind", value: request.runtimeKind },
+    { name: "RuntimeName", value: request.runtimeName },
+    { name: "RuntimeInstanceId", value: request.runtimeInstanceId || "legacy" },
+  ];
+
+  putRuntimeMetricAlarm(commandRunner, request, config, {
+    name: buildRuntimeAlarmName(request, "snapshot-failures"),
+    description: `Runtime snapshot supervisor reported failures for ${serviceName}.`,
+    namespace: "Eternum/AwsRuntime",
+    metricName: "SnapshotFailure",
+    comparisonOperator: "GreaterThanThreshold",
+    statistic: "Sum",
+    period: 300,
+    evaluationPeriods: 1,
+    threshold: 0,
+    dimensions: runtimeMetricDimensions,
+  });
+
+  putRuntimeMetricAlarm(commandRunner, request, config, {
+    name: buildRuntimeAlarmName(request, "snapshot-freshness"),
+    description: `Runtime snapshots have exceeded two five-minute intervals for ${serviceName}.`,
+    namespace: "Eternum/AwsRuntime",
+    metricName: "SnapshotSuccess",
+    comparisonOperator: "LessThanThreshold",
+    statistic: "Sum",
+    period: 300,
+    evaluationPeriods: 2,
+    threshold: 1,
+    dimensions: runtimeMetricDimensions,
+    treatMissingData: "breaching",
   });
 }
 
@@ -133,7 +168,7 @@ function putRuntimeMetricAlarm(
     "--threshold",
     `${alarm.threshold}`,
     "--treat-missing-data",
-    "notBreaching",
+    alarm.treatMissingData || "notBreaching",
     "--alarm-actions",
     config.snsTopicArn,
     "--dimensions",
@@ -168,6 +203,8 @@ function buildRuntimeAlarmNames(request: AwsRuntimeAlarmRequest): string[] {
     buildRuntimeAlarmName(request, "unhealthy-hosts"),
     buildRuntimeAlarmName(request, "target-5xx"),
     buildRuntimeAlarmName(request, "running-tasks"),
+    buildRuntimeAlarmName(request, "snapshot-failures"),
+    buildRuntimeAlarmName(request, "snapshot-freshness"),
   ];
 }
 

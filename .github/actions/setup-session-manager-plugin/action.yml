@@ -1,0 +1,9 @@
+name: Setup Session Manager plugin
+description: Install the pinned AWS Session Manager plugin required by ECS Exec checkpoints.
+
+runs:
+  using: composite
+  steps:
+    - name: Install verified Session Manager plugin
+      shell: bash
+      run: deploy/aws/scripts/install-session-manager-plugin.sh

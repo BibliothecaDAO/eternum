@@ -13,7 +13,9 @@ import {
 } from "../indexing/slot-torii";
 import {
   deleteAwsRuntime,
+  deleteAwsRuntimeGroup,
   describeAwsRuntime,
+  findExpiredAwsRuntimes,
   resizeAwsRuntime,
   type AwsRuntimeLiveState,
   type AwsRuntimeRequest,
@@ -43,13 +45,23 @@ import {
   type RefreshIndexerMaintenanceRunUpdate,
   type TierFailureIndexerMaintenanceRunUpdate,
   type TierSuccessIndexerMaintenanceRunUpdate,
+  type RuntimeDeleteFailureIndexerMaintenanceRunUpdate,
+  type RuntimeDeleteSuccessIndexerMaintenanceRunUpdate,
 } from "../run-store/indexer-maintenance-updates";
 import type { FactoryRotationRunRecord, FactoryRunRecord, FactorySeriesRunRecord } from "../run-store/types";
-import type { DeploymentEnvironmentId, IndexerTier, RuntimeProvider } from "../types";
+import type { DeploymentEnvironmentId, IndexerTier, RuntimeProvider, RuntimeTeardownReason } from "../types";
+import { requireRuntimeInstanceId } from "../runtime/runtime-identity";
 import { parseArgs } from "./args";
 
 type IndexerMaintenanceRunKind = "game" | "series" | "rotation";
-type IndexerMaintenanceAction = "inspect" | "inspect-account" | "create" | "set-tier" | "delete";
+type IndexerMaintenanceAction =
+  | "inspect"
+  | "inspect-account"
+  | "create"
+  | "set-tier"
+  | "delete"
+  | "delete-runtime-tags"
+  | "sweep-expired-runtimes";
 type IndexerMaintenanceRunRecord = FactoryRunRecord | FactorySeriesRunRecord | FactoryRotationRunRecord | null;
 type IndexerMaintenanceLiveState = ReturnType<typeof resolveSlotToriiLiveState> | AwsRuntimeLiveState;
 
@@ -61,10 +73,14 @@ interface IndexerMaintenanceOperation {
   runName?: string;
   gameName?: string;
   tier?: IndexerTier;
+  reason?: RuntimeTeardownReason;
+  runtimeInstanceId?: string;
+  expectedDeleteAfter?: string;
 }
 
 interface IndexerMaintenanceCliArgs {
   operations: IndexerMaintenanceOperation[];
+  expectedEnvironmentId?: DeploymentEnvironmentId;
 }
 
 interface IndexerMaintenanceResult {
@@ -77,21 +93,35 @@ interface IndexerMaintenanceResult {
     | "tier-already-matched"
     | "deleted"
     | "already-missing"
+    | "runtime-deleted"
+    | "skipped-stale"
+    | "runtime-swept"
     | "stale-run-removed"
     | "failed";
   previousTier?: IndexerTier;
   currentTier?: IndexerTier;
+  runtimeInstanceIds?: string[];
   message: string;
+}
+
+class IndexerMaintenanceBatchError extends Error {
+  constructor(
+    message: string,
+    readonly results: IndexerMaintenanceResult[],
+  ) {
+    super(message);
+    this.name = "IndexerMaintenanceBatchError";
+  }
 }
 
 function usage() {
   console.log(
     [
       "",
-      `Usage: bun config/deployer/clean/cli/indexer-maintenance.ts --operations-json '<json-array>'`,
+      `Usage: bun config/deployer/clean/cli/indexer-maintenance.ts --operations-file <path> --expected-environment <environment>`,
       "",
       "Operation shape:",
-      '  [{"action":"inspect|inspect-account|create|set-tier|delete","kind":"game|series|rotation","environmentId":"slot.blitz","recordPath":"runs/...json","runName":"bltz-franky","gameName":"bltz-franky-01","tier":"pro"}]',
+      '  [{"action":"inspect|inspect-account|create|set-tier|delete|delete-runtime-tags|sweep-expired-runtimes","kind":"game|series|rotation","environmentId":"slot.blitz","recordPath":"runs/...json","runName":"bltz-franky","gameName":"bltz-franky-01","tier":"pro"}]',
       "",
       `This workflow is normally dispatched by ${DEFAULT_INDEXER_MAINTENANCE_WORKFLOW_FILE}.`,
       "",
@@ -108,8 +138,26 @@ function resolveCliArgs(): IndexerMaintenanceCliArgs {
   }
 
   return {
-    operations: parseOperations(args["operations-json"]),
+    operations: parseOperations(resolveOperationsJson(args)),
+    expectedEnvironmentId: resolveExpectedEnvironment(args["expected-environment"]),
   };
+}
+
+function resolveOperationsJson(args: Record<string, string>): string | undefined {
+  const operationsFile = args["operations-file"];
+  if (!operationsFile) {
+    return args["operations-json"];
+  }
+
+  return fs.readFileSync(operationsFile, "utf8");
+}
+
+function resolveExpectedEnvironment(value: string | undefined): DeploymentEnvironmentId | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return resolveDeploymentEnvironment(value).id;
 }
 
 function parseOperations(value: string | undefined): IndexerMaintenanceOperation[] {
@@ -145,6 +193,9 @@ function parseOperation(value: unknown): IndexerMaintenanceOperation {
   const runName = `${operation.runName || ""}`.trim();
   const gameName = `${operation.gameName || ""}`.trim();
   const tier = `${operation.tier || ""}`.trim().toLowerCase();
+  const reason = `${operation.reason || ""}`.trim().toLowerCase();
+  const runtimeInstanceId = `${operation.runtimeInstanceId || ""}`.trim();
+  const expectedDeleteAfter = `${operation.expectedDeleteAfter || operation.deleteAfter || ""}`.trim();
 
   if (kind !== undefined && kind !== "game" && kind !== "series" && kind !== "rotation") {
     throw new Error(`Unsupported maintenance run kind "${kind}"`);
@@ -155,7 +206,9 @@ function parseOperation(value: unknown): IndexerMaintenanceOperation {
     action !== "inspect-account" &&
     action !== "create" &&
     action !== "set-tier" &&
-    action !== "delete"
+    action !== "delete" &&
+    action !== "delete-runtime-tags" &&
+    action !== "sweep-expired-runtimes"
   ) {
     throw new Error(`Unsupported maintenance action "${action}"`);
   }
@@ -168,11 +221,36 @@ function parseOperation(value: unknown): IndexerMaintenanceOperation {
     throw new Error(`Unsupported indexer tier "${tier}"`);
   }
 
-  if (action !== "inspect-account" && !gameName) {
+  if (action !== "inspect-account" && action !== "sweep-expired-runtimes" && !gameName) {
     throw new Error(`Maintenance action "${action}" requires gameName`);
   }
 
-  if ((recordPath || runName || kind !== undefined) && (!recordPath || !runName || kind === undefined)) {
+  if (action === "delete-runtime-tags" && (!runtimeInstanceId || !expectedDeleteAfter)) {
+    throw new Error("Runtime teardown operations require runtimeInstanceId and expectedDeleteAfter");
+  }
+
+  if (runtimeInstanceId) {
+    requireRuntimeInstanceId(runtimeInstanceId);
+  }
+
+  if (
+    resolveMaintenanceRuntimeProvider(environmentId) === "aws" &&
+    action !== "inspect-account" &&
+    action !== "sweep-expired-runtimes" &&
+    !runtimeInstanceId
+  ) {
+    throw new Error(`AWS maintenance action "${action}" requires runtimeInstanceId`);
+  }
+
+  if (resolveMaintenanceRuntimeProvider(environmentId) === "aws" && action === "delete" && !expectedDeleteAfter) {
+    throw new Error('AWS maintenance action "delete" requires expectedDeleteAfter');
+  }
+
+  if (
+    action !== "sweep-expired-runtimes" &&
+    (recordPath || runName || kind !== undefined) &&
+    (!recordPath || !runName || kind === undefined)
+  ) {
     throw new Error("Run-bound maintenance operations require kind, recordPath, and runName together");
   }
 
@@ -184,6 +262,9 @@ function parseOperation(value: unknown): IndexerMaintenanceOperation {
     ...(runName ? { runName } : {}),
     ...(gameName ? { gameName } : {}),
     ...(action === "set-tier" ? { tier: tier as IndexerTier } : {}),
+    ...(reason === "expired" || reason === "ttl-fallback" || reason === "manual" ? { reason } : {}),
+    ...(runtimeInstanceId ? { runtimeInstanceId } : {}),
+    ...(expectedDeleteAfter ? { expectedDeleteAfter } : {}),
   };
 }
 
@@ -300,8 +381,27 @@ function buildAwsRuntimeRequestForOperation(
     environmentId: environment.id,
     runtimeKind: "torii",
     runtimeName: operation.gameName!,
+    runtimeInstanceId: operation.runtimeInstanceId,
     tier,
     domain: environment.runtimeDomain,
+  };
+}
+
+function buildAwsRuntimeResizeRequest(
+  operation: IndexerMaintenanceOperation,
+  tier: IndexerTier,
+  liveState: IndexerMaintenanceLiveState,
+): AwsRuntimeRequest {
+  if (!isAwsRuntimeLiveState(liveState) || !liveState.imageDigest || !liveState.exposurePolicy) {
+    throw new Error(`AWS runtime "${operation.gameName}" is missing immutable desired-state metadata`);
+  }
+
+  return {
+    ...buildAwsRuntimeRequestForOperation(operation, tier),
+    imageDigest: liveState.imageDigest,
+    exposurePolicy: liveState.exposurePolicy,
+    upstreamRpcSecretArn: process.env.AWS_RUNTIME_UPSTREAM_RPC_SECRET_ARN,
+    routingShard: liveState.routingShard,
   };
 }
 
@@ -390,6 +490,34 @@ function buildDeleteFailureRunUpdate(
     message,
     updatedAt: new Date().toISOString(),
     liveState,
+  };
+}
+
+function buildRuntimeDeleteSuccessRunUpdate(
+  operation: IndexerMaintenanceOperation,
+  message: string,
+): RuntimeDeleteSuccessIndexerMaintenanceRunUpdate {
+  return {
+    kind: "runtime-delete-success",
+    target: resolveRunUpdateTarget(operation),
+    message,
+    updatedAt: new Date().toISOString(),
+    reason: operation.reason || "expired",
+  };
+}
+
+function buildRuntimeDeleteFailureRunUpdate(
+  operation: IndexerMaintenanceOperation,
+  message: string,
+  errorMessage: string,
+): RuntimeDeleteFailureIndexerMaintenanceRunUpdate {
+  return {
+    kind: "runtime-delete-failure",
+    target: resolveRunUpdateTarget(operation),
+    message,
+    updatedAt: new Date().toISOString(),
+    reason: operation.reason || "expired",
+    errorMessage,
   };
 }
 
@@ -498,6 +626,14 @@ async function runIndexerMaintenanceOperation(operation: IndexerMaintenanceOpera
   update?: IndexerMaintenanceRunUpdate;
   result: IndexerMaintenanceResult;
 }> {
+  if (operation.action === "sweep-expired-runtimes") {
+    return runSweepExpiredRuntimesOperation(operation);
+  }
+
+  if (operation.action === "delete-runtime-tags") {
+    return runDeleteRuntimeTagsOperation(operation);
+  }
+
   if (operation.action === "inspect-account") {
     return runInspectAccountOperation(operation);
   }
@@ -511,6 +647,142 @@ async function runIndexerMaintenanceOperation(operation: IndexerMaintenanceOpera
   }
 
   return operation.action === "delete" ? runDeleteOperation(operation) : runTierOperation(operation);
+}
+
+async function runDeleteRuntimeTagsOperation(operation: IndexerMaintenanceOperation): Promise<{
+  update?: RuntimeDeleteSuccessIndexerMaintenanceRunUpdate | RuntimeDeleteFailureIndexerMaintenanceRunUpdate;
+  result: IndexerMaintenanceResult;
+}> {
+  try {
+    const deleteResult = await deleteAwsRuntimeGroup({
+      environmentId: operation.environmentId as DeploymentEnvironmentId,
+      runtimeInstanceId: operation.runtimeInstanceId!,
+      expectedDeleteAfter: operation.expectedDeleteAfter!,
+      gameName: operation.gameName!,
+      runKind: operation.kind,
+      runName: operation.runName,
+    });
+    const deletedCount = deleteResult.deleted.length;
+    const skippedCount = deleteResult.skipped.length;
+
+    if (deleteResult.failed.length > 0) {
+      const errorMessage = deleteResult.failed.map((failure) => failure.errorMessage).join("; ");
+      const message = `Runtime teardown failed for ${operation.gameName}: ${errorMessage}`;
+      return {
+        update: buildRuntimeDeleteFailureRunUpdate(operation, message, errorMessage),
+        result: {
+          operation,
+          outcome: "failed",
+          message,
+        },
+      };
+    }
+
+    if (deleteResult.outcomes.some((outcome) => outcome.status === "skipped-stale")) {
+      const message = `Skipped stale or protected runtime teardown for ${operation.gameName}`;
+      return {
+        result: {
+          operation,
+          outcome: "skipped-stale",
+          message,
+        },
+      };
+    }
+
+    const message = `Deleted ${deletedCount} tagged runtime(s) for ${operation.gameName}; skipped ${skippedCount} stale or protected runtime(s)`;
+    return {
+      update: buildRuntimeDeleteSuccessRunUpdate(operation, message),
+      result: {
+        operation,
+        outcome: "runtime-deleted",
+        runtimeInstanceIds: [operation.runtimeInstanceId!],
+        message,
+      },
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const message = `Runtime teardown failed for ${operation.gameName}: ${errorMessage}`;
+    return {
+      update: buildRuntimeDeleteFailureRunUpdate(operation, message, errorMessage),
+      result: {
+        operation,
+        outcome: "failed",
+        message,
+      },
+    };
+  }
+}
+
+async function runSweepExpiredRuntimesOperation(operation: IndexerMaintenanceOperation): Promise<{
+  result: IndexerMaintenanceResult;
+}> {
+  if (operation.environmentId.startsWith("mainnet.")) {
+    return {
+      result: {
+        operation,
+        outcome: "runtime-swept",
+        message: `Skipped expired runtime sweep for protected environment ${operation.environmentId}`,
+      },
+    };
+  }
+
+  const expiredRuntimes = await findExpiredAwsRuntimes({
+    environmentId: operation.environmentId as DeploymentEnvironmentId,
+  });
+  const failures: string[] = [];
+  const deletedRuntimeInstanceIds: string[] = [];
+  let deletedCount = 0;
+  let skippedCount = 0;
+
+  for (const runtime of expiredRuntimes) {
+    if (!runtime.runtimeInstanceId || !runtime.deleteAfter) {
+      skippedCount += 1;
+      continue;
+    }
+    try {
+      const deleteResult = await deleteAwsRuntime({
+        environmentId: operation.environmentId as DeploymentEnvironmentId,
+        runtimeKind: runtime.runtimeKind,
+        runtimeName: runtime.runtimeName,
+        runtimeInstanceId: runtime.runtimeInstanceId,
+        expectedDeleteAfter: runtime.deleteAfter,
+      });
+      if (deleteResult.action === "skipped-stale") {
+        skippedCount += 1;
+        continue;
+      }
+      deletedCount += 1;
+      deletedRuntimeInstanceIds.push(runtime.runtimeInstanceId);
+    } catch (error) {
+      if (error instanceof Error && error.name === "AwsRuntimeStaleTeardownError") {
+        skippedCount += 1;
+        continue;
+      }
+      failures.push(
+        `${runtime.runtimeKind}/${runtime.runtimeName}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  if (failures.length > 0) {
+    return {
+      result: {
+        operation,
+        outcome: "failed",
+        runtimeInstanceIds: deletedRuntimeInstanceIds,
+        message: `Expired runtime sweep deleted ${deletedCount} runtime(s), failed ${failures.length}: ${failures.join("; ")}`,
+      },
+    };
+  }
+
+  return {
+    result: {
+      operation,
+      outcome: "runtime-swept",
+      runtimeInstanceIds: deletedRuntimeInstanceIds,
+      message: `Expired runtime sweep deleted ${deletedCount} runtime(s) and skipped ${skippedCount} stale runtime(s) for ${operation.environmentId}`,
+    },
+  };
 }
 
 async function runInspectAccountOperation(operation: IndexerMaintenanceOperation): Promise<{
@@ -558,6 +830,7 @@ async function runCreateOperation(operation: IndexerMaintenanceOperation): Promi
     const indexerRequest = await resolveFactoryGameIndexerRequest({
       environmentId: operation.environmentId as DeploymentEnvironmentId,
       gameName,
+      runtimeInstanceId: operation.runtimeInstanceId,
       cartridgeApiBase: process.env.CARTRIDGE_API_BASE || DEFAULT_CARTRIDGE_API_BASE,
       toriiNamespaces: process.env.TORII_NAMESPACES || DEFAULT_NAMESPACE,
     });
@@ -632,7 +905,7 @@ async function runTierOperation(operation: IndexerMaintenanceOperation): Promise
   }
 
   const updatedIndexer = shouldUseAwsRuntime(operation)
-    ? await resizeAwsRuntime(buildAwsRuntimeRequestForOperation(operation, tier))
+    ? await resizeAwsRuntime(buildAwsRuntimeResizeRequest(operation, tier, liveState))
     : ensureSlotIndexerTier({
         name: operation.gameName,
         tier,
@@ -676,11 +949,25 @@ async function runDeleteOperation(operation: IndexerMaintenanceOperation): Promi
 
   try {
     const deleteResult = shouldUseAwsRuntime(operation)
-      ? await deleteAwsRuntime(buildAwsRuntimeRequestForOperation(operation))
+      ? await deleteAwsRuntime({
+          ...buildAwsRuntimeRequestForOperation(operation),
+          expectedDeleteAfter: operation.expectedDeleteAfter,
+        })
       : deleteSlotIndexerDeployment({
           name: operation.gameName,
           onProgress: (message) => console.error(message),
         });
+
+    if (deleteResult.action === "skipped-stale") {
+      const message = `Skipped stale runtime teardown for ${operation.gameName}; the live lifecycle changed`;
+      return {
+        result: {
+          operation,
+          outcome: "skipped-stale",
+          message,
+        },
+      };
+    }
 
     if (deleteResult.action === "already-missing") {
       const message = buildIndexerAlreadyMissingMessage(operation.gameName);
@@ -691,6 +978,9 @@ async function runDeleteOperation(operation: IndexerMaintenanceOperation): Promi
           operation,
           outcome: "already-missing",
           previousTier: deleteResult.previousTier,
+          ...(shouldUseAwsRuntime(operation) && operation.runtimeInstanceId
+            ? { runtimeInstanceIds: [operation.runtimeInstanceId] }
+            : {}),
           message,
         },
       };
@@ -704,6 +994,9 @@ async function runDeleteOperation(operation: IndexerMaintenanceOperation): Promi
         operation,
         outcome: "deleted",
         previousTier: deleteResult.previousTier,
+        ...(shouldUseAwsRuntime(operation) && operation.runtimeInstanceId
+          ? { runtimeInstanceIds: [operation.runtimeInstanceId] }
+          : {}),
         message,
       },
     };
@@ -741,6 +1034,12 @@ async function processOperationGroup(
   const updates: IndexerMaintenanceRunUpdate[] = [];
 
   for (const operation of operations) {
+    const staleTeardown = await resolvePersistedRuntimeTeardownResult(config, recordPath, operation);
+    if (staleTeardown) {
+      results.push(staleTeardown);
+      continue;
+    }
+
     const applied = await runIndexerMaintenanceOperation(operation);
     if (applied.update) {
       updates.push(applied.update);
@@ -768,7 +1067,71 @@ async function processOperationGroup(
   return results;
 }
 
+async function resolvePersistedRuntimeTeardownResult(
+  config: ReturnType<typeof requireGitHubBranchStoreConfig>,
+  recordPath: string | undefined,
+  operation: IndexerMaintenanceOperation,
+): Promise<IndexerMaintenanceResult | undefined> {
+  if (!isPersistedRuntimeTeardownOperation(operation) || !recordPath) {
+    return undefined;
+  }
+
+  const latestRun =
+    (await readGitHubBranchJsonFile<Exclude<IndexerMaintenanceRunRecord, null>>(config, recordPath)).value || null;
+  if (!latestRun) {
+    return {
+      operation,
+      outcome: "skipped-stale",
+      message: `Skipped stale runtime teardown for ${operation.gameName}; the persisted run no longer exists`,
+    };
+  }
+
+  return resolveStaleRuntimeTeardownResult(latestRun, operation);
+}
+
+function isPersistedRuntimeTeardownOperation(operation: IndexerMaintenanceOperation): boolean {
+  return (
+    operation.action === "delete-runtime-tags" || (operation.action === "delete" && shouldUseAwsRuntime(operation))
+  );
+}
+
+function resolveStaleRuntimeTeardownResult(
+  run: IndexerMaintenanceRunRecord,
+  operation: IndexerMaintenanceOperation,
+): IndexerMaintenanceResult | undefined {
+  if (!run || !isPersistedRuntimeTeardownOperation(operation)) {
+    return undefined;
+  }
+
+  const artifacts = resolveOperationArtifacts(run, operation.gameName);
+  const runtime = artifacts?.awsRuntime;
+  const currentDeleteAfter = artifacts?.runtimeTeardown?.deleteAfter || runtime?.deleteAfter;
+  const isCurrent =
+    runtime?.runtimeInstanceId === operation.runtimeInstanceId &&
+    currentDeleteAfter === operation.expectedDeleteAfter &&
+    runtime?.autoTeardown === true &&
+    runtime?.lifecycleClass === "ephemeral";
+  if (isCurrent) {
+    return undefined;
+  }
+
+  return {
+    operation,
+    outcome: "skipped-stale",
+    message: `Skipped stale runtime teardown for ${operation.gameName}; the persisted lifecycle or runtime identity changed`,
+  };
+}
+
+function resolveOperationArtifacts(run: Exclude<IndexerMaintenanceRunRecord, null>, gameName: string | undefined) {
+  if (run.kind === "game") {
+    return run.gameName === gameName ? run.artifacts : undefined;
+  }
+
+  return run.summary.games.find((game) => game.gameName === gameName)?.artifacts;
+}
+
 export async function runIndexerMaintenance(args: IndexerMaintenanceCliArgs) {
+  validateOperationEnvironmentBoundary(args);
   const config = requireGitHubBranchStoreConfig();
   const groupedOperations = groupOperationsByRecordPath(args.operations);
   const results: IndexerMaintenanceResult[] = [];
@@ -780,14 +1143,50 @@ export async function runIndexerMaintenance(args: IndexerMaintenanceCliArgs) {
 
   await updateLiveIndexerSnapshots(config, args.operations);
   writeWorkflowSummary(results);
+
+  const failures = results.filter((result) => result.outcome === "failed");
+  if (failures.length > 0) {
+    throw new IndexerMaintenanceBatchError(
+      `${failures.length} maintenance operation(s) failed: ${failures.map((failure) => failure.message).join("; ")}`,
+      results,
+    );
+  }
+  return results;
+}
+
+function validateOperationEnvironmentBoundary(args: IndexerMaintenanceCliArgs): void {
+  if (!args.expectedEnvironmentId) {
+    return;
+  }
+
+  const mismatched = args.operations.find((operation) => operation.environmentId !== args.expectedEnvironmentId);
+  if (mismatched) {
+    throw new Error(
+      `Maintenance operation environment ${mismatched.environmentId} does not match selected environment ${args.expectedEnvironmentId}`,
+    );
+  }
 }
 
 async function main() {
-  await runIndexerMaintenance(resolveCliArgs());
+  try {
+    writeStructuredMaintenanceResult(await runIndexerMaintenance(resolveCliArgs()));
+  } catch (error) {
+    if (error instanceof IndexerMaintenanceBatchError) {
+      writeStructuredMaintenanceResult(error.results);
+    }
+    throw error;
+  }
 }
 
 if (import.meta.main) {
-  await main();
+  await main().catch((error) => {
+    process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);
+    process.exitCode = 1;
+  });
+}
+
+function writeStructuredMaintenanceResult(results: IndexerMaintenanceResult[]): void {
+  process.stdout.write(`${JSON.stringify({ schemaVersion: 1, results }, null, 2)}\n`);
 }
 
 function resolveSummaryTargetName(result: IndexerMaintenanceResult) {
@@ -809,7 +1208,7 @@ function formatSummaryLine(result: IndexerMaintenanceResult) {
 function writeWorkflowSummary(results: IndexerMaintenanceResult[]) {
   const lines = ["# Indexer Maintenance", "", ...results.map(formatSummaryLine), ""];
   const summary = `${lines.join("\n")}\n`;
-  process.stdout.write(summary);
+  process.stderr.write(summary);
 
   if (process.env.GITHUB_STEP_SUMMARY) {
     fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);

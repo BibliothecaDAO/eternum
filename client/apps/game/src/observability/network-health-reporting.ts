@@ -3,10 +3,7 @@ import * as Sentry from "@sentry/react";
 import { env } from "../../env";
 import { getActiveWorld } from "@/runtime/world";
 import { captureClientEvent } from "@/posthog";
-import type {
-  DisconnectClassification,
-  DisconnectSignalSnapshot,
-} from "@/dojo/connection-disconnect-classification";
+import type { DisconnectClassification, DisconnectSignalSnapshot } from "@/dojo/connection-disconnect-classification";
 import { resolveUserIdentity } from "./wallet-identity";
 
 export type NetworkStreamType = "spatial" | "global" | "player" | "both";

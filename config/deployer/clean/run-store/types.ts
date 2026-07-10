@@ -3,6 +3,8 @@ import type {
   DeploymentEnvironmentId,
   DeploymentGameType,
   RuntimeProvider,
+  RuntimeTeardownReason,
+  RuntimeTeardownStatus,
   IndexerWorkflowRun,
   LaunchGameRequest,
   LaunchGameStepId,
@@ -113,6 +115,17 @@ export interface FactoryRunArtifacts {
   lastIndexerTierDispatchError?: string;
   indexerWorkflowRun?: IndexerWorkflowRun;
   prizeFunding?: PrizeFundingState;
+  runtimeTeardown?: FactoryRuntimeTeardownState;
+}
+
+export interface FactoryRuntimeTeardownState {
+  deleteAfter?: string;
+  status?: RuntimeTeardownStatus;
+  requestedAt?: string;
+  completedAt?: string;
+  failedAt?: string;
+  errorMessage?: string;
+  reason?: RuntimeTeardownReason;
 }
 
 export interface FactoryRunStepRecord {
@@ -301,6 +314,9 @@ export interface FactoryRunMaintenanceArtifacts {
   lastIndexerDescribeAt?: string;
   pendingIndexerTierTarget?: string;
   pendingIndexerTierRequestedAt?: string;
+  runtimeProvider?: RuntimeProvider;
+  awsRuntime?: AwsRuntimeArtifact;
+  runtimeTeardown?: FactoryRuntimeTeardownState;
 }
 
 export interface FactoryRunMaintenanceIndexGame {
