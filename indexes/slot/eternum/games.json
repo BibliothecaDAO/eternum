@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-06-11T09:50:03.968Z",
+  "updatedAt": "2026-07-10T14:48:56.944Z",
   "entries": {
     "mygame": {
       "kind": "game",
@@ -19,6 +19,22 @@
       "recoverablePendingStepId": "grant-lootchest-role",
       "startTime": 1774555200,
       "durationSeconds": 0,
+      "artifacts": {}
+    },
+    "etrn-haven-594": {
+      "kind": "game",
+      "environment": "slot.eternum",
+      "gameName": "etrn-haven-594",
+      "path": "runs/slot/eternum/etrn-haven-594.json",
+      "inputPath": "inputs/slot/eternum/etrn-haven-594/29101189109-1.json",
+      "status": "running",
+      "updatedAt": "2026-07-10T14:48:56.944Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-07-10T15:00:00.000Z",
       "artifacts": {}
     }
   }
