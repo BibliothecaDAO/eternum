@@ -5,15 +5,14 @@
   "owner": {
     "environment": "slot.eternum",
     "gameName": "etrn-haven-594",
-    "launchRequestId": "29101189109-1",
+    "launchRequestId": "29101289735-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 29101189109,
+    "workflowRunId": 29101289735,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "fd80b0e2-2acd-469e-8b6a-e6dc5958e461"
+    "leaseId": "32d3c837-f3a8-4f11-9479-eaca73a57e6b"
   },
-  "acquiredAt": "2026-07-10T14:49:05.712Z",
-  "heartbeatAt": "2026-07-10T14:49:09.965Z",
-  "expiresAt": "2026-07-10T14:49:09.965Z",
-  "releasedAt": "2026-07-10T14:49:09.965Z"
+  "acquiredAt": "2026-07-10T14:50:37.926Z",
+  "heartbeatAt": "2026-07-10T14:50:37.926Z",
+  "expiresAt": "2026-07-10T15:00:37.926Z"
 }
