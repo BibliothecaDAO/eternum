@@ -6,14 +6,14 @@
   "chain": "slot",
   "gameType": "eternum",
   "gameName": "etrn-haven-594",
-  "status": "running",
+  "status": "attention",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/slot/eternum/etrn-haven-594/29101289735-1.json",
   "latestLaunchRequestId": "29101289735-1",
   "currentStepId": "create-world",
   "createdAt": "2026-07-10T14:48:56.944Z",
-  "updatedAt": "2026-07-10T14:50:33.006Z",
+  "updatedAt": "2026-07-10T14:50:45.038Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,11 +27,12 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world started",
+      "latestEvent": "Creating world failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"etrn-haven-594\" on slot.eternum\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=0, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 31 config steps for slot.eternum\nError: Failed to fetch world contracts: 410 Gone\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:51:15)\n    at processTicksAndRejections (native:7:39)",
       "startedAt": "2026-07-10T14:50:33.006Z",
-      "finishedAt": "2026-07-10T14:49:12.655Z"
+      "finishedAt": "2026-07-10T14:50:45.038Z",
+      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"etrn-haven-594\" on slot.eternum\n\u001b[2m[+14ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=0, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+15ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 31 config steps for slot.eternum\nError: Failed to fetch world contracts: 410 Gone\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:51:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "wait-for-factory-index",
@@ -78,13 +79,5 @@
   ],
   "artifacts": {
     "scheduledStartTime": "2026-07-10T15:00:00.000Z"
-  },
-  "activeLease": {
-    "launchRequestId": "29101289735-1",
-    "workflowRunId": 29101289735,
-    "workflowRunAttempt": 1,
-    "stepId": "create-world",
-    "acquiredAt": "2026-07-10T14:50:33.006Z",
-    "expiresAt": "2026-07-10T15:35:33.006Z"
   }
 }
