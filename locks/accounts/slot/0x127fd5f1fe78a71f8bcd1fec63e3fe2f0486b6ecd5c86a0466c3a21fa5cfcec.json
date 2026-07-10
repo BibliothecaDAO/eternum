@@ -3,17 +3,16 @@
   "chain": "slot",
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
-    "environment": "slot.blitz",
-    "gameName": "bltz-rush-857",
-    "launchRequestId": "29001318574-1",
+    "environment": "slot.eternum",
+    "gameName": "etrn-haven-594",
+    "launchRequestId": "29101189109-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 29001318574,
+    "workflowRunId": 29101189109,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "b67bc74c-69fd-4361-8ae5-7e332da63e61"
+    "leaseId": "fd80b0e2-2acd-469e-8b6a-e6dc5958e461"
   },
-  "acquiredAt": "2026-07-09T07:23:23.452Z",
-  "heartbeatAt": "2026-07-09T07:23:27.445Z",
-  "expiresAt": "2026-07-09T07:23:27.445Z",
-  "releasedAt": "2026-07-09T07:23:27.445Z"
+  "acquiredAt": "2026-07-10T14:49:05.712Z",
+  "heartbeatAt": "2026-07-10T14:49:05.712Z",
+  "expiresAt": "2026-07-10T14:59:05.712Z"
 }
