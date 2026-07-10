@@ -23,11 +23,8 @@ const gamesDirectoryOrder = [
   "blitz",
   "realms-eternum",
   "loot-survivor",
-  "blob-arena",
-  "dark-shuffle",
   "zkube",
   "pistols-at-dawn",
-  "rising-revenant",
 ];
 
 function orderGames(games: Game[]) {
@@ -65,8 +62,8 @@ function GamesPage() {
   const orderedGames = orderGames(games);
   const featuredGame = orderedGames[0];
   const secondaryGames = orderedGames.slice(1);
-  const liveGamesCount = games.filter((game) => game.isLive).length;
-  const studiosCount = new Set(games.map((game) => game.studio)).size;
+  const liveGamesCount = orderedGames.filter((game) => game.isLive).length;
+  const studiosCount = new Set(orderedGames.map((game) => game.studio)).size;
 
   return (
     <section className="realm-section realm-games-stage relative overflow-hidden py-10 sm:py-14">
@@ -90,7 +87,7 @@ function GamesPage() {
                 </p>
               </div>
               <div className="flex gap-2 sm:gap-3">
-                <span className="realm-sigil">{games.length} games listed</span>
+                <span className="realm-sigil">{orderedGames.length} games listed</span>
               </div>
             </div>
             <div className="realm-games-metrics mt-5 sm:!grid-cols-2">

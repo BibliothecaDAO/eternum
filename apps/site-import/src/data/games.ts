@@ -127,7 +127,7 @@ export const games: Game[] = [
     studio: "Provable Games",
     players: 1250,
     links: {
-      homepage: "https://survivor.realms.world/",
+      homepage: "https://www.deathmountain.gg/lootsurvivor",
       discord: "https://discord.gg/realmsworld",
       twitter: "https://twitter.com/LootRealms",
     },

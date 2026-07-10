@@ -16,8 +16,6 @@ import { Button } from "@/components/ui/button";
 const homepageGameOrder = [
   "blitz",
   "loot-survivor",
-  "blob-arena",
-  "dark-shuffle",
   "zkube",
   "realms-eternum",
 ];
