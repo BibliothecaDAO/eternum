@@ -29,16 +29,7 @@ export const FEATURE_HEXES: FeatureHexData[] = [
     label: "Loot Survivor",
     description:
       "Onchain roguelike with permadeath. Defeat beasts, collect gear, climb the leaderboard. The original Play2Die game with 1,250+ survivors.",
-    link: "https://survivor.realms.world/",
-  },
-  {
-    coord: { q: -4, r: 1 },
-    type: "game",
-    symbol: "DSH",
-    label: "Dark Shuffle",
-    description:
-      "Draft creatures and spells, venture through a map of challenges. Deck-building roguelike by Provable Games.",
-    link: "https://darkshuffle.io/",
+    link: "https://www.deathmountain.gg/lootsurvivor",
   },
   {
     coord: { q: 2, r: 3 },
@@ -48,15 +39,6 @@ export const FEATURE_HEXES: FeatureHexData[] = [
     description:
       "Onchain dueling where every bluff and bullet is etched forever. Challenge friends in atmospheric showdowns by Underware.",
     link: "https://pistols.gg",
-  },
-  {
-    coord: { q: 3, r: -5 },
-    type: "game",
-    symbol: "BLB",
-    label: "Blob Arena",
-    description:
-      "Turn-based combat where Bloberts clash using Attack, Defence, Speed, and Strength. Enhanced rock-paper-scissors by Grugs Lair.",
-    link: "https://www.blobarena.xyz/",
   },
   {
     coord: { q: -1, r: -4 },
