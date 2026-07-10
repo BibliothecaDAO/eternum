@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-07-10T14:49:01.999Z",
+  "updatedAt": "2026-07-10T14:49:12.655Z",
   "entries": {
     "mygame": {
       "kind": "game",
@@ -27,13 +27,12 @@
       "gameName": "etrn-haven-594",
       "path": "runs/slot/eternum/etrn-haven-594.json",
       "inputPath": "inputs/slot/eternum/etrn-haven-594/29101189109-1.json",
-      "status": "running",
-      "updatedAt": "2026-07-10T14:49:01.999Z",
+      "status": "attention",
+      "updatedAt": "2026-07-10T14:49:12.655Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-07-10T15:34:01.999Z",
-      "hasRunningStep": true,
-      "recoverableFailedStepId": null,
+      "hasRunningStep": false,
+      "recoverableFailedStepId": "create-world",
       "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-07-10T15:00:00.000Z",
       "artifacts": {}
