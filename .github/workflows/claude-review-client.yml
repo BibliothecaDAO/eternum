@@ -51,6 +51,7 @@ jobs:
       - name: Run Claude Client Code Review
         id: claude-review
         uses: anthropics/claude-code-action@beta
+        continue-on-error: true
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           model: "claude-sonnet-4-6"

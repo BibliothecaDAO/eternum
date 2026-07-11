@@ -26,8 +26,6 @@ const {
   VITE_PUBLIC_CHAIN,
 } = env;
 
-const cartridgeApiBase = env.VITE_PUBLIC_CARTRIDGE_API_BASE || "https://api.cartridge.gg";
-
 // Both purges must run BEFORE `getActiveWorld()` below. dojo-config is module-
 // loaded before React mounts, so it's the only choke point that runs ahead of
 // `StarknetProvider` building a `ControllerConnector` against a saved RPC URL.
@@ -80,7 +78,7 @@ if (activeWorld && activeWorld.contractsBySelector && activeWorld.worldAddress) 
 
 const resolveDojoConfigRpcUrl = (chain: Chain, profileRpcUrl: string | undefined): string => {
   if (isSlotWorldChain(chain)) {
-    return buildSharedSlotRpcUrl(cartridgeApiBase);
+    return buildSharedSlotRpcUrl(chain === "slottest" ? "slottest" : "slot");
   }
 
   return normalizeRpcUrl(profileRpcUrl ?? VITE_PUBLIC_NODE_URL);
