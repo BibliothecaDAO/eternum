@@ -29,7 +29,7 @@ export default defineConfig({
     link: [
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=MedievalSharp&family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Cinzel:wght@400;600;700&family=MedievalSharp&family=Exo+2:wght@300;400;500;600;700&family=Rajdhani:wght@300;400;500;600;700&family=Source+Code+Pro:wght@400;500;600&display=swap",
       },
       {
         rel: "stylesheet",
@@ -71,10 +71,39 @@ export default defineConfig({
     colorScheme: "dark",
     variables: {
       color: {
-        textAccent: "#c9b06a",
-        background: "#141520",
-        backgroundDark: "#141520",
-        noteBackground: "#1e2030",
+        background: "#050709",
+        background2: "#070b0d",
+        background3: "#101417",
+        background4: "#161b20",
+        background5: "#252417",
+        backgroundAccent: "#e7cf88",
+        backgroundAccentHover: "#f2dd9b",
+        backgroundAccentText: "#17110a",
+        backgroundDark: "#050709",
+        border: "rgba(231, 207, 136, 0.22)",
+        border2: "rgba(231, 207, 136, 0.36)",
+        borderAccent: "#e7cf88",
+        heading: "#f5ead0",
+        text: "#e8dcc2",
+        text2: "#cfc0a0",
+        text3: "#a99570",
+        text4: "#726754",
+        textAccent: "#e7cf88",
+        textAccentHover: "#f2dd9b",
+        title: "#f5ead0",
+        noteBackground: "rgba(7, 10, 12, 0.92)",
+        noteBorder: "rgba(231, 207, 136, 0.24)",
+        noteText: "#cfc0a0",
+        codeBlockBackground: "#050709",
+        codeInlineBackground: "rgba(231, 207, 136, 0.09)",
+        codeInlineBorder: "rgba(231, 207, 136, 0.22)",
+        codeInlineText: "#f2dd9b",
+        hr: "rgba(231, 207, 136, 0.2)",
+        link: "#e7cf88",
+        linkHover: "#f2dd9b",
+        tableBorder: "rgba(201, 169, 96, 0.18)",
+        tableHeaderBackground: "rgba(22, 27, 32, 0.92)",
+        tableHeaderText: "#c9a960",
       },
     },
   },
@@ -86,7 +115,6 @@ export default defineConfig({
   sidebar: [
     {
       text: "Overview",
-      link: "/overview/introduction",
       items: [
         { text: "Introduction", link: "/overview/introduction" },
         { text: "Cartridge Controller", link: "/overview/controller" },
@@ -94,7 +122,6 @@ export default defineConfig({
         {
           text: "Loot Chests",
           collapsed: true,
-          link: "/overview/chests/loot-chests",
           items: [
             { text: "Loot Chests", link: "/overview/chests/loot-chests" },
             { text: "Chest Contents", link: "/overview/chests/contents" },
@@ -109,7 +136,6 @@ export default defineConfig({
     },
     {
       text: "Blitz",
-      link: "/blitz/key-concepts",
       items: [
         { text: "Key Concepts", link: "/blitz/key-concepts" },
         { text: "Game Entry", link: "/blitz/game-entry" },
@@ -117,7 +143,6 @@ export default defineConfig({
         {
           text: "Realms",
           collapsed: true,
-          link: "/blitz/realms/realm",
           items: [
             { text: "Realms", link: "/blitz/realms/realm" },
             { text: "Buildings", link: "/blitz/realms/buildings" },
@@ -126,7 +151,6 @@ export default defineConfig({
         {
           text: "Materials",
           collapsed: true,
-          link: "/blitz/materials/resources",
           items: [
             { text: "Materials", link: "/blitz/materials/resources" },
             { text: "Production", link: "/blitz/materials/production" },
@@ -139,7 +163,6 @@ export default defineConfig({
         {
           text: "Military",
           collapsed: true,
-          link: "/blitz/military/armies",
           items: [
             { text: "Armies", link: "/blitz/military/armies" },
             { text: "Troop Tiers", link: "/blitz/military/troop-tiers" },
@@ -150,7 +173,6 @@ export default defineConfig({
         {
           text: "World Map & Movement",
           collapsed: true,
-          link: "/blitz/worldmap-movement/worldmap",
           items: [
             { text: "The World Map", link: "/blitz/worldmap-movement/worldmap" },
             { text: "Movement & Exploration", link: "/blitz/worldmap-movement/movement" },
@@ -164,17 +186,16 @@ export default defineConfig({
       ],
     },
     {
-      text: "Eternum (Season 1 - Concluded)",
-      link: "/eternum/key-concepts",
+      text: "Eternum (Season Ended)",
       items: [
         { text: "Key Concepts", link: "/eternum/key-concepts" },
         { text: "Game Entry", link: "/eternum/game-entry" },
         { text: "World Physics", link: "/eternum/world-physics" },
         {
           text: "Realms & Villages",
-          link: "/eternum/realm-and-villages/realm",
           collapsed: true,
           items: [
+            { text: "Realms", link: "/eternum/realm-and-villages/realm" },
             { text: "Villages", link: "/eternum/realm-and-villages/villages" },
             { text: "Buildings", link: "/eternum/realm-and-villages/buildings" },
             { text: "Wonders", link: "/eternum/realm-and-villages/wonders" },
@@ -182,9 +203,9 @@ export default defineConfig({
         },
         {
           text: "Materials",
-          link: "/eternum/resources/resources",
           collapsed: true,
           items: [
+            { text: "Materials", link: "/eternum/resources/resources" },
             { text: "Production", link: "/eternum/resources/production" },
             { text: "Automation", link: "/eternum/resources/automation" },
             { text: "Storage", link: "/eternum/resources/storage" },
@@ -194,9 +215,9 @@ export default defineConfig({
         },
         {
           text: "Military",
-          link: "/eternum/military/armies",
           collapsed: true,
           items: [
+            { text: "Armies", link: "/eternum/military/armies" },
             { text: "Troop Tiers", link: "/eternum/military/troop-tiers" },
             { text: "Stamina & Biomes", link: "/eternum/military/stamina-and-biomes" },
             { text: "Damage", link: "/eternum/military/damage" },
@@ -205,9 +226,11 @@ export default defineConfig({
         },
         {
           text: "World Map & Movement",
-          link: "/eternum/worldmap-movement/worldmap",
           collapsed: true,
-          items: [{ text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" }],
+          items: [
+            { text: "The World Map", link: "/eternum/worldmap-movement/worldmap" },
+            { text: "Movement & Exploration", link: "/eternum/worldmap-movement/movement" },
+          ],
         },
         { text: "World Structures", link: "/eternum/world-structures" },
         { text: "Tribes", link: "/eternum/tribes" },
@@ -218,13 +241,11 @@ export default defineConfig({
     {
       text: "Development",
       collapsed: true,
-      link: "/development/getting-started",
       items: [
         { text: "Getting Started", link: "/development/getting-started" },
         {
           text: "Axis",
           collapsed: true,
-          link: "/development/axis/overview",
           items: [
             { text: "Overview", link: "/development/axis/overview" },
             { text: "Install and Run", link: "/development/axis/install-and-run" },
@@ -244,7 +265,6 @@ export default defineConfig({
     {
       text: "Changelog",
       collapsed: true,
-      link: "/changelog/5-june-2026",
       items: [
         { text: "5 June 2026", link: "/changelog/5-june-2026" },
         { text: "28 March 2026", link: "/changelog/28-march-2026" },

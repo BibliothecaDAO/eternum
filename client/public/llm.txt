@@ -6,22 +6,8 @@ meta: {
 import { HomePage } from "vocs/components";
 
 <HomePage.Root>
-  <div
-    style={{
-  position: "absolute",
-  inset: 0,
-  zIndex: -10
-}}
-  >
-    <img
-      src={`/images/covers/0${Math.floor(Math.random() * 8) + 1}.png`}
-      alt="Eternum Cover"
-      style={{
-      width: "100%",
-      height: "100%",
-      objectFit: "cover"
-    }}
-    />
+  <div className="realms-homepage-background" aria-hidden="true">
+    <img src="/images/covers/twilight-tundra.png" alt="" />
   </div>
 
   {" "}
@@ -51,7 +37,7 @@ import { HomePage } from "vocs/components";
 file: docs/pages/blitz/achievements.mdx
 meta: {}
 
-# 🏆 Achievements
+# Achievements
 
 *Work in Progress*
 
@@ -126,7 +112,7 @@ meta: {
   "description": "The foundational mechanics of Blitz"
 }
 
-# 🔑 Key Concepts
+# Key Concepts
 
 <img src="/images/covers/blitz-key-concepts.png" alt="Blitz Key Concepts" className="w-full rounded-lg my-6" />
 
@@ -200,8 +186,8 @@ divided into six 'phases'.
 
 * **Exploration System**: Players must explore unrevealed hexes to find essence, claim Hyperstructures, and attack
   neighbors.
-* **Essence Discovery**: Players primarily find essence when exploring, along with stacks of donkeys and labor. Resources
-  cannot be discovered through exploration.
+* **Essence Discovery**: Players primarily find essence when exploring, along with stacks of donkeys and labor.
+  Resources cannot be discovered through exploration.
 * **Relic Discovery**: Powerful Relics can be found in Relic Crates that occasionally appear on the world map.
 * **Biomes**: 16 unique biome types affecting combat effectiveness and troop movement.
 * **Movement & Stamina**: Armies move using stamina (regenerating at +30 per Phase, +180 per Eternum Day), with costs
@@ -304,7 +290,7 @@ meta: {
   "description": "How Blitz Matchmaking Rating works and how updates are claimed"
 }
 
-# 📈 Blitz MMR
+# Blitz MMR
 
 Blitz MMR (Matchmaking Rating) is an onchain skill rating that tracks player performance across rated Blitz games. It is
 enabled on a per-world basis; if a world has MMR disabled, no ratings are tracked.
@@ -384,14 +370,14 @@ The total prize pool comes from two sources:
     width: "100%",
     tableLayout: "fixed",
     borderCollapse: "collapse",
-    backgroundColor: "#332f28",
-    border: "1px solid #564e3e",
-    borderRadius: "10px",
+    backgroundColor: "rgba(7, 10, 12, 0.82)",
+    border: "1px solid rgba(201, 169, 96, 0.18)",
+    borderRadius: "8px",
     overflow: "hidden",
     fontSize: "0.85rem",
   }}
   >
-    <thead style={{ backgroundColor: "#383a4a" }}>
+    <thead style={{ backgroundColor: "rgba(22, 27, 32, 0.86)" }}>
       <tr>
         <th
           style={{
@@ -399,8 +385,8 @@ The total prize pool comes from two sources:
           padding: "0.6rem 1rem",
           textAlign: "left",
           fontWeight: 700,
-          color: "#c9b06a",
-          borderBottom: "1px solid #6b6250",
+          color: "#c9a960",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
           whiteSpace: "nowrap",
           fontSize: "0.85rem",
         }}
@@ -414,8 +400,8 @@ The total prize pool comes from two sources:
           padding: "0.6rem 1rem",
           textAlign: "left",
           fontWeight: 700,
-          color: "#c9b06a",
-          borderBottom: "1px solid #6b6250",
+          color: "#c9a960",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
           fontSize: "0.85rem",
         }}
         >
@@ -430,8 +416,8 @@ The total prize pool comes from two sources:
           style={{
           padding: "0.6rem 1rem",
           textAlign: "left",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           whiteSpace: "nowrap",
           fontSize: "0.85rem",
         }}
@@ -443,8 +429,8 @@ The total prize pool comes from two sources:
           style={{
           padding: "0.6rem 1rem",
           textAlign: "left",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -457,7 +443,7 @@ The total prize pool comes from two sources:
           style={{
           padding: "0.6rem 1rem",
           textAlign: "left",
-          color: "#e8e4dc",
+          color: "#ece0bd",
           whiteSpace: "nowrap",
           fontSize: "0.85rem",
         }}
@@ -465,7 +451,7 @@ The total prize pool comes from two sources:
           <strong>Sponsorship (S)</strong>
         </td>
 
-        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", fontSize: "0.85rem" }}>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#ece0bd", fontSize: "0.85rem" }}>
           Additional $LORDS added by the game host or external sponsors
         </td>
       </tr>
@@ -615,7 +601,7 @@ meta: {}
 
 import { table } from "@/components/styles";
 
-# 👑 Victory
+# Victory
 
 <img src="/images/covers/07.png" alt="Blitz Victory" className="w-full rounded-lg my-6" />
 
@@ -695,7 +681,7 @@ meta: {}
 
 import { Biomes } from "@/components/Biomes";
 
-# ⚛️ World Physics
+# World Physics
 
 <img src="/images/covers/blitz-world-physics.png" alt="Blitz World Physics - Armies traversing the realm" className="w-full rounded-lg my-6" />
 
@@ -783,7 +769,7 @@ meta: {}
 import ResourceIcon from "@/components/ResourceIcon";
 import { table } from "@/components/styles";
 
-# 🏗️ World Structures
+# World Structures
 
 All World Structures in Blitz are initially occupied by bandit forces that must be defeated by a player before it can be
 claimed. Bandit garrisons range from **800 to 1,600 troops**.
@@ -869,52 +855,6 @@ When a camp is claimed, it spawns with an initial stockpile of materials.
     </table>
   </div>
 </div>
-
-
-
----
-
-file: docs/pages/changelog/5-june-2026.mdx
-meta: {
-  "layout": "docs"
-}
-
-# 5th June 2026
-
-### Combat v3
-
-* Crossbowmen now have a distinct ranged role: they can attack from **2 hexes away**, while Knights and Paladins remain adjacent-only.
-* Range-2 Crossbowman attacks are ranged pokes: **70%** damage into field armies, **30%** damage into structure guards, no biome damage modifier, no defender counter-damage, shorter battle timers, and no normal damage-ratio refunds.
-* Range-2 Crossbowman attacks cost **50 stamina** for the attacker and **20 stamina** for the defender. Range-1 combat remains **50 stamina** for the attacker and **40 stamina** for the defender.
-* Ranged attacks can clear structure guards, but structures still require adjacency to claim.
-* Knights now specialize in structure combat: **+15%** damage when assaulting structure guards from adjacent range, and Knight guards take **15% reduced incoming damage** while defending structures.
-* Paladins are unchanged mechanically and remain high-mobility cavalry.
-* T2 and T3 troop strength multipliers are standardized at **3×** and **9×**.
-
-### Blitz Stamina & Relic Consistency
-
-* [Blitz/Stamina & Biomes](/blitz/military/stamina-and-biomes): Clarified Blitz stamina regeneration as **30 stamina per phase** and **180 stamina per Eternum Day**.
-* Confirmed combat stamina thresholds are config-driven values, not dynamically derived at runtime from regeneration.
-
-### Relic Duration Standardisation
-
-* [Blitz/Relics](/blitz/materials/relics): Standardised all timed relic effects to **3 Eternum Days (18 minutes)**.
-* Updated relic reference table and explanatory text to remove older mixed-duration values.
-
-### Troop Production Relic Rebalance
-
-* [Blitz/Relics](/blitz/materials/relics): Updated Troop Production Relics to:
-  * **Relic I**: +15% troop production for 3 Eternum Days.
-  * **Relic II**: +30% troop production for 3 Eternum Days.
-* Updated shared relic metadata and descriptive resource text to match the new values.
-
-### Release Note
-
-* Updated docs, generated config artifacts, shared TypeScript constants, and Cairo defaults covered by this release pass.
-
-***
-
-*This changelog replaces the unshipped 1 May 2026 entry and covers the combined Combat v3, stamina, and relic release pass.*
 
 
 
@@ -1057,8 +997,7 @@ The first official Blitz series has launched with significant balance changes ac
 **Realm Progression**
 
 * All Realms now start the game at **City level** — the Settlement → City upgrade has been removed.
-* [Kingdom upgrade costs](/blitz/realms/realm#realm-progression) updated: 720 Labor, 2,400 Wheat, 600 Essence, 360
-  Wood.
+* [Kingdom upgrade costs](/blitz/realms/realm#realm-progression) updated: 720 Labor, 2,400 Wheat, 600 Essence, 360 Wood.
 * Empire upgrade costs updated: 1,440 Labor, 4,800 Wheat, 1,200 Essence, 720 Wood, 360 Coal, 360 Copper.
 
 **Production Rates**
@@ -1078,8 +1017,8 @@ The first official Blitz series has launched with significant balance changes ac
 
 **Exploration Rewards**
 
-* [Exploration reward](/blitz/worldmap-movement/movement#exploring) table updated. T1 troop drops have been removed
-  from exploration rewards:
+* [Exploration reward](/blitz/worldmap-movement/movement#exploring) table updated. T1 troop drops have been removed from
+  exploration rewards:
 
 <div style={table.container}>
   <div style={table.wrapper}>
@@ -1308,6 +1247,46 @@ meta: {
 ***
 
 *This changelog reflects all documentation updates made since the previous release.*
+
+
+
+---
+
+file: docs/pages/changelog/5-june-2026.mdx
+meta: {
+  "layout": "docs"
+}
+
+# 5th June 2026
+
+### Combat v3
+
+* Crossbowmen now have a distinct ranged role: they can attack from **2 hexes away**, while Knights and Paladins remain
+  adjacent-only.
+* Range-2 Crossbowman attacks are ranged pokes: **70%** damage into field armies, **30%** damage into structure guards,
+  no biome damage modifier, no defender counter-damage, shorter battle timers, and no normal damage-ratio refunds.
+* Range-2 Crossbowman attacks cost **50 stamina** for the attacker and **20 stamina** for the defender. Range-1 combat
+  remains **50 stamina** for the attacker and **40 stamina** for the defender.
+* Ranged attacks can clear structure guards, but structures still require adjacency to claim.
+* Knights now specialize in structure combat: **+15%** damage when assaulting structure guards from adjacent range, and
+  Knight guards take **15% reduced incoming damage** while defending structures.
+* Paladins are unchanged mechanically and remain high-mobility cavalry.
+* T2 and T3 troop strength multipliers are standardized at **3×** and **9×**.
+
+### Blitz Stamina & Relic Consistency
+
+* [Blitz/Stamina & Biomes](/blitz/military/stamina-and-biomes): Clarified Blitz stamina regeneration as **30 stamina per
+  phase** and **180 stamina per Eternum Day**.
+* Confirmed combat stamina thresholds are config-driven values, not dynamically derived at runtime from regeneration.
+* [Blitz/Relics](/blitz/materials/relics): Standardized all timed relic effects to **3 Eternum Days (18 minutes)**.
+* Updated Troop Production Relics to **+15%** and **+30%** troop production for 3 Eternum Days.
+* Updated docs, generated config artifacts, shared TypeScript constants, and Cairo defaults covered by this release
+  pass.
+
+***
+
+*This changelog replaces the unshipped 1 May 2026 entry and covers the combined Combat v3, stamina, and relic release
+pass.*
 
 
 
@@ -2131,7 +2110,7 @@ meta: {
   "description": "The foundational mechanics of Eternum"
 }
 
-# 🔑 Key Concepts
+# Key Concepts
 
 <img src="/images/covers/07.png" alt="Eternum Key Concepts" className="w-full rounded-lg my-6" />
 
@@ -2248,7 +2227,7 @@ meta: {}
 
 import { table } from "@/components/styles";
 
-# 💰 Prize Pool
+# Prize Pool
 
 ## Overview
 
@@ -2396,7 +2375,7 @@ If any prizes remain unallocated at the end of the game and prize distribution p
 file: docs/pages/eternum/tribes.mdx
 meta: {}
 
-# 👥 Tribes
+# Tribes
 
 Tribes are player-formed organizations enabling cooperation and coordination. They can be made public (open to all) or
 private (invitation only) and allow players access to tribe-only features. Tribes are an early form of social structures
@@ -2432,7 +2411,7 @@ import {
 } from "@/components/eternum-components/HyperstructureTable";
 import { formatNumberWithCommas } from "@/utils/formatting";
 
-# 👑 Victory
+# Victory
 
 <img src="/images/covers/07.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
 
@@ -2495,7 +2474,7 @@ meta: {}
 
 import { Biomes } from "@/components/Biomes";
 
-# 🌪️ World Physics
+# World Physics
 
 <img src="/images/covers/08.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
 
@@ -2593,7 +2572,7 @@ Initial scouting reports have revealed some key details about the world:
 file: docs/pages/eternum/world-structures.mdx
 meta: {}
 
-# 💠 World Structures
+# World Structures
 
 ## Hyperstructures
 
@@ -3029,10 +3008,10 @@ meta: {
 
 ## Play & Learn
 
-* [Empire Home](https://empire.realms.world/) - The home of Realms games
-* [Eternum](https://eternum.realms.world/) - Season 1 has concluded; Season 2 is in development
-* [Marketplace](https://empire.realms.world/trade) - Trade Realms and other ecosystem assets
-* [Statistics](https://stats.eternum.realms.world/) - Revenue and gameplay stats
+* [Realms Games Home](https://blitz.realms.world/) - The home of Realms games
+* [Marketplace](https://marketplace.realms.world/) - Trade Realms and other ecosystem assets
+* [Account](https://account.realms.world/) - Manage account, staking, and veLORDS
+* [Eternum S1 Statistics](https://stats.eternum.realms.world/) - Revenue and gameplay stats
 * [GitHub](https://github.com/BibliothecaDAO/eternum) - Explore the code
 * [Documentation](https://docs.realms.world/) - You are here
 
@@ -3041,7 +3020,7 @@ meta: {
 * [Realms World](https://realms.world/) - The DAO behind Eternum
 * [Discord](https://discord.gg/realmsworld) - Join our Discord
 * [X (Community)](https://x.com/LootRealms) - Follow the community
-* [X (Realms Games)](https://x.com/realms_gg) - Follow for Realms games updates
+* [X (Realms Games)](https://x.com/realmsgg) - Follow for Realms games updates
 
 
 
@@ -3133,7 +3112,7 @@ import { ResourceAddresses } from "@/components/ResourceAddresses";
 file: docs/pages/blitz/materials/automation.mdx
 meta: {}
 
-# 🤖 Production Automation
+# Production Automation
 
 Resource automation allows players to set up continuous production processes within their entities. This system helps
 manage resource generation and distribution efficiently without constant manual intervention.
@@ -3264,7 +3243,7 @@ Use this view to verify slider settings or debug why a resource isn’t running 
 file: docs/pages/blitz/materials/bridging.mdx
 meta: {}
 
-# 🌉 Bridging
+# Bridging
 
 Bridging in Blitz is limited to the bridging of Relics into the game. This is to prevent players from gaining advantage
 through the import of materials previously extracted from Eternum seasons, while still encouraging the use of
@@ -3293,7 +3272,7 @@ import {
   BlitzLaborProduction,
 } from "@/components/blitz-components/ResourceProduction";
 
-# ⚒️ Production
+# Production
 
 ## Resource Mode vs. Labor Mode
 
@@ -3371,7 +3350,7 @@ meta: {}
 
 import RelicTable from "@/components/blitz-components/RelicTable";
 
-# 🏺 Relics
+# Relics
 
 Relics are powerful consumables that can be discovered in Blitz from
 [Relic Crates](/blitz/worldmap-movement/worldmap#relic-crates). Depending on the nature of a relic, it can be consumed
@@ -3406,7 +3385,7 @@ import RarityResourceTable from "@/components/RarityResourceTable";
 import ResourceIcon from "@/components/ResourceIcon";
 import { ResourcesIds } from "@bibliothecadao/types";
 
-# 🧱 Materials
+# Materials
 
 ## Materials Overview
 
@@ -3508,7 +3487,7 @@ meta: {}
 import { importantNote } from "@/components/styles";
 import { BlitzWeightTable } from "@/components/blitz-components/WeightTable";
 
-# 📜 Transfers
+# Transfers
 
 Blitz has no trade system. Blitz focuses on individual competitive performance without economic trading mechanics. As
 such, there are no Banks, no P2P transfers, and no AMM or Orderbook through which Lords may trade.
@@ -3566,12 +3545,19 @@ meta: {}
 import { BlitzWorldStructureDefenseSlotsTable } from "@/components/blitz-components/DefendingArmies";
 import "@/styles.css";
 
-# ⚔️ Armies
+# Armies
 
 <img src="/images/covers/forest-army.png" alt="Forest Army" className="w-full rounded-lg my-6" />
 
 Individual armies consist of a single troop type and tier. Each hex can host only one army, so Lords must carefully
 manage their positioning and engagement opportunities.
+
+## Structure Guards and Claims
+
+Structure guards defend Camps, Essence Rifts, Hyperstructures, and Realms from their guard slots. Crossbowman armies and
+Crossbowman guards can use Combat v3 range-2 attacks to clear or threaten enemies from a distance, but a ranged attack
+never claims a structure. Once guards are cleared, the claiming army must move adjacent and use an adjacent attack/claim
+path to take control.
 
 ## Army Strength and Deployment
 
@@ -3599,14 +3585,14 @@ number of field and guard army slots.
     width: "100%",
     tableLayout: "fixed",
     borderCollapse: "collapse",
-    backgroundColor: "#332f28",
-    border: "1px solid #564e3e",
-    borderRadius: "10px",
+    backgroundColor: "rgba(7, 10, 12, 0.82)",
+    border: "1px solid rgba(201, 169, 96, 0.18)",
+    borderRadius: "8px",
     overflow: "hidden",
     fontSize: "0.85rem",
   }}
   >
-    <thead style={{ backgroundColor: "#383a4a" }}>
+    <thead style={{ backgroundColor: "rgba(22, 27, 32, 0.86)" }}>
       <tr>
         <th
           style={{
@@ -3614,8 +3600,8 @@ number of field and guard army slots.
           padding: "0.6rem 1rem",
           textAlign: "left",
           fontWeight: 700,
-          color: "#c9b06a",
-          borderBottom: "1px solid #6b6250",
+          color: "#c9a960",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
           fontSize: "0.85rem",
         }}
         >
@@ -3628,8 +3614,8 @@ number of field and guard army slots.
           padding: "0.6rem 1rem",
           textAlign: "center",
           fontWeight: 700,
-          color: "#c9b06a",
-          borderBottom: "1px solid #6b6250",
+          color: "#c9a960",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
           fontSize: "0.85rem",
         }}
         >
@@ -3642,8 +3628,8 @@ number of field and guard army slots.
           padding: "0.6rem 1rem",
           textAlign: "center",
           fontWeight: 700,
-          color: "#c9b06a",
-          borderBottom: "1px solid #6b6250",
+          color: "#c9a960",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
           fontSize: "0.85rem",
         }}
         >
@@ -3656,8 +3642,8 @@ number of field and guard army slots.
           padding: "0.6rem 1rem",
           textAlign: "center",
           fontWeight: 700,
-          color: "#c9b06a",
-          borderBottom: "1px solid #6b6250",
+          color: "#c9a960",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.28)",
           fontSize: "0.85rem",
         }}
         >
@@ -3672,8 +3658,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "left",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3684,8 +3670,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3696,8 +3682,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3708,8 +3694,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3722,8 +3708,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "left",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3734,8 +3720,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3746,8 +3732,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3758,8 +3744,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3772,8 +3758,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "left",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3784,8 +3770,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3796,8 +3782,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3808,8 +3794,8 @@ number of field and guard army slots.
           style={{
           padding: "0.6rem 1rem",
           textAlign: "center",
-          color: "#e8e4dc",
-          borderBottom: "1px solid #564e3e",
+          color: "#ece0bd",
+          borderBottom: "1px solid rgba(201, 169, 96, 0.18)",
           fontSize: "0.85rem",
         }}
         >
@@ -3818,10 +3804,10 @@ number of field and guard army slots.
       </tr>
 
       <tr>
-        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#e8e4dc", fontSize: "0.85rem" }}>Empire</td>
-        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>90,000</td>
-        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>8</td>
-        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#e8e4dc", fontSize: "0.85rem" }}>4</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "left", color: "#ece0bd", fontSize: "0.85rem" }}>Empire</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#ece0bd", fontSize: "0.85rem" }}>90,000</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#ece0bd", fontSize: "0.85rem" }}>8</td>
+        <td style={{ padding: "0.6rem 1rem", textAlign: "center", color: "#ece0bd", fontSize: "0.85rem" }}>4</td>
       </tr>
     </tbody>
   </table>
@@ -3911,15 +3897,15 @@ structure that can create field armies.
 file: docs/pages/blitz/military/damage.mdx
 meta: {}
 
-# 💥 Damage
+# Damage
 
 import { DamageCalculation } from "@/components/DamageCalculation";
 
 ## Damage Overview
 
 Damage is defined as the number of casualties dealt by one army against the other in an instance of combat. When combat
-is initiated (i.e. one army attacks another), damage for both the attacking and defending army is calculated based on a
-damage formula that considers troop numbers, troop tier, biome effects, stamina penalties, and battle timer penalties.
+is initiated (i.e. one army attacks another), damage is calculated from troop numbers, troop tier, biome effects,
+stamina penalties, battle timer penalties, and Combat v3 role modifiers.
 
 ## Combat Process
 
@@ -3932,6 +3918,19 @@ When an army attacks another from an adjacent tile, the following sequence occur
 4. **Battle Timers**: Each combatant receives a battle timer, which prevents them from initiating new attacks while
    active.
 5. **Refunds**: Damage-ratio refunds are calculated and applied to battle timers and stamina
+
+## Combat v3 Role Modifiers
+
+* **Crossbowmen** can attack from 2 hexes away. Range-2 attacks deal **70%** damage to field armies, deal **30%** damage
+  to structure guards, ignore biome damage modifiers, and receive no counter-damage.
+* **Knights** specialize in structure combat. Adjacent Knight assaults deal **+15%** damage to structure guards, and
+  Knight guards take **15% reduced incoming damage** while defending structures.
+* **Paladins** keep their high-mobility cavalry role; their main balance pressure comes from biome movement and damage
+  affinities.
+
+Range-2 Crossbowman attacks are ranged pokes rather than full battles: they apply shorter battle timers and bypass the
+normal damage-ratio refund calculation. Ranged attacks can clear structure guards, but structures still require
+adjacency to claim.
 
 ## Damage Calculation
 
@@ -3987,7 +3986,7 @@ meta: {}
 
 import { BiomeCombat } from "@/components/BiomeCombat";
 
-# ⚡ Stamina & Biome Effects
+# Stamina & Biome Effects
 
 ## Stamina
 
@@ -4012,14 +4011,13 @@ Stamina is granted instantly when a new Phase begins, and no other automatic sta
 ### Attacking Army
 
 The attacking army is the army initiating an instance of combat. To begin a combat round, the attacker must spend **50
-stamina**. If the attacker does not have the full stamina cost, the attack command is
-rejected and no combat occurs.
+stamina**. If the attacker does not have the full stamina cost, the attack command is rejected and no combat occurs.
 
 ### Defending Army
 
 The defending army is the army being attacked in an instance of combat. The defender simultaneously spends **40
-stamina**. If the defender's current stamina is below this required threshold, they
-receive a **30% damage penalty** during that combat round.
+stamina**. If the defender's current stamina is below this required threshold, they receive a **30% damage penalty**
+during that combat round.
 
 ### Crossbowman Range-2 Attacks
 
@@ -4060,7 +4058,7 @@ meta: {}
 import { TroopTiers, TroopTierDamageStats } from "@/components/TroopTiers";
 import { BlitzMaxStaminaTable } from "@/components/blitz-components/TroopMovementTable";
 
-# 🛡️ Troop Tiers
+# Troop Tiers
 
 <img src="/images/covers/drake-rider.png" alt="Drake Rider" className="w-full rounded-lg my-6" />
 
@@ -4074,6 +4072,14 @@ as inputs:
 * Two T2 troops combine to produce one T3 troop
 
 Each troop tier provides escalating advantages in terms of damage output and stamina.
+
+## Combat Roles
+
+* **Knights** are adjacent-only structure specialists, with stronger assaults into structure guards and sturdier guard
+  defense when garrisoned.
+* **Crossbowmen** can attack from 2 hexes away. Their adjacent attacks are normal combat; their ranged attacks are safer
+  but damage-inefficient pokes.
+* **Paladins** remain high-mobility cavalry whose strengths depend heavily on map position and biome distribution.
 
 <TroopTiers />
 
@@ -4094,7 +4100,7 @@ import { CapacityConfig, resources, ResourcesIds } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { BlitzBuildingCard } from "@/components/blitz-components/BlitzBuildingCard";
 
-# 🪓 Buildings
+# Buildings
 
 ## Resource Mode vs. Labor Mode
 
@@ -4549,7 +4555,7 @@ import ResourceIcon from "@/components/ResourceIcon";
 import { importantNote, table, formatAmount, section } from "@/components/styles";
 import { BlitzRealmLeveling } from "@/components/blitz-components/BlitzRealmLeveling";
 
-# 🏰 Realms
+# Realms
 
 In Blitz, each Lord starts the game commanding three Realms, evenly spaced in a triangular formation. These Realms are
 functionally identical and are not related to the 8,000 Realm NFTs that are the basis of Eternum. They can produce any
@@ -4723,7 +4729,7 @@ import { BlitzTroopMovementTable } from "@/components/blitz-components/TroopMove
 import { BiomeStamina } from "@/components/BiomeStamina";
 import { ExplorationRewards } from "@/components/blitz-components/ExplorationRewards";
 
-# 🧭 Movement & Exploration
+# Movement & Exploration
 
 <img src="/images/covers/04.png" alt="Troops Moving Across the World" className="w-full rounded-lg my-6" />
 
@@ -4736,6 +4742,9 @@ minute), totaling +180 stamina per Eternum Day. Each troop type possesses differ
 in the table below:
 
 <BlitzTroopMovementTable />
+
+Most attacks require adjacency. Crossbowmen can attack from 2 hexes away, but structures can only be claimed from an
+adjacent hex after their guards are cleared.
 
 Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
 themselves severely disadvantaged if attacked by enemy forces.
@@ -4823,7 +4832,7 @@ meta: {}
 import { HyperstructureRings } from "@/components/blitz-components/HyperstructureRings";
 import { importantNote } from "@/components/styles";
 
-# 🗺️ The World Map
+# The World Map
 
 <img src="/images/covers/blitz-march.png" alt="Troops Moving to a Hyperstructure" className="w-full rounded-lg my-6" />
 
@@ -5379,7 +5388,7 @@ import {
 import { ETERNUM_CONFIG } from "@/utils/config";
 import { formatNumberWithCommas } from "@/utils/formatting";
 
-# ⚔️ Armies
+# Armies
 
 <img src="/images/covers/06.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
 
@@ -5446,7 +5455,7 @@ structure on the worldmap, then right-clicking the target hex.
 file: docs/pages/eternum/military/damage.mdx
 meta: {}
 
-# 💥 Damage
+# Damage
 
 import { DamageCalculation } from "@/components/DamageCalculation";
 
@@ -5524,7 +5533,7 @@ import { resource } from "@/components/styles";
 import { RaidableResources } from "@/components/eternum-components/RaidableResources";
 import { importantNote } from "@/components/styles";
 
-# 💰 Raiding
+# Raiding
 
 Raiding allows field armies to attempt theft of valuable resources directly from an adjacent target structure, without
 first having to battle through enemy guard armies. Lords can direct their armies to complete this action by selecting
@@ -5628,7 +5637,7 @@ meta: {}
 
 import { BiomeCombat } from "@/components/BiomeCombat";
 
-# ⚡ Stamina & Biome Effects
+# Stamina & Biome Effects
 
 ## Stamina
 
@@ -5697,7 +5706,7 @@ meta: {}
 import { TroopTiers, TroopTierDamageStats } from "@/components/TroopTiers";
 import { MaxStaminaTable } from "@/components/eternum-components/TroopMovementTable";
 
-# 🛡️ Troop Tiers
+# Troop Tiers
 
 Troops in Eternum come in three distinct tiers: T1, T2, and T3. Tier 1 (T1) represents basic troops, while T2 and T3
 troops are more advanced, offering significantly increased combat strength and stamina.
@@ -5728,7 +5737,7 @@ import { formatNumberWithCommas } from "@/utils/formatting";
 import { CapacityConfig } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "@/utils/config";
 
-# 🪓 Buildings
+# Buildings
 
 ## Standard vs. Simple
 
@@ -6257,7 +6266,7 @@ import { BuildableHexes } from "@/components/BuildableHexes";
 import { RealmLeveling } from "@/components/eternum-components/RealmLeveling";
 import { importantNote } from "@/components/styles";
 
-# 🏰 Realms
+# Realms
 
 The 8,000 Realms are the foundation of Eternum, each uniquely destined to shape the fate of this vast continent. As
 limited and irreplaceable strongholds, these Realms serve as the primary playing pieces of the game. Each Realm settled
@@ -6329,7 +6338,7 @@ import ResourceProbability from "@/components/eternum-components/ResourceProbabi
 import { StartingResources, StructureType } from "@/components/eternum-components/StartingResources";
 import { StartingMilitary } from "@/components/StartingMilitary";
 
-# 🛖 Villages
+# Villages
 
 Beyond the limited number of sacred Realms lies the humble yet vital Village—small settlements established on hexes that
 surround a settled Realm. These modest outposts offer a more accessible entry into Eternum, serving as gateways for new
@@ -6395,7 +6404,7 @@ meta: {
   "description": "The Wonders of Realms Eternum"
 }
 
-# ✨ Wonders
+# Wonders
 
 Of the 8,000 Realms, 50 are distinguished by the presence of Wonders—unique and magical places of power that confer
 special benefits, making them highly desirable playing pieces that may put a target on their owner's back.
@@ -6415,6 +6424,135 @@ Key Notes:
 <img src="/images/buildings/construction/wonder.png" width="800" style={{ margin: "0 auto", display: "block", maxWidth: "100%" }} />
 
 <br />
+
+
+
+---
+
+file: docs/pages/eternum/worldmap-movement/movement.mdx
+meta: {}
+
+import TroopMovementTable from "@/components/eternum-components/TroopMovementTable";
+import { BiomeStamina } from "@/components/BiomeStamina";
+
+# Movement & Exploration
+
+<img src="/images/covers/04.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
+
+## Stamina
+
+Troops in Eternum are deployed onto the world map as armies. Army movement and actions across the map are governed by
+stamina, a critical resource Lords must carefully manage.
+
+Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
+against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
+maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +2 stamina per Phase (10 minutes),
+totaling +12 stamina per Eternum Day. Each troop type possesses different maximum stamina capacities, outlined in the
+table below:
+
+<TroopMovementTable />
+
+Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
+themselves severely disadvantaged if attacked by enemy forces.
+
+## Movement
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/moving-army.gif" alt="Moving Army" />
+
+  <em>Moving armies in the client</em>
+</div>
+
+Armies in Eternum can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a
+Realm, Village, another army, or a world structure such as a Bank, Fragment Mine, or Hyperstructure. Armies may also
+move to more distant hexes, provided there is a continuous path of adjacent, unoccupied hexes leading to the
+destination, and the army has sufficient stamina available for the entire journey.
+
+The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
+within the army. The table below details biome-specific stamina costs for each troop type:
+
+<BiomeStamina />
+
+## Exploring
+
+When an army is positioned adjacent to an unexplored hex, Lords may choose to send that army forth to uncover what lies
+hidden. Exploring an unknown hex always costs 30 stamina and will reveal that hex to all Lords, permanently expanding
+the known boundaries of the world.
+
+If the newly explored hex contains a world structure or an agent army, the exploring army will automatically be pushed
+back to the hex from which they started without any additional stamina penalty. Additionally, during exploration, armies
+gather any valuables they encounter, receiving a stack of randomly selected resources directly into their inventory.
+
+**Relic Chest Discovery**: Each exploration also triggers a global check for **Relic Chest** discovery. If enough time
+has passed since the last chest was discovered globally, a new chest will spawn at a calculated distance from the
+exploration point. This creates exciting opportunities for explorers to trigger discoveries that benefit the entire game
+world.
+
+If an army becomes overloaded, they will not be able to undertake further exploration, but can continue to travel on
+previously-explored hexes. Armies can return to a structure to offload the materials, or drop them to free up space.
+Note that any materials discarded in the field will be permanently lost (burned).
+
+Given the possibility of encountering hostile agent armies during exploration, Lords should ensure that their exploring
+armies are well-prepared and capable of defending themselves in unexpected combat situations.
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/explore.gif" alt="Explore" />
+
+  <em>Explore in the client</em>
+</div>
+
+## Troop Transfers
+
+Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
+the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
+on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab. Troops
+can be transferred between armies (and Realm defense slots) at any time, and transfers are not impacted by battle
+timers. However, in all instances of a troop transfer, the army that has received troops:
+
+* adopts the **lower** of the two armies' stamina values, and
+* adopts the **higher** of the two armies' battle timers.
+
+<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+  <img src="/gifs/transfer-troops.gif" alt="Transfer Troops" />
+
+  <em>Transfer troops in the client</em>
+</div>
+
+
+
+---
+
+file: docs/pages/eternum/worldmap-movement/worldmap.mdx
+meta: {}
+
+# The World Map
+
+<img src="/images/covers/05.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
+
+## An Unexplored World
+
+At the beginning of each season, Eternum lies entirely unexplored, shrouded in mystery and opportunity. The only
+exceptions are the six ancient Banks, whose location and surrounding hexes are known and visible from the outset. They
+can be seen when settling and when observing the world view, each equidistant from the center of the map and from one
+another.
+
+When Lords settle a Realm, the six hexes directly adjacent to the Realm hex and the six possible village locations are
+automatically revealed if they haven't already been explored. Beyond these instances, the world remains cloaked by the
+mist, waiting for ambitious Lords to send forth their armies to explore. Once a hex is explored, the state of the hex
+(i.e. the biome and whether it contains a world structure or army) is permanently revealed to all Lords.
+
+## Biomes
+
+Each hex is assigned one of 16 biome types, each with unique aesthetics and strategic implications. These biomes are
+procedurally generated across the world map following specific rules that dictate their distribution, ensuring a
+coherent yet varied world, with certain biomes naturally occurring more or less frequently than others.
+
+Biomes impact both combat effectiveness and troop movement. Each troop type—Knights, Crossbowmen, and Paladins—can
+potentially be advantaged or disadvantaged in battle depending on the biome in which combat takes place; this is
+explained in more detail in the [Military section](/eternum/military/stamina-and-biomes). Additionally, biomes have the
+potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop type
+differently as they move between hexes—this is explained further in the
+[Movement & Exploration](/eternum/worldmap-movement/movement) section below.
 
 
 
@@ -6687,7 +6825,7 @@ meta: {}
 
 import { EfficiencyTable } from "@/components/eternum-components/EfficiencyTable";
 
-# 🌀 Bridging (Portals)
+# Bridging (Portals)
 
 Portals provide Lords with the ability to bridge materials into and out of Eternum, connecting the in-game economy with
 the Starknet infrastructure layer. Portals are mysterious and unstable devices, so they tend to burn up most of the
@@ -6719,7 +6857,7 @@ import {
   DonkeyProduction,
 } from "@/components/eternum-components/ResourceProduction";
 
-# ⚒️ Production
+# Production
 
 ## Standard vs. Simple
 
@@ -6811,7 +6949,7 @@ import ResourceIcon from "@/components/ResourceIcon";
 import TroopsLimitTable from "@/components/eternum-components/TroopsLimitTable";
 import { ResourcesIds } from "@bibliothecadao/types";
 
-# 🧱 Materials
+# Materials
 
 ## Materials Overview
 
@@ -6968,7 +7106,7 @@ import { divideByPrecision } from "@/utils/resources";
 import { CapacityConfig, ResourcesIds } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "@/utils/config";
 
-# 🏺 Storage System
+# Storage System
 
 Your available storage limits the amount of materials your Realm or Village can hold. Effective management of your
 storage capacity is essential for successful development. Each Realm and Village begins with a base capacity of
@@ -7021,7 +7159,7 @@ meta: {}
 
 import { importantNote } from "@/components/styles";
 
-# 📜 Transfers & Trade
+# Transfers & Trade
 
 ## Transport
 
@@ -7098,135 +7236,6 @@ control, enabling them to manage market conditions to their advantage and set OT
 
 ---
 
-file: docs/pages/eternum/worldmap-movement/movement.mdx
-meta: {}
-
-import TroopMovementTable from "@/components/eternum-components/TroopMovementTable";
-import { BiomeStamina } from "@/components/BiomeStamina";
-
-# 🧭 Movement & Exploration
-
-<img src="/images/covers/04.png" alt="Troops Moving Across Eternum" className="w-full rounded-lg my-6" />
-
-## Stamina
-
-Troops in Eternum are deployed onto the world map as armies. Army movement and actions across the map are governed by
-stamina, a critical resource Lords must carefully manage.
-
-Stamina is expended whenever an army moves between hexes, explores previously unrevealed areas, or launches an attack
-against enemy forces. Each of these actions has a specific stamina cost, making strategic planning essential to
-maximizing an army's effectiveness. Armies regenerate stamina at a consistent rate of +2 stamina per Phase (10 minutes),
-totaling +12 stamina per Eternum Day. Each troop type possesses different maximum stamina capacities, outlined in the
-table below:
-
-<TroopMovementTable />
-
-Lords should remain cautious about fully depleting the stamina of their armies, as forces with low stamina may find
-themselves severely disadvantaged if attacked by enemy forces.
-
-## Movement
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/moving-army.gif" alt="Moving Army" />
-
-  <em>Moving armies in the client</em>
-</div>
-
-Armies in Eternum can move freely into any adjacent, unoccupied hex. A hex is considered occupied if it contains a
-Realm, Village, another army, or a world structure such as a Bank, Fragment Mine, or Hyperstructure. Armies may also
-move to more distant hexes, provided there is a continuous path of adjacent, unoccupied hexes leading to the
-destination, and the army has sufficient stamina available for the entire journey.
-
-The amount of stamina consumed when moving into a hex depends on both the biome of that hex and the type of troops
-within the army. The table below details biome-specific stamina costs for each troop type:
-
-<BiomeStamina />
-
-## Exploring
-
-When an army is positioned adjacent to an unexplored hex, Lords may choose to send that army forth to uncover what lies
-hidden. Exploring an unknown hex always costs 30 stamina and will reveal that hex to all Lords, permanently expanding
-the known boundaries of the world.
-
-If the newly explored hex contains a world structure or an agent army, the exploring army will automatically be pushed
-back to the hex from which they started without any additional stamina penalty. Additionally, during exploration, armies
-gather any valuables they encounter, receiving a stack of randomly selected resources directly into their inventory.
-
-**Relic Chest Discovery**: Each exploration also triggers a global check for **Relic Chest** discovery. If enough time
-has passed since the last chest was discovered globally, a new chest will spawn at a calculated distance from the
-exploration point. This creates exciting opportunities for explorers to trigger discoveries that benefit the entire game
-world.
-
-If an army becomes overloaded, they will not be able to undertake further exploration, but can continue to travel on
-previously-explored hexes. Armies can return to a structure to offload the materials, or drop them to free up space.
-Note that any materials discarded in the field will be permanently lost (burned).
-
-Given the possibility of encountering hostile agent armies during exploration, Lords should ensure that their exploring
-armies are well-prepared and capable of defending themselves in unexpected combat situations.
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/explore.gif" alt="Explore" />
-
-  <em>Explore in the client</em>
-</div>
-
-## Troop Transfers
-
-Lords may transfer troops from one army to another, provided that they are on adjacent hexes, the same troop type, and
-the same tier. To transfer troops from one army to another, or to a structure, the player first needs to select its army
-on the worldmap using left-click, then right-click on the target and select the Transfer -> Transfer Troops tab. Troops
-can be transferred between armies (and Realm defense slots) at any time, and transfers are not impacted by battle
-timers. However, in all instances of a troop transfer, the army that has received troops:
-
-* adopts the **lower** of the two armies' stamina values, and
-* adopts the **higher** of the two armies' battle timers.
-
-<div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-  <img src="/gifs/transfer-troops.gif" alt="Transfer Troops" />
-
-  <em>Transfer troops in the client</em>
-</div>
-
-
-
----
-
-file: docs/pages/eternum/worldmap-movement/worldmap.mdx
-meta: {}
-
-# 🗺️ The World Map
-
-<img src="/images/covers/05.png" alt="Eternum World Map" className="w-full rounded-lg my-6" />
-
-## An Unexplored World
-
-At the beginning of each season, Eternum lies entirely unexplored, shrouded in mystery and opportunity. The only
-exceptions are the six ancient Banks, whose location and surrounding hexes are known and visible from the outset. They
-can be seen when settling and when observing the world view, each equidistant from the center of the map and from one
-another.
-
-When Lords settle a Realm, the six hexes directly adjacent to the Realm hex and the six possible village locations are
-automatically revealed if they haven't already been explored. Beyond these instances, the world remains cloaked by the
-mist, waiting for ambitious Lords to send forth their armies to explore. Once a hex is explored, the state of the hex
-(i.e. the biome and whether it contains a world structure or army) is permanently revealed to all Lords.
-
-## Biomes
-
-Each hex is assigned one of 16 biome types, each with unique aesthetics and strategic implications. These biomes are
-procedurally generated across the world map following specific rules that dictate their distribution, ensuring a
-coherent yet varied world, with certain biomes naturally occurring more or less frequently than others.
-
-Biomes impact both combat effectiveness and troop movement. Each troop type—Knights, Crossbowmen, and Paladins—can
-potentially be advantaged or disadvantaged in battle depending on the biome in which combat takes place; this is
-explained in more detail in the [Military section](/eternum/military/stamina-and-biomes). Additionally, biomes have the
-potential to enhance or impede army maneuvers, as the various biomes impact the stamina consumption of each troop type
-differently as they move between hexes—this is explained further in the
-[Movement & Exploration](/eternum/worldmap-movement/movement) section below.
-
-
-
----
-
 file: docs/pages/overview/chests/contents.mdx
 meta: {
   "title": "Chest Contents",
@@ -7236,7 +7245,7 @@ meta: {
 import EternumRewardsChestTable from "@/components/eternum-components/EternumRewardsChestTable";
 import BlitzRewardsChestTable from "@/components/blitz-components/BlitzRewardsChestTable";
 
-# 📜 Chest Contents
+# Chest Contents
 
 Each Loot Chest contains a varying number of items. For each item slot in a chest, an independent roll is performed
 against the item list for that Loot Chest type. Every item on the list has a defined draw chance. Because each roll is
@@ -7291,7 +7300,7 @@ meta: {
 
 import { importantNote } from "../../../components/styles";
 
-# 🎨 Cosmetic Items
+# Cosmetic Items
 
 ## Equipping Cosmetic Items
 
@@ -7343,7 +7352,7 @@ meta: {
 
 import { importantNote } from "../../../components/styles";
 
-# 🎁 Loot Chests
+# Loot Chests
 
 Loot Chests are reward containers that Lords can earn through various activities in the ecosystem. These chests are
 primarily rewarded for achievements and high-scoring gameplay and contain advantageous consumables or flashy cosmetic
