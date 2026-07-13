@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  buildSceneSmokeSummary,
   buildSceneSmokeUrl,
   decodePaddedWorldName,
   GLOW_REPRO_SCENES,
@@ -12,6 +13,7 @@ import {
   normalizeRendererDiagnosticsSnapshot,
   normalizeSceneList,
   resolveAgentBrowserWorkingDirectory,
+  resolveSceneSmokeTarget,
   resolveSceneSmokeWorldName,
 } from "./run-renderer-scene-smoke.mjs";
 
@@ -111,6 +113,65 @@ describe("resolveSceneSmokeWorldName", () => {
         requestedWorldName: "",
       }),
     ).resolves.toBe("bltz-spark-702");
+  });
+
+  it("reports unavailable live discovery as a structured target instead of failing CI", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(null, {
+        status: 404,
+        statusText: "Not Found",
+      }),
+    );
+
+    const target = await resolveSceneSmokeTarget({
+      chain: "slot",
+      requestedWorldName: "",
+    });
+
+    expect(target).toEqual({
+      discoveryErrors: [
+        {
+          endpoint: "https://api.cartridge.gg/x/eternum-factory-slot-d/torii/sql",
+          message: "Factory world discovery failed: 404 Not Found",
+        },
+      ],
+      source: "unavailable",
+      worldName: null,
+    });
+    expect(
+      buildSceneSmokeSummary({
+        results: [],
+        target,
+      }),
+    ).toEqual({
+      schemaVersion: "renderer-scene-smoke/v1",
+      ok: true,
+      reason: "live-runtime-unavailable",
+      results: [],
+      skipped: true,
+      target,
+    });
+  });
+
+  it("keeps an explicitly requested live scene failure strict", () => {
+    const target = {
+      discoveryErrors: [],
+      source: "requested",
+      worldName: "bltz-manual-101",
+    };
+
+    expect(
+      buildSceneSmokeSummary({
+        results: [{ ok: false, scene: "map" }],
+        target,
+      }),
+    ).toEqual({
+      schemaVersion: "renderer-scene-smoke/v1",
+      ok: false,
+      results: [{ ok: false, scene: "map" }],
+      skipped: false,
+      target,
+    });
   });
 });
 

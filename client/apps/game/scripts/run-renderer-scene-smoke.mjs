@@ -148,23 +148,49 @@ async function isWorldSceneSmokeCandidateAlive(worldName) {
   }
 }
 
-export async function resolveSceneSmokeWorldName({ chain, requestedWorldName }) {
+export async function resolveSceneSmokeTarget({ chain, requestedWorldName }) {
   if (requestedWorldName) {
-    return requestedWorldName;
+    return {
+      discoveryErrors: [],
+      source: "requested",
+      worldName: requestedWorldName,
+    };
   }
 
+  const discoveryErrors = [];
   const factorySqlBaseUrls = FACTORY_SQL_BASE_URLS[chain] ?? [];
   for (const factorySqlBaseUrl of factorySqlBaseUrls) {
-    const candidateWorldNames = await fetchCandidateWorldNames(factorySqlBaseUrl);
+    let candidateWorldNames;
+    try {
+      candidateWorldNames = await fetchCandidateWorldNames(factorySqlBaseUrl);
+    } catch (error) {
+      discoveryErrors.push({
+        endpoint: factorySqlBaseUrl,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      continue;
+    }
 
     for (const worldName of candidateWorldNames) {
       if (await isWorldSceneSmokeCandidateAlive(worldName)) {
-        return worldName;
+        return {
+          discoveryErrors,
+          source: "factory",
+          worldName,
+        };
       }
     }
   }
 
-  return DEFAULT_WORLD_NAME;
+  return {
+    discoveryErrors,
+    source: "unavailable",
+    worldName: null,
+  };
+}
+
+export async function resolveSceneSmokeWorldName(options) {
+  return (await resolveSceneSmokeTarget(options)).worldName;
 }
 
 export function evaluateSceneSmokeResult({ canvasExists, errors, expectedPathname, openedUrl, unableToStartCount }) {
@@ -360,6 +386,26 @@ function ensureArtifactDir(artifactDir) {
   return artifactDir;
 }
 
+function emitSceneSmokeSummary(summary, artifactDir) {
+  const serialized = JSON.stringify(summary, null, 2);
+  if (artifactDir) {
+    writeFileSync(join(artifactDir, "scene-smoke-summary.json"), `${serialized}\n`);
+  }
+  console.log(serialized);
+}
+
+export function buildSceneSmokeSummary({ results, target }) {
+  const skipped = !target.worldName;
+  return {
+    schemaVersion: "renderer-scene-smoke/v1",
+    ok: skipped || results.every((result) => result.ok),
+    ...(skipped ? { reason: "live-runtime-unavailable" } : {}),
+    results,
+    skipped,
+    target,
+  };
+}
+
 function dumpSceneSmokeFailureDiagnostics({ artifactDir, headed, rendererMode, scene, session }) {
   const slug = `${scene}-${rendererMode.replace(/[^a-z0-9-]/gi, "-")}`;
   const consoleLog = tryRunAgentBrowser(session, ["console"], { headed });
@@ -462,7 +508,13 @@ async function main(argv) {
   const requestedWorldName = readOption(argv, "--world", "");
   const headed = readFlag(argv, "--headed");
   const artifactDir = ensureArtifactDir(readOption(argv, "--artifact-dir", ""));
-  const worldName = await resolveSceneSmokeWorldName({ chain, requestedWorldName });
+  const target = await resolveSceneSmokeTarget({ chain, requestedWorldName });
+  if (!target.worldName) {
+    emitSceneSmokeSummary(buildSceneSmokeSummary({ results: [], target }), artifactDir);
+    return;
+  }
+
+  const worldName = target.worldName;
   const sessionToken = Date.now().toString(36);
 
   const results = [];
@@ -482,10 +534,10 @@ async function main(argv) {
     );
   }
 
-  const failed = results.filter((result) => !result.ok);
-  console.log(JSON.stringify({ ok: failed.length === 0, results }, null, 2));
+  const summary = buildSceneSmokeSummary({ results, target });
+  emitSceneSmokeSummary(summary, artifactDir);
 
-  if (failed.length > 0) {
+  if (!summary.ok) {
     process.exitCode = 1;
   }
 }
