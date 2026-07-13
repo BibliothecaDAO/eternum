@@ -179,7 +179,7 @@ const buildReviewUnclaimedPlayersQuery = (trialId: bigint) => `
   ORDER BY rank ASC;
 `;
 
-const buildToriiSqlUrl = (worldName: string) => resolveGameRuntimeEndpoint(worldName, "sql");
+const buildToriiSqlUrl = (worldName: string, chain: Chain) => resolveGameRuntimeEndpoint(worldName, "sql", { chain });
 
 const formatTokenAmount = (amount: bigint, decimals: number): string => {
   const s = amount.toString();
@@ -1039,7 +1039,7 @@ export const fetchGameReviewData = async ({
   chain: Chain;
   playerAddress: string | null;
 }): Promise<GameReviewData> => {
-  const toriiSqlBaseUrl = buildToriiSqlUrl(worldName);
+  const toriiSqlBaseUrl = buildToriiSqlUrl(worldName, chain);
 
   const [
     leaderboard,
@@ -1156,15 +1156,12 @@ export const fetchGameReviewClaimSummary = async ({
   chain: Chain;
   playerAddress: string;
 }): Promise<GameReviewClaimSummary> => {
-  // Keep the chain param for stable query keys and future chain-dependent claim policies.
-  void chain;
-
   const normalizedPlayerAddress = parseAddress(playerAddress);
   if (!normalizedPlayerAddress) {
     throw new Error("Missing player address for claim summary.");
   }
 
-  const toriiSqlBaseUrl = buildToriiSqlUrl(worldName);
+  const toriiSqlBaseUrl = buildToriiSqlUrl(worldName, chain);
   const [finalization, personalScore] = await Promise.all([
     fetchReviewFinalizationMeta(toriiSqlBaseUrl),
     fetchLandingLeaderboardEntryByAddress(normalizedPlayerAddress, toriiSqlBaseUrl).catch(() => null),
@@ -1193,10 +1190,7 @@ const fetchGameReviewUnclaimedPlayers = async ({
   worldName: string;
   chain: Chain;
 }): Promise<GameReviewUnclaimedPlayersSummary> => {
-  // Keep the chain param for stable query keys and future chain-dependent claim policies.
-  void chain;
-
-  const toriiSqlBaseUrl = buildToriiSqlUrl(worldName);
+  const toriiSqlBaseUrl = buildToriiSqlUrl(worldName, chain);
   const finalization = await fetchReviewFinalizationMeta(toriiSqlBaseUrl);
 
   if (!finalization.rankingFinalized || finalization.finalTrialId == null || finalization.finalTrialId <= 0n) {

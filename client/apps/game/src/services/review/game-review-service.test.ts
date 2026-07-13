@@ -15,6 +15,7 @@ const fetchLandingLeaderboardMock = vi.fn<(...args: unknown[]) => Promise<Landin
 const fetchLandingLeaderboardEntryByAddressMock =
   vi.fn<(...args: unknown[]) => Promise<LandingLeaderboardEntry | null>>();
 const fetchWithErrorHandlingMock = vi.fn<(...args: unknown[]) => Promise<unknown[]>>();
+const resolveGameRuntimeEndpointMock = vi.fn<(...args: unknown[]) => string>();
 
 let lootChestAddress = TEST_LOOT_CHEST_ADDRESS;
 let allocatedChests = 2;
@@ -40,6 +41,11 @@ vi.mock("./game-review-stats-utils", () => ({
 vi.mock("@/runtime/world", () => ({
   buildWorldProfile: vi.fn(),
   patchManifestWithFactory: vi.fn((manifest: unknown) => manifest),
+}));
+
+vi.mock("@/config/runtime-endpoints", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/config/runtime-endpoints")>()),
+  resolveGameRuntimeEndpoint: (...args: unknown[]) => resolveGameRuntimeEndpointMock(...args),
 }));
 
 vi.mock("@/ui/features/prize/utils/mmr-utils", () => ({
@@ -101,6 +107,7 @@ describe("game-review-service reward query formatting", () => {
       },
     ] as LandingLeaderboardEntry[]);
     fetchLandingLeaderboardEntryByAddressMock.mockResolvedValue(null);
+    resolveGameRuntimeEndpointMock.mockReturnValue("https://runtime.example/torii/sql");
 
     fetchWithErrorHandlingMock.mockImplementation(async (urlArg: unknown) => {
       const url = String(urlArg);
@@ -197,6 +204,7 @@ describe("game-review-service reward query formatting", () => {
     expect(data.rewards?.isRanked).toBe(true);
     expect(data.rewards?.lordsWonRaw).toBe(2_000_000_000_000_000_000n);
     expect(data.rewards?.lordsWonFormatted).toBe("2");
+    expect(resolveGameRuntimeEndpointMock).toHaveBeenCalledWith("adam-14", "sql", { chain: "sepolia" });
   });
 
   it("does not estimate loot chests when the game has no loot chest collectible configured", async () => {

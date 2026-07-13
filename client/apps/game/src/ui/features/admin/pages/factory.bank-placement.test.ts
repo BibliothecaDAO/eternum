@@ -7,7 +7,7 @@ describe("Factory bank placement", () => {
   it("builds banks from the indexed map_center_offset helper instead of the fixed HexGrid center", () => {
     const source = readFileSync(resolve(process.cwd(), "src/ui/features/admin/pages/factory.tsx"), "utf8");
 
-    expect(source).toContain("fetchWorldMapCenterOffset(name)");
+    expect(source).toMatch(/fetchWorldMapCenterOffset\(\s*currentChain as Chain,\s*name,?\s*\)/);
     expect(source).toContain("buildAdminBanksForMapCenterOffset(mapCenterOffset)");
     expect(source).not.toContain("HexGrid.findHexCoordsfromCenter(BANK_STEPS_FROM_CENTER)");
   });
