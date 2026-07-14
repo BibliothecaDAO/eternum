@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "29313708453-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-07-14T07:12:06.849Z",
+  "updatedAt": "2026-07-14T07:12:18.553Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,13 @@
   "autoRetry": {
     "enabled": true,
     "intervalMinutes": 15,
+    "nextRetryAt": "2026-07-14T07:27:18.553Z",
     "lastRetryAt": "2026-07-14T07:11:00.039Z"
   },
   "evaluation": {
     "intervalMinutes": 15,
-    "nextEvaluationAt": "2026-07-14T07:27:01.323Z",
-    "lastEvaluatedAt": "2026-07-14T07:12:01.323Z"
+    "nextEvaluationAt": "2026-07-14T07:27:18.553Z",
+    "lastEvaluatedAt": "2026-07-14T07:12:18.553Z"
   },
   "steps": [
     {
@@ -59,10 +60,12 @@
     {
       "id": "configure-worlds",
       "title": "Applying settings",
-      "status": "running",
+      "status": "failed",
       "workflowStepName": "Applying settings",
-      "latestEvent": "Applying settings started",
-      "startedAt": "2026-07-14T07:12:06.849Z"
+      "latestEvent": "Applying settings failed: \u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"na-gladiator-05-06-26-0100\" on mainnet.blitz\n\u001b[2m[+20ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+20ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\n\u001b[2m[+29ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"na-gladiator-05-06-26-0100\"\n\u001b[2m[+307ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m wait for factory SQL indexing failed after 278ms: Failed to fetch world contracts: 404 Not Found\nError: 1 rotation or series game failed during configure-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:497:15)\n    at processTicksAndRejections (native:7:39)",
+      "startedAt": "2026-07-14T07:12:06.849Z",
+      "finishedAt": "2026-07-14T07:12:18.553Z",
+      "errorMessage": "\u001b[2m[+1ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"na-gladiator-05-06-26-0100\" on mainnet.blitz\n\u001b[2m[+20ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=3600, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+20ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 30 config steps for mainnet.blitz\n\u001b[2m[+29ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Waiting for factory SQL to index \"na-gladiator-05-06-26-0100\"\n\u001b[2m[+307ms]\u001b[0m \u001b[1m\u001b[31mERR\u001b[0m wait for factory SQL indexing failed after 278ms: Failed to fetch world contracts: 404 Not Found\nError: 1 rotation or series game failed during configure-worlds\n    at runGroupedSeriesLikeGameStep (/home/runner/work/eternum/eternum/config/deployer/clean/launch/series-like-runner.ts:497:15)\n    at processTicksAndRejections (native:7:39)"
     },
     {
       "id": "reserve-blitz-hyperstructures",
@@ -12175,7 +12178,7 @@
         },
         "seriesGameNumber": 65,
         "currentStepId": "configure-worlds",
-        "latestEvent": "Queued indexer tier update to pro",
+        "latestEvent": "Failed to fetch world contracts: 404 Not Found",
         "status": "failed",
         "configSteps": [],
         "steps": [
@@ -12200,7 +12203,7 @@
             "id": "configure-worlds",
             "status": "failed",
             "latestEvent": "Failed to fetch world contracts: 404 Not Found",
-            "updatedAt": "2026-07-14T06:52:11.092Z",
+            "updatedAt": "2026-07-14T07:12:14.103Z",
             "errorMessage": "Failed to fetch world contracts: 404 Not Found"
           },
           {
@@ -16612,13 +16615,5 @@
     "summaryPath": "/home/runner/work/eternum/eternum/.context/game-launch/rotation-mainnet-blitz-blitz-rotation.json",
     "seriesCreated": true,
     "seriesCreatedAt": "2026-04-28T04:59:32.707Z"
-  },
-  "activeLease": {
-    "launchRequestId": "29313708453-1",
-    "workflowRunId": 29313708453,
-    "workflowRunAttempt": 1,
-    "stepId": "configure-worlds",
-    "acquiredAt": "2026-07-14T07:12:06.849Z",
-    "expiresAt": "2026-07-14T07:57:06.849Z"
   }
 }
