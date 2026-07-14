@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "29343060918-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-07-14T14:57:25.994Z",
+  "updatedAt": "2026-07-14T15:02:59.672Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -16694,10 +16694,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-14T14:42:49.996Z",
+          "pendingIndexerTierRequestedAt": "2026-07-14T15:02:59.672Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-14T14:42:49.996Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-14T15:02:59.672Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-14-07-26-1100\" does not exist"
         }
       },
