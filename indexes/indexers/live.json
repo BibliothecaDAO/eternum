@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-15T19:27:33.046Z",
+  "updatedAt": "2026-07-15T19:32:13.618Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -4185,7 +4185,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-29-06-26-0100 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "apac-gladiator-30-06-26-1100": {
       "gameName": "apac-gladiator-30-06-26-1100",
@@ -4194,7 +4194,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-30-06-26-1100 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "bltz-pop-959": {
       "gameName": "bltz-pop-959",
@@ -4216,7 +4216,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-01-07-26-0200 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "bltz-crisp-220": {
       "gameName": "bltz-crisp-220",
@@ -4238,7 +4238,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-01-07-26-1900 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "bltz-thrum-391": {
       "gameName": "bltz-thrum-391",
@@ -4260,7 +4260,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-02-07-26-1000 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "bltz-crisp-75": {
       "gameName": "bltz-crisp-75",
@@ -4282,7 +4282,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-03-07-26-0100 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "bltz-chirp-914": {
       "gameName": "bltz-chirp-914",
@@ -4304,7 +4304,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-03-07-26-1800 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "bltz-blink-751": {
       "gameName": "bltz-blink-751",
@@ -4326,7 +4326,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-04-07-26-1200 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "eu-gladiator-04-07-26-2000": {
       "gameName": "eu-gladiator-04-07-26-2000",
@@ -4335,7 +4335,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-04-07-26-2000 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "na-gladiator-05-07-26-0300": {
       "gameName": "na-gladiator-05-07-26-0300",
@@ -4344,7 +4344,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-05-07-26-0300 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "apac-gladiator-05-07-26-1100": {
       "gameName": "apac-gladiator-05-07-26-1100",
@@ -4353,7 +4353,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-05-07-26-1100 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "eu-gladiator-05-07-26-1900": {
       "gameName": "eu-gladiator-05-07-26-1900",
@@ -4362,7 +4362,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-05-07-26-1900 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "na-gladiator-06-07-26-0100": {
       "gameName": "na-gladiator-06-07-26-0100",
@@ -4371,7 +4371,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-06-07-26-0100 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "apac-gladiator-07-07-26-1100": {
       "gameName": "apac-gladiator-07-07-26-1100",
@@ -4380,7 +4380,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-07-07-26-1100 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "na-gladiator-08-07-26-0200": {
       "gameName": "na-gladiator-08-07-26-0200",
@@ -4389,7 +4389,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-08-07-26-0200 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "eu-gladiator-08-07-26-1900": {
       "gameName": "eu-gladiator-08-07-26-1900",
@@ -4398,7 +4398,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-08-07-26-1900 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "apac-gladiator-09-07-26-1000": {
       "gameName": "apac-gladiator-09-07-26-1000",
@@ -4407,7 +4407,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-09-07-26-1000 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "na-gladiator-10-07-26-0100": {
       "gameName": "na-gladiator-10-07-26-0100",
@@ -4416,7 +4416,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-10-07-26-0100 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "eu-gladiator-10-07-26-1800": {
       "gameName": "eu-gladiator-10-07-26-1800",
@@ -4425,7 +4425,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-10-07-26-1800 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "apac-gladiator-11-07-26-1200": {
       "gameName": "apac-gladiator-11-07-26-1200",
@@ -4434,7 +4434,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-11-07-26-1200 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "eu-gladiator-11-07-26-2000": {
       "gameName": "eu-gladiator-11-07-26-2000",
@@ -4443,7 +4443,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-11-07-26-2000 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "na-gladiator-12-07-26-0300": {
       "gameName": "na-gladiator-12-07-26-0300",
@@ -4452,7 +4452,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-12-07-26-0300 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "apac-gladiator-12-07-26-1100": {
       "gameName": "apac-gladiator-12-07-26-1100",
@@ -4461,7 +4461,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-12-07-26-1100 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "eu-gladiator-12-07-26-1900": {
       "gameName": "eu-gladiator-12-07-26-1900",
@@ -4470,7 +4470,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-12-07-26-1900 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "na-gladiator-13-07-26-0100": {
       "gameName": "na-gladiator-13-07-26-0100",
@@ -4479,7 +4479,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-13-07-26-0100 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "apac-gladiator-14-07-26-1100": {
       "gameName": "apac-gladiator-14-07-26-1100",
@@ -4488,7 +4488,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment apac-gladiator-14-07-26-1100 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "na-gladiator-15-07-26-0200": {
       "gameName": "na-gladiator-15-07-26-0200",
@@ -4497,7 +4497,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-15-07-26-0200 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     },
     "eu-gladiator-15-07-26-1900": {
       "gameName": "eu-gladiator-15-07-26-1900",
@@ -4506,7 +4506,7 @@
         "stateSource": "describe-not-found",
         "describeError": "Error: rpc error: code = NotFound desc = deployment eu-gladiator-15-07-26-1900 not found"
       },
-      "updatedAt": "2026-07-15T19:12:12.925Z"
+      "updatedAt": "2026-07-15T19:32:13.618Z"
     }
   }
 }
