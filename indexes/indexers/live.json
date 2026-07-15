@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updatedAt": "2026-07-15T02:03:16.171Z",
+  "updatedAt": "2026-07-15T02:12:55.758Z",
   "entries": {
     "eternum-game-mainnet-38-pro": {
       "gameName": "eternum-game-mainnet-38-pro",
@@ -4494,10 +4494,10 @@
       "gameName": "na-gladiator-15-07-26-0200",
       "liveState": {
         "state": "missing",
-        "stateSource": "list",
-        "describeError": "error sending request for url (https://api.cartridge.gg/query)"
+        "stateSource": "describe-not-found",
+        "describeError": "Error: rpc error: code = NotFound desc = deployment na-gladiator-15-07-26-0200 not found"
       },
-      "updatedAt": "2026-07-15T01:52:24.905Z"
+      "updatedAt": "2026-07-15T02:12:55.758Z"
     }
   }
 }
