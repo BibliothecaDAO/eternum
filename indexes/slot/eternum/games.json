@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "slot.eternum",
   "kind": "game",
-  "updatedAt": "2026-07-16T00:37:15.151Z",
+  "updatedAt": "2026-07-16T00:37:19.591Z",
   "entries": {
     "mygame": {
       "kind": "game",
@@ -44,12 +44,13 @@
       "path": "runs/slot/eternum/etrn-moss-700.json",
       "inputPath": "inputs/slot/eternum/etrn-moss-700/29461890461-1.json",
       "status": "running",
-      "updatedAt": "2026-07-16T00:37:15.151Z",
+      "updatedAt": "2026-07-16T00:37:19.591Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
-      "hasRunningStep": false,
+      "activeLeaseExpiresAt": "2026-07-16T01:22:19.591Z",
+      "hasRunningStep": true,
       "recoverableFailedStepId": null,
-      "recoverablePendingStepId": "create-world",
+      "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-07-16T01:00:00.000Z",
       "artifacts": {}
     }
