@@ -4,16 +4,15 @@
   "accountAddress": "0x127fd5f1fe78a71f8bcd1fec63e3fe2f0486b6ecd5c86a0466c3a21fa5cfcec",
   "owner": {
     "environment": "slot.eternum",
-    "gameName": "etrn-haven-594",
-    "launchRequestId": "29101289735-1",
+    "gameName": "etrn-moss-700",
+    "launchRequestId": "29461890461-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 29101289735,
+    "workflowRunId": 29461890461,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "32d3c837-f3a8-4f11-9479-eaca73a57e6b"
+    "leaseId": "0bbca9b4-307c-46b3-9dca-fd0cea1263c0"
   },
-  "acquiredAt": "2026-07-10T14:50:37.926Z",
-  "heartbeatAt": "2026-07-10T14:50:42.277Z",
-  "expiresAt": "2026-07-10T14:50:42.277Z",
-  "releasedAt": "2026-07-10T14:50:42.277Z"
+  "acquiredAt": "2026-07-16T00:37:22.821Z",
+  "heartbeatAt": "2026-07-16T00:37:22.821Z",
+  "expiresAt": "2026-07-16T00:47:22.821Z"
 }
