@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "29586527868-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-07-17T14:06:37.333Z",
+  "updatedAt": "2026-07-17T14:07:26.572Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -5490,9 +5490,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:07.747Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:15.562Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:07.747Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:15.562Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-14-05-26-1000\" does not exist"
         }
       },
@@ -5687,9 +5687,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:07.830Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:15.663Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:07.830Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:15.663Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-15-05-26-0100\" does not exist"
         }
       },
@@ -5884,9 +5884,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:07.923Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:15.763Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:07.923Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:15.763Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-15-05-26-1800\" does not exist"
         }
       },
@@ -6081,9 +6081,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.017Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:15.863Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.017Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:15.863Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-16-05-26-1200\" does not exist"
         }
       },
@@ -6161,9 +6161,9 @@
           },
           "paymasterSynced": true,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.108Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:15.966Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.108Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:15.966Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-16-05-26-2000\" does not exist"
         }
       },
@@ -6352,9 +6352,9 @@
           "worldConfigTxHash": "0x16f50c20e343ddb006f98b0fcaf84ab12f1bbd39556a1caecdee497d59a32f3",
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.181Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:16.067Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.181Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:16.067Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-17-05-26-0300\" does not exist"
         }
       },
@@ -6542,10 +6542,10 @@
           "configureTxHash": "0x33384b460626da8c1680ce983df0f549598a8806aedf00ab2191db9d808614e",
           "worldConfigTxHash": "0x33384b460626da8c1680ce983df0f549598a8806aedf00ab2191db9d808614e",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.251Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:16.169Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.251Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:16.169Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-17-05-26-1100\" does not exist"
         }
       },
@@ -6733,10 +6733,10 @@
           "configureTxHash": "0xd2d91f0d24f0209c61030a7800543ac8424e9a0f348b5630592ca4ea4e963f",
           "worldConfigTxHash": "0xd2d91f0d24f0209c61030a7800543ac8424e9a0f348b5630592ca4ea4e963f",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.329Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:16.273Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.329Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:16.273Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-17-05-26-1900\" does not exist"
         }
       },
@@ -6924,10 +6924,10 @@
           "configureTxHash": "0x10235c113397affc11efbfb713d26109a4886da7f43570deb3c5471eb1e5669",
           "worldConfigTxHash": "0x10235c113397affc11efbfb713d26109a4886da7f43570deb3c5471eb1e5669",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.399Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:16.372Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.399Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:16.372Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-18-05-26-0100\" does not exist"
         }
       },
@@ -7115,10 +7115,10 @@
           "configureTxHash": "0x2ee00a9eb4aa4431b1e94142191a2d75ae2be16adb97808f03de7b5cd904e8f",
           "worldConfigTxHash": "0x2ee00a9eb4aa4431b1e94142191a2d75ae2be16adb97808f03de7b5cd904e8f",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.469Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:16.473Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.469Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:16.473Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-19-05-26-1100\" does not exist"
         }
       },
@@ -7306,10 +7306,10 @@
           "configureTxHash": "0x3b50a9719eddbc36d28d0f31d3de55c31dda98c27e9797e4bd70e3dc1c8b656",
           "worldConfigTxHash": "0x3b50a9719eddbc36d28d0f31d3de55c31dda98c27e9797e4bd70e3dc1c8b656",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.543Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:16.576Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.543Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:16.576Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-20-05-26-0200\" does not exist"
         }
       },
@@ -7497,10 +7497,10 @@
           "configureTxHash": "0x1d6d7e305ca6de342dc18ed10dab391e000663b88f0c5c807796033ff1a0bc8",
           "worldConfigTxHash": "0x1d6d7e305ca6de342dc18ed10dab391e000663b88f0c5c807796033ff1a0bc8",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.622Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:16.676Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.622Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:16.676Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-20-05-26-1900\" does not exist"
         }
       },
@@ -7688,10 +7688,10 @@
           "configureTxHash": "0xce838d82976035d5c5aff9c8e44553c7edb12a382e89059808de48e19718fc",
           "worldConfigTxHash": "0xce838d82976035d5c5aff9c8e44553c7edb12a382e89059808de48e19718fc",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.714Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:16.777Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.714Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:16.777Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-21-05-26-1000\" does not exist"
         }
       },
@@ -7879,10 +7879,10 @@
           "configureTxHash": "0x750323c1e53f0d812dab72dcb0a19dec9cc93bc33f0645b80b4d95c92d979b2",
           "worldConfigTxHash": "0x750323c1e53f0d812dab72dcb0a19dec9cc93bc33f0645b80b4d95c92d979b2",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.787Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:16.877Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.787Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:16.877Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-22-05-26-0100\" does not exist"
         }
       },
@@ -8070,10 +8070,10 @@
           "configureTxHash": "0x33b727e3c29d6a3b55c983719866a1a906e84db86d2f4dcbf5fba83862120eb",
           "worldConfigTxHash": "0x33b727e3c29d6a3b55c983719866a1a906e84db86d2f4dcbf5fba83862120eb",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.879Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:16.981Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.879Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:16.981Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-22-05-26-1800\" does not exist"
         }
       },
@@ -8261,10 +8261,10 @@
           "configureTxHash": "0x74b5054539ee5911fecf098346b32e2ef5bc326ce4794b2dcc79df2e82cf0cf",
           "worldConfigTxHash": "0x74b5054539ee5911fecf098346b32e2ef5bc326ce4794b2dcc79df2e82cf0cf",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:08.959Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:17.087Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:08.959Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:17.087Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-23-05-26-1200\" does not exist"
         }
       },
@@ -8452,10 +8452,10 @@
           "configureTxHash": "0x2a13d20e7a50fa1ed325f5824d901551cccdbf013d680cd9ca3eb07c428febc",
           "worldConfigTxHash": "0x2a13d20e7a50fa1ed325f5824d901551cccdbf013d680cd9ca3eb07c428febc",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.029Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:17.189Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.029Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:17.189Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-23-05-26-2000\" does not exist"
         }
       },
@@ -8643,10 +8643,10 @@
           "configureTxHash": "0x13df87059375aa76118da58f9e776e2ba0e18d9f51107961c015fcfec8c5e45",
           "worldConfigTxHash": "0x13df87059375aa76118da58f9e776e2ba0e18d9f51107961c015fcfec8c5e45",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.100Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:17.291Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.100Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:17.291Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-24-05-26-0300\" does not exist"
         }
       },
@@ -8834,10 +8834,10 @@
           "configureTxHash": "0xdc074f96db070daf886a185131c5219a85778e29458a9ed9ca4214f240850e",
           "worldConfigTxHash": "0xdc074f96db070daf886a185131c5219a85778e29458a9ed9ca4214f240850e",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.170Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:17.394Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.170Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:17.394Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-24-05-26-1100\" does not exist"
         }
       },
@@ -9025,10 +9025,10 @@
           "configureTxHash": "0xe05350aeb27abebd2922997c4b9fc23c4d41b32804cd201343b8a444bee81f",
           "worldConfigTxHash": "0xe05350aeb27abebd2922997c4b9fc23c4d41b32804cd201343b8a444bee81f",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.247Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:17.494Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.247Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:17.494Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-24-05-26-1900\" does not exist"
         }
       },
@@ -9216,10 +9216,10 @@
           "configureTxHash": "0x57cbedb1a644869a76711eb1b3119c907dbe58ea56b152e5c865c7c4497fa3a",
           "worldConfigTxHash": "0x57cbedb1a644869a76711eb1b3119c907dbe58ea56b152e5c865c7c4497fa3a",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.318Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:17.594Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.318Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:17.594Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-25-05-26-0100\" does not exist"
         }
       },
@@ -9407,10 +9407,10 @@
           "configureTxHash": "0x3c517161212315767155a4965bb546e7f64e280b37230b8f7556de8569df2b1",
           "worldConfigTxHash": "0x3c517161212315767155a4965bb546e7f64e280b37230b8f7556de8569df2b1",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.392Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:17.691Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.392Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:17.691Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-26-05-26-1100\" does not exist"
         }
       },
@@ -9598,10 +9598,10 @@
           "configureTxHash": "0x5866b45de59ae82af9dca91cf21ed770585d087970a16938f8e74e37e01c6df",
           "worldConfigTxHash": "0x5866b45de59ae82af9dca91cf21ed770585d087970a16938f8e74e37e01c6df",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.463Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:17.792Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.463Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:17.792Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-27-05-26-0200\" does not exist"
         }
       },
@@ -9789,10 +9789,10 @@
           "configureTxHash": "0x7f24cba967adc6e7e550feb2c5a5d01ddd2129780d3745f6a755df738bb63d6",
           "worldConfigTxHash": "0x7f24cba967adc6e7e550feb2c5a5d01ddd2129780d3745f6a755df738bb63d6",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.538Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:17.894Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.538Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:17.894Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-27-05-26-1900\" does not exist"
         }
       },
@@ -9980,10 +9980,10 @@
           "configureTxHash": "0x6b2b0bfca3d329d3ac28e80d43b9f1972864c65f86531c5b4952b87454ba05e",
           "worldConfigTxHash": "0x6b2b0bfca3d329d3ac28e80d43b9f1972864c65f86531c5b4952b87454ba05e",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.617Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:17.992Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.617Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:17.992Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-28-05-26-1000\" does not exist"
         }
       },
@@ -10171,10 +10171,10 @@
           "configureTxHash": "0x43c2ec3dd67951448f9374f8f281623710bac0aa3d00af1c0c1c9d74c156893",
           "worldConfigTxHash": "0x43c2ec3dd67951448f9374f8f281623710bac0aa3d00af1c0c1c9d74c156893",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.690Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:18.093Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.690Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:18.093Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-29-05-26-0100\" does not exist"
         }
       },
@@ -10362,10 +10362,10 @@
           "configureTxHash": "0x694f19561dffd9116b7fd7ca20dd76ba3d7679f9d8b73f21965df8678d54e76",
           "worldConfigTxHash": "0x694f19561dffd9116b7fd7ca20dd76ba3d7679f9d8b73f21965df8678d54e76",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.761Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:18.193Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.761Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:18.193Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-29-05-26-1800\" does not exist"
         }
       },
@@ -10553,10 +10553,10 @@
           "configureTxHash": "0x4439a8cb7a07ed14fab7f1331872e1a297c77dc25e63566512ee3801ba6dc69",
           "worldConfigTxHash": "0x4439a8cb7a07ed14fab7f1331872e1a297c77dc25e63566512ee3801ba6dc69",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.830Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:18.294Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.830Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:18.294Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-30-05-26-1200\" does not exist"
         }
       },
@@ -10744,10 +10744,10 @@
           "configureTxHash": "0x3389fb656be422302999bf3143a14872de0e37a1ade737d7bc973735d11b6a",
           "worldConfigTxHash": "0x3389fb656be422302999bf3143a14872de0e37a1ade737d7bc973735d11b6a",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:09.925Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:18.397Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:09.925Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:18.397Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-30-05-26-2000\" does not exist"
         }
       },
@@ -10935,10 +10935,10 @@
           "configureTxHash": "0x2b8891b00e9c3430832248eca7fbe6973342b18afada287135f55c3f709ae84",
           "worldConfigTxHash": "0x2b8891b00e9c3430832248eca7fbe6973342b18afada287135f55c3f709ae84",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.021Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:18.499Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.021Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:18.499Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-31-05-26-0300\" does not exist"
         }
       },
@@ -11126,10 +11126,10 @@
           "configureTxHash": "0x601b10e38266e2a3149e2287089bac235344c2dedcde1b8893683b7bd54861",
           "worldConfigTxHash": "0x601b10e38266e2a3149e2287089bac235344c2dedcde1b8893683b7bd54861",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.117Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:18.601Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.117Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:18.601Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-31-05-26-1100\" does not exist"
         }
       },
@@ -11317,10 +11317,10 @@
           "configureTxHash": "0x1fe95840a9daf6be823d9217da55049f81e10fd01cc8c5e19b9316e52153eaf",
           "worldConfigTxHash": "0x1fe95840a9daf6be823d9217da55049f81e10fd01cc8c5e19b9316e52153eaf",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.189Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:18.701Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.189Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:18.701Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-31-05-26-1900\" does not exist"
         }
       },
@@ -11508,10 +11508,10 @@
           "configureTxHash": "0x1e2b9ef79d85d10fac3fb174f1a4b414d1dfd5dcf9632dbac4315fb6ac81c86",
           "worldConfigTxHash": "0x1e2b9ef79d85d10fac3fb174f1a4b414d1dfd5dcf9632dbac4315fb6ac81c86",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.282Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:18.805Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.282Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:18.805Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-01-06-26-0100\" does not exist"
         }
       },
@@ -11700,9 +11700,9 @@
           "worldConfigTxHash": "0x51274f3fe780616cfe2b03a75589910615e36489385caa969a604ca387d7fe4",
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.353Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:18.905Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.353Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:18.905Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-02-06-26-1100\" does not exist"
         }
       },
@@ -11890,10 +11890,10 @@
           "configureTxHash": "0x677cf4edf08933ce97c27f0df4fddde239b03c54ec611bff6161bf21e997b7d",
           "worldConfigTxHash": "0x677cf4edf08933ce97c27f0df4fddde239b03c54ec611bff6161bf21e997b7d",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.425Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:19.005Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.425Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:19.005Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-03-06-26-0200\" does not exist"
         }
       },
@@ -12081,10 +12081,10 @@
           "configureTxHash": "0x797d37b5a273794987d310fb3355187f6658c0189a5ed156fd830bc4faa5ccc",
           "worldConfigTxHash": "0x797d37b5a273794987d310fb3355187f6658c0189a5ed156fd830bc4faa5ccc",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.496Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:19.104Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.496Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:19.104Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-03-06-26-1900\" does not exist"
         }
       },
@@ -12272,10 +12272,10 @@
           "configureTxHash": "0x718fc054ce8e4312304ab73911d27167b969b9241b5eaef938fb0716160aa27",
           "worldConfigTxHash": "0x718fc054ce8e4312304ab73911d27167b969b9241b5eaef938fb0716160aa27",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.588Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:19.201Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.588Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:19.201Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-04-06-26-1000\" does not exist"
         }
       },
@@ -12289,7 +12289,7 @@
         },
         "seriesGameNumber": 65,
         "currentStepId": "configure-worlds",
-        "latestEvent": "Failed to fetch world contracts: 404 Not Found",
+        "latestEvent": "Indexer maintenance failed for na-gladiator-05-06-26-0100: Torii deployment \"na-gladiator-05-06-26-0100\" does not exist",
         "status": "failed",
         "configSteps": [],
         "steps": [
@@ -12342,10 +12342,10 @@
           "worldAddress": "0x05ca919adf15d01d7e4fad108d96412889446b9dd4125e4bc90a63c50cffc0ac",
           "createGameTxHash": "0x2b632217a544926c30f2c038c8287bbd23def04e837a29fbe13dac473e7fed0",
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.677Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:19.300Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.677Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:19.300Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-05-06-26-0100\" does not exist"
         }
       },
@@ -12406,10 +12406,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.748Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:19.403Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.748Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:19.403Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-05-06-26-1800\" does not exist"
         }
       },
@@ -12470,10 +12470,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.841Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:19.504Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.841Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:19.504Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-06-06-26-1200\" does not exist"
         }
       },
@@ -12534,10 +12534,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.917Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:19.605Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.917Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:19.605Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-06-06-26-2000\" does not exist"
         }
       },
@@ -12598,10 +12598,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:10.987Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:19.703Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:10.987Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:19.703Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-07-06-26-0300\" does not exist"
         }
       },
@@ -12662,10 +12662,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.063Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:19.802Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.063Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:19.802Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-07-06-26-1100\" does not exist"
         }
       },
@@ -12726,10 +12726,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.135Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:19.901Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.135Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:19.901Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-07-06-26-1900\" does not exist"
         }
       },
@@ -12790,10 +12790,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.209Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:20.004Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.209Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:20.004Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-08-06-26-0100\" does not exist"
         }
       },
@@ -12854,10 +12854,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.280Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:20.106Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.280Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:20.106Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-09-06-26-1100\" does not exist"
         }
       },
@@ -12918,10 +12918,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.353Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:20.208Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.353Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:20.208Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-10-06-26-0200\" does not exist"
         }
       },
@@ -12982,10 +12982,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.424Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:20.308Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.424Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:20.308Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-10-06-26-1900\" does not exist"
         }
       },
@@ -13046,10 +13046,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.498Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:20.410Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.498Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:20.410Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-11-06-26-1000\" does not exist"
         }
       },
@@ -13110,10 +13110,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.587Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:20.511Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.587Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:20.511Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-12-06-26-0100\" does not exist"
         }
       },
@@ -13175,9 +13175,9 @@
         "artifacts": {
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.661Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:20.612Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.661Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:20.612Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-12-06-26-1800\" does not exist"
         }
       },
@@ -13238,10 +13238,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.763Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:20.714Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.763Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:20.714Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-13-06-26-1200\" does not exist"
         }
       },
@@ -13302,10 +13302,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.834Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:20.815Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.834Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:20.815Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-13-06-26-2000\" does not exist"
         }
       },
@@ -13366,10 +13366,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.905Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:20.916Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.905Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:20.916Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-14-06-26-0300\" does not exist"
         }
       },
@@ -13430,10 +13430,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:11.980Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:21.016Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:11.980Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:21.016Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-14-06-26-1100\" does not exist"
         }
       },
@@ -13494,10 +13494,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.057Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:21.117Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.057Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:21.117Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-14-06-26-1900\" does not exist"
         }
       },
@@ -13558,10 +13558,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.129Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:21.218Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.129Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:21.218Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-15-06-26-0100\" does not exist"
         }
       },
@@ -13622,10 +13622,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.203Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:21.321Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.203Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:21.321Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-16-06-26-1100\" does not exist"
         }
       },
@@ -13687,9 +13687,9 @@
         "artifacts": {
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.278Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:21.419Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.278Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:21.419Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-17-06-26-0200\" does not exist"
         }
       },
@@ -13750,10 +13750,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.350Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:21.520Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.350Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:21.520Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-17-06-26-1900\" does not exist"
         }
       },
@@ -13814,10 +13814,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.424Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:21.619Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.424Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:21.619Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-18-06-26-1000\" does not exist"
         }
       },
@@ -13878,10 +13878,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.522Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:21.719Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.522Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:21.719Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-19-06-26-0100\" does not exist"
         }
       },
@@ -13942,10 +13942,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.593Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:21.818Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.593Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:21.818Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-19-06-26-1800\" does not exist"
         }
       },
@@ -14007,9 +14007,9 @@
         "artifacts": {
           "indexerCreated": false,
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.686Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:21.919Z",
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.686Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:21.919Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-20-06-26-1200\" does not exist"
         }
       },
@@ -14070,10 +14070,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.763Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:22.019Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.763Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:22.019Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-20-06-26-2000\" does not exist"
         }
       },
@@ -14134,10 +14134,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.837Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:22.118Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.837Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:22.118Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-21-06-26-0300\" does not exist"
         }
       },
@@ -14198,10 +14198,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.912Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:22.221Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.912Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:22.221Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-21-06-26-1100\" does not exist"
         }
       },
@@ -14262,10 +14262,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:12.986Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:22.325Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:12.986Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:22.325Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-21-06-26-1900\" does not exist"
         }
       },
@@ -14326,10 +14326,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:13.076Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:22.423Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:13.076Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:22.423Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-22-06-26-0100\" does not exist"
         }
       },
@@ -14390,10 +14390,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:13.184Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:22.525Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:13.184Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:22.525Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-23-06-26-1100\" does not exist"
         }
       },
@@ -14454,10 +14454,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:13.257Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:22.625Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:13.257Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:22.625Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-24-06-26-0200\" does not exist"
         }
       },
@@ -14518,10 +14518,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:13.355Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:22.727Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:13.355Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:22.727Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-24-06-26-1900\" does not exist"
         }
       },
@@ -14582,10 +14582,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:13.429Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:22.827Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:13.429Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:22.827Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-25-06-26-1000\" does not exist"
         }
       },
@@ -14646,10 +14646,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:13.502Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:22.925Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:13.502Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:22.925Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-26-06-26-0100\" does not exist"
         }
       },
@@ -14710,10 +14710,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:13.573Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:23.027Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:13.573Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:23.027Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-26-06-26-1800\" does not exist"
         }
       },
@@ -14774,10 +14774,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:13.665Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:23.130Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:13.665Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:23.130Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-27-06-26-1200\" does not exist"
         }
       },
@@ -14838,10 +14838,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:13.765Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:23.230Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:13.765Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:23.230Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-27-06-26-2000\" does not exist"
         }
       },
@@ -14902,10 +14902,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:13.847Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:23.334Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:13.847Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:23.334Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-28-06-26-0300\" does not exist"
         }
       },
@@ -14966,10 +14966,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:13.918Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:23.437Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:13.918Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:23.437Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-28-06-26-1100\" does not exist"
         }
       },
@@ -15030,10 +15030,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:13.994Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:23.536Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:13.994Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:23.536Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-28-06-26-1900\" does not exist"
         }
       },
@@ -15094,10 +15094,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.066Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:23.640Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.066Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:23.640Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-29-06-26-0100\" does not exist"
         }
       },
@@ -15158,10 +15158,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.137Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:23.738Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.137Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:23.738Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-30-06-26-1100\" does not exist"
         }
       },
@@ -15222,10 +15222,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.211Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:23.840Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.211Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:23.840Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-01-07-26-0200\" does not exist"
         }
       },
@@ -15286,10 +15286,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.282Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:23.941Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.282Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:23.941Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-01-07-26-1900\" does not exist"
         }
       },
@@ -15350,10 +15350,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.353Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:24.043Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.353Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:24.043Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-02-07-26-1000\" does not exist"
         }
       },
@@ -15414,10 +15414,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.428Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:24.144Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.428Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:24.144Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-03-07-26-0100\" does not exist"
         }
       },
@@ -15478,10 +15478,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.520Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:24.246Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.520Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:24.246Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-03-07-26-1800\" does not exist"
         }
       },
@@ -15542,10 +15542,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.593Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:24.344Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.593Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:24.344Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-04-07-26-1200\" does not exist"
         }
       },
@@ -15606,10 +15606,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.664Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:24.445Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.664Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:24.445Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-04-07-26-2000\" does not exist"
         }
       },
@@ -15670,10 +15670,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.734Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:24.550Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.734Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:24.550Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-05-07-26-0300\" does not exist"
         }
       },
@@ -15734,10 +15734,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.807Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:24.651Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.807Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:24.651Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-05-07-26-1100\" does not exist"
         }
       },
@@ -15798,10 +15798,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.882Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:24.752Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.882Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:24.752Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-05-07-26-1900\" does not exist"
         }
       },
@@ -15862,10 +15862,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:14.952Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:24.853Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:14.952Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:24.853Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-06-07-26-0100\" does not exist"
         }
       },
@@ -15926,10 +15926,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.028Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:24.952Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.028Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:24.952Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-07-07-26-1100\" does not exist"
         }
       },
@@ -15990,10 +15990,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.105Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:25.054Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.105Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:25.054Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-08-07-26-0200\" does not exist"
         }
       },
@@ -16054,10 +16054,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.176Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:25.153Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.176Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:25.153Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-08-07-26-1900\" does not exist"
         }
       },
@@ -16118,10 +16118,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.252Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:25.255Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.252Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:25.255Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-09-07-26-1000\" does not exist"
         }
       },
@@ -16182,10 +16182,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.326Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:25.356Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.326Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:25.356Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-10-07-26-0100\" does not exist"
         }
       },
@@ -16246,10 +16246,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.403Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:25.458Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.403Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:25.458Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-10-07-26-1800\" does not exist"
         }
       },
@@ -16310,10 +16310,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.495Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:25.558Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.495Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:25.558Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-11-07-26-1200\" does not exist"
         }
       },
@@ -16374,10 +16374,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.569Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:25.659Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.569Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:25.659Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-11-07-26-2000\" does not exist"
         }
       },
@@ -16438,10 +16438,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.639Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:25.761Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.639Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:25.761Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-12-07-26-0300\" does not exist"
         }
       },
@@ -16502,10 +16502,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.714Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:25.862Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.714Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:25.862Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-12-07-26-1100\" does not exist"
         }
       },
@@ -16566,10 +16566,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.784Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:25.963Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.784Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:25.963Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-12-07-26-1900\" does not exist"
         }
       },
@@ -16630,10 +16630,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.854Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:26.066Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.854Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:26.066Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-13-07-26-0100\" does not exist"
         }
       },
@@ -16694,10 +16694,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:15.946Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:26.167Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:15.946Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:26.167Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-14-07-26-1100\" does not exist"
         }
       },
@@ -16758,10 +16758,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:16.017Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:26.267Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:16.017Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:26.267Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-15-07-26-0200\" does not exist"
         }
       },
@@ -16822,10 +16822,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:16.091Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:26.368Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:16.091Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:26.368Z",
           "lastIndexerTierDispatchError": "Torii deployment \"eu-gladiator-15-07-26-1900\" does not exist"
         }
       },
@@ -16886,10 +16886,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:16.186Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:26.470Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:16.186Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:26.470Z",
           "lastIndexerTierDispatchError": "Torii deployment \"apac-gladiator-16-07-26-1000\" does not exist"
         }
       },
@@ -16950,10 +16950,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-17T13:47:16.280Z",
+          "pendingIndexerTierRequestedAt": "2026-07-17T14:07:26.572Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-17T13:47:16.280Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-17T14:07:26.572Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-17-07-26-0100\" does not exist"
         }
       },
