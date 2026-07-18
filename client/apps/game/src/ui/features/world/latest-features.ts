@@ -34,6 +34,14 @@ const buildLatestFeaturesFeed = (features: LatestFeature[]) =>
 // are surfaced in the What's New popup.
 const allLatestFeatures: LatestFeature[] = [
   {
+    date: "2026-07-18",
+    title: "Verified Runtime Connections",
+    description:
+      "Improved mainnet startup so the game connects only through the current verified runtime registry instead of silently using an obsolete fallback when live endpoints are unavailable.",
+    type: "improvement",
+    gameSlug: "world",
+  },
+  {
     date: "2026-06-05",
     title: "Lighter Structure Sync",
     description:

@@ -1,25 +1,31 @@
 # AWS Runtime Platform
 
-This directory contains the isolated AWS ECS runtime platform for Katana and Torii. Terraform owns each environment's
-foundation. GitHub Actions own runtime mutations through `config/deployer/clean/cli/aws-runtime.ts`.
+This directory contains the reusable AWS runtime foundation and the migration path toward game-owned Blitz stacks.
+Terraform owns each environment's networking, IAM, routing, control table, Fargate, observability, backup, and recovery
+primitives. Production Katana moves to measured SEV-SNP EC2; Torii and non-attested services remain on Fargate.
+
+Production activation is blocked by the settlement program's A23 feasibility/rebaseline decision. The command backend
+therefore rejects `ec2-sev-snp` desired state until the pinned `katana-tee` source and measured EC2 provisioner are
+installed. The existing ECS foundation must not be interpreted as a production TEE implementation.
 
 ## Containment
 
-Keep `RUNTIME_PROVIDER=slot` in every GitHub environment until the rollout gates below pass. Keep
-`AWS_RUNTIME_AUTO_TEARDOWN_ENABLED=false` and `FACTORY_RUNTIME_FALLBACK_SWEEP_ENABLED=false`; automated AWS
-teardown is intentionally disabled during the remediation rollout. A registry rollback changes aliases back to Slot
-and does not delete either provider's state.
+Legacy public creation for `mainnet.blitz` is disabled. New production launches enter through the authenticated
+game-stack API, acquire authoritative DynamoDB admission, and publish Katana and Torii together only after readiness.
+`mainnet.eternum` remains outside the L3 lifecycle and its legacy create path is operator-only.
 
 Account and region ownership is fixed:
 
 | Account class | Environments | Region |
 | --- | --- | --- |
-| non-production | `slot.blitz`, `slot.eternum`, `slottest.blitz`, `slottest.eternum` | `us-east-1` |
-| production | `mainnet.blitz`, `mainnet.eternum` | `us-east-1` |
-| isolated DR | `dr-mainnet.blitz`, `dr-mainnet.eternum` | `us-west-2` |
+| legacy non-production | `slot.*`, `slottest.*` (historical read aliases only) | `us-east-1` |
+| Blitz production and real-TEE staging target | `mainnet.blitz`, `sepolia.blitz` | `us-east-2` |
+| Blitz recovery target | `mainnet.blitz` recovery | `eu-west-1` |
+| Eternum foundations | `mainnet.eternum` and its recovery environment | existing regions, separate from Blitz |
 
-The non-production account owns one shared Katana for `slot` and one for `slottest`. They use
-`LifecycleClass=shared`, are never game-owned, and cannot enter automated teardown. Mainnet permits Torii only.
+Existing shared `slot` and `slottest` Katana are historical non-production infrastructure. They are not valid targets
+for new production runtime resolution. One public Blitz launch owns one ephemeral, attested Katana and one initial
+World. `mainnet.eternum` permits Torii only and never provisions Katana.
 
 ## Foundation
 
@@ -66,7 +72,7 @@ The important outputs map directly to GitHub environment variables:
 
 Operator-set GitHub environment variables:
 
-- `RUNTIME_PROVIDER=slot`
+- `RUNTIME_PROVIDER=aws` for production Blitz after all activation gates pass
 - `AWS_RUNTIME_IMAGE_DIGEST` set to an approved `sha256:` digest
 - `AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS` only when restores need more than the 90-second floor
 - `RUNTIME_REGISTRY_URL` for the versioned public registry
@@ -202,11 +208,13 @@ Every Terraform root requires a non-empty `cors_origins` list. Entries must be p
 Production uses per-AZ production NAT gateways; non-production uses one non-production NAT gateway. Keep
 `enable_vpc_endpoints=true` so S3, ECR API/Docker, and CloudWatch Logs traffic remains on private endpoints.
 
-Clients do not build hosts. They resolve factory, global, shared-chain, and per-game aliases from
-`/api/runtime-registry/v1`. Each alias retains a Slot endpoint. Provider rollback updates `activeProvider` only and
-does not destroy AWS or Slot state.
+Clients do not build hosts. Mainnet clients require `/api/runtime-registry/v1` and fail closed when it is absent or
+unavailable. A production game stack is one AWS-only registry revision containing complete Katana and Torii endpoint
+sets, immutable runtime identities, image digests, routing shards, and `activeUntil`. Partial, expired, or Slot-backed
+production game-stack aliases are unavailable. Historical non-production aliases retain their existing rollback
+behavior while migration evidence is gathered.
 
-Seed the registry once before the first launch publication:
+Seed the historical registry only for non-production migration work:
 
 ```sh
 RUNTIME_REGISTRY_URL=https://<factory-worker>/api/runtime-registry/v1 \
@@ -214,10 +222,9 @@ FACTORY_WORKER_ADMIN_SECRET=<admin-secret> \
 bun scripts/update-runtime-registry.ts --seed-default true
 ```
 
-Slot game launches publish their resolved Torii endpoints in one revision after `create-indexer` or
-`create-indexers`. AWS launches add the immutable artifact while retaining those Slot endpoints. The generic AWS
-deployer does the same for shared-chain, factory, global, and manually managed game runtimes;
-`registry_json.activate` defaults to false so publication and traffic activation remain separate approvals.
+The generic runtime publisher rejects `mainnet.blitz`. Production uses the complete game-stack publisher so Katana and
+Torii become visible atomically after identity sealing, attestation, World deployment, indexer readiness, and registry
+verification. Removing the active production stack deletes its AWS-only aliases; it never rolls back to Slot.
 
 ## Snapshots
 
@@ -251,9 +258,9 @@ groups, EFS access points, alarms, registry records, and snapshot intent.
 
 ## Backup And DR
 
-Production EFS recovery points copy cross-account to `us-west-2`. Vault Lock retains daily points for 35 days, weekly
-points for 13 weeks, and monthly points for one year. The warm DR account keeps VPC, ECS, ALB, ECR, WAF, and replica
-EFS foundations ready.
+The existing ECS recovery implementation copies production EFS recovery points cross-account to `us-west-2`.
+Blitz's TEE recovery target is `eu-west-1`; changing the foundation, replication policy, certificates, and destructive
+restore automation is gated work and must land together after A23. Eternum keeps its existing recovery region.
 
 DR roots require `existing_certificate_arn` for a separately validated `us-west-2` ACM certificate. They set
 `manage_public_dns=false`, so the warm foundation never competes with the production roots for shard aliases; only the
@@ -293,13 +300,11 @@ Mainnet cutover remains blocked until this table is fully green and has explicit
 
 ## Rollout
 
-Provision shared `slot` and `slottest` Katana first, then factory/global Torii, then per-game Torii. Shadow factory,
-global, and representative game aliases on `slottest`; compare discovery, index height, model counts, and sampled SQL.
-Cut over `slottest.*`, then `slot.*`, mainnet factory/global Torii, and finally mainnet per-game Torii.
-
-Mainnet additionally requires two consecutive green forced-crash nights, a green 24h Torii soak, enforced WAF,
-successful DR drill, confirmed alert delivery, and signed RPO/RTO. Keep Slot alias targets for at least 14 days after
-each cutover.
+There is no provider-by-provider production cutover or Slot rollback. Wave 0 freezes the protocol schemas and publishes
+the signed A23 decision first. Subsequent staging must prove the local two-chain path, real SEV-SNP Sepolia journey,
+checkpoint/archive/relayer/indexer services, destructive restore, and the full one-way legacy migration. Production
+publishes one complete AWS-only stack after every release gate passes. After activation, recovery is emergency freeze,
+claims, exit, and dormant materialization—not an in-place checkpoint rollback.
 
 Bootstrap inputs not owned by this repository are AWS account/Organizations setup, hosted zones, state bucket names,
 the DR regional ACM certificate, production alert destinations, approved monthly budgets, KMS/backup destination ARNs,

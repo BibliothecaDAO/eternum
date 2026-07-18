@@ -16,6 +16,25 @@ export interface RuntimeEndpointAlias {
   runtimeInstanceId?: string;
   imageDigest?: string;
   routingShard?: number;
+  activeUntil?: string;
+  publicationRevision?: number;
+  attestationMeasurement?: string;
+}
+
+export interface RuntimeReadinessEvidence {
+  identitySealedAt: string;
+  attestationVerifiedAt: string;
+  worldReadyAt: string;
+  indexerReadyAt: string;
+  registryVerifiedAt: string;
+}
+
+export interface ActiveGameStackPointer {
+  gameStackId: string;
+  activeUntil: string;
+  publicationRevision: number;
+  attestationMeasurement: string;
+  verification: RuntimeReadinessEvidence;
 }
 
 export interface RuntimeRegistryV1 {
@@ -23,6 +42,7 @@ export interface RuntimeRegistryV1 {
   revision: number;
   generatedAt: string;
   aliases: Record<string, RuntimeEndpointAlias>;
+  activeGameStacks?: Record<string, ActiveGameStackPointer>;
 }
 
 export interface ResolveRuntimeAliasOptions {
@@ -33,6 +53,7 @@ export interface ResolveRuntimeAliasOptions {
 export interface LoadRuntimeRegistryOptions {
   embedded?: RuntimeRegistryV1 | string;
   fetchImpl?: typeof fetch;
+  required?: boolean;
   timeoutMs?: number;
   url?: string;
 }
@@ -61,13 +82,6 @@ const DEFAULT_SLOT_REGISTRY: RuntimeRegistryV1 = {
       "torii",
       "sql",
       "https://api.cartridge.gg/x/eternum-factory-slot-d/torii/sql",
-    ),
-    "factory.mainnet.blitz.torii.sql": slotAlias(
-      "factory",
-      "mainnet.blitz",
-      "torii",
-      "sql",
-      "https://api.cartridge.gg/x/eternum-factory-mainnet/torii/sql",
     ),
     "factory.slot.eternum.torii.sql": slotAlias(
       "factory",
@@ -111,13 +125,6 @@ const DEFAULT_SLOT_REGISTRY: RuntimeRegistryV1 = {
       "base",
       "https://api.cartridge.gg/x/blitz-slot-global-1/torii",
     ),
-    "global.mainnet.blitz.torii.base": slotAlias(
-      "global",
-      "mainnet.blitz",
-      "torii",
-      "base",
-      "https://api.cartridge.gg/x/blitz-mainnet-global-1/torii",
-    ),
     "shared-chain.slot.katana.rpc": slotAlias(
       "shared-chain",
       "slot.blitz",
@@ -145,62 +152,6 @@ const DEFAULT_SLOT_REGISTRY: RuntimeRegistryV1 = {
       "chain-rpc",
       "rpc",
       "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9",
-    ),
-    "game.mainnet.blitz.s0-game-1.torii.sql": slotAlias(
-      "game",
-      "mainnet.blitz",
-      "torii",
-      "sql",
-      "https://api.cartridge.gg/x/s0-game-1/torii/sql",
-    ),
-    "game.mainnet.blitz.s0-game-1.torii.base": slotAlias(
-      "game",
-      "mainnet.blitz",
-      "torii",
-      "base",
-      "https://api.cartridge.gg/x/s0-game-1/torii",
-    ),
-    "game.mainnet.blitz.s0-game-2.torii.sql": slotAlias(
-      "game",
-      "mainnet.blitz",
-      "torii",
-      "sql",
-      "https://api.cartridge.gg/x/s0-game-2/torii/sql",
-    ),
-    "game.mainnet.blitz.s0-game-2.torii.base": slotAlias(
-      "game",
-      "mainnet.blitz",
-      "torii",
-      "base",
-      "https://api.cartridge.gg/x/s0-game-2/torii",
-    ),
-    "game.mainnet.blitz.s0-game-3.torii.sql": slotAlias(
-      "game",
-      "mainnet.blitz",
-      "torii",
-      "sql",
-      "https://api.cartridge.gg/x/s0-game-3/torii/sql",
-    ),
-    "game.mainnet.blitz.s0-game-3.torii.base": slotAlias(
-      "game",
-      "mainnet.blitz",
-      "torii",
-      "base",
-      "https://api.cartridge.gg/x/s0-game-3/torii",
-    ),
-    "game.mainnet.blitz.s0-game-4.torii.sql": slotAlias(
-      "game",
-      "mainnet.blitz",
-      "torii",
-      "sql",
-      "https://api.cartridge.gg/x/s0-game-4/torii/sql",
-    ),
-    "game.mainnet.blitz.s0-game-4.torii.base": slotAlias(
-      "game",
-      "mainnet.blitz",
-      "torii",
-      "base",
-      "https://api.cartridge.gg/x/s0-game-4/torii",
     ),
     "game.mainnet.eternum.eternum-marketplace-mainnet19.torii.base": slotAlias(
       "game",
@@ -275,6 +226,9 @@ export async function loadRuntimeRegistry(
   const fallback = installFallbackRegistry(options.embedded);
   const registryUrl = options.url?.trim();
   if (!registryUrl) {
+    if (options.required) {
+      throw new Error("Required runtime registry URL is missing");
+    }
     return fallback;
   }
 
@@ -285,9 +239,13 @@ export async function loadRuntimeRegistry(
       source: "remote",
     };
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (options.required) {
+      throw new Error(`Required runtime registry is unavailable: ${message}`);
+    }
     return {
       ...fallback,
-      remoteError: error instanceof Error ? error.message : String(error),
+      remoteError: message,
     };
   }
 }
@@ -314,6 +272,9 @@ export function parseRuntimeRegistry(value: unknown): RuntimeRegistryV1 {
 
   for (const [alias, entry] of Object.entries(registry.aliases)) {
     validateRuntimeAlias(alias, entry);
+  }
+  if (registry.activeGameStacks !== undefined) {
+    validateActiveGameStackPointers(registry.activeGameStacks, registry.revision || 0, new Date(registry.generatedAt));
   }
   return registry as RuntimeRegistryV1;
 }
@@ -342,6 +303,161 @@ export function buildGameRuntimeAlias(
   endpointKind: "base" | "health" | "rpc" | "sql",
 ): string {
   return `game.${environmentId}.${runtimeName}.${runtimeKind}.${endpointKind}`;
+}
+
+export function assertCompleteActiveGameStack(
+  registry: RuntimeRegistryV1,
+  gameStackId: string,
+  now: Date = new Date(),
+): void {
+  const activePointer = registry.activeGameStacks?.["mainnet.blitz"];
+  if (!matchesRequestedActiveStack(activePointer, gameStackId)) {
+    throw new Error(`Blitz game stack "${gameStackId}" is not the registry's active stack`);
+  }
+  if (!isActiveGameStackPointerUnexpired(activePointer, now)) {
+    throw new Error(`Active Blitz game stack "${gameStackId}" is expired`);
+  }
+  if (!hasVerifiedAttestationMeasurement(activePointer)) {
+    throw new Error(`Active Blitz game stack "${gameStackId}" has no verified attestation measurement`);
+  }
+  if (!hasCompleteReadinessEvidence(activePointer, now)) {
+    throw new Error(`Active Blitz game stack "${gameStackId}" has future-dated readiness evidence`);
+  }
+
+  const requiredAliases = [
+    buildGameRuntimeAlias("mainnet.blitz", gameStackId, "katana", "base"),
+    buildGameRuntimeAlias("mainnet.blitz", gameStackId, "katana", "health"),
+    buildGameRuntimeAlias("mainnet.blitz", gameStackId, "katana", "rpc"),
+    buildGameRuntimeAlias("mainnet.blitz", gameStackId, "torii", "base"),
+    buildGameRuntimeAlias("mainnet.blitz", gameStackId, "torii", "health"),
+    buildGameRuntimeAlias("mainnet.blitz", gameStackId, "torii", "sql"),
+  ];
+  const entries = requiredAliases.map((alias) => [alias, registry.aliases[alias]] as const);
+  const missingAliases = entries.filter(([, entry]) => !entry).map(([alias]) => alias);
+  if (missingAliases.length > 0) {
+    throw new Error(`Active Blitz game stack is incomplete: ${missingAliases.join(", ")}`);
+  }
+
+  for (const [alias, entry] of entries) {
+    if (!entry || !isAwsOnlyImmutableGameStackAlias(entry, gameStackId, activePointer)) {
+      throw new Error(`Active Blitz game stack alias "${alias}" is not an AWS-only immutable runtime`);
+    }
+    if (!matchesActiveGameStackWindow(entry, activePointer, now)) {
+      throw new Error(`Active Blitz game stack alias "${alias}" is expired or missing activeUntil`);
+    }
+  }
+}
+
+function validateActiveGameStackPointers(
+  activeGameStacks: Record<string, ActiveGameStackPointer>,
+  registryRevision: number,
+  generatedAt: Date,
+): void {
+  for (const [environmentId, pointer] of Object.entries(activeGameStacks)) {
+    if (environmentId !== "mainnet.blitz") {
+      throw new Error(`Runtime registry has an unsupported active game-stack environment "${environmentId}"`);
+    }
+    if (!hasValidActiveGameStackIdentity(pointer)) {
+      throw new Error(`Runtime registry active game stack "${environmentId}" is invalid`);
+    }
+    if (!hasCompleteReadinessEvidence(pointer, generatedAt)) {
+      throw new Error(`Runtime registry active game stack "${environmentId}" has invalid readiness evidence`);
+    }
+    if (!hasValidPublicationRevision(pointer, registryRevision)) {
+      throw new Error(`Runtime registry active game stack "${environmentId}" has an invalid publicationRevision`);
+    }
+  }
+}
+
+function matchesRequestedActiveStack(
+  pointer: ActiveGameStackPointer | undefined,
+  gameStackId: string,
+): pointer is ActiveGameStackPointer {
+  return pointer?.gameStackId === gameStackId;
+}
+
+function isActiveGameStackPointerUnexpired(pointer: ActiveGameStackPointer, now: Date): boolean {
+  return Date.parse(pointer.activeUntil) > now.getTime();
+}
+
+function hasVerifiedAttestationMeasurement(pointer: ActiveGameStackPointer): boolean {
+  return /^sha384:[a-f0-9]{96}$/.test(pointer.attestationMeasurement);
+}
+
+function isAwsOnlyImmutableGameStackAlias(
+  entry: RuntimeEndpointAlias,
+  gameStackId: string,
+  pointer: ActiveGameStackPointer,
+): boolean {
+  const hasOnlyAwsEndpoint = entry.activeProvider === "aws" && Object.keys(entry.providers).length === 1;
+  const matchesImmutableStack =
+    Boolean(entry.providers.aws) &&
+    entry.runtimeName === gameStackId &&
+    entry.publicationRevision === pointer.publicationRevision;
+  const matchesAttestation =
+    entry.runtimeKind !== "katana" || entry.attestationMeasurement === pointer.attestationMeasurement;
+  return hasOnlyAwsEndpoint && matchesImmutableStack && matchesAttestation;
+}
+
+function matchesActiveGameStackWindow(
+  entry: RuntimeEndpointAlias,
+  pointer: ActiveGameStackPointer,
+  now: Date,
+): boolean {
+  return entry.activeUntil === pointer.activeUntil && Date.parse(entry.activeUntil) > now.getTime();
+}
+
+function hasValidActiveGameStackIdentity(
+  pointer: ActiveGameStackPointer | undefined,
+): pointer is ActiveGameStackPointer {
+  return Boolean(pointer?.gameStackId) && Number.isFinite(Date.parse(pointer?.activeUntil || ""));
+}
+
+function hasCompleteReadinessEvidence(pointer: ActiveGameStackPointer, generatedAt: Date): boolean {
+  return (
+    hasVerifiedAttestationMeasurement(pointer) &&
+    hasExactReadinessEvidenceKeys(pointer.verification) &&
+    hasOrderedReadinessEvidence(pointer.verification, generatedAt)
+  );
+}
+
+function hasExactReadinessEvidenceKeys(verification: RuntimeReadinessEvidence | undefined): boolean {
+  const expectedKeys = [
+    "identitySealedAt",
+    "attestationVerifiedAt",
+    "worldReadyAt",
+    "indexerReadyAt",
+    "registryVerifiedAt",
+  ];
+  return (
+    Boolean(verification) &&
+    Object.keys(verification || {})
+      .sort()
+      .join(",") === expectedKeys.sort().join(",")
+  );
+}
+
+function hasOrderedReadinessEvidence(verification: RuntimeReadinessEvidence, generatedAt: Date): boolean {
+  const timestamps = [
+    verification.identitySealedAt,
+    verification.attestationVerifiedAt,
+    verification.worldReadyAt,
+    verification.indexerReadyAt,
+    verification.registryVerifiedAt,
+  ].map((value) => Date.parse(value));
+  return (
+    timestamps.every(Number.isFinite) &&
+    timestamps.every((timestamp, index) => index === 0 || timestamp >= timestamps[index - 1]!) &&
+    timestamps.at(-1)! <= generatedAt.getTime()
+  );
+}
+
+function hasValidPublicationRevision(pointer: ActiveGameStackPointer, registryRevision: number): boolean {
+  return (
+    Number.isInteger(pointer.publicationRevision) &&
+    pointer.publicationRevision >= 1 &&
+    pointer.publicationRevision <= registryRevision
+  );
 }
 
 function slotAlias(
@@ -414,6 +530,18 @@ function validateRuntimeAlias(alias: string, entry: RuntimeEndpointAlias): void 
     }
     if (!Number.isInteger(entry.routingShard) || (entry.routingShard || 0) < 0) {
       throw new Error(`Runtime registry alias "${alias}" has an invalid routingShard`);
+    }
+    if (entry.activeUntil !== undefined && !Number.isFinite(Date.parse(entry.activeUntil))) {
+      throw new Error(`Runtime registry alias "${alias}" has an invalid activeUntil`);
+    }
+    if (
+      entry.publicationRevision !== undefined &&
+      (!Number.isInteger(entry.publicationRevision) || entry.publicationRevision < 1)
+    ) {
+      throw new Error(`Runtime registry alias "${alias}" has an invalid publicationRevision`);
+    }
+    if (entry.attestationMeasurement !== undefined && !/^sha384:[a-f0-9]{96}$/.test(entry.attestationMeasurement)) {
+      throw new Error(`Runtime registry alias "${alias}" has an invalid attestationMeasurement`);
     }
   }
 }

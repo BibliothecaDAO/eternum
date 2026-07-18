@@ -924,6 +924,67 @@ describe("AWS runtime helpers", () => {
     ).rejects.toThrow("Shared AWS Katana cannot be owned by a game or launch run");
   });
 
+  test("permits only game-owned SEV-SNP Katana for production Blitz", async () => {
+    const request = {
+      environmentId: "mainnet.blitz" as const,
+      runtimeKind: "katana" as const,
+      runtimeName: "blitz-season-42",
+      runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+      imageDigest: `sha256:${"a".repeat(64)}`,
+      exposurePolicy: "public-read" as const,
+      lifecycleClass: "ephemeral" as const,
+      runtimePlatform: "ec2-sev-snp" as const,
+      attestationMeasurement: `sha384:${"b".repeat(96)}`,
+      owner: {
+        runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+        gameName: "blitz-season-42",
+        runKind: "game" as const,
+        runName: "blitz-season-42",
+        autoTeardown: true,
+        lifecycleClass: "ephemeral" as const,
+      },
+    };
+    const backend = {
+      describeCount: 0,
+      async describeRuntime() {
+        this.describeCount += 1;
+        return this.describeCount === 1
+          ? {
+              provider: "aws" as const,
+              runtimeKind: "katana" as const,
+              runtimeName: request.runtimeName,
+              serviceName: request.runtimeName,
+              status: "missing" as const,
+            }
+          : {
+              provider: "aws" as const,
+              runtimeKind: "katana" as const,
+              runtimeName: request.runtimeName,
+              serviceName: request.runtimeName,
+              status: "existing" as const,
+            };
+      },
+      async createRuntime() {
+        return [];
+      },
+      async updateRuntimeTier() {},
+      async deleteRuntime() {
+        return [];
+      },
+    };
+
+    await expect(ensureAwsRuntime(request, { backend })).resolves.toMatchObject({ action: "created" });
+    await expect(ensureAwsRuntime({ ...request, environmentId: "mainnet.eternum" }, { backend })).rejects.toThrow(
+      "AWS Katana is not permitted for Eternum environment mainnet.eternum",
+    );
+    await expect(ensureAwsRuntime({ ...request, runtimePlatform: "ecs-fargate" }, { backend })).rejects.toThrow(
+      "Production Blitz Katana requires runtimePlatform=ec2-sev-snp",
+    );
+    await expect(ensureAwsRuntime(request)).rejects.toThrow(
+      "Production Blitz SEV-SNP runtime backend is unavailable until the pinned katana-tee source and measured EC2 provisioner are installed",
+    );
+  });
+
   test("rejects a mutation while another operation owns the runtime lease", async () => {
     configureAwsRuntimeEnv();
     process.env.AWS_RUNTIME_CONTROL_TABLE_NAME = "runtime-control";

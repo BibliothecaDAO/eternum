@@ -241,6 +241,7 @@ async function handleRequest(request, env) {
 async function handleCreateFactoryRun(request, env) {
   const body = await readJsonBody(request);
   validateCreateFactoryRunBody(body);
+  authorizeLegacyFactoryCreate(request, env, body.environment);
 
   const github = createGitHubClient(env, body.workflowRef);
   const existingRun = await readFactoryRunIfPresent(
@@ -290,6 +291,7 @@ async function handleCreateFactoryRun(request, env) {
 async function handleCreateFactorySeriesRun(request, env) {
   const body = await readJsonBody(request);
   validateCreateFactorySeriesRunBody(body);
+  authorizeLegacyFactoryCreate(request, env, body.environment);
 
   const github = createGitHubClient(env, body.workflowRef);
   const existingRun = await readFactorySeriesRunIfPresent(
@@ -342,6 +344,7 @@ async function handleCreateFactorySeriesRun(request, env) {
 async function handleCreateFactoryRotationRun(request, env) {
   const body = await readJsonBody(request);
   validateCreateFactoryRotationRunBody(body);
+  authorizeLegacyFactoryCreate(request, env, body.environment);
 
   const github = createGitHubClient(env, body.workflowRef);
   const existingRun = await readFactoryRotationRunIfPresent(
@@ -2015,6 +2018,15 @@ function requireFactoryWorkerAdminAuthorization(request, env) {
   const providedSecret = request.headers.get(FACTORY_WORKER_ADMIN_SECRET_HEADER);
   if (!providedSecret || providedSecret !== expectedSecret) {
     throw new HttpError(401, "Unauthorized");
+  }
+}
+
+function authorizeLegacyFactoryCreate(request, env, environment) {
+  if (environment === "mainnet.blitz") {
+    throw new HttpError(410, "Public mainnet Blitz launches require the authenticated AWS game-stack API");
+  }
+  if (environment === "mainnet.eternum") {
+    requireFactoryWorkerAdminAuthorization(request, env);
   }
 }
 

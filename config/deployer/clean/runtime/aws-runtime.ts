@@ -94,6 +94,7 @@ export {
 } from "./aws/reconcile";
 
 export type AwsRuntimeKind = "katana" | "torii";
+export type AwsRuntimePlatform = "ecs-fargate" | "ec2-sev-snp";
 export type AwsRuntimeStatus = "existing" | "missing" | "indeterminate";
 export type AwsRuntimeAction = "created" | "already-live" | "updated" | "deleted" | "already-missing" | "skipped-stale";
 export type AwsRuntimeAdoptedResource = "access-point" | "target-group" | "listener-rule" | "service";
@@ -207,6 +208,8 @@ export interface AwsRuntimeRequest {
   retainData?: boolean;
   expectedDeleteAfter?: string;
   owner?: AwsRuntimeOwnerMetadata;
+  runtimePlatform?: AwsRuntimePlatform;
+  attestationMeasurement?: string;
 }
 
 export interface AwsRuntimeOwnerMetadata {

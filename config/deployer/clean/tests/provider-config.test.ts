@@ -17,6 +17,14 @@ afterEach(() => {
 });
 
 describe("resolveRuntimeProvider", () => {
+  test("defaults mainnet environments to AWS", () => {
+    delete process.env.RUNTIME_PROVIDER;
+    delete process.env.RUNTIME_PROVIDER_OVERRIDE;
+
+    expect(resolveRuntimeProvider(resolveDeploymentEnvironment("mainnet.blitz"))).toBe("aws");
+    expect(resolveRuntimeProvider(resolveDeploymentEnvironment("mainnet.eternum"))).toBe("aws");
+  });
+
   test("resolves first-class slottest deployment environments", () => {
     expect(resolveDeploymentEnvironment("slottest.blitz")).toMatchObject({
       chain: "slottest",

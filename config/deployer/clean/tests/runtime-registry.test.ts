@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   buildFactoryRuntimeAlias,
   buildGameRuntimeAlias,
+  assertCompleteActiveGameStack,
   clearInstalledRuntimeRegistry,
   getDefaultRuntimeRegistry,
   loadRuntimeRegistry,
@@ -10,7 +11,9 @@ import {
 } from "../../../../common/factory/runtime-registry";
 import {
   removeRuntimeArtifact,
+  removeActiveGameStackPublication,
   removeRuntimeArtifacts,
+  registerReadyGameStack,
   registerRuntimeArtifact,
   registerRuntimeEndpointRegistrations,
   switchRuntimeAliasProvider,
@@ -19,6 +22,156 @@ import { buildLaunchRuntimeRegistrations } from "../../../../common/factory/runt
 import { applyRuntimeTeardownResult } from "../../../../scripts/update-runtime-registry";
 
 describe("runtime endpoint registry", () => {
+  test("keeps production Blitz runtimes out of the historical Slot defaults", () => {
+    const productionRuntimeAliases = Object.values(getDefaultRuntimeRegistry().aliases).filter(
+      (entry) => entry.environmentId === "mainnet.blitz" && entry.runtimeKind !== "chain-rpc",
+    );
+
+    expect(productionRuntimeAliases).toEqual([]);
+  });
+
+  test("publishes a complete production game stack in one AWS-only revision", () => {
+    const registry = registerReadyGameStack(
+      getDefaultRuntimeRegistry(),
+      {
+        environmentId: "mainnet.blitz",
+        gameStackId: "blitz-season-42",
+        activeUntil: "2026-07-18T14:30:00.000Z",
+        attestationMeasurement: `sha384:${"c".repeat(96)}`,
+        verification: {
+          identitySealedAt: "2026-07-18T12:20:00.000Z",
+          attestationVerifiedAt: "2026-07-18T12:25:00.000Z",
+          worldReadyAt: "2026-07-18T12:30:00.000Z",
+          indexerReadyAt: "2026-07-18T12:35:00.000Z",
+          registryVerifiedAt: "2026-07-18T12:40:00.000Z",
+        },
+        katana: {
+          runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b451",
+          imageDigest: `sha256:${"a".repeat(64)}`,
+          routingShard: 0,
+          endpoints: {
+            base: "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/katana",
+            health: "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/katana/health",
+            rpc: "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/katana/rpc/v0_9",
+          },
+        },
+        torii: {
+          runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b452",
+          imageDigest: `sha256:${"b".repeat(64)}`,
+          routingShard: 0,
+          endpoints: {
+            base: "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/torii",
+            health: "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/torii/health",
+            sql: "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/torii/sql",
+          },
+        },
+      },
+      new Date("2026-07-18T12:41:00.000Z"),
+    );
+
+    const staleRemoval = removeActiveGameStackPublication(registry, {
+      gameStackId: "blitz-season-42",
+      activeUntil: "2026-07-18T14:30:00.000Z",
+      publicationRevision: registry.revision - 1,
+    });
+    const removed = removeActiveGameStackPublication(registry, {
+      gameStackId: "blitz-season-42",
+      activeUntil: "2026-07-18T14:30:00.000Z",
+      publicationRevision: registry.revision,
+    });
+
+    expect(registry.revision).toBe(getDefaultRuntimeRegistry().revision + 1);
+    for (const runtimeKind of ["katana", "torii"] as const) {
+      const endpointKind = runtimeKind === "katana" ? "rpc" : "sql";
+      const alias = buildGameRuntimeAlias("mainnet.blitz", "blitz-season-42", runtimeKind, endpointKind);
+      expect(registry.aliases[alias]).toMatchObject({
+        activeProvider: "aws",
+        activeUntil: "2026-07-18T14:30:00.000Z",
+        publicationRevision: registry.revision,
+        providers: { aws: expect.any(String) },
+      });
+      expect(registry.aliases[alias]?.providers.slot).toBeUndefined();
+    }
+    expect(() =>
+      assertCompleteActiveGameStack(registry, "blitz-season-42", new Date("2026-07-18T13:00:00.000Z")),
+    ).not.toThrow();
+    expect(registry.activeGameStacks?.["mainnet.blitz"]).toEqual({
+      gameStackId: "blitz-season-42",
+      activeUntil: "2026-07-18T14:30:00.000Z",
+      publicationRevision: registry.revision,
+      attestationMeasurement: `sha384:${"c".repeat(96)}`,
+      verification: {
+        identitySealedAt: "2026-07-18T12:20:00.000Z",
+        attestationVerifiedAt: "2026-07-18T12:25:00.000Z",
+        worldReadyAt: "2026-07-18T12:30:00.000Z",
+        indexerReadyAt: "2026-07-18T12:35:00.000Z",
+        registryVerifiedAt: "2026-07-18T12:40:00.000Z",
+      },
+    });
+    expect(() =>
+      assertCompleteActiveGameStack(registry, "blitz-season-42", new Date("2026-07-18T14:30:00.000Z")),
+    ).toThrow("is expired");
+    expect(staleRemoval).toEqual(registry);
+
+    expect(removed.activeGameStacks?.["mainnet.blitz"]).toBeUndefined();
+    expect(removed.aliases[buildGameRuntimeAlias("mainnet.blitz", "blitz-season-42", "katana", "rpc")]).toBeDefined();
+    expect(() =>
+      assertCompleteActiveGameStack(removed, "blitz-season-42", new Date("2026-07-18T13:00:00.000Z")),
+    ).toThrow("is not the registry's active stack");
+  });
+
+  test("rejects future-dated readiness even when the remote registry future-dates itself", () => {
+    const registry = getDefaultRuntimeRegistry();
+    const gameStackId = "blitz-season-future";
+    const futureRegistry = {
+      ...registry,
+      revision: registry.revision + 1,
+      generatedAt: "2099-07-18T12:41:00.000Z",
+      activeGameStacks: {
+        "mainnet.blitz": {
+          gameStackId,
+          activeUntil: "2099-07-18T14:30:00.000Z",
+          publicationRevision: registry.revision + 1,
+          attestationMeasurement: `sha384:${"c".repeat(96)}`,
+          verification: {
+            identitySealedAt: "2099-07-18T12:20:00.000Z",
+            attestationVerifiedAt: "2099-07-18T12:25:00.000Z",
+            worldReadyAt: "2099-07-18T12:30:00.000Z",
+            indexerReadyAt: "2099-07-18T12:35:00.000Z",
+            registryVerifiedAt: "2099-07-18T12:40:00.000Z",
+          },
+        },
+      },
+    };
+
+    expect(() =>
+      assertCompleteActiveGameStack(futureRegistry, gameStackId, new Date("2026-07-18T12:41:00.000Z")),
+    ).toThrow("future-dated readiness evidence");
+  });
+
+  test("rejects partial production game-stack publication through the generic runtime path", () => {
+    expect(() =>
+      registerRuntimeArtifact(
+        getDefaultRuntimeRegistry(),
+        {
+          schemaVersion: 2,
+          environmentId: "mainnet.blitz",
+          runtimeKind: "torii",
+          runtimeName: "blitz-season-42",
+          runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b452",
+          imageDigest: `sha256:${"b".repeat(64)}`,
+          routingShard: 0,
+          endpoints: {
+            base: "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/torii",
+            health: "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/torii/health",
+            sql: "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/torii/sql",
+          },
+        },
+        { scope: "game", provider: "aws", activate: true },
+      ),
+    ).toThrow("Production Blitz runtimes must be published as one complete ready game stack");
+  });
+
   test("resolves the registry Slot target by default", () => {
     expect(resolveRuntimeEndpointAlias(buildFactoryRuntimeAlias("slot"))).toBe(
       "https://api.cartridge.gg/x/eternum-factory-slot-d/torii/sql",
@@ -368,5 +521,19 @@ describe("runtime endpoint registry", () => {
     } finally {
       clearInstalledRuntimeRegistry();
     }
+  });
+
+  test("fails closed when a required production registry is unavailable", async () => {
+    await expect(
+      loadRuntimeRegistry({
+        required: true,
+        fetchImpl: (async () => {
+          throw new Error("connection refused");
+        }) as typeof fetch,
+        url: "https://registry.realms.world/runtime.json",
+      }),
+    ).rejects.toThrow("Required runtime registry is unavailable: connection refused");
+
+    await expect(loadRuntimeRegistry({ required: true })).rejects.toThrow("Required runtime registry URL is missing");
   });
 });

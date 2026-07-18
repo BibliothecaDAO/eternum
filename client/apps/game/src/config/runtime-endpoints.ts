@@ -1,4 +1,5 @@
 import {
+  assertCompleteActiveGameStack,
   buildGameRuntimeAlias,
   buildGlobalRuntimeAlias,
   buildSharedChainRuntimeAlias,
@@ -23,6 +24,7 @@ export async function loadConfiguredRuntimeRegistry(
   const result = await loadRuntimeRegistry({
     embedded: env.VITE_PUBLIC_RUNTIME_REGISTRY_JSON,
     fetchImpl,
+    required: env.VITE_PUBLIC_CHAIN === "mainnet",
     url: env.VITE_PUBLIC_RUNTIME_REGISTRY_URL,
   });
   loadedRegistry = result.registry;
@@ -51,8 +53,15 @@ export function resolveGameRuntimeEndpoint(
   options: { chain?: string; gameType?: "blitz" | "eternum" } = {},
 ): string {
   const environmentId = resolveRuntimeEnvironmentId(options.chain, options.gameType);
+  const registry = resolveConfiguredRuntimeRegistry();
+  if (environmentId === "mainnet.blitz") {
+    if (!registry) {
+      throw new Error("Active Blitz game stack is unavailable because the required registry has not loaded");
+    }
+    assertCompleteActiveGameStack(registry, runtimeName);
+  }
   return resolveRuntimeEndpointAlias(buildGameRuntimeAlias(environmentId, runtimeName, "torii", endpointKind), {
-    registry: resolveConfiguredRuntimeRegistry(),
+    registry,
   });
 }
 

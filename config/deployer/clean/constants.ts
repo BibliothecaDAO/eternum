@@ -73,7 +73,7 @@ const SLOTTEST_DEFAULTS = {
 };
 
 const MAINNET_DEFAULTS = {
-  runtimeProvider: DEFAULT_RUNTIME_PROVIDER,
+  runtimeProvider: "aws" as const,
   runtimeDomain: DEFAULT_AWS_RUNTIME_DOMAIN,
   factoryAddress: DEFAULT_MAINNET_FACTORY_ADDRESS,
   rpcUrl: DEFAULT_MAINNET_RPC_URL,

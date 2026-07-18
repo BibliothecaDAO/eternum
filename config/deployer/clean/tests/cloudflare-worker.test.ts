@@ -185,19 +185,10 @@ describe("factory worker map config overrides", () => {
     });
   });
 
-  test("accepts mainnet environments when creating a run", async () => {
+  test("rejects mainnet Blitz on the unauthenticated legacy launch route", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
-
-      if (String(url).includes("/contents/runs/mainnet/blitz/bltz-test-mainnet.json")) {
-        return new Response("{}", { status: 404 });
-      }
-
-      if (String(url).includes("/actions/workflows/game-launch.yml/dispatches")) {
-        return new Response(null, { status: 204 });
-      }
-
       throw new Error(`Unexpected fetch call: ${String(url)}`);
     };
 
@@ -214,11 +205,29 @@ describe("factory worker map config overrides", () => {
       buildWorkerEnv(),
     );
 
-    const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
-    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
+    expect(response.status).toBe(410);
+    expect(fetchCalls).toHaveLength(0);
+    expect(await response.json()).toEqual({
+      error: "Public mainnet Blitz launches require the authenticated AWS game-stack API",
+    });
+  });
 
-    expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.environment).toBe("mainnet.blitz");
+  test("requires operator authorization for legacy mainnet Eternum launch", async () => {
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/runs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          environment: "mainnet.eternum",
+          gameName: "etrn-mainnet-operator",
+          gameStartTime: "2026-03-18T10:00:00Z",
+        }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    expect(response.status).toBe(401);
+    expect(await response.json()).toEqual({ error: "Unauthorized" });
   });
 
   test("rejects malformed runtime instance IDs before dispatch", async () => {

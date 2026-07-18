@@ -51,7 +51,7 @@ export async function ensureAwsRuntime(
   } = {},
 ): Promise<AwsRuntimeActionResult> {
   validateAwsRuntimeDesiredState(runtimeRequest);
-  const backend = await resolveAwsRuntimeBackend(options.backend);
+  const backend = await resolveAwsRuntimeBackend(runtimeRequest, options.backend);
   const requestedTier = resolveRuntimeTier(runtimeRequest.tier);
   const currentState = await backend.describeRuntime(runtimeRequest);
 
@@ -116,24 +116,54 @@ function validateAwsRuntimeDesiredState(request: AwsRuntimeRequest): void {
     throw new Error("AWS runtime desired state requires exposurePolicy");
   }
 
-  if (request.environmentId.startsWith("mainnet.") && request.runtimeKind === "katana") {
-    throw new Error(`AWS Katana is not permitted in production environment ${request.environmentId}`);
-  }
-
-  if (request.runtimeKind === "katana" && request.lifecycleClass !== "shared") {
-    throw new Error("AWS Katana requires lifecycleClass=shared");
-  }
-
-  if (request.runtimeKind === "katana" && request.owner) {
-    throw new Error("Shared AWS Katana cannot be owned by a game or launch run");
-  }
-
-  if (request.exposurePolicy && request.runtimeKind === "katana" && request.exposurePolicy !== "public-dev-rpc") {
-    throw new Error("AWS Katana requires exposurePolicy=public-dev-rpc");
+  if (request.runtimeKind === "katana") {
+    validateAwsKatanaDesiredState(request);
   }
 
   if (request.exposurePolicy && request.runtimeKind === "torii" && request.exposurePolicy !== "public-read") {
     throw new Error("AWS Torii requires exposurePolicy=public-read");
+  }
+}
+
+function validateAwsKatanaDesiredState(request: AwsRuntimeRequest): void {
+  if (request.environmentId === "mainnet.eternum") {
+    throw new Error(`AWS Katana is not permitted for Eternum environment ${request.environmentId}`);
+  }
+
+  if (request.environmentId === "mainnet.blitz") {
+    validateProductionBlitzKatanaDesiredState(request);
+    return;
+  }
+
+  if (request.lifecycleClass !== "shared") {
+    throw new Error("AWS Katana requires lifecycleClass=shared outside production Blitz");
+  }
+  if (request.owner) {
+    throw new Error("Shared AWS Katana cannot be owned by a game or launch run");
+  }
+  if (request.exposurePolicy !== "public-dev-rpc") {
+    throw new Error("Shared AWS Katana requires exposurePolicy=public-dev-rpc");
+  }
+}
+
+function validateProductionBlitzKatanaDesiredState(request: AwsRuntimeRequest): void {
+  if (request.runtimePlatform !== "ec2-sev-snp") {
+    throw new Error("Production Blitz Katana requires runtimePlatform=ec2-sev-snp");
+  }
+  if (request.lifecycleClass !== "ephemeral") {
+    throw new Error("Production Blitz Katana requires lifecycleClass=ephemeral");
+  }
+  if (!request.owner || request.owner.runKind !== "game") {
+    throw new Error("Production Blitz Katana requires an immutable game-stack owner");
+  }
+  if (request.owner.lifecycleClass !== "ephemeral") {
+    throw new Error("Production Blitz Katana owner requires lifecycleClass=ephemeral");
+  }
+  if (!/^sha384:[a-f0-9]{96}$/.test(request.attestationMeasurement || "")) {
+    throw new Error("Production Blitz Katana requires attestationMeasurement=sha384:<96 lowercase hex>");
+  }
+  if (request.exposurePolicy !== "public-read") {
+    throw new Error("Production Blitz Katana requires exposurePolicy=public-read");
   }
 }
 
@@ -162,7 +192,7 @@ export async function resizeAwsRuntime(
   } = {},
 ): Promise<AwsRuntimeActionResult> {
   validateAwsRuntimeDesiredState(request);
-  const backend = await resolveAwsRuntimeBackend(options.backend);
+  const backend = await resolveAwsRuntimeBackend(request, options.backend);
   const requestedTier = resolveRuntimeTier(request.tier);
   const currentState = await backend.describeRuntime(request);
 
@@ -203,7 +233,7 @@ export async function describeAwsRuntime(
     healthProbe?: AwsRuntimeHealthProbe;
   } = {},
 ): Promise<AwsRuntimeLiveState> {
-  const backend = await resolveAwsRuntimeBackend(options.backend);
+  const backend = await resolveAwsRuntimeBackend(request, options.backend);
   const liveState = await backend.describeRuntime(request);
   const inspectedState = await probeInspectableRuntimeHealth(
     request,
@@ -220,7 +250,7 @@ export async function deleteAwsRuntime(
   } = {},
 ): Promise<AwsRuntimeActionResult> {
   validateAwsRuntimeTeardownRequest(request);
-  const backend = await resolveAwsRuntimeBackend(options.backend);
+  const backend = await resolveAwsRuntimeBackend(request, options.backend);
   const requestedTier = resolveRuntimeTier(request.tier);
   const currentState = await backend.describeRuntime(request);
 
@@ -277,9 +307,18 @@ function isStaleRuntimeTeardownError(error: unknown): boolean {
   return error instanceof Error && error.name === "AwsRuntimeStaleTeardownError";
 }
 
-async function resolveAwsRuntimeBackend(backend: AwsRuntimeBackend | undefined): Promise<AwsRuntimeBackend> {
+async function resolveAwsRuntimeBackend(
+  request: AwsRuntimeRequest,
+  backend: AwsRuntimeBackend | undefined,
+): Promise<AwsRuntimeBackend> {
   if (backend) {
     return backend;
+  }
+
+  if (request.runtimePlatform === "ec2-sev-snp") {
+    throw new Error(
+      "Production Blitz SEV-SNP runtime backend is unavailable until the pinned katana-tee source and measured EC2 provisioner are installed",
+    );
   }
 
   const runtimeModule = await import("../aws-runtime");
