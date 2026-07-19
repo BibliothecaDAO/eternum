@@ -254,7 +254,12 @@
     content: none;
   }
 
-  body > * {
+  /* Scope the app's stacking context to real content children only.
+     Overlay web components that AppKit/Reown append directly to <body>
+     (e.g. <w3m-modal>) set their own `position: fixed` on the host element,
+     which a blanket `body > *` rule would clobber — parking the wallet modal
+     off-screen. Exclude them so their fixed positioning survives. */
+  body > *:not(w3m-modal):not(wcm-modal):not(appkit-modal) {
     position: relative;
     z-index: 1;
   }
