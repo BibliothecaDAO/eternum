@@ -89,3 +89,57 @@ fn pins_the_full_settlement_root_count_before_hash_order() {
 fn every_declared_struct_and_empty_tree_matches_the_golden_vectors() {
     crate::golden_vectors::assert_all_golden_vectors();
 }
+
+#[test]
+fn fixed_depth_roots_match_all_reference_vectors() {
+    let roots = crate::tree_vectors::expected_roots();
+    let mut index = 0;
+    for (_, depth, empty_leaf_domain, node_domain, leaves) in crate::tree_vectors::tree_vectors() {
+        let root = crate::tree::fixed_depth_root(leaves.span(), depth, empty_leaf_domain, node_domain).unwrap();
+        assert!(root == *roots.at(index));
+        index += 1;
+    }
+    for (_, depth, node_domain, leaf_index, leaf_hash, root, siblings) in crate::tree_vectors::proof_vectors() {
+        assert!(
+            crate::tree::verify_fixed_depth_proof(leaf_hash, leaf_index, siblings.span(), root, depth, node_domain)
+                .unwrap(),
+        );
+    }
+}
+
+#[test]
+fn fixed_depth_tree_rejects_overflow_and_malformed_proofs() {
+    use crate::tree::TreeError;
+
+    assert!(
+        crate::tree::fixed_depth_root(array![].span(), 0, 'EMPTY_LEAF_V1', 'NODE_V1') == Err(TreeError::InvalidDepth),
+    );
+    let mut leaves: Array<felt252> = array![];
+    for index in 0_usize..65_usize {
+        leaves.append(index.into());
+    }
+    assert!(
+        crate::tree::fixed_depth_root(leaves.span(), 6, 'EMPTY_LEAF_V1', 'NODE_V1') == Err(TreeError::CapacityExceeded),
+    );
+
+    let mut proofs = crate::tree_vectors::proof_vectors();
+    let (_, depth, node_domain, leaf_index, leaf_hash, root, siblings) = proofs.pop_front().unwrap();
+    assert!(
+        crate::tree::verify_fixed_depth_proof(
+            leaf_hash, leaf_index, array![].span(), root, depth, node_domain,
+        ) == Err(TreeError::WrongProofLength),
+    );
+    assert!(
+        crate::tree::verify_fixed_depth_proof(
+            leaf_hash, 64, siblings.span(), root, depth, node_domain,
+        ) == Err(TreeError::IndexOutsideCapacity),
+    );
+    let mut wrong_siblings = array![*siblings.at(0) + 1];
+    for index in 1..siblings.len() {
+        wrong_siblings.append(*siblings.at(index));
+    }
+    assert!(
+        !crate::tree::verify_fixed_depth_proof(leaf_hash, leaf_index, wrong_siblings.span(), root, depth, node_domain)
+            .unwrap(),
+    );
+}

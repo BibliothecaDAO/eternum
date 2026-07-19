@@ -1,6 +1,8 @@
 pub mod codec;
 pub mod golden_vectors;
 pub mod schema_vector;
+pub mod tree;
+pub mod tree_vectors;
 pub mod types;
 
 use starknet_crypto::{Felt, poseidon_hash_many};
@@ -380,5 +382,86 @@ mod tests {
     #[test]
     fn every_declared_struct_and_empty_tree_matches_the_golden_vectors() {
         crate::golden_vectors::assert_all_golden_vectors();
+    }
+
+    #[test]
+    fn fixed_depth_roots_match_all_reference_vectors() {
+        for vector in crate::tree_vectors::TREE_VECTORS {
+            let tree = crate::tree::FixedDepthTree::new(
+                vector.depth,
+                Felt::from_hex(vector.empty_leaf_domain).unwrap(),
+                Felt::from_hex(vector.node_domain).unwrap(),
+            )
+            .unwrap();
+            let leaves = vector
+                .leaf_hashes
+                .iter()
+                .map(|leaf| Felt::from_hex(leaf).unwrap())
+                .collect::<Vec<_>>();
+            assert_eq!(
+                tree.root(&leaves).unwrap(),
+                Felt::from_hex(vector.root).unwrap()
+            );
+            for &(leaf_index, expected_siblings) in vector.proofs {
+                let proof = tree.proof(&leaves, leaf_index).unwrap();
+                let expected = expected_siblings
+                    .iter()
+                    .map(|sibling| Felt::from_hex(sibling).unwrap())
+                    .collect::<Vec<_>>();
+                assert_eq!(proof, expected, "{}:{leaf_index}", vector.name);
+                assert!(
+                    tree.verify(
+                        leaves[leaf_index],
+                        leaf_index,
+                        &proof,
+                        Felt::from_hex(vector.root).unwrap(),
+                    )
+                    .unwrap()
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn fixed_depth_tree_rejects_overflow_and_malformed_proofs() {
+        use crate::tree::TreeError;
+
+        assert!(matches!(
+            crate::tree::FixedDepthTree::new(0, Felt::ONE, Felt::TWO),
+            Err(TreeError::InvalidDepth)
+        ));
+
+        let vector = crate::tree_vectors::TREE_VECTORS
+            .iter()
+            .find(|vector| vector.name == "full")
+            .unwrap();
+        let tree = crate::tree::FixedDepthTree::new(
+            vector.depth,
+            Felt::from_hex(vector.empty_leaf_domain).unwrap(),
+            Felt::from_hex(vector.node_domain).unwrap(),
+        )
+        .unwrap();
+        let leaves = vector
+            .leaf_hashes
+            .iter()
+            .map(|leaf| Felt::from_hex(leaf).unwrap())
+            .collect::<Vec<_>>();
+        let proof = tree.proof(&leaves, 0).unwrap();
+        let root = Felt::from_hex(vector.root).unwrap();
+
+        let mut overflow = leaves.clone();
+        overflow.push(Felt::ONE);
+        assert_eq!(tree.root(&overflow), Err(TreeError::CapacityExceeded));
+        assert_eq!(
+            tree.verify(leaves[0], 0, &proof[1..], root),
+            Err(TreeError::WrongProofLength)
+        );
+        assert_eq!(
+            tree.verify(leaves[0], 64, &proof, root),
+            Err(TreeError::IndexOutsideCapacity)
+        );
+        let mut wrong = proof;
+        wrong[0] += Felt::ONE;
+        assert!(!tree.verify(leaves[0], 0, &wrong, root).unwrap());
     }
 }

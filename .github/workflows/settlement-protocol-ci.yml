@@ -44,7 +44,9 @@ jobs:
           components: clippy,rustfmt
 
       - name: Reject stale or undeclared schemas
-        run: pnpm run check:settlement-schema
+        run: |
+          pnpm run check:settlement-schema
+          pnpm run check:settlement-trees
 
       - name: Test TypeScript codecs
         run: pnpm --dir packages/settlement-codec test

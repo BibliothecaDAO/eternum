@@ -2,6 +2,7 @@ import schemaRegistry from "../schema/schema-registry-v1.json";
 import { hash } from "starknet";
 
 export { decodeSchema, encodeSchema, type SchemaValue } from "./codec";
+export * from "./tree";
 export * from "./generated-types";
 
 export type ProtocolVersion = 1;
