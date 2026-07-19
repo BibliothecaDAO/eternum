@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.eternum",
   "kind": "game",
-  "updatedAt": "2026-07-19T10:18:19.502Z",
+  "updatedAt": "2026-07-19T10:19:10.905Z",
   "entries": {
     "etrn-gloom-467": {
       "kind": "game",
@@ -77,9 +77,9 @@
       "environment": "mainnet.eternum",
       "gameName": "etrn-flare-242",
       "path": "runs/mainnet/eternum/etrn-flare-242.json",
-      "inputPath": "inputs/mainnet/eternum/etrn-flare-242/29683075117-1.json",
+      "inputPath": "inputs/mainnet/eternum/etrn-flare-242/29683104656-1.json",
       "status": "attention",
-      "updatedAt": "2026-07-19T10:18:19.502Z",
+      "updatedAt": "2026-07-19T10:19:10.905Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
       "hasRunningStep": false,
