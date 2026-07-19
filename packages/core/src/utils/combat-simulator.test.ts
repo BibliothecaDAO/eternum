@@ -124,3 +124,89 @@ describe("CombatSimulator Combat v3 context", () => {
     expect(params.stamina_defense_req).toBe(40);
   });
 });
+
+// Absolute damage numbers derived by hand from the v3 formula with the default
+// Blitz-60 parameters (scaling factor 2, T1 value 100, T2 x3, T3 x9, beta 0.2):
+// damage = 2 x troops x tier_ratio x role_multipliers / total_troops^0.2.
+// Unlike the ratio tests above, these fail if any coefficient drifts.
+describe("CombatSimulator damage formula golden values", () => {
+  it("deals the exact mirrored damage in a symmetric melee battle", () => {
+    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
+
+    const result = simulator.simulateBattle(0, baseArmy(TroopType.Knight), baseArmy(TroopType.Knight), BiomeType.Taiga);
+
+    // 2 x 1000 / 2000^0.2
+    expect(result.attackerDamage).toBeCloseTo(437.3448, 3);
+    expect(result.defenderDamage).toBeCloseTo(437.3448, 3);
+    // A 1:1 damage ratio sits below the 2.5 refund threshold on both sides.
+    expect(result.attackerRefundMultiplier).toBe(0);
+    expect(result.defenderRefundMultiplier).toBe(0);
+  });
+
+  it("applies tier damage multipliers to both sides of a T3 versus T1 battle", () => {
+    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
+    const attacker = { ...baseArmy(TroopType.Knight), tier: TroopTier.T3 };
+    const defender = { ...baseArmy(TroopType.Knight), tier: TroopTier.T1 };
+
+    const result = simulator.simulateBattle(0, attacker, defender, BiomeType.Taiga);
+
+    // 2 x 1000 x 9 / 2000^0.2 and 2 x 1000 x (1/9) / 2000^0.2
+    expect(result.attackerDamage).toBeCloseTo(3936.1035, 3);
+    expect(result.defenderDamage).toBeCloseTo(48.5939, 3);
+  });
+
+  it("deals the exact ranged Crossbowman damage in the field", () => {
+    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
+
+    const result = simulator.simulateBattle(
+      0,
+      baseArmy(TroopType.Crossbowman),
+      baseArmy(TroopType.Knight),
+      BiomeType.Taiga,
+      [],
+      [],
+      { attackDistance: 2 },
+    );
+
+    // 0.7 x 2 x 1000 / 2000^0.2
+    expect(result.attackerDamage).toBeCloseTo(306.1414, 3);
+    expect(result.defenderDamage).toBe(0);
+  });
+
+  it("deals the exact ranged Crossbowman damage against a structure guard", () => {
+    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
+
+    const result = simulator.simulateBattle(
+      0,
+      baseArmy(TroopType.Crossbowman),
+      baseArmy(TroopType.Paladin),
+      BiomeType.Taiga,
+      [],
+      [],
+      { attackDistance: 2, defenderIsStructureGuard: true },
+    );
+
+    // 0.3 x 2 x 1000 / 2000^0.2
+    expect(result.attackerDamage).toBeCloseTo(131.2034, 3);
+    expect(result.defenderDamage).toBe(0);
+  });
+
+  it("deals the exact Knight assault damage into a Knight structure guard", () => {
+    const simulator = new CombatSimulator(CombatSimulator.getDefaultParameters());
+
+    const result = simulator.simulateBattle(
+      0,
+      baseArmy(TroopType.Knight),
+      baseArmy(TroopType.Knight),
+      BiomeType.Taiga,
+      [],
+      [],
+      { defenderIsStructureGuard: true },
+    );
+
+    // Assault bonus and guard damage reduction stack: 1.15 x 0.85 x 2 x 1000 / 2000^0.2
+    expect(result.attackerDamage).toBeCloseTo(427.5046, 3);
+    // The guard's own damage keeps the plain symmetric value.
+    expect(result.defenderDamage).toBeCloseTo(437.3448, 3);
+  });
+});
