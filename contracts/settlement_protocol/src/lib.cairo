@@ -1,3 +1,5 @@
+pub mod economic_candidate;
+pub mod economic_state_spike;
 pub mod golden_vectors;
 pub mod interfaces;
 pub mod registry;

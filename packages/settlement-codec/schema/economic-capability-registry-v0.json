@@ -1,0 +1,253 @@
+{
+  "version": 0,
+  "status": "a9-feasibility-candidate",
+  "families": [
+    {
+      "id": "resource",
+      "method": "mutate_resource",
+      "requestType": "ResourceMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "actions": ["credit", "debit", "transfer"]
+    },
+    {
+      "id": "structure_ownership",
+      "method": "mutate_structure_ownership",
+      "requestType": "StructureOwnershipMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "actions": ["transfer", "capture"]
+    },
+    {
+      "id": "lazy_production",
+      "method": "mutate_lazy_production",
+      "requestType": "LazyProductionMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "actions": ["reserve", "settle", "update", "release"]
+    },
+    {
+      "id": "arrival",
+      "method": "mutate_arrival",
+      "requestType": "ArrivalMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "actions": ["create", "settle", "cancel"]
+    },
+    {
+      "id": "military_and_cargo",
+      "method": "mutate_military_and_cargo",
+      "requestType": "MilitaryCargoMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "actions": ["create", "update", "destroy", "erase_dead_cargo"]
+    },
+    {
+      "id": "trade_and_donkey",
+      "method": "mutate_trade_and_donkey",
+      "requestType": "TradeDonkeyMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "actions": ["reserve", "fill", "cancel", "release"]
+    },
+    {
+      "id": "amm_and_lp",
+      "method": "mutate_amm_and_lp",
+      "requestType": "AmmLpMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "actions": ["add", "remove", "swap", "credit_wallet_lp", "debit_wallet_lp"]
+    },
+    {
+      "id": "reward_state",
+      "method": "mutate_reward_state",
+      "requestType": "RewardStateMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "actions": ["credit", "debit", "update"]
+    },
+    {
+      "id": "pending_withdrawal",
+      "method": "mutate_pending_withdrawal",
+      "requestType": "PendingWithdrawalMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "actions": ["create", "append", "seal", "complete"]
+    },
+    {
+      "id": "active_exit_backing",
+      "method": "mutate_active_exit_backing",
+      "requestType": "ActiveExitBackingMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "actions": ["reserve", "release", "move_to_outbox"]
+    },
+    {
+      "id": "player_economic_lock",
+      "method": "mutate_player_economic_lock",
+      "requestType": "PlayerEconomicLockMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "actions": ["lock", "unlock", "mark_exited"]
+    },
+    {
+      "id": "exit_position",
+      "method": "mutate_exit_position",
+      "requestType": "ExitPositionMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "actions": ["create", "split", "merge", "tombstone"]
+    },
+    {
+      "id": "settlement_callback",
+      "method": "assign_open_batch",
+      "requestType": "SettlementCallbackRequest",
+      "resultType": "felt252",
+      "actions": ["assign_open_batch", "promote_sealed_batch"]
+    }
+  ],
+  "operations": [
+    {
+      "operationId": 4097,
+      "name": "resource_mutation",
+      "family": "resource",
+      "authorizedCallerClasses": ["GameIngressAdapter", "ResourceSystem", "ProductionSystem", "ArrivalSystem", "TradeSystem", "BankSystem", "GameForcedExitAdapter"],
+      "requestType": "ResourceMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "affectedModels": ["Resource", "Weight", "ResourceIndex", "ExitPosition"],
+      "backingEffect": "Reserve, conserve, release, or select immutable backing-lot shares before the source balance changes.",
+      "indexEffect": "Create or update the stable entity/resource position and player attachment in the same transaction."
+    },
+    {
+      "operationId": 4098,
+      "name": "structure_ownership_mutation",
+      "family": "structure_ownership",
+      "authorizedCallerClasses": ["StructureSystem", "CombatSystem", "GameForcedExitAdapter"],
+      "requestType": "StructureOwnershipMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "affectedModels": ["Structure", "StructureOwner", "StructureOwnerStats", "ExitPosition"],
+      "backingEffect": "Conserve every attached position and its backing; ownership changes never move a parent allocation.",
+      "indexEffect": "Move the stable structure position between player indexes without changing its family index."
+    },
+    {
+      "operationId": 4099,
+      "name": "lazy_production_mutation",
+      "family": "lazy_production",
+      "authorizedCallerClasses": ["ProductionSystem", "BuildingSystem", "StructureSystem", "OutcomeSettlement", "GameForcedExitAdapter"],
+      "requestType": "LazyProductionMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "affectedModels": ["ResourceProduction", "Resource", "Weight", "ProductionReservation", "ExitPosition"],
+      "backingEffect": "Reserve the sealed-end ceiling before value can accrue, consume that reserve on settlement, and release only proven unused capacity.",
+      "indexEffect": "Maintain one stable producer position and its bounded timestamp/rate reservation state."
+    },
+    {
+      "operationId": 4100,
+      "name": "arrival_mutation",
+      "family": "arrival",
+      "authorizedCallerClasses": ["GameIngressAdapter", "ResourceSystem", "TradeSystem", "ArrivalSystem", "GameForcedExitAdapter"],
+      "requestType": "ArrivalMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "affectedModels": ["ResourceArrival", "Resource", "Weight", "ArrivalIndex", "ExitPosition"],
+      "backingEffect": "Conserve the source reservation while in transit and retag it exactly once on settle or cancellation.",
+      "indexEffect": "Create one monotonic arrival index, then settle or tombstone it without recycling the ID."
+    },
+    {
+      "operationId": 4101,
+      "name": "military_and_cargo_mutation",
+      "family": "military_and_cargo",
+      "authorizedCallerClasses": ["CombatSystem", "TroopManagementSystem", "TroopMovementSystem", "StructureSystem", "GameForcedExitAdapter"],
+      "requestType": "MilitaryCargoMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "affectedModels": ["ExplorerTroops", "GuardTroops", "Troops", "Resource", "Weight", "ExitPosition"],
+      "backingEffect": "Reserve creation ceilings, conserve surviving value, and release irrecoverably destroyed troops or erased dead cargo.",
+      "indexEffect": "Maintain stable explorer/guard/cargo positions with explicit tombstones and player attachments."
+    },
+    {
+      "operationId": 4102,
+      "name": "trade_and_donkey_mutation",
+      "family": "trade_and_donkey",
+      "authorizedCallerClasses": ["TradeSystem", "ResourceSystem", "GameForcedExitAdapter"],
+      "requestType": "TradeDonkeyMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "affectedModels": ["Trade", "Resource", "Weight", "OrderIndex", "ExitPosition"],
+      "backingEffect": "Move resources and DONKEY into or out of escrow without changing parent totals; fills retag the same reserved lots.",
+      "indexEffect": "Create a stable order position and tombstone it on fill or cancellation."
+    },
+    {
+      "operationId": 4103,
+      "name": "amm_and_lp_mutation",
+      "family": "amm_and_lp",
+      "authorizedCallerClasses": ["BankSystem", "LiquiditySystem", "SwapSystem", "GameForcedExitAdapter"],
+      "requestType": "AmmLpMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "affectedModels": ["Bank", "Liquidity", "LiquidityPosition", "Resource", "Weight", "ExitPosition"],
+      "backingEffect": "Conserve composite reserve backing across add/remove/swap and bind wallet LP shares to their underlying reserve claim.",
+      "indexEffect": "Maintain stable bank-pair and wallet-LP indexes with atomic reserve/share updates."
+    },
+    {
+      "operationId": 4104,
+      "name": "reward_state_mutation",
+      "family": "reward_state",
+      "authorizedCallerClasses": ["FeeSystem", "PrizeSystem", "FaithSystem", "BlitzSystem", "OutcomeSettlement", "GameForcedExitAdapter"],
+      "requestType": "RewardStateMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "affectedModels": ["SeasonPrize", "Faith", "PlayerRegisteredPoints", "BlitzParticipant", "ExitPosition"],
+      "backingEffect": "Use only the sealed purpose bucket beneath its parent and require exact child retag conservation at finalization.",
+      "indexEffect": "Maintain stable participant, prize, and Faith positions with complete finalization cursors."
+    },
+    {
+      "operationId": 4105,
+      "name": "pending_withdrawal_mutation",
+      "family": "pending_withdrawal",
+      "authorizedCallerClasses": ["ResourceSystem", "SeasonSettlementHub", "GameForcedExitAdapter"],
+      "requestType": "PendingWithdrawalMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "affectedModels": ["PendingLiability", "LiabilityAssignment", "Resource", "ExitPosition"],
+      "backingEffect": "Keep immutable lot shares active through UnsealedPending and BatchAssigned, then move them once to cumulative outbox at seal.",
+      "indexEffect": "Create one liability index with no cancellation or ID reuse and store one immutable batch assignment."
+    },
+    {
+      "operationId": 4106,
+      "name": "active_exit_backing_mutation",
+      "family": "active_exit_backing",
+      "authorizedCallerClasses": ["GameIngressAdapter", "EconomicStateSystem", "SeasonSettlementHub", "OutcomeSettlement", "GameForcedExitAdapter"],
+      "requestType": "ActiveExitBackingMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "affectedModels": ["SettlementCapacity", "GameBackingLot", "BackingTotal", "PendingLiability"],
+      "backingEffect": "Reserve or release free lot capacity in canonical order and move exact immutable shares from active to lifetime cumulative outbox.",
+      "indexEffect": "Keep fixed parent and lot slots; no slot recycles or changes source identity."
+    },
+    {
+      "operationId": 4107,
+      "name": "player_economic_lock_mutation",
+      "family": "player_economic_lock",
+      "authorizedCallerClasses": ["SeasonForcedExitCoordinator", "GameForcedExitAdapter"],
+      "requestType": "PlayerEconomicLockMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "affectedModels": ["PlayerEconomicLock", "ForcedExitJob", "ExitPosition"],
+      "backingEffect": "Locking changes no backing; mark-exited requires every attached position settled or tombstoned.",
+      "indexEffect": "Persist one idempotent player lock/exit state checked by every economic path."
+    },
+    {
+      "operationId": 4108,
+      "name": "exit_position_mutation",
+      "family": "exit_position",
+      "authorizedCallerClasses": ["EconomicStateSystem", "GameForcedExitAdapter", "OutcomeSettlement"],
+      "requestType": "ExitPositionMutationRequest",
+      "resultType": "EconomicMutationResult",
+      "affectedModels": ["ExitPosition", "PositionRef", "PlayerPositionIndex"],
+      "backingEffect": "Create, split, merge, or tombstone positions while conserving the same reserved backing shares.",
+      "indexEffect": "Use monotonic family high-water marks, stable IDs, player attachments, and explicit tombstones."
+    },
+    {
+      "operationId": 4109,
+      "name": "assign_open_batch",
+      "family": "settlement_callback",
+      "authorizedCallerClasses": ["SeasonSettlementHub"],
+      "requestType": "AssignOpenBatchRequest",
+      "resultType": "felt252",
+      "affectedModels": ["PendingLiability", "LiabilityAssignment"],
+      "backingEffect": "Assign immutable batch and leaf identity without moving active backing.",
+      "indexEffect": "Write exactly one immutable assignment for the existing liability ID."
+    },
+    {
+      "operationId": 4110,
+      "name": "promote_sealed_batch",
+      "family": "settlement_callback",
+      "authorizedCallerClasses": ["SeasonSettlementHub"],
+      "requestType": "PromoteSealedBatchRequest",
+      "resultType": "felt252",
+      "affectedModels": ["SettlementCapacity", "GameBackingLot", "BackingTotal", "LiabilityAssignment"],
+      "backingEffect": "Move the canonical game slice from active committed to lifetime cumulative outbox with no per-liability fanout.",
+      "indexEffect": "Change only aggregate parent/lot classifications and the central batch state."
+    }
+  ]
+}

@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "contracts/settlement_protocol/**"
+      - "contracts/game/src/**"
       - "packages/settlement-codec/**"
       - "proofs/eternum-settlement/**"
       - "scripts/settlement/**"
@@ -47,6 +48,7 @@ jobs:
         run: |
           pnpm run check:settlement-schema
           pnpm run check:settlement-trees
+          pnpm run check:economic-write-inventory
 
       - name: Test TypeScript codecs
         run: pnpm --dir packages/settlement-codec test

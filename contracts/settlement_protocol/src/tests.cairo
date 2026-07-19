@@ -1,9 +1,68 @@
+use crate::economic_state_spike::{
+    CallerClass, EconomicSpikeError, EconomicStateSpikeTrait, backing_is_conserved, new_economic_spike_state,
+};
 use crate::registry::{get_action_schema, get_claim_kind, validate_emitter_count};
 use crate::reservation_spike::{
     ReservationError, ReservationRoute, ScarceReservationTrait, global_nullifier, new_scarce_reservation,
 };
 use crate::schema_vector::{SCHEMA_REGISTRY_HASH, action_vectors, claim_kind_vectors, compute_schema_registry_hash};
 use crate::types::{ClaimLeg, SettlementRootMessage};
+
+#[test]
+fn representative_economic_paths_share_the_capability_boundary() {
+    let state = new_economic_spike_state(100)
+        .transfer_resource(CallerClass::ResourceSystem)
+        .unwrap()
+        .create_arrival(CallerClass::ArrivalSystem)
+        .unwrap()
+        .swap_bank_reserves(CallerClass::BankSystem)
+        .unwrap()
+        .resolve_combat_loss(CallerClass::CombatSystem, 10)
+        .unwrap()
+        .promote_sealed_batch(CallerClass::SeasonSettlementHub, 25)
+        .unwrap();
+
+    assert!(state.mutation_count == 5);
+    assert!(state.resource_version == 1);
+    assert!(state.arrival_high_watermark == 1);
+    assert!(state.bank_version == 1);
+    assert!(state.military_version == 1);
+    assert!(state.sealed_batch_count == 1);
+    assert!(backing_is_conserved(state));
+}
+
+#[test]
+fn caller_classes_cannot_cross_capability_families() {
+    let state = new_economic_spike_state(100);
+
+    assert!(state.transfer_resource(CallerClass::CombatSystem) == Err(EconomicSpikeError::UnauthorizedCaller));
+    assert!(state.create_arrival(CallerClass::BankSystem) == Err(EconomicSpikeError::UnauthorizedCaller));
+    assert!(
+        state
+            .promote_sealed_batch(CallerClass::GameForcedExitAdapter, 1) == Err(EconomicSpikeError::UnauthorizedCaller),
+    );
+    assert!(state.mutation_count == 0);
+    assert!(backing_is_conserved(state));
+}
+
+#[test]
+fn rejected_backing_mutations_leave_the_retry_state_unchanged() {
+    let state = new_economic_spike_state(10);
+
+    assert!(
+        state.resolve_combat_loss(CallerClass::CombatSystem, 11) == Err(EconomicSpikeError::InsufficientActiveBacking),
+    );
+    assert!(
+        state
+            .promote_sealed_batch(
+                CallerClass::SeasonSettlementHub, 11,
+            ) == Err(EconomicSpikeError::InsufficientActiveBacking),
+    );
+    assert!(state.active_backing == 10);
+    assert!(state.cumulative_outbox == 0);
+    assert!(state.released_backing == 0);
+    assert!(state.mutation_count == 0);
+}
 
 #[test]
 fn resolves_registered_action_and_dense_claim_kind() {
