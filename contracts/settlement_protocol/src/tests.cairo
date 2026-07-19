@@ -1,4 +1,7 @@
 use crate::registry::{get_action_schema, get_claim_kind, validate_emitter_count};
+use crate::reservation_spike::{
+    ReservationError, ReservationRoute, ScarceReservationTrait, global_nullifier, new_scarce_reservation,
+};
 use crate::schema_vector::{SCHEMA_REGISTRY_HASH, action_vectors, claim_kind_vectors, compute_schema_registry_hash};
 use crate::types::{ClaimLeg, SettlementRootMessage};
 
@@ -141,5 +144,81 @@ fn fixed_depth_tree_rejects_overflow_and_malformed_proofs() {
     assert!(
         !crate::tree::verify_fixed_depth_proof(leaf_hash, leaf_index, wrong_siblings.span(), root, depth, node_domain)
             .unwrap(),
+    );
+}
+
+#[test]
+fn one_scarce_custody_unit_cannot_pay_normal_and_emergency_routes() {
+    let nullifier = global_nullifier(11, 22);
+
+    let normal = new_scarce_reservation(1, 11, 22)
+        .reserve(1, ReservationRoute::Root)
+        .unwrap()
+        .settle(nullifier, 1, ReservationRoute::Root)
+        .unwrap();
+    assert!(normal.settle(nullifier, 1, ReservationRoute::FrozenExit) == Err(ReservationError::NullifierConsumed));
+
+    let emergency = new_scarce_reservation(1, 11, 22)
+        .reserve(1, ReservationRoute::Root)
+        .unwrap()
+        .retag(ReservationRoute::Root, ReservationRoute::FrozenExit)
+        .unwrap()
+        .settle(nullifier, 1, ReservationRoute::FrozenExit)
+        .unwrap();
+    assert!(emergency.settle(nullifier, 1, ReservationRoute::Root) == Err(ReservationError::NullifierConsumed));
+    assert!(emergency.paid_units == 1);
+    assert!(emergency.reserved_units == 0);
+}
+
+#[test]
+fn global_nullifier_matches_the_frozen_cross_language_vector() {
+    assert!(
+        crate::reservation_spike::global_nullifier(
+            11, 22,
+        ) == 0x3d214dcc435c784d5582c850984ac2d6b7660b19e587598834749d1b6db8f74,
+    );
+}
+
+#[test]
+fn scarce_reservation_retag_moves_capacity_without_duplicating_it() {
+    let root = new_scarce_reservation(7, 11, 22).reserve(5, ReservationRoute::Root).unwrap();
+    assert!(root.reserve(1, ReservationRoute::FrozenExit) == Err(ReservationError::ReservationExists));
+
+    let frozen = root.retag(ReservationRoute::Root, ReservationRoute::FrozenExit).unwrap();
+    assert!(frozen.custody_units == 7);
+    assert!(frozen.reserved_units == 5);
+    assert!(frozen.paid_units == 0);
+    assert!(frozen.route == Option::Some(ReservationRoute::FrozenExit));
+    assert!(frozen.retag(ReservationRoute::Root, ReservationRoute::FrozenExit) == Err(ReservationError::RouteMismatch));
+}
+
+#[test]
+fn rejected_scarce_settlement_preserves_the_atomic_retry_state() {
+    let reserved = new_scarce_reservation(5, 1, 2).reserve(5, ReservationRoute::Root).unwrap();
+    assert!(reserved.settle(0, 5, ReservationRoute::Root) == Err(ReservationError::InvalidNullifier));
+    assert!(reserved.settle(99, 5, ReservationRoute::Root) == Err(ReservationError::InvalidNullifier));
+    assert!(
+        reserved.settle(global_nullifier(1, 2), 4, ReservationRoute::Root) == Err(ReservationError::AmountMismatch),
+    );
+    assert!(
+        reserved
+            .settle(global_nullifier(1, 2), 5, ReservationRoute::FrozenExit) == Err(ReservationError::RouteMismatch),
+    );
+
+    let settled = reserved.settle(global_nullifier(1, 2), 5, ReservationRoute::Root).unwrap();
+    assert!(settled.paid_units == 5);
+    assert!(settled.reserved_units == 0);
+}
+
+#[test]
+fn scarce_reservation_rejects_zero_and_unbacked_capacity() {
+    assert!(new_scarce_reservation(1, 1, 2).reserve(0, ReservationRoute::Root) == Err(ReservationError::ZeroAmount));
+    assert!(
+        new_scarce_reservation(1, 1, 2)
+            .reserve(2, ReservationRoute::Root) == Err(ReservationError::InsufficientCustody),
+    );
+    assert!(
+        new_scarce_reservation(1, 1, 2)
+            .retag(ReservationRoute::Root, ReservationRoute::FrozenExit) == Err(ReservationError::ReservationMissing),
     );
 }
