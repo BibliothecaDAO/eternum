@@ -428,6 +428,22 @@ pub trait IHardenedInboxRuntime<TContractState> {
 }
 
 #[starknet::interface]
+pub trait IRecursiveStarknetFinalityVerifier<TContractState> {
+    fn verify_finalized_extension(
+        self: @TContractState,
+        previous_header_hash: felt252,
+        previous_block_number: u64,
+        header: FinalizedStarknetHeader,
+        recursive_finality_proof: Span<felt252>,
+    ) -> bool;
+}
+
+#[starknet::interface]
+pub trait ISeasonIngressCancellation<TContractState> {
+    fn consume_cancelled_transport_slot(ref self: TContractState, marker: CancelledInboxMarker);
+}
+
+#[starknet::interface]
 pub trait IGameIngressAdapter<TContractState> {
     fn apply_resource_deposit(ref self: TContractState, message: ResourceDepositMessage) -> GameIngressDispatchResult;
     fn apply_scarce_deposit(ref self: TContractState, message: ScarceDepositMessage) -> GameIngressDispatchResult;

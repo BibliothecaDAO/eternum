@@ -11372,6 +11372,22 @@
       ]
     },
     {
+      "kind": "trait",
+      "name": "IRecursiveStarknetFinalityVerifier",
+      "genericParameters": "<TContractState>",
+      "members": [
+        "fn verify_finalized_extension( self: @TContractState, previous_header_hash: felt252, previous_block_number: u64, header: FinalizedStarknetHeader, recursive_finality_proof: Span<felt252>, ) -> bool"
+      ]
+    },
+    {
+      "kind": "trait",
+      "name": "ISeasonIngressCancellation",
+      "genericParameters": "<TContractState>",
+      "members": [
+        "fn consume_cancelled_transport_slot( ref self: TContractState, marker: CancelledInboxMarker, )"
+      ]
+    },
+    {
       "kind": "struct",
       "name": "AppliedIngressResult",
       "genericParameters": "",
@@ -13128,7 +13144,7 @@
     "0x30ec62a4c16367c457518cd75acbfb6b88002e1716a1f8c27b544eecedf2b95",
     1,
     "0x7b192adbf9668d6cbfff96dc9f655bfbcd4645b7d5b98df88eae89a6ce9d7ea",
-    231,
+    233,
     "0x621a51eb90e7db202f4999f8a9291b603ac9e080aef8bd591a6e4a2e792b200",
     "0x1f711f3755cc28a52ca160dcd325c92ed7c42ed23ad4b10a946350da459a27d",
     "0x2ad17f368b31bfb8430101dbdbc4199f0063e1a813a32153c6d50fcde272448",
@@ -13330,6 +13346,8 @@
     "0x3599fd0dd0f49d3651b2225ecc8cf8298da295cffd78d715b8d57c99f734372",
     "0x5fb0fc96210343f47c2e22d20adf5a409939e1d4cb7e379b1e93f2f1d05f96a",
     "0x6194a4befa6a619f7aca36526647cd255333ad7f17097f5fabc0854bda06187",
+    "0x5828214acc281586c57112efe4d544649b57ae26c21245cb9525282db015634",
+    "0x1140facdb4ac0d548325d9e713c88e6b2207bc8eca2a5a50d0b32be3f98949a",
     "0x63a4832698b1ce9883870f3dc411a4ececeb668f32f931887c402509af77a13",
     "0x4586662e1c02bbf3a868362a7356821856d95cc527217fe69bc7a09ce63a6fa",
     "0x264d1a69b038d33a02b78cf439fe972b7f7a8c55d0516635e7ce4ea01cb5c90",
@@ -13658,5 +13676,5 @@
     "0x56333e70bd25cea0b7130e7fd13652b16bda6314d0846a1da1f1ba2f69ba064",
     "0x2a380c08356791d93c35f60c91ea23c1f5fc27fabf0cb64d8c45a56699dda84"
   ],
-  "schemaRegistryHash": "0x77e0d80832bcf6173e99c3fee68dac878821170a33a7e6254c7cdcbb5213967"
+  "schemaRegistryHash": "0x2b09dc878a4ab21d67501c809b2ac112cb4551e23266c2b27c4318cc9197402"
 }

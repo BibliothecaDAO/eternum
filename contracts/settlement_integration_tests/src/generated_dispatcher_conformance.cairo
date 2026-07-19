@@ -8,12 +8,13 @@ use settlement_protocol::interfaces::{
     ILegacyMmrConfigSystemMigrationDispatcher, ILegacyMmrCutoverFundingDispatcher, ILegacyMmrCutoverGateDispatcher,
     ILegacyMmrFactoryMigrationDispatcher, ILegacyMmrMigrationGuardDispatcher, ILegacyMmrPendingResultSourceDispatcher,
     ILegacyMmrSystemMigrationDispatcher, ILegacyMmrWorldMigrationDispatcher, IMMRSettlementModuleDispatcher,
-    IMMRSettlementRouterDispatcher, IMMRSettlementTokenDispatcher, ISealedGameFactoryDispatcher,
-    ISealedWorldPolicyDispatcher, ISeasonResourceSettlementTokenDispatcher, IStarknetFinalizedStateRootSourceDispatcher,
+    IMMRSettlementRouterDispatcher, IMMRSettlementTokenDispatcher, IRecursiveStarknetFinalityVerifierDispatcher,
+    ISealedGameFactoryDispatcher, ISealedWorldPolicyDispatcher, ISeasonIngressCancellationDispatcher,
+    ISeasonResourceSettlementTokenDispatcher, IStarknetFinalizedStateRootSourceDispatcher,
 };
 use starknet::ContractAddress;
 
-pub const PROTOCOL_DISPATCHER_COUNT: u16 = 26;
+pub const PROTOCOL_DISPATCHER_COUNT: u16 = 28;
 
 pub fn protocol_dispatcher_addresses(address: ContractAddress) -> Array<ContractAddress> {
     array![
@@ -39,6 +40,8 @@ pub fn protocol_dispatcher_addresses(address: ContractAddress) -> Array<Contract
         ISealedGameFactoryDispatcher { contract_address: address }.contract_address,
         ISealedWorldPolicyDispatcher { contract_address: address }.contract_address,
         IHardenedInboxRuntimeDispatcher { contract_address: address }.contract_address,
+        IRecursiveStarknetFinalityVerifierDispatcher { contract_address: address }.contract_address,
+        ISeasonIngressCancellationDispatcher { contract_address: address }.contract_address,
         IGameIngressAdapterDispatcher { contract_address: address }.contract_address,
         IGameEconomicSettlementCallbacksDispatcher { contract_address: address }.contract_address,
         IGameForcedExitAdapterDispatcher { contract_address: address }.contract_address,
