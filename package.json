@@ -217,6 +217,8 @@
     "check:settlement-trees": "node scripts/settlement/generate-tree-vectors.mjs --check",
     "generate:economic-write-inventory": "node scripts/settlement/generate-economic-write-inventory.mjs",
     "check:economic-write-inventory": "node scripts/settlement/generate-economic-write-inventory.mjs --check",
+    "generate:config-setter-inventory": "node scripts/settlement/generate-config-setter-inventory.mjs",
+    "check:config-setter-inventory": "node scripts/settlement/generate-config-setter-inventory.mjs --check",
     "aws-runtime:e2e": "node scripts/aws-runtime-e2e.mjs",
     "knip": "NODE_OPTIONS=--max-old-space-size=8192 pnpm dlx knip@5.80.0 --exclude binaries,dependencies",
     "lint": "pnpm --recursive run lint",

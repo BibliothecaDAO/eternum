@@ -1,3 +1,5 @@
+use crate::config_seal_spike::{ConfigSealError, ConfigSealStateTrait, new_config_seal_state};
+use crate::config_setter_vectors::{CONFIG_SETTER_COUNT, config_setter_selectors};
 use crate::economic_state_spike::{
     CallerClass, EconomicSpikeError, EconomicStateSpikeTrait, backing_is_conserved, new_economic_spike_state,
 };
@@ -7,6 +9,43 @@ use crate::reservation_spike::{
 };
 use crate::schema_vector::{SCHEMA_REGISTRY_HASH, action_vectors, claim_kind_vectors, compute_schema_registry_hash};
 use crate::types::{ClaimLeg, SettlementRootMessage};
+
+#[test]
+fn every_inventoried_config_setter_fails_after_one_way_seal() {
+    let selectors = config_setter_selectors();
+    assert!(selectors.len() == CONFIG_SETTER_COUNT);
+
+    let admin = 'config_admin';
+    let mut state = new_config_seal_state(admin);
+    for selector in selectors.span() {
+        state = state.apply_setter(admin, *selector, *selector).unwrap();
+    }
+    assert!(state.mutation_count == CONFIG_SETTER_COUNT.try_into().unwrap());
+
+    let sealed = state.seal(admin).unwrap();
+    assert!(sealed.sealed);
+    assert!(sealed.admin == 0);
+    assert!(sealed.sealed_config_hash == state.config_hash);
+    for selector in selectors.span() {
+        assert!(sealed.apply_setter(admin, *selector, 99) == Err(ConfigSealError::Sealed));
+    }
+    assert!(sealed.mutation_count == state.mutation_count);
+    assert!(sealed.config_hash == state.config_hash);
+}
+
+#[test]
+fn config_seal_rejects_unknown_callers_selectors_and_resealing() {
+    let admin = 'config_admin';
+    let state = new_config_seal_state(admin);
+    let selector = *config_setter_selectors().at(0);
+
+    assert!(state.apply_setter('other', selector, 1) == Err(ConfigSealError::Unauthorized));
+    assert!(state.apply_setter(admin, 0, 1) == Err(ConfigSealError::UnknownSetter));
+    assert!(state.seal('other') == Err(ConfigSealError::Unauthorized));
+
+    let sealed = state.seal(admin).unwrap();
+    assert!(sealed.seal(admin) == Err(ConfigSealError::AlreadySealed));
+}
 
 #[test]
 fn representative_economic_paths_share_the_capability_boundary() {
