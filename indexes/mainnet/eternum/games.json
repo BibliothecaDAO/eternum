@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.eternum",
   "kind": "game",
-  "updatedAt": "2026-07-19T09:24:33.330Z",
+  "updatedAt": "2026-07-19T09:24:45.668Z",
   "entries": {
     "etrn-gloom-467": {
       "kind": "game",
@@ -78,13 +78,12 @@
       "gameName": "etrn-flare-242",
       "path": "runs/mainnet/eternum/etrn-flare-242.json",
       "inputPath": "inputs/mainnet/eternum/etrn-flare-242/29681493036-1.json",
-      "status": "running",
-      "updatedAt": "2026-07-19T09:24:33.330Z",
+      "status": "attention",
+      "updatedAt": "2026-07-19T09:24:45.668Z",
       "workflowRef": "next",
       "currentStepId": "create-world",
-      "activeLeaseExpiresAt": "2026-07-19T10:09:33.330Z",
-      "hasRunningStep": true,
-      "recoverableFailedStepId": null,
+      "hasRunningStep": false,
+      "recoverableFailedStepId": "create-world",
       "recoverablePendingStepId": "wait-for-factory-index",
       "startTime": "2026-07-19T10:00:00.000Z",
       "artifacts": {}
