@@ -41,7 +41,8 @@ pub mod resource_bridge_systems {
         StructureOwnerStoreImpl,
     };
     use crate::models::weight::Weight;
-    use crate::systems::utils::bridge::{BridgeTxType, iBridgeImpl};
+    use crate::systems::utils::bridge::iBridgeImpl;
+    use crate::systems::utils::bridge_quote::{BridgeDirection, BridgeRecipientClass};
     use crate::systems::utils::erc20::{ERC20ABIDispatcher, ERC20ABIDispatcherTrait};
     use crate::systems::utils::resource::iResourceTransferImpl;
     use crate::utils::achievements::index::{AchievementTrait, Tasks};
@@ -95,49 +96,40 @@ pub mod resource_bridge_systems {
                 "Bridge: transfer failed",
             );
 
-            // note: we only apply this AFTER the contract has received the deposit
-            // apply inefficiency percentage to the deposit amount
-            let (inefficiency_percentage_num, inefficiency_percentage_denom) = iBridgeImpl::inefficiency_percentage(
-                ref world, resource_bridge_token_whitelist.resource_type,
+            let recipient_class = if to_structure_base.category == StructureCategory::Village.into() {
+                BridgeRecipientClass::Village
+            } else {
+                BridgeRecipientClass::Realm
+            };
+            let quote = iBridgeImpl::deposit_quote(
+                ref world,
+                token,
+                recipient_class,
+                resource_bridge_token_whitelist.resource_type,
+                amount,
+                client_fee_recipient,
             );
-            let amount_lost_to_inefficiency = (amount * inefficiency_percentage_num.into())
-                / inefficiency_percentage_denom.into();
-            let amount = amount - amount_lost_to_inefficiency;
+            iBridgeImpl::send_platform_fees(ref world, token, client_fee_recipient, quote);
 
-            // take platform fees from deposit
-            let platform_fees = iBridgeImpl::send_platform_fees(
-                ref world, token, client_fee_recipient, amount, BridgeTxType::Deposit,
-            );
-            let token_amount_less_platform_fees = amount - platform_fees;
-
-            // take realm fees from deposit and get final resource amount
-            let resource_total_amount = iBridgeImpl::token_amount_to_resource_amount(token, amount);
             let mut to_structure_weight: Weight = WeightStoreImpl::retrieve(ref world, to_structure_id);
-            let mut resource_realm_fees: u128 = 0;
             if to_structure_base.category == StructureCategory::Village.into() {
                 let to_structure_owner: ContractAddress = StructureOwnerStoreImpl::retrieve(ref world, to_structure_id);
-                resource_realm_fees =
-                    iBridgeImpl::send_realm_fees(
-                        ref world,
-                        to_structure_id,
-                        to_structure_owner,
-                        to_structure_base,
-                        ref to_structure_weight,
-                        resource_bridge_token_whitelist.resource_type,
-                        resource_total_amount,
-                        BridgeTxType::Deposit,
-                    );
+                iBridgeImpl::send_realm_fees(
+                    ref world,
+                    to_structure_id,
+                    to_structure_owner,
+                    to_structure_base,
+                    ref to_structure_weight,
+                    resource_bridge_token_whitelist.resource_type,
+                    quote.internal_fee_resource.try_into().unwrap(),
+                    BridgeDirection::Deposit,
+                );
             }
             to_structure_weight.store(ref world, to_structure_id);
 
-            let resource_amount_less_platform_fees = iBridgeImpl::token_amount_to_resource_amount(
-                token, token_amount_less_platform_fees,
-            );
-            let resource_amount_less_all_fees = resource_amount_less_platform_fees - resource_realm_fees;
-
             // transfer the resource to the recipient realm
-            let resources = array![(resource_bridge_token_whitelist.resource_type, resource_amount_less_all_fees)]
-                .span();
+            let net_resource_amount: u128 = quote.net_resource_amount.try_into().unwrap();
+            let resources = array![(resource_bridge_token_whitelist.resource_type, net_resource_amount)].span();
 
             // beam resources into the recipient's resource arrivals. it costs 0 donkey and time
             iResourceTransferImpl::portal_to_structure_arrivals_instant(ref world, to_structure_id, resources);
@@ -199,42 +191,33 @@ pub mod resource_bridge_systems {
             resource.spend(amount, ref from_structure_weight, resource_weight_grams);
             resource.store(ref world);
 
-            // note: we only apply this AFTER the contract has burned the withdrawal amount
-            // apply inefficiency percentage to the withdrawal amount
-            let (inefficiency_percentage_num, inefficiency_percentage_denom) = iBridgeImpl::inefficiency_percentage(
-                ref world, resource_bridge_token_whitelist.resource_type,
+            let recipient_class = if from_structure.category == StructureCategory::Village.into() {
+                BridgeRecipientClass::Village
+            } else {
+                BridgeRecipientClass::Realm
+            };
+            let quote = iBridgeImpl::withdrawal_quote(
+                ref world, token, recipient_class, resource_type, amount, client_fee_recipient,
             );
-            let amount_lost_to_inefficiency = (amount * inefficiency_percentage_num.into())
-                / inefficiency_percentage_denom.into();
-            let amount = amount - amount_lost_to_inefficiency;
 
-            // send fees to realm if from_structure is a village
-            let token_amount = iBridgeImpl::resource_amount_to_token_amount(token, amount);
-            let mut realm_resource_fee_amount = 0;
             if from_structure.category == StructureCategory::Village.into() {
-                realm_resource_fee_amount =
-                    iBridgeImpl::send_realm_fees(
-                        ref world,
-                        from_structure_id,
-                        from_structure_owner,
-                        from_structure,
-                        ref from_structure_weight,
-                        resource_type,
-                        amount,
-                        BridgeTxType::Withdrawal,
-                    );
+                iBridgeImpl::send_realm_fees(
+                    ref world,
+                    from_structure_id,
+                    from_structure_owner,
+                    from_structure,
+                    ref from_structure_weight,
+                    resource_type,
+                    quote.internal_fee_resource.try_into().unwrap(),
+                    BridgeDirection::Withdrawal,
+                );
             }
             from_structure_weight.store(ref world, from_structure_id);
 
-            // send platform fees
-            let platform_token_fee_amount = iBridgeImpl::send_platform_fees(
-                ref world, token, client_fee_recipient, token_amount, BridgeTxType::Withdrawal,
-            );
-            let realm_token_fee_amount = iBridgeImpl::resource_amount_to_token_amount(token, realm_resource_fee_amount);
+            iBridgeImpl::send_platform_fees(ref world, token, client_fee_recipient, quote);
 
-            // transfer withdrawm erc20 amount to recipient
-            let withdrawal_amount_less_all_fees = token_amount - realm_token_fee_amount - platform_token_fee_amount;
-            iBridgeImpl::transfer_or_mint(token, to_address, withdrawal_amount_less_all_fees);
+            // transfer withdrawn erc20 amount to recipient
+            iBridgeImpl::transfer_or_mint(token, to_address, quote.net_token_amount);
         }
 
 
@@ -260,28 +243,20 @@ pub mod resource_bridge_systems {
             let resource_bridge_token_whitelist: ResourceBridgeWtlConfig = world.read_model(token);
             iBridgeImpl::assert_resource_whitelisted(world, resource_bridge_token_whitelist);
 
-            // apply inefficiency percentage to the withdrawal amount
-            let (inefficiency_percentage_num, inefficiency_percentage_denom) = iBridgeImpl::inefficiency_percentage(
-                ref world, resource_bridge_token_whitelist.resource_type,
-            );
-            let amount_lost_to_inefficiency = (amount * inefficiency_percentage_num.into())
-                / inefficiency_percentage_denom.into();
-            let amount = amount - amount_lost_to_inefficiency;
-
-            // send fees to realm if from_structure is a village
-            let bank_resource_fee_amount = iBridgeImpl::send_bank_fees(
-                ref world, through_bank_id, resource_type, amount, BridgeTxType::Withdrawal,
+            let quote = iBridgeImpl::withdrawal_quote(
+                ref world, token, BridgeRecipientClass::Bank, resource_type, amount, Zero::zero(),
             );
 
-            // send platform fees
-            let token_amount = iBridgeImpl::resource_amount_to_token_amount(token, amount);
-            let platform_token_fee_amount = iBridgeImpl::send_platform_fees(
-                ref world, token, Zero::zero(), token_amount, BridgeTxType::Withdrawal,
+            iBridgeImpl::send_bank_fees(
+                ref world,
+                through_bank_id,
+                resource_type,
+                quote.internal_fee_resource.try_into().unwrap(),
+                BridgeDirection::Withdrawal,
             );
-            // transfer withdrawm erc20 amount to recipient
-            let bank_token_fee_amount = iBridgeImpl::resource_amount_to_token_amount(token, bank_resource_fee_amount);
-            let withdrawal_amount_less_all_fees = token_amount - bank_token_fee_amount - platform_token_fee_amount;
-            iBridgeImpl::transfer_or_mint(token, to_address, withdrawal_amount_less_all_fees);
+
+            iBridgeImpl::send_platform_fees(ref world, token, Zero::zero(), quote);
+            iBridgeImpl::transfer_or_mint(token, to_address, quote.net_token_amount);
         }
 
         fn velords_claim(ref self: ContractState) {

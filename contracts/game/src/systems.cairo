@@ -105,6 +105,7 @@ pub mod utils {
     pub mod blitz_exploration;
     pub mod blitz_profile;
     pub mod bridge;
+    pub mod bridge_quote;
     pub mod camp;
     pub mod distance;
     pub mod donkey;
