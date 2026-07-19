@@ -26,12 +26,23 @@ export interface ClaimKindSchema {
   auxiliaryBody: string;
 }
 
+export interface TreeSchema {
+  name: string;
+  depth: number;
+  capacity: number;
+  leafDomain: string;
+  emptyLeafDomain: string;
+  nodeDomain: string;
+}
+
 const PROTOCOL_VERSION = schemaRegistry.protocolVersion as ProtocolVersion;
 const ACTION_SCHEMAS = schemaRegistry.actions as readonly ActionSchema[];
 const CLAIM_KIND_SCHEMAS = schemaRegistry.claimKinds as readonly ClaimKindSchema[];
+const TREE_SCHEMAS = schemaRegistry.trees as readonly TreeSchema[];
 
 const ACTION_BY_CODE = new Map(ACTION_SCHEMAS.map((schema) => [schema.code, schema]));
 const CLAIM_KIND_BY_CODE = new Map(CLAIM_KIND_SCHEMAS.map((schema) => [schema.code, schema]));
+const TREE_BY_NAME = new Map(TREE_SCHEMAS.map((schema) => [schema.name, schema]));
 
 export function getActionSchema(version: number, actionCode: number): ActionSchema {
   if (version !== PROTOCOL_VERSION) throw new Error(`unsupported protocol version: ${version}`);
@@ -44,6 +55,12 @@ export function getActionSchema(version: number, actionCode: number): ActionSche
 export function getClaimKind(claimKindCode: number): ClaimKindSchema {
   const schema = CLAIM_KIND_BY_CODE.get(claimKindCode);
   if (!schema) throw new Error(`unregistered claim kind: ${claimKindCode}`);
+  return schema;
+}
+
+export function getTreeSchema(name: string): TreeSchema {
+  const schema = TREE_BY_NAME.get(name);
+  if (!schema) throw new Error(`unregistered tree: ${name}`);
   return schema;
 }
 

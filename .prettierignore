@@ -23,6 +23,9 @@
 **/*.graphql
 **/*.gen.ts
 
+# Rust source is formatted by rustfmt.
+proofs/**/*.rs
+
 # ignore json files
 **/*.json
 

@@ -829,6 +829,28 @@ mod tests {
     }
 
     #[test]
+    fn test_sp1_update_plan_golden_vector() {
+        let config = MMRConfigDefaultImpl::default();
+        let median: u128 = 1050;
+
+        assert!(
+            MMRCalculatorImpl::calculate_player_mmr(config, 900, 1, 6, median, median) == 934,
+            "rank-one low-MMR vector",
+        );
+        assert!(
+            MMRCalculatorImpl::calculate_player_mmr(config, 1000, 1, 6, median, median) == 1031, "rank-one tied vector",
+        );
+        assert!(MMRCalculatorImpl::calculate_player_mmr(config, 1000, 3, 6, median, median) == 1013, "rank-gap vector");
+        assert!(MMRCalculatorImpl::calculate_player_mmr(config, 1100, 4, 6, median, median) == 1100, "middle vector");
+        assert!(
+            MMRCalculatorImpl::calculate_player_mmr(config, 1200, 5, 6, median, median) == 1187, "lower-rank vector",
+        );
+        assert!(
+            MMRCalculatorImpl::calculate_player_mmr(config, 1300, 6, 6, median, median) == 1276, "last-place vector",
+        );
+    }
+
+    #[test]
     fn test_extreme_mmr_difference() {
         let config = MMRConfigDefaultImpl::default();
 

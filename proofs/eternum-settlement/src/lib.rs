@@ -1,5 +1,6 @@
 pub mod codec;
 pub mod golden_vectors;
+pub mod mmr_plan;
 pub mod schema_vector;
 pub mod tree;
 pub mod tree_vectors;

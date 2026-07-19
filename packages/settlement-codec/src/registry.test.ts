@@ -5,6 +5,7 @@ import {
   getActionSchema,
   getClaimKind,
   getSchemaRegistryHash,
+  getTreeSchema,
   validateEmitterCount,
 } from "./index";
 
@@ -32,7 +33,27 @@ describe("settlement schema registry", () => {
   });
 
   it("recomputes the frozen full registry hash", () => {
-    expect(getSchemaRegistryHash()).toBe("0x2d081aa3e28ce80cad3b11fab0fc47ba4c8835e1d2b65fec99ffc1133450530");
+    expect(getSchemaRegistryHash()).toBe("0x77e0d80832bcf6173e99c3fee68dac878821170a33a7e6254c7cdcbb5213967");
     expect(computeSchemaRegistryHash()).toBe(getSchemaRegistryHash());
+  });
+
+  it("freezes distinct depth-32 ranking and MMR-plan trees", () => {
+    expect(getTreeSchema("ranking")).toEqual({
+      name: "ranking",
+      depth: 32,
+      capacity: 4_294_967_296,
+      leafDomain: "RANKING_LEAF_V1",
+      emptyLeafDomain: "RANKING_EMPTY_LEAF_V1",
+      nodeDomain: "RANKING_NODE_V1",
+    });
+    expect(getTreeSchema("mmr-plan")).toEqual({
+      name: "mmr-plan",
+      depth: 32,
+      capacity: 4_294_967_296,
+      leafDomain: "MMR_PLAN_LEAF_V1",
+      emptyLeafDomain: "MMR_PLAN_EMPTY_LEAF_V1",
+      nodeDomain: "MMR_PLAN_NODE_V1",
+    });
+    expect(getTreeSchema("ranking").nodeDomain).not.toBe(getTreeSchema("mmr-plan").nodeDomain);
   });
 });

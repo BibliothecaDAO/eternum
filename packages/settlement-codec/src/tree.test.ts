@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import vectors from "../schema/tree-vectors-v1.json";
+import { getTreeSchema } from "./index";
 import { FixedDepthTree, verifyFixedDepthProof } from "./tree";
 
 describe("fixed-depth settlement trees", () => {
@@ -70,12 +71,26 @@ describe("fixed-depth settlement trees", () => {
       }),
     ).toBe(false);
   });
+
+  it("keeps ranking proofs domain-separated from MMR-plan proofs", () => {
+    const ranking = vectors.cases.find(({ name }) => name === "ranking-three")!;
+    const plan = vectors.cases.find(({ name }) => name === "mmr-plan-three")!;
+
+    expect(ranking.root).not.toBe(plan.root);
+    expect(
+      verifyFixedDepthProof({
+        depth: ranking.depth,
+        leafHash: ranking.leafHashes[0],
+        leafIndex: 0,
+        nodeDomain: resolveTree("mmr-plan").nodeDomain,
+        root: ranking.root,
+        siblings: ranking.proofs[0].siblings,
+      }),
+    ).toBe(false);
+  });
 });
 
 function resolveTree(name: string) {
-  if (name === "claim") return { emptyLeafDomain: "EMPTY_LEAF_V1", nodeDomain: "NODE_V1" };
-  return {
-    emptyLeafDomain: "DEPLOYMENT_REFUND_SOURCE_EMPTY_V1",
-    nodeDomain: "DEPLOYMENT_REFUND_SOURCE_NODE_V1",
-  };
+  const { emptyLeafDomain, nodeDomain } = getTreeSchema(name);
+  return { emptyLeafDomain, nodeDomain };
 }

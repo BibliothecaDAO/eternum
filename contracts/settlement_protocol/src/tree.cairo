@@ -11,24 +11,26 @@ pub enum TreeError {
 pub fn fixed_depth_root(
     leaves: Span<felt252>, depth: u8, empty_leaf_domain: felt252, node_domain: felt252,
 ) -> Result<felt252, TreeError> {
-    let capacity = tree_capacity(depth)?;
-    if leaves.len() > capacity {
-        return Err(TreeError::CapacityExceeded);
-    }
+    validate_leaf_count(depth, leaves.len())?;
 
     let empty_nodes = build_empty_nodes(depth, empty_leaf_domain, node_domain);
     let mut level = array![];
-    for index in 0..capacity {
-        level.append(if index < leaves.len() {
-            *leaves.at(index)
-        } else {
-            *empty_nodes.at(0)
-        });
+    for leaf in leaves {
+        level.append(*leaf);
     }
-    for _ in 0..depth {
+    if level.is_empty() {
+        return Ok(*empty_nodes.at(depth.into()));
+    }
+    for tree_level in 0..depth {
         let mut parents = array![];
-        for index in 0..level.len() / 2 {
-            parents.append(hash_node(node_domain, *level.at(index * 2), *level.at(index * 2 + 1)));
+        for index in 0..(level.len() + 1) / 2 {
+            let left = *level.at(index * 2);
+            let right = if index * 2 + 1 < level.len() {
+                *level.at(index * 2 + 1)
+            } else {
+                *empty_nodes.at(tree_level.into())
+            };
+            parents.append(hash_node(node_domain, left, right));
         }
         level = parents;
     }
@@ -43,10 +45,7 @@ pub fn verify_fixed_depth_proof(
     depth: u8,
     node_domain: felt252,
 ) -> Result<bool, TreeError> {
-    let capacity = tree_capacity(depth)?;
-    if leaf_index >= capacity {
-        return Err(TreeError::IndexOutsideCapacity);
-    }
+    validate_leaf_index(depth, leaf_index)?;
     if siblings.len() != depth.into() {
         return Err(TreeError::WrongProofLength);
     }
@@ -78,13 +77,33 @@ fn hash_node(node_domain: felt252, left: felt252, right: felt252) -> felt252 {
     poseidon_hash_span(array![node_domain, left, right].span())
 }
 
-fn tree_capacity(depth: u8) -> Result<usize, TreeError> {
-    if depth == 0 || depth > 16 {
+fn validate_leaf_count(depth: u8, count: usize) -> Result<(), TreeError> {
+    validate_depth(depth)?;
+    if depth < 32 && count > capacity_below_u32(depth) {
+        return Err(TreeError::CapacityExceeded);
+    }
+    Ok(())
+}
+
+fn validate_leaf_index(depth: u8, index: usize) -> Result<(), TreeError> {
+    validate_depth(depth)?;
+    if depth < 32 && index >= capacity_below_u32(depth) {
+        return Err(TreeError::IndexOutsideCapacity);
+    }
+    Ok(())
+}
+
+fn validate_depth(depth: u8) -> Result<(), TreeError> {
+    if depth == 0 || depth > 32 {
         return Err(TreeError::InvalidDepth);
     }
+    Ok(())
+}
+
+fn capacity_below_u32(depth: u8) -> usize {
     let mut capacity = 1;
     for _ in 0..depth {
         capacity *= 2;
     }
-    Ok(capacity)
+    capacity
 }

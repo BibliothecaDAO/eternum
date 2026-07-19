@@ -83,6 +83,7 @@ dependencies = [
 name = "eternum-settlement"
 version = "0.1.0"
 dependencies = [
+ "ruint",
  "starknet-crypto",
 ]
 
@@ -362,6 +363,21 @@ dependencies = [
  "hmac",
  "subtle",
 ]
+
+[[package]]
+name = "ruint"
+version = "1.19.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "45caf26f647c19115bf9c453c70ffe4a4a3a6390dceebd942610584f99b8ddce"
+dependencies = [
+ "ruint-macro",
+]
+
+[[package]]
+name = "ruint-macro"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "48fd7bd8a6377e15ad9d42a8ec25371b94ddc67abe7c8b9127bec79bebaaae18"
 
 [[package]]
 name = "rustversion"

@@ -8,6 +8,7 @@ license = "MIT"
 path = "src/lib.rs"
 
 [dependencies]
+ruint = { version = "1.19.0", default-features = false }
 starknet-crypto = "0.8.1"
 
 [lints.rust]

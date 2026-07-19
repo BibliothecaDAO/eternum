@@ -17,6 +17,8 @@ writeGenerated(rustOutput, renderRust(vectors));
 function buildTreeVectors(sourceRegistry) {
   const claimTree = requireTree(sourceRegistry, "claim");
   const refundTree = requireTree(sourceRegistry, "deployment-refund-source");
+  const rankingTree = requireTree(sourceRegistry, "ranking");
+  const mmrPlanTree = requireTree(sourceRegistry, "mmr-plan");
   return {
     protocolVersion: sourceRegistry.protocolVersion,
     cases: [
@@ -28,6 +30,8 @@ function buildTreeVectors(sourceRegistry) {
       buildCase("consecutive-full", claimTree, 65, 64),
       buildCase("final", claimTree, 129, 5),
       buildCase("refund-source-one", refundTree, 1, 1),
+      buildCase("ranking-three", rankingTree, 1, 3),
+      buildCase("mmr-plan-three", mmrPlanTree, 1, 3),
     ],
   };
 }
@@ -39,7 +43,7 @@ function requireTree(sourceRegistry, name) {
 }
 
 function buildCase(name, tree, firstValue, count) {
-  const leafDomain = hash.getSelectorFromName(resolveLeafDomain(tree.name));
+  const leafDomain = hash.getSelectorFromName(tree.leafDomain);
   const leafHashes = Array.from({ length: count }, (_, index) => poseidon([leafDomain, firstValue + index]));
   const built = buildTree(tree, leafHashes);
   const proofIndices = [...new Set([0, count - 1])];
@@ -50,28 +54,32 @@ function buildCase(name, tree, firstValue, count) {
     firstValue,
     leafHashes,
     root: built.root,
-    proofs: proofIndices.map((index) => ({ index, siblings: buildProof(built.levels, index) })),
+    proofs: proofIndices.map((index) => ({ index, siblings: buildProof(built, index) })),
   };
-}
-
-function resolveLeafDomain(treeName) {
-  return treeName === "claim" ? "CLAIM_LEAF_V1" : "DEPLOYMENT_REFUND_SOURCE_LEAF_V1";
 }
 
 function buildTree(tree, leafHashes) {
   if (leafHashes.length > tree.capacity) throw new Error(`tree capacity exceeded: ${tree.name}`);
   const emptyNodes = buildEmptyNodes(tree);
-  const levels = [Array.from({ length: tree.capacity }, (_, index) => leafHashes[index] ?? emptyNodes[0])];
+  const levels = [new Map(leafHashes.map((leaf, index) => [index, leaf]))];
   const nodeDomain = hash.getSelectorFromName(tree.nodeDomain);
   for (let depth = 0; depth < tree.depth; depth += 1) {
     const previous = levels[depth];
+    const parentIndices = new Set([...previous.keys()].map((index) => Math.floor(index / 2)));
     levels.push(
-      Array.from({ length: previous.length / 2 }, (_, index) =>
-        poseidon([nodeDomain, previous[index * 2], previous[index * 2 + 1]]),
+      new Map(
+        [...parentIndices].map((index) => [
+          index,
+          poseidon([
+            nodeDomain,
+            previous.get(index * 2) ?? emptyNodes[depth],
+            previous.get(index * 2 + 1) ?? emptyNodes[depth],
+          ]),
+        ]),
       ),
     );
   }
-  return { levels, root: levels.at(-1)[0] };
+  return { emptyNodes, levels, root: levels.at(-1).get(0) ?? emptyNodes[tree.depth] };
 }
 
 function buildEmptyNodes(tree) {
@@ -83,10 +91,10 @@ function buildEmptyNodes(tree) {
   return nodes;
 }
 
-function buildProof(levels, leafIndex) {
+function buildProof({ emptyNodes, levels }, leafIndex) {
   let index = leafIndex;
-  return levels.slice(0, -1).map((level) => {
-    const sibling = level[index ^ 1];
+  return levels.slice(0, -1).map((level, depth) => {
+    const sibling = level.get(index ^ 1) ?? emptyNodes[depth];
     index = Math.floor(index / 2);
     return sibling;
   });

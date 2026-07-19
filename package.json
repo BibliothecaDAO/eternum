@@ -213,6 +213,7 @@
     "check:aws-runtime-urls": "node scripts/check-aws-runtime-url-builders.mjs",
     "check:aws-runtime-workflows": "node scripts/check-aws-runtime-workflows.mjs",
     "check:aws-runtime-resources": "node scripts/check-aws-runtime-resources.mjs",
+    "generate:settlement-schema-commitment": "node scripts/settlement/rebuild-schema-registry-commitment.mjs",
     "check:settlement-schema": "node scripts/settlement/generate-schema-vectors.mjs --check",
     "check:settlement-trees": "node scripts/settlement/generate-tree-vectors.mjs --check",
     "generate:economic-write-inventory": "node scripts/settlement/generate-economic-write-inventory.mjs",
