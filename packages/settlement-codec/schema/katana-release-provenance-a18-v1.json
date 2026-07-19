@@ -1,0 +1,11 @@
+{
+  "schema": "katana-release-provenance-a18-v1",
+  "repository": "https://github.com/dojoengine/katana",
+  "tag": "v1.7.1",
+  "sourceCommit": "7882660a91e776ccacdc0e2e3fe2469f6b4df096",
+  "binaryVersion": "katana 1.7.1 (7882660)",
+  "linuxAmd64": {
+    "url": "https://github.com/dojoengine/katana/releases/download/v1.7.1/katana_v1.7.1_linux_amd64.tar.gz",
+    "sha256": "34632a9640b4572fb46a227deb645334addf1ca88431613da47ea8e7c70992e1"
+  }
+}

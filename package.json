@@ -216,6 +216,8 @@
     "generate:settlement-schema-commitment": "node scripts/settlement/rebuild-schema-registry-commitment.mjs",
     "check:settlement-schema": "node scripts/settlement/generate-schema-vectors.mjs --check",
     "check:settlement-trees": "node scripts/settlement/generate-tree-vectors.mjs --check",
+    "generate:deployment-identity-vector": "pnpm --dir packages/settlement-codec generate:deployment-identity-vector",
+    "check:deployment-identity-vector": "pnpm --dir packages/settlement-codec check:deployment-identity-vector",
     "generate:economic-write-inventory": "node scripts/settlement/generate-economic-write-inventory.mjs",
     "check:economic-write-inventory": "node scripts/settlement/generate-economic-write-inventory.mjs --check",
     "generate:config-setter-inventory": "node scripts/settlement/generate-config-setter-inventory.mjs",

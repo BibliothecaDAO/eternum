@@ -13,6 +13,7 @@ on:
       - "contracts/*/Scarb.toml"
       - "contracts/*/Scarb.lock"
       - "contracts/*/.tool-versions"
+      - "config/deployer/clean/**"
       - "packages/settlement-codec/**"
       - "proofs/eternum-settlement/**"
       - "scripts/settlement/**"
@@ -52,6 +53,35 @@ jobs:
         with:
           components: clippy,rustfmt
 
+      - name: Setup Scarb for the A18 genesis class artifact
+        uses: software-mansion/setup-scarb@2a96b748888e3329ee44ac9ac073d930e692b3cd
+        with:
+          scarb-version: "2.13.1"
+
+      - name: Build the A18 deterministic shell artifact
+        working-directory: contracts/settlement_protocol
+        run: scarb build
+
+      - name: Install the pinned Katana genesis reproducer
+        run: |
+          provenance="packages/settlement-codec/schema/katana-release-provenance-a18-v1.json"
+          archive_url="$(node -p "require('./${provenance}').linuxAmd64.url")"
+          archive_sha256="$(node -p "require('./${provenance}').linuxAmd64.sha256")"
+          source_commit="$(node -p "require('./${provenance}').sourceCommit")"
+          expected_version="$(node -p "require('./${provenance}').binaryVersion")"
+          archive="${RUNNER_TEMP}/katana_v1.7.1_linux_amd64.tar.gz"
+          test "${source_commit}" = "7882660a91e776ccacdc0e2e3fe2469f6b4df096"
+          test "${archive_url}" = "https://github.com/dojoengine/katana/releases/download/v1.7.1/katana_v1.7.1_linux_amd64.tar.gz"
+          test "${archive_sha256}" = "34632a9640b4572fb46a227deb645334addf1ca88431613da47ea8e7c70992e1"
+          test "${expected_version}" = "katana 1.7.1 (7882660)"
+          curl --fail --location --silent --show-error \
+            "${archive_url}" \
+            --output "${archive}"
+          echo "${archive_sha256}  ${archive}" | sha256sum --check
+          tar --extract --gzip --file "${archive}" --directory "${RUNNER_TEMP}" katana
+          sudo install "${RUNNER_TEMP}/katana" /usr/local/bin/katana
+          test "$(katana --version | head -n 1)" = "${expected_version}"
+
       - name: Reject stale or undeclared schemas
         run: |
           pnpm run check:settlement-schema
@@ -60,9 +90,13 @@ jobs:
           pnpm run check:config-setter-inventory
           pnpm run check:economic-interface-schema
           pnpm run check:package-lock-matrix
+          pnpm run check:deployment-identity-vector
 
       - name: Test TypeScript codecs
         run: pnpm --dir packages/settlement-codec test
+
+      - name: Test independent deployment identity compiler
+        run: pnpm vitest run config/deployer/clean/tests/settlement-deployment-identity.test.ts
 
       - name: Build TypeScript codecs
         run: pnpm --dir packages/settlement-codec build
@@ -99,7 +133,7 @@ jobs:
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Setup Scarb
-        uses: software-mansion/setup-scarb@v1
+        uses: software-mansion/setup-scarb@2a96b748888e3329ee44ac9ac073d930e692b3cd
         with:
           scarb-version: "2.13.1"
 

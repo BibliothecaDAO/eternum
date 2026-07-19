@@ -10,6 +10,9 @@ starknet = "2.13.1"
 [dev-dependencies]
 snforge_std = "0.51.2"
 
+[[target.starknet-contract]]
+sierra = true
+
 [scripts]
 test = "snforge test"
 

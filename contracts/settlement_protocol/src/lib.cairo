@@ -2,12 +2,19 @@ pub mod active_exit_backing_spike;
 pub mod appchain_spike_interfaces;
 pub mod config_seal_spike;
 pub mod config_setter_vectors;
+pub mod deployment_identity_spike;
+
+#[cfg(test)]
+mod deployment_identity_tests;
+pub mod deterministic_shell_deployer_spike;
+pub mod deterministic_shell_spike;
 pub mod economic_interfaces;
 pub mod economic_state_spike;
 pub mod golden_vectors;
 pub mod interfaces;
 pub mod registry;
 pub mod reservation_spike;
+pub mod resolved_identity_coordinator_spike;
 pub mod schema_vector;
 
 #[cfg(test)]

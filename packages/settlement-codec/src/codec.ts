@@ -29,6 +29,22 @@ export function encodeSchema(schemaName: string, value: SchemaValue): bigint[] {
   return encodeType(schemaName, value);
 }
 
+export function encodeFlatSchema(schemaName: string, value: object): bigint[] {
+  const record: Record<string, SchemaValue> = {};
+  for (const [field, fieldValue] of Object.entries(value)) {
+    if (
+      typeof fieldValue !== "bigint" &&
+      typeof fieldValue !== "number" &&
+      typeof fieldValue !== "string" &&
+      typeof fieldValue !== "boolean"
+    ) {
+      throw new Error(`${schemaName}.${field} is not a flat schema value`);
+    }
+    record[field] = fieldValue;
+  }
+  return encodeSchema(schemaName, record);
+}
+
 export function decodeSchema(schemaName: string, felts: readonly FeltInput[]): unknown {
   const canonicalFelts = felts.map((felt) => canonicalFelt(felt));
   const decoded = decodeType(schemaName, canonicalFelts, 0);

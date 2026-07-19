@@ -18,6 +18,8 @@
     "generate:economic-interface-schema": "node ../../scripts/settlement/generate-economic-interface-schema.mjs",
     "check:package-lock-matrix": "node ../../scripts/settlement/generate-package-lock-matrix.mjs --check",
     "generate:package-lock-matrix": "node ../../scripts/settlement/generate-package-lock-matrix.mjs",
+    "check:deployment-identity-vector": "tsx ../../scripts/settlement/generate-deployment-identity-vector.ts --check",
+    "generate:deployment-identity-vector": "tsx ../../scripts/settlement/generate-deployment-identity-vector.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -26,6 +28,7 @@
   },
   "devDependencies": {
     "tsup": "^8.0.2",
+    "tsx": "^4.21.0",
     "typescript": "^5.4.4",
     "vitest": "^3.0.0"
   }
