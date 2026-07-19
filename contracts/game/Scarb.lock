@@ -20,6 +20,15 @@ version = "0.5.2"
 source = "git+https://github.com/keep-starknet-strange/alexandria.git?tag=v0.5.2#2fa8b3e12e31f58216b7d890c3d9094da9e6fcff"
 
 [[package]]
+name = "cartridge_vrf"
+version = "0.1.0"
+source = "git+https://github.com/cartridge-gg/vrf?rev=6d1c0f60a53558f19618b2bff81c3da0849db270#6d1c0f60a53558f19618b2bff81c3da0849db270"
+dependencies = [
+ "openzeppelin",
+ "stark_vrf",
+]
+
+[[package]]
 name = "cubit"
 version = "1.3.0"
 source = "git+https://github.com/credence0x/cubit.git?branch=feat%2Fcairo-2.9.2#3b210f1eb323b9367197715fa6f91791689c1f31"
@@ -56,12 +65,14 @@ dependencies = [
  "achievement",
  "alexandria_data_structures",
  "alexandria_math",
+ "cartridge_vrf",
  "cubit",
  "dojo",
  "dojo_snf_test",
  "openzeppelin",
  "openzeppelin_token",
  "snforge_std",
+ "stark_vrf",
 ]
 
 [[package]]
@@ -196,3 +207,9 @@ checksum = "sha256:d7287b7e9c826ee560788a7a9b808a2a0454977ac4111bd3c1bcb3c7c5f01
 dependencies = [
  "snforge_scarb_plugin",
 ]
+
+[[package]]
+name = "stark_vrf"
+version = "0.1.1"
+source = "registry+https://scarbs.xyz/"
+checksum = "sha256:5345a2ec33f50f7e372b74179b0421da022775b72b9de3c51cb15b7530482475"

@@ -18,8 +18,8 @@ import {
   DEFAULT_FACTORY_INDEX_TIMEOUT_MS,
   DEFAULT_NAMESPACE,
   DEFAULT_VERSION,
-  DEFAULT_VRF_PROVIDER_ADDRESS,
 } from "../constants";
+import { resolveLaunchVrfProvider } from "../vrf/release";
 import {
   buildBanksForMapCenterOffset,
   deriveMapCenterOffsetFromWorldConfigTx,
@@ -169,7 +169,7 @@ function createLaunchRuntime(request: LaunchGameRequest, progress: LaunchProgres
     startTime: parseStartTime(request.startTime),
     cartridgeApiBase: request.cartridgeApiBase || DEFAULT_CARTRIDGE_API_BASE,
     toriiNamespaces: request.toriiNamespaces || DEFAULT_NAMESPACE,
-    vrfProviderAddress: request.vrfProviderAddress || DEFAULT_VRF_PROVIDER_ADDRESS,
+    vrfProviderAddress: resolveLaunchVrfProvider(environment.id, request.vrfProviderAddress),
     executionMode: request.executionMode || "batched",
     version: request.version || DEFAULT_VERSION,
     createGame: resolveCreateGameSettings(request, environment),

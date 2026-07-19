@@ -2,26 +2,29 @@ use collectibles_claim::utils::cartridge::vrf::Source;
 use collectibles_claim::utils::cartridge::vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait};
 use core::dict::Felt252Dict;
 use core::poseidon::poseidon_hash_span;
-use starknet::TxInfo;
 use starknet::{ContractAddress};
 
 #[generate_trait]
 pub impl VRFImpl of VRFTrait {
     fn seed(player_id: ContractAddress, vrf_provider_address: ContractAddress) -> u256 {
-        let tx_info: TxInfo = starknet::get_tx_info().unbox();
+        assert!(!vrf_provider_address.is_zero(), "VRF provider address must be set");
+        let vrf_provider = IVrfProviderDispatcher { contract_address: vrf_provider_address };
+        let random_value: felt252 = vrf_provider.consume_random(Source::Nonce(player_id));
+        random_value.into()
+    }
+}
 
-        if vrf_provider_address.is_zero() {
-            // workaround for testnet
-            assert!(
-                tx_info.chain_id != 'SN_MAIN' && tx_info.chain_id != 'SN_SEPOLIA', "VRF provider address must be set",
-            );
+#[cfg(test)]
+mod vrf_policy_tests {
+    use starknet::ContractAddress;
+    use super::VRFImpl;
 
-            return tx_info.transaction_hash.into();
-        } else {
-            let vrf_provider = IVrfProviderDispatcher { contract_address: vrf_provider_address };
-            let random_value: felt252 = vrf_provider.consume_random(Source::Nonce(player_id));
-            return random_value.into();
-        }
+    #[test]
+    #[should_panic(expected: "VRF provider address must be set")]
+    fn collectibles_reject_transaction_hash_randomness() {
+        let player: ContractAddress = 'PLAYER'.try_into().unwrap();
+        let zero_provider: ContractAddress = 0.try_into().unwrap();
+        VRFImpl::seed(player, zero_provider);
     }
 }
 

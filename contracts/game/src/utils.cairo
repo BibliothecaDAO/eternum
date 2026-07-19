@@ -14,5 +14,7 @@ pub mod interfaces {
 pub mod testing;
 pub mod trophies;
 pub mod village;
+#[cfg(test)]
+mod vrf_integration_tests;
 pub mod vrgda;
 pub mod world;

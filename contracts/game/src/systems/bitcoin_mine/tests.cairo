@@ -25,6 +25,7 @@ mod tests {
     use crate::models::troop::{GuardTroops, TroopTier, TroopType, Troops};
     use crate::models::weight::Weight;
     use crate::systems::bitcoin_mine::contracts::{IBitcoinMineSystemsDispatcher, IBitcoinMineSystemsDispatcherTrait};
+    use crate::utils::testing::helpers::deploy_deterministic_vrf_provider;
 
     // ============================================================================
     // Constants
@@ -118,7 +119,7 @@ mod tests {
     }
 
     fn setup_world() -> WorldStorage {
-        // Set chain_id for VRF bypass in tests
+        // Use an explicit provider; production code never falls back to transaction hashes.
         start_cheat_chain_id_global('SN_TEST');
 
         let mut world = spawn_test_world([namespace_def()].span());
@@ -141,6 +142,9 @@ mod tests {
         WorldConfigUtilImpl::set_member(ref world, selector!("capacity_config"), get_capacity_config());
         WorldConfigUtilImpl::set_member(
             ref world, selector!("structure_capacity_config"), get_structure_capacity_config(),
+        );
+        WorldConfigUtilImpl::set_member(
+            ref world, selector!("vrf_provider_address"), deploy_deterministic_vrf_provider(),
         );
 
         // Set weight config for labor and satoshi (both weightless for simplicity)

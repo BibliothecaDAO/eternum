@@ -1,6 +1,7 @@
 import { DEFAULT_FACTORY_CONFIG_VERSION } from "../../shared/factory-defaults";
 import { buildSharedChainRuntimeAlias, resolveRuntimeEndpointAlias } from "../../../common/factory/runtime-registry";
 import type { DeploymentEnvironment, DeploymentEnvironmentId } from "./types";
+import { CARTRIDGE_VRF_RELEASE } from "./vrf/release";
 
 export const DEFAULT_NAMESPACE = "s1_eternum";
 export const DEFAULT_VERSION = DEFAULT_FACTORY_CONFIG_VERSION;
@@ -25,7 +26,7 @@ export const DEFAULT_KATANA_VERSION = "v1.7.1";
 export const DEFAULT_TORII_SLOT_TEAM = "realms-eternum";
 export const DEFAULT_RUNTIME_PROVIDER = "slot";
 export const DEFAULT_AWS_RUNTIME_DOMAIN = "runtime.realms.world";
-export const DEFAULT_VRF_PROVIDER_ADDRESS = "0x051fea4450da9d6aee758bdeba88b2f665bcbf549d2c61421aa724e9ac0ced8f";
+export const DEFAULT_VRF_PROVIDER_ADDRESS = CARTRIDGE_VRF_RELEASE.providerAddress;
 export const DEFAULT_MAINNET_FACTORY_ADDRESS = "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da";
 export const DEFAULT_SLOT_FACTORY_ADDRESS = "0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb";
 export const DEFAULT_MAINNET_RPC_URL = resolveRuntimeEndpointAlias(buildSharedChainRuntimeAlias("mainnet"));

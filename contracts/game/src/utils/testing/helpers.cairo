@@ -15,8 +15,8 @@ use dojo::model::{ModelStorage, ModelStorageTest};
 use dojo::world::{IWorldDispatcherTrait, WorldStorage, WorldStorageTrait};
 use dojo_snf_test::{ContractDef, ContractDefTrait, NamespaceDef, TestResource, WorldStorageTestTrait, spawn_test_world};
 use snforge_std::{
-    start_cheat_block_timestamp_global, start_cheat_caller_address, start_cheat_chain_id_global,
-    stop_cheat_caller_address,
+    ContractClassTrait, DeclareResultTrait, declare, start_cheat_block_timestamp_global, start_cheat_caller_address,
+    start_cheat_chain_id_global, stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
 use starknet::syscalls::deploy_syscall;
@@ -69,6 +69,12 @@ fn deploy_mock_village_pass(ref world: WorldStorage, admin: starknet::ContractAd
     )
         .unwrap();
     mock_village_pass_address
+}
+
+pub fn deploy_deterministic_vrf_provider() -> ContractAddress {
+    let provider_class = declare("DeterministicVrfProvider").unwrap().contract_class();
+    let (provider_address, _) = provider_class.deploy(@array![]).unwrap();
+    provider_address
 }
 
 

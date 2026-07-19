@@ -1,26 +1,16 @@
 use core::dict::Felt252Dict;
 use core::num::traits::zero::Zero;
 use core::poseidon::poseidon_hash_span;
-use starknet::{ContractAddress, TxInfo};
+use starknet::ContractAddress;
 use crate::utils::cartridge::vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source};
 
 #[generate_trait]
 pub impl VRFImpl of VRFTrait {
     fn seed(source: Source, vrf_provider_address: ContractAddress) -> u256 {
-        let tx_info: TxInfo = starknet::get_tx_info().unbox();
-
-        if vrf_provider_address.is_zero() {
-            // workaround for testnet
-            assert!(
-                tx_info.chain_id != 'SN_MAIN' && tx_info.chain_id != 'SN_SEPOLIA', "VRF provider address must be set",
-            );
-
-            return tx_info.transaction_hash.into();
-        } else {
-            let vrf_provider = IVrfProviderDispatcher { contract_address: vrf_provider_address };
-            let random_value: felt252 = vrf_provider.consume_random(source);
-            return random_value.into();
-        }
+        assert!(!vrf_provider_address.is_zero(), "VRF provider address must be set");
+        let vrf_provider = IVrfProviderDispatcher { contract_address: vrf_provider_address };
+        let random_value: felt252 = vrf_provider.consume_random(source);
+        random_value.into()
     }
 }
 
@@ -138,6 +128,21 @@ pub fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
         }
     }
     return result.span();
+}
+
+#[cfg(test)]
+mod vrf_policy_tests {
+    use snforge_std::start_cheat_chain_id_global;
+    use starknet::ContractAddress;
+    use super::{Source, VRFImpl};
+
+    #[test]
+    #[should_panic(expected: "VRF provider address must be set")]
+    fn production_style_appchain_rejects_transaction_hash_randomness() {
+        start_cheat_chain_id_global('WP_BLITZ_MAIN');
+        let zero_provider: ContractAddress = 0.try_into().unwrap();
+        VRFImpl::seed(Source::Salt(7), zero_provider);
+    }
 }
 
 

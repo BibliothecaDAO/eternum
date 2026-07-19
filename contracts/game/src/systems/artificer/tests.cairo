@@ -23,6 +23,7 @@ mod tests {
     use crate::models::troop::{GuardTroops, TroopTier, TroopType, Troops};
     use crate::models::weight::Weight;
     use crate::systems::artificer::contracts::{IArtificerSystemsDispatcher, IArtificerSystemsDispatcherTrait};
+    use crate::utils::testing::helpers::deploy_deterministic_vrf_provider;
 
     // ============================================================================
     // Test Constants
@@ -114,7 +115,7 @@ mod tests {
     }
 
     fn setup_artificer_world() -> WorldStorage {
-        // Set chain_id for VRF bypass in tests
+        // Use an explicit provider; production code never falls back to transaction hashes.
         start_cheat_chain_id_global('SN_TEST');
 
         let mut world = spawn_test_world([namespace_def_artificer()].span());
@@ -133,6 +134,9 @@ mod tests {
         WorldConfigUtilImpl::set_member(ref world, selector!("capacity_config"), get_capacity_config());
         WorldConfigUtilImpl::set_member(
             ref world, selector!("structure_capacity_config"), get_structure_capacity_config(),
+        );
+        WorldConfigUtilImpl::set_member(
+            ref world, selector!("vrf_provider_address"), deploy_deterministic_vrf_provider(),
         );
 
         // Set weight config for research (weightless)
