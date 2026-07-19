@@ -12,6 +12,7 @@ starknet = "2.13.1"
 snforge_std = "0.51.2"
 
 [scripts]
+benchmark-a17 = "bash ../../scripts/settlement/check-a17-capacity-headroom.sh"
 test = "snforge test"
 
 [tool.fmt]

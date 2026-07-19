@@ -117,3 +117,8 @@ jobs:
           scarb build
           snforge test | tee "${test_log}"
           grep -Eq 'Collected [1-9][0-9]* test' "${test_log}"
+
+      - name: Enforce A17 maximum-bound transaction headroom
+        if: matrix.package == 'settlement_appchain'
+        working-directory: contracts/settlement_appchain
+        run: scarb run benchmark-a17
