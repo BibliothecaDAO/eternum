@@ -1,8 +1,8 @@
 pub mod contract;
 pub mod utils;
 pub mod tests {
-    mod mocks {
-        mod account;
+    pub mod mocks {
+        pub mod account;
     }
     mod test_collectibles;
 }

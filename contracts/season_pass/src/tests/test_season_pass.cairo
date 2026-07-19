@@ -1,21 +1,21 @@
 #[cfg(test)]
 mod tests {
+    use core::num::traits::Zero;
     use esp::contract::{EternumSeasonPass as season_pass_contract, ISeasonPassDispatcher, ISeasonPassDispatcherTrait};
     use esp::mock::lords::{ITestLords, ITestLordsDispatcher, ITestLordsDispatcherTrait};
     use esp::mock::realms::realms::{
-        IERC721MinterDispatcher, IERC721MinterDispatcherTrait, TestRealm as realms_contract,
+        IERC721MinterDispatcher, IERC721MinterDispatcherTrait, IRealmMetadataEncodedDispatcher,
+        IRealmMetadataEncodedDispatcherTrait, TestRealm as realms_contract,
     };
-    use esp::mock::realms::realms::{IRealmMetadataEncodedDispatcher, IRealmMetadataEncodedDispatcherTrait};
-
     use openzeppelin::access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
     use openzeppelin::upgrades::interface::{IUpgradeableDispatcher, IUpgradeableDispatcherTrait};
+    use snforge_std::cheatcodes::l1_handler::L1HandlerTrait;
     use snforge_std::{
-        ContractClass, ContractClassTrait, DeclareResultTrait, cheatcodes::{l1_handler::L1HandlerTrait}, declare,
-        get_class_hash, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
+        ContractClass, ContractClassTrait, DeclareResultTrait, declare, get_class_hash, spy_events,
+        start_cheat_caller_address, stop_cheat_caller_address,
     };
-
     use starknet::{ClassHash, ContractAddress, EthAddress};
 
     fn ADMIN() -> ContractAddress {

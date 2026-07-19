@@ -96,12 +96,6 @@ pub trait ITickConfig<T> {
 }
 
 #[starknet::interface]
-pub trait IStaminaConfig<T> {
-    fn set_stamina_config(ref self: T, unit_type: u8, max_stamina: u16);
-}
-
-
-#[starknet::interface]
 pub trait ITransportConfig<T> {
     fn set_donkey_speed_config(ref self: T, sec_per_km: u16, sec_per_km_troops: u16);
 }

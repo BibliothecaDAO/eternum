@@ -1,0 +1,29 @@
+[package]
+name = "settlement_integration_tests"
+version = "0.1.0"
+edition = "2024_07"
+cairo-version = "2.13.1"
+publish = false
+
+[dependencies]
+collectibles = { path = "../collectibles" }
+collectibles_claim = { path = "../collectibles_claim" }
+esp = { path = "../season_pass" }
+eternum = { path = "../game" }
+evp = { path = "../village_pass" }
+lords = { path = "../lords" }
+mmr = { path = "../mmr" }
+settlement_appchain = { path = "../settlement_appchain" }
+settlement_protocol = { path = "../settlement_protocol" }
+starknet = "2.13.1"
+world_factory = { path = "../factory" }
+
+[dev-dependencies]
+snforge_std = "0.51.2"
+
+[scripts]
+test = "snforge test"
+
+[tool.fmt]
+sort-module-level-items = true
+max-line-length = 120

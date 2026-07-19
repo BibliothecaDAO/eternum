@@ -5,8 +5,7 @@
 
 use alexandria_math::{BitShift, pow};
 use core::byte_array::ByteArrayTrait;
-use graffiti::json::Builder;
-use graffiti::json::JsonImpl;
+use graffiti::json::{Builder, JsonImpl};
 
 const BYTE_LEN: u128 = 8; // a byte is 8 bits
 const MASK_1_BYTE: u128 = 0xff;
@@ -36,14 +35,14 @@ const MASK_1_BYTE: u128 = 0xff;
 ///
 /// # Returns
 /// * `Array<u8>` - Array of 16 bytes in LSB-first order
-fn unpack_u128_to_bytes_full(mut value: u128) -> Array<u8> {
+pub fn unpack_u128_to_bytes_full(mut value: u128) -> Array<u8> {
     let mut res: Array<u8> = array![];
     for _ in 0..16_u8 {
         let byte: u8 = (value & MASK_1_BYTE).try_into().unwrap();
         res.append(byte);
 
         value = BitShift::shr(value, BYTE_LEN);
-    };
+    }
 
     return res;
 }
@@ -77,7 +76,7 @@ fn pack_bytes_to_u128_full(mut bytes: Span<u8>) -> u128 {
         let byte: u8 = *bytes.pop_back().unwrap();
         result = BitShift::shl(result, BYTE_LEN);
         result = result + byte.into();
-    };
+    }
 
     return result;
 }
@@ -121,7 +120,7 @@ pub fn make_json_and_base64_encode_metadata(
     while attrs_data.len() > 0 {
         let (trait_type_name, trait_value_name) = attrs_data.pop_front().unwrap();
         attrs.append(JsonImpl::new().add("trait_type", trait_type_name).add("value", trait_value_name).build());
-    };
+    }
 
     // construct full metadata
     let metadata = JsonImpl::new()
@@ -222,7 +221,7 @@ fn encode_bytes(mut bytes: ByteArray, base64_chars: Span<u8>) -> ByteArray {
         }
 
         i += 3;
-    };
+    }
     result
 }
 
@@ -239,68 +238,9 @@ fn encode_bytes(mut bytes: ByteArray, base64_chars: Span<u8>) -> ByteArray {
 /// Total: 62 characters (+ and / added by caller for full 64-character set)
 fn get_base64_char_set() -> Array<u8> {
     let mut result = array![
-        'A',
-        'B',
-        'C',
-        'D',
-        'E',
-        'F',
-        'G',
-        'H',
-        'I',
-        'J',
-        'K',
-        'L',
-        'M',
-        'N',
-        'O',
-        'P',
-        'Q',
-        'R',
-        'S',
-        'T',
-        'U',
-        'V',
-        'W',
-        'X',
-        'Y',
-        'Z',
-        'a',
-        'b',
-        'c',
-        'd',
-        'e',
-        'f',
-        'g',
-        'h',
-        'i',
-        'j',
-        'k',
-        'l',
-        'm',
-        'n',
-        'o',
-        'p',
-        'q',
-        'r',
-        's',
-        't',
-        'u',
-        'v',
-        'w',
-        'x',
-        'y',
-        'z',
-        '0',
-        '1',
-        '2',
-        '3',
-        '4',
-        '5',
-        '6',
-        '7',
-        '8',
-        '9',
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+        'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+        's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     ];
     result
 }

@@ -1,4 +1,4 @@
-import economicCapabilityRegistry from "../schema/economic-capability-registry-v0.json";
+import economicCapabilityRegistry from "../schema/economic-capability-registry-v1.json";
 
 export type EconomicCapabilityFamilyId =
   | "resource"
@@ -28,16 +28,19 @@ export interface EconomicCapabilityOperation {
   name: string;
   family: EconomicCapabilityFamilyId;
   authorizedCallerClasses: readonly string[];
-  requestType: string;
+  requestType: string | null;
   resultType: string;
+  interfaceTrait?: string;
+  method?: string;
+  parameters?: readonly { name: string; type: string }[];
   affectedModels: readonly string[];
   backingEffect: string;
   indexEffect: string;
 }
 
 export interface EconomicCapabilityRegistry {
-  version: 0;
-  status: "a9-feasibility-candidate";
+  version: 1;
+  status: "a14-frozen";
   families: readonly EconomicCapabilityFamily[];
   operations: readonly EconomicCapabilityOperation[];
 }

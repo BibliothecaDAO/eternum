@@ -1,7 +1,7 @@
 use starknet::ContractAddress;
-use crate::types::{BackingTotal, BatchId, GameId, LiabilityId, LotSharePromotion};
+use crate::types::{BackingTotal, GameId, LiabilityId};
 
-// A9 feasibility ABI. A14 freezes these semantic requests after the inventory and authority graph are accepted.
+// Frozen A14 economic ABI. Changes require a versioned registry and cross-package conformance update.
 #[derive(Drop, Serde)]
 pub enum ResourceMutationAction {
     Credit,
@@ -104,26 +104,6 @@ pub enum EconomicPositionFamily {
     RewardState,
     PendingWithdrawal,
     ActiveExitBacking,
-}
-
-#[derive(Drop, Serde)]
-pub struct AssignOpenBatchRequest {
-    pub liability_id: LiabilityId,
-    pub batch_id: BatchId,
-    pub leaf_index: u8,
-}
-
-#[derive(Drop, Serde)]
-pub struct PromoteSealedBatchRequest {
-    pub batch_id: BatchId,
-    pub parent_totals: Span<BackingTotal>,
-    pub lot_share_promotions: Span<LotSharePromotion>,
-}
-
-#[derive(Drop, Serde)]
-pub enum SettlementCallbackRequest {
-    AssignOpenBatch: AssignOpenBatchRequest,
-    PromoteSealedBatch: PromoteSealedBatchRequest,
 }
 
 #[derive(Drop, Serde)]
@@ -273,6 +253,7 @@ pub struct ExitPositionMutationRequest {
     pub expected_position_version: u64,
 }
 
+#[starknet::interface]
 pub trait IEconomicStateSystem<TContractState> {
     fn mutate_resource(ref self: TContractState, request: ResourceMutationRequest) -> EconomicMutationResult;
     fn mutate_structure_ownership(
@@ -298,16 +279,6 @@ pub trait IEconomicStateSystem<TContractState> {
         ref self: TContractState, request: PlayerEconomicLockMutationRequest,
     ) -> EconomicMutationResult;
     fn mutate_exit_position(ref self: TContractState, request: ExitPositionMutationRequest) -> EconomicMutationResult;
-    fn assign_open_batch(
-        ref self: TContractState, liability_id: LiabilityId, batch_id: BatchId, leaf_index: u8,
-    ) -> felt252;
-    fn promote_sealed_batch(
-        ref self: TContractState,
-        batch_id: BatchId,
-        parent_totals: Span<BackingTotal>,
-        lot_share_promotions: Span<LotSharePromotion>,
-    ) -> felt252;
-    fn get_liability_assignment(self: @TContractState, liability_id: LiabilityId) -> Option<(BatchId, u8)>;
     fn get_backing_total(self: @TContractState, game_id: GameId, parent_key_hash: felt252) -> Option<BackingTotal>;
     fn get_position_version(self: @TContractState, game_id: GameId, position_id: felt252) -> Option<u64>;
     fn is_player_economically_locked(self: @TContractState, game_id: GameId, player_l2: ContractAddress) -> bool;

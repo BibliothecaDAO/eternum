@@ -1,4 +1,4 @@
-fn compressed_name_and_attrs(token_id: felt252) -> felt252 {
+pub fn compressed_name_and_attrs(token_id: felt252) -> felt252 {
     match token_id {
         0 => panic!("zero token id"),
         1 => 0x53746f6c736c69010102011a1108060708,

@@ -1,23 +1,23 @@
 #[cfg(test)]
 mod tests {
+    use core::num::traits::Zero;
     use evp::contract::{
         EternumVillagePass as village_pass_contract, IVillagePassDispatcher, IVillagePassDispatcherTrait,
     };
     use evp::mock::realms::realms::{
         IERC721MinterDispatcher, IERC721MinterDispatcherTrait, TestRealm as realms_contract,
     };
-
     use openzeppelin::access::ownable::interface::{IOwnableDispatcher, IOwnableDispatcherTrait};
     use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
     use openzeppelin::token::erc721::interface::{
         IERC721Dispatcher, IERC721DispatcherTrait, IERC721MetadataDispatcher, IERC721MetadataDispatcherTrait,
     };
     use openzeppelin::upgrades::interface::{IUpgradeableDispatcher, IUpgradeableDispatcherTrait};
+    use snforge_std::cheatcodes::l1_handler::L1HandlerTrait;
     use snforge_std::{
-        ContractClass, ContractClassTrait, DeclareResultTrait, cheatcodes::{l1_handler::L1HandlerTrait}, declare,
-        get_class_hash, spy_events, start_cheat_caller_address, stop_cheat_caller_address,
+        ContractClass, ContractClassTrait, DeclareResultTrait, declare, get_class_hash, spy_events,
+        start_cheat_caller_address, stop_cheat_caller_address,
     };
-
     use starknet::{ClassHash, ContractAddress, EthAddress};
 
     fn DEFAULT_ADMIN() -> ContractAddress {
@@ -62,7 +62,6 @@ mod tests {
 
     fn VILLAGE_PASS() -> ContractAddress {
         let village_pass_class = declare("EternumVillagePass").unwrap().contract_class();
-        let realms_contract = TEST_REALMS();
 
         // deploy season pass contract
         let mut constructor_calldata = array![];
@@ -70,7 +69,6 @@ mod tests {
         UPGRADER().serialize(ref constructor_calldata);
         MINTER().serialize(ref constructor_calldata);
         DISTRIBUTORS().serialize(ref constructor_calldata);
-        realms_contract.serialize(ref constructor_calldata);
         let (addr, _) = village_pass_class.deploy(@constructor_calldata).unwrap();
 
         addr

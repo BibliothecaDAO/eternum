@@ -1328,9 +1328,9 @@
       "source": "world.write_model(@VillageRaidImmunity { village_id: structure_id, last_raided_at: current_tick });"
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:356:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:350:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 356,
+      "line": 350,
       "detectorKind": "write_model",
       "target": "world",
       "classification": "out_of_scope",
@@ -1339,9 +1339,9 @@
       "source": "world.write_model(@agent_config);"
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:393:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:387:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 393,
+      "line": 387,
       "detectorKind": "write_model",
       "target": "world",
       "classification": "out_of_scope",
@@ -1350,9 +1350,9 @@
       "source": "world.write_model(@world_config);"
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:407:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:401:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 407,
+      "line": 401,
       "detectorKind": "write_model",
       "target": "world",
       "classification": "out_of_scope",
@@ -1361,9 +1361,9 @@
       "source": "world.write_model(@address_name);"
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:474:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:468:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 474,
+      "line": 468,
       "detectorKind": "write_model",
       "target": "ResourceList",
       "classification": "resource",
@@ -1372,9 +1372,9 @@
       "source": ".write_model("
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:493:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:487:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 493,
+      "line": 487,
       "detectorKind": "write_model",
       "target": "ResourceList",
       "classification": "resource",
@@ -1383,9 +1383,9 @@
       "source": ".write_model("
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:555:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:549:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 555,
+      "line": 549,
       "detectorKind": "write_model",
       "target": "WeightConfig",
       "classification": "resource",
@@ -1394,9 +1394,9 @@
       "source": "world.write_model(@WeightConfig { resource_type, weight_gram });"
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:600:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:594:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 600,
+      "line": 594,
       "detectorKind": "write_model",
       "target": "ResourceList",
       "classification": "resource",
@@ -1405,9 +1405,9 @@
       "source": ".write_model("
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:612:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:606:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 612,
+      "line": 606,
       "detectorKind": "write_model",
       "target": "ResourceList",
       "classification": "resource",
@@ -1416,9 +1416,9 @@
       "source": ".write_model("
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:634:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:628:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 634,
+      "line": 628,
       "detectorKind": "write_model",
       "target": "world",
       "classification": "out_of_scope",
@@ -1427,9 +1427,9 @@
       "source": "world.write_model(@resource_factory_config);"
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:678:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:672:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 678,
+      "line": 672,
       "detectorKind": "write_model",
       "target": "world",
       "classification": "out_of_scope",
@@ -1438,9 +1438,9 @@
       "source": "world.write_model(@(*construction_resource));"
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:762:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:756:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 762,
+      "line": 756,
       "detectorKind": "write_model",
       "target": "ResourceList",
       "classification": "resource",
@@ -1449,9 +1449,9 @@
       "source": ".write_model("
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:780:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:774:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 780,
+      "line": 774,
       "detectorKind": "write_model",
       "target": "ResourceList",
       "classification": "resource",
@@ -1460,9 +1460,9 @@
       "source": ".write_model("
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:789:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:783:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 789,
+      "line": 783,
       "detectorKind": "write_model",
       "target": "BuildingCategoryConfig",
       "classification": "lazy_production",
@@ -1471,9 +1471,9 @@
       "source": ".write_model("
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:840:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:834:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 840,
+      "line": 834,
       "detectorKind": "write_model",
       "target": "world",
       "classification": "out_of_scope",
@@ -1482,9 +1482,9 @@
       "source": "world.write_model(@resource_bridge_whitelist_config);"
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:847:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:841:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 847,
+      "line": 841,
       "detectorKind": "write_model",
       "target": "world",
       "classification": "out_of_scope",
@@ -1493,9 +1493,9 @@
       "source": "world.write_model(@resource_bridge_whitelist_reverse_config);"
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:874:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:868:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 874,
+      "line": 868,
       "detectorKind": "write_model",
       "target": "ResourceList",
       "classification": "resource",
@@ -1504,9 +1504,9 @@
       "source": ".write_model("
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:882:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:876:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 882,
+      "line": 876,
       "detectorKind": "write_model",
       "target": "StructureLevelConfig",
       "classification": "structure_ownership",
@@ -1515,9 +1515,9 @@
       "source": ".write_model("
     },
     {
-      "id": "contracts/game/src/systems/config/contracts.cairo:1085:write_model",
+      "id": "contracts/game/src/systems/config/contracts.cairo:1079:write_model",
       "path": "contracts/game/src/systems/config/contracts.cairo",
-      "line": 1085,
+      "line": 1079,
       "detectorKind": "write_model",
       "target": "ResourceMinMaxList",
       "classification": "resource",

@@ -1,6 +1,6 @@
 {
-  "version": 0,
-  "status": "a9-feasibility-candidate",
+  "version": 1,
+  "status": "a14-frozen",
   "families": [
     {
       "id": "resource",
@@ -85,13 +85,6 @@
       "requestType": "ExitPositionMutationRequest",
       "resultType": "EconomicMutationResult",
       "actions": ["create", "split", "merge", "tombstone"]
-    },
-    {
-      "id": "settlement_callback",
-      "method": "assign_open_batch",
-      "requestType": "SettlementCallbackRequest",
-      "resultType": "felt252",
-      "actions": ["assign_open_batch", "promote_sealed_batch"]
     }
   ],
   "operations": [
@@ -232,7 +225,14 @@
       "name": "assign_open_batch",
       "family": "settlement_callback",
       "authorizedCallerClasses": ["SeasonSettlementHub"],
-      "requestType": "AssignOpenBatchRequest",
+      "interfaceTrait": "IGameEconomicSettlementCallbacks",
+      "method": "assign_open_batch",
+      "parameters": [
+        { "name": "liability_id", "type": "LiabilityId" },
+        { "name": "batch_id", "type": "BatchId" },
+        { "name": "leaf_index", "type": "u8" }
+      ],
+      "requestType": null,
       "resultType": "felt252",
       "affectedModels": ["PendingLiability", "LiabilityAssignment"],
       "backingEffect": "Assign immutable batch and leaf identity without moving active backing.",
@@ -243,7 +243,14 @@
       "name": "promote_sealed_batch",
       "family": "settlement_callback",
       "authorizedCallerClasses": ["SeasonSettlementHub"],
-      "requestType": "PromoteSealedBatchRequest",
+      "interfaceTrait": "IGameEconomicSettlementCallbacks",
+      "method": "promote_sealed_batch",
+      "parameters": [
+        { "name": "batch_id", "type": "BatchId" },
+        { "name": "parent_totals", "type": "Span<BackingTotal>" },
+        { "name": "lot_share_promotions", "type": "Span<LotSharePromotion>" }
+      ],
+      "requestType": null,
       "resultType": "felt252",
       "affectedModels": ["SettlementCapacity", "GameBackingLot", "BackingTotal", "LiabilityAssignment"],
       "backingEffect": "Move the canonical game slice from active committed to lifetime cumulative outbox with no per-liability fanout.",

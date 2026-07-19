@@ -11,22 +11,20 @@ mod tests {
     };
     use collectibles::tests::mocks::account::AccountUpgradeable;
     use openzeppelin::access::accesscontrol::DEFAULT_ADMIN_ROLE;
-
     use openzeppelin::access::accesscontrol::interface::{IAccessControlDispatcher, IAccessControlDispatcherTrait};
     use openzeppelin::token::common::erc2981::interface::{IERC2981Dispatcher, IERC2981DispatcherTrait};
     use openzeppelin::token::erc721::extensions::erc721_enumerable::interface::{
         IERC721EnumerableDispatcher, IERC721EnumerableDispatcherTrait,
     };
-    use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
-    use openzeppelin::token::erc721::interface::{IERC721MetadataDispatcher, IERC721MetadataDispatcherTrait};
+    use openzeppelin::token::erc721::interface::{
+        IERC721Dispatcher, IERC721DispatcherTrait, IERC721MetadataDispatcher, IERC721MetadataDispatcherTrait,
+    };
     use openzeppelin::upgrades::interface::{IUpgradeableDispatcher, IUpgradeableDispatcherTrait};
-
     use snforge_std::{
         ContractClass, ContractClassTrait, DeclareResultTrait, declare, spy_events, start_cheat_block_timestamp,
         start_cheat_caller_address, start_cheat_transaction_hash, stop_cheat_block_timestamp, stop_cheat_caller_address,
         stop_cheat_transaction_hash,
     };
-
     use starknet::{ClassHash, ContractAddress};
 
     // Test addresses
@@ -94,7 +92,7 @@ mod tests {
         while attributes_and_cids.len() > 0 {
             let (attrs, cid) = attributes_and_cids.pop_front().unwrap();
             metadata.set_attrs_raw_to_ipfs_cid(attrs, cid, false);
-        };
+        }
         stop_cheat_caller_address(contract);
     }
 

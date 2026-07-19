@@ -1,9 +1,11 @@
 [package]
-cairo-version = "2.12.2"
+cairo-version = "2.13.1"
 name = "world_factory"
 version = "1.8.0"
 edition = "2024_07"
 license = "MIT"
+
+[lib]
 
 [[target.starknet-contract]]
 sierra = true
@@ -12,10 +14,11 @@ build-external-contracts = ["dojo::world::world_contract::world"]
 
 [dependencies]
 dojo = "1.8.0"
-starknet = "2.12.2"
+settlement_protocol = { path = "../settlement_protocol" }
+starknet = "2.13.1"
 
 [dev-dependencies]
-snforge_std = "0.51.0"
+snforge_std = "0.51.2"
 dojo_snf_test = "1.8.0"
 
 [features]

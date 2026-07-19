@@ -1,13 +1,50 @@
 #[starknet::interface]
-trait IMockPaymentERC721<T> {
+pub trait IMockPaymentERC721<T> {
     fn mint(ref self: T, to: starknet::ContractAddress, token_id: u256);
+}
+
+#[starknet::contract]
+pub mod MockVrfProvider {
+    use collectibles_claim::utils::cartridge::vrf::{IVrfProvider, Proof, PublicKey, Source};
+    use starknet::ContractAddress;
+
+    #[storage]
+    struct Storage {}
+
+    #[abi(embed_v0)]
+    impl MockVrfProviderImpl of IVrfProvider<ContractState> {
+        fn request_random(self: @ContractState, caller: ContractAddress, source: Source) {}
+
+        fn submit_random(ref self: ContractState, seed: felt252, proof: Proof) {}
+
+        fn consume_random(ref self: ContractState, source: Source) -> felt252 {
+            12345
+        }
+
+        fn assert_consumed(ref self: ContractState, seed: felt252) {}
+
+        fn get_consume_count(self: @ContractState) -> u32 {
+            0
+        }
+
+        fn is_vrf_call(self: @ContractState) -> bool {
+            true
+        }
+
+        fn get_public_key(self: @ContractState) -> PublicKey {
+            PublicKey { x: 1, y: 2 }
+        }
+
+        fn set_public_key(ref self: ContractState, new_pubkey: PublicKey) {}
+    }
 }
 
 // Mock ERC721 contract for payment tokens
 #[starknet::contract]
-mod MockPaymentERC721 {
-    use openzeppelin::token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
+pub mod MockPaymentERC721 {
+    use collectibles_claim::contracts::cosmetics::PaymentTokenMetadataTrait;
     use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin::token::erc721::{ERC721Component, ERC721HooksEmptyImpl};
     use starknet::ContractAddress;
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
@@ -16,6 +53,13 @@ mod MockPaymentERC721 {
     #[abi(embed_v0)]
     pub(crate) impl ERC721MixinImpl = ERC721Component::ERC721MixinImpl<ContractState>;
     impl ERC721InternalImpl = ERC721Component::InternalImpl<ContractState>;
+
+    #[abi(embed_v0)]
+    impl PaymentTokenMetadataImpl of PaymentTokenMetadataTrait<ContractState> {
+        fn get_metadata_raw(self: @ContractState, token_id: u256) -> u128 {
+            0x101
+        }
+    }
 
     #[storage]
     struct Storage {
@@ -51,11 +95,11 @@ mod MockPaymentERC721 {
 
 // Mock ERC721 contract for collectible tokens
 #[starknet::contract]
-mod MockCollectibleERC721 {
+pub mod MockCollectibleERC721 {
     use collectibles_claim::contracts::cosmetics::CollectibleMintTrait;
-    use openzeppelin::token::erc721::{ERC721Component};
-    use openzeppelin::token::erc721::extensions::ERC721EnumerableComponent;
     use openzeppelin::introspection::src5::SRC5Component;
+    use openzeppelin::token::erc721::ERC721Component;
+    use openzeppelin::token::erc721::extensions::ERC721EnumerableComponent;
     use starknet::ContractAddress;
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
 

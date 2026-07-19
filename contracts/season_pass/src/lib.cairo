@@ -1,10 +1,10 @@
 pub mod contract;
 pub mod utils;
 pub mod mock {
-    mod lords;
-    mod realms {
-        mod metadata;
-        mod realms;
+    pub mod lords;
+    pub mod realms {
+        pub mod metadata;
+        pub mod realms;
     }
 }
 pub mod tests {

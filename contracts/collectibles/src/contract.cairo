@@ -13,7 +13,7 @@ use starknet::ContractAddress;
 /// This trait provides core NFT lifecycle management with an efficient attribute packing system
 /// that stores up to 16 different trait types in a single u128 value.
 #[starknet::interface]
-trait ERC721MintBurnTrait<TState> {
+pub trait ERC721MintBurnTrait<TState> {
     /// Destroys an existing token, removing it from circulation permanently.
     ///
     /// The token is burned using ERC721's update mechanism with zero address as recipient.
@@ -117,7 +117,7 @@ trait ERC721MintBurnTrait<TState> {
 /// Provides optimized functions for transferring multiple tokens in a single transaction,
 /// reducing gas costs and improving UX for bulk operations.
 #[starknet::interface]
-trait ERC721EnumerableTransferAmountTrait<TState> {
+pub trait ERC721EnumerableTransferAmountTrait<TState> {
     /// Transfers a specified number of tokens from one address to another.
     ///
     /// Uses the enumerable extension to efficiently select tokens in order of ownership.
@@ -164,7 +164,7 @@ trait ERC721EnumerableTransferAmountTrait<TState> {
 /// and dynamic metadata generation. It supports a two-tier image system with
 /// specific mappings for attribute combinations and fallback defaults.
 #[starknet::interface]
-trait IRealmsCollectibleMetadata<TState> {
+pub trait IRealmsCollectibleMetadata<TState> {
     /// Sets the default IPFS image used when no specific mapping exists for token attributes.
     ///
     /// This serves as the fallback image for any token whose exact attribute combination
@@ -408,7 +408,7 @@ enum LockState {
 /// and token owners choose which locks to apply to their tokens. Locks automatically
 /// expire based on timestamps and are enforced through transfer hooks.
 #[starknet::interface]
-trait IRealmsCollectibleLock<TState> {
+pub trait IRealmsCollectibleLock<TState> {
     /// Applies a global lock state to a specific token, preventing transfers until expiration.
     ///
     /// Only token owners can lock their own tokens. The lock references a global lock state
@@ -550,7 +550,7 @@ trait IRealmsCollectibleLock<TState> {
 /// token owners can apply to their tokens. Lock states are identified by unique
 /// IDs and have expiration timestamps.
 #[starknet::interface]
-trait IRealmsCollectibleLockAdmin<TState> {
+pub trait IRealmsCollectibleLockAdmin<TState> {
     /// Creates or updates a global lock state that tokens can reference.
     ///
     /// Global lock states are reusable templates that define when locks expire.
@@ -600,18 +600,17 @@ trait IRealmsCollectibleLockAdmin<TState> {
 }
 
 // Role constants for access control
-const METADATA_UPDATER_ROLE: felt252 = selector!("METADATA_UPDATER_ROLE");
-const MINTER_ROLE: felt252 = selector!("MINTER_ROLE");
-const UPGRADER_ROLE: felt252 = selector!("UPGRADER_ROLE");
-const LOCKER_ROLE: felt252 = selector!("LOCKER_ROLE");
+pub const METADATA_UPDATER_ROLE: felt252 = selector!("METADATA_UPDATER_ROLE");
+pub const MINTER_ROLE: felt252 = selector!("MINTER_ROLE");
+pub const UPGRADER_ROLE: felt252 = selector!("UPGRADER_ROLE");
+pub const LOCKER_ROLE: felt252 = selector!("LOCKER_ROLE");
 
 /// Main contract implementation with all components integrated
 #[starknet::contract]
-mod RealmsCollectible {
+pub mod RealmsCollectible {
     use collectibles::utils::{make_json_and_base64_encode_metadata, unpack_u128_to_bytes_full};
     use core::num::traits::Zero;
-    use openzeppelin::access::accesscontrol::AccessControlComponent;
-    use openzeppelin::access::accesscontrol::DEFAULT_ADMIN_ROLE;
+    use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::token::common::erc2981::{DefaultConfig, ERC2981Component};
@@ -624,20 +623,15 @@ mod RealmsCollectible {
     };
     use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
-
-    use starknet::ClassHash;
-    use starknet::ContractAddress;
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
-    use super::LockState;
-    use super::{ERC721EnumerableTransferAmountTrait};
-    use super::{IRealmsCollectibleLock, IRealmsCollectibleLockDispatcher, IRealmsCollectibleLockDispatcherTrait};
+    use starknet::{ClassHash, ContractAddress};
     use super::{
-        IRealmsCollectibleLockAdmin, IRealmsCollectibleLockAdminDispatcher, IRealmsCollectibleLockAdminDispatcherTrait,
+        ERC721EnumerableTransferAmountTrait, IRealmsCollectibleLock, IRealmsCollectibleLockAdmin,
+        IRealmsCollectibleLockAdminDispatcher, IRealmsCollectibleLockAdminDispatcherTrait,
+        IRealmsCollectibleLockDispatcher, IRealmsCollectibleLockDispatcherTrait, IRealmsCollectibleMetadata,
+        IRealmsCollectibleMetadataDispatcher, IRealmsCollectibleMetadataDispatcherTrait, LOCKER_ROLE, LockState,
+        METADATA_UPDATER_ROLE, MINTER_ROLE, UPGRADER_ROLE,
     };
-    use super::{
-        IRealmsCollectibleMetadata, IRealmsCollectibleMetadataDispatcher, IRealmsCollectibleMetadataDispatcherTrait,
-    };
-    use super::{LOCKER_ROLE, METADATA_UPDATER_ROLE, MINTER_ROLE, UPGRADER_ROLE};
 
     component!(path: ERC721Component, storage: erc721, event: ERC721Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
@@ -904,7 +898,7 @@ mod RealmsCollectible {
                 let token_id = self.erc721_enumerable.token_of_owner_by_index(from, 0);
                 self.erc721.transfer_from(from, to, token_id);
                 token_ids.append(token_id);
-            };
+            }
             token_ids.span()
         }
     }
@@ -1104,7 +1098,7 @@ mod RealmsCollectible {
                         attrs_data.append((trait_type_name, trait_value_name));
                     }
                 }
-            };
+            }
 
             let name = self.erc721.ERC721_name.read();
             let description = self.description.read();

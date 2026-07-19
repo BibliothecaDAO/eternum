@@ -12,19 +12,19 @@ describe("A11 configuration setter inventory", () => {
     const inventory = readJson(inventoryUrl);
 
     expect(inventory.summary).toEqual({
-      total: 46,
-      world: 40,
+      total: 45,
+      world: 39,
       factory: 6,
       implemented: 45,
-      missingImplementation: 1,
+      missingImplementation: 0,
     });
-    expect(new Set(inventory.entries.map((entry: Record<string, unknown>) => entry.name)).size).toBe(46);
-    expect(new Set(inventory.entries.map((entry: Record<string, unknown>) => entry.selector)).size).toBe(46);
+    expect(new Set(inventory.entries.map((entry: Record<string, unknown>) => entry.name)).size).toBe(45);
+    expect(new Set(inventory.entries.map((entry: Record<string, unknown>) => entry.selector)).size).toBe(45);
     expect(
       inventory.entries
         .filter((entry: Record<string, unknown>) => entry.implementationStatus === "missing")
         .map((entry: Record<string, unknown>) => entry.name),
-    ).toEqual(["set_stamina_config"]);
+    ).toEqual([]);
     expect(inventory.entries.every((entry: Record<string, unknown>) => entry.interfacePath && entry.signature)).toBe(
       true,
     );

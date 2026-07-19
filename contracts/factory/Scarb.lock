@@ -27,6 +27,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "settlement_protocol"
+version = "0.1.0"
+
+[[package]]
 name = "snforge_scarb_plugin"
 version = "0.51.2"
 source = "registry+https://scarbs.xyz/"
@@ -47,5 +51,6 @@ version = "1.8.0"
 dependencies = [
  "dojo",
  "dojo_snf_test",
+ "settlement_protocol",
  "snforge_std",
 ]

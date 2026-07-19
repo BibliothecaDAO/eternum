@@ -1,15 +1,13 @@
 #[starknet::interface]
-trait ITestLords<TContractState> {
+pub trait ITestLords<TContractState> {
     fn mint_test_lords(ref self: TContractState);
 }
 
 #[starknet::contract]
-mod TestLords {
+pub mod TestLords {
     use openzeppelin::introspection::src5::SRC5Component;
-    use openzeppelin::token::erc20::{ERC20Component};
-    use openzeppelin::token::erc20::{ERC20HooksEmptyImpl};
-    use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
-    use starknet::{ClassHash, ContractAddress};
+    use openzeppelin::token::erc20::{DefaultConfig, ERC20Component, ERC20HooksEmptyImpl};
+    use starknet::storage::Map;
 
     component!(path: ERC20Component, storage: erc20, event: ERC20Event);
     component!(path: SRC5Component, storage: src5, event: SRC5Event);

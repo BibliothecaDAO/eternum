@@ -1,0 +1,613 @@
+{
+  "schemaVersion": 1,
+  "packages": [
+    {
+      "id": "amm",
+      "packageName": "eternum_amm",
+      "packageVersion": "1.0.0",
+      "edition": "2024_07",
+      "role": "legacy-nonconsumer",
+      "cairoVersion": null,
+      "starknetVersion": "2.13.1",
+      "scarbVersion": null,
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "assert_macros",
+        "openzeppelin_access",
+        "openzeppelin_introspection",
+        "openzeppelin_token",
+        "openzeppelin_upgrades",
+        "openzeppelin_utils",
+        "snforge_std",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "assert_macros": "\"2.13\"",
+        "openzeppelin_access": "{ git = \"https://github.com/OpenZeppelin/cairo-contracts.git\", tag = \"v2.0.0\" }",
+        "openzeppelin_introspection": "{ git = \"https://github.com/OpenZeppelin/cairo-contracts.git\", tag = \"v2.0.0\" }",
+        "openzeppelin_token": "{ git = \"https://github.com/OpenZeppelin/cairo-contracts.git\", tag = \"v2.0.0\" }",
+        "openzeppelin_upgrades": "{ git = \"https://github.com/OpenZeppelin/cairo-contracts.git\", tag = \"v2.0.0\" }",
+        "openzeppelin_utils": "{ git = \"https://github.com/OpenZeppelin/cairo-contracts.git\", tag = \"v2.0.0\" }",
+        "snforge_std": "\"0.51.2\"",
+        "starknet": "\"2.13.1\""
+      },
+      "resolvedDependencies": [
+        "assert_macros",
+        "openzeppelin_access",
+        "openzeppelin_introspection",
+        "openzeppelin_token",
+        "openzeppelin_upgrades",
+        "openzeppelin_utils",
+        "snforge_std",
+        "starknet"
+      ],
+      "internalDependencies": [],
+      "prebuiltPlugins": [],
+      "lockSha256": "0a96887a89eca7304275b67042b5a74ee07952950a3a3e5c808578abcd40add6"
+    },
+    {
+      "id": "ammv2",
+      "packageName": "ammv2",
+      "packageVersion": "1.0.0",
+      "edition": "2024_07",
+      "role": "legacy-nonconsumer",
+      "cairoVersion": null,
+      "starknetVersion": "2.13.1",
+      "scarbVersion": "2.13.1",
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "assert_macros",
+        "openzeppelin",
+        "snforge_std",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "assert_macros": "\"2.13\"",
+        "openzeppelin": "{ git = \"https://github.com/openzeppelin/cairo-contracts\", tag = \"v0.20.0\" }",
+        "snforge_std": "\"0.51.2\"",
+        "starknet": "\"2.13.1\""
+      },
+      "resolvedDependencies": [
+        "assert_macros",
+        "openzeppelin",
+        "snforge_std",
+        "starknet"
+      ],
+      "internalDependencies": [],
+      "prebuiltPlugins": [],
+      "lockSha256": "8854696e346bb85275c20022fa0f6f929b2e6bf1483fd7838a71f0c5d24c0cb3"
+    },
+    {
+      "id": "collectibles",
+      "packageName": "collectibles",
+      "packageVersion": "1.0.0",
+      "edition": "2023_11",
+      "role": "explicit-compatible",
+      "cairoVersion": "2.13.1",
+      "starknetVersion": "2.13.1",
+      "scarbVersion": "2.13.1",
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "alexandria_math",
+        "graffiti",
+        "openzeppelin",
+        "openzeppelin_utils",
+        "snforge_std",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "alexandria_math": "{ git = \"https://github.com/keep-starknet-strange/alexandria.git\", tag = \"v0.5.2\" }",
+        "graffiti": "{ git = \"https://github.com/ponderingdemocritus/graffiti\", rev = \"bc569531791dbc71c6cd8d9bc154c34eedad31fe\" }",
+        "openzeppelin": "\"=2.0.0\"",
+        "openzeppelin_utils": "\"=2.0.0\"",
+        "snforge_std": "\"0.51.2\"",
+        "starknet": "\"2.13.1\""
+      },
+      "resolvedDependencies": [
+        "alexandria_math",
+        "graffiti",
+        "openzeppelin",
+        "openzeppelin_utils",
+        "snforge_std",
+        "starknet"
+      ],
+      "internalDependencies": [],
+      "prebuiltPlugins": [],
+      "lockSha256": "facf0055ccfa8857c76eaa27e7208f02905fca8729a8f8612e4e28118e5ba135"
+    },
+    {
+      "id": "collectibles_claim",
+      "packageName": "collectibles_claim",
+      "packageVersion": "1.0.0",
+      "edition": "2023_11",
+      "role": "explicit-compatible",
+      "cairoVersion": "2.13.1",
+      "starknetVersion": "2.13.1",
+      "scarbVersion": "2.13.1",
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "cartridge_vrf",
+        "openzeppelin",
+        "openzeppelin_utils",
+        "snforge_std",
+        "stark_vrf",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "cartridge_vrf": "{ git = \"https://github.com/cartridge-gg/vrf\", rev = \"6d1c0f60a53558f19618b2bff81c3da0849db270\" }",
+        "openzeppelin": "\"=2.0.0\"",
+        "openzeppelin_utils": "\"=2.0.0\"",
+        "snforge_std": "\"0.51.2\"",
+        "stark_vrf": "\"0.1.1\"",
+        "starknet": "\"2.13.1\""
+      },
+      "resolvedDependencies": [
+        "cartridge_vrf",
+        "openzeppelin",
+        "openzeppelin_utils",
+        "snforge_std",
+        "stark_vrf",
+        "starknet"
+      ],
+      "internalDependencies": [],
+      "prebuiltPlugins": [],
+      "lockSha256": "aa12f6ba830c902e77b29f5ff481ef142b55454543c8c5ce67f6eda3e2516aed"
+    },
+    {
+      "id": "factory",
+      "packageName": "world_factory",
+      "packageVersion": "1.8.0",
+      "edition": "2024_07",
+      "role": "protocol-consumer",
+      "cairoVersion": "2.13.1",
+      "starknetVersion": "2.13.1",
+      "scarbVersion": "2.13.1",
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "dojo",
+        "dojo_snf_test",
+        "settlement_protocol",
+        "snforge_std",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "dojo": "\"1.8.0\"",
+        "dojo_snf_test": "\"1.8.0\"",
+        "settlement_protocol": "{ path = \"../settlement_protocol\" }",
+        "snforge_std": "\"0.51.2\"",
+        "starknet": "\"2.13.1\""
+      },
+      "resolvedDependencies": [
+        "dojo",
+        "dojo_snf_test",
+        "settlement_protocol",
+        "snforge_std",
+        "starknet"
+      ],
+      "internalDependencies": [
+        "settlement_protocol"
+      ],
+      "prebuiltPlugins": [
+        "dojo_cairo_macros",
+        "snforge_std"
+      ],
+      "lockSha256": "924c104415141d8196c3aac88567870b61fb9c43c3017c0a045297447cebffd0"
+    },
+    {
+      "id": "game",
+      "packageName": "eternum",
+      "packageVersion": "1.0.0",
+      "edition": "2024_07",
+      "role": "protocol-consumer",
+      "cairoVersion": "2.13.1",
+      "starknetVersion": "2.13.1",
+      "scarbVersion": "2.13.1",
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "achievement",
+        "alexandria_data_structures",
+        "alexandria_math",
+        "assert_macros",
+        "cartridge_vrf",
+        "cubit",
+        "dojo",
+        "dojo_snf_test",
+        "openzeppelin",
+        "openzeppelin_token",
+        "settlement_protocol",
+        "snforge_std",
+        "stark_vrf",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "achievement": "{ git = \"https://github.com/cartridge-gg/arcade\", rev = \"817a0ef\" }",
+        "alexandria_data_structures": "{ git = \"https://github.com/keep-starknet-strange/alexandria.git\", tag = \"v0.5.2\" }",
+        "alexandria_math": "{ git = \"https://github.com/keep-starknet-strange/alexandria.git\", tag = \"v0.5.2\" }",
+        "assert_macros": "\"2.13\"",
+        "cartridge_vrf": "{ git = \"https://github.com/cartridge-gg/vrf\", rev = \"6d1c0f60a53558f19618b2bff81c3da0849db270\" } # v0.3.1",
+        "cubit": "{ git = \"https://github.com/credence0x/cubit.git\", branch = \"feat/cairo-2.9.2\" }",
+        "dojo": "\"1.8.0\"",
+        "dojo_snf_test": "\"1.8.0\"",
+        "openzeppelin": "\"2.0.0\"",
+        "openzeppelin_token": "\"2.0.0\"",
+        "settlement_protocol": "{ path = \"../settlement_protocol\" }",
+        "snforge_std": "\"0.51.2\"",
+        "stark_vrf": "\"0.1.1\"",
+        "starknet": "\"2.13.1\""
+      },
+      "resolvedDependencies": [
+        "achievement",
+        "alexandria_data_structures",
+        "alexandria_math",
+        "assert_macros",
+        "cartridge_vrf",
+        "cubit",
+        "dojo",
+        "dojo_snf_test",
+        "openzeppelin",
+        "openzeppelin_token",
+        "settlement_protocol",
+        "snforge_std",
+        "stark_vrf",
+        "starknet"
+      ],
+      "internalDependencies": [
+        "settlement_protocol"
+      ],
+      "prebuiltPlugins": [
+        "dojo_cairo_macros"
+      ],
+      "lockSha256": "0cedcd833ea46a8178de3d8726f64c72340cc333f752fb362675ea1ffbab135a"
+    },
+    {
+      "id": "lords",
+      "packageName": "lords",
+      "packageVersion": "1.0.0",
+      "edition": "2023_11",
+      "role": "explicit-compatible",
+      "cairoVersion": "2.13.1",
+      "starknetVersion": "2.13.1",
+      "scarbVersion": "2.13.1",
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "openzeppelin",
+        "openzeppelin_utils",
+        "snforge_std",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "openzeppelin": "\"=2.0.0\"",
+        "openzeppelin_utils": "\"=2.0.0\"",
+        "snforge_std": "\"0.51.2\"",
+        "starknet": "\"2.13.1\""
+      },
+      "resolvedDependencies": [
+        "openzeppelin",
+        "openzeppelin_utils",
+        "snforge_std",
+        "starknet"
+      ],
+      "internalDependencies": [],
+      "prebuiltPlugins": [],
+      "lockSha256": "f1ccdda334e83e2d4300b3e4a63724781e1d55046ca00786e88b98247a287238"
+    },
+    {
+      "id": "marketplace",
+      "packageName": "marketplace",
+      "packageVersion": "1.0.0",
+      "edition": "2024_07",
+      "role": "legacy-nonconsumer",
+      "cairoVersion": "2.9.4",
+      "starknetVersion": "2.9.4",
+      "scarbVersion": "2.9.4",
+      "snforgeVersion": null,
+      "dependencies": [
+        "dojo",
+        "dojo_cairo_test",
+        "openzeppelin",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "dojo": "{ git = \"https://github.com/dojoengine/dojo\", tag = \"v1.4.0\" }",
+        "dojo_cairo_test": "{ git = \"https://github.com/dojoengine/dojo.git\", tag = \"v1.4.0\" }",
+        "openzeppelin": "{ git = \"https://github.com/openzeppelin/cairo-contracts\", tag = \"v1.0.0\"}",
+        "starknet": "\"2.9.4\""
+      },
+      "resolvedDependencies": [
+        "dojo",
+        "dojo_cairo_test",
+        "openzeppelin",
+        "starknet"
+      ],
+      "internalDependencies": [],
+      "prebuiltPlugins": [],
+      "lockSha256": "a40339007b6ee376761ec33899b60a267c0befd7fc4de107bb1170a2649fee54"
+    },
+    {
+      "id": "mmr",
+      "packageName": "mmr",
+      "packageVersion": "1.0.0",
+      "edition": "2024_07",
+      "role": "explicit-compatible",
+      "cairoVersion": "2.13.1",
+      "starknetVersion": "2.13.1",
+      "scarbVersion": "2.13.1",
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "openzeppelin",
+        "openzeppelin_utils",
+        "snforge_std",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "openzeppelin": "\"=2.0.0\"",
+        "openzeppelin_utils": "\"=2.0.0\"",
+        "snforge_std": "\"0.51.2\"",
+        "starknet": "\"2.13.1\""
+      },
+      "resolvedDependencies": [
+        "openzeppelin",
+        "openzeppelin_utils",
+        "snforge_std",
+        "starknet"
+      ],
+      "internalDependencies": [],
+      "prebuiltPlugins": [],
+      "lockSha256": "e78144ea08d62f8be02940defb0825bbab0f3a7979273b9e8842701185aa67b6"
+    },
+    {
+      "id": "season_pass",
+      "packageName": "esp",
+      "packageVersion": "1.0.0",
+      "edition": "2023_11",
+      "role": "explicit-compatible",
+      "cairoVersion": "2.13.1",
+      "starknetVersion": "2.13.1",
+      "scarbVersion": "2.13.1",
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "alexandria_math",
+        "graffiti",
+        "openzeppelin",
+        "openzeppelin_utils",
+        "snforge_std",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "alexandria_math": "{ git = \"https://github.com/keep-starknet-strange/alexandria.git\", tag = \"v0.5.2\" }",
+        "graffiti": "{ git = \"https://github.com/ponderingdemocritus/graffiti\", rev = \"bc569531791dbc71c6cd8d9bc154c34eedad31fe\" }",
+        "openzeppelin": "\"=2.0.0\"",
+        "openzeppelin_utils": "\"=2.0.0\"",
+        "snforge_std": "\"0.51.2\"",
+        "starknet": "\"2.13.1\""
+      },
+      "resolvedDependencies": [
+        "alexandria_math",
+        "graffiti",
+        "openzeppelin",
+        "openzeppelin_utils",
+        "snforge_std",
+        "starknet"
+      ],
+      "internalDependencies": [],
+      "prebuiltPlugins": [],
+      "lockSha256": "e1cc57babbd3a73456d9abb88f6191c2747e0466843172bb572a6bc036dd7719"
+    },
+    {
+      "id": "season_resources",
+      "packageName": "season_resources",
+      "packageVersion": "1.0.0",
+      "edition": null,
+      "role": "deferred-migration",
+      "cairoVersion": null,
+      "starknetVersion": null,
+      "scarbVersion": "2.8.2",
+      "snforgeVersion": "0.31.0",
+      "dependencies": [
+        "openzeppelin",
+        "snforge_std"
+      ],
+      "dependencyPins": {
+        "openzeppelin": "{ git = \"https://github.com/openzeppelin/cairo-contracts\", tag = \"v0.15.0\"}",
+        "snforge_std": "{ git = \"https://github.com/foundry-rs/starknet-foundry.git\", tag = \"v0.31.0\" }"
+      },
+      "resolvedDependencies": [
+        "openzeppelin",
+        "snforge_std"
+      ],
+      "internalDependencies": [],
+      "prebuiltPlugins": [],
+      "lockSha256": "e424917d4e1e116536010230950f280149f9dd0167c31abfeeab0b7a480ac299",
+      "deferredTo": "C7",
+      "releaseBlocking": true
+    },
+    {
+      "id": "settlement_appchain",
+      "packageName": "settlement_appchain",
+      "packageVersion": "0.1.0",
+      "edition": "2024_07",
+      "role": "protocol-consumer",
+      "cairoVersion": "2.13.1",
+      "starknetVersion": "2.13.1",
+      "scarbVersion": "2.13.1",
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "settlement_protocol",
+        "snforge_std",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "settlement_protocol": "{ path = \"../settlement_protocol\" }",
+        "snforge_std": "\"0.51.2\"",
+        "starknet": "\"2.13.1\""
+      },
+      "resolvedDependencies": [
+        "settlement_protocol",
+        "snforge_std",
+        "starknet"
+      ],
+      "internalDependencies": [
+        "settlement_protocol"
+      ],
+      "prebuiltPlugins": [],
+      "lockSha256": "ba18bae0bbb173fce6b881d956eee4452df9d8875fa472993e54ff90ce65f32d"
+    },
+    {
+      "id": "settlement_integration_tests",
+      "packageName": "settlement_integration_tests",
+      "packageVersion": "0.1.0",
+      "edition": "2024_07",
+      "role": "dev-conformance",
+      "cairoVersion": "2.13.1",
+      "starknetVersion": "2.13.1",
+      "scarbVersion": "2.13.1",
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "collectibles",
+        "collectibles_claim",
+        "esp",
+        "eternum",
+        "evp",
+        "lords",
+        "mmr",
+        "settlement_appchain",
+        "settlement_protocol",
+        "snforge_std",
+        "starknet",
+        "world_factory"
+      ],
+      "dependencyPins": {
+        "collectibles": "{ path = \"../collectibles\" }",
+        "collectibles_claim": "{ path = \"../collectibles_claim\" }",
+        "esp": "{ path = \"../season_pass\" }",
+        "eternum": "{ path = \"../game\" }",
+        "evp": "{ path = \"../village_pass\" }",
+        "lords": "{ path = \"../lords\" }",
+        "mmr": "{ path = \"../mmr\" }",
+        "settlement_appchain": "{ path = \"../settlement_appchain\" }",
+        "settlement_protocol": "{ path = \"../settlement_protocol\" }",
+        "snforge_std": "\"0.51.2\"",
+        "starknet": "\"2.13.1\"",
+        "world_factory": "{ path = \"../factory\" }"
+      },
+      "resolvedDependencies": [
+        "collectibles",
+        "collectibles_claim",
+        "esp",
+        "eternum",
+        "evp",
+        "lords",
+        "mmr",
+        "settlement_appchain",
+        "settlement_protocol",
+        "snforge_std",
+        "starknet",
+        "world_factory"
+      ],
+      "internalDependencies": [
+        "collectibles",
+        "collectibles_claim",
+        "factory",
+        "game",
+        "lords",
+        "mmr",
+        "season_pass",
+        "settlement_appchain",
+        "settlement_protocol",
+        "village_pass"
+      ],
+      "prebuiltPlugins": [],
+      "lockSha256": "8c81720611d47931ad6a1e7ad76f020d97b5f4cb52fa9164311355be7c9d0c83"
+    },
+    {
+      "id": "settlement_protocol",
+      "packageName": "settlement_protocol",
+      "packageVersion": "0.1.0",
+      "edition": "2024_07",
+      "role": "dependency-leaf",
+      "cairoVersion": "2.13.1",
+      "starknetVersion": "2.13.1",
+      "scarbVersion": "2.13.1",
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "snforge_std",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "snforge_std": "\"0.51.2\"",
+        "starknet": "\"2.13.1\""
+      },
+      "resolvedDependencies": [
+        "snforge_std",
+        "starknet"
+      ],
+      "internalDependencies": [],
+      "prebuiltPlugins": [],
+      "lockSha256": "9fe1c5f5676f7ace388fc566d871063dc0e975a2d3f3dd909357c5911a41bf89"
+    },
+    {
+      "id": "village_pass",
+      "packageName": "evp",
+      "packageVersion": "1.0.0",
+      "edition": "2023_11",
+      "role": "explicit-compatible",
+      "cairoVersion": "2.13.1",
+      "starknetVersion": "2.13.1",
+      "scarbVersion": "2.13.1",
+      "snforgeVersion": "0.51.2",
+      "dependencies": [
+        "graffiti",
+        "openzeppelin",
+        "openzeppelin_utils",
+        "snforge_std",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "graffiti": "{ git = \"https://github.com/ponderingdemocritus/graffiti\", rev = \"bc569531791dbc71c6cd8d9bc154c34eedad31fe\" }",
+        "openzeppelin": "\"=2.0.0\"",
+        "openzeppelin_utils": "\"=2.0.0\"",
+        "snforge_std": "\"0.51.2\"",
+        "starknet": "\"2.13.1\""
+      },
+      "resolvedDependencies": [
+        "graffiti",
+        "openzeppelin",
+        "openzeppelin_utils",
+        "snforge_std",
+        "starknet"
+      ],
+      "internalDependencies": [],
+      "prebuiltPlugins": [],
+      "lockSha256": "26c836318791fa5f300a69bd3957aa1bce3525bfd7ad41f99a12f05346c18564"
+    },
+    {
+      "id": "world",
+      "packageName": "s1_eternum",
+      "packageVersion": "1.0.0",
+      "edition": null,
+      "role": "legacy-nonconsumer",
+      "cairoVersion": "2.9.2",
+      "starknetVersion": "2.9.2",
+      "scarbVersion": null,
+      "snforgeVersion": null,
+      "dependencies": [
+        "dojo",
+        "dojo_cairo_test",
+        "starknet"
+      ],
+      "dependencyPins": {
+        "dojo": "{ git = \"https://github.com/dojoengine/dojo\", tag = \"v1.3.1\" }",
+        "dojo_cairo_test": "{ git = \"https://github.com/dojoengine/dojo.git\", tag = \"v1.3.1\" }",
+        "starknet": "\"2.9.2\""
+      },
+      "resolvedDependencies": [
+        "dojo",
+        "dojo_cairo_test",
+        "starknet"
+      ],
+      "internalDependencies": [],
+      "prebuiltPlugins": [],
+      "lockSha256": "7b93757a32bbacf2f80c6af262d2474c3ef33145371feacb72c7d11fcf09c6d5"
+    }
+  ]
+}

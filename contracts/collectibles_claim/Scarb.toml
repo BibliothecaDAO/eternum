@@ -1,17 +1,23 @@
 [package]
 name = "collectibles_claim"
 version = "1.0.0"
+cairo-version = "2.13.1"
+edition = "2023_11"
+
+[lib]
 
 [cairo]
 sierra-replace-ids = true
 
 [dependencies]
-alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", rev = "v0.3.0" }
-openzeppelin = { git = "https://github.com/openzeppelin/cairo-contracts", tag = "v0.20.0"}
-graffiti = { git = "https://github.com/ponderingdemocritus/graffiti", rev = "bc569531791dbc71c6cd8d9bc154c34eedad31fe" }
+starknet = "2.13.1"
+cartridge_vrf = { git = "https://github.com/cartridge-gg/vrf", rev = "6d1c0f60a53558f19618b2bff81c3da0849db270" }
+openzeppelin = "=2.0.0"
+openzeppelin_utils = "=2.0.0"
+stark_vrf = "0.1.1"
 
 [dev-dependencies]
-snforge_std = { git = "https://github.com/foundry-rs/starknet-foundry.git", tag = "v0.31.0" }
+snforge_std = "0.51.2"
 
 [[target.starknet-contract]]
 sierra = true

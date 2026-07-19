@@ -7,6 +7,12 @@ on:
       - "contracts/settlement_appchain/**"
       - "contracts/game/src/**"
       - "contracts/factory/src/**"
+      - "contracts/*/src/**"
+      - "contracts/*/scripts/**"
+      - "contracts/*/ext/**"
+      - "contracts/*/Scarb.toml"
+      - "contracts/*/Scarb.lock"
+      - "contracts/*/.tool-versions"
       - "packages/settlement-codec/**"
       - "proofs/eternum-settlement/**"
       - "scripts/settlement/**"
@@ -52,12 +58,45 @@ jobs:
           pnpm run check:settlement-trees
           pnpm run check:economic-write-inventory
           pnpm run check:config-setter-inventory
+          pnpm run check:economic-interface-schema
+          pnpm run check:package-lock-matrix
 
       - name: Test TypeScript codecs
         run: pnpm --dir packages/settlement-codec test
 
       - name: Build TypeScript codecs
         run: pnpm --dir packages/settlement-codec build
+
+      - name: Check and test Rust codecs
+        working-directory: proofs/eternum-settlement
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test
+
+  aligned-cairo-packages:
+    name: Verify ${{ matrix.package }} on the frozen lane
+    needs: protocol-vectors
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - collectibles
+          - collectibles_claim
+          - factory
+          - game
+          - lords
+          - mmr
+          - season_pass
+          - settlement_appchain
+          - settlement_integration_tests
+          - settlement_protocol
+          - village_pass
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Setup Scarb
         uses: software-mansion/setup-scarb@v1
@@ -69,23 +108,12 @@ jobs:
         with:
           tool-versions: .tool-versions
 
-      - name: Check and test Cairo schemas
-        working-directory: contracts/settlement_protocol
+      - name: Format, build, and test package
+        working-directory: contracts/${{ matrix.package }}
         run: |
+          set -o pipefail
+          test_log="${RUNNER_TEMP}/${{ matrix.package }}-snforge.log"
           scarb fmt --check
           scarb build
-          snforge test
-
-      - name: Check and test appchain settlement topology
-        working-directory: contracts/settlement_appchain
-        run: |
-          scarb fmt --check
-          scarb build
-          snforge test
-
-      - name: Check and test Rust codecs
-        working-directory: proofs/eternum-settlement
-        run: |
-          cargo fmt --check
-          cargo clippy --all-targets -- -D warnings
-          cargo test
+          snforge test | tee "${test_log}"
+          grep -Eq 'Collected [1-9][0-9]* test' "${test_log}"

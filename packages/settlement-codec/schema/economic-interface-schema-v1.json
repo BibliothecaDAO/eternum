@@ -1,0 +1,764 @@
+{
+  "schemaVersion": 1,
+  "source": "contracts/settlement_protocol/src/economic_interfaces.cairo",
+  "sourceSha256": "92e7667b4ca2961c49a49ce61b00f1d63ca3d212749975fa9a6e23ae51d901c7",
+  "declarations": [
+    {
+      "kind": "enum",
+      "name": "ResourceMutationAction",
+      "members": [
+        {
+          "name": "Credit"
+        },
+        {
+          "name": "Debit"
+        },
+        {
+          "name": "Transfer"
+        }
+      ]
+    },
+    {
+      "kind": "enum",
+      "name": "StructureOwnershipMutationAction",
+      "members": [
+        {
+          "name": "Transfer"
+        },
+        {
+          "name": "Capture"
+        }
+      ]
+    },
+    {
+      "kind": "enum",
+      "name": "LazyProductionMutationAction",
+      "members": [
+        {
+          "name": "Reserve"
+        },
+        {
+          "name": "Settle"
+        },
+        {
+          "name": "Update"
+        },
+        {
+          "name": "Release"
+        }
+      ]
+    },
+    {
+      "kind": "enum",
+      "name": "ArrivalMutationAction",
+      "members": [
+        {
+          "name": "Create"
+        },
+        {
+          "name": "Settle"
+        },
+        {
+          "name": "Cancel"
+        }
+      ]
+    },
+    {
+      "kind": "enum",
+      "name": "MilitaryCargoMutationAction",
+      "members": [
+        {
+          "name": "Create"
+        },
+        {
+          "name": "Update"
+        },
+        {
+          "name": "Destroy"
+        },
+        {
+          "name": "EraseDeadCargo"
+        }
+      ]
+    },
+    {
+      "kind": "enum",
+      "name": "TradeDonkeyMutationAction",
+      "members": [
+        {
+          "name": "Reserve"
+        },
+        {
+          "name": "Fill"
+        },
+        {
+          "name": "Cancel"
+        },
+        {
+          "name": "Release"
+        }
+      ]
+    },
+    {
+      "kind": "enum",
+      "name": "AmmLpMutationAction",
+      "members": [
+        {
+          "name": "Add"
+        },
+        {
+          "name": "Remove"
+        },
+        {
+          "name": "Swap"
+        },
+        {
+          "name": "CreditWalletLp"
+        },
+        {
+          "name": "DebitWalletLp"
+        }
+      ]
+    },
+    {
+      "kind": "enum",
+      "name": "RewardStateMutationAction",
+      "members": [
+        {
+          "name": "Credit"
+        },
+        {
+          "name": "Debit"
+        },
+        {
+          "name": "Update"
+        }
+      ]
+    },
+    {
+      "kind": "enum",
+      "name": "PendingWithdrawalMutationAction",
+      "members": [
+        {
+          "name": "Create"
+        },
+        {
+          "name": "Append"
+        },
+        {
+          "name": "Seal"
+        },
+        {
+          "name": "Complete"
+        }
+      ]
+    },
+    {
+      "kind": "enum",
+      "name": "ActiveExitBackingMutationAction",
+      "members": [
+        {
+          "name": "Reserve"
+        },
+        {
+          "name": "Release"
+        },
+        {
+          "name": "MoveToOutbox"
+        }
+      ]
+    },
+    {
+      "kind": "enum",
+      "name": "PlayerEconomicLockMutationAction",
+      "members": [
+        {
+          "name": "Lock"
+        },
+        {
+          "name": "Unlock"
+        },
+        {
+          "name": "MarkExited"
+        }
+      ]
+    },
+    {
+      "kind": "enum",
+      "name": "ExitPositionMutationAction",
+      "members": [
+        {
+          "name": "Create"
+        },
+        {
+          "name": "Split"
+        },
+        {
+          "name": "Merge"
+        },
+        {
+          "name": "Tombstone"
+        }
+      ]
+    },
+    {
+      "kind": "enum",
+      "name": "EconomicPositionFamily",
+      "members": [
+        {
+          "name": "Resource"
+        },
+        {
+          "name": "StructureOwnership"
+        },
+        {
+          "name": "LazyProduction"
+        },
+        {
+          "name": "Arrival"
+        },
+        {
+          "name": "MilitaryAndCargo"
+        },
+        {
+          "name": "TradeAndDonkey"
+        },
+        {
+          "name": "AmmAndLp"
+        },
+        {
+          "name": "RewardState"
+        },
+        {
+          "name": "PendingWithdrawal"
+        },
+        {
+          "name": "ActiveExitBacking"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "EconomicMutationResult",
+      "members": [
+        {
+          "name": "operation_id",
+          "type": "u16"
+        },
+        {
+          "name": "position_id",
+          "type": "felt252"
+        },
+        {
+          "name": "position_version",
+          "type": "u64"
+        },
+        {
+          "name": "backing_before",
+          "type": "u256"
+        },
+        {
+          "name": "backing_after",
+          "type": "u256"
+        },
+        {
+          "name": "index_high_watermark",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "ResourceMutationRequest",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "GameId"
+        },
+        {
+          "name": "action",
+          "type": "ResourceMutationAction"
+        },
+        {
+          "name": "source_entity_id",
+          "type": "felt252"
+        },
+        {
+          "name": "target_entity_id",
+          "type": "felt252"
+        },
+        {
+          "name": "resource_id",
+          "type": "u32"
+        },
+        {
+          "name": "amount",
+          "type": "u256"
+        },
+        {
+          "name": "expected_position_version",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "StructureOwnershipMutationRequest",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "GameId"
+        },
+        {
+          "name": "action",
+          "type": "StructureOwnershipMutationAction"
+        },
+        {
+          "name": "structure_id",
+          "type": "felt252"
+        },
+        {
+          "name": "previous_owner",
+          "type": "ContractAddress"
+        },
+        {
+          "name": "next_owner",
+          "type": "ContractAddress"
+        },
+        {
+          "name": "expected_position_version",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "LazyProductionMutationRequest",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "GameId"
+        },
+        {
+          "name": "action",
+          "type": "LazyProductionMutationAction"
+        },
+        {
+          "name": "producer_id",
+          "type": "felt252"
+        },
+        {
+          "name": "resource_id",
+          "type": "u32"
+        },
+        {
+          "name": "economic_timestamp",
+          "type": "u64"
+        },
+        {
+          "name": "rate",
+          "type": "u128"
+        },
+        {
+          "name": "sealed_end_ceiling",
+          "type": "u256"
+        },
+        {
+          "name": "expected_position_version",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "ArrivalMutationRequest",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "GameId"
+        },
+        {
+          "name": "action",
+          "type": "ArrivalMutationAction"
+        },
+        {
+          "name": "arrival_id",
+          "type": "felt252"
+        },
+        {
+          "name": "source_entity_id",
+          "type": "felt252"
+        },
+        {
+          "name": "destination_entity_id",
+          "type": "felt252"
+        },
+        {
+          "name": "resource_id",
+          "type": "u32"
+        },
+        {
+          "name": "amount",
+          "type": "u256"
+        },
+        {
+          "name": "expected_position_version",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "MilitaryCargoMutationRequest",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "GameId"
+        },
+        {
+          "name": "action",
+          "type": "MilitaryCargoMutationAction"
+        },
+        {
+          "name": "position_id",
+          "type": "felt252"
+        },
+        {
+          "name": "owner",
+          "type": "ContractAddress"
+        },
+        {
+          "name": "troop_or_resource_id",
+          "type": "u32"
+        },
+        {
+          "name": "amount",
+          "type": "u256"
+        },
+        {
+          "name": "expected_position_version",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "TradeDonkeyMutationRequest",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "GameId"
+        },
+        {
+          "name": "action",
+          "type": "TradeDonkeyMutationAction"
+        },
+        {
+          "name": "order_id",
+          "type": "felt252"
+        },
+        {
+          "name": "maker",
+          "type": "ContractAddress"
+        },
+        {
+          "name": "resource_id",
+          "type": "u32"
+        },
+        {
+          "name": "resource_amount",
+          "type": "u256"
+        },
+        {
+          "name": "donkey_amount",
+          "type": "u256"
+        },
+        {
+          "name": "expected_position_version",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "AmmLpMutationRequest",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "GameId"
+        },
+        {
+          "name": "action",
+          "type": "AmmLpMutationAction"
+        },
+        {
+          "name": "bank_id",
+          "type": "felt252"
+        },
+        {
+          "name": "wallet",
+          "type": "ContractAddress"
+        },
+        {
+          "name": "resource_a_id",
+          "type": "u32"
+        },
+        {
+          "name": "resource_b_id",
+          "type": "u32"
+        },
+        {
+          "name": "amount_a",
+          "type": "u256"
+        },
+        {
+          "name": "amount_b",
+          "type": "u256"
+        },
+        {
+          "name": "lp_amount",
+          "type": "u256"
+        },
+        {
+          "name": "expected_position_version",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "RewardStateMutationRequest",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "GameId"
+        },
+        {
+          "name": "action",
+          "type": "RewardStateMutationAction"
+        },
+        {
+          "name": "payout_purpose",
+          "type": "felt252"
+        },
+        {
+          "name": "participant",
+          "type": "ContractAddress"
+        },
+        {
+          "name": "asset_id",
+          "type": "u32"
+        },
+        {
+          "name": "amount",
+          "type": "u256"
+        },
+        {
+          "name": "expected_position_version",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "PendingWithdrawalMutationRequest",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "GameId"
+        },
+        {
+          "name": "action",
+          "type": "PendingWithdrawalMutationAction"
+        },
+        {
+          "name": "liability_id",
+          "type": "LiabilityId"
+        },
+        {
+          "name": "claimant_l2",
+          "type": "ContractAddress"
+        },
+        {
+          "name": "recipient_l1",
+          "type": "ContractAddress"
+        },
+        {
+          "name": "legs_hash",
+          "type": "felt252"
+        },
+        {
+          "name": "amount",
+          "type": "u256"
+        },
+        {
+          "name": "expected_position_version",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "ActiveExitBackingMutationRequest",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "GameId"
+        },
+        {
+          "name": "action",
+          "type": "ActiveExitBackingMutationAction"
+        },
+        {
+          "name": "parent_key_hash",
+          "type": "felt252"
+        },
+        {
+          "name": "lot_index",
+          "type": "u8"
+        },
+        {
+          "name": "amount",
+          "type": "u256"
+        },
+        {
+          "name": "expected_position_version",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "PlayerEconomicLockMutationRequest",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "GameId"
+        },
+        {
+          "name": "action",
+          "type": "PlayerEconomicLockMutationAction"
+        },
+        {
+          "name": "player_l2",
+          "type": "ContractAddress"
+        },
+        {
+          "name": "exit_id",
+          "type": "felt252"
+        },
+        {
+          "name": "economic_timestamp",
+          "type": "u64"
+        },
+        {
+          "name": "expected_position_version",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "kind": "struct",
+      "name": "ExitPositionMutationRequest",
+      "members": [
+        {
+          "name": "game_id",
+          "type": "GameId"
+        },
+        {
+          "name": "action",
+          "type": "ExitPositionMutationAction"
+        },
+        {
+          "name": "family",
+          "type": "EconomicPositionFamily"
+        },
+        {
+          "name": "position_id",
+          "type": "felt252"
+        },
+        {
+          "name": "related_position_id",
+          "type": "felt252"
+        },
+        {
+          "name": "owner",
+          "type": "ContractAddress"
+        },
+        {
+          "name": "amount",
+          "type": "u256"
+        },
+        {
+          "name": "expected_position_version",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "interface": {
+    "name": "IEconomicStateSystem",
+    "methods": [
+      {
+        "name": "mutate_resource",
+        "signature": "fn mutate_resource(ref self:TContractState,request:ResourceMutationRequest)->EconomicMutationResult;"
+      },
+      {
+        "name": "mutate_structure_ownership",
+        "signature": "fn mutate_structure_ownership(ref self:TContractState,request:StructureOwnershipMutationRequest)->EconomicMutationResult;"
+      },
+      {
+        "name": "mutate_lazy_production",
+        "signature": "fn mutate_lazy_production(ref self:TContractState,request:LazyProductionMutationRequest)->EconomicMutationResult;"
+      },
+      {
+        "name": "mutate_arrival",
+        "signature": "fn mutate_arrival(ref self:TContractState,request:ArrivalMutationRequest)->EconomicMutationResult;"
+      },
+      {
+        "name": "mutate_military_and_cargo",
+        "signature": "fn mutate_military_and_cargo(ref self:TContractState,request:MilitaryCargoMutationRequest)->EconomicMutationResult;"
+      },
+      {
+        "name": "mutate_trade_and_donkey",
+        "signature": "fn mutate_trade_and_donkey(ref self:TContractState,request:TradeDonkeyMutationRequest)->EconomicMutationResult;"
+      },
+      {
+        "name": "mutate_amm_and_lp",
+        "signature": "fn mutate_amm_and_lp(ref self:TContractState,request:AmmLpMutationRequest)->EconomicMutationResult;"
+      },
+      {
+        "name": "mutate_reward_state",
+        "signature": "fn mutate_reward_state(ref self:TContractState,request:RewardStateMutationRequest)->EconomicMutationResult;"
+      },
+      {
+        "name": "mutate_pending_withdrawal",
+        "signature": "fn mutate_pending_withdrawal(ref self:TContractState,request:PendingWithdrawalMutationRequest)->EconomicMutationResult;"
+      },
+      {
+        "name": "mutate_active_exit_backing",
+        "signature": "fn mutate_active_exit_backing(ref self:TContractState,request:ActiveExitBackingMutationRequest)->EconomicMutationResult;"
+      },
+      {
+        "name": "mutate_player_economic_lock",
+        "signature": "fn mutate_player_economic_lock(ref self:TContractState,request:PlayerEconomicLockMutationRequest)->EconomicMutationResult;"
+      },
+      {
+        "name": "mutate_exit_position",
+        "signature": "fn mutate_exit_position(ref self:TContractState,request:ExitPositionMutationRequest)->EconomicMutationResult;"
+      },
+      {
+        "name": "get_backing_total",
+        "signature": "fn get_backing_total(self:@TContractState,game_id:GameId,parent_key_hash:felt252)->Option<BackingTotal>;"
+      },
+      {
+        "name": "get_position_version",
+        "signature": "fn get_position_version(self:@TContractState,game_id:GameId,position_id:felt252)->Option<u64>;"
+      },
+      {
+        "name": "is_player_economically_locked",
+        "signature": "fn is_player_economically_locked(self:@TContractState,game_id:GameId,player_l2:ContractAddress)->bool;"
+      }
+    ]
+  }
+}

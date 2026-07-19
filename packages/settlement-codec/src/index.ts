@@ -5,6 +5,7 @@ export { decodeSchema, encodeSchema, type SchemaValue } from "./codec";
 export * from "./economic-capability";
 export * from "./tree";
 export * from "./generated-types";
+export * from "./package-lane";
 
 export type ProtocolVersion = 1;
 

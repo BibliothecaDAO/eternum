@@ -9,18 +9,18 @@ use starknet::ContractAddress;
 
 /// Minting functionality for ERC721 tokens with packed attributes.
 #[starknet::interface]
-trait CollectibleMintTrait<TState> {
+pub trait CollectibleMintTrait<TState> {
     fn safe_mint(ref self: TState, recipient: ContractAddress, attributes_raw: u128);
 }
 
 
 #[starknet::interface]
-trait ICosmeticCollectiblesClaim<TState> {
+pub trait ICosmeticCollectiblesClaim<TState> {
     fn claim(ref self: TState, token_id: u256);
 }
 
 #[starknet::interface]
-trait PaymentTokenMetadataTrait<TState> {
+pub trait PaymentTokenMetadataTrait<TState> {
     fn get_metadata_raw(self: @TState, token_id: u256) -> u128;
 }
 
@@ -34,16 +34,15 @@ trait CollectibleClaimInternalTrait {
 
 
 // Role constants for access control
-const UPGRADER_ROLE: felt252 = selector!("UPGRADER_ROLE");
+pub const UPGRADER_ROLE: felt252 = selector!("UPGRADER_ROLE");
 
 /// Main contract implementation with all components integrated
 #[starknet::contract]
-mod CosmeticCollectiblesClaim {
+pub mod CosmeticCollectiblesClaim {
     use collectibles_claim::utils::random;
     use collectibles_claim::utils::random::VRFImpl;
     use core::num::traits::Zero;
-    use openzeppelin::access::accesscontrol::AccessControlComponent;
-    use openzeppelin::access::accesscontrol::DEFAULT_ADMIN_ROLE;
+    use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::access::ownable::OwnableComponent;
     use openzeppelin::introspection::src5::SRC5Component;
     use openzeppelin::token::common::erc2981::{DefaultConfig, ERC2981Component};
@@ -56,16 +55,13 @@ mod CosmeticCollectiblesClaim {
     };
     use openzeppelin::upgrades::UpgradeableComponent;
     use openzeppelin::upgrades::interface::IUpgradeable;
-
-    use starknet::ClassHash;
-    use starknet::ContractAddress;
     use starknet::storage::{Map, StoragePathEntry, StoragePointerReadAccess, StoragePointerWriteAccess};
+    use starknet::{ClassHash, ContractAddress};
     use super::{
-        CollectibleMintTrait, CollectibleMintTraitDispatcher, CollectibleMintTraitDispatcherTrait,
-        ICosmeticCollectiblesClaim, PaymentTokenMetadataTrait, PaymentTokenMetadataTraitDispatcher, PaymentTokenMetadataTraitDispatcherTrait
+        CollectibleClaimInternalTrait, CollectibleMintTrait, CollectibleMintTraitDispatcher,
+        CollectibleMintTraitDispatcherTrait, ICosmeticCollectiblesClaim, PaymentTokenMetadataTrait,
+        PaymentTokenMetadataTraitDispatcher, PaymentTokenMetadataTraitDispatcherTrait, UPGRADER_ROLE,
     };
-    use super::{UPGRADER_ROLE};
-    use super::CollectibleClaimInternalTrait;
 
     component!(path: SRC5Component, storage: src5, event: SRC5Event);
     component!(path: AccessControlComponent, storage: accesscontrol, event: AccessControlEvent);
@@ -162,17 +158,21 @@ mod CosmeticCollectiblesClaim {
 
             // mint the randomly collectibles
             let collectible_token_address = self.collectible_erc721_address.read();
-            let payment_token_metadata = PaymentTokenMetadataTraitDispatcher { contract_address: self.payment_erc721_address.read() };
+            let payment_token_metadata = PaymentTokenMetadataTraitDispatcher {
+                contract_address: self.payment_erc721_address.read(),
+            };
 
             let payment_token_raw_metadata = payment_token_metadata.get_metadata_raw(token_id);
-            let collectible_attributes 
-                = if payment_token_raw_metadata == ETERNUM_REWARDS_CHEST_TYPE {  // Eternum Rewards Chest
-                    EternumRewardsChestClaimImpl::get_collectibles_attributes(vrf_seed)
-                } else {
-                    assert!(payment_token_raw_metadata == BLITZ_REWARDS_S0_CHEST_TYPE, "Invalid chest type"); // Blitz Rewards S0 Chest
-                    BlitzRewardsS0ChestClaimImpl::get_collectibles_attributes(vrf_seed)
-                };
-            
+            let collectible_attributes =
+                if payment_token_raw_metadata == ETERNUM_REWARDS_CHEST_TYPE { // Eternum Rewards Chest
+                EternumRewardsChestClaimImpl::get_collectibles_attributes(vrf_seed)
+            } else {
+                assert!(
+                    payment_token_raw_metadata == BLITZ_REWARDS_S0_CHEST_TYPE, "Invalid chest type",
+                ); // Blitz Rewards S0 Chest
+                BlitzRewardsS0ChestClaimImpl::get_collectibles_attributes(vrf_seed)
+            };
+
             let collectible_token = CollectibleMintTraitDispatcher { contract_address: collectible_token_address };
             let now = starknet::get_block_timestamp();
             for i in 0..collectible_attributes.len() {
@@ -201,16 +201,8 @@ mod CosmeticCollectiblesClaim {
         fn collectibles_attributes_probabilities() -> (Span<u128>, Span<u128>) {
             (
                 array![
-                    0x107050201,
-                    0x4050301,
-                    0x2040401,
-                    0x3030501,
-                    0x2030601,
-                    0x305020701,
-                    0x306020801,
-                    0x205010901,
-                    0x206010a01,
-                    0x8010b01,
+                    0x107050201, 0x4050301, 0x2040401, 0x3030501, 0x2030601, 0x305020701, 0x306020801, 0x205010901,
+                    0x206010a01, 0x8010b01,
                 ]
                     .span(),
                 array![141, 141, 422, 845, 845, 1268, 1268, 1690, 1690, 1690].span(),
@@ -233,17 +225,8 @@ mod CosmeticCollectiblesClaim {
         fn collectibles_attributes_probabilities() -> (Span<u128>, Span<u128>) {
             (
                 array![
-                    0x207050c01,
-                    0x4040d01,
-                    0x8040e01,
-                    0x4030f01,
-                    0x8031001,
-                    0x3021101,
-                    0x105021201,
-                    0x106021301,
-                    0x1011401,
-                    0x305011501,
-                    0x306011601,
+                    0x207050c01, 0x4040d01, 0x8040e01, 0x4030f01, 0x8031001, 0x3021101, 0x105021201, 0x106021301,
+                    0x1011401, 0x305011501, 0x306011601,
                 ]
                     .span(),
                 array![121, 366, 366, 732, 732, 1098, 1098, 1098, 1463, 1463, 1463].span(),

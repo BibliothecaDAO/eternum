@@ -1,8 +1,8 @@
-use collectibles_claim::utils::cartridge::vrf::Source;
-use collectibles_claim::utils::cartridge::vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait};
+use collectibles_claim::utils::cartridge::vrf::{IVrfProviderDispatcher, IVrfProviderDispatcherTrait, Source};
 use core::dict::Felt252Dict;
+use core::num::traits::Zero;
 use core::poseidon::poseidon_hash_span;
-use starknet::{ContractAddress};
+use starknet::ContractAddress;
 
 #[generate_trait]
 pub impl VRFImpl of VRFTrait {
@@ -92,9 +92,9 @@ pub fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
                 }
                 result.append(*population.at(random(vrf_seed, index.into(), n.into()).try_into().unwrap()));
                 index += 1;
-            };
+            }
             return result.span();
-        };
+        }
 
         // get cumulative sum of weights
         cum_weights = cum_sum(weights.clone());
@@ -102,16 +102,16 @@ pub fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
         if weights.len() != 0 {
             assert(false, 'cant specify both weight types');
         };
-    };
+    }
 
     if cum_weights.len() != n {
         assert(false, 'weight length mismatch');
-    };
+    }
 
     let total = *cum_weights[cum_weights.len() - 1];
     if total == 0 {
         assert(false, 'weights sum is zero');
-    };
+    }
 
     let hi = n - 1;
     let mut index = 0;
@@ -140,7 +140,7 @@ pub fn choices<T, impl TCopy: Copy<T>, impl TDrop: Drop<T>>(
             result.append(*population.at(chosen_index));
             index += 1;
         }
-    };
+    }
     return result.span();
 }
 
@@ -171,7 +171,7 @@ fn cum_sum(a: Span<u128>) -> Span<u128> {
         total += *a[index];
         result.append(total);
         index += 1;
-    };
+    }
     return result.span();
 }
 
@@ -221,6 +221,6 @@ fn bisect_right(a: Span<u128>, x: u128, lo: u32, hi: Option<u32>) -> u32 {
         } else {
             lo = mid + 1;
         };
-    };
+    }
     return lo;
 }

@@ -10,7 +10,6 @@ trait TimeLockMakerTrait<TState> {
 #[starknet::contract]
 mod CollectibleTimeLockMaker {
     use collectibles::contract::{IRealmsCollectibleLockAdminDispatcher, IRealmsCollectibleLockAdminDispatcherTrait};
-
     use starknet::ContractAddress;
 
     const ONE_DAY_IN_SECONDS: u64 = 86400; // 24 * 60 * 60

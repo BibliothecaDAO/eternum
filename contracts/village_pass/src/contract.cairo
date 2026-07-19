@@ -5,7 +5,7 @@
 use starknet::ContractAddress;
 
 #[starknet::interface]
-trait IVillagePass<TState> {
+pub trait IVillagePass<TState> {
     fn mint(ref self: TState, recipient: ContractAddress) -> u256;
     fn batch_transfer_from(ref self: TState, from: ContractAddress, to: ContractAddress, amount: u16) -> Span<u256>;
 }
@@ -16,7 +16,8 @@ const UPGRADER_ROLE: felt252 = selector!("UPGRADER_ROLE");
 const DISTRIBUTOR_ROLE: felt252 = selector!("DISTRIBUTOR_ROLE");
 
 #[starknet::contract]
-mod EternumVillagePass {
+pub mod EternumVillagePass {
+    use core::num::traits::Zero;
     use evp::utils::make_json_and_base64_encode_metadata;
     use openzeppelin::access::accesscontrol::{AccessControlComponent, DEFAULT_ADMIN_ROLE};
     use openzeppelin::introspection::src5::SRC5Component;
@@ -192,7 +193,7 @@ mod EternumVillagePass {
                 let token_id = self.erc721_enumerable.token_of_owner_by_index(from, 0);
                 self.erc721.transfer_from(from, to, token_id);
                 token_ids.append(token_id);
-            };
+            }
             token_ids.span()
         }
     }

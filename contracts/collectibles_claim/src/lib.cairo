@@ -6,9 +6,9 @@ pub mod utils {
     pub mod random;
 }
 pub mod tests {
-    mod mocks {
-        mod account;
-        mod contracts;
+    pub mod mocks {
+        pub mod account;
+        pub mod contracts;
     }
     mod test_cosmetics_claim;
 }

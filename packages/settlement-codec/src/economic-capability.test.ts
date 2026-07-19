@@ -7,12 +7,18 @@ import {
 } from "./economic-capability";
 
 const inventoryUrl = new URL("../schema/economic-write-inventory-v0.json", import.meta.url);
-const candidateInterfaceUrl = new URL(
-  "../../../contracts/settlement_protocol/src/economic_candidate.cairo",
+const exactInterfaceSchemaUrl = new URL("../schema/economic-interface-schema-v1.json", import.meta.url);
+const frozenInterfaceUrl = new URL(
+  "../../../contracts/settlement_protocol/src/economic_interfaces.cairo",
   import.meta.url,
 );
+const dispatcherConformanceUrl = new URL(
+  "../../../contracts/settlement_integration_tests/src/generated_dispatcher_conformance.cairo",
+  import.meta.url,
+);
+const protocolInterfacesUrl = new URL("../../../contracts/settlement_protocol/src/interfaces.cairo", import.meta.url);
 
-describe("A9 economic capability candidate", () => {
+describe("A14 frozen economic capability interface", () => {
   test("publishes a complete semantic ABI and capability matrix", () => {
     const registry = getEconomicCapabilityRegistry();
     const requiredFamilies = [
@@ -28,30 +34,53 @@ describe("A9 economic capability candidate", () => {
       "active_exit_backing",
       "player_economic_lock",
       "exit_position",
-      "settlement_callback",
     ];
 
-    expect(registry.version).toBe(0);
+    expect(registry.version).toBe(1);
+    expect(registry.status).toBe("a14-frozen");
     expect(registry.families.map((family: Record<string, unknown>) => family.id)).toEqual(requiredFamilies);
     expect(new Set(registry.operations.map((operation: Record<string, unknown>) => operation.operationId)).size).toBe(
       registry.operations.length,
     );
     const familyIds = new Set(requiredFamilies);
-    const candidateInterface = readFileSync(candidateInterfaceUrl, "utf8");
+    const frozenInterface = readFileSync(frozenInterfaceUrl, "utf8");
+    const exactInterfaceSchema = readJson(exactInterfaceSchemaUrl);
+    expect(frozenInterface).toContain("#[starknet::interface]");
+    expect(frozenInterface).toContain("pub trait IEconomicStateSystem");
+    expect(exactInterfaceSchema.sourceSha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(exactInterfaceSchema.interface.methods.map(({ name }: { name: string }) => name)).toEqual([
+      ...registry.families.map(({ method }) => method),
+      "get_backing_total",
+      "get_position_version",
+      "is_player_economically_locked",
+    ]);
     for (const family of registry.families) {
-      expect(candidateInterface).toContain(`fn ${family.method}`);
-      expect(candidateInterface).toMatch(new RegExp(`pub (?:struct|enum) ${family.requestType}\\b`));
+      expect(frozenInterface).toContain(`fn ${family.method}`);
+      expect(frozenInterface).toMatch(new RegExp(`pub (?:struct|enum) ${family.requestType}\\b`));
     }
     for (const operation of registry.operations) {
-      expect(familyIds.has(operation.family)).toBe(true);
       expect(operation.authorizedCallerClasses.length).toBeGreaterThan(0);
-      expect(operation.requestType).toMatch(/Request$/);
       expect(operation.resultType === "felt252" || /Result$/.test(operation.resultType)).toBe(true);
-      expect(candidateInterface).toMatch(new RegExp(`pub struct ${operation.requestType}\\b`));
+      if (operation.family === "settlement_callback") {
+        expect(operation.requestType).toBeNull();
+        expect(operation.interfaceTrait).toBe("IGameEconomicSettlementCallbacks");
+      } else {
+        expect(familyIds.has(operation.family)).toBe(true);
+        expect(operation.requestType).toMatch(/Request$/);
+        expect(frozenInterface).toMatch(new RegExp(`pub struct ${operation.requestType}\\b`));
+      }
       expect(operation.affectedModels.length).toBeGreaterThan(0);
       expect(operation.backingEffect).toBeTruthy();
       expect(operation.indexEffect).toBeTruthy();
     }
+
+    const dispatcherConformance = readFileSync(dispatcherConformanceUrl, "utf8");
+    expect(dispatcherConformance).toContain("IEconomicStateSystemDispatcher");
+    expect(dispatcherConformance).toContain("IGameEconomicSettlementCallbacksDispatcher");
+    const protocolInterfaces = readFileSync(protocolInterfacesUrl, "utf8");
+    expect(protocolInterfaces).toContain("#[starknet::interface]\npub trait IGameEconomicSettlementCallbacks");
+    expect(frozenInterface).not.toContain("fn assign_open_batch");
+    expect(frozenInterface).not.toContain("fn promote_sealed_batch");
   });
 
   test("resolves operation and caller authority through the public codec API", () => {

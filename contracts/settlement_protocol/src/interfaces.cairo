@@ -2,16 +2,19 @@
 use starknet::ContractAddress;
 use crate::types::*;
 
+#[starknet::interface]
 pub trait ISeasonResourceSettlementToken<TContractState> {
     fn mint(ref self: TContractState, recipient: ContractAddress, amount: u256);
     fn burn_held(ref self: TContractState, amount: u256);
 }
 
+#[starknet::interface]
 pub trait IAutoIdMintWithReceipt<TContractState> {
     fn mint_with_receipt(ref self: TContractState, request: AutoIdMintRequest) -> u256;
     fn token_id_for_reservation(self: @TContractState, reservation_id: felt252) -> Option<u256>;
 }
 
+#[starknet::interface]
 pub trait ICosmeticCollectiblesClaimCompatibility<TContractState> {
     fn claim(ref self: TContractState, token_id: u256);
     fn get_payment_erc721_address(self: @TContractState) -> ContractAddress;
@@ -19,14 +22,17 @@ pub trait ICosmeticCollectiblesClaimCompatibility<TContractState> {
     fn get_vrf_provider_address(self: @TContractState) -> ContractAddress;
 }
 
+#[starknet::interface]
 pub trait IChestMetadataCompatibility<TContractState> {
     fn get_metadata_raw(self: @TContractState, token_id: u256) -> u128;
 }
 
+#[starknet::interface]
 pub trait ICosmeticMintCompatibility<TContractState> {
     fn safe_mint(ref self: TContractState, recipient: ContractAddress, attributes_raw: u128);
 }
 
+#[starknet::interface]
 pub trait ICosmeticOutputLiveness<TContractState> {
     fn get_attrs_raw_ipfs_cid(self: @TContractState, attributes_raw: u128) -> ByteArray;
     fn lock_settlement_output_universe(ref self: TContractState, output_universe_hash: felt252, attributes: Span<u128>);
@@ -34,22 +40,26 @@ pub trait ICosmeticOutputLiveness<TContractState> {
     fn is_settlement_output_supported(self: @TContractState, attributes_raw: u128) -> bool;
 }
 
+#[starknet::interface]
 pub trait ILegacyMmrPendingResultSource<TContractState> {
     fn legacy_pending_result_projection(self: @TContractState, result_key: felt252) -> LegacyMmrPendingResultProjection;
     fn legacy_applied_result_projection(self: @TContractState, result_key: felt252) -> LegacyMmrPendingResultProjection;
     fn legacy_application_context(self: @TContractState, result_key: felt252) -> Option<LegacyMmrApplicationContext>;
 }
 
+#[starknet::interface]
 pub trait ILegacyMmrWorldMigration<TContractState> {
     fn initialize_legacy_mmr_world_instrumentation(ref self: TContractState, init: LegacyMmrWorldMigrationInit);
     fn legacy_mmr_world_migration_init_hash(self: @TContractState) -> felt252;
 }
 
+#[starknet::interface]
 pub trait ILegacyMmrSystemMigration<TContractState> {
     fn initialize_legacy_mmr_system_instrumentation(ref self: TContractState, init: LegacyMmrSystemMigrationInit);
     fn legacy_mmr_system_migration_init_hash(self: @TContractState) -> felt252;
 }
 
+#[starknet::interface]
 pub trait ILegacyMmrFactoryMigration<TContractState> {
     fn initialize_legacy_mmr_factory_instrumentation(ref self: TContractState, init: LegacyMmrFactoryMigrationInit);
     fn legacy_mmr_factory_migration_init_hash(self: @TContractState) -> felt252;
@@ -68,11 +78,13 @@ pub trait ILegacyMmrFactoryMigration<TContractState> {
     );
 }
 
+#[starknet::interface]
 pub trait ILegacyMmrConfigSystemMigration<TContractState> {
     fn initialize_legacy_mmr_config_instrumentation(ref self: TContractState, init: LegacyMmrConfigSystemMigrationInit);
     fn legacy_mmr_config_migration_init_hash(self: @TContractState) -> felt252;
 }
 
+#[starknet::interface]
 pub trait ILegacyMmrMigrationGuard<TContractState> {
     fn register_legacy_mmr_initial_token_state(
         ref self: TContractState, state: LegacyMmrInitialTokenState, finalized_state_proof: Span<felt252>,
@@ -84,6 +96,7 @@ pub trait ILegacyMmrMigrationGuard<TContractState> {
     fn is_legacy_mmr_initial_token_state_executable(self: @TContractState, state_hash: felt252) -> bool;
 }
 
+#[starknet::interface]
 pub trait IStarknetFinalizedStateRootSource<TContractState> {
     fn register_state_root_anchor(
         ref self: TContractState,
@@ -99,6 +112,7 @@ pub trait IStarknetFinalizedStateRootSource<TContractState> {
     fn minimum_finality_blocks(self: @TContractState) -> u16;
 }
 
+#[starknet::interface]
 pub trait ILegacyMmrCutoverGate<TContractState> {
     fn begin_legacy_mmr_registry_bootstrap(
         ref self: TContractState,
@@ -198,6 +212,7 @@ pub trait ILegacyMmrCutoverGate<TContractState> {
     fn admission_freeze_marker_hash(self: @TContractState) -> felt252;
 }
 
+#[starknet::interface]
 pub trait ILegacyMmrArchiveQuorum<TContractState> {
     fn register_legacy_mmr_archive_set(
         ref self: TContractState,
@@ -232,6 +247,7 @@ pub trait ILegacyMmrArchiveQuorum<TContractState> {
     ) -> felt252;
 }
 
+#[starknet::interface]
 pub trait ILegacyMmrCutoverFunding<TContractState> {
     fn prefund_legacy_mmr_cutover(ref self: TContractState, static_config: LegacyMmrCutoverStaticConfig);
     fn get_legacy_mmr_cutover_escrow(self: @TContractState, cutover_id: felt252) -> Option<LegacyMmrCutoverEscrow>;
@@ -240,6 +256,7 @@ pub trait ILegacyMmrCutoverFunding<TContractState> {
     fn release_legacy_mmr_cutover_excess(ref self: TContractState, cutover_id: felt252);
 }
 
+#[starknet::interface]
 pub trait IMMRSettlementToken<TContractState> {
     fn initialize_legacy_mmr_bridge(ref self: TContractState, init: LegacyMmrTokenBridgeInit);
     fn activate_legacy_mmr_context(ref self: TContractState, activation: LegacyMmrTokenContextActivation);
@@ -279,6 +296,7 @@ pub trait IMMRSettlementToken<TContractState> {
     fn abort_settlement_before_mutation(ref self: TContractState, sequence: u64, objective_invalidity_hash: felt252);
 }
 
+#[starknet::interface]
 pub trait IMMRSettlementRouter<TContractState> {
     fn reserve_legacy_cutover(ref self: TContractState, reservation: LegacyMmrRouterReservation) -> felt252;
     fn begin_legacy_cutover(
@@ -331,6 +349,7 @@ pub trait IMMRSettlementRouter<TContractState> {
     fn next_sequence_to_settle(self: @TContractState) -> u64;
 }
 
+#[starknet::interface]
 pub trait IMMRSettlementModule<TContractState> {
     fn validate_result_eligibility(
         self: @TContractState, commitment: RankingCommitment, result: GameResult, mmr_policy_hash: felt252,
@@ -347,6 +366,7 @@ pub trait IMMRSettlementModule<TContractState> {
     ) -> bool;
 }
 
+#[starknet::interface]
 pub trait ISealedGameFactory<TContractState> {
     fn next_game_creation_nonce(self: @TContractState) -> u64;
     fn begin_game_draft(ref self: TContractState, plan: GameDraftPlan) -> (felt252, GameId, u64);
@@ -371,6 +391,7 @@ pub trait ISealedGameFactory<TContractState> {
     fn get_game_draft(self: @TContractState, draft_id: felt252) -> GameDraft;
 }
 
+#[starknet::interface]
 pub trait ISealedWorldPolicy<TContractState> {
     fn register_game_draft(
         ref self: TContractState,
@@ -388,6 +409,7 @@ pub trait ISealedWorldPolicy<TContractState> {
     fn game_writer_graph_hash(self: @TContractState, game_id: GameId) -> felt252;
 }
 
+#[starknet::interface]
 pub trait IHardenedInboxRuntime<TContractState> {
     fn submit_finalized_header(
         ref self: TContractState, header: FinalizedStarknetHeader, recursive_finality_proof: Span<felt252>,
@@ -405,6 +427,7 @@ pub trait IHardenedInboxRuntime<TContractState> {
     fn get_cancelled_slot(self: @TContractState, transport_nonce: u64) -> Option<CancelledInboxMarker>;
 }
 
+#[starknet::interface]
 pub trait IGameIngressAdapter<TContractState> {
     fn apply_resource_deposit(ref self: TContractState, message: ResourceDepositMessage) -> GameIngressDispatchResult;
     fn apply_scarce_deposit(ref self: TContractState, message: ScarceDepositMessage) -> GameIngressDispatchResult;
@@ -425,6 +448,7 @@ pub trait IGameIngressAdapter<TContractState> {
     fn lifecycle_hash(self: @TContractState) -> felt252;
 }
 
+#[starknet::interface]
 pub trait IGameEconomicSettlementCallbacks<TContractState> {
     fn assign_open_batch(
         ref self: TContractState, liability_id: LiabilityId, batch_id: BatchId, leaf_index: u8,
@@ -438,6 +462,7 @@ pub trait IGameEconomicSettlementCallbacks<TContractState> {
     fn get_liability_assignment(self: @TContractState, liability_id: LiabilityId) -> Option<(BatchId, u8)>;
 }
 
+#[starknet::interface]
 pub trait IGameForcedExitAdapter<TContractState> {
     fn begin_game_exit(
         ref self: TContractState,

@@ -71,6 +71,7 @@ dependencies = [
  "dojo_snf_test",
  "openzeppelin",
  "openzeppelin_token",
+ "settlement_protocol",
  "snforge_std",
  "stark_vrf",
 ]
@@ -192,6 +193,10 @@ name = "openzeppelin_utils"
 version = "2.0.0"
 source = "registry+https://scarbs.xyz/"
 checksum = "sha256:bf799c794139837f397975ffdf6a7ed5032d198bbf70e87a8f44f144a9dfc505"
+
+[[package]]
+name = "settlement_protocol"
+version = "0.1.0"
 
 [[package]]
 name = "snforge_scarb_plugin"

@@ -4,10 +4,13 @@ name = "eternum"
 version = "1.0.0"
 edition = "2024_07"
 
+[lib]
+
 [cairo]
 sierra-replace-ids = true
 
 [dependencies]
+settlement_protocol = { path = "../settlement_protocol" }
 starknet = "2.13.1"
 dojo = "1.8.0"
 alexandria_math = { git = "https://github.com/keep-starknet-strange/alexandria.git", tag = "v0.5.2" }
