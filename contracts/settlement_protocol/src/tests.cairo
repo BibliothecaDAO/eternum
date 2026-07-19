@@ -1,3 +1,7 @@
+use crate::active_exit_backing_spike::{
+    ActiveExitBackingError, ActiveExitBackingTrait, active_exit_total,
+    backing_is_conserved as exit_backing_is_conserved, new_active_exit_backing,
+};
 use crate::config_seal_spike::{ConfigSealError, ConfigSealStateTrait, new_config_seal_state};
 use crate::config_setter_vectors::{CONFIG_SETTER_COUNT, config_setter_selectors};
 use crate::economic_state_spike::{
@@ -9,6 +13,83 @@ use crate::reservation_spike::{
 };
 use crate::schema_vector::{SCHEMA_REGISTRY_HASH, action_vectors, claim_kind_vectors, compute_schema_registry_hash};
 use crate::types::{ClaimLeg, SettlementRootMessage};
+
+#[test]
+fn worst_case_reserve_moves_to_outbox_without_double_count() {
+    let state = new_active_exit_backing(100)
+        .reserve_production_ceiling(100)
+        .unwrap()
+        .settle_production(40)
+        .unwrap()
+        .request_withdrawal(40)
+        .unwrap()
+        .assign_open_batch(40)
+        .unwrap()
+        .seal_assigned_withdrawal(40)
+        .unwrap();
+
+    assert!(state.production_reserve == 60);
+    assert!(state.cumulative_outbox == 40);
+    assert!(active_exit_total(state) == 60);
+    assert!(exit_backing_is_conserved(state));
+}
+
+#[test]
+fn backing_cap_accepts_below_and_at_but_rejects_above_atomically() {
+    let below = new_active_exit_backing(100).reserve_genesis(99).unwrap();
+    let at = below.reserve_spawn(1).unwrap();
+
+    assert!(at.free_backing == 0);
+    assert!(active_exit_total(at) == 100);
+    assert!(at.reserve_genesis(1) == Err(ActiveExitBackingError::InsufficientFreeBacking));
+    assert!(at.active_positions == 100);
+    assert!(exit_backing_is_conserved(at));
+}
+
+#[test]
+fn transfer_conserves_and_destruction_releases_backing() {
+    let funded = new_active_exit_backing(100).reserve_genesis(60).unwrap();
+    let transferred = funded.transfer_position(25).unwrap();
+    let destroyed = transferred.destroy_position(10).unwrap();
+
+    assert!(transferred.free_backing == funded.free_backing);
+    assert!(transferred.active_positions == funded.active_positions);
+    assert!(destroyed.active_positions == 50);
+    assert!(destroyed.free_backing == 50);
+    assert!(exit_backing_is_conserved(destroyed));
+}
+
+#[test]
+fn randomized_backing_transitions_preserve_conservation() {
+    let mut seed = 1_u64;
+    let mut state = new_active_exit_backing(1_000);
+    for _ in 0_u32..512_u32 {
+        seed = (seed * 1103515245 + 12345) % 2_147_483_648;
+        let amount: u128 = (seed % 17 + 1).into();
+        let action: u8 = (seed % 8).try_into().unwrap();
+        state = apply_random_backing_transition(state, action, amount);
+        assert!(active_exit_total(state) + state.cumulative_outbox <= state.allocated_backing);
+        assert!(exit_backing_is_conserved(state));
+    }
+}
+
+fn apply_random_backing_transition(
+    state: crate::active_exit_backing_spike::ActiveExitBackingState, action: u8, amount: u128,
+) -> crate::active_exit_backing_spike::ActiveExitBackingState {
+    match action {
+        0 => state.reserve_genesis(amount).unwrap_or(state),
+        1 => state.reserve_production_ceiling(amount).unwrap_or(state),
+        2 => state.settle_production(amount).unwrap_or(state),
+        3 => state.release_production_ceiling(amount).unwrap_or(state),
+        4 => state.transfer_position(amount).unwrap_or(state),
+        5 => state.destroy_position(amount).unwrap_or(state),
+        6 => state.request_withdrawal(amount).unwrap_or(state),
+        _ => {
+            let assigned = state.assign_open_batch(amount).unwrap_or(state);
+            assigned.seal_assigned_withdrawal(amount).unwrap_or(assigned)
+        },
+    }
+}
 
 #[test]
 fn every_inventoried_config_setter_fails_after_one_way_seal() {

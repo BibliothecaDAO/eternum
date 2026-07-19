@@ -1,3 +1,4 @@
+pub mod active_exit_backing_spike;
 pub mod appchain_spike_interfaces;
 pub mod config_seal_spike;
 pub mod config_setter_vectors;
