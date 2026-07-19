@@ -2,7 +2,7 @@
   "version": 1,
   "environment": "mainnet.eternum",
   "kind": "game",
-  "updatedAt": "2026-07-05T19:09:22.860Z",
+  "updatedAt": "2026-07-19T09:21:52.997Z",
   "entries": {
     "etrn-gloom-467": {
       "kind": "game",
@@ -70,6 +70,22 @@
       "recoverablePendingStepId": "create-banks",
       "startTime": 1783281600,
       "durationSeconds": 7200,
+      "artifacts": {}
+    },
+    "etrn-flare-242": {
+      "kind": "game",
+      "environment": "mainnet.eternum",
+      "gameName": "etrn-flare-242",
+      "path": "runs/mainnet/eternum/etrn-flare-242.json",
+      "inputPath": "inputs/mainnet/eternum/etrn-flare-242/29681408235-1.json",
+      "status": "running",
+      "updatedAt": "2026-07-19T09:21:52.997Z",
+      "workflowRef": "next",
+      "currentStepId": "create-world",
+      "hasRunningStep": false,
+      "recoverableFailedStepId": null,
+      "recoverablePendingStepId": "create-world",
+      "startTime": "2026-07-19T10:00:00.000Z",
       "artifacts": {}
     }
   }
