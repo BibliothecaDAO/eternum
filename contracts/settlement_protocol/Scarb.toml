@@ -1,0 +1,18 @@
+[package]
+name = "settlement_protocol"
+version = "0.1.0"
+edition = "2024_07"
+cairo-version = "2.13.1"
+
+[dependencies]
+starknet = "2.13.1"
+
+[dev-dependencies]
+snforge_std = "0.51.2"
+
+[scripts]
+test = "snforge test"
+
+[tool.fmt]
+sort-module-level-items = true
+max-line-length = 120

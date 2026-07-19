@@ -1,0 +1,28 @@
+{
+  "name": "@bibliothecadao/settlement-codec",
+  "version": "0.1.0",
+  "description": "Canonical Eternum settlement protocol codecs and schema registry",
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "starknet": "catalog:"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.4",
+    "vitest": "^3.0.0"
+  }
+}

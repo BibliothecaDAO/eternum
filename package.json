@@ -213,6 +213,7 @@
     "check:aws-runtime-urls": "node scripts/check-aws-runtime-url-builders.mjs",
     "check:aws-runtime-workflows": "node scripts/check-aws-runtime-workflows.mjs",
     "check:aws-runtime-resources": "node scripts/check-aws-runtime-resources.mjs",
+    "check:settlement-schema": "node scripts/settlement/generate-schema-vectors.mjs --check",
     "aws-runtime:e2e": "node scripts/aws-runtime-e2e.mjs",
     "knip": "NODE_OPTIONS=--max-old-space-size=8192 pnpm dlx knip@5.80.0 --exclude binaries,dependencies",
     "lint": "pnpm --recursive run lint",

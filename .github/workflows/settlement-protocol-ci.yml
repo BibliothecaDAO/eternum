@@ -1,0 +1,77 @@
+name: Settlement protocol CI
+
+on:
+  pull_request:
+    paths:
+      - "contracts/settlement_protocol/**"
+      - "packages/settlement-codec/**"
+      - "proofs/eternum-settlement/**"
+      - "scripts/settlement/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/settlement-protocol-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: settlement-protocol-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  protocol-vectors:
+    name: Cross-language schema and vectors
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy,rustfmt
+
+      - name: Reject stale or undeclared schemas
+        run: pnpm run check:settlement-schema
+
+      - name: Test TypeScript codecs
+        run: pnpm --dir packages/settlement-codec test
+
+      - name: Build TypeScript codecs
+        run: pnpm --dir packages/settlement-codec build
+
+      - name: Setup Scarb
+        uses: software-mansion/setup-scarb@v1
+        with:
+          scarb-version: "2.13.1"
+
+      - name: Setup Starknet Foundry
+        uses: foundry-rs/setup-snfoundry@v3
+        with:
+          tool-versions: .tool-versions
+
+      - name: Check and test Cairo schemas
+        working-directory: contracts/settlement_protocol
+        run: |
+          scarb fmt --check
+          scarb build
+          snforge test
+
+      - name: Check and test Rust codecs
+        working-directory: proofs/eternum-settlement
+        run: |
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test

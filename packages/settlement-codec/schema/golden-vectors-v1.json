@@ -1,0 +1,6052 @@
+{
+  "protocolVersion": 1,
+  "schemaRegistryHash": "0x2d081aa3e28ce80cad3b11fab0fc47ba4c8835e1d2b65fec99ffc1133450530",
+  "schemas": [
+    {
+      "schema": "ProtocolEnvelope",
+      "value": {
+        "magic": "1",
+        "version": "2",
+        "source_chain_id": "3",
+        "destination_chain_id": "4",
+        "deployment_id": "5",
+        "season_id": "6",
+        "game_id": "7",
+        "action": "8",
+        "transport_nonce": "9",
+        "message_id": "10"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ]
+    },
+    {
+      "schema": "ClaimLeg",
+      "value": {
+        "asset_mode": "1",
+        "asset_id": "2",
+        "backing_pool_id": "3",
+        "recipient": "4",
+        "amount_or_token_id": "2041694201525630780780247644590609268741",
+        "policy_key": "7"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "schema": "ClaimLeaf",
+      "value": {
+        "version": "1",
+        "deployment_id": "2",
+        "season_id": "3",
+        "game_id": "4",
+        "batch_id": "5",
+        "leaf_index": "6",
+        "claim_kind": "7",
+        "liability_id": "8",
+        "claimant_l2": "9",
+        "recipient_l1": "10",
+        "legs_hash": "11",
+        "aux_hash": "12"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    {
+      "schema": "AbortRefundAux",
+      "value": {
+        "source_ingress_or_pool_id": "1",
+        "funding_source_id": "2",
+        "disposition_epoch": "3",
+        "refund_kind": "4",
+        "refund_policy_hash": "5",
+        "unused_amount": "2381976568446569244243622252022377480198"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "schema": "LiabilityTotal",
+      "value": {
+        "game_id": "1",
+        "asset_mode": "2",
+        "asset_id": "3",
+        "backing_pool_id": "4",
+        "payout_purpose": "5",
+        "amount_or_count": "2381976568446569244243622252022377480198"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "schema": "CapacityAllocation",
+      "value": {
+        "game_id": "1",
+        "asset_mode": "2",
+        "asset_id": "3",
+        "backing_pool_id": "4",
+        "amount_or_quota": "2041694201525630780780247644590609268741"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "BackingKey",
+      "value": {
+        "deployment_id": "1",
+        "game_id": "2",
+        "asset_mode": "3",
+        "asset_id": "4",
+        "backing_pool_id": "5"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "schema": "BackingTotal",
+      "value": {
+        "key": {
+          "deployment_id": "1",
+          "game_id": "2",
+          "asset_mode": "3",
+          "asset_id": "4",
+          "backing_pool_id": "5"
+        },
+        "amount_or_quota": "2381976568446569244243622252022377480198"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "schema": "GameBackingLot",
+      "value": {
+        "game_id": "1",
+        "parent_key_hash": "2",
+        "lot_index": "3",
+        "lot_class": "4",
+        "source_index": "5",
+        "source_id": "6",
+        "allocated_total": "2722258935367507707706996859454145691655",
+        "active_committed_total": "3402823669209384634633746074317682114569",
+        "cumulative_outbox_total": "4083388403051261561560495289181218537483",
+        "returned_unused_total": "4763953136893138488487244504044754960397"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14"
+      ]
+    },
+    {
+      "schema": "LotSharePromotion",
+      "value": {
+        "game_id": "1",
+        "parent_key_hash": "2",
+        "lot_index": "3",
+        "amount": "1701411834604692317316873037158841057284"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "schema": "BackingPolicy",
+      "value": {
+        "asset_mode": "1",
+        "asset_id": "2",
+        "backing_pool_id": "3",
+        "allowed_payout_purposes_hash": "4",
+        "retag_policy_hash": "5",
+        "adapter_kind": "6",
+        "custody_class_hash": "7",
+        "custody_address_recipe_hash": "8",
+        "lifetime_cap_or_quota": "3402823669209384634633746074317682114569"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ]
+    },
+    {
+      "schema": "PayoutPurposePolicy",
+      "value": {
+        "asset_mode": "1",
+        "asset_id": "2",
+        "backing_pool_id": "3",
+        "payout_purpose": "4",
+        "recipient_rule": "5",
+        "allowed_claim_kind_index_bitmap": "2381976568446569244243622252022377480198",
+        "retag_rule_hash": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "CapacityCommitmentEntry",
+      "value": {
+        "asset_mode": "1",
+        "asset_id": "2",
+        "backing_pool_id": "3",
+        "committed_amount_or_quota": "1701411834604692317316873037158841057284",
+        "custody_or_authority": "6",
+        "backing_policy_hash": "7",
+        "has_provisioning_refund_source": false,
+        "provisioning_funding_source_id": "9",
+        "provisioning_funder_l1": "10",
+        "provisioning_refund_recipient_l1": "11",
+        "provisioning_refund_policy_hash": "12"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "0",
+        "9",
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    {
+      "schema": "ProvisioningInventoryReceipt",
+      "value": {
+        "capacity_entry_hash": "1",
+        "adapter": "2",
+        "token_or_collection": "3",
+        "physical_amount": "1701411834604692317316873037158841057284",
+        "mint_or_quota_allowance": "2381976568446569244243622252022377480198",
+        "funding_source_id": "8",
+        "funder_l1": "9",
+        "refund_source": "10",
+        "refund_policy_hash": "11",
+        "entry_state_hash": "12"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    {
+      "schema": "DeploymentRefundSource",
+      "value": {
+        "source_index": "1",
+        "parent_key": {
+          "deployment_id": "2",
+          "game_id": "3",
+          "asset_mode": "4",
+          "asset_id": "5",
+          "backing_pool_id": "6"
+        },
+        "source_ingress_or_pool_id": "7",
+        "funding_source_id": "8",
+        "refund_recipient_l1": "9",
+        "refund_policy_hash": "10",
+        "provisioned_physical_total": "4083388403051261561560495289181218537483",
+        "committed_lifetime_total": "4763953136893138488487244504044754960397",
+        "unallocated_total": "5444517870735015415413993718908291383311",
+        "returned_unused_from_games_total": "6125082604576892342340742933771827806225",
+        "refundable_total": "6805647338418769269267492148635364229139",
+        "disposition_epoch": "21",
+        "refund_kind": "22",
+        "emitted": true
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "1"
+      ]
+    },
+    {
+      "schema": "DeploymentRefundCommitment",
+      "value": {
+        "source_count": "1",
+        "physical_refund_source_count": "2",
+        "sources_hash": "3",
+        "sources_root": "4",
+        "game_return_count": "5",
+        "game_returns_hash": "6",
+        "source_cursor": "7",
+        "disposition_count": "8",
+        "refund_liability_count": "9",
+        "refund_liabilities_hash": "10",
+        "refund_liabilities_root": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "DeploymentRefundDisposition",
+      "value": {
+        "source_index": "1",
+        "source_leaf_hash": "2",
+        "has_liability": true,
+        "liability_id": "4",
+        "legs_hash": "5",
+        "aux_hash": "6",
+        "has_batch_assignment": true,
+        "batch_id": "8",
+        "leaf_index": "9"
+      },
+      "felts": [
+        "1",
+        "2",
+        "1",
+        "4",
+        "5",
+        "6",
+        "1",
+        "8",
+        "9"
+      ]
+    },
+    {
+      "schema": "GameDraftPlan",
+      "value": {
+        "game_id": "1",
+        "game_creation_nonce": "2",
+        "draft_salt": "3",
+        "world_salt": "4",
+        "component_recipe_hash": "5",
+        "component_count": "6",
+        "game_config_root": "7",
+        "game_config_count": "8",
+        "game_config_hash": "9",
+        "capacity_root": "10",
+        "capacity_count": "11",
+        "writer_graph_hash": "12",
+        "writer_count": "13",
+        "series_id": "14",
+        "game_number": "15",
+        "predecessor_result_hash": "16",
+        "completion_deadline": "17"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17"
+      ]
+    },
+    {
+      "schema": "GameConfigEntry",
+      "value": {
+        "config_key": "1",
+        "value_hash": "2",
+        "value": [
+          "3"
+        ]
+      },
+      "felts": [
+        "1",
+        "2",
+        "1",
+        "3"
+      ]
+    },
+    {
+      "schema": "GameDraft",
+      "value": {
+        "plan_hash": "1",
+        "state": "2",
+        "config_cursor": "3",
+        "capacity_cursor": "4",
+        "component_cursor": "5",
+        "writer_cursor": "6",
+        "world": "7",
+        "adapter_set_hash": "8",
+        "deadline": "9"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    {
+      "schema": "RootSummary",
+      "value": {
+        "batch_id": "1",
+        "previous_batch_hash": "2",
+        "leaf_count": "3",
+        "root": "4",
+        "asset_totals_hash": "5",
+        "ingress_activation_count": "6",
+        "ingress_activations_hash": "7",
+        "nft_reservation_count": "8",
+        "nft_reservations_hash": "9",
+        "deployment_refund_count": "10",
+        "deployment_refunds_hash": "11",
+        "lot_share_promotion_count": "12",
+        "lot_share_promotions_hash": "13"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13"
+      ]
+    },
+    {
+      "schema": "IngressActivation",
+      "value": {
+        "ingress_id": "1",
+        "source_message_id": "2",
+        "applied_hash": "3"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    {
+      "schema": "IngressClaimAppend",
+      "value": {
+        "claim_kind": "1",
+        "liability_id": "2",
+        "claimant_l2": "3",
+        "recipient_l1": "4",
+        "legs": [
+          {
+            "asset_mode": "5",
+            "asset_id": "6",
+            "backing_pool_id": "7",
+            "recipient": "8",
+            "amount_or_token_id": "3402823669209384634633746074317682114569",
+            "policy_key": "11"
+          }
+        ],
+        "aux": [
+          "12"
+        ]
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "1",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "1",
+        "12"
+      ]
+    },
+    {
+      "schema": "NftReservation",
+      "value": {
+        "game_id": "1",
+        "reservation_kind": "2",
+        "asset_mode": "3",
+        "asset_id": "4",
+        "purpose": "5",
+        "token_or_claim_id": "2381976568446569244243622252022377480198",
+        "source_id": "8",
+        "attributes_raw": "9",
+        "attributes_hash": "10",
+        "metadata_hash": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "CheckpointJournal",
+      "value": {
+        "deployment_id": "1",
+        "chain_id": "2",
+        "protocol_version": "3",
+        "ruleset_hash": "4",
+        "genesis_hash": "5",
+        "production_manifest_hash": "6",
+        "previous_block_number": "7",
+        "previous_block_hash": "8",
+        "previous_state_root": "9",
+        "new_block_number": "10",
+        "new_block_hash": "11",
+        "new_state_root": "12",
+        "previous_inbox_cursor": "13",
+        "new_inbox_cursor": "14",
+        "inbox_commitment": "15",
+        "previous_outbox_cursor": "16",
+        "new_outbox_cursor": "17",
+        "outbox_commitment": "18",
+        "lifecycle_state": "19",
+        "lifecycle_commitment": "20",
+        "has_final_outbox_batch": true,
+        "final_outbox_batch_id": "22",
+        "cumulative_outbox_totals_hash": "23",
+        "active_exit_totals_hash": "24",
+        "index_high_watermarks_hash": "25",
+        "remaining_quotas_hash": "26",
+        "unsealed_ingress_activations_hash": "27",
+        "unsealed_ingress_activation_count": "28",
+        "unsealed_control_acks_hash": "29",
+        "unsealed_control_ack_count": "30",
+        "archive_manifest_hash": "31",
+        "attestation_revocation_root": "32",
+        "measurement": {
+          "limb_0": "33",
+          "limb_1": "34",
+          "limb_2": "35"
+        },
+        "checkpoint_challenge_nonce": "36",
+        "economic_timestamp": "37",
+        "report_timestamp": "38"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "1",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37",
+        "38"
+      ]
+    },
+    {
+      "schema": "CheckpointChallenge",
+      "value": {
+        "deployment_id": "1",
+        "previous_checkpoint_hash": "2",
+        "previous_block_number": "3",
+        "previous_inbox_cursor": "4",
+        "previous_outbox_cursor": "5",
+        "entropy_block_number": "6",
+        "entropy_block_hash": "7",
+        "issued_at": "8",
+        "expires_at": "9",
+        "nonce": "10",
+        "consumed": true
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "1"
+      ]
+    },
+    {
+      "schema": "Measurement384",
+      "value": {
+        "limb_0": "1",
+        "limb_1": "2",
+        "limb_2": "3"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    {
+      "schema": "ArchiveReceipt",
+      "value": {
+        "protocol_version": "1",
+        "receipt_kind": "2",
+        "deployment_id": "3",
+        "checkpoint_hash": "4",
+        "block_number": "5",
+        "state_root": "6",
+        "inbox_cursor": "7",
+        "outbox_cursor": "8",
+        "has_final_outbox_batch": true,
+        "final_outbox_batch_id": "10",
+        "manifest_or_bundle_hash": "11",
+        "game_id": "12",
+        "index_family": "13",
+        "chunk_index": "14",
+        "signer_set_epoch": "15",
+        "signer_id": "16",
+        "failure_domain_id": "17",
+        "signature_r": "18",
+        "signature_s": "19"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19"
+      ]
+    },
+    {
+      "schema": "ArchiveSigner",
+      "value": {
+        "signer_id": "1",
+        "failure_domain_id": "2",
+        "public_key": "3"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    {
+      "schema": "ArchiveRetrievalDescriptor",
+      "value": {
+        "signer_set_epoch": "1",
+        "descriptor_id": "2",
+        "failure_domain_id": "3",
+        "scheme": "4",
+        "endpoint_byte_length": "5",
+        "endpoint_word_0": "6",
+        "endpoint_word_1": "7",
+        "endpoint_word_2": "8",
+        "endpoint_word_3": "9",
+        "content_namespace_hash": "10"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ]
+    },
+    {
+      "schema": "ArchiveRouteIdentity",
+      "value": {
+        "signer_set_epoch": "1",
+        "descriptor_id": "2",
+        "failure_domain_id": "3",
+        "scheme": "4",
+        "content_namespace_hash": "5"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "schema": "ArchiveEndpointApproval",
+      "value": {
+        "signer_id": "1",
+        "failure_domain_id": "2",
+        "signature_r": "3",
+        "signature_s": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "ArchiveEndpointUpdate",
+      "value": {
+        "protocol_version": "1",
+        "deployment_id": "2",
+        "signer_set_epoch": "3",
+        "descriptor_id": "4",
+        "route_identity_hash": "5",
+        "current_endpoint_metadata_hash": "6",
+        "proposed_endpoint_byte_length": "7",
+        "proposed_endpoint_words_hash": "8",
+        "update_nonce": "9",
+        "expires_at": "10"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ]
+    },
+    {
+      "schema": "ArchiveHandover",
+      "value": {
+        "protocol_version": "1",
+        "deployment_id": "2",
+        "prior_signer_set_epoch": "3",
+        "new_signer_set_epoch": "4",
+        "prior_signer_set_hash": "5",
+        "new_signer_set_hash": "6",
+        "prior_route_identity_set_hash": "7",
+        "new_route_identity_set_hash": "8",
+        "copied_archive_manifest_hash": "9",
+        "effective_at": "10"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ]
+    },
+    {
+      "schema": "ExitClaim",
+      "value": {
+        "deployment_id": "1",
+        "game_id": "2",
+        "frozen_block_number": "3",
+        "world": "4",
+        "class_hash": "5",
+        "schema_hash": "6",
+        "position_family": "7",
+        "position_id": "8",
+        "position_generation": "9",
+        "source_state": "10",
+        "liability_id": "11",
+        "owner_l2": "12",
+        "recipient_l1": "13",
+        "recovery_policy_hash": "14",
+        "payout_legs_hash": "15"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15"
+      ]
+    },
+    {
+      "schema": "EmergencySealedClaim",
+      "value": {
+        "deployment_id": "1",
+        "frozen_checkpoint_hash": "2",
+        "game_id": "3",
+        "batch_id": "4",
+        "leaf_index": "5",
+        "original_leaf_hash": "6",
+        "liability_id": "7",
+        "disposition_kind": "8",
+        "enabling_outbox_fact_hash": "9",
+        "original_legs_hash": "10",
+        "settlement_legs_hash": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "IndexHighWatermark",
+      "value": {
+        "game_id": "1",
+        "index_family": "2",
+        "exclusive_high_watermark": "3",
+        "schema_hash": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "UnsealedControlAck",
+      "value": {
+        "claim_kind": "1",
+        "liability_id": "2",
+        "source_message_id": "3",
+        "player_l2": "4",
+        "recipient_l1": "5",
+        "aux_hash": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "GameLifecycleEntry",
+      "value": {
+        "game_id": "1",
+        "registration_index": "2",
+        "lifecycle_state": "3",
+        "ingress_cutoff_nonce": "4",
+        "freeze_id": "5",
+        "finalizer_state_hash": "6",
+        "game_result_hash": "7",
+        "series_result_hash": "8",
+        "has_game_activation_ack": true,
+        "game_activation_ack_nonce": "10",
+        "has_series_advance_ack": true,
+        "series_advance_ack_nonce": "12"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1",
+        "10",
+        "1",
+        "12"
+      ]
+    },
+    {
+      "schema": "LifecycleSnapshot",
+      "value": {
+        "deployment_id": "1",
+        "deployment_state": "2",
+        "registered_game_count": "3",
+        "registered_game_list_hash": "4",
+        "registration_close_outbox_cursor": "5",
+        "ingress_close_job_cursor": "6",
+        "game_freeze_job_cursor": "7",
+        "has_finalization_barrier": false,
+        "finalization_barrier_nonce": "9",
+        "forced_exit_cutoff_transport_nonce": "10",
+        "season_finalizer_state_hash": "11",
+        "deployment_refunds": {
+          "source_count": "12",
+          "physical_refund_source_count": "13",
+          "sources_hash": "14",
+          "sources_root": "15",
+          "game_return_count": "16",
+          "game_returns_hash": "17",
+          "source_cursor": "18",
+          "disposition_count": "19",
+          "refund_liability_count": "20",
+          "refund_liabilities_hash": "21",
+          "refund_liabilities_root": "22"
+        },
+        "game_entries_hash": "23"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "0",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23"
+      ]
+    },
+    {
+      "schema": "GameCheckpointCommitment",
+      "value": {
+        "game_id": "1",
+        "cumulative_backing_count": "2",
+        "cumulative_backing_root": "3",
+        "active_backing_count": "4",
+        "active_backing_root": "5",
+        "index_high_watermark_count": "6",
+        "index_high_watermark_root": "7",
+        "remaining_quota_count": "8",
+        "remaining_quota_root": "9",
+        "backing_lot_count": "10",
+        "backing_lot_root": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "CheckpointVectors",
+      "value": {
+        "game_commitments": [
+          {
+            "game_id": "1",
+            "cumulative_backing_count": "2",
+            "cumulative_backing_root": "3",
+            "active_backing_count": "4",
+            "active_backing_root": "5",
+            "index_high_watermark_count": "6",
+            "index_high_watermark_root": "7",
+            "remaining_quota_count": "8",
+            "remaining_quota_root": "9",
+            "backing_lot_count": "10",
+            "backing_lot_root": "11"
+          }
+        ],
+        "unsealed_ingress_activations": [
+          {
+            "ingress_id": "12",
+            "source_message_id": "13",
+            "applied_hash": "14"
+          }
+        ],
+        "unsealed_control_acks": [
+          {
+            "claim_kind": "15",
+            "liability_id": "16",
+            "source_message_id": "17",
+            "player_l2": "18",
+            "recipient_l1": "19",
+            "aux_hash": "20"
+          }
+        ],
+        "lifecycle": {
+          "deployment_id": "21",
+          "deployment_state": "22",
+          "registered_game_count": "23",
+          "registered_game_list_hash": "24",
+          "registration_close_outbox_cursor": "25",
+          "ingress_close_job_cursor": "26",
+          "game_freeze_job_cursor": "27",
+          "has_finalization_barrier": false,
+          "finalization_barrier_nonce": "29",
+          "forced_exit_cutoff_transport_nonce": "30",
+          "season_finalizer_state_hash": "31",
+          "deployment_refunds": {
+            "source_count": "32",
+            "physical_refund_source_count": "33",
+            "sources_hash": "34",
+            "sources_root": "35",
+            "game_return_count": "36",
+            "game_returns_hash": "37",
+            "source_cursor": "38",
+            "disposition_count": "39",
+            "refund_liability_count": "40",
+            "refund_liabilities_hash": "41",
+            "refund_liabilities_root": "42"
+          },
+          "game_entries_hash": "43"
+        },
+        "game_lifecycle_entries": [
+          {
+            "game_id": "44",
+            "registration_index": "45",
+            "lifecycle_state": "46",
+            "ingress_cutoff_nonce": "47",
+            "freeze_id": "48",
+            "finalizer_state_hash": "49",
+            "game_result_hash": "50",
+            "series_result_hash": "51",
+            "has_game_activation_ack": false,
+            "game_activation_ack_nonce": "53",
+            "has_series_advance_ack": false,
+            "series_advance_ack_nonce": "55"
+          }
+        ]
+      },
+      "felts": [
+        "1",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "1",
+        "12",
+        "13",
+        "14",
+        "1",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "0",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37",
+        "38",
+        "39",
+        "40",
+        "41",
+        "42",
+        "43",
+        "1",
+        "44",
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "50",
+        "51",
+        "0",
+        "53",
+        "0",
+        "55"
+      ]
+    },
+    {
+      "schema": "FrozenReservationChunk",
+      "value": {
+        "checkpoint_hash": "1",
+        "game_id": "2",
+        "vector_kind": "3",
+        "start_index": "4",
+        "item_count": "5",
+        "items_hash": "6",
+        "items": [
+          "7"
+        ],
+        "multiproof": [
+          "8"
+        ],
+        "secondary_multiproof": [
+          "9"
+        ]
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "1",
+        "7",
+        "1",
+        "8",
+        "1",
+        "9"
+      ]
+    },
+    {
+      "schema": "FrozenRecoverySummary",
+      "value": {
+        "deployment_id": "1",
+        "frozen_checkpoint_hash": "2",
+        "final_inbox_cursor": "3",
+        "final_outbox_cursor": "4",
+        "has_final_outbox_batch": true,
+        "final_outbox_batch_id": "6",
+        "cumulative_outbox_totals_hash": "7",
+        "active_exit_totals_hash": "8",
+        "index_high_watermarks_hash": "9",
+        "remaining_quotas_hash": "10",
+        "unsealed_ingress_activations_hash": "11",
+        "unsealed_ingress_activation_count": "12",
+        "unsealed_control_acks_hash": "13",
+        "unsealed_control_ack_count": "14",
+        "lifecycle_commitment": "15",
+        "deployment_refunds": {
+          "source_count": "16",
+          "physical_refund_source_count": "17",
+          "sources_hash": "18",
+          "sources_root": "19",
+          "game_return_count": "20",
+          "game_returns_hash": "21",
+          "source_cursor": "22",
+          "disposition_count": "23",
+          "refund_liability_count": "24",
+          "refund_liabilities_hash": "25",
+          "refund_liabilities_root": "26"
+        }
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "1",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26"
+      ]
+    },
+    {
+      "schema": "FrozenDeploymentRefundClaim",
+      "value": {
+        "deployment_id": "1",
+        "frozen_checkpoint_hash": "2",
+        "terminal_refund_source_hash": "3",
+        "source_index": "4",
+        "liability_id": "5",
+        "recipient_l1": "6",
+        "legs_hash": "7",
+        "aux_hash": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "FinalSettlementSummary",
+      "value": {
+        "aggregate_result_hash": "1",
+        "valid_game_count": "2",
+        "aborted_game_count": "3",
+        "final_inbox_cursor": "4",
+        "final_outbox_cursor": "5",
+        "has_final_outbox_batch": false,
+        "final_outbox_batch_id": "7",
+        "game_result_count": "8",
+        "game_results_hash": "9",
+        "ranking_ids": [
+          "10"
+        ],
+        "series_result_count": "11",
+        "series_results_hash": "12",
+        "index_high_watermarks_hash": "13",
+        "cumulative_outbox_totals_hash": "14",
+        "active_exit_totals_hash": "15",
+        "remaining_quotas_hash": "16",
+        "deployment_refunds": {
+          "source_count": "17",
+          "physical_refund_source_count": "18",
+          "sources_hash": "19",
+          "sources_root": "20",
+          "game_return_count": "21",
+          "game_returns_hash": "22",
+          "source_cursor": "23",
+          "disposition_count": "24",
+          "refund_liability_count": "25",
+          "refund_liabilities_hash": "26",
+          "refund_liabilities_root": "27"
+        },
+        "finalization_state_hash": "28"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "0",
+        "7",
+        "8",
+        "9",
+        "1",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28"
+      ]
+    },
+    {
+      "schema": "GameActivationAck",
+      "value": {
+        "game_id": "1",
+        "game_registration_hash": "2",
+        "registration_outbox_nonce": "3",
+        "capacity_count": "4",
+        "capacity_hash": "5",
+        "activation_disposition": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "SeriesLease",
+      "value": {
+        "series_id": "1",
+        "deployment_id": "2",
+        "expected_head_hash": "3",
+        "expected_accumulator_hash": "4",
+        "state": "5",
+        "acquired_at": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "EnqueuedMessage",
+      "value": {
+        "transport_nonce": "1",
+        "message_id": "2"
+      },
+      "felts": [
+        "1",
+        "2"
+      ]
+    },
+    {
+      "schema": "EnqueuedControlMessage",
+      "value": {
+        "transport_nonce": "1",
+        "message_id": "2",
+        "typed_body_hash": "3",
+        "effective_cutoff_transport_nonce": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "InboxSlotCommitment",
+      "value": {
+        "transport_nonce": "1",
+        "message_id": "2",
+        "terminal_state": "3",
+        "terminal_evidence_hash": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "OutboxSlotCommitment",
+      "value": {
+        "transport_nonce": "1",
+        "message_id": "2",
+        "envelope_hash": "3",
+        "typed_body_hash": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "InboxExecutionReceipt",
+      "value": {
+        "transport_nonce": "1",
+        "message_id": "2",
+        "action": "3",
+        "typed_body_hash": "4",
+        "execution_outcome": "5",
+        "action_receipt_hash": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "IngressRejectionReceipt",
+      "value": {
+        "ingress_id": "1",
+        "source_message_id": "2",
+        "rejection_code": "3",
+        "immutable_input_hash": "4",
+        "observed_domain_state_hash": "5",
+        "refund_policy_hash": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "CancelledInboxMarker",
+      "value": {
+        "protocol_version": "1",
+        "deployment_id": "2",
+        "transport_nonce": "3",
+        "message_id": "4",
+        "typed_body_hash": "5",
+        "cancellation_finalized_at_l1": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "ReservationCheck",
+      "value": {
+        "ok": true,
+        "reason": "2",
+        "required": "1361129467683753853853498429727072845827",
+        "available": "2041694201525630780780247644590609268741"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "BlockedOutboxHead",
+      "value": {
+        "deployment_id": "1",
+        "transport_nonce": "2",
+        "action": "3",
+        "subject_id": "4",
+        "body_hash": "5",
+        "reason": "6",
+        "blocked_at": "7",
+        "retry_deadline": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "FrozenOutboxDisposition",
+      "value": {
+        "deployment_id": "1",
+        "transport_nonce": "2",
+        "action": "3",
+        "subject_id": "4",
+        "body_hash": "5",
+        "effect_kind": "6",
+        "effect_hash": "7"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "schema": "SettlementBudgetKey",
+      "value": {
+        "deployment_id": "1",
+        "source_mode": "2",
+        "batch_or_budget_kind": "3",
+        "source_sub_id": "4",
+        "game_id": "5",
+        "asset_mode": "6",
+        "asset_id": "7",
+        "backing_pool_id": "8",
+        "has_payout_purpose": true,
+        "payout_purpose": "10",
+        "token_or_claim_id": "4083388403051261561560495289181218537483"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1",
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    {
+      "schema": "DeficiencySourceKey",
+      "value": {
+        "deployment_id": "1",
+        "source_kind": "2",
+        "source_id": "3",
+        "source_sub_id": "4",
+        "key": {
+          "deployment_id": "5",
+          "game_id": "6",
+          "asset_mode": "7",
+          "asset_id": "8",
+          "backing_pool_id": "9"
+        }
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    {
+      "schema": "BudgetExport",
+      "value": {
+        "key": {
+          "deployment_id": "1",
+          "source_mode": "2",
+          "batch_or_budget_kind": "3",
+          "source_sub_id": "4",
+          "game_id": "5",
+          "asset_mode": "6",
+          "asset_id": "7",
+          "backing_pool_id": "8",
+          "has_payout_purpose": true,
+          "payout_purpose": "10",
+          "token_or_claim_id": "4083388403051261561560495289181218537483"
+        },
+        "remaining_budget": "4763953136893138488487244504044754960397",
+        "has_remaining_deficiency": true,
+        "deficiency_source": {
+          "deployment_id": "16",
+          "source_kind": "17",
+          "source_id": "18",
+          "source_sub_id": "19",
+          "key": {
+            "deployment_id": "20",
+            "game_id": "21",
+            "asset_mode": "22",
+            "asset_id": "23",
+            "backing_pool_id": "24"
+          }
+        },
+        "remaining_deficiency": "8847341539944400050047739793225973497881",
+        "custody_amount": "9527906273786276976974489008089509920795",
+        "mint_headroom": "10208471007628153903901238222953046343709",
+        "quota_headroom": "10889035741470030830827987437816582766623",
+        "state_hash": "33"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "1",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33"
+      ]
+    },
+    {
+      "schema": "MigrationInventory",
+      "value": {
+        "adapter": "1",
+        "frozen_count": "2",
+        "cursor": "3",
+        "key_list_hash": "4",
+        "exported_totals_hash": "5",
+        "imported_totals_hash": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "AppchainMessageView",
+      "value": {
+        "transport_nonce": "1",
+        "message_id": "2",
+        "typed_body_hash": "3",
+        "accepted_checkpoint_hash": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "ReleaseBundleBodyV1",
+      "value": {
+        "protocol_version": "1",
+        "source_tree_root": "2",
+        "cairo_artifact_count": "3",
+        "cairo_artifacts_hash": "4",
+        "runtime_artifact_count": "5",
+        "runtime_artifacts_hash": "6",
+        "dojo_recipe_artifacts_hash": "7",
+        "sp1_artifact_count": "8",
+        "sp1_artifacts_hash": "9",
+        "codec_vector_artifacts_hash": "10",
+        "vrf_artifacts_hash": "11",
+        "archive_tool_artifacts_hash": "12",
+        "deployer_artifacts_hash": "13",
+        "authoritative_address_inputs_hash": "14",
+        "privileged_mutation_paths_hash": "15",
+        "benchmark_evidence_hash": "16",
+        "audit_evidence_hash": "17",
+        "ruleset_config_without_release_hash": "18"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ]
+    },
+    {
+      "schema": "ProductionReleaseCandidateBodyV1",
+      "value": {
+        "protocol_version": "1",
+        "release_bundle_hash": "2",
+        "deployment_activation_bundle_hash": "3",
+        "authoritative_address_inputs_hash": "4",
+        "privileged_mutation_paths_hash": "5",
+        "expected_roles_hash": "6",
+        "capacity_and_provenance_hash": "7",
+        "package_lock_matrix_hash": "8",
+        "maximum_bound_evidence_hash": "9",
+        "real_tee_recovery_evidence_hash": "10",
+        "audit_closure_hash": "11",
+        "legacy_liability_manifest_hash": "12",
+        "legacy_mmr_static_config_hash": "13"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13"
+      ]
+    },
+    {
+      "schema": "ArchivePolicy",
+      "value": {
+        "archive_format_version": "1",
+        "signer_count": "2",
+        "receipt_quorum": "3",
+        "failure_domain_quorum": "4",
+        "minimum_retrieval_descriptor_count": "5",
+        "maximum_retrieval_descriptor_count": "6",
+        "endpoint_word_count": "7",
+        "maximum_endpoint_byte_length": "8",
+        "signature_scheme": "9",
+        "content_hash_scheme": "10",
+        "checkpoint_receipt_kind": "11",
+        "dormant_bundle_receipt_kind": "12",
+        "handover_receipt_kind": "13",
+        "legacy_mmr_import_receipt_kind": "14",
+        "legacy_mmr_pre_freeze_receipt_kind": "15"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15"
+      ]
+    },
+    {
+      "schema": "ClassBinding",
+      "value": {
+        "binding_index": "1",
+        "component_kind": "2",
+        "execution_layer": "3",
+        "deployment_scope": "4",
+        "class_hash": "5",
+        "interface_hash": "6",
+        "constructor_schema_hash": "7",
+        "storage_layout_hash": "8",
+        "role_schema_hash": "9",
+        "expected_deploy_from_zero": false
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "0"
+      ]
+    },
+    {
+      "schema": "WriterCapability",
+      "value": {
+        "capability_index": "1",
+        "writer_component_kind": "2",
+        "writer_class_hash": "3",
+        "operation": "4",
+        "model_selector": "5",
+        "member_selector": "6",
+        "permission_kind": "7",
+        "game_scope": "8",
+        "allowed_game_lifecycle_bitmap": "3402823669209384634633746074317682114569"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ]
+    },
+    {
+      "schema": "EmitterCapability",
+      "value": {
+        "emitter_index": "1",
+        "emitter_kind": "2",
+        "emitter": "3",
+        "emitter_class_hash": "4",
+        "operation_bitmap": "2041694201525630780780247644590609268741",
+        "claim_kind_index_bitmap": "2722258935367507707706996859454145691655"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "MerkleProof",
+      "value": {
+        "leaf_index": "1",
+        "sibling_0": "2",
+        "sibling_1": "3",
+        "sibling_2": "4",
+        "sibling_3": "5",
+        "sibling_4": "6",
+        "sibling_5": "7",
+        "sibling_6": "8",
+        "sibling_7": "9",
+        "sibling_8": "10",
+        "sibling_9": "11",
+        "sibling_10": "12",
+        "sibling_11": "13",
+        "sibling_12": "14",
+        "sibling_13": "15",
+        "sibling_14": "16",
+        "sibling_15": "17",
+        "sibling_16": "18",
+        "sibling_17": "19",
+        "sibling_18": "20",
+        "sibling_19": "21",
+        "sibling_20": "22",
+        "sibling_21": "23",
+        "sibling_22": "24",
+        "sibling_23": "25",
+        "sibling_24": "26",
+        "sibling_25": "27",
+        "sibling_26": "28",
+        "sibling_27": "29",
+        "sibling_28": "30",
+        "sibling_29": "31",
+        "sibling_30": "32",
+        "sibling_31": "33"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33"
+      ]
+    },
+    {
+      "schema": "RulesetConfig",
+      "value": {
+        "protocol_version": "1",
+        "release_bundle_hash": "2",
+        "schema_registry_hash": "3",
+        "hash_domains_hash": "4",
+        "vector_bounds_hash": "5",
+        "mainnet_class_bundle_hash": "6",
+        "appchain_class_bundle_hash": "7",
+        "proof_policy_hash": "8",
+        "attestation_policy_hash": "9",
+        "genesis_recipe_hash": "10",
+        "asset_policies_hash": "11",
+        "asset_policy_count": "12",
+        "backing_policies_hash": "13",
+        "backing_policy_count": "14",
+        "payout_purpose_policies_hash": "15",
+        "payout_purpose_policy_count": "16",
+        "class_bindings_hash": "17",
+        "class_binding_count": "18",
+        "writer_capabilities_hash": "19",
+        "writer_capability_count": "20",
+        "archive_policy_hash": "21",
+        "timing_policy_hash": "22",
+        "economics_policy_hash": "23",
+        "mmr_policy_hash": "24",
+        "vrf_policy_hash": "25",
+        "recovery_policy_hash": "26"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26"
+      ]
+    },
+    {
+      "schema": "AssetPolicy",
+      "value": {
+        "asset_mode": "1",
+        "asset_id": "2",
+        "l1_token": "3",
+        "token_standard": "4",
+        "decimals": "5",
+        "transfer_semantics": "6",
+        "ingress_allowed": true,
+        "escrow_only": false,
+        "mint_shortfall_allowed": true,
+        "burn_surplus_allowed": false,
+        "lifetime_mint_cap": "4083388403051261561560495289181218537483",
+        "per_period_mint_cap": "4763953136893138488487244504044754960397",
+        "period_seconds": "15",
+        "purpose_policy_hash": "16",
+        "metadata_policy_hash": "17"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "1",
+        "0",
+        "1",
+        "0",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17"
+      ]
+    },
+    {
+      "schema": "SeasonIntentParams",
+      "value": {
+        "season_id": "1",
+        "ruleset_id": "2",
+        "creator_salt": "3",
+        "intended_start": "4",
+        "intended_end": "5",
+        "max_games": "6",
+        "operator_acceptance_deadline": "7",
+        "lifecycle_bond": "3062541302288446171170371466885913903112",
+        "operating_budget": "3743106036130323098097120681749450326026",
+        "protected_recovery_budget": "4423670769972200025023869896612986748940",
+        "sponsor_commitment_hash": "14",
+        "archive_set_hash": "15",
+        "series_id": "16",
+        "series_predecessor_hash": "17",
+        "series_accumulator_hash": "18"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ]
+    },
+    {
+      "schema": "AddressSourceRecord",
+      "value": {
+        "chain_id": "1",
+        "semantic_key": "2",
+        "source_kind": "3",
+        "source_path_hash": "4",
+        "source_key_hash": "5",
+        "value": "6",
+        "is_authoritative": true,
+        "allowed_profile_bitmap": "3062541302288446171170371466885913903112"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "1",
+        "8",
+        "9"
+      ]
+    },
+    {
+      "schema": "AddressAliasRecord",
+      "value": {
+        "chain_id": "1",
+        "semantic_key": "2",
+        "alias_path_hash": "3",
+        "alias_key_hash": "4",
+        "disposition": "5",
+        "expected_value": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "PrivilegedMutationPathRecord",
+      "value": {
+        "path_hash": "1",
+        "operation_kind": "2",
+        "target_semantic_key": "3",
+        "production_disposition": "4",
+        "replacement_path_hash": "5",
+        "evidence_hash": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "DeploymentAddressRecipe",
+      "value": {
+        "protocol_version": "1",
+        "deployment_id": "2",
+        "ruleset_id": "3",
+        "l1_chain_id": "4",
+        "appchain_chain_id": "5",
+        "l1_deployer": "6",
+        "l1_deploy_from_zero": true,
+        "l1_deployment_primitive_hash": "8",
+        "l2_deployer": "9",
+        "l2_deploy_from_zero": false,
+        "l2_deployment_primitive_hash": "11",
+        "l1_component_count": "12",
+        "l1_component_classes_hash": "13",
+        "l1_component_salts_hash": "14",
+        "l2_component_count": "15",
+        "l2_component_classes_hash": "16",
+        "l2_component_salts_hash": "17",
+        "shell_constructor_schema_hash": "18"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "1",
+        "8",
+        "9",
+        "0",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ]
+    },
+    {
+      "schema": "DeploymentManifest",
+      "value": {
+        "protocol_version": "1",
+        "deployment_id": "2",
+        "ruleset_id": "3",
+        "release_bundle_hash": "4",
+        "address_recipe_hash": "5",
+        "l1_chain_id": "6",
+        "appchain_chain_id": "7",
+        "hardened_piltover": "8",
+        "coordinator": "9",
+        "funding_vault": "10",
+        "root_inbox": "11",
+        "claim_router": "12",
+        "resource_gateway": "13",
+        "scarce_bridge": "14",
+        "entitlement_vault": "15",
+        "outcome_portal": "16",
+        "settlement_route_registry": "17",
+        "archive_quorum": "18",
+        "mmr_settlement_router": "19",
+        "mmr_settlement_module": "20",
+        "attestation_revocation_registry": "21",
+        "exit_verifier": "22",
+        "dormant_reserve": "23",
+        "settlement_config_l2": "24",
+        "settlement_ingress_l2": "25",
+        "settlement_hub_l2": "26",
+        "hardened_inbox_runtime_l2": "27",
+        "forced_exit_coordinator_l2": "28",
+        "season_finalizer_l2": "29",
+        "sealed_factory_l2": "30",
+        "world_policy_l2": "31",
+        "vrf_l2": "32",
+        "world_class_hash": "33",
+        "class_bundle_hash": "34",
+        "schema_bundle_hash": "35",
+        "authoritative_address_inputs_hash": "36",
+        "external_counterpart_count": "37",
+        "external_counterparts_hash": "38",
+        "privileged_mutation_paths_hash": "39",
+        "expected_role_count": "40",
+        "expected_roles_hash": "41",
+        "writer_graph_hash": "42",
+        "config_snapshot_hash": "43",
+        "genesis_hash": "44"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37",
+        "38",
+        "39",
+        "40",
+        "41",
+        "42",
+        "43",
+        "44"
+      ]
+    },
+    {
+      "schema": "AppchainSettlementConfig",
+      "value": {
+        "protocol_version": "1",
+        "deployment_id": "2",
+        "season_id": "3",
+        "ruleset_id": "4",
+        "release_bundle_hash": "5",
+        "starknet_chain_id": "6",
+        "appchain_chain_id": "7",
+        "hardened_piltover_l1": "8",
+        "coordinator_l1": "9",
+        "funding_vault_l1": "10",
+        "root_inbox_l1": "11",
+        "claim_router_l1": "12",
+        "resource_gateway_l1": "13",
+        "scarce_bridge_l1": "14",
+        "entitlement_vault_l1": "15",
+        "outcome_portal_l1": "16",
+        "settlement_route_registry_l1": "17",
+        "archive_quorum_l1": "18",
+        "attestation_revocation_registry_l1": "19",
+        "hardened_inbox_runtime_l2": "20",
+        "season_ingress_l2": "21",
+        "season_settlement_hub_l2": "22",
+        "forced_exit_coordinator_l2": "23",
+        "season_finalizer_l2": "24",
+        "sealed_factory_l2": "25",
+        "sealed_world_policy_l2": "26",
+        "vrf_provider_l2": "27",
+        "vrf_public_key_hash": "28",
+        "appchain_component_classes_hash": "29",
+        "class_binding_count": "30",
+        "class_bindings_hash": "31",
+        "schema_bundle_hash": "32",
+        "asset_policy_count": "33",
+        "asset_policies_hash": "34",
+        "backing_policy_count": "35",
+        "backing_policies_hash": "36",
+        "payout_purpose_policy_count": "37",
+        "payout_purpose_policies_hash": "38",
+        "writer_capability_count": "39",
+        "writer_capabilities_hash": "40",
+        "capacity_entry_count": "41",
+        "capacity_root": "42",
+        "sealed_game_recipe_hash": "43",
+        "intended_start": "44",
+        "intended_end": "45",
+        "max_games": "46",
+        "initial_inbox_cursor": "47",
+        "initial_outbox_cursor": "48",
+        "timing_policy_hash": "49",
+        "economics_policy_hash": "50",
+        "vrf_policy_hash": "51",
+        "recovery_policy_hash": "52"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37",
+        "38",
+        "39",
+        "40",
+        "41",
+        "42",
+        "43",
+        "44",
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "50",
+        "51",
+        "52"
+      ]
+    },
+    {
+      "schema": "SealedGameConfig",
+      "value": {
+        "game_id": "1",
+        "game_creation_nonce": "2",
+        "world": "3",
+        "game_config_hash": "4",
+        "world_config_snapshot_hash": "5",
+        "game_ingress_adapter": "6",
+        "economic_state_system": "7",
+        "outcome_settlement": "8",
+        "forced_exit_adapter": "9",
+        "class_bundle_hash": "10",
+        "schema_bundle_hash": "11",
+        "writer_capability_count": "12",
+        "writer_capabilities_hash": "13",
+        "emitter_capability_count": "14",
+        "emitter_capabilities_hash": "15",
+        "capacity_count": "16",
+        "capacity_hash": "17",
+        "series_id": "18",
+        "game_number": "19",
+        "predecessor_result_hash": "20",
+        "series_accumulator_seed_hash": "21"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21"
+      ]
+    },
+    {
+      "schema": "SeasonRecord",
+      "value": {
+        "deployment_id": "1",
+        "season_id": "2",
+        "ruleset_id": "3",
+        "creator": "4",
+        "operator": "5",
+        "lifecycle_state": "6",
+        "manifest_hash": "7",
+        "genesis_checkpoint_hash": "8",
+        "latest_checkpoint_hash": "9",
+        "ingress_cutoff_nonce": "10",
+        "final_outbox_cursor": "11",
+        "has_final_outbox_batch": false,
+        "final_outbox_batch_id": "13",
+        "final_summary_hash": "14",
+        "frozen_checkpoint_hash": "15",
+        "aggregate_result_hash": "16",
+        "valid_game_count": "17",
+        "aborted_game_count": "18",
+        "activated_at": "19",
+        "claims_opened_at": "20",
+        "emergency_frozen_at": "21",
+        "retirement_route": "22"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "0",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22"
+      ]
+    },
+    {
+      "schema": "RankingCommitment",
+      "value": {
+        "game_id": "1",
+        "root": "2",
+        "participant_count": "3",
+        "result_hash": "4",
+        "first_rank": "5",
+        "last_rank": "6",
+        "tie_break_policy_hash": "7"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "schema": "RankingEntry",
+      "value": {
+        "game_id": "1",
+        "player_l2": "2",
+        "recipient_l1": "3",
+        "participation_id": "4",
+        "rank": "5",
+        "score": "2381976568446569244243622252022377480198",
+        "result_hash": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "MmrSnapshotEntry",
+      "value": {
+        "ranking_entry_hash": "1",
+        "mmr_identity": "2",
+        "starting_mmr_scaled": "1361129467683753853853498429727072845827",
+        "starting_mmr_logical": "5"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "schema": "MmrPlanEntry",
+      "value": {
+        "ranking_entry_hash": "1",
+        "mmr_identity": "2",
+        "starting_mmr_logical": "3",
+        "new_mmr_logical": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "GameResult",
+      "value": {
+        "game_id": "1",
+        "winner_l2": "2",
+        "ended_at": "3",
+        "result_hash": "4",
+        "valid_result": true,
+        "abort_reason": "6",
+        "participant_root": "7",
+        "ranking_id": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "1",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "SeriesAccumulator",
+      "value": {
+        "game_index": "1",
+        "ema_players_scaled": "2",
+        "recent_len": "3",
+        "recent_0": "4",
+        "recent_1": "5",
+        "recent_2": "6",
+        "recent_sum": "7",
+        "anchor_len": "8",
+        "anchor_0": "9",
+        "anchor_1": "10",
+        "anchor_sum": "11",
+        "has_last_rate": false,
+        "last_rate_bps": "13",
+        "soft_supply": "14",
+        "overspend_remaining": "15"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "0",
+        "13",
+        "14",
+        "15"
+      ]
+    },
+    {
+      "schema": "FrozenCheckpoint",
+      "value": {
+        "deployment_id": "1",
+        "checkpoint_hash": "2",
+        "block_number": "3",
+        "block_hash": "4",
+        "state_root": "5",
+        "economic_timestamp": "6",
+        "archive_manifest_hash": "7",
+        "inbox_cursor": "8",
+        "outbox_cursor": "9",
+        "has_final_outbox_batch": false,
+        "final_outbox_batch_id": "11",
+        "cumulative_outbox_totals_hash": "12",
+        "active_exit_totals_hash": "13",
+        "index_high_watermarks_hash": "14",
+        "remaining_quotas_hash": "15",
+        "unsealed_ingress_activations_hash": "16",
+        "unsealed_ingress_activation_count": "17",
+        "unsealed_control_acks_hash": "18",
+        "unsealed_control_ack_count": "19",
+        "lifecycle_commitment": "20",
+        "deployment_refunds": {
+          "source_count": "21",
+          "physical_refund_source_count": "22",
+          "sources_hash": "23",
+          "sources_root": "24",
+          "game_return_count": "25",
+          "game_returns_hash": "26",
+          "source_cursor": "27",
+          "disposition_count": "28",
+          "refund_liability_count": "29",
+          "refund_liabilities_hash": "30",
+          "refund_liabilities_root": "31"
+        }
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "0",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31"
+      ]
+    },
+    {
+      "schema": "MaterializationChunk",
+      "value": {
+        "deployment_id": "1",
+        "frozen_checkpoint_hash": "2",
+        "game_id": "3",
+        "index_family": "4",
+        "chunk_index": "5",
+        "start_index": "6",
+        "item_count": "7",
+        "items_hash": "8",
+        "chunk_root": "9",
+        "live_liability_count": "10",
+        "live_preimages_hash": "11",
+        "live_totals_hash": "12",
+        "bundle_objects_root": "13",
+        "permanent_bundle_hash": "14"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14"
+      ]
+    },
+    {
+      "schema": "VerifiedMaterializationOutput",
+      "value": {
+        "deployment_id": "1",
+        "frozen_checkpoint_hash": "2",
+        "game_id": "3",
+        "index_family": "4",
+        "chunk_index": "5",
+        "item_count": "6",
+        "items_hash": "7",
+        "chunk_root": "8",
+        "live_liability_count": "9",
+        "live_preimages_hash": "10",
+        "live_totals_hash": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "DormantExitLeaf",
+      "value": {
+        "deployment_id": "1",
+        "frozen_checkpoint_hash": "2",
+        "game_id": "3",
+        "index_family": "4",
+        "source_index": "5",
+        "chunk_index": "6",
+        "leaf_index": "7",
+        "tombstone": false,
+        "exit_claim_hash": "9",
+        "legs_hash": "10"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "0",
+        "9",
+        "10"
+      ]
+    },
+    {
+      "schema": "DormantDeploymentRefundLeaf",
+      "value": {
+        "deployment_id": "1",
+        "frozen_checkpoint_hash": "2",
+        "terminal_refund_source_hash": "3",
+        "source_index": "4",
+        "chunk_index": "5",
+        "leaf_index": "6",
+        "tombstone": true,
+        "refund_claim_hash": "8",
+        "source_hash": "9",
+        "legs_hash": "10",
+        "aux_hash": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "1",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "QuotaBalance",
+      "value": {
+        "game_id": "1",
+        "outcome_id": "2",
+        "backing_pool_id": "3",
+        "remaining": "1701411834604692317316873037158841057284"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "schema": "AutoIdMintRequest",
+      "value": {
+        "deployment_id": "1",
+        "game_id": "2",
+        "collection_id": "3",
+        "reservation_id": "4",
+        "recipient": "5",
+        "metadata_policy_hash": "6",
+        "attributes_raw": "7"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "schema": "EffectiveMmr",
+      "value": {
+        "initialized": true,
+        "scaled_value": "1020847100762815390390123822295304634370",
+        "logical_value": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "MmrTokenUpdate",
+      "value": {
+        "identity": "1",
+        "expected_starting_scaled": "1020847100762815390390123822295304634370",
+        "new_scaled": "1701411834604692317316873037158841057284"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "schema": "LegacyMmrCutoverCommitment",
+      "value": {
+        "production_candidate_hash": "1",
+        "target_router": "2",
+        "target_router_class_hash": "3",
+        "router_legacy_binding_hash": "4",
+        "static_config_hash": "5",
+        "mmr_token": "6",
+        "mmr_token_class_hash": "7",
+        "mmr_token_storage_layout_hash": "8",
+        "mmr_token_migration_init_hash": "9",
+        "cutover_component_class_bindings_hash": "10",
+        "cutover_component_authority_state_hash": "11",
+        "admission_gate": "12",
+        "admission_registry_hash": "13",
+        "instrumentation_complete_marker_hash": "14",
+        "pending_import_baseline_hash": "15",
+        "quiescence_marker_hash": "16",
+        "pre_freeze_witness_manifest_hash": "17",
+        "proved_source_inventory_hash": "18",
+        "pre_freeze_verified_bundle_hash": "19",
+        "admission_freeze_marker_hash": "20",
+        "router_reservation_hash": "21",
+        "finalized_state_root_source": "22",
+        "finalized_header_policy_hash": "23",
+        "finalized_header_codec_hash": "24",
+        "minimum_finality_blocks": "25",
+        "inventory_finalized_state_root_anchor_hash": "26",
+        "inventory_program_id": "27",
+        "inventory_verification_key_hash": "28",
+        "derivation_program_id": "29",
+        "derivation_verification_key_hash": "30",
+        "freeze_marker_hash": "31",
+        "inventory_block_number": "32",
+        "inventory_block_hash": "33",
+        "inventory_state_root": "34",
+        "factory_count": "35",
+        "factories_hash": "36",
+        "factory_event_range_count": "37",
+        "factory_event_ranges_hash": "38",
+        "partial_creation_count": "39",
+        "partial_creations_root": "40",
+        "world_count": "41",
+        "worlds_root": "42",
+        "disposition_count": "43",
+        "dispositions_root": "44",
+        "imported_job_count": "45",
+        "imported_jobs_root": "46",
+        "legacy_synthetic_deployment_id": "47",
+        "legacy_module_protocol_version": "48",
+        "legacy_module_ruleset_id": "49",
+        "legacy_module": "50",
+        "legacy_program_id": "51",
+        "legacy_verification_key_hash": "52",
+        "legacy_mmr_policy_hash": "53",
+        "legacy_release_bundle_hash": "54",
+        "legacy_settlement_chunk_size": "55",
+        "legacy_writer_count": "56",
+        "legacy_writers_root": "57",
+        "legacy_factory_tuple_hash": "58",
+        "token_state_hash": "59",
+        "frozen_pending_import_bound_hash": "60",
+        "frozen_pending_import_job_count": "61",
+        "frozen_pending_import_reward_units": "62",
+        "prefunded_escrow_hash": "63",
+        "legacy_migration_funding_scope_id": "64",
+        "funding_vault": "65",
+        "funding_account": "66",
+        "funding_owner": "67",
+        "reward_unit_amount": "23479483317544753978972847912792006590532",
+        "max_reward_units": "70",
+        "reward_budget": "24500330418307569369362971735087311224903",
+        "excess_refund_recipient": "73",
+        "excess_return_policy_hash": "74",
+        "funding_reservations_hash": "75",
+        "archive_registry": "76",
+        "archive_policy_hash": "77",
+        "archive_signer_set_epoch": "78",
+        "archive_signer_set_hash": "79",
+        "archive_route_identity_set_hash": "80",
+        "import_data_manifest_hash": "81",
+        "import_data_item_count": "82",
+        "import_data_total_entry_count": "83",
+        "import_data_items_root": "84"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37",
+        "38",
+        "39",
+        "40",
+        "41",
+        "42",
+        "43",
+        "44",
+        "45",
+        "46",
+        "47",
+        "48",
+        "49",
+        "50",
+        "51",
+        "52",
+        "53",
+        "54",
+        "55",
+        "56",
+        "57",
+        "58",
+        "59",
+        "60",
+        "61",
+        "62",
+        "63",
+        "64",
+        "65",
+        "66",
+        "67",
+        "68",
+        "69",
+        "70",
+        "71",
+        "72",
+        "73",
+        "74",
+        "75",
+        "76",
+        "77",
+        "78",
+        "79",
+        "80",
+        "81",
+        "82",
+        "83",
+        "84"
+      ]
+    },
+    {
+      "schema": "LegacyMmrWorldDisposition",
+      "value": {
+        "disposition_index": "1",
+        "factory": "2",
+        "factory_event_index": "3",
+        "world": "4",
+        "mmr_system": "5",
+        "game_or_trial_id": "6",
+        "game_meta_hash": "7",
+        "claimed_hash": "8",
+        "status": "9",
+        "imported_job_hash": "10"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ]
+    },
+    {
+      "schema": "LegacyMmrApprovedFactoryVersion",
+      "value": {
+        "factory_index": "1",
+        "version_index": "2",
+        "factory": "3",
+        "factory_version": "4",
+        "config_revision": "5",
+        "parent_world_binding_hash": "6",
+        "child_system_bindings_hash": "7",
+        "effective_recipe_hash": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "LegacyMmrFactoryInventoryLeaf",
+      "value": {
+        "factory_index": "1",
+        "factory": "2",
+        "factory_class_hash": "3",
+        "approved_versions_hash": "4",
+        "creation_highwater_hash": "5",
+        "reverse_lookup_root": "6",
+        "writer_registry_root": "7",
+        "event_range_index": "8",
+        "completed_world_count": "9"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    {
+      "schema": "LegacyMmrFactoryBindingLeaf",
+      "value": {
+        "factory_index": "1",
+        "factory": "2",
+        "factory_class_hash": "3",
+        "approved_versions_hash": "4",
+        "factory_migration_init_hash": "5",
+        "controller_authority_closure_hash": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "LegacyMmrFactoryCreationHighwaterLeaf",
+      "value": {
+        "factory_index": "1",
+        "factory": "2",
+        "next_creation_nonce": "3",
+        "completed_world_count": "4",
+        "partial_sparse_root": "5",
+        "creation_transition_accumulator": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "LegacyMmrCanonicalHeaderLeaf",
+      "value": {
+        "range_index": "1",
+        "block_offset": "2",
+        "block_number": "3",
+        "block_hash": "4",
+        "parent_hash": "5",
+        "state_root": "6",
+        "transaction_count": "7",
+        "transactions_commitment": "8",
+        "receipt_count": "9",
+        "receipts_commitment": "10",
+        "events_commitment": "11",
+        "canonical_header_preimage_hash": "12"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    {
+      "schema": "LegacyMmrBlockTransactionCommitment",
+      "value": {
+        "range_index": "1",
+        "block_offset": "2",
+        "block_number": "3",
+        "block_hash": "4",
+        "transaction_count": "5",
+        "transactions_commitment": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "LegacyMmrBlockReceiptCommitment",
+      "value": {
+        "range_index": "1",
+        "block_offset": "2",
+        "block_number": "3",
+        "block_hash": "4",
+        "receipt_count": "5",
+        "receipts_commitment": "6",
+        "events_commitment": "7"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "schema": "LegacyMmrFactorySelectedEvent",
+      "value": {
+        "selected_event_index": "1",
+        "block_offset": "2",
+        "block_number": "3",
+        "block_hash": "4",
+        "transaction_index": "5",
+        "transaction_hash": "6",
+        "event_index_in_receipt": "7",
+        "emitter": "8",
+        "keys_hash": "9",
+        "data_hash": "10",
+        "decoded_fact_hash": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "LegacyMmrFactoryEventLayoutEntry",
+      "value": {
+        "layout_index": "1",
+        "fact_kind": "2",
+        "emitter": "3",
+        "selector": "4",
+        "keys_schema_hash": "5",
+        "data_schema_hash": "6",
+        "decoder_hash": "7"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "schema": "LegacyMmrFactoryEventRange",
+      "value": {
+        "range_index": "1",
+        "factory_index": "2",
+        "factory": "3",
+        "deployment_block_number": "4",
+        "deployment_block_hash": "5",
+        "first_block_number": "6",
+        "last_block_number": "7",
+        "header_chain_root": "8",
+        "transaction_commitments_root": "9",
+        "receipt_commitments_root": "10",
+        "first_event_index": "11",
+        "last_event_index": "12",
+        "event_count": "13",
+        "events_accumulator": "14",
+        "event_layout_hash": "15"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15"
+      ]
+    },
+    {
+      "schema": "LegacyMmrWorldInventoryLeaf",
+      "value": {
+        "disposition_index": "1",
+        "factory_index": "2",
+        "factory": "3",
+        "factory_event_index": "4",
+        "world": "5",
+        "world_class_hash": "6",
+        "world_config_hash": "7",
+        "mmr_system": "8",
+        "game_or_trial_id": "9",
+        "game_meta_hash": "10",
+        "claimed_hash": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "LegacyMmrWriterInventoryLeaf",
+      "value": {
+        "writer_index": "1",
+        "factory": "2",
+        "factory_version": "3",
+        "factory_class_hash": "4",
+        "writer_status": "5",
+        "world": "6",
+        "world_class_hash": "7",
+        "mmr_system": "8",
+        "mmr_system_class_hash": "9",
+        "game_or_trial_id": "10",
+        "result_selector": "11",
+        "claim_selector": "12",
+        "token_update_selector": "13",
+        "token_batch_update_selector": "14",
+        "config_selector_set_hash": "15",
+        "source_projection_interface_hash": "16",
+        "instrumented_class_hash": "17",
+        "locked_formula_config_hash": "18"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ]
+    },
+    {
+      "schema": "LegacyMmrRegistryBootstrapCommitment",
+      "value": {
+        "bootstrap_id": "1",
+        "finalized_state_root_anchor_hash": "2",
+        "inventory_program_id": "3",
+        "inventory_verification_key_hash": "4",
+        "bridge_token_class_hash": "5",
+        "bridge_token_storage_layout_hash": "6",
+        "token_bridge_init_hash": "7",
+        "old_factory_tuple_hash": "8",
+        "factory_count": "9",
+        "factory_bindings_hash": "10",
+        "factory_creation_highwater_hash": "11",
+        "factory_event_range_count": "12",
+        "factory_event_ranges_hash": "13",
+        "historical_event_chain_root": "14",
+        "writer_count": "15",
+        "writers_root": "16",
+        "completed_writer_count": "17",
+        "partial_writer_count": "18",
+        "partial_creation_count": "19",
+        "partial_creations_root": "20",
+        "formula_configs_root": "21",
+        "bootstrap_deadline": "22"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22"
+      ]
+    },
+    {
+      "schema": "LegacyMmrCreationTransition",
+      "value": {
+        "sequence": "1",
+        "factory": "2",
+        "creation_nonce": "3",
+        "transition_kind": "4",
+        "previous_cursor": "5",
+        "new_cursor": "6",
+        "previous_partial_leaf_hash": "7",
+        "new_partial_leaf_hash": "8",
+        "previous_writer_leaf_hash": "9",
+        "new_writer_leaf_hash": "10",
+        "previous_creation_highwater_state_hash": "11",
+        "new_creation_highwater_state_hash": "12"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    {
+      "schema": "LegacyMmrRegistryTransition",
+      "value": {
+        "sequence": "1",
+        "registry_bootstrap_commitment_hash": "2",
+        "transition_kind": "3",
+        "source_creation_transition_hash": "4",
+        "writer_update_kind": "5",
+        "writer_index": "6",
+        "previous_writer_leaf_hash": "7",
+        "new_writer_leaf_hash": "8",
+        "previous_writers_root": "9",
+        "new_writers_root": "10",
+        "previous_formula_configs_root": "11",
+        "new_formula_configs_root": "12",
+        "previous_partial_creation_count": "13",
+        "new_partial_creation_count": "14",
+        "previous_partial_creations_root": "15",
+        "new_partial_creations_root": "16",
+        "previous_factory_creation_highwater_hash": "17",
+        "new_factory_creation_highwater_hash": "18"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ]
+    },
+    {
+      "schema": "LegacyImportedMmrJob",
+      "value": {
+        "disposition_index": "1",
+        "import_index": "2",
+        "factory": "3",
+        "factory_event_index": "4",
+        "world": "5",
+        "mmr_system": "6",
+        "game_or_trial_id": "7",
+        "game_meta_hash": "8",
+        "claimed_hash": "9",
+        "legacy_source_projection_hash": "10",
+        "legacy_source_participants_root": "11",
+        "legacy_game_median": "12",
+        "legacy_formula_inputs_root": "13",
+        "legacy_formula_policy_hash": "14",
+        "settlement_chunk_size": "15",
+        "legacy_synthetic_deployment_id": "16",
+        "imported_game_id": "17",
+        "ranking_id": "18",
+        "ranking": {
+          "game_id": "19",
+          "root": "20",
+          "participant_count": "21",
+          "result_hash": "22",
+          "first_rank": "23",
+          "last_rank": "24",
+          "tie_break_policy_hash": "25"
+        },
+        "result": {
+          "game_id": "26",
+          "winner_l2": "27",
+          "ended_at": "28",
+          "result_hash": "29",
+          "valid_result": false,
+          "abort_reason": "31",
+          "participant_root": "32",
+          "ranking_id": "33"
+        },
+        "module_binding_hash": "34",
+        "module_aux_hash": "35",
+        "funding_job_id": "36",
+        "maximum_reward_units": "37"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "0",
+        "31",
+        "32",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37"
+      ]
+    },
+    {
+      "schema": "LegacyMmrPendingImportBound",
+      "value": {
+        "baseline_hash": "1",
+        "state_sequence": "2",
+        "pending_job_count": "3",
+        "reward_units_upper_bound": "4",
+        "pending_jobs_accumulator": "5"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "schema": "LegacyMmrInstrumentationCompleteMarker",
+      "value": {
+        "admission_gate": "1",
+        "admission_registry_hash": "2",
+        "writer_count": "3",
+        "writers_root": "4",
+        "factory_creation_highwater_hash": "5",
+        "partial_creation_count": "6",
+        "partial_creations_root": "7",
+        "marked_at_block_number": "8",
+        "gate_state_sequence": "9",
+        "gate_transition_accumulator": "10"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ]
+    },
+    {
+      "schema": "LegacyMmrPendingImportBaseline",
+      "value": {
+        "instrumentation_complete_marker_hash": "1",
+        "finalized_state_root_anchor_hash": "2",
+        "baseline_block_number": "3",
+        "baseline_block_hash": "4",
+        "baseline_state_root": "5",
+        "gate_state_sequence": "6",
+        "gate_transition_accumulator": "7",
+        "cumulative_added_count": "8",
+        "cumulative_added_reward_units": "9",
+        "cumulative_resolved_count": "10",
+        "cumulative_resolved_reward_units": "11",
+        "pending_job_count": "12",
+        "pending_reward_units": "13",
+        "pending_jobs_root": "14"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14"
+      ]
+    },
+    {
+      "schema": "LegacyMmrPendingResultProjection",
+      "value": {
+        "result_key": "1",
+        "factory": "2",
+        "factory_event_index": "3",
+        "world": "4",
+        "mmr_system": "5",
+        "game_or_trial_id": "6",
+        "game_meta_hash": "7",
+        "pre_application_claimed_hash": "8",
+        "current_claimed_hash": "9",
+        "legacy_result_state_hash": "10",
+        "legacy_ranking_layout_hash": "11",
+        "legacy_ranking_highwater": "12",
+        "legacy_game_median": "13",
+        "legacy_formula_policy_hash": "14",
+        "settlement_chunk_size": "15",
+        "participant_count": "16",
+        "first_rank": "17",
+        "last_rank": "18",
+        "winner_l2": "19",
+        "ended_at": "20",
+        "valid_result": true,
+        "abort_reason": "22",
+        "application_mode": "23",
+        "application_nonce": "24",
+        "application_hash": "25"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "1",
+        "22",
+        "23",
+        "24",
+        "25"
+      ]
+    },
+    {
+      "schema": "LegacyMmrSourceParticipant",
+      "value": {
+        "source_index": "1",
+        "factory": "2",
+        "factory_event_index": "3",
+        "world": "4",
+        "game_or_trial_id": "5",
+        "player_l2": "6",
+        "legacy_player_key": "7",
+        "recipient_l1": "8",
+        "legacy_participation_key": "9",
+        "formula_rank": "10",
+        "score": "4083388403051261561560495289181218537483"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    {
+      "schema": "MmrFormulaInput",
+      "value": {
+        "ordinal_index": "1",
+        "ranking_entry_hash": "2",
+        "formula_rank": "3"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    {
+      "schema": "MmrCurrentFormulaAux",
+      "value": {
+        "median_source": "1",
+        "game_median": "2",
+        "participant_count": "3",
+        "formula_inputs_root": "4",
+        "formula_policy_hash": "5"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "schema": "LegacyMmrPendingTransition",
+      "value": {
+        "sequence": "1",
+        "transition_kind": "2",
+        "result_key": "3",
+        "pending_projection_hash": "4",
+        "observed_projection_hash": "5",
+        "prior_add_transition_hash": "6",
+        "application_hash": "7",
+        "participant_count": "8",
+        "reward_units": "9"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    {
+      "schema": "LegacyMmrTokenValueChange",
+      "value": {
+        "change_index": "1",
+        "player": "2",
+        "was_initialized": true,
+        "old_scaled_value": "1701411834604692317316873037158841057284",
+        "new_scaled_value": "2381976568446569244243622252022377480198"
+      },
+      "felts": [
+        "1",
+        "2",
+        "1",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "schema": "LegacyMmrTokenMutation",
+      "value": {
+        "sequence": "1",
+        "caller": "2",
+        "mutation_kind": "3",
+        "result_key": "4",
+        "application_nonce": "5",
+        "mutation_index": "6",
+        "mutation_count": "7",
+        "value_change_count": "8",
+        "value_changes_root": "9",
+        "old_total_supply": "3743106036130323098097120681749450326026",
+        "new_total_supply": "4423670769972200025023869896612986748940"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13"
+      ]
+    },
+    {
+      "schema": "LegacyMmrApplicationContext",
+      "value": {
+        "result_key": "1",
+        "application_nonce": "2",
+        "writer_leaf_hash": "3",
+        "pending_projection_hash": "4",
+        "pre_application_claimed_hash": "5",
+        "participant_count": "6",
+        "total_update_count": "7",
+        "settlement_chunk_size": "8",
+        "chunk_index": "9",
+        "chunk_count": "10",
+        "start_index": "11",
+        "application_precommit_hash": "12"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    {
+      "schema": "LegacyMmrMutationReceipt",
+      "value": {
+        "result_key": "1",
+        "application_nonce": "2",
+        "first_mutation_sequence": "3",
+        "last_mutation_sequence": "4",
+        "completed_chunk_count": "5",
+        "mutation_hashes_accumulator": "6",
+        "resulting_total_supply": "2722258935367507707706996859454145691655",
+        "complete": true,
+        "sealed": false
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "1",
+        "0"
+      ]
+    },
+    {
+      "schema": "LegacyMmrPartialCreationDisposition",
+      "value": {
+        "factory": "1",
+        "creation_nonce": "2",
+        "factory_version": "3",
+        "game_name": "4",
+        "draft_world": "5",
+        "mmr_system": "6",
+        "has_mmr_registration": true,
+        "mmr_registration_hash": "8",
+        "creation_cursor": "9",
+        "creation_highwater": "10",
+        "creation_state_hash": "11",
+        "disposition": "12"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "1",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    {
+      "schema": "StarknetFinalizedStateRootAnchor",
+      "value": {
+        "source": "1",
+        "policy_hash": "2",
+        "header_codec_hash": "3",
+        "minimum_finality_blocks": "4",
+        "block_number": "5",
+        "block_hash": "6",
+        "state_root": "7",
+        "authenticated_at_block_number": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "LegacyMmrPreFreezeWitnessManifest",
+      "value": {
+        "cutover_id": "1",
+        "production_candidate_hash": "2",
+        "static_config_hash": "3",
+        "finalized_state_root_anchor_hash": "4",
+        "instrumentation_complete_marker_hash": "5",
+        "pending_import_baseline_hash": "6",
+        "quiescence_generation": "7",
+        "quiescence_marker_hash": "8",
+        "admission_registry_hash": "9",
+        "factory_bindings_hash": "10",
+        "writer_count": "11",
+        "writers_root": "12",
+        "formula_configs_root": "13",
+        "registry_transition_accumulator": "14",
+        "factory_creation_highwater_hash": "15",
+        "partial_creation_count": "16",
+        "partial_creations_root": "17",
+        "factory_count": "18",
+        "factories_hash": "19",
+        "factory_event_range_count": "20",
+        "factory_event_ranges_hash": "21",
+        "historical_event_chain_root": "22",
+        "world_count": "23",
+        "worlds_root": "24",
+        "pending_import_bound_hash": "25",
+        "gate_state_sequence": "26",
+        "gate_transition_accumulator": "27",
+        "initial_token_state_hash": "28",
+        "final_token_state_hash": "29",
+        "token_mutation_accumulator": "30",
+        "legacy_factory_tuple_hash": "31",
+        "raw_projection_count": "32",
+        "raw_projections_root": "33",
+        "source_participant_count": "34",
+        "source_participants_root": "35",
+        "witness_object_count": "36",
+        "witness_objects_root": "37",
+        "prefunded_escrow_hash": "38",
+        "signer_set_epoch": "39",
+        "signer_set_hash": "40",
+        "route_identity_set_hash": "41"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37",
+        "38",
+        "39",
+        "40",
+        "41"
+      ]
+    },
+    {
+      "schema": "LegacyMmrProvedSourceInventory",
+      "value": {
+        "cutover_id": "1",
+        "production_candidate_hash": "2",
+        "static_config_hash": "3",
+        "finalized_state_root_anchor_hash": "4",
+        "inventory_program_id": "5",
+        "inventory_verification_key_hash": "6",
+        "quiescence_generation": "7",
+        "quiescence_marker_hash": "8",
+        "pre_freeze_witness_manifest_hash": "9",
+        "instrumentation_complete_marker_hash": "10",
+        "pending_import_baseline_hash": "11",
+        "admission_registry_hash": "12",
+        "factory_bindings_hash": "13",
+        "writer_count": "14",
+        "writers_root": "15",
+        "formula_configs_root": "16",
+        "registry_transition_accumulator": "17",
+        "factory_creation_highwater_hash": "18",
+        "partial_creation_count": "19",
+        "partial_creations_root": "20",
+        "factory_count": "21",
+        "factories_hash": "22",
+        "factory_event_range_count": "23",
+        "factory_event_ranges_hash": "24",
+        "historical_event_chain_root": "25",
+        "world_count": "26",
+        "worlds_root": "27",
+        "pending_import_bound_hash": "28",
+        "pending_import_job_count": "29",
+        "pending_import_reward_units": "30",
+        "gate_state_sequence": "31",
+        "gate_transition_accumulator": "32",
+        "initial_token_state_hash": "33",
+        "final_token_state_hash": "34",
+        "token_mutation_accumulator": "35",
+        "legacy_factory_tuple_hash": "36",
+        "raw_projection_count": "37",
+        "raw_projections_root": "38",
+        "source_participant_count": "39",
+        "source_participants_root": "40",
+        "witness_object_count": "41",
+        "witness_objects_root": "42",
+        "prefunded_escrow_hash": "43"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37",
+        "38",
+        "39",
+        "40",
+        "41",
+        "42",
+        "43"
+      ]
+    },
+    {
+      "schema": "LegacyMmrQuiescenceMarker",
+      "value": {
+        "cutover_id": "1",
+        "quiescence_generation": "2",
+        "started_at": "3",
+        "expires_at": "4",
+        "admission_registry_hash": "5",
+        "pending_import_bound_hash": "6",
+        "gate_state_sequence": "7",
+        "gate_transition_accumulator": "8",
+        "token_mutation_accumulator": "9",
+        "legacy_factory_tuple_hash": "10",
+        "prefunded_escrow_hash": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "LegacyMmrAdmissionFreezeMarker",
+      "value": {
+        "admission_gate": "1",
+        "cutover_id": "2",
+        "frozen_at_block_number": "3",
+        "quiescence_generation": "4",
+        "quiescence_marker_hash": "5",
+        "instrumentation_complete_marker_hash": "6",
+        "pending_import_baseline_hash": "7",
+        "admission_registry_hash": "8",
+        "pending_import_bound_hash": "9",
+        "proved_source_inventory_hash": "10",
+        "pre_freeze_verified_bundle_hash": "11",
+        "router_reservation_hash": "12",
+        "gate_state_sequence": "13",
+        "gate_transition_accumulator": "14"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14"
+      ]
+    },
+    {
+      "schema": "LegacyMmrTokenMigrationPauseMarker",
+      "value": {
+        "admission_gate": "1",
+        "migration_generation": "2",
+        "started_at": "3",
+        "expires_at": "4",
+        "registry_bootstrap_commitment_hash": "5",
+        "writer_count": "6",
+        "writers_root": "7",
+        "factory_creation_highwater_hash": "8",
+        "partial_creation_count": "9",
+        "partial_creations_root": "10",
+        "formula_configs_root": "11",
+        "registry_transition_accumulator": "12",
+        "token_bridge_init_hash": "13",
+        "token_class_hash": "14",
+        "token_storage_layout_hash": "15",
+        "factory_tuple_hash": "16",
+        "pre_pause_token_state_hash": "17",
+        "pre_pause_component_authority_state_hash": "18"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18"
+      ]
+    },
+    {
+      "schema": "LegacyMmrImportArchiveItem",
+      "value": {
+        "import_index": "1",
+        "imported_job_hash": "2",
+        "legacy_source_projection_hash": "3",
+        "legacy_source_participants_root": "4",
+        "legacy_formula_inputs_root": "5",
+        "legacy_formula_inputs_content_hash": "6",
+        "ranking_root": "7",
+        "participant_count": "8",
+        "ranking_entries_content_hash": "9",
+        "merkle_material_content_hash": "10"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ]
+    },
+    {
+      "schema": "LegacyMmrImportDataManifest",
+      "value": {
+        "cutover_id": "1",
+        "freeze_marker_hash": "2",
+        "proved_source_inventory_hash": "3",
+        "legacy_synthetic_deployment_id": "4",
+        "imported_job_count": "5",
+        "imported_jobs_root": "6",
+        "total_ranking_entry_count": "7",
+        "archive_item_count": "8",
+        "archive_items_root": "9",
+        "module_binding_hash": "10",
+        "funding_reservations_hash": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "LegacyMmrFundingReservation",
+      "value": {
+        "cutover_id": "1",
+        "funding_scope_id": "2",
+        "import_index": "3",
+        "funding_job_id": "4",
+        "unit_amount": "2041694201525630780780247644590609268741",
+        "maximum_reward_units": "7",
+        "reserved_amount": "3062541302288446171170371466885913903112"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9"
+      ]
+    },
+    {
+      "schema": "LegacyMmrCutoverEscrow",
+      "value": {
+        "cutover_id": "1",
+        "production_candidate_hash": "2",
+        "static_config_hash": "3",
+        "target_router": "4",
+        "mmr_token": "5",
+        "funding_vault": "6",
+        "funding_account": "7",
+        "funding_owner": "8",
+        "reward_unit_amount": "3402823669209384634633746074317682114569",
+        "max_reward_units": "11",
+        "reward_budget": "4423670769972200025023869896612986748940",
+        "excess_refund_recipient": "14",
+        "excess_return_policy_hash": "15",
+        "state": "16",
+        "derived_funding_scope_id": "17",
+        "imported_jobs_root": "18",
+        "expected_imported_job_count": "19",
+        "reserved_job_count": "20",
+        "terminal_job_count": "21",
+        "expected_funding_reservations_hash": "22",
+        "actual_funding_reservations_hash": "23"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23"
+      ]
+    },
+    {
+      "schema": "MmrSettlementLock",
+      "value": {
+        "active": true,
+        "sequence": "2",
+        "has_snapshot_commitment": true,
+        "snapshot_commitment": "4",
+        "expected_count": "5",
+        "applied_count": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "1",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "LegacyMmrFreezeMarker",
+      "value": {
+        "cutover_id": "1",
+        "production_candidate_hash": "2",
+        "target_router": "3",
+        "router_legacy_binding_hash": "4",
+        "static_config_hash": "5",
+        "frozen_at_block_number": "6",
+        "admission_gate": "7",
+        "admission_registry_hash": "8",
+        "instrumentation_complete_marker_hash": "9",
+        "pending_import_baseline_hash": "10",
+        "quiescence_marker_hash": "11",
+        "pre_freeze_witness_manifest_hash": "12",
+        "proved_source_inventory_hash": "13",
+        "pre_freeze_verified_bundle_hash": "14",
+        "admission_freeze_marker_hash": "15",
+        "router_reservation_hash": "16",
+        "legacy_factory_tuple_hash": "17",
+        "token_mutation_accumulator": "18",
+        "frozen_pending_import_bound_hash": "19",
+        "frozen_pending_import_job_count": "20",
+        "frozen_pending_import_reward_units": "21",
+        "prefunded_escrow_hash": "22"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22"
+      ]
+    },
+    {
+      "schema": "MmrModuleBinding",
+      "value": {
+        "protocol_version": "1",
+        "ruleset_id": "2",
+        "module": "3",
+        "program_id": "4",
+        "verification_key_hash": "5",
+        "mmr_policy_hash": "6",
+        "release_bundle_hash": "7",
+        "settlement_chunk_size": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "LegacyMmrRouterBinding",
+      "value": {
+        "protocol_version": "1",
+        "router": "2",
+        "router_class_hash": "3",
+        "canonical_mmr_token": "4",
+        "funding_vault": "5",
+        "archive_registry": "6",
+        "finalized_state_root_source": "7",
+        "inventory_verifier": "8",
+        "inventory_verifier_class_hash": "9",
+        "inventory_program_id": "10",
+        "inventory_verification_key_hash": "11",
+        "derivation_program_id": "12",
+        "derivation_verification_key_hash": "13",
+        "release_bundle_hash": "14"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14"
+      ]
+    },
+    {
+      "schema": "LegacyMmrRouterReservation",
+      "value": {
+        "router_legacy_binding_hash": "1",
+        "cutover_id": "2",
+        "production_candidate_hash": "3",
+        "static_config_hash": "4",
+        "canonical_mmr_token": "5",
+        "admission_gate": "6",
+        "quiescence_generation": "7",
+        "quiescence_marker_hash": "8",
+        "pre_freeze_witness_manifest_hash": "9",
+        "proved_source_inventory_hash": "10",
+        "pre_freeze_verified_bundle_hash": "11",
+        "prefunded_escrow_hash": "12"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    {
+      "schema": "LegacyMmrCutoverStaticConfig",
+      "value": {
+        "production_candidate_hash": "1",
+        "target_router": "2",
+        "target_router_class_hash": "3",
+        "router_legacy_binding_hash": "4",
+        "mmr_token": "5",
+        "mmr_token_class_hash": "6",
+        "mmr_token_storage_layout_hash": "7",
+        "mmr_token_migration_init_hash": "8",
+        "cutover_component_class_bindings_hash": "9",
+        "cutover_component_authority_state_hash": "10",
+        "admission_gate": "11",
+        "admission_registry_hash": "12",
+        "instrumentation_complete_marker_hash": "13",
+        "pending_import_baseline_hash": "14",
+        "finalized_state_root_source": "15",
+        "finalized_header_policy_hash": "16",
+        "finalized_header_codec_hash": "17",
+        "minimum_finality_blocks": "18",
+        "quiescence_duration_seconds": "19",
+        "expected_legacy_factory_tuple_hash": "20",
+        "inventory_program_id": "21",
+        "inventory_verification_key_hash": "22",
+        "derivation_program_id": "23",
+        "derivation_verification_key_hash": "24",
+        "legacy_module_binding": {
+          "protocol_version": "25",
+          "ruleset_id": "26",
+          "module": "27",
+          "program_id": "28",
+          "verification_key_hash": "29",
+          "mmr_policy_hash": "30",
+          "release_bundle_hash": "31",
+          "settlement_chunk_size": "32"
+        },
+        "funding_vault": "33",
+        "funding_account": "34",
+        "funding_owner": "35",
+        "reward_unit_amount": "12590447576074723148144860474975423823908",
+        "max_reward_units": "38",
+        "excess_refund_recipient": "39",
+        "excess_return_policy_hash": "40",
+        "archive_registry": "41",
+        "archive_policy_hash": "42",
+        "archive_signer_set_epoch": "43",
+        "archive_signer_set_hash": "44",
+        "archive_route_identity_set_hash": "45"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23",
+        "24",
+        "25",
+        "26",
+        "27",
+        "28",
+        "29",
+        "30",
+        "31",
+        "32",
+        "33",
+        "34",
+        "35",
+        "36",
+        "37",
+        "38",
+        "39",
+        "40",
+        "41",
+        "42",
+        "43",
+        "44",
+        "45"
+      ]
+    },
+    {
+      "schema": "LegacyMmrTokenBridgeInit",
+      "value": {
+        "protocol_version": "1",
+        "migration_release_bundle_hash": "2",
+        "migration_guard": "3",
+        "expected_old_token_class_hash": "4",
+        "expected_old_storage_layout_hash": "5",
+        "expected_old_factory_tuple_hash": "6",
+        "new_token_class_hash": "7",
+        "new_token_storage_layout_hash": "8",
+        "admission_gate": "9",
+        "admission_gate_class_hash": "10",
+        "finalized_state_root_source": "11",
+        "finalized_state_root_source_class_hash": "12",
+        "finalized_header_policy_hash": "13",
+        "finalized_header_codec_hash": "14",
+        "minimum_finality_blocks": "15",
+        "inventory_program_id": "16",
+        "inventory_verification_key_hash": "17",
+        "legacy_cutover_authority": "18",
+        "expected_pre_init_role_state_hash": "19",
+        "bridge_role_state_hash": "20",
+        "post_activation_role_closure_hash": "21"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21"
+      ]
+    },
+    {
+      "schema": "LegacyMmrTokenContextActivation",
+      "value": {
+        "protocol_version": "1",
+        "migration_release_bundle_hash": "2",
+        "migration_guard": "3",
+        "admission_gate": "4",
+        "migration_generation": "5",
+        "migration_pause_marker_hash": "6",
+        "initial_token_state_hash": "7",
+        "finalized_state_root_anchor_hash": "8",
+        "registry_bootstrap_commitment_hash": "9",
+        "writer_count": "10",
+        "writers_root": "11",
+        "factory_creation_highwater_hash": "12",
+        "partial_creation_count": "13",
+        "partial_creations_root": "14",
+        "formula_configs_root": "15",
+        "registry_transition_accumulator": "16",
+        "expected_token_class_hash": "17",
+        "expected_token_storage_layout_hash": "18",
+        "expected_factory_tuple_hash": "19",
+        "post_activation_role_closure_hash": "20"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20"
+      ]
+    },
+    {
+      "schema": "LegacyMmrWorldMigrationInit",
+      "value": {
+        "protocol_version": "1",
+        "migration_release_bundle_hash": "2",
+        "migration_guard": "3",
+        "factory": "4",
+        "factory_version": "5",
+        "factory_event_index": "6",
+        "game_or_trial_id": "7",
+        "source_identity_hash": "8",
+        "world": "9",
+        "expected_old_world_class_hash": "10",
+        "expected_old_world_storage_layout_hash": "11",
+        "new_world_class_hash": "12",
+        "new_world_storage_layout_hash": "13",
+        "proved_upgrade_controller": "14",
+        "world_upgrade_route_hash": "15",
+        "child_component_plan_set_hash": "16",
+        "admission_gate": "17",
+        "migration_executor_state_hash": "18",
+        "post_rollout_authority_closure_hash": "19"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19"
+      ]
+    },
+    {
+      "schema": "LegacyMmrSystemMigrationInit",
+      "value": {
+        "protocol_version": "1",
+        "migration_release_bundle_hash": "2",
+        "migration_guard": "3",
+        "factory": "4",
+        "factory_version": "5",
+        "factory_event_index": "6",
+        "game_or_trial_id": "7",
+        "source_identity_hash": "8",
+        "world": "9",
+        "mmr_system": "10",
+        "expected_mmr_system_class_hash": "11",
+        "expected_mmr_system_storage_layout_hash": "12",
+        "new_mmr_system_class_hash": "13",
+        "new_mmr_system_storage_layout_hash": "14",
+        "proved_upgrade_controller": "15",
+        "system_upgrade_route_hash": "16",
+        "admission_gate": "17",
+        "source_projection_interface_hash": "18",
+        "instrumented_selector_set_hash": "19",
+        "post_rollout_authority_closure_hash": "20"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20"
+      ]
+    },
+    {
+      "schema": "LegacyMmrFactoryMigrationInit",
+      "value": {
+        "protocol_version": "1",
+        "migration_release_bundle_hash": "2",
+        "migration_guard": "3",
+        "factory": "4",
+        "expected_old_factory_class_hash": "5",
+        "expected_old_factory_storage_layout_hash": "6",
+        "new_factory_class_hash": "7",
+        "new_factory_storage_layout_hash": "8",
+        "factory_dojo_world": "9",
+        "proved_upgrade_controller": "10",
+        "upgrade_controller_class_hash": "11",
+        "old_owner_config_authority_state_hash": "12",
+        "admission_gate": "13",
+        "create_resume_sync_selector_set_hash": "14",
+        "config_selector_set_hash": "15",
+        "initial_creation_highwater_state_hash": "16",
+        "child_world_upgrade_route_hash": "17",
+        "instrumented_recipe_binding_hash": "18",
+        "first_instrumented_creation_nonce": "19",
+        "pre_migration_partial_creation_count": "20",
+        "pre_migration_partial_creations_root": "21",
+        "migration_executor_state_hash": "22",
+        "post_rollout_authority_closure_hash": "23"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22",
+        "23"
+      ]
+    },
+    {
+      "schema": "LegacyMmrConfigSystemMigrationInit",
+      "value": {
+        "protocol_version": "1",
+        "migration_release_bundle_hash": "2",
+        "migration_guard": "3",
+        "world": "4",
+        "config_system": "5",
+        "expected_old_config_system_class_hash": "6",
+        "expected_old_config_storage_layout_hash": "7",
+        "new_config_system_class_hash": "8",
+        "new_config_storage_layout_hash": "9",
+        "proved_upgrade_controller": "10",
+        "config_system_upgrade_route_hash": "11",
+        "set_mmr_config_selector": "12",
+        "other_mmr_config_writer_selectors_hash": "13",
+        "world_admin_writer_authority_state_hash": "14",
+        "admission_gate": "15",
+        "post_rollout_authority_closure_hash": "16"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16"
+      ]
+    },
+    {
+      "schema": "LegacyMmrMigrationPlan",
+      "value": {
+        "component_kind": "1",
+        "proxy": "2",
+        "upgrade_executor": "3",
+        "upgrade_route_hash": "4",
+        "expected_old_class_hash": "5",
+        "expected_old_storage_layout_hash": "6",
+        "expected_old_state_hash": "7",
+        "expected_new_class_hash": "8",
+        "expected_new_storage_layout_hash": "9",
+        "migration_init_hash": "10",
+        "migration_release_bundle_hash": "11",
+        "execute_before": "12"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12"
+      ]
+    },
+    {
+      "schema": "LegacyMmrInitialTokenState",
+      "value": {
+        "finalized_state_root_anchor_hash": "1",
+        "admission_gate": "2",
+        "migration_generation": "3",
+        "migration_pause_marker_hash": "4",
+        "mmr_token": "5",
+        "token_class_hash": "6",
+        "token_storage_layout_hash": "7",
+        "token_contract_storage_root": "8",
+        "factory_tuple_hash": "9",
+        "total_supply": "3743106036130323098097120681749450326026",
+        "legacy_storage_sentinel_hash": "12",
+        "registry_state_hash": "13",
+        "formula_configs_root": "14"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14"
+      ]
+    },
+    {
+      "schema": "LegacyMmrPrePauseTokenState",
+      "value": {
+        "mmr_token": "1",
+        "token_class_hash": "2",
+        "token_storage_layout_hash": "3",
+        "token_bridge_init_hash": "4",
+        "factory_tuple_hash": "5",
+        "total_supply": "2381976568446569244243622252022377480198",
+        "token_role_state_hash": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "LegacyMmrRelevantBalanceSlot",
+      "value": {
+        "slot_index": "1",
+        "player": "2",
+        "storage_key": "3",
+        "scaled_value": "1701411834604692317316873037158841057284"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "schema": "LegacyMmrAuthorityMember",
+      "value": {
+        "member_index": "1",
+        "member": "2"
+      },
+      "felts": [
+        "1",
+        "2"
+      ]
+    },
+    {
+      "schema": "LegacyMmrAuthorityRole",
+      "value": {
+        "role_index": "1",
+        "role_id": "2",
+        "admin_role_id": "3",
+        "member_count": "4",
+        "members_hash": "5"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "schema": "LegacyMmrAuthorityCapability",
+      "value": {
+        "capability_index": "1",
+        "capability_id": "2",
+        "capability_kind": "3",
+        "selector": "4",
+        "controller": "5",
+        "route_hash": "6",
+        "enabled": true
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "1"
+      ]
+    },
+    {
+      "schema": "LegacyMmrTokenAuthorityProjection",
+      "value": {
+        "mmr_token": "1",
+        "token_class_hash": "2",
+        "token_storage_layout_hash": "3",
+        "authority_schema_hash": "4",
+        "role_count": "5",
+        "roles_hash": "6",
+        "capability_count": "7",
+        "capabilities_hash": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "LegacyMmrFinalTokenState",
+      "value": {
+        "finalized_state_root_anchor_hash": "1",
+        "mmr_token": "2",
+        "token_class_hash": "3",
+        "token_storage_layout_hash": "4",
+        "token_migration_init_hash": "5",
+        "token_contract_storage_root": "6",
+        "factory_tuple_hash": "7",
+        "total_supply": "3062541302288446171170371466885913903112",
+        "token_mutation_sequence": "10",
+        "token_mutation_accumulator": "11",
+        "relevant_balance_slot_count": "12",
+        "relevant_balance_slots_root": "13",
+        "token_authority_state_hash": "14"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14"
+      ]
+    },
+    {
+      "schema": "MMRJob",
+      "value": {
+        "sequence": "1",
+        "deployment_id": "2",
+        "game_id": "3",
+        "ranking_id": "4",
+        "participant_count": "5",
+        "module_binding": {
+          "protocol_version": "6",
+          "ruleset_id": "7",
+          "module": "8",
+          "program_id": "9",
+          "verification_key_hash": "10",
+          "mmr_policy_hash": "11",
+          "release_bundle_hash": "12",
+          "settlement_chunk_size": "13"
+        },
+        "module_aux_hash": "14",
+        "funding_scope_id": "15",
+        "funding_job_id": "16",
+        "state": "17",
+        "snapshot_cursor": "18",
+        "snapshot_commitment": "19",
+        "plan_root": "20",
+        "update_cursor": "21",
+        "applied_updates_hash": "22"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16",
+        "17",
+        "18",
+        "19",
+        "20",
+        "21",
+        "22"
+      ]
+    },
+    {
+      "schema": "FinalizedStarknetHeader",
+      "value": {
+        "chain_id": "1",
+        "block_number": "2",
+        "block_hash": "3",
+        "parent_hash": "4",
+        "state_root": "5",
+        "finalized_l1_block_number": "6",
+        "finalized_l1_block_hash": "7"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "schema": "StarknetHeaderSourcePolicy",
+      "value": {
+        "chain_id": "1",
+        "recursive_finality_verifier": "2",
+        "initial_trusted_header_hash": "3",
+        "initial_trusted_block_number": "4",
+        "hardened_piltover_l1": "5",
+        "piltover_storage_layout_hash": "6",
+        "max_finality_proof_felts": "7",
+        "max_storage_proof_felts": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "AppliedIngressResult",
+      "value": {
+        "activation": {
+          "ingress_id": "1",
+          "source_message_id": "2",
+          "applied_hash": "3"
+        },
+        "batch_id": "4",
+        "appended_liability_count": "5",
+        "appended_liabilities_hash": "6",
+        "economic_effect_hash": "7"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ]
+    },
+    {
+      "schema": "GameForcedExitProgress",
+      "value": {
+        "exit_id": "1",
+        "game_id": "2",
+        "phase": "3",
+        "family_cursor": "4",
+        "item_cursor": "5",
+        "appended_liability_count": "6",
+        "liabilities_hash": "7",
+        "terminal": false
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "0"
+      ]
+    },
+    {
+      "schema": "PlayerBindingRequest",
+      "value": {
+        "ingress_id": "1",
+        "recipient_l1": "2",
+        "player_l2": "3",
+        "binding_nonce": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "ResourceDepositMessage",
+      "value": {
+        "ingress_id": "1",
+        "game_id": "2",
+        "asset_id": "3",
+        "backing_pool_id": "4",
+        "gross_amount": "2041694201525630780780247644590609268741",
+        "token_decimals": "7",
+        "player_l2": "8",
+        "recipient_l1": "9",
+        "target_structure_id": "10",
+        "client_fee_recipient": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "ScarceDepositMessage",
+      "value": {
+        "ingress_id": "1",
+        "game_id": "2",
+        "asset_id": "3",
+        "backing_pool_id": "4",
+        "purpose": "5",
+        "gross_amount": "2381976568446569244243622252022377480198",
+        "player_l2": "8",
+        "recipient_l1": "9",
+        "target_id": "10"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10"
+      ]
+    },
+    {
+      "schema": "EntitlementDepositMessage",
+      "value": {
+        "ingress_id": "1",
+        "entitlement_kind": "2",
+        "token_id": "1361129467683753853853498429727072845827",
+        "player_l2": "5",
+        "recipient_l1": "6",
+        "game_id": "7",
+        "metadata_fields": [
+          "8"
+        ],
+        "metadata_hash": "9"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "1",
+        "8",
+        "9"
+      ]
+    },
+    {
+      "schema": "TempCredentialMessage",
+      "value": {
+        "ingress_id": "1",
+        "credential_kind": "2",
+        "collection_id": "3",
+        "token_id": "1701411834604692317316873037158841057284",
+        "player_l2": "6",
+        "recipient_l1": "7",
+        "game_id": "8",
+        "attributes_raw": "9",
+        "metadata_hash": "10",
+        "lock_policy_hash": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "BlitzEntryMessage",
+      "value": {
+        "ingress_id": "1",
+        "game_id": "2",
+        "collection_id": "3",
+        "token_id": "1701411834604692317316873037158841057284",
+        "player_l2": "6",
+        "payer_l1": "7",
+        "recipient_l1": "8",
+        "payment_asset_id": "9",
+        "payment_backing_pool_id": "10",
+        "gross_fee": "4083388403051261561560495289181218537483",
+        "fee_purpose": "13",
+        "lock_policy_hash": "14"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14"
+      ]
+    },
+    {
+      "schema": "FundingGrantMessage",
+      "value": {
+        "ingress_id": "1",
+        "asset_mode": "2",
+        "asset_id": "3",
+        "backing_pool_id": "4",
+        "purpose": "5",
+        "amount_or_quota": "2381976568446569244243622252022377480198",
+        "game_id": "8",
+        "funder_l1": "9",
+        "refund_recipient_l1": "10",
+        "refund_policy_hash": "11"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11"
+      ]
+    },
+    {
+      "schema": "ForcedExitMessage",
+      "value": {
+        "request_id": "1",
+        "player_l2": "2",
+        "recipient_l1": "3",
+        "request_l1_block": "4",
+        "deadline": "5",
+        "binding_nonce": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "IngressCloseMessage",
+      "value": {
+        "cutoff_transport_nonce": "1",
+        "evidence_kind": "2",
+        "evidence_hash": "3",
+        "requested_at_l1": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "GameFreezeMessage",
+      "value": {
+        "freeze_id": "1",
+        "freeze_scope": "2",
+        "target_game_id": "3",
+        "cutoff_transport_nonce": "4",
+        "target_economic_timestamp": "5",
+        "evidence_kind": "6",
+        "evidence_hash": "7",
+        "requested_at_l1": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "FinalizationBarrierMessage",
+      "value": {
+        "barrier_id": "1",
+        "forced_exit_cutoff_transport_nonce": "2",
+        "expected_registered_game_count": "3",
+        "requested_at_l1": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "SeriesAdvanceAck",
+      "value": {
+        "series_id": "1",
+        "game_number": "2",
+        "game_id": "3",
+        "result_hash": "4",
+        "accumulator_hash": "5"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "schema": "GameRegistration",
+      "value": {
+        "game_id": "1",
+        "world": "2",
+        "game_config_hash": "3",
+        "class_bundle_hash": "4",
+        "schema_bundle_hash": "5",
+        "emitters_hash": "6",
+        "capacity_count": "7",
+        "capacity_hash": "8",
+        "series_id": "9",
+        "game_number": "10",
+        "predecessor_result_hash": "11",
+        "series_accumulator_seed_hash": "12",
+        "registration_outbox_nonce": "13"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13"
+      ]
+    },
+    {
+      "schema": "SettlementRootMessage",
+      "value": {
+        "batch_id": "1",
+        "previous_batch_hash": "2",
+        "leaf_count": "3",
+        "root": "4",
+        "asset_totals_hash": "5",
+        "ingress_activation_count": "6",
+        "ingress_activations_hash": "7",
+        "nft_reservation_count": "8",
+        "nft_reservations_hash": "9",
+        "deployment_refund_count": "10",
+        "deployment_refunds_hash": "11",
+        "lot_share_promotion_count": "12",
+        "lot_share_promotions_hash": "13"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13"
+      ]
+    },
+    {
+      "schema": "SeriesResult",
+      "value": {
+        "series_id": "1",
+        "predecessor_hash": "2",
+        "game_id": "3",
+        "result_hash": "4",
+        "valid_result": true,
+        "completed_at": "6",
+        "accumulator": [
+          "7"
+        ],
+        "accumulator_hash": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "1",
+        "6",
+        "1",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "PlayerBindingAckAux",
+      "value": {
+        "source_message_id": "1",
+        "ingress_id": "2",
+        "binding_nonce": "3"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    {
+      "schema": "ForcedExitCompletedAux",
+      "value": {
+        "source_message_id": "1",
+        "request_id": "2",
+        "liabilities_hash": "3",
+        "completion_batch_id": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "ResourcePayoutAux",
+      "value": {
+        "source_position_id": "1",
+        "generation": "2",
+        "gross_amount": "1361129467683753853853498429727072845827",
+        "loss_amount": "2041694201525630780780247644590609268741",
+        "fee_breakdown_hash": "7",
+        "conversion_policy_hash": "8"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8"
+      ]
+    },
+    {
+      "schema": "ScarcePayoutAux",
+      "value": {
+        "source_position_id": "1",
+        "generation": "2",
+        "purpose": "3",
+        "fee_breakdown_hash": "4"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "LpCompositePayoutAux",
+      "value": {
+        "lp_position_id": "1",
+        "generation": "2",
+        "pool_id": "3",
+        "shares_burned": "1701411834604692317316873037158841057284",
+        "reserve_snapshot_hash": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "FungibleOutcomePayoutAux",
+      "value": {
+        "purpose": "1",
+        "source_result_hash": "2",
+        "rank_or_share": "1361129467683753853853498429727072845827"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    {
+      "schema": "OutcomeNftPayoutAux",
+      "value": {
+        "outcome_kind": "1",
+        "source_entity_id": "2",
+        "source_nonce": "3",
+        "attributes_raw": "4",
+        "attributes_hash": "5",
+        "metadata_hash": "6"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "TempCredentialReleaseAux",
+      "value": {
+        "ingress_id": "1",
+        "collection_id": "2",
+        "token_id": "1361129467683753853853498429727072845827",
+        "release_reason": "5"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ]
+    },
+    {
+      "schema": "FeeDistributionPayoutAux",
+      "value": {
+        "source_ingress_or_withdrawal": "1",
+        "fee_kind": "2",
+        "configured_bps": "3"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3"
+      ]
+    }
+  ],
+  "u256": {
+    "value": "340282366920938463463374607431768211461",
+    "felts": [
+      "5",
+      "1"
+    ]
+  },
+  "trees": [
+    {
+      "name": "claim",
+      "depth": 6,
+      "capacity": 64,
+      "emptyLeafDomain": "EMPTY_LEAF_V1",
+      "nodeDomain": "NODE_V1",
+      "emptyNodes": [
+        "0xa751da40fa69561b2a4898d17f2391baf2b1c146d8ba2138e87c7571b2e99a",
+        "0x2b317aebf54517f608afb4ae052ab04986cf94081950001435adfb2269c4be5",
+        "0x55ede70c0a43d3655561661606d4a6c608d1a665c9de3c85699945f1230d336",
+        "0x6c8f61907cf89b49c913a804eb43478e7f60fc13d544b6a6bad713e4cebae68",
+        "0x47bf3b1641dca7b823cb01a8c2d9a1857ac0052500168575d30c9cabac59e7d",
+        "0x1901b2a38ea128c7525006fde20221863167eeab75878428dab131d3c845180",
+        "0x3b80d6b7f0905417ef92233416d7c45a19af340c6add0d16a6505fad6e63978"
+      ]
+    },
+    {
+      "name": "dormant",
+      "depth": 6,
+      "capacity": 64,
+      "emptyLeafDomain": "DORMANT_EMPTY_LEAF_V1",
+      "nodeDomain": "DORMANT_NODE_V1",
+      "emptyNodes": [
+        "0x79a53106783a03c1fb9bd6ee2a3154d2d1f3c70047c1d17f647052fa1aa825",
+        "0x2dae49316b240241a0370e223031a39db400b853dbfa0e8e817c5f0c2745aa8",
+        "0x230763802f298c4b261c92eab19a508a40644693567ed84c87ac131a3025274",
+        "0x2c522528a3c5d3447031c0262699bb758b3437d98716166d441afcf30ac59a8",
+        "0x532c956e849e55fe73767a8162f4cd17cdc22168f03a56fcdd1ce21ce7c4b18",
+        "0x499ff8c84e9e027c8a07e0f8d71fb208901e77e056cb2bdf7298ea9176f7e94",
+        "0x3d14d7b7107ff0a0197f8e076006098e8a38d53240ab6323ca93b12e418e67e"
+      ]
+    },
+    {
+      "name": "deployment-refund-source",
+      "depth": 8,
+      "capacity": 256,
+      "emptyLeafDomain": "DEPLOYMENT_REFUND_SOURCE_EMPTY_V1",
+      "nodeDomain": "DEPLOYMENT_REFUND_SOURCE_NODE_V1",
+      "emptyNodes": [
+        "0x2feaef9c043ac49211059d79df3ac0609360c5fb7965b98bc87f4adf98492db",
+        "0x3a1435b6895da56573c9b422237f4e2a44958fa84fb112b0ead31f82768b8f6",
+        "0x6bc68047ea7419a23b590e4c0629d36ad453a59ff4a89ed2edb201ba82ff06f",
+        "0x6ca5ca0935936fb45192f89248fae81da9e09e3571b1a4e77ce7423413030d9",
+        "0x7708ce6c6384dce850b696119dc10e11826bebf6489b3972c752c1baa9a2237",
+        "0x4542a56df3094544e5ea193e2175d9d4ed7562abc452127066753e4d192e33f",
+        "0x13b6afa088458c17dfc4564eac3de311146ff20588c16d91473b8131f988414",
+        "0x7e797474ffa80938b55a341fe74b5da3347ea872336a646af753173e75dcb33",
+        "0x1ca5ee5de57b00c4f67785423853df55343c3957a5442214c6539b56ad9de8d"
+      ]
+    },
+    {
+      "name": "deployment-refund-disposition",
+      "depth": 8,
+      "capacity": 256,
+      "emptyLeafDomain": "DEPLOYMENT_REFUND_DISPOSITION_EMPTY_V1",
+      "nodeDomain": "DEPLOYMENT_REFUND_DISPOSITION_NODE_V1",
+      "emptyNodes": [
+        "0x2bffa9243bd382202e80cd1e11e2546c98f58508385ea4c3183e7b1afa89b99",
+        "0x6dbffda5d22b1653d1cb3857145359dfcc2091044762633fa3b285a0f088ba9",
+        "0x5cbf02cd38c5ce13637941985af1c96a996acdc7fc90edcd81c56a423b062b9",
+        "0x373d2ceab9dbd8c95d64dfdc49dd7c1ce2f379a15d97d8660ed7bc661e609ba",
+        "0x4e7205a2e911cd229fd1ef470f467143337bfec98e63c490da3a0f13addae93",
+        "0x338cca7f99e435c7976b91f19c3824e16022dd85aafc69833172ea00db4d8",
+        "0x420154aebff72a7e4c4e98f49e873f5908a286999bc5f84b27e7a2a69c00133",
+        "0x5f8973535d8c27837a80e2a30946544cb0feb9f6f2c0caa4416dca49d9a4fa5",
+        "0x34e76b3a03bfefe883b7f128b3d785b2969eb0186eb8c2df1c8aacf9dd58225"
+      ]
+    }
+  ]
+}

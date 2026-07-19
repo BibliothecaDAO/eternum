@@ -1,0 +1,14 @@
+[package]
+name = "eternum-settlement"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+starknet-crypto = "0.8.1"
+
+[lints.rust]
+unsafe_code = "forbid"
