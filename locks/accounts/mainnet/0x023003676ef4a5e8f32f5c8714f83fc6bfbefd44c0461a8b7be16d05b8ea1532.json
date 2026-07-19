@@ -5,15 +5,14 @@
   "owner": {
     "environment": "mainnet.eternum",
     "gameName": "etrn-flare-242",
-    "launchRequestId": "29681493036-1",
+    "launchRequestId": "29681553941-1",
     "workflowName": "Game Launch",
-    "workflowRunId": 29681493036,
+    "workflowRunId": 29681553941,
     "workflowRunAttempt": 1,
     "stepId": "create-world",
-    "leaseId": "aaaf8f67-07e1-4b7b-b6ca-840434df38c9"
+    "leaseId": "3ddd7c8a-ccc1-43d6-888f-47a4bea6cc4c"
   },
-  "acquiredAt": "2026-07-19T09:24:38.986Z",
-  "heartbeatAt": "2026-07-19T09:24:43.024Z",
-  "expiresAt": "2026-07-19T09:24:43.024Z",
-  "releasedAt": "2026-07-19T09:24:43.024Z"
+  "acquiredAt": "2026-07-19T09:26:45.245Z",
+  "heartbeatAt": "2026-07-19T09:26:45.245Z",
+  "expiresAt": "2026-07-19T09:36:45.245Z"
 }
