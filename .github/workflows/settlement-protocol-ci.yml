@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "contracts/settlement_protocol/**"
+      - "contracts/settlement_appchain/**"
       - "contracts/game/src/**"
       - "packages/settlement-codec/**"
       - "proofs/eternum-settlement/**"
@@ -68,6 +69,13 @@ jobs:
 
       - name: Check and test Cairo schemas
         working-directory: contracts/settlement_protocol
+        run: |
+          scarb fmt --check
+          scarb build
+          snforge test
+
+      - name: Check and test appchain settlement topology
+        working-directory: contracts/settlement_appchain
         run: |
           scarb fmt --check
           scarb build

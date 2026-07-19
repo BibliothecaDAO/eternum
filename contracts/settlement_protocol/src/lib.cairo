@@ -1,3 +1,4 @@
+pub mod appchain_spike_interfaces;
 pub mod economic_candidate;
 pub mod economic_state_spike;
 pub mod golden_vectors;

@@ -1,0 +1,19 @@
+[package]
+name = "settlement_appchain"
+version = "0.1.0"
+edition = "2024_07"
+cairo-version = "2.13.1"
+
+[dependencies]
+settlement_protocol = { path = "../settlement_protocol" }
+starknet = "2.13.1"
+
+[dev-dependencies]
+snforge_std = "0.51.2"
+
+[scripts]
+test = "snforge test"
+
+[tool.fmt]
+sort-module-level-items = true
+max-line-length = 120
