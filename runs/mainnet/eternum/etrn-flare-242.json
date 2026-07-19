@@ -6,14 +6,14 @@
   "chain": "mainnet",
   "gameType": "eternum",
   "gameName": "etrn-flare-242",
-  "status": "attention",
+  "status": "running",
   "executionMode": "fast_trial",
   "requestedLaunchStep": "full",
   "inputPath": "inputs/mainnet/eternum/etrn-flare-242/29681585638-1.json",
   "latestLaunchRequestId": "29681585638-1",
   "currentStepId": "create-world",
   "createdAt": "2026-07-19T09:21:52.997Z",
-  "updatedAt": "2026-07-19T09:27:38.080Z",
+  "updatedAt": "2026-07-19T09:27:42.905Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -27,12 +27,11 @@
     {
       "id": "create-world",
       "title": "Creating world",
-      "status": "failed",
+      "status": "running",
       "workflowStepName": "Creating world",
-      "latestEvent": "Creating world failed: \u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"etrn-flare-242\" on mainnet.eternum\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 31 config steps for mainnet.eternum\nError: Failed to fetch world deployment: 404 Not Found\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:51:15)\n    at processTicksAndRejections (native:7:39)",
-      "startedAt": "2026-07-19T09:26:41.964Z",
-      "finishedAt": "2026-07-19T09:26:51.932Z",
-      "errorMessage": "\u001b[2m[+0ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Preparing launch for \"etrn-flare-242\" on mainnet.eternum\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Effective config flags: dev_mode_on=false, duration_seconds=7200, single_realm_mode=false, two_player_mode=false\n\u001b[2m[+12ms]\u001b[0m \u001b[1m\u001b[36mINFO\u001b[0m Resolved 31 config steps for mainnet.eternum\nError: Failed to fetch world deployment: 404 Not Found\n    at fetchFactorySqlRows (/home/runner/work/eternum/eternum/config/deployer/clean/factory/discovery.ts:51:15)\n    at processTicksAndRejections (native:7:39)"
+      "latestEvent": "Creating world started",
+      "startedAt": "2026-07-19T09:27:42.905Z",
+      "finishedAt": "2026-07-19T09:26:51.932Z"
     },
     {
       "id": "wait-for-factory-index",
@@ -86,5 +85,13 @@
   ],
   "artifacts": {
     "scheduledStartTime": "2026-07-19T10:00:00.000Z"
+  },
+  "activeLease": {
+    "launchRequestId": "29681585638-1",
+    "workflowRunId": 29681585638,
+    "workflowRunAttempt": 1,
+    "stepId": "create-world",
+    "acquiredAt": "2026-07-19T09:27:42.905Z",
+    "expiresAt": "2026-07-19T10:12:42.905Z"
   }
 }
