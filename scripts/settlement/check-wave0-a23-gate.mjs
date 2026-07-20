@@ -5,6 +5,7 @@ import { resolve } from "node:path";
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const decision = readJson("packages/settlement-codec/schema/wave0-a23-stop-decision-v1.json");
 const schemaRegistry = readJson("packages/settlement-codec/schema/schema-registry-v1.json");
+const frozenPosition = readJson("packages/settlement-codec/schema/frozen-position-a5-v1.json");
 const authority = readJson("packages/settlement-codec/schema/authority-inventory-v1.json");
 const exitFamilies = readJson("packages/settlement-codec/schema/exit-family-inventory-v0.json");
 
@@ -42,6 +43,19 @@ function assertFrozenAndCandidateInputs() {
   const inputs = decision.frozenAndCandidateInputs;
   assertEqual(inputs.protocolSchema.registryHash, schemaRegistry.schemaRegistryHash, "protocol registry hash");
   assertFileHash("packages/settlement-codec/schema/schema-registry-v1.json", inputs.protocolSchema.fileSha256);
+
+  assertEqual(frozenPosition.status, "reference-seam-complete-production-proof-blocked", "A5 frozen-position status");
+  assertEqual(frozenPosition.releaseReady, false, "A5 release readiness");
+  assertEqual(decision.wave0.find(({ ticket }) => ticket === "A5")?.status, frozenPosition.status, "A5 Wave 0 status");
+  assertEqual(frozenPosition.protocolRegistryHash, schemaRegistry.schemaRegistryHash, "A5 protocol registry hash");
+  assertEqual(
+    frozenPosition.crossLanguageVector.journalHash,
+    inputs.frozenPositionProof.journalHash,
+    "A5 journal hash",
+  );
+  assertEqual(frozenPosition.costEvidence.sp1ProveDurationMs, null, "A5 SP1 prove evidence");
+  assertEqual(frozenPosition.costEvidence.sp1VerifyDurationMs, null, "A5 SP1 verify evidence");
+  assertFileHash("packages/settlement-codec/schema/frozen-position-a5-v1.json", inputs.frozenPositionProof.fileSha256);
 
   assertEqual(authority.status, "blocked-a20-mutation-review", "A20 inventory status");
   assertEqual(authority.releaseReady, false, "A20 release readiness");

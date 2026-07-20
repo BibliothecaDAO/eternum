@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "ticket": "A5",
+  "status": "reference-seam-complete-production-proof-blocked",
+  "releaseReady": false,
+  "protocolRegistryHash": "0x48438d95ee40b261867e227b0006d5e52e43c6be8660c2799895b07704039dd",
+  "publicInputs": [
+    "deployment_id",
+    "game_id",
+    "chain_id",
+    "world",
+    "class_hash",
+    "schema_hash",
+    "layout_hash",
+    "state_root",
+    "frozen_block_number",
+    "position_family",
+    "position_id",
+    "position_generation",
+    "source_state",
+    "owner_l2",
+    "recipient_l1",
+    "liability_id",
+    "recovery_policy_hash",
+    "payout_legs_hash",
+    "final_outbox_cursor"
+  ],
+  "sourceStates": {
+    "1": "ActivePosition",
+    "2": "UnsealedPending",
+    "3": "BatchAssignedOpen"
+  },
+  "canonicalDomains": {
+    "claimLegs": "CLAIM_LEGS_V1",
+    "exitClaim": "EXIT_CLAIM_V1",
+    "program": "FROZEN_POSITION_PROGRAM_V1",
+    "referenceState": "KATANA_REFERENCE_STATE_V1",
+    "journal": "FROZEN_POSITION_JOURNAL_V1"
+  },
+  "crossLanguageVector": {
+    "payoutLegsHash": "0x517b79f2017cab86758286645e1d32ba5f9b507f1260767dc3625e419f33082",
+    "claimHash": "0x41c6f6d9243cada591946f7a9a945bb8b35e14a9eb1c029e71d0cef866e8fc",
+    "journalHash": "0x7d37e77b8cc5f0db16705e88b91ac862f125d684b8fa5644992eee730db58bc",
+    "implementations": ["Cairo", "TypeScript", "Rust"]
+  },
+  "referenceCoverage": {
+    "accepted": [
+      "active-position-zero-client-quote",
+      "unsealed-pending-exact-body-parent-and-lot-commitments",
+      "open-batch-assignment-exact-body-parent-and-lot-commitments"
+    ],
+    "rejected": [
+      "wrong-state-root",
+      "wrong-layout",
+      "wrong-owner",
+      "wrong-position-index",
+      "wrong-generation-or-liability",
+      "wrong-formula-policy",
+      "wrong-leg-hash",
+      "sealed-assignment",
+      "cursor-covered-assignment",
+      "unbacked-open-assignment"
+    ]
+  },
+  "costEvidence": {
+    "referenceCairoVectorTestL2Gas": 360577,
+    "referenceCairoNegativeTestL2Gas": 626618,
+    "sp1ProveDurationMs": null,
+    "sp1VerifyDurationMs": null,
+    "sp1ProofBytes": null,
+    "cairoSuccinctProofFelts": null,
+    "result": "production-cost-evidence-unavailable"
+  },
+  "productionBlockers": [
+    {
+      "id": "PINNED-KATANA-MULTIPROOF",
+      "reason": "Authenticated source access is unavailable for katana-tee commit 6a263b017aa37903b8d65cf28c9f52cd24cb5807, so the reference state commitment cannot yet be replaced with the production Patricia MultiProof adapter and generated Dojo/Hub slot layout."
+    },
+    {
+      "id": "SP1-RECEIPT-AND-COST",
+      "reason": "cargo-prove and sp1up are unavailable in the current environment and only 2.4 GiB is free; no production program/VK identity, succinct receipt, proof size, or prove/verify duration is claimed."
+    }
+  ]
+}

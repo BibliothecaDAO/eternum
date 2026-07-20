@@ -18,7 +18,7 @@
     { "ticket": "A2", "status": "complete" },
     { "ticket": "A3", "status": "complete" },
     { "ticket": "A4", "status": "complete" },
-    { "ticket": "A5", "status": "absent", "mandatoryBlocker": true },
+    { "ticket": "A5", "status": "reference-seam-complete-production-proof-blocked", "mandatoryBlocker": true },
     { "ticket": "A6", "status": "complete" },
     { "ticket": "A7", "status": "complete" },
     { "ticket": "A8", "status": "blocked-on-a22-and-authorized-aws", "mandatoryBlocker": true },
@@ -41,8 +41,14 @@
   "frozenAndCandidateInputs": {
     "protocolSchema": {
       "status": "frozen-wave0-v1",
-      "registryHash": "0x62bdbaf8c725979407d6677225ed00da740019043d9a3214734db3aa408df82",
-      "fileSha256": "65805b5d48a888aa8ed33aa33f6719f66037b73fdf26322d6e76253ffc02732f"
+      "registryHash": "0x48438d95ee40b261867e227b0006d5e52e43c6be8660c2799895b07704039dd",
+      "fileSha256": "9d8ab1f6ba24919b1f32ed618a6fe9d30fe448231e1aabb975fe099245262601"
+    },
+    "frozenPositionProof": {
+      "status": "reference-seam-complete-production-proof-blocked",
+      "fileSha256": "6881de840557fec2c1dccb2cd68cd7331c9fe736194a29b1cacfae070cdcec9a",
+      "journalHash": "0x7d37e77b8cc5f0db16705e88b91ac862f125d684b8fa5644992eee730db58bc",
+      "releaseReady": false
     },
     "authorityInventory": {
       "status": "candidate-not-frozen",
@@ -81,13 +87,29 @@
       "worstDistributionSteps": 8987742,
       "result": "pass"
     },
-    "unavailableMandatoryCampaigns": ["A5", "A8", "A13-production-receipt", "A15", "A16", "A19", "A21"]
+    "a5": {
+      "status": "reference-seam-complete-production-proof-blocked",
+      "artifact": "packages/settlement-codec/schema/frozen-position-a5-v1.json",
+      "cairoVectorTestL2Gas": 360577,
+      "cairoNegativeTestL2Gas": 626618,
+      "sp1ProveDurationMs": null,
+      "sp1VerifyDurationMs": null
+    },
+    "unavailableMandatoryCampaigns": [
+      "A5-production-katana-sp1",
+      "A8",
+      "A13-production-receipt",
+      "A15",
+      "A16",
+      "A19",
+      "A21"
+    ]
   },
   "topologyDecision": {
     "status": "frozen-hub-owned-v1",
     "a17SealBoundary": "SeasonSettlementHub-owned game and global active/cumulative aggregates with one central sealed-batch bit",
     "removedFromAtomicBoundary": "Fallible cross-contract EconomicStateSystem promotion callbacks",
-    "protocolRegistryHash": "0x62bdbaf8c725979407d6677225ed00da740019043d9a3214734db3aa408df82",
+    "protocolRegistryHash": "0x48438d95ee40b261867e227b0006d5e52e43c6be8660c2799895b07704039dd",
     "aggregateViewTrait": "ISeasonSettlementHubAggregateView",
     "productionRequirement": "D4 must implement the frozen Hub-owned aggregate view and cannot reintroduce a seal-time promotion callback."
   },
@@ -121,7 +143,7 @@
     },
     {
       "id": "MISSING-PROOF-GATES",
-      "action": "Complete A5, A13, A15, A16, A19, and A21 proof and maximum-bound evidence."
+      "action": "Replace A5's reference state seam with the pinned Katana MultiProof adapter and production SP1 receipt/cost evidence; complete A13, A15, A16, A19, and A21 proof and maximum-bound evidence."
     }
   ],
   "authorization": {
