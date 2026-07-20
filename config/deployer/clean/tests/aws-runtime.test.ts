@@ -2686,7 +2686,7 @@ describe("AWS runtime helpers", () => {
         "--operation",
         "deploy",
         "--environment",
-        "slot.blitz",
+        "sepolia.blitz",
         "--runtime-kind",
         "torii",
         "--runtime-name",
@@ -2751,7 +2751,7 @@ describe("AWS runtime helpers", () => {
         "--operation",
         "deploy",
         "--environment",
-        "slot.blitz",
+        "sepolia.blitz",
         "--runtime-kind",
         "torii",
         "--runtime-name",
@@ -2801,7 +2801,7 @@ describe("AWS runtime helpers", () => {
         "--operation",
         "deploy",
         "--environment",
-        "slot.blitz",
+        "sepolia.blitz",
         "--runtime-kind",
         "torii",
         "--runtime-name",
@@ -2839,7 +2839,7 @@ describe("AWS runtime helpers", () => {
         "--operation",
         "deploy",
         "--environment",
-        "slot.blitz",
+        "sepolia.blitz",
         "--runtime-kind",
         "torii",
         "--runtime-name",
@@ -2871,7 +2871,7 @@ describe("AWS runtime helpers", () => {
     );
     expect(containers[0]?.environment).toContainEqual({
       name: "RPC_URL",
-      value: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+      value: "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9",
     });
   });
 
@@ -2889,7 +2889,7 @@ describe("AWS runtime helpers", () => {
         "--operation",
         "deploy",
         "--environment",
-        "slot.blitz",
+        "sepolia.blitz",
         "--runtime-kind",
         "torii",
         "--runtime-name",
@@ -2928,7 +2928,7 @@ describe("AWS runtime helpers", () => {
         "--operation",
         "deploy",
         "--environment",
-        "slot.blitz",
+        "sepolia.blitz",
         "--runtime-kind",
         "torii",
         "--runtime-name",
@@ -2947,7 +2947,7 @@ describe("AWS runtime helpers", () => {
     const payload = JSON.parse(result.stdout);
     expect(payload).toMatchObject({
       operation: "deploy",
-      environmentId: "slot.blitz",
+      environmentId: "sepolia.blitz",
       runtimeKind: "torii",
       runtimeName: "bltz-fire-gate-42",
       failureClassification: "runtime-validation",

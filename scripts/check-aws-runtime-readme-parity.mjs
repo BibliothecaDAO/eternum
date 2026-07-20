@@ -14,15 +14,6 @@ const defaultForbiddenVariablePaths = [
   "deploy/aws/README.md",
 ];
 const forbiddenVariablePaths = resolveForbiddenVariablePaths();
-const supportedGithubEnvironments = [
-  "slot.blitz",
-  "slot.eternum",
-  "slottest.blitz",
-  "slottest.eternum",
-  "mainnet.blitz",
-  "mainnet.eternum",
-];
-
 function main() {
   const outputVariables = extractTerraformOutputVariables(fs.readFileSync(outputsPath, "utf8"));
   const variables = fs.readFileSync(variablesPath, "utf8");
@@ -110,10 +101,8 @@ function findMisclassifiedOutputVariables(outputVariables, operatorVariables) {
 function validateEnvironmentChecklist(source) {
   const requiredSnippets = [
     "## GitHub Environment Checklist",
-    "`slot.blitz`",
-    "`slot.eternum`",
-    "`slottest.blitz`",
-    "`slottest.eternum`",
+    "`sepolia.blitz`",
+    "`sepolia.eternum`",
     "`mainnet.blitz`",
     "`mainnet.eternum`",
     "required reviewers",

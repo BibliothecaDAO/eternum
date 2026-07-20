@@ -9048,7 +9048,7 @@
       "evidencePath": "config/deployer/clean/cli/grant-village-pass-minter-role.ts",
       "replacementPath": "",
       "replacementPathHash": "0x0",
-      "evidenceHash": "0x3dcf60154cff9e771b75ecadadbab4484329ffb53263a701880dfdaff79481f"
+      "evidenceHash": "0x113db0544feba32b093dcf0ca9f5fa56482a71c72c408456243d3f4285a3926"
     },
     {
       "path": "config/deployer/clean/config/native-steps.ts#factory-mutation",
@@ -9142,7 +9142,7 @@
       "target_semantic_key": "0x2a1762cdb52b0af5e7805a2af96dff80d9ae552f32c53418360e8f81986e069",
       "production_disposition": 1,
       "replacement_path_hash": "0x0",
-      "evidence_hash": "0x3dcf60154cff9e771b75ecadadbab4484329ffb53263a701880dfdaff79481f"
+      "evidence_hash": "0x113db0544feba32b093dcf0ca9f5fa56482a71c72c408456243d3f4285a3926"
     },
     {
       "path_hash": "0x3e9717bbd201c5bef7453f512b38b125a13d410ed436f9595b221b8f3a28c73",
@@ -9193,7 +9193,7 @@
       "evidence_hash": "0x306f9b73aba36c0c98139e05522f4334dc02c01b2957e378bf2e1b1201ec034"
     }
   ],
-  "privilegedMutationPathsHash": "0x5ebca1d3b1c5143a39a1c03894e8cff90cb021d1106a9bf56a8e2767494c8cb",
+  "privilegedMutationPathsHash": "0x1cd032694feb23bdd5ff32e0d3cd05a6649fb2c2a004a2ca719a220423e924f",
   "discoveredMutationPathHashes": [
     "0x7605641f1f55346869a71d3d7b1b6807b522de2ed111125567000cc42ca24",
     "0xb87878adfda15363310486a1649c5bb7178cc8b1244706e3a55fc50a6ffe9",
@@ -9213,6 +9213,7 @@
     "0x863260af8d1948789899baf4e83443a0ea9f2f3755fb50044d902cb2e90aee",
     "0x9bd38f6b3ddcc26d96de5336f43f3dd325a04116257b958747407acc384506",
     "0xa6a2f4721bc47ab2cc89b4610a2bef726a800afffabe922883494822a2739f",
+    "0xa7d3d34b3a1eaef78647e415e4864c2d0749f02e06d6024d450adcab159c92",
     "0xaf84cf515f8193bfa974003a326b5d8e726f7b35463a78918d84cab2d8553f",
     "0xbefc8436e4c06c1b393b9af5ccbbfe33ed47c7d0bf9161de4d31e2c3fc1032",
     "0xbf5d195843a4c423f86501fdb87b6db5aeb7dd56d800a994c5fa696f6d2dbb",
@@ -9287,6 +9288,14 @@
   "mutationPolicyPath": "packages/settlement-codec/schema/authority-mutation-policy-v1.json",
   "mutationPolicyStatus": "a20-review-in-progress",
   "unresolvedMutationCandidates": [
+    {
+      "path": "config/deployer/clean/game-stack/orchestrator.ts#deploy",
+      "sourcePath": "config/deployer/clean/game-stack/orchestrator.ts",
+      "operation": "deploy",
+      "pathHash": "0xa7d3d34b3a1eaef78647e415e4864c2d0749f02e06d6024d450adcab159c92",
+      "operationKind": 1,
+      "targetSemanticKey": "0x1b53c861bd5d7b74f3a03232b0c9fb015b76a4130f14466f988be70841e1e41"
+    },
     {
       "path": "config/deployer/config.ts#factory-mutation",
       "sourcePath": "config/deployer/config.ts",
@@ -9951,6 +9960,7 @@
     "0x863260af8d1948789899baf4e83443a0ea9f2f3755fb50044d902cb2e90aee",
     "0x9bd38f6b3ddcc26d96de5336f43f3dd325a04116257b958747407acc384506",
     "0xa6a2f4721bc47ab2cc89b4610a2bef726a800afffabe922883494822a2739f",
+    "0xa7d3d34b3a1eaef78647e415e4864c2d0749f02e06d6024d450adcab159c92",
     "0xaf84cf515f8193bfa974003a326b5d8e726f7b35463a78918d84cab2d8553f",
     "0xbefc8436e4c06c1b393b9af5ccbbfe33ed47c7d0bf9161de4d31e2c3fc1032",
     "0xbf5d195843a4c423f86501fdb87b6db5aeb7dd56d800a994c5fa696f6d2dbb",

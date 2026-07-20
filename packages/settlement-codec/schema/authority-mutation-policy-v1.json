@@ -35,6 +35,7 @@
   "readOnlyOperations": [],
   "consumedMigrationOperations": [],
   "unresolvedOperations": [
+    "config/deployer/clean/game-stack/orchestrator.ts#deploy",
     "config/deployer/config.ts#role-mutation",
     "contracts/amm/ext/scripts/deployment/declare.js#declare",
     "contracts/amm/ext/scripts/deployment/deploy.js#deploy",

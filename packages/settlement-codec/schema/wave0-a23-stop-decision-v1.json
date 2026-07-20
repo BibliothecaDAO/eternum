@@ -46,11 +46,11 @@
     },
     "authorityInventory": {
       "status": "candidate-not-frozen",
-      "fileSha256": "8b79672b7609395ac3bccecffe58c197675e51ddfaf9e7bc6f2ef705869726ff",
+      "fileSha256": "56d98547a42810fb5d5148b579cb37232961b93b7c572903d060f7882848b560",
       "authoritativeAddressInputsHash": "0x12b8109e3c40736c6fe819afd4fdcc5cc14bdbf09f1abc182293149e148c203",
-      "privilegedMutationPathsHash": "0x5ebca1d3b1c5143a39a1c03894e8cff90cb021d1106a9bf56a8e2767494c8cb",
+      "privilegedMutationPathsHash": "0x1cd032694feb23bdd5ff32e0d3cd05a6649fb2c2a004a2ca719a220423e924f",
       "candidateAuthoritySchemaHash": "0x69be751e24fd87fcb27cbb1a57a11b94f8f3e856b43f96fe899fdd2d0bdb1b7",
-      "unresolvedMutationCandidates": 81,
+      "unresolvedMutationCandidates": 82,
       "releaseReady": false
     },
     "exitFamilyInventory": {
