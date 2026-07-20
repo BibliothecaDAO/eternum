@@ -3,6 +3,7 @@ import { type EnvironmentContext, resolveConfiguredAddress } from "../common/env
 import type { ConfigPatch } from "../common/merge-config";
 import { mergeConfigPatches } from "../common/merge-config";
 import type { Chain } from "../common/types";
+import { resolveBlitzRegistrationAddresses } from "./addresses";
 
 const LOCAL_BLITZ_CHAIN_CONFIG: ConfigPatch = {
   troop: {
@@ -152,14 +153,7 @@ function resolveBlitzContractAddressConfig(context: EnvironmentContext): ConfigP
       mmr_token_address: resolveConfiguredAddress(addresses.mmrToken),
     },
     blitz: {
-      registration: {
-        fee_token: resolveConfiguredAddress(addresses.lords),
-        entry_token_class_hash: resolveConfiguredAddress(addresses.collectiblesClassHash),
-        collectible_cosmetics_address: resolveConfiguredAddress(addresses["Collectibles: Realms: Cosmetic Items"]),
-        collectible_timelock_address: resolveConfiguredAddress(addresses["Collectibles: Timelock Maker"]),
-        collectibles_lootchest_address: resolveConfiguredAddress(addresses["Collectibles: Realms: Loot Chest"]),
-        collectibles_elitenft_address: resolveConfiguredAddress(addresses["Collectibles: Realms: Elite Invite"]),
-      },
+      registration: resolveBlitzRegistrationAddresses(context),
     },
   };
 }

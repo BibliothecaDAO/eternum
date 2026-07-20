@@ -9,6 +9,7 @@ import {
   buildLaunchSeriesRequest,
   resolveLaunchGameStepId,
 } from "../cli/launch-request";
+import { DEFAULT_MAINNET_FACTORY_ADDRESS, DEFAULT_SLOTTEST_FACTORY_ADDRESS } from "../constants";
 
 const TEMP_DIRECTORIES: string[] = [];
 
@@ -44,7 +45,7 @@ describe("launch request helpers", () => {
         environment: "mainnet.blitz",
         game: "bltz-test-1",
         "start-time": "2026-03-18T10:00:00Z",
-        "factory-address": "0xabc",
+        "factory-address": DEFAULT_MAINNET_FACTORY_ADDRESS,
         "two-player-mode": "true",
         "duration-seconds": "3600",
         "map-config-overrides-json": JSON.stringify({
@@ -65,7 +66,7 @@ describe("launch request helpers", () => {
       environmentId: "mainnet.blitz",
       gameName: "bltz-test-1",
       startTime: "2026-03-18T10:00:00Z",
-      factoryAddress: "0xabc",
+      factoryAddress: DEFAULT_MAINNET_FACTORY_ADDRESS,
       twoPlayerMode: true,
       durationSeconds: 3600,
       mapConfigOverrides: {
@@ -82,6 +83,27 @@ describe("launch request helpers", () => {
         fee_amount: "40000",
       },
     });
+  });
+
+  test("rejects a CLI factory address that differs from the selected environment authority", () => {
+    expect(() =>
+      buildLaunchGameRequest({
+        environment: "mainnet.blitz",
+        game: "bltz-test-1",
+        "start-time": "2026-03-18T10:00:00Z",
+        "factory-address": "0xabc",
+      }),
+    ).toThrow("must repeat the authoritative factory address");
+  });
+
+  test("uses the explicit slottest factory authority instead of inheriting an unnamed Slot default", () => {
+    const request = buildLaunchGameRequest({
+      environment: "slottest.blitz",
+      game: "bltz-test-1",
+      "start-time": "2026-03-18T10:00:00Z",
+    });
+
+    expect(request.factoryAddress).toBe(DEFAULT_SLOTTEST_FACTORY_ADDRESS);
   });
 
   test("defaults max actions from the selected environment", () => {

@@ -88,12 +88,19 @@ jobs:
           pnpm run check:settlement-trees
           pnpm run check:economic-write-inventory
           pnpm run check:config-setter-inventory
+          pnpm run check:generated-config
+          pnpm run check:authority-inventory
           pnpm run check:economic-interface-schema
           pnpm run check:package-lock-matrix
           pnpm run check:deployment-identity-vector
 
       - name: Test TypeScript codecs
         run: pnpm --dir packages/settlement-codec test
+
+      - name: Verify finalized authority evidence and local class provenance
+        run: |
+          pnpm run verify:authority-observation
+          pnpm run verify:authority-source-rebuild
 
       - name: Test independent deployment identity compiler
         run: pnpm vitest run config/deployer/clean/tests/settlement-deployment-identity.test.ts

@@ -11,20 +11,27 @@ function bigIntReplacer(_key: string, value: unknown) {
   return typeof value === "bigint" ? value.toString() : value;
 }
 
+export function renderResolvedConfigJson(configuration: unknown): string {
+  return `{
+      "generatedFromTsFile": true,
+      "message": "This file was generated from the composed config source and should not be edited manually",
+      "configuration": ${JSON.stringify(configuration, bigIntReplacer, 2)}
+    }`;
+}
+
+export function assertGeneratedConfigArtifactCurrent(path: string, expected: string, actual: string): void {
+  if (actual !== expected) {
+    throw new Error(`generated config artifact is stale or hand-edited: ${path}`);
+  }
+}
+
 export async function saveResolvedConfigJson(chain: NetworkType, gameType: GameType) {
   const configurationJson = await buildConfig({
     chain,
     gameType,
   });
-
-  const dataDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../generated");
-  const targetPath = `${dataDir}/${gameType}.${chain}.json`;
-
-  const jsonFileContent = `{
-      "generatedFromTsFile": true,
-      "message": "This file was generated from the composed config source and should not be edited manually",
-      "configuration": ${JSON.stringify(configurationJson, bigIntReplacer, 2)}
-    }`;
+  const { dataDir, targetPath } = resolveGeneratedConfigPath(chain, gameType);
+  const jsonFileContent = renderResolvedConfigJson(configurationJson);
 
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
@@ -32,6 +39,21 @@ export async function saveResolvedConfigJson(chain: NetworkType, gameType: GameT
   const tmpPath = `${targetPath}.tmp`;
   fs.writeFileSync(tmpPath, jsonFileContent);
   fs.renameSync(tmpPath, targetPath);
+}
+
+export async function checkResolvedConfigJson(chain: NetworkType, gameType: GameType): Promise<void> {
+  const configuration = await buildConfig({ chain, gameType });
+  const { targetPath } = resolveGeneratedConfigPath(chain, gameType);
+  assertGeneratedConfigArtifactCurrent(
+    targetPath,
+    renderResolvedConfigJson(configuration),
+    fs.readFileSync(targetPath, "utf8"),
+  );
+}
+
+function resolveGeneratedConfigPath(chain: NetworkType, gameType: GameType) {
+  const dataDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../generated");
+  return { dataDir, targetPath: `${dataDir}/${gameType}.${chain}.json` };
 }
 
 /**

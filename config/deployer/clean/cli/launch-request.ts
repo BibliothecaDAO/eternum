@@ -5,7 +5,7 @@ import {
   DEFAULT_NAMESPACE,
   DEFAULT_VERSION,
 } from "../constants";
-import { resolveDeploymentEnvironment } from "../environment";
+import { resolveAuthoritativeFactoryAddress, resolveDeploymentEnvironment } from "../environment";
 import type {
   FactoryBiomeClimateOverrides,
   FactoryBlitzRegistrationOverrides,
@@ -506,11 +506,13 @@ function requireRotationLaunchArgs(args: Args): {
   };
 }
 
-function resolveSharedLaunchRequestOptions(args: Args) {
+function resolveSharedLaunchRequestOptions(args: Args, environment: ReturnType<typeof resolveDeploymentEnvironment>) {
+  const requestedFactoryAddress = args["factory-address"] || process.env.FACTORY_ADDRESS;
+
   return {
     runtimeInstanceId: resolveOptionalArg(args, "runtime-instance-id", ["GAME_LAUNCH_RUNTIME_INSTANCE_ID"]),
     rpcUrl: args["rpc-url"] || process.env.RPC_URL || process.env.VITE_PUBLIC_NODE_URL,
-    factoryAddress: args["factory-address"] || process.env.FACTORY_ADDRESS,
+    factoryAddress: resolveAuthoritativeFactoryAddress(environment, requestedFactoryAddress),
     accountAddress: resolveOptionalArg(args, "account-address", ["DOJO_ACCOUNT_ADDRESS", "VITE_PUBLIC_MASTER_ADDRESS"]),
     privateKey: resolveOptionalArg(args, "private-key", ["DOJO_PRIVATE_KEY", "VITE_PUBLIC_MASTER_PRIVATE_KEY"]),
     devModeOn: resolveOptionalBooleanArg(args, "dev-mode-on", ["DEV_MODE_ON"]),
@@ -571,7 +573,7 @@ export function buildLaunchGameRequest(args: Args): LaunchGameRequest {
     environmentId: requiredArgs.environmentId,
     gameName: requiredArgs.gameName,
     startTime: requiredArgs.startTime,
-    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs, environment),
     maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     seriesName: resolvedArgs["series-name"],
     seriesGameNumber: resolveOptionalNumber(resolvedArgs["series-game-number"], "series game number"),
@@ -589,7 +591,7 @@ export function buildLaunchSeriesRequest(args: Args): LaunchSeriesRequest {
     seriesName: requiredArgs.seriesName,
     games: requiredArgs.games,
     targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
-    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs, environment),
     maxActions: resolveOptionalNumber(resolvedArgs["max-actions"], "max actions") ?? environment.createGame.maxActions,
     autoRetryEnabled:
       resolveOptionalBooleanArg(resolvedArgs, "auto-retry-enabled", ["GAME_LAUNCH_AUTO_RETRY_ENABLED"]) ?? true,
@@ -617,7 +619,7 @@ export function buildLaunchRotationRequest(args: Args): LaunchRotationRequest {
     weeklyCadence: requiredArgs.weeklyCadence,
     targetGameNames: resolveTargetGameNamesJson(resolvedArgs),
     evaluationIntervalMinutes: requiredArgs.evaluationIntervalMinutes,
-    ...resolveSharedLaunchRequestOptions(resolvedArgs),
+    ...resolveSharedLaunchRequestOptions(resolvedArgs, environment),
     biomeClimateOverridesByGameNumber: resolveBiomeClimateOverridesByGameNumber(
       resolveOptionalArg(resolvedArgs, "biome-climate-overrides-by-game-number-json", [
         "BIOME_CLIMATE_OVERRIDES_BY_GAME_NUMBER_JSON",

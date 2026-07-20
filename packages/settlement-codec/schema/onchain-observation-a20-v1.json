@@ -1,0 +1,97 @@
+{
+  "schemaVersion": 1,
+  "chainId": "mainnet",
+  "semanticKey": "mmrToken",
+  "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
+  "blockNumber": 12050000,
+  "blockHash": "0x68443e015e29dfedb6c323eb9a29eb304c1c9591442b9b8962b9cab25fe3b6",
+  "stateRoot": "0x7321f3f3a121f84d6fec26dba782942e8c905a2fcafd128ef5fce898600e055",
+  "blockTimestamp": 1784490354,
+  "blockStatus": "ACCEPTED_ON_L1",
+  "contractAddress": "0xd5a3c8c5ebcacf3279aafd2de3eb0c4736afc11be6f41c84880080fa7a1aaf",
+  "classHash": "0x1dc09743f158d6e650b1b14e9557806c898274a5423ec9857558cabb2b7c1d8",
+  "classResponseSha256": "a713dc214ddd2c497c8011ff159d19c39ba0611de9c32e4dbb257fd06e6f464d",
+  "localSourceRebuild": {
+    "sourcePath": "contracts/mmr/src/contract.cairo",
+    "sierraClassHash": "0x315e51ea9f00d64b20cd30dbec2588503bc2fa28d97c97dd027f8fc0b7db81f",
+    "matchesObservedClass": false
+  },
+  "deploymentBlockNumber": 7052557,
+  "roleEventsCompleteFromDeployment": true,
+  "roleEventPageCount": 62,
+  "roleEventCount": 3,
+  "controllers": [
+    {
+      "address": "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+      "classHash": "0x36078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f",
+      "classResponseSha256": "e599ff4384ddf69f563683796bbb90e7ec6e5e358f6ab62e18961f2a643cd2e9",
+      "executionEntrypoint": "__execute__",
+      "executionSelector": "0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad"
+    },
+    {
+      "address": "0x7fd490b3ba298e4b94e3c32df832823b102e39ce98cd41076a70b2f82d9326e",
+      "classHash": "0x6e150953b26271a740bf2b6e9bca17cc52c68d765f761295de51ceb8526ee72",
+      "classResponseSha256": "c291b88705f499a7e8d94c42c88944e6b4e967b7fe6d02b5b8a2530dfc880daf",
+      "executionEntrypoint": "__execute__",
+      "executionSelector": "0x15d40a3d6ca2ac30f4031e42be28da9b056fef9bb7357ac5e85627ee876e5ad"
+    }
+  ],
+  "roles": [
+    {
+      "name": "DEFAULT_ADMIN_ROLE",
+      "roleId": "0x0",
+      "adminRoleId": "0x0",
+      "members": [
+        "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+        "0x7fd490b3ba298e4b94e3c32df832823b102e39ce98cd41076a70b2f82d9326e"
+      ]
+    },
+    {
+      "name": "UPGRADER_ROLE",
+      "roleId": "0x9ab7a9244df0848122154315af71fe140f3db0fe014031783b0946b8c9d2e3",
+      "adminRoleId": "0x0",
+      "members": ["0x7fd490b3ba298e4b94e3c32df832823b102e39ce98cd41076a70b2f82d9326e"]
+    }
+  ],
+  "roleEvents": [
+    {
+      "blockNumber": 7052557,
+      "transactionHash": "0x24d64ab4a5355ab00a0c8cf39e25a764cd59009fa2cb7b2d68bd4fd38b8b6d7",
+      "eventIndex": 0,
+      "event": "RoleGranted",
+      "roleId": "0x0",
+      "account": "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+      "sender": "0x41a78e741e5af2fec34b695679bc6891742439f7afb8484ecd7766661ad02bf"
+    },
+    {
+      "blockNumber": 7052557,
+      "transactionHash": "0x24d64ab4a5355ab00a0c8cf39e25a764cd59009fa2cb7b2d68bd4fd38b8b6d7",
+      "eventIndex": 1,
+      "event": "RoleGranted",
+      "roleId": "0x9ab7a9244df0848122154315af71fe140f3db0fe014031783b0946b8c9d2e3",
+      "account": "0x7fd490b3ba298e4b94e3c32df832823b102e39ce98cd41076a70b2f82d9326e",
+      "sender": "0x41a78e741e5af2fec34b695679bc6891742439f7afb8484ecd7766661ad02bf"
+    },
+    {
+      "blockNumber": 10195474,
+      "transactionHash": "0x8e4f34c6fd1e59025b6d48da5c67e4da7f96e54c4c771b5121762217c08576",
+      "eventIndex": 0,
+      "event": "RoleGranted",
+      "roleId": "0x0",
+      "account": "0x7fd490b3ba298e4b94e3c32df832823b102e39ce98cd41076a70b2f82d9326e",
+      "sender": "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402"
+    }
+  ],
+  "mutableEntrypoints": [
+    { "name": "upgrade", "selector": "0xf2f7c15cbe06c8d94597cd91fd7f3369eae842359235712def5584f8d270cd" },
+    { "name": "set_factory_details", "selector": "0x1ecce254dc7791ad8c4b36d08247b9c1696d7ea1795d4b0a25ceceb38688aab" },
+    { "name": "grant_role", "selector": "0x18a2f881894a5eb15a2a00f598839abaa75bd7f1fea1a37e42779d7fbcd9cf8" },
+    { "name": "grantRole", "selector": "0x37322ff1aabefe50aec25a14eb84b168b7be4f2d66fbbdb5dd8135e8234c37a" },
+    { "name": "revoke_role", "selector": "0x246116ed358bad337e64a4df51cb57a40929189494ad5905a39872c489136ec" },
+    { "name": "revokeRole", "selector": "0xa7ef1739dec1e216a0ba2987650983a3104c707ad0831a30184a3b1382dd7d" },
+    { "name": "renounce_role", "selector": "0xd80093a4ee6a9e649f2ae3c64963d5096948d50cf4ea055500aa03a342fd43" },
+    { "name": "renounceRole", "selector": "0x3c4022816cd5119ac7938fd7a982062e4cacd4777b4eda6e6a8f64d9e6833" },
+    { "name": "update_mmr", "selector": "0x963c1599f05d828a549871e22cb272a68a488d2eb0c6b5bb69c490c931beb3" },
+    { "name": "update_mmr_batch", "selector": "0x5d8d3e9c8f77bd4bccadc14f12f82104094b459143cf4e356007116adde42a" }
+  ]
+}

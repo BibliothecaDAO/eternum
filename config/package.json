@@ -1,6 +1,8 @@
 {
   "name": "eternum-config-deploy",
   "scripts": {
+    "generate": "tsx --tsconfig tsconfig.json ./scripts/generate-configs.ts",
+    "check:generated": "tsx --tsconfig tsconfig.json ./scripts/generate-configs.ts --check",
     "local:blitz": "if [ -f ../client/apps/game/.env.local.blitz ]; then bun --env-file=../client/apps/game/.env.local.blitz run ./deployer/index.ts local blitz; else bun --env-file=../client/apps/game/.env.local.blitz.sample run ./deployer/index.ts local blitz; fi",
     "local:eternum": "if [ -f ../client/apps/game/.env.local.eternum ]; then bun --env-file=../client/apps/game/.env.local.eternum run ./deployer/index.ts local eternum; else bun --env-file=../client/apps/game/.env.local.eternum.sample run ./deployer/index.ts local eternum; fi",
     "slot:blitz": "bun --env-file=../client/apps/game/.env.slot.blitz run ./deployer/index.ts slot blitz",

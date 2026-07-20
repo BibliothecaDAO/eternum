@@ -28,6 +28,7 @@ import {
 import {
   isEternumDeploymentEnvironment,
   isMainnetDeploymentEnvironment,
+  resolveAuthoritativeFactoryAddress,
   resolveDeploymentEnvironment,
 } from "../environment";
 import {
@@ -141,13 +142,7 @@ function shortenHash(value: string): string {
 }
 
 function resolveLaunchFactoryAddress(request: LaunchGameRequest, environment: DeploymentEnvironment): string {
-  const factoryAddress = request.factoryAddress || environment.factoryAddress;
-
-  if (factoryAddress) {
-    return factoryAddress;
-  }
-
-  throw new Error(`Factory address is required for ${environment.id}. Set FACTORY_ADDRESS or pass --factory-address.`);
+  return resolveAuthoritativeFactoryAddress(environment, request.factoryAddress);
 }
 
 function resolveCreateGameSettings(request: LaunchGameRequest, environment: DeploymentEnvironment): CreateGameDefaults {

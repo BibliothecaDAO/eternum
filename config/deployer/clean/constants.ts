@@ -1,5 +1,6 @@
 import { DEFAULT_FACTORY_CONFIG_VERSION } from "../../shared/factory-defaults";
 import { buildSharedChainRuntimeAlias, resolveRuntimeEndpointAlias } from "../../../common/factory/runtime-registry";
+import { resolveCanonicalAddress } from "../../source/common/canonical-addresses";
 import type { DeploymentEnvironment, DeploymentEnvironmentId } from "./types";
 import { CARTRIDGE_VRF_RELEASE } from "./vrf/release";
 
@@ -27,8 +28,9 @@ export const DEFAULT_TORII_SLOT_TEAM = "realms-eternum";
 export const DEFAULT_RUNTIME_PROVIDER = "slot";
 export const DEFAULT_AWS_RUNTIME_DOMAIN = "runtime.realms.world";
 export const DEFAULT_VRF_PROVIDER_ADDRESS = CARTRIDGE_VRF_RELEASE.providerAddress;
-export const DEFAULT_MAINNET_FACTORY_ADDRESS = "0x525410a4d0ebd4a313e2125ac986710cd8f1bd08d47379b7f45c8b9c71b4da";
-export const DEFAULT_SLOT_FACTORY_ADDRESS = "0x242226ce5f17914fc148cb111980b24e2bda624379877cda66f7e76884d2deb";
+export const DEFAULT_MAINNET_FACTORY_ADDRESS = resolveCanonicalAddress("mainnet", "factory");
+export const DEFAULT_SLOT_FACTORY_ADDRESS = resolveCanonicalAddress("slot", "factory");
+export const DEFAULT_SLOTTEST_FACTORY_ADDRESS = resolveCanonicalAddress("slottest", "factory");
 export const DEFAULT_MAINNET_RPC_URL = resolveRuntimeEndpointAlias(buildSharedChainRuntimeAlias("mainnet"));
 export const DEFAULT_SEPOLIA_RPC_URL = resolveRuntimeEndpointAlias(buildSharedChainRuntimeAlias("sepolia"));
 export const DEFAULT_SLOT_RPC_URL = resolveRuntimeEndpointAlias(buildSharedChainRuntimeAlias("slot"));
@@ -70,6 +72,7 @@ const SLOT_DEFAULTS = {
 
 const SLOTTEST_DEFAULTS = {
   ...SLOT_DEFAULTS,
+  factoryAddress: DEFAULT_SLOTTEST_FACTORY_ADDRESS,
   rpcUrl: DEFAULT_SLOTTEST_RPC_URL,
 };
 

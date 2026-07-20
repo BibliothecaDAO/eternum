@@ -1,6 +1,9 @@
 import { getGameManifest, getSeasonAddresses } from "@contracts";
 import type { ConfigPatch } from "./merge-config";
 import type { Chain } from "./types";
+import { resolveConfiguredAddress } from "./address";
+
+export { resolveConfiguredAddress };
 
 interface EnvironmentAddresses extends Record<string, string | undefined> {
   collectiblesClassHash?: string;
@@ -19,18 +22,16 @@ export interface EnvironmentContext {
   vrfProviderAddress: string;
 }
 
-export function resolveConfiguredAddress(address: string | undefined | null): string {
-  return address ?? "0x0";
-}
-
 export async function resolveEnvironmentContext(chain: Chain): Promise<EnvironmentContext> {
+  const addresses = ((await getSeasonAddresses(chain)) ?? {}) as unknown as EnvironmentAddresses;
+
   return {
     chain,
-    addresses: ((await getSeasonAddresses(chain)) ?? {}) as unknown as EnvironmentAddresses,
+    addresses,
     manifest: await getGameManifest(chain),
     startSettlingAt: Number(process.env.CONFIG_START_SETTLING_AT) || 0,
     startMainAt: Number(process.env.CONFIG_START_MAIN_AT) || 0,
-    vrfProviderAddress: process.env.VITE_PUBLIC_VRF_PROVIDER_ADDRESS || "0x0",
+    vrfProviderAddress: resolveConfiguredAddress(addresses.vrfProvider),
   };
 }
 

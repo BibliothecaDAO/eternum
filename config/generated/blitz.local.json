@@ -59,6 +59,14 @@
     "spires_max_count": 0,
     "spires_settled_count": 0
   },
+  "biomeClimate": {
+    "elevationScaleBps": 10000,
+    "moistureScaleBps": 10000,
+    "elevationBiasBps": 10000,
+    "moistureBiasBps": 10000,
+    "elevationSeed": 0,
+    "moistureSeed": 0
+  },
   "season": {
     "startSettlingAfterSeconds": 59,
     "startMainAfterSeconds": 60,
@@ -1727,9 +1735,12 @@
       "strk": "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d",
       "villagePass": "0x5c7d2d225fcd746a797f0a6adf16312b03be896fa0d13da7c6870e76c06ba35",
       "marketplace": "0x07e2ddb0c8ea9b9d357352445776f62ab7a1e635a7bee9f137483f302edb59dd",
-      "lootChests": "",
-      "cosmetics": "",
+      "lootChests": "0x4115af8531a7d550b86dd1d97f44077b9d3335d4d7b35465c5676b4f4df7689",
+      "cosmetics": "0x57bf64112fa72aa58b204c4394dd133af3c343635fc87477b6d23da12c0711a",
       "cosmeticsClaim": "",
+      "eliteInvite": "",
+      "collectiblesTimelock": "0x7102119d5b9eee456751a33c2689890e68f791d1bcbd0cad3a698dc8f65eef7",
+      "vrfProvider": "0x0",
       "mmrToken": "",
       "resources": {
         "STONE": [
