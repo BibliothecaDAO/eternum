@@ -168,6 +168,18 @@ pub fn verify_mmr_plan_journal(claim: &MmrPlanClaim, journal: &MmrPlanJournal) -
         && claim.module_aux_hash == journal.module_aux_hash
 }
 
+pub fn hash_mmr_plan_journal(journal: &MmrPlanJournal) -> Felt {
+    let mut preimage = vec![domain("MMR_PLAN_JOURNAL_V1"), Felt::from(journal.sequence)];
+    preimage.extend(journal.ranking.encode());
+    preimage.extend([
+        journal.snapshot_commitment,
+        journal.plan_root,
+        Felt::from(journal.median),
+        journal.module_aux_hash,
+    ]);
+    poseidon(&preimage)
+}
+
 fn validate_witness_shape(witness: &MmrPlanWitness) -> Result<MedianSource, MmrPlanError> {
     let count = witness.ranking_entries.len();
     if count < witness.policy.min_players as usize

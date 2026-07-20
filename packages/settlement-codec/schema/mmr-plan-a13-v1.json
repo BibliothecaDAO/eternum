@@ -1,0 +1,79 @@
+{
+  "schemaVersion": 1,
+  "ticket": "A13",
+  "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
+  "releaseReady": false,
+  "protocolRegistryHash": "0x4fc3db19cde1a3cc4b37b74b9c484c2abcc967f472d25900367e42b2ec0f581",
+  "formulaIdentity": {
+    "implementation": "Cubit-compatible integer 64.64 Rust port",
+    "sourceRevision": "3b210f1eb323b9367197715fa6f91791689c1f31",
+    "referenceRevisionId": "0x262265ac5573c6cd62eb0c2b6365a49be4e7068c25ffabc321513c0eb68e251"
+  },
+  "reproducibilityInputs": {
+    "guestCoreSha256": "058523cfa19abf1b6acf20df620754c8a2873ed56aec4cdc1f45003b6e78e255",
+    "cargoLockSha256": "e30197fc9eafbf6b898208ac9388637772ef3e2dde09899890b26b98247b6ee8",
+    "cairoVerifierSha256": "c3783a582c8e7a5fe70bea5a83756dd3c11baf4853c6a800bc9cf10b4ef5f773"
+  },
+  "publicJournal": {
+    "domain": "MMR_PLAN_JOURNAL_V1",
+    "fields": [
+      "sequence",
+      "ranking_commitment",
+      "snapshot_commitment",
+      "plan_root",
+      "median",
+      "module_aux_hash"
+    ],
+    "crossLanguageHash": "0x2e8193d2764077811fe44d826af2d7a6c0c8afdc31ced2d5f106530fb639f6a",
+    "implementations": ["Cairo", "TypeScript", "Rust"]
+  },
+  "referenceCoverage": {
+    "accepted": [
+      "locked-snapshot-odd-median",
+      "locked-snapshot-even-median-with-competition-ties-and-gaps",
+      "legacy-stored-median",
+      "one-based-contiguous-ordinals",
+      "integer-formula-parity"
+    ],
+    "rejected": [
+      "bad-snapshot",
+      "reordered-ranking",
+      "zero-ordinal",
+      "changed-formula-policy",
+      "substituted-ranking-commitment",
+      "substituted-plan-root",
+      "substituted-median",
+      "substituted-receipt-journal"
+    ],
+    "exactSixPlayerOutputs": [934, 1031, 1013, 1100, 1187, 1276]
+  },
+  "costEvidence": {
+    "referenceCairoVectorTestL2Gas": 81644,
+    "referenceCairoNegativeTestL2Gas": 150538,
+    "sp1ProgramElfSha256": null,
+    "sp1ProgramId": null,
+    "sp1VerificationKeyHash": null,
+    "sp1ProofBytes": null,
+    "sp1ProveDurationMs": null,
+    "sp1VerifyDurationMs": null,
+    "garagaVerifierClassHash": null,
+    "garagaVerifierL2Gas": null,
+    "maximumParticipantCount": 65535,
+    "maximumBoundProofCampaign": "not-run",
+    "result": "production-program-vk-proof-and-cost-unavailable"
+  },
+  "productionBlockers": [
+    {
+      "id": "SP1-PROGRAM-AND-RECEIPT",
+      "reason": "cargo-prove and sp1up are unavailable in the current environment and only 2.4 GiB is free; no production ELF/program ID, VK, Groth16 receipt, proof size, or prove/verify timing is claimed."
+    },
+    {
+      "id": "GARAGA-VERIFIER",
+      "reason": "No release-pinned Garaga SP1 verifier class or real receipt has been generated and verified on Cairo."
+    },
+    {
+      "id": "MAXIMUM-BOUND-CAMPAIGN",
+      "reason": "The u16 participant ceiling has no real SP1 maximum-bound prove/verify campaign; a reference-core test is not a substitute for production proof evidence."
+    }
+  ]
+}

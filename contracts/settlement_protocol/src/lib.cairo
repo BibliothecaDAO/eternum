@@ -15,6 +15,9 @@ pub mod frozen_position_verifier_spike;
 mod frozen_position_verifier_tests;
 pub mod golden_vectors;
 pub mod interfaces;
+pub mod mmr_plan_verifier_spike;
+#[cfg(test)]
+mod mmr_plan_verifier_tests;
 pub mod registry;
 pub mod reservation_spike;
 pub mod resolved_identity_coordinator_spike;

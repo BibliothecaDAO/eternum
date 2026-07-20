@@ -3,7 +3,7 @@
   "ticket": "A5",
   "status": "reference-seam-complete-production-proof-blocked",
   "releaseReady": false,
-  "protocolRegistryHash": "0x48438d95ee40b261867e227b0006d5e52e43c6be8660c2799895b07704039dd",
+  "protocolRegistryHash": "0x4fc3db19cde1a3cc4b37b74b9c484c2abcc967f472d25900367e42b2ec0f581",
   "publicInputs": [
     "deployment_id",
     "game_id",

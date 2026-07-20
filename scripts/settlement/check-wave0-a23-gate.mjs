@@ -6,6 +6,7 @@ const repositoryRoot = resolve(import.meta.dirname, "../..");
 const decision = readJson("packages/settlement-codec/schema/wave0-a23-stop-decision-v1.json");
 const schemaRegistry = readJson("packages/settlement-codec/schema/schema-registry-v1.json");
 const frozenPosition = readJson("packages/settlement-codec/schema/frozen-position-a5-v1.json");
+const mmrPlan = readJson("packages/settlement-codec/schema/mmr-plan-a13-v1.json");
 const authority = readJson("packages/settlement-codec/schema/authority-inventory-v1.json");
 const exitFamilies = readJson("packages/settlement-codec/schema/exit-family-inventory-v0.json");
 
@@ -56,6 +57,27 @@ function assertFrozenAndCandidateInputs() {
   assertEqual(frozenPosition.costEvidence.sp1ProveDurationMs, null, "A5 SP1 prove evidence");
   assertEqual(frozenPosition.costEvidence.sp1VerifyDurationMs, null, "A5 SP1 verify evidence");
   assertFileHash("packages/settlement-codec/schema/frozen-position-a5-v1.json", inputs.frozenPositionProof.fileSha256);
+
+  assertEqual(
+    mmrPlan.status,
+    "reference-guest-and-verifier-complete-production-receipt-blocked",
+    "A13 MMR-plan status",
+  );
+  assertEqual(mmrPlan.releaseReady, false, "A13 release readiness");
+  assertEqual(decision.wave0.find(({ ticket }) => ticket === "A13")?.status, mmrPlan.status, "A13 Wave 0 status");
+  assertEqual(mmrPlan.protocolRegistryHash, schemaRegistry.schemaRegistryHash, "A13 protocol registry hash");
+  assertEqual(mmrPlan.publicJournal.crossLanguageHash, inputs.mmrPlanProof.journalHash, "A13 journal hash");
+  assertEqual(mmrPlan.costEvidence.sp1ProgramId, null, "A13 SP1 program identity");
+  assertEqual(mmrPlan.costEvidence.sp1VerificationKeyHash, null, "A13 SP1 verification key");
+  assertEqual(mmrPlan.costEvidence.sp1ProveDurationMs, null, "A13 SP1 prove evidence");
+  assertEqual(mmrPlan.costEvidence.sp1VerifyDurationMs, null, "A13 SP1 verify evidence");
+  assertFileHash("proofs/eternum-settlement/src/mmr_plan.rs", mmrPlan.reproducibilityInputs.guestCoreSha256);
+  assertFileHash("proofs/eternum-settlement/Cargo.lock", mmrPlan.reproducibilityInputs.cargoLockSha256);
+  assertFileHash(
+    "contracts/settlement_protocol/src/mmr_plan_verifier_spike.cairo",
+    mmrPlan.reproducibilityInputs.cairoVerifierSha256,
+  );
+  assertFileHash("packages/settlement-codec/schema/mmr-plan-a13-v1.json", inputs.mmrPlanProof.fileSha256);
 
   assertEqual(authority.status, "blocked-a20-mutation-review", "A20 inventory status");
   assertEqual(authority.releaseReady, false, "A20 release readiness");

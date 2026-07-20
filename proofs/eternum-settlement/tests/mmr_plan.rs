@@ -1,6 +1,6 @@
 use eternum_settlement::mmr_plan::{
-    MedianSource, MmrFormulaPolicy, MmrPlanClaim, MmrPlanWitness, execute_mmr_update_plan,
-    verify_mmr_plan_journal,
+    MedianSource, MmrFormulaPolicy, MmrPlanClaim, MmrPlanJournal, MmrPlanWitness,
+    execute_mmr_update_plan, hash_mmr_plan_journal, verify_mmr_plan_journal,
 };
 use eternum_settlement::types::{
     MmrCurrentFormulaAux, MmrFormulaInput, MmrSnapshotEntry, RankingCommitment, RankingEntry, U256,
@@ -143,6 +143,32 @@ fn competition_ties_and_gaps_preserve_even_snapshot_median() {
             .map(|entry| entry.new_mmr_logical)
             .collect::<Vec<_>>(),
         vec![934, 1_031, 1_013, 1_100, 1_187, 1_276]
+    );
+}
+
+#[test]
+fn rust_matches_the_cairo_and_typescript_public_journal_vector() {
+    let journal = MmrPlanJournal {
+        sequence: 7,
+        ranking: RankingCommitment {
+            game_id: Felt::from(11_u8),
+            root: Felt::from(13_u8),
+            participant_count: 6,
+            result_hash: Felt::from(31_u8),
+            first_rank: 1,
+            last_rank: 6,
+            tie_break_policy_hash: Felt::from(41_u8),
+        },
+        snapshot_commitment: Felt::from(21_u8),
+        plan_root: Felt::from(23_u8),
+        median: 1_000,
+        module_aux_hash: Felt::from(29_u8),
+    };
+
+    assert_eq!(
+        hash_mmr_plan_journal(&journal),
+        Felt::from_hex("0x2e8193d2764077811fe44d826af2d7a6c0c8afdc31ced2d5f106530fb639f6a")
+            .unwrap(),
     );
 }
 

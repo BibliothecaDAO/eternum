@@ -26,7 +26,11 @@
     { "ticket": "A10", "status": "complete" },
     { "ticket": "A11", "status": "complete" },
     { "ticket": "A12", "status": "complete" },
-    { "ticket": "A13", "status": "incomplete-no-production-sp1-receipt", "mandatoryBlocker": true },
+    {
+      "ticket": "A13",
+      "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
+      "mandatoryBlocker": true
+    },
     { "ticket": "A14", "status": "complete" },
     { "ticket": "A15", "status": "absent", "mandatoryBlocker": true },
     { "ticket": "A16", "status": "incomplete-no-finalized-cancellation-proof", "mandatoryBlocker": true },
@@ -41,13 +45,19 @@
   "frozenAndCandidateInputs": {
     "protocolSchema": {
       "status": "frozen-wave0-v1",
-      "registryHash": "0x48438d95ee40b261867e227b0006d5e52e43c6be8660c2799895b07704039dd",
-      "fileSha256": "9d8ab1f6ba24919b1f32ed618a6fe9d30fe448231e1aabb975fe099245262601"
+      "registryHash": "0x4fc3db19cde1a3cc4b37b74b9c484c2abcc967f472d25900367e42b2ec0f581",
+      "fileSha256": "6f423fd4ef0bb8059d9fa5dab5d5556749feece69755200f099bf8ed95aa7a29"
     },
     "frozenPositionProof": {
       "status": "reference-seam-complete-production-proof-blocked",
-      "fileSha256": "6881de840557fec2c1dccb2cd68cd7331c9fe736194a29b1cacfae070cdcec9a",
+      "fileSha256": "b60576d638e250c9a36fd82d4db41e6a7262e39a5abdd7c35dede1c525ec2201",
       "journalHash": "0x7d37e77b8cc5f0db16705e88b91ac862f125d684b8fa5644992eee730db58bc",
+      "releaseReady": false
+    },
+    "mmrPlanProof": {
+      "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
+      "fileSha256": "3659cb5fdb28ead10f1d29bb0d44f53b3e4d0b2bbb36d931258ad1c3508233e9",
+      "journalHash": "0x2e8193d2764077811fe44d826af2d7a6c0c8afdc31ced2d5f106530fb639f6a",
       "releaseReady": false
     },
     "authorityInventory": {
@@ -95,6 +105,16 @@
       "sp1ProveDurationMs": null,
       "sp1VerifyDurationMs": null
     },
+    "a13": {
+      "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
+      "artifact": "packages/settlement-codec/schema/mmr-plan-a13-v1.json",
+      "cairoVectorTestL2Gas": 81644,
+      "cairoNegativeTestL2Gas": 150538,
+      "sp1ProgramId": null,
+      "sp1VerificationKeyHash": null,
+      "sp1ProveDurationMs": null,
+      "sp1VerifyDurationMs": null
+    },
     "unavailableMandatoryCampaigns": [
       "A5-production-katana-sp1",
       "A8",
@@ -109,7 +129,7 @@
     "status": "frozen-hub-owned-v1",
     "a17SealBoundary": "SeasonSettlementHub-owned game and global active/cumulative aggregates with one central sealed-batch bit",
     "removedFromAtomicBoundary": "Fallible cross-contract EconomicStateSystem promotion callbacks",
-    "protocolRegistryHash": "0x48438d95ee40b261867e227b0006d5e52e43c6be8660c2799895b07704039dd",
+    "protocolRegistryHash": "0x4fc3db19cde1a3cc4b37b74b9c484c2abcc967f472d25900367e42b2ec0f581",
     "aggregateViewTrait": "ISeasonSettlementHubAggregateView",
     "productionRequirement": "D4 must implement the frozen Hub-owned aggregate view and cannot reintroduce a seal-time promotion callback."
   },
