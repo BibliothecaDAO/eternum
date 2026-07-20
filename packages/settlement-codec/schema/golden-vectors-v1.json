@@ -1,6 +1,6 @@
 {
   "protocolVersion": 1,
-  "schemaRegistryHash": "0x80fc99a14698dcc5baaf6135fd007309840a624800949b1bb87d469c6b9fb6",
+  "schemaRegistryHash": "0x6223f81a3b7d07ead67c72d06acddfe67337e6387c0e9f05edd1a19f1ebdba8",
   "schemas": [
     {
       "schema": "ProtocolEnvelope",

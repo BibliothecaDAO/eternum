@@ -16,6 +16,9 @@ mod emergency_sealed_verifier_tests;
 pub mod frozen_position_verifier_spike;
 #[cfg(test)]
 mod frozen_position_verifier_tests;
+pub mod frozen_recovery_verifier_spike;
+#[cfg(test)]
+mod frozen_recovery_verifier_tests;
 pub mod golden_vectors;
 pub mod interfaces;
 pub mod mmr_plan_verifier_spike;

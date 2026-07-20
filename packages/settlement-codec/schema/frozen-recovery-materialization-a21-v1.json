@@ -1,0 +1,136 @@
+{
+  "schemaVersion": 1,
+  "ticket": "A21",
+  "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
+  "releaseReady": false,
+  "protocolRegistryHash": "0x6223f81a3b7d07ead67c72d06acddfe67337e6387c0e9f05edd1a19f1ebdba8",
+  "reproducibilityInputs": {
+    "frozenRecoveryCoreSha256": "48d10308fa766d635913dea33517fc5f8114e7ec9b1c33d3f1dee46219f893e1",
+    "deploymentRefundMaterializationCoreSha256": "e7079e0bd05d2aa15fa5f837602e050692ab4990d9f7e730e1cd51361e21ae1e",
+    "positionMaterializationCoreSha256": "b7eccf8d1b46d2173cef600bf28887d7313003a8609843ecba0e31c7b21389b7",
+    "cargoLockSha256": "e30197fc9eafbf6b898208ac9388637772ef3e2dde09899890b26b98247b6ee8",
+    "cairoVerifierSha256": "62f7beade3af788a5ab70e685060a4f9f6dee3bdc8029d6852d300416a6f5899",
+    "typescriptVerifierSha256": "9656ba23a676fbb63e8d7f8c72c524971fd6bfd3feeca7e7244a01f1e0ad903f"
+  },
+  "frozenRecoveryContract": {
+    "sourceCount": { "minimum": 1, "maximum": 256, "inclusive": true },
+    "gameCount": { "minimum": 1, "maximum": 32, "inclusive": true },
+    "provisioningLotsPerGame": { "minimum": 0, "maximum": 64, "inclusive": true },
+    "provisioningLotsPerDeployment": { "minimum": 0, "maximum": 2048, "inclusive": true },
+    "requiredLotClass": 1,
+    "sourceEquation": "provisioned_physical_total = committed_lifetime_total + refundable_total",
+    "refundEquation": "refundable_total = unallocated_total + returned_unused_from_games_total",
+    "lotEquation": "allocated_total = frozen_free_total + active_committed_total + cumulative_outbox_total + returned_unused_total",
+    "routes": ["NoLiability", "EligibleSealedRoot", "OpenAssignedFrozen", "UnappendedFrozen"],
+    "terminalCursorRule": "source_cursor == disposition_count == source_count"
+  },
+  "materializationContract": {
+    "chunkSize": 64,
+    "treeDepth": 6,
+    "ordinaryTreeDomains": ["DORMANT_EXIT_LEAF_V1", "DORMANT_EMPTY_LEAF_V1", "DORMANT_NODE_V1"],
+    "deploymentRefundTreeDomains": [
+      "DORMANT_DEPLOYMENT_REFUND_LEAF_V1",
+      "DORMANT_DEPLOYMENT_REFUND_EMPTY_V1",
+      "DORMANT_DEPLOYMENT_REFUND_NODE_V1"
+    ],
+    "deploymentRefundGameId": 0,
+    "deploymentRefundFamilyReferenceValue": 65535,
+    "deploymentRefundFamilyStatus": "reference-only-until-A3-named-enum-value-is-frozen",
+    "ordinaryFamilyExclusions": ["game_id=0", "index_family=DEPLOYMENT_REFUND_SOURCE"],
+    "liveDeploymentRoutes": ["OpenAssignedFrozen", "UnappendedFrozen"],
+    "deploymentTombstoneRoutes": ["NoLiability", "EligibleSealedRoot"]
+  },
+  "crossLanguageVectors": {
+    "frozenRecoveryJournalHash": "0x40aea6316d38fddec50d6a2ba770a77babc95603c124e2ba6356644004b5afa",
+    "deploymentRefundMaterializationJournalHash": "0x4aaed4fdfc7127f25f78d7b21d6875604cb2173fdbaf4f89656644f5ab7e43d",
+    "positionMaterializationJournalHash": "0x1f0cfc118469d26eac0b3d226cf0af1edf09eb6051e1d39ef0e15d6d1f9d9e2",
+    "implementations": ["Cairo", "TypeScript", "Rust"]
+  },
+  "referenceCoverage": {
+    "accepted": [
+      "class-1-provisioning-lot-virtual-return-normalization",
+      "source-and-lot-conservation",
+      "sealed-open-unappended-and-zero-route-classification",
+      "ordinary-live-and-explicit-tombstone-materialization",
+      "deployment-refund-live-and-route-tombstone-materialization",
+      "source-order-live-preimages-and-parent-totals",
+      "zero-one-sixty-three-sixty-four-sixty-five-and-two-hundred-fifty-six-coordinate-coverage"
+    ],
+    "rejected": [
+      "wrong-family-or-high-water",
+      "wrong-lot-class-index-share-or-order",
+      "wrong-source-total-recipient-or-policy",
+      "wrong-refund-cursor-or-assignment-route",
+      "wrong-quote-auxiliary-data-or-leg-hash",
+      "wrong-tombstone-authentication",
+      "wrong-chunk-coordinate-leaf-or-root",
+      "ordinary-and-deployment-refund-family-substitution"
+    ]
+  },
+  "costEvidence": {
+    "referenceCairoVectorTestL2Gas": 145198,
+    "referenceCairoNegativeTestL2Gas": 82074,
+    "rustTests": 41,
+    "typescriptTests": 63,
+    "perGameSegment": {
+      "sp1ProgramElfSha256": null,
+      "sp1ProgramId": null,
+      "sp1VerificationKeyHash": null,
+      "sp1ProofBytes": null,
+      "sp1ProveDurationMs": null,
+      "sp1VerifyDurationMs": null,
+      "peakMemoryBytes": null
+    },
+    "recursiveThirtyTwoGameAggregator": {
+      "sp1ProgramElfSha256": null,
+      "sp1ProgramId": null,
+      "sp1VerificationKeyHash": null,
+      "sp1ProofBytes": null,
+      "sp1ProveDurationMs": null,
+      "sp1VerifyDurationMs": null,
+      "peakMemoryBytes": null
+    },
+    "deploymentRefundMaterializer": {
+      "sp1ProgramElfSha256": null,
+      "sp1ProgramId": null,
+      "sp1VerificationKeyHash": null,
+      "sp1ProofBytes": null,
+      "sp1ProveDurationMs": null,
+      "sp1VerifyDurationMs": null,
+      "peakMemoryBytes": null
+    },
+    "ordinaryPositionMaterializer": {
+      "sp1ProgramElfSha256": null,
+      "sp1ProgramId": null,
+      "sp1VerificationKeyHash": null,
+      "sp1ProofBytes": null,
+      "sp1ProveDurationMs": null,
+      "sp1VerifyDurationMs": null,
+      "peakMemoryBytes": null
+    },
+    "maximumThirtyTwoGameCampaign": "not-run",
+    "result": "reference-seams-pass-production-segmentation-recursion-and-cost-unavailable"
+  },
+  "productionBlockers": [
+    {
+      "id": "PINNED-KATANA-STORAGE-PROOFS",
+      "reason": "Authenticated source access is unavailable for katana-tee commit 6a263b017aa37903b8d65cf28c9f52cd24cb5807, so synthetic reference state commitments and tombstone witnesses are not production Patricia MultiProof adapters over generated layouts and exact high-water roots."
+    },
+    {
+      "id": "SP1-SEGMENTED-AND-RECURSIVE-PROGRAMS",
+      "reason": "No release-pinned per-game, recursive 32-game recovery, deployment-refund materialization, or ordinary-position materialization ELF/program ID/VK/receipt exists in this environment."
+    },
+    {
+      "id": "GARAGA-VERIFIERS",
+      "reason": "No release-pinned Garaga verifier class has verified a real receipt for any A21 program."
+    },
+    {
+      "id": "MAXIMUM-BOUND-COST-CAMPAIGN",
+      "reason": "Real prove time, verify time, memory, proof size, and Cairo verification cost are absent for 32 games, 64 class-1 lots per game, 2,048 deployment lots, 256 refund sources, and 64-position materialization chunks."
+    },
+    {
+      "id": "DEPLOYMENT-REFUND-FAMILY-VALUE",
+      "reason": "The reference seam uses u16::MAX for the reserved deployment family; the A3 registry must freeze the normative named DEPLOYMENT_REFUND_SOURCE value before production."
+    }
+  ]
+}

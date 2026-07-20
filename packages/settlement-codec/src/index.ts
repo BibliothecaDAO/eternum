@@ -6,6 +6,7 @@ export { decodeSchema, encodeSchema, type SchemaValue } from "./codec";
 export * from "./economic-capability";
 export * from "./exit-family-inventory";
 export * from "./frozen-position";
+export * from "./frozen-recovery";
 export * from "./emergency-sealed";
 export * from "./mmr-plan";
 export * from "./authority-inventory";

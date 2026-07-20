@@ -8,6 +8,9 @@ const schemaRegistry = readJson("packages/settlement-codec/schema/schema-registr
 const frozenPosition = readJson("packages/settlement-codec/schema/frozen-position-a5-v1.json");
 const mmrPlan = readJson("packages/settlement-codec/schema/mmr-plan-a13-v1.json");
 const emergencySealed = readJson("packages/settlement-codec/schema/emergency-sealed-a15-v1.json");
+const frozenRecoveryMaterialization = readJson(
+  "packages/settlement-codec/schema/frozen-recovery-materialization-a21-v1.json",
+);
 const authority = readJson("packages/settlement-codec/schema/authority-inventory-v1.json");
 const exitFamilies = readJson("packages/settlement-codec/schema/exit-family-inventory-v0.json");
 
@@ -125,6 +128,8 @@ function assertFrozenAndCandidateInputs() {
     inputs.emergencySealedProof.fileSha256,
   );
 
+  assertA21Evidence(inputs.frozenRecoveryMaterializationProofs);
+
   assertEqual(authority.status, "blocked-a20-mutation-review", "A20 inventory status");
   assertEqual(authority.releaseReady, false, "A20 release readiness");
   assertEqual(
@@ -173,6 +178,63 @@ function assertFrozenAndCandidateInputs() {
     inputs.economicWriteInventorySha256,
   );
   assertFileHash("packages/settlement-codec/schema/onchain-observation-a20-v1.json", inputs.onchainObservationSha256);
+}
+
+function assertA21Evidence(input) {
+  assertEqual(
+    frozenRecoveryMaterialization.status,
+    "reference-guests-and-verifiers-complete-production-receipts-blocked",
+    "A21 frozen recovery/materialization status",
+  );
+  assertEqual(frozenRecoveryMaterialization.releaseReady, false, "A21 release readiness");
+  assertEqual(
+    decision.wave0.find(({ ticket }) => ticket === "A21")?.status,
+    frozenRecoveryMaterialization.status,
+    "A21 Wave 0 status",
+  );
+  assertEqual(
+    frozenRecoveryMaterialization.protocolRegistryHash,
+    schemaRegistry.schemaRegistryHash,
+    "A21 protocol registry hash",
+  );
+  for (const field of [
+    "frozenRecoveryJournalHash",
+    "deploymentRefundMaterializationJournalHash",
+    "positionMaterializationJournalHash",
+  ]) {
+    assertEqual(frozenRecoveryMaterialization.crossLanguageVectors[field], input[field], `A21 ${field}`);
+  }
+  assertEqual(
+    frozenRecoveryMaterialization.costEvidence.perGameSegment.sp1ProgramId,
+    null,
+    "A21 per-game SP1 program identity",
+  );
+  assertEqual(
+    frozenRecoveryMaterialization.costEvidence.recursiveThirtyTwoGameAggregator.sp1ProgramId,
+    null,
+    "A21 recursive SP1 program identity",
+  );
+  assertEqual(
+    decision.performanceEvidence.a21.cairoVectorTestL2Gas,
+    frozenRecoveryMaterialization.costEvidence.referenceCairoVectorTestL2Gas,
+    "A21 Cairo vector cost",
+  );
+  assertEqual(
+    decision.performanceEvidence.a21.cairoNegativeTestL2Gas,
+    frozenRecoveryMaterialization.costEvidence.referenceCairoNegativeTestL2Gas,
+    "A21 Cairo negative cost",
+  );
+  for (const [path, field] of [
+    ["proofs/eternum-settlement/src/frozen_recovery.rs", "frozenRecoveryCoreSha256"],
+    ["proofs/eternum-settlement/src/materialization.rs", "deploymentRefundMaterializationCoreSha256"],
+    ["proofs/eternum-settlement/src/position_materialization.rs", "positionMaterializationCoreSha256"],
+    ["proofs/eternum-settlement/Cargo.lock", "cargoLockSha256"],
+    ["contracts/settlement_protocol/src/frozen_recovery_verifier_spike.cairo", "cairoVerifierSha256"],
+    ["packages/settlement-codec/src/frozen-recovery.ts", "typescriptVerifierSha256"],
+  ]) {
+    assertFileHash(path, frozenRecoveryMaterialization.reproducibilityInputs[field]);
+  }
+  assertFileHash("packages/settlement-codec/schema/frozen-recovery-materialization-a21-v1.json", input.fileSha256);
 }
 
 function assertA20StopOutcomeCount(unresolvedMutationCandidates) {

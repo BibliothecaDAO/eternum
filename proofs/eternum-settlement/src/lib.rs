@@ -1,8 +1,11 @@
 pub mod codec;
 pub mod emergency_sealed;
 pub mod frozen_position;
+pub mod frozen_recovery;
 pub mod golden_vectors;
+pub mod materialization;
 pub mod mmr_plan;
+pub mod position_materialization;
 pub mod schema_vector;
 pub mod tree;
 pub mod tree_vectors;

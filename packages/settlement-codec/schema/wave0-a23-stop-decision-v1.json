@@ -42,32 +42,44 @@
     { "ticket": "A18", "status": "public-feasibility-complete-private-tee-source-blocked", "mandatoryBlocker": true },
     { "ticket": "A19", "status": "absent", "mandatoryBlocker": true },
     { "ticket": "A20", "status": "candidate-incomplete", "mandatoryBlocker": true },
-    { "ticket": "A21", "status": "absent", "mandatoryBlocker": true },
+    {
+      "ticket": "A21",
+      "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
+      "mandatoryBlocker": true
+    },
     { "ticket": "A22", "status": "candidate-incomplete", "mandatoryBlocker": true },
     { "ticket": "A23", "status": "stop-record-awaiting-authorized-signatures", "mandatoryBlocker": true }
   ],
   "frozenAndCandidateInputs": {
     "protocolSchema": {
       "status": "frozen-wave0-v1",
-      "registryHash": "0x80fc99a14698dcc5baaf6135fd007309840a624800949b1bb87d469c6b9fb6",
-      "fileSha256": "5a701bcc7ede013f0b9dfb5ffe52a121b7211059b0fdf302176effcb0a57cb0b"
+      "registryHash": "0x6223f81a3b7d07ead67c72d06acddfe67337e6387c0e9f05edd1a19f1ebdba8",
+      "fileSha256": "dc70b9c624a7ed129692fc0394d03f07315b0ac2a06f6b90de2b5d679f18e8d3"
     },
     "frozenPositionProof": {
       "status": "reference-seam-complete-production-proof-blocked",
-      "fileSha256": "d310d008802878f73fcf1f553016ed7719f4a3faaee53c7593f32d1fb52f9c02",
+      "fileSha256": "6affd2d54d215a4cf0ec0781b0abb52820c5f2c3197b90682e7b46c33c56f0bb",
       "journalHash": "0x7d37e77b8cc5f0db16705e88b91ac862f125d684b8fa5644992eee730db58bc",
       "releaseReady": false
     },
     "mmrPlanProof": {
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
-      "fileSha256": "5cba307284025cbd930d5a921c1c649b9dbd2f3f9b040b9feefcc32656dc4ee8",
+      "fileSha256": "c8fc0f37db1657a1e52ffdb70c043f7e5c9bec50ffc75ce109d037d312363165",
       "journalHash": "0x2e8193d2764077811fe44d826af2d7a6c0c8afdc31ced2d5f106530fb639f6a",
       "releaseReady": false
     },
     "emergencySealedProof": {
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
-      "fileSha256": "530fab0d88d27777bf58d2701faa64c69aeb256cdcabce805a65dc464b8e168e",
+      "fileSha256": "7616c0a6ea110e22480f852f91990a8a6d463d7ed2c80d0c49f3cb5a1f61eb83",
       "journalHash": "0x37890799d1a1ec66e4425bfffa52747bcfb6fdb984b80d39420f451b01b343f",
+      "releaseReady": false
+    },
+    "frozenRecoveryMaterializationProofs": {
+      "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
+      "fileSha256": "eb5688c7be2d91dc70b7d134f262faf92611c2882631209782782b502a54b8f2",
+      "frozenRecoveryJournalHash": "0x40aea6316d38fddec50d6a2ba770a77babc95603c124e2ba6356644004b5afa",
+      "deploymentRefundMaterializationJournalHash": "0x4aaed4fdfc7127f25f78d7b21d6875604cb2173fdbaf4f89656644f5ab7e43d",
+      "positionMaterializationJournalHash": "0x1f0cfc118469d26eac0b3d226cf0af1edf09eb6051e1d39ef0e15d6d1f9d9e2",
       "releaseReady": false
     },
     "authorityInventory": {
@@ -135,6 +147,16 @@
       "sp1ProveDurationMs": null,
       "sp1VerifyDurationMs": null
     },
+    "a21": {
+      "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
+      "artifact": "packages/settlement-codec/schema/frozen-recovery-materialization-a21-v1.json",
+      "cairoVectorTestL2Gas": 145198,
+      "cairoNegativeTestL2Gas": 82074,
+      "perGameSp1ProveDurationMs": null,
+      "recursiveThirtyTwoGameSp1ProveDurationMs": null,
+      "deploymentRefundMaterializationSp1ProveDurationMs": null,
+      "positionMaterializationSp1ProveDurationMs": null
+    },
     "unavailableMandatoryCampaigns": [
       "A5-production-katana-sp1",
       "A8",
@@ -142,14 +164,14 @@
       "A15-production-receipt-and-maximum-bound",
       "A16",
       "A19",
-      "A21"
+      "A21-production-segmented-recursive-receipts-and-maximum-bound"
     ]
   },
   "topologyDecision": {
     "status": "frozen-hub-owned-v1",
     "a17SealBoundary": "SeasonSettlementHub-owned game and global active/cumulative aggregates with one central sealed-batch bit",
     "removedFromAtomicBoundary": "Fallible cross-contract EconomicStateSystem promotion callbacks",
-    "protocolRegistryHash": "0x80fc99a14698dcc5baaf6135fd007309840a624800949b1bb87d469c6b9fb6",
+    "protocolRegistryHash": "0x6223f81a3b7d07ead67c72d06acddfe67337e6387c0e9f05edd1a19f1ebdba8",
     "aggregateViewTrait": "ISeasonSettlementHubAggregateView",
     "productionRequirement": "D4 must implement the frozen Hub-owned aggregate view and cannot reintroduce a seal-time promotion callback."
   },
@@ -183,7 +205,7 @@
     },
     {
       "id": "MISSING-PROOF-GATES",
-      "action": "Replace A5 and A15 reference state seams with pinned Katana MultiProof adapters and production SP1 receipt/cost evidence; complete A13 production receipt plus A16, A19, and A21 proof and maximum-bound evidence."
+      "action": "Replace A5, A15, and A21 reference state seams with pinned Katana MultiProof adapters and production SP1 receipt/cost evidence; complete A13 production receipt plus A16 and A19 proof evidence, and run A15/A21 maximum-bound campaigns."
     }
   ],
   "authorization": {
