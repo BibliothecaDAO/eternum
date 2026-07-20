@@ -87,6 +87,7 @@ jobs:
           pnpm run check:settlement-schema
           pnpm run check:settlement-trees
           pnpm run check:economic-write-inventory
+          pnpm run check:exit-family-inventory
           pnpm run check:config-setter-inventory
           pnpm run check:generated-config
           pnpm run check:authority-inventory

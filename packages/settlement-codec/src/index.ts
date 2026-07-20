@@ -3,6 +3,7 @@ import { hash } from "starknet";
 
 export { decodeSchema, encodeSchema, type SchemaValue } from "./codec";
 export * from "./economic-capability";
+export * from "./exit-family-inventory";
 export * from "./authority-inventory";
 export * from "./deployment-identity";
 export * from "./tree";

@@ -16,6 +16,8 @@
     "build": "tsup src/index.ts --format esm --dts",
     "check:economic-interface-schema": "node ../../scripts/settlement/generate-economic-interface-schema.mjs --check",
     "generate:economic-interface-schema": "node ../../scripts/settlement/generate-economic-interface-schema.mjs",
+    "check:exit-family-inventory": "tsx ../../scripts/settlement/generate-exit-family-inventory.ts --check",
+    "generate:exit-family-inventory": "tsx ../../scripts/settlement/generate-exit-family-inventory.ts",
     "check:package-lock-matrix": "node ../../scripts/settlement/generate-package-lock-matrix.mjs --check",
     "generate:package-lock-matrix": "node ../../scripts/settlement/generate-package-lock-matrix.mjs",
     "check:deployment-identity-vector": "tsx ../../scripts/settlement/generate-deployment-identity-vector.ts --check",

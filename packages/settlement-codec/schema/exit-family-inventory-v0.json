@@ -1,0 +1,996 @@
+{
+  "version": 0,
+  "status": "a22-candidate-incomplete",
+  "generatedFrom": {
+    "policyVersion": 0,
+    "economicCapabilityRegistryVersion": 1,
+    "economicWriteInventoryVersion": 0
+  },
+  "familyRegistryHash": "0x629ea1a717e1552114e5802873b00f43d9b005fba157c4c9d481f180e0377b9",
+  "sourceProjectionHash": "0xd91695bac86d84757341a8e1d2141d74f080faae75744f28cff59760dfc755",
+  "excludedProjectionHash": "0x7293f6334dd641c66870b0a8b54be93353d6de381c7b9adbf1071727cb158af",
+  "inventoryHash": "0x6db7d817adfc8b232ed97212b841c8f321768b284ab3a0d666566c1bf7c0bf0",
+  "releaseReady": false,
+  "exclusionReviewStatus": "heuristic-unreviewed",
+  "summary": {
+    "discoveredWrites": 308,
+    "exitCoveredWrites": 252,
+    "excludedWrites": 56,
+    "familyCount": 12,
+    "familiesWithoutDiscoveredWrites": 4
+  },
+  "families": [
+    {
+      "familyId": 1,
+      "capabilityFamily": "resource",
+      "sourceIdentity": {
+        "fields": [
+          "entity_id",
+          "resource_id"
+        ],
+        "status": "candidate-unreviewed"
+      },
+      "indexSchema": {
+        "key": [
+          "game_id:GameId",
+          "family:u16",
+          "index:u64"
+        ],
+        "highWatermark": "exclusive",
+        "stableIds": "monotonic-never-reused",
+        "deletion": "explicit-tombstone"
+      },
+      "chunking": {
+        "chunkSize": 64,
+        "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+      },
+      "cardinality": {
+        "maximumPositionsPerGame": null,
+        "status": "unresolved"
+      },
+      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "operationIds": [
+        4097
+      ],
+      "affectedModels": [
+        "Resource",
+        "Weight",
+        "ResourceIndex",
+        "ExitPosition"
+      ],
+      "sourceWriteIds": [
+        "contracts/game/src/models/resource/resource.cairo:88:store",
+        "contracts/game/src/models/resource/resource.cairo:89:store",
+        "contracts/game/src/models/resource/resource.cairo:319:write_model",
+        "contracts/game/src/models/resource/resource.cairo:339:write_member",
+        "contracts/game/src/models/resource/resource.cairo:350:write_member",
+        "contracts/game/src/models/resource/resource.cairo:362:write_member",
+        "contracts/game/src/systems/config/contracts.cairo:468:write_model",
+        "contracts/game/src/systems/config/contracts.cairo:487:write_model",
+        "contracts/game/src/systems/config/contracts.cairo:549:write_model",
+        "contracts/game/src/systems/config/contracts.cairo:594:write_model",
+        "contracts/game/src/systems/config/contracts.cairo:606:write_model",
+        "contracts/game/src/systems/config/contracts.cairo:756:write_model",
+        "contracts/game/src/systems/config/contracts.cairo:774:write_model",
+        "contracts/game/src/systems/config/contracts.cairo:868:write_model",
+        "contracts/game/src/systems/config/contracts.cairo:1079:write_model",
+        "contracts/game/src/systems/dev/contracts/resource.cairo:48:store",
+        "contracts/game/src/systems/quest/contracts.cairo:319:store",
+        "contracts/game/src/systems/resources/contracts/resource_bridge_systems.cairo:192:store",
+        "contracts/game/src/systems/resources/contracts/resource_systems.cairo:117:write_model",
+        "contracts/game/src/systems/resources/contracts/resource_systems.cairo:238:write_model",
+        "contracts/game/src/systems/utils/mine.cairo:100:store",
+        "contracts/game/src/systems/utils/resource.cairo:219:store",
+        "contracts/game/src/systems/utils/resource.cairo:227:store",
+        "contracts/game/src/systems/utils/resource.cairo:235:store",
+        "contracts/game/src/systems/utils/resource.cairo:239:store",
+        "contracts/game/src/systems/utils/resource.cairo:301:store",
+        "contracts/game/src/systems/utils/resource.cairo:308:store",
+        "contracts/game/src/systems/utils/resource.cairo:316:store",
+        "contracts/game/src/systems/utils/resource.cairo:319:store",
+        "contracts/game/src/systems/utils/resource.cairo:371:store",
+        "contracts/game/src/systems/utils/resource.cairo:396:store",
+        "contracts/game/src/systems/utils/resource.cairo:501:store",
+        "contracts/game/src/systems/utils/resource.cairo:535:store",
+        "contracts/game/src/systems/utils/resource.cairo:536:store",
+        "contracts/game/src/systems/utils/resource.cairo:593:store",
+        "contracts/game/src/systems/utils/resource.cairo:600:store",
+        "contracts/game/src/utils/testing/helpers.cairo:298:store",
+        "contracts/game/src/utils/testing/helpers.cairo:301:store"
+      ],
+      "sourceFiles": [
+        "contracts/game/src/models/resource/resource.cairo",
+        "contracts/game/src/systems/config/contracts.cairo",
+        "contracts/game/src/systems/dev/contracts/resource.cairo",
+        "contracts/game/src/systems/quest/contracts.cairo",
+        "contracts/game/src/systems/resources/contracts/resource_bridge_systems.cairo",
+        "contracts/game/src/systems/resources/contracts/resource_systems.cairo",
+        "contracts/game/src/systems/utils/mine.cairo",
+        "contracts/game/src/systems/utils/resource.cairo",
+        "contracts/game/src/utils/testing/helpers.cairo"
+      ],
+      "sourceWriteCount": 38,
+      "sourceFileCount": 9,
+      "schemaHash": "0x58bbc7fc5a355bed3c43d1f8493b9c3f0e9d27391a27b13a47693818a59b8cc"
+    },
+    {
+      "familyId": 2,
+      "capabilityFamily": "structure_ownership",
+      "sourceIdentity": {
+        "fields": [
+          "structure_id"
+        ],
+        "status": "candidate-unreviewed"
+      },
+      "indexSchema": {
+        "key": [
+          "game_id:GameId",
+          "family:u16",
+          "index:u64"
+        ],
+        "highWatermark": "exclusive",
+        "stableIds": "monotonic-never-reused",
+        "deletion": "explicit-tombstone"
+      },
+      "chunking": {
+        "chunkSize": 64,
+        "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+      },
+      "cardinality": {
+        "maximumPositionsPerGame": null,
+        "status": "unresolved"
+      },
+      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "operationIds": [
+        4098
+      ],
+      "affectedModels": [
+        "Structure",
+        "StructureOwner",
+        "StructureOwnerStats",
+        "ExitPosition"
+      ],
+      "sourceWriteIds": [
+        "contracts/game/src/models/structure.cairo:57:write_model",
+        "contracts/game/src/models/structure.cairo:64:write_model",
+        "contracts/game/src/models/structure.cairo:100:write_member",
+        "contracts/game/src/models/structure.cairo:222:write_member",
+        "contracts/game/src/models/structure.cairo:234:write_member",
+        "contracts/game/src/models/structure.cairo:247:write_member",
+        "contracts/game/src/models/structure.cairo:260:write_member",
+        "contracts/game/src/models/structure.cairo:272:write_member",
+        "contracts/game/src/system_libraries/structure_libraries/structure_creation_library.cairo:183:write_model",
+        "contracts/game/src/system_libraries/structure_libraries/structure_creation_library.cairo:191:write_model",
+        "contracts/game/src/system_libraries/structure_libraries/structure_creation_library.cairo:325:store",
+        "contracts/game/src/system_libraries/structure_libraries/structure_creation_library.cairo:326:store",
+        "contracts/game/src/system_libraries/structure_libraries/structure_creation_library.cairo:365:store",
+        "contracts/game/src/system_libraries/structure_libraries/structure_creation_library.cairo:366:store",
+        "contracts/game/src/systems/config/contracts.cairo:876:write_model",
+        "contracts/game/src/systems/dev/contracts/resource.cairo:51:store",
+        "contracts/game/src/systems/ownership/contracts.cairo:62:write_model",
+        "contracts/game/src/systems/realm/season/contracts.cairo:98:write_model",
+        "contracts/game/src/systems/resources/contracts/resource_bridge_systems.cairo:128:store",
+        "contracts/game/src/systems/resources/contracts/resource_bridge_systems.cairo:215:store",
+        "contracts/game/src/systems/structure/contracts.cairo:83:store",
+        "contracts/game/src/systems/structure/contracts.cairo:89:store",
+        "contracts/game/src/systems/utils/camp.cairo:40:store",
+        "contracts/game/src/systems/utils/camp.cairo:43:store",
+        "contracts/game/src/systems/utils/mine.cairo:103:store",
+        "contracts/game/src/systems/utils/realm.cairo:52:write_model",
+        "contracts/game/src/systems/utils/resource.cairo:128:store",
+        "contracts/game/src/systems/utils/resource.cairo:652:store",
+        "contracts/game/src/systems/utils/resource.cairo:666:store",
+        "contracts/game/src/systems/utils/structure.cairo:165:write_model",
+        "contracts/game/src/systems/utils/structure.cairo:173:write_model",
+        "contracts/game/src/systems/village/contracts.cairo:95:write_model",
+        "contracts/game/src/utils/testing/contracts/villagepassmock.cairo:171:write"
+      ],
+      "sourceFiles": [
+        "contracts/game/src/models/structure.cairo",
+        "contracts/game/src/system_libraries/structure_libraries/structure_creation_library.cairo",
+        "contracts/game/src/systems/config/contracts.cairo",
+        "contracts/game/src/systems/dev/contracts/resource.cairo",
+        "contracts/game/src/systems/ownership/contracts.cairo",
+        "contracts/game/src/systems/realm/season/contracts.cairo",
+        "contracts/game/src/systems/resources/contracts/resource_bridge_systems.cairo",
+        "contracts/game/src/systems/structure/contracts.cairo",
+        "contracts/game/src/systems/utils/camp.cairo",
+        "contracts/game/src/systems/utils/mine.cairo",
+        "contracts/game/src/systems/utils/realm.cairo",
+        "contracts/game/src/systems/utils/resource.cairo",
+        "contracts/game/src/systems/utils/structure.cairo",
+        "contracts/game/src/systems/village/contracts.cairo",
+        "contracts/game/src/utils/testing/contracts/villagepassmock.cairo"
+      ],
+      "sourceWriteCount": 33,
+      "sourceFileCount": 15,
+      "schemaHash": "0x54acc1ac260c972a41a57259a9e11d4475722d23c29baf8e5d56d4e3a7c513e"
+    },
+    {
+      "familyId": 3,
+      "capabilityFamily": "lazy_production",
+      "sourceIdentity": {
+        "fields": [
+          "producer_id",
+          "resource_id"
+        ],
+        "status": "candidate-unreviewed"
+      },
+      "indexSchema": {
+        "key": [
+          "game_id:GameId",
+          "family:u16",
+          "index:u64"
+        ],
+        "highWatermark": "exclusive",
+        "stableIds": "monotonic-never-reused",
+        "deletion": "explicit-tombstone"
+      },
+      "chunking": {
+        "chunkSize": 64,
+        "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+      },
+      "cardinality": {
+        "maximumPositionsPerGame": null,
+        "status": "unresolved"
+      },
+      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "operationIds": [
+        4099
+      ],
+      "affectedModels": [
+        "ResourceProduction",
+        "Resource",
+        "Weight",
+        "ProductionReservation",
+        "ExitPosition"
+      ],
+      "sourceWriteIds": [
+        "contracts/game/src/models/resource/production/building.cairo:358:store",
+        "contracts/game/src/models/resource/production/building.cairo:524:store",
+        "contracts/game/src/models/resource/production/building.cairo:537:store",
+        "contracts/game/src/models/resource/production/building.cairo:540:write_model",
+        "contracts/game/src/models/resource/production/building.cairo:552:store",
+        "contracts/game/src/models/resource/production/building.cairo:555:write_model",
+        "contracts/game/src/models/resource/production/building.cairo:606:write_model",
+        "contracts/game/src/models/resource/production/building.cairo:632:write_model",
+        "contracts/game/src/models/resource/production/building.cairo:682:write_model",
+        "contracts/game/src/models/resource/production/building.cairo:731:write_model",
+        "contracts/game/src/models/resource/production/building.cairo:798:write_model",
+        "contracts/game/src/models/resource/production/building.cairo:871:store",
+        "contracts/game/src/models/resource/production/building.cairo:878:store",
+        "contracts/game/src/models/resource/production/production.cairo:232:store",
+        "contracts/game/src/models/resource/production/production.cairo:233:store",
+        "contracts/game/src/models/resource/production/production.cairo:297:store",
+        "contracts/game/src/models/resource/production/production.cairo:311:store",
+        "contracts/game/src/models/resource/production/production.cairo:314:store",
+        "contracts/game/src/models/resource/production/production.cairo:372:store",
+        "contracts/game/src/models/resource/production/production.cairo:389:store",
+        "contracts/game/src/models/resource/production/production.cairo:392:store",
+        "contracts/game/src/models/resource/production/production.cairo:450:store",
+        "contracts/game/src/models/resource/production/production.cairo:476:store",
+        "contracts/game/src/models/resource/production/production.cairo:479:store",
+        "contracts/game/src/systems/config/contracts.cairo:783:write_model"
+      ],
+      "sourceFiles": [
+        "contracts/game/src/models/resource/production/building.cairo",
+        "contracts/game/src/models/resource/production/production.cairo",
+        "contracts/game/src/systems/config/contracts.cairo"
+      ],
+      "sourceWriteCount": 25,
+      "sourceFileCount": 3,
+      "schemaHash": "0x4387eaa89448b61c9798c3e9a850a9c33d490ee1e1cdc3138b4dfbd34b3c2f2"
+    },
+    {
+      "familyId": 4,
+      "capabilityFamily": "arrival",
+      "sourceIdentity": {
+        "fields": [
+          "structure_id",
+          "arrival_id"
+        ],
+        "status": "candidate-unreviewed"
+      },
+      "indexSchema": {
+        "key": [
+          "game_id:GameId",
+          "family:u16",
+          "index:u64"
+        ],
+        "highWatermark": "exclusive",
+        "stableIds": "monotonic-never-reused",
+        "deletion": "explicit-tombstone"
+      },
+      "chunking": {
+        "chunkSize": 64,
+        "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+      },
+      "cardinality": {
+        "maximumPositionsPerGame": null,
+        "status": "unresolved"
+      },
+      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "operationIds": [
+        4100
+      ],
+      "affectedModels": [
+        "ResourceArrival",
+        "Resource",
+        "Weight",
+        "ArrivalIndex",
+        "ExitPosition"
+      ],
+      "sourceWriteIds": [
+        "contracts/game/src/models/resource/arrivals.cairo:177:write_model",
+        "contracts/game/src/models/resource/arrivals.cairo:343:write_member",
+        "contracts/game/src/models/resource/arrivals.cairo:349:write_member"
+      ],
+      "sourceFiles": [
+        "contracts/game/src/models/resource/arrivals.cairo"
+      ],
+      "sourceWriteCount": 3,
+      "sourceFileCount": 1,
+      "schemaHash": "0x612dfd383e23ac99b7856a7338181b5e3133d57a3ce99bdbe3b3c3476555d75"
+    },
+    {
+      "familyId": 5,
+      "capabilityFamily": "military_and_cargo",
+      "sourceIdentity": {
+        "fields": [
+          "troop_id",
+          "position_kind"
+        ],
+        "status": "candidate-unreviewed"
+      },
+      "indexSchema": {
+        "key": [
+          "game_id:GameId",
+          "family:u16",
+          "index:u64"
+        ],
+        "highWatermark": "exclusive",
+        "stableIds": "monotonic-never-reused",
+        "deletion": "explicit-tombstone"
+      },
+      "chunking": {
+        "chunkSize": 64,
+        "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+      },
+      "cardinality": {
+        "maximumPositionsPerGame": null,
+        "status": "unresolved"
+      },
+      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "operationIds": [
+        4101
+      ],
+      "affectedModels": [
+        "ExplorerTroops",
+        "GuardTroops",
+        "Troops",
+        "Resource",
+        "Weight",
+        "ExitPosition"
+      ],
+      "sourceWriteIds": [
+        "contracts/game/src/systems/combat/contracts/troop_battle.cairo:233:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_battle.cairo:248:store",
+        "contracts/game/src/systems/combat/contracts/troop_battle.cairo:249:store",
+        "contracts/game/src/systems/combat/contracts/troop_battle.cairo:284:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_battle.cairo:454:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_battle.cairo:529:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_battle.cairo:790:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_management.cairo:358:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_management.cairo:565:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_management.cairo:569:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_management.cairo:699:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_management.cairo:884:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_movement.cairo:252:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_movement.cairo:285:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_movement.cairo:360:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_movement.cairo:434:store",
+        "contracts/game/src/systems/combat/contracts/troop_movement.cairo:435:store",
+        "contracts/game/src/systems/combat/contracts/troop_raid.cairo:198:write_model",
+        "contracts/game/src/systems/combat/contracts/troop_raid.cairo:252:store",
+        "contracts/game/src/systems/combat/contracts/troop_raid.cairo:253:store",
+        "contracts/game/src/systems/combat/contracts/troop_raid.cairo:257:write_model",
+        "contracts/game/src/systems/quest/contracts.cairo:320:store",
+        "contracts/game/src/systems/utils/relic.cairo:138:store",
+        "contracts/game/src/systems/utils/troop.cairo:168:write_model",
+        "contracts/game/src/systems/utils/troop.cairo:227:write_model",
+        "contracts/game/src/systems/utils/troop.cairo:338:store",
+        "contracts/game/src/systems/utils/troop.cairo:346:store",
+        "contracts/game/src/systems/utils/troop.cairo:349:store",
+        "contracts/game/src/systems/utils/troop.cairo:363:store",
+        "contracts/game/src/systems/utils/troop.cairo:564:store",
+        "contracts/game/src/systems/utils/troop.cairo:565:store",
+        "contracts/game/src/systems/utils/troop.cairo:710:write_model",
+        "contracts/game/src/systems/utils/troop.cairo:719:write_model",
+        "contracts/game/src/systems/utils/troop.cairo:735:store",
+        "contracts/game/src/systems/village/contracts.cairo:180:write_model"
+      ],
+      "sourceFiles": [
+        "contracts/game/src/systems/combat/contracts/troop_battle.cairo",
+        "contracts/game/src/systems/combat/contracts/troop_management.cairo",
+        "contracts/game/src/systems/combat/contracts/troop_movement.cairo",
+        "contracts/game/src/systems/combat/contracts/troop_raid.cairo",
+        "contracts/game/src/systems/quest/contracts.cairo",
+        "contracts/game/src/systems/utils/relic.cairo",
+        "contracts/game/src/systems/utils/troop.cairo",
+        "contracts/game/src/systems/village/contracts.cairo"
+      ],
+      "sourceWriteCount": 35,
+      "sourceFileCount": 8,
+      "schemaHash": "0x4cd3c74ea39f91a1779d780a9a949c9cf0a29a48d59277e0bdf0d30c7848c53"
+    },
+    {
+      "familyId": 6,
+      "capabilityFamily": "trade_and_donkey",
+      "sourceIdentity": {
+        "fields": [
+          "trade_id",
+          "escrow_kind"
+        ],
+        "status": "candidate-unreviewed"
+      },
+      "indexSchema": {
+        "key": [
+          "game_id:GameId",
+          "family:u16",
+          "index:u64"
+        ],
+        "highWatermark": "exclusive",
+        "stableIds": "monotonic-never-reused",
+        "deletion": "explicit-tombstone"
+      },
+      "chunking": {
+        "chunkSize": 64,
+        "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+      },
+      "cardinality": {
+        "maximumPositionsPerGame": null,
+        "status": "unresolved"
+      },
+      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "operationIds": [
+        4102
+      ],
+      "affectedModels": [
+        "Trade",
+        "Resource",
+        "Weight",
+        "OrderIndex",
+        "ExitPosition"
+      ],
+      "sourceWriteIds": [
+        "contracts/game/src/models/trade.cairo:36:write_model",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo:161:store",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo:170:store",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo:175:write_model",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo:191:write_model",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo:333:store",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo:336:store",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo:359:write_model",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo:405:store",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo:421:store",
+        "contracts/game/src/systems/utils/donkey.cairo:37:store",
+        "contracts/game/src/systems/utils/donkey.cairo:47:store"
+      ],
+      "sourceFiles": [
+        "contracts/game/src/models/trade.cairo",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo",
+        "contracts/game/src/systems/utils/donkey.cairo"
+      ],
+      "sourceWriteCount": 12,
+      "sourceFileCount": 3,
+      "schemaHash": "0x5d13451e8e9890d0d0786a8d9659554b30b9f45172e266e5e93b5c9df811ec"
+    },
+    {
+      "familyId": 7,
+      "capabilityFamily": "amm_and_lp",
+      "sourceIdentity": {
+        "fields": [
+          "pool_id",
+          "position_owner",
+          "position_kind"
+        ],
+        "status": "candidate-unreviewed"
+      },
+      "indexSchema": {
+        "key": [
+          "game_id:GameId",
+          "family:u16",
+          "index:u64"
+        ],
+        "highWatermark": "exclusive",
+        "stableIds": "monotonic-never-reused",
+        "deletion": "explicit-tombstone"
+      },
+      "chunking": {
+        "chunkSize": 64,
+        "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+      },
+      "cardinality": {
+        "maximumPositionsPerGame": null,
+        "status": "unresolved"
+      },
+      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "operationIds": [
+        4103
+      ],
+      "affectedModels": [
+        "Bank",
+        "Liquidity",
+        "LiquidityPosition",
+        "Resource",
+        "Weight",
+        "ExitPosition"
+      ],
+      "sourceWriteIds": [
+        "contracts/game/src/systems/bank/contracts/bank.cairo:75:write_model",
+        "contracts/game/src/systems/bank/contracts/liquidity.cairo:99:write_model",
+        "contracts/game/src/systems/bank/contracts/liquidity.cairo:110:store",
+        "contracts/game/src/systems/bank/contracts/liquidity.cairo:118:store",
+        "contracts/game/src/systems/bank/contracts/liquidity.cairo:121:store",
+        "contracts/game/src/systems/bank/contracts/liquidity.cairo:127:write_model",
+        "contracts/game/src/systems/bank/contracts/liquidity.cairo:158:write_model",
+        "contracts/game/src/systems/bank/contracts/liquidity.cairo:170:write_model",
+        "contracts/game/src/systems/bank/contracts/liquidity.cairo:214:store",
+        "contracts/game/src/systems/bank/contracts/liquidity.cairo:215:store",
+        "contracts/game/src/systems/bank/contracts/swap.cairo:90:store",
+        "contracts/game/src/systems/bank/contracts/swap.cairo:98:store",
+        "contracts/game/src/systems/bank/contracts/swap.cairo:103:write_model",
+        "contracts/game/src/systems/bank/contracts/swap.cairo:124:store",
+        "contracts/game/src/systems/bank/contracts/swap.cairo:125:store",
+        "contracts/game/src/systems/bank/contracts/swap.cairo:181:store",
+        "contracts/game/src/systems/bank/contracts/swap.cairo:190:store",
+        "contracts/game/src/systems/bank/contracts/swap.cairo:213:store",
+        "contracts/game/src/systems/bank/contracts/swap.cairo:214:store",
+        "contracts/game/src/systems/bank/contracts/swap.cairo:219:write_model"
+      ],
+      "sourceFiles": [
+        "contracts/game/src/systems/bank/contracts/bank.cairo",
+        "contracts/game/src/systems/bank/contracts/liquidity.cairo",
+        "contracts/game/src/systems/bank/contracts/swap.cairo"
+      ],
+      "sourceWriteCount": 20,
+      "sourceFileCount": 3,
+      "schemaHash": "0x2094865462d43e9e7c9699a7c1a44f52640d3b817851bf68b149a4b8084a1a7"
+    },
+    {
+      "familyId": 8,
+      "capabilityFamily": "reward_state",
+      "sourceIdentity": {
+        "fields": [
+          "player_id",
+          "reward_kind"
+        ],
+        "status": "candidate-unreviewed"
+      },
+      "indexSchema": {
+        "key": [
+          "game_id:GameId",
+          "family:u16",
+          "index:u64"
+        ],
+        "highWatermark": "exclusive",
+        "stableIds": "monotonic-never-reused",
+        "deletion": "explicit-tombstone"
+      },
+      "chunking": {
+        "chunkSize": 64,
+        "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+      },
+      "cardinality": {
+        "maximumPositionsPerGame": null,
+        "status": "unresolved"
+      },
+      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "operationIds": [
+        4104
+      ],
+      "affectedModels": [
+        "SeasonPrize",
+        "Faith",
+        "PlayerRegisteredPoints",
+        "BlitzParticipant",
+        "ExitPosition"
+      ],
+      "sourceWriteIds": [
+        "contracts/game/src/models/hyperstructure.cairo:71:write_model",
+        "contracts/game/src/models/hyperstructure.cairo:98:write_member",
+        "contracts/game/src/models/hyperstructure.cairo:107:write_member",
+        "contracts/game/src/models/hyperstructure.cairo:116:write_member",
+        "contracts/game/src/models/hyperstructure.cairo:217:write_model",
+        "contracts/game/src/models/hyperstructure.cairo:222:write_model",
+        "contracts/game/src/systems/artificer/contracts.cairo:65:store",
+        "contracts/game/src/systems/artificer/contracts.cairo:66:store",
+        "contracts/game/src/systems/artificer/contracts.cairo:83:store",
+        "contracts/game/src/systems/artificer/contracts.cairo:84:store",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo:92:store",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo:93:store",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo:104:write_model",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo:110:write_model",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo:188:write_model",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo:201:write_model",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo:211:store",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo:212:store",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo:243:write_model",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo:257:write_model",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo:261:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:543:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:550:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:675:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:709:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:756:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:784:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:799:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:858:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:870:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:891:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:905:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:915:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:928:write_model",
+        "contracts/game/src/systems/faith/contracts.cairo:985:write_model",
+        "contracts/game/src/systems/faith/prize_contracts.cairo:272:write_model",
+        "contracts/game/src/systems/faith/prize_contracts.cairo:316:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:222:store",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:223:store",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:242:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:306:store",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:326:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:327:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:331:store",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:352:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:357:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:361:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:452:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:460:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:478:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:494:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:538:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:581:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:589:write_model",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo:616:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:124:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:131:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:133:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:199:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:200:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:201:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:202:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:203:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:277:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:346:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:488:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:512:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:516:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:542:write_model",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo:573:write_model",
+        "contracts/game/src/systems/realm/blitz/contracts.cairo:196:write_model",
+        "contracts/game/src/systems/realm/blitz/contracts.cairo:340:write_model",
+        "contracts/game/src/systems/realm/blitz/contracts.cairo:382:write_model",
+        "contracts/game/src/systems/realm/blitz/contracts.cairo:424:write_model",
+        "contracts/game/src/systems/realm/blitz/contracts.cairo:458:write_model",
+        "contracts/game/src/systems/realm/blitz/contracts.cairo:517:write_model",
+        "contracts/game/src/systems/realm/blitz/contracts.cairo:521:write_model",
+        "contracts/game/src/systems/relic/contracts.cairo:193:store",
+        "contracts/game/src/systems/relic/contracts.cairo:195:store",
+        "contracts/game/src/systems/relic/contracts.cairo:213:store",
+        "contracts/game/src/systems/relic/contracts.cairo:215:store",
+        "contracts/game/src/systems/relic/contracts.cairo:266:write_model",
+        "contracts/game/src/systems/relic/contracts.cairo:334:write_model",
+        "contracts/game/src/systems/utils/hyperstructure.cairo:139:write_model",
+        "contracts/game/src/systems/utils/hyperstructure.cairo:156:write_model",
+        "contracts/game/src/systems/utils/relic.cairo:135:store"
+      ],
+      "sourceFiles": [
+        "contracts/game/src/models/hyperstructure.cairo",
+        "contracts/game/src/systems/artificer/contracts.cairo",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo",
+        "contracts/game/src/systems/faith/contracts.cairo",
+        "contracts/game/src/systems/faith/prize_contracts.cairo",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo",
+        "contracts/game/src/systems/realm/blitz/contracts.cairo",
+        "contracts/game/src/systems/relic/contracts.cairo",
+        "contracts/game/src/systems/utils/hyperstructure.cairo",
+        "contracts/game/src/systems/utils/relic.cairo"
+      ],
+      "sourceWriteCount": 86,
+      "sourceFileCount": 11,
+      "schemaHash": "0x2bb2898ad6208dc5fbcf16c88ffbc5613070aecb1f43190e8502ec5183fbe57"
+    },
+    {
+      "familyId": 9,
+      "capabilityFamily": "pending_withdrawal",
+      "sourceIdentity": {
+        "fields": [
+          "player_id",
+          "liability_id"
+        ],
+        "status": "candidate-unreviewed"
+      },
+      "indexSchema": {
+        "key": [
+          "game_id:GameId",
+          "family:u16",
+          "index:u64"
+        ],
+        "highWatermark": "exclusive",
+        "stableIds": "monotonic-never-reused",
+        "deletion": "explicit-tombstone"
+      },
+      "chunking": {
+        "chunkSize": 64,
+        "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+      },
+      "cardinality": {
+        "maximumPositionsPerGame": null,
+        "status": "unresolved"
+      },
+      "sourceWriteMappingStatus": "production-interface-only",
+      "operationIds": [
+        4105
+      ],
+      "affectedModels": [
+        "PendingLiability",
+        "LiabilityAssignment",
+        "Resource",
+        "ExitPosition"
+      ],
+      "sourceWriteIds": [],
+      "sourceFiles": [],
+      "sourceWriteCount": 0,
+      "sourceFileCount": 0,
+      "schemaHash": "0x5c16488c197e0d4c2d0fbc8b03768388b1e8d5937bee865aba585c67f998348"
+    },
+    {
+      "familyId": 10,
+      "capabilityFamily": "active_exit_backing",
+      "sourceIdentity": {
+        "fields": [
+          "backing_lot_id",
+          "allocation_id"
+        ],
+        "status": "candidate-unreviewed"
+      },
+      "indexSchema": {
+        "key": [
+          "game_id:GameId",
+          "family:u16",
+          "index:u64"
+        ],
+        "highWatermark": "exclusive",
+        "stableIds": "monotonic-never-reused",
+        "deletion": "explicit-tombstone"
+      },
+      "chunking": {
+        "chunkSize": 64,
+        "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+      },
+      "cardinality": {
+        "maximumPositionsPerGame": null,
+        "status": "unresolved"
+      },
+      "sourceWriteMappingStatus": "production-interface-only",
+      "operationIds": [
+        4106
+      ],
+      "affectedModels": [
+        "SettlementCapacity",
+        "GameBackingLot",
+        "BackingTotal",
+        "PendingLiability"
+      ],
+      "sourceWriteIds": [],
+      "sourceFiles": [],
+      "sourceWriteCount": 0,
+      "sourceFileCount": 0,
+      "schemaHash": "0x57f559e7566b90585e3e42eb7f5b3bd3ce6d6c2b562cc10b5cdebe2d5031c62"
+    },
+    {
+      "familyId": 11,
+      "capabilityFamily": "player_economic_lock",
+      "sourceIdentity": {
+        "fields": [
+          "player_id"
+        ],
+        "status": "candidate-unreviewed"
+      },
+      "indexSchema": {
+        "key": [
+          "game_id:GameId",
+          "family:u16",
+          "index:u64"
+        ],
+        "highWatermark": "exclusive",
+        "stableIds": "monotonic-never-reused",
+        "deletion": "explicit-tombstone"
+      },
+      "chunking": {
+        "chunkSize": 64,
+        "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+      },
+      "cardinality": {
+        "maximumPositionsPerGame": null,
+        "status": "unresolved"
+      },
+      "sourceWriteMappingStatus": "production-interface-only",
+      "operationIds": [
+        4107
+      ],
+      "affectedModels": [
+        "PlayerEconomicLock",
+        "ForcedExitJob",
+        "ExitPosition"
+      ],
+      "sourceWriteIds": [],
+      "sourceFiles": [],
+      "sourceWriteCount": 0,
+      "sourceFileCount": 0,
+      "schemaHash": "0x73ba01ef3546cab1f41176c6dc6c2fa99916296b391289435f5209a8a615827"
+    },
+    {
+      "familyId": 12,
+      "capabilityFamily": "exit_position",
+      "sourceIdentity": {
+        "fields": [
+          "position_id"
+        ],
+        "status": "candidate-unreviewed"
+      },
+      "indexSchema": {
+        "key": [
+          "game_id:GameId",
+          "family:u16",
+          "index:u64"
+        ],
+        "highWatermark": "exclusive",
+        "stableIds": "monotonic-never-reused",
+        "deletion": "explicit-tombstone"
+      },
+      "chunking": {
+        "chunkSize": 64,
+        "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+      },
+      "cardinality": {
+        "maximumPositionsPerGame": null,
+        "status": "unresolved"
+      },
+      "sourceWriteMappingStatus": "production-interface-only",
+      "operationIds": [
+        4108
+      ],
+      "affectedModels": [
+        "ExitPosition",
+        "PositionRef",
+        "PlayerPositionIndex"
+      ],
+      "sourceWriteIds": [],
+      "sourceFiles": [],
+      "sourceWriteCount": 0,
+      "sourceFileCount": 0,
+      "schemaHash": "0x5abd33f2ce81e4142c7de9a5649d49b517a0970fcbaddcd8a48f351a8b2dda0"
+    }
+  ],
+  "excludedWriteIds": [
+    "contracts/game/src/models/agent.cairo:69:write_model",
+    "contracts/game/src/models/agent.cairo:73:write_model",
+    "contracts/game/src/models/agent.cairo:79:write_model",
+    "contracts/game/src/models/agent.cairo:89:write_model",
+    "contracts/game/src/models/config.cairo:240:write_member",
+    "contracts/game/src/models/record.cairo:85:write_member",
+    "contracts/game/src/models/rng.cairo:19:write_model",
+    "contracts/game/src/systems/alt_movement/contracts.cairo:68:write_model",
+    "contracts/game/src/systems/config/contracts.cairo:350:write_model",
+    "contracts/game/src/systems/config/contracts.cairo:387:write_model",
+    "contracts/game/src/systems/config/contracts.cairo:401:write_model",
+    "contracts/game/src/systems/config/contracts.cairo:628:write_model",
+    "contracts/game/src/systems/config/contracts.cairo:672:write_model",
+    "contracts/game/src/systems/config/contracts.cairo:834:write_model",
+    "contracts/game/src/systems/config/contracts.cairo:841:write_model",
+    "contracts/game/src/systems/guild/contracts.cairo:93:write_model",
+    "contracts/game/src/systems/guild/contracts.cairo:94:write_model",
+    "contracts/game/src/systems/guild/contracts.cairo:119:write_model",
+    "contracts/game/src/systems/guild/contracts.cairo:136:write_model",
+    "contracts/game/src/systems/guild/contracts.cairo:137:write_model",
+    "contracts/game/src/systems/guild/contracts.cairo:160:write_model",
+    "contracts/game/src/systems/guild/contracts.cairo:178:write_model",
+    "contracts/game/src/systems/guild/contracts.cairo:198:write_model",
+    "contracts/game/src/systems/mmr/contracts.cairo:169:write_model",
+    "contracts/game/src/systems/mmr/contracts.cairo:227:write_model",
+    "contracts/game/src/systems/name/contracts.cairo:35:write_model",
+    "contracts/game/src/systems/name/contracts.cairo:38:write_model",
+    "contracts/game/src/systems/quest/contracts.cairo:80:write_model",
+    "contracts/game/src/systems/quest/contracts.cairo:108:write_model",
+    "contracts/game/src/systems/quest/contracts.cairo:121:write_model",
+    "contracts/game/src/systems/quest/contracts.cairo:165:write_model",
+    "contracts/game/src/systems/quest/contracts.cairo:305:write_model",
+    "contracts/game/src/systems/quest/contracts.cairo:336:write_model",
+    "contracts/game/src/systems/quest/contracts.cairo:352:write_model",
+    "contracts/game/src/systems/quest/contracts.cairo:462:write_model",
+    "contracts/game/src/systems/utils/map.cairo:131:write_model",
+    "contracts/game/src/systems/utils/map.cairo:138:write_model",
+    "contracts/game/src/systems/utils/map.cairo:184:write_model",
+    "contracts/game/src/utils/testing/contracts/erc20mock.cairo:28:write",
+    "contracts/game/src/utils/testing/contracts/erc20mock.cairo:29:write",
+    "contracts/game/src/utils/testing/contracts/erc20mock.cairo:30:write",
+    "contracts/game/src/utils/testing/contracts/erc20mock.cairo:43:write",
+    "contracts/game/src/utils/testing/contracts/erc20mock.cairo:45:write",
+    "contracts/game/src/utils/testing/contracts/erc20mock.cairo:55:write",
+    "contracts/game/src/utils/testing/contracts/erc20mock.cairo:58:write",
+    "contracts/game/src/utils/testing/contracts/erc20mock.cairo:60:write",
+    "contracts/game/src/utils/testing/contracts/erc20mock.cairo:66:write",
+    "contracts/game/src/utils/testing/contracts/mmr_token_mock.cairo:76:write",
+    "contracts/game/src/utils/testing/contracts/mmr_token_mock.cairo:86:write",
+    "contracts/game/src/utils/testing/contracts/mmr_token_mock.cairo:92:write",
+    "contracts/game/src/utils/testing/contracts/vrf_atomic_consumer.cairo:25:write",
+    "contracts/game/src/utils/testing/contracts/vrf_atomic_consumer.cairo:34:write",
+    "contracts/game/src/utils/testing/contracts/vrf_atomic_consumer.cairo:35:write",
+    "contracts/game/src/utils/testing/contracts/vrf_provider_mock.cairo:16:write",
+    "contracts/game/src/utils/testing/contracts/vrf_provider_mock.cairo:33:write",
+    "contracts/game/src/utils/testing/contracts/vrf_provider_mock.cairo:55:write"
+  ],
+  "unresolved": [
+    {
+      "kind": "source-write-mapping-review",
+      "familyIds": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "detail": "A9 path/target classifications are heuristic and require per-write domain-owner review."
+    },
+    {
+      "kind": "source-identity-review",
+      "familyIds": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "detail": "Candidate source identity fields require cross-language schema and migration-vector review."
+    },
+    {
+      "kind": "maximum-cardinality",
+      "familyIds": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "detail": "Exact maximum positions per game and campaign-sized file/system split bounds are not yet evidenced."
+    },
+    {
+      "kind": "exclusion-review",
+      "familyIds": [],
+      "detail": "Every excluded A9 write requires affirmative evidence that it cannot carry exit-covered value."
+    }
+  ]
+}

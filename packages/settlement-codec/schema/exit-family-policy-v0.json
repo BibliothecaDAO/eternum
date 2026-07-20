@@ -1,0 +1,105 @@
+{
+  "version": 0,
+  "status": "a22-candidate-incomplete",
+  "indexSchema": {
+    "key": ["game_id:GameId", "family:u16", "index:u64"],
+    "highWatermark": "exclusive",
+    "stableIds": "monotonic-never-reused",
+    "deletion": "explicit-tombstone"
+  },
+  "chunking": {
+    "chunkSize": 64,
+    "splitRule": "Split in ascending stable index order into consecutive chunks of at most 64 positions; never split one position's at-most-eight legs across chunks."
+  },
+  "families": [
+    {
+      "familyId": 1,
+      "capabilityFamily": "resource",
+      "sourceIdentity": ["entity_id", "resource_id"]
+    },
+    {
+      "familyId": 2,
+      "capabilityFamily": "structure_ownership",
+      "sourceIdentity": ["structure_id"]
+    },
+    {
+      "familyId": 3,
+      "capabilityFamily": "lazy_production",
+      "sourceIdentity": ["producer_id", "resource_id"]
+    },
+    {
+      "familyId": 4,
+      "capabilityFamily": "arrival",
+      "sourceIdentity": ["structure_id", "arrival_id"]
+    },
+    {
+      "familyId": 5,
+      "capabilityFamily": "military_and_cargo",
+      "sourceIdentity": ["troop_id", "position_kind"]
+    },
+    {
+      "familyId": 6,
+      "capabilityFamily": "trade_and_donkey",
+      "sourceIdentity": ["trade_id", "escrow_kind"]
+    },
+    {
+      "familyId": 7,
+      "capabilityFamily": "amm_and_lp",
+      "sourceIdentity": ["pool_id", "position_owner", "position_kind"]
+    },
+    {
+      "familyId": 8,
+      "capabilityFamily": "reward_state",
+      "sourceIdentity": ["player_id", "reward_kind"]
+    },
+    {
+      "familyId": 9,
+      "capabilityFamily": "pending_withdrawal",
+      "sourceIdentity": ["player_id", "liability_id"]
+    },
+    {
+      "familyId": 10,
+      "capabilityFamily": "active_exit_backing",
+      "sourceIdentity": ["backing_lot_id", "allocation_id"]
+    },
+    {
+      "familyId": 11,
+      "capabilityFamily": "player_economic_lock",
+      "sourceIdentity": ["player_id"]
+    },
+    {
+      "familyId": 12,
+      "capabilityFamily": "exit_position",
+      "sourceIdentity": ["position_id"]
+    }
+  ],
+  "reviewPolicy": {
+    "sourceIdentityStatus": "candidate-unreviewed",
+    "sourceWriteMappingStatus": "heuristic-unreviewed",
+    "exclusionStatus": "heuristic-unreviewed",
+    "maximumPositionsPerGame": null,
+    "cardinalityStatus": "unresolved"
+  },
+  "releaseBlockers": [
+    {
+      "kind": "source-write-mapping-review",
+      "scope": "all-families",
+      "detail": "A9 path/target classifications are heuristic and require per-write domain-owner review."
+    },
+    {
+      "kind": "source-identity-review",
+      "scope": "all-families",
+      "detail": "Candidate source identity fields require cross-language schema and migration-vector review."
+    },
+    {
+      "kind": "maximum-cardinality",
+      "scope": "all-families",
+      "detail": "Exact maximum positions per game and campaign-sized file/system split bounds are not yet evidenced."
+    },
+    {
+      "kind": "exclusion-review",
+      "scope": "global",
+      "detail": "Every excluded A9 write requires affirmative evidence that it cannot carry exit-covered value."
+    }
+  ]
+}

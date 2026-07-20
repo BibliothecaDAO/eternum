@@ -225,6 +225,8 @@
     "check:generated-config": "pnpm --dir config check:generated",
     "generate:economic-write-inventory": "node scripts/settlement/generate-economic-write-inventory.mjs",
     "check:economic-write-inventory": "node scripts/settlement/generate-economic-write-inventory.mjs --check",
+    "generate:exit-family-inventory": "pnpm --dir packages/settlement-codec generate:exit-family-inventory",
+    "check:exit-family-inventory": "pnpm --dir packages/settlement-codec check:exit-family-inventory",
     "generate:config-setter-inventory": "node scripts/settlement/generate-config-setter-inventory.mjs",
     "check:config-setter-inventory": "node scripts/settlement/generate-config-setter-inventory.mjs --check",
     "generate:economic-interface-schema": "node scripts/settlement/generate-economic-interface-schema.mjs",
