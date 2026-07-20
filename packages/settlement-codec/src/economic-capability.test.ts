@@ -17,6 +17,7 @@ const dispatcherConformanceUrl = new URL(
   import.meta.url,
 );
 const protocolInterfacesUrl = new URL("../../../contracts/settlement_protocol/src/interfaces.cairo", import.meta.url);
+const protocolSchemaUrl = new URL("../schema/schema-registry-v1.json", import.meta.url);
 
 describe("A14 frozen economic capability interface", () => {
   test("publishes a complete semantic ABI and capability matrix", () => {
@@ -86,9 +87,50 @@ describe("A14 frozen economic capability interface", () => {
   test("resolves operation and caller authority through the public codec API", () => {
     expect(getEconomicCapabilityOperation(4109).name).toBe("assign_open_batch");
     expect(getEconomicCapabilitiesForCaller("SeasonSettlementHub").map((operation) => operation.operationId)).toEqual([
-      4105, 4106, 4109, 4110,
+      4105, 4106, 4109,
     ]);
     expect(() => getEconomicCapabilityOperation(0)).toThrow("unregistered economic operation: 0");
+  });
+
+  test("freezes the Hub-owned A17 seal topology without a promotion callback", () => {
+    const capabilityRegistry = getEconomicCapabilityRegistry();
+    const protocolSchema = readJson(protocolSchemaUrl);
+    const declarations = new Map(
+      protocolSchema.declarations.map((declaration: { name: string }) => [declaration.name, declaration]),
+    );
+    const callbacks = declarations.get("IGameEconomicSettlementCallbacks");
+    const aggregateView = declarations.get("ISeasonSettlementHubAggregateView");
+
+    expect(callbacks.members).toEqual([
+      "fn assign_open_batch( ref self: TContractState, liability_id: LiabilityId, batch_id: BatchId, leaf_index: u8, ) -> felt252",
+      "fn get_liability_assignment( self: @TContractState, liability_id: LiabilityId, ) -> Option<(BatchId, u8)>",
+    ]);
+    expect(aggregateView.members).toEqual([
+      "fn get_batch_seal_state( self: @TContractState, batch_id: BatchId, ) -> HubBatchSealState",
+      "fn get_backing_aggregate( self: @TContractState, game_id: GameId, parent_key_hash: felt252, ) -> HubBackingAggregate",
+      "fn get_lot_aggregate( self: @TContractState, game_id: GameId, parent_key_hash: felt252, lot_index: u8, ) -> HubLotAggregate",
+      "fn get_game_aggregate_totals( self: @TContractState, game_id: GameId, ) -> (u256, u256)",
+      "fn get_global_aggregate_totals( self: @TContractState, ) -> (u256, u256)",
+    ]);
+    expect(declarations.get("HubBatchSealState").members.map(({ name }: { name: string }) => name)).toEqual([
+      "Unknown",
+      "Open",
+      "Sealed",
+    ]);
+    expect(declarations.get("HubBackingAggregate").members.map(({ name }: { name: string }) => name)).toEqual([
+      "game_id",
+      "parent_key_hash",
+      "active_committed_total",
+      "cumulative_outbox_total",
+    ]);
+    expect(declarations.get("HubLotAggregate").members.map(({ name }: { name: string }) => name)).toEqual([
+      "game_id",
+      "parent_key_hash",
+      "lot_index",
+      "active_committed_total",
+      "cumulative_outbox_total",
+    ]);
+    expect(capabilityRegistry.operations.some(({ operationId }) => operationId === 4110)).toBe(false);
   });
 
   test("isolates the canonical registry from consumer mutations", () => {

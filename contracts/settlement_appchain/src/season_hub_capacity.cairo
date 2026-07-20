@@ -56,8 +56,11 @@ pub mod SeasonSettlementCapacitySpike {
     };
     use settlement_protocol::interfaces::{
         IGameEconomicSettlementCallbacksDispatcher, IGameEconomicSettlementCallbacksDispatcherTrait,
+        ISeasonSettlementHubAggregateView,
     };
-    use settlement_protocol::types::{BackingKey, BackingTotal, LotSharePromotion};
+    use settlement_protocol::types::{
+        BackingKey, BackingTotal, HubBackingAggregate, HubBatchSealState, HubLotAggregate, LotSharePromotion,
+    };
     use starknet::storage::{
         Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
@@ -315,6 +318,64 @@ pub mod SeasonSettlementCapacitySpike {
 
         fn global_factory_seal_hash(self: @ContractState) -> felt252 {
             self.global_factory_seal_hash.read()
+        }
+    }
+
+    #[abi(embed_v0)]
+    impl AggregateViewImpl of ISeasonSettlementHubAggregateView<ContractState> {
+        fn get_batch_seal_state(self: @ContractState, batch_id: u64) -> HubBatchSealState {
+            if self.batch_sealed.read(batch_id) {
+                return HubBatchSealState::Sealed;
+            }
+            if self.liability_count.read(batch_id) != 0 || self.activation_count.read(batch_id) != 0 {
+                return HubBatchSealState::Open;
+            }
+            HubBatchSealState::Unknown
+        }
+
+        fn get_backing_aggregate(
+            self: @ContractState, game_id: felt252, parent_key_hash: felt252,
+        ) -> HubBackingAggregate {
+            if game_id == 0 {
+                return HubBackingAggregate {
+                    game_id,
+                    parent_key_hash,
+                    active_committed_total: self.global_parent_active.read(parent_key_hash),
+                    cumulative_outbox_total: self.global_parent_cumulative.read(parent_key_hash),
+                };
+            }
+            assert!(self.economic_state_by_game.read(game_id) != zero_address(), "GAME_NOT_REGISTERED");
+            HubBackingAggregate {
+                game_id,
+                parent_key_hash,
+                active_committed_total: self.game_parent_active.read((game_id, parent_key_hash)),
+                cumulative_outbox_total: self.game_parent_cumulative.read((game_id, parent_key_hash)),
+            }
+        }
+
+        fn get_lot_aggregate(
+            self: @ContractState, game_id: felt252, parent_key_hash: felt252, lot_index: u8,
+        ) -> HubLotAggregate {
+            if game_id != 0 {
+                assert!(self.economic_state_by_game.read(game_id) != zero_address(), "GAME_NOT_REGISTERED");
+            }
+            let identity = lot_identity(game_id, parent_key_hash, lot_index);
+            let (active_committed_total, cumulative_outbox_total) = if game_id == 0 {
+                (self.global_lot_active.read(identity), self.global_lot_cumulative.read(identity))
+            } else {
+                (self.game_lot_active.read((game_id, identity)), self.game_lot_cumulative.read((game_id, identity)))
+            };
+            HubLotAggregate { game_id, parent_key_hash, lot_index, active_committed_total, cumulative_outbox_total }
+        }
+
+        fn get_game_aggregate_totals(self: @ContractState, game_id: felt252) -> (u256, u256) {
+            assert!(game_id != 0, "ZERO_GAME_ID");
+            assert!(self.economic_state_by_game.read(game_id) != zero_address(), "GAME_NOT_REGISTERED");
+            (self.game_active_total.read(game_id), self.game_cumulative_total.read(game_id))
+        }
+
+        fn get_global_aggregate_totals(self: @ContractState) -> (u256, u256) {
+            (self.global_active_total.read(), self.global_cumulative_total.read())
         }
     }
 
@@ -954,11 +1015,11 @@ pub mod SeasonSettlementCapacitySpike {
     }
 
     fn lot_share_identity(share: @LotSharePromotion) -> felt252 {
-        PoseidonTrait::new()
-            .update(*share.game_id)
-            .update(*share.parent_key_hash)
-            .update((*share.lot_index).into())
-            .finalize()
+        lot_identity(*share.game_id, *share.parent_key_hash, *share.lot_index)
+    }
+
+    fn lot_identity(game_id: felt252, parent_key_hash: felt252, lot_index: u8) -> felt252 {
+        PoseidonTrait::new().update(game_id).update(parent_key_hash).update(lot_index.into()).finalize()
     }
 
     fn assert_admin(self: @ContractState) {

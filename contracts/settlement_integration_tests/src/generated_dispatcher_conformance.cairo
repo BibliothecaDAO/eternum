@@ -10,11 +10,12 @@ use settlement_protocol::interfaces::{
     ILegacyMmrSystemMigrationDispatcher, ILegacyMmrWorldMigrationDispatcher, IMMRSettlementModuleDispatcher,
     IMMRSettlementRouterDispatcher, IMMRSettlementTokenDispatcher, IRecursiveStarknetFinalityVerifierDispatcher,
     ISealedGameFactoryDispatcher, ISealedWorldPolicyDispatcher, ISeasonIngressCancellationDispatcher,
-    ISeasonResourceSettlementTokenDispatcher, IStarknetFinalizedStateRootSourceDispatcher,
+    ISeasonResourceSettlementTokenDispatcher, ISeasonSettlementHubAggregateViewDispatcher,
+    IStarknetFinalizedStateRootSourceDispatcher,
 };
 use starknet::ContractAddress;
 
-pub const PROTOCOL_DISPATCHER_COUNT: u16 = 28;
+pub const PROTOCOL_DISPATCHER_COUNT: u16 = 29;
 
 pub fn protocol_dispatcher_addresses(address: ContractAddress) -> Array<ContractAddress> {
     array![
@@ -44,6 +45,7 @@ pub fn protocol_dispatcher_addresses(address: ContractAddress) -> Array<Contract
         ISeasonIngressCancellationDispatcher { contract_address: address }.contract_address,
         IGameIngressAdapterDispatcher { contract_address: address }.contract_address,
         IGameEconomicSettlementCallbacksDispatcher { contract_address: address }.contract_address,
+        ISeasonSettlementHubAggregateViewDispatcher { contract_address: address }.contract_address,
         IGameForcedExitAdapterDispatcher { contract_address: address }.contract_address,
         IEconomicStateSystemDispatcher { contract_address: address }.contract_address,
     ]

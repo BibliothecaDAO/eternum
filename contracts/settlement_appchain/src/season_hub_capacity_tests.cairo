@@ -6,7 +6,10 @@ use settlement_protocol::appchain_spike_interfaces::{
     ISeasonSettlementCapacitySpikeDispatcher, ISeasonSettlementCapacitySpikeDispatcherTrait,
     ISeasonSettlementCapacitySpikeSafeDispatcher, ISeasonSettlementCapacitySpikeSafeDispatcherTrait,
 };
-use settlement_protocol::types::{BackingKey, BackingTotal, LotSharePromotion};
+use settlement_protocol::interfaces::{
+    ISeasonSettlementHubAggregateViewDispatcher, ISeasonSettlementHubAggregateViewDispatcherTrait,
+};
+use settlement_protocol::types::{BackingKey, BackingTotal, HubBatchSealState, LotSharePromotion};
 use snforge_std::{
     ContractClassTrait, DeclareResultTrait, declare, start_cheat_caller_address, stop_cheat_caller_address,
 };
@@ -25,7 +28,7 @@ struct CapacityFixture {
 
 #[test]
 fn one_atomic_append_accepts_sixteen_parents_and_two_hundred_fifty_six_lot_shares() {
-    let fixture = setup(false);
+    let fixture = setup();
     let (parents, shares) = maximum_game_vectors(GAME_A);
     stage_source(fixture.hub, GAME_A, 7001, 8001, parents.span(), shares.span());
 
@@ -53,7 +56,7 @@ fn one_atomic_append_accepts_sixteen_parents_and_two_hundred_fifty_six_lot_share
 #[test]
 #[feature("safe_dispatcher")]
 fn two_hundred_fifty_seven_lot_shares_reject_before_source_mutation() {
-    let fixture = setup(false);
+    let fixture = setup();
     let (parents, mut shares) = maximum_game_vectors(GAME_A);
     shares.append(LotSharePromotion { game_id: GAME_A, parent_key_hash: 999999, lot_index: 0, amount: 1_u256 });
 
@@ -74,7 +77,7 @@ fn two_hundred_fifty_seven_lot_shares_reject_before_source_mutation() {
 
 #[test]
 fn mixed_game_and_global_seal_promotes_sixteen_parents_and_two_hundred_fifty_six_rows() {
-    let fixture = setup(false);
+    let fixture = setup();
     let (first_game_parents, first_game_shares) = build_vectors(GAME_A, 0, 4);
     let (global_parents, global_shares) = half_vectors(0, 4);
     let (second_game_parents, second_game_shares) = build_vectors(GAME_A, 12, 4);
@@ -103,9 +106,49 @@ fn mixed_game_and_global_seal_promotes_sixteen_parents_and_two_hundred_fifty_six
 }
 
 #[test]
+fn frozen_aggregate_view_exposes_the_central_batch_bit_and_hub_owned_totals() {
+    let fixture = setup();
+    let aggregate_view = ISeasonSettlementHubAggregateViewDispatcher { contract_address: fixture.hub.contract_address };
+    let (parents, shares) = build_shape_vectors(GAME_A, 0, 1, 1);
+    let parent_hash = backing_key_hash(parents.at(0).key);
+
+    assert!(matches_batch_state(aggregate_view.get_batch_seal_state(0), 0));
+    stage_source(fixture.hub, GAME_A, 7101, 8101, parents.span(), shares.span());
+    fixture.hub.append_pending_liability(7101, 0, 8101);
+
+    assert!(matches_batch_state(aggregate_view.get_batch_seal_state(0), 1));
+    let open_parent = aggregate_view.get_backing_aggregate(GAME_A, parent_hash);
+    let open_lot = aggregate_view.get_lot_aggregate(GAME_A, parent_hash, 0);
+    assert!(open_parent.active_committed_total == 1_u256);
+    assert!(open_parent.cumulative_outbox_total == 0_u256);
+    assert!(open_lot.active_committed_total == 1_u256);
+    assert!(open_lot.cumulative_outbox_total == 0_u256);
+    assert!(aggregate_view.get_game_aggregate_totals(GAME_A) == (1_u256, 0_u256));
+
+    fixture.hub.seal_open_batch();
+
+    assert!(matches_batch_state(aggregate_view.get_batch_seal_state(0), 2));
+    let sealed_parent = aggregate_view.get_backing_aggregate(GAME_A, parent_hash);
+    let sealed_lot = aggregate_view.get_lot_aggregate(GAME_A, parent_hash, 0);
+    assert!(sealed_parent.active_committed_total == 0_u256);
+    assert!(sealed_parent.cumulative_outbox_total == 1_u256);
+    assert!(sealed_lot.active_committed_total == 0_u256);
+    assert!(sealed_lot.cumulative_outbox_total == 1_u256);
+    assert!(aggregate_view.get_game_aggregate_totals(GAME_A) == (0_u256, 1_u256));
+}
+
+fn matches_batch_state(state: HubBatchSealState, expected: u8) -> bool {
+    match state {
+        HubBatchSealState::Unknown => expected == 0,
+        HubBatchSealState::Open => expected == 1,
+        HubBatchSealState::Sealed => expected == 2,
+    }
+}
+
+#[test]
 #[feature("safe_dispatcher")]
-fn rejecting_world_callback_cannot_interrupt_hub_owned_seal() {
-    let fixture = setup(true);
+fn seal_performs_no_world_callback_after_assignment() {
+    let fixture = setup();
     let (global_parents, global_shares) = half_vectors(0, 0);
     let (game_parents, game_shares) = half_vectors(GAME_A, 8);
 
@@ -129,9 +172,7 @@ fn rejecting_world_callback_cannot_interrupt_hub_owned_seal() {
 #[feature("safe_dispatcher")]
 fn assignment_rejection_happens_before_hub_vector_mutation() {
     let hub_address = deploy("SeasonSettlementCapacitySpike", array![admin().into()]);
-    let callback_address = deploy(
-        "EconomicSettlementCallbackMock", array![hub_address.into(), GAME_A, true.into(), false.into(), false.into()],
-    );
+    let callback_address = deploy("EconomicSettlementCallbackMock", array![hub_address.into(), true.into()]);
     let hub = ISeasonSettlementCapacitySpikeDispatcher { contract_address: hub_address };
     let callback = IEconomicCallbackMetricsSpikeDispatcher { contract_address: callback_address };
     start_cheat_caller_address(hub_address, admin());
@@ -151,15 +192,11 @@ fn assignment_rejection_happens_before_hub_vector_mutation() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn late_game_rejection_cannot_create_partial_seal_state() {
+fn multi_game_seal_has_no_late_callback_boundary() {
     let hub_address = deploy("SeasonSettlementCapacitySpike", array![admin().into()]);
     let hub = ISeasonSettlementCapacitySpikeDispatcher { contract_address: hub_address };
-    let callback_a = deploy(
-        "EconomicSettlementCallbackMock", array![hub_address.into(), GAME_A, false.into(), false.into(), false.into()],
-    );
-    let callback_b = deploy(
-        "EconomicSettlementCallbackMock", array![hub_address.into(), GAME_B, false.into(), false.into(), true.into()],
-    );
+    let callback_a = deploy("EconomicSettlementCallbackMock", array![hub_address.into(), false.into()]);
+    let callback_b = deploy("EconomicSettlementCallbackMock", array![hub_address.into(), false.into()]);
     let metrics_a = IEconomicCallbackMetricsSpikeDispatcher { contract_address: callback_a };
     let metrics_b = IEconomicCallbackMetricsSpikeDispatcher { contract_address: callback_b };
     start_cheat_caller_address(hub_address, admin());
@@ -200,10 +237,7 @@ fn worst_distribution_seals_fifteen_games_and_one_global_parent_with_full_storag
             break;
         }
         let game_id = GAME_A + game_cursor.into();
-        let callback_address = deploy(
-            "EconomicSettlementCallbackMock",
-            array![hub_address.into(), game_id, false.into(), false.into(), false.into()],
-        );
+        let callback_address = deploy("EconomicSettlementCallbackMock", array![hub_address.into(), false.into()]);
         let callback = IEconomicCallbackMetricsSpikeDispatcher { contract_address: callback_address };
         let (parents, shares) = build_vectors(game_id, game_cursor, 1);
         start_cheat_caller_address(hub_address, admin());
@@ -236,7 +270,7 @@ fn worst_distribution_seals_fifteen_games_and_one_global_parent_with_full_storag
 
 #[test]
 fn existing_full_batch_seals_before_a_valid_next_source_is_appended() {
-    let fixture = setup(false);
+    let fixture = setup();
     let (full_parents, full_shares) = build_vectors(0, 0, 16);
     let (next_parents, next_shares) = build_vectors(0, 16, 1);
     stage_source(fixture.hub, 0, 7301, 8301, full_parents.span(), full_shares.span());
@@ -257,7 +291,7 @@ fn existing_full_batch_seals_before_a_valid_next_source_is_appended() {
 #[test]
 #[feature("safe_dispatcher")]
 fn thirty_two_world_global_factory_finalization_reads_only_staged_commitments() {
-    let fixture = setup(false);
+    let fixture = setup();
 
     start_cheat_caller_address(fixture.hub.contract_address, admin());
     let mut world_cursor = 1;
@@ -287,7 +321,7 @@ fn thirty_two_world_global_factory_finalization_reads_only_staged_commitments() 
 #[test]
 #[feature("safe_dispatcher")]
 fn global_factory_seal_rejects_unauthorized_and_premature_closure() {
-    let fixture = setup(false);
+    let fixture = setup();
     let safe_hub = ISeasonSettlementCapacitySpikeSafeDispatcher { contract_address: fixture.hub.contract_address };
 
     start_cheat_caller_address(fixture.hub.contract_address, admin());
@@ -301,7 +335,7 @@ fn global_factory_seal_rejects_unauthorized_and_premature_closure() {
 #[test]
 #[feature("safe_dispatcher")]
 fn administrative_registration_rejects_unauthorized_calls_without_reserving_identity() {
-    let fixture = setup(false);
+    let fixture = setup();
     let safe_hub = ISeasonSettlementCapacitySpikeSafeDispatcher { contract_address: fixture.hub.contract_address };
     let source_address = deploy(
         "PendingLiabilitySourceMock", array![fixture.hub.contract_address.into(), GAME_B, 9801],
@@ -326,7 +360,7 @@ fn administrative_registration_rejects_unauthorized_calls_without_reserving_iden
 
 #[test]
 fn sixty_fourth_liability_seals_immediately_and_sixty_fifth_starts_next_batch() {
-    let fixture = setup(false);
+    let fixture = setup();
     let (parents, shares) = build_vectors(GAME_A, 0, 1);
     let mut cursor: u32 = 0;
     loop {
@@ -357,7 +391,7 @@ fn sixty_fourth_liability_seals_immediately_and_sixty_fifth_starts_next_batch() 
 #[test]
 #[feature("safe_dispatcher")]
 fn source_rejects_duplicate_vectors_before_mutation() {
-    let fixture = setup(false);
+    let fixture = setup();
     let (mut parents, shares) = build_vectors(GAME_A, 0, 2);
     parents.append(copy_parent(parents.at(0)));
     let source_address = deploy(
@@ -374,7 +408,7 @@ fn source_rejects_duplicate_vectors_before_mutation() {
 #[test]
 #[feature("safe_dispatcher")]
 fn source_rejects_unsorted_unique_parents_before_mutation() {
-    let fixture = setup(false);
+    let fixture = setup();
     let (parents, shares) = build_vectors(GAME_A, 0, 2);
     let reversed = array![copy_parent(parents.at(1)), copy_parent(parents.at(0))];
     let source_address = deploy(
@@ -390,8 +424,8 @@ fn source_rejects_unsorted_unique_parents_before_mutation() {
 
 #[test]
 fn canonical_batch_hash_is_independent_of_source_append_order() {
-    let first = setup(false);
-    let second = setup(false);
+    let first = setup();
+    let second = setup();
     let (parents_a, shares_a) = build_vectors(GAME_A, 0, 1);
     let (parents_b, shares_b) = build_vectors(GAME_A, 1, 1);
     stage_source(first.hub, GAME_A, 9201, 10201, parents_b.span(), shares_b.span());
@@ -408,8 +442,8 @@ fn canonical_batch_hash_is_independent_of_source_append_order() {
 
 #[test]
 fn post_state_hash_binds_exact_promoted_record_identities() {
-    let first = setup(false);
-    let second = setup(false);
+    let first = setup();
+    let second = setup();
     let (parents_a, shares_a) = build_vectors(GAME_A, 0, 1);
     let (parents_b, shares_b) = build_vectors(GAME_A, 1, 1);
     stage_source(first.hub, GAME_A, 9401, 10401, parents_a.span(), shares_a.span());
@@ -422,8 +456,8 @@ fn post_state_hash_binds_exact_promoted_record_identities() {
 
 #[test]
 fn global_post_state_hash_binds_exact_promoted_record_identities() {
-    let first = setup(false);
-    let second = setup(false);
+    let first = setup();
+    let second = setup();
     let (parents_a, shares_a) = build_vectors(0, 0, 1);
     let (parents_b, shares_b) = build_vectors(0, 1, 1);
     stage_source(first.hub, 0, 9601, 10601, parents_a.span(), shares_a.span());
@@ -436,7 +470,7 @@ fn global_post_state_hash_binds_exact_promoted_record_identities() {
 
 #[test]
 fn activation_only_shape_seals_with_zero_parent_and_lot_rows() {
-    let fixture = setup(false);
+    let fixture = setup();
 
     assert!(fixture.hub.append_activation_only(11001) == (0, 0));
     let summary = fixture.hub.seal_open_batch();
@@ -475,7 +509,7 @@ fn sixteen_parent_two_hundred_fifty_six_lot_shape_seals() {
 #[test]
 #[feature("safe_dispatcher")]
 fn structurally_impossible_parent_lot_cross_product_shapes_reject_before_source_mutation() {
-    let fixture = setup(false);
+    let fixture = setup();
     assert_orphan_shape_rejects(fixture.hub, 1, 11601);
     assert_orphan_shape_rejects(fixture.hub, 255, 11602);
     assert_orphan_shape_rejects(fixture.hub, 256, 11603);
@@ -489,12 +523,9 @@ fn structurally_impossible_parent_lot_cross_product_shapes_reject_before_source_
     assert!(fixture.hub.batch_capacity(0).liability_count == 0);
 }
 
-fn setup(reject_promotions: bool) -> CapacityFixture {
+fn setup() -> CapacityFixture {
     let hub_address = deploy("SeasonSettlementCapacitySpike", array![admin().into()]);
-    let callback_address = deploy(
-        "EconomicSettlementCallbackMock",
-        array![hub_address.into(), GAME_A, false.into(), reject_promotions.into(), reject_promotions.into()],
-    );
+    let callback_address = deploy("EconomicSettlementCallbackMock", array![hub_address.into(), false.into()]);
     let hub = ISeasonSettlementCapacitySpikeDispatcher { contract_address: hub_address };
     start_cheat_caller_address(hub_address, admin());
     hub.register_game(GAME_A, callback_address);
@@ -520,7 +551,7 @@ fn stage_source(
 }
 
 fn assert_shape_seals(parent_count: u32, share_count: u32, seed: felt252) {
-    let fixture = setup(false);
+    let fixture = setup();
     let (parents, shares) = build_shape_vectors(GAME_A, 0, parent_count, share_count);
     stage_source(fixture.hub, GAME_A, seed, seed + 100000, parents.span(), shares.span());
     fixture.hub.append_pending_liability(seed, 0, seed + 100000);

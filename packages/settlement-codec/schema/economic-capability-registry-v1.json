@@ -237,24 +237,6 @@
       "affectedModels": ["PendingLiability", "LiabilityAssignment"],
       "backingEffect": "Assign immutable batch and leaf identity without moving active backing.",
       "indexEffect": "Write exactly one immutable assignment for the existing liability ID."
-    },
-    {
-      "operationId": 4110,
-      "name": "promote_sealed_batch",
-      "family": "settlement_callback",
-      "authorizedCallerClasses": ["SeasonSettlementHub"],
-      "interfaceTrait": "IGameEconomicSettlementCallbacks",
-      "method": "promote_sealed_batch",
-      "parameters": [
-        { "name": "batch_id", "type": "BatchId" },
-        { "name": "parent_totals", "type": "Span<BackingTotal>" },
-        { "name": "lot_share_promotions", "type": "Span<LotSharePromotion>" }
-      ],
-      "requestType": null,
-      "resultType": "felt252",
-      "affectedModels": ["SettlementCapacity", "GameBackingLot", "BackingTotal", "LiabilityAssignment"],
-      "backingEffect": "Move the canonical game slice from active committed to lifetime cumulative outbox with no per-liability fanout.",
-      "indexEffect": "Change only aggregate parent/lot classifications and the central batch state."
     }
   ]
 }

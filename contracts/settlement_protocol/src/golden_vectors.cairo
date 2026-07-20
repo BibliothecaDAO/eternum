@@ -13,6 +13,8 @@ pub fn assert_all_golden_vectors() {
     assert_backing_total();
     assert_game_backing_lot();
     assert_lot_share_promotion();
+    assert_hub_backing_aggregate();
+    assert_hub_lot_aggregate();
     assert_backing_policy();
     assert_payout_purpose_policy();
     assert_capacity_commitment_entry();
@@ -292,6 +294,26 @@ fn assert_lot_share_promotion() {
     let encoded = array![1, 2, 3, 4, 5];
     let mut input = encoded.span();
     let value: LotSharePromotion = Serde::deserialize(ref input).expect('deserialize');
+    assert!(input.is_empty());
+    let mut roundtrip = array![];
+    value.serialize(ref roundtrip);
+    assert!(roundtrip == encoded);
+}
+
+fn assert_hub_backing_aggregate() {
+    let encoded = array![1, 2, 3, 4, 5, 6];
+    let mut input = encoded.span();
+    let value: HubBackingAggregate = Serde::deserialize(ref input).expect('deserialize');
+    assert!(input.is_empty());
+    let mut roundtrip = array![];
+    value.serialize(ref roundtrip);
+    assert!(roundtrip == encoded);
+}
+
+fn assert_hub_lot_aggregate() {
+    let encoded = array![1, 2, 3, 4, 5, 6, 7];
+    let mut input = encoded.span();
+    let value: HubLotAggregate = Serde::deserialize(ref input).expect('deserialize');
     assert!(input.is_empty());
     let mut roundtrip = array![];
     value.serialize(ref roundtrip);

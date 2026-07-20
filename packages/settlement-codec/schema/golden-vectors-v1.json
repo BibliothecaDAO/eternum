@@ -1,6 +1,6 @@
 {
   "protocolVersion": 1,
-  "schemaRegistryHash": "0x2b09dc878a4ab21d67501c809b2ac112cb4551e23266c2b27c4318cc9197402",
+  "schemaRegistryHash": "0x62bdbaf8c725979407d6677225ed00da740019043d9a3214734db3aa408df82",
   "schemas": [
     {
       "schema": "ProtocolEnvelope",
@@ -222,6 +222,42 @@
         "3",
         "4",
         "5"
+      ]
+    },
+    {
+      "schema": "HubBackingAggregate",
+      "value": {
+        "game_id": "1",
+        "parent_key_hash": "2",
+        "active_committed_total": "1361129467683753853853498429727072845827",
+        "cumulative_outbox_total": "2041694201525630780780247644590609268741"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ]
+    },
+    {
+      "schema": "HubLotAggregate",
+      "value": {
+        "game_id": "1",
+        "parent_key_hash": "2",
+        "lot_index": "3",
+        "active_committed_total": "1701411834604692317316873037158841057284",
+        "cumulative_outbox_total": "2381976568446569244243622252022377480198"
+      },
+      "felts": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
       ]
     },
     {

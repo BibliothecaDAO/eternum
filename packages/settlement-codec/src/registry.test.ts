@@ -33,7 +33,7 @@ describe("settlement schema registry", () => {
   });
 
   it("recomputes the frozen full registry hash", () => {
-    expect(getSchemaRegistryHash()).toBe("0x2b09dc878a4ab21d67501c809b2ac112cb4551e23266c2b27c4318cc9197402");
+    expect(getSchemaRegistryHash()).toBe("0x62bdbaf8c725979407d6677225ed00da740019043d9a3214734db3aa408df82");
     expect(computeSchemaRegistryHash()).toBe(getSchemaRegistryHash());
   });
 

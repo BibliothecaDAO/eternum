@@ -182,6 +182,41 @@ pub fn assert_all_golden_vectors() {
         "LotSharePromotion",
     );
     assert_eq!(
+        HubBackingAggregate {
+            game_id: felt("1"),
+            parent_key_hash: felt("2"),
+            active_committed_total: U256 {
+                low: 3_u128,
+                high: 4_u128
+            },
+            cumulative_outbox_total: U256 {
+                low: 5_u128,
+                high: 6_u128
+            }
+        }
+        .encode(),
+        expected(&["1", "2", "3", "4", "5", "6"]),
+        "HubBackingAggregate",
+    );
+    assert_eq!(
+        HubLotAggregate {
+            game_id: felt("1"),
+            parent_key_hash: felt("2"),
+            lot_index: 3_u8,
+            active_committed_total: U256 {
+                low: 4_u128,
+                high: 5_u128
+            },
+            cumulative_outbox_total: U256 {
+                low: 6_u128,
+                high: 7_u128
+            }
+        }
+        .encode(),
+        expected(&["1", "2", "3", "4", "5", "6", "7"]),
+        "HubLotAggregate",
+    );
+    assert_eq!(
         BackingPolicy {
             asset_mode: 1_u8,
             asset_id: 2_u32,

@@ -214,6 +214,35 @@ impl CanonicalEncode for LotSharePromotion {
     }
 }
 
+impl CanonicalEncode for HubBatchSealState {
+    fn encode_to(&self, output: &mut Vec<Felt>) {
+        match self {
+            Self::Unknown => 0u8.encode_to(output),
+            Self::Open => 1u8.encode_to(output),
+            Self::Sealed => 2u8.encode_to(output),
+        }
+    }
+}
+
+impl CanonicalEncode for HubBackingAggregate {
+    fn encode_to(&self, output: &mut Vec<Felt>) {
+        self.game_id.encode_to(output);
+        self.parent_key_hash.encode_to(output);
+        self.active_committed_total.encode_to(output);
+        self.cumulative_outbox_total.encode_to(output);
+    }
+}
+
+impl CanonicalEncode for HubLotAggregate {
+    fn encode_to(&self, output: &mut Vec<Felt>) {
+        self.game_id.encode_to(output);
+        self.parent_key_hash.encode_to(output);
+        self.lot_index.encode_to(output);
+        self.active_committed_total.encode_to(output);
+        self.cumulative_outbox_total.encode_to(output);
+    }
+}
+
 impl CanonicalEncode for BackingPolicy {
     fn encode_to(&self, output: &mut Vec<Felt>) {
         self.asset_mode.encode_to(output);

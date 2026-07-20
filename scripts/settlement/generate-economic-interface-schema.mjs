@@ -131,8 +131,34 @@ function validateCallbacksAgainstCanonicalInterface(capabilityRegistry, protocol
     if (economicNames.has(operation.method)) throw new Error(`${operation.name} is duplicated in the economic trait`);
   }
 
+  const expectedCallbackMethods = new Set([
+    ...callbackOperations.map(({ method }) => method),
+    "get_liability_assignment",
+  ]);
+  const unexpectedCallback = callbackInterface.methods.find(({ name }) => !expectedCallbackMethods.has(name));
+  if (unexpectedCallback) throw new Error(`unregistered economic callback remains: ${unexpectedCallback.name}`);
+  if (callbackInterface.methods.length !== expectedCallbackMethods.size) {
+    throw new Error("canonical economic callback interface is missing a frozen method");
+  }
+  validateHubOwnedAggregateView(protocolSource);
+
   for (const staleType of ["AssignOpenBatchRequest", "PromoteSealedBatchRequest", "SettlementCallbackRequest"]) {
     if (economicNames.has(staleType)) throw new Error(`parallel callback type remains: ${staleType}`);
+  }
+}
+
+function validateHubOwnedAggregateView(protocolSource) {
+  const aggregateView = parseTrait(protocolSource, "ISeasonSettlementHubAggregateView");
+  const expectedMethods = [
+    "get_batch_seal_state",
+    "get_backing_aggregate",
+    "get_lot_aggregate",
+    "get_game_aggregate_totals",
+    "get_global_aggregate_totals",
+  ];
+  const actualMethods = aggregateView.methods.map(({ name }) => name);
+  if (actualMethods.join(",") !== expectedMethods.join(",")) {
+    throw new Error(`Hub-owned aggregate view drifted: ${actualMethods.join(",")}`);
   }
 }
 

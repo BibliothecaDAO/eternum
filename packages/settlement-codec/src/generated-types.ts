@@ -109,6 +109,26 @@ export interface LotSharePromotion {
   readonly amount: bigint;
 }
 
+export type HubBatchSealState =
+  | { readonly variant: "Unknown" }
+  | { readonly variant: "Open" }
+  | { readonly variant: "Sealed" };
+
+export interface HubBackingAggregate {
+  readonly game_id: GameId;
+  readonly parent_key_hash: bigint;
+  readonly active_committed_total: bigint;
+  readonly cumulative_outbox_total: bigint;
+}
+
+export interface HubLotAggregate {
+  readonly game_id: GameId;
+  readonly parent_key_hash: bigint;
+  readonly lot_index: bigint;
+  readonly active_committed_total: bigint;
+  readonly cumulative_outbox_total: bigint;
+}
+
 export interface BackingPolicy {
   readonly asset_mode: bigint;
   readonly asset_id: bigint;

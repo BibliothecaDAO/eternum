@@ -122,6 +122,30 @@ pub struct LotSharePromotion {
 }
 
 #[derive(Drop, Serde)]
+pub enum HubBatchSealState {
+    Unknown,
+    Open,
+    Sealed,
+}
+
+#[derive(Drop, Serde)]
+pub struct HubBackingAggregate {
+    pub game_id: GameId,
+    pub parent_key_hash: felt252,
+    pub active_committed_total: u256,
+    pub cumulative_outbox_total: u256,
+}
+
+#[derive(Drop, Serde)]
+pub struct HubLotAggregate {
+    pub game_id: GameId,
+    pub parent_key_hash: felt252,
+    pub lot_index: u8,
+    pub active_committed_total: u256,
+    pub cumulative_outbox_total: u256,
+}
+
+#[derive(Drop, Serde)]
 pub struct BackingPolicy {
     pub asset_mode: u8,
     pub asset_id: u32,

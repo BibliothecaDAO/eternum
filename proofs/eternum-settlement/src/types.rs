@@ -127,6 +127,31 @@ pub struct LotSharePromotion {
     pub amount: U256,
 }
 
+#[allow(clippy::large_enum_variant)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum HubBatchSealState {
+    Unknown,
+    Open,
+    Sealed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HubBackingAggregate {
+    pub game_id: GameId,
+    pub parent_key_hash: Felt,
+    pub active_committed_total: U256,
+    pub cumulative_outbox_total: U256,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HubLotAggregate {
+    pub game_id: GameId,
+    pub parent_key_hash: Felt,
+    pub lot_index: u8,
+    pub active_committed_total: U256,
+    pub cumulative_outbox_total: U256,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BackingPolicy {
     pub asset_mode: u8,

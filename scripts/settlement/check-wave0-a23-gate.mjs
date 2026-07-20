@@ -65,6 +65,7 @@ function assertFrozenAndCandidateInputs() {
     inputs.authorityInventory.unresolvedMutationCandidates,
     "A20 unresolved mutation count",
   );
+  assertA20StopOutcomeCount(inputs.authorityInventory.unresolvedMutationCandidates);
   assertFileHash("packages/settlement-codec/schema/authority-inventory-v1.json", inputs.authorityInventory.fileSha256);
 
   assertEqual(exitFamilies.status, "a22-candidate-incomplete", "A22 inventory status");
@@ -92,6 +93,15 @@ function assertFrozenAndCandidateInputs() {
   assertFileHash("packages/settlement-codec/schema/onchain-observation-a20-v1.json", inputs.onchainObservationSha256);
 }
 
+function assertA20StopOutcomeCount(unresolvedMutationCandidates) {
+  const outcome = decision.stopOutcomes.find(({ id }) => id === "A20-AUTHORITY-FREEZE");
+  assert(outcome, "A23 must declare the A20 authority-freeze outcome");
+  assert(
+    outcome.action.includes(`all ${unresolvedMutationCandidates} mutation candidates`),
+    "A20 authority-freeze outcome must name the current unresolved mutation count",
+  );
+}
+
 function assertA17Evidence() {
   const evidence = decision.performanceEvidence.a17;
   assertEqual(evidence.result, "pass", "A17 result");
@@ -104,7 +114,28 @@ function assertA17Evidence() {
   ]) {
     assert(evidence[field] <= evidence.ciCeiling, `A17 ${field} exceeds the declared CI ceiling`);
   }
-  assertEqual(decision.topologyDecision.status, "redesign-selected-rebaseline-required", "A17 topology decision");
+  assertEqual(decision.topologyDecision.status, "frozen-hub-owned-v1", "A17 topology decision");
+  assertEqual(
+    decision.topologyDecision.protocolRegistryHash,
+    schemaRegistry.schemaRegistryHash,
+    "A17 topology registry hash",
+  );
+  assertEqual(decision.topologyDecision.aggregateViewTrait, "ISeasonSettlementHubAggregateView", "A17 aggregate view");
+
+  const callback = findProtocolDeclaration("IGameEconomicSettlementCallbacks");
+  const aggregateView = findProtocolDeclaration("ISeasonSettlementHubAggregateView");
+  assert(
+    callback.members.every((method) => !method.includes("promote_sealed_batch")),
+    "A17 callback topology cannot retain seal-time promotion",
+  );
+  assertEqual(aggregateView.kind, "trait", "A17 aggregate view declaration");
+  assertEqual(decision.wave0.find(({ ticket }) => ticket === "A17")?.status, "complete", "A17 Wave 0 status");
+}
+
+function findProtocolDeclaration(name) {
+  const declaration = schemaRegistry.declarations.find((candidate) => candidate.name === name);
+  assert(declaration, `protocol declaration is missing: ${name}`);
+  return declaration;
 }
 
 function assertAuthorizationState() {

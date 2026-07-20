@@ -108,17 +108,6 @@ pub trait ISeasonSettlementCapacitySpike<TContractState> {
 
 #[starknet::interface]
 pub trait IEconomicCallbackMetricsSpike<TContractState> {
-    fn preview_promotion(
-        self: @TContractState, parent_totals: Span<BackingTotal>, lot_share_promotions: Span<LotSharePromotion>,
-    ) -> bool;
-    fn stage_active_totals(
-        ref self: TContractState, parent_totals: Span<BackingTotal>, lot_share_promotions: Span<LotSharePromotion>,
-    );
     fn assignment_count(self: @TContractState) -> u64;
     fn promotion_count(self: @TContractState) -> u64;
-    fn last_parent_count(self: @TContractState) -> u8;
-    fn last_lot_share_count(self: @TContractState) -> u16;
-    fn active_total(self: @TContractState) -> u256;
-    fn cumulative_total(self: @TContractState) -> u256;
-    fn post_state_hash(self: @TContractState) -> felt252;
 }

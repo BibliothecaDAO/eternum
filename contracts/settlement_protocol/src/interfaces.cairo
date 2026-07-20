@@ -469,13 +469,18 @@ pub trait IGameEconomicSettlementCallbacks<TContractState> {
     fn assign_open_batch(
         ref self: TContractState, liability_id: LiabilityId, batch_id: BatchId, leaf_index: u8,
     ) -> felt252;
-    fn promote_sealed_batch(
-        ref self: TContractState,
-        batch_id: BatchId,
-        parent_totals: Span<BackingTotal>,
-        lot_share_promotions: Span<LotSharePromotion>,
-    ) -> felt252;
     fn get_liability_assignment(self: @TContractState, liability_id: LiabilityId) -> Option<(BatchId, u8)>;
+}
+
+#[starknet::interface]
+pub trait ISeasonSettlementHubAggregateView<TContractState> {
+    fn get_batch_seal_state(self: @TContractState, batch_id: BatchId) -> HubBatchSealState;
+    fn get_backing_aggregate(self: @TContractState, game_id: GameId, parent_key_hash: felt252) -> HubBackingAggregate;
+    fn get_lot_aggregate(
+        self: @TContractState, game_id: GameId, parent_key_hash: felt252, lot_index: u8,
+    ) -> HubLotAggregate;
+    fn get_game_aggregate_totals(self: @TContractState, game_id: GameId) -> (u256, u256);
+    fn get_global_aggregate_totals(self: @TContractState) -> (u256, u256);
 }
 
 #[starknet::interface]
