@@ -172,7 +172,17 @@ function assertFrozenAndCandidateInputs() {
   assertA20StopOutcome();
   assertFileHash("packages/settlement-codec/schema/authority-inventory-v1.json", inputs.authorityInventory.fileSha256);
 
-  assertEqual(exitFamilies.status, "a22-candidate-incomplete", "A22 inventory status");
+  assertEqual(exitFamilies.status, "a22-stop-redesign-required", "A22 inventory status");
+  assertEqual(
+    decision.wave0.find(({ ticket }) => ticket === "A22")?.status,
+    "stop-redesign-required",
+    "A22 Wave 0 status",
+  );
+  assertEqual(
+    decision.wave0.find(({ ticket }) => ticket === "A8")?.status,
+    "blocked-on-failed-a22-and-authorized-aws",
+    "A8 Wave 0 status",
+  );
   assertEqual(exitFamilies.releaseReady, false, "A22 release readiness");
   for (const field of ["familyRegistryHash", "inventoryHash", "sourceProjectionHash", "excludedProjectionHash"]) {
     assertEqual(exitFamilies[field], inputs.exitFamilyInventory[field], `A22 ${field}`);
@@ -186,6 +196,13 @@ function assertFrozenAndCandidateInputs() {
   ]) {
     assertEqual(exitFamilies.summary[field], inputs.exitFamilyInventory[field], `A22 ${field}`);
   }
+  assertEqual(exitFamilies.reviewFindings.length, inputs.exitFamilyInventory.reviewFindingCount, "A22 review findings");
+  assertEqual(
+    exitFamilies.implementationIssues.length,
+    inputs.exitFamilyInventory.implementationIssueCount,
+    "A22 implementation issues",
+  );
+  assertA22StopOutcome();
   assertFileHash(
     "packages/settlement-codec/schema/exit-family-inventory-v0.json",
     inputs.exitFamilyInventory.fileSha256,
@@ -260,6 +277,61 @@ function assertA20StopOutcome() {
   assert(
     outcome.action.includes("89-path mutation review is complete") && outcome.action.includes("MMR class source"),
     "A20 authority-freeze outcome must distinguish completed mutation review from the class-source blocker",
+  );
+}
+
+function assertA22StopOutcome() {
+  const expectedFindings = [
+    ["economic-false-negative", "contracts/game/src/models/agent.cairo:89:write_model"],
+    ["economic-false-negative", "contracts/game/src/models/record.cairo:85:write_member"],
+    ["configuration-false-positive", "contracts/game/src/models/hyperstructure.cairo:71:write_model"],
+    ["missing-index-and-bound", "production:ExitPosition"],
+  ];
+  assertDeepEqual(
+    exitFamilies.reviewFindings.map(({ kind, sourceWriteId }) => [kind, sourceWriteId]),
+    expectedFindings,
+    "A22 failed feasibility findings",
+  );
+  assert(
+    exitFamilies.families.every(
+      (family) =>
+        family.sourceIdentity.status === "failed-no-canonical-index" &&
+        family.cardinality.status === "failed-no-enforced-bound" &&
+        family.cardinality.maximumPositionsPerGame === null,
+    ),
+    "A22 must fail closed while canonical indexes or enforced bounds are absent",
+  );
+
+  const issueProjection = exitFamilies.implementationIssues.map(
+    ({ ticket, familyIds, sourceWriteCount, sourceFileCount, missingProductionFamilyIds }) => ({
+      ticket,
+      familyIds,
+      sourceWriteCount,
+      sourceFileCount,
+      missingProductionFamilyIds,
+    }),
+  );
+  assertDeepEqual(decision.backlogRebaseline.d5ThroughD9.issues, issueProjection, "A22 D5-D9 issue projection");
+  assertEqual(
+    decision.backlogRebaseline.d5ThroughD9.status,
+    "enumerated-redesign-unestimated-until-enforced-bounds",
+    "A22 D5-D9 rebaseline status",
+  );
+  assertDeepEqual(decision.backlogRebaseline.d5ThroughD9.estimates, [], "A22 D5-D9 estimates");
+  const coveredFamilies = decision.backlogRebaseline.d5ThroughD9.issues.flatMap(({ familyIds }) => familyIds);
+  assertDeepEqual(
+    [...coveredFamilies].sort((left, right) => left - right),
+    Array.from({ length: 12 }, (_, index) => index + 1),
+    "A22 D5-D9 family coverage",
+  );
+
+  const outcome = decision.stopOutcomes.find(({ id }) => id === "A22-BOUNDS-FREEZE");
+  assert(outcome, "A23 must declare the A22 redesign outcome");
+  assert(
+    outcome.action.includes("false-negative") &&
+      outcome.action.includes("canonical monotonic indexes") &&
+      outcome.action.includes("rerun A8"),
+    "A22 redesign outcome must name the failed properties and dependent benchmark",
   );
 }
 

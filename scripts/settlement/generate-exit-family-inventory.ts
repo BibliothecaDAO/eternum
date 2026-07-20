@@ -35,6 +35,7 @@ if (shouldCheck) {
 
 function buildExitFamilyInventory() {
   assertPolicyMatchesFrozenCapabilities();
+  const reviewFindings = validateReviewFindings();
   const families = policy.families.map(buildFamilyInventory);
   const coveredSourceWriteIds = families.flatMap((family) => family.sourceWriteIds);
   const excludedWriteIds = economicWriteInventory.entries
@@ -69,6 +70,8 @@ function buildExitFamilyInventory() {
     },
     families,
     excludedWriteIds,
+    reviewFindings,
+    implementationIssues: buildImplementationIssues(families),
     unresolved: buildReleaseBlockers(families),
   };
 }
@@ -112,7 +115,7 @@ function buildFamilyInventory(familyPolicy: ExitFamilyPolicy["families"][number]
       status: policy.reviewPolicy.cardinalityStatus,
     },
     sourceWriteMappingStatus:
-      sourceWrites.length === 0 ? "production-interface-only" : policy.reviewPolicy.sourceWriteMappingStatus,
+      sourceWrites.length === 0 ? "missing-production-interface" : policy.reviewPolicy.sourceWriteMappingStatus,
     operationIds: commitmentInput.operationIds,
     affectedModels: commitmentInput.affectedModels,
     sourceWriteIds: sourceWrites.map((entry) => entry.id),
@@ -125,6 +128,55 @@ function buildFamilyInventory(familyPolicy: ExitFamilyPolicy["families"][number]
     ),
     schemaHash: computeExitFamilySchemaHash(commitmentInput),
   };
+}
+
+function validateReviewFindings() {
+  const writesById = new Map(economicWriteInventory.entries.map((entry) => [entry.id, entry]));
+  return policy.reviewFindings.map((finding) => {
+    if (finding.sourceWriteId === "production:ExitPosition") return finding;
+    const source = writesById.get(finding.sourceWriteId);
+    if (!source || source.classification !== finding.observedClassification) {
+      throw new Error(`A22 review finding no longer matches the source inventory: ${finding.sourceWriteId}`);
+    }
+    return finding;
+  });
+}
+
+function buildImplementationIssues(families: ReturnType<typeof buildFamilyInventory>[]) {
+  const familiesById = new Map(families.map((family) => [family.familyId, family]));
+  const coveredFamilyIds = policy.implementationIssues.flatMap(({ familyIds }) => familyIds);
+  if (
+    new Set(coveredFamilyIds).size !== coveredFamilyIds.length ||
+    JSON.stringify(coveredFamilyIds.toSorted((left, right) => left - right)) !==
+      JSON.stringify(families.map(({ familyId }) => familyId))
+  ) {
+    throw new Error("A22 D5-D9 issues must cover every family exactly once");
+  }
+  return policy.implementationIssues.map((issue) => {
+    const issueFamilies = issue.familyIds.map((familyId) => {
+      const family = familiesById.get(familyId);
+      if (!family) throw new Error(`A22 implementation issue names unknown family ${familyId}`);
+      return family;
+    });
+    const sourceFiles = [...new Set(issueFamilies.flatMap(({ sourceFiles }) => sourceFiles))].sort();
+    return {
+      ...issue,
+      sourceWriteCount: issueFamilies.reduce((total, family) => total + family.sourceWriteCount, 0),
+      sourceFileCount: sourceFiles.length,
+      sourceFiles,
+      missingProductionFamilyIds: issueFamilies
+        .filter(({ sourceWriteCount }) => sourceWriteCount === 0)
+        .map(({ familyId }) => familyId),
+      requiredBoundEvidence: [
+        "enforced-exclusive-high-water-cap",
+        "monotonic-never-reused-index",
+        "generation-and-explicit-tombstone",
+        "exact-source-to-exit-position-projection",
+        "bound-and-bound-plus-one-tests",
+        "A8-maximum-witness-benchmark",
+      ],
+    };
+  });
 }
 
 function buildReleaseBlockers(families: ReturnType<typeof buildFamilyInventory>[]) {
@@ -161,7 +213,7 @@ function readJson(path: string): unknown {
 
 interface ExitFamilyPolicy {
   version: 0;
-  status: "a22-candidate-incomplete";
+  status: "a22-stop-redesign-required";
   indexSchema: {
     key: string[];
     highWatermark: "exclusive";
@@ -171,12 +223,20 @@ interface ExitFamilyPolicy {
   chunking: { chunkSize: number; splitRule: string };
   families: Array<{ familyId: number; capabilityFamily: string; sourceIdentity: string[] }>;
   reviewPolicy: {
-    sourceIdentityStatus: "candidate-unreviewed";
-    sourceWriteMappingStatus: "heuristic-unreviewed";
-    exclusionStatus: "heuristic-unreviewed";
+    sourceIdentityStatus: "failed-no-canonical-index";
+    sourceWriteMappingStatus: "failed-heuristic-projection";
+    exclusionStatus: "failed-known-false-negative";
     maximumPositionsPerGame: null;
-    cardinalityStatus: "unresolved";
+    cardinalityStatus: "failed-no-enforced-bound";
   };
+  reviewFindings: Array<{
+    kind: string;
+    sourceWriteId: string;
+    observedClassification: string;
+    requiredDisposition: string;
+    detail: string;
+  }>;
+  implementationIssues: Array<{ ticket: `D${5 | 6 | 7 | 8 | 9}`; familyIds: number[]; scope: string }>;
   releaseBlockers: Array<{
     kind: string;
     scope: "all-families" | "global";

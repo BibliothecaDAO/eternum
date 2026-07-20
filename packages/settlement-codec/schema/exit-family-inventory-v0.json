@@ -1,6 +1,6 @@
 {
   "version": 0,
-  "status": "a22-candidate-incomplete",
+  "status": "a22-stop-redesign-required",
   "generatedFrom": {
     "policyVersion": 0,
     "economicCapabilityRegistryVersion": 1,
@@ -11,7 +11,7 @@
   "excludedProjectionHash": "0x7293f6334dd641c66870b0a8b54be93353d6de381c7b9adbf1071727cb158af",
   "inventoryHash": "0x697a50dd0181120563a75da511fffcc6217821944b11b6e72b4b7c1e7dedf04",
   "releaseReady": false,
-  "exclusionReviewStatus": "heuristic-unreviewed",
+  "exclusionReviewStatus": "failed-known-false-negative",
   "summary": {
     "discoveredWrites": 308,
     "exitCoveredWrites": 252,
@@ -28,7 +28,7 @@
           "entity_id",
           "resource_id"
         ],
-        "status": "candidate-unreviewed"
+        "status": "failed-no-canonical-index"
       },
       "indexSchema": {
         "key": [
@@ -46,9 +46,9 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "unresolved"
+        "status": "failed-no-enforced-bound"
       },
-      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
         4097
       ],
@@ -121,7 +121,7 @@
         "fields": [
           "structure_id"
         ],
-        "status": "candidate-unreviewed"
+        "status": "failed-no-canonical-index"
       },
       "indexSchema": {
         "key": [
@@ -139,9 +139,9 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "unresolved"
+        "status": "failed-no-enforced-bound"
       },
-      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
         4098
       ],
@@ -216,7 +216,7 @@
           "producer_id",
           "resource_id"
         ],
-        "status": "candidate-unreviewed"
+        "status": "failed-no-canonical-index"
       },
       "indexSchema": {
         "key": [
@@ -234,9 +234,9 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "unresolved"
+        "status": "failed-no-enforced-bound"
       },
-      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
         4099
       ],
@@ -292,7 +292,7 @@
           "structure_id",
           "arrival_id"
         ],
-        "status": "candidate-unreviewed"
+        "status": "failed-no-canonical-index"
       },
       "indexSchema": {
         "key": [
@@ -310,9 +310,9 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "unresolved"
+        "status": "failed-no-enforced-bound"
       },
-      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
         4100
       ],
@@ -344,7 +344,7 @@
           "troop_id",
           "position_kind"
         ],
-        "status": "candidate-unreviewed"
+        "status": "failed-no-canonical-index"
       },
       "indexSchema": {
         "key": [
@@ -362,9 +362,9 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "unresolved"
+        "status": "failed-no-enforced-bound"
       },
-      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
         4101
       ],
@@ -436,7 +436,7 @@
           "trade_id",
           "escrow_kind"
         ],
-        "status": "candidate-unreviewed"
+        "status": "failed-no-canonical-index"
       },
       "indexSchema": {
         "key": [
@@ -454,9 +454,9 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "unresolved"
+        "status": "failed-no-enforced-bound"
       },
-      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
         4102
       ],
@@ -500,7 +500,7 @@
           "position_owner",
           "position_kind"
         ],
-        "status": "candidate-unreviewed"
+        "status": "failed-no-canonical-index"
       },
       "indexSchema": {
         "key": [
@@ -518,9 +518,9 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "unresolved"
+        "status": "failed-no-enforced-bound"
       },
-      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
         4103
       ],
@@ -572,7 +572,7 @@
           "player_id",
           "reward_kind"
         ],
-        "status": "candidate-unreviewed"
+        "status": "failed-no-canonical-index"
       },
       "indexSchema": {
         "key": [
@@ -590,9 +590,9 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "unresolved"
+        "status": "failed-no-enforced-bound"
       },
-      "sourceWriteMappingStatus": "heuristic-unreviewed",
+      "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
         4104
       ],
@@ -717,7 +717,7 @@
           "player_id",
           "liability_id"
         ],
-        "status": "candidate-unreviewed"
+        "status": "failed-no-canonical-index"
       },
       "indexSchema": {
         "key": [
@@ -735,9 +735,9 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "unresolved"
+        "status": "failed-no-enforced-bound"
       },
-      "sourceWriteMappingStatus": "production-interface-only",
+      "sourceWriteMappingStatus": "missing-production-interface",
       "operationIds": [
         4105
       ],
@@ -762,7 +762,7 @@
           "backing_lot_id",
           "allocation_id"
         ],
-        "status": "candidate-unreviewed"
+        "status": "failed-no-canonical-index"
       },
       "indexSchema": {
         "key": [
@@ -780,9 +780,9 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "unresolved"
+        "status": "failed-no-enforced-bound"
       },
-      "sourceWriteMappingStatus": "production-interface-only",
+      "sourceWriteMappingStatus": "missing-production-interface",
       "operationIds": [
         4106
       ],
@@ -806,7 +806,7 @@
         "fields": [
           "player_id"
         ],
-        "status": "candidate-unreviewed"
+        "status": "failed-no-canonical-index"
       },
       "indexSchema": {
         "key": [
@@ -824,9 +824,9 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "unresolved"
+        "status": "failed-no-enforced-bound"
       },
-      "sourceWriteMappingStatus": "production-interface-only",
+      "sourceWriteMappingStatus": "missing-production-interface",
       "operationIds": [
         4107
       ],
@@ -849,7 +849,7 @@
         "fields": [
           "position_id"
         ],
-        "status": "candidate-unreviewed"
+        "status": "failed-no-canonical-index"
       },
       "indexSchema": {
         "key": [
@@ -867,9 +867,9 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "unresolved"
+        "status": "failed-no-enforced-bound"
       },
-      "sourceWriteMappingStatus": "production-interface-only",
+      "sourceWriteMappingStatus": "missing-production-interface",
       "operationIds": [
         4108
       ],
@@ -944,9 +944,201 @@
     "contracts/game/src/utils/testing/contracts/vrf_provider_mock.cairo:33:write",
     "contracts/game/src/utils/testing/contracts/vrf_provider_mock.cairo:55:write"
   ],
+  "reviewFindings": [
+    {
+      "kind": "economic-false-negative",
+      "sourceWriteId": "contracts/game/src/models/agent.cairo:89:write_model",
+      "observedClassification": "out_of_scope",
+      "requiredDisposition": "reward-or-mint-cap-state",
+      "detail": "AgentLordsMinted tracks LORDS already minted and therefore participates in an economic cap; it cannot be affirmed out of scope."
+    },
+    {
+      "kind": "economic-false-negative",
+      "sourceWriteId": "contracts/game/src/models/record.cairo:85:write_member",
+      "observedClassification": "out_of_scope",
+      "requiredDisposition": "fee-and-prize-state",
+      "detail": "WorldRecord contains creator/player/Velords fee and sponsorship totals; its generic member writer cannot be excluded without a selector-specific proof."
+    },
+    {
+      "kind": "configuration-false-positive",
+      "sourceWriteId": "contracts/game/src/models/hyperstructure.cairo:71:write_model",
+      "observedClassification": "reward_state",
+      "requiredDisposition": "sealed-configuration-not-exit-position",
+      "detail": "HyperstructureRequirements is ruleset configuration, not a player-owned live reward position."
+    },
+    {
+      "kind": "missing-index-and-bound",
+      "sourceWriteId": "production:ExitPosition",
+      "observedClassification": "absent",
+      "requiredDisposition": "D5-D9-production-interface",
+      "detail": "No production ExitPosition/PositionRef/PlayerPositionIndex writer, monotonic allocator, tombstone path, or enforced family high-water cap exists."
+    }
+  ],
+  "implementationIssues": [
+    {
+      "ticket": "D5",
+      "familyIds": [
+        1,
+        2,
+        3,
+        10,
+        11,
+        12
+      ],
+      "scope": "resource, ownership, production, backing, player lock, and canonical exit-position foundations",
+      "sourceWriteCount": 96,
+      "sourceFileCount": 21,
+      "sourceFiles": [
+        "contracts/game/src/models/resource/production/building.cairo",
+        "contracts/game/src/models/resource/production/production.cairo",
+        "contracts/game/src/models/resource/resource.cairo",
+        "contracts/game/src/models/structure.cairo",
+        "contracts/game/src/system_libraries/structure_libraries/structure_creation_library.cairo",
+        "contracts/game/src/systems/config/contracts.cairo",
+        "contracts/game/src/systems/dev/contracts/resource.cairo",
+        "contracts/game/src/systems/ownership/contracts.cairo",
+        "contracts/game/src/systems/quest/contracts.cairo",
+        "contracts/game/src/systems/realm/season/contracts.cairo",
+        "contracts/game/src/systems/resources/contracts/resource_bridge_systems.cairo",
+        "contracts/game/src/systems/resources/contracts/resource_systems.cairo",
+        "contracts/game/src/systems/structure/contracts.cairo",
+        "contracts/game/src/systems/utils/camp.cairo",
+        "contracts/game/src/systems/utils/mine.cairo",
+        "contracts/game/src/systems/utils/realm.cairo",
+        "contracts/game/src/systems/utils/resource.cairo",
+        "contracts/game/src/systems/utils/structure.cairo",
+        "contracts/game/src/systems/village/contracts.cairo",
+        "contracts/game/src/utils/testing/contracts/villagepassmock.cairo",
+        "contracts/game/src/utils/testing/helpers.cairo"
+      ],
+      "missingProductionFamilyIds": [
+        10,
+        11,
+        12
+      ],
+      "requiredBoundEvidence": [
+        "enforced-exclusive-high-water-cap",
+        "monotonic-never-reused-index",
+        "generation-and-explicit-tombstone",
+        "exact-source-to-exit-position-projection",
+        "bound-and-bound-plus-one-tests",
+        "A8-maximum-witness-benchmark"
+      ]
+    },
+    {
+      "ticket": "D6",
+      "familyIds": [
+        4,
+        6
+      ],
+      "scope": "arrivals, trades, and DONKEY escrow",
+      "sourceWriteCount": 15,
+      "sourceFileCount": 4,
+      "sourceFiles": [
+        "contracts/game/src/models/resource/arrivals.cairo",
+        "contracts/game/src/models/trade.cairo",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo",
+        "contracts/game/src/systems/utils/donkey.cairo"
+      ],
+      "missingProductionFamilyIds": [],
+      "requiredBoundEvidence": [
+        "enforced-exclusive-high-water-cap",
+        "monotonic-never-reused-index",
+        "generation-and-explicit-tombstone",
+        "exact-source-to-exit-position-projection",
+        "bound-and-bound-plus-one-tests",
+        "A8-maximum-witness-benchmark"
+      ]
+    },
+    {
+      "ticket": "D7",
+      "familyIds": [
+        5
+      ],
+      "scope": "troops, explorers, guards, ownership/capture, and cargo",
+      "sourceWriteCount": 35,
+      "sourceFileCount": 8,
+      "sourceFiles": [
+        "contracts/game/src/systems/combat/contracts/troop_battle.cairo",
+        "contracts/game/src/systems/combat/contracts/troop_management.cairo",
+        "contracts/game/src/systems/combat/contracts/troop_movement.cairo",
+        "contracts/game/src/systems/combat/contracts/troop_raid.cairo",
+        "contracts/game/src/systems/quest/contracts.cairo",
+        "contracts/game/src/systems/utils/relic.cairo",
+        "contracts/game/src/systems/utils/troop.cairo",
+        "contracts/game/src/systems/village/contracts.cairo"
+      ],
+      "missingProductionFamilyIds": [],
+      "requiredBoundEvidence": [
+        "enforced-exclusive-high-water-cap",
+        "monotonic-never-reused-index",
+        "generation-and-explicit-tombstone",
+        "exact-source-to-exit-position-projection",
+        "bound-and-bound-plus-one-tests",
+        "A8-maximum-witness-benchmark"
+      ]
+    },
+    {
+      "ticket": "D8",
+      "familyIds": [
+        7,
+        9
+      ],
+      "scope": "bank, AMM, LP, fees, and pending withdrawals",
+      "sourceWriteCount": 20,
+      "sourceFileCount": 3,
+      "sourceFiles": [
+        "contracts/game/src/systems/bank/contracts/bank.cairo",
+        "contracts/game/src/systems/bank/contracts/liquidity.cairo",
+        "contracts/game/src/systems/bank/contracts/swap.cairo"
+      ],
+      "missingProductionFamilyIds": [
+        9
+      ],
+      "requiredBoundEvidence": [
+        "enforced-exclusive-high-water-cap",
+        "monotonic-never-reused-index",
+        "generation-and-explicit-tombstone",
+        "exact-source-to-exit-position-projection",
+        "bound-and-bound-plus-one-tests",
+        "A8-maximum-witness-benchmark"
+      ]
+    },
+    {
+      "ticket": "D9",
+      "familyIds": [
+        8
+      ],
+      "scope": "fees, prizes, Faith, Blitz participant, and reward state",
+      "sourceWriteCount": 86,
+      "sourceFileCount": 11,
+      "sourceFiles": [
+        "contracts/game/src/models/hyperstructure.cairo",
+        "contracts/game/src/systems/artificer/contracts.cairo",
+        "contracts/game/src/systems/bitcoin_mine/contracts.cairo",
+        "contracts/game/src/systems/faith/contracts.cairo",
+        "contracts/game/src/systems/faith/prize_contracts.cairo",
+        "contracts/game/src/systems/hyperstructure/contracts.cairo",
+        "contracts/game/src/systems/prize_distribution/contracts.cairo",
+        "contracts/game/src/systems/realm/blitz/contracts.cairo",
+        "contracts/game/src/systems/relic/contracts.cairo",
+        "contracts/game/src/systems/utils/hyperstructure.cairo",
+        "contracts/game/src/systems/utils/relic.cairo"
+      ],
+      "missingProductionFamilyIds": [],
+      "requiredBoundEvidence": [
+        "enforced-exclusive-high-water-cap",
+        "monotonic-never-reused-index",
+        "generation-and-explicit-tombstone",
+        "exact-source-to-exit-position-projection",
+        "bound-and-bound-plus-one-tests",
+        "A8-maximum-witness-benchmark"
+      ]
+    }
+  ],
   "unresolved": [
     {
-      "kind": "source-write-mapping-review",
+      "kind": "source-write-projection-failed",
       "familyIds": [
         1,
         2,
@@ -961,10 +1153,10 @@
         11,
         12
       ],
-      "detail": "A9 path/target classifications are heuristic and require per-write domain-owner review."
+      "detail": "The A9 path/target scan has confirmed economic false negatives and configuration false positives; it cannot serve as a production writer map."
     },
     {
-      "kind": "source-identity-review",
+      "kind": "canonical-source-index-absent",
       "familyIds": [
         1,
         2,
@@ -979,10 +1171,10 @@
         11,
         12
       ],
-      "detail": "Candidate source identity fields require cross-language schema and migration-vector review."
+      "detail": "Candidate source identity tuples are not backed by implemented monotonic family indexes, generations, and tombstones."
     },
     {
-      "kind": "maximum-cardinality",
+      "kind": "maximum-cardinality-unenforced",
       "familyIds": [
         1,
         2,
@@ -997,12 +1189,17 @@
         11,
         12
       ],
-      "detail": "Exact maximum positions per game and campaign-sized file/system split bounds are not yet evidenced."
+      "detail": "No checked-in ruleset or mutation guard enforces a maximum position count for any family, so A8 has no canonical maximum witness."
     },
     {
-      "kind": "exclusion-review",
+      "kind": "exclusion-projection-failed",
       "familyIds": [],
-      "detail": "Every excluded A9 write requires affirmative evidence that it cannot carry exit-covered value."
+      "detail": "At least AgentLordsMinted and WorldRecord economic member writes are incorrectly excluded by the static scan."
+    },
+    {
+      "kind": "production-families-absent",
+      "familyIds": [],
+      "detail": "Pending-withdrawal, active-backing, player-lock, and canonical ExitPosition families have no production writers yet."
     }
   ]
 }

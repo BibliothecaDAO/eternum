@@ -21,7 +21,7 @@
     { "ticket": "A5", "status": "reference-seam-complete-production-proof-blocked", "mandatoryBlocker": true },
     { "ticket": "A6", "status": "complete" },
     { "ticket": "A7", "status": "complete" },
-    { "ticket": "A8", "status": "blocked-on-a22-and-authorized-aws", "mandatoryBlocker": true },
+    { "ticket": "A8", "status": "blocked-on-failed-a22-and-authorized-aws", "mandatoryBlocker": true },
     { "ticket": "A9", "status": "complete" },
     { "ticket": "A10", "status": "complete" },
     { "ticket": "A11", "status": "complete" },
@@ -51,7 +51,7 @@
       "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
       "mandatoryBlocker": true
     },
-    { "ticket": "A22", "status": "candidate-incomplete", "mandatoryBlocker": true },
+    { "ticket": "A22", "status": "stop-redesign-required", "mandatoryBlocker": true },
     { "ticket": "A23", "status": "stop-record-awaiting-authorized-signatures", "mandatoryBlocker": true }
   ],
   "frozenAndCandidateInputs": {
@@ -100,8 +100,8 @@
       "releaseReady": false
     },
     "exitFamilyInventory": {
-      "status": "candidate-not-frozen",
-      "fileSha256": "85d76e3f6b89b75a9b168392c06ae9ca291217bb0eb6b8bc9ce3bb7395ed1455",
+      "status": "a22-stop-redesign-required",
+      "fileSha256": "ed2ee3c4bcbfe04f5bcaad8848208b7b23007a077c8b04e63bd564becb59addd",
       "familyRegistryHash": "0xb4a640a21643ae02efd007c6f1cfbb7abed63a18e8447f1996f2c910af997b",
       "inventoryHash": "0x697a50dd0181120563a75da511fffcc6217821944b11b6e72b4b7c1e7dedf04",
       "sourceProjectionHash": "0xd91695bac86d84757341a8e1d2141d74f080faae75744f28cff59760dfc755",
@@ -111,6 +111,8 @@
       "excludedWrites": 56,
       "familyCount": 12,
       "familiesWithoutDiscoveredWrites": 4,
+      "reviewFindingCount": 4,
+      "implementationIssueCount": 5,
       "releaseReady": false
     },
     "economicWriteInventorySha256": "226a5fdceaf850797e711574307dde2841e6ca5791e8fe09703cea6b9ed5a802",
@@ -186,7 +188,48 @@
   "backlogRebaseline": {
     "c16FactoryFamilies": { "status": "unavailable-until-a19-a20", "issues": [] },
     "c17WorldMmrFamilies": { "status": "unavailable-until-a19-a20", "issues": [] },
-    "d5ThroughD9": { "status": "unbounded-until-a22", "estimates": [] },
+    "d5ThroughD9": {
+      "status": "enumerated-redesign-unestimated-until-enforced-bounds",
+      "estimates": [],
+      "issues": [
+        {
+          "ticket": "D5",
+          "familyIds": [1, 2, 3, 10, 11, 12],
+          "sourceWriteCount": 96,
+          "sourceFileCount": 21,
+          "missingProductionFamilyIds": [10, 11, 12]
+        },
+        {
+          "ticket": "D6",
+          "familyIds": [4, 6],
+          "sourceWriteCount": 15,
+          "sourceFileCount": 4,
+          "missingProductionFamilyIds": []
+        },
+        {
+          "ticket": "D7",
+          "familyIds": [5],
+          "sourceWriteCount": 35,
+          "sourceFileCount": 8,
+          "missingProductionFamilyIds": []
+        },
+        {
+          "ticket": "D8",
+          "familyIds": [7, 9],
+          "sourceWriteCount": 20,
+          "sourceFileCount": 3,
+          "missingProductionFamilyIds": [9]
+        },
+        {
+          "ticket": "D9",
+          "familyIds": [8],
+          "sourceWriteCount": 86,
+          "sourceFileCount": 11,
+          "missingProductionFamilyIds": []
+        }
+      ],
+      "reason": "A22 found known source-projection errors and no enforced canonical indexes or maximum per-game cardinalities; estimates would not be evidence-backed."
+    },
     "staffing": {
       "status": "unavailable",
       "reason": "Named individual DRIs, independent reviewers, audit owners, and authorized parallelism are not assigned."
@@ -205,7 +248,7 @@
     },
     {
       "id": "A22-BOUNDS-FREEZE",
-      "action": "Review all write mappings, exclusions, source identities, and exact per-game cardinalities before D5-D9 estimates."
+      "action": "Redesign D5-D9 from the five enumerated issue groups: correct the known false-negative and false-positive write classifications, implement canonical monotonic indexes with generations and tombstones, add the four absent production families, enforce exact per-game cardinality caps, and rerun A8 before estimating or freezing A22."
     },
     {
       "id": "TEE-SOURCE-GATE",

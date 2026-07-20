@@ -44,7 +44,7 @@ describe("A22 exit-family inventory", () => {
   test("publishes one contiguous, append-only index layout for every frozen family", () => {
     const inventory = getExitFamilyInventory();
 
-    expect(inventory.status).toBe("a22-candidate-incomplete");
+    expect(inventory.status).toBe("a22-stop-redesign-required");
     expect(inventory.releaseReady).toBe(false);
     expect(inventory.families.map((family) => family.familyId)).toEqual(
       Array.from({ length: 12 }, (_, index) => index + 1),
@@ -135,11 +135,37 @@ describe("A22 exit-family inventory", () => {
     expect(() => validateExitFamilyInventory(duplicate)).toThrow(/source write projection/);
   });
 
-  test("blocks release until every family mapping and maximum cardinality is reviewed", () => {
+  test("records the failed feasibility properties and exact D5-D9 redesign split", () => {
     const inventory = getExitFamilyInventory();
 
     expect(inventory.unresolved.length).toBeGreaterThan(0);
     expect(inventory.families.every((family) => family.cardinality.maximumPositionsPerGame === null)).toBe(true);
+    expect(inventory.families.every((family) => family.cardinality.status === "failed-no-enforced-bound")).toBe(true);
+    expect(inventory.families.every((family) => family.sourceIdentity.status === "failed-no-canonical-index")).toBe(
+      true,
+    );
+    expect(inventory.reviewFindings).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "economic-false-negative",
+          sourceWriteId: "contracts/game/src/models/agent.cairo:89:write_model",
+        }),
+        expect.objectContaining({
+          kind: "configuration-false-positive",
+          sourceWriteId: "contracts/game/src/models/hyperstructure.cairo:71:write_model",
+        }),
+      ]),
+    );
+    expect(inventory.implementationIssues.map(({ ticket }) => ticket).toSorted()).toEqual([
+      "D5",
+      "D6",
+      "D7",
+      "D8",
+      "D9",
+    ]);
+    expect(inventory.implementationIssues.flatMap(({ familyIds }) => familyIds).toSorted((a, b) => a - b)).toEqual(
+      Array.from({ length: 12 }, (_, index) => index + 1),
+    );
     expect(() => validateExitFamilyInventoryForRelease(inventory)).toThrow(/not release ready/);
 
     const forgedRelease = structuredClone(inventory);

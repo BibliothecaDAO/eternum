@@ -10,8 +10,8 @@ import {
   computeExitSourceProjectionHash,
 } from "./exit-family-commitments";
 
-export type ExitFamilyReviewStatus = "candidate-unreviewed" | "reviewed";
-export type ExitFamilyMappingStatus = "heuristic-unreviewed" | "production-interface-only" | "reviewed";
+export type ExitFamilyReviewStatus = "failed-no-canonical-index" | "reviewed";
+export type ExitFamilyMappingStatus = "failed-heuristic-projection" | "missing-production-interface" | "reviewed";
 
 export interface ExitFamilyInventoryFamily {
   familyId: number;
@@ -24,7 +24,7 @@ export interface ExitFamilyInventoryFamily {
     deletion: "explicit-tombstone";
   };
   chunking: { chunkSize: number; splitRule: string };
-  cardinality: { maximumPositionsPerGame: number | null; status: "unresolved" | "reviewed" };
+  cardinality: { maximumPositionsPerGame: number | null; status: "failed-no-enforced-bound" | "reviewed" };
   sourceWriteMappingStatus: ExitFamilyMappingStatus;
   operationIds: number[];
   affectedModels: string[];
@@ -38,7 +38,7 @@ export interface ExitFamilyInventoryFamily {
 
 export interface ExitFamilyInventory {
   version: 0;
-  status: "a22-candidate-incomplete" | "a22-frozen";
+  status: "a22-stop-redesign-required" | "a22-frozen";
   generatedFrom: {
     policyVersion: number;
     economicCapabilityRegistryVersion: number;
@@ -49,7 +49,7 @@ export interface ExitFamilyInventory {
   excludedProjectionHash: string;
   inventoryHash: string;
   releaseReady: boolean;
-  exclusionReviewStatus: "heuristic-unreviewed" | "reviewed";
+  exclusionReviewStatus: "failed-known-false-negative" | "reviewed";
   summary: {
     discoveredWrites: number;
     exitCoveredWrites: number;
@@ -59,6 +59,23 @@ export interface ExitFamilyInventory {
   };
   families: ExitFamilyInventoryFamily[];
   excludedWriteIds: string[];
+  reviewFindings: Array<{
+    kind: string;
+    sourceWriteId: string;
+    observedClassification: string;
+    requiredDisposition: string;
+    detail: string;
+  }>;
+  implementationIssues: Array<{
+    ticket: "D5" | "D6" | "D7" | "D8" | "D9";
+    familyIds: number[];
+    scope: string;
+    sourceWriteCount: number;
+    sourceFileCount: number;
+    sourceFiles: string[];
+    missingProductionFamilyIds: number[];
+    requiredBoundEvidence: string[];
+  }>;
   unresolved: Array<{ kind: string; familyIds: number[]; detail: string }>;
 }
 
@@ -144,7 +161,9 @@ function validateFamilyProjection(inventory: ExitFamilyInventory): void {
       `exit-family ${family.familyId} model projection mismatch`,
     );
     const expectedMappingStatus =
-      family.sourceWriteIds.length === 0 ? "production-interface-only" : POLICY.reviewPolicy.sourceWriteMappingStatus;
+      family.sourceWriteIds.length === 0
+        ? "missing-production-interface"
+        : POLICY.reviewPolicy.sourceWriteMappingStatus;
     if (family.sourceWriteMappingStatus !== expectedMappingStatus) {
       throw new Error(`exit-family ${family.familyId} write mapping review mismatch`);
     }
@@ -156,6 +175,34 @@ function validateFamilyProjection(inventory: ExitFamilyInventory): void {
     detail,
   }));
   assertEqualJson(inventory.unresolved, expectedReleaseBlockers, "exit-family release blockers mismatch");
+  assertEqualJson(inventory.reviewFindings, POLICY.reviewFindings, "exit-family review findings mismatch");
+  validateImplementationIssues(inventory);
+}
+
+function validateImplementationIssues(inventory: ExitFamilyInventory): void {
+  const coveredFamilyIds = inventory.implementationIssues.flatMap(({ familyIds }) => familyIds);
+  assertUniqueAndEqual(
+    coveredFamilyIds.map(String),
+    inventory.families.map(({ familyId }) => String(familyId)),
+    "D5-D9 family issue projection",
+  );
+  for (const issue of inventory.implementationIssues) {
+    const families = inventory.families.filter(({ familyId }) => issue.familyIds.includes(familyId));
+    const sourceFiles = [...new Set(families.flatMap((family) => family.sourceFiles))].sort();
+    if (
+      issue.sourceWriteCount !== families.reduce((total, family) => total + family.sourceWriteCount, 0) ||
+      issue.sourceFileCount !== sourceFiles.length
+    ) {
+      throw new Error(`${issue.ticket} source projection count mismatch`);
+    }
+    assertEqualJson(issue.sourceFiles, sourceFiles, `${issue.ticket} source file projection mismatch`);
+    assertEqualJson(
+      issue.missingProductionFamilyIds,
+      families.filter(({ sourceWriteCount }) => sourceWriteCount === 0).map(({ familyId }) => familyId),
+      `${issue.ticket} missing production family projection mismatch`,
+    );
+    if (issue.requiredBoundEvidence.length === 0) throw new Error(`${issue.ticket} has no bound evidence contract`);
+  }
 }
 
 function validateSourceWriteProjection(inventory: ExitFamilyInventory): void {
