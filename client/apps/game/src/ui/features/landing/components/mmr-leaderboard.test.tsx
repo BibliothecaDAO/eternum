@@ -19,6 +19,14 @@ vi.mock("@/ui/features/landing/hooks/use-landing-network-state", () => ({
   }),
 }));
 
+vi.mock("@/config/global-chain", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/config/global-chain")>()),
+  GLOBAL_TORII_BY_CHAIN: {
+    mainnet: "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/torii",
+    slot: "https://api.cartridge.gg/x/blitz-slot-global-1/torii",
+  },
+}));
+
 vi.mock("@/ui/utils/network-switch", () => ({
   getChainLabel: (chain: string) => (chain === "mainnet" ? "Mainnet" : "Slot"),
 }));
@@ -99,7 +107,7 @@ describe("MMRLeaderboard", () => {
         throw new Error(`Unexpected fetch URL: ${url}`);
       }
 
-      if (url.includes("blitz-mainnet-global-1")) {
+      if (url.includes("blitz-season-42")) {
         return createJsonResponse([buildRow()]);
       }
 
@@ -164,10 +172,10 @@ describe("MMRLeaderboard", () => {
     const fetchMock = vi.mocked(fetch);
     const fetchedUrls = fetchMock.mock.calls.map(([input]) => (typeof input === "string" ? input : input.toString()));
 
-    expect(fetchedUrls.some((url) => url.includes("blitz-mainnet-global-1"))).toBe(true);
+    expect(fetchedUrls.some((url) => url.includes("blitz-season-42"))).toBe(true);
     expect(fetchedUrls.some((url) => url.includes("blitz-slot-global-1"))).toBe(false);
 
-    const mainnetUrl = getLeaderboardSqlUrl("blitz-mainnet-global-1");
+    const mainnetUrl = getLeaderboardSqlUrl("blitz-season-42");
     expect(mainnetUrl).toBeDefined();
 
     const mainnetQuery = new URL(mainnetUrl ?? "").searchParams.get("query") ?? "";

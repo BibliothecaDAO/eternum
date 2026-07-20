@@ -2,8 +2,12 @@ import type { Chain } from "@contracts";
 import { resolveGlobalToriiEndpoint } from "./runtime-endpoints";
 
 export const GLOBAL_TORII_BY_CHAIN: Record<"mainnet" | "slot", string> = {
-  mainnet: resolveGlobalToriiEndpoint("mainnet"),
-  slot: resolveGlobalToriiEndpoint("slot"),
+  get mainnet() {
+    return resolveGlobalToriiEndpoint("mainnet");
+  },
+  get slot() {
+    return resolveGlobalToriiEndpoint("slot");
+  },
 };
 
 export const MMR_TOKEN_BY_CHAIN: Partial<Record<Chain, string>> = {

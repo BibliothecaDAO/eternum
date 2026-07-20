@@ -7,6 +7,7 @@ import {
   getDefaultRuntimeRegistry,
   loadRuntimeRegistry,
   parseRuntimeRegistry,
+  resolveActiveGameStackEndpoint,
   resolveRuntimeEndpointAlias,
 } from "../../../../common/factory/runtime-registry";
 import {
@@ -95,6 +96,9 @@ describe("runtime endpoint registry", () => {
     expect(() =>
       assertCompleteActiveGameStack(registry, "blitz-season-42", new Date("2026-07-18T13:00:00.000Z")),
     ).not.toThrow();
+    expect(resolveActiveGameStackEndpoint(registry, "torii", "base", new Date("2026-07-18T13:00:00.000Z"))).toBe(
+      "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/torii",
+    );
     expect(registry.activeGameStacks?.["mainnet.blitz"]).toEqual({
       gameStackId: "blitz-season-42",
       activeUntil: "2026-07-18T14:30:00.000Z",

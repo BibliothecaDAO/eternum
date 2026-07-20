@@ -77,12 +77,12 @@ describe("prediction-market-config", () => {
     expect(getPredictionMarketChain("slot")).toBe("slot");
   });
 
-  it("resolves global Torii endpoints through the runtime registry", () => {
+  it("keeps historical Slot resolution and fails closed without the mainnet registry", () => {
     expect(getPredictionMarketConfigForChain("slot").toriiUrl).toBe(
       "https://api.cartridge.gg/x/blitz-slot-global-1/torii",
     );
-    expect(getPredictionMarketConfigForChain("mainnet").toriiUrl).toBe(
-      "https://api.cartridge.gg/x/blitz-mainnet-global-1/torii",
+    expect(() => getPredictionMarketConfigForChain("mainnet").toriiUrl).toThrow(
+      "Active Blitz game stack is unavailable because the required registry has not loaded",
     );
   });
 });

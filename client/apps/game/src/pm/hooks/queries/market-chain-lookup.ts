@@ -21,8 +21,9 @@ const alternateChainOf = (chain: MarketDataChain): MarketDataChain => (chain ===
  * Look up a prediction market by its prize-distribution address, starting from the preferred chain.
  *
  * A `null` result on the preferred chain means the market genuinely doesn't exist there
- * and we do NOT probe the alternate chain. The alternate is only tried when the preferred
- * chain throws (network/gateway error) — and only when `fallbackOnError` is true (default).
+ * and we do NOT probe the alternate chain. Historical Slot reads may fall forward to
+ * mainnet after a request failure when `fallbackOnError` is true (default). Mainnet never
+ * falls back to Slot, including when active-stack endpoint resolution fails.
  *
  * This avoids the redundant cross-chain fan-out that was overwhelming PM Torii (504s).
  */
@@ -52,7 +53,7 @@ export const findMarketByPrizeAddressAcrossChains = async ({
     onChainError?.(failure);
   }
 
-  if (!fallbackOnError) {
+  if (!fallbackOnError || preferredChain === "mainnet") {
     return { chain: null, failures, marketRow: null };
   }
 

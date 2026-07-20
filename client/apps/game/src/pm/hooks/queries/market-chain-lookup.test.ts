@@ -1,9 +1,18 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+const globalChainMock = vi.hoisted(() => ({
+  mainnetError: null as Error | null,
+}));
+
 vi.mock("@/config/global-chain", () => ({
   GLOBAL_TORII_BY_CHAIN: {
-    mainnet: "https://mainnet.test/torii",
+    get mainnet() {
+      if (globalChainMock.mainnetError) {
+        throw globalChainMock.mainnetError;
+      }
+      return "https://mainnet.test/torii";
+    },
     slot: "https://slot.test/torii",
   },
 }));
@@ -24,6 +33,7 @@ describe("findMarketByPrizeAddressAcrossChains", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     mockFetchMarketByPrizeAddress.mockReset();
+    globalChainMock.mainnetError = null;
   });
 
   it("returns on the preferred chain when found and does NOT probe the alternate", async () => {
@@ -72,10 +82,9 @@ describe("findMarketByPrizeAddressAcrossChains", () => {
     expect(onChainError).toHaveBeenCalledWith({ chain: "slot", error });
   });
 
-  it("returns all failures when both chains throw", async () => {
-    const err1 = new Error("fail 1");
-    const err2 = new Error("fail 2");
-    mockFetchMarketByPrizeAddress.mockRejectedValueOnce(err1).mockRejectedValueOnce(err2);
+  it("never falls back from mainnet to historical Slot after a request failure", async () => {
+    const error = new Error("mainnet request failed");
+    mockFetchMarketByPrizeAddress.mockRejectedValueOnce(error);
 
     const result = await findMarketByPrizeAddressAcrossChains({
       preferredChain: "mainnet",
@@ -84,9 +93,23 @@ describe("findMarketByPrizeAddressAcrossChains", () => {
 
     expect(result.chain).toBeNull();
     expect(result.marketRow).toBeNull();
-    expect(result.failures).toHaveLength(2);
-    expect(result.failures[0].chain).toBe("mainnet");
-    expect(result.failures[1].chain).toBe("slot");
+    expect(result.failures).toEqual([{ chain: "mainnet", error }]);
+    expect(mockFetchMarketByPrizeAddress).toHaveBeenCalledTimes(1);
+  });
+
+  it("fails closed without querying Slot when mainnet endpoint resolution fails", async () => {
+    const error = new Error("Active Blitz game stack is unavailable");
+    globalChainMock.mainnetError = error;
+
+    const result = await findMarketByPrizeAddressAcrossChains({
+      preferredChain: "mainnet",
+      prizeAddress: "0xabc",
+    });
+
+    expect(result.chain).toBeNull();
+    expect(result.marketRow).toBeNull();
+    expect(result.failures).toEqual([{ chain: "mainnet", error }]);
+    expect(mockFetchMarketByPrizeAddress).not.toHaveBeenCalled();
   });
 
   it("does NOT fall back to alternate chain when preferred throws if fallbackOnError is false", async () => {

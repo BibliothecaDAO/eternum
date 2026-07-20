@@ -1,6 +1,7 @@
 import { createSqlApi, sqlApi } from "@/services/api";
 import { resolveGameRuntimeEndpoint } from "@/config/runtime-endpoints";
 import { SqlApi, type PlayerLeaderboardRow } from "@bibliothecadao/torii";
+import type { Chain } from "@contracts";
 
 const DEFAULT_LIMIT = 20;
 const REGISTERED_POINTS_PRECISION = 1_000_000;
@@ -84,20 +85,31 @@ interface ScoreToBeatStaticRow {
   chests: [number, number, number, number];
 }
 
-const SCORE_TO_BEAT_STATIC_ENDPOINT_BY_GAME: Record<ScoreToBeatStaticGame, string> = {
-  "s0-game-1": resolveGameRuntimeEndpoint("s0-game-1", "sql", { chain: "mainnet", gameType: "blitz" }),
-  "s0-game-2": resolveGameRuntimeEndpoint("s0-game-2", "sql", { chain: "mainnet", gameType: "blitz" }),
-  "s0-game-3": resolveGameRuntimeEndpoint("s0-game-3", "sql", { chain: "mainnet", gameType: "blitz" }),
-  "s0-game-4": resolveGameRuntimeEndpoint("s0-game-4", "sql", { chain: "mainnet", gameType: "blitz" }),
+const HISTORICAL_SCORE_TO_BEAT_ENDPOINT_BY_GAME: Record<ScoreToBeatStaticGame, string> = {
+  "s0-game-1": "https://api.cartridge.gg/x/s0-game-1/torii/sql",
+  "s0-game-2": "https://api.cartridge.gg/x/s0-game-2/torii/sql",
+  "s0-game-3": "https://api.cartridge.gg/x/s0-game-3/torii/sql",
+  "s0-game-4": "https://api.cartridge.gg/x/s0-game-4/torii/sql",
 };
 
 const SCORE_TO_BEAT_STATIC_ENDPOINT_TO_GAME = new Map<string, ScoreToBeatStaticGame>(
-  SCORE_TO_BEAT_STATIC_GAMES.map((game) => [SCORE_TO_BEAT_STATIC_ENDPOINT_BY_GAME[game], game]),
+  SCORE_TO_BEAT_STATIC_GAMES.map((game) => [HISTORICAL_SCORE_TO_BEAT_ENDPOINT_BY_GAME[game], game]),
 );
 
 const SCORE_TO_BEAT_STATIC_GAME_INDEX = new Map<ScoreToBeatStaticGame, number>(
   SCORE_TO_BEAT_STATIC_GAMES.map((game, index) => [game, index]),
 );
+
+const isScoreToBeatStaticGame = (gameName: string): gameName is ScoreToBeatStaticGame =>
+  SCORE_TO_BEAT_STATIC_GAMES.some((staticGame) => staticGame === gameName);
+
+export const resolveScoreToBeatGameEndpoint = (gameName: string, chain: Chain): string => {
+  if (chain === "mainnet" && isScoreToBeatStaticGame(gameName)) {
+    return HISTORICAL_SCORE_TO_BEAT_ENDPOINT_BY_GAME[gameName];
+  }
+
+  return resolveGameRuntimeEndpoint(gameName, "sql", { chain, gameType: "blitz" });
+};
 
 const SCORE_TO_BEAT_STATIC_ROWS: ScoreToBeatStaticRow[] = [
   {

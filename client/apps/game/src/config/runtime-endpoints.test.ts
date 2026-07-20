@@ -17,8 +17,12 @@ const envMock = vi.hoisted(() => ({
 
 vi.mock("../../env", () => envMock);
 
-const { loadConfiguredRuntimeRegistry, resolveChainRpcEndpoint, resolveGameRuntimeEndpoint } =
-  await import("./runtime-endpoints");
+const {
+  loadConfiguredRuntimeRegistry,
+  resolveChainRpcEndpoint,
+  resolveGameRuntimeEndpoint,
+  resolveGlobalToriiEndpoint,
+} = await import("./runtime-endpoints");
 
 describe("runtime endpoint registry loading", () => {
   beforeEach(() => {
@@ -119,6 +123,7 @@ describe("runtime endpoint registry loading", () => {
     await loadConfiguredRuntimeRegistry((async () => Response.json(registry)) as typeof fetch);
 
     expect(resolveGameRuntimeEndpoint("blitz-season-42", "sql")).toContain("blitz-season-42/torii/sql");
+    expect(resolveGlobalToriiEndpoint("mainnet")).toContain("blitz-season-42/torii");
     expect(() => resolveGameRuntimeEndpoint("s0-game-1", "sql")).toThrow("is not the registry's active stack");
   });
 });

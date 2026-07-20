@@ -5,6 +5,7 @@ import {
   buildSharedChainRuntimeAlias,
   loadRuntimeRegistry,
   parseRuntimeRegistry,
+  resolveActiveGameStackEndpoint,
   resolveRuntimeEndpointAlias,
   type RuntimeEndpointAlias,
   type RuntimeRegistryLoadResult,
@@ -66,8 +67,16 @@ export function resolveGameRuntimeEndpoint(
 }
 
 export function resolveGlobalToriiEndpoint(chain: "mainnet" | "slot"): string {
+  const registry = resolveConfiguredRuntimeRegistry();
+  if (chain === "mainnet") {
+    if (!registry) {
+      throw new Error("Active Blitz game stack is unavailable because the required registry has not loaded");
+    }
+    return resolveActiveGameStackEndpoint(registry, "torii", "base");
+  }
+
   return resolveRuntimeEndpointAlias(buildGlobalRuntimeAlias(chain), {
-    registry: resolveConfiguredRuntimeRegistry(),
+    registry,
   });
 }
 

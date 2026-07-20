@@ -348,6 +348,24 @@ export function assertCompleteActiveGameStack(
   }
 }
 
+export function resolveActiveGameStackEndpoint(
+  registry: RuntimeRegistryV1,
+  runtimeKind: "katana" | "torii",
+  endpointKind: "base" | "health" | "rpc" | "sql",
+  now: Date = new Date(),
+): string {
+  const activeStack = registry.activeGameStacks?.["mainnet.blitz"];
+  if (!activeStack) {
+    throw new Error("Active Blitz game stack is unavailable because the registry has no active stack");
+  }
+
+  assertCompleteActiveGameStack(registry, activeStack.gameStackId, now);
+  return resolveRuntimeEndpointAlias(
+    buildGameRuntimeAlias("mainnet.blitz", activeStack.gameStackId, runtimeKind, endpointKind),
+    { registry },
+  );
+}
+
 function validateActiveGameStackPointers(
   activeGameStacks: Record<string, ActiveGameStackPointer>,
   registryRevision: number,

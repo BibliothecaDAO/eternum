@@ -48,6 +48,14 @@ vi.mock("@/config/runtime-endpoints", async (importOriginal) => ({
   resolveGameRuntimeEndpoint: (...args: unknown[]) => resolveGameRuntimeEndpointMock(...args),
 }));
 
+vi.mock("@/config/global-chain", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/config/global-chain")>()),
+  GLOBAL_TORII_BY_CHAIN: {
+    mainnet: "https://runtime.example/mainnet/torii",
+    slot: "https://runtime.example/slot/torii",
+  },
+}));
+
 vi.mock("@/ui/features/prize/utils/mmr-utils", () => ({
   commitAndClaimMMR: vi.fn(),
 }));
