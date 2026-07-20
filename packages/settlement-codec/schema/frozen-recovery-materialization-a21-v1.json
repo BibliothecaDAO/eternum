@@ -3,11 +3,12 @@
   "ticket": "A21",
   "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
   "releaseReady": false,
-  "protocolRegistryHash": "0x6223f81a3b7d07ead67c72d06acddfe67337e6387c0e9f05edd1a19f1ebdba8",
+  "protocolRegistryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
   "reproducibilityInputs": {
-    "frozenRecoveryCoreSha256": "48d10308fa766d635913dea33517fc5f8114e7ec9b1c33d3f1dee46219f893e1",
-    "deploymentRefundMaterializationCoreSha256": "e7079e0bd05d2aa15fa5f837602e050692ab4990d9f7e730e1cd51361e21ae1e",
-    "positionMaterializationCoreSha256": "b7eccf8d1b46d2173cef600bf28887d7313003a8609843ecba0e31c7b21389b7",
+    "frozenRecoveryCoreSha256": "d00df6474956ffe5c30143aee40e931849a4624eb0359318ca4e981bf120ae32",
+    "deploymentRefundMaterializationCoreSha256": "f379c31e75f38db58cb5172fcc7689ea17841ad457391e57b434d04e541305fc",
+    "positionMaterializationCoreSha256": "0b6c0876a83ce3ec3a1adba908cd8093e45fd7c8eb8d1a3d1bdc696130e4bedc",
+    "protocolHashCoreSha256": "61e91e662b9839c6df869f5efb1de74ec5f9d65344047f393247a1e9bbf58448",
     "cargoLockSha256": "e30197fc9eafbf6b898208ac9388637772ef3e2dde09899890b26b98247b6ee8",
     "cairoVerifierSha256": "62f7beade3af788a5ab70e685060a4f9f6dee3bdc8029d6852d300416a6f5899",
     "typescriptVerifierSha256": "9656ba23a676fbb63e8d7f8c72c524971fd6bfd3feeca7e7244a01f1e0ad903f"

@@ -4068,6 +4068,8 @@ pub fn assert_all_golden_vectors() {
     assert_deployment_refund_disposition_empty_nodes();
     assert_ranking_empty_nodes();
     assert_mmr_plan_empty_nodes();
+    assert_legacy_mmr_disposition_empty_nodes();
+    assert_legacy_mmr_imported_job_empty_nodes();
 }
 
 fn expected(values: &[&str]) -> Vec<Felt> {
@@ -4708,6 +4710,409 @@ fn assert_mmr_plan_empty_nodes() {
     assert_eq!(
         current,
         Felt::from_hex("0x61dd06fa73bd2962556ee50bd9edb7d3ee628be48508642cb868c85c203b478")
+            .unwrap()
+    );
+}
+
+fn assert_legacy_mmr_disposition_empty_nodes() {
+    let node_domain =
+        Felt::from_hex("0x38e3f562f16a54130db30298f26b5a517909d9b79bb111e04ae0869524ef580")
+            .unwrap();
+    let mut current = crate::poseidon_hash_many(&[Felt::from_hex(
+        "0xec3f49cd65022a9a6ddebddfdd6f040daa2e87a5a19f841ddb91aa8147135",
+    )
+    .unwrap()]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x4c66c389e28bf8d99d49af381786de7868900a00efe2424cefdc3348c51f72f")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x567c1ac25e7a2dc3934719cacfd056a0d1f70b33003282efa32f3237b16bca3")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x50b99840bee267284926cefee58c041a8dc334b24124491f3bf2c23046649d6")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x7fb2e8a4e7910ab3058a4462b64939632476e098054f04e04fa3d3b2b325ce9")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x77b877c351574f1059e0f69330677ba575be1557746a83f339d4c6023d5440e")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x17adbf9da7156ce1dde7603cc0cbeb5509001fc51ca55124480eedba06a6247")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x6374d80ccef8212ac93ff9dda0dd8c3b4a90f8852bbaee2db276845cbc5d914")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x3998982aad8becb8c68f78447bbc74b280df8e48443e223c567c2cc58b1321f")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x61c5b016ead404b824eeff31ec32dde7fcb58dc6fe3b395e9e2facafc5c449f")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x6ab292b9c334334afa6c75d8ac1286fee14726d87dfd79482cac56762842fb").unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x7e378f35eca4981a9e6476d462b59a34b0d9511ebf9d81b7b375219ee151849")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x306897e0b4a4706d92039d5ff0cc10d7acf991b3925ee17ba9b04edafd21baa")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x79a2eb92bf0530df8f4796b598a0cfa0569508cf1760ddfbee519f5537d8605")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x57399661984e510440709e08fc20a9d5fad69d6fc8d1f06f85dbe0c5b71b0e8")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x1ea74bdc516ef992125906140282c19f0185444d9e82495f16540da4b02f7b8")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0xf78d2dc702aa5a9741f473c2ccf386a631aad6a8ddc3493c6701937982de29").unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x7369e271f06c684c21b2d5033f4c560ac8edb0da0aa322ecb304e9381fd5afa")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x3c7860619f34336c432e9c83ec14131051f84e07b2d34697a0c50f7fde45d2f")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x1b0cb6c40a7bdea343a4e6da75d0fed6fe84fe0e68ef292b37580bafecb5ae").unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x2310404a621595bc3952bc5adee5228dee53c85f06da9b76216e16054881616")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x3a4bf985fafeca5b1a8ee7cf56001535499d4c7785fd7279f2fd2d34987d2c6")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x1b2c01fd69701baeee674b3f3c9a6f3b1901cf8d14778c41b391b241f368c3a")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x14acc6c4b1b98678d9bacdb346c0974b8e84ddc15ee9d76dbe0ce11c411d6e2")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x2bfe199e24c784af365a34d2c02ec7cf1f5f89c8db01143f177387fa5eac247")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x31c3dfbccc845eb532b0332ee80c1d14cb3bb5b03cde5791e23965bc1de0d4a")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x17eb8da3f7e680f433b9dad0253ae33a27ba98fce423b99ecacfb1c4d4e2a43")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x7f16a634cfb8311012abc53d9eba32616bde325ce380b16a44d1dcd0e1c5d6a")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x50be6e83287a96dc4afbc7ab4f1d4219bb1be519ce74eecaf702ce436bac265")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x5f5f3d51aa9b058313194a02358ffba6bcb28ee7cbf5edd01d93606bcbaf840")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x412addcbc01f7b575a967c10dd9ddd41b64d553c5f5fc84a62b214a254adbef")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x221ac793451d4152fd0cf0fe2923a236957137dc6a97e9740ba75367f1cf68b")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x7ecb174e17c2188a00a4763c5d5368b8d3278351deb609e696667e60d7521b3")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x48f6874d9bf17d79d4640bf4949fa99aa6ff3f38549d9d14d0f2c997038ec1e")
+            .unwrap()
+    );
+}
+
+fn assert_legacy_mmr_imported_job_empty_nodes() {
+    let node_domain =
+        Felt::from_hex("0xf946b5d8637082ddc0470dd27e848fdae9a3b4d61b07d764a4b965a5896163").unwrap();
+    let mut current = crate::poseidon_hash_many(&[Felt::from_hex(
+        "0x28d46f65e51ea08485a69ade732de028eceec64f1ec528ab6b5ae07a50ed2c9",
+    )
+    .unwrap()]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x20abdc04b4949c3e58f70db577fe818bcbfc7d358df34c32194acc2aba7f3ac")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x20574c33b9cf00dedf96297ba61f35c41ac43b22a092d7f4865298c3dd9218f")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x1177555ac309f658bf4f73293e8a4b39f133df8cdb9de012bbd39ff563e1275")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x66451435d868f5825fde8cdf72e95e2be311348e266627bd6940f3effeb3d65")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x3b968d07f6a157b33e559c3f83bd5b574f96ff7c60d69fd8e0439d3b30ed0a4")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0xc074ef9c1f0c08c8ea47e88299dfe25a778aea1d2cbab8d91af61e768cd7db").unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0xce9f0624613cccb31f2a4eafd212f0021d3f4d4857f1731acb4525f3001152").unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x1b198f67f2d3449aa61db6ed47db2217f54e7ad535cc189f06f53650b2b4de5")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x55f9df839b261853540efe576c941d91306c46e27d00d06c617241a2c921f4c")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x10fa236f47aca330c504763924ff1f2fea24aa5e604a66b052f10613b061cde")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x4f3afaf84b9813f6262f30979de6ad464e209d7b3fe42c6fad288494325dac8")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x244398df9ffc9bec3575b936c16f693ed44787fb56367d057cc1c5e260fe2da")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x142f2ffbd5a9281de0624ea480e1ee06cfc648b2e998825f4c512caceff3d53")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x625ef98661a1cc512568b528f945974a36909b8e4ad6d2043a1447508dc74e").unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x555b1069cdbeb77111196febad80510651649025ea742f2b47522ace66739f6")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x264176cb9e541674b1479697ecd5cc17f952d02e19102a5a2b025096596f85e")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x11ca1ff241572e39daf65050188a4e05153bf67f975201071d21d463be9314f")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0xf8d59c03d0d1b7650a6650d9fff099e9059b335990e6efc6a79c9af6c4808a").unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x70c7f9ec6c17c5ff9e9f944d123348a01b3a5e90d68fd6d7d667d1973ab7c48")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x1d4d2b9a82d648b0321c1fd8117c068687d35b8ae5e3c69e69c2128cfda687c")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x3448a3a5d63870bf985e7ae7f9220569904878098163bf0624a716c47208feb")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x69b114bd639edfc30e225eb89d5de2be8d93470527fd376a86d8c7cc222132a")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x2c40fd80001a1470fa791e795193d5f67ad740fe9d001dde5c8d4fe87ac705f")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x1aebd766df8d903347970e5521aa76e74a9351d57bef08017c20ad7203710bc")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x2752a37000212c653f6d6e9db667979c57e8d9049ad1551f4a97359a063b4fd")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x8c4ff08ca4501d37032fc5400629bf3286d5f906f930e74e3435a679f85fb5").unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x62336e4c0a2d05393a41993a6f0f0de859550ebcd246d193459be425413f3d0")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x7af418610566461ffc80ebdb318619d778b1773e4bf1decbfcebe5f502ef62f")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x57d4e9cef8592c7ca541eb77b694bbb14c42efab8832fe8d0abadf27d133619")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x30d9ddad88cb1fe89ecc252135b1274135fc84818e634c9c24def38b228071").unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x5896d1afebffa7efcc8f6f2a689ba43517efeadca12f8d25abc59eb43159d5d")
+            .unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x6bb91ed9730f65c7b1c9fdc72950daba29a615c6754cbd3f363fcfb72712c9").unwrap()
+    );
+    current = crate::poseidon_hash_many(&[node_domain, current, current]);
+    assert_eq!(
+        current,
+        Felt::from_hex("0x130c8a5f4b48e2119a27e19776d5fcf63fa529f33506a452a36d49829f3f12b")
             .unwrap()
     );
 }

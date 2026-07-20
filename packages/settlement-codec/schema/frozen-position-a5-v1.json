@@ -3,7 +3,11 @@
   "ticket": "A5",
   "status": "reference-seam-complete-production-proof-blocked",
   "releaseReady": false,
-  "protocolRegistryHash": "0x6223f81a3b7d07ead67c72d06acddfe67337e6387c0e9f05edd1a19f1ebdba8",
+  "protocolRegistryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
+  "reproducibilityInputs": {
+    "guestCoreSha256": "47b276693ac4d7b69f943e3a41de7988fa964cc457395696ad94f6ebefe10e7f",
+    "protocolHashCoreSha256": "61e91e662b9839c6df869f5efb1de74ec5f9d65344047f393247a1e9bbf58448"
+  },
   "publicInputs": [
     "deployment_id",
     "game_id",

@@ -1,6 +1,7 @@
 use starknet_crypto::Felt;
 
 use crate::codec::CanonicalEncode;
+use crate::protocol_hash::domain;
 use crate::types::{ClaimLeg, ExitClaim, U256};
 
 const BASIS_POINTS: u128 = 10_000;
@@ -541,10 +542,4 @@ fn append_pending_commitment(
     preimage.push(pending.parent_shares_hash);
     preimage.push(pending.lot_shares_hash);
     preimage.push(hash_payout_legs(&pending.legs));
-}
-
-fn domain(name: &str) -> Felt {
-    let selector = crate::schema_vector::hash_domain_selector(name)
-        .unwrap_or_else(|| panic!("unregistered frozen-position domain: {name}"));
-    Felt::from_hex(selector).expect("valid generated domain selector")
 }

@@ -44,7 +44,11 @@
     },
     { "ticket": "A17", "status": "complete" },
     { "ticket": "A18", "status": "public-feasibility-complete-private-tee-source-blocked", "mandatoryBlocker": true },
-    { "ticket": "A19", "status": "absent", "mandatoryBlocker": true },
+    {
+      "ticket": "A19",
+      "status": "pending-typed-derivation-reference-seam-complete-source-inventory-and-production-proofs-blocked",
+      "mandatoryBlocker": true
+    },
     {
       "ticket": "A20",
       "status": "mutation-review-complete-observed-class-source-blocked",
@@ -61,39 +65,51 @@
   "frozenAndCandidateInputs": {
     "protocolSchema": {
       "status": "frozen-wave0-v1",
-      "registryHash": "0x6223f81a3b7d07ead67c72d06acddfe67337e6387c0e9f05edd1a19f1ebdba8",
-      "fileSha256": "dc70b9c624a7ed129692fc0394d03f07315b0ac2a06f6b90de2b5d679f18e8d3"
+      "registryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
+      "fileSha256": "06f923d90899ed10c3ab9571205524ec4dcd012e72426ac01c9b62373171f3b4"
     },
     "frozenPositionProof": {
       "status": "reference-seam-complete-production-proof-blocked",
-      "fileSha256": "6affd2d54d215a4cf0ec0781b0abb52820c5f2c3197b90682e7b46c33c56f0bb",
+      "fileSha256": "de4c6eeabf0e259cc1cf7c5159798c7dd0de42580dbdaa6b0d474762044676a1",
       "journalHash": "0x7d37e77b8cc5f0db16705e88b91ac862f125d684b8fa5644992eee730db58bc",
       "releaseReady": false
     },
     "mmrPlanProof": {
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
-      "fileSha256": "c8fc0f37db1657a1e52ffdb70c043f7e5c9bec50ffc75ce109d037d312363165",
+      "fileSha256": "41cfb56720deebb081f094c26531cad67ad249ded0037fda37ef263019264064",
       "journalHash": "0x2e8193d2764077811fe44d826af2d7a6c0c8afdc31ced2d5f106530fb639f6a",
       "releaseReady": false
     },
     "emergencySealedProof": {
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
-      "fileSha256": "7616c0a6ea110e22480f852f91990a8a6d463d7ed2c80d0c49f3cb5a1f61eb83",
+      "fileSha256": "6583f429afed29e093af1585ccea9c81b5c752d9f4fc97c6903a8a5425cc018e",
       "journalHash": "0x37890799d1a1ec66e4425bfffa52747bcfb6fdb984b80d39420f451b01b343f",
       "releaseReady": false
     },
     "hardenedInboxProof": {
       "status": "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
-      "fileSha256": "c32315c75197b5b0903627ad63b58c81dbdc2574a01f64d2302cc19c5f571721",
+      "fileSha256": "5809dfb0fc5806901ffa06377c5e786bfd7bae680f574d5254d03d6bdc599422",
       "publicEvidenceStatus": "contract-proof-only-accepted-on-l2",
       "publicBlockNumber": 12177826,
       "publicContractNodeCount": 22,
       "mandatoryBlockerCount": 4,
       "releaseReady": false
     },
+    "legacyMmrDerivationProof": {
+      "status": "pending-typed-derivation-reference-seam-complete-source-inventory-and-production-proofs-blocked",
+      "fileSha256": "526a6dbc6662281e91ef451161ad78e50821b8c466826e7d0f7a72eb2cf0dc72",
+      "provedSourceInventoryHash": "0x39a701299f9159612332c964f47cb533d6bcaa3299743861bd3a92a262eaa7",
+      "syntheticDeploymentId": "0x33c8f1316768de91f0318a1fad4ec368dd4657f0bea5ac6ad41b11eb959aa61",
+      "dispositionsRoot": "0x93064b94ad676e46210b7b30de51783bc9baf825af6ec55749cf010f89be05",
+      "importedJobsRoot": "0x698a049290c992ff54c411e8e387e779a3ed56f98e16ac715f9d4b864257b0a",
+      "fundingScopeId": "0x18efde19c29605c6bc73bab43547485fb81dcf16718b5de9bf7abe9735db3fb",
+      "jobTwoPlanRoot": "0x345ff2cc49bf5df2ad39b47b5fd1c62d357eab7dee0e90b2d11d6b26b5e70ae",
+      "mandatoryBlockerCount": 6,
+      "releaseReady": false
+    },
     "frozenRecoveryMaterializationProofs": {
       "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
-      "fileSha256": "eb5688c7be2d91dc70b7d134f262faf92611c2882631209782782b502a54b8f2",
+      "fileSha256": "c831df4d9ddeb68cad6738a8e8d15550a453bd2eb443f0e7942f3ef0e04d5b40",
       "frozenRecoveryJournalHash": "0x40aea6316d38fddec50d6a2ba770a77babc95603c124e2ba6356644004b5afa",
       "deploymentRefundMaterializationJournalHash": "0x4aaed4fdfc7127f25f78d7b21d6875604cb2173fdbaf4f89656644f5ab7e43d",
       "positionMaterializationJournalHash": "0x1f0cfc118469d26eac0b3d226cf0af1edf09eb6051e1d39ef0e15d6d1f9d9e2",
@@ -179,6 +195,16 @@
       "productionRecursiveFinalityVerifyL2Gas": null,
       "productionMaximumStorageProofL2Gas": null
     },
+    "a19": {
+      "status": "pending-typed-derivation-reference-seam-complete-source-inventory-and-production-proofs-blocked",
+      "artifact": "packages/settlement-codec/schema/legacy-mmr-derivation-a19-v1.json",
+      "rustFocusedTests": 7,
+      "sourceInventorySp1ProgramId": null,
+      "typedDerivationSp1ProgramId": null,
+      "sourceInventoryProveDurationMs": null,
+      "typedDerivationProveDurationMs": null,
+      "typedDerivationVerifyDurationMs": null
+    },
     "a21": {
       "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
       "artifact": "packages/settlement-codec/schema/frozen-recovery-materialization-a21-v1.json",
@@ -195,7 +221,7 @@
       "A13-production-receipt",
       "A15-production-receipt-and-maximum-bound",
       "A16-production-finality-and-cancelled-slot-proof",
-      "A19",
+      "A19-finalized-source-inventory-and-production-recursive-receipts",
       "A21-production-segmented-recursive-receipts-and-maximum-bound"
     ]
   },
@@ -203,7 +229,7 @@
     "status": "frozen-hub-owned-v1",
     "a17SealBoundary": "SeasonSettlementHub-owned game and global active/cumulative aggregates with one central sealed-batch bit",
     "removedFromAtomicBoundary": "Fallible cross-contract EconomicStateSystem promotion callbacks",
-    "protocolRegistryHash": "0x6223f81a3b7d07ead67c72d06acddfe67337e6387c0e9f05edd1a19f1ebdba8",
+    "protocolRegistryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
     "aggregateViewTrait": "ISeasonSettlementHubAggregateView",
     "productionRequirement": "D4 must implement the frozen Hub-owned aggregate view and cannot reintroduce a seal-time promotion callback."
   },
@@ -278,7 +304,7 @@
     },
     {
       "id": "MISSING-PROOF-GATES",
-      "action": "Replace A5, A15, and A21 reference state seams with pinned Katana MultiProof adapters and production SP1 receipt/cost evidence; complete the A13 production receipt, provide A16's pinned recursive finality verifier and real finalized CancelledInboxMarker proof, complete A19 proof evidence, and run the A15/A21 maximum-bound campaigns."
+      "action": "Replace A5, A15, and A21 reference state seams with pinned Katana MultiProof adapters and production SP1 receipt/cost evidence; complete the A13 production receipt, provide A16's pinned recursive finality verifier and real finalized CancelledInboxMarker proof, complete A19's distinct finalized source-inventory program and production recursive receipts, and run the A15/A19/A21 maximum-bound campaigns."
     }
   ],
   "authorization": {

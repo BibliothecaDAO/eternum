@@ -4,7 +4,7 @@ use ruint::aliases::U256 as WideU256;
 use starknet_crypto::Felt;
 
 use crate::codec::CanonicalEncode;
-use crate::tree::FixedDepthTree;
+use crate::protocol_hash::{domain, fixed_depth_root, hash_counted_list, hash_encoded, poseidon};
 use crate::types::{
     MmrCurrentFormulaAux, MmrFormulaInput, MmrPlanEntry, MmrSnapshotEntry, RankingCommitment,
     RankingEntry,
@@ -427,38 +427,11 @@ fn build_journal(
 }
 
 fn tree_root(empty_domain: &str, node_domain: &str, leaves: &[Felt]) -> Result<Felt, MmrPlanError> {
-    FixedDepthTree::new(32, domain(empty_domain), domain(node_domain))
-        .and_then(|tree| tree.root(leaves))
-        .map_err(|_| MmrPlanError::Tree)
-}
-
-fn hash_encoded<T: CanonicalEncode>(domain_name: &str, value: &T) -> Felt {
-    let mut values = vec![domain(domain_name)];
-    values.extend(value.encode());
-    poseidon(&values)
-}
-
-fn hash_counted_list(domain_name: &str, leaves: impl IntoIterator<Item = Felt>) -> Felt {
-    let leaves = leaves.into_iter().collect::<Vec<_>>();
-    let mut values = Vec::with_capacity(leaves.len() + 2);
-    values.push(domain(domain_name));
-    values.push(Felt::from(leaves.len()));
-    values.extend(leaves);
-    poseidon(&values)
+    fixed_depth_root(32, empty_domain, node_domain, leaves).map_err(|_| MmrPlanError::Tree)
 }
 
 fn as_u128(value: &crate::types::U256) -> Option<u128> {
     (value.high == 0).then_some(value.low)
-}
-
-fn poseidon(values: &[Felt]) -> Felt {
-    crate::poseidon_hash_many(values)
-}
-
-fn domain(name: &str) -> Felt {
-    let selector = crate::schema_vector::hash_domain_selector(name)
-        .unwrap_or_else(|| panic!("unregistered MMR domain: {name}"));
-    Felt::from_hex(selector).expect("valid generated domain selector")
 }
 
 fn prototype_cubit_revision_id() -> Felt {

@@ -9,6 +9,7 @@ use crate::frozen_position::{
     hash_exit_claim, hash_payout_legs,
 };
 use crate::materialization::{MaterializationCoordinates, materialization_coordinates};
+use crate::protocol_hash::{domain, hash_encoded};
 use crate::tree::FixedDepthTree;
 use crate::types::{
     BackingKey, BackingTotal, ClaimLeg, DormantExitLeaf, ExitClaim, U256,
@@ -479,12 +480,6 @@ fn hash_program(program: &PositionMaterializationProgram) -> Felt {
     ])
 }
 
-fn hash_encoded(domain_name: &str, value: &impl CanonicalEncode) -> Felt {
-    let mut preimage = vec![domain(domain_name)];
-    preimage.extend(value.encode());
-    crate::poseidon_hash_many(&preimage)
-}
-
 fn to_wide(value: U256) -> WideU256 {
     WideU256::from(value.low) | (WideU256::from(value.high) << 128)
 }
@@ -494,10 +489,4 @@ fn from_wide(value: WideU256) -> U256 {
         low: value.as_limbs()[0] as u128 | ((value.as_limbs()[1] as u128) << 64),
         high: value.as_limbs()[2] as u128 | ((value.as_limbs()[3] as u128) << 64),
     }
-}
-
-fn domain(name: &str) -> Felt {
-    let selector = crate::schema_vector::hash_domain_selector(name)
-        .unwrap_or_else(|| panic!("unregistered position materialization domain: {name}"));
-    Felt::from_hex(selector).expect("valid generated domain selector")
 }

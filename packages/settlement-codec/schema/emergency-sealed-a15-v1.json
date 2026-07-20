@@ -3,9 +3,10 @@
   "ticket": "A15",
   "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
   "releaseReady": false,
-  "protocolRegistryHash": "0x6223f81a3b7d07ead67c72d06acddfe67337e6387c0e9f05edd1a19f1ebdba8",
+  "protocolRegistryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
   "reproducibilityInputs": {
-    "guestCoreSha256": "eee386d6371e47935f7f4bad68ac6df18e34aa3a34b879233282d18ecb22dca0",
+    "guestCoreSha256": "c22363752d4024e252b5b2690a0a59699ee3efe41dd6aa695dc224df1e1e1a51",
+    "protocolHashCoreSha256": "61e91e662b9839c6df869f5efb1de74ec5f9d65344047f393247a1e9bbf58448",
     "cargoLockSha256": "e30197fc9eafbf6b898208ac9388637772ef3e2dde09899890b26b98247b6ee8",
     "cairoVerifierSha256": "a17f5e777653c004c9bfce8fa9f71d50c3478556ac7b8bb13d0111856d2cd8c0"
   },

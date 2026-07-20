@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "ticket": "A19",
+  "status": "pending-typed-derivation-reference-seam-complete-source-inventory-and-production-proofs-blocked",
+  "releaseReady": false,
+  "protocolRegistryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
+  "trustBoundary": {
+    "program": "post-freeze-recursive-typed-derivation-reference",
+    "input": "complete LegacyMmrProvedSourceInventory plus its committed pending projections and participant rows",
+    "historicalRpcReadsAfterFreeze": false,
+    "preFreezeFinalizedSourceInventoryProgramImplemented": false,
+    "sourceAndDerivationProgramsRemainDistinct": true
+  },
+  "derivation": {
+    "syntheticDeploymentIdentity": true,
+    "syntheticGameIdentity": true,
+    "gameScopedParticipationIdentity": true,
+    "sourceParticipantCommitment": true,
+    "gameResultAndRankingCommitment": true,
+    "storedMedianAndFormulaInputs": true,
+    "typedImportedJobs": true,
+    "fundingScopeAndExactRewardUnits": true,
+    "supportedDisposition": "ImportedPending",
+    "unauthenticatedNonPendingDispositionAccepted": false,
+    "supportedSettlementChunkSizes": [1, 2, 4, 8, 16, 32],
+    "maximumRewardUnitsFormula": "2 * ceil(participant_count / settlement_chunk_size) + 4"
+  },
+  "trees": {
+    "dispositions": {
+      "registryName": "legacy-mmr-disposition",
+      "depth": 32,
+      "nodeDomain": "LEGACY_MMR_DISPOSITION_NODE_V1"
+    },
+    "importedJobs": {
+      "registryName": "legacy-mmr-imported-job",
+      "depth": 32,
+      "nodeDomain": "LEGACY_IMPORTED_MMR_JOB_NODE_V1"
+    }
+  },
+  "overlappingPendingGamesVector": {
+    "sourceWorldCount": 2,
+    "pendingImportJobCount": 2,
+    "sourceParticipantCount": 12,
+    "distinctParticipantCount": 11,
+    "pendingImportRewardUnits": 20,
+    "provedSourceInventoryHash": "0x39a701299f9159612332c964f47cb533d6bcaa3299743861bd3a92a262eaa7",
+    "syntheticDeploymentId": "0x33c8f1316768de91f0318a1fad4ec368dd4657f0bea5ac6ad41b11eb959aa61",
+    "dispositionsRoot": "0x93064b94ad676e46210b7b30de51783bc9baf825af6ec55749cf010f89be05",
+    "importedJobsRoot": "0x698a049290c992ff54c411e8e387e779a3ed56f98e16ac715f9d4b864257b0a",
+    "fundingScopeId": "0x18efde19c29605c6bc73bab43547485fb81dcf16718b5de9bf7abe9735db3fb"
+  },
+  "sequentialOverlapVector": {
+    "overlappingLegacyPlayerKey": "0x3e9",
+    "initialMmr": 1500,
+    "balanceOrder": ["0x3e8", "0x3e9", "0x3ea", "0x3eb", "0x3ec", "0x3ed", "0x3ee", "0x3ef", "0x3f0", "0x3f1", "0x3f2"],
+    "postJobOneMmr": 1502,
+    "postJobOneBalances": [1512, 1502, 1493, 1484, 1476, 1470, 1500, 1500, 1500, 1500, 1500],
+    "jobTwoPlanRoot": "0x345ff2cc49bf5df2ad39b47b5fd1c62d357eab7dee0e90b2d11d6b26b5e70ae",
+    "orderedFinalMmr": 1514,
+    "orderedFinalBalances": [1512, 1514, 1493, 1484, 1476, 1470, 1502, 1493, 1484, 1476, 1470],
+    "reversedFinalMmr": 1513,
+    "reversedFinalBalances": [1512, 1513, 1493, 1484, 1476, 1470, 1502, 1493, 1484, 1476, 1470],
+    "reversedSourceOrderRejected": true
+  },
+  "testEvidence": {
+    "rustFocusedTests": 7,
+    "rustFocusedPassed": 7,
+    "negativeCoverage": [
+      "registered-source-substitution",
+      "world-order",
+      "pending-mode",
+      "participant-source-index",
+      "participant-identity-alias",
+      "duplicate-legacy-player-key",
+      "participant-rank",
+      "reward-bound",
+      "unsupported-chunk-size"
+    ],
+    "sp1SourceInventoryProgramId": null,
+    "sp1SourceInventoryVerificationKeyHash": null,
+    "sp1TypedDerivationProgramId": null,
+    "sp1TypedDerivationVerificationKeyHash": null,
+    "sourceInventoryProveDurationMs": null,
+    "typedDerivationProveDurationMs": null,
+    "typedDerivationVerifyDurationMs": null
+  },
+  "reproducibilityInputs": {
+    "typedDerivationCoreSha256": "16853e88aa99c01fdb3a689e8981ebed6179d866d3c01d582fa14213cc05d4c7",
+    "typedDerivationTestsSha256": "ba265af740a5f218527a213890f363d3f665948ef35763a175284253d389fa17",
+    "protocolHashCoreSha256": "61e91e662b9839c6df869f5efb1de74ec5f9d65344047f393247a1e9bbf58448",
+    "cargoLockSha256": "e30197fc9eafbf6b898208ac9388637772ef3e2dde09899890b26b98247b6ee8"
+  },
+  "mandatoryBlockers": [
+    {
+      "id": "non-pending-disposition-source-evidence-absent",
+      "reason": "Status 1 NoEligibleResult and status 2 AlreadyApplied require the finalized source program to prove absence or the matching MMRClaimed/token-update facts; the pending-only reference seam rejects rather than trusting an uncommitted status selector."
+    },
+    {
+      "id": "pre-freeze-finalized-source-inventory-program-absent",
+      "reason": "No pinned program proves finalized deployment-to-anchor header, transaction, receipt, event, World/controller topology, historical nonce, depth-252 partial-root, token-slot, formula, high-water, and authority completeness."
+    },
+    {
+      "id": "production-recursive-receipts-absent",
+      "reason": "The source-inventory and post-freeze typed-derivation programs have no pinned SP1 program identities, verification keys, or recursive receipt verification path."
+    },
+    {
+      "id": "deployed-mmr-source-and-authority-schema-unfrozen",
+      "reason": "A20 observes a deployed MMR class/source mismatch, so the exact live storage layout and authority schema required by the source inventory cannot be claimed."
+    },
+    {
+      "id": "production-finality-input-absent",
+      "reason": "A16 does not yet provide the pinned production recursive finality verifier and finalized source anchor required by A19."
+    },
+    {
+      "id": "production-cost-campaigns-absent",
+      "reason": "Neither distinct proof program has production maximum-witness prove/verify measurements or a published ceiling result."
+    }
+  ]
+}

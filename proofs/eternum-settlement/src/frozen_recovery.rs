@@ -5,6 +5,7 @@ use starknet_crypto::Felt;
 
 use crate::codec::CanonicalEncode;
 use crate::frozen_position::hash_payout_legs;
+use crate::protocol_hash::{domain, hash_encoded};
 use crate::tree::FixedDepthTree;
 use crate::types::{
     AbortRefundAux, ClaimLeg, DeploymentRefundCommitment, DeploymentRefundDisposition,
@@ -786,12 +787,6 @@ fn refund_tree(
         .map_err(|_| FrozenRecoveryError::Tree)
 }
 
-fn hash_encoded(domain_name: &str, value: &impl CanonicalEncode) -> Felt {
-    let mut preimage = vec![domain(domain_name)];
-    preimage.extend(value.encode());
-    crate::poseidon_hash_many(&preimage)
-}
-
 fn hash_program(program: &FrozenRecoveryProgram) -> Felt {
     crate::poseidon_hash_many(&[
         domain("FROZEN_RECOVERY_SUMMARY_V1"),
@@ -859,10 +854,4 @@ fn from_wide(value: WideU256) -> U256 {
 
 fn zero() -> U256 {
     U256 { low: 0, high: 0 }
-}
-
-fn domain(name: &str) -> Felt {
-    let selector = crate::schema_vector::hash_domain_selector(name)
-        .unwrap_or_else(|| panic!("unregistered frozen-recovery domain: {name}"));
-    Felt::from_hex(selector).expect("valid generated domain selector")
 }

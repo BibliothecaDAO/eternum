@@ -4,6 +4,7 @@ use ruint::aliases::U256 as WideU256;
 use starknet_crypto::Felt;
 
 use crate::codec::CanonicalEncode;
+use crate::protocol_hash::{domain, hash_encoded};
 use crate::tree::FixedDepthTree;
 use crate::types::{ClaimLeaf, ClaimLeg, EmergencySealedClaim, NftReservation, U256};
 
@@ -688,12 +689,6 @@ fn empty_claim_leaf_hash() -> Felt {
     crate::poseidon_hash_many(&[domain("EMPTY_LEAF_V1")])
 }
 
-fn hash_encoded(domain_name: &str, value: &impl CanonicalEncode) -> Felt {
-    let mut preimage = vec![domain(domain_name)];
-    preimage.extend(value.encode());
-    crate::poseidon_hash_many(&preimage)
-}
-
 fn parent_key(leg: &ClaimLeg) -> ParentKey {
     ParentKey {
         asset_mode: leg.asset_mode,
@@ -715,10 +710,4 @@ fn from_wide(value: WideU256) -> U256 {
         low: value.as_limbs()[0] as u128 | ((value.as_limbs()[1] as u128) << 64),
         high: value.as_limbs()[2] as u128 | ((value.as_limbs()[3] as u128) << 64),
     }
-}
-
-fn domain(name: &str) -> Felt {
-    let selector = crate::schema_vector::hash_domain_selector(name)
-        .unwrap_or_else(|| panic!("unregistered emergency-sealed domain: {name}"));
-    Felt::from_hex(selector).expect("valid generated domain selector")
 }

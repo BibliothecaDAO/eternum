@@ -3,14 +3,15 @@
   "ticket": "A13",
   "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
   "releaseReady": false,
-  "protocolRegistryHash": "0x6223f81a3b7d07ead67c72d06acddfe67337e6387c0e9f05edd1a19f1ebdba8",
+  "protocolRegistryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
   "formulaIdentity": {
     "implementation": "Cubit-compatible integer 64.64 Rust port",
     "sourceRevision": "3b210f1eb323b9367197715fa6f91791689c1f31",
     "referenceRevisionId": "0x262265ac5573c6cd62eb0c2b6365a49be4e7068c25ffabc321513c0eb68e251"
   },
   "reproducibilityInputs": {
-    "guestCoreSha256": "058523cfa19abf1b6acf20df620754c8a2873ed56aec4cdc1f45003b6e78e255",
+    "guestCoreSha256": "90490977691f27fefd87b4abcfe0327b3756a7dcf009ec5db6edc87d5282c88a",
+    "protocolHashCoreSha256": "61e91e662b9839c6df869f5efb1de74ec5f9d65344047f393247a1e9bbf58448",
     "cargoLockSha256": "e30197fc9eafbf6b898208ac9388637772ef3e2dde09899890b26b98247b6ee8",
     "cairoVerifierSha256": "c3783a582c8e7a5fe70bea5a83756dd3c11baf4853c6a800bc9cf10b4ef5f773"
   },
