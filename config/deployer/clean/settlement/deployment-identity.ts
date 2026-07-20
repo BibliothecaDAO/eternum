@@ -1,21 +1,19 @@
 import { hash, shortString } from "starknet";
 import type {
+  AppchainSettlementConfig,
   ApprovedDeploymentAddressInputs,
   CompiledDeploymentAddressRecipe,
+  DeploymentAddressRecipe,
   DeploymentAddressPlan,
   DeploymentLayerPlan,
+  DeploymentManifest,
   KatanaGenesisArtifactCommitment,
   ResolvedShellComponent,
-} from "../../../../packages/settlement-codec/src/deployment-identity";
+} from "@bibliothecadao/settlement-codec";
 import {
   DEPLOYMENT_MANIFEST_L1_COMPONENT_FIELDS,
   DEPLOYMENT_MANIFEST_L2_COMPONENT_FIELDS,
-} from "../../../../packages/settlement-codec/src/deployment-identity";
-import type {
-  AppchainSettlementConfig,
-  DeploymentAddressRecipe,
-  DeploymentManifest,
-} from "../../../../packages/settlement-codec/src/generated-types";
+} from "@bibliothecadao/settlement-codec";
 
 const ADDRESS_RECIPE_DOMAIN = felt("DEPLOYMENT_ADDRESS_RECIPE_V1");
 const APPCHAIN_SETTLEMENT_CONFIG_DOMAIN = felt("APPCHAIN_SETTLEMENT_CONFIG_V1");

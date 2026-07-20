@@ -1,4 +1,5 @@
 import economicCapabilityRegistry from "../schema/economic-capability-registry-v1.json";
+import { cloneProtocolValue } from "./clone";
 
 export type EconomicCapabilityFamilyId =
   | "resource"
@@ -49,15 +50,16 @@ const REGISTRY = economicCapabilityRegistry as EconomicCapabilityRegistry;
 const OPERATION_BY_ID = new Map(REGISTRY.operations.map((operation) => [operation.operationId, operation]));
 
 export function getEconomicCapabilityRegistry(): EconomicCapabilityRegistry {
-  return REGISTRY;
+  return cloneProtocolValue(REGISTRY);
 }
 
 export function getEconomicCapabilityOperation(operationId: number): EconomicCapabilityOperation {
   const operation = OPERATION_BY_ID.get(operationId);
   if (!operation) throw new Error(`unregistered economic operation: ${operationId}`);
-  return operation;
+  return cloneProtocolValue(operation);
 }
 
 export function getEconomicCapabilitiesForCaller(callerClass: string): readonly EconomicCapabilityOperation[] {
-  return REGISTRY.operations.filter((operation) => operation.authorizedCallerClasses.includes(callerClass));
+  const operations = REGISTRY.operations.filter((operation) => operation.authorizedCallerClasses.includes(callerClass));
+  return cloneProtocolValue(operations);
 }

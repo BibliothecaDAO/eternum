@@ -91,6 +91,20 @@ describe("A14 frozen economic capability interface", () => {
     expect(() => getEconomicCapabilityOperation(0)).toThrow("unregistered economic operation: 0");
   });
 
+  test("isolates the canonical registry from consumer mutations", () => {
+    const registry = getEconomicCapabilityRegistry();
+    const operation = getEconomicCapabilityOperation(4109);
+    const callerOperations = getEconomicCapabilitiesForCaller("SeasonSettlementHub");
+
+    (registry.families[0].actions as string[])[0] = "consumer-rewrite";
+    operation.name = "consumer-rewrite";
+    (callerOperations[0].affectedModels as string[])[0] = "consumer-rewrite";
+
+    expect(getEconomicCapabilityRegistry().families[0].actions[0]).toBe("credit");
+    expect(getEconomicCapabilityOperation(4109).name).toBe("assign_open_batch");
+    expect(getEconomicCapabilitiesForCaller("SeasonSettlementHub")[0].affectedModels[0]).toBe("PendingLiability");
+  });
+
   test("classifies every discovered non-test model/member write", () => {
     const inventory = readJson(inventoryUrl);
     const registry = getEconomicCapabilityRegistry();

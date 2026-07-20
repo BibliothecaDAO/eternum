@@ -1,5 +1,6 @@
 import type { AppchainSettlementConfig, DeploymentManifest } from "./generated-types";
 import { hash } from "starknet";
+import { cloneProtocolValue, freezeProtocolValue } from "./clone";
 import { encodeFlatSchema } from "./codec";
 import {
   buildKatanaGenesisArtifactCommitment,
@@ -20,19 +21,19 @@ const KATANA_SOURCE_COMMIT = BigInt("0x7882660a91e776ccacdc0e2e3fe2469f6b4df096"
 const DETERMINISTIC_SHELL_CLASS_HASH = BigInt("0x0693fb061b3e60cd4cf1c7caa2f0428d82a2fb599133befe678a7f827ed889ae");
 const A18_KATANA_GENESIS_STATE_ROOT = 268091293760204763631382757931779078794118851212906591280343453994588570303n;
 const STORAGE_ADDRESS_BOUND = (1n << 251n) - 256n;
-const KATANA_GENESIS_BLOCK = {
+const KATANA_GENESIS_BLOCK = freezeProtocolValue({
   number: 0n,
   parentHash: 0n,
   timestamp: 1_800_000_000n,
   sequencerAddress: 8503n,
   ethGasPrice: 1n,
   strkGasPrice: 1n,
-} as const;
+} as const);
 
-export const A18_L1_COMPONENT_FIELDS = DEPLOYMENT_MANIFEST_L1_COMPONENT_FIELDS;
-export const A18_L2_COMPONENT_FIELDS = DEPLOYMENT_MANIFEST_L2_COMPONENT_FIELDS;
+export const A18_L1_COMPONENT_FIELDS = freezeProtocolValue(cloneProtocolValue(DEPLOYMENT_MANIFEST_L1_COMPONENT_FIELDS));
+export const A18_L2_COMPONENT_FIELDS = freezeProtocolValue(cloneProtocolValue(DEPLOYMENT_MANIFEST_L2_COMPONENT_FIELDS));
 
-export const A18_RELEASE_IDENTITY = {
+export const A18_RELEASE_IDENTITY = freezeProtocolValue({
   rulesetId: 8001n,
   releaseBundleHash: 13001n,
   coordinator: 8501n,
@@ -54,9 +55,9 @@ export const A18_RELEASE_IDENTITY = {
   genesisSequencerAddress: KATANA_GENESIS_BLOCK.sequencerAddress,
   genesisEthGasPrice: KATANA_GENESIS_BLOCK.ethGasPrice,
   genesisStrkGasPrice: KATANA_GENESIS_BLOCK.strkGasPrice,
-} as const;
+} as const);
 
-export const A18_APPROVED_ADDRESS_INPUTS: ApprovedDeploymentAddressInputs = {
+export const A18_APPROVED_ADDRESS_INPUTS: ApprovedDeploymentAddressInputs = freezeProtocolValue({
   protocolVersion: 1n,
   rulesetId: A18_RELEASE_IDENTITY.rulesetId,
   predeployedCoordinator: A18_RELEASE_IDENTITY.coordinator,
@@ -82,12 +83,12 @@ export const A18_APPROVED_ADDRESS_INPUTS: ApprovedDeploymentAddressInputs = {
       classHash: DETERMINISTIC_SHELL_CLASS_HASH,
     })),
   },
-};
+});
 
-export const A18_DEPLOYMENT_PLAN: DeploymentAddressPlan = {
+export const A18_DEPLOYMENT_PLAN: DeploymentAddressPlan = freezeProtocolValue({
   ...A18_APPROVED_ADDRESS_INPUTS,
   deploymentId: 7001n,
-};
+});
 
 export function buildA18DeploymentIdentityVector() {
   const genesis = buildA18GenesisInputs(A18_KATANA_GENESIS_STATE_ROOT);

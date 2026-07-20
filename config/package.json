@@ -45,6 +45,7 @@
   },
   "dependencies": {
     "@bibliothecadao/provider": "workspace:*",
+    "@bibliothecadao/settlement-codec": "workspace:*",
     "@bibliothecadao/types": "workspace:*",
     "@dojoengine/core": "catalog:",
     "chalk": "^5.4.1",

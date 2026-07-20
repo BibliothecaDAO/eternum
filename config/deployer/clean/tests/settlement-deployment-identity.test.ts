@@ -1,14 +1,12 @@
 import { describe, expect, test } from "vitest";
 import {
-  compileDeploymentAddressRecipe,
-  type DeploymentAddressPlan,
-} from "../../../../packages/settlement-codec/src/deployment-identity";
-import {
-  A18_DEPLOYMENT_PLAN,
   A18_APPROVED_ADDRESS_INPUTS,
+  A18_DEPLOYMENT_PLAN,
   A18_RELEASE_IDENTITY,
   buildA18DeploymentIdentityVector,
-} from "../../../../packages/settlement-codec/src/deployment-identity-vector";
+  compileDeploymentAddressRecipe,
+  type DeploymentAddressPlan,
+} from "@bibliothecadao/settlement-codec";
 import {
   deriveDeploymentShellPlan,
   deriveResolvedDeploymentIdentity,
@@ -21,6 +19,22 @@ const APPROVED = A18_APPROVED_ADDRESS_INPUTS;
 const APPROVED_RULESETS = rulesetResolver(A18_RELEASE_IDENTITY);
 
 describe("A18 deployer parity", () => {
+  test("keeps public deployment fixtures immutable", () => {
+    const vector = buildA18DeploymentIdentityVector();
+
+    expect(() => {
+      (A18_APPROVED_ADDRESS_INPUTS.l1.componentKinds as bigint[])[0] = 999n;
+    }).toThrow(TypeError);
+    expect(() => {
+      (vector.plan.l2.componentClasses as { componentKind: bigint; classHash: bigint }[])[0].classHash = 999n;
+    }).toThrow(TypeError);
+
+    expect(A18_APPROVED_ADDRESS_INPUTS.l1.componentKinds[0]).toBe(1n);
+    expect(buildA18DeploymentIdentityVector().plan.l2.componentClasses[0].classHash).toBe(
+      vector.plan.l2.componentClasses[0].classHash,
+    );
+  });
+
   test("independently reproduces the codec recipe and every address", () => {
     const codec = compileDeploymentAddressRecipe(PLAN, APPROVED);
     const deployer = deriveDeploymentShellPlan(PLAN, APPROVED);

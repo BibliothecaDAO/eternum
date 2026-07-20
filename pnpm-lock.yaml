@@ -883,6 +883,9 @@ importers:
       '@bibliothecadao/provider':
         specifier: workspace:*
         version: link:../packages/provider
+      '@bibliothecadao/settlement-codec':
+        specifier: workspace:*
+        version: link:../packages/settlement-codec
       '@bibliothecadao/types':
         specifier: workspace:*
         version: link:../packages/types

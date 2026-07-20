@@ -56,4 +56,18 @@ describe("settlement schema registry", () => {
     });
     expect(getTreeSchema("ranking").nodeDomain).not.toBe(getTreeSchema("mmr-plan").nodeDomain);
   });
+
+  it("isolates canonical schemas from consumer mutations", () => {
+    const action = getActionSchema(1, 0x0110);
+    const claimKind = getClaimKind(0x1001);
+    const tree = getTreeSchema("ranking");
+
+    action.name = "consumer-rewrite";
+    claimKind.name = "consumer-rewrite";
+    tree.nodeDomain = "consumer-rewrite";
+
+    expect(getActionSchema(1, 0x0110).name).toBe("RESOURCE_DEPOSIT");
+    expect(getClaimKind(0x1001).name).toBe("CONTROL_PLAYER_BINDING_ACK");
+    expect(getTreeSchema("ranking").nodeDomain).toBe("RANKING_NODE_V1");
+  });
 });
