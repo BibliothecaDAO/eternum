@@ -1,4 +1,5 @@
 pub mod codec;
+pub mod emergency_sealed;
 pub mod frozen_position;
 pub mod golden_vectors;
 pub mod mmr_plan;

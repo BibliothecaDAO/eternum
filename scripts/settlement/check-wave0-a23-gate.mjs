@@ -7,6 +7,7 @@ const decision = readJson("packages/settlement-codec/schema/wave0-a23-stop-decis
 const schemaRegistry = readJson("packages/settlement-codec/schema/schema-registry-v1.json");
 const frozenPosition = readJson("packages/settlement-codec/schema/frozen-position-a5-v1.json");
 const mmrPlan = readJson("packages/settlement-codec/schema/mmr-plan-a13-v1.json");
+const emergencySealed = readJson("packages/settlement-codec/schema/emergency-sealed-a15-v1.json");
 const authority = readJson("packages/settlement-codec/schema/authority-inventory-v1.json");
 const exitFamilies = readJson("packages/settlement-codec/schema/exit-family-inventory-v0.json");
 
@@ -78,6 +79,51 @@ function assertFrozenAndCandidateInputs() {
     mmrPlan.reproducibilityInputs.cairoVerifierSha256,
   );
   assertFileHash("packages/settlement-codec/schema/mmr-plan-a13-v1.json", inputs.mmrPlanProof.fileSha256);
+
+  assertEqual(
+    emergencySealed.status,
+    "reference-guest-and-verifier-complete-production-receipt-blocked",
+    "A15 emergency-sealed status",
+  );
+  assertEqual(emergencySealed.releaseReady, false, "A15 release readiness");
+  assertEqual(
+    decision.wave0.find(({ ticket }) => ticket === "A15")?.status,
+    emergencySealed.status,
+    "A15 Wave 0 status",
+  );
+  assertEqual(emergencySealed.protocolRegistryHash, schemaRegistry.schemaRegistryHash, "A15 protocol registry hash");
+  assertEqual(
+    emergencySealed.crossLanguageVector.journalHash,
+    inputs.emergencySealedProof.journalHash,
+    "A15 journal hash",
+  );
+  assertEqual(emergencySealed.costEvidence.sp1ProgramId, null, "A15 SP1 program identity");
+  assertEqual(emergencySealed.costEvidence.sp1VerificationKeyHash, null, "A15 SP1 verification key");
+  assertEqual(emergencySealed.costEvidence.sp1ProveDurationMs, null, "A15 SP1 prove evidence");
+  assertEqual(emergencySealed.costEvidence.sp1VerifyDurationMs, null, "A15 SP1 verify evidence");
+  assertEqual(
+    decision.performanceEvidence.a15.cairoVectorTestL2Gas,
+    emergencySealed.costEvidence.referenceCairoVectorTestL2Gas,
+    "A15 Cairo vector cost",
+  );
+  assertEqual(
+    decision.performanceEvidence.a15.cairoNegativeTestL2Gas,
+    emergencySealed.costEvidence.referenceCairoNegativeTestL2Gas,
+    "A15 Cairo negative cost",
+  );
+  assertFileHash(
+    "proofs/eternum-settlement/src/emergency_sealed.rs",
+    emergencySealed.reproducibilityInputs.guestCoreSha256,
+  );
+  assertFileHash("proofs/eternum-settlement/Cargo.lock", emergencySealed.reproducibilityInputs.cargoLockSha256);
+  assertFileHash(
+    "contracts/settlement_protocol/src/emergency_sealed_verifier_spike.cairo",
+    emergencySealed.reproducibilityInputs.cairoVerifierSha256,
+  );
+  assertFileHash(
+    "packages/settlement-codec/schema/emergency-sealed-a15-v1.json",
+    inputs.emergencySealedProof.fileSha256,
+  );
 
   assertEqual(authority.status, "blocked-a20-mutation-review", "A20 inventory status");
   assertEqual(authority.releaseReady, false, "A20 release readiness");

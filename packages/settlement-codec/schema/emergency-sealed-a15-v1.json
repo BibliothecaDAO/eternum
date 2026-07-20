@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "ticket": "A15",
+  "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
+  "releaseReady": false,
+  "protocolRegistryHash": "0x80fc99a14698dcc5baaf6135fd007309840a624800949b1bb87d469c6b9fb6",
+  "reproducibilityInputs": {
+    "guestCoreSha256": "eee386d6371e47935f7f4bad68ac6df18e34aa3a34b879233282d18ecb22dca0",
+    "cargoLockSha256": "e30197fc9eafbf6b898208ac9388637772ef3e2dde09899890b26b98247b6ee8",
+    "cairoVerifierSha256": "a17f5e777653c004c9bfce8fa9f71d50c3478556ac7b8bb13d0111856d2cd8c0"
+  },
+  "publicInputs": [
+    "deployment_id",
+    "frozen_checkpoint_hash",
+    "frozen_outbox_cursor",
+    "complete_accepted_outbox_interval",
+    "registered_batch_id",
+    "registered_root",
+    "leaf_index",
+    "six_sibling_proof",
+    "original_claim_leaf",
+    "original_claim_legs",
+    "settlement_claim_legs",
+    "liability_id",
+    "disposition_kind",
+    "enabling_or_terminal_fact_hash",
+    "immutable_replacement_policy_hash",
+    "registered_root_budget_source",
+    "parent_dispositions",
+    "exact_reservation_effects"
+  ],
+  "canonicalDomains": {
+    "claimLeaf": "CLAIM_LEAF_V1",
+    "claimLegs": "CLAIM_LEGS_V1",
+    "acceptedFact": "ACCEPTED_OUTBOX_FACT_V1",
+    "acceptedInterval": "ACCEPTED_OUTBOX_INTERVAL_V1",
+    "replacementPolicy": "EMERGENCY_REPLACEMENT_POLICY_V1",
+    "claim": "EMERGENCY_SEALED_CLAIM_V1",
+    "parentDispositions": "EMERGENCY_PARENT_DISPOSITIONS_V1",
+    "exactReservations": "EMERGENCY_EXACT_RESERVATIONS_V1",
+    "journal": "EMERGENCY_SEALED_JOURNAL_V1"
+  },
+  "registeredRootBudgetHandoff": {
+    "sourceMode": 1,
+    "source": "Root(batch_id)",
+    "requiresRegisteredRoot": true,
+    "requiresFullyFundedTouchedParents": true,
+    "forbiddenSources": ["PendingOutbox", "FrozenExit", "ExactNftFromAnotherLiability"],
+    "fungibleInvariant": "original and settlement amounts conserve independently for every (asset_mode, asset_id, backing_pool_id)",
+    "exactReservationInvariant": "every original exact reservation is retained by an enabled original leg or explicitly released by abort"
+  },
+  "crossLanguageVector": {
+    "originalLeafHash": "0x556b800ade71aa2435161409a39f1c96c9e4ca6ea5da04457568db7a1303e9b",
+    "originalAndSettlementLegsHash": "0x629899a61f730d376f3132c3d96052f782439f569ed5368b58ac3a4dbb50003",
+    "claimHash": "0x1373c23a74a4ba9cefdc862253704bc800077476bfe663669eefdcb2029ae9f",
+    "journalHash": "0x37890799d1a1ec66e4425bfffa52747bcfb6fdb984b80d39420f451b01b343f",
+    "implementations": ["Cairo", "TypeScript", "Rust"]
+  },
+  "referenceCoverage": {
+    "accepted": [
+      "registered-root-frozen-enabled-original-legs",
+      "registered-root-terminal-abort-deterministic-replacement",
+      "same-liability-and-global-nullifier",
+      "parent-by-parent-fungible-conservation",
+      "zero-value-exact-reservation-release"
+    ],
+    "rejected": [
+      "wrong-or-unregistered-root",
+      "wrong-six-sibling-proof",
+      "gapped-or-post-cursor-outbox-interval",
+      "missing-or-ambiguous-enabling-terminal-fact",
+      "wrong-replacement-policy",
+      "alternate-refund-recipient",
+      "pending-or-frozen-exit-budget-source",
+      "underfunded-root-budget",
+      "wrong-original-root-budget-leg-hash",
+      "parent-conservation-failure",
+      "changed-original-or-settlement-preimage",
+      "missing-or-stranded-exact-reservation"
+    ]
+  },
+  "costEvidence": {
+    "referenceCairoVectorTestL2Gas": 297715,
+    "referenceCairoNegativeTestL2Gas": 563512,
+    "sp1ProgramElfSha256": null,
+    "sp1ProgramId": null,
+    "sp1VerificationKeyHash": null,
+    "sp1ProofBytes": null,
+    "sp1ProveDurationMs": null,
+    "sp1VerifyDurationMs": null,
+    "garagaVerifierClassHash": null,
+    "garagaVerifierL2Gas": null,
+    "maximumAcceptedOutboxIntervalCampaign": "not-run",
+    "result": "production-program-vk-proof-and-cost-unavailable"
+  },
+  "productionBlockers": [
+    {
+      "id": "SP1-PROGRAM-AND-RECEIPT",
+      "reason": "cargo-prove and sp1up are unavailable in the current environment; no production ELF/program ID, VK, succinct receipt, proof size, or prove/verify timing is claimed."
+    },
+    {
+      "id": "GARAGA-VERIFIER",
+      "reason": "No release-pinned Garaga SP1 verifier class or real receipt has been generated and verified on Cairo."
+    },
+    {
+      "id": "PINNED-KATANA-INTERVAL-AND-ROOT-PROOFS",
+      "reason": "Authenticated source access is unavailable for katana-tee commit 6a263b017aa37903b8d65cf28c9f52cd24cb5807, so the reference complete-interval and registered-root witnesses cannot yet be replaced by production Patricia MultiProof adapters and generated Hub slots."
+    },
+    {
+      "id": "MAXIMUM-BOUND-CAMPAIGN",
+      "reason": "The maximum accepted-outbox interval and eight-leg disposition have no real SP1 segmented/recursive prove and verify campaign."
+    }
+  ]
+}

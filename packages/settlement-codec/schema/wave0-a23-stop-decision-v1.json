@@ -32,7 +32,11 @@
       "mandatoryBlocker": true
     },
     { "ticket": "A14", "status": "complete" },
-    { "ticket": "A15", "status": "absent", "mandatoryBlocker": true },
+    {
+      "ticket": "A15",
+      "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
+      "mandatoryBlocker": true
+    },
     { "ticket": "A16", "status": "incomplete-no-finalized-cancellation-proof", "mandatoryBlocker": true },
     { "ticket": "A17", "status": "complete" },
     { "ticket": "A18", "status": "public-feasibility-complete-private-tee-source-blocked", "mandatoryBlocker": true },
@@ -45,19 +49,25 @@
   "frozenAndCandidateInputs": {
     "protocolSchema": {
       "status": "frozen-wave0-v1",
-      "registryHash": "0x4fc3db19cde1a3cc4b37b74b9c484c2abcc967f472d25900367e42b2ec0f581",
-      "fileSha256": "6f423fd4ef0bb8059d9fa5dab5d5556749feece69755200f099bf8ed95aa7a29"
+      "registryHash": "0x80fc99a14698dcc5baaf6135fd007309840a624800949b1bb87d469c6b9fb6",
+      "fileSha256": "5a701bcc7ede013f0b9dfb5ffe52a121b7211059b0fdf302176effcb0a57cb0b"
     },
     "frozenPositionProof": {
       "status": "reference-seam-complete-production-proof-blocked",
-      "fileSha256": "b60576d638e250c9a36fd82d4db41e6a7262e39a5abdd7c35dede1c525ec2201",
+      "fileSha256": "d310d008802878f73fcf1f553016ed7719f4a3faaee53c7593f32d1fb52f9c02",
       "journalHash": "0x7d37e77b8cc5f0db16705e88b91ac862f125d684b8fa5644992eee730db58bc",
       "releaseReady": false
     },
     "mmrPlanProof": {
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
-      "fileSha256": "3659cb5fdb28ead10f1d29bb0d44f53b3e4d0b2bbb36d931258ad1c3508233e9",
+      "fileSha256": "5cba307284025cbd930d5a921c1c649b9dbd2f3f9b040b9feefcc32656dc4ee8",
       "journalHash": "0x2e8193d2764077811fe44d826af2d7a6c0c8afdc31ced2d5f106530fb639f6a",
+      "releaseReady": false
+    },
+    "emergencySealedProof": {
+      "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
+      "fileSha256": "530fab0d88d27777bf58d2701faa64c69aeb256cdcabce805a65dc464b8e168e",
+      "journalHash": "0x37890799d1a1ec66e4425bfffa52747bcfb6fdb984b80d39420f451b01b343f",
       "releaseReady": false
     },
     "authorityInventory": {
@@ -115,11 +125,21 @@
       "sp1ProveDurationMs": null,
       "sp1VerifyDurationMs": null
     },
+    "a15": {
+      "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
+      "artifact": "packages/settlement-codec/schema/emergency-sealed-a15-v1.json",
+      "cairoVectorTestL2Gas": 297715,
+      "cairoNegativeTestL2Gas": 563512,
+      "sp1ProgramId": null,
+      "sp1VerificationKeyHash": null,
+      "sp1ProveDurationMs": null,
+      "sp1VerifyDurationMs": null
+    },
     "unavailableMandatoryCampaigns": [
       "A5-production-katana-sp1",
       "A8",
       "A13-production-receipt",
-      "A15",
+      "A15-production-receipt-and-maximum-bound",
       "A16",
       "A19",
       "A21"
@@ -129,7 +149,7 @@
     "status": "frozen-hub-owned-v1",
     "a17SealBoundary": "SeasonSettlementHub-owned game and global active/cumulative aggregates with one central sealed-batch bit",
     "removedFromAtomicBoundary": "Fallible cross-contract EconomicStateSystem promotion callbacks",
-    "protocolRegistryHash": "0x4fc3db19cde1a3cc4b37b74b9c484c2abcc967f472d25900367e42b2ec0f581",
+    "protocolRegistryHash": "0x80fc99a14698dcc5baaf6135fd007309840a624800949b1bb87d469c6b9fb6",
     "aggregateViewTrait": "ISeasonSettlementHubAggregateView",
     "productionRequirement": "D4 must implement the frozen Hub-owned aggregate view and cannot reintroduce a seal-time promotion callback."
   },
@@ -163,7 +183,7 @@
     },
     {
       "id": "MISSING-PROOF-GATES",
-      "action": "Replace A5's reference state seam with the pinned Katana MultiProof adapter and production SP1 receipt/cost evidence; complete A13, A15, A16, A19, and A21 proof and maximum-bound evidence."
+      "action": "Replace A5 and A15 reference state seams with pinned Katana MultiProof adapters and production SP1 receipt/cost evidence; complete A13 production receipt plus A16, A19, and A21 proof and maximum-bound evidence."
     }
   ],
   "authorization": {
