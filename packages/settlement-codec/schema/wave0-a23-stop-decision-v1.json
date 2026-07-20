@@ -37,7 +37,11 @@
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
       "mandatoryBlocker": true
     },
-    { "ticket": "A16", "status": "incomplete-no-finalized-cancellation-proof", "mandatoryBlocker": true },
+    {
+      "ticket": "A16",
+      "status": "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
+      "mandatoryBlocker": true
+    },
     { "ticket": "A17", "status": "complete" },
     { "ticket": "A18", "status": "public-feasibility-complete-private-tee-source-blocked", "mandatoryBlocker": true },
     { "ticket": "A19", "status": "absent", "mandatoryBlocker": true },
@@ -76,6 +80,15 @@
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
       "fileSha256": "7616c0a6ea110e22480f852f91990a8a6d463d7ed2c80d0c49f3cb5a1f61eb83",
       "journalHash": "0x37890799d1a1ec66e4425bfffa52747bcfb6fdb984b80d39420f451b01b343f",
+      "releaseReady": false
+    },
+    "hardenedInboxProof": {
+      "status": "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
+      "fileSha256": "c32315c75197b5b0903627ad63b58c81dbdc2574a01f64d2302cc19c5f571721",
+      "publicEvidenceStatus": "contract-proof-only-accepted-on-l2",
+      "publicBlockNumber": 12177826,
+      "publicContractNodeCount": 22,
+      "mandatoryBlockerCount": 4,
       "releaseReady": false
     },
     "frozenRecoveryMaterializationProofs": {
@@ -157,6 +170,15 @@
       "sp1ProveDurationMs": null,
       "sp1VerifyDurationMs": null
     },
+    "a16": {
+      "status": "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
+      "artifact": "packages/settlement-codec/schema/hardened-inbox-a16-v1.json",
+      "focusedTests": 26,
+      "positiveApplyReplayL2Gas": 4786614,
+      "capturedContractProofL2Gas": 1082878,
+      "productionRecursiveFinalityVerifyL2Gas": null,
+      "productionMaximumStorageProofL2Gas": null
+    },
     "a21": {
       "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
       "artifact": "packages/settlement-codec/schema/frozen-recovery-materialization-a21-v1.json",
@@ -172,7 +194,7 @@
       "A8",
       "A13-production-receipt",
       "A15-production-receipt-and-maximum-bound",
-      "A16",
+      "A16-production-finality-and-cancelled-slot-proof",
       "A19",
       "A21-production-segmented-recursive-receipts-and-maximum-bound"
     ]
@@ -256,7 +278,7 @@
     },
     {
       "id": "MISSING-PROOF-GATES",
-      "action": "Replace A5, A15, and A21 reference state seams with pinned Katana MultiProof adapters and production SP1 receipt/cost evidence; complete A13 production receipt plus A16 and A19 proof evidence, and run A15/A21 maximum-bound campaigns."
+      "action": "Replace A5, A15, and A21 reference state seams with pinned Katana MultiProof adapters and production SP1 receipt/cost evidence; complete the A13 production receipt, provide A16's pinned recursive finality verifier and real finalized CancelledInboxMarker proof, complete A19 proof evidence, and run the A15/A21 maximum-bound campaigns."
     }
   ],
   "authorization": {

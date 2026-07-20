@@ -8,6 +8,7 @@ const schemaRegistry = readJson("packages/settlement-codec/schema/schema-registr
 const frozenPosition = readJson("packages/settlement-codec/schema/frozen-position-a5-v1.json");
 const mmrPlan = readJson("packages/settlement-codec/schema/mmr-plan-a13-v1.json");
 const emergencySealed = readJson("packages/settlement-codec/schema/emergency-sealed-a15-v1.json");
+const hardenedInbox = readJson("packages/settlement-codec/schema/hardened-inbox-a16-v1.json");
 const frozenRecoveryMaterialization = readJson(
   "packages/settlement-codec/schema/frozen-recovery-materialization-a21-v1.json",
 );
@@ -129,6 +130,7 @@ function assertFrozenAndCandidateInputs() {
   );
 
   assertA21Evidence(inputs.frozenRecoveryMaterializationProofs);
+  assertA16Evidence(inputs.hardenedInboxProof);
 
   assertEqual(authority.status, "mutation-review-complete-observed-class-source-blocked", "A20 inventory status");
   assertEqual(authority.releaseReady, false, "A20 release readiness");
@@ -269,6 +271,62 @@ function assertA21Evidence(input) {
     assertFileHash(path, frozenRecoveryMaterialization.reproducibilityInputs[field]);
   }
   assertFileHash("packages/settlement-codec/schema/frozen-recovery-materialization-a21-v1.json", input.fileSha256);
+}
+
+function assertA16Evidence(input) {
+  assertEqual(
+    hardenedInbox.status,
+    "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
+    "A16 hardened-inbox status",
+  );
+  assertEqual(hardenedInbox.releaseReady, false, "A16 release readiness");
+  assertEqual(decision.wave0.find(({ ticket }) => ticket === "A16")?.status, hardenedInbox.status, "A16 Wave 0 status");
+  assertEqual(hardenedInbox.protocolRegistryHash, schemaRegistry.schemaRegistryHash, "A16 protocol registry hash");
+  assertEqual(hardenedInbox.publicPatriciaEvidence.status, input.publicEvidenceStatus, "A16 public proof status");
+  assertEqual(hardenedInbox.publicPatriciaEvidence.blockNumber, input.publicBlockNumber, "A16 public proof block");
+  assertEqual(
+    hardenedInbox.publicPatriciaEvidence.contractNodeCount,
+    input.publicContractNodeCount,
+    "A16 public contract proof nodes",
+  );
+  assertEqual(
+    hardenedInbox.publicPatriciaEvidence.containsCancelledMarkerStorageProof,
+    false,
+    "A16 marker proof claim",
+  );
+  assertEqual(hardenedInbox.mandatoryBlockers.length, input.mandatoryBlockerCount, "A16 blocker count");
+  assertDeepEqual(
+    hardenedInbox.mandatoryBlockers.map(({ id }) => id),
+    [
+      "production-recursive-finality-source-absent",
+      "finalized-cancelled-slot-fixture-absent",
+      "public-piltover-layout-incompatible",
+      "production-cost-campaign-absent",
+    ],
+    "A16 mandatory blockers",
+  );
+  assertEqual(
+    decision.performanceEvidence.a16.positiveApplyReplayL2Gas,
+    hardenedInbox.testEvidence.positiveApplyReplayL2Gas,
+    "A16 apply/replay cost",
+  );
+  assertEqual(
+    decision.performanceEvidence.a16.capturedContractProofL2Gas,
+    hardenedInbox.testEvidence.capturedContractProofL2Gas,
+    "A16 public Patricia cost",
+  );
+  assertEqual(hardenedInbox.testEvidence.productionRecursiveFinalityVerifyL2Gas, null, "A16 production finality cost");
+  assertEqual(hardenedInbox.testEvidence.productionMaximumStorageProofL2Gas, null, "A16 maximum proof cost");
+  for (const [path, field] of [
+    ["contracts/settlement_appchain/src/hardened_inbox_runtime.cairo", "runtimeSha256"],
+    ["contracts/settlement_appchain/src/hardened_inbox_runtime_tests.cairo", "testsAndCapturedProofSha256"],
+    ["contracts/settlement_appchain/src/hardened_inbox_runtime_mocks.cairo", "testMocksSha256"],
+    ["contracts/settlement_protocol/src/interfaces.cairo", "protocolInterfacesSha256"],
+    ["contracts/settlement_protocol/src/types.cairo", "protocolTypesSha256"],
+  ]) {
+    assertFileHash(path, hardenedInbox.reproducibilityInputs[field]);
+  }
+  assertFileHash("packages/settlement-codec/schema/hardened-inbox-a16-v1.json", input.fileSha256);
 }
 
 function assertA20StopOutcome() {

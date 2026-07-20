@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "ticket": "A16",
+  "status": "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
+  "releaseReady": false,
+  "protocolRegistryHash": "0x6223f81a3b7d07ead67c72d06acddfe67337e6387c0e9f05edd1a19f1ebdba8",
+  "runtime": {
+    "package": "settlement_appchain",
+    "contract": "HardenedInboxRuntimeSpike",
+    "interface": "IHardenedInboxRuntime",
+    "upgradeable": false,
+    "proofArrayBoundsEnforcedBeforeDecode": true,
+    "finalizedHeadersMustExtendStoredTip": true,
+    "storageProofRequiresStoredFinalizedHeader": true,
+    "cancelledSlotsConsumeInNonceOrder": true,
+    "exactReplayOnly": true,
+    "seasonIngressCallbackPrecedesCursorCommit": true
+  },
+  "proofModel": {
+    "trieHeight": 251,
+    "contractHash": "Pedersen(class_hash, storage_root, nonce, contract_state_hash_version)",
+    "stateCommitment": "Poseidon(STARKNET_STATE_V0, contracts_root, classes_root)",
+    "storageKey": "storage_base_address(Pedersen(cancelled_marker_storage_base, transport_nonce))",
+    "storageValue": "Poseidon(INBOX_CANCELLED_V1, serialized CancelledInboxMarker)",
+    "layoutIdentity": "Poseidon(INBOX_CANCELLED_V1, hardened_piltover_l1, expected_class_hash, cancelled_marker_storage_base)"
+  },
+  "publicPatriciaEvidence": {
+    "status": "contract-proof-only-accepted-on-l2",
+    "network": "SN_SEPOLIA",
+    "blockNumber": 12177826,
+    "blockHash": "0x562d0d576b0b4552f5e4f4645db79e365a16ea7d64c425b5aab289c3369a202",
+    "finalityStatus": "ACCEPTED_ON_L2",
+    "piltoverAddress": "0x6e1745e4c94abba8bf4dbde2b4d10f2e26495a085f451422e3ea52ba90950a1",
+    "piltoverClassHash": "0x28078dda04ff5d0cc6e361d7c3ce22e6f8855655cee15ff387aa7d9e2a5716f",
+    "contractNodeCount": 22,
+    "contractLeaf": "0x2a988a29d5c602ebbb17e68132435c5e43e92c2c6b26e43d12ef0c0b79228f0",
+    "contractsRoot": "0x5ec8f3e415abf4e31d6ff8c66826c99842d0c1034cb88da02dcacd179aaef57",
+    "classesRoot": "0x66db14fed264333f9cae1ca52d9e467ac1706193ccf73b59c5beaac5a54736a",
+    "stateRoot": "0x790a64c9fa7815bbd3435146bc940af66dad9105850a5cdcfe443937203fad8",
+    "containsCancelledMarkerStorageProof": false
+  },
+  "testEvidence": {
+    "focusedTests": 26,
+    "focusedPassed": 26,
+    "positiveApplyReplayL2Gas": 4786614,
+    "capturedContractProofL2Gas": 1082878,
+    "productionRecursiveFinalityVerifyL2Gas": null,
+    "productionMaximumStorageProofL2Gas": null
+  },
+  "reproducibilityInputs": {
+    "runtimeSha256": "74d394e1ba922e93f460518bf0ed2e957ea444905e3d0bed4bff24186c0c38c1",
+    "testsAndCapturedProofSha256": "bcfe643eccc7259bfafec1e56661f250397db04de170d490b6c09eff720d5ef1",
+    "testMocksSha256": "8397e27f9ae8afe53d7ff497809a851bcf6ed190fa6851b411104f5cf7379518",
+    "protocolInterfacesSha256": "2231a513200f661ad666adc24225c4c486899a597a66db7365f19abaf936ed62",
+    "protocolTypesSha256": "64ee1230b9d5bdc1b2854952b14b3fc1874cc1788f347f6dddf589a524e2a955"
+  },
+  "mandatoryBlockers": [
+    {
+      "id": "production-recursive-finality-source-absent",
+      "reason": "The checked-in verifier is test-only and no pinned production recursive verifier, program identity, verification key, immutable trusted checkpoint, or finalized-chain proof is available."
+    },
+    {
+      "id": "finalized-cancelled-slot-fixture-absent",
+      "reason": "The captured public proof establishes only Piltover contract inclusion at an ACCEPTED_ON_L2 block; it does not prove the frozen CancelledInboxMarker value at a finalized block."
+    },
+    {
+      "id": "public-piltover-layout-incompatible",
+      "reason": "The observed public Piltover implementation stores message-hash status rather than the normative nonce-keyed complete CancelledInboxMarker layout, so it cannot serve as the production fixture."
+    },
+    {
+      "id": "production-cost-campaign-absent",
+      "reason": "The production recursive-finality and maximum storage-proof Cairo verification costs have not been measured; synthetic mock gas is not release evidence."
+    }
+  ]
+}
