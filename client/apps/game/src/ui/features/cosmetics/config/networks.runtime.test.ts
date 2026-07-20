@@ -1,9 +1,46 @@
 // @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 
+const marketplaceRegistry = JSON.stringify({
+  schemaVersion: "realms-runtime-registry/v1",
+  revision: 1,
+  generatedAt: "2026-07-21T00:00:00.000Z",
+  aliases: {
+    "game.mainnet.eternum.eternum-marketplace-mainnet19.torii.base": {
+      scope: "game",
+      environmentId: "mainnet.eternum",
+      runtimeKind: "torii",
+      endpointKind: "base",
+      activeProvider: "aws",
+      runtimeName: "eternum-marketplace-mainnet19",
+      runtimeInstanceId: "c44e7b79-a78c-4c6b-8435-c94cf167d990",
+      imageDigest: `sha256:${"a".repeat(64)}`,
+      routingShard: 0,
+      providers: {
+        aws: "https://s0.mainnet-eternum.runtime.realms.world/x/mainnet-eternum/eternum-marketplace-mainnet19/torii",
+      },
+    },
+    "game.sepolia.eternum.eternum-marketplace-sepolia-1.torii.base": {
+      scope: "game",
+      environmentId: "sepolia.eternum",
+      runtimeKind: "torii",
+      endpointKind: "base",
+      activeProvider: "aws",
+      runtimeName: "eternum-marketplace-sepolia-1",
+      runtimeInstanceId: "acaa3c98-dd69-403b-8f3e-8680e13082b7",
+      imageDigest: `sha256:${"b".repeat(64)}`,
+      routingShard: 0,
+      providers: {
+        aws: "https://s0.sepolia-eternum.runtime.realms.world/x/sepolia-eternum/eternum-marketplace-sepolia-1/torii",
+      },
+    },
+  },
+});
+
 const envState = {
   VITE_PUBLIC_CHAIN: "slot",
   VITE_PUBLIC_MARKETPLACE_URL: "https://example.com/torii",
+  VITE_PUBLIC_RUNTIME_REGISTRY_JSON: marketplaceRegistry,
 };
 
 vi.mock("@contracts", () => ({
