@@ -327,6 +327,23 @@ mod tests {
             assert_eq!(claim_kind.name, name);
             assert_eq!(claim_kind.auxiliary_body, auxiliary_body);
         }
+        assert_eq!(crate::schema_vector::INDEX_FAMILY_VECTORS.len(), 13);
+        assert_eq!(
+            crate::schema_vector::INDEX_FAMILY_VECTORS[0],
+            (1, "RESOURCE", 0)
+        );
+        assert_eq!(
+            crate::schema_vector::INDEX_FAMILY_VECTORS[12],
+            (
+                crate::schema_vector::DEPLOYMENT_REFUND_SOURCE_INDEX_FAMILY,
+                "DEPLOYMENT_REFUND_SOURCE",
+                1,
+            ),
+        );
+        assert_eq!(
+            crate::materialization::DEPLOYMENT_REFUND_SOURCE_FAMILY,
+            crate::schema_vector::DEPLOYMENT_REFUND_SOURCE_INDEX_FAMILY,
+        );
     }
 
     #[test]

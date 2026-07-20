@@ -65,30 +65,30 @@
   "frozenAndCandidateInputs": {
     "protocolSchema": {
       "status": "frozen-wave0-v1",
-      "registryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
-      "fileSha256": "06f923d90899ed10c3ab9571205524ec4dcd012e72426ac01c9b62373171f3b4"
+      "registryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
+      "fileSha256": "b6463b5feca0a46121faf9273427419d847ee7d54a6425463b8429827be556c5"
     },
     "frozenPositionProof": {
       "status": "reference-seam-complete-production-proof-blocked",
-      "fileSha256": "de4c6eeabf0e259cc1cf7c5159798c7dd0de42580dbdaa6b0d474762044676a1",
+      "fileSha256": "a342c95eb57c957ba599dd4d908597fe3677081491296cc0222a2b33e4ff5a4d",
       "journalHash": "0x7d37e77b8cc5f0db16705e88b91ac862f125d684b8fa5644992eee730db58bc",
       "releaseReady": false
     },
     "mmrPlanProof": {
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
-      "fileSha256": "41cfb56720deebb081f094c26531cad67ad249ded0037fda37ef263019264064",
+      "fileSha256": "e80a917384ad233ab10a42f654b41d64b3a0b4f8d72f9c501e9a8e4d65c58f32",
       "journalHash": "0x2e8193d2764077811fe44d826af2d7a6c0c8afdc31ced2d5f106530fb639f6a",
       "releaseReady": false
     },
     "emergencySealedProof": {
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
-      "fileSha256": "6583f429afed29e093af1585ccea9c81b5c752d9f4fc97c6903a8a5425cc018e",
+      "fileSha256": "8ce09cc457d7de3540457bf9439ad757ebc3e34bee43002e90cebb5315b71d8c",
       "journalHash": "0x37890799d1a1ec66e4425bfffa52747bcfb6fdb984b80d39420f451b01b343f",
       "releaseReady": false
     },
     "hardenedInboxProof": {
       "status": "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
-      "fileSha256": "5809dfb0fc5806901ffa06377c5e786bfd7bae680f574d5254d03d6bdc599422",
+      "fileSha256": "9af5df9bfda02f7e158fdea591a6f615279443efc34ece3bd5cc9187f056cbbb",
       "publicEvidenceStatus": "contract-proof-only-accepted-on-l2",
       "publicBlockNumber": 12177826,
       "publicContractNodeCount": 22,
@@ -97,7 +97,7 @@
     },
     "legacyMmrDerivationProof": {
       "status": "pending-typed-derivation-reference-seam-complete-source-inventory-and-production-proofs-blocked",
-      "fileSha256": "526a6dbc6662281e91ef451161ad78e50821b8c466826e7d0f7a72eb2cf0dc72",
+      "fileSha256": "6bdf5fe49a0746b5e17e5e5304e0bed394f400b3656c9dd1772cbd56f6184f32",
       "provedSourceInventoryHash": "0x39a701299f9159612332c964f47cb533d6bcaa3299743861bd3a92a262eaa7",
       "syntheticDeploymentId": "0x33c8f1316768de91f0318a1fad4ec368dd4657f0bea5ac6ad41b11eb959aa61",
       "dispositionsRoot": "0x93064b94ad676e46210b7b30de51783bc9baf825af6ec55749cf010f89be05",
@@ -109,7 +109,7 @@
     },
     "frozenRecoveryMaterializationProofs": {
       "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
-      "fileSha256": "c831df4d9ddeb68cad6738a8e8d15550a453bd2eb443f0e7942f3ef0e04d5b40",
+      "fileSha256": "d3678e347fbcfa0f2561e887199c8938ee9cf522767fb8e41274ab62de740224",
       "frozenRecoveryJournalHash": "0x40aea6316d38fddec50d6a2ba770a77babc95603c124e2ba6356644004b5afa",
       "deploymentRefundMaterializationJournalHash": "0x4aaed4fdfc7127f25f78d7b21d6875604cb2173fdbaf4f89656644f5ab7e43d",
       "positionMaterializationJournalHash": "0x1f0cfc118469d26eac0b3d226cf0af1edf09eb6051e1d39ef0e15d6d1f9d9e2",
@@ -230,7 +230,7 @@
     "status": "frozen-hub-owned-v1",
     "a17SealBoundary": "SeasonSettlementHub-owned game and global active/cumulative aggregates with one central sealed-batch bit",
     "removedFromAtomicBoundary": "Fallible cross-contract EconomicStateSystem promotion callbacks",
-    "protocolRegistryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
+    "protocolRegistryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
     "aggregateViewTrait": "ISeasonSettlementHubAggregateView",
     "productionRequirement": "D4 must implement the frozen Hub-owned aggregate view and cannot reintroduce a seal-time promotion callback."
   },

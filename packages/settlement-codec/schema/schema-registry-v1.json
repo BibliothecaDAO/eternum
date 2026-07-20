@@ -12820,6 +12820,73 @@
       "auxiliaryBody": "FeeDistributionPayoutAux"
     }
   ],
+  "indexFamilies": [
+    {
+      "code": 1,
+      "name": "RESOURCE",
+      "scope": "world"
+    },
+    {
+      "code": 2,
+      "name": "STRUCTURE_OWNERSHIP",
+      "scope": "world"
+    },
+    {
+      "code": 3,
+      "name": "LAZY_PRODUCTION",
+      "scope": "world"
+    },
+    {
+      "code": 4,
+      "name": "ARRIVAL",
+      "scope": "world"
+    },
+    {
+      "code": 5,
+      "name": "MILITARY_AND_CARGO",
+      "scope": "world"
+    },
+    {
+      "code": 6,
+      "name": "TRADE_AND_DONKEY",
+      "scope": "world"
+    },
+    {
+      "code": 7,
+      "name": "AMM_AND_LP",
+      "scope": "world"
+    },
+    {
+      "code": 8,
+      "name": "REWARD_STATE",
+      "scope": "world"
+    },
+    {
+      "code": 9,
+      "name": "PENDING_WITHDRAWAL",
+      "scope": "world"
+    },
+    {
+      "code": 10,
+      "name": "ACTIVE_EXIT_BACKING",
+      "scope": "world"
+    },
+    {
+      "code": 11,
+      "name": "PLAYER_ECONOMIC_LOCK",
+      "scope": "world"
+    },
+    {
+      "code": 12,
+      "name": "EXIT_POSITION",
+      "scope": "world"
+    },
+    {
+      "code": 65535,
+      "name": "DEPLOYMENT_REFUND_SOURCE",
+      "scope": "deployment"
+    }
+  ],
   "hashDomains": [
     "ETERNUM_INTENT_V1",
     "INBOX_EXECUTION_V1",
@@ -13561,6 +13628,20 @@
     "0x853230c939da9226ebfd2bf1362e527c4200640924516bad0b343395b47e92",
     "0xe418c30ee1573b8d2ddbee300b9fd6f041399b4c115fdf9075fe5e0be89429",
     "0x3d0545b8a0727b4bdb5dcb13fa180eff9df3965a0a2151adff781ff6806ad84",
+    13,
+    "0x475cb2c278970bf48d316efcf2cd75b0aa5ea73dda55241fa2db2ebd79e6777",
+    "0xca0ff7c95605eeedb493451c6fd85f1588a993b70f80167251c250235926d",
+    "0x7dcc6b2501639a13d43cdf64140fef187b956f2a5dc7a4b5baca9e396a68a26",
+    "0x66d05f3d9e5228955cdf262e80f02a129b6da7c945b6cbf54d4870c23c69add",
+    "0x47d63f0cf5ba2226d8ce95af95df81f8c296a65fe3ff9e42d74beb558f15bda",
+    "0x546f084b975871808eddba4350729b8a6bce11688125a2be37fadb9565542d1",
+    "0x1403e64a80aa74dd5cd3ae0e23bdd98ac7e8adbe04901361cb9c04368d64ad5",
+    "0x75a39aaf1fa7df40860f60ae7152ab0cb74fb4a22bfdf20e1e793cec7d94460",
+    "0xb2bf27d7ac64448635b4fa195bbe8883976f92590bd024a5c79f78273e4f1f",
+    "0x460ac174d1d008dd6d76fe7210dde728af15256c06e53b4afbf14c2d9f6d17",
+    "0x137ce929a6d70ca1dd8d0f56083983c0d55f23d8629d5bd19e06bc84b04f4ae",
+    "0x13508313927b7561a1e772e9cb4d9834e14627cc47da2edbd61c4283cf8b84c",
+    "0x7b75b660e805cc56ceae0de109ba204ccee2ecd5b1ae1764ec8e1808728d2f3",
     261,
     "0x7cbb5a6cb036ff08b59c4262a46d00f5c7a4a83ecdb14b9c3be02ebb0123ac",
     "0x217af8fc0af60a642d7072353693054cc512acc11c85bba8cbaad399cceaaee",
@@ -13868,5 +13949,5 @@
     "0x67dcf674b34bb74b7623faef16f4557a92f1e30c99dba120441cd8824f688d2",
     "0x5acf3610c86239eff8b579546f42fba13464244bc9141c8dc54f59dcc25901e"
   ],
-  "schemaRegistryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a"
+  "schemaRegistryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c"
 }

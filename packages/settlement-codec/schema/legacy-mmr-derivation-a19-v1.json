@@ -3,7 +3,7 @@
   "ticket": "A19",
   "status": "pending-typed-derivation-reference-seam-complete-source-inventory-and-production-proofs-blocked",
   "releaseReady": false,
-  "protocolRegistryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
+  "protocolRegistryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
   "trustBoundary": {
     "program": "post-freeze-recursive-typed-derivation-reference",
     "input": "complete LegacyMmrProvedSourceInventory plus its committed pending projections and participant rows",

@@ -11,7 +11,10 @@ use crate::registry::{get_action_schema, get_claim_kind, validate_emitter_count}
 use crate::reservation_spike::{
     ReservationError, ReservationRoute, ScarceReservationTrait, global_nullifier, new_scarce_reservation,
 };
-use crate::schema_vector::{SCHEMA_REGISTRY_HASH, action_vectors, claim_kind_vectors, compute_schema_registry_hash};
+use crate::schema_vector::{
+    DEPLOYMENT_REFUND_SOURCE_INDEX_FAMILY, SCHEMA_REGISTRY_HASH, action_vectors, claim_kind_vectors,
+    compute_schema_registry_hash, index_family_vectors,
+};
 use crate::types::{ClaimLeg, SettlementRootMessage};
 
 #[test]
@@ -226,6 +229,15 @@ fn emitter_count_rejects_zero_and_nine() {
 #[test]
 fn recomputes_the_frozen_full_registry_hash() {
     assert!(compute_schema_registry_hash() == SCHEMA_REGISTRY_HASH);
+}
+
+#[test]
+fn freezes_the_deployment_refund_index_family() {
+    let families = index_family_vectors();
+    assert!(families.len() == 13);
+    assert!(*families.at(0) == (1, 'RESOURCE', 0));
+    assert!(*families.at(11) == (12, 'EXIT_POSITION', 0));
+    assert!(*families.at(12) == (DEPLOYMENT_REFUND_SOURCE_INDEX_FAMILY, 'DEPLOYMENT_REFUND_SOURCE', 1));
 }
 
 #[test]

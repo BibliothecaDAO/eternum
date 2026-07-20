@@ -4,6 +4,8 @@ import {
   computeSchemaRegistryHash,
   getActionSchema,
   getClaimKind,
+  getIndexFamily,
+  getIndexFamilyByName,
   getSchemaRegistryHash,
   getTreeSchema,
   validateEmitterCount,
@@ -25,6 +27,17 @@ describe("settlement schema registry", () => {
     expect(() => getClaimKind(0xffff)).toThrow("unregistered claim kind");
   });
 
+  it("reserves the deployment-refund materialization family outside World families", () => {
+    expect(getIndexFamily(1)).toEqual({ code: 1, name: "RESOURCE", scope: "world" });
+    expect(getIndexFamilyByName("EXIT_POSITION")).toEqual({ code: 12, name: "EXIT_POSITION", scope: "world" });
+    expect(getIndexFamilyByName("DEPLOYMENT_REFUND_SOURCE")).toEqual({
+      code: 65_535,
+      name: "DEPLOYMENT_REFUND_SOURCE",
+      scope: "deployment",
+    });
+    expect(() => getIndexFamily(13)).toThrow("unregistered index family");
+  });
+
   it("accepts emitter lists at one and eight and rejects zero and nine", () => {
     expect(validateEmitterCount(1)).toBe(1);
     expect(validateEmitterCount(8)).toBe(8);
@@ -33,7 +46,7 @@ describe("settlement schema registry", () => {
   });
 
   it("recomputes the frozen full registry hash", () => {
-    expect(getSchemaRegistryHash()).toBe("0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a");
+    expect(getSchemaRegistryHash()).toBe("0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c");
     expect(computeSchemaRegistryHash()).toBe(getSchemaRegistryHash());
   });
 

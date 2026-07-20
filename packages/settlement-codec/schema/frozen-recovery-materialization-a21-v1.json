@@ -3,10 +3,10 @@
   "ticket": "A21",
   "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
   "releaseReady": false,
-  "protocolRegistryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
+  "protocolRegistryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
   "reproducibilityInputs": {
     "frozenRecoveryCoreSha256": "d00df6474956ffe5c30143aee40e931849a4624eb0359318ca4e981bf120ae32",
-    "deploymentRefundMaterializationCoreSha256": "f379c31e75f38db58cb5172fcc7689ea17841ad457391e57b434d04e541305fc",
+    "deploymentRefundMaterializationCoreSha256": "f8ba446c592d93bde08ae81cd8e4bf7519a56172b9307d99df117ba736a406f7",
     "positionMaterializationCoreSha256": "0b6c0876a83ce3ec3a1adba908cd8093e45fd7c8eb8d1a3d1bdc696130e4bedc",
     "protocolHashCoreSha256": "61e91e662b9839c6df869f5efb1de74ec5f9d65344047f393247a1e9bbf58448",
     "cargoLockSha256": "e30197fc9eafbf6b898208ac9388637772ef3e2dde09899890b26b98247b6ee8",
@@ -36,7 +36,7 @@
     ],
     "deploymentRefundGameId": 0,
     "deploymentRefundFamilyReferenceValue": 65535,
-    "deploymentRefundFamilyStatus": "reference-only-until-A3-named-enum-value-is-frozen",
+    "deploymentRefundFamilyStatus": "frozen-A3-named-index-family",
     "ordinaryFamilyExclusions": ["game_id=0", "index_family=DEPLOYMENT_REFUND_SOURCE"],
     "liveDeploymentRoutes": ["OpenAssignedFrozen", "UnappendedFrozen"],
     "deploymentTombstoneRoutes": ["NoLiability", "EligibleSealedRoot"]
@@ -128,10 +128,6 @@
     {
       "id": "MAXIMUM-BOUND-COST-CAMPAIGN",
       "reason": "Real prove time, verify time, memory, proof size, and Cairo verification cost are absent for 32 games, 64 class-1 lots per game, 2,048 deployment lots, 256 refund sources, and 64-position materialization chunks."
-    },
-    {
-      "id": "DEPLOYMENT-REFUND-FAMILY-VALUE",
-      "reason": "The reference seam uses u16::MAX for the reserved deployment family; the A3 registry must freeze the normative named DEPLOYMENT_REFUND_SOURCE value before production."
     }
   ]
 }

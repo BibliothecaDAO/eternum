@@ -36,6 +36,12 @@ export interface ClaimKindSchema {
   auxiliaryBody: string;
 }
 
+export interface IndexFamilySchema {
+  code: number;
+  name: string;
+  scope: "world" | "deployment";
+}
+
 export interface TreeSchema {
   name: string;
   depth: number;
@@ -48,10 +54,13 @@ export interface TreeSchema {
 const PROTOCOL_VERSION = schemaRegistry.protocolVersion as ProtocolVersion;
 const ACTION_SCHEMAS = schemaRegistry.actions as readonly ActionSchema[];
 const CLAIM_KIND_SCHEMAS = schemaRegistry.claimKinds as readonly ClaimKindSchema[];
+const INDEX_FAMILY_SCHEMAS = schemaRegistry.indexFamilies as readonly IndexFamilySchema[];
 const TREE_SCHEMAS = schemaRegistry.trees as readonly TreeSchema[];
 
 const ACTION_BY_CODE = new Map(ACTION_SCHEMAS.map((schema) => [schema.code, schema]));
 const CLAIM_KIND_BY_CODE = new Map(CLAIM_KIND_SCHEMAS.map((schema) => [schema.code, schema]));
+const INDEX_FAMILY_BY_CODE = new Map(INDEX_FAMILY_SCHEMAS.map((schema) => [schema.code, schema]));
+const INDEX_FAMILY_BY_NAME = new Map(INDEX_FAMILY_SCHEMAS.map((schema) => [schema.name, schema]));
 const TREE_BY_NAME = new Map(TREE_SCHEMAS.map((schema) => [schema.name, schema]));
 
 export function getActionSchema(version: number, actionCode: number): ActionSchema {
@@ -65,6 +74,18 @@ export function getActionSchema(version: number, actionCode: number): ActionSche
 export function getClaimKind(claimKindCode: number): ClaimKindSchema {
   const schema = CLAIM_KIND_BY_CODE.get(claimKindCode);
   if (!schema) throw new Error(`unregistered claim kind: ${claimKindCode}`);
+  return cloneProtocolValue(schema);
+}
+
+export function getIndexFamily(indexFamilyCode: number): IndexFamilySchema {
+  const schema = INDEX_FAMILY_BY_CODE.get(indexFamilyCode);
+  if (!schema) throw new Error(`unregistered index family: ${indexFamilyCode}`);
+  return cloneProtocolValue(schema);
+}
+
+export function getIndexFamilyByName(name: string): IndexFamilySchema {
+  const schema = INDEX_FAMILY_BY_NAME.get(name);
+  if (!schema) throw new Error(`unregistered index family: ${name}`);
   return cloneProtocolValue(schema);
 }
 

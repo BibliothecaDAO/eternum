@@ -3,7 +3,7 @@
   "ticket": "A16",
   "status": "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
   "releaseReady": false,
-  "protocolRegistryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
+  "protocolRegistryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
   "runtime": {
     "package": "settlement_appchain",
     "contract": "HardenedInboxRuntimeSpike",

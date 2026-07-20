@@ -246,6 +246,26 @@ function assertA21Evidence(input) {
     schemaRegistry.schemaRegistryHash,
     "A21 protocol registry hash",
   );
+  const deploymentRefundFamily = schemaRegistry.indexFamilies.find(({ name }) => name === "DEPLOYMENT_REFUND_SOURCE");
+  assertDeepEqual(
+    deploymentRefundFamily,
+    { code: 65_535, name: "DEPLOYMENT_REFUND_SOURCE", scope: "deployment" },
+    "A21 deployment-refund index family",
+  );
+  assertEqual(
+    frozenRecoveryMaterialization.materializationContract.deploymentRefundFamilyReferenceValue,
+    deploymentRefundFamily.code,
+    "A21 deployment-refund family value",
+  );
+  assertEqual(
+    frozenRecoveryMaterialization.materializationContract.deploymentRefundFamilyStatus,
+    "frozen-A3-named-index-family",
+    "A21 deployment-refund family status",
+  );
+  assert(
+    frozenRecoveryMaterialization.productionBlockers.every(({ id }) => id !== "DEPLOYMENT-REFUND-FAMILY-VALUE"),
+    "A21 must not retain the resolved deployment-refund family blocker",
+  );
   for (const field of [
     "frozenRecoveryJournalHash",
     "deploymentRefundMaterializationJournalHash",

@@ -18,7 +18,7 @@ use crate::types::{
     VerifiedMaterializationOutput,
 };
 
-pub const DEPLOYMENT_REFUND_SOURCE_FAMILY: u16 = u16::MAX;
+pub use crate::schema_vector::DEPLOYMENT_REFUND_SOURCE_INDEX_FAMILY as DEPLOYMENT_REFUND_SOURCE_FAMILY;
 const CHUNK_SIZE: u64 = 64;
 const CHUNK_TREE_DEPTH: u8 = 6;
 

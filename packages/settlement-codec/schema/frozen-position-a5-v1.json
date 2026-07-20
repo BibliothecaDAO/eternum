@@ -3,7 +3,7 @@
   "ticket": "A5",
   "status": "reference-seam-complete-production-proof-blocked",
   "releaseReady": false,
-  "protocolRegistryHash": "0x7427ce477fc62c900e10e8a9af22144d6adb060ee1452d4a218667a2a79d47a",
+  "protocolRegistryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
   "reproducibilityInputs": {
     "guestCoreSha256": "47b276693ac4d7b69f943e3a41de7988fa964cc457395696ad94f6ebefe10e7f",
     "protocolHashCoreSha256": "61e91e662b9839c6df869f5efb1de74ec5f9d65344047f393247a1e9bbf58448"
