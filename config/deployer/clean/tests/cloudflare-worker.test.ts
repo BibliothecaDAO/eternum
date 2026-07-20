@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import worker from "../run-store/cloudflare-worker.js";
-import { getDefaultRuntimeRegistry } from "../../../../common/factory/runtime-registry";
+import { getEmbeddedReadOnlyRuntimeRegistry } from "../../../../common/factory/runtime-registry";
 
 const originalFetch = globalThis.fetch;
 
@@ -18,6 +18,39 @@ function parseLaunchRequestInput(dispatchBody: { inputs?: Record<string, string>
 }
 
 describe("factory worker map config overrides", () => {
+  test("forwards the public game-stack API to the configured AWS control plane", async () => {
+    const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
+    globalThis.fetch = async (url, init) => {
+      fetchCalls.push({ url: String(url), init });
+      return Response.json({ challengeId: "0x42" }, { status: 201 });
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/v1/auth/challenges?client=game", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requesterWallet: "0x1234" }),
+      }),
+      buildWorkerEnv({ GAME_STACK_API_URL: "https://launch-api.internal.example/control" }),
+    );
+
+    expect(response.status).toBe(201);
+    expect(fetchCalls).toHaveLength(1);
+    expect(fetchCalls[0]?.url).toBe("https://launch-api.internal.example/v1/auth/challenges?client=game");
+    expect(fetchCalls[0]?.init).toMatchObject({ method: "POST" });
+  });
+
+  test("fails closed when the AWS game-stack API is unavailable", async () => {
+    globalThis.fetch = async () => {
+      throw new Error("The unconfigured API must not make an upstream request");
+    };
+
+    const response = await worker.fetch(new Request("https://worker.example/v1/blitz/active"), buildWorkerEnv());
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: "GAME_STACK_API_URL is not configured" });
+  });
+
   test("forwards map config overrides when creating a run", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = async (url, init) => {
@@ -212,7 +245,7 @@ describe("factory worker map config overrides", () => {
     });
   });
 
-  test("requires operator authorization for legacy mainnet Eternum launch", async () => {
+  test("rejects retired mainnet Eternum creation", async () => {
     const response = await worker.fetch(
       new Request("https://worker.example/api/factory/runs", {
         method: "POST",
@@ -226,8 +259,10 @@ describe("factory worker map config overrides", () => {
       buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
     );
 
-    expect(response.status).toBe(401);
-    expect(await response.json()).toEqual({ error: "Unauthorized" });
+    expect(response.status).toBe(410);
+    expect(await response.json()).toEqual({
+      error: "Mainnet Eternum creation is retired; operator workflows may provision its Torii only",
+    });
   });
 
   test("rejects malformed runtime instance IDs before dispatch", async () => {
@@ -1254,7 +1289,7 @@ describe("factory worker recovery signals", () => {
     });
   });
 
-  test("dispatches live Slot inspection for listed games", async () => {
+  test("dispatches live AWS inspection for listed games", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
@@ -1274,7 +1309,7 @@ describe("factory worker recovery signals", () => {
           "x-factory-admin-secret": "factory-secret",
         },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "sepolia.blitz",
           gameNames: ["bltz-franky-01", "bltz-franky-02"],
         }),
       }),
@@ -1287,17 +1322,17 @@ describe("factory worker recovery signals", () => {
     const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
 
     expect(response.status).toBe(202);
-    expect(dispatchBody.inputs.environment).toBe("slot.blitz");
+    expect(dispatchBody.inputs.environment).toBe("sepolia.blitz");
     expect(dispatchBody.inputs.operation_count).toBe("2");
     expect(JSON.parse(dispatchBody.inputs.operations_json)).toEqual([
       {
         action: "inspect",
-        environmentId: "slot.blitz",
+        environmentId: "sepolia.blitz",
         gameName: "bltz-franky-01",
       },
       {
         action: "inspect",
-        environmentId: "slot.blitz",
+        environmentId: "sepolia.blitz",
         gameName: "bltz-franky-02",
       },
     ]);
@@ -1323,7 +1358,7 @@ describe("factory worker recovery signals", () => {
           "x-factory-admin-secret": "factory-secret",
         },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "sepolia.blitz",
           gameNames: ["bltz-franky-01", "bltz-franky-02"],
         }),
       }),
@@ -1340,13 +1375,13 @@ describe("factory worker recovery signals", () => {
     expect(operations).toEqual([
       {
         action: "create",
-        environmentId: "slot.blitz",
+        environmentId: "sepolia.blitz",
         gameName: "bltz-franky-01",
         runtimeInstanceId: expect.any(String),
       },
       {
         action: "create",
-        environmentId: "slot.blitz",
+        environmentId: "sepolia.blitz",
         gameName: "bltz-franky-02",
         runtimeInstanceId: expect.any(String),
       },
@@ -1355,6 +1390,30 @@ describe("factory worker recovery signals", () => {
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
     );
     expect(operations[1].runtimeInstanceId).not.toBe(operations[0].runtimeInstanceId);
+  });
+
+  test("keeps historical Slot indexer operations read-only", async () => {
+    let didCallGitHub = false;
+    globalThis.fetch = async () => {
+      didCallGitHub = true;
+      throw new Error("Historical Slot mutations must not reach GitHub");
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/factory/indexers/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-factory-admin-secret": "factory-secret",
+        },
+        body: JSON.stringify({ environment: "slot.blitz", gameNames: ["bltz-archived-01"] }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({ error: 'Historical Slot environment "slot.blitz" is read-only' });
+    expect(didCallGitHub).toBe(false);
   });
 
   test("cancels auto retry for a rotation run when the admin secret is provided", async () => {
@@ -1484,19 +1543,22 @@ describe("factory worker recovery signals", () => {
     globalThis.fetch = async (url, init) => {
       fetchCalls.push({ url: String(url), init });
 
-      if (String(url).includes("/contents/indexes/slot/blitz/games.json") && (!init?.method || init.method === "GET")) {
+      if (
+        String(url).includes("/contents/indexes/sepolia/blitz/games.json") &&
+        (!init?.method || init.method === "GET")
+      ) {
         return buildGitHubContentsResponse({
           version: 1,
-          environment: "slot.blitz",
+          environment: "sepolia.blitz",
           kind: "game",
           updatedAt: offsetTimestamp(-30_000),
           entries: {
             "bltz-test-14": {
               kind: "game",
-              environment: "slot.blitz",
+              environment: "sepolia.blitz",
               gameName: "bltz-test-14",
-              path: "runs/slot/blitz/bltz-test-14.json",
-              inputPath: "inputs/slot/blitz/bltz-test-14/101-1.json",
+              path: "runs/sepolia/blitz/bltz-test-14.json",
+              inputPath: "inputs/sepolia/blitz/bltz-test-14/101-1.json",
               status: "complete",
               updatedAt: offsetTimestamp(-30_000),
               workflowRef: "codex/factory-v2-rotation-review",
@@ -1516,21 +1578,21 @@ describe("factory worker recovery signals", () => {
       }
 
       if (
-        String(url).includes("/contents/runs/slot/blitz/bltz-test-14.json") &&
+        String(url).includes("/contents/runs/sepolia/blitz/bltz-test-14.json") &&
         (!init?.method || init.method === "GET")
       ) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "game",
-          runId: "slot.blitz:bltz-test-14",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "sepolia.blitz:bltz-test-14",
+          environment: "sepolia.blitz",
+          chain: "sepolia",
           gameType: "blitz",
           gameName: "bltz-test-14",
           status: "complete",
           executionMode: "fast_trial",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/bltz-test-14/101-1.json",
+          inputPath: "inputs/sepolia/blitz/bltz-test-14/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: null,
           createdAt: offsetTimestamp(-60_000),
@@ -1550,14 +1612,14 @@ describe("factory worker recovery signals", () => {
         return new Response(null, { status: 204 });
       }
 
-      if (String(url).includes("/contents/runs/slot/blitz/bltz-test-14.json") && init?.method === "PUT") {
+      if (String(url).includes("/contents/runs/sepolia/blitz/bltz-test-14.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
         });
       }
 
-      if (String(url).includes("/contents/indexes/slot/blitz/games.json") && init?.method === "PUT") {
+      if (String(url).includes("/contents/indexes/sepolia/blitz/games.json") && init?.method === "PUT") {
         return new Response(JSON.stringify({ content: {} }), {
           status: 200,
           headers: { "Content-Type": "application/json" },
@@ -1575,7 +1637,7 @@ describe("factory worker recovery signals", () => {
           "x-factory-admin-secret": "factory-secret",
         },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "sepolia.blitz",
           gameName: "bltz-test-14",
           tier: "legendary",
         }),
@@ -1584,7 +1646,7 @@ describe("factory worker recovery signals", () => {
     );
 
     const updateCall = fetchCalls.find(
-      (call) => call.url.includes("/contents/runs/slot/blitz/bltz-test-14.json") && call.init?.method === "PUT",
+      (call) => call.url.includes("/contents/runs/sepolia/blitz/bltz-test-14.json") && call.init?.method === "PUT",
     );
     const updateBody = JSON.parse(String(updateCall?.init?.body));
     const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
@@ -1601,8 +1663,8 @@ describe("factory worker recovery signals", () => {
       {
         action: "set-tier",
         kind: "game",
-        environmentId: "slot.blitz",
-        recordPath: "runs/slot/blitz/bltz-test-14.json",
+        environmentId: "sepolia.blitz",
+        recordPath: "runs/sepolia/blitz/bltz-test-14.json",
         runName: "bltz-test-14",
         gameName: "bltz-test-14",
         tier: "legendary",
@@ -1613,7 +1675,7 @@ describe("factory worker recovery signals", () => {
     expect(nextRunRecord.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));
   });
 
-  test("scheduled rotation evaluation replays weekly cadence from the run summary", async () => {
+  test("scheduled rotation evaluation leaves historical Slot runs read-only", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     const startedAt = new Date(Date.now() - 60_000).toISOString();
     const weeklyCadence = [
@@ -1774,18 +1836,11 @@ describe("factory worker recovery signals", () => {
     );
     await Promise.all(scheduledTasks);
 
-    const dispatchCall = fetchCalls.find((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"));
-    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
-    const launchOptions = parseLaunchOptionsInput(dispatchBody);
-    const workflowRequest = parseLaunchRequestInput(dispatchBody);
-
-    expect(dispatchBody.inputs.launch_kind).toBe("rotation");
-    expect(dispatchBody.inputs.rotation_name).toBe("blitz-rotation");
-    expect(workflowRequest.gameIntervalMinutes).toBeUndefined();
-    expect(launchOptions.weeklyCadence).toEqual(weeklyCadence);
+    expect(fetchCalls.some((call) => call.url.includes("/actions/workflows/game-launch.yml/dispatches"))).toBe(false);
+    expect(fetchCalls.some((call) => call.init?.method === "PUT")).toBe(false);
   });
 
-  test("scheduled tier reconciliation batches operations per workflow ref and records batch failures once", async () => {
+  test("scheduled tier reconciliation leaves historical Slot runs read-only", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     const startedAt = new Date(Date.now() - 60_000).toISOString();
 
@@ -1932,63 +1987,10 @@ describe("factory worker recovery signals", () => {
     );
     await Promise.all(scheduledTasks);
 
-    const dispatchCalls = fetchCalls.filter((call) =>
-      call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
-    );
-    const updateCall = fetchCalls.find(
-      (call) => call.url.includes("/contents/runs/slot/blitz/series/bltz-knicker.json") && call.init?.method === "PUT",
-    );
-    const updateBody = JSON.parse(String(updateCall?.init?.body));
-    const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
-    const firstGame = nextRunRecord.summary.games.find(
-      (game: { gameName: string }) => game.gameName === "bltz-knicker-01",
-    );
-    const secondGame = nextRunRecord.summary.games.find(
-      (game: { gameName: string }) => game.gameName === "bltz-knicker-02",
-    );
-    const firstDispatchBody = JSON.parse(String(dispatchCalls[0]?.init?.body));
-    const operations = JSON.parse(String(firstDispatchBody.inputs.operations_json));
-
-    expect(dispatchCalls).toHaveLength(1);
-    expect(firstDispatchBody.ref).toBe("codex/factory-v2-rotation-review");
-    expect(firstDispatchBody.inputs.operation_count).toBe("2");
-    expect(operations).toEqual([
-      {
-        action: "set-tier",
-        kind: "series",
-        environmentId: "slot.blitz",
-        recordPath: "runs/slot/blitz/series/bltz-knicker.json",
-        runName: "bltz-knicker",
-        gameName: "bltz-knicker-01",
-        tier: "legendary",
-      },
-      {
-        action: "set-tier",
-        kind: "series",
-        environmentId: "slot.blitz",
-        recordPath: "runs/slot/blitz/series/bltz-knicker.json",
-        runName: "bltz-knicker",
-        gameName: "bltz-knicker-02",
-        tier: "legendary",
-      },
-    ]);
-    expect(fetchCalls.some((call) => call.url.includes("/contents/runs/slot/blitz/series?ref=factory-runs"))).toBe(
-      false,
-    );
-    expect(firstGame.artifacts.lastIndexerTierDispatchTarget).toBe("legendary");
-    expect(firstGame.artifacts.lastIndexerTierDispatchFailedAt).toEqual(expect.any(String));
-    expect(firstGame.artifacts.lastIndexerTierDispatchError).toContain(
-      "Failed to dispatch factory-indexer-maintenance workflow",
-    );
-    expect(firstGame.artifacts.pendingIndexerTierTarget).toBe("legendary");
-    expect(firstGame.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));
-    expect(secondGame.artifacts.lastIndexerTierDispatchTarget).toBe("legendary");
-    expect(secondGame.artifacts.lastIndexerTierDispatchFailedAt).toEqual(expect.any(String));
-    expect(secondGame.artifacts.lastIndexerTierDispatchError).toContain(
-      "Failed to dispatch factory-indexer-maintenance workflow",
-    );
-    expect(secondGame.artifacts.pendingIndexerTierTarget).toBe("legendary");
-    expect(secondGame.artifacts.pendingIndexerTierRequestedAt).toEqual(expect.any(String));
+    expect(
+      fetchCalls.some((call) => call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")),
+    ).toBe(false);
+    expect(fetchCalls.some((call) => call.init?.method === "PUT")).toBe(false);
   });
 
   test("scheduled tier reconciliation skips series runs after auto-retry is cancelled", async () => {
@@ -2063,7 +2065,7 @@ describe("factory worker recovery signals", () => {
     );
   });
 
-  test("scheduled runtime teardown dispatches expired AWS game runtimes and records pending state", async () => {
+  test("scheduled runtime teardown leaves historical Slot runtimes read-only", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     const startedAt = offsetTimestamp(-3 * 60 * 60_000);
     const gameRecord = buildAwsRuntimeGameRunRecord("bltz-expired-runtime", startedAt);
@@ -2125,35 +2127,10 @@ describe("factory worker recovery signals", () => {
     );
     await Promise.all(scheduledTasks);
 
-    const dispatchCall = fetchCalls.find((call) =>
-      call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches"),
-    );
-    const updateCall = fetchCalls.find(
-      (call) => call.url.includes("/contents/runs/slot/blitz/bltz-expired-runtime.json") && call.init?.method === "PUT",
-    );
-    const dispatchBody = JSON.parse(String(dispatchCall?.init?.body));
-    const operations = JSON.parse(String(dispatchBody.inputs.operations_json));
-    const updateBody = JSON.parse(String(updateCall?.init?.body));
-    const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
-
-    expect(operations).toEqual([
-      {
-        action: "delete-runtime-tags",
-        kind: "game",
-        environmentId: "slot.blitz",
-        recordPath: "runs/slot/blitz/bltz-expired-runtime.json",
-        runName: "bltz-expired-runtime",
-        gameName: "bltz-expired-runtime",
-        reason: "expired",
-        expectedDeleteAfter: expect.any(String),
-        runtimeInstanceId: "018f6e54-5f4a-7ae2-a0ff-000000000001",
-      },
-    ]);
-    expect(nextRunRecord.artifacts.runtimeTeardown).toMatchObject({
-      status: "dispatched",
-      reason: "expired",
-      requestedAt: expect.any(String),
-    });
+    expect(
+      fetchCalls.some((call) => call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")),
+    ).toBe(false);
+    expect(fetchCalls.some((call) => call.init?.method === "PUT")).toBe(false);
   });
 
   test("scheduled runtime teardown skips active, recent, complete, and pre-grace AWS runtimes", async () => {
@@ -2234,7 +2211,7 @@ describe("factory worker recovery signals", () => {
     ).toBe(false);
   });
 
-  test("scheduled runtime teardown records dispatch failures", async () => {
+  test("scheduled runtime teardown does not mutate historical Slot failures", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
     const startedAt = offsetTimestamp(-3 * 60 * 60_000);
     const gameRecord = buildAwsRuntimeGameRunRecord("bltz-runtime-failure", startedAt);
@@ -2299,21 +2276,13 @@ describe("factory worker recovery signals", () => {
     );
     await Promise.all(scheduledTasks);
 
-    const updateCall = fetchCalls.find(
-      (call) => call.url.includes("/contents/runs/slot/blitz/bltz-runtime-failure.json") && call.init?.method === "PUT",
-    );
-    const updateBody = JSON.parse(String(updateCall?.init?.body));
-    const nextRunRecord = JSON.parse(Buffer.from(updateBody.content, "base64").toString("utf8"));
-
-    expect(nextRunRecord.artifacts.runtimeTeardown).toMatchObject({
-      status: "failed",
-      reason: "expired",
-      failedAt: expect.any(String),
-      errorMessage: expect.stringContaining("Failed to dispatch factory-indexer-maintenance workflow"),
-    });
+    expect(
+      fetchCalls.some((call) => call.url.includes("/actions/workflows/factory-indexer-maintenance.yml/dispatches")),
+    ).toBe(false);
+    expect(fetchCalls.some((call) => call.init?.method === "PUT")).toBe(false);
   });
 
-  test("scheduled fallback sweep dispatches only non-mainnet AWS runtime sweeps when enabled", async () => {
+  test("scheduled fallback sweep dispatches only provider-neutral non-production AWS environments", async () => {
     const fetchCalls: Array<{ url: string; init?: RequestInit }> = [];
 
     globalThis.fetch = async (url, init) => {
@@ -2353,22 +2322,22 @@ describe("factory worker recovery signals", () => {
     expect(dispatchedOperations).toEqual([
       {
         action: "sweep-expired-runtimes",
-        environmentId: "slot.blitz",
+        environmentId: "local.blitz",
         reason: "ttl-fallback",
       },
       {
         action: "sweep-expired-runtimes",
-        environmentId: "slot.eternum",
+        environmentId: "local.eternum",
         reason: "ttl-fallback",
       },
       {
         action: "sweep-expired-runtimes",
-        environmentId: "slottest.blitz",
+        environmentId: "sepolia.blitz",
         reason: "ttl-fallback",
       },
       {
         action: "sweep-expired-runtimes",
-        environmentId: "slottest.eternum",
+        environmentId: "sepolia.eternum",
         reason: "ttl-fallback",
       },
     ]);
@@ -2381,20 +2350,20 @@ describe("factory worker recovery signals", () => {
       const value = String(url);
       fetchCalls.push({ url: value, init });
 
-      if (value.includes("/contents/runs/slot/blitz/rotations/bltz-franky.json")) {
+      if (value.includes("/contents/runs/sepolia/blitz/rotations/bltz-franky.json")) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "rotation",
-          runId: "slot.blitz:rotation:bltz-franky",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "sepolia.blitz:rotation:bltz-franky",
+          environment: "sepolia.blitz",
+          chain: "sepolia",
           gameType: "blitz",
           rotationName: "bltz-franky",
           seriesName: "bltz-franky",
           status: "complete",
           executionMode: "fast_trial",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/rotations/bltz-franky/101-1.json",
+          inputPath: "inputs/sepolia/blitz/rotations/bltz-franky/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: null,
           createdAt: offsetTimestamp(-120_000),
@@ -2425,7 +2394,7 @@ describe("factory worker recovery signals", () => {
           "x-factory-admin-secret": "factory-secret",
         },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "sepolia.blitz",
           runKind: "rotation",
           runName: "bltz-franky",
           gameNames: ["bltz-franky-01", "bltz-franky-02"],
@@ -2446,16 +2415,16 @@ describe("factory worker recovery signals", () => {
       {
         action: "delete",
         kind: "rotation",
-        environmentId: "slot.blitz",
-        recordPath: "runs/slot/blitz/rotations/bltz-franky.json",
+        environmentId: "sepolia.blitz",
+        recordPath: "runs/sepolia/blitz/rotations/bltz-franky.json",
         runName: "bltz-franky",
         gameName: "bltz-franky-01",
       },
       {
         action: "delete",
         kind: "rotation",
-        environmentId: "slot.blitz",
-        recordPath: "runs/slot/blitz/rotations/bltz-franky.json",
+        environmentId: "sepolia.blitz",
+        recordPath: "runs/sepolia/blitz/rotations/bltz-franky.json",
         runName: "bltz-franky",
         gameName: "bltz-franky-02",
       },
@@ -2468,19 +2437,19 @@ describe("factory worker recovery signals", () => {
     globalThis.fetch = async (url) => {
       const value = String(url);
 
-      if (value.includes("/contents/runs/slot/blitz/series/bltz-franky.json")) {
+      if (value.includes("/contents/runs/sepolia/blitz/series/bltz-franky.json")) {
         return buildGitHubContentsResponse({
           version: 1,
           kind: "series",
-          runId: "slot.blitz:series:bltz-franky",
-          environment: "slot.blitz",
-          chain: "slot",
+          runId: "sepolia.blitz:series:bltz-franky",
+          environment: "sepolia.blitz",
+          chain: "sepolia",
           gameType: "blitz",
           seriesName: "bltz-franky",
           status: "complete",
           executionMode: "fast_trial",
           requestedLaunchStep: "full",
-          inputPath: "inputs/slot/blitz/series/bltz-franky/101-1.json",
+          inputPath: "inputs/sepolia/blitz/series/bltz-franky/101-1.json",
           latestLaunchRequestId: "101-1",
           currentStepId: null,
           createdAt: offsetTimestamp(-120_000),
@@ -2512,7 +2481,7 @@ describe("factory worker recovery signals", () => {
           "x-factory-admin-secret": "factory-secret",
         },
         body: JSON.stringify({
-          environment: "slot.blitz",
+          environment: "sepolia.blitz",
           runKind: "series",
           runName: "bltz-franky",
           gameNames: ["bltz-franky-02"],
@@ -3471,7 +3440,7 @@ describe("factory worker prize funding", () => {
 
 describe("factory worker runtime registry", () => {
   test("publishes one validated optimistic registry revision", async () => {
-    const currentRegistry = getDefaultRuntimeRegistry();
+    const currentRegistry = getEmbeddedReadOnlyRuntimeRegistry();
     const nextRegistry = {
       ...currentRegistry,
       revision: currentRegistry.revision + 1,
@@ -3509,7 +3478,7 @@ describe("factory worker runtime registry", () => {
   });
 
   test("rejects malformed registry aliases before writing GitHub state", async () => {
-    const currentRegistry = getDefaultRuntimeRegistry();
+    const currentRegistry = getEmbeddedReadOnlyRuntimeRegistry();
     const alias = "game.slot.blitz.invalid.torii.base";
     const invalidRegistry = {
       ...currentRegistry,
@@ -3548,6 +3517,48 @@ describe("factory worker runtime registry", () => {
     expect(response.status).toBe(400);
     expect(fetchCalls).toHaveLength(0);
     expect(await response.json()).toEqual({ error: `Runtime registry alias "${alias}" has an invalid scope` });
+  });
+
+  test("rejects dual-provider aliases that could restore Slot rollback behavior", async () => {
+    const currentRegistry = getEmbeddedReadOnlyRuntimeRegistry();
+    const alias = "game.sepolia.blitz.game-42.torii.base";
+    const invalidRegistry = {
+      ...currentRegistry,
+      revision: currentRegistry.revision + 1,
+      generatedAt: "2026-07-10T04:00:00.000Z",
+      aliases: {
+        ...currentRegistry.aliases,
+        [alias]: {
+          scope: "game",
+          environmentId: "sepolia.blitz",
+          runtimeKind: "torii",
+          endpointKind: "base",
+          activeProvider: "aws",
+          providers: {
+            aws: "https://runtime.example/game-42/torii",
+            slot: "https://api.cartridge.gg/x/game-42/torii",
+          },
+          runtimeName: "game-42",
+          runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b451",
+          imageDigest: `sha256:${"a".repeat(64)}`,
+          routingShard: 0,
+        },
+      },
+    };
+
+    const response = await worker.fetch(
+      new Request("https://worker.example/api/runtime-registry/v1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-factory-admin-secret": "factory-secret" },
+        body: JSON.stringify({ registry: invalidRegistry, expectedRevision: currentRegistry.revision }),
+      }),
+      buildWorkerEnv({ FACTORY_WORKER_ADMIN_SECRET: "factory-secret" }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: `Runtime registry alias "${alias}" must contain only its active provider endpoint`,
+    });
   });
 });
 

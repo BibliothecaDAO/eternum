@@ -86,6 +86,10 @@ const supportedOperations: ReadonlySet<AwsRuntimeCliResult["operation"]> = new S
   "delete",
 ]);
 const supportedEnvironmentIds: ReadonlySet<DeploymentEnvironmentId> = new Set([
+  "local.blitz",
+  "local.eternum",
+  "sepolia.blitz",
+  "sepolia.eternum",
   "slot.blitz",
   "slot.eternum",
   "slottest.blitz",
@@ -121,7 +125,7 @@ function usage() {
   console.log(
     [
       "",
-      "Usage: bun config/deployer/clean/cli/aws-runtime.ts --operation <deploy|inspect|resize|delete> --environment <slot.blitz|slot.eternum|slottest.blitz|slottest.eternum|mainnet.blitz|mainnet.eternum> --runtime-kind <katana|torii> --runtime-name <name>",
+      "Usage: bun config/deployer/clean/cli/aws-runtime.ts --operation <deploy|inspect|resize|delete> --environment <local.blitz|local.eternum|sepolia.blitz|sepolia.eternum|mainnet.blitz|mainnet.eternum> --runtime-kind <katana|torii> --runtime-name <name>",
       "",
       "Optional flags:",
       "  --tier <basic|pro|epic|legendary>",
@@ -331,12 +335,9 @@ function validateRuntimeOperationRequest(
   runtimeRequest: ReturnType<typeof buildRuntimeRequest>,
 ): void {
   assertCanonicalRuntimeName(request.runtimeName);
+  assertRuntimeMutationEnvironment(request);
   if (request.operation !== "inspect") {
     requireRuntimeInstanceId(request.runtimeInstanceId);
-  }
-
-  if (request.environmentId.startsWith("mainnet.") && request.runtimeKind === "katana") {
-    throw new Error(`AWS Katana is not permitted in production environment ${request.environmentId}`);
   }
 
   if (request.operation === "delete" && !Number.isFinite(Date.parse(request.expectedDeleteAfter || ""))) {
@@ -357,6 +358,20 @@ function validateRuntimeOperationRequest(
   }
 
   validatePinnedImageForMutation(request);
+}
+
+function assertRuntimeMutationEnvironment(request: AwsRuntimeCliRequest): void {
+  const isMutation = request.operation === "deploy" || request.operation === "resize";
+  if (!isMutation) return;
+  if (request.environmentId.startsWith("slot.") || request.environmentId.startsWith("slottest.")) {
+    throw new Error(`Historical Slot environment "${request.environmentId}" is read-only`);
+  }
+  if (request.environmentId === "mainnet.blitz") {
+    throw new Error("Production Blitz runtimes are provisioned only by the game-stack orchestrator");
+  }
+  if (request.environmentId === "mainnet.eternum" && request.runtimeKind !== "torii") {
+    throw new Error("mainnet.eternum permits operator-managed Torii only");
+  }
 }
 
 function validatePinnedImageForMutation(request: AwsRuntimeCliRequest): void {

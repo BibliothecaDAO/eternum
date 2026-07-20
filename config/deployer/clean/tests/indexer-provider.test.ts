@@ -44,7 +44,6 @@ describe("ensureIndexerDeployment", () => {
       },
       {
         ensureAwsToriiRuntime,
-        ensureSlotIndexerDeployment,
       },
     );
 
@@ -53,7 +52,7 @@ describe("ensureIndexerDeployment", () => {
     expect(ensureSlotIndexerDeployment).not.toHaveBeenCalled();
   });
 
-  test("keeps Slot available as an explicit rollback provider", async () => {
+  test("rejects Slot as a new indexer deployment provider", async () => {
     const ensureAwsToriiRuntime = mock(async () => awsResult);
     const ensureSlotIndexerDeployment = mock(() => ({
       mode: "slot-direct" as const,
@@ -67,24 +66,22 @@ describe("ensureIndexerDeployment", () => {
       },
     }));
 
-    const result = await ensureIndexerDeployment(
-      {
-        env: "slot",
-        runtimeProvider: "slot",
-        environmentId: "slot.blitz",
-        rpcUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
-        namespaces: "s1_eternum",
-        worldName: "bltz-fire-gate-42",
-        worldAddress: "0x123",
-      },
-      {
-        ensureAwsToriiRuntime,
-        ensureSlotIndexerDeployment,
-      },
-    );
+    await expect(
+      ensureIndexerDeployment(
+        {
+          env: "slot",
+          runtimeProvider: "slot",
+          environmentId: "slot.blitz",
+          rpcUrl: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
+          namespaces: "s1_eternum",
+          worldName: "bltz-fire-gate-42",
+          worldAddress: "0x123",
+        },
+        { ensureAwsToriiRuntime },
+      ),
+    ).rejects.toThrow("Slot is historical read-only state");
 
-    expect(result.mode).toBe("slot-direct");
-    expect(ensureSlotIndexerDeployment).toHaveBeenCalledTimes(1);
+    expect(ensureSlotIndexerDeployment).not.toHaveBeenCalled();
     expect(ensureAwsToriiRuntime).not.toHaveBeenCalled();
   });
 });

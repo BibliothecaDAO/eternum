@@ -37,7 +37,7 @@ describe("resolveDeploymentEnvironment", () => {
 
   test("rejects unsupported environments", () => {
     expect(() => resolveDeploymentEnvironment("invalid.blitz")).toThrow(
-      'Unsupported environment "invalid.blitz". Expected one of: mainnet.blitz, mainnet.eternum, slot.blitz, slot.eternum',
+      'Unsupported environment "invalid.blitz". Expected a provider-neutral local, sepolia, or mainnet environment; Slot identifiers are historical only',
     );
   });
 

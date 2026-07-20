@@ -233,6 +233,7 @@
     "check:economic-interface-schema": "node scripts/settlement/generate-economic-interface-schema.mjs --check",
     "generate:package-lock-matrix": "node scripts/settlement/generate-package-lock-matrix.mjs",
     "check:package-lock-matrix": "node scripts/settlement/generate-package-lock-matrix.mjs --check",
+    "check:wave0-a23": "node scripts/settlement/check-wave0-a23-gate.mjs",
     "aws-runtime:e2e": "node scripts/aws-runtime-e2e.mjs",
     "knip": "NODE_OPTIONS=--max-old-space-size=8192 pnpm dlx knip@5.80.0 --exclude binaries,dependencies",
     "lint": "pnpm --recursive run lint",

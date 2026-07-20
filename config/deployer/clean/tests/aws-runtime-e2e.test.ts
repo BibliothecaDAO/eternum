@@ -678,7 +678,7 @@ jobs:
     expect(result.stderr).toContain("aws-runtime-e2e.yml must upload the e2e JSON artifact");
   });
 
-  test("provider guard rejects retired switches and hardcoded AWS workflow defaults", () => {
+  test("provider guard rejects retired switches and active Slot workflow defaults", () => {
     const workspace = fs.mkdtempSync(path.join(os.tmpdir(), "aws-runtime-provider-"));
     const legacyConfigPath = path.join(workspace, "legacy-provider.ts");
     const workflowPath = path.join(workspace, "factory-torii-deployer.yml");
@@ -694,7 +694,7 @@ const factoryProvider = process.env.FACTORY_RUNTIME_PROVIDER;
       workflowPath,
       `
 env:
-  RUNTIME_PROVIDER: aws
+  RUNTIME_PROVIDER: $\{{ vars.RUNTIME_PROVIDER || 'slot' }}
 `,
     );
 
@@ -711,7 +711,8 @@ env:
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("retired provider switch INDEXER_RUNTIME_PROVIDER");
     expect(result.stderr).toContain("retired provider switch FACTORY_RUNTIME_PROVIDER");
-    expect(result.stderr).toContain("workflow must not hardcode RUNTIME_PROVIDER: aws");
+    expect(result.stderr).toContain("workflow must pin RUNTIME_PROVIDER: aws");
+    expect(result.stderr).toContain("workflow must not expose an active Slot provider fallback");
   });
 
   test("URL guard rejects retired wss routes and missing protocol docs", () => {
@@ -756,7 +757,7 @@ The public URL shape includes /x/{env}/{runtime}/torii/wss.
       env: {
         ...process.env,
         AWS_RUNTIME_E2E_ARGS:
-          "--dry-run --environment slot.blitz --runtime-kind katana --runtime-name e2e-smoke --domain runtime.example.test",
+          "--dry-run --environment sepolia.blitz --runtime-kind katana --runtime-name e2e-smoke --domain runtime.example.test",
       },
     });
 
@@ -766,7 +767,7 @@ The public URL shape includes /x/{env}/{runtime}/torii/wss.
     expect(JSON.parse(result.stdout)).toMatchObject({
       operation: "aws-runtime-e2e",
       status: "planned",
-      environmentId: "slot.blitz",
+      environmentId: "sepolia.blitz",
       runtimeKind: "katana",
       runtimeName: "e2e-smoke",
     });
@@ -811,7 +812,7 @@ The public URL shape includes /x/{env}/{runtime}/torii/wss.
     for (const step of auditSteps) {
       expect(step.command).toContain("check:aws-runtime-resources");
       expect(step.command).toContain("--environment");
-      expect(step.command).toContain("slot.blitz");
+      expect(step.command).toContain("sepolia.blitz");
       expect(step.command).toContain("--runtime-kind");
       expect(step.command).toContain("katana");
       expect(step.command).toContain("--runtime-name");
@@ -879,7 +880,7 @@ The public URL shape includes /x/{env}/{runtime}/torii/wss.
       [
         "scripts/aws-runtime-e2e.mjs",
         "--environment",
-        "slot.blitz",
+        "sepolia.blitz",
         "--runtime-kind",
         "katana",
         "--runtime-name",
@@ -966,7 +967,7 @@ The public URL shape includes /x/{env}/{runtime}/torii/wss.
       [
         "scripts/aws-runtime-e2e.mjs",
         "--environment",
-        "slot.blitz",
+        "sepolia.blitz",
         "--runtime-kind",
         "katana",
         "--runtime-name",

@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { DEFAULT_MAINNET_MAX_ACTIONS, DEFAULT_SLOT_MAX_ACTIONS, DEFAULT_VERSION } from "../constants";
 import { runLaunchStep } from "../launch/runner";
+import { assertLegacyLaunchEnvironmentIsMutable } from "../launch/environment-policy";
 import { runLaunchRotationStep } from "../launch/rotation-runner";
 import { runLaunchSeriesStep } from "../launch/series-runner";
 import { requireGitHubBranchStoreConfig, readGitHubBranchJsonFile } from "../run-store/github";
@@ -27,7 +28,7 @@ function usage(): void {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/launch-step.ts --launch-kind <game|series|rotation> --step <step-id> --environment <slot.blitz|slot.eternum|slottest.blitz|slottest.eternum|mainnet.blitz|mainnet.eternum>",
+      "  bun config/deployer/clean/cli/launch-step.ts --launch-kind <game|series|rotation> --step <step-id> --environment <local.blitz|local.eternum|sepolia.blitz|sepolia.eternum>",
       "  bun config/deployer/clean/cli/launch-step.ts --config-path <path-to-launch.yaml> --step <step-id>",
       "",
       "Game launch:",
@@ -126,6 +127,7 @@ async function main() {
 
   if (resolveLaunchKind(args) === "series") {
     const request = buildLaunchSeriesRequest(args);
+    assertLegacyLaunchEnvironmentIsMutable(request.environmentId);
     const summary = await runLaunchSeriesStep({
       ...request,
       stepId: resolveLaunchSeriesStepId(args.step),
@@ -137,6 +139,7 @@ async function main() {
 
   if (resolveLaunchKind(args) === "rotation") {
     const request = buildLaunchRotationRequest(args);
+    assertLegacyLaunchEnvironmentIsMutable(request.environmentId);
     const summary = await runLaunchRotationStep({
       ...request,
       stepId: resolveLaunchRotationStepId(args.step),
@@ -147,6 +150,7 @@ async function main() {
   }
 
   const request = buildLaunchGameRequest(args);
+  assertLegacyLaunchEnvironmentIsMutable(request.environmentId);
   const summary = await runLaunchStep({
     ...request,
     stepId: resolveLaunchGameStepId(args.step),

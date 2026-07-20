@@ -1,6 +1,6 @@
 name: AWS Runtime E2E
 run-name:
-  AWS Runtime E2E / ${{ github.event.inputs.environment || vars.AWS_RUNTIME_E2E_ENVIRONMENT || 'slottest.blitz' }}
+  AWS Runtime E2E / ${{ github.event.inputs.environment || vars.AWS_RUNTIME_E2E_ENVIRONMENT || 'sepolia.blitz' }}
 
 on:
   workflow_dispatch:
@@ -8,13 +8,11 @@ on:
       environment:
         description: "Deployment environment"
         required: false
-        default: slottest.blitz
+        default: sepolia.blitz
         type: choice
         options:
-          - slot.blitz
-          - slot.eternum
-          - slottest.blitz
-          - slottest.eternum
+          - sepolia.blitz
+          - sepolia.eternum
       runtime_name:
         description: "Runtime name prefix"
         required: false
@@ -37,7 +35,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: aws-runtime-${{ github.event.inputs.environment || vars.AWS_RUNTIME_E2E_ENVIRONMENT || 'slottest.blitz' }}-e2e
+  group: aws-runtime-${{ github.event.inputs.environment || vars.AWS_RUNTIME_E2E_ENVIRONMENT || 'sepolia.blitz' }}-e2e
   cancel-in-progress: false
 
 jobs:
@@ -45,7 +43,7 @@ jobs:
     name: Runtime e2e (${{ matrix.runtime_kind }})
     runs-on: ubuntu-latest
     timeout-minutes: 90
-    environment: ${{ github.event.inputs.environment || vars.AWS_RUNTIME_E2E_ENVIRONMENT || 'slottest.blitz' }}
+    environment: ${{ github.event.inputs.environment || vars.AWS_RUNTIME_E2E_ENVIRONMENT || 'sepolia.blitz' }}
     strategy:
       fail-fast: false
       matrix:
@@ -53,9 +51,9 @@ jobs:
           - katana
           - torii
     env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-2' }}
       AWS_RUNTIME_E2E_ENVIRONMENT:
-        ${{ github.event.inputs.environment || vars.AWS_RUNTIME_E2E_ENVIRONMENT || 'slottest.blitz' }}
+        ${{ github.event.inputs.environment || vars.AWS_RUNTIME_E2E_ENVIRONMENT || 'sepolia.blitz' }}
       AWS_RUNTIME_E2E_RUNTIME_KIND: ${{ matrix.runtime_kind }}
       AWS_RUNTIME_E2E_DOMAIN:
         ${{ github.event.inputs.domain || vars.AWS_RUNTIME_E2E_DOMAIN || vars.AWS_RUNTIME_DOMAIN ||

@@ -72,7 +72,6 @@ The important outputs map directly to GitHub environment variables:
 
 Operator-set GitHub environment variables:
 
-- `RUNTIME_PROVIDER=aws` for production Blitz after all activation gates pass
 - `AWS_RUNTIME_IMAGE_DIGEST` set to an approved `sha256:` digest
 - `AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS` only when restores need more than the 90-second floor
 - `RUNTIME_REGISTRY_URL` for the versioned public registry
@@ -95,12 +94,13 @@ only the non-secret foundation manifest. Do not place RPC credentials in GitHub 
 
 Configure these GitHub environments before dispatching runtime workflows:
 
-- `slot.blitz`
-- `slot.eternum`
-- `slottest.blitz`
-- `slottest.eternum`
+- `sepolia.blitz`
+- `sepolia.eternum`
 - `mainnet.blitz`
 - `mainnet.eternum`
+
+The committed `slot.*` and `slottest.*` roots and state keys describe historical foundations only. Runtime workflows
+do not accept those identifiers, and they must not be used to create or republish runtimes.
 
 Each Terraform root binds its deploy, maintenance, image-promotion, DR, and non-production E2E roles to one exact
 GitHub environment. A role for one environment cannot assume or mutate another environment's foundation. Mainnet
@@ -199,8 +199,9 @@ existing endpoint.
 WAF managed protections and rate rules begin in Count mode on Slot/slottest shadow traffic. Mainnet foundations reject
 Terraform apply unless enforcement is set to `block`. The
 path proxy enforces URL/body limits, explicit CORS origins, connection/upstream timeouts, semantic health checks, and
-WebSocket connection/idle limits. Torii reads are public. `slot` and `slottest` Katana are the explicit public-dev RPC
-exception. Mainnet Katana and production mutation requests are rejected.
+WebSocket connection/idle limits. Torii reads are public. Historical `slot` and `slottest` Katana remain readable only
+through their immutable archive aliases. Mainnet Eternum Katana is rejected; production Blitz Katana additionally
+requires the game-owned SEV-SNP identity and attestation fields.
 
 Every Terraform root requires a non-empty `cors_origins` list. Entries must be pathless HTTPS origins or explicit
 `localhost`/`127.0.0.1` development origins.
@@ -211,8 +212,8 @@ Production uses per-AZ production NAT gateways; non-production uses one non-prod
 Clients do not build hosts. Mainnet clients require `/api/runtime-registry/v1` and fail closed when it is absent or
 unavailable. A production game stack is one AWS-only registry revision containing complete Katana and Torii endpoint
 sets, immutable runtime identities, image digests, routing shards, and `activeUntil`. Partial, expired, or Slot-backed
-production game-stack aliases are unavailable. Historical non-production aliases retain their existing rollback
-behavior while migration evidence is gathered.
+production game-stack aliases are unavailable. Historical non-production Slot aliases are read-only, contain no AWS
+fallback target, and cannot be used as inputs to a new publication.
 
 Seed the historical registry only for non-production migration work:
 

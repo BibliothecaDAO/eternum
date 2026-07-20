@@ -56,6 +56,7 @@ export interface GameStackFailure {
 }
 
 export interface GameStackRuntimeIdentity {
+  chainId?: string;
   runtimeName: string;
   runtimeInstanceId: string;
   imageDigest: string;
@@ -63,17 +64,34 @@ export interface GameStackRuntimeIdentity {
   endpoints?: Partial<Record<"base" | "health" | "rpc" | "sql", string>>;
 }
 
+export interface GameStackReadinessEvidence {
+  identitySealedAt?: string;
+  attestationVerifiedAt?: string;
+  worldReadyAt?: string;
+  indexerReadyAt?: string;
+  registryVerifiedAt?: string;
+}
+
 export function deriveGameStackOperationalPhase(
   lifecycle: GameStackProtocolLifecycle,
-  hasFailure = false,
+  readiness: GameStackReadinessEvidence = {},
 ): GameStackOperationalPhase {
-  if (hasFailure || lifecycle === "IntentExpired" || lifecycle === "ProvisioningAborted") return "failed";
+  if (lifecycle === "IntentExpired" || lifecycle === "ProvisioningAborted") return "failed";
   if (lifecycle === "Intent" || lifecycle === "AcceptanceBuilding") return "reserving";
   if (lifecycle === "Provisioning") return "provisioning-l3";
-  if (lifecycle === "ProvisioningIdentitySealed" || lifecycle === "Attested") return "ready";
+  if (lifecycle === "ProvisioningIdentitySealed") return "provisioning-l3";
+  if (lifecycle === "Attested") return deriveAttestedOperationalPhase(readiness);
   if (lifecycle === "Active") return "active";
   if (lifecycle === "DormantMaterialized" || lifecycle === "Retired") return "closed";
   return "settling";
+}
+
+function deriveAttestedOperationalPhase(readiness: GameStackReadinessEvidence): GameStackOperationalPhase {
+  if (!readiness.identitySealedAt || !readiness.attestationVerifiedAt || !readiness.worldReadyAt) {
+    return "deploying-world";
+  }
+  if (!readiness.indexerReadyAt || !readiness.registryVerifiedAt) return "provisioning-indexer";
+  return "ready";
 }
 
 export interface GameStack {
@@ -90,9 +108,12 @@ export interface GameStack {
   releaseBundleHash: string;
   l3ChainId?: string;
   settlementIdentity?: string;
+  worldAddress?: string;
   attestationMeasurement?: string;
   katana?: GameStackRuntimeIdentity;
   torii?: GameStackRuntimeIdentity;
+  readiness?: GameStackReadinessEvidence;
+  publicationRevision?: number;
   protocolLifecycle: GameStackProtocolLifecycle;
   operationalPhase: GameStackOperationalPhase;
   failure?: GameStackFailure;

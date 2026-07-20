@@ -19,16 +19,9 @@ on:
         required: true
         type: choice
         options:
-          - slot.blitz
-          - slot.eternum
-          - slottest.blitz
-          - slottest.eternum
-          - mainnet.blitz
+          - sepolia.blitz
+          - sepolia.eternum
           - mainnet.eternum
-      runtime_provider:
-        description: "Runtime provider; AWS is the v1 replacement path"
-        required: false
-        default: "aws"
       torii_name:
         description: "Canonical Torii runtime name"
         required: true
@@ -77,8 +70,8 @@ jobs:
     timeout-minutes: 20
     environment: ${{ inputs.environment_id }}
     env:
-      RUNTIME_PROVIDER: ${{ vars.RUNTIME_PROVIDER || 'slot' }}
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      RUNTIME_PROVIDER: aws
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-2' }}
       AWS_RUNTIME_CLUSTER: ${{ vars.AWS_RUNTIME_CLUSTER }}
       AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
       AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
@@ -97,7 +90,7 @@ jobs:
       AWS_RUNTIME_REQUIRE_CONTROL_TABLE: ${{ vars.AWS_RUNTIME_REQUIRE_CONTROL_TABLE || 'true' }}
       AWS_RUNTIME_CORS_ORIGINS: ${{ vars.AWS_RUNTIME_CORS_ORIGINS }}
       AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS: ${{ vars.AWS_RUNTIME_HEALTH_START_PERIOD_SECONDS }}
-      INPUT_RUNTIME_PROVIDER: ${{ github.event.inputs.runtime_provider || 'aws' }}
+      INPUT_RUNTIME_PROVIDER: aws
       INPUT_OPERATION: ${{ github.event.inputs.operation || 'deploy' }}
       INPUT_ENVIRONMENT_ID: ${{ github.event.inputs.environment_id }}
       INPUT_RUNTIME_NAME: ${{ github.event.inputs.torii_name }}
@@ -129,7 +122,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
         with:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-2' }}
 
       - name: Setup ECS Exec client
         uses: ./.github/actions/setup-session-manager-plugin

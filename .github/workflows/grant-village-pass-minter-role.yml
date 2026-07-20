@@ -6,13 +6,10 @@ on:
       chain:
         description: "Eternum environment"
         required: true
-        default: "slot.eternum"
+        default: "sepolia.eternum"
         type: choice
         options:
-          - slot.eternum
-          - slottest.eternum
           - sepolia.eternum
-          - mainnet.eternum
       game_name:
         description: "Game/world name (example: etrn-iron-mist-11)"
         required: true

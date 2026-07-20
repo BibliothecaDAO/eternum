@@ -34,18 +34,18 @@ describe("resolveRuntimeProvider", () => {
     expect(resolveDeploymentEnvironment("slottest.eternum").configPath).toBe("config/generated/eternum.slottest.json");
   });
 
-  test("uses override env before github env before environment default", () => {
+  test("rejects historical Slot environments and provider overrides for new runtime resolution", () => {
     const environment = resolveDeploymentEnvironment("slot.blitz");
 
     delete process.env.RUNTIME_PROVIDER;
     delete process.env.RUNTIME_PROVIDER_OVERRIDE;
-    expect(resolveRuntimeProvider(environment)).toBe("slot");
+    expect(() => resolveRuntimeProvider(environment)).toThrow("historical Slot runtime state");
 
     process.env.RUNTIME_PROVIDER = "aws";
     expect(resolveRuntimeProvider(environment)).toBe("aws");
 
     process.env.RUNTIME_PROVIDER_OVERRIDE = "slot";
-    expect(resolveRuntimeProvider(environment)).toBe("slot");
+    expect(() => resolveRuntimeProvider(environment)).toThrow("historical read-only provider");
   });
 
   test("rejects invalid provider values", () => {

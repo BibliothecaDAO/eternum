@@ -55,7 +55,7 @@ describe("getFactorySqlBaseUrl", () => {
     expect(getFactorySqlBaseUrl("slot")).toBe("https://api.cartridge.gg/x/eternum-factory-slot-d/torii/sql");
   });
 
-  test("resolves factory Torii through the AWS registry target when selected", () => {
+  test("rejects an AWS target grafted onto a historical Slot alias", () => {
     process.env.RUNTIME_PROVIDER = "aws";
     process.env.RUNTIME_REGISTRY_JSON = JSON.stringify({
       schemaVersion: "realms-runtime-registry/v1",
@@ -73,15 +73,14 @@ describe("getFactorySqlBaseUrl", () => {
           imageDigest: `sha256:${"a".repeat(64)}`,
           routingShard: 0,
           providers: {
-            slot: "https://api.cartridge.gg/x/eternum-factory-slot-d/torii/sql",
             aws: "https://s0.slot-blitz.runtime.realms.world/x/slot-blitz/eternum-factory-slot/torii/sql",
           },
         },
       },
     });
 
-    expect(getFactorySqlBaseUrl("slot")).toBe(
-      "https://s0.slot-blitz.runtime.realms.world/x/slot-blitz/eternum-factory-slot/torii/sql",
+    expect(() => getFactorySqlBaseUrl("slot")).toThrow(
+      'Runtime registry alias "factory.slot.blitz.torii.sql" cannot graft an active provider onto a historical Slot alias',
     );
   });
 });

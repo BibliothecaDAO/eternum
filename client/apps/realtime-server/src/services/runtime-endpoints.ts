@@ -2,7 +2,7 @@ import {
   buildFactoryRuntimeAlias,
   buildGameRuntimeAlias,
   buildSharedChainRuntimeAlias,
-  getDefaultRuntimeRegistry,
+  getEmbeddedReadOnlyRuntimeRegistry,
   loadRuntimeRegistry,
   parseRuntimeRegistry,
   resolveRuntimeEndpointAlias,
@@ -54,11 +54,11 @@ function resolveAlias(alias: string): string {
   if (registry?.aliases[alias]) {
     return resolveRuntimeEndpointAlias(alias, { registry });
   }
-  return resolveRuntimeEndpointAlias(alias, { registry: getDefaultRuntimeRegistry() });
+  return resolveRuntimeEndpointAlias(alias, { registry: getEmbeddedReadOnlyRuntimeRegistry() });
 }
 
 function hasAlias(alias: string): boolean {
-  return Boolean(resolveConfiguredRegistry()?.aliases[alias] || getDefaultRuntimeRegistry().aliases[alias]);
+  return Boolean(resolveConfiguredRegistry()?.aliases[alias] || getEmbeddedReadOnlyRuntimeRegistry().aliases[alias]);
 }
 
 function resolveConfiguredRegistry(): RuntimeRegistryV1 | undefined {

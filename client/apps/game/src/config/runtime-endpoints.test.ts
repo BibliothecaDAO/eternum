@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   clearInstalledRuntimeRegistry,
-  getDefaultRuntimeRegistry,
+  getEmbeddedReadOnlyRuntimeRegistry,
 } from "../../../../../common/factory/runtime-registry";
 import { registerReadyGameStack } from "../../../../../common/factory/runtime-registry-artifact";
 
@@ -50,22 +50,24 @@ describe("runtime endpoint registry loading", () => {
   });
 
   it("loads the public registry before resolving endpoints", async () => {
-    const alias = "shared-chain.slot.katana.rpc";
+    const alias = "game.sepolia.blitz.game-42.torii.base";
     const registry = {
-      ...getDefaultRuntimeRegistry(),
+      ...getEmbeddedReadOnlyRuntimeRegistry(),
       revision: 2,
       aliases: {
-        ...getDefaultRuntimeRegistry().aliases,
+        ...getEmbeddedReadOnlyRuntimeRegistry().aliases,
         [alias]: {
-          ...getDefaultRuntimeRegistry().aliases[alias],
+          scope: "game" as const,
+          environmentId: "sepolia.blitz",
+          runtimeKind: "torii" as const,
+          endpointKind: "base" as const,
           activeProvider: "aws" as const,
-          runtimeName: "eternum-blitz-slot-4",
+          runtimeName: "game-42",
           runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b451",
           imageDigest: `sha256:${"a".repeat(64)}`,
           routingShard: 0,
           providers: {
-            slot: "https://api.cartridge.gg/x/eternum-blitz-slot-4/katana/rpc/v0_9",
-            aws: "https://s0.slot-blitz.runtime.realms.world/x/slot-blitz/katana/rpc/v0_9",
+            aws: "https://s0.sepolia-blitz.runtime.realms.world/x/game-42/torii",
           },
         },
       },
@@ -76,14 +78,16 @@ describe("runtime endpoint registry loading", () => {
     const result = await loadConfiguredRuntimeRegistry(fetchImpl);
 
     expect(result.source).toBe("remote");
-    expect(resolveChainRpcEndpoint("slot")).toContain("s0.slot-blitz.runtime.realms.world");
+    expect(resolveGameRuntimeEndpoint("game-42", "base", { chain: "sepolia" })).toContain(
+      "s0.sepolia-blitz.runtime.realms.world",
+    );
   });
 
   it("resolves mainnet Blitz only when both AWS runtimes are complete and unexpired", async () => {
     envMock.env.VITE_PUBLIC_CHAIN = "mainnet";
     envMock.env.VITE_PUBLIC_RUNTIME_REGISTRY_URL = "https://registry.realms.world/runtime.json";
     const registry = registerReadyGameStack(
-      getDefaultRuntimeRegistry(),
+      getEmbeddedReadOnlyRuntimeRegistry(),
       {
         environmentId: "mainnet.blitz",
         gameStackId: "blitz-season-42",

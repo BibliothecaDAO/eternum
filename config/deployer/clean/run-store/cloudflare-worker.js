@@ -12,6 +12,7 @@
  * - GITHUB_WORKFLOW_REF              default: next
  * - FACTORY_RUN_STORE_BRANCH         default: factory-runs
  * - FACTORY_ALLOWED_ORIGIN           default: *
+ * - GAME_STACK_API_URL               required for public /v1 game-stack routes
  */
 
 const DEFAULT_FACTORY_RUN_RECOVERY_GRACE_MS = 15_000;
@@ -33,11 +34,22 @@ const MAX_FACTORY_RECENT_RUN_LIST_LIMIT = 100;
 const FACTORY_WORKER_ADMIN_SECRET_HEADER = "x-factory-admin-secret";
 const RUNTIME_INSTANCE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const FACTORY_ENVIRONMENTS = [
+  "local.blitz",
+  "local.eternum",
+  "sepolia.blitz",
+  "sepolia.eternum",
   "slot.blitz",
   "slot.eternum",
   "slottest.blitz",
   "slottest.eternum",
   "mainnet.blitz",
+  "mainnet.eternum",
+];
+const OPERATOR_WORKFLOW_ENVIRONMENTS = [
+  "local.blitz",
+  "local.eternum",
+  "sepolia.blitz",
+  "sepolia.eternum",
   "mainnet.eternum",
 ];
 const BIOME_CLIMATE_OVERRIDE_LIMITS = {
@@ -90,6 +102,10 @@ async function handleRequest(request, env) {
 
     if (request.method === "OPTIONS") {
       return buildCorsPreflightResponse(request, env);
+    }
+
+    if (url.pathname.startsWith("/v1/")) {
+      return await forwardGameStackApiRequest(request, url, env);
     }
 
     if (request.method === "GET" && url.pathname === "/api/runtime-registry/v1") {
@@ -236,6 +252,21 @@ async function handleRequest(request, env) {
     const message = error instanceof Error ? error.message : "Unexpected error";
     return buildJsonResponse(request, env, { error: message }, 500);
   }
+}
+
+async function forwardGameStackApiRequest(request, url, env) {
+  if (!env.GAME_STACK_API_URL) {
+    throw new HttpError(503, "GAME_STACK_API_URL is not configured");
+  }
+
+  const upstreamBase = new URL(env.GAME_STACK_API_URL);
+  const upstreamUrl = new URL(`${url.pathname}${url.search}`, upstreamBase.origin);
+  return fetch(upstreamUrl, {
+    method: request.method,
+    headers: request.headers,
+    body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
+    redirect: "manual",
+  });
 }
 
 async function handleCreateFactoryRun(request, env) {
@@ -991,6 +1022,7 @@ async function handleNudgeFactoryRotationRun(request, env, route) {
 async function handleUpdateFactoryIndexerTier(request, env) {
   const body = await readJsonBody(request);
   validateFactoryIndexerTierUpdateBody(body);
+  assertWritableRuntimeEnvironment(body.environment);
 
   const branch = resolveRunStoreBranch(env);
   const github = createGitHubClient(env);
@@ -1030,6 +1062,7 @@ async function handleUpdateFactoryIndexerTier(request, env) {
 async function handleCreateFactoryIndexers(request, env) {
   const body = await readJsonBody(request);
   validateFactoryIndexerCreateBody(body);
+  assertWritableRuntimeEnvironment(body.environment);
 
   const github = createGitHubClient(env, body.workflowRef);
   const operations = body.gameNames.map((gameName) => ({
@@ -1058,6 +1091,7 @@ async function handleCreateFactoryIndexers(request, env) {
 async function handleDeleteFactoryIndexers(request, env) {
   const body = await readJsonBody(request);
   validateFactoryIndexerDeleteBody(body);
+  assertWritableRuntimeEnvironment(body.environment);
 
   const branch = resolveRunStoreBranch(env);
   const github = createGitHubClient(env);
@@ -1112,6 +1146,7 @@ async function handleReadFactoryLiveIndexers(request, env) {
 async function handleRefreshFactoryLiveIndexers(request, env) {
   const body = await readJsonBody(request);
   validateFactoryLiveIndexerRefreshBody(body);
+  assertWritableRuntimeEnvironment(body.environment);
 
   const github = createGitHubClient(env, body.workflowRef);
   const requestedGameNames = Array.isArray(body.gameNames) ? body.gameNames.map((gameName) => gameName.trim()) : [];
@@ -1789,13 +1824,14 @@ function hasSucceededSeriesLikeGameStep(steps, stepId) {
 }
 
 function validateEnvironment(environment) {
-  if (
-    environment !== "slot.blitz" &&
-    environment !== "slot.eternum" &&
-    environment !== "mainnet.blitz" &&
-    environment !== "mainnet.eternum"
-  ) {
+  if (!FACTORY_ENVIRONMENTS.includes(environment)) {
     throw new HttpError(400, `Unsupported environment "${environment}"`);
+  }
+}
+
+function assertWritableRuntimeEnvironment(environment) {
+  if (/^(slot|slottest)\./.test(environment)) {
+    throw new HttpError(409, `Historical Slot environment "${environment}" is read-only`);
   }
 }
 
@@ -2026,7 +2062,7 @@ function authorizeLegacyFactoryCreate(request, env, environment) {
     throw new HttpError(410, "Public mainnet Blitz launches require the authenticated AWS game-stack API");
   }
   if (environment === "mainnet.eternum") {
-    requireFactoryWorkerAdminAuthorization(request, env);
+    throw new HttpError(410, "Mainnet Eternum creation is retired; operator workflows may provision its Torii only");
   }
 }
 
@@ -2117,7 +2153,7 @@ function validateRuntimeRegistryAlias(alias, entry) {
   if (!/^[a-z0-9.-]+$/.test(alias)) {
     throw new HttpError(400, `Runtime registry alias "${alias}" is not canonical`);
   }
-  if (!entry || typeof entry !== "object" || !["slot", "aws"].includes(entry.activeProvider)) {
+  if (!entry || typeof entry !== "object" || !["slot", "aws", "external"].includes(entry.activeProvider)) {
     throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid activeProvider`);
   }
   if (!["factory", "global", "shared-chain", "game"].includes(entry.scope)) {
@@ -2132,14 +2168,27 @@ function validateRuntimeRegistryAlias(alias, entry) {
   if (!["base", "health", "rpc", "sql"].includes(entry.endpointKind)) {
     throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid endpointKind`);
   }
-  if (!entry.providers?.slot) {
-    throw new HttpError(400, `Runtime registry alias "${alias}" must retain a Slot rollback target`);
+  const providerEntries = Object.entries(entry.providers || {});
+  if (providerEntries.length !== 1 || providerEntries[0]?.[0] !== entry.activeProvider) {
+    throw new HttpError(400, `Runtime registry alias "${alias}" must contain only its active provider endpoint`);
+  }
+  if (entry.activeProvider === "slot" && !/^(slot|slottest)\./.test(entry.environmentId)) {
+    throw new HttpError(400, `Runtime registry alias "${alias}" uses Slot outside a historical environment`);
+  }
+  if (/^(slot|slottest)\./.test(entry.environmentId) && entry.activeProvider !== "slot") {
+    throw new HttpError(
+      400,
+      `Runtime registry alias "${alias}" cannot graft an active provider onto a historical Slot alias`,
+    );
+  }
+  if (entry.activeProvider === "external" && entry.runtimeKind !== "chain-rpc") {
+    throw new HttpError(400, `Runtime registry alias "${alias}" uses external provider for a managed runtime`);
   }
   if (!entry.providers[entry.activeProvider]) {
     throw new HttpError(400, `Runtime registry alias "${alias}" is missing its active provider endpoint`);
   }
-  for (const [provider, endpoint] of Object.entries(entry.providers)) {
-    if (!["slot", "aws"].includes(provider)) {
+  for (const [provider, endpoint] of providerEntries) {
+    if (!["slot", "aws", "external"].includes(provider)) {
       throw new HttpError(400, `Runtime registry alias "${alias}" has an invalid provider "${provider}"`);
     }
     if (!isValidPublicRuntimeEndpoint(endpoint)) {
@@ -4297,7 +4346,7 @@ async function handleScheduledFactoryMaintenance(env) {
 }
 
 async function retryEligibleFactorySeriesRuns(github, branch) {
-  for (const environment of FACTORY_ENVIRONMENTS) {
+  for (const environment of OPERATOR_WORKFLOW_ENVIRONMENTS) {
     const entries = await readFactorySeriesRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
 
     for (const entry of entries) {
@@ -4371,7 +4420,7 @@ function isEligibleForSeriesAutoRetry(run) {
 }
 
 async function retryEligibleFactoryRotationRuns(github, branch) {
-  for (const environment of FACTORY_ENVIRONMENTS) {
+  for (const environment of OPERATOR_WORKFLOW_ENVIRONMENTS) {
     const entries = await readFactoryRotationRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
 
     for (const entry of entries) {
@@ -4445,7 +4494,7 @@ function isEligibleForRotationAutoRetry(run) {
 }
 
 async function evaluateEligibleFactoryRotationRuns(github, branch) {
-  for (const environment of FACTORY_ENVIRONMENTS) {
+  for (const environment of OPERATOR_WORKFLOW_ENVIRONMENTS) {
     const entries = await readFactoryRotationRunMaintenanceIndexEntriesForEnvironment(github, environment, branch);
 
     for (const entry of entries) {
@@ -4517,7 +4566,7 @@ function isEligibleForRotationEvaluation(run) {
 async function reconcileFactoryIndexerTiers(github, branch) {
   const pendingOperations = [];
 
-  for (const environment of FACTORY_ENVIRONMENTS) {
+  for (const environment of OPERATOR_WORKFLOW_ENVIRONMENTS) {
     pendingOperations.push(...(await collectFactoryGameRunIndexerTierOperations(github, branch, environment)));
     pendingOperations.push(...(await collectFactorySeriesRunIndexerTierOperations(github, branch, environment)));
     pendingOperations.push(...(await collectFactoryRotationRunIndexerTierOperations(github, branch, environment)));
@@ -4529,7 +4578,7 @@ async function reconcileFactoryIndexerTiers(github, branch) {
 async function reconcileExpiredAwsRuntimes(github, branch, env) {
   const pendingOperations = [];
 
-  for (const environment of FACTORY_ENVIRONMENTS) {
+  for (const environment of OPERATOR_WORKFLOW_ENVIRONMENTS) {
     pendingOperations.push(...(await collectFactoryGameRunRuntimeDeleteOperations(github, branch, environment)));
     pendingOperations.push(...(await collectFactorySeriesRunRuntimeDeleteOperations(github, branch, environment)));
     pendingOperations.push(...(await collectFactoryRotationRunRuntimeDeleteOperations(github, branch, environment)));
@@ -4950,12 +4999,10 @@ function hasActiveLeaseForMaintenanceEntry(entry) {
   return Number.isFinite(activeLeaseExpiresAtMs) && activeLeaseExpiresAtMs > Date.now();
 }
 
-function isMainnetEnvironment(environment) {
-  return String(environment || "").startsWith("mainnet.");
-}
-
 function shouldDispatchRuntimeFallbackSweep(env, environment) {
-  return env?.FACTORY_RUNTIME_FALLBACK_SWEEP_ENABLED === "true" && !isMainnetEnvironment(environment);
+  return (
+    env?.FACTORY_RUNTIME_FALLBACK_SWEEP_ENABLED === "true" && /^(local|sepolia)\.(blitz|eternum)$/.test(environment)
+  );
 }
 
 function resolveDesiredIndexerTier({ startTime, durationSeconds, currentTier }) {

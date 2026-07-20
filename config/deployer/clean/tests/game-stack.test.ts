@@ -6,6 +6,39 @@ describe("Blitz game-stack launch policy", () => {
   test("derives the coarse operational phase from the normative protocol lifecycle", () => {
     expect(deriveGameStackOperationalPhase("Intent")).toBe("reserving");
     expect(deriveGameStackOperationalPhase("Provisioning")).toBe("provisioning-l3");
+    expect(deriveGameStackOperationalPhase("ProvisioningIdentitySealed")).toBe("provisioning-l3");
+    expect(deriveGameStackOperationalPhase("Attested")).toBe("deploying-world");
+    expect(
+      deriveGameStackOperationalPhase("Attested", {
+        worldReadyAt: "2026-07-18T12:30:00.000Z",
+        indexerReadyAt: "2026-07-18T12:35:00.000Z",
+        registryVerifiedAt: "2026-07-18T12:40:00.000Z",
+      }),
+    ).toBe("deploying-world");
+    expect(
+      deriveGameStackOperationalPhase("Attested", {
+        identitySealedAt: "2026-07-18T12:20:00.000Z",
+        attestationVerifiedAt: "2026-07-18T12:25:00.000Z",
+        worldReadyAt: "2026-07-18T12:30:00.000Z",
+      }),
+    ).toBe("provisioning-indexer");
+    expect(
+      deriveGameStackOperationalPhase("Attested", {
+        identitySealedAt: "2026-07-18T12:20:00.000Z",
+        attestationVerifiedAt: "2026-07-18T12:25:00.000Z",
+        worldReadyAt: "2026-07-18T12:30:00.000Z",
+        indexerReadyAt: "2026-07-18T12:35:00.000Z",
+      }),
+    ).toBe("provisioning-indexer");
+    expect(
+      deriveGameStackOperationalPhase("Attested", {
+        identitySealedAt: "2026-07-18T12:20:00.000Z",
+        attestationVerifiedAt: "2026-07-18T12:25:00.000Z",
+        worldReadyAt: "2026-07-18T12:30:00.000Z",
+        indexerReadyAt: "2026-07-18T12:35:00.000Z",
+        registryVerifiedAt: "2026-07-18T12:40:00.000Z",
+      }),
+    ).toBe("ready");
     expect(deriveGameStackOperationalPhase("Active")).toBe("active");
     expect(deriveGameStackOperationalPhase("FinalRootsSealed")).toBe("settling");
     expect(deriveGameStackOperationalPhase("Retired")).toBe("closed");

@@ -3,6 +3,7 @@ import { Account, RpcProvider } from "starknet";
 import { DEFAULT_CARTRIDGE_API_BASE } from "../constants";
 import { resolveDeploymentEnvironment } from "../environment";
 import { resolvePrizeDistributionAddressForFactoryGame } from "../factory/prize-distribution-address";
+import { assertHistoricalEnvironmentIsReadOnly } from "../launch/environment-policy";
 import {
   resolveDefaultSeriesLikePrizeFundingGameNames,
   resolveGamePrizeFundingReadiness,
@@ -80,7 +81,7 @@ function usage() {
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/fund-prizes.ts --environment <slot.blitz|slottest.blitz|mainnet.blitz|slot.eternum|slottest.eternum|mainnet.eternum> --run-kind <game|series|rotation> --run-name <name> --amount <tokens>",
+      "  bun config/deployer/clean/cli/fund-prizes.ts --environment <mainnet.blitz|mainnet.eternum> --run-kind <game|series|rotation> --run-name <name> --amount <tokens>",
       "",
       "Optional:",
       "  --selected-games-json <json-array-of-game-names>",
@@ -109,6 +110,7 @@ function resolveCliArgs() {
   if (!environmentId || !runName || !amountDisplay) {
     throw new Error("--environment, --run-kind, --run-name, and --amount are required");
   }
+  assertHistoricalEnvironmentIsReadOnly(environmentId);
 
   return {
     environmentId,

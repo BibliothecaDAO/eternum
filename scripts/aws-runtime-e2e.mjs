@@ -4,10 +4,10 @@ import { randomUUID } from "node:crypto";
 import process from "node:process";
 
 const validEnvironments = new Set([
-  "slot.blitz",
-  "slot.eternum",
-  "slottest.blitz",
-  "slottest.eternum",
+  "local.blitz",
+  "local.eternum",
+  "sepolia.blitz",
+  "sepolia.eternum",
   "mainnet.blitz",
   "mainnet.eternum",
 ]);

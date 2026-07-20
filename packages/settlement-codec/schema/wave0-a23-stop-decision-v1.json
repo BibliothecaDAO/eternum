@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "ticket": "A23",
+  "recordedAt": "2026-07-20",
+  "decision": "STOP",
+  "decisionReason": "Mandatory Wave 0 feasibility properties remain absent, incomplete, externally blocked, or require a frozen-topology rebaseline.",
+  "releaseReady": false,
+  "productionStartAuthorized": false,
+  "productionEpics": {
+    "B": { "dependsOn": ["A23"], "status": "blocked" },
+    "C": { "dependsOn": ["A23"], "status": "blocked" },
+    "D": { "dependsOn": ["A23"], "status": "blocked" },
+    "E": { "dependsOn": ["A23"], "status": "blocked" },
+    "F": { "dependsOn": ["A23"], "status": "blocked" }
+  },
+  "wave0": [
+    { "ticket": "A1", "status": "complete" },
+    { "ticket": "A2", "status": "complete" },
+    { "ticket": "A3", "status": "complete" },
+    { "ticket": "A4", "status": "complete" },
+    { "ticket": "A5", "status": "absent", "mandatoryBlocker": true },
+    { "ticket": "A6", "status": "complete" },
+    { "ticket": "A7", "status": "complete" },
+    { "ticket": "A8", "status": "blocked-on-a22-and-authorized-aws", "mandatoryBlocker": true },
+    { "ticket": "A9", "status": "complete" },
+    { "ticket": "A10", "status": "complete" },
+    { "ticket": "A11", "status": "complete" },
+    { "ticket": "A12", "status": "complete" },
+    { "ticket": "A13", "status": "incomplete-no-production-sp1-receipt", "mandatoryBlocker": true },
+    { "ticket": "A14", "status": "complete" },
+    { "ticket": "A15", "status": "absent", "mandatoryBlocker": true },
+    { "ticket": "A16", "status": "incomplete-no-finalized-cancellation-proof", "mandatoryBlocker": true },
+    { "ticket": "A17", "status": "feasibility-passed-topology-rebaseline-required", "mandatoryBlocker": true },
+    { "ticket": "A18", "status": "public-feasibility-complete-private-tee-source-blocked", "mandatoryBlocker": true },
+    { "ticket": "A19", "status": "absent", "mandatoryBlocker": true },
+    { "ticket": "A20", "status": "candidate-incomplete", "mandatoryBlocker": true },
+    { "ticket": "A21", "status": "absent", "mandatoryBlocker": true },
+    { "ticket": "A22", "status": "candidate-incomplete", "mandatoryBlocker": true },
+    { "ticket": "A23", "status": "stop-record-awaiting-authorized-signatures", "mandatoryBlocker": true }
+  ],
+  "frozenAndCandidateInputs": {
+    "protocolSchema": {
+      "status": "frozen-wave0-v1",
+      "registryHash": "0x2b09dc878a4ab21d67501c809b2ac112cb4551e23266c2b27c4318cc9197402",
+      "fileSha256": "9c95f3bb68f8009433416ce52a76e189327db74399843982d23e29722f4f171c"
+    },
+    "authorityInventory": {
+      "status": "candidate-not-frozen",
+      "fileSha256": "8b79672b7609395ac3bccecffe58c197675e51ddfaf9e7bc6f2ef705869726ff",
+      "authoritativeAddressInputsHash": "0x12b8109e3c40736c6fe819afd4fdcc5cc14bdbf09f1abc182293149e148c203",
+      "privilegedMutationPathsHash": "0x5ebca1d3b1c5143a39a1c03894e8cff90cb021d1106a9bf56a8e2767494c8cb",
+      "candidateAuthoritySchemaHash": "0x69be751e24fd87fcb27cbb1a57a11b94f8f3e856b43f96fe899fdd2d0bdb1b7",
+      "unresolvedMutationCandidates": 81,
+      "releaseReady": false
+    },
+    "exitFamilyInventory": {
+      "status": "candidate-not-frozen",
+      "fileSha256": "85d76e3f6b89b75a9b168392c06ae9ca291217bb0eb6b8bc9ce3bb7395ed1455",
+      "familyRegistryHash": "0xb4a640a21643ae02efd007c6f1cfbb7abed63a18e8447f1996f2c910af997b",
+      "inventoryHash": "0x697a50dd0181120563a75da511fffcc6217821944b11b6e72b4b7c1e7dedf04",
+      "sourceProjectionHash": "0xd91695bac86d84757341a8e1d2141d74f080faae75744f28cff59760dfc755",
+      "excludedProjectionHash": "0x7293f6334dd641c66870b0a8b54be93353d6de381c7b9adbf1071727cb158af",
+      "discoveredWrites": 308,
+      "exitCoveredWrites": 252,
+      "excludedWrites": 56,
+      "familyCount": 12,
+      "familiesWithoutDiscoveredWrites": 4,
+      "releaseReady": false
+    },
+    "economicWriteInventorySha256": "226a5fdceaf850797e711574307dde2841e6ca5791e8fe09703cea6b9ed5a802",
+    "onchainObservationSha256": "64570077b1405d7a47db1fedb19a07950001df290ba33e33254df412693040ab"
+  },
+  "performanceEvidence": {
+    "a17": {
+      "katanaStepLimit": 25000000,
+      "ciCeiling": 20000000,
+      "atomicAppendSteps": 1863253,
+      "mixedMaximumJourneySteps": 17568415,
+      "rolloverSteps": 2868453,
+      "thirtyTwoWorldClosureSteps": 90115,
+      "worstDistributionSteps": 8995092,
+      "result": "pass"
+    },
+    "unavailableMandatoryCampaigns": ["A5", "A8", "A13-production-receipt", "A15", "A16", "A19", "A21"]
+  },
+  "topologyDecision": {
+    "status": "redesign-selected-rebaseline-required",
+    "a17SealBoundary": "SeasonSettlementHub-owned game and global active/cumulative aggregates with one central sealed-batch bit",
+    "removedFromAtomicBoundary": "Fallible cross-contract EconomicStateSystem promotion callbacks",
+    "productionRequirement": "Version and freeze the Hub-owned topology in the protocol registry and production D4 interfaces before A17 can unblock A23."
+  },
+  "backlogRebaseline": {
+    "c16FactoryFamilies": { "status": "unavailable-until-a19-a20", "issues": [] },
+    "c17WorldMmrFamilies": { "status": "unavailable-until-a19-a20", "issues": [] },
+    "d5ThroughD9": { "status": "unbounded-until-a22", "estimates": [] },
+    "staffing": {
+      "status": "unavailable",
+      "reason": "Named individual DRIs, independent reviewers, audit owners, and authorized parallelism are not assigned."
+    },
+    "criticalPath": {
+      "status": "not-evidence-backed",
+      "rangeWeeks": null,
+      "reason": "Proof/resource ceilings, migration family counts, economic campaign bounds, staffing, audit lead time, and risk reserve are unresolved."
+    },
+    "riskReserve": { "status": "unavailable", "rangeWeeks": null }
+  },
+  "stopOutcomes": [
+    {
+      "id": "A17-TOPOLOGY-REBASELINE",
+      "action": "Version and freeze the Hub-owned aggregate topology; do not ship the callback-based seal ABI."
+    },
+    {
+      "id": "A20-AUTHORITY-FREEZE",
+      "action": "Resolve all 81 mutation candidates and the deployed MMR class/source mismatch before freezing authority_schema_hash."
+    },
+    {
+      "id": "A22-BOUNDS-FREEZE",
+      "action": "Review all write mappings, exclusions, source identities, and exact per-game cardinalities before D5-D9 estimates."
+    },
+    {
+      "id": "TEE-SOURCE-GATE",
+      "action": "Obtain authenticated reproducible access to katana-tee commit 6a263b017aa37903b8d65cf28c9f52cd24cb5807."
+    },
+    {
+      "id": "MISSING-PROOF-GATES",
+      "action": "Complete A5, A13, A15, A16, A19, and A21 proof and maximum-bound evidence."
+    }
+  ],
+  "authorization": {
+    "status": "awaiting-authorized-signatures",
+    "requiredDecisionAuthority": true,
+    "signatures": [],
+    "namedTicketDris": [],
+    "namedIndependentReviewers": [],
+    "namedAuditOwners": []
+  }
+}

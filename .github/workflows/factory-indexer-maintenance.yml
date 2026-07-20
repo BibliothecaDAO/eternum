@@ -11,11 +11,8 @@ on:
         required: true
         type: choice
         options:
-          - slot.blitz
-          - slot.eternum
-          - slottest.blitz
-          - slottest.eternum
-          - mainnet.blitz
+          - sepolia.blitz
+          - sepolia.eternum
           - mainnet.eternum
       operation_count:
         description: "Number of maintenance operations in this batch"
@@ -45,9 +42,9 @@ jobs:
     environment: ${{ github.event.inputs.environment }}
     env:
       FACTORY_RUN_STORE_BRANCH: factory-runs
-      RUNTIME_PROVIDER: ${{ vars.RUNTIME_PROVIDER || 'slot' }}
+      RUNTIME_PROVIDER: aws
       GITHUB_TOKEN: ${{ github.token }}
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-2' }}
       AWS_RUNTIME_CLUSTER: ${{ vars.AWS_RUNTIME_CLUSTER }}
       AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
       AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
@@ -90,7 +87,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
         with:
           role-to-assume: ${{ vars.AWS_MAINTENANCE_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-2' }}
 
       - name: Setup ECS Exec client
         uses: ./.github/actions/setup-session-manager-plugin

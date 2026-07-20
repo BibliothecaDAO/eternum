@@ -9,9 +9,7 @@ on:
         type: choice
         options:
           - mainnet.blitz
-          - slot.blitz
           - mainnet.eternum
-          - slot.eternum
       run_kind:
         description: "Fund a single game, series selection, or rotation selection"
         required: true

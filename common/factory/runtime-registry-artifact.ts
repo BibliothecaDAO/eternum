@@ -28,8 +28,6 @@ export interface RegistryRuntimeArtifact {
 export interface RegisterRuntimeArtifactOptions {
   scope: RuntimeAliasScope;
   provider: RuntimeRegistryProvider;
-  activate?: boolean;
-  fallbackEndpoints?: Partial<Record<RuntimeEndpointKind, string>>;
 }
 
 export interface RuntimeEndpointRegistration extends RegisterRuntimeArtifactOptions {
@@ -81,7 +79,6 @@ export interface ActiveGameStackPublicationIdentity {
 type ReadyProductionRuntimeRegistrationBase = RegisterRuntimeArtifactOptions & {
   scope: "game";
   provider: "aws";
-  activate: true;
   publicationClass: "ready-game-stack";
   environmentId: "mainnet.blitz";
   runtimeName: string;
@@ -197,7 +194,7 @@ function buildRegisteredRuntimeAlias(
   if (registration.publicationClass === "ready-game-stack") {
     return buildReadyProductionRuntimeAlias(requireReadyProductionRegistration(registration), endpointKind, endpoint);
   }
-  return buildLegacyRuntimeAlias(registration, endpointKind, endpoint, current);
+  return buildAwsRuntimeAlias(registration, endpointKind, endpoint);
 }
 
 function buildReadyProductionRuntimeAlias(
@@ -222,72 +219,22 @@ function buildReadyProductionRuntimeAlias(
   };
 }
 
-function buildLegacyRuntimeAlias(
+function buildAwsRuntimeAlias(
   registration: RuntimeEndpointRegistration,
   endpointKind: RuntimeEndpointKind,
   endpoint: string,
-  current: RuntimeEndpointAlias | undefined,
 ): RuntimeEndpointAlias {
-  const fallbackEndpoint = resolveLegacyFallbackEndpoint(registration, endpointKind, endpoint, current);
   return {
     scope: registration.scope,
     environmentId: registration.environmentId,
     runtimeKind: registration.runtimeKind,
     endpointKind,
-    activeProvider: registration.activate ? registration.provider : current?.activeProvider || "slot",
-    providers: {
-      ...current?.providers,
-      slot: fallbackEndpoint,
-      [registration.provider]: endpoint,
-    },
-    runtimeName: registration.provider === "aws" ? registration.runtimeName : current?.runtimeName,
-    runtimeInstanceId: registration.provider === "aws" ? registration.runtimeInstanceId : current?.runtimeInstanceId,
-    imageDigest: registration.provider === "aws" ? registration.imageDigest : current?.imageDigest,
-    routingShard: registration.provider === "aws" ? registration.routingShard : current?.routingShard,
-  };
-}
-
-function resolveLegacyFallbackEndpoint(
-  registration: RuntimeEndpointRegistration,
-  endpointKind: RuntimeEndpointKind,
-  endpoint: string,
-  current: RuntimeEndpointAlias | undefined,
-): string {
-  const fallbackEndpoint =
-    registration.provider === "slot"
-      ? endpoint
-      : current?.providers.slot || registration.fallbackEndpoints?.[endpointKind];
-  if (!fallbackEndpoint) {
-    const alias = buildArtifactAlias(registration, registration.scope, endpointKind);
-    throw new Error(`Runtime registry alias "${alias}" requires a Slot rollback endpoint before AWS registration`);
-  }
-  return fallbackEndpoint;
-}
-
-export function switchRuntimeAliasProvider(
-  registryValue: RuntimeRegistryV1 | string,
-  aliasPrefix: string,
-  provider: RuntimeRegistryProvider,
-): RuntimeRegistryV1 {
-  const registry = parseRuntimeRegistry(registryValue);
-  const aliases = { ...registry.aliases };
-  const matchingAliases = Object.entries(aliases).filter(([alias]) => alias.startsWith(aliasPrefix));
-  if (matchingAliases.length === 0) {
-    throw new Error(`Runtime registry alias prefix "${aliasPrefix}" did not match any aliases`);
-  }
-
-  for (const [alias, entry] of matchingAliases) {
-    if (!entry.providers[provider]) {
-      throw new Error(`Runtime registry alias "${alias}" has no ${provider} endpoint`);
-    }
-    aliases[alias] = { ...entry, activeProvider: provider };
-  }
-
-  return {
-    ...registry,
-    revision: registry.revision + 1,
-    generatedAt: new Date().toISOString(),
-    aliases,
+    activeProvider: "aws",
+    providers: { aws: endpoint },
+    runtimeName: registration.runtimeName,
+    runtimeInstanceId: registration.runtimeInstanceId,
+    imageDigest: registration.imageDigest,
+    routingShard: registration.routingShard,
   };
 }
 
@@ -345,23 +292,7 @@ export function removeRuntimeArtifacts(
   }
 
   for (const [alias, entry] of matchingAliases) {
-    if (!entry.providers.slot) {
-      delete aliases[alias];
-      continue;
-    }
-    const { aws: _aws, ...providers } = entry.providers;
-    aliases[alias] = {
-      ...entry,
-      activeProvider: "slot",
-      providers,
-      runtimeName: undefined,
-      runtimeInstanceId: undefined,
-      imageDigest: undefined,
-      routingShard: undefined,
-      activeUntil: undefined,
-      publicationRevision: undefined,
-      attestationMeasurement: undefined,
-    };
+    delete aliases[alias];
   }
 
   const activeGameStacks = { ...registry.activeGameStacks };
@@ -401,6 +332,9 @@ function buildArtifactAlias(
 }
 
 function validateEndpointRegistration(registration: RuntimeEndpointRegistration): void {
+  if (registration.provider !== "aws") {
+    throw new Error("Slot runtime publication is retired; historical Slot aliases are read-only");
+  }
   if (
     registration.environmentId === "mainnet.blitz" &&
     registration.provider === "aws" &&
@@ -491,7 +425,6 @@ function isCompleteReadyProductionRegistration(
   return (
     registration.scope === "game" &&
     registration.provider === "aws" &&
-    registration.activate === true &&
     registration.publicationClass === "ready-game-stack" &&
     registration.environmentId === "mainnet.blitz" &&
     hasRequiredIdentity &&
@@ -514,7 +447,6 @@ function buildReadyGameStackRuntimeRegistrations(
   const shared = {
     scope: "game" as const,
     provider: "aws" as const,
-    activate: true as const,
     publicationClass: "ready-game-stack" as const,
     environmentId: gameStack.environmentId,
     runtimeName: gameStack.gameStackId,

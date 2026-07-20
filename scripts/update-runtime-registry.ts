@@ -8,14 +8,12 @@ import {
   removeRuntimeArtifacts,
   registerRuntimeArtifact,
   registerRuntimeEndpointRegistrations,
-  switchRuntimeAliasProvider,
   type RegistryRuntimeArtifact,
 } from "../common/factory/runtime-registry-artifact";
 import {
-  getDefaultRuntimeRegistry,
+  getEmbeddedReadOnlyRuntimeRegistry,
   parseRuntimeRegistry,
   type RuntimeAliasScope,
-  type RuntimeRegistryProvider,
 } from "../common/factory/runtime-registry";
 import { requireRuntimeInstanceId } from "../config/deployer/clean/runtime/runtime-identity";
 
@@ -64,7 +62,7 @@ export function buildNextRegistry(
   currentRegistry: ReturnType<typeof parseRuntimeRegistry>,
 ) {
   if (args["seed-default"] === "true") {
-    return getDefaultRuntimeRegistry();
+    return getEmbeddedReadOnlyRuntimeRegistry();
   }
   if (args["teardown-result-file"]) {
     const teardownResult = JSON.parse(fs.readFileSync(args["teardown-result-file"], "utf8")) as unknown;
@@ -76,20 +74,15 @@ export function buildNextRegistry(
   if (args["maintenance-result-file"]) {
     return removeRuntimeArtifacts(currentRegistry, readMaintenanceRuntimeInstanceIds(args["maintenance-result-file"]));
   }
-  if (args["alias-prefix"]) {
-    return switchRuntimeAliasProvider(currentRegistry, args["alias-prefix"], requireProvider(args.provider));
-  }
   if (args["launch-summary-directory"]) {
     return registerRuntimeEndpointRegistrations(
       currentRegistry,
-      readLaunchRuntimeRegistrations(args["launch-summary-directory"], args["activate-aws"] === "true"),
+      readLaunchRuntimeRegistrations(args["launch-summary-directory"]),
     );
   }
   return registerRuntimeArtifact(currentRegistry, readArtifact(requireValue(args, "artifact-file")), {
     scope: requireScope(args.scope),
     provider: requireProvider(args.provider || "aws"),
-    activate: args.activate === "true",
-    fallbackEndpoints: resolveFallbackEndpoints(args),
   });
 }
 
@@ -170,7 +163,7 @@ async function readRegistryIfPresent(url: string) {
 
 function requireSeedOperation(args: Record<string, string>) {
   if (args["seed-default"] === "true") {
-    return getDefaultRuntimeRegistry();
+    return getEmbeddedReadOnlyRuntimeRegistry();
   }
   throw new Error("Runtime registry is not published; run with --seed-default true first");
 }
@@ -184,23 +177,12 @@ function readArtifact(filePath: string): RegistryRuntimeArtifact {
   return record.artifact || record;
 }
 
-function resolveFallbackEndpoints(args: Record<string, string>) {
-  if (args["fallback-endpoints-json"]) {
-    const value = JSON.parse(args["fallback-endpoints-json"]) as unknown;
-    if (!value || typeof value !== "object" || Array.isArray(value)) {
-      throw new Error("Runtime registry fallback endpoints must be a JSON object");
-    }
-    return value as RegistryRuntimeArtifact["endpoints"];
-  }
-  return args["fallback-artifact-file"] ? readArtifact(args["fallback-artifact-file"]).endpoints : undefined;
-}
-
-function readLaunchRuntimeRegistrations(directory: string, activateAws: boolean) {
+function readLaunchRuntimeRegistrations(directory: string) {
   const summaries = fs
     .readdirSync(directory)
     .filter((entry) => entry.endsWith(".json"))
     .map((filename) => JSON.parse(fs.readFileSync(path.join(directory, filename), "utf8")) as unknown);
-  const registrations = buildLaunchRuntimeRegistrations(summaries, { activateAws });
+  const registrations = buildLaunchRuntimeRegistrations(summaries);
   if (registrations.length === 0) {
     throw new Error(`No published runtime endpoints found in launch summaries under ${directory}`);
   }
@@ -253,11 +235,9 @@ function requireValue(args: Record<string, string>, name: string, fallback?: str
   return value;
 }
 
-function requireProvider(value?: string): RuntimeRegistryProvider {
-  if (value === "slot" || value === "aws") {
-    return value;
-  }
-  throw new Error("Runtime registry provider must be slot or aws");
+function requireProvider(value?: string): "aws" {
+  if (value === "aws") return value;
+  throw new Error("Runtime registry mutations require the AWS provider");
 }
 
 function requireScope(value?: string): RuntimeAliasScope {

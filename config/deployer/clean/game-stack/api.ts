@@ -34,6 +34,7 @@ export interface GameStackApiDependencies {
   now(): Date;
   verifySignature(challenge: BlitzAuthChallenge, signature: string[]): Promise<boolean>;
   readFinalizedSeasonIntent(deploymentId: string): Promise<FinalizedSeasonIntent>;
+  assertProductionReleaseAuthorized(): Promise<void>;
   startProvisioning(gameStack: GameStack): Promise<void>;
 }
 
@@ -119,9 +120,19 @@ async function handleCreateGameStack(request: Request, dependencies: GameStackAp
   const intent = await dependencies.readFinalizedSeasonIntent(deploymentId);
   assertIntentMatchesQuote(intent, quote, deploymentId);
   const gameStack = buildRequestedGameStack(quote, intent, dependencies);
+  await authorizeProductionLaunch(dependencies);
   await dependencies.store.acquireGameStack(challenge.challengeId, gameStack);
   await startGameStackProvisioning(gameStack, dependencies);
   return jsonResponse(gameStack, 202);
+}
+
+async function authorizeProductionLaunch(dependencies: GameStackApiDependencies): Promise<void> {
+  try {
+    await dependencies.assertProductionReleaseAuthorized();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new GameStackApiError(503, message);
+  }
 }
 
 async function startGameStackProvisioning(gameStack: GameStack, dependencies: GameStackApiDependencies): Promise<void> {
@@ -141,7 +152,57 @@ async function handleReadGameStack(gameStackId: string, dependencies: GameStackA
 
 async function handleReadActiveGameStack(dependencies: GameStackApiDependencies): Promise<Response> {
   const gameStack = await dependencies.store.readActiveGameStack();
-  return gameStack ? jsonResponse(gameStack) : jsonResponse({ error: "No active Blitz game stack" }, 404);
+  return gameStack && isCompletePublicGameStack(gameStack, dependencies.now())
+    ? jsonResponse(gameStack)
+    : jsonResponse({ error: "No published active Blitz game stack" }, 404);
+}
+
+function isCompletePublicGameStack(gameStack: GameStack, now: Date): boolean {
+  return (
+    isPublicGameStackPhase(gameStack) &&
+    !gameStack.failure &&
+    hasCompleteRuntimeIdentity(gameStack) &&
+    hasOrderedReadinessEvidence(gameStack, now)
+  );
+}
+
+function isPublicGameStackPhase(gameStack: GameStack): boolean {
+  return gameStack.operationalPhase === "ready" || gameStack.operationalPhase === "active";
+}
+
+function hasOrderedReadinessEvidence(gameStack: GameStack, now: Date): boolean {
+  const readiness = gameStack.readiness;
+  const readinessTimestamps = readiness
+    ? [
+        readiness.identitySealedAt,
+        readiness.attestationVerifiedAt,
+        readiness.worldReadyAt,
+        readiness.indexerReadyAt,
+        readiness.registryVerifiedAt,
+      ].map((value) => Date.parse(value || ""))
+    : [];
+  return (
+    readinessTimestamps.length === 5 &&
+    readinessTimestamps.every(
+      (timestamp, index) => Number.isFinite(timestamp) && (index === 0 || timestamp >= readinessTimestamps[index - 1]!),
+    ) &&
+    readinessTimestamps.at(-1)! <= now.getTime()
+  );
+}
+
+function hasCompleteRuntimeIdentity(gameStack: GameStack): boolean {
+  return Boolean(
+    gameStack.worldAddress &&
+    gameStack.attestationMeasurement &&
+    gameStack.l3ChainId &&
+    gameStack.katana?.runtimeInstanceId &&
+    gameStack.katana.endpoints?.rpc &&
+    gameStack.torii?.runtimeInstanceId &&
+    gameStack.torii.endpoints?.base &&
+    gameStack.torii.endpoints?.sql &&
+    Number.isInteger(gameStack.publicationRevision) &&
+    gameStack.publicationRevision! > 0,
+  );
 }
 
 async function authenticateRequest(
@@ -211,7 +272,7 @@ function buildProvisioningDispatchFailure(gameStack: GameStack, error: unknown, 
   return {
     ...gameStack,
     protocolLifecycle: "ProvisioningAborted",
-    operationalPhase: deriveGameStackOperationalPhase("ProvisioningAborted", true),
+    operationalPhase: "failed",
     failure: {
       classification: "provisioning-dispatch",
       message,

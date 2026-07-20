@@ -120,7 +120,7 @@ function validateRuntimeRegistryPublication() {
     ]),
     ...validateRequiredSnippets("game-launch.yml", gameLaunch, [
       [
-        "must publish launched Slot and AWS endpoints",
+        "must publish launched AWS endpoints without a provider fallback",
         ["Publish launched runtime endpoints", "--launch-summary-directory", "FACTORY_WORKER_ADMIN_SECRET"],
       ],
     ]),
@@ -330,7 +330,7 @@ function validateRuntimeImageWorkflow(workflow) {
     ["must login to ECR before pushing", ["aws-actions/amazon-ecr-login"]],
     [
       "must allow only exact non-production candidate environments",
-      ["Validate candidate request", "slot.blitz|slot.eternum|slottest.blitz|slottest.eternum"],
+      ["Validate candidate request", "sepolia.blitz|sepolia.eternum"],
     ],
     [
       "must validate dojo_version before writing outputs",

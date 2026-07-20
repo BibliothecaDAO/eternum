@@ -1,14 +1,11 @@
 import type { RuntimeEndpointRegistration } from "./runtime-registry-artifact";
 
-export function buildLaunchRuntimeRegistrations(
-  summaries: unknown[],
-  options: { activateAws?: boolean } = {},
-): RuntimeEndpointRegistration[] {
+export function buildLaunchRuntimeRegistrations(summaries: unknown[]): RuntimeEndpointRegistration[] {
   const registrations = new Map<string, RuntimeEndpointRegistration>();
   for (const summary of summaries) {
     const summaryRecord = asRecord(summary);
     if (summaryRecord) {
-      collectLaunchSummaryRegistrations(summaryRecord, Boolean(options.activateAws), registrations);
+      collectLaunchSummaryRegistrations(summaryRecord, registrations);
     }
   }
   return [...registrations.values()];
@@ -16,7 +13,6 @@ export function buildLaunchRuntimeRegistrations(
 
 function collectLaunchSummaryRegistrations(
   summary: Record<string, unknown>,
-  activateAws: boolean,
   registrations: Map<string, RuntimeEndpointRegistration>,
 ): void {
   const environmentId = asString(summary.environment);
@@ -26,7 +22,7 @@ function collectLaunchSummaryRegistrations(
 
   const gameName = asString(summary.gameName);
   if (gameName) {
-    collectGameRuntimeRegistration(environmentId, gameName, summary, activateAws, registrations);
+    collectGameRuntimeRegistration(environmentId, gameName, summary, registrations);
   }
 
   if (!Array.isArray(summary.games)) {
@@ -37,7 +33,7 @@ function collectLaunchSummaryRegistrations(
     const groupedGameName = asString(gameSummary?.gameName);
     const artifacts = asRecord(gameSummary?.artifacts);
     if (groupedGameName && artifacts) {
-      collectGameRuntimeRegistration(environmentId, groupedGameName, artifacts, activateAws, registrations);
+      collectGameRuntimeRegistration(environmentId, groupedGameName, artifacts, registrations);
     }
   }
 }
@@ -46,29 +42,14 @@ function collectGameRuntimeRegistration(
   environmentId: string,
   runtimeName: string,
   artifacts: Record<string, unknown>,
-  activateAws: boolean,
   registrations: Map<string, RuntimeEndpointRegistration>,
 ): void {
   const provider = artifacts.runtimeProvider;
-  if (provider === "slot" && typeof artifacts.indexerUrl === "string") {
-    addRuntimeRegistration(registrations, {
-      scope: "game",
-      provider,
-      activate: true,
-      environmentId,
-      runtimeKind: "torii",
-      runtimeName,
-      endpoints: buildToriiEndpoints(artifacts.indexerUrl),
-    });
-    return;
-  }
-
   const awsRuntime = asRecord(artifacts.awsRuntime);
   if (provider === "aws" && awsRuntime) {
     addRuntimeRegistration(registrations, {
       scope: "game",
       provider,
-      activate: activateAws,
       environmentId,
       runtimeKind: "torii",
       runtimeName,
@@ -88,15 +69,6 @@ function addRuntimeRegistration(
     `${registration.provider}:${registration.environmentId}:${registration.runtimeKind}:${registration.runtimeName}`,
     registration,
   );
-}
-
-function buildToriiEndpoints(endpointUrl: string): RuntimeEndpointRegistration["endpoints"] {
-  const base = endpointUrl.replace(/\/+$/, "");
-  return {
-    base,
-    health: `${base}/health`,
-    sql: `${base}/sql`,
-  };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | undefined {

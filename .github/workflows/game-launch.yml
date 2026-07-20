@@ -17,12 +17,8 @@ on:
         required: true
         type: choice
         options:
-          - mainnet.blitz
-          - mainnet.eternum
-          - slot.blitz
-          - slot.eternum
-          - slottest.blitz
-          - slottest.eternum
+          - sepolia.blitz
+          - sepolia.eternum
       game_name:
         description: "Game/world name"
         required: false
@@ -95,12 +91,12 @@ jobs:
       GAME_LAUNCH_REQUEST_JSON: ${{ github.event.inputs.request_json || '{}' }}
       GAME_LAUNCH_STEP: ${{ github.event.inputs.launch_step }}
       FACTORY_RUN_STORE_BRANCH: factory-runs
-      RUNTIME_PROVIDER: ${{ vars.RUNTIME_PROVIDER || 'slot' }}
+      RUNTIME_PROVIDER: aws
       FACTORY_ADDRESS: ${{ vars.FACTORY_ADDRESS }}
       DOJO_ACCOUNT_ADDRESS: ${{ vars.GAME_LAUNCH_DOJO_ACCOUNT_ADDRESS }}
       DOJO_PRIVATE_KEY: ${{ secrets.GAME_LAUNCH_DOJO_PRIVATE_KEY }}
       GITHUB_TOKEN: ${{ github.token }}
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-2' }}
       AWS_RUNTIME_CLUSTER: ${{ vars.AWS_RUNTIME_CLUSTER }}
       AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
       AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
@@ -120,7 +116,6 @@ jobs:
       AWS_RUNTIME_CONTROL_TABLE_NAME: ${{ vars.AWS_RUNTIME_CONTROL_TABLE_NAME }}
       AWS_RUNTIME_REQUIRE_CONTROL_TABLE: ${{ vars.AWS_RUNTIME_REQUIRE_CONTROL_TABLE || 'true' }}
       AWS_RUNTIME_CORS_ORIGINS: ${{ vars.AWS_RUNTIME_CORS_ORIGINS }}
-      AWS_RUNTIME_REGISTRY_ACTIVATE: ${{ vars.AWS_RUNTIME_REGISTRY_ACTIVATE || 'false' }}
       RUNTIME_REGISTRY_URL: ${{ vars.RUNTIME_REGISTRY_URL }}
     steps:
       - name: Checkout
@@ -141,7 +136,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
         with:
           role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-2' }}
 
       - name: Setup ECS Exec client
         uses: ./.github/actions/setup-session-manager-plugin
@@ -1046,7 +1041,6 @@ jobs:
           bun scripts/update-runtime-registry.ts \
             --registry-url "${RUNTIME_REGISTRY_URL}" \
             --launch-summary-directory .context/game-launch \
-            --activate-aws "${AWS_RUNTIME_REGISTRY_ACTIVATE}" \
             | tee .context/game-launch/runtime-registry-result.json
 
       - name: Sync paymaster

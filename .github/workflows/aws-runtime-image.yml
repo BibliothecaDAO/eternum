@@ -25,13 +25,11 @@ on:
       environment:
         description: "GitHub environment containing AWS runtime variables"
         required: false
-        default: slot.blitz
+        default: sepolia.blitz
         type: choice
         options:
-          - slot.blitz
-          - slot.eternum
-          - slottest.blitz
-          - slottest.eternum
+          - sepolia.blitz
+          - sepolia.eternum
       dojo_version:
         description: "Dojo runtime image version"
         required: false
@@ -53,12 +51,12 @@ jobs:
     name: Build and push runtime image
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    environment: ${{ inputs.environment || 'slot.blitz' }}
+    environment: ${{ inputs.environment || 'sepolia.blitz' }}
     env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-2' }}
       AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
       DOJO_VERSION: ${{ inputs.dojo_version || 'v1.8.16' }}
-      SELECTED_ENVIRONMENT: ${{ inputs.environment || 'slot.blitz' }}
+      SELECTED_ENVIRONMENT: ${{ inputs.environment || 'sepolia.blitz' }}
     outputs:
       image_digest: ${{ steps.build.outputs.digest }}
       image_tag: ${{ steps.meta.outputs.image_tag }}
@@ -70,7 +68,7 @@ jobs:
         run: |
           set -euo pipefail
           case "${SELECTED_ENVIRONMENT}" in
-            slot.blitz|slot.eternum|slottest.blitz|slottest.eternum) ;;
+            sepolia.blitz|sepolia.eternum) ;;
             *)
               echo "Candidate builds require an exact non-production environment" >&2
               exit 1
@@ -90,7 +88,7 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
         with:
           role-to-assume: ${{ vars.AWS_RUNTIME_IMAGE_ROLE_ARN || vars.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-2' }}
 
       - name: Login to ECR
         uses: aws-actions/amazon-ecr-login@d539f0932e70871a027e9d5a9d8fc38589180a64

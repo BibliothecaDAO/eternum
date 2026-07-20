@@ -73,6 +73,7 @@ function createDependencies(store = createMemoryStore()): GameStackApiDependenci
       rulesetId: "0x77",
       releaseBundleHash: "0x88",
     }),
+    assertProductionReleaseAuthorized: async () => {},
     startProvisioning: async () => {},
   };
 }
@@ -191,8 +192,47 @@ describe("AWS Blitz game-stack API", () => {
       new Request("https://launch.example/v1/blitz/active"),
       dependencies,
     );
-    expect(activeResponse.status).toBe(200);
-    expect(await activeResponse.json()).toEqual(stack);
+    expect(activeResponse.status).toBe(404);
+    expect(await activeResponse.json()).toEqual({ error: "No published active Blitz game stack" });
+
+    const publishedStack: GameStack = {
+      ...stack,
+      l3ChainId: "0x534e5f424c49545a",
+      worldAddress: "0x9876",
+      attestationMeasurement: `sha384:${"c".repeat(96)}`,
+      katana: {
+        runtimeName: "blitz-season-42-katana",
+        runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b451",
+        imageDigest: `sha256:${"a".repeat(64)}`,
+        endpoints: { rpc: "https://runtime.example/katana/rpc/v0_9" },
+      },
+      torii: {
+        runtimeName: "blitz-season-42-torii",
+        runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b452",
+        imageDigest: `sha256:${"b".repeat(64)}`,
+        endpoints: {
+          base: "https://runtime.example/torii",
+          sql: "https://runtime.example/torii/sql",
+        },
+      },
+      readiness: {
+        identitySealedAt: "2026-07-18T10:20:00.000Z",
+        attestationVerifiedAt: "2026-07-18T10:20:00.000Z",
+        worldReadyAt: "2026-07-18T10:20:00.000Z",
+        indexerReadyAt: "2026-07-18T10:20:00.000Z",
+        registryVerifiedAt: "2026-07-18T10:20:00.000Z",
+      },
+      protocolLifecycle: "Attested",
+      operationalPhase: "ready",
+      publicationRevision: 42,
+    };
+    store.gameStacks.set(publishedStack.gameStackId, publishedStack);
+    const publishedResponse = await handleGameStackApiRequest(
+      new Request("https://launch.example/v1/blitz/active"),
+      dependencies,
+    );
+    expect(publishedResponse.status).toBe(200);
+    expect(await publishedResponse.json()).toEqual(publishedStack);
   });
 
   test("releases admission when provisioning dispatch fails", async () => {

@@ -15,15 +15,10 @@ type IndexerProviderResult = AwsRuntimeActionResult | SlotIndexerDeploymentResul
 
 interface EnsureIndexerDeploymentDependencies {
   ensureAwsToriiRuntime?: typeof ensureAwsToriiRuntime;
-  ensureSlotIndexerDeployment?: typeof ensureSlotIndexerDeployment;
 }
 
 function shouldUseAwsRuntimeProvider(request: IndexerRequest): boolean {
   return request.runtimeProvider === "aws";
-}
-
-function shouldUseSlotRuntimeProvider(request: IndexerRequest): boolean {
-  return request.runtimeProvider === "slot" || !request.runtimeProvider;
 }
 
 function resolveAwsIndexerArtifacts(result: AwsRuntimeActionResult) {
@@ -63,11 +58,7 @@ export async function ensureIndexerDeployment(
     return (dependencies.ensureAwsToriiRuntime || ensureAwsToriiRuntime)(request);
   }
 
-  if (shouldUseSlotRuntimeProvider(request)) {
-    return (dependencies.ensureSlotIndexerDeployment || ensureSlotIndexerDeployment)(request);
-  }
-
-  throw new Error(`Unsupported runtime provider "${request.runtimeProvider}"`);
+  throw new Error("New indexer deployment requires runtimeProvider=aws; Slot is historical read-only state");
 }
 
 export function resolveIndexerArtifactStateFromProvider(result: IndexerProviderResult): Pick<

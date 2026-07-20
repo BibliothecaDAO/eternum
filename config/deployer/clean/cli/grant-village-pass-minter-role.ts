@@ -1,13 +1,14 @@
 #!/usr/bin/env bun
 import { parseArgs, resolveOptionalArg } from "./args";
 import { grantVillagePassRolesToWorldSystems } from "../eternum/village-pass-role";
+import { assertHistoricalEnvironmentIsReadOnly } from "../launch/environment-policy";
 
 function usage(): void {
   console.log(
     [
       "",
       "Usage:",
-      "  bun config/deployer/clean/cli/grant-village-pass-minter-role.ts --chain <slot.eternum|slottest.eternum|sepolia.eternum|mainnet.eternum|local.eternum> --game <world-name>",
+      "  bun config/deployer/clean/cli/grant-village-pass-minter-role.ts --chain <sepolia.eternum|local.eternum> --game <world-name>",
       "",
       "This command grants village pass roles for one eternum world:",
       "  MINTER_ROLE -> realm_internal_systems",
@@ -40,6 +41,10 @@ function requireGrantVillagePassArgs(args: Record<string, string>): { chain: str
 
 function buildGrantVillagePassRequest(args: Record<string, string>) {
   const requiredArgs = requireGrantVillagePassArgs(args);
+  assertHistoricalEnvironmentIsReadOnly(requiredArgs.chain);
+  if (requiredArgs.chain === "mainnet.eternum") {
+    throw new Error("Mainnet Eternum world mutation is retired; operator workflows may provision its Torii only");
+  }
 
   return {
     chain: requiredArgs.chain,

@@ -1,10 +1,14 @@
+import localAddresses from "../../../contracts/common/addresses/local.json";
 import mainnetAddresses from "../../../contracts/common/addresses/mainnet.json";
+import sepoliaAddresses from "../../../contracts/common/addresses/sepolia.json";
 import slotAddresses from "../../../contracts/common/addresses/slot.json";
 import slottestAddresses from "../../../contracts/common/addresses/slottest.json";
 import { resolveConfiguredAddress } from "./address";
 
 const CANONICAL_ADDRESSES = {
+  local: localAddresses,
   mainnet: mainnetAddresses,
+  sepolia: sepoliaAddresses,
   slot: slotAddresses,
   slottest: slottestAddresses,
 } as const;

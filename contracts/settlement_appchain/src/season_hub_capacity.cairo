@@ -51,8 +51,7 @@ pub mod SeasonSettlementCapacitySpike {
     use core::hash::HashStateTrait;
     use core::poseidon::PoseidonTrait;
     use settlement_protocol::appchain_spike_interfaces::{
-        BatchCapacitySnapshot, BatchSealSummary, IEconomicCallbackMetricsSpikeDispatcher,
-        IEconomicCallbackMetricsSpikeDispatcherTrait, IPendingLiabilitySourceSpikeDispatcher,
+        BatchCapacitySnapshot, BatchSealSummary, IPendingLiabilitySourceSpikeDispatcher,
         IPendingLiabilitySourceSpikeDispatcherTrait, ISeasonSettlementCapacitySpike, PendingSourceSnapshot,
     };
     use settlement_protocol::interfaces::{
@@ -90,7 +89,7 @@ pub mod SeasonSettlementCapacitySpike {
 
     #[derive(Copy, Drop)]
     struct PromotionResult {
-        game_callback_count: u8,
+        game_group_count: u8,
         global_parent_count: u8,
         global_lot_share_count: u16,
         global_amount: u256,
@@ -121,6 +120,12 @@ pub mod SeasonSettlementCapacitySpike {
         source_provider: Map<felt252, ContractAddress>,
         source_game_id: Map<felt252, felt252>,
         economic_state_by_game: Map<felt252, ContractAddress>,
+        game_parent_active: Map<(felt252, felt252), u256>,
+        game_parent_cumulative: Map<(felt252, felt252), u256>,
+        game_lot_active: Map<(felt252, felt252), u256>,
+        game_lot_cumulative: Map<(felt252, felt252), u256>,
+        game_active_total: Map<felt252, u256>,
+        game_cumulative_total: Map<felt252, u256>,
         global_parent_active: Map<felt252, u256>,
         global_parent_cumulative: Map<felt252, u256>,
         global_lot_active: Map<felt252, u256>,
@@ -295,6 +300,19 @@ pub mod SeasonSettlementCapacitySpike {
             self.global_cumulative_total.read()
         }
 
+        fn game_active_total(self: @ContractState, game_id: felt252) -> u256 {
+            self.game_active_total.read(game_id)
+        }
+
+        fn game_cumulative_total(self: @ContractState, game_id: felt252) -> u256 {
+            self.game_cumulative_total.read(game_id)
+        }
+
+        fn is_game_batch_sealed(self: @ContractState, game_id: felt252, batch_id: u64) -> bool {
+            assert!(self.economic_state_by_game.read(game_id) != zero_address(), "GAME_NOT_REGISTERED");
+            self.batch_sealed.read(batch_id)
+        }
+
         fn global_factory_seal_hash(self: @ContractState) -> felt252 {
             self.global_factory_seal_hash.read()
         }
@@ -342,7 +360,7 @@ pub mod SeasonSettlementCapacitySpike {
             batch_id,
             parent_count: snapshot.parent_count,
             lot_share_count: snapshot.lot_share_count,
-            game_callback_count: promotion.game_callback_count,
+            game_group_count: promotion.game_group_count,
             global_parent_count: promotion.global_parent_count,
             global_lot_share_count: promotion.global_lot_share_count,
             post_state_hash: promotion.post_state_hash,
@@ -358,16 +376,7 @@ pub mod SeasonSettlementCapacitySpike {
             };
             let parents = load_parents_for_game(self, snapshot, game_id);
             let shares = load_lot_shares_for_game(self, snapshot, game_id);
-            if game_id == 0 {
-                preview_global_group(self, parents.span(), shares.span());
-            } else {
-                let economic_state = self.economic_state_by_game.read(game_id);
-                assert!(
-                    IEconomicCallbackMetricsSpikeDispatcher { contract_address: economic_state }
-                        .preview_promotion(parents.span(), shares.span()),
-                    "PROMOTION_PREFLIGHT_REJECTED",
-                );
-            }
+            preview_group(self, game_id, parents.span(), shares.span());
             processed_games.append(game_id);
         }
     }
@@ -424,6 +433,15 @@ pub mod SeasonSettlementCapacitySpike {
                 .global_parent_active
                 .write(parent_hash, self.global_parent_active.read(parent_hash) + *total.amount_or_quota);
             self.global_active_total.write(self.global_active_total.read() + *total.amount_or_quota);
+        } else {
+            let game_id = *total.key.game_id;
+            self
+                .game_parent_active
+                .write(
+                    (game_id, parent_hash),
+                    self.game_parent_active.read((game_id, parent_hash)) + *total.amount_or_quota,
+                );
+            self.game_active_total.write(game_id, self.game_active_total.read(game_id) + *total.amount_or_quota);
         }
     }
 
@@ -461,6 +479,11 @@ pub mod SeasonSettlementCapacitySpike {
         }
         if *share.game_id == 0 {
             self.global_lot_active.write(identity, self.global_lot_active.read(identity) + *share.amount);
+        } else {
+            let game_id = *share.game_id;
+            self
+                .game_lot_active
+                .write((game_id, identity), self.game_lot_active.read((game_id, identity)) + *share.amount);
         }
     }
 
@@ -581,7 +604,7 @@ pub mod SeasonSettlementCapacitySpike {
     fn promote_batch(ref self: ContractState, snapshot: BatchCapacitySnapshot) -> PromotionResult {
         let mut processed_games = array![];
         let mut result = PromotionResult {
-            game_callback_count: 0,
+            game_group_count: 0,
             global_parent_count: 0,
             global_lot_share_count: 0,
             global_amount: 0_u256,
@@ -594,11 +617,7 @@ pub mod SeasonSettlementCapacitySpike {
             };
             let parents = load_parents_for_game(@self, snapshot, game_id);
             let lot_shares = load_lot_shares_for_game(@self, snapshot, game_id);
-            let (group_hash, global_amount) = if game_id == 0 {
-                promote_global_group(ref self, parents.span(), lot_shares.span())
-            } else {
-                (promote_game_group(@self, snapshot.batch_id, game_id, parents.span(), lot_shares.span()), 0_u256)
-            };
+            let (group_hash, global_amount) = promote_group(ref self, game_id, parents.span(), lot_shares.span());
             result = record_group_result(result, game_id, parents.len(), lot_shares.len(), global_amount, group_hash);
             processed_games.append(game_id);
         }
@@ -675,24 +694,75 @@ pub mod SeasonSettlementCapacitySpike {
         shares
     }
 
+    fn promote_group(
+        ref self: ContractState, game_id: felt252, parents: Span<BackingTotal>, lot_shares: Span<LotSharePromotion>,
+    ) -> (felt252, u256) {
+        if game_id == 0 {
+            return promote_global_group(ref self, parents, lot_shares);
+        }
+        (promote_game_group(ref self, game_id, parents, lot_shares), 0_u256)
+    }
+
     fn promote_game_group(
-        self: @ContractState,
-        batch_id: u64,
-        game_id: felt252,
-        parents: Span<BackingTotal>,
-        lot_shares: Span<LotSharePromotion>,
+        ref self: ContractState, game_id: felt252, parents: Span<BackingTotal>, lot_shares: Span<LotSharePromotion>,
     ) -> felt252 {
-        let economic_state = self.economic_state_by_game.read(game_id);
-        assert!(economic_state != zero_address(), "GAME_NOT_REGISTERED");
-        let post_state_hash = IGameEconomicSettlementCallbacksDispatcher { contract_address: economic_state }
-            .promote_sealed_batch(batch_id, parents, lot_shares);
-        assert!(post_state_hash != 0, "PROMOTION_REJECTED");
-        assert!(
-            IEconomicCallbackMetricsSpikeDispatcher { contract_address: economic_state }
-                .post_state_hash() == post_state_hash,
-            "PROMOTION_POST_STATE_MISMATCH",
-        );
-        post_state_hash
+        let amount = preview_game_group(@self, game_id, parents, lot_shares);
+        let mut records_hash = 'GAME_PROMOTED_RECORDS_V1';
+        for parent in parents {
+            let identity = backing_key_hash(parent.key);
+            let key = (game_id, identity);
+            let next_active = self.game_parent_active.read(key) - *parent.amount_or_quota;
+            let next_cumulative = self.game_parent_cumulative.read(key) + *parent.amount_or_quota;
+            self.game_parent_active.write(key, next_active);
+            self.game_parent_cumulative.write(key, next_cumulative);
+            records_hash = hash_promoted_record(records_hash, 1, identity, next_active, next_cumulative);
+        }
+        for share in lot_shares {
+            let identity = lot_share_identity(share);
+            let key = (game_id, identity);
+            let next_active = self.game_lot_active.read(key) - *share.amount;
+            let next_cumulative = self.game_lot_cumulative.read(key) + *share.amount;
+            self.game_lot_active.write(key, next_active);
+            self.game_lot_cumulative.write(key, next_cumulative);
+            records_hash = hash_promoted_record(records_hash, 2, identity, next_active, next_cumulative);
+        }
+        self.game_active_total.write(game_id, self.game_active_total.read(game_id) - amount);
+        self.game_cumulative_total.write(game_id, self.game_cumulative_total.read(game_id) + amount);
+        PoseidonTrait::new()
+            .update('GAME_PROMOTION_POST_STATE_V1')
+            .update(game_id)
+            .update(records_hash)
+            .update(self.game_active_total.read(game_id).low.into())
+            .update(self.game_active_total.read(game_id).high.into())
+            .update(self.game_cumulative_total.read(game_id).low.into())
+            .update(self.game_cumulative_total.read(game_id).high.into())
+            .finalize()
+    }
+
+    fn preview_group(
+        self: @ContractState, game_id: felt252, parents: Span<BackingTotal>, lot_shares: Span<LotSharePromotion>,
+    ) -> u256 {
+        if game_id == 0 {
+            return preview_global_group(self, parents, lot_shares);
+        }
+        preview_game_group(self, game_id, parents, lot_shares)
+    }
+
+    fn preview_game_group(
+        self: @ContractState, game_id: felt252, parents: Span<BackingTotal>, lot_shares: Span<LotSharePromotion>,
+    ) -> u256 {
+        let parent_total = sum_parent_totals(parents);
+        assert!(parent_total == sum_lot_shares(lot_shares), "GAME_PROMOTION_TOTAL_MISMATCH");
+        assert!(self.game_active_total.read(game_id) >= parent_total, "GAME_ACTIVE_UNDERFLOW");
+        for parent in parents {
+            let key = (game_id, backing_key_hash(parent.key));
+            assert!(self.game_parent_active.read(key) >= *parent.amount_or_quota, "GAME_PARENT_UNDERFLOW");
+        }
+        for share in lot_shares {
+            let key = (game_id, lot_share_identity(share));
+            assert!(self.game_lot_active.read(key) >= *share.amount, "GAME_LOT_UNDERFLOW");
+        }
+        parent_total
     }
 
     fn preview_global_group(
@@ -812,7 +882,7 @@ pub mod SeasonSettlementCapacitySpike {
                 ..result,
             }
         } else {
-            PromotionResult { game_callback_count: result.game_callback_count + 1, post_state_hash, ..result }
+            PromotionResult { game_group_count: result.game_group_count + 1, post_state_hash, ..result }
         }
     }
 

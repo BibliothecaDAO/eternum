@@ -47,7 +47,7 @@ pub struct BatchSealSummary {
     pub batch_id: u64,
     pub parent_count: u8,
     pub lot_share_count: u16,
-    pub game_callback_count: u8,
+    pub game_group_count: u8,
     pub global_parent_count: u8,
     pub global_lot_share_count: u16,
     pub post_state_hash: felt252,
@@ -100,6 +100,9 @@ pub trait ISeasonSettlementCapacitySpike<TContractState> {
     fn source_snapshot(self: @TContractState, source_id: felt252) -> PendingSourceSnapshot;
     fn global_active_total(self: @TContractState) -> u256;
     fn global_cumulative_total(self: @TContractState) -> u256;
+    fn game_active_total(self: @TContractState, game_id: felt252) -> u256;
+    fn game_cumulative_total(self: @TContractState, game_id: felt252) -> u256;
+    fn is_game_batch_sealed(self: @TContractState, game_id: felt252, batch_id: u64) -> bool;
     fn global_factory_seal_hash(self: @TContractState) -> felt252;
 }
 

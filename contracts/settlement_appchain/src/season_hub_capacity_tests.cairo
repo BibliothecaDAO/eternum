@@ -79,8 +79,6 @@ fn mixed_game_and_global_seal_promotes_sixteen_parents_and_two_hundred_fifty_six
     let (global_parents, global_shares) = half_vectors(0, 4);
     let (second_game_parents, second_game_shares) = build_vectors(GAME_A, 12, 4);
 
-    fixture.callback.stage_active_totals(first_game_parents.span(), first_game_shares.span());
-    fixture.callback.stage_active_totals(second_game_parents.span(), second_game_shares.span());
     stage_source(fixture.hub, GAME_A, 7001, 8001, first_game_parents.span(), first_game_shares.span());
     stage_source(fixture.hub, 0, 7002, 8002, global_parents.span(), global_shares.span());
     stage_source(fixture.hub, GAME_A, 7003, 8003, second_game_parents.span(), second_game_shares.span());
@@ -91,21 +89,22 @@ fn mixed_game_and_global_seal_promotes_sixteen_parents_and_two_hundred_fifty_six
 
     assert!(summary.parent_count == 16);
     assert!(summary.lot_share_count == 256);
-    assert!(summary.game_callback_count == 1);
+    assert!(summary.game_group_count == 1);
     assert!(summary.global_parent_count == 8);
     assert!(summary.global_lot_share_count == 128);
     assert!(summary.post_state_hash != 0);
     assert!(fixture.hub.batch_capacity(0).sealed);
-    assert!(fixture.callback.promotion_count() == 1);
-    assert!(fixture.callback.last_parent_count() == 8);
-    assert!(fixture.callback.last_lot_share_count() == 128);
+    assert!(fixture.callback.promotion_count() == 0);
+    assert!(fixture.hub.game_active_total(GAME_A) == 0_u256);
+    assert!(fixture.hub.game_cumulative_total(GAME_A) == 128_u256);
+    assert!(fixture.hub.is_game_batch_sealed(GAME_A, 0));
     assert!(fixture.hub.global_active_total() == 0_u256);
     assert!(fixture.hub.global_cumulative_total() == 128_u256);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
-fn preflight_rejection_preserves_global_promotion_and_central_batch_bit() {
+fn rejecting_world_callback_cannot_interrupt_hub_owned_seal() {
     let fixture = setup(true);
     let (global_parents, global_shares) = half_vectors(0, 0);
     let (game_parents, game_shares) = half_vectors(GAME_A, 8);
@@ -115,12 +114,14 @@ fn preflight_rejection_preserves_global_promotion_and_central_batch_bit() {
     fixture.hub.append_pending_liability(7001, 0, 8001);
     fixture.hub.append_pending_liability(7002, 0, 8002);
     assert!(fixture.hub.global_active_total() == 128_u256, "PRESEAL_GLOBAL_ACTIVE_MISMATCH");
-    let safe_hub = ISeasonSettlementCapacitySpikeSafeDispatcher { contract_address: fixture.hub.contract_address };
+    let summary = fixture.hub.seal_open_batch();
 
-    assert!(safe_hub.seal_open_batch().is_err());
-    assert!(!fixture.hub.batch_capacity(0).sealed);
-    assert!(fixture.hub.global_active_total() == 128_u256, "POSTREVERT_GLOBAL_ACTIVE_MISMATCH");
-    assert!(fixture.hub.global_cumulative_total() == 0_u256);
+    assert!(summary.game_group_count == 1);
+    assert!(fixture.hub.batch_capacity(0).sealed);
+    assert!(fixture.hub.global_active_total() == 0_u256);
+    assert!(fixture.hub.global_cumulative_total() == 128_u256);
+    assert!(fixture.hub.game_active_total(GAME_A) == 0_u256);
+    assert!(fixture.hub.game_cumulative_total(GAME_A) == 128_u256);
     assert!(fixture.callback.promotion_count() == 0);
 }
 
@@ -150,7 +151,7 @@ fn assignment_rejection_happens_before_hub_vector_mutation() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn caught_late_game_rejection_demonstrates_non_atomic_cross_contract_promotion() {
+fn late_game_rejection_cannot_create_partial_seal_state() {
     let hub_address = deploy("SeasonSettlementCapacitySpike", array![admin().into()]);
     let hub = ISeasonSettlementCapacitySpikeDispatcher { contract_address: hub_address };
     let callback_a = deploy(
@@ -168,25 +169,24 @@ fn caught_late_game_rejection_demonstrates_non_atomic_cross_contract_promotion()
     let (parents_a, shares_a) = build_vectors(GAME_A, 0, 1);
     let (parents_b, shares_b) = build_vectors(GAME_B, 1, 1);
     let (global_parents, global_shares) = build_vectors(0, 2, 1);
-    metrics_a.stage_active_totals(parents_a.span(), shares_a.span());
-    metrics_b.stage_active_totals(parents_b.span(), shares_b.span());
     stage_source(hub, 0, 7500, 8500, global_parents.span(), global_shares.span());
     stage_source(hub, GAME_A, 7501, 8501, parents_a.span(), shares_a.span());
     stage_source(hub, GAME_B, 7502, 8502, parents_b.span(), shares_b.span());
     hub.append_pending_liability(7500, 0, 8500);
     hub.append_pending_liability(7501, 0, 8501);
     hub.append_pending_liability(7502, 0, 8502);
-    let safe_hub = ISeasonSettlementCapacitySpikeSafeDispatcher { contract_address: hub_address };
+    let summary = hub.seal_open_batch();
 
-    assert!(safe_hub.seal_open_batch().is_err());
-    assert!(!hub.batch_capacity(0).sealed);
+    assert!(summary.game_group_count == 2);
+    assert!(hub.batch_capacity(0).sealed);
     assert!(hub.global_active_total() == 0_u256);
     assert!(hub.global_cumulative_total() == 16_u256);
-    assert!(metrics_a.promotion_count() == 1);
+    assert!(hub.game_active_total(GAME_A) == 0_u256);
+    assert!(hub.game_cumulative_total(GAME_A) == 16_u256);
+    assert!(hub.game_active_total(GAME_B) == 0_u256);
+    assert!(hub.game_cumulative_total(GAME_B) == 16_u256);
+    assert!(metrics_a.promotion_count() == 0);
     assert!(metrics_b.promotion_count() == 0);
-    assert!(metrics_a.active_total() == 0_u256);
-    assert!(metrics_a.cumulative_total() == 16_u256);
-    assert!(metrics_b.active_total() == 16_u256);
 }
 
 #[test]
@@ -206,7 +206,6 @@ fn worst_distribution_seals_fifteen_games_and_one_global_parent_with_full_storag
         );
         let callback = IEconomicCallbackMetricsSpikeDispatcher { contract_address: callback_address };
         let (parents, shares) = build_vectors(game_id, game_cursor, 1);
-        callback.stage_active_totals(parents.span(), shares.span());
         start_cheat_caller_address(hub_address, admin());
         hub.register_game(game_id, callback_address);
         stop_cheat_caller_address(hub_address);
@@ -225,15 +224,13 @@ fn worst_distribution_seals_fifteen_games_and_one_global_parent_with_full_storag
 
     assert!(summary.parent_count == 16);
     assert!(summary.lot_share_count == 256);
-    assert!(summary.game_callback_count == 15);
+    assert!(summary.game_group_count == 15);
     assert!(summary.global_parent_count == 1);
     assert!(summary.global_lot_share_count == 16);
     assert!(hub.global_active_total() == 0_u256);
     assert!(hub.global_cumulative_total() == 16_u256);
     for callback in callbacks {
-        assert!(callback.promotion_count() == 1);
-        assert!(callback.active_total() == 0_u256);
-        assert!(callback.cumulative_total() == 16_u256);
+        assert!(callback.promotion_count() == 0);
     }
 }
 
@@ -338,7 +335,6 @@ fn sixty_fourth_liability_seals_immediately_and_sixty_fifth_starts_next_batch() 
         }
         let source_id = 9000 + cursor.into();
         let liability_id = 10000 + cursor.into();
-        fixture.callback.stage_active_totals(parents.span(), shares.span());
         stage_source(fixture.hub, GAME_A, source_id, liability_id, parents.span(), shares.span());
         assert!(fixture.hub.append_pending_liability(source_id, 0, liability_id) == (0, cursor.try_into().unwrap()));
         cursor += 1;
@@ -346,7 +342,9 @@ fn sixty_fourth_liability_seals_immediately_and_sixty_fifth_starts_next_batch() 
 
     assert!(fixture.hub.batch_capacity(0).sealed);
     assert!(fixture.hub.batch_capacity(0).liability_count == 64);
-    assert!(fixture.callback.promotion_count() == 1);
+    assert!(fixture.callback.promotion_count() == 0);
+    assert!(fixture.hub.game_active_total(GAME_A) == 0_u256);
+    assert!(fixture.hub.game_cumulative_total(GAME_A) == 1024_u256);
     let next_source = stage_source(fixture.hub, GAME_A, 9064, 10064, parents.span(), shares.span());
     let next_assignment = fixture.hub.append_pending_liability(9064, 0, 10064);
 
@@ -396,10 +394,6 @@ fn canonical_batch_hash_is_independent_of_source_append_order() {
     let second = setup(false);
     let (parents_a, shares_a) = build_vectors(GAME_A, 0, 1);
     let (parents_b, shares_b) = build_vectors(GAME_A, 1, 1);
-    first.callback.stage_active_totals(parents_a.span(), shares_a.span());
-    first.callback.stage_active_totals(parents_b.span(), shares_b.span());
-    second.callback.stage_active_totals(parents_a.span(), shares_a.span());
-    second.callback.stage_active_totals(parents_b.span(), shares_b.span());
     stage_source(first.hub, GAME_A, 9201, 10201, parents_b.span(), shares_b.span());
     stage_source(first.hub, GAME_A, 9202, 10202, parents_a.span(), shares_a.span());
     stage_source(second.hub, GAME_A, 9301, 10301, parents_a.span(), shares_a.span());
@@ -418,8 +412,6 @@ fn post_state_hash_binds_exact_promoted_record_identities() {
     let second = setup(false);
     let (parents_a, shares_a) = build_vectors(GAME_A, 0, 1);
     let (parents_b, shares_b) = build_vectors(GAME_A, 1, 1);
-    first.callback.stage_active_totals(parents_a.span(), shares_a.span());
-    second.callback.stage_active_totals(parents_b.span(), shares_b.span());
     stage_source(first.hub, GAME_A, 9401, 10401, parents_a.span(), shares_a.span());
     stage_source(second.hub, GAME_A, 9501, 10501, parents_b.span(), shares_b.span());
     first.hub.append_pending_liability(9401, 0, 10401);
@@ -530,7 +522,6 @@ fn stage_source(
 fn assert_shape_seals(parent_count: u32, share_count: u32, seed: felt252) {
     let fixture = setup(false);
     let (parents, shares) = build_shape_vectors(GAME_A, 0, parent_count, share_count);
-    fixture.callback.stage_active_totals(parents.span(), shares.span());
     stage_source(fixture.hub, GAME_A, seed, seed + 100000, parents.span(), shares.span());
     fixture.hub.append_pending_liability(seed, 0, seed + 100000);
 
@@ -538,9 +529,9 @@ fn assert_shape_seals(parent_count: u32, share_count: u32, seed: felt252) {
 
     assert!(summary.parent_count == parent_count.try_into().unwrap());
     assert!(summary.lot_share_count == share_count.try_into().unwrap());
-    assert!(summary.game_callback_count == 1);
-    assert!(fixture.callback.active_total() == 0_u256);
-    assert!(fixture.callback.cumulative_total() == share_count.into());
+    assert!(summary.game_group_count == 1);
+    assert!(fixture.hub.game_active_total(GAME_A) == 0_u256);
+    assert!(fixture.hub.game_cumulative_total(GAME_A) == share_count.into());
 }
 
 #[feature("safe_dispatcher")]

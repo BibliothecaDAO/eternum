@@ -59,6 +59,7 @@ jobs:
           pnpm run check:authority-inventory
           pnpm run check:economic-interface-schema
           pnpm run check:package-lock-matrix
+          pnpm run check:wave0-a23
 
   typescript-codecs:
     name: TypeScript protocol codecs

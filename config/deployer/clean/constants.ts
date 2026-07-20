@@ -25,7 +25,7 @@ export const DEFAULT_INDEXER_WORKFLOW_POLL_MS = 5_000;
 export const DEFAULT_TORII_VERSION = "v1.8.16";
 export const DEFAULT_KATANA_VERSION = "v1.7.1";
 export const DEFAULT_TORII_SLOT_TEAM = "realms-eternum";
-export const DEFAULT_RUNTIME_PROVIDER = "slot";
+export const DEFAULT_RUNTIME_PROVIDER = "aws";
 export const DEFAULT_AWS_RUNTIME_DOMAIN = "runtime.realms.world";
 export const DEFAULT_VRF_PROVIDER_ADDRESS = CARTRIDGE_VRF_RELEASE.providerAddress;
 export const DEFAULT_MAINNET_FACTORY_ADDRESS = resolveCanonicalAddress("mainnet", "factory");
@@ -56,7 +56,7 @@ export function resolveDefaultRpcUrl(chain: string): string {
 }
 
 const SLOT_DEFAULTS = {
-  runtimeProvider: DEFAULT_RUNTIME_PROVIDER,
+  runtimeProvider: "slot" as const,
   runtimeDomain: DEFAULT_AWS_RUNTIME_DOMAIN,
   factoryAddress: DEFAULT_SLOT_FACTORY_ADDRESS,
   rpcUrl: DEFAULT_SLOT_RPC_URL,
@@ -89,7 +89,51 @@ const MAINNET_DEFAULTS = {
   },
 };
 
+const SEPOLIA_DEFAULTS = {
+  ...MAINNET_DEFAULTS,
+  factoryAddress: undefined,
+  rpcUrl: DEFAULT_SEPOLIA_RPC_URL,
+};
+
+const LOCAL_DEFAULTS = {
+  ...MAINNET_DEFAULTS,
+  factoryAddress: undefined,
+  rpcUrl: DEFAULT_LOCAL_RPC_URL,
+};
+
 export const DEPLOYMENT_ENVIRONMENTS: Record<DeploymentEnvironmentId, DeploymentEnvironment> = {
+  "local.blitz": {
+    id: "local.blitz",
+    chain: "local",
+    gameType: "blitz",
+    toriiEnv: "local",
+    configPath: "config/generated/blitz.local.json",
+    ...LOCAL_DEFAULTS,
+  },
+  "local.eternum": {
+    id: "local.eternum",
+    chain: "local",
+    gameType: "eternum",
+    toriiEnv: "local",
+    configPath: "config/generated/eternum.local.json",
+    ...LOCAL_DEFAULTS,
+  },
+  "sepolia.blitz": {
+    id: "sepolia.blitz",
+    chain: "sepolia",
+    gameType: "blitz",
+    toriiEnv: "sepolia",
+    configPath: "config/generated/blitz.sepolia.json",
+    ...SEPOLIA_DEFAULTS,
+  },
+  "sepolia.eternum": {
+    id: "sepolia.eternum",
+    chain: "sepolia",
+    gameType: "eternum",
+    toriiEnv: "sepolia",
+    configPath: "config/generated/eternum.sepolia.json",
+    ...SEPOLIA_DEFAULTS,
+  },
   "mainnet.blitz": {
     id: "mainnet.blitz",
     chain: "mainnet",

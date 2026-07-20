@@ -7,9 +7,13 @@ import type {
 import type { Account } from "starknet";
 import type { AwsRuntimeArtifact } from "./runtime/aws-runtime";
 
-export type DeploymentChain = "slot" | "slottest" | "mainnet";
+export type DeploymentChain = "local" | "sepolia" | "slot" | "slottest" | "mainnet";
 export type DeploymentGameType = "blitz" | "eternum";
 export type DeploymentEnvironmentId =
+  | "local.blitz"
+  | "local.eternum"
+  | "sepolia.blitz"
+  | "sepolia.eternum"
   | "slot.blitz"
   | "slot.eternum"
   | "slottest.blitz"

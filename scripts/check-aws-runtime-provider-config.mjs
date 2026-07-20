@@ -72,12 +72,15 @@ function findRetiredProviderSwitches(path, source) {
 function validateWorkflowRuntimeProvider(path, source) {
   const failures = [];
 
-  if (workflowHardcodesAwsProvider(source)) {
-    failures.push(`${path} workflow must not hardcode RUNTIME_PROVIDER: aws`);
+  if (!workflowHardcodesAwsProvider(source)) {
+    failures.push(`${path} workflow must pin RUNTIME_PROVIDER: aws`);
   }
 
-  if (!source.includes("RUNTIME_PROVIDER: ${{ vars.RUNTIME_PROVIDER || 'slot' }}")) {
-    failures.push(`${path} workflow must read RUNTIME_PROVIDER from GitHub environment vars with slot fallback`);
+  if (source.includes("vars.RUNTIME_PROVIDER") || /RUNTIME_PROVIDER[^\n]*slot/i.test(source)) {
+    failures.push(`${path} workflow must not expose an active Slot provider fallback`);
+  }
+  if (/^\s*-\s*(?:slot|slottest)\.(?:blitz|eternum)\s*$/m.test(source)) {
+    failures.push(`${path} workflow must not expose historical Slot environments`);
   }
 
   return failures;

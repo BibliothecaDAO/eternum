@@ -22,11 +22,8 @@ on:
         required: true
         type: choice
         options:
-          - slot.blitz
-          - slot.eternum
-          - slottest.blitz
-          - slottest.eternum
-          - mainnet.blitz
+          - sepolia.blitz
+          - sepolia.eternum
           - mainnet.eternum
       runtime_kind:
         description: "Runtime kind"
@@ -64,9 +61,9 @@ on:
         default: ""
         type: string
       registry_json:
-        description: "Registry scope, activation, and optional Slot rollback endpoints"
+        description: "AWS registry scope"
         required: false
-        default: '{"scope":"game","activate":false,"slotFallbackEndpoints":{}}'
+        default: '{"scope":"game"}'
         type: string
       request_json:
         description: "Optional JSON object containing secondary runtime fields"
@@ -91,7 +88,7 @@ jobs:
     timeout-minutes: 20
     environment: ${{ github.event.inputs.environment }}
     env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-2' }}
       AWS_RUNTIME_CLUSTER: ${{ vars.AWS_RUNTIME_CLUSTER }}
       AWS_RUNTIME_DOMAIN: ${{ vars.AWS_RUNTIME_DOMAIN || 'runtime.realms.world' }}
       AWS_RUNTIME_ECR_REPOSITORY_URL: ${{ vars.AWS_RUNTIME_ECR_REPOSITORY_URL }}
@@ -121,8 +118,7 @@ jobs:
       INPUT_EXPECTED_DELETE_AFTER: ${{ github.event.inputs.expected_delete_after }}
       INPUT_TIER: ${{ github.event.inputs.tier }}
       INPUT_IMAGE_DIGEST: ${{ github.event.inputs.image_digest || vars.AWS_RUNTIME_IMAGE_DIGEST }}
-      INPUT_REGISTRY_JSON:
-        ${{ github.event.inputs.registry_json || '{"scope":"game","activate":false,"slotFallbackEndpoints":{}}' }}
+      INPUT_REGISTRY_JSON: ${{ github.event.inputs.registry_json || '{"scope":"game"}' }}
       INPUT_REQUEST_JSON: ${{ github.event.inputs.request_json || '{}' }}
       INPUT_UPSTREAM_RPC_SECRET_ARN: ${{ vars.AWS_RUNTIME_UPSTREAM_RPC_SECRET_ARN }}
     steps:
@@ -144,13 +140,21 @@ jobs:
         uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
         with:
           role-to-assume: ${{ env.SELECTED_ROLE_ARN }}
-          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-2' }}
 
       - name: Setup ECS Exec client
         uses: ./.github/actions/setup-session-manager-plugin
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Validate runtime scope
+        run: |
+          set -euo pipefail
+          if [ "${INPUT_ENVIRONMENT}" = "mainnet.eternum" ] && [ "${INPUT_RUNTIME_KIND}" != "torii" ]; then
+            echo "mainnet.eternum permits operator-managed Torii only" >&2
+            exit 1
+          fi
 
       - name: Reconcile runtime
         run: |
@@ -196,14 +200,10 @@ jobs:
           printf '%s' "${INPUT_REGISTRY_JSON}" > "${registry_request_file}"
           jq -e '
             type == "object" and
-            ((keys - ["activate", "scope", "slotFallbackEndpoints"]) | length == 0) and
-            (.scope | IN("game", "factory", "global", "shared-chain")) and
-            (.activate | type == "boolean") and
-            (.slotFallbackEndpoints | type == "object")
+            ((keys - ["scope"]) | length == 0) and
+            (.scope | IN("game", "factory", "global", "shared-chain"))
           ' "${registry_request_file}" >/dev/null
           registry_scope="$(jq -r '.scope' "${registry_request_file}")"
-          activate_registry="$(jq -r '.activate' "${registry_request_file}")"
-          slot_fallback_endpoints="$(jq -c '.slotFallbackEndpoints' "${registry_request_file}")"
 
           registry_args=(--registry-url "${RUNTIME_REGISTRY_URL}")
           if [ "${INPUT_OPERATION}" = "delete" ]; then
@@ -213,11 +213,7 @@ jobs:
               --artifact-file aws-runtime-result.json
               --scope "${registry_scope}"
               --provider aws
-              --activate "${activate_registry}"
             )
-            if [ "${slot_fallback_endpoints}" != "{}" ]; then
-              registry_args+=(--fallback-endpoints-json "${slot_fallback_endpoints}")
-            fi
           fi
 
           bun scripts/update-runtime-registry.ts "${registry_args[@]}" | tee runtime-registry-result.json

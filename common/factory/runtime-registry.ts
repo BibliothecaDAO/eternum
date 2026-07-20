@@ -2,7 +2,7 @@ export const RUNTIME_REGISTRY_SCHEMA_VERSION = "realms-runtime-registry/v1" as c
 const RUNTIME_INSTANCE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const IMAGE_DIGEST_PATTERN = /^sha256:[a-f0-9]{64}$/;
 
-export type RuntimeRegistryProvider = "slot" | "aws";
+export type RuntimeRegistryProvider = "slot" | "aws" | "external";
 export type RuntimeAliasScope = "factory" | "global" | "shared-chain" | "game";
 
 export interface RuntimeEndpointAlias {
@@ -61,10 +61,10 @@ export interface LoadRuntimeRegistryOptions {
 export interface RuntimeRegistryLoadResult {
   registry: RuntimeRegistryV1;
   remoteError?: string;
-  source: "default" | "embedded" | "remote";
+  source: "embedded" | "remote";
 }
 
-const DEFAULT_SLOT_REGISTRY: RuntimeRegistryV1 = {
+const EMBEDDED_READ_ONLY_REGISTRY: RuntimeRegistryV1 = {
   schemaVersion: RUNTIME_REGISTRY_SCHEMA_VERSION,
   revision: 1,
   generatedAt: "2026-07-10T00:00:00.000Z",
@@ -97,20 +97,6 @@ const DEFAULT_SLOT_REGISTRY: RuntimeRegistryV1 = {
       "sql",
       "https://api.cartridge.gg/x/eternum-factory-slot-d/torii/sql",
     ),
-    "factory.mainnet.eternum.torii.sql": slotAlias(
-      "factory",
-      "mainnet.eternum",
-      "torii",
-      "sql",
-      "https://api.cartridge.gg/x/eternum-factory-mainnet/torii/sql",
-    ),
-    "factory.sepolia.blitz.torii.sql": slotAlias(
-      "factory",
-      "sepolia.blitz",
-      "torii",
-      "sql",
-      "https://api.cartridge.gg/x/eternum-factory-sepolia/torii/sql",
-    ),
     "global.slot.blitz.torii.base": slotAlias(
       "global",
       "slot.blitz",
@@ -139,41 +125,27 @@ const DEFAULT_SLOT_REGISTRY: RuntimeRegistryV1 = {
       "rpc",
       "https://api.cartridge.gg/x/eternum-blitz-slot-test/katana/rpc/v0_9",
     ),
-    "shared-chain.mainnet.chain-rpc.rpc": slotAlias(
+    "shared-chain.mainnet.chain-rpc.rpc": externalAlias(
       "shared-chain",
       "mainnet.blitz",
       "chain-rpc",
       "rpc",
       "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
     ),
-    "shared-chain.sepolia.chain-rpc.rpc": slotAlias(
+    "shared-chain.sepolia.chain-rpc.rpc": externalAlias(
       "shared-chain",
       "sepolia.blitz",
       "chain-rpc",
       "rpc",
       "https://api.cartridge.gg/x/starknet/sepolia/rpc/v0_9",
     ),
-    "game.mainnet.eternum.eternum-marketplace-mainnet19.torii.base": slotAlias(
-      "game",
-      "mainnet.eternum",
-      "torii",
-      "base",
-      "https://api.cartridge.gg/x/eternum-marketplace-mainnet19/torii",
-    ),
-    "game.sepolia.eternum.eternum-marketplace-sepolia-1.torii.base": slotAlias(
-      "game",
-      "sepolia.eternum",
-      "torii",
-      "base",
-      "https://api.cartridge.gg/x/eternum-marketplace-sepolia-1/torii",
-    ),
   },
 };
 
 let installedRegistry: RuntimeRegistryV1 | undefined;
 
-export function getDefaultRuntimeRegistry(): RuntimeRegistryV1 {
-  return DEFAULT_SLOT_REGISTRY;
+export function getEmbeddedReadOnlyRuntimeRegistry(): RuntimeRegistryV1 {
+  return EMBEDDED_READ_ONLY_REGISTRY;
 }
 
 function installRuntimeRegistry(registry: RuntimeRegistryV1 | string): RuntimeRegistryV1 {
@@ -187,7 +159,7 @@ export function clearInstalledRuntimeRegistry(): void {
 
 export function resolveRuntimeEndpointAlias(alias: string, options: ResolveRuntimeAliasOptions = {}): string {
   const registry =
-    options.registry || installedRegistry || readRuntimeRegistryFromEnvironment() || DEFAULT_SLOT_REGISTRY;
+    options.registry || installedRegistry || readRuntimeRegistryFromEnvironment() || EMBEDDED_READ_ONLY_REGISTRY;
   const entry = registry.aliases[alias];
   if (!entry) {
     throw new Error(`Runtime registry alias "${alias}" is not registered`);
@@ -196,7 +168,7 @@ export function resolveRuntimeEndpointAlias(alias: string, options: ResolveRunti
   const provider = options.provider || entry.activeProvider;
   const endpoint = entry.providers[provider];
   if (!endpoint) {
-    throw new Error(`Runtime registry alias "${alias}" has no ${provider} rollback target`);
+    throw new Error(`Runtime registry alias "${alias}" has no ${provider} endpoint`);
   }
   return endpoint;
 }
@@ -495,6 +467,23 @@ function slotAlias(
   };
 }
 
+function externalAlias(
+  scope: RuntimeAliasScope,
+  environmentId: string,
+  runtimeKind: RuntimeEndpointAlias["runtimeKind"],
+  endpointKind: RuntimeEndpointAlias["endpointKind"],
+  endpoint: string,
+): RuntimeEndpointAlias {
+  return {
+    scope,
+    environmentId,
+    runtimeKind,
+    endpointKind,
+    activeProvider: "external",
+    providers: { external: endpoint },
+  };
+}
+
 function parseRegistryJson(value: string): unknown {
   try {
     return JSON.parse(value);
@@ -507,7 +496,7 @@ function validateRuntimeAlias(alias: string, entry: RuntimeEndpointAlias): void 
   if (!/^[a-z0-9.-]+$/.test(alias)) {
     throw new Error(`Runtime registry alias "${alias}" is not canonical`);
   }
-  if (!entry || typeof entry !== "object" || !["slot", "aws"].includes(entry.activeProvider)) {
+  if (!entry || typeof entry !== "object" || !["slot", "aws", "external"].includes(entry.activeProvider)) {
     throw new Error(`Runtime registry alias "${alias}" has an invalid activeProvider`);
   }
   if (!["factory", "global", "shared-chain", "game"].includes(entry.scope)) {
@@ -525,8 +514,21 @@ function validateRuntimeAlias(alias: string, entry: RuntimeEndpointAlias): void 
   if (!entry.providers || typeof entry.providers !== "object") {
     throw new Error(`Runtime registry alias "${alias}" has no provider endpoints`);
   }
-  for (const [provider, endpoint] of Object.entries(entry.providers)) {
-    if (!(["slot", "aws"] as string[]).includes(provider)) {
+  const providerEntries = Object.entries(entry.providers);
+  if (providerEntries.length !== 1 || providerEntries[0]?.[0] !== entry.activeProvider) {
+    throw new Error(`Runtime registry alias "${alias}" must contain only its active provider endpoint`);
+  }
+  if (entry.activeProvider === "slot" && !/^(slot|slottest)\./.test(entry.environmentId)) {
+    throw new Error(`Runtime registry alias "${alias}" uses Slot outside a historical environment`);
+  }
+  if (/^(slot|slottest)\./.test(entry.environmentId) && entry.activeProvider !== "slot") {
+    throw new Error(`Runtime registry alias "${alias}" cannot graft an active provider onto a historical Slot alias`);
+  }
+  if (entry.activeProvider === "external" && entry.runtimeKind !== "chain-rpc") {
+    throw new Error(`Runtime registry alias "${alias}" uses external provider for a managed runtime`);
+  }
+  for (const [provider, endpoint] of providerEntries) {
+    if (!(["slot", "aws", "external"] as string[]).includes(provider)) {
       throw new Error(`Runtime registry alias "${alias}" has an invalid provider "${provider}"`);
     }
     if (!endpoint || !isAllowedRegistryUrl(endpoint)) {
@@ -585,10 +587,10 @@ function installFallbackRegistry(embedded: LoadRuntimeRegistryOptions["embedded"
   if (typeof embedded === "string" && !embedded.trim()) {
     embedded = undefined;
   }
-  const registry = installRuntimeRegistry(embedded || DEFAULT_SLOT_REGISTRY);
+  const registry = installRuntimeRegistry(embedded || EMBEDDED_READ_ONLY_REGISTRY);
   return {
     registry,
-    source: embedded ? "embedded" : "default",
+    source: "embedded",
   };
 }
 
