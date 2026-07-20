@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   AddressAliasDisposition,
   AddressSourceKind,
+  ProductionMutationDisposition,
   getAuthorityInventory,
   getAddressAliasRecords,
   getAddressSourceRecords,
@@ -78,22 +79,30 @@ describe("A20 authority inventory", () => {
     const inventory = getAuthorityInventory();
 
     expect(inventory.privilegedMutationPaths.length).toBeGreaterThan(0);
-    expect(inventory.discoveredMutationPathHashes).toHaveLength(
-      inventory.privilegedMutationPaths.length + inventory.unresolvedMutationCandidates.length,
-    );
-    expect(inventory.unresolvedMutationPathHashes.length).toBeGreaterThan(0);
+    expect(inventory.discoveredMutationPathHashes).toHaveLength(inventory.privilegedMutationPaths.length);
+    expect(inventory.unresolvedMutationCandidates).toEqual([]);
+    expect(inventory.unresolvedMutationPathHashes).toEqual([]);
     expect(inventory.releaseReady).toBe(false);
     expect(() => validateAuthorityInventory(inventory)).not.toThrow();
-    expect(() => validateAuthorityInventoryForRelease(inventory)).toThrow("unresolved privileged mutation paths");
-    expect(() => validateAuthorityInventoryForRelease({ ...inventory, unresolvedMutationPathHashes: [] })).toThrow(
-      "unresolved mutation path hash projection mismatch",
+    expect(() => validateAuthorityInventoryForRelease(inventory)).toThrow(
+      "observed MMR class does not match the local storage-layout source",
     );
     expect(() => validateAuthorityInventoryForRelease({ ...inventory, releaseReady: true })).toThrow(
       "authority inventory release readiness mismatch",
     );
+    expect(inventory.privilegedMutationPaths.map(({ path }) => path)).toContain(
+      "config/deployer/clean/config/native-steps.ts#factory-mutation",
+    );
     expect(
-      [...inventory.privilegedMutationPaths, ...inventory.unresolvedMutationCandidates].map(({ path }) => path),
-    ).toContain("config/deployer/clean/config/native-steps.ts#factory-mutation");
+      inventory.privilegedMutationPaths.filter(
+        ({ productionDisposition }) => productionDisposition === ProductionMutationDisposition.HardDisabled,
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "contracts/game/ext/scripts/slot.sh#deploy" }),
+        expect.objectContaining({ path: "contracts/marketplace/ext/scripts/slot.sh#deploy" }),
+      ]),
+    );
   });
 
   test("publishes reproducible release hashes and a contiguous candidate MMR authority schema", () => {

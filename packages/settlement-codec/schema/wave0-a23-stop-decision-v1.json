@@ -41,7 +41,11 @@
     { "ticket": "A17", "status": "complete" },
     { "ticket": "A18", "status": "public-feasibility-complete-private-tee-source-blocked", "mandatoryBlocker": true },
     { "ticket": "A19", "status": "absent", "mandatoryBlocker": true },
-    { "ticket": "A20", "status": "candidate-incomplete", "mandatoryBlocker": true },
+    {
+      "ticket": "A20",
+      "status": "mutation-review-complete-observed-class-source-blocked",
+      "mandatoryBlocker": true
+    },
     {
       "ticket": "A21",
       "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
@@ -83,12 +87,16 @@
       "releaseReady": false
     },
     "authorityInventory": {
-      "status": "candidate-not-frozen",
-      "fileSha256": "56d98547a42810fb5d5148b579cb37232961b93b7c572903d060f7882848b560",
+      "status": "mutation-review-complete-observed-class-source-blocked",
+      "fileSha256": "e9603ad2d587805129f7d363513495e30a2e200a9ed21e54bb58178b80fb54c8",
       "authoritativeAddressInputsHash": "0x12b8109e3c40736c6fe819afd4fdcc5cc14bdbf09f1abc182293149e148c203",
-      "privilegedMutationPathsHash": "0x1cd032694feb23bdd5ff32e0d3cd05a6649fb2c2a004a2ca719a220423e924f",
+      "privilegedMutationPathsHash": "0x730c57f7701f95923436679eb45be6bc6e792bae15a99f98e1076a63c1c92c0",
       "candidateAuthoritySchemaHash": "0x69be751e24fd87fcb27cbb1a57a11b94f8f3e856b43f96fe899fdd2d0bdb1b7",
-      "unresolvedMutationCandidates": 82,
+      "unresolvedMutationCandidates": 0,
+      "reviewedMutationPaths": 89,
+      "canonicalStructuredPaths": 20,
+      "hardDisabledPaths": 2,
+      "migrationOnlyPaths": 67,
       "releaseReady": false
     },
     "exitFamilyInventory": {
@@ -193,7 +201,7 @@
   "stopOutcomes": [
     {
       "id": "A20-AUTHORITY-FREEZE",
-      "action": "Resolve all 82 mutation candidates and the deployed MMR class/source mismatch before freezing authority_schema_hash."
+      "action": "The 89-path mutation review is complete; obtain the exact deployed MMR class source or an independently verified compatible storage-layout source before freezing authority_schema_hash."
     },
     {
       "id": "A22-BOUNDS-FREEZE",

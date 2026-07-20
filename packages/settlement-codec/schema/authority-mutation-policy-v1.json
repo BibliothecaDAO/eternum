@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "a20-review-in-progress",
+  "status": "a20-mutation-review-complete",
   "canonicalStructuredOperations": [
     {
       "path": "config/deployer/clean/cli/grant-village-pass-minter-role.ts#role-mutation",
@@ -31,91 +31,53 @@
       "evidencePath": "config/deployer/clean/role-grants/grant-role.ts"
     }
   ],
-  "hardDisabledOperations": [],
+  "hardDisabledOperations": [
+    {
+      "path": "contracts/game/ext/scripts/slot.sh#deploy",
+      "evidencePath": "contracts/game/ext/scripts/slot.sh",
+      "replacementPath": "config/deployer/clean/game-stack/orchestrator.ts"
+    },
+    {
+      "path": "contracts/marketplace/ext/scripts/slot.sh#deploy",
+      "evidencePath": "contracts/marketplace/ext/scripts/slot.sh",
+      "replacementPath": "config/deployer/clean/game-stack/orchestrator.ts"
+    }
+  ],
   "readOnlyOperations": [],
   "consumedMigrationOperations": [],
-  "unresolvedOperations": [
-    "config/deployer/clean/game-stack/orchestrator.ts#deploy",
-    "config/deployer/config.ts#role-mutation",
-    "contracts/amm/ext/scripts/deployment/declare.js#declare",
-    "contracts/amm/ext/scripts/deployment/deploy.js#deploy",
-    "contracts/amm/ext/scripts/deployment/libs/common.js#declare",
-    "contracts/collectibles_claim/ext/scripts/deployment/declare.js#declare",
-    "contracts/collectibles_claim/ext/scripts/deployment/deploy.js#deploy",
-    "contracts/collectibles_claim/ext/scripts/deployment/libs/commands.js#declare",
-    "contracts/collectibles_claim/ext/scripts/deployment/libs/commands.js#deploy",
-    "contracts/collectibles_claim/ext/scripts/deployment/libs/common.js#declare",
-    "contracts/collectibles/ext/scripts/deployment/declare.js#declare",
-    "contracts/collectibles/ext/scripts/deployment/deploy.js#deploy",
-    "contracts/collectibles/ext/scripts/deployment/libs/commands.js#declare",
-    "contracts/collectibles/ext/scripts/deployment/libs/commands.js#deploy",
-    "contracts/collectibles/ext/scripts/deployment/libs/common.js#declare",
-    "contracts/lords/ext/scripts/deployment/declare.js#declare",
-    "contracts/lords/ext/scripts/deployment/deploy.js#deploy",
-    "contracts/lords/ext/scripts/deployment/libs/commands.js#declare",
-    "contracts/lords/ext/scripts/deployment/libs/commands.js#deploy",
-    "contracts/lords/ext/scripts/deployment/libs/common.js#declare",
-    "contracts/mmr/ext/scripts/deployment/libs/commands.js#declare",
-    "contracts/mmr/ext/scripts/deployment/libs/commands.js#deploy",
-    "contracts/mmr/ext/scripts/deployment/libs/common.js#declare",
-    "contracts/season_pass/ext/scripts/deployment/declare.js#declare",
-    "contracts/season_pass/ext/scripts/deployment/deploy.js#deploy",
-    "contracts/season_pass/ext/scripts/deployment/libs/commands.js#declare",
-    "contracts/season_pass/ext/scripts/deployment/libs/commands.js#deploy",
-    "contracts/season_pass/ext/scripts/deployment/libs/common.js#declare",
-    "contracts/season_resources/ext/scripts/deployment/deploy.js#deploy",
-    "contracts/season_resources/ext/scripts/deployment/deploy.js#role-mutation",
-    "contracts/season_resources/ext/scripts/deployment/libs/commands.js#declare",
-    "contracts/season_resources/ext/scripts/deployment/libs/common.js#declare",
-    "contracts/season_resources/ext/scripts/deployment/libs/grants.js#role-mutation",
-    "contracts/season_resources/ext/scripts/deployment/revoke.js#role-mutation",
-    "contracts/village_pass/ext/scripts/deployment/deploy.js#deploy",
-    "contracts/village_pass/ext/scripts/deployment/libs/commands.js#declare",
-    "contracts/village_pass/ext/scripts/deployment/libs/commands.js#deploy",
-    "contracts/village_pass/ext/scripts/deployment/libs/common.js#declare",
-    "config/deployer/config.ts#factory-mutation",
-    "contracts/amm/ext/scripts/declare.sh#declare",
-    "contracts/amm/ext/scripts/deploy.sh#deploy",
-    "contracts/amm/ext/scripts/deployment/libs/commands.js#declare",
-    "contracts/amm/ext/scripts/deployment/libs/commands.js#deploy",
-    "contracts/amm/ext/scripts/deployment/libs/common.js#deploy",
-    "contracts/ammv2/scripts/commands/deployment/manifest.js#role-mutation",
-    "contracts/collectibles_claim/ext/scripts/declare.sh#declare",
-    "contracts/collectibles_claim/ext/scripts/deploy.sh#deploy",
-    "contracts/collectibles_claim/ext/scripts/deployment/libs/common.js#deploy",
-    "contracts/collectibles/ext/scripts/declare.sh#declare",
-    "contracts/collectibles/ext/scripts/deploy.sh#deploy",
-    "contracts/collectibles/ext/scripts/deployment/libs/common.js#deploy",
-    "contracts/game/ext/scripts/migrate.sh#deploy",
-    "contracts/game/ext/scripts/slot.sh#deploy",
-    "contracts/lords/ext/scripts/declare.sh#declare",
-    "contracts/lords/ext/scripts/deploy.sh#deploy",
-    "contracts/lords/ext/scripts/deployment/libs/common.js#deploy",
-    "contracts/marketplace/ext/scripts/migrate.sh#deploy",
-    "contracts/marketplace/ext/scripts/slot.sh#deploy",
-    "contracts/mmr/ext/scripts/deployment/deploy.js#deploy",
-    "contracts/mmr/ext/scripts/deployment/grant-game-role.js#role-mutation",
-    "contracts/mmr/ext/scripts/deployment/libs/common.js#deploy",
-    "contracts/mmr/ext/scripts/deployment/set-factory-address.js#factory-mutation",
-    "contracts/scripts-runtime/js/contract-package.js#declare",
-    "contracts/scripts-runtime/js/contract-package.js#deploy",
-    "contracts/scripts-runtime/js/contract-package.js#role-mutation",
-    "contracts/scripts-runtime/js/contract-package.js#upgrade",
-    "contracts/scripts-runtime/js/package-runner.js#declare",
-    "contracts/scripts-runtime/js/package-runner.js#deploy",
-    "contracts/scripts-runtime/js/package-runner.js#role-mutation",
-    "contracts/scripts-runtime/js/package-runner.js#upgrade",
-    "contracts/scripts-runtime/js/starknet.js#declare",
-    "contracts/scripts-runtime/js/starknet.js#deploy",
-    "contracts/scripts-runtime/js/starknet.js#upgrade",
-    "contracts/season_pass/ext/scripts/declare.sh#declare",
-    "contracts/season_pass/ext/scripts/deploy.sh#deploy",
-    "contracts/season_pass/ext/scripts/deployment/libs/common.js#deploy",
-    "contracts/season_resources/ext/scripts/deploy.sh#deploy",
-    "contracts/season_resources/ext/scripts/deployment/libs/commands.js#role-mutation",
-    "contracts/season_resources/ext/scripts/deployment/libs/common.js#deploy",
-    "contracts/village_pass/ext/scripts/deploy.sh#deploy",
-    "contracts/village_pass/ext/scripts/deployment/libs/common.js#deploy",
-    "scripts/ci/roles/grant-prize-distributor-minter-role.ts#role-mutation"
-  ]
+  "pathPrefixRules": [
+    {
+      "id": "aws-game-stack-orchestrator",
+      "pathPrefix": "config/deployer/clean/game-stack/orchestrator.ts#",
+      "productionDisposition": 1,
+      "evidenceMode": "source"
+    },
+    {
+      "id": "legacy-config-migration-only",
+      "pathPrefix": "config/deployer/config.ts#",
+      "productionDisposition": 4,
+      "evidenceMode": "source",
+      "replacementPath": "config/deployer/clean/launch/runner.ts"
+    },
+    {
+      "id": "shared-contract-package-runtime",
+      "pathPrefix": "contracts/scripts-runtime/js/",
+      "productionDisposition": 1,
+      "evidenceMode": "source"
+    },
+    {
+      "id": "package-local-migration-only",
+      "pathPrefix": "contracts/",
+      "productionDisposition": 4,
+      "evidenceMode": "source",
+      "replacementPath": "contracts/scripts-runtime/js/contract-package.js"
+    },
+    {
+      "id": "typed-ci-role-workflow",
+      "pathPrefix": "scripts/ci/roles/",
+      "productionDisposition": 1,
+      "evidenceMode": "source"
+    }
+  ],
+  "unresolvedOperations": []
 }

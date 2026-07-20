@@ -130,7 +130,7 @@ function assertFrozenAndCandidateInputs() {
 
   assertA21Evidence(inputs.frozenRecoveryMaterializationProofs);
 
-  assertEqual(authority.status, "blocked-a20-mutation-review", "A20 inventory status");
+  assertEqual(authority.status, "mutation-review-complete-observed-class-source-blocked", "A20 inventory status");
   assertEqual(authority.releaseReady, false, "A20 release readiness");
   assertEqual(
     authority.authoritativeAddressInputsHash,
@@ -152,7 +152,24 @@ function assertFrozenAndCandidateInputs() {
     inputs.authorityInventory.unresolvedMutationCandidates,
     "A20 unresolved mutation count",
   );
-  assertA20StopOutcomeCount(inputs.authorityInventory.unresolvedMutationCandidates);
+  assertEqual(
+    authority.privilegedMutationPaths.length,
+    inputs.authorityInventory.reviewedMutationPaths,
+    "A20 path count",
+  );
+  for (const [disposition, field] of [
+    [1, "canonicalStructuredPaths"],
+    [2, "hardDisabledPaths"],
+    [4, "migrationOnlyPaths"],
+  ]) {
+    assertEqual(
+      authority.privilegedMutationPaths.filter(({ productionDisposition }) => productionDisposition === disposition)
+        .length,
+      inputs.authorityInventory[field],
+      `A20 ${field}`,
+    );
+  }
+  assertA20StopOutcome();
   assertFileHash("packages/settlement-codec/schema/authority-inventory-v1.json", inputs.authorityInventory.fileSha256);
 
   assertEqual(exitFamilies.status, "a22-candidate-incomplete", "A22 inventory status");
@@ -237,12 +254,12 @@ function assertA21Evidence(input) {
   assertFileHash("packages/settlement-codec/schema/frozen-recovery-materialization-a21-v1.json", input.fileSha256);
 }
 
-function assertA20StopOutcomeCount(unresolvedMutationCandidates) {
+function assertA20StopOutcome() {
   const outcome = decision.stopOutcomes.find(({ id }) => id === "A20-AUTHORITY-FREEZE");
   assert(outcome, "A23 must declare the A20 authority-freeze outcome");
   assert(
-    outcome.action.includes(`all ${unresolvedMutationCandidates} mutation candidates`),
-    "A20 authority-freeze outcome must name the current unresolved mutation count",
+    outcome.action.includes("89-path mutation review is complete") && outcome.action.includes("MMR class source"),
+    "A20 authority-freeze outcome must distinguish completed mutation review from the class-source blocker",
   );
 }
 

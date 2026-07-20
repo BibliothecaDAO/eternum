@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# A20_HARD_DISABLED: Slot is a historical runtime and cannot launch a production game.
+echo "Slot deployment is disabled; use the AWS game-stack orchestrator." >&2
+exit 1
+
 # =============================================================================
 # Slot Deployment Script
 # =============================================================================
@@ -344,4 +348,3 @@ echo -e "\n"
 echo -e "${BLUE}${BOLD}$PROJECT_NAME${NC}"
 echo -e "\n\n"
 echo "$PROJECT_NAME"
-

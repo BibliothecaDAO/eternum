@@ -31,6 +31,7 @@ const legacyAliases = new Map([
 const mutationPolicyPath = "packages/settlement-codec/schema/authority-mutation-policy-v1.json";
 const mutationPolicy = readJson(mutationPolicyPath);
 const mutationPolicyByPath = indexMutationPolicy(mutationPolicy);
+const appliedMutationPolicyRuleIds = new Set();
 const MUTATION_OPERATIONS = [
   {
     name: "deploy",
@@ -91,7 +92,7 @@ const privilegedMutationPathRecords = privilegedMutationPaths.map(serializePrivi
 const onchainObservations = [readJson("packages/settlement-codec/schema/onchain-observation-a20-v1.json")];
 const inventory = {
   schemaVersion: 1,
-  status: mutationPolicy.unresolvedOperations.length === 0 ? "a20-authority-inventory" : "blocked-a20-mutation-review",
+  status: resolveInventoryStatus(authoritySchema),
   generatedArtifactsCurrent: generatedAddressesAreCurrent(addressSources),
   addressSources,
   addressSourceRecords,
@@ -570,7 +571,7 @@ function discoverMutationPaths() {
 
 function mutationRecord(sourcePath, source, operation) {
   const path = `${sourcePath}#${operation.name}`;
-  const policy = mutationPolicyByPath.get(path);
+  const policy = resolveMutationPolicy(path, sourcePath);
   if (!policy) {
     return {
       path,
@@ -588,7 +589,7 @@ function mutationRecord(sourcePath, source, operation) {
     };
   }
   const replacementPath = policy.replacementPath ?? "";
-  return {
+  const record = {
     path,
     sourcePath,
     operation: operation.name,
@@ -602,6 +603,37 @@ function mutationRecord(sourcePath, source, operation) {
     replacementPathHash: replacementPath ? felt(replacementPath) : "0x0",
     evidenceHash: policy.evidencePath ? felt(readText(policy.evidencePath)) : "0x0",
   };
+  validateMutationEvidence(record, source);
+  return record;
+}
+
+function resolveMutationPolicy(path, sourcePath) {
+  const exact = mutationPolicyByPath.get(path);
+  if (exact) return exact;
+  const matches = mutationPolicy.pathPrefixRules
+    .filter(({ pathPrefix }) => path.startsWith(pathPrefix))
+    .sort((left, right) => right.pathPrefix.length - left.pathPrefix.length);
+  if (matches.length === 0) return null;
+  if (matches.length > 1 && matches[0].pathPrefix.length === matches[1].pathPrefix.length) {
+    throw new Error(`ambiguous privileged mutation policy rules: ${path}`);
+  }
+  const rule = matches[0];
+  appliedMutationPolicyRuleIds.add(rule.id);
+  return {
+    productionDisposition: rule.productionDisposition,
+    reviewStatus: "reviewed",
+    replacementPath: rule.replacementPath ?? "",
+    evidencePath: rule.evidenceMode === "source" ? sourcePath : rule.evidencePath,
+  };
+}
+
+function validateMutationEvidence(record, source) {
+  if (record.productionDisposition === 2 && !source.includes("A20_HARD_DISABLED")) {
+    throw new Error(`hard-disabled mutation path lacks an executable guard: ${record.path}`);
+  }
+  if (record.productionDisposition === 4 && !record.replacementPath) {
+    throw new Error(`migration-only mutation path lacks a replacement: ${record.path}`);
+  }
 }
 
 function indexMutationPolicy(policy) {
@@ -638,12 +670,23 @@ function indexMutationPolicy(policy) {
 function assertMutationPolicyCoverage(discovered, policyByPath) {
   const discoveredPaths = new Set(discovered.map(({ path }) => path));
   const stale = [...policyByPath.keys()].filter((path) => !discoveredPaths.has(path));
-  const missing = [...discoveredPaths].filter((path) => !policyByPath.has(path));
-  if (stale.length > 0 || missing.length > 0) {
+  const missing = discovered.filter(({ reviewStatus }) => reviewStatus === "unreviewed").map(({ path }) => path);
+  const unusedRules = mutationPolicy.pathPrefixRules
+    .filter(({ id }) => !appliedMutationPolicyRuleIds.has(id))
+    .map(({ id }) => id);
+  if (stale.length > 0 || missing.length > 0 || unusedRules.length > 0) {
     throw new Error(
-      `privileged mutation policy mismatch\nmissing:\n${missing.join("\n")}\nstale:\n${stale.join("\n")}`,
+      `privileged mutation policy mismatch\nmissing:\n${missing.join("\n")}\nstale:\n${stale.join("\n")}\nunused rules:\n${unusedRules.join("\n")}`,
     );
   }
+}
+
+function resolveInventoryStatus(authoritySchema) {
+  if (mutationPolicy.unresolvedOperations.length > 0) return "blocked-a20-mutation-review";
+  if (!authoritySchema.observedClassMatchesLocalStorageLayoutSource) {
+    return "mutation-review-complete-observed-class-source-blocked";
+  }
+  return "a20-authority-inventory";
 }
 
 function addressRecord(chainId, semanticKey, sourceKind, sourcePath, sourceKey, value, isAuthoritative) {
