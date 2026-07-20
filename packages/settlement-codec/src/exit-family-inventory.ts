@@ -6,6 +6,7 @@ import {
   computeExitFamilyInventoryHash,
   computeExitFamilyRegistryHash,
   computeExitFamilySchemaHash,
+  computeExitFamilySourceProjectionHash,
   computeExitSourceProjectionHash,
 } from "./exit-family-commitments";
 
@@ -31,6 +32,7 @@ export interface ExitFamilyInventoryFamily {
   sourceFiles: string[];
   sourceWriteCount: number;
   sourceFileCount: number;
+  familyProjectionHash: string;
   schemaHash: string;
 }
 
@@ -66,7 +68,7 @@ const CAPABILITY_REGISTRY = economicCapabilityRegistryJson;
 const ECONOMIC_WRITES = economicWriteInventoryJson.entries;
 
 export function getExitFamilyInventory(): ExitFamilyInventory {
-  return INVENTORY;
+  return structuredClone(INVENTORY);
 }
 
 export function validateExitFamilyInventory(inventory: ExitFamilyInventory): void {
@@ -184,6 +186,9 @@ function validateSourceWriteProjection(inventory: ExitFamilyInventory): void {
     ) {
       throw new Error(`exit-family ${family.familyId} source projection count mismatch`);
     }
+    if (family.familyProjectionHash !== computeExitFamilySourceProjectionHash(family.familyId, family.sourceWriteIds)) {
+      throw new Error(`exit-family ${family.familyId} source projection commitment mismatch`);
+    }
   }
 
   const expectedSummary = {
@@ -218,7 +223,7 @@ function validateCommitments(inventory: ExitFamilyInventory): void {
   }
   const inventoryHash = computeExitFamilyInventoryHash({
     familyRegistryHash,
-    coveredSourceWriteIds: coveredIds,
+    familySourceProjectionHashes: inventory.families.map((family) => family.familyProjectionHash),
     excludedSourceWriteIds: inventory.excludedWriteIds,
   });
   if (inventory.inventoryHash !== inventoryHash) throw new Error("exit-family inventory commitment mismatch");
@@ -262,6 +267,7 @@ function familyCommitment(family: ExitFamilyInventoryFamily) {
     deletion: family.indexSchema.deletion,
     chunkSize: family.chunking.chunkSize,
     splitRule: family.chunking.splitRule,
+    maximumPositionsPerGame: family.cardinality.maximumPositionsPerGame,
     operationIds: family.operationIds,
     affectedModels: family.affectedModels,
   };

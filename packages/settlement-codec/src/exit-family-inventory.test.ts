@@ -5,10 +5,23 @@ import {
   validateExitFamilyInventory,
   validateExitFamilyInventoryForRelease,
 } from "./exit-family-inventory";
+import {
+  computeExitFamilyInventoryHash,
+  computeExitFamilySchemaHash,
+  computeExitFamilySourceProjectionHash,
+} from "./exit-family-commitments";
 
 const economicWriteInventoryUrl = new URL("../schema/economic-write-inventory-v0.json", import.meta.url);
 
 describe("A22 exit-family inventory", () => {
+  test("returns an isolated inventory that cannot corrupt later reads", () => {
+    const inventory = getExitFamilyInventory();
+    inventory.families[0].sourceWriteIds.pop();
+
+    expect(() => validateExitFamilyInventory(inventory)).toThrow(/source write projection/);
+    expect(() => validateExitFamilyInventory(getExitFamilyInventory())).not.toThrow();
+  });
+
   test("projects every discovered write into exactly one reviewed bucket", () => {
     const inventory = getExitFamilyInventory();
     const writes = readJson(economicWriteInventoryUrl).entries as EconomicWrite[];
@@ -62,8 +75,53 @@ describe("A22 exit-family inventory", () => {
       expect(family.chunking.splitRule).toContain("ascending stable index");
       expect(family.schemaHash).toMatch(/^0x[0-9a-f]+$/);
     }
-    expect(inventory.familyRegistryHash).toBe("0x629ea1a717e1552114e5802873b00f43d9b005fba157c4c9d481f180e0377b9");
-    expect(inventory.inventoryHash).toBe("0x6db7d817adfc8b232ed97212b841c8f321768b284ab3a0d666566c1bf7c0bf0");
+    expect(inventory.familyRegistryHash).toBe("0xb4a640a21643ae02efd007c6f1cfbb7abed63a18e8447f1996f2c910af997b");
+    expect(inventory.inventoryHash).toBe("0x697a50dd0181120563a75da511fffcc6217821944b11b6e72b4b7c1e7dedf04");
+  });
+
+  test("binds reviewed cardinality and each writer's family assignment into commitments", () => {
+    const inventory = getExitFamilyInventory();
+    const family = inventory.families[0];
+    const schemaInput = {
+      familyId: family.familyId,
+      capabilityFamily: family.capabilityFamily,
+      sourceIdentityFields: family.sourceIdentity.fields,
+      indexKey: family.indexSchema.key,
+      highWatermark: family.indexSchema.highWatermark,
+      stableIds: family.indexSchema.stableIds,
+      deletion: family.indexSchema.deletion,
+      chunkSize: family.chunking.chunkSize,
+      splitRule: family.chunking.splitRule,
+      maximumPositionsPerGame: family.cardinality.maximumPositionsPerGame,
+      operationIds: family.operationIds,
+      affectedModels: family.affectedModels,
+    };
+
+    expect(computeExitFamilySchemaHash({ ...schemaInput, maximumPositionsPerGame: 1024 })).not.toBe(
+      computeExitFamilySchemaHash(schemaInput),
+    );
+    expect(computeExitFamilySourceProjectionHash(1, ["writer-a"])).not.toBe(
+      computeExitFamilySourceProjectionHash(2, ["writer-a"]),
+    );
+    expect(family.familyProjectionHash).toBe(
+      computeExitFamilySourceProjectionHash(family.familyId, family.sourceWriteIds),
+    );
+    const familySourceProjectionHashes = inventory.families.map((candidate) => candidate.familyProjectionHash);
+    expect(
+      computeExitFamilyInventoryHash({
+        familyRegistryHash: inventory.familyRegistryHash,
+        familySourceProjectionHashes,
+        excludedSourceWriteIds: inventory.excludedWriteIds,
+      }),
+    ).toBe(inventory.inventoryHash);
+    familySourceProjectionHashes[0] = computeExitFamilySourceProjectionHash(2, family.sourceWriteIds);
+    expect(
+      computeExitFamilyInventoryHash({
+        familyRegistryHash: inventory.familyRegistryHash,
+        familySourceProjectionHashes,
+        excludedSourceWriteIds: inventory.excludedWriteIds,
+      }),
+    ).not.toBe(inventory.inventoryHash);
   });
 
   test("fails closed when generated coverage is missing or duplicated", () => {

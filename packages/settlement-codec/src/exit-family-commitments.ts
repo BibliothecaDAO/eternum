@@ -10,6 +10,7 @@ export interface ExitFamilySchemaCommitmentInput {
   readonly deletion: string;
   readonly chunkSize: number;
   readonly splitRule: string;
+  readonly maximumPositionsPerGame: number | null;
   readonly operationIds: readonly number[];
   readonly affectedModels: readonly string[];
 }
@@ -29,6 +30,7 @@ export function computeExitFamilySchemaHash(family: ExitFamilySchemaCommitmentIn
     hashExitFamilyString(family.deletion),
     family.chunkSize,
     hashExitFamilyString(family.splitRule),
+    family.maximumPositionsPerGame ?? 0,
     exitFamilyCountedHash("EXIT_FAMILY_OPERATION_IDS_V0", family.operationIds.map(String)),
     exitFamilyCountedHash("EXIT_FAMILY_AFFECTED_MODELS_V0", family.affectedModels.map(hashExitFamilyString)),
   );
@@ -42,15 +44,23 @@ export function computeExitSourceProjectionHash(sourceWriteIds: readonly string[
   return exitFamilyCountedHash("EXIT_SOURCE_WRITE_PROJECTION_V0", sourceWriteIds.map(hashExitFamilyString));
 }
 
+export function computeExitFamilySourceProjectionHash(familyId: number, sourceWriteIds: readonly string[]): string {
+  return exitFamilyPoseidon(
+    "EXIT_FAMILY_SOURCE_WRITE_PROJECTION_V0",
+    familyId,
+    computeExitSourceProjectionHash(sourceWriteIds),
+  );
+}
+
 export function computeExitFamilyInventoryHash(input: {
   readonly familyRegistryHash: string;
-  readonly coveredSourceWriteIds: readonly string[];
+  readonly familySourceProjectionHashes: readonly string[];
   readonly excludedSourceWriteIds: readonly string[];
 }): string {
   return exitFamilyPoseidon(
     "EXIT_FAMILY_INVENTORY_V0",
     input.familyRegistryHash,
-    computeExitSourceProjectionHash(input.coveredSourceWriteIds),
+    exitFamilyCountedHash("EXIT_FAMILY_SOURCE_WRITE_PROJECTIONS_V0", input.familySourceProjectionHashes),
     computeExitSourceProjectionHash(input.excludedSourceWriteIds),
   );
 }

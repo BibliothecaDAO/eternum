@@ -6,10 +6,10 @@
     "economicCapabilityRegistryVersion": 1,
     "economicWriteInventoryVersion": 0
   },
-  "familyRegistryHash": "0x629ea1a717e1552114e5802873b00f43d9b005fba157c4c9d481f180e0377b9",
+  "familyRegistryHash": "0xb4a640a21643ae02efd007c6f1cfbb7abed63a18e8447f1996f2c910af997b",
   "sourceProjectionHash": "0xd91695bac86d84757341a8e1d2141d74f080faae75744f28cff59760dfc755",
   "excludedProjectionHash": "0x7293f6334dd641c66870b0a8b54be93353d6de381c7b9adbf1071727cb158af",
-  "inventoryHash": "0x6db7d817adfc8b232ed97212b841c8f321768b284ab3a0d666566c1bf7c0bf0",
+  "inventoryHash": "0x697a50dd0181120563a75da511fffcc6217821944b11b6e72b4b7c1e7dedf04",
   "releaseReady": false,
   "exclusionReviewStatus": "heuristic-unreviewed",
   "summary": {
@@ -111,7 +111,8 @@
       ],
       "sourceWriteCount": 38,
       "sourceFileCount": 9,
-      "schemaHash": "0x58bbc7fc5a355bed3c43d1f8493b9c3f0e9d27391a27b13a47693818a59b8cc"
+      "familyProjectionHash": "0x3b17f51a7ef349db0933ba2061cbc3adb4ba91ab754e7c1db7f324417df7b53",
+      "schemaHash": "0xed35032ff322ba21769c91c4a8080087252c2cb9e999ed291640c8ba5a246b"
     },
     {
       "familyId": 2,
@@ -204,7 +205,8 @@
       ],
       "sourceWriteCount": 33,
       "sourceFileCount": 15,
-      "schemaHash": "0x54acc1ac260c972a41a57259a9e11d4475722d23c29baf8e5d56d4e3a7c513e"
+      "familyProjectionHash": "0x5454603923d742a91c41c9f0afb2e9c79694c8df8e22a707b86aa90e42fcc4b",
+      "schemaHash": "0x26972cdc6a2447a31a53dd4f98164a2b1259a55b2b6dc810d57123a4900e888"
     },
     {
       "familyId": 3,
@@ -279,7 +281,8 @@
       ],
       "sourceWriteCount": 25,
       "sourceFileCount": 3,
-      "schemaHash": "0x4387eaa89448b61c9798c3e9a850a9c33d490ee1e1cdc3138b4dfbd34b3c2f2"
+      "familyProjectionHash": "0x5906c6319d3f931d6f5f26e74fd61f31648657d230c9ad7fbbb7c1c4436f43b",
+      "schemaHash": "0x7ce7bc51af942bb85ef6a9b847e38c9e502409c256d1997227dc22584788701"
     },
     {
       "familyId": 4,
@@ -330,7 +333,8 @@
       ],
       "sourceWriteCount": 3,
       "sourceFileCount": 1,
-      "schemaHash": "0x612dfd383e23ac99b7856a7338181b5e3133d57a3ce99bdbe3b3c3476555d75"
+      "familyProjectionHash": "0x3908ca3ee0decf69eccde4e3731163c7861167c2a386683fec15c4176f0dab",
+      "schemaHash": "0x1ed923afaf9194f7166d2eafdb3ed1f0d2b28867baebfcf63332b71eb9a16a8"
     },
     {
       "familyId": 5,
@@ -421,7 +425,8 @@
       ],
       "sourceWriteCount": 35,
       "sourceFileCount": 8,
-      "schemaHash": "0x4cd3c74ea39f91a1779d780a9a949c9cf0a29a48d59277e0bdf0d30c7848c53"
+      "familyProjectionHash": "0x33e75ac9dd41f0f1785bd71ebfdf65479f1e154fceb2f57abed9d1ce275bd46",
+      "schemaHash": "0x5d7e3048f34b911a816d205dfbb2991cf49495ffb2aa005833a91071c027609"
     },
     {
       "familyId": 6,
@@ -483,7 +488,8 @@
       ],
       "sourceWriteCount": 12,
       "sourceFileCount": 3,
-      "schemaHash": "0x5d13451e8e9890d0d0786a8d9659554b30b9f45172e266e5e93b5c9df811ec"
+      "familyProjectionHash": "0x3be2160d871a5baa8654bd4d602e8be6e3c5a626b168ce20f0060ef44ae9e49",
+      "schemaHash": "0x313fef74bbae89d14c45e5dfb00c4681ba0511abc65e6e166ed536af6322f37"
     },
     {
       "familyId": 7,
@@ -555,7 +561,8 @@
       ],
       "sourceWriteCount": 20,
       "sourceFileCount": 3,
-      "schemaHash": "0x2094865462d43e9e7c9699a7c1a44f52640d3b817851bf68b149a4b8084a1a7"
+      "familyProjectionHash": "0x29f33d178529643c84bb1461975c19290dfd6b265ca3552d7862aace3f32207",
+      "schemaHash": "0x5b19e4bd011038f389b80cbd58024cc5a739a96cfcc1fa3c0a57de7ea6830e7"
     },
     {
       "familyId": 8,
@@ -699,7 +706,8 @@
       ],
       "sourceWriteCount": 86,
       "sourceFileCount": 11,
-      "schemaHash": "0x2bb2898ad6208dc5fbcf16c88ffbc5613070aecb1f43190e8502ec5183fbe57"
+      "familyProjectionHash": "0x300bd995eb8dd8ac82d36360b2b97bfd7a35910d1c2c802ad74705edeb479e0",
+      "schemaHash": "0x6c42a9aaf9f49c6c6e284dd0daec0a589a9c263e0b28d6835d5d6ee4ab0336f"
     },
     {
       "familyId": 9,
@@ -743,7 +751,8 @@
       "sourceFiles": [],
       "sourceWriteCount": 0,
       "sourceFileCount": 0,
-      "schemaHash": "0x5c16488c197e0d4c2d0fbc8b03768388b1e8d5937bee865aba585c67f998348"
+      "familyProjectionHash": "0x4f478afbd79d3283c601780a8df2dd208619e57be8017dd08f5b8dc517c9801",
+      "schemaHash": "0x2a094690adf0ea0ad20d4185bb5dd7fc59b6381029f71fef39f7526b23c010d"
     },
     {
       "familyId": 10,
@@ -787,7 +796,8 @@
       "sourceFiles": [],
       "sourceWriteCount": 0,
       "sourceFileCount": 0,
-      "schemaHash": "0x57f559e7566b90585e3e42eb7f5b3bd3ce6d6c2b562cc10b5cdebe2d5031c62"
+      "familyProjectionHash": "0x5e8d5166f9833e62bf690dd5f4b6995e31691b6b8a25359c9a8a9ea53cf3740",
+      "schemaHash": "0x1bb7551f9e26f6e1e2c5ffe9597593fa4c8de9538d6452dcc0d2b5f48cec2c2"
     },
     {
       "familyId": 11,
@@ -829,7 +839,8 @@
       "sourceFiles": [],
       "sourceWriteCount": 0,
       "sourceFileCount": 0,
-      "schemaHash": "0x73ba01ef3546cab1f41176c6dc6c2fa99916296b391289435f5209a8a615827"
+      "familyProjectionHash": "0x2297b1d535c68bd8899b1b920616b49c201a2260fbca0036d0b29c67f6deda5",
+      "schemaHash": "0x51b5dd9f0ced15d4365002b37ef9ce29f8400c1a3095333b06dbcc55bcc4fff"
     },
     {
       "familyId": 12,
@@ -871,7 +882,8 @@
       "sourceFiles": [],
       "sourceWriteCount": 0,
       "sourceFileCount": 0,
-      "schemaHash": "0x5abd33f2ce81e4142c7de9a5649d49b517a0970fcbaddcd8a48f351a8b2dda0"
+      "familyProjectionHash": "0x30f197c423e741e75232f1d28edb386a8428a2cde2f55f3f8e6e502062b077e",
+      "schemaHash": "0x2c2786eeb094e1e812cf7c1b5b53e366cf8a4672502870bfab5b27147271b9a"
     }
   ],
   "excludedWriteIds": [

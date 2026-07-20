@@ -4,6 +4,7 @@ import {
   computeExitFamilyInventoryHash,
   computeExitFamilyRegistryHash,
   computeExitFamilySchemaHash,
+  computeExitFamilySourceProjectionHash,
   computeExitSourceProjectionHash,
 } from "../../packages/settlement-codec/src/exit-family-commitments";
 
@@ -54,7 +55,7 @@ function buildExitFamilyInventory() {
     excludedProjectionHash: computeExitSourceProjectionHash(excludedWriteIds),
     inventoryHash: computeExitFamilyInventoryHash({
       familyRegistryHash,
-      coveredSourceWriteIds,
+      familySourceProjectionHashes: families.map((family) => family.familyProjectionHash),
       excludedSourceWriteIds: excludedWriteIds,
     }),
     releaseReady: false,
@@ -92,6 +93,7 @@ function buildFamilyInventory(familyPolicy: ExitFamilyPolicy["families"][number]
     deletion: policy.indexSchema.deletion,
     chunkSize: policy.chunking.chunkSize,
     splitRule: policy.chunking.splitRule,
+    maximumPositionsPerGame: policy.reviewPolicy.maximumPositionsPerGame,
     operationIds: operations.map((operation) => operation.operationId),
     affectedModels: operations.flatMap((operation) => operation.affectedModels),
   };
@@ -117,6 +119,10 @@ function buildFamilyInventory(familyPolicy: ExitFamilyPolicy["families"][number]
     sourceFiles,
     sourceWriteCount: sourceWrites.length,
     sourceFileCount: sourceFiles.length,
+    familyProjectionHash: computeExitFamilySourceProjectionHash(
+      familyPolicy.familyId,
+      sourceWrites.map((entry) => entry.id),
+    ),
     schemaHash: computeExitFamilySchemaHash(commitmentInput),
   };
 }
