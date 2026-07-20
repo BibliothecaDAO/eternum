@@ -45,6 +45,11 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
 
+      - name: Setup Scarb for package lock metadata
+        uses: software-mansion/setup-scarb@2a96b748888e3329ee44ac9ac073d930e692b3cd
+        with:
+          scarb-version: "2.13.1"
+
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
