@@ -1,5 +1,5 @@
 launchKind: series
-environmentId: slot.blitz
+environmentId: sepolia.blitz
 seriesName: blitz-weekly-example
 autoRetryEnabled: true
 autoRetryIntervalMinutes: 15

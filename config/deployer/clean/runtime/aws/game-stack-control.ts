@@ -26,6 +26,11 @@ export interface FailBlitzGameStackProvisioningRequest extends BlitzControlReque
   gameStack: GameStack;
 }
 
+export interface PersistBlitzGameStackTransitionRequest extends BlitzControlRequest {
+  expected: GameStack;
+  next: GameStack;
+}
+
 export interface ReadActiveBlitzGameStackRequest extends BlitzControlRequest {
   now?: Date;
 }
@@ -151,6 +156,22 @@ export function releaseBlitzGameStackAdmission(
   );
 }
 
+export function persistBlitzGameStackTransition(
+  commandRunner: AwsCommandRunner,
+  request: PersistBlitzGameStackTransitionRequest,
+): void {
+  assertMainnetBlitzControlRequest(request);
+  assertTransitionIdentityIsImmutable(request);
+  runConditionalBlitzTransaction(
+    commandRunner,
+    `persist Blitz game-stack transition for "${request.next.gameStackId}"`,
+    buildPersistTransitionCommand(request),
+    new GameStackStoreConflictError(
+      `Blitz game stack "${request.next.gameStackId}" changed before its lifecycle transition could be persisted`,
+    ),
+  );
+}
+
 export async function closeExpiredBlitzGameStack(
   commandRunner: AwsCommandRunner,
   request: CloseExpiredBlitzGameStackRequest,
@@ -236,6 +257,40 @@ function buildReleaseAdmissionCommand(request: BlitzControlRequest, gameStackId:
   ];
 }
 
+function buildPersistTransitionCommand(request: PersistBlitzGameStackTransitionRequest): string[] {
+  return [
+    "dynamodb",
+    "update-item",
+    "--region",
+    request.region,
+    "--table-name",
+    request.tableName,
+    "--key",
+    JSON.stringify({ ControlKey: { S: buildGameStackKey(request.next.gameStackId) } }),
+    "--update-expression",
+    "SET ProtocolLifecycle = :protocolLifecycle, OperationalPhase = :operationalPhase, GameStackJson = :gameStackJson",
+    "--condition-expression",
+    "GameStackId = :gameStackId AND GameStackJson = :expectedGameStackJson",
+    "--expression-attribute-values",
+    JSON.stringify({
+      ":gameStackId": { S: request.next.gameStackId },
+      ":expectedGameStackJson": { S: JSON.stringify(request.expected) },
+      ":protocolLifecycle": { S: request.next.protocolLifecycle },
+      ":operationalPhase": { S: request.next.operationalPhase },
+      ":gameStackJson": { S: JSON.stringify(request.next) },
+    }),
+  ];
+}
+
+function assertTransitionIdentityIsImmutable(request: PersistBlitzGameStackTransitionRequest): void {
+  if (
+    request.expected.gameStackId !== request.next.gameStackId ||
+    request.expected.deploymentId !== request.next.deploymentId
+  ) {
+    throw new Error("Blitz game-stack transition cannot change immutable stack or deployment identity");
+  }
+}
+
 export function failBlitzGameStackProvisioning(
   commandRunner: AwsCommandRunner,
   request: FailBlitzGameStackProvisioningRequest,
@@ -245,11 +300,18 @@ export function failBlitzGameStackProvisioning(
     throw new Error("Failed Blitz game-stack persistence requires structured failure data");
   }
 
-  persistFailedGameStack(commandRunner, request);
+  persistBlitzGameStackProvisioningFailure(commandRunner, request);
   releaseFailedGameStackAdmission(commandRunner, request);
 }
 
-function persistFailedGameStack(commandRunner: AwsCommandRunner, request: FailBlitzGameStackProvisioningRequest): void {
+export function persistBlitzGameStackProvisioningFailure(
+  commandRunner: AwsCommandRunner,
+  request: FailBlitzGameStackProvisioningRequest,
+): void {
+  assertMainnetBlitzControlRequest(request);
+  if (request.gameStack.operationalPhase !== "failed" || !request.gameStack.failure) {
+    throw new Error("Failed Blitz game-stack persistence requires structured failure data");
+  }
   runRequiredAwsCommand(commandRunner, `persist failed Blitz game stack "${request.gameStack.gameStackId}"`, [
     "dynamodb",
     "update-item",

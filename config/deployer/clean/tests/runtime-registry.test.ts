@@ -117,7 +117,8 @@ describe("runtime endpoint registry", () => {
     expect(staleRemoval).toEqual(registry);
 
     expect(removed.activeGameStacks?.["mainnet.blitz"]).toBeUndefined();
-    expect(removed.aliases[buildGameRuntimeAlias("mainnet.blitz", "blitz-season-42", "katana", "rpc")]).toBeDefined();
+    expect(removed.aliases[buildGameRuntimeAlias("mainnet.blitz", "blitz-season-42", "katana", "rpc")]).toBeUndefined();
+    expect(removed.aliases[buildGameRuntimeAlias("mainnet.blitz", "blitz-season-42", "torii", "sql")]).toBeUndefined();
     expect(() =>
       assertCompleteActiveGameStack(removed, "blitz-season-42", new Date("2026-07-18T13:00:00.000Z")),
     ).toThrow("is not the registry's active stack");

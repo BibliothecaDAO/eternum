@@ -1,13 +1,13 @@
-import { readFileSync } from "node:fs";
 import {
-  assertProductionReleaseAuthorized,
   createGameStackApiHandler,
   verifyCartridgeWalletSignature,
   type FinalizedSeasonIntent,
   type GameStack,
+  type A23ReleaseAuthorizationVerification,
 } from "../../game-stack";
 import { runAwsCommand, type AwsCommandRunner } from "./commands";
 import { createAwsCliGameStackApiStore } from "./game-stack-control";
+import { assertCurrentWave0ReleaseDecision } from "./wave0-release";
 
 export interface AwsGameStackApiConfig {
   tableName: string;
@@ -16,6 +16,7 @@ export interface AwsGameStackApiConfig {
   seasonIntentReaderUrl: string;
   orchestratorUrl: string;
   serviceToken: string;
+  releaseAuthorization?: A23ReleaseAuthorizationVerification;
 }
 
 export interface AwsGameStackApiAdapters {
@@ -55,18 +56,10 @@ export function createAwsGameStackApiHandler(
         fetchImpl,
       }),
     readFinalizedSeasonIntent: (deploymentId) => readFinalizedSeasonIntent(config, deploymentId, fetchImpl),
-    assertProductionReleaseAuthorized: async () => assertCurrentWave0ReleaseDecision(),
+    assertProductionReleaseAuthorized: async () => assertCurrentWave0ReleaseDecision(config.releaseAuthorization),
     dispatchProvisioning: (gameStack, idempotencyKey) =>
       dispatchGameStackProvisioning(config, gameStack, idempotencyKey, fetchImpl),
   });
-}
-
-function assertCurrentWave0ReleaseDecision(): void {
-  const decisionUrl = new URL(
-    "../../../../../packages/settlement-codec/schema/wave0-a23-stop-decision-v1.json",
-    import.meta.url,
-  );
-  assertProductionReleaseAuthorized(JSON.parse(readFileSync(decisionUrl, "utf8")) as unknown);
 }
 
 async function readFinalizedSeasonIntent(
@@ -77,7 +70,6 @@ async function readFinalizedSeasonIntent(
   const url = new URL(`/v1/season-intents/${encodeURIComponent(deploymentId)}`, config.seasonIntentReaderUrl);
   const response = await fetchImpl(url, {
     headers: buildServiceHeaders(config.serviceToken),
-    cache: "no-store",
   });
   if (!response.ok) {
     throw new Error(`Finalized SeasonIntent verification failed with HTTP ${response.status}`);
@@ -114,7 +106,14 @@ function uuidToFelt(uuid: string): string {
 }
 
 function validateAwsGameStackApiConfig(config: AwsGameStackApiConfig): void {
-  for (const [name, value] of Object.entries(config)) {
+  for (const [name, value] of Object.entries({
+    tableName: config.tableName,
+    region: config.region,
+    mainnetRpcUrl: config.mainnetRpcUrl,
+    seasonIntentReaderUrl: config.seasonIntentReaderUrl,
+    orchestratorUrl: config.orchestratorUrl,
+    serviceToken: config.serviceToken,
+  })) {
     if (!value.trim()) throw new Error(`AWS game-stack API requires ${name}`);
   }
   for (const [name, value] of [

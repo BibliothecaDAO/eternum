@@ -14,7 +14,11 @@ export {
   type GameStackApiStore,
 } from "./api";
 export { createBlitzLaunchQuote, type CreateBlitzLaunchQuoteRequest } from "./policy";
-export { assertProductionReleaseAuthorized } from "./release-authorization";
+export {
+  assertProductionReleaseAuthorized,
+  buildA23ReleaseAuthorizationMessage,
+  type A23ReleaseAuthorizationVerification,
+} from "./release-authorization";
 export { deriveGameStackOperationalPhase } from "./types";
 export { provisionGameStack, type GameStackProvisioningDependencies } from "./orchestrator";
 export { createGameStackProvisioningHandler, type GameStackProvisioningHandlerConfig } from "./provisioning-handler";

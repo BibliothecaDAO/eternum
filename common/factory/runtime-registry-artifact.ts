@@ -257,13 +257,31 @@ export function removeActiveGameStackPublication(
   }
 
   const activeGameStacks = { ...registry.activeGameStacks };
+  const aliases = { ...registry.aliases };
   delete activeGameStacks["mainnet.blitz"];
+  for (const [alias, entry] of Object.entries(aliases)) {
+    if (matchesActiveGameStackAlias(entry, identity)) delete aliases[alias];
+  }
   return {
     ...registry,
     revision: registry.revision + 1,
     generatedAt: generatedAt.toISOString(),
+    aliases,
     activeGameStacks,
   };
+}
+
+function matchesActiveGameStackAlias(
+  entry: RuntimeEndpointAlias,
+  identity: ActiveGameStackPublicationIdentity,
+): boolean {
+  return (
+    entry.scope === "game" &&
+    entry.environmentId === "mainnet.blitz" &&
+    entry.runtimeName === identity.gameStackId &&
+    entry.activeUntil === identity.activeUntil &&
+    entry.publicationRevision === identity.publicationRevision
+  );
 }
 
 function matchesActiveGameStackPublication(

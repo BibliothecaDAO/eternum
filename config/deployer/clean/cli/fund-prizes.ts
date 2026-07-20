@@ -50,7 +50,7 @@ interface ResolvedPrizeFundingPlan {
   environmentId: string;
   runKind: PrizeFundingRunKind;
   runName: string;
-  chain: "slot" | "mainnet";
+  chain: "mainnet";
   rpcUrl: string;
   cartridgeApiBase: string;
   accountAddress: string;
@@ -69,7 +69,7 @@ interface PrizeFundingTransactionResult {
 }
 
 interface PrizeFundingCliArgs {
-  environmentId: string;
+  environmentId: "mainnet.blitz" | "mainnet.eternum";
   runKind: PrizeFundingRunKind;
   runName: string;
   amountDisplay: string;
@@ -102,15 +102,14 @@ function resolveCliArgs() {
     process.exit(0);
   }
 
-  const environmentId = args.environment;
+  const environmentId = resolvePrizeFundingEnvironment(args.environment);
   const runKind = resolveRunKind(args["run-kind"]);
   const runName = args["run-name"];
   const amountDisplay = args.amount;
 
-  if (!environmentId || !runName || !amountDisplay) {
+  if (!runName || !amountDisplay) {
     throw new Error("--environment, --run-kind, --run-name, and --amount are required");
   }
-  assertHistoricalEnvironmentIsReadOnly(environmentId);
 
   return {
     environmentId,
@@ -119,6 +118,15 @@ function resolveCliArgs() {
     amountDisplay,
     selectedGameNames: parseSelectedGameNames(args["selected-games-json"]),
   } satisfies PrizeFundingCliArgs;
+}
+
+export function resolvePrizeFundingEnvironment(value: string | undefined): "mainnet.blitz" | "mainnet.eternum" {
+  if (!value) throw new Error("--environment, --run-kind, --run-name, and --amount are required");
+  assertHistoricalEnvironmentIsReadOnly(value);
+  if (value !== "mainnet.blitz" && value !== "mainnet.eternum") {
+    throw new Error("Prize funding is an operator-only mainnet workflow");
+  }
+  return value;
 }
 
 function resolveRunKind(value: string | undefined): PrizeFundingRunKind {
@@ -149,9 +157,8 @@ function parseSelectedGameNames(value: string | undefined) {
   return parsedValue.map((gameName) => gameName.trim());
 }
 
-function buildRpcProvider(rpcUrl: string, chain: "slot" | "mainnet") {
-  const chainId = chain === "mainnet" ? "0x534e5f4d41494e" : undefined;
-  return chainId ? new RpcProvider({ nodeUrl: rpcUrl, chainId }) : new RpcProvider({ nodeUrl: rpcUrl });
+function buildRpcProvider(rpcUrl: string) {
+  return new RpcProvider({ nodeUrl: rpcUrl, chainId: "0x534e5f4d41494e" });
 }
 
 function buildExecutionAccount(provider: RpcProvider, accountAddress: string, privateKey: string) {
@@ -238,7 +245,11 @@ async function resolveTokenDecimals(provider: RpcProvider, tokenAddress: string)
   return decimals;
 }
 
-async function readRunRecordWithInput(runKind: PrizeFundingRunKind, environmentId: string, runName: string) {
+async function readRunRecordWithInput(
+  runKind: PrizeFundingRunKind,
+  environmentId: PrizeFundingCliArgs["environmentId"],
+  runName: string,
+) {
   const config = requireGitHubBranchStoreConfig();
   const runRecordPath = resolveRunRecordPath(runKind, environmentId, runName);
   const { value: runRecord } = await readGitHubBranchJsonFile<PrizeFundingRunRecord>(config, runRecordPath);
@@ -259,7 +270,11 @@ async function readRunRecordWithInput(runKind: PrizeFundingRunKind, environmentI
   };
 }
 
-function resolveRunRecordPath(runKind: PrizeFundingRunKind, environmentId: string, runName: string) {
+function resolveRunRecordPath(
+  runKind: PrizeFundingRunKind,
+  environmentId: PrizeFundingCliArgs["environmentId"],
+  runName: string,
+) {
   if (runKind === "series") {
     return resolveFactorySeriesRunRecordPath({ environmentId, seriesName: runName });
   }
@@ -333,16 +348,12 @@ function resolveSeriesLikeSelectedGames(
   return resolveSelectedSeriesLikePrizeFundingGameNames(runRecord, requestedGameNames);
 }
 
-async function resolvePrizeFundingTargets(
-  chain: "slot" | "mainnet",
-  cartridgeApiBase: string,
-  selectedGameNames: string[],
-) {
+async function resolvePrizeFundingTargets(cartridgeApiBase: string, selectedGameNames: string[]) {
   const targets: PrizeFundingTarget[] = [];
 
   for (const gameName of selectedGameNames) {
     const resolution = await resolvePrizeDistributionAddressForFactoryGame({
-      chain,
+      chain: "mainnet",
       gameName,
       cartridgeApiBase,
     });
@@ -362,12 +373,13 @@ async function resolvePrizeFundingPlan(cliArgs: PrizeFundingCliArgs, rawCliArgs:
     cliArgs.environmentId,
     cliArgs.runName,
   );
+  assertMainnetPrizeFundingRun(runRecord);
 
   const rawRequest = resolveGameRequest(inputRecord);
   const rpcUrl = rawCliArgs["rpc-url"] || resolveRpcUrl(rawRequest, cliArgs.environmentId);
   const { accountAddress, privateKey } = resolveExecutionCredentials(rawRequest, rawCliArgs);
   const cartridgeApiBase = resolveCartridgeApiBase(rawRequest, rawCliArgs);
-  const provider = buildRpcProvider(rpcUrl, runRecord.chain);
+  const provider = buildRpcProvider(rpcUrl);
   const tokenAddress = resolvePrizeTokenAddress(rawRequest, runRecord.chain);
   const decimals = await resolveTokenDecimals(provider, tokenAddress);
   const amountRaw = parseDecimalAmountToRaw(cliArgs.amountDisplay, decimals);
@@ -377,7 +389,7 @@ async function resolvePrizeFundingPlan(cliArgs: PrizeFundingCliArgs, rawCliArgs:
   }
 
   const selectedGameNames = resolveSelectedGameNamesForRun(runRecord, cliArgs.selectedGameNames);
-  const targets = await resolvePrizeFundingTargets(runRecord.chain, cartridgeApiBase, selectedGameNames);
+  const targets = await resolvePrizeFundingTargets(cartridgeApiBase, selectedGameNames);
 
   return {
     environmentId: cliArgs.environmentId,
@@ -397,6 +409,14 @@ async function resolvePrizeFundingPlan(cliArgs: PrizeFundingCliArgs, rawCliArgs:
   } satisfies ResolvedPrizeFundingPlan;
 }
 
+function assertMainnetPrizeFundingRun(
+  runRecord: PrizeFundingRunRecord,
+): asserts runRecord is PrizeFundingRunRecord & { chain: "mainnet" } {
+  if (runRecord.chain !== "mainnet") {
+    throw new Error(`Prize funding rejects non-mainnet run record chain "${runRecord.chain}"`);
+  }
+}
+
 function resolveSelectedGameNamesForRun(runRecord: PrizeFundingRunRecord, requestedGameNames: string[]) {
   if (runRecord.kind === "series") {
     return resolveSeriesLikeSelectedGames(runRecord, requestedGameNames);
@@ -411,7 +431,7 @@ function resolveSelectedGameNamesForRun(runRecord: PrizeFundingRunRecord, reques
 }
 
 async function submitPrizeFundingTransaction(plan: ResolvedPrizeFundingPlan): Promise<PrizeFundingTransactionResult> {
-  const provider = buildRpcProvider(plan.rpcUrl, plan.chain);
+  const provider = buildRpcProvider(plan.rpcUrl);
   const account = buildExecutionAccount(provider, plan.accountAddress, plan.privateKey);
   const amount = toUint256(plan.amountRaw);
   const calls = plan.targets.map((target) => ({
@@ -538,15 +558,17 @@ async function main() {
   );
 }
 
-main().catch((error: unknown) => {
-  const message = error instanceof Error ? error.stack || error.message : String(error);
-  if (
-    message.includes("--environment, --run-kind, --run-name, and --amount are required") ||
-    message.includes('Unsupported run kind "')
-  ) {
-    usage();
-  }
+if (import.meta.main) {
+  main().catch((error: unknown) => {
+    const message = error instanceof Error ? error.stack || error.message : String(error);
+    if (
+      message.includes("--environment, --run-kind, --run-name, and --amount are required") ||
+      message.includes('Unsupported run kind "')
+    ) {
+      usage();
+    }
 
-  console.error(message);
-  process.exit(1);
-});
+    console.error(message);
+    process.exit(1);
+  });
+}

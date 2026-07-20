@@ -562,10 +562,26 @@ function assertAuthorizationState() {
 
 function assertRuntimeEnforcement() {
   const apiSource = readText("config/deployer/clean/runtime/aws/game-stack-api.ts");
+  const provisioningSource = readText("config/deployer/clean/runtime/aws/game-stack-provisioning.ts");
+  const releaseDecisionSource = readText("config/deployer/clean/runtime/aws/wave0-release.ts");
+  const releaseAuthorizationSource = readText("config/deployer/clean/game-stack/release-authorization.ts");
   const orchestratorSource = readText("config/deployer/clean/game-stack/orchestrator.ts");
   assert(
-    apiSource.includes("wave0-a23-stop-decision-v1.json") && apiSource.includes("assertProductionReleaseAuthorized"),
+    apiSource.includes("assertCurrentWave0ReleaseDecision") &&
+      releaseDecisionSource.includes("wave0-a23-stop-decision-v1.json") &&
+      releaseDecisionSource.includes("assertProductionReleaseAuthorized"),
     "AWS game-stack admission must consume the checked-in A23 release decision",
+  );
+  assert(
+    provisioningSource.includes("assertCurrentWave0ReleaseDecision") &&
+      provisioningSource.includes("createGameStackProvisioningHandler"),
+    "AWS game-stack provisioning must consume the checked-in A23 release decision",
+  );
+  assert(
+    releaseAuthorizationSource.includes("createPublicKey") &&
+      releaseAuthorizationSource.includes("verify(null") &&
+      releaseAuthorizationSource.includes("requiredSignatureCount"),
+    "A23 GO authorization must verify trusted cryptographic signatures and quorum",
   );
   assert(
     orchestratorSource.includes("dependencies.assertProductionReleaseAuthorized"),

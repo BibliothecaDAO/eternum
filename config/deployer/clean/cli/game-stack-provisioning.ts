@@ -1,26 +1,25 @@
 #!/usr/bin/env bun
-import { createAwsGameStackApiHandler } from "../runtime/aws/game-stack-api";
+import { createAwsGameStackProvisioningServiceHandler } from "../runtime/aws/game-stack-provisioning";
 import { readA23ReleaseAuthorizationVerification } from "../runtime/aws/wave0-release";
 
 function main(): void {
-  const handler = createAwsGameStackApiHandler({
+  const handler = createAwsGameStackProvisioningServiceHandler({
     tableName: requireEnvironment("AWS_RUNTIME_CONTROL_TABLE_NAME"),
     region: process.env.AWS_REGION || "us-east-2",
-    mainnetRpcUrl: requireEnvironment("MAINNET_RPC_URL"),
-    seasonIntentReaderUrl: requireEnvironment("SEASON_INTENT_READER_URL"),
-    orchestratorUrl: requireEnvironment("BLITZ_GAME_STACK_ORCHESTRATOR_URL"),
+    operationsUrl: requireEnvironment("BLITZ_GAME_STACK_OPERATIONS_URL"),
+    registryUrl: requireEnvironment("RUNTIME_REGISTRY_URL"),
+    registryAdminSecret: requireEnvironment("FACTORY_WORKER_ADMIN_SECRET"),
     serviceToken: requireEnvironment("BLITZ_CONTROL_PLANE_SERVICE_TOKEN"),
     releaseAuthorization: readA23ReleaseAuthorizationVerification(process.env),
   });
-
   const port = parsePort(process.env.PORT);
   Bun.serve({ port, fetch: handler });
-  process.stdout.write(`${JSON.stringify({ event: "game-stack-api-listening", port })}\n`);
+  process.stdout.write(`${JSON.stringify({ event: "game-stack-provisioning-listening", port })}\n`);
 }
 
 function requireEnvironment(name: string): string {
   const value = process.env[name]?.trim();
-  if (!value) throw new Error(`Game-stack API requires ${name}`);
+  if (!value) throw new Error(`Game-stack provisioning requires ${name}`);
   return value;
 }
 

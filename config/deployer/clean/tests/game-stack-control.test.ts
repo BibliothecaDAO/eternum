@@ -4,6 +4,7 @@ import {
   closeExpiredBlitzGameStack,
   createAwsCliGameStackApiStore,
   failBlitzGameStackProvisioning,
+  persistBlitzGameStackTransition,
   readActiveBlitzGameStack,
   releaseBlitzGameStackAdmission,
 } from "../runtime/aws/game-stack-control";
@@ -188,6 +189,51 @@ describe("authoritative Blitz game-stack admission", () => {
     const failureValues = JSON.parse(calls[0]?.[calls[0].indexOf("--expression-attribute-values") + 1] ?? "{}");
     expect(failureValues[":failureJson"].S).toContain("provisioning-dispatch");
     expect(calls[1]?.[calls[1].indexOf("--condition-expression") + 1]).toBe("GameStackId = :gameStackId");
+  });
+
+  test("persists lifecycle transitions with an exact optimistic state condition", () => {
+    const calls: string[][] = [];
+    const next = {
+      ...GAME_STACK,
+      protocolLifecycle: "Provisioning" as const,
+      operationalPhase: "provisioning-l3" as const,
+      updatedAt: "2026-07-18T10:21:00.000Z",
+    };
+
+    persistBlitzGameStackTransition(
+      (args) => {
+        calls.push(args);
+        return okAwsCommand();
+      },
+      {
+        tableName: "runtime-control",
+        region: "us-east-2",
+        environmentId: "mainnet.blitz",
+        expected: GAME_STACK,
+        next,
+      },
+    );
+
+    const args = calls[0] ?? [];
+    expect(args.slice(0, 2)).toEqual(["dynamodb", "update-item"]);
+    expect(args[args.indexOf("--condition-expression") + 1]).toBe(
+      "GameStackId = :gameStackId AND GameStackJson = :expectedGameStackJson",
+    );
+    const values = JSON.parse(args[args.indexOf("--expression-attribute-values") + 1]);
+    expect(values[":expectedGameStackJson"].S).toBe(JSON.stringify(GAME_STACK));
+    expect(values[":gameStackJson"].S).toBe(JSON.stringify(next));
+  });
+
+  test("rejects a stale lifecycle transition instead of overwriting newer state", () => {
+    expect(() =>
+      persistBlitzGameStackTransition(() => failedAwsCommand("ConditionalCheckFailedException"), {
+        tableName: "runtime-control",
+        region: "us-east-2",
+        environmentId: "mainnet.blitz",
+        expected: GAME_STACK,
+        next: { ...GAME_STACK, updatedAt: "2026-07-18T10:21:00.000Z" },
+      }),
+    ).toThrow("changed before its lifecycle transition could be persisted");
   });
 
   test("does not expose an expired admission as the active game", () => {
