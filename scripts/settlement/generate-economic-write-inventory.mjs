@@ -4,12 +4,18 @@ import { relative, resolve } from "node:path";
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const gameSourceRoot = resolve(repositoryRoot, "contracts/game/src");
 const outputPath = resolve(repositoryRoot, "packages/settlement-codec/schema/economic-write-inventory-v0.json");
+const classificationPolicyPath = resolve(
+  repositoryRoot,
+  "packages/settlement-codec/schema/economic-write-classification-policy-v0.json",
+);
 const shouldCheck = process.argv.includes("--check");
+const classificationPolicy = JSON.parse(readFileSync(classificationPolicyPath, "utf8"));
 
-const entries = scanEconomicWrites();
+const entries = applyReviewedClassificationOverrides(scanEconomicWrites());
 const inventory = {
   version: 0,
   status: "a9-feasibility-inventory",
+  generatedFrom: { classificationPolicyVersion: classificationPolicy.version },
   sourceRoot: "contracts/game/src",
   detectorKinds: ["write_model", "delete_model", "write_member", "set_member", "write", "store"],
   summary: summarize(entries),
@@ -57,6 +63,32 @@ function scanEconomicWrites() {
     }
   }
   return entries.sort((left, right) => left.path.localeCompare(right.path) || left.line - right.line);
+}
+
+function applyReviewedClassificationOverrides(entries) {
+  const entriesById = new Map(entries.map((entry) => [entry.id, entry]));
+  const seenIds = new Set();
+  for (const override of classificationPolicy.reviewedOverrides) {
+    if (seenIds.has(override.sourceWriteId)) {
+      throw new Error(`duplicate reviewed classification override: ${override.sourceWriteId}`);
+    }
+    seenIds.add(override.sourceWriteId);
+    const entry = entriesById.get(override.sourceWriteId);
+    if (!entry) throw new Error(`reviewed classification override has no source write: ${override.sourceWriteId}`);
+    if (entry.source !== override.expectedSource) {
+      throw new Error(`reviewed classification override source changed: ${override.sourceWriteId}`);
+    }
+    if (entry.classification !== override.observedClassification) {
+      throw new Error(`reviewed classification override no longer matches heuristic: ${override.sourceWriteId}`);
+    }
+    Object.assign(entry, {
+      classification: override.classification,
+      exitCoveredCandidate: override.exitCoveredCandidate,
+      reason: override.reason,
+      classificationSource: "reviewed-override",
+    });
+  }
+  return entries;
 }
 
 function* walkCairoFiles(directory) {
@@ -148,6 +180,7 @@ function summarize(allEntries) {
     exitCoveredCandidates: allEntries.filter((entry) => entry.exitCoveredCandidate).length,
     outOfScopeCandidates: allEntries.filter((entry) => !entry.exitCoveredCandidate).length,
     unclassified: allEntries.filter((entry) => entry.classification === "unclassified").length,
+    reviewedOverrides: allEntries.filter((entry) => entry.classificationSource === "reviewed-override").length,
     byClassification,
   };
 }

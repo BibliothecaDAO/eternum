@@ -7,15 +7,15 @@
     "economicWriteInventoryVersion": 0
   },
   "familyRegistryHash": "0xb4a640a21643ae02efd007c6f1cfbb7abed63a18e8447f1996f2c910af997b",
-  "sourceProjectionHash": "0xd91695bac86d84757341a8e1d2141d74f080faae75744f28cff59760dfc755",
-  "excludedProjectionHash": "0x7293f6334dd641c66870b0a8b54be93353d6de381c7b9adbf1071727cb158af",
-  "inventoryHash": "0x697a50dd0181120563a75da511fffcc6217821944b11b6e72b4b7c1e7dedf04",
+  "sourceProjectionHash": "0x222bea4ce5ef256065eb7f59e349cd7e3e5f44e29b7be2e6814d5c4e96549da",
+  "excludedProjectionHash": "0x7bf52c4889bd5b3dfd3dd9dd9df86a1a33f96687130b3b96bc8583067fe523b",
+  "inventoryHash": "0x30d232b7467990394d14e8b9858d987e65978d18388024f330b4c661448e87b",
   "releaseReady": false,
-  "exclusionReviewStatus": "failed-known-false-negative",
+  "exclusionReviewStatus": "reviewed",
   "summary": {
     "discoveredWrites": 308,
-    "exitCoveredWrites": 252,
-    "excludedWrites": 56,
+    "exitCoveredWrites": 253,
+    "excludedWrites": 55,
     "familyCount": 12,
     "familiesWithoutDiscoveredWrites": 4
   },
@@ -604,12 +604,13 @@
         "ExitPosition"
       ],
       "sourceWriteIds": [
-        "contracts/game/src/models/hyperstructure.cairo:71:write_model",
+        "contracts/game/src/models/agent.cairo:89:write_model",
         "contracts/game/src/models/hyperstructure.cairo:98:write_member",
         "contracts/game/src/models/hyperstructure.cairo:107:write_member",
         "contracts/game/src/models/hyperstructure.cairo:116:write_member",
         "contracts/game/src/models/hyperstructure.cairo:217:write_model",
         "contracts/game/src/models/hyperstructure.cairo:222:write_model",
+        "contracts/game/src/models/record.cairo:85:write_member",
         "contracts/game/src/systems/artificer/contracts.cairo:65:store",
         "contracts/game/src/systems/artificer/contracts.cairo:66:store",
         "contracts/game/src/systems/artificer/contracts.cairo:83:store",
@@ -692,7 +693,9 @@
         "contracts/game/src/systems/utils/relic.cairo:135:store"
       ],
       "sourceFiles": [
+        "contracts/game/src/models/agent.cairo",
         "contracts/game/src/models/hyperstructure.cairo",
+        "contracts/game/src/models/record.cairo",
         "contracts/game/src/systems/artificer/contracts.cairo",
         "contracts/game/src/systems/bitcoin_mine/contracts.cairo",
         "contracts/game/src/systems/faith/contracts.cairo",
@@ -704,9 +707,9 @@
         "contracts/game/src/systems/utils/hyperstructure.cairo",
         "contracts/game/src/systems/utils/relic.cairo"
       ],
-      "sourceWriteCount": 86,
-      "sourceFileCount": 11,
-      "familyProjectionHash": "0x300bd995eb8dd8ac82d36360b2b97bfd7a35910d1c2c802ad74705edeb479e0",
+      "sourceWriteCount": 87,
+      "sourceFileCount": 13,
+      "familyProjectionHash": "0xf6c1115ecbe20e27de5d9bf408bc9151cb6f779e27a5926ad8773709e082ad",
       "schemaHash": "0x6c42a9aaf9f49c6c6e284dd0daec0a589a9c263e0b28d6835d5d6ee4ab0336f"
     },
     {
@@ -890,9 +893,8 @@
     "contracts/game/src/models/agent.cairo:69:write_model",
     "contracts/game/src/models/agent.cairo:73:write_model",
     "contracts/game/src/models/agent.cairo:79:write_model",
-    "contracts/game/src/models/agent.cairo:89:write_model",
     "contracts/game/src/models/config.cairo:240:write_member",
-    "contracts/game/src/models/record.cairo:85:write_member",
+    "contracts/game/src/models/hyperstructure.cairo:71:write_model",
     "contracts/game/src/models/rng.cairo:19:write_model",
     "contracts/game/src/systems/alt_movement/contracts.cairo:68:write_model",
     "contracts/game/src/systems/config/contracts.cairo:350:write_model",
@@ -945,27 +947,6 @@
     "contracts/game/src/utils/testing/contracts/vrf_provider_mock.cairo:55:write"
   ],
   "reviewFindings": [
-    {
-      "kind": "economic-false-negative",
-      "sourceWriteId": "contracts/game/src/models/agent.cairo:89:write_model",
-      "observedClassification": "out_of_scope",
-      "requiredDisposition": "reward-or-mint-cap-state",
-      "detail": "AgentLordsMinted tracks LORDS already minted and therefore participates in an economic cap; it cannot be affirmed out of scope."
-    },
-    {
-      "kind": "economic-false-negative",
-      "sourceWriteId": "contracts/game/src/models/record.cairo:85:write_member",
-      "observedClassification": "out_of_scope",
-      "requiredDisposition": "fee-and-prize-state",
-      "detail": "WorldRecord contains creator/player/Velords fee and sponsorship totals; its generic member writer cannot be excluded without a selector-specific proof."
-    },
-    {
-      "kind": "configuration-false-positive",
-      "sourceWriteId": "contracts/game/src/models/hyperstructure.cairo:71:write_model",
-      "observedClassification": "reward_state",
-      "requiredDisposition": "sealed-configuration-not-exit-position",
-      "detail": "HyperstructureRequirements is ruleset configuration, not a player-owned live reward position."
-    },
     {
       "kind": "missing-index-and-bound",
       "sourceWriteId": "production:ExitPosition",
@@ -1110,10 +1091,12 @@
         8
       ],
       "scope": "fees, prizes, Faith, Blitz participant, and reward state",
-      "sourceWriteCount": 86,
-      "sourceFileCount": 11,
+      "sourceWriteCount": 87,
+      "sourceFileCount": 13,
       "sourceFiles": [
+        "contracts/game/src/models/agent.cairo",
         "contracts/game/src/models/hyperstructure.cairo",
+        "contracts/game/src/models/record.cairo",
         "contracts/game/src/systems/artificer/contracts.cairo",
         "contracts/game/src/systems/bitcoin_mine/contracts.cairo",
         "contracts/game/src/systems/faith/contracts.cairo",
@@ -1138,7 +1121,7 @@
   ],
   "unresolved": [
     {
-      "kind": "source-write-projection-failed",
+      "kind": "source-write-projection-unfrozen",
       "familyIds": [
         1,
         2,
@@ -1153,7 +1136,7 @@
         11,
         12
       ],
-      "detail": "The A9 path/target scan has confirmed economic false negatives and configuration false positives; it cannot serve as a production writer map."
+      "detail": "The reviewed A9 scan is conservative, but exact source-to-ExitPosition projections remain unimplemented and therefore cannot serve as a production writer map."
     },
     {
       "kind": "canonical-source-index-absent",
@@ -1190,11 +1173,6 @@
         12
       ],
       "detail": "No checked-in ruleset or mutation guard enforces a maximum position count for any family, so A8 has no canonical maximum witness."
-    },
-    {
-      "kind": "exclusion-projection-failed",
-      "familyIds": [],
-      "detail": "At least AgentLordsMinted and WorldRecord economic member writes are incorrectly excluded by the static scan."
     },
     {
       "kind": "production-families-absent",

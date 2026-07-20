@@ -225,7 +225,7 @@ interface ExitFamilyPolicy {
   reviewPolicy: {
     sourceIdentityStatus: "failed-no-canonical-index";
     sourceWriteMappingStatus: "failed-heuristic-projection";
-    exclusionStatus: "failed-known-false-negative";
+    exclusionStatus: "failed-known-false-negative" | "reviewed";
     maximumPositionsPerGame: null;
     cardinalityStatus: "failed-no-enforced-bound";
   };

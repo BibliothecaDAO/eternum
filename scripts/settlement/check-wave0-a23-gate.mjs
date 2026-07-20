@@ -219,6 +219,10 @@ function assertFrozenAndCandidateInputs() {
     inputs.exitFamilyInventory.fileSha256,
   );
   assertFileHash(
+    "packages/settlement-codec/schema/economic-write-classification-policy-v0.json",
+    inputs.economicWriteClassificationPolicySha256,
+  );
+  assertFileHash(
     "packages/settlement-codec/schema/economic-write-inventory-v0.json",
     inputs.economicWriteInventorySha256,
   );
@@ -462,12 +466,7 @@ function assertA20StopOutcome() {
 }
 
 function assertA22StopOutcome() {
-  const expectedFindings = [
-    ["economic-false-negative", "contracts/game/src/models/agent.cairo:89:write_model"],
-    ["economic-false-negative", "contracts/game/src/models/record.cairo:85:write_member"],
-    ["configuration-false-positive", "contracts/game/src/models/hyperstructure.cairo:71:write_model"],
-    ["missing-index-and-bound", "production:ExitPosition"],
-  ];
+  const expectedFindings = [["missing-index-and-bound", "production:ExitPosition"]];
   assertDeepEqual(
     exitFamilies.reviewFindings.map(({ kind, sourceWriteId }) => [kind, sourceWriteId]),
     expectedFindings,
@@ -509,7 +508,7 @@ function assertA22StopOutcome() {
   const outcome = decision.stopOutcomes.find(({ id }) => id === "A22-BOUNDS-FREEZE");
   assert(outcome, "A23 must declare the A22 redesign outcome");
   assert(
-    outcome.action.includes("false-negative") &&
+    outcome.action.includes("classification errors now have exact reviewed overrides") &&
       outcome.action.includes("canonical monotonic indexes") &&
       outcome.action.includes("rerun A8"),
     "A22 redesign outcome must name the failed properties and dependent benchmark",

@@ -167,6 +167,28 @@ describe("A14 frozen economic capability interface", () => {
     expect(inventory.summary.writes).toBe(inventory.entries.length);
     expect(inventory.summary.files).toBeGreaterThan(30);
   });
+
+  test("applies the reviewed A22 classification corrections exactly", () => {
+    const inventory = readJson(inventoryUrl);
+    const writesById = new Map(inventory.entries.map((entry: Record<string, unknown>) => [entry.id, entry]));
+
+    expect(writesById.get("contracts/game/src/models/agent.cairo:89:write_model")).toMatchObject({
+      classification: "reward_state",
+      exitCoveredCandidate: true,
+      classificationSource: "reviewed-override",
+    });
+    expect(writesById.get("contracts/game/src/models/record.cairo:85:write_member")).toMatchObject({
+      classification: "reward_state",
+      exitCoveredCandidate: true,
+      classificationSource: "reviewed-override",
+    });
+    expect(writesById.get("contracts/game/src/models/hyperstructure.cairo:71:write_model")).toMatchObject({
+      classification: "out_of_scope",
+      exitCoveredCandidate: false,
+      classificationSource: "reviewed-override",
+    });
+    expect(inventory.summary.reviewedOverrides).toBe(3);
+  });
 });
 
 function readJson(url: URL): any {

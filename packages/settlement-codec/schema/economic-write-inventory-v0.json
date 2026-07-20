@@ -1,6 +1,9 @@
 {
   "version": 0,
   "status": "a9-feasibility-inventory",
+  "generatedFrom": {
+    "classificationPolicyVersion": 0
+  },
   "sourceRoot": "contracts/game/src",
   "detectorKinds": [
     "write_model",
@@ -13,12 +16,13 @@
   "summary": {
     "writes": 308,
     "files": 57,
-    "exitCoveredCandidates": 252,
-    "outOfScopeCandidates": 56,
+    "exitCoveredCandidates": 253,
+    "outOfScopeCandidates": 55,
     "unclassified": 0,
+    "reviewedOverrides": 3,
     "byClassification": {
-      "out_of_scope": 56,
-      "reward_state": 86,
+      "out_of_scope": 55,
+      "reward_state": 87,
       "arrival": 3,
       "lazy_production": 25,
       "resource": 38,
@@ -68,10 +72,11 @@
       "line": 89,
       "detectorKind": "write_model",
       "target": "world",
-      "classification": "out_of_scope",
-      "exitCoveredCandidate": false,
-      "reason": "Non-economic config, map, guild, naming, quest, achievement, RNG, lifecycle, or administrative state; A22 must confirm the exclusion.",
-      "source": "world.write_model(@agent_lords_minted);"
+      "classification": "reward_state",
+      "exitCoveredCandidate": true,
+      "reason": "AgentLordsMinted is economic mint-cap state and must remain available to the reward-state exit projection.",
+      "source": "world.write_model(@agent_lords_minted);",
+      "classificationSource": "reviewed-override"
     },
     {
       "id": "contracts/game/src/models/config.cairo:240:write_member",
@@ -90,10 +95,11 @@
       "line": 71,
       "detectorKind": "write_model",
       "target": "world",
-      "classification": "reward_state",
-      "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "world.write_model(@hyperstructure_requirements);"
+      "classification": "out_of_scope",
+      "exitCoveredCandidate": false,
+      "reason": "HyperstructureRequirements is sealed ruleset configuration rather than a player-owned live reward position.",
+      "source": "world.write_model(@hyperstructure_requirements);",
+      "classificationSource": "reviewed-override"
     },
     {
       "id": "contracts/game/src/models/hyperstructure.cairo:98:write_member",
@@ -156,10 +162,11 @@
       "line": 85,
       "detectorKind": "write_member",
       "target": "world",
-      "classification": "out_of_scope",
-      "exitCoveredCandidate": false,
-      "reason": "Non-economic config, map, guild, naming, quest, achievement, RNG, lifecycle, or administrative state; A22 must confirm the exclusion.",
-      "source": "world.write_member(Model::<WorldRecord>::ptr_from_keys(WORLD_CONFIG_ID), selector, value)"
+      "classification": "reward_state",
+      "exitCoveredCandidate": true,
+      "reason": "The selector-generic WorldRecord writer can mutate fee, prize, and sponsorship totals, so the conservative projection is economic reward state.",
+      "source": "world.write_member(Model::<WorldRecord>::ptr_from_keys(WORLD_CONFIG_ID), selector, value)",
+      "classificationSource": "reviewed-override"
     },
     {
       "id": "contracts/game/src/models/resource/arrivals.cairo:177:write_model",

@@ -76,32 +76,11 @@
   "reviewPolicy": {
     "sourceIdentityStatus": "failed-no-canonical-index",
     "sourceWriteMappingStatus": "failed-heuristic-projection",
-    "exclusionStatus": "failed-known-false-negative",
+    "exclusionStatus": "reviewed",
     "maximumPositionsPerGame": null,
     "cardinalityStatus": "failed-no-enforced-bound"
   },
   "reviewFindings": [
-    {
-      "kind": "economic-false-negative",
-      "sourceWriteId": "contracts/game/src/models/agent.cairo:89:write_model",
-      "observedClassification": "out_of_scope",
-      "requiredDisposition": "reward-or-mint-cap-state",
-      "detail": "AgentLordsMinted tracks LORDS already minted and therefore participates in an economic cap; it cannot be affirmed out of scope."
-    },
-    {
-      "kind": "economic-false-negative",
-      "sourceWriteId": "contracts/game/src/models/record.cairo:85:write_member",
-      "observedClassification": "out_of_scope",
-      "requiredDisposition": "fee-and-prize-state",
-      "detail": "WorldRecord contains creator/player/Velords fee and sponsorship totals; its generic member writer cannot be excluded without a selector-specific proof."
-    },
-    {
-      "kind": "configuration-false-positive",
-      "sourceWriteId": "contracts/game/src/models/hyperstructure.cairo:71:write_model",
-      "observedClassification": "reward_state",
-      "requiredDisposition": "sealed-configuration-not-exit-position",
-      "detail": "HyperstructureRequirements is ruleset configuration, not a player-owned live reward position."
-    },
     {
       "kind": "missing-index-and-bound",
       "sourceWriteId": "production:ExitPosition",
@@ -139,9 +118,9 @@
   ],
   "releaseBlockers": [
     {
-      "kind": "source-write-projection-failed",
+      "kind": "source-write-projection-unfrozen",
       "scope": "all-families",
-      "detail": "The A9 path/target scan has confirmed economic false negatives and configuration false positives; it cannot serve as a production writer map."
+      "detail": "The reviewed A9 scan is conservative, but exact source-to-ExitPosition projections remain unimplemented and therefore cannot serve as a production writer map."
     },
     {
       "kind": "canonical-source-index-absent",
@@ -152,11 +131,6 @@
       "kind": "maximum-cardinality-unenforced",
       "scope": "all-families",
       "detail": "No checked-in ruleset or mutation guard enforces a maximum position count for any family, so A8 has no canonical maximum witness."
-    },
-    {
-      "kind": "exclusion-projection-failed",
-      "scope": "global",
-      "detail": "At least AgentLordsMinted and WorldRecord economic member writes are incorrectly excluded by the static scan."
     },
     {
       "kind": "production-families-absent",

@@ -130,21 +130,22 @@
     },
     "exitFamilyInventory": {
       "status": "a22-stop-redesign-required",
-      "fileSha256": "ed2ee3c4bcbfe04f5bcaad8848208b7b23007a077c8b04e63bd564becb59addd",
+      "fileSha256": "7f3a9a00526dacc2966a37bb46d82efe0aa7587b127c3f4a813bb21e3b0c5b48",
       "familyRegistryHash": "0xb4a640a21643ae02efd007c6f1cfbb7abed63a18e8447f1996f2c910af997b",
-      "inventoryHash": "0x697a50dd0181120563a75da511fffcc6217821944b11b6e72b4b7c1e7dedf04",
-      "sourceProjectionHash": "0xd91695bac86d84757341a8e1d2141d74f080faae75744f28cff59760dfc755",
-      "excludedProjectionHash": "0x7293f6334dd641c66870b0a8b54be93353d6de381c7b9adbf1071727cb158af",
+      "inventoryHash": "0x30d232b7467990394d14e8b9858d987e65978d18388024f330b4c661448e87b",
+      "sourceProjectionHash": "0x222bea4ce5ef256065eb7f59e349cd7e3e5f44e29b7be2e6814d5c4e96549da",
+      "excludedProjectionHash": "0x7bf52c4889bd5b3dfd3dd9dd9df86a1a33f96687130b3b96bc8583067fe523b",
       "discoveredWrites": 308,
-      "exitCoveredWrites": 252,
-      "excludedWrites": 56,
+      "exitCoveredWrites": 253,
+      "excludedWrites": 55,
       "familyCount": 12,
       "familiesWithoutDiscoveredWrites": 4,
-      "reviewFindingCount": 4,
+      "reviewFindingCount": 1,
       "implementationIssueCount": 5,
       "releaseReady": false
     },
-    "economicWriteInventorySha256": "226a5fdceaf850797e711574307dde2841e6ca5791e8fe09703cea6b9ed5a802",
+    "economicWriteClassificationPolicySha256": "f1849edcd83b773c09def2ea78f78bbe3b729989c940e59eba5db73029c8b145",
+    "economicWriteInventorySha256": "840ccdbbb34ec3b768ae6af8346f918a753a0e425465cf2e7e97fc72fe3ef36f",
     "onchainObservationSha256": "64570077b1405d7a47db1fedb19a07950001df290ba33e33254df412693040ab"
   },
   "performanceEvidence": {
@@ -271,12 +272,12 @@
         {
           "ticket": "D9",
           "familyIds": [8],
-          "sourceWriteCount": 86,
-          "sourceFileCount": 11,
+          "sourceWriteCount": 87,
+          "sourceFileCount": 13,
           "missingProductionFamilyIds": []
         }
       ],
-      "reason": "A22 found known source-projection errors and no enforced canonical indexes or maximum per-game cardinalities; estimates would not be evidence-backed."
+      "reason": "A22's three known classification errors are corrected through exact reviewed overrides, but exact production projections, canonical indexes, and maximum per-game cardinalities remain unimplemented; estimates would not be evidence-backed."
     },
     "staffing": {
       "status": "unavailable",
@@ -296,7 +297,7 @@
     },
     {
       "id": "A22-BOUNDS-FREEZE",
-      "action": "Redesign D5-D9 from the five enumerated issue groups: correct the known false-negative and false-positive write classifications, implement canonical monotonic indexes with generations and tombstones, add the four absent production families, enforce exact per-game cardinality caps, and rerun A8 before estimating or freezing A22."
+      "action": "The three known classification errors now have exact reviewed overrides. Redesign D5-D9 from the five enumerated issue groups: implement exact source projections and canonical monotonic indexes with generations and tombstones, add the four absent production families, enforce exact per-game cardinality caps, and rerun A8 before estimating or freezing A22."
     },
     {
       "id": "TEE-SOURCE-GATE",

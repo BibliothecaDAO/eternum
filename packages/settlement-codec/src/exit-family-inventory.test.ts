@@ -76,7 +76,7 @@ describe("A22 exit-family inventory", () => {
       expect(family.schemaHash).toMatch(/^0x[0-9a-f]+$/);
     }
     expect(inventory.familyRegistryHash).toBe("0xb4a640a21643ae02efd007c6f1cfbb7abed63a18e8447f1996f2c910af997b");
-    expect(inventory.inventoryHash).toBe("0x697a50dd0181120563a75da511fffcc6217821944b11b6e72b4b7c1e7dedf04");
+    expect(inventory.inventoryHash).toBe("0x30d232b7467990394d14e8b9858d987e65978d18388024f330b4c661448e87b");
   });
 
   test("binds reviewed cardinality and each writer's family assignment into commitments", () => {
@@ -135,7 +135,7 @@ describe("A22 exit-family inventory", () => {
     expect(() => validateExitFamilyInventory(duplicate)).toThrow(/source write projection/);
   });
 
-  test("records the failed feasibility properties and exact D5-D9 redesign split", () => {
+  test("records the remaining feasibility failures and exact D5-D9 redesign split", () => {
     const inventory = getExitFamilyInventory();
 
     expect(inventory.unresolved.length).toBeGreaterThan(0);
@@ -144,18 +144,13 @@ describe("A22 exit-family inventory", () => {
     expect(inventory.families.every((family) => family.sourceIdentity.status === "failed-no-canonical-index")).toBe(
       true,
     );
-    expect(inventory.reviewFindings).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          kind: "economic-false-negative",
-          sourceWriteId: "contracts/game/src/models/agent.cairo:89:write_model",
-        }),
-        expect.objectContaining({
-          kind: "configuration-false-positive",
-          sourceWriteId: "contracts/game/src/models/hyperstructure.cairo:71:write_model",
-        }),
-      ]),
-    );
+    expect(inventory.exclusionReviewStatus).toBe("reviewed");
+    expect(inventory.reviewFindings).toEqual([
+      expect.objectContaining({
+        kind: "missing-index-and-bound",
+        sourceWriteId: "production:ExitPosition",
+      }),
+    ]);
     expect(inventory.implementationIssues.map(({ ticket }) => ticket).toSorted()).toEqual([
       "D5",
       "D6",

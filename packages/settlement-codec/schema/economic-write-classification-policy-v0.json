@@ -1,0 +1,29 @@
+{
+  "version": 0,
+  "reviewedOverrides": [
+    {
+      "sourceWriteId": "contracts/game/src/models/agent.cairo:89:write_model",
+      "expectedSource": "world.write_model(@agent_lords_minted);",
+      "observedClassification": "out_of_scope",
+      "classification": "reward_state",
+      "exitCoveredCandidate": true,
+      "reason": "AgentLordsMinted is economic mint-cap state and must remain available to the reward-state exit projection."
+    },
+    {
+      "sourceWriteId": "contracts/game/src/models/record.cairo:85:write_member",
+      "expectedSource": "world.write_member(Model::<WorldRecord>::ptr_from_keys(WORLD_CONFIG_ID), selector, value)",
+      "observedClassification": "out_of_scope",
+      "classification": "reward_state",
+      "exitCoveredCandidate": true,
+      "reason": "The selector-generic WorldRecord writer can mutate fee, prize, and sponsorship totals, so the conservative projection is economic reward state."
+    },
+    {
+      "sourceWriteId": "contracts/game/src/models/hyperstructure.cairo:71:write_model",
+      "expectedSource": "world.write_model(@hyperstructure_requirements);",
+      "observedClassification": "reward_state",
+      "classification": "out_of_scope",
+      "exitCoveredCandidate": false,
+      "reason": "HyperstructureRequirements is sealed ruleset configuration rather than a player-owned live reward position."
+    }
+  ]
+}
