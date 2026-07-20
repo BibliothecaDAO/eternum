@@ -8,8 +8,7 @@ trap 'rm -f "${benchmark_log}"' EXIT
 
 snforge test season_hub_capacity \
   --tracked-resource cairo-steps \
-  --detailed-resources \
-  --gas-report | tee "${benchmark_log}"
+  --detailed-resources | tee "${benchmark_log}"
 
 required_tests=(
   one_atomic_append_accepts_sixteen_parents_and_two_hundred_fifty_six_lot_shares
