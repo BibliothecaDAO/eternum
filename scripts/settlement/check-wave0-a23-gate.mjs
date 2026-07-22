@@ -1,12 +1,17 @@
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { readFileSync, readdirSync } from "node:fs";
+import { join, relative, resolve } from "node:path";
+import {
+  A23_PRODUCTION_TICKET_IDS,
+  A23_WAVE0_TICKET_IDS,
+} from "../../config/deployer/clean/game-stack/a23-decision.mts";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const decision = readJson("packages/settlement-codec/schema/wave0-a23-stop-decision-v1.json");
 const schemaRegistry = readJson("packages/settlement-codec/schema/schema-registry-v1.json");
 const frozenPosition = readJson("packages/settlement-codec/schema/frozen-position-a5-v1.json");
 const mmrPlan = readJson("packages/settlement-codec/schema/mmr-plan-a13-v1.json");
+const mmrPlanSp1Fixture = readJson("proofs/eternum-settlement/sp1/mmr-plan-a13-fixture-evidence-v0.json");
 const emergencySealed = readJson("packages/settlement-codec/schema/emergency-sealed-a15-v1.json");
 const hardenedInbox = readJson("packages/settlement-codec/schema/hardened-inbox-a16-v1.json");
 const legacyMmrDerivation = readJson("packages/settlement-codec/schema/legacy-mmr-derivation-a19-v1.json");
@@ -29,13 +34,36 @@ function assertStopDecision() {
   assertEqual(decision.decision, "STOP", "Wave 0 decision");
   assertEqual(decision.releaseReady, false, "release readiness");
   assertEqual(decision.productionStartAuthorized, false, "production authorization");
+  assertEqual(decision.productionProgramStartAuthorized, false, "production program-start authorization");
 
-  const blockers = decision.wave0.filter((ticket) => ticket.mandatoryBlocker);
-  assert(blockers.length > 0, "A23 STOP record must enumerate mandatory blockers");
-  assert(
-    blockers.every((ticket) => ticket.status !== "complete"),
-    "A23 mandatory blockers cannot be marked complete",
+  assertDeepEqual(
+    decision.wave0.map(({ ticket, status, mandatoryBlocker }) => ({
+      ticket,
+      status,
+      mandatoryBlocker: mandatoryBlocker === true,
+    })),
+    expectedWave0Projection(),
+    "A23 exact Wave 0 projection",
   );
+  assertDeepEqual(
+    decision.stopOutcomes.map(({ id }) => id),
+    ["A22-BOUNDS-FREEZE", "TEE-SOURCE-GATE", "MISSING-PROOF-GATES"],
+    "A23 stop outcomes",
+  );
+  assertDeepEqual(
+    decision.performanceEvidence.unavailableMandatoryCampaigns,
+    [
+      "A5-production-katana-sp1",
+      "A8",
+      "A13-production-codec-reproducible-elf-receipt-vk-cairo-verifier-and-maximum-bound",
+      "A15-production-receipt-and-maximum-bound",
+      "A16-production-finality-cancelled-slot-proof-and-cost-campaign",
+      "A19-finalized-source-inventory-and-production-recursive-receipts",
+      "A21-production-segmented-recursive-receipts-and-maximum-bound",
+    ],
+    "A23 unavailable mandatory campaigns",
+  );
+  assertEvidenceChronology();
 }
 
 function assertProductionDependencyMatrix() {
@@ -44,6 +72,58 @@ function assertProductionDependencyMatrix() {
     assertEqual(entry?.status, "blocked", `Epic ${epic} status`);
     assertDeepEqual(entry?.dependsOn, ["A23"], `Epic ${epic} dependency`);
   }
+  const matrix = decision.productionTicketDependencyMatrix;
+  assertEqual(matrix.status, "blocked", "production ticket matrix status");
+  assertEqual(matrix.appliesToEachTicket, true, "production ticket matrix application");
+  assertDeepEqual(matrix.dependsOn, ["A23"], "production ticket matrix dependency");
+  assertDeepEqual(matrix.ticketIds, A23_PRODUCTION_TICKET_IDS, "production ticket matrix ticket set");
+}
+
+function expectedWave0Projection() {
+  const statuses = [
+    "complete",
+    "complete",
+    "complete",
+    "complete",
+    "reference-seam-complete-production-proof-blocked",
+    "complete",
+    "complete",
+    "blocked-on-failed-a22-and-authorized-aws",
+    "complete",
+    "complete",
+    "complete",
+    "complete",
+    "reference-guest-and-verifier-complete-production-receipt-blocked",
+    "complete",
+    "reference-guest-and-verifier-complete-production-receipt-blocked",
+    "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
+    "complete",
+    "public-feasibility-complete-private-tee-source-blocked",
+    "pending-typed-derivation-reference-seam-complete-source-inventory-and-production-proofs-blocked",
+    "a20-evidence-complete-awaiting-a23-freeze",
+    "reference-guests-and-verifiers-complete-production-receipts-blocked",
+    "stop-redesign-required",
+    "stop-record-awaiting-authorized-signatures",
+  ];
+  const blockerTickets = new Set(["A5", "A8", "A13", "A15", "A16", "A18", "A19", "A21", "A22", "A23"]);
+  return statuses.map((status, index) => {
+    const ticket = A23_WAVE0_TICKET_IDS[index];
+    return { ticket, status, mandatoryBlocker: blockerTickets.has(ticket) };
+  });
+}
+
+function assertEvidenceChronology() {
+  const decisionTime = Date.parse(`${decision.recordedAt}T23:59:59Z`);
+  const evidenceTimes = [
+    Date.parse(mmrPlanSp1Fixture.capturedAt),
+    Date.parse(hardenedInbox.publicPatriciaEvidence.rpcObservation.observedAt),
+  ];
+  assert(Number.isFinite(decisionTime), "A23 recordedAt must be an ISO date");
+  assert(evidenceTimes.every(Number.isFinite), "A23 evidence timestamps must be ISO dates");
+  assert(
+    evidenceTimes.every((evidenceTime) => evidenceTime <= decisionTime),
+    "A23 cannot predate evidence that it binds",
+  );
 }
 
 function assertFrozenAndCandidateInputs() {
@@ -90,6 +170,7 @@ function assertFrozenAndCandidateInputs() {
     mmrPlan.reproducibilityInputs.cairoVerifierSha256,
   );
   assertFileHash("packages/settlement-codec/schema/mmr-plan-a13-v1.json", inputs.mmrPlanProof.fileSha256);
+  assertA13Sp1FixtureEvidence(inputs.mmrPlanProof);
 
   assertEqual(
     emergencySealed.status,
@@ -140,48 +221,7 @@ function assertFrozenAndCandidateInputs() {
   assertA21Evidence(inputs.frozenRecoveryMaterializationProofs);
   assertA16Evidence(inputs.hardenedInboxProof);
   assertA19Evidence(inputs.legacyMmrDerivationProof);
-
-  assertEqual(authority.status, "mutation-review-complete-observed-class-source-blocked", "A20 inventory status");
-  assertEqual(authority.releaseReady, false, "A20 release readiness");
-  assertEqual(
-    authority.authoritativeAddressInputsHash,
-    inputs.authorityInventory.authoritativeAddressInputsHash,
-    "A20 address input hash",
-  );
-  assertEqual(
-    authority.privilegedMutationPathsHash,
-    inputs.authorityInventory.privilegedMutationPathsHash,
-    "A20 mutation path hash",
-  );
-  assertEqual(
-    authority.authoritySchema.authoritySchemaHash,
-    inputs.authorityInventory.candidateAuthoritySchemaHash,
-    "A20 candidate authority schema hash",
-  );
-  assertEqual(
-    authority.unresolvedMutationCandidates.length,
-    inputs.authorityInventory.unresolvedMutationCandidates,
-    "A20 unresolved mutation count",
-  );
-  assertEqual(
-    authority.privilegedMutationPaths.length,
-    inputs.authorityInventory.reviewedMutationPaths,
-    "A20 path count",
-  );
-  for (const [disposition, field] of [
-    [1, "canonicalStructuredPaths"],
-    [2, "hardDisabledPaths"],
-    [4, "migrationOnlyPaths"],
-  ]) {
-    assertEqual(
-      authority.privilegedMutationPaths.filter(({ productionDisposition }) => productionDisposition === disposition)
-        .length,
-      inputs.authorityInventory[field],
-      `A20 ${field}`,
-    );
-  }
-  assertA20StopOutcome();
-  assertFileHash("packages/settlement-codec/schema/authority-inventory-v1.json", inputs.authorityInventory.fileSha256);
+  assertA20EvidenceComplete(inputs.authorityInventory);
 
   assertEqual(exitFamilies.status, "a22-stop-redesign-required", "A22 inventory status");
   assertEqual(
@@ -329,6 +369,208 @@ function assertA21Evidence(input) {
   assertFileHash("packages/settlement-codec/schema/frozen-recovery-materialization-a21-v1.json", input.fileSha256);
 }
 
+function assertA13Sp1FixtureEvidence(input) {
+  assertA13Sp1Identity(input);
+  assertA13Sp1InputProjection();
+  assertA13Sp1Execution(input);
+  assertA13Sp1Performance();
+  assertA13Sp1ProductionBlockers();
+}
+
+function assertA13Sp1Identity(input) {
+  const pointer = mmrPlan.sp1FixtureEvidence;
+
+  assertEqual(pointer.status, input.sp1FixtureStatus, "A13 SP1 fixture status");
+  assertEqual(pointer.fileSha256, input.sp1FixtureEvidenceSha256, "A13 SP1 fixture evidence hash");
+  assertEqual(
+    pointer.ciEvidenceCheckerSha256,
+    input.sp1FixtureCiEvidenceCheckerSha256,
+    "A13 SP1 CI evidence checker hash",
+  );
+  assertEqual(pointer.fixtureElfSha256, input.sp1FixtureElfSha256, "A13 SP1 fixture ELF hash");
+  assertEqual(pointer.sp1Commit, input.sp1Commit, "A13 SP1 source commit");
+  assertEqual(pointer.executionKind, input.sp1ExecutionKind, "A13 SP1 execution kind");
+  assertEqual(pointer.publicValuesDomain, input.sp1PublicValuesDomain, "A13 public-values domain");
+  assertEqual(pointer.publicValuesEncoding, input.sp1PublicValuesEncoding, "A13 public-values encoding");
+  assertEqual(pointer.publicValuesLengthBytes, input.sp1PublicValuesLengthBytes, "A13 public-values length");
+  assertEqual(pointer.releaseReady, false, "A13 SP1 fixture release readiness");
+  assertFileHash(pointer.artifact, pointer.fileSha256);
+  assertFileHash("scripts/settlement/check-a13-sp1-fixture-execution.mjs", pointer.ciEvidenceCheckerSha256);
+
+  assertEqual(mmrPlanSp1Fixture.schema, "eternum.a13.sp1-fixture-evidence.v0", "A13 evidence schema");
+  assertEqual(mmrPlanSp1Fixture.scope, "wave0-fixture-only", "A13 evidence scope");
+  assertEqual(mmrPlanSp1Fixture.status, pointer.status, "A13 evidence status");
+  assertEqual(mmrPlanSp1Fixture.releaseReady, false, "A13 evidence release readiness");
+  assertEqual(
+    mmrPlanSp1Fixture.sourceState,
+    "uncommitted-complete-input-projection-bound-by-sha256",
+    "A13 evidence source state",
+  );
+  assertEqual(mmrPlanSp1Fixture.sp1.tag, pointer.sp1Tag, "A13 SP1 tag");
+  assertEqual(mmrPlanSp1Fixture.sp1.commit, pointer.sp1Commit, "A13 SP1 commit");
+  assertEqual(mmrPlanSp1Fixture.fixtureElf.sha256, pointer.fixtureElfSha256, "A13 fixture ELF identity");
+  assertEqual(mmrPlanSp1Fixture.fixtureElf.compileStatus, "passed", "A13 fixture compile status");
+  assertEqual(mmrPlanSp1Fixture.fixtureElf.executionStatus, "passed", "A13 fixture execution status");
+  assertEqual(mmrPlanSp1Fixture.fixtureElf.publicValues.domain, pointer.publicValuesDomain, "A13 ELF journal domain");
+  assertEqual(
+    mmrPlanSp1Fixture.fixtureElf.publicValues.encoding,
+    pointer.publicValuesEncoding,
+    "A13 ELF public-values encoding",
+  );
+  assertEqual(
+    mmrPlanSp1Fixture.fixtureElf.publicValues.lengthBytes,
+    pointer.publicValuesLengthBytes,
+    "A13 ELF public-values length",
+  );
+  assertEqual(
+    mmrPlanSp1Fixture.fixtureElf.reproducibilityStatus,
+    "local-single-build-independent-ci-reproduction-required",
+    "A13 fixture reproducibility status",
+  );
+}
+
+function assertA13Sp1InputProjection() {
+  assertA13CompleteInputProjection(mmrPlanSp1Fixture.inputSha256);
+}
+
+function assertA13Sp1Execution(input) {
+  const execution = mmrPlanSp1Fixture.execution;
+  const validGuest = execution.guestExecution;
+  const badSnapshot = findUniqueByName(execution.nativeNegativeAssertions, "bad-snapshot", "A13 native negative");
+  const substitutedRoot = findUniqueByName(
+    execution.nativeNegativeAssertions,
+    "substituted-plan-root",
+    "A13 native negative",
+  );
+
+  assertEqual(execution.schema, "eternum.a13.sp1-execution.v1", "A13 execution schema");
+  assertEqual(execution.kind, input.sp1ExecutionKind, "A13 execution kind");
+  assertEqual(execution.testsPassed, 1, "A13 execution passed tests");
+  assertEqual(execution.testsFailed, 0, "A13 execution failed tests");
+  assertEqual(Object.hasOwn(execution, "fixtures"), false, "A13 parallel fixture output wire removal");
+  assertDeepEqual(
+    execution.nativeNegativeAssertions.map(({ name }) => name).sort(),
+    ["bad-snapshot", "substituted-plan-root"],
+    "A13 exact native negative set",
+  );
+
+  assertEqual(validGuest.name, "valid-tie-gap", "A13 valid guest name");
+  assertEqual(validGuest.status, "accepted", "A13 valid guest status");
+  assertEqual(
+    validGuest.publicJournalHashHex,
+    mmrPlanSp1Fixture.fixtureElf.expectedJournalHash,
+    "A13 normative guest journal hash",
+  );
+  assertPositiveSafeInteger(validGuest.elapsedMs, "A13 valid guest elapsed time");
+  assertPositiveSafeInteger(validGuest.instructions, "A13 valid guest instructions");
+  assertPositiveSafeInteger(validGuest.totalCycles, "A13 valid guest total cycles");
+  assertEqual(validGuest.syscalls, 0, "A13 valid guest syscalls");
+
+  assertA13NativeNegative(badSnapshot, "invalid-plan:snapshot");
+  assertA13NativeNegative(substitutedRoot, "substituted-plan-root");
+}
+
+function assertA13NativeNegative(negative, expectedError) {
+  assertEqual(negative.status, "rejected", `A13 ${negative.name} rejection status`);
+  assertEqual(negative.exactError, expectedError, `A13 ${negative.name} exact error`);
+  assertPositiveSafeInteger(negative.elapsedMs, `A13 ${negative.name} elapsed time`);
+  assertEqual(Object.hasOwn(negative, "publicOutcomeHex"), false, `A13 ${negative.name} public outcome absence`);
+  assertEqual(Object.hasOwn(negative, "publicJournalHashHex"), false, `A13 ${negative.name} public hash absence`);
+}
+
+function assertA13Sp1Performance() {
+  const execution = mmrPlanSp1Fixture.execution;
+  const validGuest = execution.guestExecution;
+
+  assertEqual(decision.performanceEvidence.a13.sp1FixtureExecutionStatus, "passed", "A13 fixture performance status");
+  assertEqual(decision.performanceEvidence.a13.sp1FixtureExecutionKind, execution.kind, "A13 fixture performance kind");
+  assertEqual(
+    decision.performanceEvidence.a13.sp1FixtureProverInitializationMs,
+    execution.proverInitializationMs,
+    "A13 fixture initialization performance",
+  );
+  assertEqual(decision.performanceEvidence.a13.productionProofPerformanceAvailable, false, "A13 production cost claim");
+  assertEqual(
+    decision.performanceEvidence.a13.sp1FixtureValidInstructions,
+    validGuest.instructions,
+    "A13 valid fixture instructions",
+  );
+  assertEqual(
+    decision.performanceEvidence.a13.sp1FixtureNegativeAssertionMode,
+    "native-shared-core-exact-errors",
+    "A13 negative assertion mode",
+  );
+  for (const [value, label] of [
+    [execution.proverInitializationMs, "prover initialization"],
+    [execution.suiteElapsedMs, "suite elapsed time"],
+    [execution.commandWallMs, "command wall time"],
+    [execution.maxResidentSetBytes, "maximum resident set"],
+  ]) {
+    assertPositiveSafeInteger(value, `A13 ${label}`);
+  }
+  assert(execution.userCpuSeconds > 0, "A13 user CPU evidence must be positive");
+  assert(execution.systemCpuSeconds > 0, "A13 system CPU evidence must be positive");
+  assertEqual(execution.swaps, 0, "A13 execution swaps");
+}
+
+function assertA13Sp1ProductionBlockers() {
+  for (const [field, value] of Object.entries(mmrPlanSp1Fixture.production)) {
+    assertEqual(value, null, `A13 production ${field}`);
+  }
+  assertEqual(mmrPlanSp1Fixture.blockers.length, 6, "A13 fixture blocker count");
+  assert(
+    mmrPlanSp1Fixture.blockers.every((blocker) => typeof blocker === "string" && blocker.trim().length > 0),
+    "A13 fixture blockers must be non-empty strings",
+  );
+  assertDeepEqual(
+    mmrPlan.productionBlockers.map(({ id }) => id),
+    ["SP1-PROGRAM-AND-RECEIPT", "REPRODUCIBLE-RELEASE-BUILD", "GARAGA-VERIFIER", "MAXIMUM-BOUND-CAMPAIGN"],
+    "A13 production blockers",
+  );
+}
+
+function findUniqueByName(entries, name, label) {
+  const matches = entries.filter((entry) => entry.name === name);
+  assertEqual(matches.length, 1, `${label} ${name} uniqueness`);
+  return matches[0];
+}
+
+function assertA13CompleteInputProjection(inputHashes) {
+  const expectedPaths = [
+    "proofs/eternum-settlement/Cargo.lock",
+    "proofs/eternum-settlement/Cargo.toml",
+    "proofs/eternum-settlement/sp1/mmr-plan-host/Cargo.lock",
+    "proofs/eternum-settlement/sp1/mmr-plan-host/Cargo.toml",
+    "proofs/eternum-settlement/sp1/mmr-plan-host/build.rs",
+    "proofs/eternum-settlement/sp1/mmr-plan-host/tests/mmr_plan_execution.rs",
+    "proofs/eternum-settlement/sp1/mmr-plan-program/Cargo.lock",
+    "proofs/eternum-settlement/sp1/mmr-plan-program/Cargo.toml",
+    "proofs/eternum-settlement/sp1/mmr-plan-program/src/main.rs",
+    ...listRustSources("proofs/eternum-settlement/src"),
+  ].sort();
+
+  assertDeepEqual(Object.keys(inputHashes).sort(), expectedPaths, "A13 complete input projection");
+  for (const path of expectedPaths) assertFileHash(path, inputHashes[path]);
+}
+
+function listRustSources(relativeDirectory) {
+  return listFilesRecursively(resolve(repositoryRoot, relativeDirectory))
+    .filter((path) => path.endsWith(".rs"))
+    .map((path) => relative(repositoryRoot, path))
+    .sort();
+}
+
+function listFilesRecursively(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(directory, entry.name);
+    return entry.isDirectory() ? listFilesRecursively(path) : [path];
+  });
+}
+
+function assertPositiveSafeInteger(value, label) {
+  assert(Number.isSafeInteger(value) && value > 0, `${label} must be a positive safe integer`);
+}
+
 function assertA16Evidence(input) {
   assertEqual(
     hardenedInbox.status,
@@ -341,10 +583,43 @@ function assertA16Evidence(input) {
   assertEqual(hardenedInbox.publicPatriciaEvidence.status, input.publicEvidenceStatus, "A16 public proof status");
   assertEqual(hardenedInbox.publicPatriciaEvidence.blockNumber, input.publicBlockNumber, "A16 public proof block");
   assertEqual(
+    hardenedInbox.publicPatriciaEvidence.finalityStatus,
+    input.publicFinalityStatus,
+    "A16 observed block finality status",
+  );
+  assertEqual(
+    hardenedInbox.publicPatriciaEvidence.rpcObservation.productionRecursiveFinalityVerified,
+    input.productionRecursiveFinalityVerified,
+    "A16 production recursive finality claim",
+  );
+  assertEqual(
+    hardenedInbox.publicPatriciaEvidence.historicalStorageProofReplay.errorCode,
+    input.historicalStorageProofErrorCode,
+    "A16 historical storage-proof replay error",
+  );
+  assertEqual(
+    hardenedInbox.externalSourcePins.starknetRpcSpec.commit,
+    input.starknetRpcSpecCommit,
+    "A16 Starknet RPC specification pin",
+  );
+  assertEqual(
+    hardenedInbox.externalSourcePins.publicPiltover.commit,
+    input.publicPiltoverCommit,
+    "A16 public Piltover source pin",
+  );
+  assertEqual(
     hardenedInbox.publicPatriciaEvidence.contractNodeCount,
     input.publicContractNodeCount,
     "A16 public contract proof nodes",
   );
+  for (const [field, inputField, label] of [
+    ["contractLeaf", "publicContractLeaf", "contract leaf"],
+    ["contractsRoot", "publicContractsRoot", "contracts root"],
+    ["classesRoot", "publicClassesRoot", "classes root"],
+    ["stateRoot", "publicStateRoot", "state root"],
+  ]) {
+    assertEqual(hardenedInbox.publicPatriciaEvidence[field], input[inputField], `A16 public ${label}`);
+  }
   assertEqual(
     hardenedInbox.publicPatriciaEvidence.containsCancelledMarkerStorageProof,
     false,
@@ -373,7 +648,12 @@ function assertA16Evidence(input) {
   );
   assertEqual(hardenedInbox.testEvidence.productionRecursiveFinalityVerifyL2Gas, null, "A16 production finality cost");
   assertEqual(hardenedInbox.testEvidence.productionMaximumStorageProofL2Gas, null, "A16 maximum proof cost");
+  assertEqual(hardenedInbox.testEvidence.command, input.focusedTestCommand, "A16 focused test command");
+  assertEqual(hardenedInbox.reproducibilityInputs.manifestSha256, input.manifestSha256, "A16 manifest identity");
+  assertEqual(hardenedInbox.reproducibilityInputs.lockfileSha256, input.lockfileSha256, "A16 lockfile identity");
   for (const [path, field] of [
+    ["contracts/settlement_appchain/Scarb.toml", "manifestSha256"],
+    ["contracts/settlement_appchain/Scarb.lock", "lockfileSha256"],
     ["contracts/settlement_appchain/src/hardened_inbox_runtime.cairo", "runtimeSha256"],
     ["contracts/settlement_appchain/src/hardened_inbox_runtime_tests.cairo", "testsAndCapturedProofSha256"],
     ["contracts/settlement_appchain/src/hardened_inbox_runtime_mocks.cairo", "testMocksSha256"],
@@ -383,6 +663,9 @@ function assertA16Evidence(input) {
     assertFileHash(path, hardenedInbox.reproducibilityInputs[field]);
   }
   assertFileHash("packages/settlement-codec/schema/hardened-inbox-a16-v1.json", input.fileSha256);
+  assertFileHash("packages/settlement-codec/src/hardened-inbox-evidence.ts", input.evidenceValidatorSha256);
+  assertFileHash("packages/settlement-codec/src/hardened-inbox-evidence.test.ts", input.evidenceValidatorTestSha256);
+  assertFileHash("scripts/settlement/check-hardened-inbox-a16-evidence.ts", input.structuredEvidenceCheckerSha256);
 }
 
 function assertA19Evidence(input) {
@@ -498,13 +781,169 @@ function assertA19Evidence(input) {
   assertFileHash("packages/settlement-codec/schema/legacy-mmr-derivation-a19-v1.json", input.fileSha256);
 }
 
-function assertA20StopOutcome() {
-  const outcome = decision.stopOutcomes.find(({ id }) => id === "A20-AUTHORITY-FREEZE");
-  assert(outcome, "A23 must declare the A20 authority-freeze outcome");
+function assertA20EvidenceComplete(input) {
+  const wave0 = decision.wave0.find(({ ticket }) => ticket === "A20");
+  const observation = authority.onchainObservations.find(({ semanticKey }) => semanticKey === "mmrToken");
+  const rebuild = observation?.deployedSourceRebuild;
+
+  assertEqual(authority.status, "a20-evidence-complete-awaiting-a23-freeze", "A20 inventory status");
+  assertEqual(authority.status, input.status, "A20 decision status");
+  assertEqual(authority.evidenceComplete, true, "A20 evidence completion");
+  assertEqual(authority.evidenceComplete, input.evidenceComplete, "A20 decision evidence completion");
+  assertEqual(authority.releaseReady, false, "A20 release readiness");
+  assertEqual(wave0?.status, authority.status, "A20 Wave 0 status");
+  assertEqual(wave0?.mandatoryBlocker, undefined, "A20 completed evidence must not remain a feasibility blocker");
   assert(
-    outcome.action.includes("89-path mutation review is complete") && outcome.action.includes("MMR class source"),
-    "A20 authority-freeze outcome must distinguish completed mutation review from the class-source blocker",
+    !decision.stopOutcomes.some(({ id }) => id === "A20-AUTHORITY-FREEZE"),
+    "A20 source-provenance blocker must be removed after exact reproduction",
   );
+
+  assertEqual(authority.authoritativeAddressInputsHash, input.authoritativeAddressInputsHash, "A20 address input hash");
+  assertEqual(authority.privilegedMutationPathsHash, input.privilegedMutationPathsHash, "A20 mutation path hash");
+  assertEqual(
+    authority.authoritySchema.authoritySchemaHash,
+    input.candidateAuthoritySchemaHash,
+    "A20 candidate authority schema hash",
+  );
+  assertEqual(authority.authoritySchema.status, input.authoritySchemaStatus, "A20 authority schema status");
+  assertEqual(
+    authority.authoritySchema.observedClassMatchesLocalStorageLayoutSource,
+    true,
+    "A20 deployed source and layout identity",
+  );
+  assertEqual(
+    authority.unresolvedMutationCandidates.length,
+    input.unresolvedMutationCandidates,
+    "A20 unresolved mutation count",
+  );
+  assertEqual(
+    authority.addressSourceRecords.length,
+    input.concreteAddressSourceRecords,
+    "A20 concrete address source count",
+  );
+  assertEqual(
+    authority.dynamicAddressInputs.length,
+    input.dynamicAddressInputRecords,
+    "A20 dynamic address input count",
+  );
+  assertEqual(authority.dynamicAddressInputRecords.length, input.dynamicAddressInputRecords, "A20 dynamic wire count");
+  assertEqual(authority.dynamicAddressInputsHash, input.dynamicAddressInputsHash, "A20 dynamic address input hash");
+  assertA20DynamicAddressInputCounts(input);
+  assertEqual(authority.privilegedMutationPaths.length, input.reviewedMutationPaths, "A20 path count");
+  assertA20DispositionCounts(input);
+
+  assert(observation, "A20 MMR-token observation must exist");
+  assert(rebuild, "A20 deployed-source rebuild evidence must exist");
+  assertEqual(rebuild.sourceCommit, input.deployedSourceCommit, "A20 deployed source commit");
+  assertEqual(rebuild.cleanBuilds.length, input.cleanBuildCount, "A20 clean rebuild count");
+  assertEqual(rebuild.sierraClassHash, input.deployedSierraClassHash, "A20 rebuilt Sierra class hash");
+  assertEqual(rebuild.compiledClassHash, input.deployedCompiledClassHash, "A20 rebuilt compiled class hash");
+  assertEqual(
+    rebuild.storageLayoutIdentityHash,
+    input.historicalStorageLayoutIdentityHash,
+    "A20 historical storage layout identity",
+  );
+  assertEqual(
+    rebuild.topLevelStorageDeclarationHash,
+    input.historicalTopLevelStorageDeclarationHash,
+    "A20 historical top-level storage declaration",
+  );
+  assertEqual(
+    authority.authoritySchema.tokenStorageLayoutHash,
+    rebuild.storageLayoutIdentityHash,
+    "A20 schema layout identity",
+  );
+  assertEqual(observation.rpcChainId, input.rpcChainId, "A20 RPC chain identity");
+  assertEqual(observation.observationKind, input.observationKind, "A20 finalized-RPC trust boundary");
+  assertEqual(
+    rebuild.rpcRepresentableClassExactMatch,
+    input.rpcRepresentableClassExactMatch,
+    "A20 normalized RPC class match",
+  );
+  assertEqual(observation.classHash, rebuild.sierraClassHash, "A20 observed/rebuilt Sierra class identity");
+  assertEqual(observation.declaration.compiledClassHash, rebuild.compiledClassHash, "A20 declaration/CASM identity");
+  assertEqual(observation.declaration.finalityStatus, input.declarationFinalityStatus, "A20 declaration finality");
+  assertEqual(observation.deployment.finalityStatus, input.deploymentFinalityStatus, "A20 deployment finality");
+  assertEqual(
+    observation.deployment.transactionVersion,
+    input.deploymentTransactionVersion,
+    "A20 deployment transaction version",
+  );
+  assertEqual(observation.deployment.udc.address, input.deploymentUdcAddress, "A20 deployment UDC address");
+  assertEqual(
+    observation.deployment.udc.deployContractSelector,
+    input.deploymentUdcSelector,
+    "A20 UDC deployment selector",
+  );
+  assertEqual(observation.deployment.udc.salt, input.deploymentSalt, "A20 deployment salt");
+  assertEqual(
+    observation.deployment.contractDeployedEvent.selector,
+    input.contractDeployedEventSelector,
+    "A20 ContractDeployed selector",
+  );
+  assertEqual(
+    observation.deployment.contractDeployedEvent.fromAddress,
+    observation.deployment.udc.address,
+    "A20 ContractDeployed emitter",
+  );
+
+  assertEqual(
+    authority.externalAuthorization.status,
+    input.externalAuthorizationStatus,
+    "A20 external authorization status",
+  );
+  assertEqual(
+    authority.externalAuthorization.authoritySchemaHash,
+    authority.authoritySchema.authoritySchemaHash,
+    "A20 authorization schema identity",
+  );
+  assertEqual(authority.externalAuthorization.approvalRecordHash, input.approvalRecordHash, "A20 approval record");
+
+  assertFileHash("packages/settlement-codec/schema/authority-inventory-v1.json", input.fileSha256);
+  assertFileHash("packages/settlement-codec/schema/authority-mutation-policy-v1.json", input.mutationPolicySha256);
+  assertFileHash("packages/settlement-codec/src/authority-inventory.ts", input.validatorSha256);
+  assertFileHash("packages/settlement-codec/src/authority-inventory.test.ts", input.validatorTestSha256);
+  assertFileHash("packages/settlement-codec/src/authority-commitments.ts", input.authorityCommitmentsSha256);
+  assertFileHash("packages/settlement-codec/src/authority-address-discovery.ts", input.addressDiscoverySha256);
+  assertFileHash("packages/settlement-codec/src/authority-address-discovery.test.ts", input.addressDiscoveryTestSha256);
+  assertFileHash(
+    "packages/settlement-codec/src/authority-deployment-provenance.test.ts",
+    input.deploymentProvenanceTestSha256,
+  );
+  assertFileHash("packages/settlement-codec/src/authority-role-provenance.test.ts", input.roleProvenanceTestSha256);
+  assertFileHash("scripts/settlement/generate-authority-inventory.mjs", input.generatorSha256);
+  assertFileHash("scripts/settlement/verify-authority-observation.mjs", input.observationVerifierSha256);
+  assertFileHash("scripts/settlement/verify-authority-source-rebuild.mjs", input.sourceRebuildVerifierSha256);
+}
+
+function assertA20DynamicAddressInputCounts(input) {
+  for (const [inputKind, field] of [
+    ["environment", "dynamicEnvironmentInputs"],
+    ["cli", "dynamicCliInputs"],
+    ["runtime-field", "dynamicRuntimeFieldInputs"],
+  ]) {
+    assertEqual(
+      authority.dynamicAddressInputs.filter((entry) => entry.inputKind === inputKind).length,
+      input[field],
+      `A20 ${inputKind} address input count`,
+    );
+  }
+}
+
+function assertA20DispositionCounts(input) {
+  for (const [disposition, field] of [
+    [1, "canonicalStructuredPaths"],
+    [2, "hardDisabledPaths"],
+    [3, "readOnlySemanticReferencePaths"],
+    [4, "migrationOnlyPaths"],
+  ]) {
+    assertEqual(
+      authority.privilegedMutationPaths.filter(({ productionDisposition }) => productionDisposition === disposition)
+        .length,
+      input[field],
+      `A20 ${field}`,
+    );
+  }
 }
 
 function assertA22StopOutcome() {
@@ -671,32 +1110,31 @@ function assertAuthorizationState() {
 }
 
 function assertRuntimeEnforcement() {
-  const apiSource = readText("config/deployer/clean/runtime/aws/game-stack-api.ts");
-  const provisioningSource = readText("config/deployer/clean/runtime/aws/game-stack-provisioning.ts");
-  const releaseDecisionSource = readText("config/deployer/clean/runtime/aws/wave0-release.ts");
-  const releaseAuthorizationSource = readText("config/deployer/clean/game-stack/release-authorization.ts");
-  const orchestratorSource = readText("config/deployer/clean/game-stack/orchestrator.ts");
-  assert(
-    apiSource.includes("assertCurrentWave0ReleaseDecision") &&
-      releaseDecisionSource.includes("wave0-a23-stop-decision-v1.json") &&
-      releaseDecisionSource.includes("assertProductionReleaseAuthorized"),
-    "AWS game-stack admission must consume the checked-in A23 release decision",
-  );
-  assert(
-    provisioningSource.includes("assertCurrentWave0ReleaseDecision") &&
-      provisioningSource.includes("createGameStackProvisioningHandler"),
-    "AWS game-stack provisioning must consume the checked-in A23 release decision",
-  );
-  assert(
-    releaseAuthorizationSource.includes("createPublicKey") &&
-      releaseAuthorizationSource.includes("verify(null") &&
-      releaseAuthorizationSource.includes("requiredSignatureCount"),
-    "A23 GO authorization must verify trusted cryptographic signatures and quorum",
-  );
-  assert(
-    orchestratorSource.includes("dependencies.assertProductionReleaseAuthorized"),
-    "game-stack publication must recheck A23 production authorization",
-  );
+  const evidence = decision.runtimeEnforcement;
+  const expectedSources = [
+    "config/deployer/clean/game-stack/a23-decision.mts",
+    "config/deployer/clean/game-stack/api.ts",
+    "config/deployer/clean/game-stack/orchestrator.ts",
+    "config/deployer/clean/game-stack/release-authorization.ts",
+    "config/deployer/clean/runtime/aws/game-stack-api.ts",
+    "config/deployer/clean/runtime/aws/game-stack-provisioning.ts",
+    "config/deployer/clean/runtime/aws/wave0-release.ts",
+  ];
+  const expectedTests = [
+    "config/deployer/clean/tests/aws-game-stack-provisioning.test.ts",
+    "config/deployer/clean/tests/game-stack-api.test.ts",
+    "config/deployer/clean/tests/game-stack-orchestrator.test.ts",
+    "config/deployer/clean/tests/game-stack-provisioning-handler.test.ts",
+    "config/deployer/clean/tests/game-stack-release-authorization.test.ts",
+    "config/deployer/clean/tests/game-stack-runtime.test.ts",
+    "config/deployer/clean/tests/wave0-release.test.ts",
+  ];
+  assertDeepEqual(Object.keys(evidence.sourceSha256), expectedSources, "A23 runtime enforcement source set");
+  assertDeepEqual(Object.keys(evidence.testSha256), expectedTests, "A23 runtime enforcement test set");
+  for (const path of expectedSources) assertFileHash(path, evidence.sourceSha256[path]);
+  for (const path of expectedTests) assertFileHash(path, evidence.testSha256[path]);
+  assertFileHash(".github/workflows/aws-runtime-ci.yml", evidence.ciWorkflowSha256);
+  assertFileHash(".github/workflows/settlement-protocol-ci.yml", evidence.settlementCiWorkflowSha256);
 }
 
 function readJson(relativePath) {

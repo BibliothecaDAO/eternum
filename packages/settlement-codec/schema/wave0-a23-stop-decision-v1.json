@@ -1,17 +1,85 @@
 {
   "schemaVersion": 1,
   "ticket": "A23",
-  "recordedAt": "2026-07-20",
+  "recordedAt": "2026-07-23",
   "decision": "STOP",
   "decisionReason": "Mandatory Wave 0 feasibility properties remain absent, incomplete, or externally blocked.",
   "releaseReady": false,
   "productionStartAuthorized": false,
+  "productionProgramStartAuthorized": false,
   "productionEpics": {
     "B": { "dependsOn": ["A23"], "status": "blocked" },
     "C": { "dependsOn": ["A23"], "status": "blocked" },
     "D": { "dependsOn": ["A23"], "status": "blocked" },
     "E": { "dependsOn": ["A23"], "status": "blocked" },
     "F": { "dependsOn": ["A23"], "status": "blocked" }
+  },
+  "productionTicketDependencyMatrix": {
+    "status": "blocked",
+    "appliesToEachTicket": true,
+    "dependsOn": ["A23"],
+    "ticketIds": [
+      "B1",
+      "B2",
+      "B3",
+      "B4",
+      "B5",
+      "B6",
+      "B7",
+      "B8",
+      "C1",
+      "C2",
+      "C3",
+      "C4",
+      "C5",
+      "C6",
+      "C7",
+      "C8",
+      "C9",
+      "C10",
+      "C11",
+      "C12",
+      "C13",
+      "C14",
+      "C15",
+      "C16",
+      "C17",
+      "C18",
+      "C19",
+      "C20",
+      "C21",
+      "C22",
+      "C23",
+      "D2",
+      "D3",
+      "D4",
+      "D5",
+      "D6",
+      "D7",
+      "D8",
+      "D9",
+      "D10",
+      "D11",
+      "D12",
+      "E1",
+      "E2",
+      "E3",
+      "E4",
+      "E5",
+      "E6",
+      "E7",
+      "E8",
+      "E9",
+      "E10",
+      "F1",
+      "F2",
+      "F3",
+      "F4",
+      "F5",
+      "F6",
+      "F7",
+      "F8"
+    ]
   },
   "wave0": [
     { "ticket": "A1", "status": "complete" },
@@ -51,8 +119,7 @@
     },
     {
       "ticket": "A20",
-      "status": "mutation-review-complete-observed-class-source-blocked",
-      "mandatoryBlocker": true
+      "status": "a20-evidence-complete-awaiting-a23-freeze"
     },
     {
       "ticket": "A21",
@@ -76,8 +143,17 @@
     },
     "mmrPlanProof": {
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
-      "fileSha256": "e80a917384ad233ab10a42f654b41d64b3a0b4f8d72f9c501e9a8e4d65c58f32",
+      "fileSha256": "00d2fb94bc72ef61eed9ecc56557a0faeb05dcae7a470e1eae131b2e1ede3fcc",
       "journalHash": "0x2e8193d2764077811fe44d826af2d7a6c0c8afdc31ced2d5f106530fb639f6a",
+      "sp1FixtureStatus": "fixture-execution-passed-production-proof-blocked",
+      "sp1FixtureEvidenceSha256": "f723ddca87bd17da5830b9f058cb31db39e1d9d1892f127df2cd6b4047a24dd2",
+      "sp1FixtureCiEvidenceCheckerSha256": "d8f6d353d3059ab727605d85094edb34bf585b570f38eacabc563d9c54e6fd35",
+      "sp1FixtureElfSha256": "42b69fb90cf5829b658f8f50ac3f6e7236070a5af69a72a6326926afb242c7c0",
+      "sp1Commit": "150e6294959f40dbc3ba42eb21c8eccc14c95bc5",
+      "sp1ExecutionKind": "sp1-sdk-v6.2.2-cpu-execute-valid-only-with-native-negatives-no-proof",
+      "sp1PublicValuesDomain": "MMR_PLAN_JOURNAL_V1",
+      "sp1PublicValuesEncoding": "journal-hash-only",
+      "sp1PublicValuesLengthBytes": 32,
       "releaseReady": false
     },
     "emergencySealedProof": {
@@ -88,10 +164,25 @@
     },
     "hardenedInboxProof": {
       "status": "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
-      "fileSha256": "9af5df9bfda02f7e158fdea591a6f615279443efc34ece3bd5cc9187f056cbbb",
-      "publicEvidenceStatus": "contract-proof-only-accepted-on-l2",
+      "fileSha256": "7015005275731d7ba050e2328ab3433916ff5b939e77ffae996c4432afeaabe6",
+      "evidenceValidatorSha256": "8297369c65934cf3526cd8be3a38d8e8127af988b5d95cfa45a615aea0bfed76",
+      "evidenceValidatorTestSha256": "4636a728f40a96e99dba464c9f6582bf54d79ef44fa08ae60152bd8c41a74673",
+      "structuredEvidenceCheckerSha256": "845eb695a18153832a666c61d0ed3fe44e56fdfe8cb87e60adb850200c057205",
+      "publicEvidenceStatus": "contract-proof-only-block-now-rpc-accepted-on-l1",
       "publicBlockNumber": 12177826,
       "publicContractNodeCount": 22,
+      "publicContractLeaf": "0x2a988a29d5c602ebbb17e68132435c5e43e92c2c6b26e43d12ef0c0b79228f0",
+      "publicContractsRoot": "0x5ec8f3e415abf4e31d6ff8c66826c99842d0c1034cb88da02dcacd179aaef57",
+      "publicClassesRoot": "0x66db14fed264333f9cae1ca52d9e467ac1706193ccf73b59c5beaac5a54736a",
+      "publicStateRoot": "0x790a64c9fa7815bbd3435146bc940af66dad9105850a5cdcfe443937203fad8",
+      "publicFinalityStatus": "ACCEPTED_ON_L1",
+      "productionRecursiveFinalityVerified": false,
+      "historicalStorageProofErrorCode": 42,
+      "starknetRpcSpecCommit": "95acf0cb23f0967903c559d151a19ef5c3fac0fb",
+      "publicPiltoverCommit": "563f6a10184d97c1168ea0f892c4f132ae4d927c",
+      "manifestSha256": "cdf4d7f447583d7e12b9f6de0a56008e55250ed794070b5569b8e35d5dd1d4c8",
+      "lockfileSha256": "ba18bae0bbb173fce6b881d956eee4452df9d8875fa472993e54ff90ce65f32d",
+      "focusedTestCommand": "snforge test hardened_inbox_runtime_tests",
       "mandatoryBlockerCount": 4,
       "releaseReady": false
     },
@@ -116,16 +207,54 @@
       "releaseReady": false
     },
     "authorityInventory": {
-      "status": "mutation-review-complete-observed-class-source-blocked",
-      "fileSha256": "e9603ad2d587805129f7d363513495e30a2e200a9ed21e54bb58178b80fb54c8",
-      "authoritativeAddressInputsHash": "0x12b8109e3c40736c6fe819afd4fdcc5cc14bdbf09f1abc182293149e148c203",
-      "privilegedMutationPathsHash": "0x730c57f7701f95923436679eb45be6bc6e792bae15a99f98e1076a63c1c92c0",
-      "candidateAuthoritySchemaHash": "0x69be751e24fd87fcb27cbb1a57a11b94f8f3e856b43f96fe899fdd2d0bdb1b7",
+      "status": "a20-evidence-complete-awaiting-a23-freeze",
+      "evidenceComplete": true,
+      "fileSha256": "f86918b86e8f5f93f7c0a66537adb3611f876e3a80e8ad1d640faf074d1731ed",
+      "validatorSha256": "863a2f362c73a2ed67b6aa298a357bf3d37e8b5fee72866707f08c1eb5ba7faf",
+      "validatorTestSha256": "ca6771aafd80efec1f3e8438fe1f7c84511f75a084a161fa7ab163d2fc79e6ef",
+      "authorityCommitmentsSha256": "a2ae384da9fee821dce4e3f4586754388a49164c28df6a3c70f46617707efd5e",
+      "addressDiscoverySha256": "efb825ba4f562e9243092d3ac78dd055d85bdfce514422ee508b33cb81f4d5d7",
+      "addressDiscoveryTestSha256": "d8404eb4afe7f807dde27ce9549ffc9b9343794d47a04a5b273921e1ec65b918",
+      "generatorSha256": "4dd491c6030d5f44009163664b07d60229361ac4d8849960aa291f5b3e61f263",
+      "mutationPolicySha256": "3624ec27f20de322404e040f808e98faad9d58a28e595984851e2e49b1f37ba5",
+      "observationVerifierSha256": "9c37e308620f2111802320515e39499e8c833939fb231a2c1e28fe42956832f3",
+      "deploymentProvenanceTestSha256": "5d30b3036eda35c2913620d86c37067884bdb629524434ec3400d576ef0e68db",
+      "roleProvenanceTestSha256": "418aa0a16b14d4fb554fe7e4f8cedf6d5eb20eee0a6164f9a73f8c4983c53fad",
+      "sourceRebuildVerifierSha256": "b2ad3f3e1632a4456bdaebe6da3e48fd125e0fd7cbe65775e5ff0406cd041857",
+      "authoritativeAddressInputsHash": "0x1a0671374891999cfcf7bc0d08be01dd943af997dc72334eceb2f35a9864437",
+      "dynamicAddressInputsHash": "0x7ba72595602344f16689a3c790f6eefc0abee59ccda3736eb5fe82f5056205f",
+      "privilegedMutationPathsHash": "0x34890e6d3e1410d49d89cf79b4fba110c323bef822ded58440ea3bd1a2391fc",
+      "candidateAuthoritySchemaHash": "0x425ef7718fbd7887b4ef15dc16bc1df3023ecb1c2141c49022df1b4d37f0ad6",
+      "historicalStorageLayoutIdentityHash": "0x4a992114f95f83ddff05a6df6dc468b41a9c9cc198cb8eb99f0c4ccace2c7a8",
+      "historicalTopLevelStorageDeclarationHash": "0x27cb4147c8f9d0699bfc5c477dfd1fb79beec889a607d1bcc97454bd2ee9fb1",
+      "rpcChainId": "0x534e5f4d41494e",
+      "observationKind": "single-rpc-finalized-state-observation-not-proof",
+      "authoritySchemaStatus": "provenance-complete-awaiting-a23-freeze",
+      "deployedSourceCommit": "00bdf7bec3a239a34fc16a4d47e70b91c30cddca",
+      "cleanBuildCount": 2,
+      "deployedSierraClassHash": "0x1dc09743f158d6e650b1b14e9557806c898274a5423ec9857558cabb2b7c1d8",
+      "deployedCompiledClassHash": "0x742167c3d25ad97497fe17270c90a6cf23d0541f52c464f200b1523cf02b948",
+      "rpcRepresentableClassExactMatch": true,
+      "declarationFinalityStatus": "ACCEPTED_ON_L1",
+      "deploymentFinalityStatus": "ACCEPTED_ON_L1",
+      "deploymentTransactionVersion": "0x3",
+      "deploymentUdcAddress": "0x41a78e741e5af2fec34b695679bc6891742439f7afb8484ecd7766661ad02bf",
+      "deploymentUdcSelector": "0x1987cbd17808b9a23693d4de7e246a443cfe37e6e7fbaeabd7d7e6532b07c3d",
+      "deploymentSalt": "0x71f9f9da9b5f8122adf140396ff17244b0d82371906208dcda5bc454a526258",
+      "contractDeployedEventSelector": "0x26b160f10156dea0639bec90696772c640b9706a47f5b8c52ea1abe5858b34d",
+      "externalAuthorizationStatus": "awaiting-a23-authority-freeze",
+      "approvalRecordHash": null,
       "unresolvedMutationCandidates": 0,
-      "reviewedMutationPaths": 89,
-      "canonicalStructuredPaths": 20,
+      "concreteAddressSourceRecords": 337,
+      "dynamicAddressInputRecords": 498,
+      "dynamicEnvironmentInputs": 72,
+      "dynamicCliInputs": 17,
+      "dynamicRuntimeFieldInputs": 409,
+      "reviewedMutationPaths": 96,
+      "canonicalStructuredPaths": 22,
       "hardDisabledPaths": 2,
-      "migrationOnlyPaths": 67,
+      "readOnlySemanticReferencePaths": 3,
+      "migrationOnlyPaths": 69,
       "releaseReady": false
     },
     "exitFamilyInventory": {
@@ -150,7 +279,7 @@
     },
     "economicWriteClassificationPolicySha256": "f1849edcd83b773c09def2ea78f78bbe3b729989c940e59eba5db73029c8b145",
     "economicWriteInventorySha256": "eb8e8cd806ae0d9532bd7d6549ba11e68aaa589ab652ddfd1b5ef4ddbeadecbf",
-    "onchainObservationSha256": "64570077b1405d7a47db1fedb19a07950001df290ba33e33254df412693040ab"
+    "onchainObservationSha256": "49a1b550d58b56d64cf914c79eb094bd2e8de1d9126c6fbc1b1b4cb1a559a49c"
   },
   "performanceEvidence": {
     "a17": {
@@ -176,6 +305,12 @@
       "artifact": "packages/settlement-codec/schema/mmr-plan-a13-v1.json",
       "cairoVectorTestL2Gas": 81644,
       "cairoNegativeTestL2Gas": 150538,
+      "sp1FixtureExecutionStatus": "passed",
+      "sp1FixtureExecutionKind": "sp1-sdk-v6.2.2-cpu-execute-valid-only-with-native-negatives-no-proof",
+      "sp1FixtureProverInitializationMs": 575562,
+      "sp1FixtureValidInstructions": 51707742,
+      "sp1FixtureNegativeAssertionMode": "native-shared-core-exact-errors",
+      "productionProofPerformanceAvailable": false,
       "sp1ProgramId": null,
       "sp1VerificationKeyHash": null,
       "sp1ProveDurationMs": null,
@@ -223,9 +358,9 @@
     "unavailableMandatoryCampaigns": [
       "A5-production-katana-sp1",
       "A8",
-      "A13-production-receipt",
+      "A13-production-codec-reproducible-elf-receipt-vk-cairo-verifier-and-maximum-bound",
       "A15-production-receipt-and-maximum-bound",
-      "A16-production-finality-and-cancelled-slot-proof",
+      "A16-production-finality-cancelled-slot-proof-and-cost-campaign",
       "A19-finalized-source-inventory-and-production-recursive-receipts",
       "A21-production-segmented-recursive-receipts-and-maximum-bound"
     ]
@@ -294,11 +429,29 @@
     },
     "riskReserve": { "status": "unavailable", "rangeWeeks": null }
   },
-  "stopOutcomes": [
-    {
-      "id": "A20-AUTHORITY-FREEZE",
-      "action": "The 89-path mutation review is complete; obtain the exact deployed MMR class source or an independently verified compatible storage-layout source before freezing authority_schema_hash."
+  "runtimeEnforcement": {
+    "sourceSha256": {
+      "config/deployer/clean/game-stack/a23-decision.mts": "0fd422e559975521dae3f095ea61f894f3d8e6577038db43d5fdec3f496cc499",
+      "config/deployer/clean/game-stack/api.ts": "5a89c45f2ba9083acfc9c91e9d7703ac3f7cf2c1f11e502984bb5456729177e1",
+      "config/deployer/clean/game-stack/orchestrator.ts": "694bbecff933802d40efd2278dc33fd461094a1555c96e95291c93badcb536be",
+      "config/deployer/clean/game-stack/release-authorization.ts": "606bfa431416e9632f31a79368392591e5691e09c41210e6cecd3a5cdee4e6a9",
+      "config/deployer/clean/runtime/aws/game-stack-api.ts": "e72d5d2620ba10b47d6280e78a316091684bbd81437058fa0299d3dea1b8ee30",
+      "config/deployer/clean/runtime/aws/game-stack-provisioning.ts": "2839c1b45c0620dbe9b1bce12dbf8de53faf373c5c56a61e18e3255b6788cbbe",
+      "config/deployer/clean/runtime/aws/wave0-release.ts": "a30bcfd338322774d4292c517cb3b65403db17158a8bec34eb93877e12693615"
     },
+    "testSha256": {
+      "config/deployer/clean/tests/aws-game-stack-provisioning.test.ts": "030ca344b9cf1742b0de0efed642fa9736f603516bcf7079d4006537a7952f10",
+      "config/deployer/clean/tests/game-stack-api.test.ts": "0c94ff5302e92619af24b6f2c374df69b5176279f6670617c2af2982387cf216",
+      "config/deployer/clean/tests/game-stack-orchestrator.test.ts": "54eb065645b1f4cdf23645e9eed0e317f0bffeb356cdae8a162c3f55228af63e",
+      "config/deployer/clean/tests/game-stack-provisioning-handler.test.ts": "1fd26748fc3da179f4e27c09b8d8ecfe71a31f80446acf6284c8480468aeaabb",
+      "config/deployer/clean/tests/game-stack-release-authorization.test.ts": "cf1d7582e9536697e9b5b15108cd7386da8f815529cd31b27c81015268597297",
+      "config/deployer/clean/tests/game-stack-runtime.test.ts": "6d74b95bca6c30412d97ddb245378285f624bd203164ffb70e65fa93af5c2990",
+      "config/deployer/clean/tests/wave0-release.test.ts": "6762c3bd5ae7e5ad27f47d9fb995c797d0925c2279c13c671b320a7b3f5a60bc"
+    },
+    "ciWorkflowSha256": "423891fbba4b6ad4d0494179b5bc22ffd73f0c42cc4ea6a76c3a15ffee89394a",
+    "settlementCiWorkflowSha256": "712e3fbec54e5ea1595f02e3f6c66f81697628274caf7c4a5682817aebc9db33"
+  },
+  "stopOutcomes": [
     {
       "id": "A22-BOUNDS-FREEZE",
       "action": "A22 now discovers erase_model lifecycle mutations, preserves three exact reviewed classification overrides, publishes executable reference u64 index, generation, tombstone, and chunk semantics, and binds per-family cardinality formulas, required inputs, and atomic exhaustion rules. Family 10 has a 4,096-position normative candidate, but its fixed lot coordinate still requires integration review. Independently review exact per-family maxima from rulesets and simulations; redesign D5-D9 from the five enumerated issue groups; implement typed source projections and production indexes; add the four absent production families; enforce the reviewed caps; and rerun A8 before estimating or authorizing production."
@@ -309,7 +462,7 @@
     },
     {
       "id": "MISSING-PROOF-GATES",
-      "action": "Replace A5, A15, and A21 reference state seams with pinned Katana MultiProof adapters and production SP1 receipt/cost evidence; complete the A13 production receipt, provide A16's pinned recursive finality verifier and real finalized CancelledInboxMarker proof, complete A19's distinct finalized source-inventory program and production recursive receipts, and run the A15/A19/A21 maximum-bound campaigns."
+      "action": "Replace A5, A15, and A21 reference state seams with pinned Katana MultiProof adapters and production SP1 receipt/cost evidence; freeze A13's production codecs, reproduce its ELF in two clean release-container builds, publish its receipt and verification key, implement its Cairo proof verifier, and run its maximum-bound campaign; provide A16's pinned recursive finality verifier and real finalized CancelledInboxMarker proof and measure both recursive-finality and maximum storage-proof verification costs; complete A19's distinct finalized source-inventory program and production recursive receipts; and run the A15/A19/A21 maximum-bound campaigns."
     }
   ],
   "authorization": {

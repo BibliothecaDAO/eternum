@@ -1,5 +1,9 @@
 import { readFileSync } from "node:fs";
-import { assertProductionReleaseAuthorized, type A23ReleaseAuthorizationVerification } from "../../game-stack";
+import {
+  assertA23ReleaseAuthorizationVerification,
+  assertProductionReleaseAuthorized,
+  type A23ReleaseAuthorizationVerification,
+} from "../../game-stack";
 
 const WAVE0_DECISION_URL = new URL(
   "../../../../../packages/settlement-codec/schema/wave0-a23-stop-decision-v1.json",
@@ -27,7 +31,9 @@ export function readA23ReleaseAuthorizationVerification(
   if (!Number.isInteger(requiredSignatureCount) || requiredSignatureCount < 1) {
     throw new Error("A23_RELEASE_SIGNATURE_QUORUM must be a positive integer");
   }
-  return { requiredSignatureCount, trustedSignerPublicKeys };
+  const verification = { requiredSignatureCount, trustedSignerPublicKeys };
+  assertA23ReleaseAuthorizationVerification(verification);
+  return verification;
 }
 
 function parseTrustedSignerPublicKeys(value: string): Record<string, string> {

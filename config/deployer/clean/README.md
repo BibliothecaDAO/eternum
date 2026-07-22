@@ -53,8 +53,9 @@ Required configuration:
 - `BLITZ_CONTROL_PLANE_SERVICE_TOKEN`
 
 Both services read the checked-in A23 decision. A future GO also requires separately trusted Ed25519 keys in
-`A23_RELEASE_AUTHORITY_PUBLIC_KEYS_JSON` and a positive `A23_RELEASE_SIGNATURE_QUORUM`. The current unsigned STOP record
-deliberately prevents production admission and publication.
+`A23_RELEASE_AUTHORITY_PUBLIC_KEYS_JSON` and a positive `A23_RELEASE_SIGNATURE_QUORUM`, but authorizes only the start of
+production Epics B-F. Production admission and publication remain fail-closed until the later real-TEE, recovery, audit,
+and release-candidate authorization gate is implemented. The current unsigned STOP record blocks both phases.
 
 ## Environment policy
 

@@ -43,9 +43,16 @@ jobs:
             config/deployer/clean/tests/aws-runtime.test.ts \
             config/deployer/clean/tests/aws-runtime-e2e.test.ts \
             config/deployer/clean/tests/aws-runtime-dr.test.ts \
+            config/deployer/clean/tests/aws-game-stack-provisioning.test.ts \
             config/deployer/clean/tests/runtime-image.test.ts \
             config/deployer/clean/tests/runtime-registry.test.ts \
-            config/deployer/clean/tests/cloudflare-worker.test.ts
+            config/deployer/clean/tests/cloudflare-worker.test.ts \
+            config/deployer/clean/tests/game-stack-api.test.ts \
+            config/deployer/clean/tests/game-stack-orchestrator.test.ts \
+            config/deployer/clean/tests/game-stack-provisioning-handler.test.ts \
+            config/deployer/clean/tests/game-stack-release-authorization.test.ts \
+            config/deployer/clean/tests/game-stack-runtime.test.ts \
+            config/deployer/clean/tests/wave0-release.test.ts
 
       - name: Run runtime static guards
         run: |
