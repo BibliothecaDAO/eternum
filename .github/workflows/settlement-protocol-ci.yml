@@ -3,6 +3,18 @@ name: Settlement protocol CI
 on:
   pull_request:
     paths:
+      - "**/*.js"
+      - "**/*.cjs"
+      - "**/*.mjs"
+      - "**/*.ts"
+      - "**/*.cts"
+      - "**/*.mts"
+      - "**/*.tsx"
+      - "**/*.py"
+      - "**/*.rs"
+      - "**/*.sh"
+      - "**/*.yml"
+      - "**/*.yaml"
       - "contracts/settlement_protocol/**"
       - "contracts/settlement_appchain/**"
       - "contracts/game/src/**"
@@ -10,16 +22,30 @@ on:
       - "contracts/*/src/**"
       - "contracts/*/scripts/**"
       - "contracts/*/ext/**"
+      - "contracts/**/scripts/**"
+      - "contracts/**/ext/scripts/**"
       - "contracts/*/Scarb.toml"
       - "contracts/*/Scarb.lock"
       - "contracts/*/.tool-versions"
       - "config/deployer/clean/**"
+      - "config/deployer/config.ts"
+      - "config/source/**"
+      - "config/generated/**"
+      - "contracts/common/addresses/**"
+      - "contracts/scripts-runtime/**"
+      - "packages/provider/**"
+      - "client/apps/eternum-mobile/src/app/dojo/context/policies.ts"
+      - "client/apps/game/src/hooks/context/policies.ts"
+      - "client/apps/game/src/pm/bindings/typescript/contracts.gen.ts"
+      - "client/apps/game/src/ui/features/admin/**"
+      - "scripts/recover-aws-runtime-from-registry.mjs"
+      - "scripts/ci/roles/**"
       - "packages/settlement-codec/**"
       - "proofs/eternum-settlement/**"
       - "scripts/settlement/**"
       - "package.json"
       - "pnpm-lock.yaml"
-      - ".github/workflows/settlement-protocol-ci.yml"
+      - ".github/workflows/**"
 
 permissions:
   contents: read
@@ -62,6 +88,7 @@ jobs:
           pnpm run check:config-setter-inventory
           pnpm run check:generated-config
           pnpm run check:authority-inventory
+          pnpm run check:hardened-inbox-a16-evidence
           pnpm run check:economic-interface-schema
           pnpm run check:package-lock-matrix
           pnpm run check:wave0-a23
@@ -192,6 +219,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
@@ -235,6 +264,42 @@ jobs:
           cargo clippy --all-targets -- -D warnings
           cargo test
 
+  a13-sp1-fixture:
+    name: Pinned A13 SP1 fixture execution
+    needs: generated-protocol-artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: "22"
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install the pinned SP1 CLI and Succinct Rust toolchain
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          cargo install --locked --git https://github.com/succinctlabs/sp1.git --tag v6.2.2 --no-default-features sp1-cli
+          cargo prove --version | grep -F '150e6294959f40dbc3ba42eb21c8eccc14c95bc5'
+          cargo prove install-toolchain
+          test "$(rustc +succinct --version)" = "rustc 1.93.0-dev"
+
+      - name: Rebuild and execute the normative A13 fixture
+        run: |
+          set -o pipefail
+          test_log="${RUNNER_TEMP}/a13-sp1-fixture.log"
+          cargo test --locked --manifest-path proofs/eternum-settlement/sp1/mmr-plan-host/Cargo.toml \
+            -- --test-threads=1 --nocapture | tee "${test_log}"
+          A13_SP1_EXECUTION_LOG="${test_log}" \
+          A13_SP1_ELF="proofs/eternum-settlement/sp1/mmr-plan-program/target/elf-compilation/riscv64im-succinct-zkvm-elf/release/eternum-mmr-plan-program" \
+            node scripts/settlement/check-a13-sp1-fixture-execution.mjs
+
   aligned-cairo-packages:
     name: Verify ${{ matrix.package }} on the frozen lane
     needs:
@@ -244,6 +309,7 @@ jobs:
       - deployer-compiler
       - authority-evidence
       - rust-codecs
+      - a13-sp1-fixture
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
@@ -289,3 +355,14 @@ jobs:
         if: matrix.package == 'settlement_appchain'
         working-directory: contracts/settlement_appchain
         run: scarb run benchmark-a17
+
+      - name: Verify A16 focused evidence measurements
+        if: matrix.package == 'settlement_appchain'
+        working-directory: contracts/settlement_appchain
+        run: |
+          set -o pipefail
+          test_log="${RUNNER_TEMP}/settlement_appchain-a16-snforge.log"
+          snforge test hardened_inbox_runtime_tests | tee "${test_log}"
+          grep -F 'Tests: 26 passed, 0 failed, 0 ignored, 28 filtered out' "${test_log}"
+          grep -F 'finalized_header_and_exact_cancelled_slot_apply_once' "${test_log}" | grep -F 'l2_gas: ~4786614'
+          grep -F 'independently_captured_starknet_piltover_contract_proof_reconstructs' "${test_log}" | grep -F 'l2_gas: ~1082878'

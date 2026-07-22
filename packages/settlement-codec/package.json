@@ -25,7 +25,7 @@
     "check:authority-inventory": "tsx ../../scripts/settlement/generate-authority-inventory.mjs --check",
     "generate:authority-inventory": "tsx ../../scripts/settlement/generate-authority-inventory.mjs",
     "verify:authority-observation": "node ../../scripts/settlement/verify-authority-observation.mjs",
-    "verify:authority-source-rebuild": "node ../../scripts/settlement/verify-authority-source-rebuild.mjs",
+    "verify:authority-source-rebuild": "tsx ../../scripts/settlement/verify-authority-source-rebuild.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

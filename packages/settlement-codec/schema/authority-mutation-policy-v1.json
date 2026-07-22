@@ -29,6 +29,14 @@
     {
       "path": "config/deployer/clean/role-grants/grant-role.ts#role-mutation",
       "evidencePath": "config/deployer/clean/role-grants/grant-role.ts"
+    },
+    {
+      "path": "packages/provider/src/index.ts#factory-mutation",
+      "evidencePath": "packages/provider/src/index.ts"
+    },
+    {
+      "path": "packages/provider/src/index.ts#role-mutation",
+      "evidencePath": "packages/provider/src/index.ts"
     }
   ],
   "hardDisabledOperations": [
@@ -43,8 +51,32 @@
       "replacementPath": "config/deployer/clean/game-stack/orchestrator.ts"
     }
   ],
-  "readOnlyOperations": [],
-  "consumedMigrationOperations": [],
+  "readOnlyOperations": [
+    {
+      "path": "client/apps/eternum-mobile/src/app/dojo/context/policies.ts#upgrade",
+      "evidencePath": "client/apps/eternum-mobile/src/app/dojo/context/policies.ts"
+    },
+    {
+      "path": "client/apps/game/src/hooks/context/policies.ts#upgrade",
+      "evidencePath": "client/apps/game/src/hooks/context/policies.ts"
+    },
+    {
+      "path": "scripts/recover-aws-runtime-from-registry.mjs#deploy",
+      "evidencePath": "scripts/recover-aws-runtime-from-registry.mjs"
+    }
+  ],
+  "consumedMigrationOperations": [
+    {
+      "path": "client/apps/game/src/pm/bindings/typescript/contracts.gen.ts#role-mutation",
+      "evidencePath": "client/apps/game/src/pm/bindings/typescript/contracts.gen.ts",
+      "replacementPath": "config/deployer/clean/role-grants/grant-role.ts"
+    },
+    {
+      "path": "client/apps/game/src/ui/features/admin/pages/factory.tsx#factory-mutation",
+      "evidencePath": "client/apps/game/src/ui/features/admin/pages/factory.tsx",
+      "replacementPath": "config/deployer/clean/config/native-steps.ts"
+    }
+  ],
   "pathPrefixRules": [
     {
       "id": "aws-game-stack-orchestrator",

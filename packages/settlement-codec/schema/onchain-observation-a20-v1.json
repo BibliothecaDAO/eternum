@@ -1,6 +1,8 @@
 {
   "schemaVersion": 1,
   "chainId": "mainnet",
+  "rpcChainId": "0x534e5f4d41494e",
+  "observationKind": "single-rpc-finalized-state-observation-not-proof",
   "semanticKey": "mmrToken",
   "rpcUrl": "https://api.cartridge.gg/x/starknet/mainnet/rpc/v0_9",
   "blockNumber": 12050000,
@@ -11,10 +13,107 @@
   "contractAddress": "0xd5a3c8c5ebcacf3279aafd2de3eb0c4736afc11be6f41c84880080fa7a1aaf",
   "classHash": "0x1dc09743f158d6e650b1b14e9557806c898274a5423ec9857558cabb2b7c1d8",
   "classResponseSha256": "a713dc214ddd2c497c8011ff159d19c39ba0611de9c32e4dbb257fd06e6f464d",
+  "declaration": {
+    "blockNumber": 7052550,
+    "blockHash": "0x6285eac3822bb771697915415d52722872a6e9f72562d3333923dd849cb44b8",
+    "blockTimestamp": 1771797419,
+    "transactionHash": "0x1c4a82af17119d0136061f01e92050ffdd0cdc982011579f953b405c770124f",
+    "sender": "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+    "classHash": "0x1dc09743f158d6e650b1b14e9557806c898274a5423ec9857558cabb2b7c1d8",
+    "compiledClassHash": "0x742167c3d25ad97497fe17270c90a6cf23d0541f52c464f200b1523cf02b948",
+    "executionStatus": "SUCCEEDED",
+    "finalityStatus": "ACCEPTED_ON_L1"
+  },
+  "deployment": {
+    "blockNumber": 7052557,
+    "blockHash": "0x163e9762e2301954dc5ed0fe9de207e7307ec559d6b02a549d42833c872aa91",
+    "blockTimestamp": 1771797436,
+    "transactionHash": "0x24d64ab4a5355ab00a0c8cf39e25a764cd59009fa2cb7b2d68bd4fd38b8b6d7",
+    "sender": "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+    "classHash": "0x1dc09743f158d6e650b1b14e9557806c898274a5423ec9857558cabb2b7c1d8",
+    "transactionVersion": "0x3",
+    "udc": {
+      "address": "0x41a78e741e5af2fec34b695679bc6891742439f7afb8484ecd7766661ad02bf",
+      "deployContractSelector": "0x1987cbd17808b9a23693d4de7e246a443cfe37e6e7fbaeabd7d7e6532b07c3d",
+      "salt": "0x71f9f9da9b5f8122adf140396ff17244b0d82371906208dcda5bc454a526258",
+      "unique": "0x1"
+    },
+    "accountCalldata": [
+      "0x1",
+      "0x41a78e741e5af2fec34b695679bc6891742439f7afb8484ecd7766661ad02bf",
+      "0x1987cbd17808b9a23693d4de7e246a443cfe37e6e7fbaeabd7d7e6532b07c3d",
+      "0x6",
+      "0x1dc09743f158d6e650b1b14e9557806c898274a5423ec9857558cabb2b7c1d8",
+      "0x71f9f9da9b5f8122adf140396ff17244b0d82371906208dcda5bc454a526258",
+      "0x1",
+      "0x2",
+      "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+      "0x7fd490b3ba298e4b94e3c32df832823b102e39ce98cd41076a70b2f82d9326e"
+    ],
+    "constructorCalldata": [
+      "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+      "0x7fd490b3ba298e4b94e3c32df832823b102e39ce98cd41076a70b2f82d9326e"
+    ],
+    "contractDeployedEvent": {
+      "fromAddress": "0x41a78e741e5af2fec34b695679bc6891742439f7afb8484ecd7766661ad02bf",
+      "selector": "0x26b160f10156dea0639bec90696772c640b9706a47f5b8c52ea1abe5858b34d",
+      "keys": ["0x26b160f10156dea0639bec90696772c640b9706a47f5b8c52ea1abe5858b34d"],
+      "data": [
+        "0xd5a3c8c5ebcacf3279aafd2de3eb0c4736afc11be6f41c84880080fa7a1aaf",
+        "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+        "0x1",
+        "0x1dc09743f158d6e650b1b14e9557806c898274a5423ec9857558cabb2b7c1d8",
+        "0x2",
+        "0x6292eefbff50689b0e4d007e6ad17abee996e08e66e62762f0c4bc170738402",
+        "0x7fd490b3ba298e4b94e3c32df832823b102e39ce98cd41076a70b2f82d9326e",
+        "0x71f9f9da9b5f8122adf140396ff17244b0d82371906208dcda5bc454a526258"
+      ]
+    },
+    "executionStatus": "SUCCEEDED",
+    "finalityStatus": "ACCEPTED_ON_L1"
+  },
   "localSourceRebuild": {
     "sourcePath": "contracts/mmr/src/contract.cairo",
     "sierraClassHash": "0x315e51ea9f00d64b20cd30dbec2588503bc2fa28d97c97dd027f8fc0b7db81f",
     "matchesObservedClass": false
+  },
+  "deployedSourceRebuild": {
+    "sourceCommit": "00bdf7bec3a239a34fc16a4d47e70b91c30cddca",
+    "lastPredeclarationCommit": "fcaaf36ff8c696a26e3b2f99b29d0c729140ff70",
+    "sourcePath": "contracts/mmr/src/contract.cairo",
+    "sourceGitBlob": "081fd7cbe4e6c4ef35b6e5e1c383b1332232dfbc",
+    "sourceSha256": "456e26c7347d673cd3954db03d5be8a7edc270cbd33ee0793379a2f73f28e286",
+    "manifestPath": "contracts/mmr/Scarb.toml",
+    "manifestGitBlob": "5d0f1d10ea7f8e2bb76c53ccba1f701fcb30ec68",
+    "manifestSha256": "cfed48843010d45e5fcc1151cecb4803bb75623fb4cbfb49d79f0eaaaa938986",
+    "lockfilePath": "contracts/mmr/Scarb.lock",
+    "lockfileGitBlob": "f7ad430a7577d4d43da7905271d7893ff033ebb4",
+    "lockfileSha256": "32cb4d4e7fce00a6d5799b3bdc93663227c991068df8b3cb6a3639de39a22939",
+    "topLevelStorageDeclarationHash": "0x27cb4147c8f9d0699bfc5c477dfd1fb79beec889a607d1bcc97454bd2ee9fb1",
+    "storageLayoutIdentityKind": "historical-source-package-class-v1",
+    "storageLayoutIdentityHash": "0x4a992114f95f83ddff05a6df6dc468b41a9c9cc198cb8eb99f0c4ccace2c7a8",
+    "toolchain": {
+      "scarbVersion": "2.13.1",
+      "scarbBuildCommit": "a76aed717",
+      "cairoVersion": "2.13.1",
+      "sierraVersion": "1.7.0"
+    },
+    "cleanBuilds": [
+      {
+        "buildIndex": 0,
+        "sierraArtifactSha256": "ea2dc62d6788dc0200e23636df4d269c65c2933bf8a4a3e307ef7c971dc34c2a",
+        "casmArtifactSha256": "1fb939a346037e07fbd97e064ef6ad6f50265c0ef7558179267483a564cb0a67"
+      },
+      {
+        "buildIndex": 1,
+        "sierraArtifactSha256": "ea2dc62d6788dc0200e23636df4d269c65c2933bf8a4a3e307ef7c971dc34c2a",
+        "casmArtifactSha256": "1fb939a346037e07fbd97e064ef6ad6f50265c0ef7558179267483a564cb0a67"
+      }
+    ],
+    "sierraClassHash": "0x1dc09743f158d6e650b1b14e9557806c898274a5423ec9857558cabb2b7c1d8",
+    "compiledClassHash": "0x742167c3d25ad97497fe17270c90a6cf23d0541f52c464f200b1523cf02b948",
+    "rpcRepresentableCanonicalSha256": "8993be37fe3f3670907d61177e4398b66f4817af4f28115dcaea5a7d0d309bf4",
+    "rpcRepresentableClassExactMatch": true
   },
   "deploymentBlockNumber": 7052557,
   "roleEventsCompleteFromDeployment": true,

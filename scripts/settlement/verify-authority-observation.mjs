@@ -1,32 +1,202 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { hash } from "starknet";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const observation = readJson("packages/settlement-codec/schema/onchain-observation-a20-v1.json");
 
-await verifyFinalizedBlock();
-await verifyDeploymentBoundary();
-await verifyObservedClasses();
-await verifyMutableEntrypoints();
-await verifyCompleteRoleHistory();
+if (isDirectInvocation()) await verifyAuthorityObservation();
 
-console.log(
-  JSON.stringify({
-    blockNumber: observation.blockNumber,
-    classHash: observation.classHash,
-    contractAddress: observation.contractAddress,
-    result: "verified",
-    roleEventCount: observation.roleEventCount,
-  }),
-);
+async function verifyAuthorityObservation() {
+  await verifyChainIdentity();
+  await verifyFinalizedBlock();
+  await verifyFinalizedDeclaration();
+  await verifyFinalizedDeployment();
+  await verifyDeploymentBoundary();
+  await verifyObservedClasses();
+  await verifyMutableEntrypoints();
+  await verifyCompleteRoleHistory();
+
+  console.log(
+    JSON.stringify({
+      blockNumber: observation.blockNumber,
+      classHash: observation.classHash,
+      contractAddress: observation.contractAddress,
+      result: "verified",
+      roleEventCount: observation.roleEventCount,
+    }),
+  );
+}
+
+async function verifyChainIdentity() {
+  const chainId = await rpcResult("starknet_chainId", []);
+  assertFeltEqual(chainId, observation.rpcChainId, "authority observation RPC chain");
+}
 
 async function verifyFinalizedBlock() {
   const block = await rpcResult("starknet_getBlockWithTxHashes", [{ block_number: observation.blockNumber }]);
   assertEqual(block.block_hash, observation.blockHash, "finalized block hash");
   assertEqual(block.new_root, observation.stateRoot, "finalized state root");
   assertEqual(block.status, observation.blockStatus, "finalized block status");
+}
+
+async function verifyFinalizedDeclaration() {
+  const transaction = await rpcResult("starknet_getTransactionByHash", [observation.declaration.transactionHash]);
+  assertEqual(transaction.type, "DECLARE", "MMR declaration transaction type");
+  assertFeltEqual(transaction.sender_address, observation.declaration.sender, "MMR declaration sender");
+  assertFeltEqual(transaction.class_hash, observation.declaration.classHash, "MMR declared Sierra class");
+  assertFeltEqual(
+    transaction.compiled_class_hash,
+    observation.declaration.compiledClassHash,
+    "MMR declared compiled class",
+  );
+  await verifyFinalizedTransactionReceipt(observation.declaration, "declaration");
+}
+
+async function verifyFinalizedDeployment() {
+  const transaction = await rpcResult("starknet_getTransactionByHash", [observation.deployment.transactionHash]);
+  const receipt = await verifyFinalizedTransactionReceipt(observation.deployment, "deployment");
+  validateFinalizedMmrDeploymentEvidence(observation.deployment, observation.contractAddress, transaction, receipt);
+}
+
+export function validateFinalizedMmrDeploymentEvidence(deployment, contractAddress, transaction, receipt) {
+  validateDeploymentTransactionEnvelope(deployment, transaction);
+
+  const recordedCall = parseSingleUdcDeploymentCall(deployment.accountCalldata, "recorded MMR deployment call");
+  const liveCall = parseSingleUdcDeploymentCall(transaction.calldata, "live MMR deployment call");
+  validateDeploymentCallSemantics(deployment, recordedCall);
+  validateDeploymentCallSemantics(deployment, liveCall);
+
+  const deploymentEvent = findUniqueContractDeployedEvent(receipt.events);
+  validateRecordedContractDeployedEvent(deployment, deploymentEvent);
+
+  const recordedEvent = parseContractDeployedEventData(
+    deployment.contractDeployedEvent.data,
+    "recorded MMR ContractDeployed event",
+  );
+  const liveEvent = parseContractDeployedEventData(deploymentEvent.data, "live MMR ContractDeployed event");
+  validateDeploymentEventSemantics(deployment, contractAddress, recordedEvent);
+  validateDeploymentEventSemantics(deployment, contractAddress, liveEvent);
+}
+
+function validateDeploymentTransactionEnvelope(deployment, transaction) {
+  assertEqual(transaction.type, "INVOKE", "MMR deployment transaction type");
+  assertFeltEqual(transaction.transaction_hash, deployment.transactionHash, "MMR deployment transaction hash");
+  assertFeltEqual(transaction.sender_address, deployment.sender, "MMR deployment sender");
+  assertFeltEqual(transaction.version, deployment.transactionVersion, "MMR deployment transaction version");
+  assertJsonFeltEqual(transaction.calldata, deployment.accountCalldata, "MMR deployment account calldata");
+}
+
+function parseSingleUdcDeploymentCall(accountCalldata, label) {
+  assertFeltEqual(accountCalldata[0], "0x1", `${label} call count`);
+  const callCalldataLength = readFeltCount(accountCalldata[3], `${label} calldata length`);
+  assertEqual(accountCalldata.length, callCalldataLength + 4, `${label} encoded length`);
+  if (callCalldataLength < 4) throw new Error(`${label} is missing UDC deployment fields`);
+
+  const constructorCalldataLength = readFeltCount(accountCalldata[7], `${label} constructor calldata length`);
+  assertEqual(callCalldataLength, constructorCalldataLength + 4, `${label} constructor framing`);
+
+  return {
+    udcAddress: accountCalldata[1],
+    selector: accountCalldata[2],
+    classHash: accountCalldata[4],
+    salt: accountCalldata[5],
+    unique: accountCalldata[6],
+    constructorCalldata: accountCalldata.slice(8),
+  };
+}
+
+function validateDeploymentCallSemantics(deployment, call) {
+  assertFeltEqual(call.udcAddress, deployment.udc.address, "MMR deployment UDC address");
+  assertFeltEqual(call.selector, deployment.udc.deployContractSelector, "MMR deployment selector");
+  assertFeltEqual(
+    deployment.udc.deployContractSelector,
+    hash.getSelectorFromName("deployContract"),
+    "MMR canonical deployContract selector",
+  );
+  assertFeltEqual(call.classHash, deployment.classHash, "MMR deployment class hash");
+  assertFeltEqual(call.salt, deployment.udc.salt, "MMR deployment salt");
+  assertFeltEqual(call.unique, deployment.udc.unique, "MMR deployment unique flag");
+  assertJsonFeltEqual(call.constructorCalldata, deployment.constructorCalldata, "MMR deployment constructor calldata");
+}
+
+function findUniqueContractDeployedEvent(events) {
+  const selector = hash.getSelectorFromName("ContractDeployed");
+  const deploymentEvents = events.filter(({ keys }) => keys.length > 0 && sameFelt(keys[0], selector));
+  assertEqual(deploymentEvents.length, 1, "expected exactly one ContractDeployed event");
+  return deploymentEvents[0];
+}
+
+function validateRecordedContractDeployedEvent(deployment, deploymentEvent) {
+  assertFeltEqual(
+    deployment.contractDeployedEvent.selector,
+    hash.getSelectorFromName("ContractDeployed"),
+    "MMR ContractDeployed selector",
+  );
+  assertFeltEqual(
+    deploymentEvent.from_address,
+    deployment.contractDeployedEvent.fromAddress,
+    "MMR ContractDeployed emitter",
+  );
+  assertFeltEqual(
+    deployment.contractDeployedEvent.fromAddress,
+    deployment.udc.address,
+    "MMR ContractDeployed UDC emitter",
+  );
+  assertJsonFeltEqual(deploymentEvent.keys, deployment.contractDeployedEvent.keys, "MMR ContractDeployed keys");
+  assertEqual(
+    deploymentEvent.data.length,
+    deployment.contractDeployedEvent.data.length,
+    "MMR ContractDeployed data length",
+  );
+  assertJsonFeltEqual(deploymentEvent.data, deployment.contractDeployedEvent.data, "MMR ContractDeployed data");
+}
+
+function parseContractDeployedEventData(data, label) {
+  if (data.length < 6) throw new Error(`${label} is missing deployment fields`);
+  const constructorCalldataLength = readFeltCount(data[4], `${label} constructor calldata length`);
+  assertEqual(data.length, constructorCalldataLength + 6, `${label} encoded length`);
+
+  return {
+    deployedContractAddress: data[0],
+    deployer: data[1],
+    unique: data[2],
+    classHash: data[3],
+    constructorCalldata: data.slice(5, 5 + constructorCalldataLength),
+    salt: data.at(-1),
+  };
+}
+
+function validateDeploymentEventSemantics(deployment, contractAddress, event) {
+  assertFeltEqual(event.deployedContractAddress, contractAddress, "MMR deployed contract address");
+  assertFeltEqual(event.deployer, deployment.sender, "MMR deployment event deployer");
+  assertFeltEqual(event.unique, deployment.udc.unique, "MMR deployment event unique flag");
+  assertFeltEqual(event.classHash, deployment.classHash, "MMR deployment event class hash");
+  assertJsonFeltEqual(
+    event.constructorCalldata,
+    deployment.constructorCalldata,
+    "MMR deployment event constructor calldata",
+  );
+  assertFeltEqual(event.salt, deployment.udc.salt, "MMR deployment event salt");
+}
+
+function readFeltCount(value, label) {
+  const count = BigInt(value);
+  if (count > BigInt(Number.MAX_SAFE_INTEGER)) throw new Error(`${label} exceeds the safe integer range`);
+  return Number(count);
+}
+
+async function verifyFinalizedTransactionReceipt(expected, label) {
+  const receipt = await rpcResult("starknet_getTransactionReceipt", [expected.transactionHash]);
+  assertEqual(receipt.execution_status, expected.executionStatus, `MMR ${label} execution status`);
+  assertEqual(receipt.finality_status, expected.finalityStatus, `MMR ${label} finality status`);
+  assertEqual(receipt.block_number, expected.blockNumber, `MMR ${label} block number`);
+  assertFeltEqual(receipt.block_hash, expected.blockHash, `MMR ${label} block hash`);
+  const block = await rpcResult("starknet_getBlockWithTxHashes", [{ block_number: expected.blockNumber }]);
+  assertEqual(block.timestamp, expected.blockTimestamp, `MMR ${label} block timestamp`);
+  return receipt;
 }
 
 async function verifyObservedClasses() {
@@ -118,22 +288,9 @@ async function verifyCompleteRoleHistory() {
 }
 
 async function verifyObservedRoleState(roleEvents) {
-  const membersByRole = new Map();
-  for (const event of roleEvents) {
-    if (event.event === "RoleAdminChanged") continue;
-    const roleId = normalizeFelt(event.roleId);
-    const members = membersByRole.get(roleId) ?? new Set();
-    if (event.event === "RoleGranted") members.add(normalizeFelt(event.account));
-    if (event.event === "RoleRevoked") members.delete(normalizeFelt(event.account));
-    membersByRole.set(roleId, members);
-  }
+  validateCompleteObservedRoleHistory(roleEvents, observation.roles);
 
   for (const role of observation.roles) {
-    const roleId = normalizeFelt(role.roleId);
-    const observedMembers = [...(membersByRole.get(roleId) ?? new Set())].sort(compareFelts);
-    const expectedMembers = role.members.map(normalizeFelt).sort(compareFelts);
-    assertJsonEqual(observedMembers, expectedMembers, `role members ${role.name}`);
-
     const adminRoleResult = await rpcResult("starknet_call", [
       {
         contract_address: observation.contractAddress,
@@ -144,6 +301,70 @@ async function verifyObservedRoleState(roleEvents) {
     ]);
     assertEqual(normalizeFelt(adminRoleResult[0]), normalizeFelt(role.adminRoleId), `admin role ${role.name}`);
   }
+}
+
+export function validateCompleteObservedRoleHistory(roleEvents, observedRoles) {
+  const roleState = deriveCompleteRoleState(roleEvents);
+  validateObservedRoleSet(observedRoles, roleState.roleIds);
+
+  for (const role of observedRoles) {
+    const roleId = normalizeFelt(role.roleId);
+    const observedMembers = [...roleState.membersByRole.get(roleId)].sort(compareFelts);
+    const expectedMembers = role.members.map(normalizeFelt).sort(compareFelts);
+    assertJsonEqual(observedMembers, expectedMembers, `role members ${role.name}`);
+    assertFeltEqual(role.adminRoleId, roleState.adminByRole.get(roleId), `MMR observed admin role ${roleId}`);
+  }
+}
+
+function deriveCompleteRoleState(roleEvents) {
+  const roleIds = collectRoleIdsFromHistory(roleEvents);
+  const membersByRole = new Map([...roleIds].map((roleId) => [roleId, new Set()]));
+  const adminByRole = new Map([...roleIds].map((roleId) => [roleId, "0x0"]));
+
+  for (const event of roleEvents) {
+    const roleId = normalizeFelt(event.roleId);
+    if (event.event === "RoleAdminChanged") {
+      applyRoleAdminChange(adminByRole, roleId, event);
+      continue;
+    }
+
+    const members = membersByRole.get(roleId);
+    if (event.event === "RoleGranted") members.add(normalizeFelt(event.account));
+    if (event.event === "RoleRevoked") members.delete(normalizeFelt(event.account));
+  }
+
+  return { roleIds, membersByRole, adminByRole };
+}
+
+function collectRoleIdsFromHistory(roleEvents) {
+  const roleIds = new Set();
+  for (const event of roleEvents) {
+    roleIds.add(normalizeFelt(event.roleId));
+    if (event.event === "RoleAdminChanged") {
+      roleIds.add(normalizeFelt(event.account));
+      roleIds.add(normalizeFelt(event.sender));
+    }
+  }
+  return roleIds;
+}
+
+function applyRoleAdminChange(adminByRole, roleId, event) {
+  const previousAdminRoleId = normalizeFelt(event.account);
+  const newAdminRoleId = normalizeFelt(event.sender);
+  assertFeltEqual(previousAdminRoleId, adminByRole.get(roleId), `MMR previous admin role ${roleId}`);
+  adminByRole.set(roleId, newAdminRoleId);
+}
+
+function validateObservedRoleSet(observedRoles, historicalRoleIds) {
+  const observedRoleIds = observedRoles.map(({ roleId }) => normalizeFelt(roleId));
+  if (new Set(observedRoleIds).size !== observedRoleIds.length) {
+    throw new Error("MMR observed role set contains duplicate role IDs");
+  }
+  assertJsonEqual(
+    observedRoleIds.sort(compareFelts),
+    [...historicalRoleIds].sort(compareFelts),
+    "MMR observed role set",
+  );
 }
 
 async function loadAllContractEvents() {
@@ -204,6 +425,16 @@ function assertJsonEqual(actual, expected, label) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(`${label} mismatch`);
 }
 
+function assertFeltEqual(actual, expected, label) {
+  if (!sameFelt(actual, expected)) throw new Error(`${label} mismatch: expected ${expected}, received ${actual}`);
+}
+
+function assertJsonFeltEqual(actual, expected, label) {
+  const normalizedActual = actual.map(normalizeFelt);
+  const normalizedExpected = expected.map(normalizeFelt);
+  assertJsonEqual(normalizedActual, normalizedExpected, label);
+}
+
 function sha256(value) {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -212,10 +443,18 @@ function normalizeFelt(value) {
   return `0x${BigInt(value).toString(16)}`;
 }
 
+function sameFelt(left, right) {
+  return BigInt(left) === BigInt(right);
+}
+
 function compareFelts(left, right) {
   return BigInt(left) < BigInt(right) ? -1 : BigInt(left) > BigInt(right) ? 1 : 0;
 }
 
 function readJson(path) {
   return JSON.parse(readFileSync(resolve(repositoryRoot, path), "utf8"));
+}
+
+function isDirectInvocation() {
+  return process.argv[1] !== undefined && pathToFileURL(resolve(process.argv[1])).href === import.meta.url;
 }

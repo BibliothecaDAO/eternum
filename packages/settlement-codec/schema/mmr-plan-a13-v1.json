@@ -15,6 +15,20 @@
     "cargoLockSha256": "e30197fc9eafbf6b898208ac9388637772ef3e2dde09899890b26b98247b6ee8",
     "cairoVerifierSha256": "c3783a582c8e7a5fe70bea5a83756dd3c11baf4853c6a800bc9cf10b4ef5f773"
   },
+  "sp1FixtureEvidence": {
+    "status": "fixture-execution-passed-production-proof-blocked",
+    "artifact": "proofs/eternum-settlement/sp1/mmr-plan-a13-fixture-evidence-v0.json",
+    "fileSha256": "f723ddca87bd17da5830b9f058cb31db39e1d9d1892f127df2cd6b4047a24dd2",
+    "ciEvidenceCheckerSha256": "d8f6d353d3059ab727605d85094edb34bf585b570f38eacabc563d9c54e6fd35",
+    "sp1Tag": "v6.2.2",
+    "sp1Commit": "150e6294959f40dbc3ba42eb21c8eccc14c95bc5",
+    "fixtureElfSha256": "42b69fb90cf5829b658f8f50ac3f6e7236070a5af69a72a6326926afb242c7c0",
+    "executionKind": "sp1-sdk-v6.2.2-cpu-execute-valid-only-with-native-negatives-no-proof",
+    "publicValuesDomain": "MMR_PLAN_JOURNAL_V1",
+    "publicValuesEncoding": "journal-hash-only",
+    "publicValuesLengthBytes": 32,
+    "releaseReady": false
+  },
   "publicJournal": {
     "domain": "MMR_PLAN_JOURNAL_V1",
     "fields": [
@@ -66,7 +80,11 @@
   "productionBlockers": [
     {
       "id": "SP1-PROGRAM-AND-RECEIPT",
-      "reason": "cargo-prove and sp1up are unavailable in the current environment and only 2.4 GiB is free; no production ELF/program ID, VK, Groth16 receipt, proof size, or prove/verify timing is claimed."
+      "reason": "A pinned SP1 v6.2.2 fixture guest commits only the normative 32-byte MMR_PLAN_JOURNAL_V1 hash, while exact bad-snapshot and substituted-root negatives execute natively through the shared core. Its witness/input codec and ELF are explicitly non-production. No production program ID, VK, Groth16 receipt, proof size, or prove/verify timing is claimed."
+    },
+    {
+      "id": "REPRODUCIBLE-RELEASE-BUILD",
+      "reason": "The fixture evidence is a local content-addressed build with an independent CI reproduction guard. The production ELF has not been built in the release container or reproduced by a second clean isolated release-container build."
     },
     {
       "id": "GARAGA-VERIFIER",

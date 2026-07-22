@@ -6,6 +6,7 @@ pub mod golden_vectors;
 pub mod legacy_mmr_derivation;
 pub mod materialization;
 pub mod mmr_plan;
+pub mod mmr_plan_sp1_fixture;
 pub mod position_materialization;
 mod protocol_hash;
 pub mod schema_vector;

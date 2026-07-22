@@ -1,0 +1,18 @@
+[package]
+name = "eternum-mmr-plan-host"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[dependencies]
+eternum-settlement = { path = "../.." }
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+sp1-sdk = { git = "https://github.com/succinctlabs/sp1.git", tag = "v6.2.2", features = ["blocking"] }
+
+[build-dependencies]
+sp1-build = { git = "https://github.com/succinctlabs/sp1.git", tag = "v6.2.2" }
+
+[lints.rust]
+unsafe_code = "forbid"

@@ -20,6 +20,15 @@ export interface SerializedAddressAliasRecord {
   readonly expected_value: string;
 }
 
+export interface SerializedDynamicAddressInputRecord {
+  readonly semantic_key: string;
+  readonly source_path_hash: string;
+  readonly source_key_hash: string;
+  readonly input_kind: number;
+  readonly is_authoritative: false;
+  readonly allowed_profile_bitmap: string;
+}
+
 export interface SerializedPrivilegedMutationPathRecord {
   readonly path_hash: string;
   readonly operation_kind: number;
@@ -44,9 +53,23 @@ export interface AuthoritySchemaCommitmentInput {
   }>;
 }
 
+export interface HistoricalStorageLayoutIdentityInput {
+  readonly sourceCommit: string;
+  readonly sourceGitBlob: string;
+  readonly sourceSha256: string;
+  readonly manifestGitBlob: string;
+  readonly manifestSha256: string;
+  readonly lockfileGitBlob: string;
+  readonly lockfileSha256: string;
+  readonly topLevelStorageDeclarationHash: string;
+  readonly sierraClassHash: string;
+  readonly compiledClassHash: string;
+}
+
 export function computeAddressInputsCommitment(
   sources: readonly SerializedAddressSourceRecord[],
   aliases: readonly SerializedAddressAliasRecord[],
+  dynamicInputs: readonly SerializedDynamicAddressInputRecord[] = [],
 ): string {
   const sourceHash = authorityCountedHash(
     "ADDRESS_SOURCE_RECORDS_V1",
@@ -78,7 +101,25 @@ export function computeAddressInputsCommitment(
       ),
     ),
   );
-  return authorityPoseidon("AUTHORITATIVE_ADDRESS_INPUTS_V1", sourceHash, aliasHash);
+  const dynamicInputHash = computeDynamicAddressInputsCommitment(dynamicInputs);
+  return authorityPoseidon("AUTHORITATIVE_ADDRESS_INPUTS_V2", sourceHash, aliasHash, dynamicInputHash);
+}
+
+export function computeDynamicAddressInputsCommitment(records: readonly SerializedDynamicAddressInputRecord[]): string {
+  return authorityCountedHash(
+    "DYNAMIC_ADDRESS_INPUT_RECORDS_V1",
+    records.map((record) =>
+      authorityPoseidon(
+        "DYNAMIC_ADDRESS_INPUT_RECORD_V1",
+        record.semantic_key,
+        record.source_path_hash,
+        record.source_key_hash,
+        record.input_kind,
+        record.is_authoritative ? 1 : 0,
+        ...serializeU256(record.allowed_profile_bitmap),
+      ),
+    ),
+  );
 }
 
 export function computeMutationPathsCommitment(records: readonly SerializedPrivilegedMutationPathRecord[]): string {
@@ -137,6 +178,22 @@ export function computeAuthoritySchemaCommitments(schema: AuthoritySchemaCommitm
 
 export function computeAuthoritySchemaCommitment(schema: AuthoritySchemaCommitmentInput): string {
   return computeAuthoritySchemaCommitments(schema).authoritySchemaHash;
+}
+
+export function computeHistoricalStorageLayoutIdentityHash(input: HistoricalStorageLayoutIdentityInput): string {
+  return authorityPoseidon(
+    "LEGACY_MMR_STORAGE_LAYOUT_IDENTITY_V1",
+    hashAuthorityDomain(input.sourceCommit),
+    hashAuthorityDomain(input.sourceGitBlob),
+    hashAuthorityDomain(input.sourceSha256),
+    hashAuthorityDomain(input.manifestGitBlob),
+    hashAuthorityDomain(input.manifestSha256),
+    hashAuthorityDomain(input.lockfileGitBlob),
+    hashAuthorityDomain(input.lockfileSha256),
+    input.topLevelStorageDeclarationHash,
+    input.sierraClassHash,
+    input.compiledClassHash,
+  );
 }
 
 export function hashAuthorityDomain(value: string): string {

@@ -1,0 +1,106 @@
+{
+  "schema": "eternum.a13.sp1-fixture-evidence.v0",
+  "scope": "wave0-fixture-only",
+  "status": "fixture-execution-passed-production-proof-blocked",
+  "releaseReady": false,
+  "capturedAt": "2026-07-22T22:39:13Z",
+  "implementationBaseRevision": "77e3e3497edf04e9a8c73b38be66d3fb99613ed2",
+  "sourceState": "uncommitted-complete-input-projection-bound-by-sha256",
+  "inputSha256": {
+    "proofs/eternum-settlement/Cargo.lock": "e30197fc9eafbf6b898208ac9388637772ef3e2dde09899890b26b98247b6ee8",
+    "proofs/eternum-settlement/Cargo.toml": "64bdabda8b631197f45bb1b7168c734df15b5f9ef5f7f64c4da0b18807237eaf",
+    "proofs/eternum-settlement/sp1/mmr-plan-host/Cargo.lock": "4f771f0dde9ddb38742511ada9780a1ab6d5990abc1585a4926d9fc2769fe680",
+    "proofs/eternum-settlement/sp1/mmr-plan-host/Cargo.toml": "18532c8b4b097474e9b7d64db38d33b10f930db0abd927c7ee31626735c0acc1",
+    "proofs/eternum-settlement/sp1/mmr-plan-host/build.rs": "a2fb6aa5231500aa3c1d35751daef79b1137d0b230e72530ee5e694064a49887",
+    "proofs/eternum-settlement/sp1/mmr-plan-host/tests/mmr_plan_execution.rs": "2be311c1c9bee9500c36f1aaa5ed35b84130c937b1e949eced9218e3943e4540",
+    "proofs/eternum-settlement/sp1/mmr-plan-program/Cargo.lock": "c68c41dcf27b2d1b7d7ba31a84d567a62ad904cd223cacc14e466f98192c3d4e",
+    "proofs/eternum-settlement/sp1/mmr-plan-program/Cargo.toml": "ad9af25f1897934562aed137a4bd7a256e43f92385feb564656b5cf99a34272c",
+    "proofs/eternum-settlement/sp1/mmr-plan-program/src/main.rs": "11d22d1f2ccaec6d1e9c549d46483ace62d04cf407e61ca001e68615d890af1f",
+    "proofs/eternum-settlement/src/codec.rs": "07747f36f29648e831fcfe1679c440f7fe66c0d04fc5d17d74502c9211b93976",
+    "proofs/eternum-settlement/src/emergency_sealed.rs": "c22363752d4024e252b5b2690a0a59699ee3efe41dd6aa695dc224df1e1e1a51",
+    "proofs/eternum-settlement/src/frozen_position.rs": "47b276693ac4d7b69f943e3a41de7988fa964cc457395696ad94f6ebefe10e7f",
+    "proofs/eternum-settlement/src/frozen_recovery.rs": "d00df6474956ffe5c30143aee40e931849a4624eb0359318ca4e981bf120ae32",
+    "proofs/eternum-settlement/src/golden_vectors.rs": "b28d69da9510c36d484ef65ef9992ecd4a7e21a6373e8cf551928d0d2090cf1f",
+    "proofs/eternum-settlement/src/legacy_mmr_derivation.rs": "16853e88aa99c01fdb3a689e8981ebed6179d866d3c01d582fa14213cc05d4c7",
+    "proofs/eternum-settlement/src/lib.rs": "4185d9d27bc7ead1865fb31f651538b2c661c2843b7c964a872b7d7cba33344c",
+    "proofs/eternum-settlement/src/materialization.rs": "f8ba446c592d93bde08ae81cd8e4bf7519a56172b9307d99df117ba736a406f7",
+    "proofs/eternum-settlement/src/mmr_plan.rs": "90490977691f27fefd87b4abcfe0327b3756a7dcf009ec5db6edc87d5282c88a",
+    "proofs/eternum-settlement/src/mmr_plan_sp1_fixture.rs": "6727f2c6dd8d823210d6b840dd7134312353248be379c7f02f1c6da6e2f2e63f",
+    "proofs/eternum-settlement/src/position_materialization.rs": "0b6c0876a83ce3ec3a1adba908cd8093e45fd7c8eb8d1a3d1bdc696130e4bedc",
+    "proofs/eternum-settlement/src/protocol_hash.rs": "61e91e662b9839c6df869f5efb1de74ec5f9d65344047f393247a1e9bbf58448",
+    "proofs/eternum-settlement/src/schema_vector.rs": "f88fdd266137f78a934ccb51858e3c65875fbaab731a24dcf6e76a83b55b254a",
+    "proofs/eternum-settlement/src/tree.rs": "ca2439a7fad37b7256c323f8682c9a4058ad5ece1f542dd742dfb4f13553f0ca",
+    "proofs/eternum-settlement/src/tree_vectors.rs": "d19af1e2a184cbe3c5a94d4f36c96c66ed5a9d6202a1606dacd5f5ecadcf9c75",
+    "proofs/eternum-settlement/src/types.rs": "ce85c58753f6f9c1c4b15a5cea19ff643120bcc111aff01ab1db9fa68795ab4f"
+  },
+  "sp1": {
+    "tag": "v6.2.2",
+    "commit": "150e6294959f40dbc3ba42eb21c8eccc14c95bc5",
+    "succinctRustc": "1.93.0-dev"
+  },
+  "fixtureElf": {
+    "sha256": "42b69fb90cf5829b658f8f50ac3f6e7236070a5af69a72a6326926afb242c7c0",
+    "sizeBytes": 383936,
+    "expectedJournalHash": "0x01f511e769c50cf24faab59c7235f70e968e9d4488a691bac02b9ebe77cacefc",
+    "publicValues": {
+      "domain": "MMR_PLAN_JOURNAL_V1",
+      "encoding": "journal-hash-only",
+      "lengthBytes": 32
+    },
+    "compileStatus": "passed",
+    "executionStatus": "passed",
+    "reproducibilityStatus": "local-single-build-independent-ci-reproduction-required"
+  },
+  "execution": {
+    "schema": "eternum.a13.sp1-execution.v1",
+    "kind": "sp1-sdk-v6.2.2-cpu-execute-valid-only-with-native-negatives-no-proof",
+    "command": "cargo test --locked --manifest-path proofs/eternum-settlement/sp1/mmr-plan-host/Cargo.toml -- --test-threads=1 --nocapture",
+    "testsPassed": 1,
+    "testsFailed": 0,
+    "proverInitializationMs": 575562,
+    "guestExecution": {
+      "name": "valid-tie-gap",
+      "status": "accepted",
+      "publicJournalHashHex": "0x01f511e769c50cf24faab59c7235f70e968e9d4488a691bac02b9ebe77cacefc",
+      "elapsedMs": 20536,
+      "instructions": 51707742,
+      "syscalls": 0,
+      "totalCycles": 51707742
+    },
+    "nativeNegativeAssertions": [
+      {
+        "name": "bad-snapshot",
+        "status": "rejected",
+        "exactError": "invalid-plan:snapshot",
+        "elapsedMs": 35
+      },
+      {
+        "name": "substituted-plan-root",
+        "status": "rejected",
+        "exactError": "substituted-plan-root",
+        "elapsedMs": 85
+      }
+    ],
+    "suiteElapsedMs": 596220,
+    "commandWallMs": 662040,
+    "userCpuSeconds": 5672.82,
+    "systemCpuSeconds": 39.01,
+    "maxResidentSetBytes": 5943623680,
+    "swaps": 0
+  },
+  "production": {
+    "elfDigest": null,
+    "receipt": null,
+    "verifyingKey": null,
+    "cairoVerifier": null,
+    "maxBoundPerformance": null
+  },
+  "blockers": [
+    "freeze the production witness/input codec against the normative 32-byte journal-hash public value",
+    "build the production program in the reproducible release container",
+    "reproduce the same ELF digest from a second clean isolated build",
+    "produce and independently verify a production proof receipt and verifying key",
+    "implement the Cairo proof verifier instead of journal-hash comparison",
+    "measure the frozen maximum-bound witness"
+  ]
+}

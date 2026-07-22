@@ -6,9 +6,14 @@ import {
   authorityPoseidon,
   computeAddressInputsCommitment,
   computeAuthoritySchemaCommitments,
+  computeDynamicAddressInputsCommitment,
   computeMutationPathsCommitment,
   hashAuthorityDomain,
 } from "../../packages/settlement-codec/src/authority-commitments.ts";
+import {
+  discoverDynamicAddressInputUses,
+  isDynamicAddressInputSourcePath,
+} from "../../packages/settlement-codec/src/authority-address-discovery.ts";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const outputPath = resolve(repositoryRoot, "packages/settlement-codec/schema/authority-inventory-v1.json");
@@ -49,14 +54,15 @@ const MUTATION_OPERATIONS = [
     name: "upgrade",
     operationKind: 3,
     targetSemanticKey: "deployment",
-    pattern: /\bupgrade(?:\s*\(|[A-Z_]\w*\s*\()|entrypoint:\s*["']upgrade["']|\bbun run upgrade(?::|\b)/,
+    pattern:
+      /\bupgrade(?:Contract|Contracts|PackageContracts)\s*\(|entrypoint:\s*["']upgrade["']|\bbun run upgrade(?::|\b)/,
   },
   {
     name: "role-mutation",
     operationKind: 4,
     targetSemanticKey: "roleAuthority",
     pattern:
-      /\b(?:grant|revoke|renounce)(?:\s*\(|[A-Z_]\w*\s*\()|entrypoint:\s*["'](?:grant_role|grantRole|revoke_role|revokeRole|renounce_role|renounceRole)["']|\bgrant_role\b|\brevoke_role\b/,
+      /\b(?:grant|revoke|renounce)_role\s*\(|\b(?:grant|revoke|renounce)\w*Roles?\w*\s*\(|entrypoint:\s*["'](?:grant_role|grantRole|revoke_role|revokeRole|renounce_role|renounceRole)["']/,
   },
   {
     name: "factory-mutation",
@@ -72,6 +78,7 @@ assertRequiredSourceSemantics();
 const canonicalAddresses = new Map(chains.map((chain) => [chain, readAddressFile(chain)]));
 const addressSources = buildAddressSources().sort(compareAddressRecords);
 const addressAliases = buildAddressAliases().sort(compareAliasRecords);
+const dynamicAddressInputs = buildDynamicAddressInputs().sort(compareDynamicAddressInputs);
 const mutationReviewPaths = discoverMutationPaths().sort((left, right) => left.path.localeCompare(right.path));
 assertMutationPolicyCoverage(mutationReviewPaths, mutationPolicyByPath);
 const privilegedMutationPaths = mutationReviewPaths.filter(({ reviewStatus }) => reviewStatus === "reviewed");
@@ -86,19 +93,36 @@ const unresolvedMutationCandidates = mutationReviewPaths
     targetSemanticKey,
   }));
 const authoritySchema = buildAuthoritySchema();
+const evidenceComplete =
+  mutationPolicy.unresolvedOperations.length === 0 && authoritySchema.observedClassMatchesLocalStorageLayoutSource;
+const externalAuthorization = {
+  required: true,
+  status: "awaiting-a23-authority-freeze",
+  authoritySchemaHash: authoritySchema.authoritySchemaHash,
+  approvalRecordHash: null,
+};
 const addressSourceRecords = addressSources.map(serializeAddressSourceRecord);
 const addressAliasRecords = addressAliases.map(serializeAddressAliasRecord);
+const dynamicAddressInputRecords = dynamicAddressInputs.map(serializeDynamicAddressInputRecord);
 const privilegedMutationPathRecords = privilegedMutationPaths.map(serializePrivilegedMutationPathRecord);
 const onchainObservations = [readJson("packages/settlement-codec/schema/onchain-observation-a20-v1.json")];
 const inventory = {
   schemaVersion: 1,
   status: resolveInventoryStatus(authoritySchema),
+  evidenceComplete,
   generatedArtifactsCurrent: generatedAddressesAreCurrent(addressSources),
   addressSources,
   addressSourceRecords,
   addressAliases,
   addressAliasRecords,
-  authoritativeAddressInputsHash: computeAddressInputsCommitment(addressSourceRecords, addressAliasRecords),
+  dynamicAddressInputs,
+  dynamicAddressInputRecords,
+  dynamicAddressInputsHash: computeDynamicAddressInputsCommitment(dynamicAddressInputRecords),
+  authoritativeAddressInputsHash: computeAddressInputsCommitment(
+    addressSourceRecords,
+    addressAliasRecords,
+    dynamicAddressInputRecords,
+  ),
   privilegedMutationPaths,
   privilegedMutationPathRecords,
   privilegedMutationPathsHash: computeMutationPathsCommitment(privilegedMutationPathRecords),
@@ -107,8 +131,8 @@ const inventory = {
   mutationPolicyStatus: mutationPolicy.status,
   unresolvedMutationCandidates,
   unresolvedMutationPathHashes: unresolvedMutationCandidates.map(({ pathHash }) => pathHash).sort(compareFelt),
-  releaseReady:
-    mutationPolicy.unresolvedOperations.length === 0 && authoritySchema.observedClassMatchesLocalStorageLayoutSource,
+  externalAuthorization,
+  releaseReady: false,
   onchainObservations,
   authoritySchema,
 };
@@ -126,6 +150,26 @@ function buildAddressSources() {
   ];
 }
 
+function buildDynamicAddressInputs() {
+  return listRepositoryFiles()
+    .filter(isDynamicAddressInputSourcePath)
+    .flatMap((sourcePath) =>
+      discoverDynamicAddressInputUses(readText(sourcePath)).map(({ semanticKey, sourceKey, inputKind }) => ({
+        semanticKey,
+        semanticKeyHash: felt(semanticKey),
+        sourcePath,
+        sourcePathHash: felt(sourcePath),
+        sourceKey,
+        sourceKeyHash: felt(sourceKey),
+        inputKind,
+        inputKindCode: dynamicAddressInputKindCode(inputKind),
+        value: null,
+        isAuthoritative: false,
+        allowedProfileBitmap: "0x1f",
+      })),
+    );
+}
+
 function canonicalAddressRecords() {
   return chains.flatMap((chain) => {
     const path = `contracts/common/addresses/${chain}.json`;
@@ -136,30 +180,24 @@ function canonicalAddressRecords() {
 }
 
 function sourceConfigRecords() {
-  const semanticKeys = [
-    "lords",
-    "collectiblesClassHash",
-    "cosmetics",
-    "collectiblesTimelock",
-    "lootChests",
-    "eliteInvite",
-    "vrfProvider",
-  ];
-  return chains.flatMap((chain) =>
-    semanticKeys
-      .filter((semanticKey) => semanticKey in canonicalAddresses.get(chain))
-      .map((semanticKey) =>
-        addressRecord(
-          chain,
-          semanticKey,
-          2,
-          semanticKey === "vrfProvider" ? "config/source/common/environment.ts" : "config/source/blitz/addresses.ts",
-          `addresses.${semanticKey}`,
-          canonicalAddresses.get(chain)[semanticKey],
-          false,
-        ),
-      ),
+  return discoverSourceConfigAddressUses().flatMap(({ sourcePath, semanticKey }) =>
+    chains.flatMap((chain) => {
+      const value = canonicalAddresses.get(chain)[semanticKey];
+      if (typeof value !== "string") return [];
+      return [addressRecord(chain, semanticKey, 2, sourcePath, `addresses.${semanticKey}`, value, false)];
+    }),
   );
+}
+
+function discoverSourceConfigAddressUses() {
+  return listFiles("config/source")
+    .filter((path) => path.endsWith(".ts") && !path.endsWith(".test.ts"))
+    .flatMap((sourcePath) => {
+      const semanticKeys = new Set(
+        [...readText(sourcePath).matchAll(/\b(?:context\.)?addresses\.([A-Za-z_$][\w$]*)/g)].map((match) => match[1]),
+      );
+      return [...semanticKeys].sort().map((semanticKey) => ({ sourcePath, semanticKey }));
+    });
 }
 
 function publicMainnetVrfRecords() {
@@ -183,9 +221,6 @@ function publicMainnetVrfRecords() {
       "DEFAULT_VRF_PROVIDER_ADDRESS",
       value,
       false,
-    ),
-    ...["--vrf-provider-address", "VRF_PROVIDER_ADDRESS", "VITE_PUBLIC_VRF_PROVIDER_ADDRESS"].map((sourceKey) =>
-      addressRecord(chain, "vrfProvider", 5, "config/deployer/clean/cli/launch-request.ts", sourceKey, value, false),
     ),
   ];
 }
@@ -217,16 +252,6 @@ function factoryInputRecords() {
         value,
         false,
       ),
-      addressRecord(
-        chain,
-        "factory",
-        5,
-        "config/deployer/clean/cli/launch-request.ts",
-        "FACTORY_ADDRESS",
-        value,
-        false,
-      ),
-      addressRecord(chain, "factory", 2, "config/deployer/config.ts", "factory_address", value, false),
     ];
   });
 }
@@ -296,6 +321,7 @@ function packageAddressRecords() {
 
 function buildAuthoritySchema() {
   const observation = readJson("packages/settlement-codec/schema/onchain-observation-a20-v1.json");
+  const deployedSourceMatches = deployedSourceProvenanceMatchesObservation(observation);
   const observedRoles = new Map(observation.roles.map((role) => [role.name, role]));
   const defaultAdmins = observedRoles.get("DEFAULT_ADMIN_ROLE").members.map(normalizeAddress).sort(compareFelt);
   const upgraders = observedRoles.get("UPGRADER_ROLE").members.map(normalizeAddress).sort(compareFelt);
@@ -393,21 +419,30 @@ function buildAuthoritySchema() {
         compareFelt(left.capabilityId, right.capabilityId),
     )
     .map((entry, capabilityIndex) => ({ ...entry, capabilityIndex }));
-  const tokenStorageLayoutHash = felt(extractStorageLayout(readText("contracts/mmr/src/contract.cairo")));
+  const tokenStorageLayoutHash = observation.deployedSourceRebuild.storageLayoutIdentityHash;
   const commitments = computeAuthoritySchemaCommitments({ tokenStorageLayoutHash, roles, capabilities });
   return {
-    status: observation.localSourceRebuild.matchesObservedClass
-      ? "candidate-awaiting-a23-freeze"
+    status: deployedSourceMatches
+      ? "provenance-complete-awaiting-a23-freeze"
       : "blocked-observed-class-source-mismatch",
     tokenAddress: normalizeAddress(observation.contractAddress),
     tokenClassHash: normalizeAddress(observation.classHash),
-    localSourceClassHash: normalizeAddress(observation.localSourceRebuild.sierraClassHash),
-    observedClassMatchesLocalStorageLayoutSource: observation.localSourceRebuild.matchesObservedClass,
+    localSourceClassHash: normalizeAddress(observation.deployedSourceRebuild.sierraClassHash),
+    observedClassMatchesLocalStorageLayoutSource: deployedSourceMatches,
     tokenStorageLayoutHash,
     roles,
     capabilities,
     ...commitments,
   };
+}
+
+function deployedSourceProvenanceMatchesObservation(observation) {
+  return (
+    observation.deployedSourceRebuild.rpcRepresentableClassExactMatch &&
+    normalizeAddress(observation.deployedSourceRebuild.sierraClassHash) === normalizeAddress(observation.classHash) &&
+    normalizeAddress(observation.deployedSourceRebuild.compiledClassHash) ===
+      normalizeAddress(observation.declaration.compiledClassHash)
+  );
 }
 
 function capability(semanticKey, capabilityKind, selectorName, controllerKind, controller, routeDescriptor, enabled) {
@@ -469,12 +504,6 @@ function requireObservedController(observation, controllerAddress) {
   );
   if (!controller) throw new Error(`authority controller is not in the finalized observation: ${controllerAddress}`);
   return controller;
-}
-
-function extractStorageLayout(source) {
-  const match = source.match(/#\[storage\]\s*struct Storage\s*\{[\s\S]*?\n    \}/);
-  if (!match) throw new Error("MMR token storage layout was not found");
-  return match[0].replace(/\s+/g, " ").trim();
 }
 
 function buildAddressAliases() {
@@ -558,15 +587,17 @@ function assertRequiredSourceSemantics() {
 }
 
 function discoverMutationPaths() {
-  const candidates = [".github/workflows", "config/deployer", "contracts", "scripts/ci"]
-    .flatMap(listFiles)
-    .filter(isMutationSource);
+  const candidates = listRepositoryFiles().filter(isMutationSource);
   return candidates.flatMap((sourcePath) => {
     const source = readText(sourcePath);
     return MUTATION_OPERATIONS.filter(({ pattern }) => pattern.test(source)).map((operation) =>
       mutationRecord(sourcePath, source, operation),
     );
   });
+}
+
+function listRepositoryFiles() {
+  return listFiles(".").map((path) => path.replace(/^\.\//, ""));
 }
 
 function mutationRecord(sourcePath, source, operation) {
@@ -686,7 +717,7 @@ function resolveInventoryStatus(authoritySchema) {
   if (!authoritySchema.observedClassMatchesLocalStorageLayoutSource) {
     return "mutation-review-complete-observed-class-source-blocked";
   }
-  return "a20-authority-inventory";
+  return "a20-evidence-complete-awaiting-a23-freeze";
 }
 
 function addressRecord(chainId, semanticKey, sourceKind, sourcePath, sourceKey, value, isAuthoritative) {
@@ -742,6 +773,17 @@ function serializeAddressAliasRecord(record) {
     alias_key_hash: record.aliasKeyHash,
     disposition: record.disposition,
     expected_value: record.expectedValue,
+  };
+}
+
+function serializeDynamicAddressInputRecord(record) {
+  return {
+    semantic_key: record.semanticKeyHash,
+    source_path_hash: record.sourcePathHash,
+    source_key_hash: record.sourceKeyHash,
+    input_kind: record.inputKindCode,
+    is_authoritative: record.isAuthoritative,
+    allowed_profile_bitmap: record.allowedProfileBitmap,
   };
 }
 
@@ -807,6 +849,15 @@ function compareAliasRecords(left, right) {
   );
 }
 
+function compareDynamicAddressInputs(left, right) {
+  return (
+    left.semanticKey.localeCompare(right.semanticKey) ||
+    left.sourcePath.localeCompare(right.sourcePath) ||
+    left.inputKind.localeCompare(right.inputKind) ||
+    left.sourceKey.localeCompare(right.sourceKey)
+  );
+}
+
 function compareFelt(left, right) {
   const leftValue = BigInt(left);
   const rightValue = BigInt(right);
@@ -815,10 +866,18 @@ function compareFelt(left, right) {
 
 function isMutationSource(path) {
   return (
-    /\.(js|mjs|sh|ts|tsx|ya?ml)$/.test(path) &&
+    /\.(c?js|mjs|sh|c?ts|mts|tsx|py|rs|ya?ml)$/.test(path) &&
     !/(^|\/)(tests?|mocks?|target|node_modules)(\/|$)|\.test\.|_vectors\.cairo$/.test(path) &&
-    !path.includes("/generated/")
+    !path.includes("/generated/") &&
+    path !== "scripts/settlement/generate-authority-inventory.mjs"
   );
+}
+
+function dynamicAddressInputKindCode(inputKind) {
+  const codes = { environment: 1, cli: 2, "runtime-field": 3 };
+  const code = codes[inputKind];
+  if (!code) throw new Error(`unknown dynamic address input kind: ${inputKind}`);
+  return code;
 }
 
 function listFiles(root) {
@@ -827,8 +886,13 @@ function listFiles(root) {
   if (!statSync(absoluteRoot).isDirectory()) return [root];
   return readdirSync(absoluteRoot, { withFileTypes: true }).flatMap((entry) => {
     const path = `${root}/${entry.name}`;
+    if (entry.isDirectory() && isIgnoredDiscoveryDirectory(entry.name)) return [];
     return entry.isDirectory() ? listFiles(path) : [path];
   });
+}
+
+function isIgnoredDiscoveryDirectory(name) {
+  return [".git", ".context", ".next", "coverage", "dist", "node_modules", "target"].includes(name);
 }
 
 function readAddressFile(chain) {
