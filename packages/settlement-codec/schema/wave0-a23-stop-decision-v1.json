@@ -130,7 +130,8 @@
     },
     "exitFamilyInventory": {
       "status": "a22-stop-redesign-required",
-      "fileSha256": "7f3a9a00526dacc2966a37bb46d82efe0aa7587b127c3f4a813bb21e3b0c5b48",
+      "fileSha256": "210ceb34e22e806a802202899c5e1871387a9f9989e9ccc3fb7c2646a6c35bd0",
+      "referenceLayoutSha256": "01bab02564a0f0888f2cfd6177dba8d4cd33bf60663bf22cfb766a461b7a9a46",
       "familyRegistryHash": "0xb4a640a21643ae02efd007c6f1cfbb7abed63a18e8447f1996f2c910af997b",
       "inventoryHash": "0x30d232b7467990394d14e8b9858d987e65978d18388024f330b4c661448e87b",
       "sourceProjectionHash": "0x222bea4ce5ef256065eb7f59e349cd7e3e5f44e29b7be2e6814d5c4e96549da",
@@ -277,7 +278,7 @@
           "missingProductionFamilyIds": []
         }
       ],
-      "reason": "A22's three known classification errors are corrected through exact reviewed overrides, but exact production projections, canonical indexes, and maximum per-game cardinalities remain unimplemented; estimates would not be evidence-backed."
+      "reason": "A22's three known classification errors are corrected through exact reviewed overrides and its reference u64 index, generation, tombstone, and chunk semantics are executable. Typed source identities, reviewed per-family maxima, exact production projections, cap enforcement, and A8 measurements remain unavailable, so estimates would not be evidence-backed."
     },
     "staffing": {
       "status": "unavailable",
@@ -297,7 +298,7 @@
     },
     {
       "id": "A22-BOUNDS-FREEZE",
-      "action": "The three known classification errors now have exact reviewed overrides. Redesign D5-D9 from the five enumerated issue groups: implement exact source projections and canonical monotonic indexes with generations and tombstones, add the four absent production families, enforce exact per-game cardinality caps, and rerun A8 before estimating or freezing A22."
+      "action": "The three known classification errors have exact reviewed overrides and A22 has executable reference u64 index, generation, tombstone, and chunk semantics. Derive and independently review exact per-family maxima from rulesets and simulations; redesign D5-D9 from the five enumerated issue groups; implement typed source projections and production indexes; add the four absent production families; enforce the reviewed caps; and rerun A8 before estimating or authorizing production."
     },
     {
       "id": "TEE-SOURCE-GATE",

@@ -28,7 +28,7 @@
           "entity_id",
           "resource_id"
         ],
-        "status": "failed-no-canonical-index"
+        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
       },
       "indexSchema": {
         "key": [
@@ -46,7 +46,7 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-enforced-bound"
+        "status": "failed-no-reviewed-bound"
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -121,7 +121,7 @@
         "fields": [
           "structure_id"
         ],
-        "status": "failed-no-canonical-index"
+        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
       },
       "indexSchema": {
         "key": [
@@ -139,7 +139,7 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-enforced-bound"
+        "status": "failed-no-reviewed-bound"
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -216,7 +216,7 @@
           "producer_id",
           "resource_id"
         ],
-        "status": "failed-no-canonical-index"
+        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
       },
       "indexSchema": {
         "key": [
@@ -234,7 +234,7 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-enforced-bound"
+        "status": "failed-no-reviewed-bound"
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -292,7 +292,7 @@
           "structure_id",
           "arrival_id"
         ],
-        "status": "failed-no-canonical-index"
+        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
       },
       "indexSchema": {
         "key": [
@@ -310,7 +310,7 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-enforced-bound"
+        "status": "failed-no-reviewed-bound"
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -344,7 +344,7 @@
           "troop_id",
           "position_kind"
         ],
-        "status": "failed-no-canonical-index"
+        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
       },
       "indexSchema": {
         "key": [
@@ -362,7 +362,7 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-enforced-bound"
+        "status": "failed-no-reviewed-bound"
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -436,7 +436,7 @@
           "trade_id",
           "escrow_kind"
         ],
-        "status": "failed-no-canonical-index"
+        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
       },
       "indexSchema": {
         "key": [
@@ -454,7 +454,7 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-enforced-bound"
+        "status": "failed-no-reviewed-bound"
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -500,7 +500,7 @@
           "position_owner",
           "position_kind"
         ],
-        "status": "failed-no-canonical-index"
+        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
       },
       "indexSchema": {
         "key": [
@@ -518,7 +518,7 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-enforced-bound"
+        "status": "failed-no-reviewed-bound"
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -572,7 +572,7 @@
           "player_id",
           "reward_kind"
         ],
-        "status": "failed-no-canonical-index"
+        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
       },
       "indexSchema": {
         "key": [
@@ -590,7 +590,7 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-enforced-bound"
+        "status": "failed-no-reviewed-bound"
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -720,7 +720,7 @@
           "player_id",
           "liability_id"
         ],
-        "status": "failed-no-canonical-index"
+        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
       },
       "indexSchema": {
         "key": [
@@ -738,7 +738,7 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-enforced-bound"
+        "status": "failed-no-reviewed-bound"
       },
       "sourceWriteMappingStatus": "missing-production-interface",
       "operationIds": [
@@ -765,7 +765,7 @@
           "backing_lot_id",
           "allocation_id"
         ],
-        "status": "failed-no-canonical-index"
+        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
       },
       "indexSchema": {
         "key": [
@@ -783,7 +783,7 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-enforced-bound"
+        "status": "failed-no-reviewed-bound"
       },
       "sourceWriteMappingStatus": "missing-production-interface",
       "operationIds": [
@@ -809,7 +809,7 @@
         "fields": [
           "player_id"
         ],
-        "status": "failed-no-canonical-index"
+        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
       },
       "indexSchema": {
         "key": [
@@ -827,7 +827,7 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-enforced-bound"
+        "status": "failed-no-reviewed-bound"
       },
       "sourceWriteMappingStatus": "missing-production-interface",
       "operationIds": [
@@ -852,7 +852,7 @@
         "fields": [
           "position_id"
         ],
-        "status": "failed-no-canonical-index"
+        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
       },
       "indexSchema": {
         "key": [
@@ -870,7 +870,7 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-enforced-bound"
+        "status": "failed-no-reviewed-bound"
       },
       "sourceWriteMappingStatus": "missing-production-interface",
       "operationIds": [
@@ -948,11 +948,11 @@
   ],
   "reviewFindings": [
     {
-      "kind": "missing-index-and-bound",
+      "kind": "missing-production-index-and-enforcement",
       "sourceWriteId": "production:ExitPosition",
       "observedClassification": "absent",
       "requiredDisposition": "D5-D9-production-interface",
-      "detail": "No production ExitPosition/PositionRef/PlayerPositionIndex writer, monotonic allocator, tombstone path, or enforced family high-water cap exists."
+      "detail": "The reference layout freezes u64 allocation, generation, tombstone, and chunk semantics, but typed source identities, reviewed per-family maxima, and production ExitPosition/PositionRef/PlayerPositionIndex writers remain absent."
     }
   ],
   "implementationIssues": [
@@ -1172,7 +1172,7 @@
         11,
         12
       ],
-      "detail": "No checked-in ruleset or mutation guard enforces a maximum position count for any family, so A8 has no canonical maximum witness."
+      "detail": "No reviewed ruleset or simulation-derived maximum position count exists for any family, so A8 has no canonical maximum witness and production has no cap to enforce."
     },
     {
       "kind": "production-families-absent",

@@ -223,11 +223,11 @@ interface ExitFamilyPolicy {
   chunking: { chunkSize: number; splitRule: string };
   families: Array<{ familyId: number; capabilityFamily: string; sourceIdentity: string[] }>;
   reviewPolicy: {
-    sourceIdentityStatus: "failed-no-canonical-index";
+    sourceIdentityStatus: "reference-index-semantics-complete-typed-identity-and-production-index-absent";
     sourceWriteMappingStatus: "failed-heuristic-projection";
     exclusionStatus: "failed-known-false-negative" | "reviewed";
     maximumPositionsPerGame: null;
-    cardinalityStatus: "failed-no-enforced-bound";
+    cardinalityStatus: "failed-no-reviewed-bound";
   };
   reviewFindings: Array<{
     kind: string;

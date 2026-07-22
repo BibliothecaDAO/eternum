@@ -219,6 +219,10 @@ function assertFrozenAndCandidateInputs() {
     inputs.exitFamilyInventory.fileSha256,
   );
   assertFileHash(
+    "packages/settlement-codec/src/exit-family-layout.ts",
+    inputs.exitFamilyInventory.referenceLayoutSha256,
+  );
+  assertFileHash(
     "packages/settlement-codec/schema/economic-write-classification-policy-v0.json",
     inputs.economicWriteClassificationPolicySha256,
   );
@@ -486,20 +490,15 @@ function assertA20StopOutcome() {
 }
 
 function assertA22StopOutcome() {
-  const expectedFindings = [["missing-index-and-bound", "production:ExitPosition"]];
+  const expectedFindings = [["missing-production-index-and-enforcement", "production:ExitPosition"]];
   assertDeepEqual(
     exitFamilies.reviewFindings.map(({ kind, sourceWriteId }) => [kind, sourceWriteId]),
     expectedFindings,
     "A22 failed feasibility findings",
   );
   assert(
-    exitFamilies.families.every(
-      (family) =>
-        family.sourceIdentity.status === "failed-no-canonical-index" &&
-        family.cardinality.status === "failed-no-enforced-bound" &&
-        family.cardinality.maximumPositionsPerGame === null,
-    ),
-    "A22 must fail closed while canonical indexes or enforced bounds are absent",
+    exitFamilies.families.every(hasReferenceIndexSemanticsAndUnresolvedBound),
+    "A22 must distinguish reference index semantics from unresolved typed identities and cardinality bounds",
   );
 
   const issueProjection = exitFamilies.implementationIssues.map(
@@ -527,12 +526,27 @@ function assertA22StopOutcome() {
 
   const outcome = decision.stopOutcomes.find(({ id }) => id === "A22-BOUNDS-FREEZE");
   assert(outcome, "A23 must declare the A22 redesign outcome");
-  assert(
-    outcome.action.includes("classification errors now have exact reviewed overrides") &&
-      outcome.action.includes("canonical monotonic indexes") &&
-      outcome.action.includes("rerun A8"),
-    "A22 redesign outcome must name the failed properties and dependent benchmark",
+  assert(namesRequiredA22RedesignWork(outcome.action), "A22 redesign outcome must name every remaining gate");
+}
+
+function hasReferenceIndexSemanticsAndUnresolvedBound(family) {
+  return (
+    family.sourceIdentity.status === "reference-index-semantics-complete-typed-identity-and-production-index-absent" &&
+    family.cardinality.status === "failed-no-reviewed-bound" &&
+    family.cardinality.maximumPositionsPerGame === null
   );
+}
+
+function namesRequiredA22RedesignWork(action) {
+  const requiredWork = [
+    "reference u64 index",
+    "per-family maxima",
+    "typed source projections",
+    "production indexes",
+    "reviewed caps",
+    "A8",
+  ];
+  return requiredWork.every((requirement) => action.includes(requirement));
 }
 
 function assertA17Evidence() {

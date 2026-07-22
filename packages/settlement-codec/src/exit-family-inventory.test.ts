@@ -140,14 +140,18 @@ describe("A22 exit-family inventory", () => {
 
     expect(inventory.unresolved.length).toBeGreaterThan(0);
     expect(inventory.families.every((family) => family.cardinality.maximumPositionsPerGame === null)).toBe(true);
-    expect(inventory.families.every((family) => family.cardinality.status === "failed-no-enforced-bound")).toBe(true);
-    expect(inventory.families.every((family) => family.sourceIdentity.status === "failed-no-canonical-index")).toBe(
-      true,
-    );
+    expect(inventory.families.every((family) => family.cardinality.status === "failed-no-reviewed-bound")).toBe(true);
+    expect(
+      inventory.families.every(
+        (family) =>
+          family.sourceIdentity.status ===
+          "reference-index-semantics-complete-typed-identity-and-production-index-absent",
+      ),
+    ).toBe(true);
     expect(inventory.exclusionReviewStatus).toBe("reviewed");
     expect(inventory.reviewFindings).toEqual([
       expect.objectContaining({
-        kind: "missing-index-and-bound",
+        kind: "missing-production-index-and-enforcement",
         sourceWriteId: "production:ExitPosition",
       }),
     ]);

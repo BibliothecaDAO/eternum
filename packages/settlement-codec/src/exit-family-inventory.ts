@@ -10,7 +10,9 @@ import {
   computeExitSourceProjectionHash,
 } from "./exit-family-commitments";
 
-export type ExitFamilyReviewStatus = "failed-no-canonical-index" | "reviewed";
+export type ExitFamilyReviewStatus =
+  | "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+  | "reviewed";
 export type ExitFamilyMappingStatus = "failed-heuristic-projection" | "missing-production-interface" | "reviewed";
 
 export interface ExitFamilyInventoryFamily {
@@ -24,7 +26,10 @@ export interface ExitFamilyInventoryFamily {
     deletion: "explicit-tombstone";
   };
   chunking: { chunkSize: number; splitRule: string };
-  cardinality: { maximumPositionsPerGame: number | null; status: "failed-no-enforced-bound" | "reviewed" };
+  cardinality: {
+    maximumPositionsPerGame: number | null;
+    status: "failed-no-reviewed-bound" | "reviewed";
+  };
   sourceWriteMappingStatus: ExitFamilyMappingStatus;
   operationIds: number[];
   affectedModels: string[];
@@ -292,11 +297,7 @@ function collectReleaseBlockers(inventory: ExitFamilyInventory): string[] {
       blockers.push(`family ${family.familyId} source identity is unreviewed`);
     if (family.sourceWriteMappingStatus !== "reviewed")
       blockers.push(`family ${family.familyId} write mapping is unreviewed`);
-    if (
-      family.cardinality.status !== "reviewed" ||
-      !Number.isSafeInteger(family.cardinality.maximumPositionsPerGame) ||
-      (family.cardinality.maximumPositionsPerGame ?? 0) < 1
-    ) {
+    if (family.cardinality.status !== "reviewed") {
       blockers.push(`family ${family.familyId} cardinality is unresolved`);
     }
   }

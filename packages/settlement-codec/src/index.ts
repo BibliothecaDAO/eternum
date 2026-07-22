@@ -5,6 +5,7 @@ import { cloneProtocolValue } from "./clone";
 export { decodeSchema, encodeSchema, type SchemaValue } from "./codec";
 export * from "./economic-capability";
 export * from "./exit-family-inventory";
+export * from "./exit-family-layout";
 export * from "./frozen-position";
 export * from "./frozen-recovery";
 export * from "./emergency-sealed";

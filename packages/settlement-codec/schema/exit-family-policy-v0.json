@@ -74,19 +74,19 @@
     }
   ],
   "reviewPolicy": {
-    "sourceIdentityStatus": "failed-no-canonical-index",
+    "sourceIdentityStatus": "reference-index-semantics-complete-typed-identity-and-production-index-absent",
     "sourceWriteMappingStatus": "failed-heuristic-projection",
     "exclusionStatus": "reviewed",
     "maximumPositionsPerGame": null,
-    "cardinalityStatus": "failed-no-enforced-bound"
+    "cardinalityStatus": "failed-no-reviewed-bound"
   },
   "reviewFindings": [
     {
-      "kind": "missing-index-and-bound",
+      "kind": "missing-production-index-and-enforcement",
       "sourceWriteId": "production:ExitPosition",
       "observedClassification": "absent",
       "requiredDisposition": "D5-D9-production-interface",
-      "detail": "No production ExitPosition/PositionRef/PlayerPositionIndex writer, monotonic allocator, tombstone path, or enforced family high-water cap exists."
+      "detail": "The reference layout freezes u64 allocation, generation, tombstone, and chunk semantics, but typed source identities, reviewed per-family maxima, and production ExitPosition/PositionRef/PlayerPositionIndex writers remain absent."
     }
   ],
   "implementationIssues": [
@@ -130,7 +130,7 @@
     {
       "kind": "maximum-cardinality-unenforced",
       "scope": "all-families",
-      "detail": "No checked-in ruleset or mutation guard enforces a maximum position count for any family, so A8 has no canonical maximum witness."
+      "detail": "No reviewed ruleset or simulation-derived maximum position count exists for any family, so A8 has no canonical maximum witness and production has no cap to enforce."
     },
     {
       "kind": "production-families-absent",
