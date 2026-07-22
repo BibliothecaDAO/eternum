@@ -21,6 +21,7 @@ interface DecodedValue {
 }
 
 const FELT_PRIME = (1n << 251n) + 17n * (1n << 192n) + 1n;
+const CONTRACT_ADDRESS_BOUND = (1n << 251n) - 256n;
 const DECLARATIONS = new Map(
   (schemaRegistry.declarations as readonly SchemaDeclaration[]).map((declaration) => [declaration.name, declaration]),
 );
@@ -190,7 +191,10 @@ function decodeBoolean(felts: readonly bigint[], offset: number): DecodedValue {
 function encodeBoundedFelt(type: string, value: SchemaValue): bigint {
   const integer = requireInteger(value, type);
   if (type.startsWith("u")) assertUnsignedRange(type, integer, Number(type.slice(1)));
-  if ((type === "felt252" || type === "ContractAddress") && (integer < 0n || integer >= FELT_PRIME)) {
+  if (type === "felt252" && (integer < 0n || integer >= FELT_PRIME)) {
+    throw new Error(`${type} out of range`);
+  }
+  if (type === "ContractAddress" && (integer < 0n || integer >= CONTRACT_ADDRESS_BOUND)) {
     throw new Error(`${type} out of range`);
   }
   return integer;

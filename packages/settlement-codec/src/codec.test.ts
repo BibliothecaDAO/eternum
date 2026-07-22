@@ -5,6 +5,14 @@ import goldenVectors from "../schema/golden-vectors-v1.json";
 import { decodeSchema, encodeSchema, type SchemaValue } from "./codec";
 
 describe("canonical settlement codec", () => {
+  it("enforces the Starknet contract-address bound", () => {
+    const addressBound = (1n << 251n) - 256n;
+
+    expect(encodeSchema("ContractAddress", addressBound - 1n)).toEqual([addressBound - 1n]);
+    expect(() => encodeSchema("ContractAddress", addressBound)).toThrow("ContractAddress out of range");
+    expect(() => decodeSchema("ContractAddress", [addressBound])).toThrow("ContractAddress out of range");
+  });
+
   it("encodes u256 as explicit low and high u128 limbs", () => {
     expect(
       encodeSchema("ClaimLeg", {

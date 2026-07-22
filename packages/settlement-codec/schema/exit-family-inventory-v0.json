@@ -6,10 +6,10 @@
     "economicCapabilityRegistryVersion": 1,
     "economicWriteInventoryVersion": 0
   },
-  "familyRegistryHash": "0xb4a640a21643ae02efd007c6f1cfbb7abed63a18e8447f1996f2c910af997b",
+  "familyRegistryHash": "0x462a2e6b6d1f6f3d815c25d5b223ee06914dace9f96db73fb530223bd3bc1eb",
   "sourceProjectionHash": "0x222bea4ce5ef256065eb7f59e349cd7e3e5f44e29b7be2e6814d5c4e96549da",
   "excludedProjectionHash": "0x7bf52c4889bd5b3dfd3dd9dd9df86a1a33f96687130b3b96bc8583067fe523b",
-  "inventoryHash": "0x30d232b7467990394d14e8b9858d987e65978d18388024f330b4c661448e87b",
+  "inventoryHash": "0x5dead66af3436a13ecdaed71c52551d66a5595799f6bfdce2fc174c44248036",
   "releaseReady": false,
   "exclusionReviewStatus": "reviewed",
   "summary": {
@@ -25,10 +25,42 @@
       "capabilityFamily": "resource",
       "sourceIdentity": {
         "fields": [
-          "entity_id",
-          "resource_id"
+          {
+            "name": "entity_id",
+            "type": "felt252",
+            "interfaceMembers": [
+              {
+                "declaration": "ResourceMutationRequest",
+                "member": "source_entity_id"
+              },
+              {
+                "declaration": "ResourceMutationRequest",
+                "member": "target_entity_id"
+              }
+            ]
+          },
+          {
+            "name": "resource_id",
+            "type": "u32",
+            "interfaceMembers": [
+              {
+                "declaration": "ResourceMutationRequest",
+                "member": "resource_id"
+              }
+            ]
+          }
         ],
-        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+        "status": "interface-reviewed",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/resource/resource.cairo",
+            "model": "Resource",
+            "members": [
+              "entity_id"
+            ]
+          }
+        ],
+        "unresolvedReason": null
       },
       "indexSchema": {
         "key": [
@@ -112,16 +144,35 @@
       "sourceWriteCount": 38,
       "sourceFileCount": 9,
       "familyProjectionHash": "0x3b17f51a7ef349db0933ba2061cbc3adb4ba91ab754e7c1db7f324417df7b53",
-      "schemaHash": "0xed35032ff322ba21769c91c4a8080087252c2cb9e999ed291640c8ba5a246b"
+      "schemaHash": "0x2708b4ad942664e411b530bdac1b07d45837a17816e4a82f7f809e611cb27f2"
     },
     {
       "familyId": 2,
       "capabilityFamily": "structure_ownership",
       "sourceIdentity": {
         "fields": [
-          "structure_id"
+          {
+            "name": "structure_id",
+            "type": "felt252",
+            "interfaceMembers": [
+              {
+                "declaration": "StructureOwnershipMutationRequest",
+                "member": "structure_id"
+              }
+            ]
+          }
         ],
-        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+        "status": "interface-reviewed",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/structure.cairo",
+            "model": "Structure",
+            "members": [
+              "entity_id"
+            ]
+          }
+        ],
+        "unresolvedReason": null
       },
       "indexSchema": {
         "key": [
@@ -206,17 +257,37 @@
       "sourceWriteCount": 33,
       "sourceFileCount": 15,
       "familyProjectionHash": "0x5454603923d742a91c41c9f0afb2e9c79694c8df8e22a707b86aa90e42fcc4b",
-      "schemaHash": "0x26972cdc6a2447a31a53dd4f98164a2b1259a55b2b6dc810d57123a4900e888"
+      "schemaHash": "0x43f4c676c7eb543aac28b3611a4556268b1b3fb3a43edf8071f40eca2144fea"
     },
     {
       "familyId": 3,
       "capabilityFamily": "lazy_production",
       "sourceIdentity": {
         "fields": [
-          "producer_id",
-          "resource_id"
+          {
+            "name": "producer_id",
+            "type": "felt252",
+            "interfaceMembers": [
+              {
+                "declaration": "LazyProductionMutationRequest",
+                "member": "producer_id"
+              }
+            ]
+          },
+          {
+            "name": "resource_id",
+            "type": "u32",
+            "interfaceMembers": [
+              {
+                "declaration": "LazyProductionMutationRequest",
+                "member": "resource_id"
+              }
+            ]
+          }
         ],
-        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+        "status": "interface-reviewed",
+        "sourceModels": [],
+        "unresolvedReason": null
       },
       "indexSchema": {
         "key": [
@@ -282,17 +353,38 @@
       "sourceWriteCount": 25,
       "sourceFileCount": 3,
       "familyProjectionHash": "0x5906c6319d3f931d6f5f26e74fd61f31648657d230c9ad7fbbb7c1c4436f43b",
-      "schemaHash": "0x7ce7bc51af942bb85ef6a9b847e38c9e502409c256d1997227dc22584788701"
+      "schemaHash": "0x1c3f9627c93ff7a20d54bfeb82dc1df334f2d81ee2bc1e60072d271d64087c"
     },
     {
       "familyId": 4,
       "capabilityFamily": "arrival",
       "sourceIdentity": {
         "fields": [
-          "structure_id",
-          "arrival_id"
+          {
+            "name": "structure_id",
+            "type": null,
+            "interfaceMembers": []
+          },
+          {
+            "name": "arrival_id",
+            "type": null,
+            "interfaceMembers": []
+          }
         ],
-        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+        "status": "unresolved",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/resource/arrivals.cairo",
+            "model": "ResourceArrival",
+            "members": [
+              "structure_id",
+              "day",
+              "slot_1",
+              "slot_48"
+            ]
+          }
+        ],
+        "unresolvedReason": "The current ResourceArrival key is (structure_id, day) with nested slots, while the frozen mutation ABI exposes arrival_id; no canonical slot-to-arrival identity projection exists."
       },
       "indexSchema": {
         "key": [
@@ -334,17 +426,35 @@
       "sourceWriteCount": 3,
       "sourceFileCount": 1,
       "familyProjectionHash": "0x3908ca3ee0decf69eccde4e3731163c7861167c2a386683fec15c4176f0dab",
-      "schemaHash": "0x1ed923afaf9194f7166d2eafdb3ed1f0d2b28867baebfcf63332b71eb9a16a8"
+      "schemaHash": "0x3357e533a55a43ea10c874fe581dbb452e47d011dfbd47b43886f60a48363ea"
     },
     {
       "familyId": 5,
       "capabilityFamily": "military_and_cargo",
       "sourceIdentity": {
         "fields": [
-          "troop_id",
-          "position_kind"
+          {
+            "name": "troop_id",
+            "type": null,
+            "interfaceMembers": []
+          },
+          {
+            "name": "position_kind",
+            "type": null,
+            "interfaceMembers": []
+          }
         ],
-        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+        "status": "unresolved",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/troop.cairo",
+            "model": "ExplorerTroops",
+            "members": [
+              "explorer_id"
+            ]
+          }
+        ],
+        "unresolvedReason": "Military and cargo values span explorer, army, guard, ownership, and nested cargo records; the current candidate tuple has no reviewed discriminator or exact model-key projection."
       },
       "indexSchema": {
         "key": [
@@ -426,17 +536,35 @@
       "sourceWriteCount": 35,
       "sourceFileCount": 8,
       "familyProjectionHash": "0x33e75ac9dd41f0f1785bd71ebfdf65479f1e154fceb2f57abed9d1ce275bd46",
-      "schemaHash": "0x5d7e3048f34b911a816d205dfbb2991cf49495ffb2aa005833a91071c027609"
+      "schemaHash": "0xc076eef09a8171815b1a13b0b723ca95d8899b22fa628a6947afb97d6a6484"
     },
     {
       "familyId": 6,
       "capabilityFamily": "trade_and_donkey",
       "sourceIdentity": {
         "fields": [
-          "trade_id",
-          "escrow_kind"
+          {
+            "name": "trade_id",
+            "type": null,
+            "interfaceMembers": []
+          },
+          {
+            "name": "escrow_kind",
+            "type": null,
+            "interfaceMembers": []
+          }
         ],
-        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+        "status": "unresolved",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/trade.cairo",
+            "model": "Trade",
+            "members": [
+              "trade_id"
+            ]
+          }
+        ],
+        "unresolvedReason": "The Trade key is trade_id and the frozen mutation ABI uses order_id, but DONKEY and resource escrow subpositions have no frozen discriminator or exact source projection."
       },
       "indexSchema": {
         "key": [
@@ -489,18 +617,48 @@
       "sourceWriteCount": 12,
       "sourceFileCount": 3,
       "familyProjectionHash": "0x3be2160d871a5baa8654bd4d602e8be6e3c5a626b168ce20f0060ef44ae9e49",
-      "schemaHash": "0x313fef74bbae89d14c45e5dfb00c4681ba0511abc65e6e166ed536af6322f37"
+      "schemaHash": "0x223572816e4d936c87b89a516a5b1a37576843da710254fec367bb62c9102d2"
     },
     {
       "familyId": 7,
       "capabilityFamily": "amm_and_lp",
       "sourceIdentity": {
         "fields": [
-          "pool_id",
-          "position_owner",
-          "position_kind"
+          {
+            "name": "pool_id",
+            "type": null,
+            "interfaceMembers": []
+          },
+          {
+            "name": "position_owner",
+            "type": null,
+            "interfaceMembers": []
+          },
+          {
+            "name": "position_kind",
+            "type": null,
+            "interfaceMembers": []
+          }
         ],
-        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+        "status": "unresolved",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/bank/liquidity.cairo",
+            "model": "Liquidity",
+            "members": [
+              "player",
+              "resource_type"
+            ]
+          },
+          {
+            "path": "contracts/game/src/models/bank/market.cairo",
+            "model": "Market",
+            "members": [
+              "resource_type"
+            ]
+          }
+        ],
+        "unresolvedReason": "Bank, market, AMM, and LP values use different keyed models; no reviewed pool/owner/kind discriminator projects every value-bearing position exactly once."
       },
       "indexSchema": {
         "key": [
@@ -562,17 +720,43 @@
       "sourceWriteCount": 20,
       "sourceFileCount": 3,
       "familyProjectionHash": "0x29f33d178529643c84bb1461975c19290dfd6b265ca3552d7862aace3f32207",
-      "schemaHash": "0x5b19e4bd011038f389b80cbd58024cc5a739a96cfcc1fa3c0a57de7ea6830e7"
+      "schemaHash": "0x507c35a6b1fda8688fc60f35fd43a464acfa71447c1cbc05e7b2e4150288835"
     },
     {
       "familyId": 8,
       "capabilityFamily": "reward_state",
       "sourceIdentity": {
         "fields": [
-          "player_id",
-          "reward_kind"
+          {
+            "name": "player_id",
+            "type": null,
+            "interfaceMembers": []
+          },
+          {
+            "name": "reward_kind",
+            "type": null,
+            "interfaceMembers": []
+          }
         ],
-        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+        "status": "unresolved",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/faith.cairo",
+            "model": "WonderFaithPrize",
+            "members": [
+              "wonder_id"
+            ]
+          },
+          {
+            "path": "contracts/game/src/models/faith.cairo",
+            "model": "PlayerFaithPrizeClaimed",
+            "members": [
+              "player",
+              "wonder_id"
+            ]
+          }
+        ],
+        "unresolvedReason": "Reward, Faith, prize, fee, and participant state uses heterogeneous keys; player_id/reward_kind does not identify every affected value-bearing record."
       },
       "indexSchema": {
         "key": [
@@ -710,17 +894,27 @@
       "sourceWriteCount": 87,
       "sourceFileCount": 13,
       "familyProjectionHash": "0xf6c1115ecbe20e27de5d9bf408bc9151cb6f779e27a5926ad8773709e082ad",
-      "schemaHash": "0x6c42a9aaf9f49c6c6e284dd0daec0a589a9c263e0b28d6835d5d6ee4ab0336f"
+      "schemaHash": "0x1c2a249337eecbd268147459d0dea23a86cc68810b58f53f93d263f878cc572"
     },
     {
       "familyId": 9,
       "capabilityFamily": "pending_withdrawal",
       "sourceIdentity": {
         "fields": [
-          "player_id",
-          "liability_id"
+          {
+            "name": "liability_id",
+            "type": "LiabilityId",
+            "interfaceMembers": [
+              {
+                "declaration": "PendingWithdrawalMutationRequest",
+                "member": "liability_id"
+              }
+            ]
+          }
         ],
-        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+        "status": "interface-reviewed",
+        "sourceModels": [],
+        "unresolvedReason": null
       },
       "indexSchema": {
         "key": [
@@ -755,17 +949,46 @@
       "sourceWriteCount": 0,
       "sourceFileCount": 0,
       "familyProjectionHash": "0x4f478afbd79d3283c601780a8df2dd208619e57be8017dd08f5b8dc517c9801",
-      "schemaHash": "0x2a094690adf0ea0ad20d4185bb5dd7fc59b6381029f71fef39f7526b23c010d"
+      "schemaHash": "0x5f2b8ce186b6f691e35bd0f7328236fa9804217bb5024df4c0faffdae2b8acf"
     },
     {
       "familyId": 10,
       "capabilityFamily": "active_exit_backing",
       "sourceIdentity": {
         "fields": [
-          "backing_lot_id",
-          "allocation_id"
+          {
+            "name": "parent_key_hash",
+            "type": "felt252",
+            "interfaceMembers": [
+              {
+                "declaration": "ActiveExitBackingMutationRequest",
+                "member": "parent_key_hash"
+              }
+            ]
+          },
+          {
+            "name": "lot_index",
+            "type": "u8",
+            "interfaceMembers": [
+              {
+                "declaration": "ActiveExitBackingMutationRequest",
+                "member": "lot_index"
+              }
+            ]
+          }
         ],
-        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+        "status": "interface-reviewed",
+        "sourceModels": [
+          {
+            "path": "contracts/settlement_protocol/src/types.cairo",
+            "model": "GameBackingLot",
+            "members": [
+              "parent_key_hash",
+              "lot_index"
+            ]
+          }
+        ],
+        "unresolvedReason": null
       },
       "indexSchema": {
         "key": [
@@ -800,16 +1023,27 @@
       "sourceWriteCount": 0,
       "sourceFileCount": 0,
       "familyProjectionHash": "0x5e8d5166f9833e62bf690dd5f4b6995e31691b6b8a25359c9a8a9ea53cf3740",
-      "schemaHash": "0x1bb7551f9e26f6e1e2c5ffe9597593fa4c8de9538d6452dcc0d2b5f48cec2c2"
+      "schemaHash": "0x4dd52420eb84ac6ad06ee75e400103612c5a91a99e97637a289f97bf7d1976f"
     },
     {
       "familyId": 11,
       "capabilityFamily": "player_economic_lock",
       "sourceIdentity": {
         "fields": [
-          "player_id"
+          {
+            "name": "player_l2",
+            "type": "ContractAddress",
+            "interfaceMembers": [
+              {
+                "declaration": "PlayerEconomicLockMutationRequest",
+                "member": "player_l2"
+              }
+            ]
+          }
         ],
-        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+        "status": "interface-reviewed",
+        "sourceModels": [],
+        "unresolvedReason": null
       },
       "indexSchema": {
         "key": [
@@ -843,16 +1077,27 @@
       "sourceWriteCount": 0,
       "sourceFileCount": 0,
       "familyProjectionHash": "0x2297b1d535c68bd8899b1b920616b49c201a2260fbca0036d0b29c67f6deda5",
-      "schemaHash": "0x51b5dd9f0ced15d4365002b37ef9ce29f8400c1a3095333b06dbcc55bcc4fff"
+      "schemaHash": "0x58fa3434c82b656b7883c07b246b9574c577b7439b4b40eb213f8ac09802c87"
     },
     {
       "familyId": 12,
       "capabilityFamily": "exit_position",
       "sourceIdentity": {
         "fields": [
-          "position_id"
+          {
+            "name": "position_id",
+            "type": "felt252",
+            "interfaceMembers": [
+              {
+                "declaration": "ExitPositionMutationRequest",
+                "member": "position_id"
+              }
+            ]
+          }
         ],
-        "status": "reference-index-semantics-complete-typed-identity-and-production-index-absent"
+        "status": "interface-reviewed",
+        "sourceModels": [],
+        "unresolvedReason": null
       },
       "indexSchema": {
         "key": [
@@ -886,7 +1131,7 @@
       "sourceWriteCount": 0,
       "sourceFileCount": 0,
       "familyProjectionHash": "0x30f197c423e741e75232f1d28edb386a8428a2cde2f55f3f8e6e502062b077e",
-      "schemaHash": "0x2c2786eeb094e1e812cf7c1b5b53e366cf8a4672502870bfab5b27147271b9a"
+      "schemaHash": "0x6d7f3fd7eb90e80ec005748d8004af00f9b33cc329f622d25c9213ba605b7e2"
     }
   ],
   "excludedWriteIds": [
@@ -952,7 +1197,7 @@
       "sourceWriteId": "production:ExitPosition",
       "observedClassification": "absent",
       "requiredDisposition": "D5-D9-production-interface",
-      "detail": "The reference layout freezes u64 allocation, generation, tombstone, and chunk semantics, but typed source identities, reviewed per-family maxima, and production ExitPosition/PositionRef/PlayerPositionIndex writers remain absent."
+      "detail": "The reference layout freezes u64 allocation, generation, tombstone, and chunk semantics. Seven interface-backed candidate encodings are typed but are not exact source projections, and five heterogeneous families remain unresolved; reviewed per-family maxima and production ExitPosition/PositionRef/PlayerPositionIndex writers remain absent."
     }
   ],
   "implementationIssues": [
@@ -1155,6 +1400,17 @@
         12
       ],
       "detail": "Candidate source identity tuples are not backed by implemented monotonic family indexes, generations, and tombstones."
+    },
+    {
+      "kind": "typed-source-identity-unresolved",
+      "familyIds": [
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "detail": "Arrivals, military/cargo, trade/DONKEY, AMM/LP, and reward state do not yet have exact typed identities that cover their heterogeneous source model keys."
     },
     {
       "kind": "maximum-cardinality-unenforced",

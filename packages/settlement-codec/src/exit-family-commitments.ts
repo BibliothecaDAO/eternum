@@ -1,9 +1,10 @@
 import { hash } from "starknet";
+import type { ExitFamilySourceIdentityField } from "./exit-family-source-identity";
 
 export interface ExitFamilySchemaCommitmentInput {
   readonly familyId: number;
   readonly capabilityFamily: string;
-  readonly sourceIdentityFields: readonly string[];
+  readonly sourceIdentityFields: readonly ExitFamilySourceIdentityField[];
   readonly indexKey: readonly string[];
   readonly highWatermark: string;
   readonly stableIds: string;
@@ -22,7 +23,7 @@ export function computeExitFamilySchemaHash(family: ExitFamilySchemaCommitmentIn
     hashExitFamilyString(family.capabilityFamily),
     exitFamilyCountedHash(
       "EXIT_FAMILY_SOURCE_IDENTITY_FIELDS_V0",
-      family.sourceIdentityFields.map(hashExitFamilyString),
+      family.sourceIdentityFields.map(hashExitFamilySourceIdentityField),
     ),
     exitFamilyCountedHash("EXIT_FAMILY_INDEX_KEY_V0", family.indexKey.map(hashExitFamilyString)),
     hashExitFamilyString(family.highWatermark),
@@ -33,6 +34,14 @@ export function computeExitFamilySchemaHash(family: ExitFamilySchemaCommitmentIn
     family.maximumPositionsPerGame ?? 0,
     exitFamilyCountedHash("EXIT_FAMILY_OPERATION_IDS_V0", family.operationIds.map(String)),
     exitFamilyCountedHash("EXIT_FAMILY_AFFECTED_MODELS_V0", family.affectedModels.map(hashExitFamilyString)),
+  );
+}
+
+function hashExitFamilySourceIdentityField(field: ExitFamilySourceIdentityField): string {
+  return exitFamilyPoseidon(
+    "EXIT_FAMILY_SOURCE_IDENTITY_FIELD_V0",
+    hashExitFamilyString(field.name),
+    hashExitFamilyString(field.type ?? "UNRESOLVED"),
   );
 }
 

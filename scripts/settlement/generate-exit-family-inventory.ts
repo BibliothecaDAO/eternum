@@ -7,6 +7,13 @@ import {
   computeExitFamilySourceProjectionHash,
   computeExitSourceProjectionHash,
 } from "../../packages/settlement-codec/src/exit-family-commitments";
+import {
+  resolveExitFamilyReleaseBlockerFamilyIds,
+  type ExitFamilyReleaseBlockerScope,
+  type ExitFamilySourceIdentityPolicy,
+  validateExitFamilySourceIdentityPolicy,
+  validateExitFamilySourceModelEvidence,
+} from "../../packages/settlement-codec/src/exit-family-source-identity";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const policyPath = resolve(repositoryRoot, "packages/settlement-codec/schema/exit-family-policy-v0.json");
@@ -77,6 +84,12 @@ function buildExitFamilyInventory() {
 }
 
 function buildFamilyInventory(familyPolicy: ExitFamilyPolicy["families"][number]) {
+  validateExitFamilySourceIdentityPolicy(familyPolicy.familyId, familyPolicy.sourceIdentity);
+  validateExitFamilySourceModelEvidence(
+    familyPolicy.familyId,
+    familyPolicy.sourceIdentity.sourceModels,
+    readRepositorySource,
+  );
   const operations = capabilityRegistry.operations.filter(
     (candidate) => candidate.family === familyPolicy.capabilityFamily,
   );
@@ -89,7 +102,7 @@ function buildFamilyInventory(familyPolicy: ExitFamilyPolicy["families"][number]
   const commitmentInput = {
     familyId: familyPolicy.familyId,
     capabilityFamily: familyPolicy.capabilityFamily,
-    sourceIdentityFields: familyPolicy.sourceIdentity,
+    sourceIdentityFields: familyPolicy.sourceIdentity.fields,
     indexKey: policy.indexSchema.key,
     highWatermark: policy.indexSchema.highWatermark,
     stableIds: policy.indexSchema.stableIds,
@@ -105,8 +118,7 @@ function buildFamilyInventory(familyPolicy: ExitFamilyPolicy["families"][number]
     familyId: familyPolicy.familyId,
     capabilityFamily: familyPolicy.capabilityFamily,
     sourceIdentity: {
-      fields: familyPolicy.sourceIdentity,
-      status: policy.reviewPolicy.sourceIdentityStatus,
+      ...familyPolicy.sourceIdentity,
     },
     indexSchema: policy.indexSchema,
     chunking: policy.chunking,
@@ -180,10 +192,9 @@ function buildImplementationIssues(families: ReturnType<typeof buildFamilyInvent
 }
 
 function buildReleaseBlockers(families: ReturnType<typeof buildFamilyInventory>[]) {
-  const allFamilyIds = families.map((family) => family.familyId);
   return policy.releaseBlockers.map(({ kind, scope, detail }) => ({
     kind,
-    familyIds: scope === "all-families" ? allFamilyIds : [],
+    familyIds: resolveExitFamilyReleaseBlockerFamilyIds(scope, families),
     detail,
   }));
 }
@@ -211,6 +222,13 @@ function readJson(path: string): unknown {
   return JSON.parse(readFileSync(path, "utf8"));
 }
 
+function readRepositorySource(path: string): string {
+  const sourcePath = resolve(repositoryRoot, path);
+  if (!sourcePath.startsWith(`${repositoryRoot}/`))
+    throw new Error(`source model evidence escapes repository: ${path}`);
+  return readFileSync(sourcePath, "utf8");
+}
+
 interface ExitFamilyPolicy {
   version: 0;
   status: "a22-stop-redesign-required";
@@ -221,9 +239,12 @@ interface ExitFamilyPolicy {
     deletion: "explicit-tombstone";
   };
   chunking: { chunkSize: number; splitRule: string };
-  families: Array<{ familyId: number; capabilityFamily: string; sourceIdentity: string[] }>;
+  families: Array<{
+    familyId: number;
+    capabilityFamily: string;
+    sourceIdentity: ExitFamilySourceIdentityPolicy;
+  }>;
   reviewPolicy: {
-    sourceIdentityStatus: "reference-index-semantics-complete-typed-identity-and-production-index-absent";
     sourceWriteMappingStatus: "failed-heuristic-projection";
     exclusionStatus: "failed-known-false-negative" | "reviewed";
     maximumPositionsPerGame: null;
@@ -239,7 +260,7 @@ interface ExitFamilyPolicy {
   implementationIssues: Array<{ ticket: `D${5 | 6 | 7 | 8 | 9}`; familyIds: number[]; scope: string }>;
   releaseBlockers: Array<{
     kind: string;
-    scope: "all-families" | "global";
+    scope: ExitFamilyReleaseBlockerScope;
     detail: string;
   }>;
 }

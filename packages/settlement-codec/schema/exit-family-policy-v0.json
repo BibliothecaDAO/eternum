@@ -15,66 +15,269 @@
     {
       "familyId": 1,
       "capabilityFamily": "resource",
-      "sourceIdentity": ["entity_id", "resource_id"]
+      "sourceIdentity": {
+        "fields": [
+          {
+            "name": "entity_id",
+            "type": "felt252",
+            "interfaceMembers": [
+              { "declaration": "ResourceMutationRequest", "member": "source_entity_id" },
+              { "declaration": "ResourceMutationRequest", "member": "target_entity_id" }
+            ]
+          },
+          {
+            "name": "resource_id",
+            "type": "u32",
+            "interfaceMembers": [{ "declaration": "ResourceMutationRequest", "member": "resource_id" }]
+          }
+        ],
+        "status": "interface-reviewed",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/resource/resource.cairo",
+            "model": "Resource",
+            "members": ["entity_id"]
+          }
+        ],
+        "unresolvedReason": null
+      }
     },
     {
       "familyId": 2,
       "capabilityFamily": "structure_ownership",
-      "sourceIdentity": ["structure_id"]
+      "sourceIdentity": {
+        "fields": [
+          {
+            "name": "structure_id",
+            "type": "felt252",
+            "interfaceMembers": [
+              { "declaration": "StructureOwnershipMutationRequest", "member": "structure_id" }
+            ]
+          }
+        ],
+        "status": "interface-reviewed",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/structure.cairo",
+            "model": "Structure",
+            "members": ["entity_id"]
+          }
+        ],
+        "unresolvedReason": null
+      }
     },
     {
       "familyId": 3,
       "capabilityFamily": "lazy_production",
-      "sourceIdentity": ["producer_id", "resource_id"]
+      "sourceIdentity": {
+        "fields": [
+          {
+            "name": "producer_id",
+            "type": "felt252",
+            "interfaceMembers": [{ "declaration": "LazyProductionMutationRequest", "member": "producer_id" }]
+          },
+          {
+            "name": "resource_id",
+            "type": "u32",
+            "interfaceMembers": [{ "declaration": "LazyProductionMutationRequest", "member": "resource_id" }]
+          }
+        ],
+        "status": "interface-reviewed",
+        "sourceModels": [],
+        "unresolvedReason": null
+      }
     },
     {
       "familyId": 4,
       "capabilityFamily": "arrival",
-      "sourceIdentity": ["structure_id", "arrival_id"]
+      "sourceIdentity": {
+        "fields": [
+          { "name": "structure_id", "type": null, "interfaceMembers": [] },
+          { "name": "arrival_id", "type": null, "interfaceMembers": [] }
+        ],
+        "status": "unresolved",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/resource/arrivals.cairo",
+            "model": "ResourceArrival",
+            "members": ["structure_id", "day", "slot_1", "slot_48"]
+          }
+        ],
+        "unresolvedReason": "The current ResourceArrival key is (structure_id, day) with nested slots, while the frozen mutation ABI exposes arrival_id; no canonical slot-to-arrival identity projection exists."
+      }
     },
     {
       "familyId": 5,
       "capabilityFamily": "military_and_cargo",
-      "sourceIdentity": ["troop_id", "position_kind"]
+      "sourceIdentity": {
+        "fields": [
+          { "name": "troop_id", "type": null, "interfaceMembers": [] },
+          { "name": "position_kind", "type": null, "interfaceMembers": [] }
+        ],
+        "status": "unresolved",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/troop.cairo",
+            "model": "ExplorerTroops",
+            "members": ["explorer_id"]
+          }
+        ],
+        "unresolvedReason": "Military and cargo values span explorer, army, guard, ownership, and nested cargo records; the current candidate tuple has no reviewed discriminator or exact model-key projection."
+      }
     },
     {
       "familyId": 6,
       "capabilityFamily": "trade_and_donkey",
-      "sourceIdentity": ["trade_id", "escrow_kind"]
+      "sourceIdentity": {
+        "fields": [
+          { "name": "trade_id", "type": null, "interfaceMembers": [] },
+          { "name": "escrow_kind", "type": null, "interfaceMembers": [] }
+        ],
+        "status": "unresolved",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/trade.cairo",
+            "model": "Trade",
+            "members": ["trade_id"]
+          }
+        ],
+        "unresolvedReason": "The Trade key is trade_id and the frozen mutation ABI uses order_id, but DONKEY and resource escrow subpositions have no frozen discriminator or exact source projection."
+      }
     },
     {
       "familyId": 7,
       "capabilityFamily": "amm_and_lp",
-      "sourceIdentity": ["pool_id", "position_owner", "position_kind"]
+      "sourceIdentity": {
+        "fields": [
+          { "name": "pool_id", "type": null, "interfaceMembers": [] },
+          { "name": "position_owner", "type": null, "interfaceMembers": [] },
+          { "name": "position_kind", "type": null, "interfaceMembers": [] }
+        ],
+        "status": "unresolved",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/bank/liquidity.cairo",
+            "model": "Liquidity",
+            "members": ["player", "resource_type"]
+          },
+          {
+            "path": "contracts/game/src/models/bank/market.cairo",
+            "model": "Market",
+            "members": ["resource_type"]
+          }
+        ],
+        "unresolvedReason": "Bank, market, AMM, and LP values use different keyed models; no reviewed pool/owner/kind discriminator projects every value-bearing position exactly once."
+      }
     },
     {
       "familyId": 8,
       "capabilityFamily": "reward_state",
-      "sourceIdentity": ["player_id", "reward_kind"]
+      "sourceIdentity": {
+        "fields": [
+          { "name": "player_id", "type": null, "interfaceMembers": [] },
+          { "name": "reward_kind", "type": null, "interfaceMembers": [] }
+        ],
+        "status": "unresolved",
+        "sourceModels": [
+          {
+            "path": "contracts/game/src/models/faith.cairo",
+            "model": "WonderFaithPrize",
+            "members": ["wonder_id"]
+          },
+          {
+            "path": "contracts/game/src/models/faith.cairo",
+            "model": "PlayerFaithPrizeClaimed",
+            "members": ["player", "wonder_id"]
+          }
+        ],
+        "unresolvedReason": "Reward, Faith, prize, fee, and participant state uses heterogeneous keys; player_id/reward_kind does not identify every affected value-bearing record."
+      }
     },
     {
       "familyId": 9,
       "capabilityFamily": "pending_withdrawal",
-      "sourceIdentity": ["player_id", "liability_id"]
+      "sourceIdentity": {
+        "fields": [
+          {
+            "name": "liability_id",
+            "type": "LiabilityId",
+            "interfaceMembers": [
+              { "declaration": "PendingWithdrawalMutationRequest", "member": "liability_id" }
+            ]
+          }
+        ],
+        "status": "interface-reviewed",
+        "sourceModels": [],
+        "unresolvedReason": null
+      }
     },
     {
       "familyId": 10,
       "capabilityFamily": "active_exit_backing",
-      "sourceIdentity": ["backing_lot_id", "allocation_id"]
+      "sourceIdentity": {
+        "fields": [
+          {
+            "name": "parent_key_hash",
+            "type": "felt252",
+            "interfaceMembers": [
+              { "declaration": "ActiveExitBackingMutationRequest", "member": "parent_key_hash" }
+            ]
+          },
+          {
+            "name": "lot_index",
+            "type": "u8",
+            "interfaceMembers": [
+              { "declaration": "ActiveExitBackingMutationRequest", "member": "lot_index" }
+            ]
+          }
+        ],
+        "status": "interface-reviewed",
+        "sourceModels": [
+          {
+            "path": "contracts/settlement_protocol/src/types.cairo",
+            "model": "GameBackingLot",
+            "members": ["parent_key_hash", "lot_index"]
+          }
+        ],
+        "unresolvedReason": null
+      }
     },
     {
       "familyId": 11,
       "capabilityFamily": "player_economic_lock",
-      "sourceIdentity": ["player_id"]
+      "sourceIdentity": {
+        "fields": [
+          {
+            "name": "player_l2",
+            "type": "ContractAddress",
+            "interfaceMembers": [
+              { "declaration": "PlayerEconomicLockMutationRequest", "member": "player_l2" }
+            ]
+          }
+        ],
+        "status": "interface-reviewed",
+        "sourceModels": [],
+        "unresolvedReason": null
+      }
     },
     {
       "familyId": 12,
       "capabilityFamily": "exit_position",
-      "sourceIdentity": ["position_id"]
+      "sourceIdentity": {
+        "fields": [
+          {
+            "name": "position_id",
+            "type": "felt252",
+            "interfaceMembers": [{ "declaration": "ExitPositionMutationRequest", "member": "position_id" }]
+          }
+        ],
+        "status": "interface-reviewed",
+        "sourceModels": [],
+        "unresolvedReason": null
+      }
     }
   ],
   "reviewPolicy": {
-    "sourceIdentityStatus": "reference-index-semantics-complete-typed-identity-and-production-index-absent",
     "sourceWriteMappingStatus": "failed-heuristic-projection",
     "exclusionStatus": "reviewed",
     "maximumPositionsPerGame": null,
@@ -86,7 +289,7 @@
       "sourceWriteId": "production:ExitPosition",
       "observedClassification": "absent",
       "requiredDisposition": "D5-D9-production-interface",
-      "detail": "The reference layout freezes u64 allocation, generation, tombstone, and chunk semantics, but typed source identities, reviewed per-family maxima, and production ExitPosition/PositionRef/PlayerPositionIndex writers remain absent."
+      "detail": "The reference layout freezes u64 allocation, generation, tombstone, and chunk semantics. Seven interface-backed candidate encodings are typed but are not exact source projections, and five heterogeneous families remain unresolved; reviewed per-family maxima and production ExitPosition/PositionRef/PlayerPositionIndex writers remain absent."
     }
   ],
   "implementationIssues": [
@@ -126,6 +329,11 @@
       "kind": "canonical-source-index-absent",
       "scope": "all-families",
       "detail": "Candidate source identity tuples are not backed by implemented monotonic family indexes, generations, and tombstones."
+    },
+    {
+      "kind": "typed-source-identity-unresolved",
+      "scope": "unresolved-source-identities",
+      "detail": "Arrivals, military/cargo, trade/DONKEY, AMM/LP, and reward state do not yet have exact typed identities that cover their heterogeneous source model keys."
     },
     {
       "kind": "maximum-cardinality-unenforced",

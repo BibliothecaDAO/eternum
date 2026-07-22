@@ -5,7 +5,7 @@ import {
   countExitFamilyMigrationChunks,
   parseExitFamilyId,
   resolveExitFamilyMigrationChunk,
-  validateExitFamilySourceIdentityShape,
+  validateExitFamilySourceIdentityCandidate,
 } from "./exit-family-layout";
 
 const MAX_U64 = (1n << 64n) - 1n;
@@ -24,22 +24,60 @@ describe("A22 exit-family reference layout", () => {
     expect(() => parseExitFamilyId(99)).toThrow(/unknown exit family/);
   });
 
-  test("validates only the frozen source-identity shape and makes tombstones terminal", () => {
+  test("validates frozen source-identity field types and makes tombstones terminal", () => {
     const resourceFamily = parseExitFamilyId(1);
 
     expect(() =>
-      validateExitFamilySourceIdentityShape(resourceFamily, { entity_id: "0x1", resource_id: "37" }),
+      validateExitFamilySourceIdentityCandidate(resourceFamily, { entity_id: "0x1", resource_id: "37" }),
     ).not.toThrow();
-    expect(() => validateExitFamilySourceIdentityShape(resourceFamily, { entity_id: "0x1" })).toThrow(
-      /reference shape/,
+    expect(() => validateExitFamilySourceIdentityCandidate(resourceFamily, { entity_id: "0x1" })).toThrow(
+      /fields do not match/,
     );
     expect(() =>
-      validateExitFamilySourceIdentityShape(resourceFamily, {
+      validateExitFamilySourceIdentityCandidate(resourceFamily, {
         entity_id: "0x1",
         resource_id: "37",
         owner: "0x2",
       }),
-    ).toThrow(/reference shape/);
+    ).toThrow(/fields do not match/);
+    expect(() =>
+      validateExitFamilySourceIdentityCandidate(resourceFamily, { entity_id: "0x1", resource_id: 1n << 32n }),
+    ).toThrow(/u32 out of range/);
+
+    const backingFamily = parseExitFamilyId(10);
+    expect(() =>
+      validateExitFamilySourceIdentityCandidate(backingFamily, { parent_key_hash: "0x99", lot_index: 255 }),
+    ).not.toThrow();
+    expect(() =>
+      validateExitFamilySourceIdentityCandidate(backingFamily, { parent_key_hash: "0x99", lot_index: 256 }),
+    ).toThrow(/u8 out of range/);
+
+    const pendingWithdrawalFamily = parseExitFamilyId(9);
+    expect(() =>
+      validateExitFamilySourceIdentityCandidate(pendingWithdrawalFamily, { liability_id: "0x42" }),
+    ).not.toThrow();
+    expect(() =>
+      validateExitFamilySourceIdentityCandidate(pendingWithdrawalFamily, {
+        liability_id: "0x42",
+        claimant_l2: "0x7",
+      }),
+    ).toThrow(/fields do not match/);
+
+    const playerLockFamily = parseExitFamilyId(11);
+    const contractAddressBound = (1n << 251n) - 256n;
+    expect(() =>
+      validateExitFamilySourceIdentityCandidate(playerLockFamily, { player_l2: contractAddressBound - 1n }),
+    ).not.toThrow();
+    expect(() =>
+      validateExitFamilySourceIdentityCandidate(playerLockFamily, { player_l2: contractAddressBound }),
+    ).toThrow(/ContractAddress out of range/);
+
+    expect(() =>
+      validateExitFamilySourceIdentityCandidate(parseExitFamilyId(4), {
+        structure_id: "0x1",
+        arrival_id: "0x2",
+      }),
+    ).toThrow(/typed source identity is unresolved/);
 
     const active = { familyId: resourceFamily, index: 7n, generation: 0n, tombstoned: false };
     const nextGeneration = advanceExitFamilyPosition(active, "advance-generation");

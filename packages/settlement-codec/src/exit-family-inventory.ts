@@ -9,16 +9,20 @@ import {
   computeExitFamilySourceProjectionHash,
   computeExitSourceProjectionHash,
 } from "./exit-family-commitments";
+import {
+  resolveExitFamilyReleaseBlockerFamilyIds,
+  type ExitFamilyReleaseBlockerScope,
+  type ExitFamilySourceIdentityPolicy,
+  validateExitFamilySourceIdentityPolicy,
+} from "./exit-family-source-identity";
 
-export type ExitFamilyReviewStatus =
-  | "reference-index-semantics-complete-typed-identity-and-production-index-absent"
-  | "reviewed";
+export type ExitFamilyReviewStatus = ExitFamilySourceIdentityPolicy["status"];
 export type ExitFamilyMappingStatus = "failed-heuristic-projection" | "missing-production-interface" | "reviewed";
 
 export interface ExitFamilyInventoryFamily {
   familyId: number;
   capabilityFamily: string;
-  sourceIdentity: { fields: string[]; status: ExitFamilyReviewStatus };
+  sourceIdentity: ExitFamilySourceIdentityPolicy;
   indexSchema: {
     key: string[];
     highWatermark: "exclusive";
@@ -133,7 +137,7 @@ function validateFamilyProjection(inventory: ExitFamilyInventory): void {
   const actualFamilies = inventory.families.map(({ familyId, capabilityFamily }) => ({ familyId, capabilityFamily }));
   assertEqualJson(actualFamilies, expectedFamilies, "exit-family capability projection mismatch");
   assertEqualJson(
-    inventory.families.map((family) => family.sourceIdentity.fields),
+    inventory.families.map((family) => family.sourceIdentity),
     POLICY.families.map((family) => family.sourceIdentity),
     "exit-family source identity projection mismatch",
   );
@@ -141,9 +145,7 @@ function validateFamilyProjection(inventory: ExitFamilyInventory): void {
   for (const family of inventory.families) {
     assertEqualJson(family.indexSchema, POLICY.indexSchema, `exit-family ${family.familyId} index schema mismatch`);
     assertEqualJson(family.chunking, POLICY.chunking, `exit-family ${family.familyId} chunking mismatch`);
-    if (family.sourceIdentity.status !== POLICY.reviewPolicy.sourceIdentityStatus) {
-      throw new Error(`exit-family ${family.familyId} source identity review mismatch`);
-    }
+    validateSourceIdentityReview(family);
     assertEqualJson(
       family.cardinality,
       {
@@ -173,15 +175,18 @@ function validateFamilyProjection(inventory: ExitFamilyInventory): void {
       throw new Error(`exit-family ${family.familyId} write mapping review mismatch`);
     }
   }
-  const allFamilyIds = inventory.families.map((family) => family.familyId);
   const expectedReleaseBlockers = POLICY.releaseBlockers.map(({ kind, scope, detail }) => ({
     kind,
-    familyIds: scope === "all-families" ? allFamilyIds : [],
+    familyIds: resolveExitFamilyReleaseBlockerFamilyIds(scope as ExitFamilyReleaseBlockerScope, inventory.families),
     detail,
   }));
   assertEqualJson(inventory.unresolved, expectedReleaseBlockers, "exit-family release blockers mismatch");
   assertEqualJson(inventory.reviewFindings, POLICY.reviewFindings, "exit-family review findings mismatch");
   validateImplementationIssues(inventory);
+}
+
+function validateSourceIdentityReview(family: ExitFamilyInventoryFamily): void {
+  validateExitFamilySourceIdentityPolicy(family.familyId, family.sourceIdentity);
 }
 
 function validateImplementationIssues(inventory: ExitFamilyInventory): void {
@@ -293,8 +298,7 @@ function collectReleaseBlockers(inventory: ExitFamilyInventory): string[] {
   if (!inventory.releaseReady) blockers.push("releaseReady is false");
   if (inventory.exclusionReviewStatus !== "reviewed") blockers.push("exclusions are not reviewed");
   for (const family of inventory.families) {
-    if (family.sourceIdentity.status !== "reviewed")
-      blockers.push(`family ${family.familyId} source identity is unreviewed`);
+    blockers.push(`family ${family.familyId} exact source identity projection is unavailable in v0`);
     if (family.sourceWriteMappingStatus !== "reviewed")
       blockers.push(`family ${family.familyId} write mapping is unreviewed`);
     if (family.cardinality.status !== "reviewed") {

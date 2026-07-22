@@ -223,6 +223,10 @@ function assertFrozenAndCandidateInputs() {
     inputs.exitFamilyInventory.referenceLayoutSha256,
   );
   assertFileHash(
+    "packages/settlement-codec/src/exit-family-source-identity.ts",
+    inputs.exitFamilyInventory.sourceIdentityValidatorSha256,
+  );
+  assertFileHash(
     "packages/settlement-codec/schema/economic-write-classification-policy-v0.json",
     inputs.economicWriteClassificationPolicySha256,
   );
@@ -497,8 +501,34 @@ function assertA22StopOutcome() {
     "A22 failed feasibility findings",
   );
   assert(
-    exitFamilies.families.every(hasReferenceIndexSemanticsAndUnresolvedBound),
-    "A22 must distinguish reference index semantics from unresolved typed identities and cardinality bounds",
+    exitFamilies.families.every(hasReferenceIndexSemantics),
+    "A22 must preserve the frozen non-production reference index semantics",
+  );
+  assert(
+    exitFamilies.families.every(hasUnresolvedCardinalityBound),
+    "A22 must keep every cardinality bound unresolved",
+  );
+  assertDeepEqual(
+    exitFamilies.families
+      .filter(({ sourceIdentity }) => sourceIdentity.status === "unresolved")
+      .map(({ familyId }) => familyId),
+    [4, 5, 6, 7, 8],
+    "A22 unresolved typed source identities",
+  );
+  assertDeepEqual(
+    exitFamilies.families
+      .filter(({ sourceIdentity }) => sourceIdentity.status === "interface-reviewed")
+      .map(({ familyId }) => familyId),
+    [1, 2, 3, 9, 10, 11, 12],
+    "A22 interface-reviewed source identity candidates",
+  );
+  assert(
+    exitFamilies.families
+      .filter(({ sourceIdentity }) => sourceIdentity.status === "interface-reviewed")
+      .every(({ sourceIdentity }) =>
+        sourceIdentity.fields.every(({ type }) => typeof type === "string" && type.length > 0),
+      ),
+    "A22 interface-reviewed source identity candidates must freeze every field type",
   );
 
   const issueProjection = exitFamilies.implementationIssues.map(
@@ -529,11 +559,21 @@ function assertA22StopOutcome() {
   assert(namesRequiredA22RedesignWork(outcome.action), "A22 redesign outcome must name every remaining gate");
 }
 
-function hasReferenceIndexSemanticsAndUnresolvedBound(family) {
+function hasReferenceIndexSemantics(family) {
   return (
-    family.sourceIdentity.status === "reference-index-semantics-complete-typed-identity-and-production-index-absent" &&
-    family.cardinality.status === "failed-no-reviewed-bound" &&
-    family.cardinality.maximumPositionsPerGame === null
+    JSON.stringify(family.indexSchema) ===
+      JSON.stringify({
+        key: ["game_id:GameId", "family:u16", "index:u64"],
+        highWatermark: "exclusive",
+        stableIds: "monotonic-never-reused",
+        deletion: "explicit-tombstone",
+      }) && family.chunking.chunkSize === 64
+  );
+}
+
+function hasUnresolvedCardinalityBound(family) {
+  return (
+    family.cardinality.status === "failed-no-reviewed-bound" && family.cardinality.maximumPositionsPerGame === null
   );
 }
 

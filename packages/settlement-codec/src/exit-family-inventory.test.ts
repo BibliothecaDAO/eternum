@@ -10,6 +10,11 @@ import {
   computeExitFamilySchemaHash,
   computeExitFamilySourceProjectionHash,
 } from "./exit-family-commitments";
+import {
+  validateExitFamilySourceIdentityCandidateValue,
+  validateExitFamilySourceIdentityPolicy,
+  validateExitFamilySourceModelEvidence,
+} from "./exit-family-source-identity";
 
 const economicWriteInventoryUrl = new URL("../schema/economic-write-inventory-v0.json", import.meta.url);
 
@@ -75,8 +80,8 @@ describe("A22 exit-family inventory", () => {
       expect(family.chunking.splitRule).toContain("ascending stable index");
       expect(family.schemaHash).toMatch(/^0x[0-9a-f]+$/);
     }
-    expect(inventory.familyRegistryHash).toBe("0xb4a640a21643ae02efd007c6f1cfbb7abed63a18e8447f1996f2c910af997b");
-    expect(inventory.inventoryHash).toBe("0x30d232b7467990394d14e8b9858d987e65978d18388024f330b4c661448e87b");
+    expect(inventory.familyRegistryHash).toBe("0x462a2e6b6d1f6f3d815c25d5b223ee06914dace9f96db73fb530223bd3bc1eb");
+    expect(inventory.inventoryHash).toBe("0x5dead66af3436a13ecdaed71c52551d66a5595799f6bfdce2fc174c44248036");
   });
 
   test("binds reviewed cardinality and each writer's family assignment into commitments", () => {
@@ -100,6 +105,14 @@ describe("A22 exit-family inventory", () => {
     expect(computeExitFamilySchemaHash({ ...schemaInput, maximumPositionsPerGame: 1024 })).not.toBe(
       computeExitFamilySchemaHash(schemaInput),
     );
+    expect(
+      computeExitFamilySchemaHash({
+        ...schemaInput,
+        sourceIdentityFields: schemaInput.sourceIdentityFields.map((field) =>
+          field.name === "resource_id" ? { ...field, type: "u64" } : field,
+        ),
+      }),
+    ).not.toBe(computeExitFamilySchemaHash(schemaInput));
     expect(computeExitFamilySourceProjectionHash(1, ["writer-a"])).not.toBe(
       computeExitFamilySourceProjectionHash(2, ["writer-a"]),
     );
@@ -142,12 +155,42 @@ describe("A22 exit-family inventory", () => {
     expect(inventory.families.every((family) => family.cardinality.maximumPositionsPerGame === null)).toBe(true);
     expect(inventory.families.every((family) => family.cardinality.status === "failed-no-reviewed-bound")).toBe(true);
     expect(
-      inventory.families.every(
-        (family) =>
-          family.sourceIdentity.status ===
-          "reference-index-semantics-complete-typed-identity-and-production-index-absent",
-      ),
+      inventory.families
+        .filter((family) => family.sourceIdentity.status === "interface-reviewed")
+        .map(({ familyId }) => familyId),
+    ).toEqual([1, 2, 3, 9, 10, 11, 12]);
+    expect(
+      inventory.families
+        .filter((family) => family.sourceIdentity.status === "unresolved")
+        .map(({ familyId }) => familyId),
+    ).toEqual([4, 5, 6, 7, 8]);
+    expect(
+      inventory.families
+        .filter((family) => family.sourceIdentity.status === "interface-reviewed")
+        .every((family) => family.sourceIdentity.fields.every(({ type }) => type !== null)),
     ).toBe(true);
+    expect(
+      inventory.families
+        .filter((family) => family.sourceIdentity.status === "unresolved")
+        .every((family) => family.sourceIdentity.unresolvedReason),
+    ).toBe(true);
+    const invalidEvidence = structuredClone(inventory.families[0].sourceIdentity);
+    invalidEvidence.fields[0].interfaceMembers[0].member = "not_a_frozen_member";
+    expect(() => validateExitFamilySourceIdentityPolicy(1, invalidEvidence)).toThrow(/not in the frozen ABI/);
+    expect(() =>
+      validateExitFamilySourceIdentityCandidateValue(
+        1,
+        { ...inventory.families[0].sourceIdentity, status: "unknown" as never },
+        { entity_id: 1, resource_id: 1 },
+      ),
+    ).toThrow(/unknown source identity status/);
+    expect(() =>
+      validateExitFamilySourceModelEvidence(
+        1,
+        [{ path: "resource.cairo", model: "Resource", members: ["missing_member"] }],
+        () => "pub struct Resource {\n    entity_id: u32,\n}",
+      ),
+    ).toThrow(/source model evidence is stale/);
     expect(inventory.exclusionReviewStatus).toBe("reviewed");
     expect(inventory.reviewFindings).toEqual([
       expect.objectContaining({

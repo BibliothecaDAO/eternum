@@ -1,8 +1,13 @@
 import exitFamilyPolicyJson from "../schema/exit-family-policy-v0.json";
+import type { SchemaValue } from "./codec";
+import {
+  type ExitFamilySourceIdentityPolicy,
+  validateExitFamilySourceIdentityCandidateValue,
+} from "./exit-family-source-identity";
 
 interface ExitFamilyLayoutPolicy {
   chunking: { chunkSize: number };
-  families: Array<{ familyId: number; sourceIdentity: string[] }>;
+  families: Array<{ familyId: number; sourceIdentity: ExitFamilySourceIdentityPolicy }>;
 }
 
 declare const EXIT_FAMILY_ID: unique symbol;
@@ -51,18 +56,12 @@ export function allocateExitFamilyIndex(
   return { index: currentHighWatermark, nextHighWatermark: currentHighWatermark + 1n };
 }
 
-export function validateExitFamilySourceIdentityShape(
+export function validateExitFamilySourceIdentityCandidate(
   familyId: ExitFamilyId,
-  sourceIdentity: Readonly<Record<string, unknown>>,
+  sourceIdentity: Readonly<Record<string, SchemaValue>>,
 ): void {
-  const expectedFields = getFamilyPolicy(familyId).sourceIdentity.toSorted();
-  const actualFields = Object.keys(sourceIdentity).toSorted();
-  if (JSON.stringify(actualFields) !== JSON.stringify(expectedFields)) {
-    throw new Error(`family ${familyId} source identity fields do not match its reference shape`);
-  }
-  if (actualFields.some((field) => sourceIdentity[field] === null || sourceIdentity[field] === undefined)) {
-    throw new Error(`family ${familyId} source identity fields must be present`);
-  }
+  const identityPolicy = getFamilyPolicy(familyId).sourceIdentity;
+  validateExitFamilySourceIdentityCandidateValue(familyId, identityPolicy, sourceIdentity);
 }
 
 export function advanceExitFamilyPosition(
