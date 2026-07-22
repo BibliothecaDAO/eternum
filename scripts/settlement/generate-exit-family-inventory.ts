@@ -14,7 +14,11 @@ import {
   validateExitFamilySourceIdentityPolicy,
   validateExitFamilySourceModelEvidence,
 } from "../../packages/settlement-codec/src/exit-family-source-identity";
-import type { ExitFamilyCardinalityReview } from "../../packages/settlement-codec/src/exit-family-inventory";
+import {
+  type ExitFamilyCardinalityReview,
+  type ExitFamilySourceAudit,
+  validateExitFamilyCardinalityReview,
+} from "../../packages/settlement-codec/src/exit-family-inventory";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const policyPath = resolve(repositoryRoot, "packages/settlement-codec/schema/exit-family-policy-v0.json");
@@ -32,6 +36,7 @@ const shouldCheck = process.argv.includes("--check");
 const policy = readJson(policyPath) as ExitFamilyPolicy;
 const capabilityRegistry = readJson(capabilityRegistryPath) as EconomicCapabilityRegistry;
 const economicWriteInventory = readJson(economicWriteInventoryPath) as EconomicWriteInventory;
+const validWriteDispositions = new Set([...capabilityRegistry.families.map((family) => family.id), "out_of_scope"]);
 const inventory = buildExitFamilyInventory();
 const rendered = `${JSON.stringify(inventory, null, 2)}\n`;
 
@@ -44,6 +49,7 @@ if (shouldCheck) {
 function buildExitFamilyInventory() {
   assertPolicyMatchesFrozenCapabilities();
   assertCardinalityReviewsAreComplete();
+  assertSourceAuditsAreComplete();
   const reviewFindings = validateReviewFindings();
   const families = policy.families.map(buildFamilyInventory);
   const coveredSourceWriteIds = families.flatMap((family) => family.sourceWriteIds);
@@ -102,6 +108,7 @@ function buildFamilyInventory(familyPolicy: ExitFamilyPolicy["families"][number]
   );
   const sourceFiles = [...new Set(sourceWrites.map((entry) => entry.path))].sort();
   const cardinalityReview = resolveCardinalityReview(familyPolicy.familyId);
+  const sourceAudit = resolveSourceAudit(familyPolicy.familyId);
   const commitmentInput = {
     familyId: familyPolicy.familyId,
     capabilityFamily: familyPolicy.capabilityFamily,
@@ -123,6 +130,7 @@ function buildFamilyInventory(familyPolicy: ExitFamilyPolicy["families"][number]
     sourceIdentity: {
       ...familyPolicy.sourceIdentity,
     },
+    sourceAudit,
     indexSchema: policy.indexSchema,
     chunking: policy.chunking,
     cardinality: {
@@ -150,6 +158,12 @@ function resolveCardinalityReview(familyId: number) {
   const review = policy.cardinalityReviews.find((candidate) => candidate.familyId === familyId);
   if (!review) throw new Error(`missing A22 cardinality review for family ${familyId}`);
   return review;
+}
+
+function resolveSourceAudit(familyId: number) {
+  const audit = policy.sourceAudits.find((candidate) => candidate.familyId === familyId);
+  if (!audit) throw new Error(`missing A22 source audit for family ${familyId}`);
+  return audit;
 }
 
 function projectCardinalityReview({ familyId: _, ...review }: ExitFamilyPolicy["cardinalityReviews"][number]) {
@@ -231,12 +245,60 @@ function assertCardinalityReviewsAreComplete() {
     throw new Error("A22 cardinality reviews must cover every family in frozen order");
   }
   for (const review of policy.cardinalityReviews) {
-    if (!review.formula || review.requiredInputs.length === 0 || !review.capExhaustion) {
-      throw new Error(`A22 cardinality review is incomplete for family ${review.familyId}`);
+    validateExitFamilyCardinalityReview(review.familyId, review);
+  }
+}
+
+function assertSourceAuditsAreComplete() {
+  const expectedIds = policy.families.map((family) => family.familyId);
+  if (JSON.stringify(policy.sourceAudits.map((audit) => audit.familyId)) !== JSON.stringify(expectedIds)) {
+    throw new Error("A22 source audits must cover every family in frozen order");
+  }
+
+  const writesById = new Map(economicWriteInventory.entries.map((entry) => [entry.id, entry]));
+  const reassignedWriteIds = new Set<string>();
+  for (const audit of policy.sourceAudits) {
+    assertSourceAuditNarrativeIsComplete(audit);
+    const capabilityFamily = policy.families.find((family) => family.familyId === audit.familyId)?.capabilityFamily;
+    if (!capabilityFamily) throw new Error(`A22 source audit names unknown family ${audit.familyId}`);
+    for (const reassignment of audit.knownReassignments) {
+      if (
+        reassignment.observedClassification !== capabilityFamily ||
+        reassignment.sourceWriteIds.length === 0 ||
+        !validWriteDispositions.has(reassignment.requiredDisposition)
+      ) {
+        throw new Error(`A22 source reassignment contract is invalid for family ${audit.familyId}`);
+      }
+      for (const sourceWriteId of reassignment.sourceWriteIds) {
+        if (reassignedWriteIds.has(sourceWriteId)) {
+          throw new Error(`A22 source reassignment is duplicated: ${sourceWriteId}`);
+        }
+        reassignedWriteIds.add(sourceWriteId);
+        const write = writesById.get(sourceWriteId);
+        if (!write || write.classification !== reassignment.observedClassification) {
+          throw new Error(`A22 source reassignment is stale: ${sourceWriteId}`);
+        }
+        if (reassignment.requiredDisposition === reassignment.observedClassification) {
+          throw new Error(`A22 source reassignment preserves the incorrect family: ${sourceWriteId}`);
+        }
+      }
     }
-    if ((review.candidateMaximumPositionsPerGame === null) !== (review.candidateEvidence === null)) {
-      throw new Error(`A22 candidate cardinality evidence mismatch for family ${review.familyId}`);
-    }
+  }
+}
+
+function assertSourceAuditNarrativeIsComplete(audit: ExitFamilySourceAudit) {
+  const requiredText = [audit.status, audit.ownerDerivation, audit.highWaterAllocation];
+  const productionAbsent = audit.status === "interface-candidate-production-model-absent";
+  if (
+    requiredText.some((value) => value.trim().length === 0) ||
+    (!productionAbsent && audit.sourceModelKeys.length === 0) ||
+    audit.sourceModelKeys.some((value) => value.trim().length === 0) ||
+    audit.lifecycle.length === 0 ||
+    audit.lifecycle.some((value) => value.trim().length === 0) ||
+    audit.projectionFindings.length === 0 ||
+    audit.projectionFindings.some((value) => value.trim().length === 0)
+  ) {
+    throw new Error(`A22 source audit narrative is incomplete for family ${audit.familyId}`);
   }
 }
 
@@ -274,6 +336,7 @@ interface ExitFamilyPolicy {
     sourceIdentity: ExitFamilySourceIdentityPolicy;
   }>;
   cardinalityReviews: Array<{ familyId: number } & ExitFamilyCardinalityReview>;
+  sourceAudits: ExitFamilySourceAudit[];
   reviewPolicy: {
     sourceWriteMappingStatus: "failed-heuristic-projection";
     exclusionStatus: "failed-known-false-negative" | "reviewed";

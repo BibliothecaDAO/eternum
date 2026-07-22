@@ -27,10 +27,30 @@ export interface ExitFamilyCardinalityReview {
   capExhaustion: string;
 }
 
+export interface ExitFamilySourceAudit {
+  familyId: number;
+  status:
+    | "candidate-identity-source-projection-unresolved"
+    | "heterogeneous-source-identity-unresolved"
+    | "interface-candidate-production-model-absent"
+    | "normative-layout-candidate-production-storage-absent";
+  sourceModelKeys: string[];
+  lifecycle: string[];
+  ownerDerivation: string;
+  highWaterAllocation: string;
+  projectionFindings: string[];
+  knownReassignments: Array<{
+    observedClassification: string;
+    requiredDisposition: string;
+    sourceWriteIds: string[];
+  }>;
+}
+
 export interface ExitFamilyInventoryFamily {
   familyId: number;
   capabilityFamily: string;
   sourceIdentity: ExitFamilySourceIdentityPolicy;
+  sourceAudit: ExitFamilySourceAudit;
   indexSchema: {
     key: string[];
     highWatermark: "exclusive";
@@ -121,6 +141,28 @@ export function validateExitFamilyInventoryForRelease(inventory: ExitFamilyInven
   }
 }
 
+export function validateExitFamilyCardinalityReview(familyId: number, review: ExitFamilyCardinalityReview): void {
+  requireNonBlank(review.formula, `exit family ${familyId} cardinality formula`);
+  if (review.requiredInputs.length === 0) {
+    throw new Error(`exit family ${familyId} has no cardinality required input`);
+  }
+  for (const input of review.requiredInputs) {
+    requireNonBlank(input, `exit family ${familyId} cardinality required input`);
+  }
+  requireNonBlank(review.capExhaustion, `exit family ${familyId} cap exhaustion rule`);
+
+  const hasCandidate = review.candidateMaximumPositionsPerGame !== null;
+  const hasCandidateEvidence = review.candidateEvidence !== null;
+  if (hasCandidate !== hasCandidateEvidence) {
+    throw new Error(`exit family ${familyId} candidate maximum and evidence must be provided together`);
+  }
+  if (!hasCandidate) return;
+  if (!Number.isSafeInteger(review.candidateMaximumPositionsPerGame) || review.candidateMaximumPositionsPerGame! <= 0) {
+    throw new Error(`exit family ${familyId} candidate maximum must be a positive safe integer`);
+  }
+  requireNonBlank(review.candidateEvidence!, `exit family ${familyId} candidate evidence`);
+}
+
 function validateGeneratedVersions(inventory: ExitFamilyInventory): void {
   if (inventory.version !== POLICY.version || inventory.generatedFrom.policyVersion !== POLICY.version) {
     throw new Error("exit-family inventory policy version mismatch");
@@ -153,8 +195,12 @@ function validateFamilyProjection(inventory: ExitFamilyInventory): void {
   for (const family of inventory.families) {
     const cardinalityReview = POLICY.cardinalityReviews.find((candidate) => candidate.familyId === family.familyId);
     if (!cardinalityReview) throw new Error(`missing cardinality review for exit family ${family.familyId}`);
+    validateExitFamilyCardinalityReview(family.familyId, cardinalityReview);
     assertEqualJson(family.indexSchema, POLICY.indexSchema, `exit-family ${family.familyId} index schema mismatch`);
     assertEqualJson(family.chunking, POLICY.chunking, `exit-family ${family.familyId} chunking mismatch`);
+    const sourceAudit = POLICY.sourceAudits.find((candidate) => candidate.familyId === family.familyId);
+    if (!sourceAudit) throw new Error(`missing source audit for exit family ${family.familyId}`);
+    assertEqualJson(family.sourceAudit, sourceAudit, `exit-family ${family.familyId} source audit mismatch`);
     validateSourceIdentityReview(family);
     assertEqualJson(
       family.cardinality,
@@ -351,4 +397,8 @@ function assertUniqueAndEqual(actual: string[], expected: string[], label: strin
 
 function assertEqualJson(actual: unknown, expected: unknown, message: string): void {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) throw new Error(message);
+}
+
+function requireNonBlank(value: string, label: string): void {
+  if (value.trim().length === 0) throw new Error(`${label} must not be blank`);
 }

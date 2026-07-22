@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, test } from "vitest";
 import {
   getExitFamilyInventory,
+  validateExitFamilyCardinalityReview,
   validateExitFamilyInventory,
   validateExitFamilyInventoryForRelease,
 } from "./exit-family-inventory";
@@ -177,6 +178,28 @@ describe("A22 exit-family inventory", () => {
       null,
     ]);
     expect(
+      inventory.families.every(
+        (family) =>
+          family.sourceAudit.sourceModelKeys.length > 0 ||
+          family.sourceWriteMappingStatus === "missing-production-interface",
+      ),
+    ).toBe(true);
+    expect(inventory.families.every((family) => family.sourceAudit.lifecycle.length > 0)).toBe(true);
+    expect(inventory.families.every((family) => family.sourceAudit.ownerDerivation.length > 0)).toBe(true);
+    expect(inventory.families.every((family) => family.sourceAudit.highWaterAllocation.length > 0)).toBe(true);
+    expect(inventory.families.every((family) => family.sourceAudit.projectionFindings.length > 0)).toBe(true);
+    expect(
+      inventory.families
+        .filter((family) => family.sourceAudit.knownReassignments.length > 0)
+        .map((family) => [
+          family.familyId,
+          family.sourceAudit.knownReassignments.flatMap(({ sourceWriteIds }) => sourceWriteIds).length,
+        ]),
+    ).toEqual([
+      [7, 14],
+      [8, 21],
+    ]);
+    expect(
       inventory.families
         .filter((family) => family.sourceIdentity.status === "interface-reviewed")
         .map(({ familyId }) => familyId),
@@ -235,6 +258,37 @@ describe("A22 exit-family inventory", () => {
     const forgedRelease = structuredClone(inventory);
     forgedRelease.releaseReady = true;
     expect(() => validateExitFamilyInventory(forgedRelease)).toThrow(/unresolved release blockers/);
+  });
+
+  test("rejects malformed cardinality evidence before it reaches a generated artifact", () => {
+    const reviewedCandidate = {
+      formula: "64 parents * 64 lots",
+      requiredInputs: ["sealed parent registry"],
+      candidateMaximumPositionsPerGame: 4096,
+      candidateEvidence: "Normative 64-by-64 ceiling pending coordinate review.",
+      capExhaustion: "Reject before mutation.",
+    };
+
+    expect(() => validateExitFamilyCardinalityReview(10, reviewedCandidate)).not.toThrow();
+    expect(() => validateExitFamilyCardinalityReview(10, { ...reviewedCandidate, formula: "  " })).toThrow(/formula/);
+    expect(() =>
+      validateExitFamilyCardinalityReview(10, { ...reviewedCandidate, requiredInputs: ["valid", " "] }),
+    ).toThrow(/required input/);
+    expect(() =>
+      validateExitFamilyCardinalityReview(10, { ...reviewedCandidate, candidateMaximumPositionsPerGame: -1 }),
+    ).toThrow(/candidate maximum/);
+    expect(() =>
+      validateExitFamilyCardinalityReview(10, { ...reviewedCandidate, candidateMaximumPositionsPerGame: 1.5 }),
+    ).toThrow(/candidate maximum/);
+    expect(() =>
+      validateExitFamilyCardinalityReview(10, {
+        ...reviewedCandidate,
+        candidateMaximumPositionsPerGame: Number.MAX_SAFE_INTEGER + 1,
+      }),
+    ).toThrow(/candidate maximum/);
+    expect(() => validateExitFamilyCardinalityReview(10, { ...reviewedCandidate, candidateEvidence: " " })).toThrow(
+      /candidate evidence/,
+    );
   });
 });
 

@@ -213,6 +213,20 @@ function assertFrozenAndCandidateInputs() {
     inputs.exitFamilyInventory.implementationIssueCount,
     "A22 implementation issues",
   );
+  assertEqual(exitFamilies.families.length, inputs.exitFamilyInventory.sourceAuditCount, "A22 source audit count");
+  assertEqual(
+    exitFamilies.families.reduce(
+      (count, family) =>
+        count +
+        family.sourceAudit.knownReassignments.reduce(
+          (familyCount, reassignment) => familyCount + reassignment.sourceWriteIds.length,
+          0,
+        ),
+      0,
+    ),
+    inputs.exitFamilyInventory.knownReassignmentCount,
+    "A22 known source reassignment count",
+  );
   assertA22StopOutcome();
   assertFileHash(
     "packages/settlement-codec/schema/exit-family-inventory-v0.json",
@@ -529,6 +543,29 @@ function assertA22StopOutcome() {
         sourceIdentity.fields.every(({ type }) => typeof type === "string" && type.length > 0),
       ),
     "A22 interface-reviewed source identity candidates must freeze every field type",
+  );
+  assert(
+    exitFamilies.families.every(
+      ({ sourceAudit }) =>
+        sourceAudit.lifecycle.length > 0 &&
+        sourceAudit.ownerDerivation.trim().length > 0 &&
+        sourceAudit.highWaterAllocation.trim().length > 0 &&
+        sourceAudit.projectionFindings.length > 0,
+    ),
+    "A22 source audits must bind lifecycle, owner, allocation, and projection findings",
+  );
+  assertDeepEqual(
+    exitFamilies.families
+      .filter(({ sourceAudit }) => sourceAudit.knownReassignments.length > 0)
+      .map(({ familyId, sourceAudit }) => [
+        familyId,
+        sourceAudit.knownReassignments.reduce((count, reassignment) => count + reassignment.sourceWriteIds.length, 0),
+      ]),
+    [
+      [7, 14],
+      [8, 21],
+    ],
+    "A22 exact known source reassignments",
   );
 
   const issueProjection = exitFamilies.implementationIssues.map(

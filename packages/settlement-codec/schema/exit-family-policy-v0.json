@@ -432,6 +432,332 @@
       "capExhaustion": "Reject create, split, or merge before source, owner index, backing, generation, tombstone, or child mutation."
     }
   ],
+  "sourceAudits": [
+    {
+      "familyId": 1,
+      "status": "candidate-identity-source-projection-unresolved",
+      "sourceModelKeys": [
+        "contracts/game/src/models/resource/resource.cairo#Resource(entity_id:ID/u32,resource_selector:u8)"
+      ],
+      "lifecycle": [
+        "Allocate on first activation of an approved entity/resource pair.",
+        "Credit, debit, transfer, harvest, conversion, generation, backing, and index changes must be atomic.",
+        "A terminal tombstone cannot be resurrected or reuse its stable index."
+      ],
+      "ownerDerivation": "Resolve entity kind through a sealed registry, then resolve the canonical owner; structure-attached resources follow Structure.owner.",
+      "highWaterAllocation": "Only first activation allocates; balance updates, ownership changes, zeroing, and tombstone resurrection do not.",
+      "projectionFindings": [
+        "Resource.entity_id does not encode entity kind, so current writers do not prove one total owner resolver.",
+        "Current u8 source resource selectors require an explicit reviewed conversion to the frozen u32 resource_id."
+      ],
+      "knownReassignments": []
+    },
+    {
+      "familyId": 2,
+      "status": "candidate-identity-source-projection-unresolved",
+      "sourceModelKeys": [
+        "contracts/game/src/models/structure.cairo#Structure(entity_id:ID/u32)",
+        "contracts/game/src/models/structure.cairo#StructureOwnerStats(owner:ContractAddress)[derived-counter]"
+      ],
+      "lifecycle": [
+        "Allocate when a Structure is created and its nonzero owner is installed atomically.",
+        "Transfer or capture moves the owner index and advances generation without changing the family index.",
+        "Only an approved terminal structure disposition may tombstone the position."
+      ],
+      "ownerDerivation": "Read Structure.owner at the same version; transfer and capture move the existing stable position.",
+      "highWaterAllocation": "Only initial economically active Structure creation allocates; owner stats, metadata, troop, and resource writes do not.",
+      "projectionFindings": [
+        "Creation installs the default Structure and owner through separate semantic calls that the line scanner cannot prove atomic.",
+        "StructureOwnerStats is a derived counter and must not become a second redeemable position."
+      ],
+      "knownReassignments": []
+    },
+    {
+      "familyId": 3,
+      "status": "candidate-identity-source-projection-unresolved",
+      "sourceModelKeys": [
+        "contracts/game/src/models/resource/resource.cairo#Resource.Production(entity_id:ID/u32,resource_type:u8)",
+        "contracts/game/src/models/resource/production/building.cairo#Building/StructureBuildings[causal-controls]"
+      ],
+      "lifecycle": [
+        "Allocate and reserve before nonzero production can accrue.",
+        "Settle to accepted economic time before rate, output, reserve, generation, and backing update atomically.",
+        "Terminal producer destruction releases only proven unused reserve and tombstones without reuse."
+      ],
+      "ownerDerivation": "For Resource-backed producers, resolve the owning Structure.owner at the same state version; non-Structure producers need a sealed kind registry.",
+      "highWaterAllocation": "First nonzero reservation for an approved producer/resource pair allocates; pause, resume, building changes, and deletion update that pair.",
+      "projectionFindings": [
+        "Building and StructureBuildings are causal controls, not independent reserved-output positions.",
+        "seed_unbounded_structure_labor_output must be replaced by a finite sealed-end ceiling."
+      ],
+      "knownReassignments": []
+    },
+    {
+      "familyId": 4,
+      "status": "heterogeneous-source-identity-unresolved",
+      "sourceModelKeys": [
+        "contracts/game/src/models/resource/arrivals.cairo#ResourceArrival(structure_id:ID/u32,day:u64,slot:1..48,resource_type:u8)"
+      ],
+      "lifecycle": [
+        "Allocate a canonical arrival resource leg before source debit or backing reservation.",
+        "Coalesced bucket updates must preserve the canonical leg identity.",
+        "Settle or cancel tombstones exactly once; the current code has no cancellation identity."
+      ],
+      "ownerDerivation": "Resolve destination Structure.owner, but owner-at-create versus owner-follows-destination remains a frozen product decision.",
+      "highWaterAllocation": "Allocate before the first debit for every canonical arrival leg; cap check, backing, debit, and bucket creation are one transaction.",
+      "projectionFindings": [
+        "The current (structure_id,day,slot,resource_type) bucket has no arrival_id, source attribution, backing identity, or cancellation identity.",
+        "Generic helper writes cannot distinguish semantic create, settle, cancellation, source, destination, or resource leg."
+      ],
+      "knownReassignments": []
+    },
+    {
+      "familyId": 5,
+      "status": "heterogeneous-source-identity-unresolved",
+      "sourceModelKeys": [
+        "contracts/game/src/models/troop.cairo#ExplorerTroops(explorer_id:ID/u32)",
+        "contracts/game/src/models/structure.cairo#Structure.troop_guards(structure_id:ID/u32,guard_slot:enum)",
+        "contracts/game/src/models/resource/resource.cairo#ResourceCargo(explorer_id:ID/u32,resource_id:u8)",
+        "contracts/game/src/models/agent.cairo#AgentOwner(explorer_id:ID/u32)"
+      ],
+      "lifecycle": [
+        "Explorer creation allocates before payment or credit; death/delete atomically disposes cargo and tombstones.",
+        "Guard zero/resurrection must choose stable-slot update or fresh incarnation before bounds are reviewed.",
+        "Cargo follows the explorer and every residual asset needs a destroyed or return disposition."
+      ],
+      "ownerDerivation": "Player explorers, guards, and cargo follow Structure.owner; agent controller is not automatically the economic claimant and sponsor return remains unresolved.",
+      "highWaterAllocation": "Allocate per explorer creation, reviewed guard incarnation, and first nonzero explorer/resource cargo pair; terminals never release capacity.",
+      "projectionFindings": [
+        "The guard value writer in models/structure.cairo is currently assigned to family 2 by the path heuristic.",
+        "Several current family-5 writes are map, immunity, weight, or provisioning state rather than independent value positions."
+      ],
+      "knownReassignments": []
+    },
+    {
+      "familyId": 6,
+      "status": "heterogeneous-source-identity-unresolved",
+      "sourceModelKeys": [
+        "contracts/game/src/models/trade.cairo#Trade(trade_id:ID/u32)",
+        "contracts/game/src/models/trade.cairo#TradeCount(structure_id:ID/u32)[derived-counter]",
+        "contracts/game/src/models/resource/resource.cairo#ImplicitTradeEscrow(maker_id:ID/u32,resource_id:u8)"
+      ],
+      "lifecycle": [
+        "Allocate before offered-resource debit, DONKEY reserve, UUID publication, or Trade creation.",
+        "Partial fill updates one generation and creates typed arrival legs atomically.",
+        "Full fill or cancel terminally tombstones the order exactly once."
+      ],
+      "ownerDerivation": "Trade stores maker structure ID; owner-at-create versus owner-follows-maker remains unresolved.",
+      "highWaterAllocation": "One allocation per successful order creation; fills and cancellation never recycle it.",
+      "projectionFindings": [
+        "TradeCount is a concurrent admission counter, not a second exit position.",
+        "The current Trade record omits immutable escrow backing shares and refundable DONKEY amount."
+      ],
+      "knownReassignments": []
+    },
+    {
+      "familyId": 7,
+      "status": "heterogeneous-source-identity-unresolved",
+      "sourceModelKeys": [
+        "contracts/game/src/models/bank/market.cairo#Market(resource_type:u8)",
+        "contracts/game/src/models/bank/liquidity.cairo#Liquidity(player:ContractAddress,resource_type:u8)"
+      ],
+      "lifecycle": [
+        "Allocate each sealed Market reserve once.",
+        "Allocate LP on first positive shares; full removal tombstones and re-entry needs a fresh epoch or prohibition.",
+        "Every irreversible debit advances generation and composite decomposition uses fresh children."
+      ],
+      "ownerDerivation": "Market reserve is protocol/season-pool owned; Liquidity.player owns wallet LP; bank internal fees are not duplicate LP positions.",
+      "highWaterAllocation": "Allocate reserve initialization and each new wallet/resource LP epoch, never a swap or update to an existing live position.",
+      "projectionFindings": [
+        "Only six pre-erase family writes directly mutate Market or Liquidity; thirteen are Resource/Weight and one is AddressName metadata.",
+        "Market has no bank_id and represents a LORDS/resource pair, while the frozen request implies general pair and bank identity."
+      ],
+      "knownReassignments": [
+        {
+          "observedClassification": "amm_and_lp",
+          "requiredDisposition": "resource",
+          "sourceWriteIds": [
+            "contracts/game/src/systems/bank/contracts/liquidity.cairo:110:store",
+            "contracts/game/src/systems/bank/contracts/liquidity.cairo:118:store",
+            "contracts/game/src/systems/bank/contracts/liquidity.cairo:121:store",
+            "contracts/game/src/systems/bank/contracts/liquidity.cairo:214:store",
+            "contracts/game/src/systems/bank/contracts/liquidity.cairo:215:store",
+            "contracts/game/src/systems/bank/contracts/swap.cairo:90:store",
+            "contracts/game/src/systems/bank/contracts/swap.cairo:98:store",
+            "contracts/game/src/systems/bank/contracts/swap.cairo:124:store",
+            "contracts/game/src/systems/bank/contracts/swap.cairo:125:store",
+            "contracts/game/src/systems/bank/contracts/swap.cairo:181:store",
+            "contracts/game/src/systems/bank/contracts/swap.cairo:190:store",
+            "contracts/game/src/systems/bank/contracts/swap.cairo:213:store",
+            "contracts/game/src/systems/bank/contracts/swap.cairo:214:store"
+          ]
+        },
+        {
+          "observedClassification": "amm_and_lp",
+          "requiredDisposition": "out_of_scope",
+          "sourceWriteIds": ["contracts/game/src/systems/bank/contracts/bank.cairo:75:write_model"]
+        }
+      ]
+    },
+    {
+      "familyId": 8,
+      "status": "heterogeneous-source-identity-unresolved",
+      "sourceModelKeys": [
+        "AgentLordsMinted(id:ID/u32)",
+        "HyperstructureShareholders(hyperstructure_id:ID/u32)",
+        "PlayerConstructionPoints(address:ContractAddress,hyperstructure_id:ID/u32)",
+        "PlayerRegisteredPoints(address:ContractAddress)",
+        "SeasonPrize(config_id:ID/u32)",
+        "WorldRecord(world_id:ID/u32)[selector-generic]",
+        "BitcoinPhaseLabor(phase_id:u64)",
+        "BitcoinMinePhaseLabor(phase_id:u64,mine_id:ID/u32)",
+        "WonderFaithPrize(wonder_id:ID/u32)",
+        "PlayerFaithPrizeClaimed(player:ContractAddress,wonder_id:ID/u32)",
+        "WonderFaith(wonder_id:ID/u32)",
+        "FaithfulStructure(structure_id:ID/u32)",
+        "PlayerFaithPoints(player:ContractAddress,wonder_id:ID/u32)",
+        "WonderFaithWinners(world_id:ID/u32)",
+        "WonderFaithBlacklist(wonder_id:ID/u32,blocked_id:felt252)",
+        "SeriesChestRewardState(world_id:ID/u32)",
+        "GameChestReward(world_id:ID/u32)",
+        "PlayersRankTrial(trial_id:u128)",
+        "PlayersRankFinal(world_id:u128)",
+        "PlayerRank(trial_id:u128,player:ContractAddress)",
+        "RankPrize(trial_id:u128,rank:u16)",
+        "RankList(trial_id:u128,rank:u16,index:u16)",
+        "BlitzSettlementPosition(settlement_number:u16)",
+        "BlitzSettlement(player:ContractAddress)",
+        "BlitzEntryTokenRegister(token_id:u128)",
+        "BlitzCosmeticAttrsRegister(player:ContractAddress)"
+      ],
+      "lifecycle": [
+        "Allocate each retained typed subtype when its value-bearing source first becomes live.",
+        "Supporting cursors are separately tagged only when finalization must enumerate them.",
+        "Finalization persists liabilities/cursors before terminal tombstone; recurring sources use intrinsic identity or a fresh epoch."
+      ],
+      "ownerDerivation": "Player-keyed rows use bound wallets; structure/wonder/mine rows require frozen owner-time semantics; global pools are OutcomeSettlement-owned enumerations.",
+      "highWaterAllocation": "Allocate first live record for every retained typed subtype and never repeat updates to an existing stable source.",
+      "projectionFindings": [
+        "At least 21 of 87 pre-correction writes are another family or metadata; the remaining candidates require subtype-by-subtype review.",
+        "WorldRecord selector-generic writes must split into typed economic and non-economic paths."
+      ],
+      "knownReassignments": [
+        {
+          "observedClassification": "reward_state",
+          "requiredDisposition": "resource",
+          "sourceWriteIds": [
+            "contracts/game/src/systems/artificer/contracts.cairo:65:store",
+            "contracts/game/src/systems/artificer/contracts.cairo:66:store",
+            "contracts/game/src/systems/artificer/contracts.cairo:83:store",
+            "contracts/game/src/systems/artificer/contracts.cairo:84:store",
+            "contracts/game/src/systems/bitcoin_mine/contracts.cairo:92:store",
+            "contracts/game/src/systems/bitcoin_mine/contracts.cairo:93:store",
+            "contracts/game/src/systems/bitcoin_mine/contracts.cairo:211:store",
+            "contracts/game/src/systems/bitcoin_mine/contracts.cairo:212:store",
+            "contracts/game/src/systems/hyperstructure/contracts.cairo:222:store",
+            "contracts/game/src/systems/hyperstructure/contracts.cairo:223:store",
+            "contracts/game/src/systems/hyperstructure/contracts.cairo:306:store",
+            "contracts/game/src/systems/hyperstructure/contracts.cairo:331:store",
+            "contracts/game/src/systems/relic/contracts.cairo:193:store",
+            "contracts/game/src/systems/relic/contracts.cairo:195:store",
+            "contracts/game/src/systems/relic/contracts.cairo:213:store",
+            "contracts/game/src/systems/relic/contracts.cairo:215:store",
+            "contracts/game/src/systems/utils/relic.cairo:135:store"
+          ]
+        },
+        {
+          "observedClassification": "reward_state",
+          "requiredDisposition": "military_and_cargo",
+          "sourceWriteIds": ["contracts/game/src/systems/relic/contracts.cairo:266:write_model"]
+        },
+        {
+          "observedClassification": "reward_state",
+          "requiredDisposition": "lazy_production",
+          "sourceWriteIds": ["contracts/game/src/systems/relic/contracts.cairo:334:write_model"]
+        },
+        {
+          "observedClassification": "reward_state",
+          "requiredDisposition": "structure_ownership",
+          "sourceWriteIds": ["contracts/game/src/systems/realm/blitz/contracts.cairo:521:write_model"]
+        },
+        {
+          "observedClassification": "reward_state",
+          "requiredDisposition": "out_of_scope",
+          "sourceWriteIds": ["contracts/game/src/systems/realm/blitz/contracts.cairo:517:write_model"]
+        }
+      ]
+    },
+    {
+      "familyId": 9,
+      "status": "interface-candidate-production-model-absent",
+      "sourceModelKeys": [],
+      "lifecycle": [
+        "Persist immutable UnsealedPending by liability_id in the same transaction as the source debit.",
+        "Append and BatchAssigned retry without rewriting identity; seal promotes only Hub aggregates.",
+        "Claim and recovery never delete or recycle the liability record."
+      ],
+      "ownerDerivation": "PendingLiability stores claimant_l2 and recipient_l1 from the locked source owner/binding; LiabilityAssignment is addressed only by liability_id.",
+      "highWaterAllocation": "Allocate exactly once when a new liability_id first persists; duplicate IDs or cap exhaustion reject before source debit.",
+      "projectionFindings": [
+        "PendingLiability and LiabilityAssignment production models, writers, and indexed getters are absent.",
+        "Repeated partial withdrawals require a lifetime liability or per-source generation cap."
+      ],
+      "knownReassignments": []
+    },
+    {
+      "familyId": 10,
+      "status": "normative-layout-candidate-production-storage-absent",
+      "sourceModelKeys": [
+        "contracts/settlement_protocol/src/types.cairo#GameBackingLot(game_id:GameId,parent_key_hash:felt252,lot_index:u8)[value-type-only]"
+      ],
+      "lifecycle": [
+        "Allocate immutable provisioning, voluntary-funding, or pooled-ingress lot slots before local credit.",
+        "Counter updates preserve allocated = free + active + cumulative_outbox + returned_unused.",
+        "Slots never recycle; terminal zero/free/returned states remain lifetime records."
+      ],
+      "ownerDerivation": "Lots belong to one game and BackingKey; claimant ownership comes from ExitPosition/liability lot shares.",
+      "highWaterAllocation": "Assign every parent and lot internally for each accepted provenance source; callers never supply coordinates.",
+      "projectionFindings": [
+        "GameBackingLot is currently a protocol value type with no production allocator, storage model, writer, or root.",
+        "The fixed parent_index*64+lot_index coordinate is not reconciled with the generic family index."
+      ],
+      "knownReassignments": []
+    },
+    {
+      "familyId": 11,
+      "status": "interface-candidate-production-model-absent",
+      "sourceModelKeys": [],
+      "lifecycle": [
+        "Allocate at first economic participation or first forced-exit lock according to the reviewed design.",
+        "Lock precedes unwind and every economic path checks it.",
+        "Exited is terminal; Unlock is legal only for a precisely enumerated pre-effect abort."
+      ],
+      "ownerDerivation": "player_l2 is the owner and subject; exit_id identifies a request but cannot change the stable family identity.",
+      "highWaterAllocation": "Allocate the first economically addressable player or first lock; retries and later exit IDs never allocate again.",
+      "projectionFindings": [
+        "PlayerEconomicLock has no production model, index, writer, or complete player-introduction surface.",
+        "The paid-entry u16 bound cannot be borrowed as a unique-player lifetime cap."
+      ],
+      "knownReassignments": []
+    },
+    {
+      "familyId": 12,
+      "status": "interface-candidate-production-model-absent",
+      "sourceModelKeys": [],
+      "lifecycle": [
+        "Create from one canonical source binding with a fresh monotonic ID and at most eight payout legs.",
+        "Consume expected generation and atomically update source and position.",
+        "Split/merge creates fresh outputs and terminally tombstones every consumed input."
+      ],
+      "ownerDerivation": "Store owner and source binding in ExitPosition; attached sources follow current owner and wallet-owned positions remain wallet-owned.",
+      "highWaterAllocation": "Allocate every initial canonical source position, split child, and merge output; no terminal index is reused.",
+      "projectionFindings": [
+        "ExitPosition, PositionRef, PlayerPositionIndex, production writer, and cap-enforcing allocator are absent.",
+        "Repeated split/merge churn is unbounded without an explicit lifetime reshape cap."
+      ],
+      "knownReassignments": []
+    }
+  ],
   "reviewPolicy": {
     "sourceWriteMappingStatus": "failed-heuristic-projection",
     "exclusionStatus": "reviewed",

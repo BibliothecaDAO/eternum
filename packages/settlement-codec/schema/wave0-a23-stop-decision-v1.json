@@ -130,7 +130,7 @@
     },
     "exitFamilyInventory": {
       "status": "a22-stop-redesign-required",
-      "fileSha256": "fe09b160c4d591d9445e875dafd759980e5ea82fe1df3c6f7645594b802aa94f",
+      "fileSha256": "e55bdf91cceb0bab5f92579d8b48e9ab3484551f11c16e9fbdcd26a5d4c62a9b",
       "referenceLayoutSha256": "d0b9e3f9374933e6eb176de23382121285f58898071f8775df12bcff97b794ce",
       "sourceIdentityValidatorSha256": "adf608df8b9a83d2bd32d00acccc696c4210b63c16dbcd160cff239e194559e0",
       "familyRegistryHash": "0x462a2e6b6d1f6f3d815c25d5b223ee06914dace9f96db73fb530223bd3bc1eb",
@@ -144,6 +144,8 @@
       "familiesWithoutDiscoveredWrites": 4,
       "reviewFindingCount": 1,
       "implementationIssueCount": 5,
+      "sourceAuditCount": 12,
+      "knownReassignmentCount": 35,
       "releaseReady": false
     },
     "economicWriteClassificationPolicySha256": "f1849edcd83b773c09def2ea78f78bbe3b729989c940e59eba5db73029c8b145",
