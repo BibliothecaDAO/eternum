@@ -8,17 +8,22 @@ const classificationPolicyPath = resolve(
   repositoryRoot,
   "packages/settlement-codec/schema/economic-write-classification-policy-v0.json",
 );
+const exitFamilyPolicyPath = resolve(repositoryRoot, "packages/settlement-codec/schema/exit-family-policy-v0.json");
 const shouldCheck = process.argv.includes("--check");
 const classificationPolicy = JSON.parse(readFileSync(classificationPolicyPath, "utf8"));
+const exitFamilyPolicy = JSON.parse(readFileSync(exitFamilyPolicyPath, "utf8"));
 const detectorKinds = ["write_model", "delete_model", "erase_model", "write_member", "set_member", "write", "store"];
 const modelMutationKinds = new Set(["write_model", "delete_model", "erase_model"]);
 const detectorPattern = new RegExp(`(?:([A-Za-z_][A-Za-z0-9_:.()]*)\\s*)?\\.(${detectorKinds.join("|")})\\s*\\(`);
 
-const entries = applyReviewedClassificationOverrides(scanEconomicWrites());
+const entries = applySourceAuditReassignments(applyReviewedClassificationOverrides(scanEconomicWrites()));
 const inventory = {
   version: 0,
   status: "a9-feasibility-inventory",
-  generatedFrom: { classificationPolicyVersion: classificationPolicy.version },
+  generatedFrom: {
+    classificationPolicyVersion: classificationPolicy.version,
+    exitFamilyPolicyVersion: exitFamilyPolicy.version,
+  },
   sourceRoot: "contracts/game/src",
   detectorKinds,
   summary: summarize(entries),
@@ -88,6 +93,32 @@ function applyReviewedClassificationOverrides(entries) {
       reason: override.reason,
       classificationSource: "reviewed-override",
     });
+  }
+  return entries;
+}
+
+function applySourceAuditReassignments(entries) {
+  const entriesById = new Map(entries.map((entry) => [entry.id, entry]));
+  const seenIds = new Set(classificationPolicy.reviewedOverrides.map(({ sourceWriteId }) => sourceWriteId));
+  for (const audit of exitFamilyPolicy.sourceAudits) {
+    for (const reassignment of audit.knownReassignments) {
+      for (const sourceWriteId of reassignment.sourceWriteIds) {
+        if (seenIds.has(sourceWriteId)) throw new Error(`duplicate reviewed source disposition: ${sourceWriteId}`);
+        seenIds.add(sourceWriteId);
+        const entry = entriesById.get(sourceWriteId);
+        if (!entry) throw new Error(`reviewed source reassignment has no discovered write: ${sourceWriteId}`);
+        if (entry.classification !== reassignment.observedClassification) {
+          throw new Error(`reviewed source reassignment no longer matches heuristic: ${sourceWriteId}`);
+        }
+        Object.assign(entry, {
+          originalClassification: entry.classification,
+          classification: reassignment.requiredDisposition,
+          exitCoveredCandidate: reassignment.requiredDisposition !== "out_of_scope",
+          reason: `A22 source audit reassigns ${reassignment.observedClassification} to ${reassignment.requiredDisposition}.`,
+          classificationSource: "a22-source-audit-reassignment",
+        });
+      }
+    }
   }
   return entries;
 }
@@ -182,6 +213,8 @@ function summarize(allEntries) {
     outOfScopeCandidates: allEntries.filter((entry) => !entry.exitCoveredCandidate).length,
     unclassified: allEntries.filter((entry) => entry.classification === "unclassified").length,
     reviewedOverrides: allEntries.filter((entry) => entry.classificationSource === "reviewed-override").length,
+    reviewedReassignments: allEntries.filter((entry) => entry.classificationSource === "a22-source-audit-reassignment")
+      .length,
     byClassification,
   };
 }

@@ -275,7 +275,12 @@ function assertSourceAuditsAreComplete() {
         }
         reassignedWriteIds.add(sourceWriteId);
         const write = writesById.get(sourceWriteId);
-        if (!write || write.classification !== reassignment.observedClassification) {
+        if (
+          !write ||
+          write.originalClassification !== reassignment.observedClassification ||
+          write.classification !== reassignment.requiredDisposition ||
+          write.classificationSource !== "a22-source-audit-reassignment"
+        ) {
           throw new Error(`A22 source reassignment is stale: ${sourceWriteId}`);
         }
         if (reassignment.requiredDisposition === reassignment.observedClassification) {
@@ -371,5 +376,7 @@ interface EconomicWriteInventory {
     path: string;
     classification: string;
     exitCoveredCandidate: boolean;
+    originalClassification?: string;
+    classificationSource?: string;
   }>;
 }

@@ -2,7 +2,8 @@
   "version": 0,
   "status": "a9-feasibility-inventory",
   "generatedFrom": {
-    "classificationPolicyVersion": 0
+    "classificationPolicyVersion": 0,
+    "exitFamilyPolicyVersion": 0
   },
   "sourceRoot": "contracts/game/src",
   "detectorKinds": [
@@ -17,20 +18,21 @@
   "summary": {
     "writes": 323,
     "files": 57,
-    "exitCoveredCandidates": 263,
-    "outOfScopeCandidates": 60,
+    "exitCoveredCandidates": 261,
+    "outOfScopeCandidates": 62,
     "unclassified": 0,
     "reviewedOverrides": 3,
+    "reviewedReassignments": 35,
     "byClassification": {
-      "out_of_scope": 60,
-      "reward_state": 87,
+      "out_of_scope": 62,
+      "reward_state": 66,
       "arrival": 4,
-      "lazy_production": 26,
-      "resource": 38,
-      "structure_ownership": 34,
+      "lazy_production": 27,
+      "resource": 68,
+      "structure_ownership": 35,
       "trade_and_donkey": 15,
-      "amm_and_lp": 21,
-      "military_and_cargo": 38
+      "amm_and_lp": 7,
+      "military_and_cargo": 39
     }
   },
   "entries": [
@@ -758,10 +760,12 @@
       "line": 65,
       "detectorKind": "store",
       "target": "research",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "research.store(ref world);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "research.store(ref world);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/artificer/contracts.cairo:66:store",
@@ -769,10 +773,12 @@
       "line": 66,
       "detectorKind": "store",
       "target": "structure_weight",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "structure_weight.store(ref world, structure_id);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "structure_weight.store(ref world, structure_id);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/artificer/contracts.cairo:83:store",
@@ -780,10 +786,12 @@
       "line": 83,
       "detectorKind": "store",
       "target": "relic",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "relic.store(ref world);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "relic.store(ref world);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/artificer/contracts.cairo:84:store",
@@ -791,10 +799,12 @@
       "line": 84,
       "detectorKind": "store",
       "target": "structure_weight",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "structure_weight.store(ref world, structure_id);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "structure_weight.store(ref world, structure_id);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/bank.cairo:75:write_model",
@@ -802,10 +812,12 @@
       "line": 75,
       "detectorKind": "write_model",
       "target": "AddressName",
-      "classification": "amm_and_lp",
-      "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "world.write_model(@AddressName { address: bank_entity_id.into(), name: *bank.name });"
+      "classification": "out_of_scope",
+      "exitCoveredCandidate": false,
+      "reason": "A22 source audit reassigns amm_and_lp to out_of_scope.",
+      "source": "world.write_model(@AddressName { address: bank_entity_id.into(), name: *bank.name });",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/liquidity.cairo:99:write_model",
@@ -824,10 +836,12 @@
       "line": 110,
       "detectorKind": "store",
       "target": "player_resource",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "player_resource.store(ref world);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "player_resource.store(ref world);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/liquidity.cairo:118:store",
@@ -835,10 +849,12 @@
       "line": 118,
       "detectorKind": "store",
       "target": "player_lords_resource",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "player_lords_resource.store(ref world);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "player_lords_resource.store(ref world);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/liquidity.cairo:121:store",
@@ -846,10 +862,12 @@
       "line": 121,
       "detectorKind": "store",
       "target": "player_structure_weight",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "player_structure_weight.store(ref world, entity_id);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "player_structure_weight.store(ref world, entity_id);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/liquidity.cairo:127:write_model",
@@ -901,10 +919,12 @@
       "line": 214,
       "detectorKind": "store",
       "target": "player_structure_weight",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "player_structure_weight.store(ref world, entity_id);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "player_structure_weight.store(ref world, entity_id);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/liquidity.cairo:215:store",
@@ -912,10 +932,12 @@
       "line": 215,
       "detectorKind": "store",
       "target": "bank_structure_weight",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "bank_structure_weight.store(ref world, bank_entity_id);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "bank_structure_weight.store(ref world, bank_entity_id);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/swap.cairo:90:store",
@@ -923,10 +945,12 @@
       "line": 90,
       "detectorKind": "store",
       "target": "player_resource",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "player_resource.store(ref world);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "player_resource.store(ref world);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/swap.cairo:98:store",
@@ -934,10 +958,12 @@
       "line": 98,
       "detectorKind": "store",
       "target": "bank_lords_resource",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "bank_lords_resource.store(ref world);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "bank_lords_resource.store(ref world);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/swap.cairo:103:write_model",
@@ -956,10 +982,12 @@
       "line": 124,
       "detectorKind": "store",
       "target": "player_structure_weight",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "player_structure_weight.store(ref world, structure_id);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "player_structure_weight.store(ref world, structure_id);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/swap.cairo:125:store",
@@ -967,10 +995,12 @@
       "line": 125,
       "detectorKind": "store",
       "target": "bank_structure_weight",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "bank_structure_weight.store(ref world, bank_entity_id);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "bank_structure_weight.store(ref world, bank_entity_id);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/swap.cairo:181:store",
@@ -978,10 +1008,12 @@
       "line": 181,
       "detectorKind": "store",
       "target": "player_resource",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "player_resource.store(ref world);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "player_resource.store(ref world);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/swap.cairo:190:store",
@@ -989,10 +1021,12 @@
       "line": 190,
       "detectorKind": "store",
       "target": "bank_lords_resource",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "bank_lords_resource.store(ref world);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "bank_lords_resource.store(ref world);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/swap.cairo:213:store",
@@ -1000,10 +1034,12 @@
       "line": 213,
       "detectorKind": "store",
       "target": "player_structure_weight",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "player_structure_weight.store(ref world, structure_id);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "player_structure_weight.store(ref world, structure_id);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/swap.cairo:214:store",
@@ -1011,10 +1047,12 @@
       "line": 214,
       "detectorKind": "store",
       "target": "bank_structure_weight",
-      "classification": "amm_and_lp",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "bank reserve, AMM, or wallet LP state",
-      "source": "bank_structure_weight.store(ref world, bank_entity_id);"
+      "reason": "A22 source audit reassigns amm_and_lp to resource.",
+      "source": "bank_structure_weight.store(ref world, bank_entity_id);",
+      "originalClassification": "amm_and_lp",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/swap.cairo:219:write_model",
@@ -1033,10 +1071,12 @@
       "line": 92,
       "detectorKind": "store",
       "target": "labor_resource",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "labor_resource.store(ref world);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "labor_resource.store(ref world);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bitcoin_mine/contracts.cairo:93:store",
@@ -1044,10 +1084,12 @@
       "line": 93,
       "detectorKind": "store",
       "target": "mine_weight",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "mine_weight.store(ref world, mine_id);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "mine_weight.store(ref world, mine_id);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bitcoin_mine/contracts.cairo:104:write_model",
@@ -1099,10 +1141,12 @@
       "line": 211,
       "detectorKind": "store",
       "target": "satoshi_resource",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "satoshi_resource.store(ref world);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "satoshi_resource.store(ref world);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bitcoin_mine/contracts.cairo:212:store",
@@ -1110,10 +1154,12 @@
       "line": 212,
       "detectorKind": "store",
       "target": "mine_weight",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "mine_weight.store(ref world, mine_id);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "mine_weight.store(ref world, mine_id);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/bitcoin_mine/contracts.cairo:243:write_model",
@@ -1924,10 +1970,12 @@
       "line": 222,
       "detectorKind": "store",
       "target": "hyperstructure_shard_resource",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "hyperstructure_shard_resource.store(ref world);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "hyperstructure_shard_resource.store(ref world);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/hyperstructure/contracts.cairo:223:store",
@@ -1935,10 +1983,12 @@
       "line": 223,
       "detectorKind": "store",
       "target": "hyperstructure_weight",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "hyperstructure_weight.store(ref world, hyperstructure_id);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "hyperstructure_weight.store(ref world, hyperstructure_id);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/hyperstructure/contracts.cairo:242:write_model",
@@ -1957,10 +2007,12 @@
       "line": 306,
       "detectorKind": "store",
       "target": "from_structure_resource",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "from_structure_resource.store(ref world);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "from_structure_resource.store(ref world);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/hyperstructure/contracts.cairo:326:write_model",
@@ -1990,10 +2042,12 @@
       "line": 331,
       "detectorKind": "store",
       "target": "from_structure_weight",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "from_structure_weight.store(ref world, from_structure_id);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "from_structure_weight.store(ref world, from_structure_id);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/hyperstructure/contracts.cairo:352:write_model",
@@ -2507,10 +2561,12 @@
       "line": 517,
       "detectorKind": "write_model",
       "target": "AddressName",
-      "classification": "reward_state",
-      "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "world.write_model(@AddressName { address: owner.into(), name });"
+      "classification": "out_of_scope",
+      "exitCoveredCandidate": false,
+      "reason": "A22 source audit reassigns reward_state to out_of_scope.",
+      "source": "world.write_model(@AddressName { address: owner.into(), name });",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/realm/blitz/contracts.cairo:521:write_model",
@@ -2518,10 +2574,12 @@
       "line": 521,
       "detectorKind": "write_model",
       "target": "world",
-      "classification": "reward_state",
+      "classification": "structure_ownership",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "world.write_model(@structure_owner_stats);"
+      "reason": "A22 source audit reassigns reward_state to structure_ownership.",
+      "source": "world.write_model(@structure_owner_stats);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/realm/season/contracts.cairo:98:write_model",
@@ -2540,10 +2598,12 @@
       "line": 193,
       "detectorKind": "store",
       "target": "relic_resource",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "relic_resource.store(ref world);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "relic_resource.store(ref world);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/relic/contracts.cairo:195:store",
@@ -2551,10 +2611,12 @@
       "line": 195,
       "detectorKind": "store",
       "target": "entity_weight",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "entity_weight.store(ref world, entity_id);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "entity_weight.store(ref world, entity_id);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/relic/contracts.cairo:213:store",
@@ -2562,10 +2624,12 @@
       "line": 213,
       "detectorKind": "store",
       "target": "essence_resource",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "essence_resource.store(ref world);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "essence_resource.store(ref world);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/relic/contracts.cairo:215:store",
@@ -2573,10 +2637,12 @@
       "line": 215,
       "detectorKind": "store",
       "target": "essence_payer_weight",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "essence_payer_weight.store(ref world, essence_payer_id);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "essence_payer_weight.store(ref world, essence_payer_id);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/relic/contracts.cairo:266:write_model",
@@ -2584,10 +2650,12 @@
       "line": 266,
       "detectorKind": "write_model",
       "target": "world",
-      "classification": "reward_state",
+      "classification": "military_and_cargo",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "world.write_model(@explorer);"
+      "reason": "A22 source audit reassigns reward_state to military_and_cargo.",
+      "source": "world.write_model(@explorer);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/relic/contracts.cairo:334:write_model",
@@ -2595,10 +2663,12 @@
       "line": 334,
       "detectorKind": "write_model",
       "target": "world",
-      "classification": "reward_state",
+      "classification": "lazy_production",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "world.write_model(@production_boost_bonus);"
+      "reason": "A22 source audit reassigns reward_state to lazy_production.",
+      "source": "world.write_model(@production_boost_bonus);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/resources/contracts/resource_bridge_systems.cairo:128:store",
@@ -2936,10 +3006,12 @@
       "line": 135,
       "detectorKind": "store",
       "target": "relic_resource",
-      "classification": "reward_state",
+      "classification": "resource",
       "exitCoveredCandidate": true,
-      "reason": "fee, prize, Faith, Blitz, or outcome-bearing participant state",
-      "source": "relic_resource.store(ref world);"
+      "reason": "A22 source audit reassigns reward_state to resource.",
+      "source": "relic_resource.store(ref world);",
+      "originalClassification": "reward_state",
+      "classificationSource": "a22-source-audit-reassignment"
     },
     {
       "id": "contracts/game/src/systems/utils/relic.cairo:138:store",

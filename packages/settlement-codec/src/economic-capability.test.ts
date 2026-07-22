@@ -215,6 +215,40 @@ describe("A14 frozen economic capability interface", () => {
     });
     expect(inventory.summary.reviewedOverrides).toBe(3);
   });
+
+  test("applies every exact A22 source-audit reassignment", () => {
+    const inventory = readJson(inventoryUrl);
+    const reassigned = inventory.entries.filter(
+      ({ classificationSource }: { classificationSource?: string }) =>
+        classificationSource === "a22-source-audit-reassignment",
+    );
+
+    expect(reassigned).toHaveLength(35);
+    expect(inventory.summary.reviewedReassignments).toBe(35);
+    expect(
+      reassigned.filter(({ originalClassification }: { originalClassification: string }) =>
+        ["amm_and_lp", "reward_state"].includes(originalClassification),
+      ),
+    ).toHaveLength(35);
+    expect(
+      reassigned.find(
+        ({ id }: { id: string }) => id === "contracts/game/src/systems/bank/contracts/bank.cairo:75:write_model",
+      ),
+    ).toMatchObject({
+      originalClassification: "amm_and_lp",
+      classification: "out_of_scope",
+      exitCoveredCandidate: false,
+    });
+    expect(
+      reassigned.find(
+        ({ id }: { id: string }) => id === "contracts/game/src/systems/relic/contracts.cairo:334:write_model",
+      ),
+    ).toMatchObject({
+      originalClassification: "reward_state",
+      classification: "lazy_production",
+      exitCoveredCandidate: true,
+    });
+  });
 });
 
 function readJson(url: URL): any {

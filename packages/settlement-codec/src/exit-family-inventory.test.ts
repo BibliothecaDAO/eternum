@@ -82,7 +82,7 @@ describe("A22 exit-family inventory", () => {
       expect(family.schemaHash).toMatch(/^0x[0-9a-f]+$/);
     }
     expect(inventory.familyRegistryHash).toBe("0x462a2e6b6d1f6f3d815c25d5b223ee06914dace9f96db73fb530223bd3bc1eb");
-    expect(inventory.inventoryHash).toBe("0x550dd0326b6db4d6fbf528d3980eac2a7ef269c0cec806aea8ed3a1e50c0c4f");
+    expect(inventory.inventoryHash).toBe("0x1062e47d3bd855005fa4ec81b3c24b202d790ea8c44eef942b73df196a250d8");
   });
 
   test("binds reviewed cardinality and each writer's family assignment into commitments", () => {

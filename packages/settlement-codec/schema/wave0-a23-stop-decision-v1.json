@@ -130,16 +130,16 @@
     },
     "exitFamilyInventory": {
       "status": "a22-stop-redesign-required",
-      "fileSha256": "e55bdf91cceb0bab5f92579d8b48e9ab3484551f11c16e9fbdcd26a5d4c62a9b",
+      "fileSha256": "bdbac4de3e4f35cf92ee934f9f5e6857bf375dd7b3435b95a7a9e7e8377a8477",
       "referenceLayoutSha256": "d0b9e3f9374933e6eb176de23382121285f58898071f8775df12bcff97b794ce",
       "sourceIdentityValidatorSha256": "adf608df8b9a83d2bd32d00acccc696c4210b63c16dbcd160cff239e194559e0",
       "familyRegistryHash": "0x462a2e6b6d1f6f3d815c25d5b223ee06914dace9f96db73fb530223bd3bc1eb",
-      "inventoryHash": "0x550dd0326b6db4d6fbf528d3980eac2a7ef269c0cec806aea8ed3a1e50c0c4f",
-      "sourceProjectionHash": "0x1ae7c5e1793312af595844c960d7364d432bddd743c57ef7cd091c318a9d995",
-      "excludedProjectionHash": "0x262527d89b0646c80867b2b739e48f50466801b076e5e7927796c37cce3e070",
+      "inventoryHash": "0x1062e47d3bd855005fa4ec81b3c24b202d790ea8c44eef942b73df196a250d8",
+      "sourceProjectionHash": "0x2ae10c1b5c3742aba385fa37e9bfbaec922605cad7f1fe70a1bc4a954dc7f8",
+      "excludedProjectionHash": "0x323eebe84e430996aad436ddfee5ee177dec41208a29afb6e34f0df3211b6b0",
       "discoveredWrites": 323,
-      "exitCoveredWrites": 263,
-      "excludedWrites": 60,
+      "exitCoveredWrites": 261,
+      "excludedWrites": 62,
       "familyCount": 12,
       "familiesWithoutDiscoveredWrites": 4,
       "reviewFindingCount": 1,
@@ -149,7 +149,7 @@
       "releaseReady": false
     },
     "economicWriteClassificationPolicySha256": "f1849edcd83b773c09def2ea78f78bbe3b729989c940e59eba5db73029c8b145",
-    "economicWriteInventorySha256": "31ff94e3ce9862d215718483a6e163855bfa23581e6ebc883420b822d2ca83f2",
+    "economicWriteInventorySha256": "eb8e8cd806ae0d9532bd7d6549ba11e68aaa589ab652ddfd1b5ef4ddbeadecbf",
     "onchainObservationSha256": "64570077b1405d7a47db1fedb19a07950001df290ba33e33254df412693040ab"
   },
   "performanceEvidence": {
@@ -248,8 +248,8 @@
         {
           "ticket": "D5",
           "familyIds": [1, 2, 3, 10, 11, 12],
-          "sourceWriteCount": 98,
-          "sourceFileCount": 21,
+          "sourceWriteCount": 130,
+          "sourceFileCount": 29,
           "missingProductionFamilyIds": [10, 11, 12]
         },
         {
@@ -262,22 +262,22 @@
         {
           "ticket": "D7",
           "familyIds": [5],
-          "sourceWriteCount": 38,
-          "sourceFileCount": 8,
+          "sourceWriteCount": 39,
+          "sourceFileCount": 9,
           "missingProductionFamilyIds": []
         },
         {
           "ticket": "D8",
           "familyIds": [7, 9],
-          "sourceWriteCount": 21,
-          "sourceFileCount": 3,
+          "sourceWriteCount": 7,
+          "sourceFileCount": 2,
           "missingProductionFamilyIds": [9]
         },
         {
           "ticket": "D9",
           "familyIds": [8],
-          "sourceWriteCount": 87,
-          "sourceFileCount": 13,
+          "sourceWriteCount": 66,
+          "sourceFileCount": 10,
           "missingProductionFamilyIds": []
         }
       ],
