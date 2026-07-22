@@ -42,6 +42,7 @@ export interface ExitFamilySourceAudit {
   knownReassignments: Array<{
     observedClassification: string;
     requiredDisposition: string;
+    sourceProjectionSha256: string;
     sourceWriteIds: string[];
   }>;
 }

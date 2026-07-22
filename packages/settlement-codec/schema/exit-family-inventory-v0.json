@@ -913,6 +913,7 @@
           {
             "observedClassification": "amm_and_lp",
             "requiredDisposition": "resource",
+            "sourceProjectionSha256": "54904ea91ee081dd09a71760b11c717cb6446c100c837e5e2f3f01c3c3be6c38",
             "sourceWriteIds": [
               "contracts/game/src/systems/bank/contracts/liquidity.cairo:110:store",
               "contracts/game/src/systems/bank/contracts/liquidity.cairo:118:store",
@@ -932,6 +933,7 @@
           {
             "observedClassification": "amm_and_lp",
             "requiredDisposition": "out_of_scope",
+            "sourceProjectionSha256": "731d81fd3544cf55ccd0e85035d14dcae9f92c6ab51b84381ec7881ca209854e",
             "sourceWriteIds": [
               "contracts/game/src/systems/bank/contracts/bank.cairo:75:write_model"
             ]
@@ -1078,6 +1080,7 @@
           {
             "observedClassification": "reward_state",
             "requiredDisposition": "resource",
+            "sourceProjectionSha256": "3b690bb33c51b73a02970c8df77c6adcaf306ebf16b409c4d61c1160aa7a6459",
             "sourceWriteIds": [
               "contracts/game/src/systems/artificer/contracts.cairo:65:store",
               "contracts/game/src/systems/artificer/contracts.cairo:66:store",
@@ -1101,6 +1104,7 @@
           {
             "observedClassification": "reward_state",
             "requiredDisposition": "military_and_cargo",
+            "sourceProjectionSha256": "fa7710cd8c08139748e634f64fea9f01388900d82c57e5b3f7da981f087e6b28",
             "sourceWriteIds": [
               "contracts/game/src/systems/relic/contracts.cairo:266:write_model"
             ]
@@ -1108,6 +1112,7 @@
           {
             "observedClassification": "reward_state",
             "requiredDisposition": "lazy_production",
+            "sourceProjectionSha256": "5ad528415b35ec52408de6661299359cec0761e9c9bd099e2e39d450e5310e1d",
             "sourceWriteIds": [
               "contracts/game/src/systems/relic/contracts.cairo:334:write_model"
             ]
@@ -1115,6 +1120,7 @@
           {
             "observedClassification": "reward_state",
             "requiredDisposition": "structure_ownership",
+            "sourceProjectionSha256": "7704b66725eda95a2b1cfcec36f21868b3bea4f06025bd8f67e6c3ff55881416",
             "sourceWriteIds": [
               "contracts/game/src/systems/realm/blitz/contracts.cairo:521:write_model"
             ]
@@ -1122,6 +1128,7 @@
           {
             "observedClassification": "reward_state",
             "requiredDisposition": "out_of_scope",
+            "sourceProjectionSha256": "8fe08a68de0810286a09e318cfab059dd9441d57820df2bb2e6b336990910791",
             "sourceWriteIds": [
               "contracts/game/src/systems/realm/blitz/contracts.cairo:517:write_model"
             ]

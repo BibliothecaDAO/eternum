@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { relative, resolve } from "node:path";
 
@@ -102,11 +103,19 @@ function applySourceAuditReassignments(entries) {
   const seenIds = new Set(classificationPolicy.reviewedOverrides.map(({ sourceWriteId }) => sourceWriteId));
   for (const audit of exitFamilyPolicy.sourceAudits) {
     for (const reassignment of audit.knownReassignments) {
+      const sourceProjection = reassignment.sourceWriteIds.map((sourceWriteId) => {
+        const entry = entriesById.get(sourceWriteId);
+        if (!entry) throw new Error(`reviewed source reassignment has no discovered write: ${sourceWriteId}`);
+        return { id: entry.id, source: entry.source };
+      });
+      const sourceProjectionSha256 = createHash("sha256").update(JSON.stringify(sourceProjection)).digest("hex");
+      if (sourceProjectionSha256 !== reassignment.sourceProjectionSha256) {
+        throw new Error(`reviewed source reassignment projection changed for family ${audit.familyId}`);
+      }
       for (const sourceWriteId of reassignment.sourceWriteIds) {
         if (seenIds.has(sourceWriteId)) throw new Error(`duplicate reviewed source disposition: ${sourceWriteId}`);
         seenIds.add(sourceWriteId);
         const entry = entriesById.get(sourceWriteId);
-        if (!entry) throw new Error(`reviewed source reassignment has no discovered write: ${sourceWriteId}`);
         if (entry.classification !== reassignment.observedClassification) {
           throw new Error(`reviewed source reassignment no longer matches heuristic: ${sourceWriteId}`);
         }

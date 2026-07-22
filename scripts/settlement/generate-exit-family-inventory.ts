@@ -265,7 +265,8 @@ function assertSourceAuditsAreComplete() {
       if (
         reassignment.observedClassification !== capabilityFamily ||
         reassignment.sourceWriteIds.length === 0 ||
-        !validWriteDispositions.has(reassignment.requiredDisposition)
+        !validWriteDispositions.has(reassignment.requiredDisposition) ||
+        !/^[0-9a-f]{64}$/.test(reassignment.sourceProjectionSha256)
       ) {
         throw new Error(`A22 source reassignment contract is invalid for family ${audit.familyId}`);
       }

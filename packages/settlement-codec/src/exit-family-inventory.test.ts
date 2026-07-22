@@ -189,6 +189,13 @@ describe("A22 exit-family inventory", () => {
     expect(inventory.families.every((family) => family.sourceAudit.highWaterAllocation.length > 0)).toBe(true);
     expect(inventory.families.every((family) => family.sourceAudit.projectionFindings.length > 0)).toBe(true);
     expect(
+      inventory.families.every((family) =>
+        family.sourceAudit.knownReassignments.every(({ sourceProjectionSha256 }) =>
+          /^[0-9a-f]{64}$/.test(sourceProjectionSha256),
+        ),
+      ),
+    ).toBe(true);
+    expect(
       inventory.families
         .filter((family) => family.sourceAudit.knownReassignments.length > 0)
         .map((family) => [

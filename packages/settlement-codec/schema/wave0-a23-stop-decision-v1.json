@@ -130,7 +130,7 @@
     },
     "exitFamilyInventory": {
       "status": "a22-stop-redesign-required",
-      "fileSha256": "bdbac4de3e4f35cf92ee934f9f5e6857bf375dd7b3435b95a7a9e7e8377a8477",
+      "fileSha256": "12ab8e3d55534e3c0ffb3b34150dbfb3d98613254abea9d752f203610dbe19ec",
       "referenceLayoutSha256": "d0b9e3f9374933e6eb176de23382121285f58898071f8775df12bcff97b794ce",
       "sourceIdentityValidatorSha256": "adf608df8b9a83d2bd32d00acccc696c4210b63c16dbcd160cff239e194559e0",
       "familyRegistryHash": "0x462a2e6b6d1f6f3d815c25d5b223ee06914dace9f96db73fb530223bd3bc1eb",
