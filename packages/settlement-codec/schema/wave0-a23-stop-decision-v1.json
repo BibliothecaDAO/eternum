@@ -449,7 +449,7 @@
       "config/deployer/clean/tests/wave0-release.test.ts": "6762c3bd5ae7e5ad27f47d9fb995c797d0925c2279c13c671b320a7b3f5a60bc"
     },
     "ciWorkflowSha256": "423891fbba4b6ad4d0494179b5bc22ffd73f0c42cc4ea6a76c3a15ffee89394a",
-    "settlementCiWorkflowSha256": "712e3fbec54e5ea1595f02e3f6c66f81697628274caf7c4a5682817aebc9db33"
+    "settlementCiWorkflowSha256": "8cdcab3ca467d7cdb0e8a28fc55d0012c478d73db16668c435f64335f7407328"
   },
   "stopOutcomes": [
     {

@@ -286,7 +286,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           cargo install --locked --git https://github.com/succinctlabs/sp1.git --tag v6.2.2 --no-default-features sp1-cli
-          cargo prove --version | grep -F '150e6294959f40dbc3ba42eb21c8eccc14c95bc5'
+          sp1_install_metadata="${CARGO_HOME:-${HOME}/.cargo}/.crates.toml"
+          grep -F 'sp1-cli 6.2.2 (git+https://github.com/succinctlabs/sp1.git?tag=v6.2.2#150e6294959f40dbc3ba42eb21c8eccc14c95bc5)' "${sp1_install_metadata}"
           cargo prove install-toolchain
           test "$(rustc +succinct --version)" = "rustc 1.93.0-dev"
 
