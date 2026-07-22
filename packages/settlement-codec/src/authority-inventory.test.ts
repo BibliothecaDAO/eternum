@@ -148,13 +148,6 @@ describe("A20 authority inventory", () => {
     expect(inventory.unresolvedMutationCandidates).toEqual([]);
     expect(inventory.unresolvedMutationPathHashes).toEqual([]);
     expect(inventory.releaseReady).toBe(false);
-    expect(() => validateAuthorityInventory(inventory)).not.toThrow();
-    expect(() => validateAuthorityInventoryForRelease(inventory)).toThrow(
-      "authority inventory release authorization requires a cryptographically verified A23 artifact",
-    );
-    expect(() => validateAuthorityInventoryForRelease({ ...inventory, releaseReady: true })).toThrow(
-      "authority inventory release readiness mismatch",
-    );
     expect(inventory.privilegedMutationPaths.map(({ path }) => path)).toContain(
       "config/deployer/clean/config/native-steps.ts#factory-mutation",
     );
@@ -187,6 +180,22 @@ describe("A20 authority inventory", () => {
         expect.objectContaining({ path: "contracts/game/ext/scripts/slot.sh#deploy" }),
         expect.objectContaining({ path: "contracts/marketplace/ext/scripts/slot.sh#deploy" }),
       ]),
+    );
+  });
+
+  test("validates the complete authority inventory", () => {
+    expect(() => validateAuthorityInventory(getAuthorityInventory())).not.toThrow();
+  }, 10_000);
+
+  test("requires cryptographic A23 authorization before release", () => {
+    expect(() => validateAuthorityInventoryForRelease(getAuthorityInventory())).toThrow(
+      "authority inventory release authorization requires a cryptographically verified A23 artifact",
+    );
+  }, 10_000);
+
+  test("rejects an asserted release-ready state before expensive commitment checks", () => {
+    expect(() => validateAuthorityInventoryForRelease({ ...getAuthorityInventory(), releaseReady: true })).toThrow(
+      "authority inventory release readiness mismatch",
     );
   });
 

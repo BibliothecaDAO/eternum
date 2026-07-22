@@ -399,10 +399,10 @@ export function validateAuthorityInventory(inventory: AuthorityInventory): void 
   validateDynamicAddressInputs(inventory.dynamicAddressInputs);
   validateMutationCoverage(inventory);
   validateRecordProjections(inventory);
-  validateCommitments(inventory);
   validateOnchainObservations(inventory);
   validateAuthoritySchema(inventory.authoritySchema);
   validateEvidenceAndAuthorization(inventory);
+  validateCommitments(inventory);
 }
 
 export function validateAuthorityInventoryForRelease(inventory: AuthorityInventory): void {
