@@ -19,6 +19,14 @@ import {
 export type ExitFamilyReviewStatus = ExitFamilySourceIdentityPolicy["status"];
 export type ExitFamilyMappingStatus = "failed-heuristic-projection" | "missing-production-interface" | "reviewed";
 
+export interface ExitFamilyCardinalityReview {
+  formula: string;
+  requiredInputs: string[];
+  candidateMaximumPositionsPerGame: number | null;
+  candidateEvidence: string | null;
+  capExhaustion: string;
+}
+
 export interface ExitFamilyInventoryFamily {
   familyId: number;
   capabilityFamily: string;
@@ -30,14 +38,9 @@ export interface ExitFamilyInventoryFamily {
     deletion: "explicit-tombstone";
   };
   chunking: { chunkSize: number; splitRule: string };
-  cardinality: {
+  cardinality: ExitFamilyCardinalityReview & {
     maximumPositionsPerGame: number | null;
     status: "failed-no-reviewed-bound" | "reviewed";
-    formula: string;
-    requiredInputs: string[];
-    candidateMaximumPositionsPerGame: number | null;
-    candidateEvidence: string | null;
-    capExhaustion: string;
   };
   sourceWriteMappingStatus: ExitFamilyMappingStatus;
   operationIds: number[];
@@ -158,11 +161,7 @@ function validateFamilyProjection(inventory: ExitFamilyInventory): void {
       {
         maximumPositionsPerGame: POLICY.reviewPolicy.maximumPositionsPerGame,
         status: POLICY.reviewPolicy.cardinalityStatus,
-        formula: cardinalityReview.formula,
-        requiredInputs: cardinalityReview.requiredInputs,
-        candidateMaximumPositionsPerGame: cardinalityReview.candidateMaximumPositionsPerGame,
-        candidateEvidence: cardinalityReview.candidateEvidence,
-        capExhaustion: cardinalityReview.capExhaustion,
+        ...projectCardinalityReview(cardinalityReview),
       },
       `exit-family ${family.familyId} cardinality review mismatch`,
     );
@@ -195,6 +194,10 @@ function validateFamilyProjection(inventory: ExitFamilyInventory): void {
   assertEqualJson(inventory.unresolved, expectedReleaseBlockers, "exit-family release blockers mismatch");
   assertEqualJson(inventory.reviewFindings, POLICY.reviewFindings, "exit-family review findings mismatch");
   validateImplementationIssues(inventory);
+}
+
+function projectCardinalityReview({ familyId: _, ...review }: { familyId: number } & ExitFamilyCardinalityReview) {
+  return review;
 }
 
 function validateSourceIdentityReview(family: ExitFamilyInventoryFamily): void {

@@ -14,6 +14,7 @@ import {
   validateExitFamilySourceIdentityPolicy,
   validateExitFamilySourceModelEvidence,
 } from "../../packages/settlement-codec/src/exit-family-source-identity";
+import type { ExitFamilyCardinalityReview } from "../../packages/settlement-codec/src/exit-family-inventory";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const policyPath = resolve(repositoryRoot, "packages/settlement-codec/schema/exit-family-policy-v0.json");
@@ -42,6 +43,7 @@ if (shouldCheck) {
 
 function buildExitFamilyInventory() {
   assertPolicyMatchesFrozenCapabilities();
+  assertCardinalityReviewsAreComplete();
   const reviewFindings = validateReviewFindings();
   const families = policy.families.map(buildFamilyInventory);
   const coveredSourceWriteIds = families.flatMap((family) => family.sourceWriteIds);
@@ -126,11 +128,7 @@ function buildFamilyInventory(familyPolicy: ExitFamilyPolicy["families"][number]
     cardinality: {
       maximumPositionsPerGame: policy.reviewPolicy.maximumPositionsPerGame,
       status: policy.reviewPolicy.cardinalityStatus,
-      formula: cardinalityReview.formula,
-      requiredInputs: cardinalityReview.requiredInputs,
-      candidateMaximumPositionsPerGame: cardinalityReview.candidateMaximumPositionsPerGame,
-      candidateEvidence: cardinalityReview.candidateEvidence,
-      capExhaustion: cardinalityReview.capExhaustion,
+      ...projectCardinalityReview(cardinalityReview),
     },
     sourceWriteMappingStatus:
       sourceWrites.length === 0 ? "missing-production-interface" : policy.reviewPolicy.sourceWriteMappingStatus,
@@ -151,6 +149,10 @@ function buildFamilyInventory(familyPolicy: ExitFamilyPolicy["families"][number]
 function resolveCardinalityReview(familyId: number) {
   const review = policy.cardinalityReviews.find((candidate) => candidate.familyId === familyId);
   if (!review) throw new Error(`missing A22 cardinality review for family ${familyId}`);
+  return review;
+}
+
+function projectCardinalityReview({ familyId: _, ...review }: ExitFamilyPolicy["cardinalityReviews"][number]) {
   return review;
 }
 
@@ -221,6 +223,10 @@ function assertPolicyMatchesFrozenCapabilities() {
   if (JSON.stringify(policy.families.map((family) => family.familyId)) !== JSON.stringify(expectedIds)) {
     throw new Error("exit-family policy IDs must be contiguous and one-based");
   }
+}
+
+function assertCardinalityReviewsAreComplete() {
+  const expectedIds = policy.families.map((family) => family.familyId);
   if (JSON.stringify(policy.cardinalityReviews.map((review) => review.familyId)) !== JSON.stringify(expectedIds)) {
     throw new Error("A22 cardinality reviews must cover every family in frozen order");
   }
@@ -267,14 +273,7 @@ interface ExitFamilyPolicy {
     capabilityFamily: string;
     sourceIdentity: ExitFamilySourceIdentityPolicy;
   }>;
-  cardinalityReviews: Array<{
-    familyId: number;
-    formula: string;
-    requiredInputs: string[];
-    candidateMaximumPositionsPerGame: number | null;
-    candidateEvidence: string | null;
-    capExhaustion: string;
-  }>;
+  cardinalityReviews: Array<{ familyId: number } & ExitFamilyCardinalityReview>;
   reviewPolicy: {
     sourceWriteMappingStatus: "failed-heuristic-projection";
     exclusionStatus: "failed-known-false-negative" | "reviewed";

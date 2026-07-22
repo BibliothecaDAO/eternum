@@ -10,6 +10,9 @@ const classificationPolicyPath = resolve(
 );
 const shouldCheck = process.argv.includes("--check");
 const classificationPolicy = JSON.parse(readFileSync(classificationPolicyPath, "utf8"));
+const detectorKinds = ["write_model", "delete_model", "erase_model", "write_member", "set_member", "write", "store"];
+const modelMutationKinds = new Set(["write_model", "delete_model", "erase_model"]);
+const detectorPattern = new RegExp(`(?:([A-Za-z_][A-Za-z0-9_:.()]*)\\s*)?\\.(${detectorKinds.join("|")})\\s*\\(`);
 
 const entries = applyReviewedClassificationOverrides(scanEconomicWrites());
 const inventory = {
@@ -17,7 +20,7 @@ const inventory = {
   status: "a9-feasibility-inventory",
   generatedFrom: { classificationPolicyVersion: classificationPolicy.version },
   sourceRoot: "contracts/game/src",
-  detectorKinds: ["write_model", "delete_model", "erase_model", "write_member", "set_member", "write", "store"],
+  detectorKinds,
   summary: summarize(entries),
   entries,
 };
@@ -41,9 +44,7 @@ function scanEconomicWrites() {
     const lines = readFileSync(absolutePath, "utf8").split(/\r?\n/);
     for (let index = 0; index < lines.length; index += 1) {
       const source = stripLineComment(lines[index]).trim();
-      const match = source.match(
-        /(?:([A-Za-z_][A-Za-z0-9_:.()]*)\s*)?\.(write_model|delete_model|erase_model|write_member|set_member|write|store)\s*\(/,
-      );
+      const match = source.match(detectorPattern);
       if (!match) continue;
 
       const receiver = match[1] ?? resolveMultilineReceiver(lines, index);
@@ -121,7 +122,7 @@ function resolveMultilineReceiver(lines, index) {
 }
 
 function resolveTarget(lines, index, receiver, detectorKind) {
-  if (!["write_model", "delete_model", "erase_model"].includes(detectorKind)) return receiver;
+  if (!modelMutationKinds.has(detectorKind)) return receiver;
   const callWindow = lines.slice(index, index + 5).join(" ");
   const typeMatch = callWindow.match(/@\s*([A-Z][A-Za-z0-9_]*)/);
   return typeMatch?.[1] ?? receiver;
