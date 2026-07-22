@@ -81,7 +81,7 @@ describe("A22 exit-family inventory", () => {
       expect(family.schemaHash).toMatch(/^0x[0-9a-f]+$/);
     }
     expect(inventory.familyRegistryHash).toBe("0x462a2e6b6d1f6f3d815c25d5b223ee06914dace9f96db73fb530223bd3bc1eb");
-    expect(inventory.inventoryHash).toBe("0x5dead66af3436a13ecdaed71c52551d66a5595799f6bfdce2fc174c44248036");
+    expect(inventory.inventoryHash).toBe("0x550dd0326b6db4d6fbf528d3980eac2a7ef269c0cec806aea8ed3a1e50c0c4f");
   });
 
   test("binds reviewed cardinality and each writer's family assignment into commitments", () => {
@@ -154,6 +154,28 @@ describe("A22 exit-family inventory", () => {
     expect(inventory.unresolved.length).toBeGreaterThan(0);
     expect(inventory.families.every((family) => family.cardinality.maximumPositionsPerGame === null)).toBe(true);
     expect(inventory.families.every((family) => family.cardinality.status === "failed-no-reviewed-bound")).toBe(true);
+    expect(
+      inventory.families.every(
+        (family) =>
+          family.cardinality.formula.length > 0 &&
+          family.cardinality.requiredInputs.length > 0 &&
+          family.cardinality.capExhaustion.length > 0,
+      ),
+    ).toBe(true);
+    expect(inventory.families.map((family) => family.cardinality.candidateMaximumPositionsPerGame)).toEqual([
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      4096,
+      null,
+      null,
+    ]);
     expect(
       inventory.families
         .filter((family) => family.sourceIdentity.status === "interface-reviewed")

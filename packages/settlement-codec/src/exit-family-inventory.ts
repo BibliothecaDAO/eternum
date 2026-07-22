@@ -33,6 +33,11 @@ export interface ExitFamilyInventoryFamily {
   cardinality: {
     maximumPositionsPerGame: number | null;
     status: "failed-no-reviewed-bound" | "reviewed";
+    formula: string;
+    requiredInputs: string[];
+    candidateMaximumPositionsPerGame: number | null;
+    candidateEvidence: string | null;
+    capExhaustion: string;
   };
   sourceWriteMappingStatus: ExitFamilyMappingStatus;
   operationIds: number[];
@@ -143,6 +148,8 @@ function validateFamilyProjection(inventory: ExitFamilyInventory): void {
   );
 
   for (const family of inventory.families) {
+    const cardinalityReview = POLICY.cardinalityReviews.find((candidate) => candidate.familyId === family.familyId);
+    if (!cardinalityReview) throw new Error(`missing cardinality review for exit family ${family.familyId}`);
     assertEqualJson(family.indexSchema, POLICY.indexSchema, `exit-family ${family.familyId} index schema mismatch`);
     assertEqualJson(family.chunking, POLICY.chunking, `exit-family ${family.familyId} chunking mismatch`);
     validateSourceIdentityReview(family);
@@ -151,6 +158,11 @@ function validateFamilyProjection(inventory: ExitFamilyInventory): void {
       {
         maximumPositionsPerGame: POLICY.reviewPolicy.maximumPositionsPerGame,
         status: POLICY.reviewPolicy.cardinalityStatus,
+        formula: cardinalityReview.formula,
+        requiredInputs: cardinalityReview.requiredInputs,
+        candidateMaximumPositionsPerGame: cardinalityReview.candidateMaximumPositionsPerGame,
+        candidateEvidence: cardinalityReview.candidateEvidence,
+        capExhaustion: cardinalityReview.capExhaustion,
       },
       `exit-family ${family.familyId} cardinality review mismatch`,
     );

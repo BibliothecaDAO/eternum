@@ -17,7 +17,7 @@ const inventory = {
   status: "a9-feasibility-inventory",
   generatedFrom: { classificationPolicyVersion: classificationPolicy.version },
   sourceRoot: "contracts/game/src",
-  detectorKinds: ["write_model", "delete_model", "write_member", "set_member", "write", "store"],
+  detectorKinds: ["write_model", "delete_model", "erase_model", "write_member", "set_member", "write", "store"],
   summary: summarize(entries),
   entries,
 };
@@ -42,7 +42,7 @@ function scanEconomicWrites() {
     for (let index = 0; index < lines.length; index += 1) {
       const source = stripLineComment(lines[index]).trim();
       const match = source.match(
-        /(?:([A-Za-z_][A-Za-z0-9_:.()]*)\s*)?\.(write_model|delete_model|write_member|set_member|write|store)\s*\(/,
+        /(?:([A-Za-z_][A-Za-z0-9_:.()]*)\s*)?\.(write_model|delete_model|erase_model|write_member|set_member|write|store)\s*\(/,
       );
       if (!match) continue;
 
@@ -121,7 +121,7 @@ function resolveMultilineReceiver(lines, index) {
 }
 
 function resolveTarget(lines, index, receiver, detectorKind) {
-  if (detectorKind !== "write_model" && detectorKind !== "delete_model") return receiver;
+  if (!["write_model", "delete_model", "erase_model"].includes(detectorKind)) return receiver;
   const callWindow = lines.slice(index, index + 5).join(" ");
   const typeMatch = callWindow.match(/@\s*([A-Z][A-Za-z0-9_]*)/);
   return typeMatch?.[1] ?? receiver;

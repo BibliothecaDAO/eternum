@@ -130,16 +130,16 @@
     },
     "exitFamilyInventory": {
       "status": "a22-stop-redesign-required",
-      "fileSha256": "5598db55c6b45b1cb9c9ff722b46829a047b5b55b8791ba8af4b1591a570d7ca",
+      "fileSha256": "fe09b160c4d591d9445e875dafd759980e5ea82fe1df3c6f7645594b802aa94f",
       "referenceLayoutSha256": "d0b9e3f9374933e6eb176de23382121285f58898071f8775df12bcff97b794ce",
       "sourceIdentityValidatorSha256": "adf608df8b9a83d2bd32d00acccc696c4210b63c16dbcd160cff239e194559e0",
       "familyRegistryHash": "0x462a2e6b6d1f6f3d815c25d5b223ee06914dace9f96db73fb530223bd3bc1eb",
-      "inventoryHash": "0x5dead66af3436a13ecdaed71c52551d66a5595799f6bfdce2fc174c44248036",
-      "sourceProjectionHash": "0x222bea4ce5ef256065eb7f59e349cd7e3e5f44e29b7be2e6814d5c4e96549da",
-      "excludedProjectionHash": "0x7bf52c4889bd5b3dfd3dd9dd9df86a1a33f96687130b3b96bc8583067fe523b",
-      "discoveredWrites": 308,
-      "exitCoveredWrites": 253,
-      "excludedWrites": 55,
+      "inventoryHash": "0x550dd0326b6db4d6fbf528d3980eac2a7ef269c0cec806aea8ed3a1e50c0c4f",
+      "sourceProjectionHash": "0x1ae7c5e1793312af595844c960d7364d432bddd743c57ef7cd091c318a9d995",
+      "excludedProjectionHash": "0x262527d89b0646c80867b2b739e48f50466801b076e5e7927796c37cce3e070",
+      "discoveredWrites": 323,
+      "exitCoveredWrites": 263,
+      "excludedWrites": 60,
       "familyCount": 12,
       "familiesWithoutDiscoveredWrites": 4,
       "reviewFindingCount": 1,
@@ -147,7 +147,7 @@
       "releaseReady": false
     },
     "economicWriteClassificationPolicySha256": "f1849edcd83b773c09def2ea78f78bbe3b729989c940e59eba5db73029c8b145",
-    "economicWriteInventorySha256": "840ccdbbb34ec3b768ae6af8346f918a753a0e425465cf2e7e97fc72fe3ef36f",
+    "economicWriteInventorySha256": "31ff94e3ce9862d215718483a6e163855bfa23581e6ebc883420b822d2ca83f2",
     "onchainObservationSha256": "64570077b1405d7a47db1fedb19a07950001df290ba33e33254df412693040ab"
   },
   "performanceEvidence": {
@@ -246,28 +246,28 @@
         {
           "ticket": "D5",
           "familyIds": [1, 2, 3, 10, 11, 12],
-          "sourceWriteCount": 96,
+          "sourceWriteCount": 98,
           "sourceFileCount": 21,
           "missingProductionFamilyIds": [10, 11, 12]
         },
         {
           "ticket": "D6",
           "familyIds": [4, 6],
-          "sourceWriteCount": 15,
+          "sourceWriteCount": 19,
           "sourceFileCount": 4,
           "missingProductionFamilyIds": []
         },
         {
           "ticket": "D7",
           "familyIds": [5],
-          "sourceWriteCount": 35,
+          "sourceWriteCount": 38,
           "sourceFileCount": 8,
           "missingProductionFamilyIds": []
         },
         {
           "ticket": "D8",
           "familyIds": [7, 9],
-          "sourceWriteCount": 20,
+          "sourceWriteCount": 21,
           "sourceFileCount": 3,
           "missingProductionFamilyIds": [9]
         },
@@ -279,7 +279,7 @@
           "missingProductionFamilyIds": []
         }
       ],
-      "reason": "A22's three known classification errors are corrected through exact reviewed overrides and its reference u64 index, generation, tombstone, and chunk semantics are executable. Typed source identities, reviewed per-family maxima, exact production projections, cap enforcement, and A8 measurements remain unavailable, so estimates would not be evidence-backed."
+      "reason": "A22's mutation inventory now includes erase_model lifecycle edges, its three exact classification overrides remain enforced, and its reference u64 index, generation, tombstone, and chunk semantics are executable. All twelve family formulas, required inputs, and cap-exhaustion rules are bound; family 10 has a 4,096-position normative candidate pending coordinate review. Typed source identities, reviewed per-family maxima, exact production projections, cap enforcement, and A8 measurements remain unavailable, so estimates would not be evidence-backed."
     },
     "staffing": {
       "status": "unavailable",
@@ -299,7 +299,7 @@
     },
     {
       "id": "A22-BOUNDS-FREEZE",
-      "action": "The three known classification errors have exact reviewed overrides and A22 has executable reference u64 index, generation, tombstone, and chunk semantics. Derive and independently review exact per-family maxima from rulesets and simulations; redesign D5-D9 from the five enumerated issue groups; implement typed source projections and production indexes; add the four absent production families; enforce the reviewed caps; and rerun A8 before estimating or authorizing production."
+      "action": "A22 now discovers erase_model lifecycle mutations, preserves three exact reviewed classification overrides, publishes executable reference u64 index, generation, tombstone, and chunk semantics, and binds per-family cardinality formulas, required inputs, and atomic exhaustion rules. Family 10 has a 4,096-position normative candidate, but its fixed lot coordinate still requires integration review. Independently review exact per-family maxima from rulesets and simulations; redesign D5-D9 from the five enumerated issue groups; implement typed source projections and production indexes; add the four absent production families; enforce the reviewed caps; and rerun A8 before estimating or authorizing production."
     },
     {
       "id": "TEE-SOURCE-GATE",

@@ -8,28 +8,29 @@
   "detectorKinds": [
     "write_model",
     "delete_model",
+    "erase_model",
     "write_member",
     "set_member",
     "write",
     "store"
   ],
   "summary": {
-    "writes": 308,
+    "writes": 323,
     "files": 57,
-    "exitCoveredCandidates": 253,
-    "outOfScopeCandidates": 55,
+    "exitCoveredCandidates": 263,
+    "outOfScopeCandidates": 60,
     "unclassified": 0,
     "reviewedOverrides": 3,
     "byClassification": {
-      "out_of_scope": 55,
+      "out_of_scope": 60,
       "reward_state": 87,
-      "arrival": 3,
-      "lazy_production": 25,
+      "arrival": 4,
+      "lazy_production": 26,
       "resource": 38,
-      "structure_ownership": 33,
-      "trade_and_donkey": 12,
-      "amm_and_lp": 20,
-      "military_and_cargo": 35
+      "structure_ownership": 34,
+      "trade_and_donkey": 15,
+      "amm_and_lp": 21,
+      "military_and_cargo": 38
     }
   },
   "entries": [
@@ -180,6 +181,17 @@
       "source": "world.write_model(@resource_arrival_model);"
     },
     {
+      "id": "contracts/game/src/models/resource/arrivals.cairo:317:erase_model",
+      "path": "contracts/game/src/models/resource/arrivals.cairo",
+      "line": 317,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "arrival",
+      "exitCoveredCandidate": true,
+      "reason": "arrival or in-transit value state",
+      "source": "world.erase_model(@resource_arrival_model);"
+    },
+    {
       "id": "contracts/game/src/models/resource/arrivals.cairo:343:write_member",
       "path": "contracts/game/src/models/resource/arrivals.cairo",
       "line": 343,
@@ -321,6 +333,17 @@
       "exitCoveredCandidate": true,
       "reason": "lazy production, producer, or reserved output state",
       "source": "world.write_model(@structure_buildings);"
+    },
+    {
+      "id": "contracts/game/src/models/resource/production/building.cairo:803:erase_model",
+      "path": "contracts/game/src/models/resource/production/building.cairo",
+      "line": 803,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "lazy_production",
+      "exitCoveredCandidate": true,
+      "reason": "lazy production, producer, or reserved output state",
+      "source": "world.erase_model(@building);"
     },
     {
       "id": "contracts/game/src/models/resource/production/building.cairo:871:store",
@@ -631,6 +654,17 @@
       "source": "world.write_member(Model::<Structure>::ptr_from_keys(structure_id), selector!(\"metadata\"), self);"
     },
     {
+      "id": "contracts/game/src/models/trade.cairo:34:erase_model",
+      "path": "contracts/game/src/models/trade.cairo",
+      "line": 34,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "trade_and_donkey",
+      "exitCoveredCandidate": true,
+      "reason": "trade order or DONKEY escrow state",
+      "source": "world.erase_model(@self);"
+    },
+    {
       "id": "contracts/game/src/models/trade.cairo:36:write_model",
       "path": "contracts/game/src/models/trade.cairo",
       "line": 36,
@@ -838,6 +872,17 @@
       "exitCoveredCandidate": true,
       "reason": "bank reserve, AMM, or wallet LP state",
       "source": "world.write_model(@market);"
+    },
+    {
+      "id": "contracts/game/src/systems/bank/contracts/liquidity.cairo:168:erase_model",
+      "path": "contracts/game/src/systems/bank/contracts/liquidity.cairo",
+      "line": 168,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "amm_and_lp",
+      "exitCoveredCandidate": true,
+      "reason": "bank reserve, AMM, or wallet LP state",
+      "source": "world.erase_model(@player_liquidity);"
     },
     {
       "id": "contracts/game/src/systems/bank/contracts/liquidity.cairo:170:write_model",
@@ -1753,6 +1798,17 @@
       "source": "world.write_model(@GuildMember { member: caller_address, guild_id: caller_address });"
     },
     {
+      "id": "contracts/game/src/systems/guild/contracts.cairo:117:erase_model",
+      "path": "contracts/game/src/systems/guild/contracts.cairo",
+      "line": 117,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "out_of_scope",
+      "exitCoveredCandidate": false,
+      "reason": "Non-economic config, map, guild, naming, quest, achievement, RNG, lifecycle, or administrative state; A22 must confirm the exclusion.",
+      "source": "world.erase_model(@old_guild);"
+    },
+    {
       "id": "contracts/game/src/systems/guild/contracts.cairo:119:write_model",
       "path": "contracts/game/src/systems/guild/contracts.cairo",
       "line": 119,
@@ -1786,6 +1842,17 @@
       "source": "world.write_model(@guild_member);"
     },
     {
+      "id": "contracts/game/src/systems/guild/contracts.cairo:158:erase_model",
+      "path": "contracts/game/src/systems/guild/contracts.cairo",
+      "line": 158,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "out_of_scope",
+      "exitCoveredCandidate": false,
+      "reason": "Non-economic config, map, guild, naming, quest, achievement, RNG, lifecycle, or administrative state; A22 must confirm the exclusion.",
+      "source": "world.erase_model(@guild);"
+    },
+    {
       "id": "contracts/game/src/systems/guild/contracts.cairo:160:write_model",
       "path": "contracts/game/src/systems/guild/contracts.cairo",
       "line": 160,
@@ -1797,6 +1864,17 @@
       "source": "world.write_model(@guild);"
     },
     {
+      "id": "contracts/game/src/systems/guild/contracts.cairo:162:erase_model",
+      "path": "contracts/game/src/systems/guild/contracts.cairo",
+      "line": 162,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "out_of_scope",
+      "exitCoveredCandidate": false,
+      "reason": "Non-economic config, map, guild, naming, quest, achievement, RNG, lifecycle, or administrative state; A22 must confirm the exclusion.",
+      "source": "world.erase_model(@guild_member);"
+    },
+    {
       "id": "contracts/game/src/systems/guild/contracts.cairo:178:write_model",
       "path": "contracts/game/src/systems/guild/contracts.cairo",
       "line": 178,
@@ -1806,6 +1884,28 @@
       "exitCoveredCandidate": false,
       "reason": "Non-economic config, map, guild, naming, quest, achievement, RNG, lifecycle, or administrative state; A22 must confirm the exclusion.",
       "source": "world.write_model(@GuildWhitelist { guild_id: caller_address, address, whitelisted: whitelist });"
+    },
+    {
+      "id": "contracts/game/src/systems/guild/contracts.cairo:191:erase_model",
+      "path": "contracts/game/src/systems/guild/contracts.cairo",
+      "line": 191,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "out_of_scope",
+      "exitCoveredCandidate": false,
+      "reason": "Non-economic config, map, guild, naming, quest, achievement, RNG, lifecycle, or administrative state; A22 must confirm the exclusion.",
+      "source": "world.erase_model(@guild_member);"
+    },
+    {
+      "id": "contracts/game/src/systems/guild/contracts.cairo:196:erase_model",
+      "path": "contracts/game/src/systems/guild/contracts.cairo",
+      "line": 196,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "out_of_scope",
+      "exitCoveredCandidate": false,
+      "reason": "Non-economic config, map, guild, naming, quest, achievement, RNG, lifecycle, or administrative state; A22 must confirm the exclusion.",
+      "source": "world.erase_model(@guild);"
     },
     {
       "id": "contracts/game/src/systems/guild/contracts.cairo:198:write_model",
@@ -2644,6 +2744,17 @@
       "source": "taker_structure_weight.store(ref world, taker_id);"
     },
     {
+      "id": "contracts/game/src/systems/trade/contracts/trade_systems.cairo:357:erase_model",
+      "path": "contracts/game/src/systems/trade/contracts/trade_systems.cairo",
+      "line": 357,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "trade_and_donkey",
+      "exitCoveredCandidate": true,
+      "reason": "trade order or DONKEY escrow state",
+      "source": "world.erase_model(@trade);"
+    },
+    {
       "id": "contracts/game/src/systems/trade/contracts/trade_systems.cairo:359:write_model",
       "path": "contracts/game/src/systems/trade/contracts/trade_systems.cairo",
       "line": 359,
@@ -2675,6 +2786,17 @@
       "exitCoveredCandidate": true,
       "reason": "trade order or DONKEY escrow state",
       "source": "maker_structure_weight.store(ref world, trade.maker_id);"
+    },
+    {
+      "id": "contracts/game/src/systems/trade/contracts/trade_systems.cairo:424:erase_model",
+      "path": "contracts/game/src/systems/trade/contracts/trade_systems.cairo",
+      "line": 424,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "trade_and_donkey",
+      "exitCoveredCandidate": true,
+      "reason": "trade order or DONKEY escrow state",
+      "source": "world.erase_model(@trade);"
     },
     {
       "id": "contracts/game/src/systems/utils/camp.cairo:40:store",
@@ -3117,6 +3239,39 @@
       "source": "troop_weight.store(ref world, explorer_id);"
     },
     {
+      "id": "contracts/game/src/systems/utils/troop.cairo:378:erase_model",
+      "path": "contracts/game/src/systems/utils/troop.cairo",
+      "line": 378,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "military_and_cargo",
+      "exitCoveredCandidate": true,
+      "reason": "troop, explorer, guard, combat, or surviving cargo state",
+      "source": "world.erase_model(@agent_owner);"
+    },
+    {
+      "id": "contracts/game/src/systems/utils/troop.cairo:486:erase_model",
+      "path": "contracts/game/src/systems/utils/troop.cairo",
+      "line": 486,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "military_and_cargo",
+      "exitCoveredCandidate": true,
+      "reason": "troop, explorer, guard, combat, or surviving cargo state",
+      "source": "world.erase_model(@resource);"
+    },
+    {
+      "id": "contracts/game/src/systems/utils/troop.cairo:489:erase_model",
+      "path": "contracts/game/src/systems/utils/troop.cairo",
+      "line": 489,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "military_and_cargo",
+      "exitCoveredCandidate": true,
+      "reason": "troop, explorer, guard, combat, or surviving cargo state",
+      "source": "world.erase_model(@explorer);"
+    },
+    {
       "id": "contracts/game/src/systems/utils/troop.cairo:564:store",
       "path": "contracts/game/src/systems/utils/troop.cairo",
       "line": 564,
@@ -3170,6 +3325,17 @@
       "exitCoveredCandidate": true,
       "reason": "troop, explorer, guard, combat, or surviving cargo state",
       "source": "lords_resource.store(ref world);"
+    },
+    {
+      "id": "contracts/game/src/systems/village/contracts.cairo:92:erase_model",
+      "path": "contracts/game/src/systems/village/contracts.cairo",
+      "line": 92,
+      "detectorKind": "erase_model",
+      "target": "world",
+      "classification": "structure_ownership",
+      "exitCoveredCandidate": true,
+      "reason": "structure/entity ownership or attached position state",
+      "source": "world.erase_model(@structure_village_slots);"
     },
     {
       "id": "contracts/game/src/systems/village/contracts.cairo:95:write_model",

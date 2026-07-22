@@ -168,6 +168,32 @@ describe("A14 frozen economic capability interface", () => {
     expect(inventory.summary.files).toBeGreaterThan(30);
   });
 
+  test("includes every discovered erase_model lifecycle mutation", () => {
+    const inventory = readJson(inventoryUrl);
+    const discoveredEraseIds = inventory.entries
+      .filter(({ detectorKind }: { detectorKind: string }) => detectorKind === "erase_model")
+      .map(({ id }: { id: string }) => id);
+
+    expect(inventory.detectorKinds).toContain("erase_model");
+    expect(discoveredEraseIds).toEqual([
+      "contracts/game/src/models/resource/arrivals.cairo:317:erase_model",
+      "contracts/game/src/models/resource/production/building.cairo:803:erase_model",
+      "contracts/game/src/models/trade.cairo:34:erase_model",
+      "contracts/game/src/systems/bank/contracts/liquidity.cairo:168:erase_model",
+      "contracts/game/src/systems/guild/contracts.cairo:117:erase_model",
+      "contracts/game/src/systems/guild/contracts.cairo:158:erase_model",
+      "contracts/game/src/systems/guild/contracts.cairo:162:erase_model",
+      "contracts/game/src/systems/guild/contracts.cairo:191:erase_model",
+      "contracts/game/src/systems/guild/contracts.cairo:196:erase_model",
+      "contracts/game/src/systems/trade/contracts/trade_systems.cairo:357:erase_model",
+      "contracts/game/src/systems/trade/contracts/trade_systems.cairo:424:erase_model",
+      "contracts/game/src/systems/utils/troop.cairo:378:erase_model",
+      "contracts/game/src/systems/utils/troop.cairo:486:erase_model",
+      "contracts/game/src/systems/utils/troop.cairo:489:erase_model",
+      "contracts/game/src/systems/village/contracts.cairo:92:erase_model",
+    ]);
+  });
+
   test("applies the reviewed A22 classification corrections exactly", () => {
     const inventory = readJson(inventoryUrl);
     const writesById = new Map(inventory.entries.map((entry: Record<string, unknown>) => [entry.id, entry]));

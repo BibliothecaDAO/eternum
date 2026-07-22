@@ -7,15 +7,15 @@
     "economicWriteInventoryVersion": 0
   },
   "familyRegistryHash": "0x462a2e6b6d1f6f3d815c25d5b223ee06914dace9f96db73fb530223bd3bc1eb",
-  "sourceProjectionHash": "0x222bea4ce5ef256065eb7f59e349cd7e3e5f44e29b7be2e6814d5c4e96549da",
-  "excludedProjectionHash": "0x7bf52c4889bd5b3dfd3dd9dd9df86a1a33f96687130b3b96bc8583067fe523b",
-  "inventoryHash": "0x5dead66af3436a13ecdaed71c52551d66a5595799f6bfdce2fc174c44248036",
+  "sourceProjectionHash": "0x1ae7c5e1793312af595844c960d7364d432bddd743c57ef7cd091c318a9d995",
+  "excludedProjectionHash": "0x262527d89b0646c80867b2b739e48f50466801b076e5e7927796c37cce3e070",
+  "inventoryHash": "0x550dd0326b6db4d6fbf528d3980eac2a7ef269c0cec806aea8ed3a1e50c0c4f",
   "releaseReady": false,
   "exclusionReviewStatus": "reviewed",
   "summary": {
-    "discoveredWrites": 308,
-    "exitCoveredWrites": 253,
-    "excludedWrites": 55,
+    "discoveredWrites": 323,
+    "exitCoveredWrites": 263,
+    "excludedWrites": 60,
     "familyCount": 12,
     "familiesWithoutDiscoveredWrites": 4
   },
@@ -78,7 +78,16 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-reviewed-bound"
+        "status": "failed-no-reviewed-bound",
+        "formula": "Sum every sealed resource-bearing entity class's lifetime allocations multiplied by its approved resource-position set.",
+        "requiredInputs": [
+          "lifetime allocation cap for every resource-bearing entity class",
+          "sealed ordered resource registry and allocation policy",
+          "preset-specific structure, troop, bank, mine, quest, and participant caps"
+        ],
+        "candidateMaximumPositionsPerGame": null,
+        "candidateEvidence": null,
+        "capExhaustion": "Reject before any Resource, Weight, backing, index, or ExitPosition mutation; tombstones never return capacity."
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -190,7 +199,16 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-reviewed-bound"
+        "status": "failed-no-reviewed-bound",
+        "formula": "Count lifetime economically active Structure IDs across every allowed category; ownership transfers do not increase the count.",
+        "requiredInputs": [
+          "maximum accepted realm and participant registrations",
+          "sealed per-category structure creation limits",
+          "destroyed-structure terminal and recreation policy"
+        ],
+        "candidateMaximumPositionsPerGame": null,
+        "candidateEvidence": null,
+        "capExhaustion": "Reject structure creation before Structure, owner-stat, resource, map, backing, index, or ExitPosition writes."
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -234,6 +252,7 @@
         "contracts/game/src/systems/utils/resource.cairo:666:store",
         "contracts/game/src/systems/utils/structure.cairo:165:write_model",
         "contracts/game/src/systems/utils/structure.cairo:173:write_model",
+        "contracts/game/src/systems/village/contracts.cairo:92:erase_model",
         "contracts/game/src/systems/village/contracts.cairo:95:write_model",
         "contracts/game/src/utils/testing/contracts/villagepassmock.cairo:171:write"
       ],
@@ -254,9 +273,9 @@
         "contracts/game/src/systems/village/contracts.cairo",
         "contracts/game/src/utils/testing/contracts/villagepassmock.cairo"
       ],
-      "sourceWriteCount": 33,
+      "sourceWriteCount": 34,
       "sourceFileCount": 15,
-      "familyProjectionHash": "0x5454603923d742a91c41c9f0afb2e9c79694c8df8e22a707b86aa90e42fcc4b",
+      "familyProjectionHash": "0xb0fbb0613ea1af08baa6906a9ed2ada576af821ad65534ac136e16db1f8102",
       "schemaHash": "0x43f4c676c7eb543aac28b3611a4556268b1b3fb3a43edf8071f40eca2144fea"
     },
     {
@@ -305,7 +324,17 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-reviewed-bound"
+        "status": "failed-no-reviewed-bound",
+        "formula": "Sum each lifetime approved producer entity's sealed production-enabled resource set.",
+        "requiredInputs": [
+          "lifetime producer caps",
+          "sealed production-enabled resource registry",
+          "fixed season end and maximum rate-extension/output ceilings",
+          "building deletion and recreation policy"
+        ],
+        "candidateMaximumPositionsPerGame": null,
+        "candidateEvidence": null,
+        "capExhaustion": "Reject before rate, output, Resource, Weight, backing, Building, index, or ExitPosition mutation; replace unbounded labor output with the sealed-end ceiling."
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -330,6 +359,7 @@
         "contracts/game/src/models/resource/production/building.cairo:682:write_model",
         "contracts/game/src/models/resource/production/building.cairo:731:write_model",
         "contracts/game/src/models/resource/production/building.cairo:798:write_model",
+        "contracts/game/src/models/resource/production/building.cairo:803:erase_model",
         "contracts/game/src/models/resource/production/building.cairo:871:store",
         "contracts/game/src/models/resource/production/building.cairo:878:store",
         "contracts/game/src/models/resource/production/production.cairo:232:store",
@@ -350,9 +380,9 @@
         "contracts/game/src/models/resource/production/production.cairo",
         "contracts/game/src/systems/config/contracts.cairo"
       ],
-      "sourceWriteCount": 25,
+      "sourceWriteCount": 26,
       "sourceFileCount": 3,
-      "familyProjectionHash": "0x5906c6319d3f931d6f5f26e74fd61f31648657d230c9ad7fbbb7c1c4436f43b",
+      "familyProjectionHash": "0x31b2e992f25016b380f5539ee1b2423be9f2c8d340c0943c51d1e6ff1005c09",
       "schemaHash": "0x1c3f9627c93ff7a20d54bfeb82dc1df334f2d81ee2bc1e60072d271d64087c"
     },
     {
@@ -402,7 +432,17 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-reviewed-bound"
+        "status": "failed-no-reviewed-bound",
+        "formula": "Count every admitted arrival resource leg over the game lifetime, not only concurrently retained day buckets.",
+        "requiredInputs": [
+          "destination structure and eligible arrival-resource maxima",
+          "fixed season and delivery timing bounds",
+          "maximum resources per transfer and every arrival-producing operation",
+          "explicit lifetime arrival-position cap"
+        ],
+        "candidateMaximumPositionsPerGame": null,
+        "candidateEvidence": null,
+        "capExhaustion": "Reject atomically before resource debit, DONKEY burn, backing reservation, arrival bucket mutation, or acceptance event."
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -417,15 +457,16 @@
       ],
       "sourceWriteIds": [
         "contracts/game/src/models/resource/arrivals.cairo:177:write_model",
+        "contracts/game/src/models/resource/arrivals.cairo:317:erase_model",
         "contracts/game/src/models/resource/arrivals.cairo:343:write_member",
         "contracts/game/src/models/resource/arrivals.cairo:349:write_member"
       ],
       "sourceFiles": [
         "contracts/game/src/models/resource/arrivals.cairo"
       ],
-      "sourceWriteCount": 3,
+      "sourceWriteCount": 4,
       "sourceFileCount": 1,
-      "familyProjectionHash": "0x3908ca3ee0decf69eccde4e3731163c7861167c2a386683fec15c4176f0dab",
+      "familyProjectionHash": "0x6cceeeb001139c691ca366797a3f2e3eae744a8e6572cc7754a9795475297bf",
       "schemaHash": "0x3357e533a55a43ea10c874fe581dbb452e47d011dfbd47b43886f60a48363ea"
     },
     {
@@ -472,7 +513,17 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-reviewed-bound"
+        "status": "failed-no-reviewed-bound",
+        "formula": "Count lifetime player and agent explorers, guard generations, and nonzero explorer cargo positions.",
+        "requiredInputs": [
+          "sealed structure and troop capacity maxima",
+          "agent current and lifetime caps",
+          "reviewed cargo resource set",
+          "player explorer, guard resurrection, and cargo lifetime policies"
+        ],
+        "candidateMaximumPositionsPerGame": null,
+        "candidateEvidence": null,
+        "capExhaustion": "Reject before troop payment, UUID publication, sponsor credit, guard or cargo mutation, backing, index, or ExitPosition change."
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -516,6 +567,9 @@
         "contracts/game/src/systems/utils/troop.cairo:346:store",
         "contracts/game/src/systems/utils/troop.cairo:349:store",
         "contracts/game/src/systems/utils/troop.cairo:363:store",
+        "contracts/game/src/systems/utils/troop.cairo:378:erase_model",
+        "contracts/game/src/systems/utils/troop.cairo:486:erase_model",
+        "contracts/game/src/systems/utils/troop.cairo:489:erase_model",
         "contracts/game/src/systems/utils/troop.cairo:564:store",
         "contracts/game/src/systems/utils/troop.cairo:565:store",
         "contracts/game/src/systems/utils/troop.cairo:710:write_model",
@@ -533,9 +587,9 @@
         "contracts/game/src/systems/utils/troop.cairo",
         "contracts/game/src/systems/village/contracts.cairo"
       ],
-      "sourceWriteCount": 35,
+      "sourceWriteCount": 38,
       "sourceFileCount": 8,
-      "familyProjectionHash": "0x33e75ac9dd41f0f1785bd71ebfdf65479f1e154fceb2f57abed9d1ce275bd46",
+      "familyProjectionHash": "0x69fc6e92724fee821f740b61ba27f61e3abfc45b620dfff9ab4247e00fe83bc",
       "schemaHash": "0xc076eef09a8171815b1a13b0b723ca95d8899b22fa628a6947afb97d6a6484"
     },
     {
@@ -582,7 +636,17 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-reviewed-bound"
+        "status": "failed-no-reviewed-bound",
+        "formula": "Count every successful order creation and its typed resource/DONKEY escrow positions over the game lifetime.",
+        "requiredInputs": [
+          "eligible maker structure maximum",
+          "concurrent order cap and all order-creation sources",
+          "fixed season duration",
+          "explicit lifetime trade-position cap"
+        ],
+        "candidateMaximumPositionsPerGame": null,
+        "candidateEvidence": null,
+        "capExhaustion": "Reject before resource debit, DONKEY burn, backing reservation, order UUID, TradeCount, Trade, index, or ExitPosition mutation."
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -596,6 +660,7 @@
         "ExitPosition"
       ],
       "sourceWriteIds": [
+        "contracts/game/src/models/trade.cairo:34:erase_model",
         "contracts/game/src/models/trade.cairo:36:write_model",
         "contracts/game/src/systems/trade/contracts/trade_systems.cairo:161:store",
         "contracts/game/src/systems/trade/contracts/trade_systems.cairo:170:store",
@@ -603,9 +668,11 @@
         "contracts/game/src/systems/trade/contracts/trade_systems.cairo:191:write_model",
         "contracts/game/src/systems/trade/contracts/trade_systems.cairo:333:store",
         "contracts/game/src/systems/trade/contracts/trade_systems.cairo:336:store",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo:357:erase_model",
         "contracts/game/src/systems/trade/contracts/trade_systems.cairo:359:write_model",
         "contracts/game/src/systems/trade/contracts/trade_systems.cairo:405:store",
         "contracts/game/src/systems/trade/contracts/trade_systems.cairo:421:store",
+        "contracts/game/src/systems/trade/contracts/trade_systems.cairo:424:erase_model",
         "contracts/game/src/systems/utils/donkey.cairo:37:store",
         "contracts/game/src/systems/utils/donkey.cairo:47:store"
       ],
@@ -614,9 +681,9 @@
         "contracts/game/src/systems/trade/contracts/trade_systems.cairo",
         "contracts/game/src/systems/utils/donkey.cairo"
       ],
-      "sourceWriteCount": 12,
+      "sourceWriteCount": 15,
       "sourceFileCount": 3,
-      "familyProjectionHash": "0x3be2160d871a5baa8654bd4d602e8be6e3c5a626b168ce20f0060ef44ae9e49",
+      "familyProjectionHash": "0x2c538dfc8bce153234b464331ce56894ff5c44b7dcf9b220e9b8dd3f8f1d4ae",
       "schemaHash": "0x223572816e4d936c87b89a516a5b1a37576843da710254fec367bb62c9102d2"
     },
     {
@@ -676,7 +743,17 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-reviewed-bound"
+        "status": "failed-no-reviewed-bound",
+        "formula": "Add sealed AMM reserve pairs to every admitted wallet/resource-pair LP creation epoch.",
+        "requiredInputs": [
+          "sealed AMM pair registry",
+          "bank identity and pair semantics",
+          "maximum admitted wallets",
+          "LP re-entry prohibition or maximum creation epochs"
+        ],
+        "candidateMaximumPositionsPerGame": null,
+        "candidateEvidence": null,
+        "capExhaustion": "Reject before reserve, share, Resource, Weight, backing-lot, pending-liability, index, or ExitPosition mutation."
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -698,6 +775,7 @@
         "contracts/game/src/systems/bank/contracts/liquidity.cairo:121:store",
         "contracts/game/src/systems/bank/contracts/liquidity.cairo:127:write_model",
         "contracts/game/src/systems/bank/contracts/liquidity.cairo:158:write_model",
+        "contracts/game/src/systems/bank/contracts/liquidity.cairo:168:erase_model",
         "contracts/game/src/systems/bank/contracts/liquidity.cairo:170:write_model",
         "contracts/game/src/systems/bank/contracts/liquidity.cairo:214:store",
         "contracts/game/src/systems/bank/contracts/liquidity.cairo:215:store",
@@ -717,9 +795,9 @@
         "contracts/game/src/systems/bank/contracts/liquidity.cairo",
         "contracts/game/src/systems/bank/contracts/swap.cairo"
       ],
-      "sourceWriteCount": 20,
+      "sourceWriteCount": 21,
       "sourceFileCount": 3,
-      "familyProjectionHash": "0x29f33d178529643c84bb1461975c19290dfd6b265ca3552d7862aace3f32207",
+      "familyProjectionHash": "0x50b3dc76eb45c42196c5fabfef3690a593b30c1da41b5a2344da425673ee901",
       "schemaHash": "0x507c35a6b1fda8688fc60f35fd43a464acfa71447c1cbc05e7b2e4150288835"
     },
     {
@@ -774,7 +852,17 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-reviewed-bound"
+        "status": "failed-no-reviewed-bound",
+        "formula": "Sum the independently frozen maxima of every typed reward subtype and every supporting record required by finalization.",
+        "requiredInputs": [
+          "sealed reward subtype registry and supporting-record policy",
+          "phase, trial, wonder, rank, chest, participant, and sponsor maxima",
+          "fixed season timing and admitted structure/player counts",
+          "claimed, paid, zeroed, and recreated source policies"
+        ],
+        "candidateMaximumPositionsPerGame": null,
+        "candidateEvidence": null,
+        "capExhaustion": "Reject before source value, backing, quota, cursor, claimed state, pending liability, index, or ExitPosition mutation while preserving existing finalization and exits."
       },
       "sourceWriteMappingStatus": "failed-heuristic-projection",
       "operationIds": [
@@ -932,7 +1020,17 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-reviewed-bound"
+        "status": "failed-no-reviewed-bound",
+        "formula": "Sum every irreversible source-position debit generation that creates a liability plus finalizer-created ordinary withdrawal liabilities.",
+        "requiredInputs": [
+          "reviewed maxima for all source families",
+          "liability-producing generation cap per source or one game-global lifetime cap",
+          "forced-exit and finalizer decomposition maxima",
+          "maximum-witness UnsealedPending and open BatchAssigned states"
+        ],
+        "candidateMaximumPositionsPerGame": null,
+        "candidateEvidence": null,
+        "capExhaustion": "Reject liability creation before source debit, generation, backing-lot, index, or journal mutation; existing append, seal, claim, and recovery remain available."
       },
       "sourceWriteMappingStatus": "missing-production-interface",
       "operationIds": [
@@ -1006,7 +1104,16 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-reviewed-bound"
+        "status": "failed-no-reviewed-bound",
+        "formula": "At most 64 active-backing parent keys multiplied by 64 contiguous lots per parent.",
+        "requiredInputs": [
+          "sealed parent registry limited to 64",
+          "immutable per-parent lot count limited to 64",
+          "review of fixed parent-index and lot-index coordinates against the generic family index"
+        ],
+        "candidateMaximumPositionsPerGame": 4096,
+        "candidateEvidence": "Normative protocol limits provide 64 parents by 64 lots, but the fixed coordinate has not been reconciled with the generic append-only index.",
+        "capExhaustion": "Reject a sixty-fifth parent or lot before local credit, backing, index, or ExitPosition mutation."
       },
       "sourceWriteMappingStatus": "missing-production-interface",
       "operationIds": [
@@ -1061,7 +1168,17 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-reviewed-bound"
+        "status": "failed-no-reviewed-bound",
+        "formula": "Count unique economically addressable player_l2 values admitted during the game lifetime.",
+        "requiredInputs": [
+          "sealed participant and paid-entry maxima",
+          "every binding or funding path that introduces a player",
+          "duplicate-wallet and multiple-entry policy",
+          "first-participation versus first-lock allocation rule"
+        ],
+        "candidateMaximumPositionsPerGame": null,
+        "candidateEvidence": null,
+        "capExhaustion": "Reject participation or first lock before any source, backing, index, or ExitPosition mutation."
       },
       "sourceWriteMappingStatus": "missing-production-interface",
       "operationIds": [
@@ -1115,7 +1232,17 @@
       },
       "cardinality": {
         "maximumPositionsPerGame": null,
-        "status": "failed-no-reviewed-bound"
+        "status": "failed-no-reviewed-bound",
+        "formula": "Add initial positions projected from families 1 through 11 to every permitted split child and merge output over the game lifetime.",
+        "requiredInputs": [
+          "reviewed maxima for families 1 through 11",
+          "split fan-out and merge fan-in limits",
+          "per-position and per-game lifetime reshape caps",
+          "eager versus lazy source-position creation policy"
+        ],
+        "candidateMaximumPositionsPerGame": null,
+        "candidateEvidence": null,
+        "capExhaustion": "Reject create, split, or merge before source, owner index, backing, generation, tombstone, or child mutation."
       },
       "sourceWriteMappingStatus": "missing-production-interface",
       "operationIds": [
@@ -1151,11 +1278,16 @@
     "contracts/game/src/systems/config/contracts.cairo:841:write_model",
     "contracts/game/src/systems/guild/contracts.cairo:93:write_model",
     "contracts/game/src/systems/guild/contracts.cairo:94:write_model",
+    "contracts/game/src/systems/guild/contracts.cairo:117:erase_model",
     "contracts/game/src/systems/guild/contracts.cairo:119:write_model",
     "contracts/game/src/systems/guild/contracts.cairo:136:write_model",
     "contracts/game/src/systems/guild/contracts.cairo:137:write_model",
+    "contracts/game/src/systems/guild/contracts.cairo:158:erase_model",
     "contracts/game/src/systems/guild/contracts.cairo:160:write_model",
+    "contracts/game/src/systems/guild/contracts.cairo:162:erase_model",
     "contracts/game/src/systems/guild/contracts.cairo:178:write_model",
+    "contracts/game/src/systems/guild/contracts.cairo:191:erase_model",
+    "contracts/game/src/systems/guild/contracts.cairo:196:erase_model",
     "contracts/game/src/systems/guild/contracts.cairo:198:write_model",
     "contracts/game/src/systems/mmr/contracts.cairo:169:write_model",
     "contracts/game/src/systems/mmr/contracts.cairo:227:write_model",
@@ -1212,7 +1344,7 @@
         12
       ],
       "scope": "resource, ownership, production, backing, player lock, and canonical exit-position foundations",
-      "sourceWriteCount": 96,
+      "sourceWriteCount": 98,
       "sourceFileCount": 21,
       "sourceFiles": [
         "contracts/game/src/models/resource/production/building.cairo",
@@ -1258,7 +1390,7 @@
         6
       ],
       "scope": "arrivals, trades, and DONKEY escrow",
-      "sourceWriteCount": 15,
+      "sourceWriteCount": 19,
       "sourceFileCount": 4,
       "sourceFiles": [
         "contracts/game/src/models/resource/arrivals.cairo",
@@ -1282,7 +1414,7 @@
         5
       ],
       "scope": "troops, explorers, guards, ownership/capture, and cargo",
-      "sourceWriteCount": 35,
+      "sourceWriteCount": 38,
       "sourceFileCount": 8,
       "sourceFiles": [
         "contracts/game/src/systems/combat/contracts/troop_battle.cairo",
@@ -1311,7 +1443,7 @@
         9
       ],
       "scope": "bank, AMM, LP, fees, and pending withdrawals",
-      "sourceWriteCount": 20,
+      "sourceWriteCount": 21,
       "sourceFileCount": 3,
       "sourceFiles": [
         "contracts/game/src/systems/bank/contracts/bank.cairo",

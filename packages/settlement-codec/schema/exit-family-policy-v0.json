@@ -277,6 +277,161 @@
       }
     }
   ],
+  "cardinalityReviews": [
+    {
+      "familyId": 1,
+      "formula": "Sum every sealed resource-bearing entity class's lifetime allocations multiplied by its approved resource-position set.",
+      "requiredInputs": [
+        "lifetime allocation cap for every resource-bearing entity class",
+        "sealed ordered resource registry and allocation policy",
+        "preset-specific structure, troop, bank, mine, quest, and participant caps"
+      ],
+      "candidateMaximumPositionsPerGame": null,
+      "candidateEvidence": null,
+      "capExhaustion": "Reject before any Resource, Weight, backing, index, or ExitPosition mutation; tombstones never return capacity."
+    },
+    {
+      "familyId": 2,
+      "formula": "Count lifetime economically active Structure IDs across every allowed category; ownership transfers do not increase the count.",
+      "requiredInputs": [
+        "maximum accepted realm and participant registrations",
+        "sealed per-category structure creation limits",
+        "destroyed-structure terminal and recreation policy"
+      ],
+      "candidateMaximumPositionsPerGame": null,
+      "candidateEvidence": null,
+      "capExhaustion": "Reject structure creation before Structure, owner-stat, resource, map, backing, index, or ExitPosition writes."
+    },
+    {
+      "familyId": 3,
+      "formula": "Sum each lifetime approved producer entity's sealed production-enabled resource set.",
+      "requiredInputs": [
+        "lifetime producer caps",
+        "sealed production-enabled resource registry",
+        "fixed season end and maximum rate-extension/output ceilings",
+        "building deletion and recreation policy"
+      ],
+      "candidateMaximumPositionsPerGame": null,
+      "candidateEvidence": null,
+      "capExhaustion": "Reject before rate, output, Resource, Weight, backing, Building, index, or ExitPosition mutation; replace unbounded labor output with the sealed-end ceiling."
+    },
+    {
+      "familyId": 4,
+      "formula": "Count every admitted arrival resource leg over the game lifetime, not only concurrently retained day buckets.",
+      "requiredInputs": [
+        "destination structure and eligible arrival-resource maxima",
+        "fixed season and delivery timing bounds",
+        "maximum resources per transfer and every arrival-producing operation",
+        "explicit lifetime arrival-position cap"
+      ],
+      "candidateMaximumPositionsPerGame": null,
+      "candidateEvidence": null,
+      "capExhaustion": "Reject atomically before resource debit, DONKEY burn, backing reservation, arrival bucket mutation, or acceptance event."
+    },
+    {
+      "familyId": 5,
+      "formula": "Count lifetime player and agent explorers, guard generations, and nonzero explorer cargo positions.",
+      "requiredInputs": [
+        "sealed structure and troop capacity maxima",
+        "agent current and lifetime caps",
+        "reviewed cargo resource set",
+        "player explorer, guard resurrection, and cargo lifetime policies"
+      ],
+      "candidateMaximumPositionsPerGame": null,
+      "candidateEvidence": null,
+      "capExhaustion": "Reject before troop payment, UUID publication, sponsor credit, guard or cargo mutation, backing, index, or ExitPosition change."
+    },
+    {
+      "familyId": 6,
+      "formula": "Count every successful order creation and its typed resource/DONKEY escrow positions over the game lifetime.",
+      "requiredInputs": [
+        "eligible maker structure maximum",
+        "concurrent order cap and all order-creation sources",
+        "fixed season duration",
+        "explicit lifetime trade-position cap"
+      ],
+      "candidateMaximumPositionsPerGame": null,
+      "candidateEvidence": null,
+      "capExhaustion": "Reject before resource debit, DONKEY burn, backing reservation, order UUID, TradeCount, Trade, index, or ExitPosition mutation."
+    },
+    {
+      "familyId": 7,
+      "formula": "Add sealed AMM reserve pairs to every admitted wallet/resource-pair LP creation epoch.",
+      "requiredInputs": [
+        "sealed AMM pair registry",
+        "bank identity and pair semantics",
+        "maximum admitted wallets",
+        "LP re-entry prohibition or maximum creation epochs"
+      ],
+      "candidateMaximumPositionsPerGame": null,
+      "candidateEvidence": null,
+      "capExhaustion": "Reject before reserve, share, Resource, Weight, backing-lot, pending-liability, index, or ExitPosition mutation."
+    },
+    {
+      "familyId": 8,
+      "formula": "Sum the independently frozen maxima of every typed reward subtype and every supporting record required by finalization.",
+      "requiredInputs": [
+        "sealed reward subtype registry and supporting-record policy",
+        "phase, trial, wonder, rank, chest, participant, and sponsor maxima",
+        "fixed season timing and admitted structure/player counts",
+        "claimed, paid, zeroed, and recreated source policies"
+      ],
+      "candidateMaximumPositionsPerGame": null,
+      "candidateEvidence": null,
+      "capExhaustion": "Reject before source value, backing, quota, cursor, claimed state, pending liability, index, or ExitPosition mutation while preserving existing finalization and exits."
+    },
+    {
+      "familyId": 9,
+      "formula": "Sum every irreversible source-position debit generation that creates a liability plus finalizer-created ordinary withdrawal liabilities.",
+      "requiredInputs": [
+        "reviewed maxima for all source families",
+        "liability-producing generation cap per source or one game-global lifetime cap",
+        "forced-exit and finalizer decomposition maxima",
+        "maximum-witness UnsealedPending and open BatchAssigned states"
+      ],
+      "candidateMaximumPositionsPerGame": null,
+      "candidateEvidence": null,
+      "capExhaustion": "Reject liability creation before source debit, generation, backing-lot, index, or journal mutation; existing append, seal, claim, and recovery remain available."
+    },
+    {
+      "familyId": 10,
+      "formula": "At most 64 active-backing parent keys multiplied by 64 contiguous lots per parent.",
+      "requiredInputs": [
+        "sealed parent registry limited to 64",
+        "immutable per-parent lot count limited to 64",
+        "review of fixed parent-index and lot-index coordinates against the generic family index"
+      ],
+      "candidateMaximumPositionsPerGame": 4096,
+      "candidateEvidence": "Normative protocol limits provide 64 parents by 64 lots, but the fixed coordinate has not been reconciled with the generic append-only index.",
+      "capExhaustion": "Reject a sixty-fifth parent or lot before local credit, backing, index, or ExitPosition mutation."
+    },
+    {
+      "familyId": 11,
+      "formula": "Count unique economically addressable player_l2 values admitted during the game lifetime.",
+      "requiredInputs": [
+        "sealed participant and paid-entry maxima",
+        "every binding or funding path that introduces a player",
+        "duplicate-wallet and multiple-entry policy",
+        "first-participation versus first-lock allocation rule"
+      ],
+      "candidateMaximumPositionsPerGame": null,
+      "candidateEvidence": null,
+      "capExhaustion": "Reject participation or first lock before any source, backing, index, or ExitPosition mutation."
+    },
+    {
+      "familyId": 12,
+      "formula": "Add initial positions projected from families 1 through 11 to every permitted split child and merge output over the game lifetime.",
+      "requiredInputs": [
+        "reviewed maxima for families 1 through 11",
+        "split fan-out and merge fan-in limits",
+        "per-position and per-game lifetime reshape caps",
+        "eager versus lazy source-position creation policy"
+      ],
+      "candidateMaximumPositionsPerGame": null,
+      "candidateEvidence": null,
+      "capExhaustion": "Reject create, split, or merge before source, owner index, backing, generation, tombstone, or child mutation."
+    }
+  ],
   "reviewPolicy": {
     "sourceWriteMappingStatus": "failed-heuristic-projection",
     "exclusionStatus": "reviewed",
