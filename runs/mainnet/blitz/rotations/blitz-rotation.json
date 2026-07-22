@@ -14,7 +14,7 @@
   "latestLaunchRequestId": "29896988331-1",
   "currentStepId": "configure-worlds",
   "createdAt": "2026-04-28T04:59:08.099Z",
-  "updatedAt": "2026-07-22T06:32:57.284Z",
+  "updatedAt": "2026-07-22T06:42:33.094Z",
   "workflow": {
     "workflowName": "Game Launch",
     "workflowJob": "launch",
@@ -17526,10 +17526,10 @@
         ],
         "artifacts": {
           "pendingIndexerTierTarget": "pro",
-          "pendingIndexerTierRequestedAt": "2026-07-22T06:22:34.941Z",
+          "pendingIndexerTierRequestedAt": "2026-07-22T06:42:33.094Z",
           "indexerCreated": false,
           "lastIndexerTierDispatchTarget": "pro",
-          "lastIndexerTierDispatchFailedAt": "2026-07-22T06:22:34.941Z",
+          "lastIndexerTierDispatchFailedAt": "2026-07-22T06:42:33.094Z",
           "lastIndexerTierDispatchError": "Torii deployment \"na-gladiator-22-07-26-0200\" does not exist"
         }
       },
