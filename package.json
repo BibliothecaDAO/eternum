@@ -28,6 +28,7 @@
     "_comment_local_network6": "and will also use the matching config environment files",
     "_comment_local_network__": "_______________________________________________",
     "katana:start:local": "cd ./contracts/game && ./ext/scripts/katana.sh",
+    "settlement:e2e:sandbox": "bun config/deployer/clean/cli/local-settlement-sandbox.ts",
     "game:migrate:local": "cd ./contracts/game && ./ext/scripts/migrate.sh",
     "marketplace:migrate:local": "cd ./contracts/marketplace && ./ext/scripts/migrate.sh",
     "seasonpass:deploy:local": "cd ./contracts/season_pass/ext/scripts && ./deploy.sh",
