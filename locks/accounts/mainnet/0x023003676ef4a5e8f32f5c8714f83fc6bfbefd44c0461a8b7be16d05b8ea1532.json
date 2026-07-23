@@ -13,6 +13,7 @@
     "leaseId": "feda8652-2c24-471f-be95-caad114ab75b"
   },
   "acquiredAt": "2026-07-23T19:17:04.776Z",
-  "heartbeatAt": "2026-07-23T19:17:04.776Z",
-  "expiresAt": "2026-07-23T19:27:04.776Z"
+  "heartbeatAt": "2026-07-23T19:17:09.370Z",
+  "expiresAt": "2026-07-23T19:17:09.370Z",
+  "releasedAt": "2026-07-23T19:17:09.370Z"
 }
