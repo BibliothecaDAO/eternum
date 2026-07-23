@@ -3,9 +3,9 @@
   "scope": "wave0-fixture-only",
   "status": "fixture-execution-passed-production-proof-blocked",
   "releaseReady": false,
-  "capturedAt": "2026-07-22T22:39:13Z",
-  "implementationBaseRevision": "77e3e3497edf04e9a8c73b38be66d3fb99613ed2",
-  "sourceState": "uncommitted-complete-input-projection-bound-by-sha256",
+  "capturedAt": "2026-07-23T02:53:50Z",
+  "implementationBaseRevision": "d2781fe44d50f517ed749db84db23af5bcfe5d84",
+  "sourceState": "committed-complete-input-projection-bound-by-sha256",
   "inputSha256": {
     "proofs/eternum-settlement/Cargo.lock": "e30197fc9eafbf6b898208ac9388637772ef3e2dde09899890b26b98247b6ee8",
     "proofs/eternum-settlement/Cargo.toml": "64bdabda8b631197f45bb1b7168c734df15b5f9ef5f7f64c4da0b18807237eaf",
@@ -44,8 +44,8 @@
     }
   },
   "fixtureElf": {
-    "sha256": "42b69fb90cf5829b658f8f50ac3f6e7236070a5af69a72a6326926afb242c7c0",
-    "sizeBytes": 383936,
+    "sha256": "5ce2dd952e72b3afd81559b26f74a6bcbaf9f3378e25b866bbbf1b7888d1b59a",
+    "sizeBytes": 383976,
     "expectedJournalHash": "0x01f511e769c50cf24faab59c7235f70e968e9d4488a691bac02b9ebe77cacefc",
     "publicValues": {
       "domain": "MMR_PLAN_JOURNAL_V1",
@@ -54,7 +54,23 @@
     },
     "compileStatus": "passed",
     "executionStatus": "passed",
-    "reproducibilityStatus": "local-single-build-independent-ci-reproduction-required"
+    "reproducibilityStatus": "two-clean-pinned-container-builds-matched",
+    "reproductionRuns": [
+      {
+        "workflowRunId": 29974570170,
+        "jobId": 89103681026,
+        "buildResult": "passed",
+        "sha256": "5ce2dd952e72b3afd81559b26f74a6bcbaf9f3378e25b866bbbf1b7888d1b59a",
+        "sizeBytes": null
+      },
+      {
+        "workflowRunId": 29975151851,
+        "jobId": 89105394891,
+        "buildResult": "passed",
+        "sha256": "5ce2dd952e72b3afd81559b26f74a6bcbaf9f3378e25b866bbbf1b7888d1b59a",
+        "sizeBytes": 383976
+      }
+    ]
   },
   "execution": {
     "schema": "eternum.a13.sp1-execution.v1",

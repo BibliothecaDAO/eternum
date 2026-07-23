@@ -18,7 +18,7 @@
   "sp1FixtureEvidence": {
     "status": "fixture-execution-passed-production-proof-blocked",
     "artifact": "proofs/eternum-settlement/sp1/mmr-plan-a13-fixture-evidence-v0.json",
-    "fileSha256": "52d399c7ddc9c2b0da17a8f06463eb99368b04cc09c834bf9c0e9bb3cb75733a",
+    "fileSha256": "9835809ca08ad572548e12ece6133ce48de55ce68d49a7c1d00bff0e49d6ff96",
     "ciEvidenceCheckerSha256": "12e3aaea3477b6e14fc11636c83a0f2dae7c6c98b50ed4c61820f066d772e28a",
     "ciElfIdentityCheckerSha256": "37562f61ccdf2f8cb513b43b0f306ced569c970c0725116710504a419abfbc01",
     "sp1Tag": "v6.2.2",
@@ -26,7 +26,8 @@
     "sp1BuildContainerImage": "ghcr.io/succinctlabs/sp1",
     "sp1BuildContainerManifestSha256": "af8c2f46bb5e417c1c2fb939cd4397c75aa4f2439a9fd7c1f9ce2e0a693f6f6b",
     "sp1BuildPlatform": "linux/amd64",
-    "fixtureElfSha256": "42b69fb90cf5829b658f8f50ac3f6e7236070a5af69a72a6326926afb242c7c0",
+    "fixtureElfSha256": "5ce2dd952e72b3afd81559b26f74a6bcbaf9f3378e25b866bbbf1b7888d1b59a",
+    "fixtureElfSizeBytes": 383976,
     "executionKind": "sp1-sdk-v6.2.2-cpu-execute-valid-only-with-native-negatives-no-proof",
     "publicValuesDomain": "MMR_PLAN_JOURNAL_V1",
     "publicValuesEncoding": "journal-hash-only",

@@ -393,6 +393,7 @@ function assertA13Sp1Identity(input) {
     "A13 SP1 CI ELF identity checker hash",
   );
   assertEqual(pointer.fixtureElfSha256, input.sp1FixtureElfSha256, "A13 SP1 fixture ELF hash");
+  assertEqual(pointer.fixtureElfSizeBytes, input.sp1FixtureElfSizeBytes, "A13 SP1 fixture ELF size");
   assertEqual(pointer.sp1Commit, input.sp1Commit, "A13 SP1 source commit");
   assertEqual(pointer.sp1BuildContainerImage, input.sp1BuildContainerImage, "A13 SP1 build-container image");
   assertEqual(
@@ -416,7 +417,7 @@ function assertA13Sp1Identity(input) {
   assertEqual(mmrPlanSp1Fixture.releaseReady, false, "A13 evidence release readiness");
   assertEqual(
     mmrPlanSp1Fixture.sourceState,
-    "uncommitted-complete-input-projection-bound-by-sha256",
+    "committed-complete-input-projection-bound-by-sha256",
     "A13 evidence source state",
   );
   assertEqual(mmrPlanSp1Fixture.sp1.tag, pointer.sp1Tag, "A13 SP1 tag");
@@ -437,6 +438,7 @@ function assertA13Sp1Identity(input) {
     "A13 SP1 build-container platform",
   );
   assertEqual(mmrPlanSp1Fixture.fixtureElf.sha256, pointer.fixtureElfSha256, "A13 fixture ELF identity");
+  assertEqual(mmrPlanSp1Fixture.fixtureElf.sizeBytes, pointer.fixtureElfSizeBytes, "A13 fixture ELF size");
   assertEqual(mmrPlanSp1Fixture.fixtureElf.compileStatus, "passed", "A13 fixture compile status");
   assertEqual(mmrPlanSp1Fixture.fixtureElf.executionStatus, "passed", "A13 fixture execution status");
   assertEqual(mmrPlanSp1Fixture.fixtureElf.publicValues.domain, pointer.publicValuesDomain, "A13 ELF journal domain");
@@ -452,9 +454,24 @@ function assertA13Sp1Identity(input) {
   );
   assertEqual(
     mmrPlanSp1Fixture.fixtureElf.reproducibilityStatus,
-    "local-single-build-independent-ci-reproduction-required",
+    "two-clean-pinned-container-builds-matched",
     "A13 fixture reproducibility status",
   );
+  assertA13Sp1ReproductionRuns(pointer);
+}
+
+function assertA13Sp1ReproductionRuns(pointer) {
+  const runs = mmrPlanSp1Fixture.fixtureElf.reproductionRuns;
+
+  assertEqual(runs.length, 2, "A13 clean reproduction run count");
+  assertEqual(new Set(runs.map(({ workflowRunId }) => workflowRunId)).size, 2, "A13 reproduction workflow uniqueness");
+  assertEqual(new Set(runs.map(({ jobId }) => jobId)).size, 2, "A13 reproduction job uniqueness");
+  for (const run of runs) {
+    assertEqual(run.buildResult, "passed", `A13 reproduction ${run.workflowRunId} build result`);
+    assertEqual(run.sha256, pointer.fixtureElfSha256, `A13 reproduction ${run.workflowRunId} ELF hash`);
+  }
+  assertEqual(runs[0].sizeBytes, null, "A13 first reproduction size observation absence");
+  assertEqual(runs[1].sizeBytes, pointer.fixtureElfSizeBytes, "A13 second reproduction ELF size");
 }
 
 function assertA13Sp1InputProjection() {
