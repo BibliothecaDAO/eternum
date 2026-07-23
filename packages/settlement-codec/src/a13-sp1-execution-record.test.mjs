@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseExecutionRecord } from "../../../scripts/settlement/check-a13-sp1-fixture-execution.mjs";
+import {
+  calculateElfIdentity,
+  parseExecutionRecord,
+} from "../../../scripts/settlement/check-a13-sp1-fixture-execution.mjs";
 
 const record = {
   schema: "eternum.a13.sp1-execution-evidence.v1",
@@ -24,5 +27,14 @@ describe("A13 SP1 execution record framing", () => {
     expect(() => parseExecutionRecord(`${framed}\n${framed}`)).toThrow(
       "A13 emitted execution record count: expected 1, received 2",
     );
+  });
+});
+
+describe("A13 SP1 ELF identity", () => {
+  it("reports the exact digest and byte length", () => {
+    expect(calculateElfIdentity(Buffer.from("abc"))).toEqual({
+      sha256: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      sizeBytes: 3,
+    });
   });
 });

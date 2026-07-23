@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,7 +17,7 @@ function verifyExecutionEvidence() {
 
   const emitted = readExecutionRecord(executionLog);
 
-  assertFixtureElfIdentity(elfPath);
+  assertExpectedFixtureElfIdentity(readFixtureElfIdentity(elfPath));
   assertExecutionRecord(emitted);
 
   console.log(
@@ -31,11 +31,16 @@ function verifyExecutionEvidence() {
   );
 }
 
-export function assertFixtureElfIdentity(relativePath) {
+export function readFixtureElfIdentity(relativePath) {
   const absolutePath = resolve(repositoryRoot, relativePath);
-  const bytes = readFileSync(absolutePath);
-  const identity = { sha256: sha256(bytes), sizeBytes: statSync(absolutePath).size };
+  return calculateElfIdentity(readFileSync(absolutePath));
+}
 
+export function calculateElfIdentity(bytes) {
+  return { sha256: sha256(bytes), sizeBytes: bytes.byteLength };
+}
+
+export function assertExpectedFixtureElfIdentity(identity) {
   assertEqual(identity.sha256, evidence.fixtureElf.sha256, "A13 rebuilt fixture ELF hash");
   assertEqual(identity.sizeBytes, evidence.fixtureElf.sizeBytes, "A13 rebuilt fixture ELF size");
   return identity;
