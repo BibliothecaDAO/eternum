@@ -1246,6 +1246,7 @@ function assertRuntimeEnforcement() {
     "config/deployer/clean/runtime/aws/reconcile.ts",
     "config/deployer/clean/runtime/aws/wave0-release.ts",
     "package.json",
+    "packages/settlement-codec/package.json",
     "packages/settlement-codec/src/index.ts",
     "packages/settlement-codec/src/katana-launch-attestation.ts",
     "pnpm-lock.yaml",

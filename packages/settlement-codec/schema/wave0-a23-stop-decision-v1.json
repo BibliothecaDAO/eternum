@@ -466,8 +466,8 @@
   },
   "runtimeEnforcement": {
     "sourceSha256": {
-    "common/factory/runtime-registry-artifact.ts": "ea5ece94d164342f30efb9b5a25540e8c4375cb54e4bc2bf6c5ab3a411defce5",
-      "common/factory/runtime-registry.ts": "b8a6de79ee3905e1f1bdd02f6bbd4b155da73e098bc9aef716f49b3cdd49f5bf",
+      "common/factory/runtime-registry-artifact.ts": "ea5ece94d164342f30efb9b5a25540e8c4375cb54e4bc2bf6c5ab3a411defce5",
+      "common/factory/runtime-registry.ts": "ed1b12053d96c7a08b6351d02378b7b487e31f2a884e730763c383ee2f60f544",
       "config/deployer/clean/game-stack/a23-decision.mts": "a9a71d6b366b50419b6a8bcbc5b8c64f09ab7afd01ad8ca4d70e508bae750135",
       "config/deployer/clean/game-stack/api.ts": "7aac7c51c4ede730bb44a9f8969dc0b9ac37dfdc7b4c1d8974cde53ec17f9014",
       "config/deployer/clean/game-stack/attestation.ts": "7570137d2446a82b4bdb9551784adb05a9f07a36587ac161a2e79b8ae4366c78",
@@ -484,6 +484,7 @@
       "config/deployer/clean/runtime/aws/reconcile.ts": "7af4d9df22b120940f2e7715f80b379c584a5f3708472d1e4c39329220bfe785",
       "config/deployer/clean/runtime/aws/wave0-release.ts": "a30bcfd338322774d4292c517cb3b65403db17158a8bec34eb93877e12693615",
       "package.json": "aa6bc4cc2b99ae7def424005dc7c911189618e401ba314c1763d2ee2bbc3728f",
+      "packages/settlement-codec/package.json": "bde3e1e0f4dc5fb6a8b32fd26d01f1b9c0d0cce77ceccd0981f3a486c96169e9",
       "packages/settlement-codec/src/index.ts": "c3ffb99c15829e5daafa4e34914a5db92cce2057a3e890198d958c63b62daf4b",
       "packages/settlement-codec/src/katana-launch-attestation.ts": "497e4d7c9db8ec8c51c5f50bba1c81fcf7a47456b3c5d7ddcbff4910906ace4b",
       "pnpm-lock.yaml": "a969c773aa3dbce2e1df51373e1354aa16e18b6ac62d097a68731e7259229141",
@@ -492,7 +493,7 @@
       "proofs/katana-launch-attestation/src/lib.rs": "46a33a68be35227ce2e896f92490c2730cf63b3e11c4bf86f28b5084ede212fe"
     },
     "testSha256": {
-    "config/deployer/clean/tests/aws-game-stack-provisioning.test.ts": "914fa412df8f00ba9d787e0f5786940533e6069ce883c871b9e33776f629d2c4",
+      "config/deployer/clean/tests/aws-game-stack-provisioning.test.ts": "914fa412df8f00ba9d787e0f5786940533e6069ce883c871b9e33776f629d2c4",
       "config/deployer/clean/tests/aws-runtime.test.ts": "8ae58615e69ba35e37dd57b66ef4c94af036988a9b73a051d4b3cbbe4e59ef86",
       "config/deployer/clean/tests/game-stack-api.test.ts": "92ae52ad7d8649d4fa5d41f9e787ded689e1012395832fca802c66a98d5b1d03",
       "config/deployer/clean/tests/game-stack-orchestrator.test.ts": "e1cac0544eac76696c623783f470d5aa6f42ef171db90112a1bd0f7e58c45f2b",

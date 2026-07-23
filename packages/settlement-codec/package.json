@@ -10,10 +10,14 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./katana-tee-release": {
+      "import": "./dist/katana-tee-release.js",
+      "types": "./dist/katana-tee-release.d.ts"
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts",
+    "build": "tsup src/index.ts src/katana-tee-release.ts --format esm --dts",
     "check:economic-interface-schema": "node ../../scripts/settlement/generate-economic-interface-schema.mjs --check",
     "generate:economic-interface-schema": "node ../../scripts/settlement/generate-economic-interface-schema.mjs",
     "check:exit-family-inventory": "tsx ../../scripts/settlement/generate-exit-family-inventory.ts --check",

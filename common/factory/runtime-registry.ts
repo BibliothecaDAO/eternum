@@ -1,7 +1,7 @@
 import {
   getKatanaTeeReleaseProjection,
   matchesKatanaTeeAttestationMeasurement,
-} from "@bibliothecadao/settlement-codec";
+} from "@bibliothecadao/settlement-codec/katana-tee-release";
 
 export const RUNTIME_REGISTRY_SCHEMA_VERSION = "realms-runtime-registry/v1" as const;
 const PINNED_KATANA_TEE_RELEASE = Object.freeze(getKatanaTeeReleaseProjection());
