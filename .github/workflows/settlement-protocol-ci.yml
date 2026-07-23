@@ -303,7 +303,7 @@ jobs:
           set -o pipefail
           test_log="${RUNNER_TEMP}/a13-sp1-fixture.log"
           cargo test --locked --manifest-path proofs/eternum-settlement/sp1/mmr-plan-host/Cargo.toml \
-            -- --test-threads=1 --nocapture | tee "${test_log}"
+            -- --test-threads=1 --nocapture 2>&1 | tee "${test_log}"
           A13_SP1_EXECUTION_LOG="${test_log}" \
           A13_SP1_ELF="proofs/eternum-settlement/sp1/mmr-plan-program/target/elf-compilation/riscv64im-succinct-zkvm-elf/release/eternum-mmr-plan-program" \
             node scripts/settlement/check-a13-sp1-fixture-execution.mjs
