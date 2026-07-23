@@ -11,7 +11,7 @@
     "proofs/eternum-settlement/Cargo.toml": "64bdabda8b631197f45bb1b7168c734df15b5f9ef5f7f64c4da0b18807237eaf",
     "proofs/eternum-settlement/sp1/mmr-plan-host/Cargo.lock": "4f771f0dde9ddb38742511ada9780a1ab6d5990abc1585a4926d9fc2769fe680",
     "proofs/eternum-settlement/sp1/mmr-plan-host/Cargo.toml": "18532c8b4b097474e9b7d64db38d33b10f930db0abd927c7ee31626735c0acc1",
-    "proofs/eternum-settlement/sp1/mmr-plan-host/build.rs": "a2fb6aa5231500aa3c1d35751daef79b1137d0b230e72530ee5e694064a49887",
+    "proofs/eternum-settlement/sp1/mmr-plan-host/build.rs": "4a3d3813529d05734a9affadd7050ba9e8e43bd4818a9b47e3e97a6738521be6",
     "proofs/eternum-settlement/sp1/mmr-plan-host/tests/mmr_plan_execution.rs": "2be311c1c9bee9500c36f1aaa5ed35b84130c937b1e949eced9218e3943e4540",
     "proofs/eternum-settlement/sp1/mmr-plan-program/Cargo.lock": "c68c41dcf27b2d1b7d7ba31a84d567a62ad904cd223cacc14e466f98192c3d4e",
     "proofs/eternum-settlement/sp1/mmr-plan-program/Cargo.toml": "ad9af25f1897934562aed137a4bd7a256e43f92385feb564656b5cf99a34272c",
@@ -36,7 +36,12 @@
   "sp1": {
     "tag": "v6.2.2",
     "commit": "150e6294959f40dbc3ba42eb21c8eccc14c95bc5",
-    "succinctRustc": "1.93.0-dev"
+    "succinctRustc": "1.93.0-dev",
+    "buildContainer": {
+      "image": "ghcr.io/succinctlabs/sp1",
+      "manifestSha256": "af8c2f46bb5e417c1c2fb939cd4397c75aa4f2439a9fd7c1f9ce2e0a693f6f6b",
+      "platform": "linux/amd64"
+    }
   },
   "fixtureElf": {
     "sha256": "42b69fb90cf5829b658f8f50ac3f6e7236070a5af69a72a6326926afb242c7c0",

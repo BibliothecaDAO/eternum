@@ -387,8 +387,20 @@ function assertA13Sp1Identity(input) {
     input.sp1FixtureCiEvidenceCheckerSha256,
     "A13 SP1 CI evidence checker hash",
   );
+  assertEqual(
+    pointer.ciElfIdentityCheckerSha256,
+    input.sp1FixtureCiElfIdentityCheckerSha256,
+    "A13 SP1 CI ELF identity checker hash",
+  );
   assertEqual(pointer.fixtureElfSha256, input.sp1FixtureElfSha256, "A13 SP1 fixture ELF hash");
   assertEqual(pointer.sp1Commit, input.sp1Commit, "A13 SP1 source commit");
+  assertEqual(pointer.sp1BuildContainerImage, input.sp1BuildContainerImage, "A13 SP1 build-container image");
+  assertEqual(
+    pointer.sp1BuildContainerManifestSha256,
+    input.sp1BuildContainerManifestSha256,
+    "A13 SP1 build-container manifest",
+  );
+  assertEqual(pointer.sp1BuildPlatform, input.sp1BuildPlatform, "A13 SP1 build platform");
   assertEqual(pointer.executionKind, input.sp1ExecutionKind, "A13 SP1 execution kind");
   assertEqual(pointer.publicValuesDomain, input.sp1PublicValuesDomain, "A13 public-values domain");
   assertEqual(pointer.publicValuesEncoding, input.sp1PublicValuesEncoding, "A13 public-values encoding");
@@ -396,6 +408,7 @@ function assertA13Sp1Identity(input) {
   assertEqual(pointer.releaseReady, false, "A13 SP1 fixture release readiness");
   assertFileHash(pointer.artifact, pointer.fileSha256);
   assertFileHash("scripts/settlement/check-a13-sp1-fixture-execution.mjs", pointer.ciEvidenceCheckerSha256);
+  assertFileHash("scripts/settlement/check-a13-sp1-fixture-elf.mjs", pointer.ciElfIdentityCheckerSha256);
 
   assertEqual(mmrPlanSp1Fixture.schema, "eternum.a13.sp1-fixture-evidence.v0", "A13 evidence schema");
   assertEqual(mmrPlanSp1Fixture.scope, "wave0-fixture-only", "A13 evidence scope");
@@ -408,6 +421,21 @@ function assertA13Sp1Identity(input) {
   );
   assertEqual(mmrPlanSp1Fixture.sp1.tag, pointer.sp1Tag, "A13 SP1 tag");
   assertEqual(mmrPlanSp1Fixture.sp1.commit, pointer.sp1Commit, "A13 SP1 commit");
+  assertEqual(
+    mmrPlanSp1Fixture.sp1.buildContainer.image,
+    pointer.sp1BuildContainerImage,
+    "A13 SP1 build-container image",
+  );
+  assertEqual(
+    mmrPlanSp1Fixture.sp1.buildContainer.manifestSha256,
+    pointer.sp1BuildContainerManifestSha256,
+    "A13 SP1 build-container manifest",
+  );
+  assertEqual(
+    mmrPlanSp1Fixture.sp1.buildContainer.platform,
+    pointer.sp1BuildPlatform,
+    "A13 SP1 build-container platform",
+  );
   assertEqual(mmrPlanSp1Fixture.fixtureElf.sha256, pointer.fixtureElfSha256, "A13 fixture ELF identity");
   assertEqual(mmrPlanSp1Fixture.fixtureElf.compileStatus, "passed", "A13 fixture compile status");
   assertEqual(mmrPlanSp1Fixture.fixtureElf.executionStatus, "passed", "A13 fixture execution status");

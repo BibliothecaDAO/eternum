@@ -17,7 +17,7 @@ function verifyExecutionEvidence() {
 
   const emitted = readExecutionRecord(executionLog);
 
-  assertElfIdentity(elfPath);
+  assertFixtureElfIdentity(elfPath);
   assertExecutionRecord(emitted);
 
   console.log(
@@ -31,12 +31,14 @@ function verifyExecutionEvidence() {
   );
 }
 
-function assertElfIdentity(relativePath) {
+export function assertFixtureElfIdentity(relativePath) {
   const absolutePath = resolve(repositoryRoot, relativePath);
   const bytes = readFileSync(absolutePath);
+  const identity = { sha256: sha256(bytes), sizeBytes: statSync(absolutePath).size };
 
-  assertEqual(sha256(bytes), evidence.fixtureElf.sha256, "A13 rebuilt fixture ELF hash");
-  assertEqual(statSync(absolutePath).size, evidence.fixtureElf.sizeBytes, "A13 rebuilt fixture ELF size");
+  assertEqual(identity.sha256, evidence.fixtureElf.sha256, "A13 rebuilt fixture ELF hash");
+  assertEqual(identity.sizeBytes, evidence.fixtureElf.sizeBytes, "A13 rebuilt fixture ELF size");
+  return identity;
 }
 
 function assertExecutionRecord(record) {
