@@ -281,10 +281,17 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Setup pinned protoc
+        uses: arduino/setup-protoc@c65c819552d16ad3c9b72d9dfd5ba5237b9c906b
+        with:
+          version: "27.3"
+          repo-token: ${{ github.token }}
+
       - name: Install the pinned SP1 CLI and Succinct Rust toolchain
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
+          test "$(protoc --version)" = "libprotoc 27.3"
           cargo install --locked --git https://github.com/succinctlabs/sp1.git --tag v6.2.2 --no-default-features sp1-cli
           sp1_install_metadata="${CARGO_HOME:-${HOME}/.cargo}/.crates.toml"
           grep -F 'sp1-cli 6.2.2 (git+https://github.com/succinctlabs/sp1.git?tag=v6.2.2#150e6294959f40dbc3ba42eb21c8eccc14c95bc5)' "${sp1_install_metadata}"
