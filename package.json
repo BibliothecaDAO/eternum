@@ -280,6 +280,7 @@
   "devDependencies": {
     "@bibliothecadao/eternum": "workspace:^",
     "@bibliothecadao/react": "workspace:^",
+    "@bibliothecadao/settlement-codec": "workspace:*",
     "@types/node": "^20.17.30",
     "@types/react": "^18.3.20",
     "@types/react-dom": "^18.3.5",

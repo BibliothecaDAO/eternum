@@ -14,6 +14,8 @@ const mmrPlan = readJson("packages/settlement-codec/schema/mmr-plan-a13-v1.json"
 const mmrPlanSp1Fixture = readJson("proofs/eternum-settlement/sp1/mmr-plan-a13-fixture-evidence-v0.json");
 const emergencySealed = readJson("packages/settlement-codec/schema/emergency-sealed-a15-v1.json");
 const hardenedInbox = readJson("packages/settlement-codec/schema/hardened-inbox-a16-v1.json");
+const katanaTeeRelease = readJson("packages/settlement-codec/schema/katana-tee-release-v1.json");
+const katanaGenesisProvenance = readJson("packages/settlement-codec/schema/katana-release-provenance-a18-v1.json");
 const legacyMmrDerivation = readJson("packages/settlement-codec/schema/legacy-mmr-derivation-a19-v1.json");
 const frozenRecoveryMaterialization = readJson(
   "packages/settlement-codec/schema/frozen-recovery-materialization-a21-v1.json",
@@ -47,7 +49,7 @@ function assertStopDecision() {
   );
   assertDeepEqual(
     decision.stopOutcomes.map(({ id }) => id),
-    ["A22-BOUNDS-FREEZE", "TEE-SOURCE-GATE", "MISSING-PROOF-GATES"],
+    ["A22-BOUNDS-FREEZE", "TEE-REPRODUCTION-AND-RUNTIME-GATE", "MISSING-PROOF-GATES"],
     "A23 stop outcomes",
   );
   assertDeepEqual(
@@ -98,7 +100,7 @@ function expectedWave0Projection() {
     "reference-guest-and-verifier-complete-production-receipt-blocked",
     "reference-runtime-and-public-patricia-proof-complete-production-finality-blocked",
     "complete",
-    "public-feasibility-complete-private-tee-source-blocked",
+    "public-dag-complete-tee-release-pinned-reproduction-blocked",
     "pending-typed-derivation-reference-seam-complete-source-inventory-and-production-proofs-blocked",
     "a20-evidence-complete-awaiting-a23-freeze",
     "reference-guests-and-verifiers-complete-production-receipts-blocked",
@@ -220,6 +222,7 @@ function assertFrozenAndCandidateInputs() {
 
   assertA21Evidence(inputs.frozenRecoveryMaterializationProofs);
   assertA16Evidence(inputs.hardenedInboxProof);
+  assertKatanaTeeReleaseEvidence(inputs.katanaTeeRelease);
   assertA19Evidence(inputs.legacyMmrDerivationProof);
   assertA20EvidenceComplete(inputs.authorityInventory);
 
@@ -289,6 +292,74 @@ function assertFrozenAndCandidateInputs() {
     inputs.economicWriteInventorySha256,
   );
   assertFileHash("packages/settlement-codec/schema/onchain-observation-a20-v1.json", inputs.onchainObservationSha256);
+}
+
+function assertKatanaTeeReleaseEvidence(input) {
+  assertEqual(input.status, "public-release-pinned-reproduction-blocked", "Katana TEE release status");
+  assertEqual(input.releaseReady, false, "Katana TEE release readiness");
+  assertEqual(input.artifact, "packages/settlement-codec/schema/katana-tee-release-v1.json", "Katana TEE artifact");
+  assertEqual(input.fileSha256, input.releaseIdentitySha256, "Katana TEE release identity hash");
+  assertFileHash(input.artifact, input.fileSha256);
+  assertFileHash("packages/settlement-codec/src/katana-tee-release.ts", input.validatorSha256);
+  assertFileHash("packages/settlement-codec/src/katana-tee-release.test.ts", input.validatorTestSha256);
+
+  const buildInfo = requireReleaseAsset("build-info-");
+  const virtualMachine = requireReleaseAsset("katana-tee-vm-");
+  assertEqual(katanaTeeRelease.schemaVersion, 1, "Katana TEE schema version");
+  assertEqual(katanaTeeRelease.repository, "https://github.com/dojoengine/katana", "Katana TEE repository");
+  assertEqual(katanaTeeRelease.release.tag, input.releaseTag, "Katana TEE release tag");
+  assertEqual(katanaTeeRelease.source.commit, input.sourceCommit, "Katana TEE source commit");
+  assertEqual(katanaTeeRelease.source.githubVerification.verified, true, "Katana TEE source signature");
+  assertEqual(katanaTeeRelease.source.githubVerification.reason, "valid", "Katana TEE source verification");
+  assertEqual(buildInfo.digest, input.buildInfoDigest, "Katana TEE build-info digest");
+  assertEqual(virtualMachine.digest, input.vmAssetDigest, "Katana TEE VM digest");
+  assertEqual(katanaTeeRelease.launchMeasurement.algorithm, "sha384", "Katana TEE measurement algorithm");
+  assertEqual(katanaTeeRelease.launchMeasurement.value, input.launchMeasurement, "Katana TEE launch measurement");
+
+  assertEqual(input.sourceAuditStatus, "not-run", "Katana TEE source audit status");
+  assertEqual(
+    input.releaseArtifactVerificationStatus,
+    "metadata-and-digests-pinned",
+    "Katana TEE artifact verification status",
+  );
+  assertEqual(input.buildReproductionStatus, "not-run", "Katana TEE build reproduction status");
+  assertEqual(input.launchMeasurementReproductionStatus, "not-run", "Katana TEE measurement reproduction status");
+  assertEqual(input.realTeeEvidenceStatus, "not-run", "Katana TEE real-hardware evidence status");
+  assertEqual(input.independentBuildCount, 0, "Katana TEE independent build count");
+  assertEqual(input.productionIdentityAligned, false, "Katana TEE production identity alignment");
+  assertEqual(input.sbomSha256, null, "Katana TEE SBOM identity");
+  assertEqual(input.provenanceSha256, null, "Katana TEE provenance identity");
+  assertEqual(input.measuredProvisionerStatus, "not-run", "Katana TEE measured provisioner status");
+  assertEqual(input.measuredProvisionerArtifactSha256, null, "Katana TEE measured provisioner artifact");
+  assertEqual(
+    input.feasibilityDagSourceCommit,
+    katanaGenesisProvenance.sourceCommit,
+    "A18 feasibility DAG source identity",
+  );
+  assert(
+    input.feasibilityDagSourceCommit !== input.sourceCommit,
+    "A18 must retain the production DAG/source mismatch until it is reproduced",
+  );
+
+  for (const evidence of [frozenPosition, emergencySealed, frozenRecoveryMaterialization]) {
+    assertEqual(evidence.katanaTeeRelease.fileSha256, input.fileSha256, `${evidence.ticket} Katana TEE identity`);
+    assertEqual(evidence.katanaTeeRelease.tag, input.releaseTag, `${evidence.ticket} Katana TEE tag`);
+    assertEqual(evidence.katanaTeeRelease.sourceCommit, input.sourceCommit, `${evidence.ticket} Katana TEE source`);
+    assert(
+      !JSON.stringify(evidence.productionBlockers).includes("6a263b017aa37903b8d65cf28c9f52cd24cb5807"),
+      `${evidence.ticket} retains the superseded private source pin`,
+    );
+    assert(
+      !JSON.stringify(evidence.productionBlockers).includes("source access is unavailable"),
+      `${evidence.ticket} incorrectly claims public source is unavailable`,
+    );
+  }
+}
+
+function requireReleaseAsset(namePrefix) {
+  const assets = katanaTeeRelease.assets.filter(({ name }) => name.startsWith(namePrefix));
+  assertEqual(assets.length, 1, `Katana TEE ${namePrefix} asset count`);
+  return assets[0];
 }
 
 function assertA21Evidence(input) {
@@ -1157,22 +1228,42 @@ function assertAuthorizationState() {
 function assertRuntimeEnforcement() {
   const evidence = decision.runtimeEnforcement;
   const expectedSources = [
+    "common/factory/runtime-registry-artifact.ts",
+    "common/factory/runtime-registry.ts",
     "config/deployer/clean/game-stack/a23-decision.mts",
     "config/deployer/clean/game-stack/api.ts",
+    "config/deployer/clean/game-stack/attestation.ts",
+    "config/deployer/clean/game-stack/index.ts",
     "config/deployer/clean/game-stack/orchestrator.ts",
     "config/deployer/clean/game-stack/release-authorization.ts",
+    "config/deployer/clean/game-stack/types.ts",
+    "config/deployer/clean/runtime/aws-runtime.ts",
+    "config/deployer/clean/runtime/aws/errors.ts",
     "config/deployer/clean/runtime/aws/game-stack-api.ts",
     "config/deployer/clean/runtime/aws/game-stack-provisioning.ts",
+    "config/deployer/clean/runtime/aws/katana-runtime-artifact.ts",
+    "config/deployer/clean/runtime/aws/katana-tee-release.ts",
+    "config/deployer/clean/runtime/aws/reconcile.ts",
     "config/deployer/clean/runtime/aws/wave0-release.ts",
+    "package.json",
+    "packages/settlement-codec/src/index.ts",
+    "packages/settlement-codec/src/katana-launch-attestation.ts",
+    "pnpm-lock.yaml",
+    "proofs/katana-launch-attestation/Cargo.lock",
+    "proofs/katana-launch-attestation/Cargo.toml",
+    "proofs/katana-launch-attestation/src/lib.rs",
   ];
   const expectedTests = [
     "config/deployer/clean/tests/aws-game-stack-provisioning.test.ts",
+    "config/deployer/clean/tests/aws-runtime.test.ts",
     "config/deployer/clean/tests/game-stack-api.test.ts",
     "config/deployer/clean/tests/game-stack-orchestrator.test.ts",
     "config/deployer/clean/tests/game-stack-provisioning-handler.test.ts",
     "config/deployer/clean/tests/game-stack-release-authorization.test.ts",
     "config/deployer/clean/tests/game-stack-runtime.test.ts",
+    "config/deployer/clean/tests/runtime-registry.test.ts",
     "config/deployer/clean/tests/wave0-release.test.ts",
+    "packages/settlement-codec/src/katana-launch-attestation.test.ts",
   ];
   assertDeepEqual(Object.keys(evidence.sourceSha256), expectedSources, "A23 runtime enforcement source set");
   assertDeepEqual(Object.keys(evidence.testSha256), expectedTests, "A23 runtime enforcement test set");

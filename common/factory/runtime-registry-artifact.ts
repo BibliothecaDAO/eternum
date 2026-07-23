@@ -3,6 +3,9 @@ import {
   buildGameRuntimeAlias,
   buildGlobalRuntimeAlias,
   buildSharedChainRuntimeAlias,
+  isPinnedKatanaTeeAttestationMeasurement,
+  isPinnedKatanaTeeReleaseIdentity,
+  isPinnedKatanaTeeVmAssetDigest,
   parseRuntimeRegistry,
   type ActiveGameStackPointer,
   type RuntimeAliasScope,
@@ -64,6 +67,7 @@ export interface ReadyGameStackRegistration {
   environmentId: "mainnet.blitz";
   gameStackId: string;
   activeUntil: string;
+  releaseIdentitySha256: string;
   attestationMeasurement: string;
   verification: ReadyGameStackVerification;
   katana: ReadyGameStackKatanaArtifact;
@@ -117,6 +121,7 @@ export function registerReadyGameStack(
         gameStackId: gameStack.gameStackId,
         activeUntil: gameStack.activeUntil,
         publicationRevision,
+        releaseIdentitySha256: gameStack.releaseIdentitySha256,
         attestationMeasurement: gameStack.attestationMeasurement,
         verification: gameStack.verification,
       },
@@ -252,16 +257,16 @@ export function removeActiveGameStackPublication(
 ): RuntimeRegistryV1 {
   const registry = parseRuntimeRegistry(registryValue);
   const activePointer = registry.activeGameStacks?.["mainnet.blitz"];
-  if (!matchesActiveGameStackPublication(activePointer, identity)) {
+  const removesActivePointer = matchesActiveGameStackPublication(activePointer, identity);
+  const matchingAliases = findActiveGameStackAliases(registry.aliases, identity);
+  if (!removesActivePointer && matchingAliases.length === 0) {
     return registry;
   }
 
   const activeGameStacks = { ...registry.activeGameStacks };
   const aliases = { ...registry.aliases };
-  delete activeGameStacks["mainnet.blitz"];
-  for (const [alias, entry] of Object.entries(aliases)) {
-    if (matchesActiveGameStackAlias(entry, identity)) delete aliases[alias];
-  }
+  if (removesActivePointer) delete activeGameStacks["mainnet.blitz"];
+  for (const alias of matchingAliases) delete aliases[alias];
   return {
     ...registry,
     revision: registry.revision + 1,
@@ -269,6 +274,15 @@ export function removeActiveGameStackPublication(
     aliases,
     activeGameStacks,
   };
+}
+
+function findActiveGameStackAliases(
+  aliases: RuntimeRegistryV1["aliases"],
+  identity: ActiveGameStackPublicationIdentity,
+): string[] {
+  return Object.entries(aliases)
+    .filter(([, entry]) => matchesActiveGameStackAlias(entry, identity))
+    .map(([alias]) => alias);
 }
 
 function matchesActiveGameStackAlias(
@@ -385,15 +399,21 @@ function validateEndpointRegistration(registration: RuntimeEndpointRegistration)
 }
 
 function validateReadyGameStackRegistration(gameStack: ReadyGameStackRegistration, now: Date): void {
-  if (!/^sha384:[a-f0-9]{96}$/.test(gameStack.attestationMeasurement)) {
-    throw new Error("Production Blitz game-stack publication requires a verified SEV-SNP measurement");
+  if (!isPinnedKatanaTeeReleaseIdentity(gameStack.releaseIdentitySha256)) {
+    throw new Error("Production Blitz game-stack publication requires a pinned release identity");
+  }
+  if (!isPinnedKatanaTeeAttestationMeasurement(gameStack.attestationMeasurement)) {
+    throw new Error("Production Blitz game-stack publication requires the pinned SEV-SNP measurement");
+  }
+  if (!isPinnedKatanaTeeVmAssetDigest(gameStack.katana.imageDigest)) {
+    throw new Error("Production Blitz game-stack publication requires the pinned Katana VM artifact");
   }
   const verificationTimestamps = [
     gameStack.verification.identitySealedAt,
     gameStack.verification.attestationVerifiedAt,
     gameStack.verification.worldReadyAt,
     gameStack.verification.indexerReadyAt,
-    gameStack.verification.registryVerifiedAt,
+    gameStack.verification.registryAvailableAt,
   ].map((value) => Date.parse(value));
   const hasAllVerificationSteps = hasExactReadyVerificationKeys(gameStack.verification);
   const isOrdered = verificationTimestamps.every(
@@ -412,7 +432,7 @@ function hasExactReadyVerificationKeys(verification: ReadyGameStackVerification)
     "attestationVerifiedAt",
     "identitySealedAt",
     "indexerReadyAt",
-    "registryVerifiedAt",
+    "registryAvailableAt",
     "worldReadyAt",
   ];
   return Object.keys(verification).sort().join(",") === expectedKeys.join(",");

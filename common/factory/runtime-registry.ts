@@ -1,4 +1,10 @@
+import {
+  getKatanaTeeReleaseProjection,
+  matchesKatanaTeeAttestationMeasurement,
+} from "@bibliothecadao/settlement-codec";
+
 export const RUNTIME_REGISTRY_SCHEMA_VERSION = "realms-runtime-registry/v1" as const;
+const PINNED_KATANA_TEE_RELEASE = Object.freeze(getKatanaTeeReleaseProjection());
 const RUNTIME_INSTANCE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const IMAGE_DIGEST_PATTERN = /^sha256:[a-f0-9]{64}$/;
 
@@ -26,13 +32,14 @@ export interface RuntimeReadinessEvidence {
   attestationVerifiedAt: string;
   worldReadyAt: string;
   indexerReadyAt: string;
-  registryVerifiedAt: string;
+  registryAvailableAt: string;
 }
 
 export interface ActiveGameStackPointer {
   gameStackId: string;
   activeUntil: string;
   publicationRevision: number;
+  releaseIdentitySha256: string;
   attestationMeasurement: string;
   verification: RuntimeReadinessEvidence;
 }
@@ -146,6 +153,22 @@ let installedRegistry: RuntimeRegistryV1 | undefined;
 
 export function getEmbeddedReadOnlyRuntimeRegistry(): RuntimeRegistryV1 {
   return EMBEDDED_READ_ONLY_REGISTRY;
+}
+
+export function isPinnedKatanaTeeReleaseIdentity(value: unknown): boolean {
+  return value === PINNED_KATANA_TEE_RELEASE.releaseIdentitySha256;
+}
+
+export function getPinnedKatanaTeeReleaseProjection() {
+  return { ...PINNED_KATANA_TEE_RELEASE };
+}
+
+export function isPinnedKatanaTeeAttestationMeasurement(value: unknown): boolean {
+  return matchesKatanaTeeAttestationMeasurement(value);
+}
+
+export function isPinnedKatanaTeeVmAssetDigest(value: unknown): boolean {
+  return value === PINNED_KATANA_TEE_RELEASE.vmAssetDigest;
 }
 
 function installRuntimeRegistry(registry: RuntimeRegistryV1 | string): RuntimeRegistryV1 {
@@ -289,8 +312,11 @@ export function assertCompleteActiveGameStack(
   if (!isActiveGameStackPointerUnexpired(activePointer, now)) {
     throw new Error(`Active Blitz game stack "${gameStackId}" is expired`);
   }
+  if (!isPinnedKatanaTeeReleaseIdentity(activePointer.releaseIdentitySha256)) {
+    throw new Error(`Active Blitz game stack "${gameStackId}" has an unapproved release identity`);
+  }
   if (!hasVerifiedAttestationMeasurement(activePointer)) {
-    throw new Error(`Active Blitz game stack "${gameStackId}" has no verified attestation measurement`);
+    throw new Error(`Active Blitz game stack "${gameStackId}" does not match the pinned attestation measurement`);
   }
   if (!hasCompleteReadinessEvidence(activePointer, now)) {
     throw new Error(`Active Blitz game stack "${gameStackId}" has future-dated readiness evidence`);
@@ -371,7 +397,7 @@ function isActiveGameStackPointerUnexpired(pointer: ActiveGameStackPointer, now:
 }
 
 function hasVerifiedAttestationMeasurement(pointer: ActiveGameStackPointer): boolean {
-  return /^sha384:[a-f0-9]{96}$/.test(pointer.attestationMeasurement);
+  return isPinnedKatanaTeeAttestationMeasurement(pointer.attestationMeasurement);
 }
 
 function isAwsOnlyImmutableGameStackAlias(
@@ -386,7 +412,8 @@ function isAwsOnlyImmutableGameStackAlias(
     entry.publicationRevision === pointer.publicationRevision;
   const matchesAttestation =
     entry.runtimeKind !== "katana" || entry.attestationMeasurement === pointer.attestationMeasurement;
-  return hasOnlyAwsEndpoint && matchesImmutableStack && matchesAttestation;
+  const matchesKatanaVm = entry.runtimeKind !== "katana" || isPinnedKatanaTeeVmAssetDigest(entry.imageDigest);
+  return hasOnlyAwsEndpoint && matchesImmutableStack && matchesAttestation && matchesKatanaVm;
 }
 
 function matchesActiveGameStackWindow(
@@ -400,7 +427,11 @@ function matchesActiveGameStackWindow(
 function hasValidActiveGameStackIdentity(
   pointer: ActiveGameStackPointer | undefined,
 ): pointer is ActiveGameStackPointer {
-  return Boolean(pointer?.gameStackId) && Number.isFinite(Date.parse(pointer?.activeUntil || ""));
+  return (
+    Boolean(pointer?.gameStackId) &&
+    Number.isFinite(Date.parse(pointer?.activeUntil || "")) &&
+    isPinnedKatanaTeeReleaseIdentity(pointer?.releaseIdentitySha256)
+  );
 }
 
 function hasCompleteReadinessEvidence(pointer: ActiveGameStackPointer, generatedAt: Date): boolean {
@@ -417,7 +448,7 @@ function hasExactReadinessEvidenceKeys(verification: RuntimeReadinessEvidence | 
     "attestationVerifiedAt",
     "worldReadyAt",
     "indexerReadyAt",
-    "registryVerifiedAt",
+    "registryAvailableAt",
   ];
   return (
     Boolean(verification) &&
@@ -433,7 +464,7 @@ function hasOrderedReadinessEvidence(verification: RuntimeReadinessEvidence, gen
     verification.attestationVerifiedAt,
     verification.worldReadyAt,
     verification.indexerReadyAt,
-    verification.registryVerifiedAt,
+    verification.registryAvailableAt,
   ].map((value) => Date.parse(value));
   return (
     timestamps.every(Number.isFinite) &&

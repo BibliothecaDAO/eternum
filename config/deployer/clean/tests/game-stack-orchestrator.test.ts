@@ -1,12 +1,20 @@
 import { describe, expect, test } from "bun:test";
-import { provisionGameStack, type GameStackProvisioningDependencies } from "../game-stack/orchestrator";
-import type { GameStack } from "../game-stack/types";
+import { getKatanaTeeReleaseProjection } from "@bibliothecadao/settlement-codec";
+import { buildGameStackAttestationReportDataHash } from "../game-stack/attestation";
+import {
+  GameStackPublicationAttemptError,
+  provisionGameStack,
+  type GameStackProvisioningDependencies,
+} from "../game-stack/orchestrator";
+import type { GameStack, GameStackAttestationEvidence } from "../game-stack/types";
 
+const PINNED_KATANA_TEE_RELEASE = getKatanaTeeReleaseProjection();
 const KATANA = {
   chainId: "0x534e5f424c49545a",
+  genesisHash: `0x6${"c".repeat(62)}`,
   runtimeName: "blitz-season-42-katana",
   runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b451",
-  imageDigest: `sha256:${"a".repeat(64)}`,
+  imageDigest: PINNED_KATANA_TEE_RELEASE.vmAssetDigest,
   routingShard: 0,
   endpoints: {
     base: "https://runtime.example/katana",
@@ -26,6 +34,7 @@ const TORII = {
     sql: "https://runtime.example/torii/sql",
   },
 };
+const PINNED_ATTESTATION_MEASUREMENT = `sha384:${PINNED_KATANA_TEE_RELEASE.launchMeasurement}`;
 
 function requestedStack(): GameStack {
   return {
@@ -40,6 +49,7 @@ function requestedStack(): GameStack {
     readinessDeadline: "2026-07-18T12:45:00.000Z",
     rulesetId: "0x77",
     releaseBundleHash: "0x88",
+    katanaTeeRelease: { ...PINNED_KATANA_TEE_RELEASE },
     protocolLifecycle: "Intent",
     operationalPhase: "reserving",
     createdAt: "2026-07-18T10:20:00.000Z",
@@ -57,9 +67,9 @@ function createDependencies(events: string[], now = new Date("2026-07-18T12:40:0
       return KATANA;
     },
     sealKatanaIdentity: async () => events.push("seal-identity"),
-    verifyKatanaAttestation: async () => {
+    verifyKatanaAttestation: async (gameStack) => {
       events.push("verify-attestation");
-      return `sha384:${"c".repeat(96)}`;
+      return attestationEvidence(gameStack);
     },
     deployWorld: async () => {
       events.push("deploy-world");
@@ -74,13 +84,17 @@ function createDependencies(events: string[], now = new Date("2026-07-18T12:40:0
     assertProductionReleaseAuthorized: async () => events.push("authorize-production"),
     publishReadyGameStack: async () => {
       events.push("publish-stack");
-      return 42;
+      return {
+        publicationRevision: 42,
+        publicationVerifiedAt: "2026-07-18T12:40:00.011Z",
+      };
     },
     removeReadyGameStackPublication: async () => events.push("remove-publication"),
     persistTransition: async (_expected, stack) => {
       events.push(`persist:${stack.operationalPhase}`);
     },
-    abortProvisioning: async () => events.push("abort-provisioning"),
+    persistProvisioningFailure: async () => {},
+    abortProvisionedInfrastructure: async () => events.push("abort-provisioning"),
     releaseAdmission: async () => events.push("release-admission"),
   };
   return dependencies;
@@ -120,7 +134,7 @@ describe("Blitz game-stack provisioning orchestrator", () => {
       operationalPhase: "ready",
       l3ChainId: "0x534e5f424c49545a",
       worldAddress: "0x9876",
-      attestationMeasurement: `sha384:${"c".repeat(96)}`,
+      attestationMeasurement: PINNED_ATTESTATION_MEASUREMENT,
       publicationRevision: 42,
       katana: KATANA,
       torii: TORII,
@@ -130,15 +144,19 @@ describe("Blitz game-stack provisioning orchestrator", () => {
       attestationVerifiedAt: "2026-07-18T12:40:00.004Z",
       worldReadyAt: "2026-07-18T12:40:00.006Z",
       indexerReadyAt: "2026-07-18T12:40:00.008Z",
-      registryVerifiedAt: "2026-07-18T12:40:00.010Z",
+      registryAvailableAt: "2026-07-18T12:40:00.010Z",
+      publicationVerifiedAt: "2026-07-18T12:40:00.011Z",
     });
     expect(transitions.at(-1)?.expected.operationalPhase).toBe("provisioning-indexer");
     expect(transitions.at(-1)?.expected.publicationRevision).toBeUndefined();
-    expect(transitions.at(-1)?.expected.readiness?.registryVerifiedAt).toBeUndefined();
+    expect(transitions.at(-1)?.expected.readiness?.publicationVerifiedAt).toBeUndefined();
     expect(transitions.at(-1)?.next).toMatchObject({
       operationalPhase: "ready",
       publicationRevision: 42,
-      readiness: { registryVerifiedAt: "2026-07-18T12:40:00.010Z" },
+      readiness: {
+        registryAvailableAt: "2026-07-18T12:40:00.010Z",
+        publicationVerifiedAt: "2026-07-18T12:40:00.011Z",
+      },
     });
   });
 
@@ -160,9 +178,8 @@ describe("Blitz game-stack provisioning orchestrator", () => {
       events.push("deploy-world");
       throw new Error("World deployment rejected");
     };
-    dependencies.abortProvisioning = async (gameStack) => {
+    dependencies.persistProvisioningFailure = async (gameStack) => {
       failedStack = gameStack;
-      events.push("abort-provisioning");
     };
 
     await expect(provisionGameStack(requestedStack(), dependencies)).rejects.toThrow("World deployment rejected");
@@ -178,6 +195,25 @@ describe("Blitz game-stack provisioning orchestrator", () => {
         retryable: true,
       },
     });
+  });
+
+  test("retains infrastructure and admission when structured failure persistence fails", async () => {
+    const events: string[] = [];
+    const dependencies = createDependencies(events);
+    dependencies.deployWorld = async () => {
+      events.push("deploy-world");
+      throw new Error("World deployment rejected");
+    };
+    dependencies.persistProvisioningFailure = async () => {
+      events.push("persist-failure");
+      throw new Error("failure store unavailable");
+    };
+
+    await expect(provisionGameStack(requestedStack(), dependencies)).rejects.toThrow("World deployment rejected");
+
+    expect(events.at(-1)).toBe("persist-failure");
+    expect(events).not.toContain("abort-provisioning");
+    expect(events).not.toContain("release-admission");
   });
 
   test("fails closed before sealing when Katana has no immutable L3 identity", async () => {
@@ -196,6 +232,50 @@ describe("Blitz game-stack provisioning orchestrator", () => {
     expect(events.slice(-2)).toEqual(["abort-provisioning", "release-admission"]);
   });
 
+  test("rejects a substituted release identity before accepting the intent", async () => {
+    const events: string[] = [];
+    const dependencies = createDependencies(events);
+    const gameStack = requestedStack();
+    gameStack.katanaTeeRelease.sourceCommit = "a".repeat(40);
+
+    await expect(provisionGameStack(gameStack, dependencies)).rejects.toThrow(
+      "Game-stack Katana TEE release does not match the pinned public release",
+    );
+
+    expect(events).toEqual(["abort-provisioning", "release-admission"]);
+  });
+
+  test("rejects an attestation that does not match the game-stack release before World deployment", async () => {
+    const events: string[] = [];
+    const dependencies = createDependencies(events);
+    dependencies.verifyKatanaAttestation = async (gameStack) => {
+      events.push("verify-attestation");
+      return attestationEvidence(gameStack, { attestationMeasurement: `sha384:${"c".repeat(96)}` });
+    };
+
+    await expect(provisionGameStack(requestedStack(), dependencies)).rejects.toThrow(
+      "Katana attestation does not match the game-stack release identity",
+    );
+
+    expect(events).not.toContain("deploy-world");
+    expect(events.slice(-2)).toEqual(["abort-provisioning", "release-admission"]);
+  });
+
+  test("rejects attestation report data that does not bind the sealed runtime before World deployment", async () => {
+    const events: string[] = [];
+    const dependencies = createDependencies(events);
+    dependencies.verifyKatanaAttestation = async (gameStack) => {
+      events.push("verify-attestation");
+      return attestationEvidence(gameStack, { reportDataHash: `0x${"d".repeat(64)}` });
+    };
+
+    await expect(provisionGameStack(requestedStack(), dependencies)).rejects.toThrow(
+      "Katana attestation report data does not bind the sealed game-stack identity",
+    );
+
+    expect(events).not.toContain("deploy-world");
+  });
+
   test("carries the newest runtime identity into cleanup when persistence fails", async () => {
     const events: string[] = [];
     let aborted: GameStack | undefined;
@@ -204,7 +284,7 @@ describe("Blitz game-stack provisioning orchestrator", () => {
       events.push(`persist:${stack.operationalPhase}`);
       if (stack.katana) throw new Error("transition store unavailable");
     };
-    dependencies.abortProvisioning = async (gameStack) => {
+    dependencies.abortProvisionedInfrastructure = async (gameStack) => {
       aborted = gameStack;
       events.push("abort-provisioning");
     };
@@ -227,7 +307,7 @@ describe("Blitz game-stack provisioning orchestrator", () => {
       removedPublication = gameStack;
       events.push("remove-publication");
     };
-    dependencies.abortProvisioning = async () => {
+    dependencies.abortProvisionedInfrastructure = async () => {
       events.push("abort-provisioning");
       throw new Error("infrastructure cleanup deferred");
     };
@@ -240,6 +320,79 @@ describe("Blitz game-stack provisioning orchestrator", () => {
       protocolLifecycle: "ProvisioningAborted",
     });
     expect(events.slice(-3)).toEqual(["remove-publication", "abort-provisioning", "release-admission"]);
+  });
+
+  test("removes an ambiguously applied publication before releasing admission", async () => {
+    const events: string[] = [];
+    let removedPublication: GameStack | undefined;
+    const dependencies = createDependencies(events);
+    dependencies.publishReadyGameStack = async () => {
+      events.push("publish-stack");
+      throw new GameStackPublicationAttemptError(43, new Error("registry read-back unavailable"));
+    };
+    dependencies.removeReadyGameStackPublication = async (gameStack) => {
+      removedPublication = gameStack;
+      events.push("remove-publication");
+    };
+
+    await expect(provisionGameStack(requestedStack(), dependencies)).rejects.toThrow("registry read-back unavailable");
+
+    expect(removedPublication).toMatchObject({
+      gameStackId: "blitz-season-42",
+      publicationRevision: 43,
+      protocolLifecycle: "ProvisioningAborted",
+    });
+    expect(events.slice(-3)).toEqual(["remove-publication", "abort-provisioning", "release-admission"]);
+  });
+
+  test("retains admission when an ambiguous publication cannot be removed", async () => {
+    const events: string[] = [];
+    const dependencies = createDependencies(events);
+    dependencies.publishReadyGameStack = async () => {
+      events.push("publish-stack");
+      throw new GameStackPublicationAttemptError(43, new Error("registry read-back unavailable"));
+    };
+    dependencies.removeReadyGameStackPublication = async () => {
+      events.push("remove-publication");
+      throw new Error("registry cleanup unavailable");
+    };
+    dependencies.persistProvisioningFailure = async () => events.push("persist-failure");
+
+    await expect(provisionGameStack(requestedStack(), dependencies)).rejects.toThrow("registry read-back unavailable");
+
+    expect(events.slice(-2)).toEqual(["persist-failure", "remove-publication"]);
+    expect(events).not.toContain("abort-provisioning");
+    expect(events).not.toContain("release-admission");
+  });
+
+  test("removes a publication that verifies after the fixed readiness deadline", async () => {
+    const events: string[] = [];
+    let failedStack: GameStack | undefined;
+    const dependencies = createDependencies(events);
+    dependencies.publishReadyGameStack = async () => {
+      events.push("publish-stack");
+      return {
+        publicationRevision: 43,
+        publicationVerifiedAt: "2026-07-18T12:46:00.000Z",
+      };
+    };
+    dependencies.persistProvisioningFailure = async (gameStack) => {
+      failedStack = gameStack;
+    };
+
+    await expect(provisionGameStack(requestedStack(), dependencies)).rejects.toThrow(
+      "missed its fixed readiness deadline",
+    );
+
+    expect(failedStack).toMatchObject({
+      publicationRevision: 43,
+      failure: {
+        classification: "readiness-deadline",
+        retryable: false,
+      },
+    });
+    expect(events.slice(-3)).toEqual(["remove-publication", "abort-provisioning", "release-admission"]);
+    expect(events).not.toContain("persist:ready");
   });
 
   test("rechecks production authorization before publication", async () => {
@@ -256,3 +409,18 @@ describe("Blitz game-stack provisioning orchestrator", () => {
     expect(events.slice(-2)).toEqual(["abort-provisioning", "release-admission"]);
   });
 });
+
+function attestationEvidence(
+  gameStack: GameStack,
+  overrides: Partial<GameStackAttestationEvidence> = {},
+): GameStackAttestationEvidence {
+  const identitySealedAtMs = Date.parse(gameStack.readiness?.identitySealedAt || "");
+  return {
+    schemaVersion: 1,
+    attestationMeasurement: PINNED_ATTESTATION_MEASUREMENT,
+    attestationDocumentSha256: `sha256:${"e".repeat(64)}`,
+    reportDataHash: buildGameStackAttestationReportDataHash(gameStack),
+    verifiedAt: new Date(identitySealedAtMs + 1).toISOString(),
+    ...overrides,
+  };
+}

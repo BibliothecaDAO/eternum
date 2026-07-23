@@ -1,3 +1,5 @@
+import { assertKatanaTeeReleaseProjection, getKatanaTeeReleaseProjection } from "@bibliothecadao/settlement-codec";
+
 const PRODUCTION_EPICS = ["B", "C", "D", "E", "F"] as const;
 const REQUIRED_INPUTS = [
   "authorityInventory",
@@ -8,6 +10,7 @@ const REQUIRED_INPUTS = [
   "frozenPositionProof",
   "frozenRecoveryMaterializationProofs",
   "hardenedInboxProof",
+  "katanaTeeRelease",
   "legacyMmrDerivationProof",
   "mmrPlanProof",
   "onchainObservationSha256",
@@ -64,6 +67,7 @@ const A17_STEP_FIELDS = [
   "worstDistributionSteps",
   "mixedMaximumJourneySteps",
 ] as const;
+const PINNED_KATANA_TEE_RELEASE = getKatanaTeeReleaseProjection();
 const INPUT_READY_STATUSES: Record<(typeof REQUIRED_INPUTS)[number], string> = {
   authorityInventory: "production-ready",
   economicWriteClassificationPolicySha256: "production-ready",
@@ -73,6 +77,7 @@ const INPUT_READY_STATUSES: Record<(typeof REQUIRED_INPUTS)[number], string> = {
   frozenPositionProof: "production-ready",
   frozenRecoveryMaterializationProofs: "production-ready",
   hardenedInboxProof: "production-ready",
+  katanaTeeRelease: "production-ready",
   legacyMmrDerivationProof: "production-ready",
   mmrPlanProof: "production-ready",
   onchainObservationSha256: "production-ready",
@@ -93,6 +98,7 @@ const INPUT_IDENTITY_FIELDS: Record<(typeof REQUIRED_INPUTS)[number], readonly s
     "cancelledMarkerProofHash",
     "stateRoot",
   ],
+  katanaTeeRelease: ["releaseIdentitySha256"],
   legacyMmrDerivationProof: [
     "sourceInventoryProgramId",
     "typedDerivationProgramId",
@@ -367,6 +373,37 @@ function assertInputSpecificCompletion(inputs: Record<string, unknown>): void {
   const inbox = asObject(inputs.hardenedInboxProof, "A23 hardened-inbox proof");
   if (inbox.productionRecursiveFinalityVerified !== true || inbox.mandatoryBlockerCount !== 0) {
     throw new Error("A23 hardened-inbox proof is incomplete");
+  }
+
+  assertKatanaTeeReleaseComplete(inputs.katanaTeeRelease);
+}
+
+function assertKatanaTeeReleaseComplete(value: unknown): void {
+  const release = asObject(value, "A23 Katana TEE release");
+  assertKatanaTeeReleaseProjection(release, "A23 Katana TEE release");
+  for (const field of [
+    "sourceAuditStatus",
+    "releaseArtifactVerificationStatus",
+    "buildReproductionStatus",
+    "launchMeasurementReproductionStatus",
+  ]) {
+    if (release[field] !== "passed") {
+      throw new Error(`A23 Katana TEE release evidence is incomplete: ${field}`);
+    }
+  }
+  if (
+    release.productionDagSourceCommit !== PINNED_KATANA_TEE_RELEASE.sourceCommit ||
+    release.productionIdentityAligned !== true ||
+    !isPositiveIntegerAtLeast(release.independentBuildCount, 2) ||
+    release.realTeeEvidenceStatus !== "passed" ||
+    release.measuredProvisionerStatus !== "passed" ||
+    !isSha256(release.sbomSha256) ||
+    !isSha256(release.provenanceSha256) ||
+    !isSha256(release.measuredProvisionerArtifactSha256)
+  ) {
+    throw new Error(
+      "A23 Katana TEE production identity, supply chain, provisioner, or real-hardware evidence is incomplete",
+    );
   }
 }
 

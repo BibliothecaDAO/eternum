@@ -5,6 +5,7 @@ import * as path from "node:path";
 import { afterEach, describe, expect, test } from "bun:test";
 import { buildFailureResult, validateCliResult } from "../cli/aws-runtime";
 import {
+  AwsRuntimeOperationalError,
   buildAwsRuntimeEndpointUrl,
   buildAwsRuntimeServiceName,
   classifyAwsRuntimeFailure,
@@ -14,6 +15,7 @@ import {
   describeAwsRuntime,
   ensureAwsRuntime,
   findExpiredAwsRuntimes,
+  PINNED_KATANA_TEE_RELEASE,
   resolveAwsRuntimeTier,
   resolveAwsRuntimeEndpoint,
   toAwsRuntimeArtifact,
@@ -930,11 +932,13 @@ describe("AWS runtime helpers", () => {
       runtimeKind: "katana" as const,
       runtimeName: "blitz-season-42",
       runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
-      imageDigest: `sha256:${"a".repeat(64)}`,
+      version: PINNED_KATANA_TEE_RELEASE.releaseTag,
+      imageDigest: PINNED_KATANA_TEE_RELEASE.vmAssetDigest,
       exposurePolicy: "public-read" as const,
       lifecycleClass: "ephemeral" as const,
       runtimePlatform: "ec2-sev-snp" as const,
-      attestationMeasurement: `sha384:${"b".repeat(96)}`,
+      attestationMeasurement: `sha384:${PINNED_KATANA_TEE_RELEASE.launchMeasurement}`,
+      katanaTeeRelease: PINNED_KATANA_TEE_RELEASE,
       owner: {
         runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
         gameName: "blitz-season-42",
@@ -974,15 +978,141 @@ describe("AWS runtime helpers", () => {
     };
 
     await expect(ensureAwsRuntime(request, { backend })).resolves.toMatchObject({ action: "created" });
+    backend.describeCount = 0;
+    await expect(ensureAwsRuntime({ ...request, environmentId: "sepolia.blitz" }, { backend })).resolves.toMatchObject({
+      action: "created",
+    });
     await expect(ensureAwsRuntime({ ...request, environmentId: "mainnet.eternum" }, { backend })).rejects.toThrow(
       "AWS Katana is not permitted for Eternum environment mainnet.eternum",
     );
-    await expect(ensureAwsRuntime({ ...request, runtimePlatform: "ecs-fargate" }, { backend })).rejects.toThrow(
+    const invalidPlatformError = await ensureAwsRuntime(
+      { ...request, runtimePlatform: "ecs-fargate" },
+      { backend },
+    ).catch((error: unknown) => error);
+    expect(invalidPlatformError).toBeInstanceOf(AwsRuntimeOperationalError);
+    expect((invalidPlatformError as Error).message).toBe(
       "Production Blitz Katana requires runtimePlatform=ec2-sev-snp",
     );
+    expect(classifyAwsRuntimeFailure(invalidPlatformError)).toBe("runtime-validation");
     await expect(ensureAwsRuntime(request)).rejects.toThrow(
-      "Production Blitz SEV-SNP runtime backend is unavailable until the pinned katana-tee source and measured EC2 provisioner are installed",
+      "Blitz SEV-SNP runtime backend is unavailable until the measured EC2 provisioner is installed for the pinned public Katana TEE release",
     );
+    await expect(ensureAwsRuntime({ ...request, environmentId: "sepolia.blitz" })).rejects.toThrow(
+      "Blitz SEV-SNP runtime backend is unavailable until the measured EC2 provisioner is installed for the pinned public Katana TEE release",
+    );
+    expect(
+      classifyAwsRuntimeFailure(
+        new AwsRuntimeOperationalError(
+          "missing-foundation-config",
+          "Blitz SEV-SNP runtime backend is unavailable until the measured EC2 provisioner is installed for the pinned public Katana TEE release",
+        ),
+      ),
+    ).toBe("missing-foundation-config");
+  });
+
+  test("rejects missing or mismatched production Katana TEE release identity before reading AWS", async () => {
+    const backend = {
+      async describeRuntime() {
+        throw new Error("TEE release validation must run before AWS");
+      },
+      async createRuntime() {
+        return [];
+      },
+      async updateRuntimeTier() {},
+      async deleteRuntime() {
+        return [];
+      },
+    };
+    const request = {
+      environmentId: "mainnet.blitz" as const,
+      runtimeKind: "katana" as const,
+      runtimeName: "blitz-season-42",
+      runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+      version: PINNED_KATANA_TEE_RELEASE.releaseTag,
+      imageDigest: PINNED_KATANA_TEE_RELEASE.vmAssetDigest,
+      exposurePolicy: "public-read" as const,
+      lifecycleClass: "ephemeral" as const,
+      runtimePlatform: "ec2-sev-snp" as const,
+      attestationMeasurement: `sha384:${PINNED_KATANA_TEE_RELEASE.launchMeasurement}`,
+      owner: {
+        runtimeInstanceId: TEST_RUNTIME_INSTANCE_ID,
+        gameName: "blitz-season-42",
+        runKind: "game" as const,
+        runName: "blitz-season-42",
+        autoTeardown: true,
+        lifecycleClass: "ephemeral" as const,
+      },
+    };
+
+    await expect(ensureAwsRuntime(request, { backend })).rejects.toThrow(
+      "Production Blitz Katana requires katanaTeeRelease identity",
+    );
+    expect(
+      classifyAwsRuntimeFailure(
+        new AwsRuntimeOperationalError(
+          "runtime-validation",
+          "Production Blitz Katana requires katanaTeeRelease identity",
+        ),
+      ),
+    ).toBe("runtime-validation");
+
+    for (const [field, value] of [
+      ["releaseIdentitySha256", "a".repeat(64)],
+      ["releaseTag", "tee-vm-v0.4.0+katana-v1.8.0-rc.9"],
+      ["sourceCommit", "a".repeat(40)],
+      ["buildInfoDigest", `sha256:${"b".repeat(64)}`],
+      ["vmAssetDigest", `sha256:${"b".repeat(64)}`],
+      ["launchMeasurement", "c".repeat(96)],
+    ] as const) {
+      await expect(
+        ensureAwsRuntime(
+          {
+            ...request,
+            katanaTeeRelease: {
+              ...PINNED_KATANA_TEE_RELEASE,
+              [field]: value,
+            },
+          },
+          { backend },
+        ),
+      ).rejects.toThrow("Production Blitz Katana katanaTeeRelease does not match the pinned public release");
+    }
+
+    await expect(
+      ensureAwsRuntime(
+        {
+          ...request,
+          attestationMeasurement: `sha384:${"d".repeat(96)}`,
+          katanaTeeRelease: PINNED_KATANA_TEE_RELEASE,
+        },
+        { backend },
+      ),
+    ).rejects.toThrow(
+      "Production Blitz Katana attestationMeasurement does not match the pinned public release launch measurement",
+    );
+
+    await expect(
+      ensureAwsRuntime(
+        {
+          ...request,
+          version: PINNED_KATANA_TEE_RELEASE.releaseTag,
+          imageDigest: `sha256:${"d".repeat(64)}`,
+          katanaTeeRelease: PINNED_KATANA_TEE_RELEASE,
+        },
+        { backend },
+      ),
+    ).rejects.toThrow("Production Blitz Katana imageDigest does not match the pinned public release VM artifact");
+    await expect(
+      ensureAwsRuntime(
+        {
+          ...request,
+          version: "tee-vm-v0.4.0+katana-v1.8.0-rc.9",
+          imageDigest: PINNED_KATANA_TEE_RELEASE.vmAssetDigest,
+          katanaTeeRelease: PINNED_KATANA_TEE_RELEASE,
+        },
+        { backend },
+      ),
+    ).rejects.toThrow("Production Blitz Katana version does not match the pinned public release tag");
   });
 
   test("rejects a mutation while another operation owns the runtime lease", async () => {

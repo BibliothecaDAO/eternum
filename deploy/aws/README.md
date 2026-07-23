@@ -5,8 +5,11 @@ Terraform owns each environment's networking, IAM, routing, control table, Farga
 primitives. Production Katana moves to measured SEV-SNP EC2; Torii and non-attested services remain on Fargate.
 
 Production activation is blocked by the settlement program's A23 feasibility/rebaseline decision. The command backend
-therefore rejects `ec2-sev-snp` desired state until the pinned `katana-tee` source and measured EC2 provisioner are
-installed. The existing ECS foundation must not be interpreted as a production TEE implementation.
+pins public Katana TEE release `tee-vm-v0.4.1+katana-v1.8.0-rc.9` to GitHub-verified signed source commit
+`92787269bc05ab319f566b5d1f85715cb408fc17`, rejects any substituted artifact or launch measurement, and still rejects
+`ec2-sev-snp` desired state until the measured EC2 provisioner is installed. The release assets are digest-pinned; this
+repository does not claim that the assets themselves are signed. The existing ECS foundation must not be interpreted
+as a production TEE implementation.
 
 ## Containment
 
@@ -26,6 +29,20 @@ Account and region ownership is fixed:
 Existing shared `slot` and `slottest` Katana are historical non-production infrastructure. They are not valid targets
 for new production runtime resolution. One public Blitz launch owns one ephemeral, attested Katana and one initial
 World. `mainnet.eternum` permits Torii only and never provisions Katana.
+
+`sepolia.blitz` keeps its shared development Katana path, but an explicit `ec2-sev-snp` request enters the same
+game-owned, pinned-release, attestation-bound validation as production. That real-TEE staging path remains fail-closed
+until the measured EC2 provisioner exists.
+
+The game-stack provisioner sends a canonical desired Katana request to the operations backend and accepts only a
+distinct EC2-observed runtime artifact that exactly matches its platform, ownership, image, release, measurement, and
+lifecycle fields. The observed artifact must also match the provisioning idempotency key, postdate that request, not
+be future-dated, and remain within a five-minute control-plane freshness window. The subsequent attestation step binds
+the sealed stack, deployment, runtime, chain, genesis, ruleset, release bundle, release manifest, and VM digest with the versioned
+`KATANA_LAUNCH_ATTESTATION_BINDING_V1` Poseidon vector shared by TypeScript and Rust. This is a control-plane launch
+binding, not the settlement protocol's hardened checkpoint proof. The evidence timestamp establishes only local
+ordering after identity sealing; production freshness still requires the specification's L1-issued challenge,
+certificate/TCB validation, genuine SEV-SNP quote, and production verifier.
 
 ## Foundation
 
@@ -224,8 +241,12 @@ bun scripts/update-runtime-registry.ts --seed-default true
 ```
 
 The generic runtime publisher rejects `mainnet.blitz`. Production uses the complete game-stack publisher so Katana and
-Torii become visible atomically after identity sealing, attestation, World deployment, indexer readiness, and registry
-verification. Removing the active production stack deletes its AWS-only aliases; it never rolls back to Slot.
+Torii become visible atomically after identity sealing, attestation, World deployment, indexer readiness, and a
+successful registry availability check. The publisher then reads the committed registry revision back and requires an
+exact match before the GameStack records publication verification and becomes ready. Removing the active production
+stack deletes its AWS-only aliases; it never rolls back to Slot. Ambiguous publication attempts retain admission until
+cleanup observes and removes the exact attempted revision, and publication verification after the fixed readiness
+deadline takes the provisioning-abort path.
 
 ## Snapshots
 

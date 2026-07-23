@@ -4,6 +4,12 @@
   "status": "reference-seam-complete-production-proof-blocked",
   "releaseReady": false,
   "protocolRegistryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
+  "katanaTeeRelease": {
+    "artifact": "packages/settlement-codec/schema/katana-tee-release-v1.json",
+    "fileSha256": "184822d44db5bb9e0f6652a2a7cf7b851ac9a65eaa76bb991d642679fbb7dbf2",
+    "tag": "tee-vm-v0.4.1+katana-v1.8.0-rc.9",
+    "sourceCommit": "92787269bc05ab319f566b5d1f85715cb408fc17"
+  },
   "reproducibilityInputs": {
     "guestCoreSha256": "47b276693ac4d7b69f943e3a41de7988fa964cc457395696ad94f6ebefe10e7f",
     "protocolHashCoreSha256": "61e91e662b9839c6df869f5efb1de74ec5f9d65344047f393247a1e9bbf58448"
@@ -78,7 +84,7 @@
   "productionBlockers": [
     {
       "id": "PINNED-KATANA-MULTIPROOF",
-      "reason": "Authenticated source access is unavailable for katana-tee commit 6a263b017aa37903b8d65cf28c9f52cd24cb5807, so the reference state commitment cannot yet be replaced with the production Patricia MultiProof adapter and generated Dojo/Hub slot layout."
+      "reason": "The public Katana TEE release is pinned to a GitHub-verified signed source commit and its source is available. The reference state commitment still must be replaced with a production Patricia MultiProof adapter generated from the exact release layout and verified against its published launch measurement."
     },
     {
       "id": "SP1-RECEIPT-AND-COST",

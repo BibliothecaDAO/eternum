@@ -114,6 +114,9 @@ importers:
       '@bibliothecadao/react':
         specifier: workspace:^
         version: link:packages/react
+      '@bibliothecadao/settlement-codec':
+        specifier: workspace:*
+        version: link:packages/settlement-codec
       '@types/node':
         specifier: ^20.17.30
         version: 20.19.33

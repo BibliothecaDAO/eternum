@@ -1,3 +1,5 @@
+import type { KatanaTeeReleaseProjection } from "@bibliothecadao/settlement-codec";
+
 export type PublicBlitzPresetId = "blitz-fast" | "blitz-open" | "blitz-duel";
 
 export interface BlitzLaunchQuote {
@@ -57,6 +59,7 @@ export interface GameStackFailure {
 
 export interface GameStackRuntimeIdentity {
   chainId?: string;
+  genesisHash?: string;
   runtimeName: string;
   runtimeInstanceId: string;
   imageDigest: string;
@@ -64,12 +67,21 @@ export interface GameStackRuntimeIdentity {
   endpoints?: Partial<Record<"base" | "health" | "rpc" | "sql", string>>;
 }
 
+export interface GameStackAttestationEvidence {
+  schemaVersion: 1;
+  attestationMeasurement: string;
+  attestationDocumentSha256: string;
+  reportDataHash: string;
+  verifiedAt: string;
+}
+
 export interface GameStackReadinessEvidence {
   identitySealedAt?: string;
   attestationVerifiedAt?: string;
   worldReadyAt?: string;
   indexerReadyAt?: string;
-  registryVerifiedAt?: string;
+  registryAvailableAt?: string;
+  publicationVerifiedAt?: string;
 }
 
 export function deriveGameStackOperationalPhase(
@@ -90,7 +102,9 @@ function deriveAttestedOperationalPhase(readiness: GameStackReadinessEvidence): 
   if (!readiness.identitySealedAt || !readiness.attestationVerifiedAt || !readiness.worldReadyAt) {
     return "deploying-world";
   }
-  if (!readiness.indexerReadyAt || !readiness.registryVerifiedAt) return "provisioning-indexer";
+  if (!readiness.indexerReadyAt || !readiness.registryAvailableAt || !readiness.publicationVerifiedAt) {
+    return "provisioning-indexer";
+  }
   return "ready";
 }
 
@@ -106,10 +120,12 @@ export interface GameStack {
   readinessDeadline: string;
   rulesetId: string;
   releaseBundleHash: string;
+  katanaTeeRelease: KatanaTeeReleaseProjection;
   l3ChainId?: string;
   settlementIdentity?: string;
   worldAddress?: string;
   attestationMeasurement?: string;
+  attestationEvidence?: GameStackAttestationEvidence;
   katana?: GameStackRuntimeIdentity;
   torii?: GameStackRuntimeIdentity;
   readiness?: GameStackReadinessEvidence;

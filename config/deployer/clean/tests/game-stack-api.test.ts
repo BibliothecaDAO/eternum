@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { getKatanaTeeReleaseProjection } from "@bibliothecadao/settlement-codec";
 import {
   GameStackStoreConflictError,
   handleGameStackApiRequest,
   type GameStackApiDependencies,
   type GameStackApiStore,
 } from "../game-stack/api";
+import { buildGameStackAttestationReportDataHash } from "../game-stack/attestation";
 import type { BlitzAuthChallenge, BlitzLaunchQuote, GameStack } from "../game-stack";
 
 function createMemoryStore(): GameStackApiStore & {
@@ -183,6 +185,7 @@ describe("AWS Blitz game-stack API", () => {
       presetId: "blitz-open",
       intendedStart: "2026-07-18T13:00:00.000Z",
       intendedEnd: "2026-07-18T14:30:00.000Z",
+      katanaTeeRelease: getKatanaTeeReleaseProjection(),
       protocolLifecycle: "Intent",
       operationalPhase: "reserving",
     });
@@ -195,37 +198,11 @@ describe("AWS Blitz game-stack API", () => {
     expect(activeResponse.status).toBe(404);
     expect(await activeResponse.json()).toEqual({ error: "No published active Blitz game stack" });
 
-    const publishedStack: GameStack = {
+    const publishedStack = createPublishedGameStack({
       ...stack,
-      l3ChainId: "0x534e5f424c49545a",
-      worldAddress: "0x9876",
-      attestationMeasurement: `sha384:${"c".repeat(96)}`,
-      katana: {
-        runtimeName: "blitz-season-42-katana",
-        runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b451",
-        imageDigest: `sha256:${"a".repeat(64)}`,
-        endpoints: { rpc: "https://runtime.example/katana/rpc/v0_9" },
-      },
-      torii: {
-        runtimeName: "blitz-season-42-torii",
-        runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b452",
-        imageDigest: `sha256:${"b".repeat(64)}`,
-        endpoints: {
-          base: "https://runtime.example/torii",
-          sql: "https://runtime.example/torii/sql",
-        },
-      },
-      readiness: {
-        identitySealedAt: "2026-07-18T10:20:00.000Z",
-        attestationVerifiedAt: "2026-07-18T10:20:00.000Z",
-        worldReadyAt: "2026-07-18T10:20:00.000Z",
-        indexerReadyAt: "2026-07-18T10:20:00.000Z",
-        registryVerifiedAt: "2026-07-18T10:20:00.000Z",
-      },
       protocolLifecycle: "Attested",
       operationalPhase: "ready",
-      publicationRevision: 42,
-    };
+    });
     store.gameStacks.set(publishedStack.gameStackId, publishedStack);
     const publishedResponse = await handleGameStackApiRequest(
       new Request("https://launch.example/v1/blitz/active"),
@@ -233,6 +210,49 @@ describe("AWS Blitz game-stack API", () => {
     );
     expect(publishedResponse.status).toBe(200);
     expect(await publishedResponse.json()).toEqual(publishedStack);
+
+    store.gameStacks.set(publishedStack.gameStackId, {
+      ...publishedStack,
+      katanaTeeRelease: {
+        ...publishedStack.katanaTeeRelease,
+        sourceCommit: "a".repeat(40),
+      },
+    });
+    const substitutedReleaseResponse = await handleGameStackApiRequest(
+      new Request("https://launch.example/v1/blitz/active"),
+      dependencies,
+    );
+    expect(substitutedReleaseResponse.status).toBe(404);
+  });
+
+  test("does not expose a stack whose L3 chain or Katana image differs from its sealed identity", async () => {
+    const store = createMemoryStore();
+    const dependencies = createDependencies(store);
+    const publishedStack = createPublishedGameStack();
+    store.active = publishedStack.gameStackId;
+
+    for (const substitutedStack of [
+      {
+        ...publishedStack,
+        l3ChainId: "0x1234",
+      },
+      {
+        ...publishedStack,
+        katana: {
+          ...publishedStack.katana!,
+          imageDigest: `sha256:${"a".repeat(64)}`,
+        },
+      },
+    ]) {
+      store.gameStacks.set(publishedStack.gameStackId, substitutedStack);
+      const response = await handleGameStackApiRequest(
+        new Request("https://launch.example/v1/blitz/active"),
+        dependencies,
+      );
+
+      expect(response.status).toBe(404);
+      expect(await response.json()).toEqual({ error: "No published active Blitz game stack" });
+    }
   });
 
   test("releases admission when provisioning dispatch fails", async () => {
@@ -286,3 +306,63 @@ describe("AWS Blitz game-stack API", () => {
     });
   });
 });
+
+function createPublishedGameStack(overrides: Partial<GameStack> = {}): GameStack {
+  const release = getKatanaTeeReleaseProjection();
+  const gameStack: GameStack = {
+    schemaVersion: 1,
+    gameStackId: "018f6e54-5f4a-7ae2-a0ff-123456789abc",
+    deploymentId: "0x4242",
+    requesterWallet: "0x1234",
+    quoteId: "0x99",
+    presetId: "blitz-open",
+    intendedStart: "2026-07-18T13:00:00.000Z",
+    intendedEnd: "2026-07-18T14:30:00.000Z",
+    readinessDeadline: "2026-07-18T12:45:00.000Z",
+    rulesetId: "0x77",
+    releaseBundleHash: "0x88",
+    katanaTeeRelease: release,
+    l3ChainId: "0x534e5f424c49545a",
+    worldAddress: "0x9876",
+    attestationMeasurement: `sha384:${release.launchMeasurement}`,
+    katana: {
+      chainId: "0x534e5f424c49545a",
+      genesisHash: `0x6${"c".repeat(62)}`,
+      runtimeName: "blitz-season-42-katana",
+      runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b451",
+      imageDigest: release.vmAssetDigest,
+      endpoints: { rpc: "https://runtime.example/katana/rpc/v0_9" },
+    },
+    torii: {
+      runtimeName: "blitz-season-42-torii",
+      runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b452",
+      imageDigest: `sha256:${"b".repeat(64)}`,
+      endpoints: {
+        base: "https://runtime.example/torii",
+        sql: "https://runtime.example/torii/sql",
+      },
+    },
+    readiness: {
+      identitySealedAt: "2026-07-18T10:20:00.000Z",
+      attestationVerifiedAt: "2026-07-18T10:20:00.000Z",
+      worldReadyAt: "2026-07-18T10:20:00.000Z",
+      indexerReadyAt: "2026-07-18T10:20:00.000Z",
+      registryAvailableAt: "2026-07-18T10:20:00.000Z",
+      publicationVerifiedAt: "2026-07-18T10:20:00.000Z",
+    },
+    protocolLifecycle: "Attested",
+    operationalPhase: "ready",
+    publicationRevision: 42,
+    createdAt: "2026-07-18T10:20:00.000Z",
+    updatedAt: "2026-07-18T10:20:00.000Z",
+    ...overrides,
+  };
+  gameStack.attestationEvidence = {
+    schemaVersion: 1,
+    attestationMeasurement: gameStack.attestationMeasurement!,
+    attestationDocumentSha256: `sha256:${"e".repeat(64)}`,
+    reportDataHash: buildGameStackAttestationReportDataHash(gameStack),
+    verifiedAt: gameStack.readiness!.attestationVerifiedAt!,
+  };
+  return gameStack;
+}

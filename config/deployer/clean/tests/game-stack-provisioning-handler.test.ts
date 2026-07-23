@@ -1,5 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { createGameStackProvisioningHandler, type GameStackProvisioningDependencies } from "../game-stack";
+import { getKatanaTeeReleaseProjection } from "@bibliothecadao/settlement-codec";
+import {
+  buildGameStackAttestationReportDataHash,
+  createGameStackProvisioningHandler,
+  type GameStackProvisioningDependencies,
+} from "../game-stack";
 import type { GameStack } from "../game-stack/types";
 
 describe("game-stack provisioning service boundary", () => {
@@ -59,6 +64,7 @@ function requestedStack(): GameStack {
     readinessDeadline: "2026-07-18T12:45:00.000Z",
     rulesetId: "0x77",
     releaseBundleHash: "0x88",
+    katanaTeeRelease: getKatanaTeeReleaseProjection(),
     protocolLifecycle: "Intent",
     operationalPhase: "reserving",
     createdAt: "2026-07-18T10:20:00.000Z",
@@ -73,13 +79,20 @@ function createProvisioningDependencies(events: string[]): GameStackProvisioning
     acceptSeasonIntent: async () => events.push("accept"),
     provisionKatana: async () => ({
       chainId: "0x534e5f424c49545a",
+      genesisHash: `0x6${"c".repeat(62)}`,
       runtimeName: "blitz-season-42-katana",
       runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b451",
-      imageDigest: `sha256:${"a".repeat(64)}`,
+      imageDigest: getKatanaTeeReleaseProjection().vmAssetDigest,
       endpoints: { rpc: "https://runtime.example/katana/rpc/v0_9" },
     }),
     sealKatanaIdentity: async () => events.push("seal"),
-    verifyKatanaAttestation: async () => `sha384:${"c".repeat(96)}`,
+    verifyKatanaAttestation: async (gameStack) => ({
+      schemaVersion: 1,
+      attestationMeasurement: `sha384:${getKatanaTeeReleaseProjection().launchMeasurement}`,
+      attestationDocumentSha256: `sha256:${"e".repeat(64)}`,
+      reportDataHash: buildGameStackAttestationReportDataHash(gameStack),
+      verifiedAt: gameStack.readiness!.identitySealedAt!,
+    }),
     deployWorld: async () => "0x9876",
     provisionTorii: async () => ({
       runtimeName: "blitz-season-42-torii",
@@ -95,11 +108,15 @@ function createProvisioningDependencies(events: string[]): GameStackProvisioning
     assertProductionReleaseAuthorized: async () => events.push("authorize-production"),
     publishReadyGameStack: async () => {
       events.push("publish");
-      return 42;
+      return {
+        publicationRevision: 42,
+        publicationVerifiedAt: "2026-07-18T12:40:00.011Z",
+      };
     },
     removeReadyGameStackPublication: async () => events.push("remove-publication"),
     persistTransition: async (_expected, next) => events.push(`persist:${next.operationalPhase}`),
-    abortProvisioning: async () => events.push("abort"),
+    persistProvisioningFailure: async () => events.push("persist-failure"),
+    abortProvisionedInfrastructure: async () => events.push("abort"),
     releaseAdmission: async () => events.push("release"),
   };
 }

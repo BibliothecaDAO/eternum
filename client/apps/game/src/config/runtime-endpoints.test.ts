@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearInstalledRuntimeRegistry,
   getEmbeddedReadOnlyRuntimeRegistry,
+  getPinnedKatanaTeeReleaseProjection,
 } from "../../../../../common/factory/runtime-registry";
 import { registerReadyGameStack } from "../../../../../common/factory/runtime-registry-artifact";
 
@@ -86,23 +87,25 @@ describe("runtime endpoint registry loading", () => {
   it("resolves mainnet Blitz only when both AWS runtimes are complete and unexpired", async () => {
     envMock.env.VITE_PUBLIC_CHAIN = "mainnet";
     envMock.env.VITE_PUBLIC_RUNTIME_REGISTRY_URL = "https://registry.realms.world/runtime.json";
+    const katanaTeeRelease = getPinnedKatanaTeeReleaseProjection();
     const registry = registerReadyGameStack(
       getEmbeddedReadOnlyRuntimeRegistry(),
       {
         environmentId: "mainnet.blitz",
         gameStackId: "blitz-season-42",
         activeUntil: "2099-07-18T14:30:00.000Z",
-        attestationMeasurement: `sha384:${"c".repeat(96)}`,
+        releaseIdentitySha256: katanaTeeRelease.releaseIdentitySha256,
+        attestationMeasurement: `sha384:${katanaTeeRelease.launchMeasurement}`,
         verification: {
           identitySealedAt: "2025-07-18T12:20:00.000Z",
           attestationVerifiedAt: "2025-07-18T12:25:00.000Z",
           worldReadyAt: "2025-07-18T12:30:00.000Z",
           indexerReadyAt: "2025-07-18T12:35:00.000Z",
-          registryVerifiedAt: "2025-07-18T12:40:00.000Z",
+          registryAvailableAt: "2025-07-18T12:40:00.000Z",
         },
         katana: {
           runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b451",
-          imageDigest: `sha256:${"a".repeat(64)}`,
+          imageDigest: katanaTeeRelease.vmAssetDigest,
           routingShard: 0,
           endpoints: {
             base: "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/katana",

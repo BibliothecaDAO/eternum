@@ -15,6 +15,8 @@ export * from "./authority-inventory";
 export * from "./authority-address-discovery";
 export * from "./deployment-identity";
 export * from "./deployment-identity-vector";
+export * from "./katana-tee-release";
+export * from "./katana-launch-attestation";
 export * from "./tree";
 export * from "./generated-types";
 export * from "./package-lane";

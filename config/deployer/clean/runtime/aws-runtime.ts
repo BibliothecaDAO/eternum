@@ -78,10 +78,16 @@ import {
   resolveExistingRuntimeRouteAssignment,
   withRuntimeMutationLease,
 } from "./aws/control";
+import { AwsRuntimeOperationalError, type AwsRuntimeFailureClassification } from "./aws/errors";
 import { requireRuntimeInstanceId, type RuntimeIdentity } from "./runtime-identity";
+import type { AwsKatanaTeeReleaseIdentity } from "./aws/katana-tee-release";
 export { resolveAwsRuntimeTier } from "./aws/config";
 export type { AwsRuntimeTierConfig } from "./aws/config";
 export type { AwsRuntimeHealth, AwsRuntimeHealthProbe, AwsRuntimeHealthStatus } from "./aws/health";
+export { AwsRuntimeOperationalError } from "./aws/errors";
+export type { AwsRuntimeFailureClassification } from "./aws/errors";
+export { PINNED_KATANA_TEE_RELEASE } from "./aws/katana-tee-release";
+export type { AwsKatanaTeeReleaseIdentity } from "./aws/katana-tee-release";
 export { buildAwsRuntimeServiceName } from "./aws/naming";
 export {
   buildAwsToriiRuntimeRequest,
@@ -106,16 +112,6 @@ export type AwsRuntimeSweptResource =
   | "task-definitions"
   | "target-group"
   | "access-point";
-export type AwsRuntimeFailureClassification =
-  | "missing-foundation-config"
-  | "aws-command-failed"
-  | "image-not-found"
-  | "rollout-failed"
-  | "stabilization-timeout"
-  | "runtime-state-indeterminate"
-  | "runtime-validation"
-  | "unknown";
-
 export interface AwsRuntimeLiveState {
   provider: "aws";
   environmentId?: DeploymentEnvironmentId;
@@ -210,6 +206,7 @@ export interface AwsRuntimeRequest {
   owner?: AwsRuntimeOwnerMetadata;
   runtimePlatform?: AwsRuntimePlatform;
   attestationMeasurement?: string;
+  katanaTeeRelease?: AwsKatanaTeeReleaseIdentity;
 }
 
 export interface AwsRuntimeOwnerMetadata {
@@ -1494,6 +1491,7 @@ export function resolveAwsRuntimeEndpoint(options: {
 }
 
 export function classifyAwsRuntimeFailure(error: unknown): AwsRuntimeFailureClassification {
+  if (error instanceof AwsRuntimeOperationalError) return error.classification;
   const message = error instanceof Error ? error.message : String(error);
 
   if (/Missing AWS runtime foundation config/i.test(message)) {

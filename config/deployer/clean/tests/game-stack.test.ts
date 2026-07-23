@@ -12,7 +12,7 @@ describe("Blitz game-stack launch policy", () => {
       deriveGameStackOperationalPhase("Attested", {
         worldReadyAt: "2026-07-18T12:30:00.000Z",
         indexerReadyAt: "2026-07-18T12:35:00.000Z",
-        registryVerifiedAt: "2026-07-18T12:40:00.000Z",
+        registryAvailableAt: "2026-07-18T12:40:00.000Z",
       }),
     ).toBe("deploying-world");
     expect(
@@ -36,7 +36,8 @@ describe("Blitz game-stack launch policy", () => {
         attestationVerifiedAt: "2026-07-18T12:25:00.000Z",
         worldReadyAt: "2026-07-18T12:30:00.000Z",
         indexerReadyAt: "2026-07-18T12:35:00.000Z",
-        registryVerifiedAt: "2026-07-18T12:40:00.000Z",
+        registryAvailableAt: "2026-07-18T12:40:00.000Z",
+        publicationVerifiedAt: "2026-07-18T12:41:00.000Z",
       }),
     ).toBe("ready");
     expect(deriveGameStackOperationalPhase("Active")).toBe("active");

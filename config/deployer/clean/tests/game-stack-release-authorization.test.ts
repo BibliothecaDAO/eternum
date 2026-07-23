@@ -10,6 +10,7 @@ import {
   buildA23ProgramAuthorizationMessage,
   type A23ReleaseAuthorizationVerification,
 } from "../game-stack";
+import { getKatanaTeeReleaseProjection } from "@bibliothecadao/settlement-codec";
 
 describe("Wave 0 production release authorization", () => {
   test("fails closed for the current unsigned A23 STOP shape", () => {
@@ -142,6 +143,73 @@ describe("Wave 0 production release authorization", () => {
       [
         "required proof identity",
         (decision) => delete decision.frozenAndCandidateInputs.mmrPlanProof.verificationKeyHash,
+      ],
+      [
+        "pinned Katana TEE release",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.sourceCommit = "a".repeat(40)),
+      ],
+      [
+        "Katana TEE release manifest",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.releaseIdentitySha256 = "a".repeat(64)),
+      ],
+      [
+        "Katana TEE build-info asset",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.buildInfoDigest = `sha256:${"a".repeat(64)}`),
+      ],
+      [
+        "Katana TEE VM asset",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.vmAssetDigest = `sha256:${"a".repeat(64)}`),
+      ],
+      [
+        "Katana TEE launch measurement",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.launchMeasurement = "a".repeat(96)),
+      ],
+      [
+        "Katana TEE source audit",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.sourceAuditStatus = "not-run"),
+      ],
+      [
+        "Katana TEE release artifact verification",
+        (decision) =>
+          (decision.frozenAndCandidateInputs.katanaTeeRelease.releaseArtifactVerificationStatus = "pending"),
+      ],
+      [
+        "Katana TEE build reproduction",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.buildReproductionStatus = "pending"),
+      ],
+      [
+        "Katana TEE launch measurement reproduction",
+        (decision) =>
+          (decision.frozenAndCandidateInputs.katanaTeeRelease.launchMeasurementReproductionStatus = "not-run"),
+      ],
+      [
+        "Katana TEE production DAG",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.productionDagSourceCommit = "a".repeat(40)),
+      ],
+      [
+        "Katana TEE production identity alignment",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.productionIdentityAligned = false),
+      ],
+      [
+        "Katana TEE independent builds",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.independentBuildCount = 1),
+      ],
+      [
+        "Katana TEE real hardware evidence",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.realTeeEvidenceStatus = "not-run"),
+      ],
+      ["Katana TEE SBOM", (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.sbomSha256 = "a")],
+      [
+        "Katana TEE provenance",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.provenanceSha256 = "a"),
+      ],
+      [
+        "Katana TEE measured provisioner",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.measuredProvisionerStatus = "not-run"),
+      ],
+      [
+        "Katana TEE measured provisioner artifact",
+        (decision) => (decision.frozenAndCandidateInputs.katanaTeeRelease.measuredProvisionerArtifactSha256 = "a"),
       ],
       ["failed nested status", (decision) => (decision.frozenAndCandidateInputs.mmrPlanProof.status = "failed")],
       [
@@ -293,6 +361,22 @@ function goDecision() {
         stateRoot: felt("a16:state-root"),
         productionRecursiveFinalityVerified: true,
         mandatoryBlockerCount: 0,
+      },
+      katanaTeeRelease: {
+        ...evidence("katana-tee-release"),
+        ...getKatanaTeeReleaseProjection(),
+        sourceAuditStatus: "passed",
+        releaseArtifactVerificationStatus: "passed",
+        buildReproductionStatus: "passed",
+        launchMeasurementReproductionStatus: "passed",
+        productionDagSourceCommit: getKatanaTeeReleaseProjection().sourceCommit,
+        productionIdentityAligned: true,
+        independentBuildCount: 2,
+        realTeeEvidenceStatus: "passed",
+        sbomSha256: sha256("katana-tee-release:sbom"),
+        provenanceSha256: sha256("katana-tee-release:provenance"),
+        measuredProvisionerStatus: "passed",
+        measuredProvisionerArtifactSha256: sha256("katana-tee-release:measured-provisioner"),
       },
       legacyMmrDerivationProof: {
         ...evidence("a19"),

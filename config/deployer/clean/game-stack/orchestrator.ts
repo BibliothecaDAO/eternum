@@ -1,7 +1,10 @@
+import { assertKatanaTeeReleaseProjection } from "@bibliothecadao/settlement-codec";
+import { assertGameStackAttestationEvidence } from "./attestation";
 import {
   deriveGameStackOperationalPhase,
   type FailedGameStack,
   type GameStack,
+  type GameStackAttestationEvidence,
   type GameStackReadinessEvidence,
   type GameStackRuntimeIdentity,
 } from "./types";
@@ -11,16 +14,17 @@ export interface GameStackProvisioningDependencies {
   acceptSeasonIntent(gameStack: GameStack): Promise<void>;
   provisionKatana(gameStack: GameStack): Promise<GameStackRuntimeIdentity>;
   sealKatanaIdentity(gameStack: GameStack): Promise<void>;
-  verifyKatanaAttestation(gameStack: GameStack): Promise<string>;
+  verifyKatanaAttestation(gameStack: GameStack): Promise<GameStackAttestationEvidence>;
   deployWorld(gameStack: GameStack): Promise<string>;
   provisionTorii(gameStack: GameStack): Promise<GameStackRuntimeIdentity>;
   verifyIndexerReadiness(gameStack: GameStack): Promise<void>;
   verifyRegistryAvailability(gameStack: GameStack): Promise<void>;
   assertProductionReleaseAuthorized(): Promise<void>;
-  publishReadyGameStack(gameStack: GameStack): Promise<number>;
+  publishReadyGameStack(gameStack: GameStack): Promise<{ publicationRevision: number; publicationVerifiedAt: string }>;
   removeReadyGameStackPublication(gameStack: GameStack): Promise<void>;
   persistTransition(expected: GameStack, next: GameStack): Promise<void>;
-  abortProvisioning(gameStack: FailedGameStack): Promise<void>;
+  persistProvisioningFailure(gameStack: FailedGameStack): Promise<void>;
+  abortProvisionedInfrastructure(gameStack: FailedGameStack): Promise<void>;
   releaseAdmission(gameStackId: string): Promise<void>;
 }
 
@@ -39,10 +43,10 @@ export async function provisionGameStack(
     gameStack = await prepareReadyPublication(gameStack, dependencies);
     assertReadinessDeadline(gameStack, dependencies.now());
     await runProvisioningStep(gameStack, dependencies.assertProductionReleaseAuthorized);
-    const publicationRevision = await runProvisioningStep(gameStack, () =>
-      dependencies.publishReadyGameStack(gameStack),
-    );
-    gameStack = { ...gameStack, publicationRevision };
+    const publication = await runPublicationStep(gameStack, () => dependencies.publishReadyGameStack(gameStack));
+    gameStack = recordPublicationAttempt(gameStack, publication.publicationRevision);
+    gameStack = applyVerifiedPublication(gameStack, publication);
+    assertReadinessDeadline(gameStack, new Date(publication.publicationVerifiedAt));
     gameStack = await persistPreparedProvisioningState(lastPersistedStack, gameStack, dependencies);
     return gameStack;
   } catch (error) {
@@ -71,17 +75,23 @@ async function provisionAttestedKatana(
   const identitySealed = await persistProvisioningState(
     gameStack,
     "ProvisioningIdentitySealed",
-    { katana, readiness: recordReadiness(gameStack.readiness, "identitySealedAt", dependencies.now()) },
+    {
+      katana,
+      l3ChainId: katana.chainId,
+      readiness: recordReadiness(gameStack.readiness, "identitySealedAt", dependencies.now()),
+    },
     dependencies,
   );
-  const attestationMeasurement = await dependencies.verifyKatanaAttestation(identitySealed);
+  const attestationEvidence = await dependencies.verifyKatanaAttestation(identitySealed);
+  const attestationVerifiedAt = dependencies.now();
+  assertGameStackAttestationEvidence(identitySealed, attestationEvidence, attestationVerifiedAt);
   return persistProvisioningState(
     identitySealed,
     "Attested",
     {
-      attestationMeasurement,
-      l3ChainId: katana.chainId,
-      readiness: recordReadiness(identitySealed.readiness, "attestationVerifiedAt", dependencies.now()),
+      attestationMeasurement: attestationEvidence.attestationMeasurement,
+      attestationEvidence,
+      readiness: recordReadiness(identitySealed.readiness, "attestationVerifiedAt", attestationVerifiedAt),
     },
     dependencies,
   );
@@ -125,9 +135,37 @@ async function prepareReadyPublication(
   return buildProvisioningState(
     gameStack,
     "Attested",
-    { readiness: recordReadiness(gameStack.readiness, "registryVerifiedAt", dependencies.now()) },
+    { readiness: recordReadiness(gameStack.readiness, "registryAvailableAt", dependencies.now()) },
     dependencies,
   );
+}
+
+function applyVerifiedPublication(
+  gameStack: GameStack,
+  publication: { publicationRevision: number; publicationVerifiedAt: string },
+): GameStack {
+  const publicationVerifiedAt = new Date(publication.publicationVerifiedAt);
+  const registryAvailableAt = Date.parse(gameStack.readiness?.registryAvailableAt || "");
+  if (
+    !Number.isFinite(publicationVerifiedAt.getTime()) ||
+    !Number.isFinite(registryAvailableAt) ||
+    publicationVerifiedAt.getTime() < registryAvailableAt
+  ) {
+    throw new Error("Game-stack publication requires an ordered verification timestamp");
+  }
+  const readiness = recordReadiness(gameStack.readiness, "publicationVerifiedAt", publicationVerifiedAt);
+  return {
+    ...gameStack,
+    readiness,
+    operationalPhase: deriveGameStackOperationalPhase(gameStack.protocolLifecycle, readiness),
+  };
+}
+
+function recordPublicationAttempt(gameStack: GameStack, publicationRevision: number): GameStack {
+  if (!Number.isInteger(publicationRevision) || publicationRevision <= 0) {
+    throw new Error("Game-stack publication requires a positive registry revision");
+  }
+  return { ...gameStack, publicationRevision };
 }
 
 async function persistProvisioningState(
@@ -183,6 +221,21 @@ async function runProvisioningStep<T>(gameStack: GameStack, action: () => Promis
   }
 }
 
+async function runPublicationStep(
+  gameStack: GameStack,
+  action: () => Promise<{ publicationRevision: number; publicationVerifiedAt: string }>,
+): Promise<{ publicationRevision: number; publicationVerifiedAt: string }> {
+  try {
+    return await action();
+  } catch (error) {
+    const attemptedStack =
+      error instanceof GameStackPublicationAttemptError
+        ? recordPublicationAttempt(gameStack, error.publicationRevision)
+        : gameStack;
+    throw new GameStackProvisioningStepError(attemptedStack, error);
+  }
+}
+
 function recordReadiness(
   current: GameStackReadinessEvidence | undefined,
   step: keyof GameStackReadinessEvidence,
@@ -193,6 +246,7 @@ function recordReadiness(
 
 function assertKatanaIdentityComplete(katana: GameStackRuntimeIdentity): void {
   assertNonEmptyIdentity(katana.chainId, "Katana chain ID");
+  assertNonEmptyIdentity(katana.genesisHash, "Katana genesis hash");
   assertNonEmptyIdentity(katana.endpoints?.rpc, "Katana RPC endpoint");
 }
 
@@ -206,10 +260,15 @@ function assertNonEmptyIdentity(value: string | undefined, label: string): asser
 }
 
 function assertProvisioningCanStart(gameStack: GameStack, now: Date): void {
+  assertPinnedKatanaTeeRelease(gameStack);
   if (gameStack.protocolLifecycle !== "Intent" || gameStack.operationalPhase !== "reserving") {
     throw new Error(`Game stack "${gameStack.gameStackId}" is not awaiting provisioning`);
   }
   assertReadinessDeadline(gameStack, now);
+}
+
+function assertPinnedKatanaTeeRelease(gameStack: GameStack): void {
+  assertKatanaTeeReleaseProjection(gameStack.katanaTeeRelease, "Game-stack Katana TEE release");
 }
 
 function assertReadinessDeadline(gameStack: GameStack, now: Date): void {
@@ -251,23 +310,44 @@ async function runProvisioningCleanup(
   dependencies: GameStackProvisioningDependencies,
 ): Promise<unknown[]> {
   const cleanupErrors: unknown[] = [];
+  const failurePersistenceSucceeded = await captureCleanupFailure(
+    () => dependencies.persistProvisioningFailure(failedStack),
+    cleanupErrors,
+  );
+  let publicationCleanupSucceeded = true;
   if (failedStack.publicationRevision !== undefined) {
-    await captureCleanupFailure(() => dependencies.removeReadyGameStackPublication(failedStack), cleanupErrors);
+    publicationCleanupSucceeded = await captureCleanupFailure(
+      () => dependencies.removeReadyGameStackPublication(failedStack),
+      cleanupErrors,
+    );
   }
-  await captureCleanupFailure(() => dependencies.abortProvisioning(failedStack), cleanupErrors);
-  await captureCleanupFailure(() => dependencies.releaseAdmission(failedStack.gameStackId), cleanupErrors);
+  if (failurePersistenceSucceeded && publicationCleanupSucceeded) {
+    await captureCleanupFailure(() => dependencies.abortProvisionedInfrastructure(failedStack), cleanupErrors);
+    await captureCleanupFailure(() => dependencies.releaseAdmission(failedStack.gameStackId), cleanupErrors);
+  }
   return cleanupErrors;
 }
 
-async function captureCleanupFailure(action: () => Promise<void>, errors: unknown[]): Promise<void> {
+async function captureCleanupFailure(action: () => Promise<void>, errors: unknown[]): Promise<boolean> {
   try {
     await action();
+    return true;
   } catch (error) {
     errors.push(error);
+    return false;
   }
 }
 
 class GameStackReadinessDeadlineError extends Error {}
+
+export class GameStackPublicationAttemptError extends Error {
+  constructor(
+    readonly publicationRevision: number,
+    readonly cause: unknown,
+  ) {
+    super(cause instanceof Error ? cause.message : String(cause));
+  }
+}
 
 class GameStackProvisioningStepError extends Error {
   constructor(

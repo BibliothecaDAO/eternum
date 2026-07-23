@@ -7,6 +7,11 @@ export {
   type VerifyCartridgeWalletSignatureRequest,
 } from "./auth";
 export {
+  assertGameStackAttestationEvidence,
+  buildGameStackAttestationReportDataHash,
+  hasGameStackAttestationBinding,
+} from "./attestation";
+export {
   GameStackStoreConflictError,
   handleGameStackApiRequest,
   type FinalizedSeasonIntent,
@@ -23,13 +28,18 @@ export {
 } from "./release-authorization";
 export { A23_PRODUCTION_TICKET_IDS, A23_PROGRAM_TICKET_IDS, A23_WAVE0_TICKET_IDS } from "./a23-decision.mjs";
 export { deriveGameStackOperationalPhase } from "./types";
-export { provisionGameStack, type GameStackProvisioningDependencies } from "./orchestrator";
+export {
+  GameStackPublicationAttemptError,
+  provisionGameStack,
+  type GameStackProvisioningDependencies,
+} from "./orchestrator";
 export { createGameStackProvisioningHandler, type GameStackProvisioningHandlerConfig } from "./provisioning-handler";
 export { createGameStackApiHandler, type GameStackApiHandlerDependencies } from "./runtime";
 export type {
   BlitzLaunchQuote,
   FailedGameStack,
   GameStack,
+  GameStackAttestationEvidence,
   GameStackFailure,
   GameStackOperationalPhase,
   GameStackProtocolLifecycle,

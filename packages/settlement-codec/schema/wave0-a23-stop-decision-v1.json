@@ -111,7 +111,11 @@
       "mandatoryBlocker": true
     },
     { "ticket": "A17", "status": "complete" },
-    { "ticket": "A18", "status": "public-feasibility-complete-private-tee-source-blocked", "mandatoryBlocker": true },
+    {
+      "ticket": "A18",
+      "status": "public-dag-complete-tee-release-pinned-reproduction-blocked",
+      "mandatoryBlocker": true
+    },
     {
       "ticket": "A19",
       "status": "pending-typed-derivation-reference-seam-complete-source-inventory-and-production-proofs-blocked",
@@ -137,7 +141,7 @@
     },
     "frozenPositionProof": {
       "status": "reference-seam-complete-production-proof-blocked",
-      "fileSha256": "a342c95eb57c957ba599dd4d908597fe3677081491296cc0222a2b33e4ff5a4d",
+      "fileSha256": "d9338fe3b1862bfa1d3081b5e8d95b7b59f9b0eade0abcacda99bc30e4cfd4da",
       "journalHash": "0x7d37e77b8cc5f0db16705e88b91ac862f125d684b8fa5644992eee730db58bc",
       "releaseReady": false
     },
@@ -163,7 +167,7 @@
     },
     "emergencySealedProof": {
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
-      "fileSha256": "8ce09cc457d7de3540457bf9439ad757ebc3e34bee43002e90cebb5315b71d8c",
+      "fileSha256": "1a11cedf4c03f41f06530015f37e4e283a5138796eb509958a91f84a6201a592",
       "journalHash": "0x37890799d1a1ec66e4425bfffa52747bcfb6fdb984b80d39420f451b01b343f",
       "releaseReady": false
     },
@@ -191,6 +195,32 @@
       "mandatoryBlockerCount": 4,
       "releaseReady": false
     },
+    "katanaTeeRelease": {
+      "status": "public-release-pinned-reproduction-blocked",
+      "artifact": "packages/settlement-codec/schema/katana-tee-release-v1.json",
+      "fileSha256": "184822d44db5bb9e0f6652a2a7cf7b851ac9a65eaa76bb991d642679fbb7dbf2",
+      "validatorSha256": "b6126f90b355185339e9530ad9694f31c7000f22753c3800368bc4f7982f6d94",
+      "validatorTestSha256": "6a75824faab735442afea8edcd6ffb8e396fe87a236cd693a2e6033c8639a6e8",
+      "releaseIdentitySha256": "184822d44db5bb9e0f6652a2a7cf7b851ac9a65eaa76bb991d642679fbb7dbf2",
+      "releaseTag": "tee-vm-v0.4.1+katana-v1.8.0-rc.9",
+      "sourceCommit": "92787269bc05ab319f566b5d1f85715cb408fc17",
+      "buildInfoDigest": "sha256:6edb4e541824f2e6fbfe16beb180e6fc2ace7c167b618bbe289d676b0988b66f",
+      "vmAssetDigest": "sha256:7a518422e8fbb5517b36f230a4dd3fa55f880969b6f51f5f41815549414b8767",
+      "launchMeasurement": "68c29fbdbf424f9fd14b1bc393f366d0b3d4330cb5e75c875822a595840aea334770a5b015d6ece90a35f57739d7f16e",
+      "sourceAuditStatus": "not-run",
+      "releaseArtifactVerificationStatus": "metadata-and-digests-pinned",
+      "buildReproductionStatus": "not-run",
+      "launchMeasurementReproductionStatus": "not-run",
+      "feasibilityDagSourceCommit": "7882660a91e776ccacdc0e2e3fe2469f6b4df096",
+      "productionIdentityAligned": false,
+      "independentBuildCount": 0,
+      "realTeeEvidenceStatus": "not-run",
+      "sbomSha256": null,
+      "provenanceSha256": null,
+      "measuredProvisionerStatus": "not-run",
+      "measuredProvisionerArtifactSha256": null,
+      "releaseReady": false
+    },
     "legacyMmrDerivationProof": {
       "status": "pending-typed-derivation-reference-seam-complete-source-inventory-and-production-proofs-blocked",
       "fileSha256": "6bdf5fe49a0746b5e17e5e5304e0bed394f400b3656c9dd1772cbd56f6184f32",
@@ -205,7 +235,7 @@
     },
     "frozenRecoveryMaterializationProofs": {
       "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
-      "fileSha256": "d3678e347fbcfa0f2561e887199c8938ee9cf522767fb8e41274ab62de740224",
+      "fileSha256": "b5af25fb3e63b6f3bf79987670dae6d97b252052274b933bc456b7d2b0fe839f",
       "frozenRecoveryJournalHash": "0x40aea6316d38fddec50d6a2ba770a77babc95603c124e2ba6356644004b5afa",
       "deploymentRefundMaterializationJournalHash": "0x4aaed4fdfc7127f25f78d7b21d6875604cb2173fdbaf4f89656644f5ab7e43d",
       "positionMaterializationJournalHash": "0x1f0cfc118469d26eac0b3d226cf0af1edf09eb6051e1d39ef0e15d6d1f9d9e2",
@@ -436,25 +466,45 @@
   },
   "runtimeEnforcement": {
     "sourceSha256": {
-      "config/deployer/clean/game-stack/a23-decision.mts": "0fd422e559975521dae3f095ea61f894f3d8e6577038db43d5fdec3f496cc499",
-      "config/deployer/clean/game-stack/api.ts": "5a89c45f2ba9083acfc9c91e9d7703ac3f7cf2c1f11e502984bb5456729177e1",
-      "config/deployer/clean/game-stack/orchestrator.ts": "694bbecff933802d40efd2278dc33fd461094a1555c96e95291c93badcb536be",
+    "common/factory/runtime-registry-artifact.ts": "ea5ece94d164342f30efb9b5a25540e8c4375cb54e4bc2bf6c5ab3a411defce5",
+      "common/factory/runtime-registry.ts": "b8a6de79ee3905e1f1bdd02f6bbd4b155da73e098bc9aef716f49b3cdd49f5bf",
+      "config/deployer/clean/game-stack/a23-decision.mts": "a9a71d6b366b50419b6a8bcbc5b8c64f09ab7afd01ad8ca4d70e508bae750135",
+      "config/deployer/clean/game-stack/api.ts": "7aac7c51c4ede730bb44a9f8969dc0b9ac37dfdc7b4c1d8974cde53ec17f9014",
+      "config/deployer/clean/game-stack/attestation.ts": "7570137d2446a82b4bdb9551784adb05a9f07a36587ac161a2e79b8ae4366c78",
+      "config/deployer/clean/game-stack/index.ts": "0321e2caa49f4bc57fc8cf5bcc3cd3e203b65316b12767692a6eaa4ac4598af3",
+      "config/deployer/clean/game-stack/orchestrator.ts": "eae9195927fe8ea031dbe26c4a8057171959bccdced40392868dbe159c6ab575",
       "config/deployer/clean/game-stack/release-authorization.ts": "606bfa431416e9632f31a79368392591e5691e09c41210e6cecd3a5cdee4e6a9",
+      "config/deployer/clean/game-stack/types.ts": "19411577c0cbabf72675b0a010e74890165b1539fd0a7b577157c36c6a8ae4ec",
+      "config/deployer/clean/runtime/aws-runtime.ts": "72eab9ed3aa23c1449ea8583cc2e8dda7b10cb77b0c9017def7e7c559ad9341d",
+      "config/deployer/clean/runtime/aws/errors.ts": "5bf7a696abd0212a695ab26669abae06017571a2367c666e2d9a33e4a9f39d7c",
       "config/deployer/clean/runtime/aws/game-stack-api.ts": "e72d5d2620ba10b47d6280e78a316091684bbd81437058fa0299d3dea1b8ee30",
-      "config/deployer/clean/runtime/aws/game-stack-provisioning.ts": "2839c1b45c0620dbe9b1bce12dbf8de53faf373c5c56a61e18e3255b6788cbbe",
-      "config/deployer/clean/runtime/aws/wave0-release.ts": "a30bcfd338322774d4292c517cb3b65403db17158a8bec34eb93877e12693615"
+      "config/deployer/clean/runtime/aws/game-stack-provisioning.ts": "bcb0b15ccab9a3e5bc995479d85eb441344a3197c84e481256f419cbc5bf46a7",
+      "config/deployer/clean/runtime/aws/katana-runtime-artifact.ts": "32af667b1cb779f668f496aa3779705c56b169d27d34011f22cb5745ae6683c9",
+      "config/deployer/clean/runtime/aws/katana-tee-release.ts": "ac72c2bd5aebb9f5bd96b58acf3965c9f73710f6d3250bda7fd3ddaf335f2d36",
+      "config/deployer/clean/runtime/aws/reconcile.ts": "7af4d9df22b120940f2e7715f80b379c584a5f3708472d1e4c39329220bfe785",
+      "config/deployer/clean/runtime/aws/wave0-release.ts": "a30bcfd338322774d4292c517cb3b65403db17158a8bec34eb93877e12693615",
+      "package.json": "aa6bc4cc2b99ae7def424005dc7c911189618e401ba314c1763d2ee2bbc3728f",
+      "packages/settlement-codec/src/index.ts": "c3ffb99c15829e5daafa4e34914a5db92cce2057a3e890198d958c63b62daf4b",
+      "packages/settlement-codec/src/katana-launch-attestation.ts": "497e4d7c9db8ec8c51c5f50bba1c81fcf7a47456b3c5d7ddcbff4910906ace4b",
+      "pnpm-lock.yaml": "a969c773aa3dbce2e1df51373e1354aa16e18b6ac62d097a68731e7259229141",
+      "proofs/katana-launch-attestation/Cargo.lock": "f0fcd4fe2c294b13b466abc5046088dc89749bd729ceb453c9e9ea53aea5d514",
+      "proofs/katana-launch-attestation/Cargo.toml": "5a7bb2c7b7bb53689d167f7a75b881dc00d7e1dd711a95d6fb3c4ed14ba18e25",
+      "proofs/katana-launch-attestation/src/lib.rs": "0538869ea4b7a277db1e38becf5d7f7d3d23a813e515c6350ca4532b803114ec"
     },
     "testSha256": {
-      "config/deployer/clean/tests/aws-game-stack-provisioning.test.ts": "030ca344b9cf1742b0de0efed642fa9736f603516bcf7079d4006537a7952f10",
-      "config/deployer/clean/tests/game-stack-api.test.ts": "0c94ff5302e92619af24b6f2c374df69b5176279f6670617c2af2982387cf216",
-      "config/deployer/clean/tests/game-stack-orchestrator.test.ts": "54eb065645b1f4cdf23645e9eed0e317f0bffeb356cdae8a162c3f55228af63e",
-      "config/deployer/clean/tests/game-stack-provisioning-handler.test.ts": "1fd26748fc3da179f4e27c09b8d8ecfe71a31f80446acf6284c8480468aeaabb",
-      "config/deployer/clean/tests/game-stack-release-authorization.test.ts": "cf1d7582e9536697e9b5b15108cd7386da8f815529cd31b27c81015268597297",
+    "config/deployer/clean/tests/aws-game-stack-provisioning.test.ts": "914fa412df8f00ba9d787e0f5786940533e6069ce883c871b9e33776f629d2c4",
+      "config/deployer/clean/tests/aws-runtime.test.ts": "8ae58615e69ba35e37dd57b66ef4c94af036988a9b73a051d4b3cbbe4e59ef86",
+      "config/deployer/clean/tests/game-stack-api.test.ts": "92ae52ad7d8649d4fa5d41f9e787ded689e1012395832fca802c66a98d5b1d03",
+      "config/deployer/clean/tests/game-stack-orchestrator.test.ts": "e1cac0544eac76696c623783f470d5aa6f42ef171db90112a1bd0f7e58c45f2b",
+      "config/deployer/clean/tests/game-stack-provisioning-handler.test.ts": "b724f10d37c13271e4b0f881c129692a8e885dc3ba6e02b7c9536513a5854a58",
+      "config/deployer/clean/tests/game-stack-release-authorization.test.ts": "0eaf614e32f6cf0414d82e1e78c6a0811ef5234ad9083ef50da0de884cbd4779",
       "config/deployer/clean/tests/game-stack-runtime.test.ts": "6d74b95bca6c30412d97ddb245378285f624bd203164ffb70e65fa93af5c2990",
-      "config/deployer/clean/tests/wave0-release.test.ts": "6762c3bd5ae7e5ad27f47d9fb995c797d0925c2279c13c671b320a7b3f5a60bc"
+      "config/deployer/clean/tests/runtime-registry.test.ts": "df4ddb7eae31bf6aed778d826809c3c0708335de6848652381a8a447925ec0ee",
+      "config/deployer/clean/tests/wave0-release.test.ts": "6762c3bd5ae7e5ad27f47d9fb995c797d0925c2279c13c671b320a7b3f5a60bc",
+      "packages/settlement-codec/src/katana-launch-attestation.test.ts": "b3af697c56515a44ccc5a1ec7f550d6b5a165dba732d5634a996389ff9f643f1"
     },
     "ciWorkflowSha256": "423891fbba4b6ad4d0494179b5bc22ffd73f0c42cc4ea6a76c3a15ffee89394a",
-    "settlementCiWorkflowSha256": "5551d2e1ee1de495dba7277f6134a21a3da850613f801a7499b4442c8680194e"
+    "settlementCiWorkflowSha256": "aaf643e33b52c8e797b9cb4bbd10c31b7db143cb8e915982946d30f860906137"
   },
   "stopOutcomes": [
     {
@@ -462,8 +512,8 @@
       "action": "A22 now discovers erase_model lifecycle mutations, preserves three exact reviewed classification overrides, publishes executable reference u64 index, generation, tombstone, and chunk semantics, and binds per-family cardinality formulas, required inputs, and atomic exhaustion rules. Family 10 has a 4,096-position normative candidate, but its fixed lot coordinate still requires integration review. Independently review exact per-family maxima from rulesets and simulations; redesign D5-D9 from the five enumerated issue groups; implement typed source projections and production indexes; add the four absent production families; enforce the reviewed caps; and rerun A8 before estimating or authorizing production."
     },
     {
-      "id": "TEE-SOURCE-GATE",
-      "action": "Obtain authenticated reproducible access to katana-tee commit 6a263b017aa37903b8d65cf28c9f52cd24cb5807."
+      "id": "TEE-REPRODUCTION-AND-RUNTIME-GATE",
+      "action": "Independently reproduce the public Katana TEE release from GitHub-verified signed source commit 92787269bc05ab319f566b5d1f85715cb408fc17 and reproduce its launch measurement, align the A18 production deployment DAG with that commit, publish SBOM/provenance, implement the measured EC2 provisioner and game-owned real-TEE Sepolia mode, and capture a valid SEV-SNP quote before authorizing production work."
     },
     {
       "id": "MISSING-PROOF-GATES",

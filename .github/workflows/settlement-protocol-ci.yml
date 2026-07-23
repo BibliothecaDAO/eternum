@@ -42,6 +42,7 @@ on:
       - "scripts/ci/roles/**"
       - "packages/settlement-codec/**"
       - "proofs/eternum-settlement/**"
+      - "proofs/katana-launch-attestation/**"
       - "scripts/settlement/**"
       - "package.json"
       - "pnpm-lock.yaml"
@@ -264,6 +265,27 @@ jobs:
           cargo clippy --all-targets -- -D warnings
           cargo test
 
+  katana-launch-attestation-vector:
+    name: Katana launch attestation vector
+    needs: generated-protocol-artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy,rustfmt
+
+      - name: Format, lint, and test the launch binding
+        working-directory: proofs/katana-launch-attestation
+        run: |
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked
+
   a13-sp1-fixture:
     name: Pinned A13 SP1 fixture execution
     needs: generated-protocol-artifacts
@@ -330,6 +352,7 @@ jobs:
       - deployer-compiler
       - authority-evidence
       - rust-codecs
+      - katana-launch-attestation-vector
       - a13-sp1-fixture
     runs-on: ubuntu-latest
     timeout-minutes: 45

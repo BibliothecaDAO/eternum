@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
+import { getKatanaTeeReleaseProjection } from "@bibliothecadao/settlement-codec";
 import {
   buildFactoryRuntimeAlias,
   buildGameRuntimeAlias,
   assertCompleteActiveGameStack,
   clearInstalledRuntimeRegistry,
   getEmbeddedReadOnlyRuntimeRegistry,
+  getPinnedKatanaTeeReleaseProjection,
+  isPinnedKatanaTeeReleaseIdentity,
+  isPinnedKatanaTeeVmAssetDigest,
   loadRuntimeRegistry,
   parseRuntimeRegistry,
   resolveActiveGameStackEndpoint,
@@ -21,7 +25,21 @@ import {
 import { buildLaunchRuntimeRegistrations } from "../../../../common/factory/runtime-registry-launch";
 import { applyRuntimeTeardownResult } from "../../../../scripts/update-runtime-registry";
 
+const PINNED_KATANA_TEE_RELEASE = getKatanaTeeReleaseProjection();
+const PINNED_ATTESTATION_MEASUREMENT = `sha384:${PINNED_KATANA_TEE_RELEASE.launchMeasurement}`;
+
 describe("runtime endpoint registry", () => {
+  test("keeps the canonical Katana TEE release pin immutable across callers", () => {
+    const projection = getPinnedKatanaTeeReleaseProjection();
+    projection.releaseIdentitySha256 = "a".repeat(64);
+    projection.vmAssetDigest = `sha256:${"a".repeat(64)}`;
+
+    expect(isPinnedKatanaTeeReleaseIdentity(PINNED_KATANA_TEE_RELEASE.releaseIdentitySha256)).toBeTrue();
+    expect(isPinnedKatanaTeeVmAssetDigest(PINNED_KATANA_TEE_RELEASE.vmAssetDigest)).toBeTrue();
+    expect(isPinnedKatanaTeeReleaseIdentity(projection.releaseIdentitySha256)).toBeFalse();
+    expect(isPinnedKatanaTeeVmAssetDigest(projection.vmAssetDigest)).toBeFalse();
+  });
+
   test("keeps production Blitz runtimes out of the embedded historical registry", () => {
     const productionRuntimeAliases = Object.values(getEmbeddedReadOnlyRuntimeRegistry().aliases).filter(
       (entry) => entry.environmentId === "mainnet.blitz" && entry.runtimeKind !== "chain-rpc",
@@ -37,17 +55,18 @@ describe("runtime endpoint registry", () => {
         environmentId: "mainnet.blitz",
         gameStackId: "blitz-season-42",
         activeUntil: "2026-07-18T14:30:00.000Z",
-        attestationMeasurement: `sha384:${"c".repeat(96)}`,
+        releaseIdentitySha256: PINNED_KATANA_TEE_RELEASE.releaseIdentitySha256,
+        attestationMeasurement: PINNED_ATTESTATION_MEASUREMENT,
         verification: {
           identitySealedAt: "2026-07-18T12:20:00.000Z",
           attestationVerifiedAt: "2026-07-18T12:25:00.000Z",
           worldReadyAt: "2026-07-18T12:30:00.000Z",
           indexerReadyAt: "2026-07-18T12:35:00.000Z",
-          registryVerifiedAt: "2026-07-18T12:40:00.000Z",
+          registryAvailableAt: "2026-07-18T12:40:00.000Z",
         },
         katana: {
           runtimeInstanceId: "9c71925b-e87d-4a26-85cf-e5476274b451",
-          imageDigest: `sha256:${"a".repeat(64)}`,
+          imageDigest: PINNED_KATANA_TEE_RELEASE.vmAssetDigest,
           routingShard: 0,
           endpoints: {
             base: "https://s0.mainnet-blitz.runtime.realms.world/x/blitz-season-42/katana",
@@ -102,15 +121,56 @@ describe("runtime endpoint registry", () => {
       gameStackId: "blitz-season-42",
       activeUntil: "2026-07-18T14:30:00.000Z",
       publicationRevision: registry.revision,
-      attestationMeasurement: `sha384:${"c".repeat(96)}`,
+      releaseIdentitySha256: PINNED_KATANA_TEE_RELEASE.releaseIdentitySha256,
+      attestationMeasurement: PINNED_ATTESTATION_MEASUREMENT,
       verification: {
         identitySealedAt: "2026-07-18T12:20:00.000Z",
         attestationVerifiedAt: "2026-07-18T12:25:00.000Z",
         worldReadyAt: "2026-07-18T12:30:00.000Z",
         indexerReadyAt: "2026-07-18T12:35:00.000Z",
-        registryVerifiedAt: "2026-07-18T12:40:00.000Z",
+        registryAvailableAt: "2026-07-18T12:40:00.000Z",
       },
     });
+    const substitutedRelease = {
+      ...registry,
+      activeGameStacks: {
+        "mainnet.blitz": {
+          ...registry.activeGameStacks!["mainnet.blitz"],
+          releaseIdentitySha256: "a".repeat(64),
+        },
+      },
+    };
+    expect(() =>
+      assertCompleteActiveGameStack(substitutedRelease, "blitz-season-42", new Date("2026-07-18T13:00:00.000Z")),
+    ).toThrow('Active Blitz game stack "blitz-season-42" has an unapproved release identity');
+    const substitutedMeasurement = {
+      ...registry,
+      activeGameStacks: {
+        "mainnet.blitz": {
+          ...registry.activeGameStacks!["mainnet.blitz"],
+          attestationMeasurement: `sha384:${"c".repeat(96)}`,
+        },
+      },
+    };
+    expect(() =>
+      assertCompleteActiveGameStack(substitutedMeasurement, "blitz-season-42", new Date("2026-07-18T13:00:00.000Z")),
+    ).toThrow('Active Blitz game stack "blitz-season-42" does not match the pinned attestation measurement');
+    const katanaRpcAlias = buildGameRuntimeAlias("mainnet.blitz", "blitz-season-42", "katana", "rpc");
+    const substitutedImage = {
+      ...registry,
+      aliases: {
+        ...registry.aliases,
+        [katanaRpcAlias]: {
+          ...registry.aliases[katanaRpcAlias]!,
+          imageDigest: `sha256:${"a".repeat(64)}`,
+        },
+      },
+    };
+    expect(() =>
+      assertCompleteActiveGameStack(substitutedImage, "blitz-season-42", new Date("2026-07-18T13:00:00.000Z")),
+    ).toThrow(
+      'Active Blitz game stack alias "game.mainnet.blitz.blitz-season-42.katana.rpc" is not an AWS-only immutable runtime',
+    );
     expect(() =>
       assertCompleteActiveGameStack(registry, "blitz-season-42", new Date("2026-07-18T14:30:00.000Z")),
     ).toThrow("is expired");
@@ -136,13 +196,14 @@ describe("runtime endpoint registry", () => {
           gameStackId,
           activeUntil: "2099-07-18T14:30:00.000Z",
           publicationRevision: registry.revision + 1,
-          attestationMeasurement: `sha384:${"c".repeat(96)}`,
+          releaseIdentitySha256: PINNED_KATANA_TEE_RELEASE.releaseIdentitySha256,
+          attestationMeasurement: PINNED_ATTESTATION_MEASUREMENT,
           verification: {
             identitySealedAt: "2099-07-18T12:20:00.000Z",
             attestationVerifiedAt: "2099-07-18T12:25:00.000Z",
             worldReadyAt: "2099-07-18T12:30:00.000Z",
             indexerReadyAt: "2099-07-18T12:35:00.000Z",
-            registryVerifiedAt: "2099-07-18T12:40:00.000Z",
+            registryAvailableAt: "2099-07-18T12:40:00.000Z",
           },
         },
       },

@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "repository": "https://github.com/dojoengine/katana",
+  "release": {
+    "tag": "tee-vm-v0.4.1+katana-v1.8.0-rc.9",
+    "url": "https://github.com/dojoengine/katana/releases/tag/tee-vm-v0.4.1%2Bkatana-v1.8.0-rc.9",
+    "publishedAt": "2026-07-20T13:29:50Z"
+  },
+  "source": {
+    "commit": "92787269bc05ab319f566b5d1f85715cb408fc17",
+    "tree": "a9acf1afcf242dad5d10b8a058baf210317a9a46",
+    "url": "https://github.com/dojoengine/katana/commit/92787269bc05ab319f566b5d1f85715cb408fc17",
+    "buildSubtree": {
+      "path": "misc/AMDSEV",
+      "tree": "daab986ea269e04c865eb24c7e83f6881989f342"
+    },
+    "githubVerification": {
+      "verified": true,
+      "reason": "valid",
+      "verifiedAt": "2026-07-20T12:14:09Z"
+    }
+  },
+  "assets": [
+    {
+      "name": "build-info-tee-vm-v0.4.1+katana-v1.8.0-rc.9.txt",
+      "mediaType": "text/plain",
+      "size": 2197,
+      "digest": "sha256:6edb4e541824f2e6fbfe16beb180e6fc2ace7c167b618bbe289d676b0988b66f"
+    },
+    {
+      "name": "katana-tee-vm-tee-vm-v0.4.1+katana-v1.8.0-rc.9.tar.gz",
+      "mediaType": "application/gzip",
+      "size": 249153751,
+      "digest": "sha256:7a518422e8fbb5517b36f230a4dd3fa55f880969b6f51f5f41815549414b8767"
+    },
+    {
+      "name": "launch-measurement-tee-vm-v0.4.1+katana-v1.8.0-rc.9.txt",
+      "mediaType": "text/plain",
+      "size": 97,
+      "digest": "sha256:79048dfe11e9a29e8dc04ccdf0be6465a78058c5c77dd89c7b0099f8c729c3da"
+    }
+  ],
+  "launchMeasurement": {
+    "algorithm": "sha384",
+    "value": "68c29fbdbf424f9fd14b1bc393f366d0b3d4330cb5e75c875822a595840aea334770a5b015d6ece90a35f57739d7f16e"
+  },
+  "measuredComponents": {
+    "ovmf": "bdf28964b623837685a8243a35bb98fdfcaec8d867f5086d68a8304d2898e45c",
+    "kernel": "0913dbdfb7db70d66168e1987c3f76696a8f228c5ca799e0afa12c6f4c1c6a80",
+    "initrd": "2052002d8a4431bf9e245233df6ff37741d5e08809dc76487f83a1a39893569d",
+    "katana": "e14b0bae28336ff1b8157d40b6f3679516c049ad7fdceb560860c46cd244ea6c",
+    "paymaster": "89f8143bc7820911e46610193c33623ac2fdf96c5a2cdf511b992e800ad81ba2",
+    "vrf": "a848eef735d089d75323dc00749203fbd866a563a853e181f590ca8395e0320e"
+  },
+  "buildInputs": {
+    "ovmfCommit": "fbe0805b2091393406952e84724188f8c1941837",
+    "luksUuid": "00000000-0000-0000-0000-000000000001"
+  }
+}

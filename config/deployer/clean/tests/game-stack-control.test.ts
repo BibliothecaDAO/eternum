@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { getKatanaTeeReleaseProjection } from "@bibliothecadao/settlement-codec";
 import {
   acquireBlitzGameStackAdmission,
   closeExpiredBlitzGameStack,
@@ -22,6 +23,7 @@ const GAME_STACK: GameStack = {
   readinessDeadline: "2026-07-18T12:45:00.000Z",
   rulesetId: "0x77",
   releaseBundleHash: "0x88",
+  katanaTeeRelease: getKatanaTeeReleaseProjection(),
   protocolLifecycle: "Intent",
   operationalPhase: "reserving",
   createdAt: "2026-07-18T10:20:00.000Z",

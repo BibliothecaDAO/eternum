@@ -1,4 +1,10 @@
+import {
+  getKatanaTeeReleaseProjection,
+  matchesKatanaTeeAttestationMeasurement,
+  matchesKatanaTeeReleaseProjection,
+} from "@bibliothecadao/settlement-codec";
 import { createBlitzAuthChallenge, type BlitzAuthChallenge } from "./auth";
+import { hasGameStackAttestationBinding } from "./attestation";
 import { createBlitzLaunchQuote } from "./policy";
 import { deriveGameStackOperationalPhase, type BlitzLaunchQuote, type FailedGameStack, type GameStack } from "./types";
 
@@ -178,11 +184,12 @@ function hasOrderedReadinessEvidence(gameStack: GameStack, now: Date): boolean {
         readiness.attestationVerifiedAt,
         readiness.worldReadyAt,
         readiness.indexerReadyAt,
-        readiness.registryVerifiedAt,
+        readiness.registryAvailableAt,
+        readiness.publicationVerifiedAt,
       ].map((value) => Date.parse(value || ""))
     : [];
   return (
-    readinessTimestamps.length === 5 &&
+    readinessTimestamps.length === 6 &&
     readinessTimestamps.every(
       (timestamp, index) => Number.isFinite(timestamp) && (index === 0 || timestamp >= readinessTimestamps[index - 1]!),
     ) &&
@@ -192,10 +199,15 @@ function hasOrderedReadinessEvidence(gameStack: GameStack, now: Date): boolean {
 
 function hasCompleteRuntimeIdentity(gameStack: GameStack): boolean {
   return Boolean(
+    matchesKatanaTeeReleaseProjection(gameStack.katanaTeeRelease) &&
     gameStack.worldAddress &&
-    gameStack.attestationMeasurement &&
+    matchesKatanaTeeAttestationMeasurement(gameStack.attestationMeasurement) &&
+    hasGameStackAttestationBinding(gameStack) &&
     gameStack.l3ChainId &&
+    gameStack.l3ChainId === gameStack.katana?.chainId &&
     gameStack.katana?.runtimeInstanceId &&
+    gameStack.katana.imageDigest === gameStack.katanaTeeRelease.vmAssetDigest &&
+    gameStack.katana.genesisHash &&
     gameStack.katana.endpoints?.rpc &&
     gameStack.torii?.runtimeInstanceId &&
     gameStack.torii.endpoints?.base &&
@@ -259,6 +271,7 @@ function buildRequestedGameStack(
     readinessDeadline: quote.readinessDeadline,
     rulesetId: intent.rulesetId,
     releaseBundleHash: intent.releaseBundleHash,
+    katanaTeeRelease: getKatanaTeeReleaseProjection(),
     protocolLifecycle: "Intent",
     operationalPhase: deriveGameStackOperationalPhase("Intent"),
     createdAt: now,

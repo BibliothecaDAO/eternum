@@ -4,6 +4,12 @@
   "status": "reference-guests-and-verifiers-complete-production-receipts-blocked",
   "releaseReady": false,
   "protocolRegistryHash": "0x3c0d5bcc57346e38b6ddf4dc41f9c6f2c65e2094b42985a10c959402e7d9a1c",
+  "katanaTeeRelease": {
+    "artifact": "packages/settlement-codec/schema/katana-tee-release-v1.json",
+    "fileSha256": "184822d44db5bb9e0f6652a2a7cf7b851ac9a65eaa76bb991d642679fbb7dbf2",
+    "tag": "tee-vm-v0.4.1+katana-v1.8.0-rc.9",
+    "sourceCommit": "92787269bc05ab319f566b5d1f85715cb408fc17"
+  },
   "reproducibilityInputs": {
     "frozenRecoveryCoreSha256": "d00df6474956ffe5c30143aee40e931849a4624eb0359318ca4e981bf120ae32",
     "deploymentRefundMaterializationCoreSha256": "f8ba446c592d93bde08ae81cd8e4bf7519a56172b9307d99df117ba736a406f7",
@@ -115,7 +121,7 @@
   "productionBlockers": [
     {
       "id": "PINNED-KATANA-STORAGE-PROOFS",
-      "reason": "Authenticated source access is unavailable for katana-tee commit 6a263b017aa37903b8d65cf28c9f52cd24cb5807, so synthetic reference state commitments and tombstone witnesses are not production Patricia MultiProof adapters over generated layouts and exact high-water roots."
+      "reason": "The public Katana TEE release is pinned to a GitHub-verified signed source commit and its source is available. Synthetic reference state commitments and tombstone witnesses still must be replaced by production Patricia MultiProof adapters over generated layouts and exact high-water roots, then verified against the published launch measurement."
     },
     {
       "id": "SP1-SEGMENTED-AND-RECURSIVE-PROGRAMS",

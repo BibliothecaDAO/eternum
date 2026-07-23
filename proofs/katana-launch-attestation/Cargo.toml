@@ -1,0 +1,16 @@
+[package]
+name = "katana-launch-attestation-vector"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+sha3 = "0.10.9"
+starknet-crypto = "0.8.1"
+
+[lints.rust]
+unsafe_code = "forbid"

@@ -16,6 +16,8 @@ import {
   type AwsRuntimeSweptResource,
 } from "../aws-runtime";
 import { assertCanonicalRuntimeName, requireRuntimeInstanceId } from "../runtime-identity";
+import { AwsRuntimeOperationalError } from "./errors";
+import { validatePinnedKatanaTeeRelease } from "./katana-tee-release";
 
 export function buildAwsToriiRuntimeRequest(request: IndexerRequest): AwsRuntimeRequest {
   if (!request.environmentId) {
@@ -104,7 +106,7 @@ export async function ensureAwsRuntime(
   };
 }
 
-function validateAwsRuntimeDesiredState(request: AwsRuntimeRequest): void {
+export function validateAwsRuntimeDesiredState(request: AwsRuntimeRequest): void {
   assertCanonicalRuntimeName(request.runtimeName);
   requireRuntimeInstanceId(request.runtimeInstanceId);
 
@@ -130,7 +132,7 @@ function validateAwsKatanaDesiredState(request: AwsRuntimeRequest): void {
     throw new Error(`AWS Katana is not permitted for Eternum environment ${request.environmentId}`);
   }
 
-  if (request.environmentId === "mainnet.blitz") {
+  if (requiresGameOwnedTeeKatana(request)) {
     validateProductionBlitzKatanaDesiredState(request);
     return;
   }
@@ -147,24 +149,44 @@ function validateAwsKatanaDesiredState(request: AwsRuntimeRequest): void {
 }
 
 function validateProductionBlitzKatanaDesiredState(request: AwsRuntimeRequest): void {
+  const runtimeLabel =
+    request.environmentId === "mainnet.blitz" ? "Production Blitz Katana" : "Real-TEE staging Katana";
   if (request.runtimePlatform !== "ec2-sev-snp") {
-    throw new Error("Production Blitz Katana requires runtimePlatform=ec2-sev-snp");
+    throwRuntimeValidation(`${runtimeLabel} requires runtimePlatform=ec2-sev-snp`);
   }
   if (request.lifecycleClass !== "ephemeral") {
-    throw new Error("Production Blitz Katana requires lifecycleClass=ephemeral");
+    throwRuntimeValidation(`${runtimeLabel} requires lifecycleClass=ephemeral`);
   }
   if (!request.owner || request.owner.runKind !== "game") {
-    throw new Error("Production Blitz Katana requires an immutable game-stack owner");
+    throwRuntimeValidation(`${runtimeLabel} requires an immutable game-stack owner`);
   }
   if (request.owner.lifecycleClass !== "ephemeral") {
-    throw new Error("Production Blitz Katana owner requires lifecycleClass=ephemeral");
+    throwRuntimeValidation(`${runtimeLabel} owner requires lifecycleClass=ephemeral`);
   }
   if (!/^sha384:[a-f0-9]{96}$/.test(request.attestationMeasurement || "")) {
-    throw new Error("Production Blitz Katana requires attestationMeasurement=sha384:<96 lowercase hex>");
+    throwRuntimeValidation(`${runtimeLabel} requires attestationMeasurement=sha384:<96 lowercase hex>`);
+  }
+  validatePinnedKatanaTeeRelease(request.katanaTeeRelease, request.attestationMeasurement, runtimeLabel);
+  if (request.version !== request.katanaTeeRelease?.releaseTag) {
+    throwRuntimeValidation(`${runtimeLabel} version does not match the pinned public release tag`);
+  }
+  if (request.imageDigest !== request.katanaTeeRelease?.vmAssetDigest) {
+    throwRuntimeValidation(`${runtimeLabel} imageDigest does not match the pinned public release VM artifact`);
   }
   if (request.exposurePolicy !== "public-read") {
-    throw new Error("Production Blitz Katana requires exposurePolicy=public-read");
+    throwRuntimeValidation(`${runtimeLabel} requires exposurePolicy=public-read`);
   }
+}
+
+function throwRuntimeValidation(message: string): never {
+  throw new AwsRuntimeOperationalError("runtime-validation", message);
+}
+
+function requiresGameOwnedTeeKatana(request: AwsRuntimeRequest): boolean {
+  return (
+    request.environmentId === "mainnet.blitz" ||
+    (request.environmentId === "sepolia.blitz" && request.runtimePlatform === "ec2-sev-snp")
+  );
 }
 
 export async function ensureAwsToriiRuntime(
@@ -316,8 +338,9 @@ async function resolveAwsRuntimeBackend(
   }
 
   if (request.runtimePlatform === "ec2-sev-snp") {
-    throw new Error(
-      "Production Blitz SEV-SNP runtime backend is unavailable until the pinned katana-tee source and measured EC2 provisioner are installed",
+    throw new AwsRuntimeOperationalError(
+      "missing-foundation-config",
+      "Blitz SEV-SNP runtime backend is unavailable until the measured EC2 provisioner is installed for the pinned public Katana TEE release",
     );
   }
 
