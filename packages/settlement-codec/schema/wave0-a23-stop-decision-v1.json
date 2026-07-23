@@ -244,7 +244,7 @@
     "authorityInventory": {
       "status": "a20-evidence-complete-awaiting-a23-freeze",
       "evidenceComplete": true,
-      "fileSha256": "f86918b86e8f5f93f7c0a66537adb3611f876e3a80e8ad1d640faf074d1731ed",
+      "fileSha256": "df74cddc3dfdcc0bef19ae76c56b1983d648db5e776f2124c3de64ca24656daa",
       "validatorSha256": "72f6d6c3d40f2ec4653e39acd04f825b10b83684f8d2ac46718295c7f657e1cb",
       "validatorTestSha256": "f3d255c22cef4727622172e414d449fd0f7d0175cb7f1999e413d1ccc80d5672",
       "authorityCommitmentsSha256": "a2ae384da9fee821dce4e3f4586754388a49164c28df6a3c70f46617707efd5e",
@@ -258,7 +258,7 @@
       "sourceRebuildVerifierSha256": "b2ad3f3e1632a4456bdaebe6da3e48fd125e0fd7cbe65775e5ff0406cd041857",
       "authoritativeAddressInputsHash": "0x1a0671374891999cfcf7bc0d08be01dd943af997dc72334eceb2f35a9864437",
       "dynamicAddressInputsHash": "0x7ba72595602344f16689a3c790f6eefc0abee59ccda3736eb5fe82f5056205f",
-      "privilegedMutationPathsHash": "0x34890e6d3e1410d49d89cf79b4fba110c323bef822ded58440ea3bd1a2391fc",
+      "privilegedMutationPathsHash": "0x5f374c009c8d889a3917f6fff612d7e4a54f880ea254da43b642833d99b438",
       "candidateAuthoritySchemaHash": "0x425ef7718fbd7887b4ef15dc16bc1df3023ecb1c2141c49022df1b4d37f0ad6",
       "historicalStorageLayoutIdentityHash": "0x4a992114f95f83ddff05a6df6dc468b41a9c9cc198cb8eb99f0c4ccace2c7a8",
       "historicalTopLevelStorageDeclarationHash": "0x27cb4147c8f9d0699bfc5c477dfd1fb79beec889a607d1bcc97454bd2ee9fb1",
@@ -503,7 +503,7 @@
       "config/deployer/clean/tests/wave0-release.test.ts": "6762c3bd5ae7e5ad27f47d9fb995c797d0925c2279c13c671b320a7b3f5a60bc",
       "packages/settlement-codec/src/katana-launch-attestation.test.ts": "b3af697c56515a44ccc5a1ec7f550d6b5a165dba732d5634a996389ff9f643f1"
     },
-    "ciWorkflowSha256": "423891fbba4b6ad4d0494179b5bc22ffd73f0c42cc4ea6a76c3a15ffee89394a",
+    "ciWorkflowSha256": "328e957e547aaa365612fa4827b823f3f5ed038ee0a99f67d2959edb48ee6294",
     "settlementCiWorkflowSha256": "aaf643e33b52c8e797b9cb4bbd10c31b7db143cb8e915982946d30f860906137"
   },
   "stopOutcomes": [

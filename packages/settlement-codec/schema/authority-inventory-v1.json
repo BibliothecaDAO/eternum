@@ -19994,7 +19994,7 @@
       "evidencePath": "config/deployer/clean/game-stack/orchestrator.ts",
       "replacementPath": "",
       "replacementPathHash": "0x0",
-      "evidenceHash": "0x479355d55bb0ee834a569f903b5e3157b89064a5dad0d1fd6fe4b8ee48c719"
+      "evidenceHash": "0x7a6bb2730b23a4ea394e206e3dea0a148601f3bbcd092333b7c2929598f1bf"
     },
     {
       "path": "config/deployer/clean/launch/grouped-role-grants.ts#role-mutation",
@@ -21292,7 +21292,7 @@
       "target_semantic_key": "0x1b53c861bd5d7b74f3a03232b0c9fb015b76a4130f14466f988be70841e1e41",
       "production_disposition": 1,
       "replacement_path_hash": "0x0",
-      "evidence_hash": "0x479355d55bb0ee834a569f903b5e3157b89064a5dad0d1fd6fe4b8ee48c719"
+      "evidence_hash": "0x7a6bb2730b23a4ea394e206e3dea0a148601f3bbcd092333b7c2929598f1bf"
     },
     {
       "path_hash": "0x64756b6c9af53adee53e401756c69ba8117d5291ab61d41e06af2ce111e219",
@@ -21999,7 +21999,7 @@
       "evidence_hash": "0x32165d25eb2255517b91c6857adf32d5fa4e6f0fe255831ef6359b5483e37ba"
     }
   ],
-  "privilegedMutationPathsHash": "0x34890e6d3e1410d49d89cf79b4fba110c323bef822ded58440ea3bd1a2391fc",
+  "privilegedMutationPathsHash": "0x5f374c009c8d889a3917f6fff612d7e4a54f880ea254da43b642833d99b438",
   "discoveredMutationPathHashes": [
     "0x7605641f1f55346869a71d3d7b1b6807b522de2ed111125567000cc42ca24",
     "0xb87878adfda15363310486a1649c5bb7178cc8b1244706e3a55fc50a6ffe9",

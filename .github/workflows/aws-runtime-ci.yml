@@ -36,6 +36,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Build settlement codec dependency
+        run: pnpm --dir packages/settlement-codec build
+
       - name: Run focused runtime tests
         run: |
           set -euo pipefail
