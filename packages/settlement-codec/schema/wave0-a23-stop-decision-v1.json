@@ -143,11 +143,11 @@
     },
     "mmrPlanProof": {
       "status": "reference-guest-and-verifier-complete-production-receipt-blocked",
-      "fileSha256": "00d2fb94bc72ef61eed9ecc56557a0faeb05dcae7a470e1eae131b2e1ede3fcc",
+      "fileSha256": "1d6fa2259b676061e33b844b5dcc3aa12680037157bc14d9ba2cd410364f69b5",
       "journalHash": "0x2e8193d2764077811fe44d826af2d7a6c0c8afdc31ced2d5f106530fb639f6a",
       "sp1FixtureStatus": "fixture-execution-passed-production-proof-blocked",
       "sp1FixtureEvidenceSha256": "f723ddca87bd17da5830b9f058cb31db39e1d9d1892f127df2cd6b4047a24dd2",
-      "sp1FixtureCiEvidenceCheckerSha256": "d8f6d353d3059ab727605d85094edb34bf585b570f38eacabc563d9c54e6fd35",
+      "sp1FixtureCiEvidenceCheckerSha256": "e7779a72d61926ee1d959f4e8d30a6f282485d05cda661a5e9e4eb2e8c32d588",
       "sp1FixtureElfSha256": "42b69fb90cf5829b658f8f50ac3f6e7236070a5af69a72a6326926afb242c7c0",
       "sp1Commit": "150e6294959f40dbc3ba42eb21c8eccc14c95bc5",
       "sp1ExecutionKind": "sp1-sdk-v6.2.2-cpu-execute-valid-only-with-native-negatives-no-proof",

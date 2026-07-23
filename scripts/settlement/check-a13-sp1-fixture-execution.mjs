@@ -1,29 +1,35 @@
 import { createHash } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const repositoryRoot = resolve(import.meta.dirname, "../..");
 const evidence = readJson("proofs/eternum-settlement/sp1/mmr-plan-a13-fixture-evidence-v0.json");
-const executionLog = process.env.A13_SP1_EXECUTION_LOG;
-const elfPath = process.env.A13_SP1_ELF;
 
-assert(executionLog, "A13_SP1_EXECUTION_LOG is required");
-assert(elfPath, "A13_SP1_ELF is required");
+if (isDirectExecution()) verifyExecutionEvidence();
 
-const emitted = readExecutionRecord(executionLog);
+function verifyExecutionEvidence() {
+  const executionLog = process.env.A13_SP1_EXECUTION_LOG;
+  const elfPath = process.env.A13_SP1_ELF;
 
-assertElfIdentity(elfPath);
-assertExecutionRecord(emitted);
+  assert(executionLog, "A13_SP1_EXECUTION_LOG is required");
+  assert(elfPath, "A13_SP1_ELF is required");
 
-console.log(
-  JSON.stringify({
-    schema: "eternum.a13.sp1-ci-verification.v1",
-    result: "pass",
-    elfSha256: evidence.fixtureElf.sha256,
-    journalHash: evidence.fixtureElf.expectedJournalHash,
-    negativeAssertions: emitted.nativeNegativeAssertions.map(({ name, exactError }) => ({ name, exactError })),
-  }),
-);
+  const emitted = readExecutionRecord(executionLog);
+
+  assertElfIdentity(elfPath);
+  assertExecutionRecord(emitted);
+
+  console.log(
+    JSON.stringify({
+      schema: "eternum.a13.sp1-ci-verification.v1",
+      result: "pass",
+      elfSha256: evidence.fixtureElf.sha256,
+      journalHash: evidence.fixtureElf.expectedJournalHash,
+      negativeAssertions: emitted.nativeNegativeAssertions.map(({ name, exactError }) => ({ name, exactError })),
+    }),
+  );
+}
 
 function assertElfIdentity(relativePath) {
   const absolutePath = resolve(repositoryRoot, relativePath);
@@ -71,13 +77,27 @@ function assertNativeNegative(entries, name, expectedError) {
 }
 
 function readExecutionRecord(relativePath) {
+  return parseExecutionRecord(readFileSync(resolve(repositoryRoot, relativePath), "utf8"));
+}
+
+export function parseExecutionRecord(log) {
   const prefix = "A13_SP1_EXECUTION_EVIDENCE=";
-  const records = readFileSync(resolve(repositoryRoot, relativePath), "utf8")
-    .split(/\r?\n/u)
-    .filter((line) => line.startsWith(prefix));
+  const records = log.split(/\r?\n/u).flatMap((line) => findExecutionRecords(line, prefix));
 
   assertEqual(records.length, 1, "A13 emitted execution record count");
-  return JSON.parse(records[0].slice(prefix.length));
+  return JSON.parse(records[0]);
+}
+
+function findExecutionRecords(line, prefix) {
+  const records = [];
+  let offset = line.indexOf(prefix);
+
+  while (offset !== -1) {
+    records.push(line.slice(offset + prefix.length));
+    offset = line.indexOf(prefix, offset + prefix.length);
+  }
+
+  return records;
 }
 
 function readJson(relativePath) {
@@ -102,4 +122,8 @@ function assertEqual(actual, expected, label) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
+}
+
+function isDirectExecution() {
+  return process.argv[1] !== undefined && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
 }

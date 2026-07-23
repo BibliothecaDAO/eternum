@@ -19,7 +19,7 @@
     "status": "fixture-execution-passed-production-proof-blocked",
     "artifact": "proofs/eternum-settlement/sp1/mmr-plan-a13-fixture-evidence-v0.json",
     "fileSha256": "f723ddca87bd17da5830b9f058cb31db39e1d9d1892f127df2cd6b4047a24dd2",
-    "ciEvidenceCheckerSha256": "d8f6d353d3059ab727605d85094edb34bf585b570f38eacabc563d9c54e6fd35",
+    "ciEvidenceCheckerSha256": "e7779a72d61926ee1d959f4e8d30a6f282485d05cda661a5e9e4eb2e8c32d588",
     "sp1Tag": "v6.2.2",
     "sp1Commit": "150e6294959f40dbc3ba42eb21c8eccc14c95bc5",
     "fixtureElfSha256": "42b69fb90cf5829b658f8f50ac3f6e7236070a5af69a72a6326926afb242c7c0",
